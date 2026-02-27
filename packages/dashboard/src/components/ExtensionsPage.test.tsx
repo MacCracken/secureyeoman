@@ -109,7 +109,7 @@ describe('ExtensionsPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     mockFetchExtensions.mockResolvedValue(MOCK_EXTENSIONS);
     mockFetchExtensionHooks.mockResolvedValue(MOCK_HOOKS);
@@ -151,7 +151,7 @@ describe('ExtensionsPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     renderComponent();
     expect(await screen.findByText('Extensions Not Enabled')).toBeInTheDocument();
@@ -185,7 +185,7 @@ describe('ExtensionsPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     renderComponent();
     expect(await screen.findByText('Discover')).toBeInTheDocument();
@@ -220,7 +220,7 @@ describe('ExtensionsPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     renderComponent();
     expect(await screen.findByText('Discover')).toBeInTheDocument();

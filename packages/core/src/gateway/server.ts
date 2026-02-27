@@ -76,6 +76,7 @@ import { registerAuditExportRoutes } from '../logging/audit-export-routes.js';
 import { SQLiteAuditStorage } from '../logging/sqlite-storage.js';
 import { registerBackupRoutes } from '../backup/backup-routes.js';
 import { registerTenantRoutes } from '../tenants/tenant-routes.js';
+import { registerTrainingRoutes } from '../training/training-routes.js';
 import { CollabManager } from '../soul/collab.js';
 import { SoulStorage } from '../soul/storage.js';
 import { formatPrometheusMetrics } from './prometheus.js';
@@ -966,6 +967,16 @@ export class GatewayServer {
       });
     }
 
+    // Training dataset export routes
+    try {
+      registerTrainingRoutes(this.app, { secureYeoman: this.secureYeoman });
+      this.getLogger().info('Training routes registered');
+    } catch (err) {
+      this.getLogger().debug('Training routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
     // Prometheus metrics endpoint (unauthenticated)
     this.app.get('/prom/metrics', async (_request, reply) => {
       try {
@@ -1551,6 +1562,7 @@ export class GatewayServer {
         allowIntentEditor: config.security.allowIntentEditor,
         allowCodeEditor: config.security.allowCodeEditor,
         allowAdvancedEditor: config.security.allowAdvancedEditor,
+        allowTrainingExport: config.security.allowTrainingExport,
       };
     });
 
@@ -1587,6 +1599,7 @@ export class GatewayServer {
             allowIntentEditor?: boolean;
             allowCodeEditor?: boolean;
             allowAdvancedEditor?: boolean;
+            allowTrainingExport?: boolean;
           };
         }>,
         reply: FastifyReply
@@ -1620,6 +1633,7 @@ export class GatewayServer {
             allowIntentEditor,
             allowCodeEditor,
             allowAdvancedEditor,
+            allowTrainingExport,
           } = request.body;
           if (
             allowSubAgents === undefined &&
@@ -1648,7 +1662,8 @@ export class GatewayServer {
             allowOrgIntent === undefined &&
             allowIntentEditor === undefined &&
             allowCodeEditor === undefined &&
-            allowAdvancedEditor === undefined
+            allowAdvancedEditor === undefined &&
+            allowTrainingExport === undefined
           ) {
             return sendError(reply, 400, 'No valid fields provided');
           }
@@ -1680,6 +1695,7 @@ export class GatewayServer {
             allowIntentEditor,
             allowCodeEditor,
             allowAdvancedEditor,
+            allowTrainingExport,
           });
 
           // Audit the policy change

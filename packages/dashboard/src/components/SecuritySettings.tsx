@@ -1065,6 +1065,29 @@ export function SecuritySettings() {
         </div>
       </div>
 
+      {/* Training Export Policy */}
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <Brain className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Training Data Export</h3>
+        </div>
+        <div className="p-4">
+          <PolicyToggle
+            label="Training Dataset Export"
+            enabled={securityPolicy?.allowTrainingExport ?? false}
+            isPending={policyMutation.isPending}
+            onToggle={() => {
+              policyMutation.mutate({ allowTrainingExport: !(securityPolicy?.allowTrainingExport ?? false) });
+            }}
+            description={
+              (securityPolicy?.allowTrainingExport ?? false)
+                ? 'Training export is enabled. The Training tab is visible in Developers and conversations can be downloaded as ShareGPT / instruction / raw text datasets.'
+                : 'Training export is disabled. Enable to allow exporting conversations as LLM fine-tuning datasets (ShareGPT JSONL, instruction JSONL, raw text).'
+            }
+          />
+        </div>
+      </div>
+
       {/* Community Skills Policy */}
       <div className="card">
         <div className="p-4 border-b flex items-center gap-2">

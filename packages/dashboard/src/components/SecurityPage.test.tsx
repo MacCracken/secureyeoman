@@ -194,7 +194,7 @@ beforeEach(() => {
     allowOrgIntent: false,
     allowIntentEditor: false,
     allowCodeEditor: true,
-    allowAdvancedEditor: false,
+    allowAdvancedEditor: false, allowTrainingExport: false,
   });
 });
 
@@ -428,7 +428,7 @@ function enableMlPolicy() {
     allowOrgIntent: false,
     allowIntentEditor: false,
     allowCodeEditor: true,
-    allowAdvancedEditor: false,
+    allowAdvancedEditor: false, allowTrainingExport: false,
   });
 }
 

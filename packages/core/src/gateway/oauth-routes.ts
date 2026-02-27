@@ -523,6 +523,19 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
         });
         setTimeout(() => PENDING_OAUTH_USERINFO.delete(connectionToken), PENDING_TOKEN_EXPIRY_MS);
 
+        // Persist tokens in the unified token store so connected accounts survive page refresh
+        if (oauthTokenService && userInfo.email) {
+          await oauthTokenService.storeToken({
+            provider: providerId,
+            email: userInfo.email,
+            userId: userInfo.id,
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            scopes: OAUTH_PROVIDERS[providerId]?.scopes.join(' ') ?? '',
+            expiresIn: 3600,
+          });
+        }
+
         return await reply.redirect(
           `/connections/oauth?connected=true&provider=${providerId}&email=${encodeURIComponent(userInfo.email || '')}&name=${encodeURIComponent(userInfo.name || '')}&token=${connectionToken}`
         );

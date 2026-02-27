@@ -2329,6 +2329,7 @@ export class SecureYeoman {
     allowIntentEditor?: boolean;
     allowCodeEditor?: boolean;
     allowAdvancedEditor?: boolean;
+    allowTrainingExport?: boolean;
   }): void {
     this.ensureInitialized();
 
@@ -2428,6 +2429,9 @@ export class SecureYeoman {
     }
     if (updates.allowAdvancedEditor !== undefined) {
       this.config!.security.allowAdvancedEditor = updates.allowAdvancedEditor;
+    }
+    if (updates.allowTrainingExport !== undefined) {
+      this.config!.security.allowTrainingExport = updates.allowTrainingExport;
     }
 
     this.logger?.info('Security policy updated', updates);

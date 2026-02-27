@@ -109,7 +109,7 @@ describe('MultimodalPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     mockFetchMultimodalJobs.mockResolvedValue(MOCK_JOBS);
   });
@@ -143,7 +143,7 @@ describe('MultimodalPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     renderComponent();
     expect(
@@ -178,7 +178,7 @@ describe('MultimodalPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     renderComponent();
     await screen.findByText(/Multimodal processing is currently disabled/);
@@ -225,7 +225,7 @@ describe('MultimodalPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     renderComponent({ embedded: true });
     await screen.findByText(/Multimodal processing is currently disabled/);

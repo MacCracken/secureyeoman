@@ -46,6 +46,8 @@ import type {
   CreateExternalFindingOptions,
   BackupRecord,
   TenantRecord,
+  OAuthConnectedToken,
+  AiHealthStatus,
 } from '../types.js';
 
 const API_BASE = '/api/v1';
@@ -813,6 +815,69 @@ export async function startIntegration(id: string): Promise<{ message: string }>
 
 export async function stopIntegration(id: string): Promise<{ message: string }> {
   return request(`/integrations/${id}/stop`, { method: 'POST' });
+}
+
+// ─── Training Dataset Export ──────────────────────────────────────
+
+export interface TrainingStats {
+  conversations: number;
+  memories: number;
+  knowledge: number;
+}
+
+export async function fetchTrainingStats(): Promise<TrainingStats> {
+  return request<TrainingStats>('/training/stats');
+}
+
+export async function exportTrainingDataset(opts: {
+  format: 'sharegpt' | 'instruction' | 'raw';
+  from?: number;
+  to?: number;
+  personalityIds?: string[];
+  limit?: number;
+}): Promise<{ url: string; filename: string }> {
+  const token = getAccessToken();
+  const response = await fetch('/api/v1/training/export', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(opts),
+    signal: AbortSignal.timeout(300_000),
+  });
+
+  if (!response.ok) {
+    const err = (await response.json()) as { message?: string };
+    throw new Error(err.message ?? `Export failed: ${response.statusText}`);
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const ext = opts.format === 'raw' ? 'txt' : 'jsonl';
+  const filename = `training-export-${new Date().toISOString().slice(0, 10)}.${ext}`;
+  return { url, filename };
+}
+
+// ─── AI Health ────────────────────────────────────────────────────
+
+export async function fetchAiHealth(): Promise<AiHealthStatus> {
+  return request<AiHealthStatus>('/ai/health');
+}
+
+// ─── OAuth Connected Tokens ────────────────────────────────────────
+
+export async function fetchOAuthTokens(): Promise<OAuthConnectedToken[]> {
+  try {
+    const data = await request<{ tokens: OAuthConnectedToken[] }>('/auth/oauth/tokens');
+    return data.tokens;
+  } catch {
+    return [];
+  }
+}
+
+export async function revokeOAuthToken(id: string): Promise<void> {
+  await request(`/auth/oauth/tokens/${id}`, { method: 'DELETE' });
 }
 
 // ─── Auth Roles ───────────────────────────────────────────────────
@@ -2035,6 +2100,7 @@ export interface SecurityPolicy {
   allowIntentEditor: boolean;
   allowCodeEditor: boolean;
   allowAdvancedEditor: boolean;
+  allowTrainingExport: boolean;
 }
 
 export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
@@ -2067,7 +2133,7 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     };
   }
 }

@@ -1,3 +1,29 @@
+## [2026.2.27] — 2026-02-27
+
+### Added
+
+#### Local-First AI (Phase 62)
+
+- **Ollama Embedding Provider** — `OllamaEmbeddingProvider` calls `POST {baseUrl}/api/embed` for local, privacy-preserving dense embeddings. No API key needed. Supported models: `nomic-embed-text` (768d, default), `mxbai-embed-large` (1024d), `all-minilm` (384d). Configure via Settings → Brain → Vector Memory → Provider = Ollama. *(Guide: ollama-embeddings.md)*
+- **Training Dataset Export** — `POST /api/v1/training/export` streams conversations as ShareGPT JSONL (chat fine-tuning), Alpaca Instruction JSONL (SFT pairs), or Raw Text (pre-training/SimCSE). `GET /api/v1/training/stats` returns row counts. Supports `from`/`to` timestamp filters, `personalityIds` filter, and `limit` cap (max 100k). CLI: `secureyeoman training export [--format] [--out] [--from] [--to] [--personality-id] [--limit]`. *(ADR 146, Guide: training-dataset-export.md)*
+- **Offline Detection Banner** — `GET /api/v1/ai/health` pings configured AI providers (Ollama `GET /api/tags`, LM Studio `GET /v1/models`, cloud key presence check). Dashboard shows a persistent `WifiOff` warning banner when a local provider is unreachable.
+- **Training Data Export security policy** — `allowTrainingExport` (default `false`) added to `SecurityConfigSchema`. When disabled, the Training tab is hidden in the Developers page. Toggle in Settings → Security.
+- **Training tab in Developers page** — Stats cards (conversations, memories, knowledge), format radio selection with descriptions, limit input, download button, and a "Local Training Pipeline" guide covering: export → sentence-transformers / Unsloth → Ollama → connect back.
+- **CLI `training` command** — `secureyeoman training export` streams the response body to stdout or `--out <file>`; `secureyeoman training stats` prints a formatted table.
+
+#### OAuth Connected Accounts
+
+- **OAuth token persistence** — Google and GitHub OAuth callbacks now call `oauthTokenService.storeToken()`, persisting connections across page refreshes.
+- **Multiple accounts per provider** — Multiple Google (or GitHub) accounts can be connected simultaneously; uniqueness is per `(provider, email)`. The Connect panel always shows all available providers.
+- **Richer connected account cards** — Each token shows provider icon, email, "Connected" badge, connected-since date, and a Disconnect button. Provider icons use monochrome `currentColor` to match the active theme.
+
+### Changed
+
+- **Google OAuth icon** — Replaced multi-colour SVG with a monochrome `fill="currentColor"` icon matching the GitHub icon and respecting the active theme.
+- **OAuth tab text** — "Available OAuth Providers" → "Connect an Account" (no accounts) / "Add Another Account" (some connected). Removed "All providers connected" sentinel.
+
+---
+
 ## [2026.2.26] — 2026-02-26
 
 ### Added

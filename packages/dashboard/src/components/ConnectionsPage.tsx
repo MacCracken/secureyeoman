@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -64,9 +64,11 @@ import {
   testIntegration,
   fetchSecurityPolicy,
   updateSecurityPolicy,
+  fetchOAuthTokens,
+  revokeOAuthToken,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
-import type { McpServerConfig, McpToolDef, McpFeatureConfig, IntegrationInfo } from '../types';
+import type { McpServerConfig, McpToolDef, McpFeatureConfig, IntegrationInfo, OAuthConnectedToken } from '../types';
 import type { SecurityPolicy } from '../api/client';
 import { sanitizeText } from '../utils/sanitize';
 import { McpPrebuilts } from './McpPrebuilts';
@@ -3468,17 +3470,44 @@ function EmailTab({
   );
 }
 
+const OAUTH_PROVIDER_META: Record<string, { name: string; icon: ReactNode; description: string; oauthUrl: string }> = {
+  google: {
+    name: 'Google',
+    description: 'Sign in with your Google account',
+    icon: (
+      // Monochrome "G" — uses currentColor so it matches the theme and GitHub icon style
+      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor" aria-hidden="true">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+      </svg>
+    ),
+    oauthUrl: '/api/v1/auth/oauth/google',
+  },
+  github: {
+    name: 'GitHub',
+    description: 'Sign in with your GitHub account',
+    icon: <GitBranchIcon className="w-5 h-5" />,
+    oauthUrl: '/api/v1/auth/oauth/github',
+  },
+};
+
+const AVAILABLE_OAUTH_PROVIDERS = ['google', 'github'];
+
 function OAuthTab({
-  integrations,
-  onDelete,
-  isDeleting,
+  integrations: _integrations,
+  onDelete: _onDelete,
+  isDeleting: _isDeleting,
 }: {
   integrations: IntegrationInfo[];
   onDelete: (id: string) => void;
   isDeleting: boolean;
 }) {
   const location = useLocation();
+  const queryClient = useQueryClient();
   const [successBanner, setSuccessBanner] = useState<{ provider: string; email: string; name: string } | null>(null);
+  const [disconnectTarget, setDisconnectTarget] = useState<OAuthConnectedToken | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -3491,37 +3520,32 @@ function OAuthTab({
         name: params.get('name') || '',
       });
       window.history.replaceState({}, '', '/connections/oauth');
+      void queryClient.invalidateQueries({ queryKey: ['oauth-tokens'] });
     }
-  }, [location.search]);
+  }, [location.search, queryClient]);
 
-  const oauthProviders = [
-    {
-      id: 'google_oauth',
-      name: 'Google',
-      description: 'Sign in with Google account',
-      icon: <Globe className="w-6 h-6" />,
-      oauthUrl: '/api/v1/auth/oauth/google',
+  const { data: tokens = [], isLoading: tokensLoading } = useQuery({
+    queryKey: ['oauth-tokens'],
+    queryFn: fetchOAuthTokens,
+  });
+
+  const revokeMut = useMutation({
+    mutationFn: revokeOAuthToken,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['oauth-tokens'] });
+      setDisconnectTarget(null);
     },
-    {
-      id: 'github_oauth',
-      name: 'GitHub',
-      description: 'Sign in with GitHub account',
-      icon: <GitBranchIcon className="w-6 h-6" />,
-      oauthUrl: '/api/v1/auth/oauth/github',
-    },
-  ];
+  });
 
-  const connectedOAuth = integrations.filter((i) => i.platform.endsWith('_oauth'));
-
-  const handleOAuthConnect = (oauthUrl: string) => {
-    window.location.href = oauthUrl;
-  };
+  // Always show all providers — multiple accounts per provider are supported
+  // (storage uniqueness is per (provider, email), not per provider)
+  const availableProviders = AVAILABLE_OAUTH_PROVIDERS;
 
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
-        Connect your account with OAuth providers for secure authentication. OAuth connections allow
-        you to sign in using your existing accounts from supported providers.
+        Connect your accounts with OAuth providers. Multiple accounts per provider are supported —
+        connect as many Google or GitHub accounts as you need.
       </p>
 
       {successBanner && (
@@ -3535,78 +3559,95 @@ function OAuthTab({
         </div>
       )}
 
-      {connectedOAuth.length > 0 && (
+      {tokensLoading && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Loading connected accounts…
+        </div>
+      )}
+
+      {tokens.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">Connected OAuth Providers</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {connectedOAuth.map((integration) => (
-              <div key={integration.id} className="card p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Globe className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <h3 className="font-medium text-sm">{integration.displayName}</h3>
-                      <p className="text-xs text-muted-foreground">Connected</p>
+          <h3 className="text-sm font-semibold text-foreground">Connected Accounts</h3>
+          <div className="space-y-3">
+            {tokens.map((token) => {
+              const meta = OAUTH_PROVIDER_META[token.provider];
+              return (
+                <div key={token.id} className="card p-4">
+                  <div className="flex items-center gap-4">
+                    <div className="p-2.5 rounded-xl bg-muted/40 shrink-0">
+                      {meta?.icon ?? <Globe className="w-5 h-5 text-muted-foreground" />}
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm">{meta?.name ?? token.provider}</span>
+                        <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full">
+                          <CheckCircle className="w-3 h-3" />
+                          Connected
+                        </span>
+                      </div>
+                      <p className="text-sm text-foreground/80 mt-0.5 truncate">{token.email}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Since {new Date(token.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setDisconnectTarget(token)}
+                      disabled={revokeMut.isPending}
+                      className="btn btn-ghost text-xs text-destructive hover:bg-destructive/10 shrink-0"
+                    >
+                      Disconnect
+                    </button>
                   </div>
-                  <button
-                    onClick={() => {
-                      if (confirm(`Disconnect ${integration.displayName}?`))
-                        onDelete(integration.id);
-                    }}
-                    disabled={isDeleting}
-                    className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-                  >
-                    Disconnect
-                  </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
 
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">Available OAuth Providers</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {oauthProviders.map((provider) => {
-            const isConnected = connectedOAuth.some((i) => i.platform === provider.id);
-
-            return (
-              <div key={provider.id} className="card p-4">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-muted/30 text-foreground">{provider.icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-medium text-sm">{provider.name}</h3>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${
-                          isConnected
-                            ? 'bg-green-500/10 text-green-600 dark:text-green-400'
-                            : 'bg-muted text-muted-foreground'
-                        }`}
-                      >
-                        {isConnected ? 'Connected' : 'Available'}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">{provider.description}</p>
-                    {!isConnected && (
+      {availableProviders.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">
+            {tokens.length > 0 ? 'Add Another Account' : 'Connect an Account'}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {availableProviders.map((providerId) => {
+              const meta = OAUTH_PROVIDER_META[providerId];
+              if (!meta) return null;
+              return (
+                <div key={providerId} className="card p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-muted/30">{meta.icon}</div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-sm">{meta.name}</h3>
+                      <p className="text-xs text-muted-foreground mt-1">{meta.description}</p>
                       <button
-                        onClick={() => {
-                          handleOAuthConnect(provider.oauthUrl);
-                        }}
+                        onClick={() => { window.location.href = meta.oauthUrl; }}
                         className="btn btn-ghost text-xs px-3 py-1.5 mt-2"
                       >
                         Connect
                       </button>
-                    )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
+
+      {disconnectTarget && (
+        <ConfirmDialog
+          open={true}
+          title={`Disconnect ${OAUTH_PROVIDER_META[disconnectTarget.provider]?.name ?? disconnectTarget.provider}?`}
+          message={`This will remove the connection for ${disconnectTarget.email}. You can reconnect at any time.`}
+          confirmLabel="Disconnect"
+          destructive
+          onConfirm={() => revokeMut.mutate(disconnectTarget.id)}
+          onCancel={() => setDisconnectTarget(null)}
+        />
+      )}
     </div>
   );
 }

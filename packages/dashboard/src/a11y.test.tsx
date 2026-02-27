@@ -155,7 +155,7 @@ beforeEach(() => {
     allowOrgIntent: false,
     allowIntentEditor: true,
     allowCodeEditor: true,
-    allowAdvancedEditor: false,
+    allowAdvancedEditor: false, allowTrainingExport: false,
   });
   vi.mocked(api.fetchAutonomyOverview).mockResolvedValue({} as any);
   vi.mocked(api.fetchAuditRuns).mockResolvedValue({ runs: [] } as any);

@@ -103,6 +103,7 @@ vi.mock('../api/client', () => ({
   fetchHealth: vi.fn(),
   fetchMetrics: vi.fn(),
   fetchOnboardingStatus: vi.fn(),
+  fetchAiHealth: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -110,6 +111,7 @@ import * as api from '../api/client';
 const mockFetchHealth = vi.mocked(api.fetchHealth);
 const mockFetchMetrics = vi.mocked(api.fetchMetrics);
 const mockFetchOnboardingStatus = vi.mocked(api.fetchOnboardingStatus);
+const mockFetchAiHealth = vi.mocked(api.fetchAiHealth);
 
 // ── Import after mocks ───────────────────────────────────────────────
 import { DashboardLayout } from './DashboardLayout';
@@ -152,6 +154,12 @@ describe('DashboardLayout routing', () => {
       needed: false,
       agentName: 'Friday',
       personality: null,
+    });
+    mockFetchAiHealth.mockResolvedValue({
+      status: 'configured',
+      provider: 'openai',
+      model: 'gpt-4',
+      local: false,
     });
   });
 

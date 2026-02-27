@@ -146,7 +146,7 @@ describe('SubAgentsPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     mockFetchAgentProfiles.mockResolvedValue(MOCK_PROFILES);
     mockFetchActiveDelegations.mockResolvedValue(MOCK_ACTIVE_DELEGATIONS);
@@ -194,7 +194,7 @@ describe('SubAgentsPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     renderComponent();
     expect(await screen.findByText('Delegation Not Enabled')).toBeInTheDocument();
@@ -231,7 +231,7 @@ describe('SubAgentsPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     renderComponent();
     expect(await screen.findByText('Active')).toBeInTheDocument();
@@ -268,7 +268,7 @@ describe('SubAgentsPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     renderComponent();
     expect(await screen.findByText('Active')).toBeInTheDocument();
@@ -325,7 +325,7 @@ describe('SubAgentsPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     renderComponent();
     const tabs = await screen.findAllByRole('button', { name: /Active|Swarms|History|Profiles/i });

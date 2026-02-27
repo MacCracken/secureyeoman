@@ -129,7 +129,7 @@ describe('SettingsPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
   });
 

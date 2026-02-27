@@ -236,6 +236,14 @@ router.registerLazy({
   loader: () => import('./cli/commands/agents.js').then((m) => m.agentsCommand),
 });
 
+router.registerLazy({
+  name: 'training',
+  aliases: ['train'],
+  description: 'Export conversations and memories as LLM training datasets',
+  usage: 'secureyeoman training <export|stats> [options]',
+  loader: () => import('./cli/commands/training.js').then((m) => m.trainingCommand),
+});
+
 // ── Help command (eager — uses router directly) ────────────────────────────
 
 router.register({

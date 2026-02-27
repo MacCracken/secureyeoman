@@ -214,7 +214,7 @@ beforeEach(() => {
     allowOrgIntent: false,
     allowIntentEditor: false,
     allowCodeEditor: true,
-    allowAdvancedEditor: false,
+    allowAdvancedEditor: false, allowTrainingExport: false,
   });
 });
 
@@ -393,7 +393,7 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -441,7 +441,7 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -484,7 +484,7 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -527,7 +527,7 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -640,7 +640,7 @@ describe('PersonalityEditor — Organizational Intent toggle', () => {
       allowOrgIntent: true,
       allowIntentEditor: true,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     mockFetchMcpConfig.mockResolvedValue({ exposeOrgIntentTools: true } as any);
 

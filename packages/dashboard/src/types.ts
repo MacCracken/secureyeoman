@@ -180,6 +180,7 @@ export interface Personality {
     };
     selectedServers?: string[];
     selectedIntegrations?: string[];
+    integrationAccess?: { id: string; mode: 'auto' | 'draft' | 'suggest' }[];
     mcpFeatures?: {
       exposeGit?: boolean;
       exposeFilesystem?: boolean;
@@ -273,6 +274,7 @@ export interface PersonalityCreate {
     };
     selectedServers?: string[];
     selectedIntegrations?: string[];
+    integrationAccess?: { id: string; mode: 'auto' | 'draft' | 'suggest' }[];
     mcpFeatures?: {
       exposeGit?: boolean;
       exposeFilesystem?: boolean;
@@ -598,6 +600,28 @@ export interface IntegrationInfo {
   lastMessageAt?: string;
   messageCount: number;
   errorMessage?: string;
+}
+
+/** Response from GET /api/v1/ai/health */
+export interface AiHealthStatus {
+  status: 'reachable' | 'unreachable' | 'configured' | 'missing_key';
+  provider: string;
+  model: string;
+  local: boolean;
+  baseUrl?: string;
+  latencyMs?: number;
+}
+
+/** Stored OAuth token record returned by GET /api/v1/auth/oauth/tokens */
+export interface OAuthConnectedToken {
+  id: string;
+  provider: string;
+  email: string;
+  userId: string;
+  scopes: string;
+  expiresAt: number | null;
+  createdAt: number;
+  updatedAt: number;
 }
 
 // ─── Brain Types (Memory) ────────────────────────────────────

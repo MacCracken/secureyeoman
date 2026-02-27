@@ -52,7 +52,7 @@ beforeEach(() => {
     allowOrgIntent: false,
     allowIntentEditor: true,
     allowCodeEditor: true,
-    allowAdvancedEditor: false,
+    allowAdvancedEditor: false, allowTrainingExport: false,
   });
   vi.mocked(api.updateSecurityPolicy).mockResolvedValue({} as any);
   vi.mocked(api.createApiKey).mockResolvedValue({

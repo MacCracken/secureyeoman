@@ -217,6 +217,7 @@ export class SoulManager {
           },
           selectedServers: [],
           selectedIntegrations: [],
+          integrationAccess: [],
           mcpFeatures: {
             exposeGit: false,
             exposeFilesystem: false,

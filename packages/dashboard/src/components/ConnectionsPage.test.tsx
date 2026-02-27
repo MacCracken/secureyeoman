@@ -23,6 +23,8 @@ vi.mock('../api/client', () => ({
   stopIntegration: vi.fn(),
   deleteIntegration: vi.fn(),
   testIntegration: vi.fn(),
+  fetchOAuthTokens: vi.fn(),
+  revokeOAuthToken: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -34,6 +36,7 @@ const mockFetchSecurityPolicy = vi.mocked(api.fetchSecurityPolicy);
 const mockFetchIntegrations = vi.mocked(api.fetchIntegrations);
 const mockFetchAvailablePlatforms = vi.mocked(api.fetchAvailablePlatforms);
 const mockTestIntegration = vi.mocked(api.testIntegration);
+const mockFetchOAuthTokens = vi.mocked(api.fetchOAuthTokens);
 
 function createQueryClient() {
   return new QueryClient({
@@ -83,6 +86,7 @@ describe('ConnectionsPage', () => {
     });
     mockFetchIntegrations.mockResolvedValue({ integrations: [], total: 0, running: 0 });
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: [] });
+    mockFetchOAuthTokens.mockResolvedValue([]);
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,
@@ -109,7 +113,7 @@ describe('ConnectionsPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     } as never);
   });
 
@@ -163,7 +167,7 @@ describe('ConnectionsPage', () => {
     const oauthTab = await screen.findByText('OAuth');
     await user.click(oauthTab);
 
-    expect(screen.getByText(/Connect your account with OAuth providers/)).toBeInTheDocument();
+    expect(screen.getByText(/Connect your accounts with OAuth providers/)).toBeInTheDocument();
   });
 
   it('displays OAuth providers when OAuth tab is active', async () => {
@@ -255,21 +259,18 @@ describe('ConnectionsPage', () => {
 
   it('shows Connected OAuth providers', async () => {
     const user = userEvent.setup();
-    mockFetchIntegrations.mockResolvedValue({
-      integrations: [
-        {
-          id: '1',
-          platform: 'google_oauth',
-          displayName: 'Google',
-          status: 'connected',
-          messageCount: 0,
-          config: {},
-          enabled: true,
-        },
-      ],
-      total: 1,
-      running: 1,
-    });
+    mockFetchOAuthTokens.mockResolvedValue([
+      {
+        id: 'tok-1',
+        provider: 'google',
+        email: 'test@gmail.com',
+        userId: 'u1',
+        scopes: 'email profile',
+        expiresAt: null,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+    ]);
 
     renderComponent();
 
@@ -279,7 +280,9 @@ describe('ConnectionsPage', () => {
     const oauthTab = await screen.findByText('OAuth');
     await user.click(oauthTab);
 
-    expect(screen.getByText('Connected OAuth Providers')).toBeInTheDocument();
+    // New heading is "Connected Accounts"
+    expect(await screen.findByText('Connected Accounts')).toBeInTheDocument();
+    expect(screen.getByText('test@gmail.com')).toBeInTheDocument();
     expect(screen.getAllByText('Google').length).toBeGreaterThan(0);
   });
 
@@ -646,7 +649,7 @@ describe('ConnectionsPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     } as never);
 
     renderComponent();
@@ -681,7 +684,7 @@ describe('ConnectionsPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     } as never);
 
     renderComponent();

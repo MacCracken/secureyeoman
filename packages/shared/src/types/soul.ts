@@ -180,6 +180,20 @@ export const ResourcePolicySchema = z
 
 export type ResourcePolicy = z.infer<typeof ResourcePolicySchema>;
 
+/**
+ * Per-integration access entry with a fine-grained permission mode.
+ *
+ * - auto   — Personality acts autonomously on this integration (send, post, etc.)
+ * - draft  — Personality composes content but requires human approval before sending
+ * - suggest — Personality only recommends actions; never takes them directly
+ */
+export const IntegrationAccessSchema = z.object({
+  id: z.string().min(1),
+  mode: z.enum(['auto', 'draft', 'suggest']).default('auto'),
+});
+export type IntegrationAccess = z.infer<typeof IntegrationAccessSchema>;
+export type IntegrationAccessMode = IntegrationAccess['mode'];
+
 export const BodyConfigSchema = z
   .object({
     enabled: z.boolean().default(false),
@@ -187,7 +201,10 @@ export const BodyConfigSchema = z
     heartEnabled: z.boolean().default(true),
     creationConfig: CreationConfigSchema.default({}),
     selectedServers: z.array(z.string()).default([]),
+    /** @deprecated Use integrationAccess instead. Kept for backward compat with persisted JSONB data. */
     selectedIntegrations: z.array(z.string()).default([]),
+    /** Replaces selectedIntegrations — includes both selection and permission mode per integration. */
+    integrationAccess: z.array(IntegrationAccessSchema).default([]),
     mcpFeatures: McpFeaturesSchema.default({}),
     proactiveConfig: ProactivePersonalityConfigSchema.default({}),
     activeHours: PersonalityActiveHoursSchema.default({}),
@@ -516,8 +533,9 @@ export const VectorConfigSchema = z
       .default({}),
     api: z
       .object({
-        provider: z.enum(['openai', 'gemini']).default('openai'),
+        provider: z.enum(['openai', 'gemini', 'ollama']).default('openai'),
         model: z.string().default('text-embedding-3-small'),
+        baseUrl: z.string().url().optional(),
       })
       .default({}),
     faiss: z

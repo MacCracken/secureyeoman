@@ -296,6 +296,8 @@ export const SecurityConfigSchema = z.object({
   allowCodeEditor: z.boolean().default(true),
   /** Replace the standard editor with the advanced three-panel workspace. */
   allowAdvancedEditor: z.boolean().default(false),
+  /** Allow training dataset export (conversations → JSONL/text for LLM fine-tuning). Off by default. */
+  allowTrainingExport: z.boolean().default(false),
   /** Allow agents to generate and register tools at runtime. Off by default. */
   allowDynamicTools: z.boolean().default(false),
   /** Require dynamically-created tools to run inside a sandbox. Defaults true; only applies when allowDynamicTools is true. */

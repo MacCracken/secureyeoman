@@ -88,7 +88,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [securityDirty, setSecurityDirty] = useState(false);
   const [securityToggles, setSecurityToggles] = useState<Record<string, boolean>>({
     allowCodeEditor: true,
-    allowAdvancedEditor: false,
+    allowAdvancedEditor: false, allowTrainingExport: false,
     allowIntentEditor: true,
     allowFileSystemAccess: false,
     allowNetworkAccess: false,

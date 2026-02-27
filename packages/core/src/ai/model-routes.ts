@@ -7,6 +7,25 @@ import type { SecureYeoman } from '../secureyeoman.js';
 import { getAvailableModelsAsync } from './cost-calculator.js';
 import { ModelRouter, profileTask } from './model-router.js';
 import { sendError } from '../utils/errors.js';
+import { getSecret } from '../config/loader.js';
+
+const LOCAL_PROVIDERS = new Set(['ollama', 'lmstudio', 'localai']);
+
+async function pingLocalProvider(
+  provider: string,
+  baseUrl: string
+): Promise<{ reachable: boolean; latencyMs: number }> {
+  const healthUrl =
+    provider === 'ollama' ? `${baseUrl}/api/tags` : `${baseUrl}/v1/models`;
+  const start = Date.now();
+  try {
+    const res = await fetch(healthUrl, { signal: AbortSignal.timeout(5000) });
+    const latencyMs = Date.now() - start;
+    return { reachable: res.ok, latencyMs };
+  } catch {
+    return { reachable: false, latencyMs: Date.now() - start };
+  }
+}
 
 export interface ModelRoutesOptions {
   secureYeoman: SecureYeoman;
@@ -210,4 +229,48 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
       }
     }
   );
+
+  // ── AI Provider Health ───────────────────────────────────────────────────
+  // Pings the active provider to check reachability.
+  // Local providers (ollama, lmstudio, localai) are pinged via HTTP.
+  // Cloud providers return 'configured' / 'missing_key' status without a live ping.
+
+  app.get('/api/v1/ai/health', async (_request, reply: FastifyReply) => {
+    try {
+      const config = secureYeoman.getConfig();
+      const { provider, model, baseUrl, apiKeyEnv } = config.model;
+      const isLocal = LOCAL_PROVIDERS.has(provider);
+
+      if (isLocal) {
+        const providerBaseUrl =
+          baseUrl ??
+          (provider === 'ollama'
+            ? 'http://localhost:11434'
+            : provider === 'lmstudio'
+              ? 'http://localhost:1234'
+              : 'http://localhost:8080');
+        const { reachable, latencyMs } = await pingLocalProvider(provider, providerBaseUrl);
+        return {
+          status: reachable ? 'reachable' : 'unreachable',
+          provider,
+          model,
+          local: true,
+          baseUrl: providerBaseUrl,
+          latencyMs: reachable ? latencyMs : undefined,
+        };
+      }
+
+      // Cloud providers — check API key presence
+      const key = getSecret(apiKeyEnv);
+      return {
+        status: key ? 'configured' : 'missing_key',
+        provider,
+        model,
+        local: false,
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return sendError(reply, 500, message);
+    }
+  });
 }

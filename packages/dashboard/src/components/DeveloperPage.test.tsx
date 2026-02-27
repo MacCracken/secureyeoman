@@ -12,6 +12,7 @@ vi.mock('../api/client', async (importOriginal) => {
     ...actual,
     fetchSecurityPolicy: vi.fn(),
     fetchExtensionConfig: vi.fn(),
+    fetchTrainingStats: vi.fn(),
   };
 });
 
@@ -19,6 +20,7 @@ import * as api from '../api/client';
 
 const mockFetchSecurityPolicy = vi.mocked(api.fetchSecurityPolicy);
 const mockFetchExtensionConfig = vi.mocked(api.fetchExtensionConfig);
+const mockFetchTrainingStats = vi.mocked(api.fetchTrainingStats);
 
 function createQueryClient() {
   return new QueryClient({
@@ -62,7 +64,7 @@ const FULL_POLICY = {
   allowOrgIntent: false,
   allowIntentEditor: false,
   allowCodeEditor: true,
-  allowAdvancedEditor: false,
+  allowAdvancedEditor: false, allowTrainingExport: false,
 };
 
 describe('DeveloperPage', () => {
@@ -70,6 +72,7 @@ describe('DeveloperPage', () => {
     vi.resetAllMocks();
     mockFetchSecurityPolicy.mockResolvedValue(FULL_POLICY);
     mockFetchExtensionConfig.mockResolvedValue({ config: {} });
+    mockFetchTrainingStats.mockResolvedValue({ conversations: 42, memories: 7, knowledge: 3 });
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({}), {
         status: 200,
@@ -118,6 +121,37 @@ describe('DeveloperPage', () => {
     await waitFor(() => {
       expect(
         screen.queryByText('Experiments are Disabled') ?? screen.queryByText('New Experiment')
+      ).toBeTruthy();
+    });
+  });
+
+  it('does NOT render Training tab when allowTrainingExport is false', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({ ...FULL_POLICY, allowTrainingExport: false });
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /training/i })).not.toBeInTheDocument();
+    });
+  });
+
+  it('renders Training tab when allowTrainingExport is true', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({ ...FULL_POLICY, allowTrainingExport: true });
+    renderComponent();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /training/i })).toBeInTheDocument();
+    });
+  });
+
+  it('shows Training content when Training tab is clicked', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({ ...FULL_POLICY, allowTrainingExport: true });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const trainingBtn = await screen.findByRole('button', { name: /training/i });
+    await user.click(trainingBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('Training Dataset Export') ?? screen.queryByText('Download Dataset')
       ).toBeTruthy();
     });
   });

@@ -1,11 +1,11 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, Menu } from 'lucide-react';
+import { Loader2, Menu, WifiOff } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useSidebar } from '../hooks/useSidebar';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { fetchMetrics, fetchHealth, fetchOnboardingStatus } from '../api/client';
+import { fetchMetrics, fetchHealth, fetchOnboardingStatus, fetchAiHealth } from '../api/client';
 import { Sidebar } from './Sidebar';
 import { SearchBar } from './SearchBar';
 import { NotificationBell } from './NotificationBell';
@@ -70,6 +70,13 @@ export function DashboardLayout() {
   });
 
   const { connected, reconnecting } = useWebSocket('/ws/metrics');
+
+  const { data: aiHealth } = useQuery({
+    queryKey: ['ai-health'],
+    queryFn: fetchAiHealth,
+    refetchInterval: 30_000,
+    retry: false,
+  });
 
   const { data: onboarding, refetch: refetchOnboarding } = useQuery({
     queryKey: ['onboarding'],
@@ -159,6 +166,21 @@ export function DashboardLayout() {
               </div>
             </div>
           </header>
+
+          {/* Local AI Unavailable Banner */}
+          {aiHealth?.local && aiHealth.status === 'unreachable' && (
+            <div
+              role="alert"
+              className="flex items-center gap-3 px-4 py-2.5 bg-warning/10 border-b border-warning/30 text-warning text-sm"
+            >
+              <WifiOff className="w-4 h-4 shrink-0" />
+              <span>
+                <strong>Local AI Unavailable</strong> — {aiHealth.provider} at{' '}
+                <code className="text-xs bg-warning/10 px-1 rounded">{aiHealth.baseUrl}</code> is
+                not reachable. Check that {aiHealth.provider} is running.
+              </span>
+            </div>
+          )}
 
           {/* Main Content */}
           <main className="px-2 sm:px-3 py-3 sm:py-4 flex-1">

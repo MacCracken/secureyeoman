@@ -80,6 +80,7 @@ import type {
   HeartbeatTask,
   Skill,
 } from '../types';
+import type { IntegrationAccess, IntegrationAccessMode } from '@secureyeoman/shared';
 import { sanitizeText } from '../utils/sanitize';
 
 const LOCAL_MCP_NAME = 'YEOMAN MCP';
@@ -1780,8 +1781,8 @@ interface BodySectionProps {
   onAllowConnectionsChange: (enabled: boolean) => void;
   selectedServers: string[];
   onSelectedServersChange: (servers: string[]) => void;
-  selectedIntegrations: string[];
-  onSelectedIntegrationsChange: (integrations: string[]) => void;
+  integrationAccess: IntegrationAccess[];
+  onIntegrationAccessChange: (access: IntegrationAccess[]) => void;
   enabledCaps: Record<string, boolean>;
   onEnabledCapsChange: (caps: Record<string, boolean>) => void;
   mcpFeatures: {
@@ -1901,8 +1902,8 @@ function BodySection({
   onAllowConnectionsChange,
   selectedServers,
   onSelectedServersChange,
-  selectedIntegrations,
-  onSelectedIntegrationsChange,
+  integrationAccess,
+  onIntegrationAccessChange,
   enabledCaps,
   onEnabledCapsChange,
   mcpFeatures,
@@ -3049,9 +3050,15 @@ function BodySection({
       <CollapsibleSection title="Integration Access" defaultOpen={false}>
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            Select which integrations this personality can access. Leave all unchecked to allow
-            access to every configured integration.
+            Choose which integrations this personality can access and set the permission level per
+            integration. Leave all unchecked to allow access to every configured integration.
           </p>
+          <div className="flex items-start gap-2 text-[10px] text-muted-foreground bg-muted/30 rounded p-2">
+            <span className="font-semibold text-foreground/60 shrink-0">Modes:</span>
+            <span><strong className="text-foreground/80">Auto</strong> — acts autonomously (send, post, reply).</span>
+            <span><strong className="text-foreground/80">Draft</strong> — composes but awaits approval.</span>
+            <span><strong className="text-foreground/80">Suggest</strong> — recommends only, never acts.</span>
+          </div>
 
           {integrationsLoading ? (
             <p className="text-xs text-muted-foreground">Loading integrations...</p>
@@ -3062,37 +3069,72 @@ function BodySection({
           ) : (
             <div className="space-y-2">
               {integrations.map((integration) => {
-                const isSelected = selectedIntegrations.includes(integration.id);
+                const entry = integrationAccess.find((a) => a.id === integration.id);
+                const isSelected = !!entry;
+                const mode: IntegrationAccessMode = entry?.mode ?? 'auto';
+
+                const setMode = (newMode: IntegrationAccessMode) => {
+                  onIntegrationAccessChange(
+                    integrationAccess.map((a) =>
+                      a.id === integration.id ? { ...a, mode: newMode } : a
+                    )
+                  );
+                };
+
                 return (
-                  <label
+                  <div
                     key={integration.id}
-                    className={`flex items-center gap-2 p-2 rounded border cursor-pointer transition-colors ${
+                    className={`rounded border transition-colors ${
                       isSelected
                         ? 'bg-success/5 border-success/30'
-                        : 'bg-muted/30 border-border hover:bg-muted/50'
+                        : 'bg-muted/30 border-border'
                     }`}
                   >
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          onSelectedIntegrationsChange([...selectedIntegrations, integration.id]);
-                        } else {
-                          onSelectedIntegrationsChange(
-                            selectedIntegrations.filter((id) => id !== integration.id)
-                          );
-                        }
-                      }}
-                      className="w-3.5 h-3.5 rounded accent-primary"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <span className="text-xs font-medium">{integration.displayName}</span>
-                      <p className="text-[10px] text-muted-foreground truncate">
-                        {integration.platform}
-                      </p>
-                    </div>
-                  </label>
+                    <label className="flex items-center gap-2 p-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            onIntegrationAccessChange([
+                              ...integrationAccess,
+                              { id: integration.id, mode: 'auto' },
+                            ]);
+                          } else {
+                            onIntegrationAccessChange(
+                              integrationAccess.filter((a) => a.id !== integration.id)
+                            );
+                          }
+                        }}
+                        className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-medium">{integration.displayName}</span>
+                        <p className="text-[10px] text-muted-foreground truncate">
+                          {integration.platform}
+                        </p>
+                      </div>
+                    </label>
+
+                    {isSelected && (
+                      <div className="flex gap-1 px-2 pb-2">
+                        {(['auto', 'draft', 'suggest'] as IntegrationAccessMode[]).map((m) => (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => setMode(m)}
+                            className={`px-2 py-0.5 rounded text-[10px] font-medium capitalize transition-colors ${
+                              mode === m
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                            }`}
+                          >
+                            {m}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -3352,7 +3394,7 @@ export function PersonalityEditor() {
 
   const [allowConnections, setAllowConnections] = useState(false);
   const [selectedServers, setSelectedServers] = useState<string[]>([]);
-  const [selectedIntegrations, setSelectedIntegrations] = useState<string[]>([]);
+  const [integrationAccess, setIntegrationAccess] = useState<IntegrationAccess[]>([]);
   const [enabledCaps, setEnabledCaps] = useState<Record<string, boolean>>({
     vision: false,
     limb_movement: false,
@@ -3638,7 +3680,12 @@ export function PersonalityEditor() {
     });
     setAllowConnections(body.enabled ?? false);
     setSelectedServers(body.selectedServers ?? []);
-    setSelectedIntegrations(body.selectedIntegrations ?? []);
+    // Migrate from legacy selectedIntegrations (string[]) to integrationAccess if needed
+    const legacyIds: string[] = body.selectedIntegrations ?? [];
+    const access: IntegrationAccess[] = (body.integrationAccess ?? []).length > 0
+      ? (body.integrationAccess ?? [])
+      : legacyIds.map((id) => ({ id, mode: 'auto' as const }));
+    setIntegrationAccess(access);
     const caps = body.capabilities ?? [];
     setEnabledCaps({
       vision: caps.includes('vision'),
@@ -3827,7 +3874,8 @@ export function PersonalityEditor() {
         heartEnabled: true,
         creationConfig,
         selectedServers,
-        selectedIntegrations,
+        selectedIntegrations: integrationAccess.map((a) => a.id), // keep for backward compat
+        integrationAccess,
         mcpFeatures,
         proactiveConfig,
         activeHours,
@@ -4166,8 +4214,8 @@ export function PersonalityEditor() {
             onAllowConnectionsChange={setAllowConnections}
             selectedServers={selectedServers}
             onSelectedServersChange={setSelectedServers}
-            selectedIntegrations={selectedIntegrations}
-            onSelectedIntegrationsChange={setSelectedIntegrations}
+            integrationAccess={integrationAccess}
+            onIntegrationAccessChange={setIntegrationAccess}
             enabledCaps={enabledCaps}
             onEnabledCapsChange={setEnabledCaps}
             mcpFeatures={mcpFeatures}

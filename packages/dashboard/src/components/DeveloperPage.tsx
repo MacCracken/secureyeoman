@@ -1,69 +1,73 @@
 import { useState } from 'react';
-import { Code2, Puzzle, FlaskConical, BookOpen } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Puzzle, FlaskConical, BookOpen, Brain, Lock } from 'lucide-react';
 import { ExtensionsPage } from './ExtensionsPage';
 import { ExperimentsPage } from './ExperimentsPage';
 import { StorybookPage } from './StorybookPage';
+import { TrainingTab } from './TrainingTab';
+import { fetchSecurityPolicy } from '../api/client';
 
-type DevTab = 'extensions' | 'experiments' | 'storybook';
+type DevTab = 'extensions' | 'experiments' | 'storybook' | 'training';
 
 export function DeveloperPage() {
   const [activeTab, setActiveTab] = useState<DevTab>('extensions');
+
+  const { data: policy } = useQuery({
+    queryKey: ['security-policy'],
+    queryFn: fetchSecurityPolicy,
+    retry: false,
+  });
+
+  const trainingEnabled = policy?.allowTrainingExport ?? false;
+
+  const tabs: { id: DevTab; label: string; icon: React.ReactNode; hidden?: boolean }[] = [
+    { id: 'extensions', label: 'Extensions', icon: <Puzzle className="w-4 h-4" /> },
+    { id: 'experiments', label: 'Experiments', icon: <FlaskConical className="w-4 h-4" /> },
+    { id: 'storybook', label: 'Storybook', icon: <BookOpen className="w-4 h-4" /> },
+    { id: 'training', label: 'Training', icon: <Brain className="w-4 h-4" />, hidden: !trainingEnabled },
+  ];
+
+  const visibleTabs = tabs.filter((t) => !t.hidden);
 
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Developers</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Extensions, experiments, and component development tools
+          Extensions, experiments, component tools, and training data export
         </p>
       </div>
 
       <div className="flex gap-1 p-1 bg-muted/50 rounded-lg w-fit">
-        <button
-          onClick={() => {
-            setActiveTab('extensions');
-          }}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-            activeTab === 'extensions'
-              ? 'bg-background shadow-sm text-foreground'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Puzzle className="w-4 h-4" />
-          Extensions
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab('experiments');
-          }}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-            activeTab === 'experiments'
-              ? 'bg-background shadow-sm text-foreground'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <FlaskConical className="w-4 h-4" />
-          Experiments
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab('storybook');
-          }}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-            activeTab === 'storybook'
-              ? 'bg-background shadow-sm text-foreground'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <BookOpen className="w-4 h-4" />
-          Storybook
-        </button>
+        {visibleTabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              activeTab === tab.id
+                ? 'bg-background shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {activeTab === 'extensions' ? (
         <ExtensionsPage />
       ) : activeTab === 'experiments' ? (
         <ExperimentsPage />
+      ) : activeTab === 'training' ? (
+        trainingEnabled ? (
+          <TrainingTab />
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
+            <Lock className="w-8 h-8" />
+            <p className="text-sm">Training export is disabled. Enable it in Security settings.</p>
+          </div>
+        )
       ) : (
         <StorybookPage />
       )}

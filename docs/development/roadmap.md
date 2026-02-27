@@ -32,6 +32,7 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 - [ ] **Manual test: RLS tenant isolation** — Create tenant B via API. Insert `soul.personality` scoped to tenant B. Query personalities as tenant A → empty. Query as tenant B → record visible. Existing default-tenant data unaffected.
 - [ ] **Base knowledge generic entries need per-personality review** — `hierarchy`, `purpose`, and `interaction` are currently seeded globally. These may need per-personality variants (e.g., T.Ron's purpose may differ from FRIDAY's). Low urgency — global entries are contextually correct for now.
 - [ ] **Consumer UX: Settings page split** — Extract `<AuditChainTab>`, `<SoulSystemTab>`, `<RateLimitingTab>` from the `SettingsPage.tsx` monolith.
+- [ ] ** Manual Testing - OAuth** - continue improvements (PRIORITY 1)
 
 ---
 
@@ -57,9 +58,9 @@ Privacy-first, offline-capable AI processing via on-device models. Completes the
 
 ### Local-First Operational Mode
 
-- [ ] **Local embedding generation** — Wire Ollama's native embedding endpoint (`/api/embeddings`) as an `EmbeddingProvider` alongside the existing SentenceTransformers and OpenAI/Gemini providers. Add `nomic-embed-text` and other Ollama-served models as selectable options in `brain.vector.api.provider`. The abstraction layer (`ai/embeddings/`) already exists; this is a new provider implementation + config enum entry.
+- [x] **Local embedding generation** — `OllamaEmbeddingProvider` calls `POST {baseUrl}/api/embed`. Supported: `nomic-embed-text` (768d), `mxbai-embed-large` (1024d), `all-minilm` (384d). `api.provider = 'ollama'` added to `VectorConfigSchema`. *(2026-02-27)*
 - [ ] **Hybrid cloud/local switch** — Add `localFirst` routing mode: primary request goes to the configured local provider; on `ProviderUnavailableError` automatically falls back to the first cloud entry in the fallback chain. Distinct from the existing fallback chain which requires explicit config. Expose as a toggle in dashboard settings alongside the model picker.
-- [ ] **Offline detection** — When the active provider is local and unreachable, surface a clear "Local AI Unavailable" banner in the dashboard rather than failing silently. Requires a `/api/v1/ai/health` endpoint that pings the configured local provider (Ollama `/api/tags`, LM Studio `/v1/models`) and returns reachability status. Error types already propagate correctly (`ProviderUnavailableError`); the gap is the health route and dashboard state.
+- [x] **Offline detection** — `GET /api/v1/ai/health` pings configured local provider (Ollama `/api/tags`, LM Studio `/v1/models`). Dashboard shows a `WifiOff` banner when a local provider is unreachable. *(2026-02-27)*
 - [ ] **Model lifecycle management** — `ollama pull <model>`, `ollama rm <model>` CLI subcommands and MCP tools. `ollama list` already works via `secureyeoman model list --provider ollama` (backed by `OllamaProvider.fetchAvailableModels()`). The gap is write operations: download and delete, plus surfacing disk usage per model.
 - [ ] **Quantization awareness** — Document recommended quantizations (Q4_K_M, Q5_K_S, etc.) per hardware tier in a guide. Optionally: auto-detect host RAM via `os.totalmem()` at startup and emit a warning if the configured model's estimated VRAM requirement exceeds available memory.
 
@@ -69,7 +70,7 @@ Train, fine-tune, and distill models directly from SecureYeoman's own data — c
 
 *Prerequisites: GPU-capable host for fine-tuning and training phases. Dataset export and distillation can run CPU-only.*
 
-- [ ] **Training dataset export** — Export conversations, memories, knowledge entries, and heartbeat logs as structured training datasets. Output formats: ShareGPT JSONL (chat fine-tuning), instruction JSONL (Alpaca-style), and raw text corpus. Configurable filters: date range, personality, quality score, message length. Exposed via `POST /api/v1/training/export` and `secureyeoman training export` CLI. This is the prerequisite for all downstream training items.
+- [x] **Training dataset export** — `POST /api/v1/training/export` streams ShareGPT JSONL, Instruction JSONL, or Raw Text. Filters: date range, `personalityIds`, `limit` (cap 100k). `GET /api/v1/training/stats` for row counts. CLI: `secureyeoman training export/stats`. Training tab in Developers page (gated by `allowTrainingExport` policy). Includes Local Training Pipeline guide: export → sentence-transformers/Unsloth → Ollama → reconnect. *(ADR 146, 2026-02-27)*
 - [ ] **Model distillation** — Use a cloud model (Claude, GPT-4o, etc.) as teacher: generate synthetic completions for prompts drawn from the exported dataset, producing a high-quality fine-tuning corpus without labelling by hand. Distillation jobs run as heartbeat tasks; output is a JSONL dataset ready for the fine-tuning pipeline.
 - [ ] **LoRA / QLoRA fine-tuning** — Fine-tune a local base model (Llama 3, Mistral, Phi, etc.) on an exported dataset using parameter-efficient methods. Runs via a Docker sidecar container (Unsloth or HuggingFace PEFT + `accelerate`). SecureYeoman orchestrates job submission, streams training logs to the dashboard, and on completion registers the resulting adapter weights with Ollama for immediate use. Config: base model, LoRA rank/alpha, batch size, epochs, VRAM budget.
 - [ ] **Continual / online learning** — Incremental adapter updates from new interactions without a full retrain cycle. High complexity: requires replay buffer management, learning rate scheduling, and drift detection to prevent catastrophic forgetting. Treat as research-grade; implement only once fine-tuning pipeline is stable and battle-tested.
@@ -152,4 +153,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-27 — v2026.2.26 released. Phases 57 and 58 complete. Phase 59 (Local-First AI) is the active priority. Phases 60–62 remain demand-gated.*
+*Last updated: 2026-02-27 — v2026.2.27 released. Phase 62 (Local-First AI) in progress: Ollama embeddings, offline detection, and training dataset export complete. Model lifecycle management and hybrid cloud/local switch remain. Phases 60–61 enterprise work complete.*

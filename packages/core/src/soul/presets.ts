@@ -41,6 +41,7 @@ const BASE_BODY: PersonalityCreate['body'] = {
   },
   selectedServers: [],
   selectedIntegrations: [],
+  integrationAccess: [],
   mcpFeatures: {
     exposeGit: false,
     exposeFilesystem: false,

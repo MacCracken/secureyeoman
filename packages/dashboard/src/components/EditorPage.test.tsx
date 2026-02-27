@@ -186,7 +186,7 @@ describe('EditorPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     mockFetchExecutionSessions.mockResolvedValue(MOCK_SESSIONS);
     mockFetchExecutionHistory.mockResolvedValue({
@@ -224,7 +224,7 @@ describe('EditorPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: true,
+      allowAdvancedEditor: true, allowTrainingExport: false,
     });
     renderComponent();
     expect(await screen.findByTestId('advanced-editor-page')).toBeInTheDocument();
@@ -300,7 +300,7 @@ describe('EditorPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false,
+      allowAdvancedEditor: false, allowTrainingExport: false,
     });
     renderComponent();
     await screen.findByText('Terminal');
