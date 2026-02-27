@@ -9,7 +9,7 @@
 | Phase | Name | Status |
 |-------|------|--------|
 | XX | Find & Repair (Ongoing) | Ongoing |
-| 57 | Dashboard UX | In Progress |
+| 57 | Dashboard UX | Complete ✅ |
 | 58 | Security Toolkit | Complete ✅ |
 | 59 | Local-First AI | Near-Term |
 | 60 | Voice & Community | Demand-Gated |
@@ -37,11 +37,7 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ## Phase 57: Dashboard UX
 
-**Status**: In Progress — Advanced Editor Mode and Theme Presets shipped (2026-02-26); one item remains.
-
-Deferred visual polish and power-user tooling from Phase 53.
-
-- [ ] **Intent creation form** — The "New → Intent" entry in the sidebar dialog currently navigates directly to the Intent Editor. Convert it to a guided creation form in the dialog: structured fields matching the intent schema (name, description, hard boundaries, policies, signal conditions) instead of raw JSON entry. Include an **Import JSON** button as an escape hatch for power users who already have an intent document. Form pre-fills the Intent Editor on submit; JSON import parses and validates against the intent schema before navigating.
+**Status**: Complete (2026-02-27) — See [CHANGELOG.md](../../CHANGELOG.md) for details.
 
 ---
 
@@ -156,4 +152,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-27 — v2026.2.26 released. Phase 57 in progress (Intent creation form is the only remaining open item). Phase 58 (Security Toolkit) complete. Phase 59 (Local-First AI) is the active priority. Phases 60–62 remain demand-gated.*
+*Last updated: 2026-02-27 — v2026.2.26 released. Phases 57 and 58 complete. Phase 59 (Local-First AI) is the active priority. Phases 60–62 remain demand-gated.*

@@ -63,6 +63,7 @@
 - **Personality Avatars** — Upload, delete, and serve endpoints (`POST/DELETE/GET /api/v1/soul/personalities/:id/avatar`). 2 MB cap, MIME validation. `PersonalityAvatar` component reused in personality cards, chat header, message bubbles, and agents page. *(ADR 136)*
 - **OpenTasks live view** — `TaskHistory` renamed `OpenTasks`. Shows active tasks (`pending` + `running`) only. Date range, pagination, and export removed from the live view; export is available in Security → Automations → Tasks.
 - **Automation consolidation** — Single `/automation` route with Tasks | Workflows pill tabs. Old `/tasks` and `/workflows` routes redirect there. Heartbeats extracted to `HeartbeatsView` and promoted as the default subview in Security → Automations.
+- **Intent creation form** — "New → Intent" in the sidebar dialog replaced with a structured guided form: name, description, hard boundaries, policies, and signal conditions fields matching the intent schema. **Import JSON** button as a power-user escape hatch. Form pre-fills the Intent Editor on submit; JSON import validates against the intent schema before navigating.
 - **Marketplace origin filter tabs** — All / Marketplace / Community tabs in `MarketplacePage`. Community skills show a "Community" badge. Pagination added (page size 20).
 
 #### CLI
