@@ -27,6 +27,8 @@ vi.mock('../api/client', () => ({
   revokeOAuthToken: vi.fn(),
   refreshOAuthToken: vi.fn(),
   createApiKey: vi.fn(),
+  fetchApiKeys: vi.fn(),
+  revokeApiKey: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -40,6 +42,8 @@ const mockFetchAvailablePlatforms = vi.mocked(api.fetchAvailablePlatforms);
 const mockTestIntegration = vi.mocked(api.testIntegration);
 const mockFetchOAuthTokens = vi.mocked(api.fetchOAuthTokens);
 const mockCreateApiKey = vi.mocked(api.createApiKey);
+const mockFetchApiKeys = vi.mocked(api.fetchApiKeys);
+const mockRevokeApiKey = vi.mocked(api.revokeApiKey);
 
 function createQueryClient() {
   return new QueryClient({
@@ -92,6 +96,16 @@ describe('ConnectionsPage', () => {
     mockFetchIntegrations.mockResolvedValue({ integrations: [], total: 0, running: 0 });
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: [] });
     mockFetchOAuthTokens.mockResolvedValue([]);
+    mockFetchApiKeys.mockResolvedValue({ keys: [] });
+    mockCreateApiKey.mockResolvedValue({
+      id: 'key-auto',
+      name: 'YEOMAN MCP',
+      role: 'operator',
+      rawKey: 'sck_auto_generated',
+      prefix: 'sck_auto',
+      createdAt: new Date().toISOString(),
+    } as never);
+    mockRevokeApiKey.mockResolvedValue(undefined);
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,
@@ -700,70 +714,56 @@ describe('ConnectionsPage', () => {
 
   // ── Connection Setup section ────────────────────────────────────────
 
-  it('shows Connect your MCP client section with generate button for LocalServerCard', async () => {
-    mockFetchMcpServers.mockResolvedValue({
-      servers: [
-        {
-          id: 'local',
-          name: 'YEOMAN MCP',
-          transport: 'streamable-http',
-          enabled: true,
-          command: null,
-          args: [],
-          description: 'Local MCP',
-          url: 'http://localhost:18789/mcp/v1',
-          env: {},
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        },
-      ],
-      total: 1,
-    });
+  const LOCAL_SERVER = {
+    id: 'local',
+    name: 'YEOMAN MCP',
+    transport: 'streamable-http' as const,
+    enabled: true,
+    command: null,
+    args: [],
+    description: 'Local MCP',
+    url: 'http://localhost:18789/mcp/v1',
+    env: {},
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
 
+  it('shows Connect your MCP client section for LocalServerCard', async () => {
+    mockFetchMcpServers.mockResolvedValue({ servers: [LOCAL_SERVER], total: 1 });
     renderComponent();
     expect(await screen.findByText('Connect your MCP client')).toBeInTheDocument();
-    expect(screen.getByText('Generate connection token')).toBeInTheDocument();
     expect(screen.getByText('http://localhost:18789/mcp/v1')).toBeInTheDocument();
   });
 
-  it('shows generated token after clicking generate button', async () => {
+  it('auto-generates a key on mount and shows new key banner', async () => {
+    mockFetchMcpServers.mockResolvedValue({ servers: [LOCAL_SERVER], total: 1 });
+    renderComponent();
+    expect(await screen.findByText(/New key generated/)).toBeInTheDocument();
+    expect(mockCreateApiKey).toHaveBeenCalledWith({ name: 'YEOMAN MCP', role: 'operator' });
+  });
+
+  it('shows existing keys listing with revoke button', async () => {
     const user = userEvent.setup();
-    mockFetchMcpServers.mockResolvedValue({
-      servers: [
-        {
-          id: 'local',
-          name: 'YEOMAN MCP',
-          transport: 'streamable-http',
-          enabled: true,
-          command: null,
-          args: [],
-          description: 'Local MCP',
-          url: 'http://localhost:18789/mcp/v1',
-          env: {},
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        },
-      ],
-      total: 1,
-    });
-    mockCreateApiKey.mockResolvedValue({
-      id: 'key-1',
-      name: 'YEOMAN MCP',
-      role: 'operator',
-      rawKey: 'sck_test_abc123',
-      createdAt: new Date().toISOString(),
+    mockFetchApiKeys.mockResolvedValue({
+      keys: [{ id: 'key-1', name: 'YEOMAN MCP', role: 'operator', prefix: 'sck_abcd', createdAt: '2026-02-27T00:00:00.000Z' }],
     } as never);
+    mockFetchMcpServers.mockResolvedValue({ servers: [LOCAL_SERVER], total: 1 });
 
     renderComponent();
-    const generateBtn = await screen.findByText('Generate connection token');
-    await user.click(generateBtn);
+    expect(await screen.findByText(/sck_abcd/)).toBeInTheDocument();
+    const revokeBtn = screen.getByTitle('Revoke key');
+    await user.click(revokeBtn);
+    expect(mockRevokeApiKey).toHaveBeenCalledWith('key-1');
+  });
 
-    // Token is masked by default; "Shown once" warning and copy button should appear
-    expect(await screen.findByText(/Shown once/)).toBeInTheDocument();
-    expect(mockCreateApiKey).toHaveBeenCalledWith({ name: 'YEOMAN MCP', role: 'operator' });
-    // Reveal the token
+  it('shows revealed token after clicking reveal button', async () => {
+    const user = userEvent.setup();
+    mockFetchMcpServers.mockResolvedValue({ servers: [LOCAL_SERVER], total: 1 });
+
+    renderComponent();
+    await screen.findByText(/New key generated/);
     const revealBtn = screen.getByTitle('Reveal token');
     await user.click(revealBtn);
-    expect(screen.getByText('sck_test_abc123')).toBeInTheDocument();
+    expect(screen.getByText('sck_auto_generated')).toBeInTheDocument();
   });
 });

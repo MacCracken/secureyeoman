@@ -33,7 +33,8 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 - [ ] Specification Engineering
     1. self contained problem statements
     2. learn about acceptance criteria
-    3. 
+    3. constraint architecture
+    4. decomposition (modualarity) 
 
 ### Open Items
 

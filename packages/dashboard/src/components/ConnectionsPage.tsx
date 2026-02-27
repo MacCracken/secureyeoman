@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -71,6 +71,8 @@ import {
   revokeOAuthToken,
   refreshOAuthToken,
   createApiKey,
+  fetchApiKeys,
+  revokeApiKey,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type { McpServerConfig, McpToolDef, McpFeatureConfig, IntegrationInfo, OAuthConnectedToken } from '../types';
@@ -2434,14 +2436,33 @@ function LocalServerCard({
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [copiedToken, setCopiedToken] = useState(false);
   const [copiedConfig, setCopiedConfig] = useState(false);
+  const autoGenRef = useRef(false);
+
+  const { data: keysData, isLoading: mcpKeysLoading } = useQuery({
+    queryKey: ['apiKeys'],
+    queryFn: fetchApiKeys,
+  });
+  const mcpKeys = (keysData?.keys ?? []).filter((k) => k.name === LOCAL_MCP_NAME);
 
   const createMcpKeyMut = useMutation({
-    mutationFn: () => createApiKey({ name: 'YEOMAN MCP', role: 'operator' }),
+    mutationFn: () => createApiKey({ name: LOCAL_MCP_NAME, role: 'operator' }),
     onSuccess: (result) => {
       setMcpToken(result.rawKey);
       void queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
     },
   });
+
+  const revokeMcpKeyMut = useMutation({
+    mutationFn: (id: string) => revokeApiKey(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['apiKeys'] }),
+  });
+
+  // Auto-generate a key on first load if none exist
+  useEffect(() => {
+    if (autoGenRef.current || !keysData || mcpKeys.length > 0) return;
+    autoGenRef.current = true;
+    createMcpKeyMut.mutate();
+  }, [keysData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const mcpUrl = server.url ?? `${window.location.origin}/mcp/v1`;
 
@@ -2516,8 +2537,8 @@ function LocalServerCard({
           Connect your MCP client
         </h4>
 
-        {/* Server URL row */}
-        <div className="flex items-center gap-2 mb-2">
+        {/* URL row */}
+        <div className="flex items-center gap-2 mb-3">
           <span className="text-[10px] text-muted-foreground shrink-0">URL</span>
           <code className="flex-1 text-[10px] bg-muted/40 rounded px-2 py-1 font-mono truncate">
             {mcpUrl}
@@ -2529,14 +2550,28 @@ function LocalServerCard({
           >
             {copiedUrl ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
           </button>
+          {createMcpKeyMut.isPending ? (
+            <Loader2 className="w-3 h-3 animate-spin text-muted-foreground shrink-0" />
+          ) : (
+            <button
+              onClick={() => createMcpKeyMut.mutate()}
+              className="shrink-0 p-1 rounded hover:bg-muted/50 transition-colors text-muted-foreground"
+              title="Generate new token"
+            >
+              <Plus className="w-3 h-3" />
+            </button>
+          )}
         </div>
 
-        {/* Token row */}
-        {mcpToken ? (
-          <div className="space-y-1.5">
+        {/* Newly generated key — shown once */}
+        {mcpToken && (
+          <div className="mb-3 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 space-y-1.5">
+            <p className="text-[10px] text-amber-400 font-medium flex items-center gap-1">
+              <Info className="w-2.5 h-2.5 shrink-0" />
+              New key generated — copy it now, shown once only
+            </p>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-muted-foreground shrink-0">Token</span>
-              <code className="flex-1 text-[10px] bg-muted/40 rounded px-2 py-1 font-mono truncate text-amber-400">
+              <code className="flex-1 text-[10px] bg-black/20 rounded px-2 py-1 font-mono truncate text-amber-300">
                 {showToken ? mcpToken : '••••••••••••••••••••••••••••••••'}
               </code>
               <button
@@ -2554,13 +2589,7 @@ function LocalServerCard({
                 {copiedToken ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
               </button>
             </div>
-            <p className="text-[10px] text-amber-500 flex items-center gap-1">
-              <Info className="w-2.5 h-2.5 shrink-0" />
-              Shown once — copy it now. Manage keys in Settings → API Keys.
-            </p>
-
-            {/* JSON config snippet */}
-            <div className="mt-2">
+            <div>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] text-muted-foreground">Config snippet</span>
                 <button
@@ -2571,25 +2600,42 @@ function LocalServerCard({
                   {copiedConfig ? 'Copied' : 'Copy'}
                 </button>
               </div>
-              <pre className="text-[9px] bg-muted/40 rounded p-2 font-mono overflow-x-auto whitespace-pre text-muted-foreground">
+              <pre className="text-[9px] bg-black/20 rounded p-2 font-mono overflow-x-auto whitespace-pre text-amber-200/70">
                 {mcpJsonConfig}
               </pre>
             </div>
           </div>
-        ) : (
-          <button
-            onClick={() => createMcpKeyMut.mutate()}
-            disabled={createMcpKeyMut.isPending}
-            className="w-full text-xs py-1.5 px-3 rounded-md bg-primary/10 hover:bg-primary/20 text-primary transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
-          >
-            {createMcpKeyMut.isPending ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : (
-              <Key className="w-3 h-3" />
-            )}
-            Generate connection token
-          </button>
         )}
+
+        {/* Active keys listing */}
+        {mcpKeysLoading ? (
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground py-1 mb-2">
+            <Loader2 className="w-3 h-3 animate-spin" /> Loading keys...
+          </div>
+        ) : mcpKeys.length > 0 ? (
+          <div className="space-y-1 mb-2">
+            {mcpKeys.map((k) => (
+              <div key={k.id} className="flex items-center gap-2 p-1.5 rounded-md bg-muted/30">
+                <Key className="w-3 h-3 text-muted-foreground shrink-0" />
+                <code className="flex-1 text-[10px] font-mono text-muted-foreground truncate">
+                  {k.prefix}••••••••••••
+                </code>
+                <span className="text-[10px] text-muted-foreground shrink-0">
+                  {new Date(k.createdAt).toLocaleDateString()}
+                </span>
+                <button
+                  onClick={() => revokeMcpKeyMut.mutate(k.id)}
+                  disabled={revokeMcpKeyMut.isPending}
+                  className="shrink-0 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                  title="Revoke key"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
         {createMcpKeyMut.isError && (
           <p className="text-[10px] text-destructive mt-1">Failed to generate token — try again.</p>
         )}

@@ -310,10 +310,10 @@ function MissionControlTab({
   const heartbeatRunning = heartbeatStatus?.running ?? false;
 
   // Agent World view mode (lifted from widget so toggle lives in card-header)
-  const [worldViewMode, setWorldViewMode] = useState<'grid' | 'map'>(
-    () => (localStorage.getItem('world:viewMode') ?? 'grid') as 'grid' | 'map'
+  const [worldViewMode, setWorldViewMode] = useState<'grid' | 'map' | 'large'>(
+    () => (localStorage.getItem('world:viewMode') ?? 'large') as 'grid' | 'map' | 'large'
   );
-  const setAndPersistWorldView = (m: 'grid' | 'map') => {
+  const setAndPersistWorldView = (m: 'grid' | 'map' | 'large') => {
     setWorldViewMode(m);
     localStorage.setItem('world:viewMode', m);
   };
@@ -853,6 +853,14 @@ function MissionControlTab({
                 aria-pressed={worldViewMode === 'map'}
               >
                 ⊞ Map
+              </button>
+              <button
+                onClick={() => setAndPersistWorldView('large')}
+                className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'large' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                title="Large zone view"
+                aria-pressed={worldViewMode === 'large'}
+              >
+                ⊟ Large
               </button>
             </div>
           </div>

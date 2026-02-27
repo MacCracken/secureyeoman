@@ -251,7 +251,7 @@ function AgentPill({ personality, state, frame, inMeeting, onClick }: AgentPillP
   );
 }
 
-// ── Zone box (map view) ───────────────────────────────────────────────────────
+// ── Zone box (shared by map and large views) ──────────────────────────────────
 
 interface ZoneBoxProps {
   label: string;
@@ -263,6 +263,8 @@ interface ZoneBoxProps {
   whiteboardText?: string;
   onAgentClick?: (personalityId: string) => void;
   now: number;
+  /** 'pill' = compact name+face row (map view); 'card' = full agent card (large view) */
+  mode?: 'pill' | 'card';
 }
 
 function ZoneBox({
@@ -275,6 +277,7 @@ function ZoneBox({
   whiteboardText,
   onAgentClick,
   now,
+  mode = 'pill',
 }: ZoneBoxProps) {
   const hasMeeting = zoneId === 'meeting' && agents.length > 0;
 
@@ -298,15 +301,24 @@ function ZoneBox({
         </div>
       )}
 
-      {/* Agent pills */}
+      {/* Agents */}
       {agents.length === 0 ? (
         <span className="text-[10px] text-muted-foreground/30 italic">empty</span>
       ) : (
         <div className="flex flex-wrap gap-1">
           {agents.map((p) => {
-            const { state } = deriveAgentState(p, tasks, now);
+            const { state, taskLabel } = deriveAgentState(p, tasks, now);
             const inMeeting = meetingPairs.has(p.id);
-            return (
+            return mode === 'card' ? (
+              <AgentCard
+                key={p.id}
+                personality={p}
+                state={state}
+                taskLabel={taskLabel}
+                frame={framesMap.get(p.id) ?? 0}
+                onClick={onAgentClick ? () => onAgentClick(p.id) : undefined}
+              />
+            ) : (
               <AgentPill
                 key={p.id}
                 personality={p}
@@ -323,7 +335,26 @@ function ZoneBox({
   );
 }
 
-// ── AgentWorldMapView ──────────────────────────────────────────────────────────
+// ── Shared zone-distribution helper ───────────────────────────────────────────
+
+function distributeZones(personalities: Personality[], tasks: Task[]) {
+  const meetingPairs = computeReactMeetingPairs(tasks);
+  const now = Date.now();
+  const zones: Record<'workspace' | 'meeting' | 'break-room', Personality[]> = {
+    workspace: [],
+    meeting: [],
+    'break-room': [],
+  };
+  for (const p of personalities) {
+    zones[computeZoneForAgent(p, tasks, meetingPairs, undefined, now)].push(p);
+  }
+  const activeJointTask = tasks.find(
+    (t) => t.status === 'running' && meetingPairs.has(t.securityContext?.personalityId ?? '')
+  );
+  return { zones, meetingPairs, activeJointTask, now };
+}
+
+// ── AgentWorldMapView (compact pill layout) ────────────────────────────────────
 
 interface MapViewProps {
   personalities: Personality[];
@@ -333,68 +364,39 @@ interface MapViewProps {
 }
 
 function AgentWorldMapView({ personalities, tasks, framesMap, onAgentClick }: MapViewProps) {
-  const now = Date.now();
-  const meetingPairs = computeReactMeetingPairs(tasks);
-
-  // Distribute agents to zones
-  const zones: Record<'workspace' | 'meeting' | 'break-room', Personality[]> = {
-    workspace: [],
-    meeting: [],
-    'break-room': [],
-  };
-
-  for (const p of personalities) {
-    const zone = computeZoneForAgent(p, tasks, meetingPairs, undefined, now);
-    zones[zone].push(p);
-  }
-
-  const activeJointTask = tasks.find(
-    (t) => t.status === 'running' && meetingPairs.has(t.securityContext?.personalityId ?? '')
-  );
+  const { zones, meetingPairs, activeJointTask, now } = distributeZones(personalities, tasks);
 
   return (
     <div className="grid grid-cols-2 gap-2 font-mono text-[11px]" role="list" aria-label="Agent world map">
-      <ZoneBox
-        label="Workspace"
-        zoneId="workspace"
-        agents={zones.workspace}
-        tasks={tasks}
-        meetingPairs={meetingPairs}
-        framesMap={framesMap}
-        onAgentClick={onAgentClick}
-        now={now}
-      />
-      <ZoneBox
-        label="Meeting Room"
-        zoneId="meeting"
-        agents={zones.meeting}
-        tasks={tasks}
-        meetingPairs={meetingPairs}
-        framesMap={framesMap}
-        whiteboardText={activeJointTask?.name}
-        onAgentClick={onAgentClick}
-        now={now}
-      />
-      <ZoneBox
-        label="Break Room"
-        zoneId="break-room"
-        agents={zones['break-room']}
-        tasks={tasks}
-        meetingPairs={meetingPairs}
-        framesMap={framesMap}
-        onAgentClick={onAgentClick}
-        now={now}
-      />
-      <ZoneBox
-        label="Server Room"
-        zoneId="server-room"
-        agents={[]} /* system health agents show in workspace in React view */
-        tasks={tasks}
-        meetingPairs={meetingPairs}
-        framesMap={framesMap}
-        onAgentClick={onAgentClick}
-        now={now}
-      />
+      <ZoneBox label="Workspace" zoneId="workspace" agents={zones.workspace} tasks={tasks}
+        meetingPairs={meetingPairs} framesMap={framesMap} onAgentClick={onAgentClick} now={now} />
+      <ZoneBox label="Meeting Room" zoneId="meeting" agents={zones.meeting} tasks={tasks}
+        meetingPairs={meetingPairs} framesMap={framesMap} whiteboardText={activeJointTask?.name}
+        onAgentClick={onAgentClick} now={now} />
+      <ZoneBox label="Break Room" zoneId="break-room" agents={zones['break-room']} tasks={tasks}
+        meetingPairs={meetingPairs} framesMap={framesMap} onAgentClick={onAgentClick} now={now} />
+      <ZoneBox label="Server Room" zoneId="server-room" agents={[]} tasks={tasks}
+        meetingPairs={meetingPairs} framesMap={framesMap} onAgentClick={onAgentClick} now={now} />
+    </div>
+  );
+}
+
+// ── AgentWorldLargeView (full card layout per zone) ────────────────────────────
+
+function AgentWorldLargeView({ personalities, tasks, framesMap, onAgentClick }: MapViewProps) {
+  const { zones, meetingPairs, activeJointTask, now } = distributeZones(personalities, tasks);
+
+  return (
+    <div className="grid grid-cols-2 gap-3 font-mono text-[11px]" role="list" aria-label="Agent world large view">
+      <ZoneBox label="Workspace" zoneId="workspace" agents={zones.workspace} tasks={tasks}
+        meetingPairs={meetingPairs} framesMap={framesMap} onAgentClick={onAgentClick} now={now} mode="card" />
+      <ZoneBox label="Meeting Room" zoneId="meeting" agents={zones.meeting} tasks={tasks}
+        meetingPairs={meetingPairs} framesMap={framesMap} whiteboardText={activeJointTask?.name}
+        onAgentClick={onAgentClick} now={now} mode="card" />
+      <ZoneBox label="Break Room" zoneId="break-room" agents={zones['break-room']} tasks={tasks}
+        meetingPairs={meetingPairs} framesMap={framesMap} onAgentClick={onAgentClick} now={now} mode="card" />
+      <ZoneBox label="Server Room" zoneId="server-room" agents={[]} tasks={tasks}
+        meetingPairs={meetingPairs} framesMap={framesMap} onAgentClick={onAgentClick} now={now} mode="card" />
     </div>
   );
 }
@@ -408,7 +410,7 @@ export interface AgentWorldWidgetProps {
   /** Called when the user clicks an agent pill or card. */
   onAgentClick?: (personalityId: string) => void;
   /** Controlled view mode. Defaults to 'grid' when not provided. */
-  viewMode?: 'grid' | 'map';
+  viewMode?: 'grid' | 'map' | 'large';
 }
 
 export function AgentWorldWidget({ className = '', maxAgents = 16, onAgentClick, viewMode = 'grid' }: AgentWorldWidgetProps) {
@@ -464,7 +466,14 @@ export function AgentWorldWidget({ className = '', maxAgents = 16, onAgentClick,
 
   return (
     <div className={className}>
-      {viewMode === 'map' ? (
+      {viewMode === 'large' ? (
+        <AgentWorldLargeView
+          personalities={personalities}
+          tasks={tasks}
+          framesMap={framesRef.current}
+          onAgentClick={onAgentClick}
+        />
+      ) : viewMode === 'map' ? (
         <AgentWorldMapView
           personalities={personalities}
           tasks={tasks}

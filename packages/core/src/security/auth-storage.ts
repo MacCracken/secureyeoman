@@ -90,13 +90,13 @@ export class AuthStorage extends PgBaseStorage {
   async listApiKeys(userId?: string): Promise<Omit<ApiKeyRow, 'key_hash'>[]> {
     if (userId) {
       return this.queryMany<Omit<ApiKeyRow, 'key_hash'>>(
-        'SELECT id, name, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at FROM auth.api_keys WHERE user_id = $1 ORDER BY created_at DESC',
+        'SELECT id, name, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at FROM auth.api_keys WHERE user_id = $1 AND revoked_at IS NULL ORDER BY created_at DESC',
         [userId]
       );
     }
 
     return this.queryMany<Omit<ApiKeyRow, 'key_hash'>>(
-      'SELECT id, name, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at FROM auth.api_keys ORDER BY created_at DESC'
+      'SELECT id, name, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at FROM auth.api_keys WHERE revoked_at IS NULL ORDER BY created_at DESC'
     );
   }
 

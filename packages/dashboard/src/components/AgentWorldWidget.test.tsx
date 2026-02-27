@@ -35,7 +35,7 @@ function makeQueryClient() {
 function renderWidget(props: {
   maxAgents?: number;
   onAgentClick?: (id: string) => void;
-  viewMode?: 'grid' | 'map';
+  viewMode?: 'grid' | 'map' | 'large';
 } = {}) {
   const qc = makeQueryClient();
   return render(
@@ -369,6 +369,68 @@ describe('view mode prop', () => {
     expect(screen.queryByTitle('Card grid view')).not.toBeInTheDocument();
     expect(screen.queryByTitle('World map view')).not.toBeInTheDocument();
   });
+
+  it('shows zone boxes when viewMode="large"', async () => {
+    renderWidget({ viewMode: 'large' });
+    await waitFor(() => {
+      expect(screen.getByText('Workspace')).toBeInTheDocument();
+    });
+  });
+});
+
+// ── Large view ────────────────────────────────────────────────────────────────
+
+describe('large view', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    localStorage.clear();
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+  });
+
+  it('renders zone boxes in large mode', async () => {
+    mockFetchPersonalities.mockResolvedValue({
+      personalities: [makePersonality({ id: 'p-1', name: 'Alice', isActive: true })],
+    });
+    renderWidget({ viewMode: 'large' });
+    await waitFor(() => {
+      expect(screen.getByText('Workspace')).toBeInTheDocument();
+      expect(screen.getByText('Meeting Room')).toBeInTheDocument();
+      expect(screen.getByText('Break Room')).toBeInTheDocument();
+    });
+  });
+
+  it('renders agents as cards (with state label) not pills', async () => {
+    mockFetchPersonalities.mockResolvedValue({
+      personalities: [makePersonality({ id: 'p-1', name: 'Alice', isActive: true })],
+    });
+    renderWidget({ viewMode: 'large' });
+    // AgentCard shows a state label; AgentPill does not
+    await waitFor(() => {
+      expect(screen.getByText('Alice')).toBeInTheDocument();
+      expect(screen.getByText('idle')).toBeInTheDocument();
+    });
+  });
+
+  it('calls onAgentClick with personalityId in large mode', async () => {
+    mockFetchPersonalities.mockResolvedValue({
+      personalities: [makePersonality({ id: 'p-1', name: 'Alice', isActive: true })],
+    });
+    const onAgentClick = vi.fn();
+    renderWidget({ viewMode: 'large', onAgentClick });
+    await waitFor(() => expect(screen.getByText('Workspace')).toBeInTheDocument());
+    fireEvent.click(screen.getByTitle(/Alice/i));
+    expect(onAgentClick).toHaveBeenCalledWith('p-1');
+  });
+
+  it('accessible list container is present in large mode', async () => {
+    mockFetchPersonalities.mockResolvedValue({
+      personalities: [makePersonality({ id: 'p-1', name: 'Alice', isActive: true })],
+    });
+    renderWidget({ viewMode: 'large' });
+    await waitFor(() => {
+      expect(screen.getByRole('list', { name: /agent world large view/i })).toBeInTheDocument();
+    });
+  });
 });
 
 // ── Map view zones ────────────────────────────────────────────────────────────
@@ -469,4 +531,55 @@ describe('agent click-through', () => {
     await waitFor(() => expect(screen.getByText('Alice')).toBeInTheDocument());
     expect(() => fireEvent.click(screen.getByTitle(/Alice/i))).not.toThrow();
   });
+});
+
+// ── Synthetic chat task (chat-in-progress activity) ────────────────────────────
+
+describe('synthetic chat task activity', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    localStorage.clear();
+    mockFetchPersonalities.mockResolvedValue({
+      personalities: [makePersonality({ id: 'p-1', name: 'Friday', isActive: true })],
+    });
+  });
+
+  it('shows thinking state when a __chat_ synthetic task is present', async () => {
+    const now = Date.now();
+    mockFetchTasks.mockResolvedValue({
+      tasks: [
+        makeTask({
+          id: '__chat_p-1',
+          personalityId: 'p-1',
+          startedAt: now, // just started → < 8 s → thinking
+        }),
+      ],
+      total: 1,
+    });
+    renderWidget();
+    await waitFor(() => {
+      expect(screen.getByText('Friday')).toBeInTheDocument();
+      expect(screen.getByText('thinking')).toBeInTheDocument();
+    });
+  });
+
+  it('shows working state when synthetic task has been running > 8 s', async () => {
+    mockFetchTasks.mockResolvedValue({
+      tasks: [
+        makeTask({
+          id: '__chat_p-1',
+          personalityId: 'p-1',
+          startedAt: Date.now() - 20_000, // 20 s ago → typing/working
+        }),
+      ],
+      total: 1,
+    });
+    renderWidget();
+    await waitFor(() => {
+      expect(screen.getByText('Friday')).toBeInTheDocument();
+      expect(screen.getByText('working')).toBeInTheDocument();
+    });
+  });
+
+
 });

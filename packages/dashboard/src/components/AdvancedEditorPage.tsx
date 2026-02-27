@@ -29,6 +29,7 @@ import {
 } from '../api/client';
 import { ModelWidget } from './ModelWidget';
 import { AgentWorldWidget } from './AgentWorldWidget';
+import type { Task } from '../types';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -378,6 +379,10 @@ function InlineChat({
   const [sending, setSending] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
+
+  // Synthetic task ID used to signal chat-in-progress to AgentWorldWidget
+  const chatTaskId = personalityId ? `__chat_${personalityId}` : null;
 
   const send = useCallback(async () => {
     const text = input.trim();
@@ -387,6 +392,28 @@ function InlineChat({
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setSending(true);
+
+    // Inject a synthetic running task so AgentWorldWidget shows the personality
+    // as active while waiting for the chat response. The task is removed in
+    // `finally` — no server round-trip required.
+    if (personalityId) {
+      const syntheticTask: Task = {
+        id: chatTaskId!,
+        type: 'chat',
+        name: 'Chat response',
+        status: 'running',
+        createdAt: Date.now(),
+        startedAt: Date.now(),
+        securityContext: { personalityId },
+      };
+      queryClient.setQueryData(
+        ['world-tasks-running'],
+        (old: { tasks: Task[]; total: number } | undefined) => ({
+          tasks: [...(old?.tasks ?? []).filter((t) => t.id !== chatTaskId), syntheticTask],
+          total: (old?.total ?? 0) + 1,
+        })
+      );
+    }
 
     try {
       const history = messages.map((m) => ({ role: m.role, content: m.content }));
@@ -417,10 +444,20 @@ function InlineChat({
       };
       setMessages((prev) => [...prev, errMsg]);
     } finally {
+      // Remove the synthetic task — widget reverts to real server state immediately
+      if (personalityId) {
+        queryClient.setQueryData(
+          ['world-tasks-running'],
+          (old: { tasks: Task[]; total: number } | undefined) => ({
+            tasks: (old?.tasks ?? []).filter((t) => t.id !== chatTaskId),
+            total: Math.max(0, (old?.total ?? 0) - 1),
+          })
+        );
+      }
       setSending(false);
       setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     }
-  }, [input, sending, messages, personalityId, memoryEnabled, terminalContext]);
+  }, [input, sending, messages, personalityId, memoryEnabled, terminalContext, queryClient, chatTaskId]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background border-t border-border">
@@ -609,10 +646,10 @@ export function AdvancedEditorPage() {
   const [showWorld, setShowWorld] = useState(
     () => localStorage.getItem('editor:showWorld') === 'true'
   );
-  const [worldViewMode, setWorldViewMode] = useState<'grid' | 'map'>(
-    () => (localStorage.getItem('world:viewMode') ?? 'grid') as 'grid' | 'map'
+  const [worldViewMode, setWorldViewMode] = useState<'grid' | 'map' | 'large'>(
+    () => (localStorage.getItem('world:viewMode') ?? 'grid') as 'grid' | 'map' | 'large'
   );
-  const setAndPersistWorldView = (m: 'grid' | 'map') => {
+  const setAndPersistWorldView = (m: 'grid' | 'map' | 'large') => {
     setWorldViewMode(m);
     localStorage.setItem('world:viewMode', m);
   };
@@ -784,6 +821,14 @@ export function AdvancedEditorPage() {
                       aria-pressed={worldViewMode === 'map'}
                     >
                       ⊞ Map
+                    </button>
+                    <button
+                      onClick={() => setAndPersistWorldView('large')}
+                      className={`px-1.5 py-0.5 text-[11px] rounded transition-colors ${worldViewMode === 'large' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                      title="Large zone view"
+                      aria-pressed={worldViewMode === 'large'}
+                    >
+                      ⊟ Large
                     </button>
                   </div>
                   <button
