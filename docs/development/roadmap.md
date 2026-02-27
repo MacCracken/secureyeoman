@@ -10,11 +10,16 @@
 |-------|------|--------|
 | XX | Find & Repair (Ongoing) | Ongoing |
 | 57 | Dashboard UX | Complete ✅ |
-| 58 | Security Toolkit | Complete ✅ |
-| 59 | Local-First AI | Near-Term |
-| 60 | Voice & Community | Demand-Gated |
-| 61 | Native Clients | Demand-Gated |
-| 62 | Infrastructure & Platform | Demand-Gated |
+| 58 | Security Toolkit + Audio Quality | Complete ✅ |
+| 59 | Security Hardening | Complete ✅ |
+| 60 | Multi-Theme System | Complete ✅ |
+| 61 | Enterprise Features (Audit Export, Backup, SAML, Multi-tenancy) | Complete ✅ |
+| 62 | Local-First AI + OAuth Improvements | Complete ✅ |
+| 63 | Connected Account MCP (Gmail + Twitter/X) | Complete ✅ |
+| 64 | AI Training Pipeline (Distillation, LoRA, Model Lifecycle) | Near-Term |
+| 65 | Voice & Community | Demand-Gated |
+| 66 | Native Clients | Demand-Gated |
+| 67 | Infrastructure & Platform | Demand-Gated |
 
 ---
 
@@ -32,7 +37,7 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 - [ ] **Manual test: RLS tenant isolation** — Create tenant B via API. Insert `soul.personality` scoped to tenant B. Query personalities as tenant A → empty. Query as tenant B → record visible. Existing default-tenant data unaffected.
 - [ ] **Base knowledge generic entries need per-personality review** — `hierarchy`, `purpose`, and `interaction` are currently seeded globally. These may need per-personality variants (e.g., T.Ron's purpose may differ from FRIDAY's). Low urgency — global entries are contextually correct for now.
 - [ ] **Consumer UX: Settings page split** — Extract `<AuditChainTab>`, `<SoulSystemTab>`, `<RateLimitingTab>` from the `SettingsPage.tsx` monolith.
-- [ ] ** Manual Testing - OAuth** - continue improvements (PRIORITY 1)
+- [ ] **Manual test: OAuth token refresh end-to-end** — (1) Connect a Gmail account; (2) Wait for access token to expire (or use Connections → OAuth → "Refresh Token" button); (3) Confirm personality can still call `gmail_profile` without error; (4) Revoke the Google refresh token in Google Account → Security → Third-party apps, then trigger a Gmail tool call — confirm error message tells user to reconnect (not a silent 500). *(401-retry + forceRefreshById now implemented, 2026-02-27c)*
 
 ---
 
@@ -48,37 +53,62 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ---
 
-## Phase 59: Local-First AI
+## Phase 59: Security Hardening
 
-**Status**: Near-Term — strategic priority for sovereign AI positioning
+**Status**: Complete (2026-02-26) — See [CHANGELOG.md](../../CHANGELOG.md) for details.
 
-Privacy-first, offline-capable AI processing via on-device models. Completes the "sovereign AI" positioning for fully self-hosted deployments.
+---
 
-> **Note:** Local LLM inference (Ollama, LM Studio, LocalAI), runtime model switching (`POST /api/v1/model/switch`), persistence (`POST /api/v1/model/default`), dashboard model picker, and CLI (`secureyeoman model switch/default`) are already fully implemented. The remaining items below close the gaps for local-first as a complete operational mode.
+## Phase 60: Multi-Theme System
 
-### Local-First Operational Mode
+**Status**: Complete (2026-02-26) — See [CHANGELOG.md](../../CHANGELOG.md) for details.
 
-- [x] **Local embedding generation** — `OllamaEmbeddingProvider` calls `POST {baseUrl}/api/embed`. Supported: `nomic-embed-text` (768d), `mxbai-embed-large` (1024d), `all-minilm` (384d). `api.provider = 'ollama'` added to `VectorConfigSchema`. *(2026-02-27)*
-- [ ] **Hybrid cloud/local switch** — Add `localFirst` routing mode: primary request goes to the configured local provider; on `ProviderUnavailableError` automatically falls back to the first cloud entry in the fallback chain. Distinct from the existing fallback chain which requires explicit config. Expose as a toggle in dashboard settings alongside the model picker.
-- [x] **Offline detection** — `GET /api/v1/ai/health` pings configured local provider (Ollama `/api/tags`, LM Studio `/v1/models`). Dashboard shows a `WifiOff` banner when a local provider is unreachable. *(2026-02-27)*
-- [ ] **Model lifecycle management** — `ollama pull <model>`, `ollama rm <model>` CLI subcommands and MCP tools. `ollama list` already works via `secureyeoman model list --provider ollama` (backed by `OllamaProvider.fetchAvailableModels()`). The gap is write operations: download and delete, plus surfacing disk usage per model.
-- [ ] **Quantization awareness** — Document recommended quantizations (Q4_K_M, Q5_K_S, etc.) per hardware tier in a guide. Optionally: auto-detect host RAM via `os.totalmem()` at startup and emit a warning if the configured model's estimated VRAM requirement exceeds available memory.
+---
+
+## Phase 61: Enterprise Features
+
+**Status**: Complete (2026-02-26) — See [CHANGELOG.md](../../CHANGELOG.md) for details.
+
+---
+
+## Phase 62: Local-First AI + OAuth Improvements
+
+**Status**: Complete (2026-02-27) — See [CHANGELOG.md](../../CHANGELOG.md) for details.
+
+---
+
+## Phase 63: Connected Account MCP (Gmail + Twitter/X)
+
+**Status**: Complete (2026-02-27) — See [CHANGELOG.md](../../CHANGELOG.md) for details.
+
+---
+
+## Phase 64: AI Training Pipeline
+
+**Status**: Near-Term — builds on the training dataset export foundation from Phase 62.
+
+Local model lifecycle management and a closed-loop train-distill-fine-tune pipeline. Dataset export (Phase 62) is done; the remaining work enables on-device model improvement.
+
+*Prerequisites: GPU-capable host for fine-tuning and training phases. Distillation can run CPU-only.*
+
+### Local Model Lifecycle
+
+- [ ] **Hybrid cloud/local switch** — `localFirst` routing mode: primary request to the configured local provider; on `ProviderUnavailableError` falls back to the first cloud entry in the fallback chain. Toggle in dashboard Settings alongside the model picker.
+- [ ] **Model lifecycle management** — `ollama pull <model>` and `ollama rm <model>` CLI subcommands and MCP tools. `ollama list` already works. The gap is write operations: download, delete, and surfacing disk usage per model in the dashboard.
+- [ ] **Quantization awareness** — Guide for recommended quantizations (Q4_K_M, Q5_K_S, etc.) per hardware tier. Optionally: auto-detect host RAM via `os.totalmem()` at startup and warn if the configured model's estimated VRAM requirement exceeds available memory.
 
 ### Model Training & Customisation
 
 Train, fine-tune, and distill models directly from SecureYeoman's own data — conversations, memories, knowledge, and agent interactions. The goal is a closed loop: data lives here, models trained here, served here.
 
-*Prerequisites: GPU-capable host for fine-tuning and training phases. Dataset export and distillation can run CPU-only.*
-
-- [x] **Training dataset export** — `POST /api/v1/training/export` streams ShareGPT JSONL, Instruction JSONL, or Raw Text. Filters: date range, `personalityIds`, `limit` (cap 100k). `GET /api/v1/training/stats` for row counts. CLI: `secureyeoman training export/stats`. Training tab in Developers page (gated by `allowTrainingExport` policy). Includes Local Training Pipeline guide: export → sentence-transformers/Unsloth → Ollama → reconnect. *(ADR 146, 2026-02-27)*
-- [ ] **Model distillation** — Use a cloud model (Claude, GPT-4o, etc.) as teacher: generate synthetic completions for prompts drawn from the exported dataset, producing a high-quality fine-tuning corpus without labelling by hand. Distillation jobs run as heartbeat tasks; output is a JSONL dataset ready for the fine-tuning pipeline.
-- [ ] **LoRA / QLoRA fine-tuning** — Fine-tune a local base model (Llama 3, Mistral, Phi, etc.) on an exported dataset using parameter-efficient methods. Runs via a Docker sidecar container (Unsloth or HuggingFace PEFT + `accelerate`). SecureYeoman orchestrates job submission, streams training logs to the dashboard, and on completion registers the resulting adapter weights with Ollama for immediate use. Config: base model, LoRA rank/alpha, batch size, epochs, VRAM budget.
-- [ ] **Continual / online learning** — Incremental adapter updates from new interactions without a full retrain cycle. High complexity: requires replay buffer management, learning rate scheduling, and drift detection to prevent catastrophic forgetting. Treat as research-grade; implement only once fine-tuning pipeline is stable and battle-tested.
-- [ ] **Training from scratch** — Pre-train a model on a curated local corpus (documents, knowledge base, domain data). Extremely resource-intensive — even a 1B parameter model requires significant GPU-hours. Scope is constrained to small models (≤3B params) intended as lightweight specialists, not general-purpose replacements. Depends on the dataset export and fine-tuning pipeline being fully operational first.
+- [ ] **Model distillation** — Use a cloud model (Claude, GPT-4o) as teacher: generate synthetic completions from exported dataset prompts. Distillation jobs run as heartbeat tasks; output is a JSONL corpus ready for fine-tuning.
+- [ ] **LoRA / QLoRA fine-tuning** — Fine-tune a local base model (Llama 3, Mistral, Phi) via a Docker sidecar (Unsloth or HuggingFace PEFT + `accelerate`). SecureYeoman orchestrates job submission, streams training logs to the dashboard, and on completion registers adapter weights with Ollama. Config: base model, LoRA rank/alpha, batch size, epochs, VRAM budget.
+- [ ] **Continual / online learning** — Incremental adapter updates from new interactions without a full retrain. High complexity: replay buffer management, LR scheduling, drift detection. Research-grade; implement once fine-tuning pipeline is stable.
+- [ ] **Training from scratch** — Pre-train on a curated local corpus. Scoped to small models (≤3B params) as lightweight specialists. Depends on dataset export + fine-tuning pipeline being battle-tested.
 
 ---
 
-## Phase 60: Voice & Community
+## Phase 65: Voice & Community
 
 **Status**: Demand-Gated — implement when voice profile and marketplace demand justifies the investment.
 
@@ -98,7 +128,7 @@ Train, fine-tune, and distill models directly from SecureYeoman's own data — c
 
 ---
 
-## Phase 61: Native Clients
+## Phase 66: Native Clients
 
 **Status**: Demand-Gated — implement once REST/WebSocket API is stable and adoption justifies native packaging.
 
@@ -115,7 +145,7 @@ Train, fine-tune, and distill models directly from SecureYeoman's own data — c
 
 ---
 
-## Phase 62: Infrastructure & Platform
+## Phase 67: Infrastructure & Platform
 
 **Status**: Demand-Gated — implement once operational scale or compliance requirements justify the investment.
 
@@ -153,4 +183,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-27 — v2026.2.27b released. Phase 63 (Connected Account MCP): Gmail (7 tools) and Twitter/X (10 tools) added to YEOMAN MCP with two-level gating (global + per-personality). Security policy persistence bug fixed (allowCodeEditor, allowAdvancedEditor, allowTrainingExport now survive restarts). ADR 147.*
+*Last updated: 2026-02-27 — v2026.2.27b released. Timeline updated: phases 59–63 now marked complete; phases 64–67 renumbered to avoid conflicts with completed work. Phase 64 (AI Training Pipeline) is next near-term target.*

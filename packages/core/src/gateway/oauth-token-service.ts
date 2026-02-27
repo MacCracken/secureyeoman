@@ -91,6 +91,19 @@ export class OAuthTokenService {
     return this.storage.deleteToken(id);
   }
 
+  /**
+   * Force a token refresh by ID, bypassing the near-expiry buffer check.
+   * Use this when an upstream API returns 401 to recover without requiring the
+   * user to reconnect.
+   *
+   * Returns the new access token, or null if refresh failed / no token found.
+   */
+  async forceRefreshById(id: string): Promise<string | null> {
+    const record = await this.storage.getById(id);
+    if (!record) return null;
+    return this.refreshAndStore(record);
+  }
+
   // ── Private helpers ─────────────────────────────────────────
 
   private needsRefresh(record: OAuthToken): boolean {
@@ -152,9 +165,14 @@ export class OAuthTokenService {
     }
   }
 
-  /** Returns Google credentials for any google-* provider. */
+  /** Returns Google credentials for any Google-family provider. */
   private getCredentials(provider: string): GoogleClientCredentials | undefined {
-    if (provider === 'googlecalendar' || provider === 'googledrive' || provider === 'gmail') {
+    if (
+      provider === 'google' ||
+      provider === 'gmail' ||
+      provider === 'googlecalendar' ||
+      provider === 'googledrive'
+    ) {
       return this.googleCredentials;
     }
     return undefined;

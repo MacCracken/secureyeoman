@@ -66,6 +66,7 @@ import {
   updateSecurityPolicy,
   fetchOAuthTokens,
   revokeOAuthToken,
+  refreshOAuthToken,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type { McpServerConfig, McpToolDef, McpFeatureConfig, IntegrationInfo, OAuthConnectedToken } from '../types';
@@ -3591,6 +3592,13 @@ function OAuthTab({
     },
   });
 
+  const refreshMut = useMutation({
+    mutationFn: refreshOAuthToken,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['oauth-tokens'] });
+    },
+  });
+
   // Always show all providers — multiple accounts per provider are supported
   // (storage uniqueness is per (provider, email), not per provider)
   const availableProviders = AVAILABLE_OAUTH_PROVIDERS;
@@ -3676,13 +3684,23 @@ function OAuthTab({
                         Since {new Date(token.createdAt).toLocaleDateString()}
                       </p>
                     </div>
-                    <button
-                      onClick={() => setDisconnectTarget(token)}
-                      disabled={revokeMut.isPending}
-                      className="btn btn-ghost text-xs text-destructive hover:bg-destructive/10 shrink-0"
-                    >
-                      Disconnect
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => refreshMut.mutate(token.id)}
+                        disabled={refreshMut.isPending}
+                        className="btn btn-ghost text-xs"
+                        title="Force-refresh this token"
+                      >
+                        {refreshMut.isPending ? 'Refreshing…' : 'Refresh Token'}
+                      </button>
+                      <button
+                        onClick={() => setDisconnectTarget(token)}
+                        disabled={revokeMut.isPending}
+                        className="btn btn-ghost text-xs text-destructive hover:bg-destructive/10"
+                      >
+                        Disconnect
+                      </button>
+                    </div>
                   </div>
                 </div>
               );

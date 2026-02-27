@@ -1,3 +1,17 @@
+## [2026.2.27c] — 2026-02-27
+
+### Added
+
+- **Force-refresh OAuth token endpoint** — `POST /api/v1/auth/oauth/tokens/:id/refresh` bypasses the 5-minute near-expiry buffer and immediately exchanges the stored refresh token for a new access token. Returns 404 if the token is not found or refresh fails (e.g. refresh token revoked — user must reconnect).
+- **"Refresh Token" button in Connections → OAuth** — Each connected account card now shows a "Refresh Token" button next to "Disconnect". Useful when a personality reports an expired token: click to force-refresh without reconnecting the account.
+
+### Fixed
+
+- **Gmail API 401 → auto-retry after token refresh** — All Gmail routes (`profile`, `messages`, `threads`, `drafts`, `send`, `labels`) now use a `fetchGmail` helper that detects a 401 response from the Gmail API, calls `forceRefreshById` to get a new access token, and retries the request once. If the second attempt also fails (e.g. refresh token revoked), the 401 is returned to the caller as before.
+- **`'google'` provider tokens could not be refreshed** — `OAuthTokenService.getCredentials()` checked for `'gmail' | 'googlecalendar' | 'googledrive'` but not `'google'`. Tokens stored with `provider = 'google'` (general Google OAuth flow) would hit the "no client credentials configured" warn and return the stale token, causing silent 401 failures from Google APIs.
+
+---
+
 ## [2026.2.27b] — 2026-02-27
 
 ### Added

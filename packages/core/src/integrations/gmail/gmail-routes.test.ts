@@ -39,6 +39,7 @@ function mockOAuthTokenService(opts?: {
     getValidToken: vi
       .fn()
       .mockResolvedValue(opts?.noValidToken ? null : 'access-token-abc'),
+    forceRefreshById: vi.fn().mockResolvedValue(null), // returns null → no retry
     storeToken: vi.fn(),
     revokeToken: vi.fn(),
   } as unknown as OAuthTokenService;

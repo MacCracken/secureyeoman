@@ -880,6 +880,10 @@ export async function revokeOAuthToken(id: string): Promise<void> {
   await request(`/auth/oauth/tokens/${id}`, { method: 'DELETE' });
 }
 
+export async function refreshOAuthToken(id: string): Promise<void> {
+  await request(`/auth/oauth/tokens/${id}/refresh`, { method: 'POST' });
+}
+
 // ─── Auth Roles ───────────────────────────────────────────────────
 
 export interface RoleInfo {

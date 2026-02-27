@@ -35,6 +35,7 @@ function makeStorage(overrides: Partial<OAuthTokenStorage> = {}): OAuthTokenStor
   return {
     upsertToken: vi.fn().mockResolvedValue(makeToken()),
     getByEmail: vi.fn().mockResolvedValue(makeToken()),
+    getById: vi.fn().mockResolvedValue(makeToken()),
     listTokens: vi.fn().mockResolvedValue([makeToken()]),
     deleteToken: vi.fn().mockResolvedValue(true),
     updateAccessToken: vi.fn().mockResolvedValue(undefined),
@@ -251,6 +252,31 @@ describe('OAuthTokenService', () => {
       expect(result).toBe('access-tok-123');
       // fetch should not be called for github (no credential match)
       expect(mockFetch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('forceRefreshById', () => {
+    it('returns null when token ID not found', async () => {
+      const storage = makeStorage({ getById: vi.fn().mockResolvedValue(null) });
+      const svc = new OAuthTokenService({ storage, logger, googleCredentials: { clientId: 'cid', clientSecret: 'csec' } });
+
+      const result = await svc.forceRefreshById('nonexistent-id');
+      expect(result).toBeNull();
+    });
+
+    it('refreshes token ignoring the 5-minute buffer', async () => {
+      // token expires in 2 hours — well outside the 5-min buffer, so getValidToken would NOT refresh
+      const token = makeToken({ expiresAt: Date.now() + 2 * 60 * 60 * 1000 });
+      const storage = makeStorage({ getById: vi.fn().mockResolvedValue(token) });
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ access_token: 'brand-new-token', expires_in: 3600 }),
+      });
+      const svc = new OAuthTokenService({ storage, logger, googleCredentials: { clientId: 'cid', clientSecret: 'csec' } });
+
+      const result = await svc.forceRefreshById('tok-1');
+      expect(result).toBe('brand-new-token');
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
   });
 });

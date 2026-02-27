@@ -40,6 +40,7 @@ function makeMockTokenService(overrides?: Partial<OAuthTokenService>): OAuthToke
     listTokens: vi.fn().mockResolvedValue([{ id: 'tok-1', provider: 'gmail', email: 'u@x.com' }]),
     revokeToken: vi.fn().mockResolvedValue(true),
     storeToken: vi.fn().mockResolvedValue(undefined),
+    forceRefreshById: vi.fn().mockResolvedValue('refreshed-token'),
     ...overrides,
   } as unknown as OAuthTokenService;
 }
@@ -244,6 +245,33 @@ describe('DELETE /api/v1/auth/oauth/tokens/:id', () => {
   it('returns 503 when token service not configured', async () => {
     const app = buildApp({}, false);
     const res = await app.inject({ method: 'DELETE', url: '/api/v1/auth/oauth/tokens/tok-1' });
+    expect(res.statusCode).toBe(503);
+  });
+});
+
+describe('POST /api/v1/auth/oauth/tokens/:id/refresh', () => {
+  it('force-refreshes a token and returns 200', async () => {
+    const app = buildApp({}, true);
+    const res = await app.inject({ method: 'POST', url: '/api/v1/auth/oauth/tokens/tok-1/refresh' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().message).toContain('refreshed');
+  });
+
+  it('returns 404 when token not found or refresh failed', async () => {
+    const app = Fastify();
+    registerOAuthRoutes(app, {
+      authService: {} as AuthService,
+      oauthService: makeMockOAuthService(),
+      baseUrl: 'http://localhost:3000',
+      oauthTokenService: makeMockTokenService({ forceRefreshById: vi.fn().mockResolvedValue(null) }),
+    });
+    const res = await app.inject({ method: 'POST', url: '/api/v1/auth/oauth/tokens/missing/refresh' });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('returns 503 when token service not configured', async () => {
+    const app = buildApp({}, false);
+    const res = await app.inject({ method: 'POST', url: '/api/v1/auth/oauth/tokens/tok-1/refresh' });
     expect(res.statusCode).toBe(503);
   });
 });

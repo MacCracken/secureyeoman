@@ -653,4 +653,20 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
       return { message: 'Token revoked' };
     }
   );
+
+  // Force-refresh a stored OAuth token (bypasses the 5-min near-expiry buffer).
+  // Returns 200 on success, 404 if not found, 502 if the upstream refresh call fails.
+  app.post(
+    '/api/v1/auth/oauth/tokens/:id/refresh',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      if (!oauthTokenService) {
+        return sendError(reply, 503, 'OAuth token service not configured');
+      }
+      const newToken = await oauthTokenService.forceRefreshById(request.params.id);
+      if (newToken === null) {
+        return sendError(reply, 404, 'Token not found or refresh failed. You may need to reconnect the account.');
+      }
+      return reply.send({ message: 'Token refreshed successfully' });
+    }
+  );
 }

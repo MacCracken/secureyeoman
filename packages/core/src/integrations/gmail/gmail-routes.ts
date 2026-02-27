@@ -23,6 +23,37 @@ export interface GmailRoutesOptions {
 // ─── Helpers ──────────────────────────────────────────────────
 
 /**
+ * Fetch a Gmail API URL with automatic 401 recovery.
+ * On a 401 response the token is force-refreshed and the request is retried
+ * once with the new access token.
+ */
+async function fetchGmail(
+  url: string,
+  opts: RequestInit,
+  tokenId: string,
+  accessToken: string,
+  oauthTokenService: OAuthTokenService
+): Promise<Response> {
+  const authHeader = { Authorization: `Bearer ${accessToken}` };
+  let resp = await fetch(url, {
+    ...opts,
+    headers: { ...opts.headers, ...authHeader },
+  });
+
+  if (resp.status === 401) {
+    const newToken = await oauthTokenService.forceRefreshById(tokenId);
+    if (newToken) {
+      resp = await fetch(url, {
+        ...opts,
+        headers: { ...opts.headers, Authorization: `Bearer ${newToken}` },
+      });
+    }
+  }
+
+  return resp;
+}
+
+/**
  * Find the first gmail OAuth token and return { accessToken, email, tokenId }.
  * Also returns the mode from the active personality's integrationAccess, defaulting to 'auto'.
  */
@@ -65,9 +96,7 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
     if (!creds) {
       return sendError(reply, 404, 'No Gmail account connected. Connect a Google account via Settings > Connections > OAuth.');
     }
-    const resp = await fetch(`${GMAIL_API}/profile`, {
-      headers: { Authorization: `Bearer ${creds.accessToken}` },
-    });
+    const resp = await fetchGmail(`${GMAIL_API}/profile`, {}, creds.tokenId, creds.accessToken, oauthTokenService);
     if (!resp.ok) {
       const body = await resp.text();
       return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, `Gmail API error: ${body}`);
@@ -91,9 +120,7 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
       if (req.query.pageToken) url.searchParams.set('pageToken', req.query.pageToken);
       if (req.query.labelIds) url.searchParams.set('labelIds', req.query.labelIds);
 
-      const resp = await fetch(url.toString(), {
-        headers: { Authorization: `Bearer ${creds.accessToken}` },
-      });
+      const resp = await fetchGmail(url.toString(), {}, creds.tokenId, creds.accessToken, oauthTokenService);
       if (!resp.ok) {
         const body = await resp.text();
         return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, `Gmail API error: ${body}`);
@@ -113,9 +140,12 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
       }
 
       const format = req.query.format ?? 'full';
-      const resp = await fetch(
+      const resp = await fetchGmail(
         `${GMAIL_API}/messages/${req.params.messageId}?format=${format}`,
-        { headers: { Authorization: `Bearer ${creds.accessToken}` } }
+        {},
+        creds.tokenId,
+        creds.accessToken,
+        oauthTokenService
       );
       if (!resp.ok) {
         const body = await resp.text();
@@ -135,9 +165,13 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
         return sendError(reply, 404, 'No Gmail account connected.');
       }
 
-      const resp = await fetch(`${GMAIL_API}/threads/${req.params.threadId}?format=full`, {
-        headers: { Authorization: `Bearer ${creds.accessToken}` },
-      });
+      const resp = await fetchGmail(
+        `${GMAIL_API}/threads/${req.params.threadId}?format=full`,
+        {},
+        creds.tokenId,
+        creds.accessToken,
+        oauthTokenService
+      );
       if (!resp.ok) {
         const body = await resp.text();
         return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, `Gmail API error: ${body}`);
@@ -186,14 +220,13 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
     const draftBody: Record<string, unknown> = { message: { raw: encoded } };
     if (threadId) (draftBody.message as Record<string, string>).threadId = threadId;
 
-    const resp = await fetch(`${GMAIL_API}/drafts`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${creds.accessToken}`,
-      },
-      body: JSON.stringify(draftBody),
-    });
+    const resp = await fetchGmail(
+      `${GMAIL_API}/drafts`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draftBody) },
+      creds.tokenId,
+      creds.accessToken,
+      oauthTokenService
+    );
 
     if (!resp.ok) {
       const errBody = await resp.text();
@@ -254,14 +287,13 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
     const sendBody: Record<string, string> = { raw: encoded };
     if (threadId) sendBody.threadId = threadId;
 
-    const resp = await fetch(`${GMAIL_API}/messages/send`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${creds.accessToken}`,
-      },
-      body: JSON.stringify(sendBody),
-    });
+    const resp = await fetchGmail(
+      `${GMAIL_API}/messages/send`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sendBody) },
+      creds.tokenId,
+      creds.accessToken,
+      oauthTokenService
+    );
 
     if (!resp.ok) {
       const errBody = await resp.text();
@@ -278,9 +310,7 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
     if (!creds) {
       return sendError(reply, 404, 'No Gmail account connected.');
     }
-    const resp = await fetch(`${GMAIL_API}/labels`, {
-      headers: { Authorization: `Bearer ${creds.accessToken}` },
-    });
+    const resp = await fetchGmail(`${GMAIL_API}/labels`, {}, creds.tokenId, creds.accessToken, oauthTokenService);
     if (!resp.ok) {
       const body = await resp.text();
       return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, `Gmail API error: ${body}`);
