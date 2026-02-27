@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -183,7 +183,9 @@ describe('Sidebar nav order', () => {
 
     renderSidebar();
 
-    await screen.findByRole('link', { name: /mission control/i });
-    expect(screen.queryByRole('link', { name: /^editor$/i })).not.toBeInTheDocument();
+    // Wait for the policy query to resolve and the component to update
+    await waitFor(() => {
+      expect(screen.queryByRole('link', { name: /^editor$/i })).not.toBeInTheDocument();
+    });
   });
 });
