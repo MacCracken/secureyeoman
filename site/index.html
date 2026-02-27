@@ -531,7 +531,7 @@
           </div>
           <div class="compare-alert-body">
             <strong>The OpenClaw security crisis — 2026</strong>
-            <p>9+ CVEs including a CVSS 8.8 one-click RCE. 341 malicious marketplace skills in a coordinated supply-chain attack. Gartner issued an enterprise ban. Palo Alto Networks called it "the potential biggest insider threat of 2026." The framework runs with unrestricted host-machine access by default.</p>
+            <p>10+ CVEs including a CVSS 8.8 one-click RCE. 824–1,184+ malicious marketplace skills across two coordinated supply-chain attacks (ClawHavoc + Snyk ToxicSkills — 36% prompt injection rate in examined skills). Gartner issued an enterprise ban. Palo Alto Networks called it "the potential biggest insider threat of 2026." The framework runs with unrestricted host-machine access by default.</p>
           </div>
           <div class="compare-alert-counter">
             <span class="counter-value">0</span>
@@ -551,7 +551,7 @@
           </div>
 
           <div class="compare-row">
-            <div class="compare-feature-col"><i class="fas fa-users-cog"></i> RBAC &amp; SSO/OIDC</div>
+            <div class="compare-feature-col"><i class="fas fa-users-cog"></i> RBAC · SSO/OIDC · SAML 2.0</div>
             <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> Full</span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
@@ -560,6 +560,15 @@
           </div>
 
           <div class="compare-row compare-row-alt">
+            <div class="compare-feature-col"><i class="fas fa-building"></i> Multi-tenancy</div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> RLS-enforced</span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+          </div>
+
+          <div class="compare-row">
             <div class="compare-feature-col"><i class="fas fa-key"></i> Secrets / Vault</div>
             <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> SecretsManager</span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
@@ -589,7 +598,7 @@
           <div class="compare-row">
             <div class="compare-feature-col"><i class="fas fa-bug"></i> CVEs (2026)</div>
             <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 0</span></div>
-            <div class="compare-col"><span class="cmp-no cmp-danger"><i class="fas fa-skull-crossbones"></i> 9+</span></div>
+            <div class="compare-col"><span class="cmp-no cmp-danger"><i class="fas fa-skull-crossbones"></i> 10+</span></div>
             <div class="compare-col"><span class="cmp-yes"><i class="fas fa-check"></i> 0</span></div>
             <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> Pre-prod</span></div>
             <div class="compare-col"><span class="cmp-yes"><i class="fas fa-check"></i> 0</span></div>
@@ -648,7 +657,7 @@
             <div class="diff-card">
               <div class="diff-icon"><i class="fas fa-shield-alt"></i></div>
               <h4>Enterprise Auth Stack</h4>
-              <p>RBAC · SSO/OIDC (Okta, Azure AD, Auth0) · mTLS · HMAC-SHA256 audit chain. No competitor has all five.</p>
+              <p>RBAC · SSO/OIDC (Okta, Azure AD, Auth0) · SAML 2.0 · mTLS · HMAC-SHA256 audit chain · PostgreSQL RLS multi-tenancy. No competitor has all six.</p>
             </div>
             <div class="diff-card">
               <div class="diff-icon"><i class="fas fa-eye-slash"></i></div>
@@ -709,7 +718,7 @@
           </div>
           <div class="exec-kpi-divider"></div>
           <div class="exec-kpi">
-            <span class="kpi-value">9 CVEs</span>
+            <span class="kpi-value">10+ CVEs</span>
             <span class="kpi-label">Leading competitor — incl. CVSS 8.8 RCE</span>
           </div>
           <div class="exec-kpi-divider"></div>
@@ -734,7 +743,7 @@
               <span class="exec-role exec-role-ciso">CISO</span>
             </div>
             <h3>Risk Quantification</h3>
-            <p>Competitors' 9 CVEs — including a CVSS 8.8 one-click remote code execution — translate directly to breach exposure. IBM's 2024 Cost of a Data Breach Report puts the average incident at $4.88M. SecureYeoman's zero-CVE track record, cryptographic audit chain, five sandboxing modes, and 18-pattern credential redaction convert that exposure into measurable risk reduction you can report to the board.</p>
+            <p>Competitors' 10+ CVEs — including a CVSS 8.8 one-click remote code execution — translate directly to breach exposure. IBM's 2024 Cost of a Data Breach Report puts the average incident at $4.88M. SecureYeoman's zero-CVE track record, cryptographic audit chain, five sandboxing modes, and 18-pattern credential redaction convert that exposure into measurable risk reduction you can report to the board.</p>
             <div class="exec-proof">
               <span class="proof-item"><i class="fas fa-check-circle"></i> 0 CVEs on record</span>
               <span class="proof-item"><i class="fas fa-check-circle"></i> HMAC-SHA256 audit chain</span>
@@ -764,11 +773,11 @@
               <span class="exec-role exec-role-cfo">CFO / Legal</span>
             </div>
             <h3>Compliance Pathway</h3>
-            <p>RBAC with four roles, SSO/OIDC (Okta, Azure AD, Auth0), cryptographically-chained audit logs exportable as JSON/HTML/CSV, secrets management via Vault/OpenBao, and an Organizational Intent layer enforcing hard boundaries via OPA policy evaluation. This is the compliance foundation — not the compliance sprint you scramble through after an incident.</p>
+            <p>RBAC with four roles, SSO/OIDC (Okta, Azure AD, Auth0), SAML 2.0, multi-tenancy with PostgreSQL RLS isolation, cryptographically-chained audit logs exportable as JSON/HTML/CSV, secrets management via Vault/OpenBao, and an Organizational Intent layer enforcing hard boundaries via OPA policy evaluation. This is the compliance foundation — not the compliance sprint you scramble through after an incident.</p>
             <div class="exec-proof">
-              <span class="proof-item"><i class="fas fa-check-circle"></i> RBAC + SSO/OIDC ready</span>
+              <span class="proof-item"><i class="fas fa-check-circle"></i> RBAC + SSO/OIDC + SAML 2.0</span>
               <span class="proof-item"><i class="fas fa-check-circle"></i> Exportable cryptographic audit chain</span>
-              <span class="proof-item"><i class="fas fa-check-circle"></i> OPA policy enforcement</span>
+              <span class="proof-item"><i class="fas fa-check-circle"></i> Multi-tenancy + OPA policy enforcement</span>
             </div>
           </div>
 
