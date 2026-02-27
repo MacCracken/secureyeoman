@@ -10,7 +10,7 @@
 |-------|------|--------|
 | XX | Find & Repair (Ongoing) | Ongoing |
 | 57 | Dashboard UX | In Progress |
-| 58 | Security Toolkit | Complete |
+| 58 | Security Toolkit | Complete ✅ |
 | 59 | Local-First AI | Near-Term |
 | 60 | Voice & Community | Demand-Gated |
 | 61 | Native Clients | Demand-Gated |
@@ -28,42 +28,26 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 - [ ] **Manual test: Per-Personality Memory Scoping** — End-to-end verification of ADR 134. Steps: (1) Chat with T.Ron → save a memory, confirm it appears in T.Ron recall but NOT in FRIDAY recall; (2) Check heartbeat stats show different Memories counts for T.Ron and FRIDAY; (3) Enable Omnipresent Mind on FRIDAY → confirm FRIDAY can now recall T.Ron's memories; (4) Disable Omnipresent Mind → scoping restored; (5) Verify `/api/v1/brain/stats?personalityId=<id>` returns per-personality counts. *(No automated DB integration test yet)*
 - [ ] **Manual test: One Skill Schema + Community Marketplace** — End-to-end verification of ADR 135. Steps: (1) Dashboard → Marketplace → confirm All / Marketplace / Community filter tabs render; (2) Sync community skills via `POST /api/v1/marketplace/community/sync` with a local repo path; (3) Switch to Community tab → confirm community skills appear with "Community" badge; (4) Install a community skill that has `mcpToolsAllowed` set → confirm the brain skill record carries the same `mcpToolsAllowed` value; (5) Dashboard → Skills → Installed tab → confirm the installed community skill shows "Community" in the Source column; (6) Uninstall the skill → confirm `installed` resets to false and card returns to "Install" state.
-- [ ] **Base knowledge generic entries need per-personality review** — `hierarchy`, `purpose`, and `interaction` are currently seeded globally (shared by all personalities). These may need per-personality variants or at least personality-aware content (e.g., T.Ron's purpose may differ from FRIDAY's). Low urgency — global entries are contextually correct for now.
-- [x] **Enterprise: Multi-tenancy** — `auth.tenants` + `tenant_id DEFAULT 'default'` on all user-data tables + PostgreSQL RLS policies. `PgBaseStorage.withTenantContext` / `bypassRls`. Admin REST API + dashboard Tenants tab. *(Phase 61, 2026-02-26)*
-- [x] **Enterprise: Audit log export** — `POST /api/v1/audit/export` streaming JSON-Lines, CSV, syslog RFC 5424. Dashboard "Export" dropdown in Audit Log tab. *(Phase 61, 2026-02-26)*
-- [x] **Enterprise: Backup & Disaster Recovery API** — `BackupManager` + pg_dump/pg_restore. Six REST endpoints at `/api/v1/admin/backups`. Dashboard Backup tab in Settings. *(Phase 61, 2026-02-26)*
-- [x] **Enterprise: SAML 2.0 support** — `SamlAdapter` via `node-saml`. SP metadata endpoint + ACS endpoint. Group→role mapping. Dashboard SSO form SAML fields. *(Phase 61, 2026-02-26)*
 - [ ] **Manual test: SAML SP flow** — Configure SimpleSAMLphp (or mock). (1) `GET /api/v1/auth/sso/saml/:id/metadata` returns valid `<md:EntityDescriptor>` XML. (2) `GET /api/v1/auth/sso/authorize/:id` redirects to IdP with SAMLRequest. (3) Post-IdP redirect hits ACS, returns JWT in URL fragment.
 - [ ] **Manual test: RLS tenant isolation** — Create tenant B via API. Insert `soul.personality` scoped to tenant B. Query personalities as tenant A → empty. Query as tenant B → record visible. Existing default-tenant data unaffected.
-- [ ] **Consumer UX: Onboarding wizard** — `OnboardingWizard` component gated behind `hasCompletedOnboarding`. Steps: personality → API keys → security policy → done.
-- [ ] **Consumer UX: Accessibility audit** — Add `eslint-plugin-jsx-a11y`, axe-core CI step, global `focus-visible` ring, 44px touch targets on mobile.
-- [ ] **Consumer UX: Settings page split** — Extract `<AuditChainTab>`, `<SoulSystemTab>`, `<RateLimitingTab>` from the 619-line `SettingsPage.tsx` monolith.
-- [ ] **Observability: Correlation IDs** — `onRequest` hook that reads `X-Correlation-ID` header or generates a UUIDv7 and threads it through gateway, heartbeat, and audit logs.
+- [ ] **Base knowledge generic entries need per-personality review** — `hierarchy`, `purpose`, and `interaction` are currently seeded globally. These may need per-personality variants (e.g., T.Ron's purpose may differ from FRIDAY's). Low urgency — global entries are contextually correct for now.
+- [ ] **Consumer UX: Settings page split** — Extract `<AuditChainTab>`, `<SoulSystemTab>`, `<RateLimitingTab>` from the `SettingsPage.tsx` monolith.
 
 ---
 
 ## Phase 57: Dashboard UX
 
-**Status**: In Progress — Advanced Editor Mode shipped (2026-02-26); two items remain.
+**Status**: In Progress — Advanced Editor Mode and Theme Presets shipped (2026-02-26); one item remains.
 
-Deferred visual polish and power-user tooling from Phase 53. Theme Presets shipped (2026-02-26). Remaining: Intent creation form + multi-theme manual test.
+Deferred visual polish and power-user tooling from Phase 53.
 
 - [ ] **Intent creation form** — The "New → Intent" entry in the sidebar dialog currently navigates directly to the Intent Editor. Convert it to a guided creation form in the dialog: structured fields matching the intent schema (name, description, hard boundaries, policies, signal conditions) instead of raw JSON entry. Include an **Import JSON** button as an escape hatch for power users who already have an intent document. Form pre-fills the Intent Editor on submit; JSON import parses and validates against the intent schema before navigating.
-- [x] **Switchable Theme Presets** — 18 named themes (dark + light + enterprise) with `data-theme` CSS variable overrides, `useTheme` hook (`ThemeId`, `isDark`, `setTheme`), floating theme picker in Sidebar, Appearance tab in Settings. *(Phase 60, 2026-02-26)*
-- [x] **Manual test: Multi-Theme System** — End-to-end verification of Phase 60. Steps: (1) Open Sidebar → profile → Theme → select Tokyo Night → confirm navbar/card/primary colors update immediately; (2) Reload page → theme persists from localStorage; (3) Select "System" → match OS preference (light/dark); (4) Settings → Appearance → verify all 19 theme cards render with correct swatches; (5) Open Monaco editor (Editor page) → confirm `vs-dark`/`vs` follows `isDark`; (6) Send a chat message with a code block → confirm syntax highlighting style follows theme; (7) Toggle between a dark and light named theme → confirm Tailwind `dark:` variants (dark sidebar, dark cards) apply correctly.
 
 ---
 
 ## Phase 58: Security Toolkit Completion
 
-**Status**: Complete (2026-02-26)
-
-Core Kali toolkit shipped (ADR 089). This phase hardens its operational surface.
-
-- [x] **Scope manifest UI** — Dashboard panel for managing `MCP_ALLOWED_TARGETS` — add/remove CIDRs, hostnames, URL prefixes. Wildcard (`*`) mode requires explicit acknowledgement checkbox. Reads/writes `mcp.config` DB table. Security → Scope tab with `ScopeManifestTab`.
-- [x] **Structured output normalization** — Parse nmap XML (`-oX -`), sqlmap stdout, nuclei JSONL (`-j`), and gobuster output into a consistent `{ tool, target, command, parsed, exit_code }` MCP envelope for richer agent chaining.
-- [x] **`ghcr.io/secureyeoman/mcp-security-toolkit` prebuilt image** — `Dockerfile.security-toolkit` at repo root. Added as 16th entry in `McpPrebuilts.tsx`.
-- [x] **Hydra live brute-force** — `sec_hydra` with dual-flag authorization (`MCP_EXPOSE_SECURITY_TOOLS=true` AND `MCP_ALLOW_BRUTE_FORCE=true`). `parseHydraOutput` extracts credentials.
+**Status**: Complete (2026-02-26) — See [CHANGELOG.md](../../CHANGELOG.md) for details.
 
 ---
 
@@ -172,4 +156,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-26 — Phase 57 in progress (Advanced Editor Mode + Theme Presets shipped; Intent creation form open). Phase 58 (Security Toolkit) complete. Enterprise features complete (audit log export, backup DR, SAML 2.0, multi-tenancy). Consumer UX + Accessibility + Correlation IDs shipped (ADR 145): 5-step onboarding wizard, jsx-a11y lint, vitest-axe smoke tests, AsyncLocalStorage correlation ID threading. Active queue: Phase 59 (Local-First AI). Phases 60–62 remain demand-gated.*
+*Last updated: 2026-02-27 — v2026.2.26 released. Phase 57 in progress (Intent creation form is the only remaining open item). Phase 58 (Security Toolkit) complete. Phase 59 (Local-First AI) is the active priority. Phases 60–62 remain demand-gated.*

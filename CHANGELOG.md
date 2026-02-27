@@ -1,496 +1,104 @@
-## [2026.2.27c] — CLI Init Wizard Alignment
-
-### Changed
-
-- **`secureyeoman init` 5-step flow** — Interactive onboarding wizard restructured to mirror the dashboard `OnboardingWizard` step sequence: **Personality** (name, description, formality/humor/verbosity) → **API Keys** (create a dashboard API key if server is reachable, skippable) → **Security** (5 policy toggles — `allowCodeEditor`, `allowAdvancedEditor`, `allowIntentEditor`, `allowFileSystemAccess`, `allowNetworkAccess` — calls `PATCH /api/v1/security/policy` when dirty and server is reachable; skippable) → **Model** (provider picker + model name + provider API key) → **Done** (gateway port, database backend, security key generation). `--env-only` runs a shorter 2-step flow (Model → Infrastructure). `--non-interactive` uses all defaults unchanged.
-
----
-
-## [2026.2.27b] — Editor UX Refinements
-
-### Changed
-
-- **Standard Editor — send button** — chat send button changed from `btn-primary` to `btn btn-ghost`, matching the Advanced Editor and Chat page styles.
-- **Standard Editor — Watch toggle** — when the active personality has `vision` capability, a Watch toggle button appears in the chat input bar. When on, the full terminal history is included as `editorContent` context in every chat message. Toggle uses `btn-primary` when active, `btn-ghost` when off.
-- **Standard Editor — no duplicate filename** — the standalone editable filename `<input>` in the Monaco editor toolbar removed; the tab label is the sole filename reference. The language badge remains.
-- **Standard Editor — read-only working directory** — the editable `cwd` text inputs in the Files panel and terminal bar replaced with plain read-only `<span>` elements. The working directory still updates dynamically from terminal command results (`result.cwd`); users just can't hand-edit it.
-- **Chat page send button** — also changed to `btn btn-ghost` (from previous session).
-- **`useChatStream`** — `editorContent?: string` added to `UseChatStreamOptions`; injected into stream body via `latestOptions` ref so it stays current without stale closures.
-
----
-
-## [2026.2.27a] — Advanced Editor: Workspace Intelligence
-
-### Added
-
-- **Inline chat panel** — Personality chat embedded directly in the Workspace below the terminal. Terminal output is automatically shared with the personality as context when Watch is enabled. Messages use `editorContent` for terminal context and `saveAsMemory` to persist notable exchanges.
-- **Memory toggle** — Toolbar pill that enables/disables saving terminal commands and outputs as episodic memories (persisted to localStorage across sessions). When on, each completed command is written to the brain via `addMemory` and scoped to the active personality.
-- **Watch toggle** — Personality-gated (vision capability required) toolbar toggle. When on, the personality can see current terminal output in every chat message. A small eye indicator appears in the chat header when Watch is active. Gates on `personality.body.capabilities.includes('vision')`.
-- **Model selector** — Toolbar button shows the active model name; opens `ModelWidget` popup for inline model switching. Auto-switches to the personality's `defaultModel` when the personality selection changes.
-- **Default personality pre-selection** — The personality dropdown pre-selects the `isDefault` personality on first load; falls back to alphabetical first. Selection persisted to `localStorage` (`soul:editorPersonalityId`).
-
-### Changed
-
-- **Advanced Editor — terminal-first layout** — Monaco editor removed entirely. `MultiTerminal` dominates the right column (`flex-[3]`); inline chat below (`flex-[2]`). Narrow 224 px sidebar: Sessions + Task panels only (memory not displayed in sidebar — memories are available to the personality but not shown in the view). `caret-primary` cursor in all inputs.
-- **Security policy toggles (Code Editor / Advanced Editor)** fixed — `allowCodeEditor` and `allowAdvancedEditor` were missing from the `GET /api/v1/security/policy` response, PATCH body type, `updateSecurityPolicy()`, and the PATCH return. Toggling either flag in Settings → Security now persists correctly.
-- Task running count badge now renders as "N running" (was bare number).
-
----
-
-## [2026.2.26t] — Consumer UX, Accessibility, and Correlation IDs
-
-### Added
-
-- **Onboarding Wizard Rework** — 4-step wizard replaced with a 5-step flow: `personality` (name + traits merged) → `api-keys` (create key + one-time copy banner; skippable) → `security` (5 policy toggles, calls `updateSecurityPolicy` only when dirty; skippable) → `model` (unchanged) → `done` ("Launch SecureYeoman" button). *(ADR 145)*
-- **Accessibility Audit** — `eslint-plugin-jsx-a11y` added at warn-only level via flat ESLint config. Global `:focus-visible` ring (`2px solid hsl(var(--ring))`) added to `index.css`. 44 px minimum touch targets for coarse-pointer devices (`@media (pointer: coarse)`). Four `vitest-axe` smoke tests for `SecurityPage`, `McpPrebuilts`, `SettingsPage`, and `OnboardingWizard`. *(ADR 145)*
-- **Correlation IDs** — `utils/correlation-context.ts` (AsyncLocalStorage). Every HTTP request auto-generates a UUIDv7 correlation ID (or echoes the `X-Correlation-ID` request header) and propagates it via ALS. `AuditChain._doRecord()` auto-enriches `entry.correlationId` from ALS — zero changes to existing call sites. Heartbeat beat cycles each get their own correlation ID. Response header `X-Correlation-ID` returned on all responses. *(ADR 145)*
-
-### Documentation
-
-- ADR 145 in `docs/adr/145-consumer-ux-a11y-correlation.md`
-
----
-
-## [2026.2.26s] — Phase 61: Enterprise Features
-
-### Added
-
-- **Audit Log Export** — `POST /api/v1/audit/export` streams audit entries in JSON-Lines, CSV, or syslog RFC 5424 format directly to the HTTP socket (no buffering). Filtering by timestamp range, level, event, userId, limit (max 1M). Dashboard adds "Export" dropdown button in Audit Log sub-tab. *(ADR 141)*
-- **Backup & DR API** — `BackupManager` orchestrates `pg_dump` (non-blocking) and `pg_restore`. Six REST endpoints at `/api/v1/admin/backups`: create, list, get, download, restore (requires `{ confirm: "RESTORE" }`), delete. Metadata in `admin.backups` (migration 057). Dashboard adds "Backup" tab to Settings page. *(ADR 142)*
-- **SAML 2.0 SSO** — `SamlAdapter` wraps `node-saml` for SP-initiated SSO. `SsoManager` branches on `provider.type === 'saml'`. New routes: `GET /api/v1/auth/sso/saml/:id/metadata` (SP metadata XML) and `POST /api/v1/auth/sso/saml/:id/acs` (ACS endpoint). Group→role mapping via `config.groupRoleMap`. Dashboard SSO form shows SAML-specific fields. *(ADR 143)*
-- **Multi-tenancy** — `auth.tenants` registry + `tenant_id DEFAULT 'default'` column on all user-data tables + PostgreSQL RLS policies (migration 058). `PgBaseStorage` gains `withTenantContext` and `bypassRls` helpers. `TenantManager` CRUD with slug validation; blocks deletion of `'default'` tenant. REST API at `/api/v1/admin/tenants`. Dashboard adds "Tenants" tab (admin-only). *(ADR 144)*
-
-### Documentation
-
-- ADRs 141–144 in `docs/adr/`
-
----
-
-## [2026.2.26r] — Phase 58: Security Toolkit Completion
-
-### Added
-- **Structured Output Normalization**: `sec_nmap`, `sec_sqlmap`, `sec_nuclei`, `sec_gobuster` now append a `---JSON---` machine-parseable envelope `{ tool, target, command, parsed, exit_code }` to all output, enabling agent chaining without text parsing. Parser functions: `parseNmapXml`, `parseSqlmapOutput`, `parseNucleiJsonl`, `parseGobusterOutput`.
-- **Scope Manifest UI**: New **Security → Scope** tab with `ScopeManifestTab` component. Manage `allowedTargets` and enable/disable security tools via the dashboard without an env var restart. Wildcard `*` requires explicit checkbox acknowledgement.
-- **`allowedTargets` + `exposeSecurityTools`** added to `McpFeatureConfig` in `mcp.config` DB table.
-- **Security Toolkit Prebuilt Image**: `Dockerfile.security-toolkit` at repo root. 16th entry in Connections → Prebuilts: `ghcr.io/secureyeoman/mcp-security-toolkit:latest` with all Kali tools pre-installed.
-- **`sec_hydra`** — Live credential brute-force tool. Requires both `MCP_EXPOSE_SECURITY_TOOLS=true` **and** `MCP_ALLOW_BRUTE_FORCE=true` (dual-flag authorization). Supports ssh, ftp, telnet, http-get/post-form, mysql, postgres, rdp, smb, smtp. `parseHydraOutput` extracts found credentials.
-- **`allowBruteForce`** field in `McpServiceConfigSchema` and `loadConfig`. Set `MCP_ALLOW_BRUTE_FORCE=true` to enable.
-- nikto, ffuf, whatweb, wpscan also append `{ parsed: null }` envelope for consistency.
-
-### Documentation
-- ADR 141: Security Toolkit Completion decisions
-- Guide: `docs/guides/security-toolkit-scope.md`
-- Guide: `docs/guides/security-toolkit-image.md`
-
----
-
-## [2026.2.26q] — 2026-02-26
-
-### Fixed
-
-#### Audit Chain — Mid-Chain Break Not Caught by `repairOnInit`
-
-- **Root cause** — `initialize()` with `repairOnInit: true` only checked the **last entry's** signature. If the last entry had a valid signature (e.g. its metadata was already alphabetically sorted so the JSONB key-order fix did not change its hash), auto-repair did not trigger — even though earlier entries in the chain had broken `previousEntryHash` links.
-- **Fix** — When `repairOnInit: true`, `initialize()` now runs a full `verify()` pass instead of the single-entry signature check. If verify fails for any reason (mid-chain `previousEntryHash` mismatch, signature failure, any entry), repair runs automatically. When `repairOnInit: false` (the default), the existing fast-path single-entry check is unchanged.
-- **Tests** — `audit-chain.test.ts` grows from 41 to 44 tests: three new `repairOnInit` tests covering last-entry signature failure, mid-chain break with valid last entry, and chain continuity after auto-repair on init. Stale comments updated.
-
----
-
-## [2026.2.26p] — 2026-02-26
-
-### Security / Performance / Stability — Phase 59 Hardening
-
-#### Security
-
-- **Terminal env sanitization** (`terminal-routes.ts`) — Child processes spawned by the terminal route now receive only a strict whitelist of safe environment variables (`PATH`, `HOME`, `USER`, `LOGNAME`, `LANG`, `LC_ALL`, `LC_CTYPE`, `TERM`, `SHELL`, `TMPDIR`, `TZ`, `XDG_RUNTIME_DIR`). `PATH` is always overridden with a hardcoded safe value. Previously, all of `process.env` was spread into child processes, leaking every secret to spawned shells.
-- **PostgreSQL SSL verification** (`pg-pool.ts`) — `rejectUnauthorized` now defaults to `true` (secure). Opt-out via `DATABASE_SSL_REJECT_UNAUTHORIZED=false` for dev self-signed certs; custom CA via `DATABASE_CA` env var (PEM). A warning is logged whenever verification is disabled. In `NODE_ENV=production`, the DB password env var is required (throws if missing rather than silently using the dev default).
-- **Content-Security-Policy** (`server.ts`) — CSP header added to all API responses: `default-src 'self'`; `script-src 'self' 'unsafe-inline'`; `style-src 'self' 'unsafe-inline'`; `img-src 'self' data: blob:`; `font-src 'self' data:`; `connect-src 'self' ws: wss:`; `media-src 'self' blob:`; `object-src 'none'`; `frame-ancestors 'none'`. HSTS max-age bumped to 2 years with `preload`.
-- **Auth endpoint rate limiting wired** (`auth-routes.ts`) — The `rateLimiter` was injected but never called. Now enforced: login uses existing `auth_attempts` rule (5/15 min per IP), refresh uses new `auth_refresh` rule (10/min per IP), reset-password uses new `auth_reset_password` rule (3/hour per IP). All 429 responses include `Retry-After` header.
-- **Token refresh race condition** (`client.ts`) — Changed from inline flag reset to `.finally()` so `_isRefreshing` and `_refreshPromise` are cleared unconditionally even if `attemptTokenRefresh()` throws, preventing subsequent 401s from awaiting a permanently stale rejected promise.
-
-#### Performance
-
-- **Audit list single-query window function** (`sqlite-storage.ts`) — `queryEntries` and `searchFullText` previously fired two separate DB round-trips (COUNT + SELECT). Merged into a single query using `COUNT(*) OVER() AS total_count`, halving round-trips on every audit list request.
-
-#### Stability
-
-- **Audit chain concurrent-write lock** (`audit-chain.ts`) — `repair()` now runs through the `_recordQueue` so it never races with in-flight `record()` calls that are about to update `this.lastHash`. Internal work extracted to `_doRepair()`. `createSnapshot()` awaits the queue tail before reading `this.lastHash`.
-- **Health check split** (`server.ts`) — `/health` split into three Kubernetes-compatible probes: `GET /health/live` (liveness, no I/O), `GET /health/ready` (real DB ping, returns 503 on failure), `GET /health/deep` (full component diagnostics, 207 on partial). `/health` retained as backward-compat alias for ready semantics.
-- **Dashboard API request timeouts** (`client.ts`) — `AbortSignal.timeout()` added to all `fetch()` calls: 30 s for main requests (including retry), 10 s for token refresh. Respects caller-supplied `signal` (React Query abort controller remains functional).
-
-### Docs
-
-- **ADR 140** — `docs/adr/140-security-hardening-phase-59.md` — rationale and alternatives for all 10 items above.
-
----
-
-## [2026.2.26o] — 2026-02-26
-
-### Added
-
-#### Phase 57 — Advanced Editor Mode + Code Editor Toggle
-
-- **`allowCodeEditor` policy flag** (`SecurityConfigSchema`) — new boolean (default `true`). Controls whether the Code Editor nav item appears in the sidebar. When `false`, the editor link is hidden and the Advanced Editor toggle in Security Settings is greyed out.
-- **`allowAdvancedEditor` policy flag** (`SecurityConfigSchema`) — new boolean (default `false`). When `true` (and Code Editor is enabled), `EditorPage` renders the new `AdvancedEditorPage` layout instead of the standard editor.
-- **`AdvancedEditorPage.tsx`** (new) — Three-panel advanced editor layout: Monaco editor (flex-3 left), right column with `FileManagerPanel` (top) + `TaskPanel` (bottom, flex-2), and `MultiTerminal` docked at the bottom (h-48). Personality selector uses `fetchPersonalities` → `data?.personalities`. Terminal integration via `executeTerminalCommand(cmd, cwd)`. Monaco loader config applied in `useEffect`.
-- **`EditorPage.tsx` refactored** — Now a thin wrapper: one `useQuery` for the security policy, conditional branch to `AdvancedEditorPage` when `allowAdvancedEditor` is true, otherwise renders the existing `StandardEditorPage`. Old body renamed to `StandardEditorPage`.
-- **`SecuritySettings.tsx` toggles** — Two new `PolicyToggle` cards after the Intent Document Editor row: "Code Editor" (`Code` icon, controls `allowCodeEditor`) and "Advanced Editor" (`LayoutPanelLeft` icon, controls `allowAdvancedEditor`). Advanced Editor toggle uses `opacity-40 pointer-events-none` with a hint text explaining it requires Code Editor to be on when `!codeEditorAllowed`.
-- **`Sidebar.tsx` conditional Editor link** — `Editor` removed from `BASE_TOP_ITEMS`. Re-added conditionally inside `useMemo` via `top.splice(4, 0, ...)` when `codeEditorAllowed`. `codeEditorAllowed` added to dependency array.
-- **`SecurityPolicy` interface** (`client.ts`) — `allowCodeEditor: boolean` and `allowAdvancedEditor: boolean` added; fallback default return updated to include both.
-
-### Tests
-
-- `SecuritySettings.test.tsx` — +6 tests: Code Editor toggle renders and calls correct update; Advanced Editor toggle renders; Advanced Editor toggle is greyed out with hint when Code Editor is off; enabling/disabling Code Editor calls correct update function.
-- `Sidebar.test.tsx` — +2 tests: Editor nav item shown when `codeEditorAllowed: true`; Editor nav item hidden when `codeEditorAllowed: false`.
-- All 57 core + 94 dashboard tests pass; `tsc --noEmit` = 0 errors.
-
----
-
-## [2026.2.26n] — 2026-02-26
-
-### Fixed
-
-#### Phase XX — Audit Chain Integrity (JSONB metadata key ordering)
-
-- **Root cause** — `computeEntryHash` serialised metadata keys in their JavaScript insertion order. The `metadata` column is `JSONB` in PostgreSQL, which sorts keys alphabetically on storage. When an entry was read back during `verify()`, the alphabetically-sorted keys produced a different hash than the one computed at write time, causing every entry with out-of-order metadata keys to fail signature verification and report `Chain Status: Invalid`.
-- **Fix** — Replaced `JSON.stringify(hashData, Object.keys(hashData).sort())` with a deep-sorted `sortedKeysReplacer` function that recursively sorts all plain-object keys at every nesting depth before serialisation. This is now consistent with what PostgreSQL JSONB returns.
-- **Repair route** — `POST /api/v1/audit/repair` re-signs the entire chain using the current signing key and the corrected hash function. Entries that are already valid are skipped. Returns `{ repairedCount, entriesTotal }`.
-- **`AuditChain.repair()`** — New method on the `AuditChain` class; also updates `this.lastHash` so subsequent `record()` calls chain correctly post-repair.
-- **`AuditChainStorage.updateIntegrity()`** — New method on the storage interface; implemented on both `SQLiteAuditStorage` (PostgreSQL `UPDATE`) and `InMemoryAuditStorage`.
-- **`getStats()` error details** — Now returns `chainError?: string` and `chainBrokenAt?: string` when the chain is invalid, forwarded through `SecureYeoman.getAuditStats()` and `fetchAuditStats()` in the dashboard.
-- **Dashboard repair UI** — Settings → Audit Chain card shows the error message and first broken entry ID when `chainValid` is false, along with a "Repair Chain" button that calls `POST /audit/repair` and invalidates the `audit-stats` query on success.
-- **Tests** — `audit-chain.test.ts` grows from 27 to 41 tests: JSONB round-trip metadata stability (2 tests), `repair()` coverage (4 tests), `getStats()` error-detail coverage (2 tests).
-
----
-
-## [2026.2.26m] — 2026-02-26
-
-### Added
-
-#### Phase 58 — Audio Quality
-
-- **Streaming TTS binary route** — `POST /api/v1/multimodal/audio/speak/stream` returns raw binary audio with the correct `Content-Type` header (`audio/mpeg`, `audio/ogg; codecs=opus`, etc.). OpenAI path uses a direct `arrayBuffer()` fetch — no base64 roundtrip. All other TTS providers convert their existing base64 result to a `Buffer`. `Content-Length` and `X-Duration-Ms` headers included. Dashboard adds `synthesizeSpeechStream()` (returns a blob URL) and `updateMultimodalModel()`.
-- **Audio validation before STT** — `validateAudioBuffer()` runs in the transcription route after schema parse. All formats: reject if `< 1000` bytes. WAV format additionally: parse RIFF header for channels/sample-rate/bit-depth, reject if duration `< 2s` or `> 30s`, compute RMS/peak on first 10s of PCM samples, reject `audio_too_quiet` (RMS < 0.01) or `audio_clipped` (peak ≥ 0.99). Returns HTTP 422 with descriptive error code.
-- **Whisper model size selection** — `MultimodalManager.resolveSTTModel()` resolves model via `WHISPER_MODEL` env → DB pref → config default. `setModel(type, model)` persists to `prefsStorage`. New `PATCH /api/v1/multimodal/model` route (validates `type ∈ stt|tts` and non-empty model string). `detectAvailableProviders()` now includes `stt.model` in its response, surfaced via `GET /api/v1/multimodal/config`. MultimodalPage provider card shows a model selector for STT: local providers (voicebox, openedai) get a `<select>` with `tiny | base | small | medium | large | large-v2 | large-v3`; OpenAI shows a non-interactive `whisper-1` chip.
-- **Tests** — 52 tests in `multimodal-routes.test.ts` (audio validation ×9, model route ×6, streaming TTS ×8, plus all existing) + 84 tests in `manager.test.ts` (new: `synthesizeSpeechBinary` ×7, STT model resolution ×7). 136 total pass across both files. Dashboard `tsc --noEmit` = 0 errors.
-- **ADR 139** — `docs/adr/139-audio-quality-improvements.md` covers streaming TTS design, WAV validation rule rationale, and Whisper model resolution order.
-- **Guide** — `docs/guides/audio-quality.md` covers streaming TTS curl/client usage, validation error codes, and Whisper model size selection (API, env var, config, dashboard UI).
-
----
-
-## [2026.2.26l] — 2026-02-26
-
-### Added
-
-#### Phase 55 — Notifications & Integrations
-
-- **Real external dispatch** (`body/heartbeat.ts`) — `executeNotifyAction()` now calls running
-  integration adapters for `slack`, `telegram`, `discord`, and `email` channels instead of
-  logging stubs. `integrationId` in notify config targets a specific integration; omit to use
-  all running adapters for the platform. Audit events `notification_dispatched` (info) and
-  `notification_dispatch_failed` (warning) are recorded per recipient.
-- **`IntegrationManager.getAdaptersByPlatform(platform)`** — new method that returns all running
-  `Integration` instances for the given platform string. Used by both the heartbeat dispatch
-  path and the notification fan-out.
-- **Per-user notification preferences** — migration `056_user_notification_prefs.sql` adds
-  `auth.user_notification_prefs`. `UserNotificationPrefsStorage` provides full CRUD + upsert
-  with `ON CONFLICT (user_id, channel, chat_id) DO UPDATE`. Routes at
-  `GET/POST/PUT/DELETE /api/v1/users/me/notification-prefs` (auth required).
-- **Fan-out** (`notification-manager.ts`) — `NotificationManager._fanout()` is called on every
-  `notify()` and dispatches to each enabled pref's adapter, honouring `minLevel` and UTC quiet
-  hours (with overnight wrap-around support). Failure per pref is caught and non-fatal.
-- **Notification retention cleanup** — `NotificationStorage.deleteOlderThan(maxAgeMs)` added.
-  `NotificationManager.startCleanupJob(retentionDays?)` fires immediately and repeats daily.
-  `notifications.retentionDays: 30` config field added to shared `ConfigSchema`.
-- **Settings → Notifications tab** (`SettingsPage.tsx`) — new `NotificationPrefsPanel` component
-  shows current prefs with channel badge, chat ID, min level, quiet hours, enabled toggle, and
-  delete button. "Add channel" form with all fields including quiet hours.
-- **`UserNotificationPref`** type in `packages/dashboard/src/types.ts` and 4 client functions in
-  `client.ts`: `fetchNotificationPrefs`, `createNotificationPref`, `updateNotificationPref`,
-  `deleteNotificationPref`.
-
-### Tests
-
-- `notification-storage.test.ts` — 3 new tests for `deleteOlderThan()` (25 total)
-- `notification-manager.test.ts` — 12 new Phase 55 tests: fan-out level filtering, quiet hours,
-  integrationId dispatch, cleanup job start/stop (31 total)
-- `user-notification-prefs-storage.test.ts` — 13 new tests: CRUD, upsert, field mapping
-- `user-notification-prefs-routes.test.ts` — 14 new tests: all 4 routes, 401/400/404 coverage
-- `tsc --noEmit` = 0 errors
-
-### Docs
-
-- `docs/adr/138-notification-delivery-and-user-prefs.md` — new ADR
-- `docs/guides/notifications.md` — updated with External Dispatch, Per-User Preferences, and
-  Retention sections
-
----
-
-## [2026.2.26k] — 2026-02-26
-
-### Changed
-
-#### Dashboard — Mission Control, Navigation & Consistency
-
-- **Mission Control layout restructured** (`MetricsPage.tsx`) — Operational row (Active Tasks · Workflows · Security Events) now appears **first** so actionable data is immediately visible. Infrastructure row (System Topology · Agent Health · System Health) moves below. System Topology reduced from 2/3 to 1/3 column width. Quick Actions removed (sidebar + New button covers creation flows).
-- **Agent Health promoted** — Moved from the bottom Live Feed row to the Infrastructure row alongside System Topology and System Health.
-- **Workflows card added** to both the operational live feed row and as a nav target (`/automation?tab=workflows`).
-- **ReactFlow MiniMap** made smaller (`width: 90, height: 60`) so it doesn't dominate the compact Topology card.
-- **Sidebar — Automation reordered** (`Sidebar.tsx`) — "Automation" moved to position 3 (right after Security) in the top nav, statically included in `BASE_TOP_ITEMS`.
-- **Sidebar — Administration casing fixed** — `groupHeaderClass` no longer includes `uppercase`; "Administration" label renders in proper title case.
-- **SettingsPage header relabeled** — `h2` changed from "Settings" to "Administration" to match the sidebar group label.
-- **Date filters added to all three Security > Automations views** — Tasks, Heartbeats, and Workflows now all include a date preset bar (Last hour · Last 24h · Last 7 days · All time) plus custom from/to date inputs. Tasks filter is server-side; Heartbeats filters by `lastRunAt`; Workflows filters by `createdAt` (both client-side).
-- **Date filters added to OpenTasks** — Date preset bar and custom date inputs added to Automation > Tasks. Date params forwarded to `fetchTasks` query (`from` / `to`).
-- **Navigation routing fixed**:
-  - `/workflows` redirect → `/automation?tab=workflows` (was stripping tab context)
-  - `NewEntityDialog` "Workflow" nav item → `/automation?tab=workflows`
-  - `NewEntityDialog` task creation navigates to `/automation?create=true&...` (was `/tasks?...` which stripped params)
-  - `AutomationPage` reads `?tab=workflows` URL param to initialize the correct active tab on load
-
-### Tests
-
-- `TaskHistory.test.tsx` — Updated `does not render date range inputs` → `renders date range inputs` (date inputs are now present).
-- `tsc --noEmit` = 0 errors; 106 tests pass across 4 test files.
-
-## [2026.2.26j] — 2026-02-26
-
-### Changed
-
-#### Phase 53 — Open Tasks view + Security Automations export
-
-- **`TaskHistory` → `OpenTasks`** (`src/components/TaskHistory.tsx`) — Component renamed from `TaskHistory` to `OpenTasks`; heading renamed "Open Tasks". Now a live view of active tasks only.
-- **Active-only display** — `OpenTasks` fetches up to 200 tasks and client-side filters to `pending` + `running`. Historical tasks (completed, failed, timeout, cancelled) are not shown.
-- **Status filter narrowed** — Dropdown options: "All Active" | "Pending" | "In Progress". Historical statuses removed. When a specific status is selected, the server-side filter is used directly (bypassing the client-side active filter).
-- **Pagination removed** — Not relevant for a live active-task view.
-- **Date range removed** — Date range bar and date preset buttons removed from `OpenTasks`.
-- **Export removed from `OpenTasks`** — CSV/JSON download buttons removed; export is available in Security > Automations > Tasks only.
-- **Agent ID column removed** from `OpenTasks` (was `hidden xl:table-cell`); the Agent name column already provides this information.
-- **Security > Automations > Tasks export added** — CSV/JSON export buttons added to the filter bar. Exports all tasks matching the current filters (up to 10,000 rows). CSV columns: ID, Agent, Name, Sub-Agent, Type, Status, Duration (ms), Created At.
-- **Security > Automations > Tasks keeps all status options** — Completed, Failed, Timeout, Running, Pending, Cancelled all available for full audit filtering.
-
-### Tests
-
-- `TaskHistory.test.tsx` (`OpenTasks`) — Fully rewritten: 34 tests updated to reflect active-only behavior; use `pending`/`running` tasks in row-level tests; removed pagination/date-range/export tests; added new tests asserting historical statuses are client-side filtered and that date/export controls are absent.
-- `DashboardLayout.test.tsx` — Updated mock from `TaskHistory` → `OpenTasks`; updated test description.
-- `SecurityPage.test.tsx` — All 35 tests pass unchanged.
-
-## [2026.2.26i] — 2026-02-26
-
-### Changed
-
-#### Phase 53 — Task table column reorder + sub-agent column
-
-- **Column order standardised** — Both `TaskHistory` and `Security > Automations > Tasks` now use a unified column order: **Agent | ID | Name | Sub-Agent | Type | Status | Duration | Created** (+ Agent ID / Actions in TaskHistory). Agent was promoted to the first column; Sub-Agent inserted between Name and Type.
-- **Sub-Agent column** — New column in both task tables. Displays `↳ <parentTaskId[0..8]>…` badge (monospace, `bg-muted`) when a task was spawned as a child of another task; `—` otherwise. Hidden below `lg` breakpoint. Reads `task.parentTaskId` (added to dashboard `Task` interface in `types.ts`).
-- **`Task` interface** (`packages/dashboard/src/types.ts`) — Added `parentTaskId?: string` field to mirror the backend `TaskSchema`.
-
-### Tests
-
-- `TaskHistory.test.tsx` — 34/34 pass; `colSpan` updated from 8 → 10 (two new visible columns: Sub-Agent, Agent moved from mid to first).
-- `SecurityPage.test.tsx` — 35/35 pass; no changes required (tests assert on content, not column structure).
-
-## [2026.2.26h] — 2026-02-26
-
-### Changed
-
-#### Phase 53 — Heartbeats moved to Security > Automations; Automation View polish
-
-- **Heartbeats view extracted** — `HeartbeatsView.tsx` (new self-contained component) extracted from `TaskHistory`. Fetches `fetchHeartbeatStatus` + `fetchPersonalities`; renders per-monitor `HeartbeatCard` components. Heartbeats sub-tab removed from `TaskHistory` entirely.
-- **`system_health` card border fix** — `HeartbeatCard` no longer renders the left `border-l-4` highlight on `system_health`-type monitors (was `border-l-4 border-l-success`/`border-l-muted-foreground/30`).
-- **Security > Automations > Heartbeats** — Added Heartbeats as the default (first) subview in the Security Automations tab. Subview order: **Heartbeats → Tasks → Workflows**. Tab switcher uses the Mission Control pill-tab style (`bg-muted/50` container, `bg-card shadow-sm` active state).
-- **Security > Automations task filter** — Status filter `<select>` now uses `bg-background border rounded-md` (theme-aware) matching the TaskHistory filter style.
-- **Automation page polish** — `AutomationPage` tab switcher upgraded to Mission Control pill-tab style: title promoted to `text-2xl font-bold tracking-tight`, pill tabs (`bg-muted/50 border rounded-lg p-1`) replace the old border-bottom tabs.
-
-### Tests
-
-- `SecurityPage.test.tsx` — 35/35 pass; replaced `fetchHeartbeatTasks` mock with `fetchHeartbeatStatus` + `fetchPersonalities`; updated Automations tab tests to reflect default Heartbeats subview and pill-tab `role="tab"` selectors; added "shows Heartbeats content as default subview" test.
-- `TaskHistory.test.tsx` — 34/34 pass; replaced `fetchHeartbeatTasks`/`fetchHeartbeatLog` mock with `fetchPersonalities`; removed all heartbeat-specific tests (moved to HeartbeatsView).
-
-## [2026.2.26g] — 2026-02-26
-
-### Added
-
-#### Phase 53 — Automation View Consolidation + Security > Automations Tab
-
-- **`AutomationPage`** (`src/pages/AutomationPage.tsx`) — New unified automation management view at `/automation`. A Tasks | Workflows tab switcher renders the full `TaskHistory` component (including its own Tasks/Heartbeats sub-tabs) or `WorkflowsPage` respectively. Old routes `/tasks` and `/workflows` now redirect to `/automation`.
-- **Sidebar consolidation** — Removed the collapsible "Automation" group with separate Tasks and Workflows items. Replaced with a single flat `Automation → /automation` nav link (Layers icon), removing the per-feature conditional Workflows entry and the expand/collapse state.
-- **Security > Automations tab** — New `Automations` tab in `SecurityPage` inserted between "Audit Log" and "Autonomy". Contains two security-audit subviews:
-  - **Tasks subview** — Read-only paginated table of all task executions. Columns: Name, Type, Status (badged), Started, Duration, Error. Status filter dropdown. No create/edit/delete controls (audit lens only).
-  - **Workflows subview** — List of all workflow definitions with Enabled/Disabled badge and step count. Each row is expandable: on expand, fetches the last 5 runs via `fetchWorkflowRuns` and shows Status, Timestamp, Triggered-by, and Error inline.
-
-### Tests
-
-- `SecurityPage.test.tsx` — 34/34 pass; added 6 new Automations tab tests (tab renders, Tasks/Workflows subviews, empty states, data display, subview switching); added mocks for `fetchTlsStatus`, `fetchAutonomyOverview`, `fetchAuditRuns`, `fetchWorkflows`, `fetchWorkflowRuns`.
-- `Sidebar.test.tsx` — 6/6 pass; updated to assert `Automation → /automation` link.
-
-## [2026.2.26f] — 2026-02-26
-
-### Added
-
-#### Phase 53 — Mission Control Dashboard
-
-- **Mission Control tab** — Replaces the old "Overview" tab in `MetricsPage` as the default landing view. Renders a multi-panel command-center grid with live auto-refresh data:
-  - **KPI stat bar** — 6 cards: Active Agents, Heartbeat status, Active Tasks, Tasks Today, Cost Today (click-to-drill into Costs tab), Audit Entries.
-  - **System topology** — existing ReactFlow topology graph (lg:col-span-2) alongside System Health card (latency, memory, uptime, version) and Quick Actions (5 shortcut buttons: Active Tasks, Audit Log, Connections, Workflows, Cost Analytics).
-  - **Live feeds row** — Active Tasks feed (running tasks with progress bar), Security Events feed (recent events with severity badge), Agent Health panel (heartbeat status per personality).
-  - **Resource monitoring** — CPU/memory AreaChart sparkline + 4 mini stat chips (CPU %, Memory MB, Tokens, Cost), beside Integration Status grid (MCP server connections, up to 8 shown, 2-col).
-  - **Audit stream** — recent audit entries with timestamp and actor. **Workflow runs** — workflow definitions list with enabled/disabled status badge.
-- **Costs tab preserved** — Full provider breakdown table, history filters, cost-over-time chart, and recommendations remain intact as the second tab. The "Cost Today" KPI card on Mission Control links to it.
-- **Sidebar rename** — "Metrics" nav item renamed to "Mission Control" with `LayoutDashboard` icon (was `BarChart2`); route unchanged (`/metrics`).
-
-### Tests
-
-- `MetricsPage.test.tsx` — 34/34 pass; added mocks for `fetchTasks`, `fetchSecurityEvents`, `fetchAuditEntries`, `fetchWorkflows`; updated assertions to "Mission Control" terminology.
-- `Sidebar.test.tsx` — 9/9 pass; fixed pre-existing ambiguous `/security/i` selector (uses `getAllByRole()[0]`); corrected Tasks/Skills ordering assertion to reflect automation-group DOM structure.
-
-## [2026.2.26e] — 2026-02-26
-
-### Added
-
-#### Phase 54 — AI Safety Layer
-
-- **ResponseGuard** (`src/security/response-guard.ts`) — output-side injection scanner, counterpart to `PromptGuard`. Six patterns: `instruction_injection_output`, `cross_turn_influence`, `self_escalation`, `role_confusion`, `base64_exfiltration`, `hex_exfiltration`. Modes: `block`, `warn` (default), `disabled`. Brain consistency check (always warn-only) detects responses that contradict established identity or deny used memories.
-- **OPA Output Compliance** — new `checkOutputCompliance(responseText)` on `IntentManager`. Evaluates `output_compliance/allow` OPA policy against active hard boundaries. `syncPoliciesWithOpa()` now automatically uploads the `output_compliance` Rego package. Non-compliant responses log `output_compliance_warning`, never block.
-- **LLM-as-Judge** (`src/security/llm-judge.ts`) — secondary LLM review for high-autonomy tool calls. Triggers when personality `automationLevel` matches configured list (default: `supervised_auto`). Verdicts: `allow`, `warn`, `block`. Fail-open on errors. Audit events: `llm_judge_block`, `llm_judge_warn`.
-- **OutputSchemaValidator** (`src/security/output-schema-validator.ts`) — minimal JSON Schema subset validator (no new runtime deps). Supports `type`, `required[]`, `properties{}`, `items{}`. Hooked into `WorkflowEngine.runStep()` — validates step output against `step.config.outputSchema`; logs `step_output_schema_violation` warning, never throws.
-- **`outputSchema` field on skills** — `BaseSkillSchema` gains `outputSchema: Record<string, unknown> | null`. Migration `055_skill_output_schema.sql` adds the `output_schema JSONB` column to `brain.skills` and `marketplace.skills`.
-- **Config schemas** — `ResponseGuardConfigSchema` and `LLMJudgeConfigSchema` added to `SecurityConfigSchema` in `packages/shared`.
-- **27 tests** in `response-guard.test.ts`, 17 in `output-schema-validator.test.ts`, 14 in `llm-judge.test.ts`, 6 new tests in `intent-manager.test.ts`.
-- **ADR 137** (`docs/adr/137-ai-safety-layer.md`) and **guide** (`docs/guides/ai-safety-layer.md`).
-
-## [2026.2.26d] — 2026-02-26
-
-### Changed
-
-- **Personality avatar default icon** — `PersonalityAvatar` and `AvatarUpload` placeholders now show a `<Bot />` icon instead of `<User />` when no avatar has been uploaded.
-
-## [2026.2.26c] — 2026-02-26
-
-### Added
-
-#### Phase 53 — Personality Avatar Upload
-
-- **Avatar upload route** (`POST /api/v1/soul/personalities/:id/avatar`) — accepts `multipart/form-data` with a single `avatar` file field. Validates MIME type (jpeg/png/gif/webp/svg+xml) and enforces a 2 MB cap via `@fastify/multipart`. Stores the file at `{dataDir}/avatars/{id}{ext}`, removing any prior file for the same personality. Updates `avatar_url` in the DB and returns the full updated personality.
-- **Avatar delete route** (`DELETE /api/v1/soul/personalities/:id/avatar`) — removes the file from disk and nulls `avatar_url`.
-- **Avatar serve route** (`GET /api/v1/soul/personalities/:id/avatar`) — streams the file with correct `Content-Type` and `Cache-Control: public, max-age=31536000`.
-- **Migration `054_personality_avatar.sql`** — `ALTER TABLE soul.personalities ADD COLUMN IF NOT EXISTS avatar_url TEXT`.
-- **`@fastify/multipart`** registered globally in the gateway with a 2 MB per-file limit.
-- **Dashboard: `AvatarUpload` component** — shown at the top of the Soul section in `PersonalityEditor` when editing an existing personality. Displays a 96×96 px circle avatar or User placeholder, an "Upload Photo" button with hidden file input, a "Remove" button when an avatar exists, and inline error messages for oversized/wrong-type files.
-- **Dashboard: `PersonalityAvatar` helper** — exported from `PersonalityEditor.tsx`; renders `<img>` with cache-busted URL or `<User />` fallback; reused in personality card headers, chat header, personality picker, and agents page.
-- **Avatar display** across the dashboard: personality list cards (PersonalityEditor), chat header + message bubbles (ChatPage), personality picker dropdown (ChatPage), agents page header (AgentsPage).
-- **`data/` directory gitignored** — runtime data including avatars, TLS certs, and vector indices should not be committed.
-- **ADR 136** (`docs/adr/136-personality-avatar-upload.md`) and **guide** (`docs/guides/personality-avatars.md`).
-- **19 tests** in `src/soul/avatar-routes.test.ts` covering all three routes, MIME validation, 404/503 error cases, filesystem assertions, and cache headers.
-
-## [2026.2.26b] — 2026-02-26
-
-### Changed
-
-#### Dashboard — Skills page
-
-- **Personal tab scoped to default agent** — `MySkillsTab` now filters to skills whose `personalityId` matches the `isDefault` personality only, hiding all other agents' skills. A scope banner at the top reads *"These skills are personal to [default agent name]. To see all installed skills across every agent, visit the Installed tab."*
-- **Installed tab — consolidated skill cards** — Skills are grouped by name before rendering; one card per unique skill replaces the previous one-card-per-personality-instance layout that produced duplicates. Each card shows a **Personalities:** chip row listing every agent the skill is installed for. Enable/disable toggles and delete buttons removed from Installed cards — those actions belong in the Personal tab per-agent context.
-- **Installed tab — removed "Global (No Personality)" filter** — The `__global__` filter option is removed from the personality dropdown since there is no dashboard path to create global skills. Filter logic simplified to a two-branch test.
-
-#### Dashboard — Tasks > Heartbeats
-
-- **Expanded log no longer scrolls** — Removed the `overflow-y-auto` / `maxHeight: 240px` scrollable wrapper from the expanded execution log panel in each `HeartbeatCard`.
-- **Paginated execution log** — The expanded log now fetches 10 entries per page with `offset`-based API pagination. A **Previous / Next** control and `X–Y of Z` label appear below the table when there are more than 10 entries. Page resets to 0 when the card is collapsed. Section header shows the total entry count (`Execution Log (N total)`).
-- **Header badge always uses latest entry** — `globalLastEntry` now always reads from the always-running `latestData` query rather than switching to `logData.entries[0]` when expanded, so the collapsed status badge stays accurate while browsing deeper log pages.
-
 ## [2026.2.26] — 2026-02-26
 
 ### Added
 
-#### Phase 53 — Risk Assessment & Reporting System
+#### Enterprise Features (Phase 61)
 
-- **`RiskAssessmentStorage`** (`src/risk-assessment/risk-assessment-storage.ts`) — `PgBaseStorage` subclass for three tables in the `risk` schema: `assessments`, `external_feeds`, `external_findings`. Supports create/list/get for assessments; CRUD + enable/disable for feeds; dedup ingest (by `source_ref` per feed) + acknowledge/resolve lifecycle for findings.
-- **`RiskAssessmentManager`** (`src/risk-assessment/risk-assessment-manager.ts`) — cross-domain risk scoring engine. Five domain scorers run in parallel: `security` (injection, sandbox violations, auth failures, secret access, audit-chain integrity — weight 30%), `autonomy` (L4/L5 items without emergency-stop, no completed audit run, open checklist items — 25%), `governance` (boundary violations, policy block rate, no active org intent — 20%), `infrastructure` (unhealthy MCP servers, disconnected integrations, untrusted A2A peers, TLS cert expiry, heartbeat errors — 15%), `external` (open critical/high/medium external findings — 10%). Composite score is a weighted average clamped to `[0, 100]`; mapped to `low / medium / high / critical` risk levels.
-- **`RiskReportGenerator`** (`src/risk-assessment/risk-assessment-report.ts`) — generates assessment reports in four formats: JSON (structured), HTML (styled, self-contained), Markdown, CSV (findings rows).
-- **Risk Assessment REST API** (`src/risk-assessment/risk-assessment-routes.ts`) at `/api/v1/risk/`: `POST /assessments` (run assessment), `GET /assessments` (list, with `status` filter), `GET /assessments/:id`, `GET /assessments/:id/report/:fmt` (download in json/html/markdown/csv). External feeds: `GET /feeds`, `POST /feeds`, `DELETE /feeds/:feedId`, `POST /feeds/:feedId/ingest`. Findings: `GET /findings` (filter by feed/status/severity), `POST /findings`, `PATCH /findings/:id/acknowledge`, `PATCH /findings/:id/resolve`.
-- **Migration `053_risk_assessment.sql`** — creates `risk` schema with `assessments`, `external_feeds`, `external_findings` tables. Stores domain scores, findings, and report bodies (JSON/HTML/Markdown/CSV) in a single row per assessment run.
-- **Auto-assessment on startup** — `secureyeoman.ts` Step 6e initialises `RiskAssessmentManager` and immediately runs a baseline full-domain `"Startup Assessment"` (non-fatal if any domain scorer fails).
-- **Dashboard: `RiskAssessmentTab.tsx`** — four sub-tabs in the Security page: **Overview** (composite score ring + per-domain score cards + recent findings table), **Assessments** (run new assessment, history list with status badges, download report in any format), **Findings** (external findings table with severity filter, acknowledge/resolve actions), **Feeds** (create/delete external feeds, ingest findings via JSON paste).
-- **Security page tab reorder** — "Risk" tab now appears before "System" in the Security page navigation.
-- Tests: `risk-assessment-manager.test.ts` (32), `risk-assessment-routes.test.ts` (30), `risk-assessment-storage.test.ts` (27) — 89 tests total.
+- **Audit Log Export** — `POST /api/v1/audit/export` streams audit entries in JSON-Lines, CSV, or syslog RFC 5424 format with no server-side buffering. Filtering by timestamp range, level, event, userId, limit (max 1M). Dashboard adds "Export" dropdown in the Audit Log sub-tab. *(ADR 141)*
+- **Backup & DR API** — `BackupManager` orchestrates `pg_dump` and `pg_restore` (non-blocking). Six REST endpoints at `/api/v1/admin/backups`: create, list, get, download, restore (requires `{ confirm: "RESTORE" }`), delete. Metadata persisted to `admin.backups` (migration 057). Dashboard adds a Backup tab to Settings. *(ADR 142)*
+- **SAML 2.0 SSO** — `SamlAdapter` wraps `node-saml` for SP-initiated SSO. New routes: `GET /api/v1/auth/sso/saml/:id/metadata` (SP metadata XML) and `POST /api/v1/auth/sso/saml/:id/acs` (ACS endpoint). Group→role mapping via `config.groupRoleMap`. Dashboard SSO form shows SAML-specific fields. *(ADR 143)*
+- **Multi-tenancy** — `auth.tenants` registry + `tenant_id DEFAULT 'default'` on all user-data tables + PostgreSQL RLS policies (migration 058). `PgBaseStorage` gains `withTenantContext` and `bypassRls` helpers. `TenantManager` CRUD with slug validation; blocks deletion of the `'default'` tenant. REST API at `/api/v1/admin/tenants`. Dashboard adds a Tenants tab (admin-only). *(ADR 144)*
 
-#### Marketplace & Community — Pagination
+#### Security Hardening (Phase 59)
 
-- **`MarketplacePage` pagination** — page size 20; Previous/Next controls shown when total exceeds one page; page resets automatically on search or origin-filter change. Count label shows total from server response.
-- **`CommunityTab` (SkillsPage) pagination** — same page-size-20 pattern applied to the Community tab; count badge reflects server total.
+- **Terminal env sanitization** — Child processes receive only a strict whitelist of safe env vars (`PATH`, `HOME`, `USER`, `LOGNAME`, `LANG`, `LC_ALL`, `LC_CTYPE`, `TERM`, `SHELL`, `TMPDIR`, `TZ`, `XDG_RUNTIME_DIR`). Previously all of `process.env` was spread, leaking every secret to spawned shells.
+- **PostgreSQL SSL verification** — `rejectUnauthorized` defaults to `true`. Opt-out via `DATABASE_SSL_REJECT_UNAUTHORIZED=false`; custom CA via `DATABASE_CA` (PEM). Production throws on missing DB password rather than silently using the dev default.
+- **Content-Security-Policy** — CSP header added to all API responses. HSTS max-age bumped to 2 years with `preload`.
+- **Auth rate limiting** — Login uses `auth_attempts` (5/15 min per IP), token refresh uses `auth_refresh` (10/min), password reset uses `auth_reset_password` (3/hr). All 429 responses include `Retry-After`.
+- **Token refresh race condition fix** — Changed to `.finally()` so `_isRefreshing` and `_refreshPromise` are cleared unconditionally even if `attemptTokenRefresh()` throws.
+- **Health check split** — `/health` split into three Kubernetes probes: `GET /health/live` (liveness, no I/O), `GET /health/ready` (real DB ping, 503 on failure), `GET /health/deep` (full diagnostics). `/health` retained as backward-compat alias. *(ADR 140)*
+- **Dashboard request timeouts** — `AbortSignal.timeout()` added to all `fetch()` calls: 30 s for main requests, 10 s for token refresh.
+
+#### Security Toolkit Completion (Phase 58)
+
+- **Structured output normalization** — `sec_nmap`, `sec_sqlmap`, `sec_nuclei`, `sec_gobuster` append a `---JSON---` machine-parseable envelope `{ tool, target, command, parsed, exit_code }` for agent chaining. Parsers: `parseNmapXml`, `parseSqlmapOutput`, `parseNucleiJsonl`, `parseGobusterOutput`.
+- **Scope Manifest UI** — New Security → Scope tab (`ScopeManifestTab`). Manage `allowedTargets` and toggle security tools from the dashboard. Wildcard `*` requires explicit checkbox acknowledgement.
+- **`sec_hydra`** — Live credential brute-force tool. Requires both `MCP_EXPOSE_SECURITY_TOOLS=true` **and** `MCP_ALLOW_BRUTE_FORCE=true`. Supports ssh, ftp, telnet, http-get/post-form, mysql, postgres, rdp, smb, smtp. `parseHydraOutput` extracts found credentials.
+- **Security Toolkit Prebuilt Image** — `Dockerfile.security-toolkit` at repo root. 16th entry in Connections → Prebuilts: `ghcr.io/secureyeoman/mcp-security-toolkit:latest`.
+
+#### AI Safety Layer (Phase 54)
+
+- **`ResponseGuard`** — Output-side injection scanner with six pattern types: `instruction_injection_output`, `cross_turn_influence`, `self_escalation`, `role_confusion`, `base64_exfiltration`, `hex_exfiltration`. Modes: `block`, `warn` (default), `disabled`. *(ADR 137)*
+- **OPA Output Compliance** — `IntentManager.checkOutputCompliance()` evaluates the active `output_compliance/allow` OPA policy against hard boundaries. Non-compliant responses log `output_compliance_warning`, never block.
+- **LLM-as-Judge** — Secondary LLM review for high-autonomy tool calls. Triggers when `automationLevel` matches the configured list. Verdicts: `allow`, `warn`, `block`. Fail-open on errors.
+- **`OutputSchemaValidator`** — Minimal JSON Schema subset validator hooked into `WorkflowEngine.runStep()`. Validates step output against `step.config.outputSchema`; logs `step_output_schema_violation` warning, never throws.
+
+#### Risk Assessment & Reporting (Phase 53)
+
+- **`RiskAssessmentManager`** — Five domain scorers (security 30%, autonomy 25%, governance 20%, infrastructure 15%, external 10%) produce a composite `[0–100]` score mapped to `low / medium / high / critical`.
+- **`RiskReportGenerator`** — Generates reports in JSON, HTML, Markdown, and CSV formats.
+- **REST API at `/api/v1/risk/`** — Endpoints for assessments, external feeds, and findings lifecycle (acknowledge/resolve). Auto-assessment runs at startup.
+- **Dashboard: `RiskAssessmentTab`** — Four sub-tabs in Security: Overview, Assessments, Findings, Feeds.
+
+#### Audio Quality (Phase 58)
+
+- **Streaming TTS binary route** — `POST /api/v1/multimodal/audio/speak/stream` returns raw binary audio with `Content-Type`, `Content-Length`, and `X-Duration-Ms` headers. No base64 roundtrip for OpenAI.
+- **Audio validation before STT** — `validateAudioBuffer()` rejects buffers under 1 KB. WAV format additionally checks RIFF header, duration (2–30 s), RMS (`audio_too_quiet`), and peak (`audio_clipped`). Returns HTTP 422 with descriptive error code.
+- **Whisper model selection** — `MultimodalManager.resolveSTTModel()` resolves via `WHISPER_MODEL` env → DB pref → config default. `PATCH /api/v1/multimodal/model` route persists selection. Dashboard STT provider card shows a model selector. *(ADR 139)*
+
+#### Notifications & Integrations (Phase 55)
+
+- **Real external dispatch** — `executeNotifyAction()` calls running integration adapters for `slack`, `telegram`, `discord`, and `email`. `integrationId` in notify config targets a specific integration; omit for all running adapters on the platform. Audit events: `notification_dispatched` and `notification_dispatch_failed`. *(ADR 138)*
+- **Per-user notification preferences** — `auth.user_notification_prefs` table (migration 056). `UserNotificationPrefsStorage` with full CRUD + upsert. Routes at `GET/POST/PUT/DELETE /api/v1/users/me/notification-prefs`.
+- **Fan-out with quiet hours** — `NotificationManager._fanout()` honours `minLevel` and UTC quiet hours (overnight wrap-around). Settings → Notifications tab with `NotificationPrefsPanel`.
+- **Notification retention** — `NotificationStorage.deleteOlderThan()`. `NotificationManager.startCleanupJob(retentionDays?)` fires immediately and repeats daily.
+
+#### Dashboard
+
+- **Mission Control** — Replaces the old "Overview" tab as the default landing view. Multi-panel command-center grid: KPI stat bar (6 cards), system topology + health + quick-actions, live feeds (active tasks, security events, agent health), resource monitoring + integration grid, audit stream + workflow runs. Sidebar nav item renamed "Mission Control" (`LayoutDashboard` icon).
+- **Advanced Editor Mode** — New `AdvancedEditorPage`: terminal-first layout with `MultiTerminal` (flex-3), inline chat panel below (flex-2), and a 224 px sidebar for sessions + tasks. Personality pre-selection, model selector, Watch toggle (vision-gated), memory toggle, inline chat with personality context. `allowAdvancedEditor` security policy flag controls access.
+- **Code Editor policy toggle** — `allowCodeEditor` flag added to `SecurityConfigSchema`. When `false`, the Editor sidebar link is hidden and the Advanced Editor toggle is greyed out.
+- **Multi-Theme System** — 18 named themes (dark, light, enterprise variants) via `data-theme` CSS variable overrides. `useTheme` hook (`ThemeId`, `isDark`, `setTheme`). Floating theme picker in Sidebar profile menu. Appearance tab in Settings with grouped theme cards and 3-dot swatches. *(Phase 60)*
+- **5-step Onboarding Wizard** — `personality` → `api-keys` (one-time copy banner) → `security` (5 policy toggles, updates only if dirty) → `model` → `done`. *(ADR 145)*
+- **Personality Avatars** — Upload, delete, and serve endpoints (`POST/DELETE/GET /api/v1/soul/personalities/:id/avatar`). 2 MB cap, MIME validation. `PersonalityAvatar` component reused in personality cards, chat header, message bubbles, and agents page. *(ADR 136)*
+- **OpenTasks live view** — `TaskHistory` renamed `OpenTasks`. Shows active tasks (`pending` + `running`) only. Date range, pagination, and export removed from the live view; export is available in Security → Automations → Tasks.
+- **Automation consolidation** — Single `/automation` route with Tasks | Workflows pill tabs. Old `/tasks` and `/workflows` routes redirect there. Heartbeats extracted to `HeartbeatsView` and promoted as the default subview in Security → Automations.
+- **Marketplace origin filter tabs** — All / Marketplace / Community tabs in `MarketplacePage`. Community skills show a "Community" badge. Pagination added (page size 20).
+
+#### CLI
+
+- **`secureyeoman init` 5-step wizard** — Mirrors the dashboard onboarding: Personality → API Keys → Security (5 policy toggles) → Model → Done. `--env-only` runs a 2-step flow; `--non-interactive` uses all defaults.
+
+#### Accessibility & Observability *(ADR 145)*
+
+- **Accessibility audit** — `eslint-plugin-jsx-a11y` at warn-only. Global `:focus-visible` ring. 44 px minimum touch targets (`@media (pointer: coarse)`). `vitest-axe` smoke tests for `SecurityPage`, `McpPrebuilts`, `SettingsPage`, and `OnboardingWizard`.
+- **Correlation IDs** — `utils/correlation-context.ts` (AsyncLocalStorage). Every HTTP request gets a UUIDv7 correlation ID (or echoes `X-Correlation-ID`). `AuditChain._doRecord()` auto-enriches `entry.correlationId` from ALS. Heartbeat beat cycles each get their own correlation ID. `X-Correlation-ID` returned in all responses.
+
+#### Skills & Marketplace (Phase 52)
+
+- **One Skill Schema** — `BaseSkillSchema` extracted in `packages/shared/src/types/soul.ts`; shared by `SkillSchema` (brain) and `CatalogSkillSchema` (catalog). `origin: 'marketplace' | 'community'` derived from `source`, not stored in DB. `mcpToolsAllowed` now survives the full lifecycle: community JSON → `marketplace.skills` → `brain.skills` → inference prompt. *(ADR 135)*
+- **Vector Memory multi-personality scoping** — `queryMemoriesByRRF` and `queryKnowledgeByRRF` accept `personalityId?` for scoped recall. Vector search in `brain/vector/manager.ts` passes personality context. `VectorMemoryExplorerPage` personality dropdown and per-row badges. *(ADR 134)*
+- **Routing quality schema** — `MarketplaceSkillSchema` gains `useWhen`, `doNotUseWhen`, `successCriteria`, `routing`, and `autonomyLevel` (migrations 049, 050). All 6 builtin marketplace skills populated with meaningful routing metadata.
 
 ### Fixed
 
-- **Storybook CSP framing blocked** — `dashboard/index.html` CSP meta tag now includes an explicit `frame-src http://localhost:6006 https://localhost:6006;` directive so the Storybook iframe is no longer blocked by the `default-src 'self'` fallback. Also added `wss://` and `https://` variants to `connect-src` so WebSocket and API connections work correctly when TLS is enabled. `StorybookPage.tsx` now reads the iframe/link URL from `VITE_STORYBOOK_URL` env var (fallback: `http://localhost:6006`) — set to `https://localhost:6006` when running Storybook behind a TLS proxy. Two new tests added to `StorybookPage.test.tsx` covering custom `VITE_STORYBOOK_URL` values.
-- **MCP filesystem tools non-functional in dev** — `MCP_EXPOSE_FILESYSTEM=true` and `MCP_ALLOWED_PATHS=/home/secureyeoman/.secureyeoman/workspace` are now set in `.env.dev`. The `mcp` service in `docker-compose.yml` now mounts the `data` named volume so the container can access the workspace directory. `.env.dev.example` documents `MCP_ALLOWED_PATHS` as a commented-out example.
-
-- **Vector memory recall now scopes to the active personality** — personalities no longer share each other's semantic search results.
-- **`seedBaseKnowledge` now seeds `self-identity` per-personality** with the correct name (e.g., "I am T.Ron" for T.Ron, "I am FRIDAY" for FRIDAY), removing the legacy global "I am F.R.I.D.A.Y." entry that all personalities incorrectly inherited.
-- **Legacy global self-identity knowledge entries** created before Phase 52 are automatically migrated to per-personality scoped entries on startup.
-- **Heartbeat tasks agent name** — `HeartbeatCard` now receives the global `personalityMap` fetched from `GET /api/v1/soul/personalities` and merges it with the task-local list, so log entry agent cells display personality names instead of raw UUIDs.
-- **`empathyResonance` missing from default personality objects** — Added `empathyResonance: false` to the inline `PersonalityCreate` objects in `creation-tool-executor.ts`, `manager.ts`, `presets.ts` (×2), and `soul-routes.ts` so `npm run build` succeeds after migration `048` added the required field.
-- **CPU usage always 0%** — `SecureYeoman.getMetrics()` now uses a rolling `process.cpuUsage()` delta sampler. Private fields `_lastCpuUsage` and `_lastCpuSampleAt` track the previous snapshot; each call computes `(userDelta + systemDelta µs) / elapsedMs / 10` → percentage. Value is clamped to `[0, 100]`.
-- **Heartbeat Tasks same stats across agents** — `HeartbeatCard` now fetches up to 20 recent log entries and builds a `latestByPersonality` map (first entry per `personalityId`). The collapsed header renders a per-personality row showing each agent's name + its own most-recent status badge, so FRIDAY and T.Ron (or any multi-agent task) display independent statuses side by side.
+- **Audit chain JSONB key ordering** — `computeEntryHash` now uses a deep-sorted `sortedKeysReplacer` consistent with PostgreSQL's alphabetical JSONB key storage, preventing hash mismatches on every entry with out-of-order metadata keys. `POST /api/v1/audit/repair` re-signs the entire chain. `getStats()` returns `chainError` and `chainBrokenAt` for dashboard display.
+- **Audit chain mid-chain break not caught by `repairOnInit`** — `initialize()` with `repairOnInit: true` now runs a full `verify()` pass instead of single-entry check, catching mid-chain breaks where the last entry happens to be valid.
+- **Audit chain concurrent-write lock** — `repair()` now runs through `_recordQueue` to prevent races with in-flight `record()` calls. `createSnapshot()` awaits the queue tail before reading `this.lastHash`.
+- **Audit list double round-trip** — `queryEntries` and `searchFullText` merged into a single query using `COUNT(*) OVER() AS total_count`.
+- **Security policy toggles** — `allowCodeEditor` and `allowAdvancedEditor` were missing from `GET /api/v1/security/policy` response, PATCH body type, `updateSecurityPolicy()`, and PATCH return. Both flags now persist correctly.
+- **Vector memory recall scoped to active personality** — personalities no longer share each other's semantic search results.
+- **`seedBaseKnowledge` per-personality self-identity** — Seeds "I am T.Ron" for T.Ron, "I am FRIDAY" for FRIDAY; removes the legacy global entry all personalities incorrectly shared. Legacy global entries auto-migrate on startup.
+- **Storybook CSP framing** — `dashboard/index.html` CSP meta tag includes explicit `frame-src` directive. `StorybookPage` reads iframe URL from `VITE_STORYBOOK_URL` env var.
 
 ### Changed
 
-- **`btn btn-primary` → `btn btn-ghost`** — All 78 occurrences across 25 dashboard `.tsx` files updated for visual consistency and multi-theme readiness.
-- **Tailwind config — CSS variable theming** — All colour tokens (`primary`, `secondary`, `muted`, `accent`, `destructive`, `success`, `warning`, `info`, `error`, `background`, `foreground`, `border`, `input`, `ring`, `card`, `popover`) now use `hsl(var(--X) / <alpha-value>)` format, enabling opacity utilities (`bg-primary/10`) and `peer-checked:` variants to respond to CSS variable theme switches. Old hardcoded shades (`primary-50` … `primary-950`) removed — no usages existed.
-- **`peer-checked:bg-green-500` → `peer-checked:bg-success`** — 4 instances in `PersonalityEditor.tsx` updated to use the theme-aware token.
-- **Dark mode semantic colours** — Added `--success`, `--warning`, `--info` CSS variable overrides to `.dark` block in `index.css`.
-- **PersonalityEditor — ontological restructure**
-  - Org Intent card: removed redundant outer `<div className="border-b pb-3 mb-3">` wrapper.
-  - Added `Globe` icon to Omnipresent Mind toggle, `Clock` icon to Chronoception toggle.
-  - Active Hours moved to immediately after the Thinking section.
-  - Prompt Budget consolidated inside the Thinking `CollapsibleSection`.
-  - External KB renamed to "External Brain Sync" and relocated as the last item in the Brain-Intellect section.
-- **PersonalityEditor — Brain section toggle polish** — Omnipresent Mind and Chronoception toggle rows changed from `border-b pb-3 mb-3` separator style to `rounded-lg border border-border p-3` card style for visual consistency. Extended Thinking and Prompt Budget toggles converted from native checkbox to pill-style toggle (matching all other toggles in the editor). Fixed `CollapsibleSection` indentation for the Extended Thinking block.
-- **Task History — agent name resolution** — `TaskRow` now resolves `personalityName` from a global `fetchPersonalities` query map, falling back to the UUID only when the personality is unknown. Added "Agent ID" column (hidden on `< xl` viewports) showing the truncated UUID with full value on hover.
-- **Workspaces `+ New Workspace` button** — Changed to `btn btn-ghost` to match the Users page pattern.
-- **Roadmap** — Sidebar Reorganization updated to show Intent promoted to top-level nav item.
+- **Tailwind CSS variable theming** — All colour tokens use `hsl(var(--X) / <alpha-value>)` format, enabling opacity utilities (`bg-primary/10`) and `peer-checked:` variants to respond to CSS variable theme switches.
+- **`PersonalityEditor` ontological restructure** — Spirit / Brain / Body / Soul sections reorganised. Active Hours promoted after the Thinking section. Omnipresent Mind and Chronoception toggle rows use card style. Extended Thinking and Prompt Budget converted to pill-style toggles.
+- **Task column order standardised** — Agent | ID | Name | Sub-Agent | Type | Status | Duration | Created in both `OpenTasks` and Security → Automations → Tasks. Sub-Agent column shows `↳ <parentTaskId[0..8]>…` badge for child tasks.
+- **`btn btn-primary` → `btn btn-ghost`** across all 78 occurrences in 25 dashboard files for visual consistency and multi-theme readiness.
 
-### Added
-
-#### Phase 52 — Vector Memory Multi-Personality Scoping
-
-- **Vector Memory Explorer personality filter** — Personality dropdown at the top of `VectorMemoryExplorerPage` — select any personality or "All Personalities" to browse memories and knowledge.
-- **Per-row personality badge** — In "All Personalities" view, each memory/knowledge row shows which personality it belongs to (or "Global").
-- **Semantic search personality scope** — Semantic search in Vector Memory Explorer also respects the selected personality scope.
-- **`/brain/search/similar` `personalityId` param** — `/brain/search/similar` API endpoint now accepts `personalityId` query parameter to scope vector similarity results.
-- **Vector Memory first tab in Agents** — Vector Memory is now the first/default tab in the Agents page; tab order: Vector Memory → Web → Multimodal → Swarm → A2A Network.
-- **`seedBaseKnowledge()` personalities array** — `seedBaseKnowledge()` accepts a `personalities` array and is called at every startup (not just onboarding) — new personalities added after first run get their self-identity seeded on next restart.
-- ADR 134 (`docs/adr/134-vector-memory-multi-personality.md`).
-
-#### Phase 52 — One Skill Schema: CatalogSkillSchema + BaseSkillSchema Unification (ADR 135)
-
-- **`BaseSkillSchema`** extracted from `SkillSchema` in `packages/shared/src/types/soul.ts` — owns all fields shared between the catalog and brain layers: `id`, `name`, `description`, `instructions`, `tools`, `triggerPatterns`, `useWhen`, `doNotUseWhen`, `successCriteria`, `mcpToolsAllowed`, `routing`, `autonomyLevel`, `updatedAt`. Both `SkillSchema` and `CatalogSkillSchema` extend it.
-- **`CatalogSkillSchema`** (new canonical name) in `packages/shared/src/types/marketplace.ts` — extends `BaseSkillSchema` with catalog-distribution fields: `version`, `author`, `authorInfo`, `category`, `tags`, `downloadCount`, `rating`, `installed`, `source`, `origin`, `publishedAt`. `MarketplaceSkillSchema` and `MarketplaceSkill` are retained as backward-compat aliases.
-- **`origin: 'marketplace' | 'community'`** — derived field on `CatalogSkillSchema`. Set by `rowToSkill()` from `source` (`'community'` → `'community'`, `'builtin'`/`'published'` → `'marketplace'`). Not stored as a DB column. Replaces scattered `skill.source === 'community'` checks throughout `manager.ts`.
-- **`mcpToolsAllowed` now survives the full lifecycle** — community JSON → `marketplace.skills` → `brain.skills` → inference prompt. Previously dropped silently at every boundary.
-- **Migration `051_marketplace_mcp_tools_allowed.sql`** — adds `mcp_tools_allowed JSONB NOT NULL DEFAULT '[]'` to `marketplace.skills`.
-- **Migration `052_brain_skills_mcp_tools_allowed.sql`** — adds the same column to `brain.skills` (separate migration to handle environments where 051 was already applied before the brain column was identified as missing).
-- **`brain/storage.ts`** — `SkillRow` interface gains `mcp_tools_allowed?`; `rowToSkill`, `createSkill`, `updateSkill` all read/write the new column.
-- **`MarketplaceManager.install()`** — uses `skill.origin` for `brainSource`; passes `mcpToolsAllowed` to `SkillCreateSchema`.
-- **`MarketplaceManager.uninstall()`** — uses `skill.origin` for `brainSource`.
-- **`marketplace-routes.ts`** — accepts `origin` query param; translates to `source != 'community'` (marketplace) or `source = 'community'` (community) for storage layer.
-- **Dashboard: Marketplace origin filter tabs** — `MarketplacePage.tsx` gains **All / Marketplace / Community** tabs. Community skills display a `Community` badge on their card.
-- **Dashboard: Skills Manager community label** — `SOURCE_LABELS` in `SkillsManager.tsx` gains `community: 'Community'`.
-- **Community skill JSON cleanup** — `emoji-mood-detector.json` stripped of brain-runtime-only fields (`source`, `status`, `personalityId`, `actions`, `triggers`, `dependencies`, `provides`, `requireApproval`, `allowedPermissions`, `enabled`); `autonomyLevel: "L1"` added.
-- **Community JSON schema** (`skill.schema.json`) — `autonomyLevel` property added (enum L1–L5, default L1).
-- **Tests**: 10 new tests across `marketplace.test.ts` (integration), `manager.test.ts`, `storage.test.ts`, `marketplace-routes.test.ts`; pre-existing `seedBuiltinSkills` SELECT assertion fixed.
-- **Docs**: ADR 135 (`docs/adr/135-one-skill-schema-catalog-unification.md`), guide (`docs/guides/skill-catalog.md`).
-
-#### Marketplace — Routing Quality Schema Alignment
-
-- **`MarketplaceSkillSchema`** gains five Phase 44/49 fields: `useWhen`, `doNotUseWhen`, `successCriteria`, `routing` (`fuzzy | explicit`, default `fuzzy`), `autonomyLevel` (`L1`–`L5`, default `L1`).
-- **Migration `049_marketplace_routing_quality.sql`** — adds the five columns to `marketplace.skills` with appropriate defaults.
-- **Migration `050_brain_skills_routing_quality.sql`** — adds the same five columns to `brain.skills` so installed skills persist routing metadata.
-- **All 6 builtin marketplace skills** populated with meaningful `useWhen`, `doNotUseWhen`, `successCriteria`, `routing`, and `autonomyLevel` values.
-- **`MarketplaceStorage.addSkill` / `updateSkill` / `rowToSkill`** — read/write the five new columns.
-- **`MarketplaceStorage.seedBuiltinSkills`** — changed from insert-only to upsert so re-deploys propagate updated routing fields to existing rows.
-- **`MarketplaceManager.install()`** — passes all five routing quality fields through to `SkillCreateSchema` when creating the brain skill, ensuring installed marketplace skills carry their routing metadata.
-- **`MarketplaceManager.syncFromCommunity()`** — parses `useWhen`, `doNotUseWhen`, `successCriteria`, `routing`, and `autonomyLevel` from community JSON files (format parity with builtin skills).
-- Tests: 4 new tests covering builtin skill routing fields, upsert re-seed, community JSON propagation, and install→brain carry-through (marketplace.test.ts).
+---
 
 ## [2026.2.25] — 2026-02-25
 

@@ -5,6 +5,8 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
+import { statSync } from 'node:fs';
+import { resolve as resolvePath } from 'node:path';
 import { getLogger, type SecureLogger } from '../logging/logger.js';
 import { sendError } from '../utils/errors.js';
 
@@ -131,6 +133,81 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
           'Working directory is not allowed. Must be within project directory or standard system paths.'
         );
       }
+
+      // ── cd interception ────────────────────────────────────────────────────
+      // Each execAsync call runs in an isolated subprocess, so `cd` has no
+      // persistent effect.  We resolve the path ourselves and return the new
+      // cwd without spawning a child process.
+      const cdMatch = /^\s*cd(?:\s+(.*?))?\s*$/.exec(command);
+      if (cdMatch) {
+        const arg = cdMatch[1]?.trim() ?? '';
+
+        if (arg === '-') {
+          // cd - requires OLDPWD which we don't track
+          return {
+            output: '',
+            error: 'cd: OLDPWD not set (stateless terminal)',
+            exitCode: 1,
+            cwd: workingDir,
+          } satisfies ExecuteCommandResponse;
+        }
+
+        // Expand ~ prefix
+        const expanded =
+          !arg || arg === '~'
+            ? (process.env.HOME ?? '/tmp')
+            : arg.startsWith('~/')
+              ? (process.env.HOME ?? '/tmp') + arg.slice(1)
+              : arg;
+
+        const target = resolvePath(workingDir, expanded);
+
+        // Apply the same security checks to the target directory
+        if (
+          SENSITIVE_PATH_PREFIXES.some((p) => target === p || target.startsWith(p + '/'))
+        ) {
+          return {
+            output: '',
+            error: `cd: ${target}: Permission denied`,
+            exitCode: 1,
+            cwd: workingDir,
+          } satisfies ExecuteCommandResponse;
+        }
+
+        const targetAllowed =
+          allowedPrefixes.some(
+            (prefix) => target === prefix || target.startsWith(prefix + '/')
+          ) || target.startsWith(process.cwd() + '/');
+
+        if (!targetAllowed) {
+          return {
+            output: '',
+            error: `cd: ${target}: Permission denied`,
+            exitCode: 1,
+            cwd: workingDir,
+          } satisfies ExecuteCommandResponse;
+        }
+
+        // Verify the target actually exists and is a directory
+        let isDir = false;
+        try {
+          isDir = statSync(target).isDirectory();
+        } catch {
+          isDir = false;
+        }
+        if (!isDir) {
+          return {
+            output: '',
+            error: `cd: ${target}: No such file or directory`,
+            exitCode: 1,
+            cwd: workingDir,
+          } satisfies ExecuteCommandResponse;
+        }
+
+        logger.debug('cd resolved', { from: workingDir, to: target });
+        return { output: '', error: '', exitCode: 0, cwd: target } satisfies ExecuteCommandResponse;
+      }
+      // ───────────────────────────────────────────────────────────────────────
 
       try {
         logger.debug('Executing terminal command', { command, cwd: workingDir });

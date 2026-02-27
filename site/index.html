@@ -86,7 +86,7 @@
       <!-- Release badge — centered across full page width, above columns -->
       <div class="hero-badge">
         <span class="badge-dot"></span>
-        <span>v2026.2.25 Now Available</span>
+        <span>v2026.2.26 Now Available</span>
         <a
           href="https://github.com/MacCracken/secureyeoman/releases"
           target="_blank"
@@ -257,10 +257,10 @@
               with optional OPA sidecar integration.
             </p>
             <ul class="feature-list">
-              <li>RBAC + SSO/OIDC (Okta, Azure AD, Auth0)</li>
+              <li>RBAC + SSO/OIDC + SAML 2.0 (Okta, Azure AD, Auth0)</li>
+              <li>Multi-tenancy with PostgreSQL RLS isolation</li>
               <li>Vault / OpenBao secrets backend</li>
               <li>Five sandboxing modes</li>
-              <li>18-pattern credential redaction on every response</li>
               <li>Organizational Intent — hard boundaries &amp; OPA policies</li>
             </ul>
           </div>
@@ -280,10 +280,10 @@
             </p>
             <ul class="feature-list">
               <li>Cryptographic integrity (HMAC-SHA256)</li>
-              <li>Prometheus + Grafana dashboards</li>
-              <li>Risk Assessment — composite 0–100 score</li>
-              <li>JSON / HTML / Markdown / CSV export</li>
-              <li>Immutable, tamper-evident logs</li>
+              <li>Streaming audit export — JSON-Lines, CSV, syslog RFC 5424</li>
+              <li>Backup &amp; DR — pg_dump/restore with 6 REST endpoints</li>
+              <li>Risk Assessment — composite 0–100 score across 5 domains</li>
+              <li>Immutable, tamper-evident logs + Prometheus metrics</li>
             </ul>
           </div>
 

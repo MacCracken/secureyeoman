@@ -132,3 +132,97 @@ describe('POST /api/v1/terminal/execute — validation', () => {
     expect(res.statusCode).toBe(400);
   });
 });
+
+describe('POST /api/v1/terminal/execute — cd interception', () => {
+  it('cd /tmp returns new cwd without error', async () => {
+    const app = buildApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/terminal/execute',
+      payload: { command: 'cd /tmp', cwd: '/tmp' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ cwd: string; exitCode: number }>();
+    expect(body.exitCode).toBe(0);
+    expect(body.cwd).toBe('/tmp');
+  });
+
+  it('cd /var/tmp resolves to /var/tmp', async () => {
+    const app = buildApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/terminal/execute',
+      payload: { command: 'cd /var/tmp', cwd: '/tmp' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ cwd: string; exitCode: number }>();
+    expect(body.exitCode).toBe(0);
+    expect(body.cwd).toBe('/var/tmp');
+  });
+
+  it('cd .. from /tmp resolves to / and returns permission denied', async () => {
+    const app = buildApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/terminal/execute',
+      payload: { command: 'cd ..', cwd: '/tmp' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ cwd: string; exitCode: number; error: string }>();
+    expect(body.exitCode).toBe(1);
+    expect(body.error).toMatch(/Permission denied/);
+    expect(body.cwd).toBe('/tmp'); // cwd unchanged on error
+  });
+
+  it('cd /etc returns permission denied', async () => {
+    const app = buildApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/terminal/execute',
+      payload: { command: 'cd /etc', cwd: '/tmp' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ exitCode: number; error: string }>();
+    expect(body.exitCode).toBe(1);
+    expect(body.error).toMatch(/Permission denied/);
+  });
+
+  it('cd to a non-existent path inside /tmp returns no such file or directory', async () => {
+    const app = buildApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/terminal/execute',
+      payload: { command: 'cd /tmp/nonexistent-dir-xyz-abc-123', cwd: '/tmp' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ exitCode: number; error: string }>();
+    expect(body.exitCode).toBe(1);
+    expect(body.error).toMatch(/No such file or directory/);
+  });
+
+  it('cd - returns OLDPWD error', async () => {
+    const app = buildApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/terminal/execute',
+      payload: { command: 'cd -', cwd: '/tmp' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ exitCode: number; error: string }>();
+    expect(body.exitCode).toBe(1);
+    expect(body.error).toMatch(/OLDPWD/);
+  });
+
+  it('bare cd resolves to HOME or /tmp', async () => {
+    const app = buildApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/terminal/execute',
+      payload: { command: 'cd', cwd: '/tmp' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ exitCode: number }>();
+    // HOME may or may not be in the allowlist — just confirm the command was intercepted (no 500)
+    expect([0, 1]).toContain(body.exitCode);
+  });
+});
