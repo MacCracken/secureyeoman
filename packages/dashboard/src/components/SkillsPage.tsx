@@ -1477,11 +1477,17 @@ function PersonalitySelector({
         >
           {!required && <option value="">Global (All Personalities)</option>}
           {required && <option value="">— Select a personality —</option>}
-          {personalities.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name} {p.isActive ? '(Active)' : ''}
-            </option>
-          ))}
+          {[...personalities]
+            .sort((a, b) => {
+              if (a.isActive && !b.isActive) return -1;
+              if (!a.isActive && b.isActive) return 1;
+              return a.name.localeCompare(b.name);
+            })
+            .map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} {p.isActive ? '(Active)' : ''}
+              </option>
+            ))}
         </select>
         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
           <svg
@@ -1507,6 +1513,7 @@ function MarketplaceTab() {
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [uninstallingId, setUninstallingId] = useState<string | null>(null);
   const [previewSkill, setPreviewSkill] = useState<CatalogSkill | null>(null);
+  const personalityInitialized = useRef(false);
 
   const { data: personalitiesData } = useQuery({
     queryKey: ['personalities'],
@@ -1516,17 +1523,19 @@ function MarketplaceTab() {
   const personalities = personalitiesData?.personalities ?? [];
   const activePersonality = personalities.find((p) => p.isActive);
 
-  // Set selected personality to active personality once loaded (only on first load)
+  // Pre-select the active personality once — user can then switch to Global or any other
   useEffect(() => {
-    if (activePersonality && !selectedPersonalityId) {
+    if (activePersonality && !personalityInitialized.current) {
+      personalityInitialized.current = true;
       setSelectedPersonalityId(activePersonality.id);
     }
-  }, [activePersonality, selectedPersonalityId]);
+  }, [activePersonality]);
 
-  // Fetch all non-community skills — keyed on personalityId so install state refreshes when selection changes
+  // Fetch marketplace (builtin + published) skills — exclude community via origin filter
   const { data, isLoading } = useQuery({
     queryKey: ['marketplace', query, selectedPersonalityId],
-    queryFn: () => fetchMarketplaceSkills(query || undefined, undefined, selectedPersonalityId),
+    queryFn: () =>
+      fetchMarketplaceSkills(query || undefined, undefined, selectedPersonalityId, 'marketplace', 200),
   });
 
   const invalidate = () => {
@@ -1699,7 +1708,7 @@ function CommunityTab() {
   const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
   const [selectedPersonalityId, setSelectedPersonalityId] = useState<string>('');
-  const [hasInitialized, setHasInitialized] = useState(false);
+  const personalityInitialized = useRef(false);
   const [page, setPage] = useState(0);
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [uninstallingId, setUninstallingId] = useState<string | null>(null);
@@ -1723,7 +1732,6 @@ function CommunityTab() {
         COMMUNITY_PAGE_SIZE,
         page * COMMUNITY_PAGE_SIZE
       ),
-    enabled: hasInitialized,
   });
 
   const { data: statusData } = useQuery({
@@ -1739,13 +1747,13 @@ function CommunityTab() {
   const personalities = personalitiesData?.personalities ?? [];
   const activePersonality = personalities.find((p) => p.isActive);
 
-  // Default to active personality — community installs are always per-personality
+  // Pre-select the active personality once — user can then switch to Global or any other
   useEffect(() => {
-    if (activePersonality && !hasInitialized) {
+    if (activePersonality && !personalityInitialized.current) {
+      personalityInitialized.current = true;
       setSelectedPersonalityId(activePersonality.id);
-      setHasInitialized(true);
     }
-  }, [activePersonality, hasInitialized]);
+  }, [activePersonality]);
 
   // Reset to first page when search or personality filter changes
   useEffect(() => {
@@ -1838,12 +1846,10 @@ function CommunityTab() {
             />
           </div>
 
-          {/* Per-personality required */}
           <PersonalitySelector
             personalities={personalities}
             value={selectedPersonalityId}
             onChange={setSelectedPersonalityId}
-            required
           />
 
           {/* Sync button */}

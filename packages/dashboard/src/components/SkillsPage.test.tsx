@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { SkillsPage } from './SkillsPage';
@@ -238,6 +239,131 @@ describe('SkillsPage', () => {
 
     // Component message: 'Only .json files are accepted...'
     expect(await screen.findByText(/only \.json files/i)).toBeInTheDocument();
+  });
+
+  it('Marketplace tab calls fetchMarketplaceSkills with origin=marketplace and limit=200', async () => {
+    mockFetchMarketplaceSkills.mockResolvedValue({ skills: [], total: 0 });
+    renderComponent(['/skills/marketplace']);
+
+    await waitFor(() => {
+      expect(mockFetchMarketplaceSkills).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+        expect.any(String), // personalityId
+        'marketplace',
+        200
+      );
+    });
+  });
+
+  it('Marketplace tab shows builtin skills returned by API', async () => {
+    const builtinSkill = {
+      id: 'b1',
+      name: 'Summarize Text',
+      description: 'Summarizes content',
+      version: '1.0.0',
+      author: 'YEOMAN',
+      category: 'productivity',
+      tags: [],
+      downloadCount: 0,
+      rating: 0,
+      instructions: 'Summarize things',
+      tools: [],
+      triggerPatterns: [],
+      useWhen: '',
+      doNotUseWhen: '',
+      successCriteria: '',
+      mcpToolsAllowed: [],
+      routing: 'fuzzy' as const,
+      autonomyLevel: 'L1' as const,
+      outputSchema: null,
+      installed: false,
+      installedGlobally: false,
+      source: 'builtin' as const,
+      origin: 'marketplace' as const,
+      publishedAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    mockFetchMarketplaceSkills.mockResolvedValue({ skills: [builtinSkill], total: 1 });
+    renderComponent(['/skills/marketplace']);
+
+    await waitFor(() => {
+      expect(screen.getByText('Summarize Text')).toBeInTheDocument();
+      expect(screen.getByText('YEOMAN Built-ins')).toBeInTheDocument();
+    });
+  });
+
+  it('Marketplace tab personality selector includes Global (All Personalities) option', async () => {
+    renderComponent(['/skills/marketplace']);
+
+    // Wait for personality selector to render
+    await waitFor(() => {
+      expect(screen.getByText('Install to:')).toBeInTheDocument();
+    });
+    const select = screen.getByRole('combobox');
+    const options = Array.from(select.querySelectorAll('option')).map((o) => o.textContent);
+    expect(options).toContain('Global (All Personalities)');
+  });
+
+  it('Marketplace tab Global selection is not overridden by active personality', async () => {
+    const user = userEvent.setup();
+    renderComponent(['/skills/marketplace']);
+
+    // Wait for personality selector — active personality is pre-selected
+    await waitFor(() => {
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+    });
+
+    const select = screen.getByRole('combobox');
+    // Switch to Global (All Personalities)
+    await user.selectOptions(select, '');
+    expect((select as HTMLSelectElement).value).toBe('');
+
+    // After a tick, the effect must NOT override the user's choice
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 100));
+    });
+    expect((select as HTMLSelectElement).value).toBe('');
+  });
+
+  it('Community tab fetches skills without requiring personality pre-selection', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({ allowCommunityGitFetch: true } as never);
+    mockFetchPersonalities.mockResolvedValue({ personalities: [] }); // no active personality
+    renderComponent();
+
+    // Open community tab
+    const communityBtn = await screen.findByRole('button', { name: /^community$/i });
+    fireEvent.click(communityBtn);
+
+    // Community content visible
+    await screen.findByText(/Sync Community Skills/i);
+
+    // fetchMarketplaceSkills must have fired — not gated by personality init
+    await waitFor(() => {
+      expect(mockFetchMarketplaceSkills).toHaveBeenCalledWith(
+        undefined,
+        'community',
+        '', // no active personality → empty personalityId
+        undefined,
+        20,
+        0
+      );
+    });
+  });
+
+  it('Community tab personality selector includes Global (All Personalities) option', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({ allowCommunityGitFetch: true } as never);
+    renderComponent();
+
+    // Open community tab
+    const communityBtn = await screen.findByRole('button', { name: /^community$/i });
+    fireEvent.click(communityBtn);
+    await screen.findByText(/Sync Community Skills/i);
+
+    // The personality selector should include a "Global" option (value='')
+    const select = await screen.findByRole('combobox');
+    const options = Array.from(select.querySelectorAll('option')).map((o) => o.textContent);
+    expect(options).toContain('Global (All Personalities)');
   });
 
   it('shows removed count in sync result when community skills were pruned', async () => {
