@@ -21,8 +21,10 @@ import {
   GitBranch,
   GitMerge,
   Plug,
+  Crosshair,
+  Plus,
 } from 'lucide-react';
-import { fetchModelInfo, createProactiveTrigger, registerExtension, createUser, createWorkspace, addMemory, learnKnowledge } from '../api/client';
+import { fetchModelInfo, createProactiveTrigger, registerExtension, createUser, createWorkspace, addMemory, learnKnowledge, createIntent } from '../api/client';
 
 type IconComp = React.ComponentType<{ className?: string }>;
 
@@ -38,12 +40,12 @@ type DialogStep =
   | 'extension'
   | 'user'
   | 'workspace'
-  | 'memory';
+  | 'memory'
+  | 'intent';
 
 type ConfigItem =
   | { kind: 'form'; step: Exclude<DialogStep, 'select'>; icon: IconComp; label: string; desc: string }
-  | { kind: 'nav'; path: string; icon: IconComp; label: string; desc: string }
-  | { kind: 'tbd' };
+  | { kind: 'nav'; path: string; icon: IconComp; label: string; desc: string };
 
 type NavItem = { path: string; icon: IconComp; label: string; desc: string };
 
@@ -61,7 +63,7 @@ const CONFIG_ITEMS: ConfigItem[] = [
   // Row 2 — AI agents
   { kind: 'form', step: 'personality', icon: Brain,     label: 'Personality', desc: 'New AI personality'       },
   { kind: 'form', step: 'sub-agent',   icon: Bot,       label: 'Sub-Agent',  desc: 'Create an agent profile'   },
-  { kind: 'tbd' },
+  { kind: 'form', step: 'intent',      icon: Crosshair, label: 'Intent',     desc: 'Define org intent'          },
   // Row 3 — automation & research
   { kind: 'form', step: 'proactive',   icon: Bell,  label: 'Proactive Trigger', desc: 'Proactive assistance rule' },
   { kind: 'form', step: 'extension',   icon: Package,   label: 'Extension',  desc: 'Add an extension'          },
@@ -127,6 +129,15 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     topic: '',
     knowledgeContent: '',
     error: '',
+  });
+  const [intent, setIntent] = useState({
+    name: '',
+    goals: [] as Array<{ id: string; name: string; description: string; priority: number }>,
+    hardBoundaries: [] as Array<{ id: string; rule: string; rationale: string }>,
+    policies: [] as Array<{ id: string; rule: string; enforcement: 'warn' | 'block'; rationale: string }>,
+    importJson: '',
+    importError: '',
+    activeTab: 'basics' as 'basics' | 'boundaries' | 'policies' | 'import',
   });
 
   const queryClient = useQueryClient();
@@ -194,6 +205,18 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     },
   });
 
+  const createIntentMut = useMutation({
+    mutationFn: (doc: Record<string, unknown>) => createIntent(doc),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['intents'] });
+      handleClose();
+      window.location.href = '/intent';
+    },
+    onError: (err) => {
+      setIntent((s) => ({ ...s, importError: err instanceof Error ? err.message : 'Failed to create intent' }));
+    },
+  });
+
   const { data: modelInfo } = useQuery({
     queryKey: ['modelInfo'],
     queryFn: fetchModelInfo,
@@ -222,6 +245,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     setUser({ email: '', displayName: '', password: '', isAdmin: false, error: '' });
     setWorkspace({ name: '', description: '', error: '' });
     setMemory({ subtype: 'memory', memType: 'semantic', content: '', source: '', importance: 0.5, topic: '', knowledgeContent: '', error: '' });
+    setIntent({ name: '', goals: [], hardBoundaries: [], policies: [], importJson: '', importError: '', activeTab: 'basics' });
   };
 
   const handleClose = () => {
@@ -242,24 +266,11 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     <div className="space-y-5">
       {/* Create & Configure */}
       <div>
-        <p className="text-xs font-medium text-muted uppercase tracking-wider mb-2">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
           Create &amp; Configure
         </p>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {CONFIG_ITEMS.map((item, i) => {
-            if (item.kind === 'tbd') {
-              return (
-                <div
-                  key={i}
-                  className="p-3 border border-dashed rounded-lg opacity-30 cursor-not-allowed select-none"
-                >
-                  <div className="w-5 h-5 mb-1.5 rounded bg-muted" />
-                  <div className="font-medium text-sm">Coming Soon</div>
-                  <div className="text-xs text-muted">More options</div>
-                </div>
-              );
-            }
-
             const { icon: Icon, label, desc } = item;
             const isNav = item.kind === 'nav';
 
@@ -277,7 +288,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
                   className={`w-5 h-5 mb-1.5 ${isNav ? 'text-muted-foreground' : 'text-primary'}`}
                 />
                 <div className="font-medium text-sm">{label}</div>
-                <div className="text-xs text-muted">{desc}</div>
+                <div className="text-xs text-muted-foreground">{desc}</div>
               </button>
             );
           })}
@@ -286,10 +297,10 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
 
       {/* Navigate & Create */}
       <div>
-        <p className="text-xs font-medium text-muted uppercase tracking-wider mb-2">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
           Navigate &amp; Create
         </p>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {NAV_ITEMS.map(({ path, icon: Icon, label, desc }) => (
             <button
               key={path + label}
@@ -298,7 +309,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
             >
               <Icon className="w-5 h-5 mb-1.5 text-muted-foreground" />
               <div className="font-medium text-sm">{label}</div>
-              <div className="text-xs text-muted">{desc}</div>
+              <div className="text-xs text-muted-foreground">{desc}</div>
             </button>
           ))}
         </div>
@@ -544,7 +555,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           placeholder="What you're testing"
         />
       </div>
-      <p className="text-xs text-muted">
+      <p className="text-xs text-muted-foreground">
         Creates an experiment with Control and Variant A variants (50% traffic each).
       </p>
       <div className="flex justify-end gap-2 pt-2">
@@ -592,7 +603,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           placeholder="What this agent specialises in"
         />
       </div>
-      <p className="text-xs text-muted">
+      <p className="text-xs text-muted-foreground">
         Opens the Agents page where you can configure the full agent profile.
       </p>
       <div className="flex justify-end gap-2 pt-2">
@@ -640,7 +651,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           placeholder="Role purpose and capabilities"
         />
       </div>
-      <p className="text-xs text-muted">
+      <p className="text-xs text-muted-foreground">
         Opens Security Settings where you can assign permissions to this role.
       </p>
       <div className="flex justify-end gap-2 pt-2">
@@ -880,7 +891,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
             rows={3}
             placeholder={'pre-chat, observe, 10\npost-task, transform, 20'}
           />
-          <p className="text-xs text-muted mt-1">One per line: point, semantics, priority (optional)</p>
+          <p className="text-xs text-muted-foreground mt-1">One per line: point, semantics, priority (optional)</p>
         </div>
 
         {extension.error && (
@@ -1130,7 +1141,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Importance <span className="text-muted">({memory.importance.toFixed(1)})</span>
+                  Importance <span className="text-muted-foreground">({memory.importance.toFixed(1)})</span>
                 </label>
                 <input
                   type="range"
@@ -1187,6 +1198,286 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     );
   };
 
+  const renderIntent = () => {
+    const set = (patch: Partial<typeof intent>) => setIntent((s) => ({ ...s, ...patch }));
+    const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+
+    const addGoal     = () => set({ goals: [...intent.goals, { id: `g-${uid()}`, name: '', description: '', priority: 5 }] });
+    const removeGoal  = (id: string) => set({ goals: intent.goals.filter((g) => g.id !== id) });
+    const updateGoal  = (id: string, patch: Partial<typeof intent.goals[0]>) =>
+      set({ goals: intent.goals.map((g) => (g.id === id ? { ...g, ...patch } : g)) });
+
+    const addBoundary    = () => set({ hardBoundaries: [...intent.hardBoundaries, { id: `b-${uid()}`, rule: '', rationale: '' }] });
+    const removeBoundary = (id: string) => set({ hardBoundaries: intent.hardBoundaries.filter((b) => b.id !== id) });
+    const updateBoundary = (id: string, patch: Partial<typeof intent.hardBoundaries[0]>) =>
+      set({ hardBoundaries: intent.hardBoundaries.map((b) => (b.id === id ? { ...b, ...patch } : b)) });
+
+    const addPolicy    = () => set({ policies: [...intent.policies, { id: `p-${uid()}`, rule: '', enforcement: 'warn' as const, rationale: '' }] });
+    const removePolicy = (id: string) => set({ policies: intent.policies.filter((p) => p.id !== id) });
+    const updatePolicy = (id: string, patch: Partial<typeof intent.policies[0]>) =>
+      set({ policies: intent.policies.map((p) => (p.id === id ? { ...p, ...patch } : p)) });
+
+    const handleImport = () => {
+      try {
+        const parsed = JSON.parse(intent.importJson) as Record<string, unknown>;
+        set({
+          name: typeof parsed.name === 'string' ? parsed.name : intent.name,
+          goals: ((parsed.goals as Record<string, unknown>[] | undefined) ?? []).map((g, i) => ({
+            id: `g-${uid()}-${i}`, name: String(g.name ?? ''), description: String(g.description ?? ''), priority: Number(g.priority ?? 5),
+          })),
+          hardBoundaries: ((parsed.hardBoundaries as Record<string, unknown>[] | undefined) ?? []).map((b, i) => ({
+            id: `b-${uid()}-${i}`, rule: String(b.rule ?? ''), rationale: String(b.rationale ?? ''),
+          })),
+          policies: ((parsed.policies as Record<string, unknown>[] | undefined) ?? []).map((p, i) => ({
+            id: `p-${uid()}-${i}`, rule: String(p.rule ?? ''),
+            enforcement: p.enforcement === 'block' ? 'block' as const : 'warn' as const,
+            rationale: String(p.rationale ?? ''),
+          })),
+          importError: '',
+          activeTab: 'basics',
+        });
+      } catch {
+        set({ importError: 'Invalid JSON — check the format and try again.' });
+      }
+    };
+
+    const handleSubmit = () => {
+      createIntentMut.mutate({
+        name: intent.name.trim(),
+        apiVersion: '1.0',
+        goals: intent.goals.filter((g) => g.name.trim()).map((g) => ({
+          id: g.id, name: g.name.trim(), description: g.description.trim(),
+          priority: g.priority, successCriteria: '', ownerRole: 'admin',
+          skills: [], signals: [], authorizedActions: [],
+        })),
+        hardBoundaries: intent.hardBoundaries.filter((b) => b.rule.trim()).map((b) => ({
+          id: b.id, rule: b.rule.trim(), rationale: b.rationale.trim(),
+        })),
+        policies: intent.policies.filter((p) => p.rule.trim()).map((p) => ({
+          id: p.id, rule: p.rule.trim(), enforcement: p.enforcement, rationale: p.rationale.trim(),
+        })),
+        signals: [], dataSources: [], authorizedActions: [], tradeoffProfiles: [],
+        delegationFramework: { tenants: [] }, context: [],
+      });
+    };
+
+    const TABS = [
+      { id: 'basics' as const,     label: 'Basics' },
+      { id: 'boundaries' as const, label: 'Boundaries' },
+      { id: 'policies' as const,   label: 'Policies' },
+      { id: 'import' as const,     label: 'Import JSON' },
+    ];
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <button onClick={goBack} className="btn-ghost p-1 rounded">
+            <ChevronDown className="w-4 h-4 rotate-90" />
+          </button>
+          <h3 className="text-lg font-semibold">New Intent</h3>
+        </div>
+
+        {/* Tab bar */}
+        <div className="flex gap-0 border-b text-sm">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => set({ activeTab: t.id })}
+              className={`px-3 py-1.5 font-medium transition-colors border-b-2 -mb-px ${
+                intent.activeTab === t.id
+                  ? 'border-primary text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Basics */}
+        {intent.activeTab === 'basics' && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Name *</label>
+              <input
+                type="text"
+                value={intent.name}
+                onChange={(e) => set({ name: e.target.value })}
+                className="w-full px-3 py-2 rounded border bg-background"
+                placeholder="e.g., Production Safety Intent"
+              />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium">Goals</label>
+                <button onClick={addGoal} className="btn btn-ghost text-xs flex items-center gap-1">
+                  <Plus className="w-3 h-3" /> Add Goal
+                </button>
+              </div>
+              {intent.goals.length === 0 && (
+                <p className="text-xs text-muted-foreground py-1">No goals yet — click Add Goal.</p>
+              )}
+              <div className="space-y-2">
+                {intent.goals.map((g) => (
+                  <div key={g.id} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={g.name}
+                        onChange={(e) => updateGoal(g.id, { name: e.target.value })}
+                        className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
+                        placeholder="Goal name"
+                      />
+                      <input
+                        type="number"
+                        min={1} max={10}
+                        value={g.priority}
+                        onChange={(e) => updateGoal(g.id, { priority: parseInt(e.target.value) || 5 })}
+                        className="w-14 px-2 py-1.5 rounded border bg-background text-sm text-center"
+                        title="Priority (1–10)"
+                      />
+                      <button onClick={() => removeGoal(g.id)} className="p-1 text-muted-foreground hover:text-destructive transition-colors">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={g.description}
+                      onChange={(e) => updateGoal(g.id, { description: e.target.value })}
+                      className="w-full px-2 py-1.5 rounded border bg-background text-sm"
+                      placeholder="Description"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Boundaries */}
+        {intent.activeTab === 'boundaries' && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Rules the AI must never violate.</p>
+              <button onClick={addBoundary} className="btn btn-ghost text-xs flex items-center gap-1">
+                <Plus className="w-3 h-3" /> Add Boundary
+              </button>
+            </div>
+            {intent.hardBoundaries.length === 0 && (
+              <p className="text-xs text-muted-foreground py-1">No hard boundaries defined.</p>
+            )}
+            <div className="space-y-2">
+              {intent.hardBoundaries.map((b) => (
+                <div key={b.id} className="border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={b.rule}
+                      onChange={(e) => updateBoundary(b.id, { rule: e.target.value })}
+                      className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
+                      placeholder="e.g., Never delete production data"
+                    />
+                    <button onClick={() => removeBoundary(b.id)} className="p-1 text-muted-foreground hover:text-destructive transition-colors">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={b.rationale}
+                    onChange={(e) => updateBoundary(b.id, { rationale: e.target.value })}
+                    className="w-full px-2 py-1.5 rounded border bg-background text-sm"
+                    placeholder="Rationale"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Policies */}
+        {intent.activeTab === 'policies' && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Soft rules — warn or block on violation.</p>
+              <button onClick={addPolicy} className="btn btn-ghost text-xs flex items-center gap-1">
+                <Plus className="w-3 h-3" /> Add Policy
+              </button>
+            </div>
+            {intent.policies.length === 0 && (
+              <p className="text-xs text-muted-foreground py-1">No policies defined.</p>
+            )}
+            <div className="space-y-2">
+              {intent.policies.map((p) => (
+                <div key={p.id} className="border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={p.rule}
+                      onChange={(e) => updatePolicy(p.id, { rule: e.target.value })}
+                      className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
+                      placeholder="Policy rule"
+                    />
+                    <select
+                      value={p.enforcement}
+                      onChange={(e) => updatePolicy(p.id, { enforcement: e.target.value as 'warn' | 'block' })}
+                      className="px-2 py-1.5 rounded border bg-background text-sm"
+                    >
+                      <option value="warn">Warn</option>
+                      <option value="block">Block</option>
+                    </select>
+                    <button onClick={() => removePolicy(p.id)} className="p-1 text-muted-foreground hover:text-destructive transition-colors">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={p.rationale}
+                    onChange={(e) => updatePolicy(p.id, { rationale: e.target.value })}
+                    className="w-full px-2 py-1.5 rounded border bg-background text-sm"
+                    placeholder="Rationale"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Import JSON */}
+        {intent.activeTab === 'import' && (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Paste a full intent JSON document to populate the form.</p>
+            <textarea
+              value={intent.importJson}
+              onChange={(e) => set({ importJson: e.target.value, importError: '' })}
+              className="w-full px-3 py-2 rounded border bg-background font-mono text-xs resize-none"
+              rows={8}
+              placeholder={'{\n  "name": "...",\n  "goals": [],\n  "hardBoundaries": [],\n  "policies": []\n}'}
+            />
+            {intent.importError && <p className="text-xs text-destructive">{intent.importError}</p>}
+            <button
+              onClick={handleImport}
+              disabled={!intent.importJson.trim()}
+              className="btn btn-ghost text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Parse &amp; Apply
+            </button>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2 pt-2 border-t">
+          <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
+          <button
+            disabled={!intent.name.trim() || createIntentMut.isPending}
+            className="btn btn-ghost disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleSubmit}
+          >
+            {createIntentMut.isPending ? 'Creating...' : 'Create Intent'}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const renderContent = () => {
     switch (step) {
       case 'select':      return renderSelect();
@@ -1201,6 +1492,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
       case 'user':        return renderUser();
       case 'workspace':   return renderWorkspace();
       case 'memory':      return renderMemory();
+      case 'intent':      return renderIntent();
     }
   };
 
@@ -1208,11 +1500,11 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
       onClick={handleClose}
     >
       <div
-        className="bg-background border rounded-lg p-6 w-full max-w-lg shadow-lg max-h-[90vh] overflow-y-auto"
+        className="bg-background border rounded-t-2xl sm:rounded-xl p-4 sm:p-6 w-full sm:max-w-xl md:max-w-2xl shadow-xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">

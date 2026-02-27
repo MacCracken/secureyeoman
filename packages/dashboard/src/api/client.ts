@@ -48,6 +48,11 @@ import type {
 
 const API_BASE = '/api/v1';
 
+/** Default request timeout. Prevents fetch() from hanging indefinitely. */
+const REQUEST_TIMEOUT_MS = 30_000;
+/** Shorter timeout for token refresh — we need a fast fail so auth doesn't stall. */
+const REFRESH_TIMEOUT_MS = 10_000;
+
 class APIError extends Error {
   constructor(
     message: string,
@@ -110,6 +115,7 @@ async function attemptTokenRefresh(): Promise<boolean> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
+      signal: AbortSignal.timeout(REFRESH_TIMEOUT_MS),
     });
 
     if (!response.ok) return false;
@@ -147,24 +153,34 @@ async function request<T>(
   const response = await fetch(url, {
     ...options,
     headers,
+    // Respect a caller-supplied signal (e.g. React Query's abort controller)
+    // and fall back to a 30-second timeout to prevent hanging fetches.
+    signal: options.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
 
   if (response.status === 401 && !skipAuth) {
-    // Attempt token refresh (deduplicate concurrent refreshes)
+    // Deduplicate concurrent refreshes: all in-flight 401s await the same
+    // promise, and `finally` guarantees the flags are cleared regardless of
+    // whether the refresh succeeded, failed, or threw an exception.
     if (!_isRefreshing) {
       _isRefreshing = true;
-      _refreshPromise = attemptTokenRefresh();
+      _refreshPromise = attemptTokenRefresh().finally(() => {
+        _isRefreshing = false;
+        _refreshPromise = null;
+      });
     }
 
     const refreshed = await _refreshPromise;
-    _isRefreshing = false;
-    _refreshPromise = null;
 
     if (refreshed) {
       // Retry the original request with new token
       const newToken = getAccessToken();
       headers.Authorization = `Bearer ${newToken}`;
-      const retryResponse = await fetch(url, { ...options, headers });
+      const retryResponse = await fetch(url, {
+        ...options,
+        headers,
+        signal: options.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
 
       if (!retryResponse.ok) {
         const error = await retryResponse.json().catch(() => ({ message: 'Unknown error' }));

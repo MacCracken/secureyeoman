@@ -80,7 +80,7 @@ export function WorkflowsPage() {
         </div>
         <button
           onClick={() => navigate('/workflows/new/builder')}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+          className="btn btn-ghost flex items-center gap-2 text-sm font-medium"
         >
           <Plus className="w-4 h-4" />
           New Workflow
@@ -183,7 +183,7 @@ export function WorkflowsPage() {
                       <button
                         onClick={() => handleRun(def)}
                         disabled={runningId === def.id || !def.isEnabled}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="btn btn-ghost flex items-center gap-1.5 text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Run workflow"
                       >
                         {runningId === def.id ? (

@@ -11,6 +11,7 @@
  */
 
 import { readFileSync, existsSync } from 'node:fs';
+import { getPool } from '../storage/pg-pool.js';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import Fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
@@ -236,12 +237,37 @@ export class GatewayServer {
     this.app.addHook('onRequest', async (_request, reply) => {
       reply.header('X-Content-Type-Options', 'nosniff');
       reply.header('X-Frame-Options', 'DENY');
+      // X-XSS-Protection: 0 intentionally disables the legacy browser XSS auditor.
+      // Modern browsers no longer use it, and enabling it can introduce new vulnerabilities.
+      // CSP (below) is the correct defence against XSS.
       reply.header('X-XSS-Protection', '0');
       reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
       reply.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
+      // Content-Security-Policy — defence-in-depth against XSS.
+      // 'unsafe-inline' is required for Vite-built React (inline event handlers and styles).
+      // script-src 'self' still prevents loading external scripts from untrusted origins.
+      // connect-src includes ws:/wss: for WebSocket subscriptions.
+      reply.header(
+        'Content-Security-Policy',
+        [
+          "default-src 'self'",
+          "script-src 'self' 'unsafe-inline'",
+          "style-src 'self' 'unsafe-inline'",
+          "img-src 'self' data: blob:",
+          "font-src 'self' data:",
+          "connect-src 'self' ws: wss:",
+          "media-src 'self' blob:",
+          "object-src 'none'",
+          "base-uri 'self'",
+          "form-action 'self'",
+          "frame-ancestors 'none'",
+        ].join('; ')
+      );
+
       if (this.config.tls.enabled) {
-        reply.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        // 2-year max-age + preload eligibility
+        reply.header('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
       }
     });
 
@@ -862,25 +888,143 @@ export class GatewayServer {
       }
     });
 
-    // Health check
-    this.app.get('/health', async () => {
+    // ── Health probes ──────────────────────────────────────────────────────────
+    // Three levels following Kubernetes probe conventions:
+    //   /health/live  — liveness: is the process alive? (fast, no I/O)
+    //   /health/ready — readiness: can the process serve traffic? (DB ping)
+    //   /health/deep  — diagnostics: full component status (for ops tooling)
+    //   /health       — backward-compat alias for /health/ready
+
+    this.app.get('/health/live', async (_request, reply) => {
+      reply.code(200);
+      return { status: 'ok', version: VERSION };
+    });
+
+    this.app.get('/health/ready', async (_request, reply) => {
       const state = this.secureYeoman.getState();
-      const isLoopback =
-        this.config.host === '127.0.0.1' || this.config.host === 'localhost';
-      const networkMode = isLoopback
-        ? 'local'
-        : this.config.tls.enabled
-          ? 'public'
-          : 'lan';
+      const checks: Record<string, boolean> = {};
+
+      // Database ping — actual round-trip to verify connectivity
+      try {
+        const pool = getPool();
+        await pool.query('SELECT 1');
+        checks.database = true;
+      } catch {
+        checks.database = false;
+      }
+
+      // Application state
+      checks.application = state.healthy;
+
+      // Audit chain — non-blocking: just check it's initialized
+      try {
+        const auditChain = this.secureYeoman.getAuditChain();
+        checks.auditChain = !!auditChain;
+      } catch {
+        checks.auditChain = false;
+      }
+
+      const allHealthy = Object.values(checks).every(Boolean);
+      reply.code(allHealthy ? 200 : 503);
+
       return {
-        status: state.healthy ? 'ok' : 'error',
+        status: allHealthy ? 'ok' : 'degraded',
+        version: VERSION,
+        uptime: state.startedAt ? Date.now() - state.startedAt : 0,
+        checks,
+      };
+    });
+
+    this.app.get('/health/deep', async (_request, reply) => {
+      const state = this.secureYeoman.getState();
+      const components: Record<string, { ok: boolean; detail?: string }> = {};
+
+      // Database — full ping with latency measurement
+      try {
+        const pool = getPool();
+        const start = Date.now();
+        await pool.query('SELECT 1');
+        components.database = { ok: true, detail: `${Date.now() - start}ms` };
+      } catch (err) {
+        components.database = {
+          ok: false,
+          detail: err instanceof Error ? err.message : 'Unknown error',
+        };
+      }
+
+      // Audit chain count
+      try {
+        const auditChain = this.secureYeoman.getAuditChain();
+        components.auditChain = { ok: true, detail: 'initialized' };
+        void auditChain; // satisfy no-unused
+      } catch (err) {
+        components.auditChain = {
+          ok: false,
+          detail: err instanceof Error ? err.message : 'Not available',
+        };
+      }
+
+      // Auth service
+      components.auth = { ok: !!this.authService, detail: this.authService ? 'active' : 'disabled' };
+
+      // WebSocket clients
+      components.websocket = {
+        ok: true,
+        detail: `${this.clients.size} client(s) connected`,
+      };
+
+      // Intent / governance manager
+      try {
+        const intentManager = this.secureYeoman.getIntentManager?.();
+        components.intent = { ok: !!intentManager, detail: intentManager ? 'active' : 'not configured' };
+      } catch {
+        components.intent = { ok: false, detail: 'unavailable' };
+      }
+
+      const allOk = Object.values(components).every((c) => c.ok);
+      reply.code(allOk ? 200 : 207); // 207 Multi-Status if partial
+
+      return {
+        status: allOk ? 'ok' : 'partial',
+        version: VERSION,
+        uptime: state.startedAt ? Date.now() - state.startedAt : 0,
+        components,
+      };
+    });
+
+    // Backward-compatible alias — same semantics as /health/ready
+    this.app.get('/health', async (_request, reply) => {
+      const state = this.secureYeoman.getState();
+      const checks: Record<string, boolean> = {};
+
+      try {
+        const pool = getPool();
+        await pool.query('SELECT 1');
+        checks.database = true;
+      } catch {
+        checks.database = false;
+      }
+
+      checks.application = state.healthy;
+
+      try {
+        checks.auditChain = !!this.secureYeoman.getAuditChain();
+      } catch {
+        checks.auditChain = false;
+      }
+
+      const allHealthy = Object.values(checks).every(Boolean);
+      reply.code(allHealthy ? 200 : 503);
+
+      const isLoopback = this.config.host === '127.0.0.1' || this.config.host === 'localhost';
+      const networkMode = isLoopback ? 'local' : this.config.tls.enabled ? 'public' : 'lan';
+
+      return {
+        status: allHealthy ? 'ok' : 'error',
         version: VERSION,
         uptime: state.startedAt ? Date.now() - state.startedAt : 0,
         networkMode,
-        checks: {
-          database: true,
-          auditChain: true,
-        },
+        checks,
       };
     });
 

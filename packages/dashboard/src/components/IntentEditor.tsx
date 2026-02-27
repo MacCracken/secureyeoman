@@ -595,40 +595,20 @@ function DelegationFrameworkView() {
   );
 }
 
-const STARTER_INTENT_YAML = `{
-  "name": "My Organization Intent",
-  "goals": [
-    {
-      "id": "goal-1",
-      "name": "Example Goal",
-      "description": "Describe what you want the agent to focus on.",
-      "priority": 50,
-      "successCriteria": "Define what success looks like.",
-      "skills": [],
-      "signals": [],
-      "authorizedActions": []
-    }
-  ],
-  "hardBoundaries": [
-    {
-      "id": "hb-1",
-      "rule": "deny: drop production",
-      "rationale": "Never allow destructive operations on production systems."
-    }
-  ],
-  "signals": [],
-  "dataSources": [],
-  "authorizedActions": [],
-  "tradeoffProfiles": [],
-  "delegationFramework": { "tenants": [] },
-  "context": []
-}`;
+const EMPTY_CREATE_FORM = {
+  name: '',
+  goals: [] as Array<{ id: string; name: string; description: string; priority: number }>,
+  hardBoundaries: [] as Array<{ id: string; rule: string; rationale: string }>,
+  policies: [] as Array<{ id: string; rule: string; enforcement: 'warn' | 'block'; rationale: string }>,
+  importJson: '',
+  importError: '',
+  activeTab: 'basics' as 'basics' | 'boundaries' | 'policies' | 'import',
+};
 
 export function IntentEditor() {
   const [activeTab, setActiveTab] = useState<IntentTab>('docs');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createJson, setCreateJson] = useState(STARTER_INTENT_YAML);
-  const [createError, setCreateError] = useState('');
+  const [createForm, setCreateForm] = useState(EMPTY_CREATE_FORM);
   const [editingIntentId, setEditingIntentId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
@@ -669,19 +649,33 @@ export function IntentEditor() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['intents'] });
       setShowCreateModal(false);
-      setCreateJson(STARTER_INTENT_YAML);
-      setCreateError('');
+      setCreateForm(EMPTY_CREATE_FORM);
+    },
+    onError: (err) => {
+      setCreateForm((f) => ({ ...f, importError: err instanceof Error ? err.message : 'Failed to create intent' }));
     },
   });
 
+  const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+
   const handleCreate = () => {
-    try {
-      const parsed = JSON.parse(createJson) as Record<string, unknown>;
-      setCreateError('');
-      createMutation.mutate(parsed);
-    } catch {
-      setCreateError('Invalid JSON. Please check your input.');
-    }
+    createMutation.mutate({
+      name: createForm.name.trim(),
+      apiVersion: '1.0',
+      goals: createForm.goals.filter((g) => g.name.trim()).map((g) => ({
+        id: g.id, name: g.name.trim(), description: g.description.trim(),
+        priority: g.priority, successCriteria: '', ownerRole: 'admin',
+        skills: [], signals: [], authorizedActions: [],
+      })),
+      hardBoundaries: createForm.hardBoundaries.filter((b) => b.rule.trim()).map((b) => ({
+        id: b.id, rule: b.rule.trim(), rationale: b.rationale.trim(),
+      })),
+      policies: createForm.policies.filter((p) => p.rule.trim()).map((p) => ({
+        id: p.id, rule: p.rule.trim(), enforcement: p.enforcement, rationale: p.rationale.trim(),
+      })),
+      signals: [], dataSources: [], authorizedActions: [], tradeoffProfiles: [],
+      delegationFramework: { tenants: [] }, context: [],
+    });
   };
 
   const intents = intentsData?.intents ?? [];
@@ -734,42 +728,269 @@ export function IntentEditor() {
           <div className="flex justify-end">
             <button
               className="btn btn-ghost text-sm flex items-center gap-1"
-              onClick={() => { setShowCreateModal((v) => !v); setCreateError(''); }}
+              onClick={() => { setShowCreateModal((v) => !v); setCreateForm(EMPTY_CREATE_FORM); }}
             >
               <Plus className="w-4 h-4" />
               Create Intent
             </button>
           </div>
 
-          {showCreateModal && (
-            <div className="p-3 rounded-lg bg-muted/30 space-y-3">
-              <p className="text-xs text-muted-foreground">
-                Enter a JSON document matching the OrgIntentDoc schema. Edit the template below.
-              </p>
-              <textarea
-                value={createJson}
-                onChange={(e) => setCreateJson(e.target.value)}
-                rows={18}
-                className="px-2 py-1 rounded border bg-background text-foreground font-mono text-xs w-full focus:outline-none focus:ring-2 focus:ring-primary resize-y"
-              />
-              {createError && <p className="text-xs text-destructive">{createError}</p>}
-              <div className="flex gap-2">
-                <button
-                  className="btn btn-ghost text-sm px-3 py-1"
-                  onClick={handleCreate}
-                  disabled={createMutation.isPending}
-                >
-                  {createMutation.isPending ? 'Creating…' : 'Create'}
-                </button>
-                <button
-                  className="btn btn-ghost text-sm px-3 py-1"
-                  onClick={() => { setShowCreateModal(false); setCreateError(''); setCreateJson(STARTER_INTENT_YAML); }}
-                >
-                  Cancel
-                </button>
+          {showCreateModal && (() => {
+            const set = (patch: Partial<typeof createForm>) => setCreateForm((f) => ({ ...f, ...patch }));
+
+            const addGoal     = () => set({ goals: [...createForm.goals, { id: `g-${uid()}`, name: '', description: '', priority: 5 }] });
+            const removeGoal  = (id: string) => set({ goals: createForm.goals.filter((g) => g.id !== id) });
+            const updateGoal  = (id: string, patch: Partial<typeof createForm.goals[0]>) =>
+              set({ goals: createForm.goals.map((g) => (g.id === id ? { ...g, ...patch } : g)) });
+
+            const addBoundary    = () => set({ hardBoundaries: [...createForm.hardBoundaries, { id: `b-${uid()}`, rule: '', rationale: '' }] });
+            const removeBoundary = (id: string) => set({ hardBoundaries: createForm.hardBoundaries.filter((b) => b.id !== id) });
+            const updateBoundary = (id: string, patch: Partial<typeof createForm.hardBoundaries[0]>) =>
+              set({ hardBoundaries: createForm.hardBoundaries.map((b) => (b.id === id ? { ...b, ...patch } : b)) });
+
+            const addPolicy    = () => set({ policies: [...createForm.policies, { id: `p-${uid()}`, rule: '', enforcement: 'warn' as const, rationale: '' }] });
+            const removePolicy = (id: string) => set({ policies: createForm.policies.filter((p) => p.id !== id) });
+            const updatePolicy = (id: string, patch: Partial<typeof createForm.policies[0]>) =>
+              set({ policies: createForm.policies.map((p) => (p.id === id ? { ...p, ...patch } : p)) });
+
+            const handleImport = () => {
+              try {
+                const parsed = JSON.parse(createForm.importJson) as Record<string, unknown>;
+                set({
+                  name: typeof parsed.name === 'string' ? parsed.name : createForm.name,
+                  goals: ((parsed.goals as Record<string, unknown>[] | undefined) ?? []).map((g, i) => ({
+                    id: `g-${uid()}-${i}`, name: String(g.name ?? ''), description: String(g.description ?? ''), priority: Number(g.priority ?? 5),
+                  })),
+                  hardBoundaries: ((parsed.hardBoundaries as Record<string, unknown>[] | undefined) ?? []).map((b, i) => ({
+                    id: `b-${uid()}-${i}`, rule: String(b.rule ?? ''), rationale: String(b.rationale ?? ''),
+                  })),
+                  policies: ((parsed.policies as Record<string, unknown>[] | undefined) ?? []).map((p, i) => ({
+                    id: `p-${uid()}-${i}`, rule: String(p.rule ?? ''),
+                    enforcement: p.enforcement === 'block' ? 'block' as const : 'warn' as const,
+                    rationale: String(p.rationale ?? ''),
+                  })),
+                  importError: '',
+                  activeTab: 'basics',
+                });
+              } catch {
+                set({ importError: 'Invalid JSON — check the format and try again.' });
+              }
+            };
+
+            const TABS = [
+              { id: 'basics' as const,     label: 'Basics' },
+              { id: 'boundaries' as const, label: 'Boundaries' },
+              { id: 'policies' as const,   label: 'Policies' },
+              { id: 'import' as const,     label: 'Import JSON' },
+            ];
+
+            return (
+              <div className="border border-border rounded-lg p-4 space-y-4">
+                {/* Inner tab bar */}
+                <div className="flex gap-0 border-b border-border text-sm">
+                  {TABS.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => set({ activeTab: t.id })}
+                      className={`px-3 py-1.5 font-medium transition-colors border-b-2 -mb-px ${
+                        createForm.activeTab === t.id
+                          ? 'border-primary text-foreground'
+                          : 'border-transparent text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Basics */}
+                {createForm.activeTab === 'basics' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Name *</label>
+                      <input
+                        type="text"
+                        value={createForm.name}
+                        onChange={(e) => set({ name: e.target.value })}
+                        className="w-full px-3 py-2 rounded border bg-background"
+                        placeholder="e.g., Production Safety Intent"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium">Goals</label>
+                        <button onClick={addGoal} className="btn btn-ghost text-xs flex items-center gap-1">
+                          <Plus className="w-3 h-3" /> Add Goal
+                        </button>
+                      </div>
+                      {createForm.goals.length === 0 && (
+                        <p className="text-xs text-muted-foreground py-1">No goals yet — click Add Goal.</p>
+                      )}
+                      <div className="space-y-2">
+                        {createForm.goals.map((g) => (
+                          <div key={g.id} className="border rounded-lg p-3 space-y-2">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={g.name}
+                                onChange={(e) => updateGoal(g.id, { name: e.target.value })}
+                                className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
+                                placeholder="Goal name"
+                              />
+                              <input
+                                type="number"
+                                min={1} max={10}
+                                value={g.priority}
+                                onChange={(e) => updateGoal(g.id, { priority: parseInt(e.target.value) || 5 })}
+                                className="w-14 px-2 py-1.5 rounded border bg-background text-sm text-center"
+                                title="Priority (1–10)"
+                              />
+                              <button onClick={() => removeGoal(g.id)} className="p-1 text-muted-foreground hover:text-destructive transition-colors">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <input
+                              type="text"
+                              value={g.description}
+                              onChange={(e) => updateGoal(g.id, { description: e.target.value })}
+                              className="w-full px-2 py-1.5 rounded border bg-background text-sm"
+                              placeholder="Description"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Boundaries */}
+                {createForm.activeTab === 'boundaries' && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">Rules the AI must never violate.</p>
+                      <button onClick={addBoundary} className="btn btn-ghost text-xs flex items-center gap-1">
+                        <Plus className="w-3 h-3" /> Add Boundary
+                      </button>
+                    </div>
+                    {createForm.hardBoundaries.length === 0 && (
+                      <p className="text-xs text-muted-foreground py-1">No hard boundaries defined.</p>
+                    )}
+                    <div className="space-y-2">
+                      {createForm.hardBoundaries.map((b) => (
+                        <div key={b.id} className="border rounded-lg p-3 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={b.rule}
+                              onChange={(e) => updateBoundary(b.id, { rule: e.target.value })}
+                              className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
+                              placeholder="e.g., Never delete production data"
+                            />
+                            <button onClick={() => removeBoundary(b.id)} className="p-1 text-muted-foreground hover:text-destructive transition-colors">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            value={b.rationale}
+                            onChange={(e) => updateBoundary(b.id, { rationale: e.target.value })}
+                            className="w-full px-2 py-1.5 rounded border bg-background text-sm"
+                            placeholder="Rationale"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Policies */}
+                {createForm.activeTab === 'policies' && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">Soft rules — warn or block on violation.</p>
+                      <button onClick={addPolicy} className="btn btn-ghost text-xs flex items-center gap-1">
+                        <Plus className="w-3 h-3" /> Add Policy
+                      </button>
+                    </div>
+                    {createForm.policies.length === 0 && (
+                      <p className="text-xs text-muted-foreground py-1">No policies defined.</p>
+                    )}
+                    <div className="space-y-2">
+                      {createForm.policies.map((p) => (
+                        <div key={p.id} className="border rounded-lg p-3 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={p.rule}
+                              onChange={(e) => updatePolicy(p.id, { rule: e.target.value })}
+                              className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
+                              placeholder="Policy rule"
+                            />
+                            <select
+                              value={p.enforcement}
+                              onChange={(e) => updatePolicy(p.id, { enforcement: e.target.value as 'warn' | 'block' })}
+                              className="px-2 py-1.5 rounded border bg-background text-sm"
+                            >
+                              <option value="warn">Warn</option>
+                              <option value="block">Block</option>
+                            </select>
+                            <button onClick={() => removePolicy(p.id)} className="p-1 text-muted-foreground hover:text-destructive transition-colors">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            value={p.rationale}
+                            onChange={(e) => updatePolicy(p.id, { rationale: e.target.value })}
+                            className="w-full px-2 py-1.5 rounded border bg-background text-sm"
+                            placeholder="Rationale"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Import JSON */}
+                {createForm.activeTab === 'import' && (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">Paste a full intent JSON document to populate the form.</p>
+                    <textarea
+                      value={createForm.importJson}
+                      onChange={(e) => set({ importJson: e.target.value, importError: '' })}
+                      rows={10}
+                      className="w-full px-3 py-2 rounded border bg-background font-mono text-xs resize-y"
+                      placeholder={'{\n  "name": "...",\n  "goals": [],\n  "hardBoundaries": [],\n  "policies": []\n}'}
+                    />
+                    {createForm.importError && <p className="text-xs text-destructive">{createForm.importError}</p>}
+                    <button
+                      onClick={handleImport}
+                      disabled={!createForm.importJson.trim()}
+                      className="btn btn-ghost text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Parse &amp; Apply
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-2 border-t border-border">
+                  <button
+                    className="btn btn-ghost text-sm"
+                    onClick={() => { setShowCreateModal(false); setCreateForm(EMPTY_CREATE_FORM); }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="btn btn-ghost text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleCreate}
+                    disabled={!createForm.name.trim() || createMutation.isPending}
+                  >
+                    {createMutation.isPending ? 'Creating…' : 'Create Intent'}
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {intents.length === 0 && !showCreateModal && (
             <div className="text-center py-8 border border-dashed border-border rounded-lg">

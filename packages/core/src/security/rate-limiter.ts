@@ -371,13 +371,32 @@ export function createRateLimiter(config: SecurityConfig): RateLimiterLike {
 
   const authRule: RateLimitRule = {
     name: 'auth_attempts',
-    windowMs: rl.authLoginWindowMs ?? 900000,
+    windowMs: rl.authLoginWindowMs ?? 900_000, // 15 min
     maxRequests: rl.authLoginMaxAttempts ?? 5,
     keyType: 'ip',
     onExceed: 'reject',
   };
 
-  const rules = [...STATIC_RULES, authRule];
+  // Refresh tokens are long-lived — 10 per minute per IP is generous but
+  // still blocks credential-stuffing loops that cycle through stolen tokens.
+  const authRefreshRule: RateLimitRule = {
+    name: 'auth_refresh',
+    windowMs: 60_000, // 1 min
+    maxRequests: 10,
+    keyType: 'ip',
+    onExceed: 'reject',
+  };
+
+  // Password reset is high-value: 3 attempts per hour per IP.
+  const authResetRule: RateLimitRule = {
+    name: 'auth_reset_password',
+    windowMs: 3_600_000, // 1 hour
+    maxRequests: 3,
+    keyType: 'ip',
+    onExceed: 'reject',
+  };
+
+  const rules = [...STATIC_RULES, authRule, authRefreshRule, authResetRule];
 
   if (rl.redisUrl) {
     const limiter = new RedisRateLimiter(rl, rl.redisUrl, rl.redisPrefix ?? 'secureyeoman:rl');

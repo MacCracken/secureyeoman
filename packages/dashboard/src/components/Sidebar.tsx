@@ -232,7 +232,7 @@ export function Sidebar({
           onClick={() => {
             setNewDialogOpen(true);
           }}
-          className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200`}
+          className={`btn btn-ghost flex items-center justify-center gap-2 w-full py-2.5`}
         >
           <Plus className="w-4 h-4" />
           <span

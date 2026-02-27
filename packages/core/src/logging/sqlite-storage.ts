@@ -174,20 +174,17 @@ export class SQLiteAuditStorage extends PgBaseStorage implements AuditChainStora
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    const countRow = await this.queryOne<{ cnt: string }>(
-      `SELECT COUNT(*) as cnt FROM audit.entries ${where}`,
-      params
-    );
-
+    // Single query using a window function to avoid a separate COUNT round-trip.
+    // COUNT(*) OVER() computes the total matching rows while fetching the page.
     const dataParams = [...params, limit, offset];
-    const rows = await this.queryMany<AuditRow>(
-      `SELECT * FROM audit.entries ${where} ORDER BY timestamp ${order} LIMIT $${paramIndex++} OFFSET $${paramIndex++}`,
+    const rows = await this.queryMany<AuditRow & { total_count: string }>(
+      `SELECT *, COUNT(*) OVER() AS total_count FROM audit.entries ${where} ORDER BY timestamp ${order} LIMIT $${paramIndex++} OFFSET $${paramIndex++}`,
       dataParams
     );
 
     return {
       entries: rows.map(rowToEntry),
-      total: Number(countRow?.cnt ?? 0),
+      total: Number(rows[0]?.total_count ?? 0),
       limit,
       offset,
     };
@@ -224,13 +221,9 @@ export class SQLiteAuditStorage extends PgBaseStorage implements AuditChainStora
     const limit = Math.min(opts.limit ?? 50, 1000);
     const offset = opts.offset ?? 0;
 
-    const countRow = await this.queryOne<{ cnt: string }>(
-      `SELECT COUNT(*) as cnt FROM audit.entries WHERE search_vector @@ plainto_tsquery('english', $1)`,
-      [query]
-    );
-
-    const rows = await this.queryMany<AuditRow>(
-      `SELECT * FROM audit.entries
+    // Single query with window function — avoids a separate COUNT round-trip.
+    const rows = await this.queryMany<AuditRow & { total_count: string }>(
+      `SELECT *, COUNT(*) OVER() AS total_count FROM audit.entries
        WHERE search_vector @@ plainto_tsquery('english', $1)
        ORDER BY ts_rank(search_vector, plainto_tsquery('english', $1)) DESC
        LIMIT $2 OFFSET $3`,
@@ -239,7 +232,7 @@ export class SQLiteAuditStorage extends PgBaseStorage implements AuditChainStora
 
     return {
       entries: rows.map(rowToEntry),
-      total: Number(countRow?.cnt ?? 0),
+      total: Number(rows[0]?.total_count ?? 0),
       limit,
       offset,
     };

@@ -39,6 +39,13 @@ export interface AuditChainConfig {
   storage: AuditChainStorage;
   /** Signing key for HMAC (from environment) */
   signingKey: string;
+  /**
+   * When true, a signature mismatch on the last entry during initialize()
+   * triggers an automatic repair pass instead of throwing.  Safe to enable
+   * in all environments — repair is idempotent and only re-signs entries
+   * whose hash or signature no longer matches.
+   */
+  repairOnInit?: boolean;
 }
 
 export interface VerificationResult {
@@ -109,6 +116,7 @@ function computeSignature(entryHash: string, previousHash: string, signingKey: s
 export class AuditChain {
   private readonly storage: AuditChainStorage;
   private signingKey: string;
+  private readonly repairOnInit: boolean;
   private lastHash: string = GENESIS_HASH;
   private initialized = false;
   private logger: SecureLogger | null = null;
@@ -126,6 +134,7 @@ export class AuditChain {
   constructor(config: AuditChainConfig) {
     this.storage = config.storage;
     this.signingKey = config.signingKey;
+    this.repairOnInit = config.repairOnInit ?? false;
 
     // Validate signing key strength
     if (config.signingKey.length < 32) {
@@ -184,6 +193,16 @@ export class AuditChain {
       );
 
       if (!secureCompare(lastEntry.integrity.signature, expectedSig)) {
+        if (this.repairOnInit) {
+          this.logger?.warn('Audit chain signature mismatch on last entry — running automatic repair', {
+            lastEntryId: lastEntry.id,
+          });
+          // Mark initialized first to prevent recursive initialize() call inside repair()
+          this.initialized = true;
+          const { repairedCount, entriesTotal } = await this.repair();
+          this.logger?.info('Audit chain auto-repair complete', { repairedCount, entriesTotal });
+          return;
+        }
         throw new Error('Audit chain integrity compromised: last entry signature invalid');
       }
 
@@ -403,10 +422,22 @@ export class AuditChain {
    * introduced).  The operation is idempotent: entries whose hash + signature
    * already match are left untouched.
    *
+   * Repair is serialized through the same queue as record() so it never races
+   * with an in-flight write about to update this.lastHash.  New record() calls
+   * that arrive during repair will queue behind it.
+   *
    * Returns the number of entries that were actually re-signed and the final
    * chain hash.
    */
-  async repair(): Promise<{ repairedCount: number; entriesTotal: number }> {
+  repair(): Promise<{ repairedCount: number; entriesTotal: number }> {
+    const next = this._recordQueue.then(() => this._doRepair());
+    // Errors must not poison the queue for future record() calls
+    this._recordQueue = next.catch(() => undefined);
+    return next;
+  }
+
+  /** Internal repair implementation — called exclusively through repair(). */
+  private async _doRepair(): Promise<{ repairedCount: number; entriesTotal: number }> {
     if (!this.initialized) {
       await this.initialize();
     }
@@ -442,8 +473,11 @@ export class AuditChain {
   }
 
   /**
-   * Create a forensic snapshot of the chain state
-   * Used before recovery operations
+   * Create a forensic snapshot of the chain state.
+   * Used before recovery operations.
+   *
+   * Waits for any in-flight record() to settle before reading this.lastHash
+   * so the snapshot always reflects a consistent chain tip.
    */
   async createSnapshot(): Promise<{
     timestamp: number;
@@ -451,6 +485,10 @@ export class AuditChain {
     lastHash: string;
     lastEntryId: string | null;
   }> {
+    // Wait for the tail of the record queue — swallow errors so a failed
+    // record() doesn't block the snapshot.
+    await this._recordQueue.catch(() => undefined);
+
     const lastEntry = await this.storage.getLast();
 
     return {

@@ -38,6 +38,13 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
       request: FastifyRequest<{ Body: { password: string; rememberMe?: boolean } }>,
       reply: FastifyReply
     ) => {
+      // Rate-limit by IP: max 5 attempts per 15 minutes (configurable via SecurityConfig)
+      const rl = await rateLimiter.check('auth_attempts', request.ip, { ipAddress: request.ip });
+      if (!rl.allowed) {
+        reply.header('Retry-After', String(rl.retryAfter ?? 60));
+        return sendError(reply, 429, 'Too many login attempts. Please try again later.');
+      }
+
       const { password, rememberMe } = request.body ?? {};
       if (!password || typeof password !== 'string') {
         return sendError(reply, 400, 'Password is required');
@@ -59,6 +66,13 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
   app.post(
     '/api/v1/auth/refresh',
     async (request: FastifyRequest<{ Body: { refreshToken: string } }>, reply: FastifyReply) => {
+      // Rate-limit by IP: max 10 per minute (blocks token-stuffing loops)
+      const rl = await rateLimiter.check('auth_refresh', request.ip, { ipAddress: request.ip });
+      if (!rl.allowed) {
+        reply.header('Retry-After', String(rl.retryAfter ?? 60));
+        return sendError(reply, 429, 'Too many refresh attempts. Please try again later.');
+      }
+
       const { refreshToken } = request.body ?? {};
       if (!refreshToken || typeof refreshToken !== 'string') {
         return sendError(reply, 400, 'Refresh token is required');
@@ -94,6 +108,13 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
       request: FastifyRequest<{ Body: { currentPassword: string; newPassword: string } }>,
       reply: FastifyReply
     ) => {
+      // Rate-limit by IP: max 3 per hour (high-value credential operation)
+      const rl = await rateLimiter.check('auth_reset_password', request.ip, { ipAddress: request.ip });
+      if (!rl.allowed) {
+        reply.header('Retry-After', String(rl.retryAfter ?? 3600));
+        return sendError(reply, 429, 'Too many password reset attempts. Please try again later.');
+      }
+
       const { currentPassword, newPassword } = request.body ?? {};
       if (!currentPassword || typeof currentPassword !== 'string') {
         return sendError(reply, 400, 'Current password is required');

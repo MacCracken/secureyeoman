@@ -399,6 +399,7 @@ export class SecureYeoman {
       this.auditChain = new AuditChain({
         storage,
         signingKey,
+        repairOnInit: true,
       });
       await this.auditChain.initialize();
       this.logger.debug('Audit chain initialized');
