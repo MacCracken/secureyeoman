@@ -39,7 +39,14 @@ const NETBOX_TOOL_PREFIXES = ['netbox_'];
 const TWINGATE_TOOL_PREFIXES = ['twingate_'];
 
 export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions): void {
-  const { mcpStorage, mcpClient, mcpServer, healthMonitor, credentialManager, getNetBoxWriteAllowed } = opts;
+  const {
+    mcpStorage,
+    mcpClient,
+    mcpServer,
+    healthMonitor,
+    credentialManager,
+    getNetBoxWriteAllowed,
+  } = opts;
 
   // List configured MCP servers
   app.get(
@@ -181,7 +188,10 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
       }
       if (!config.exposeBrowser && BROWSER_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
         return false;
-      if (!config.exposeDesktopControl && DESKTOP_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+      if (
+        !config.exposeDesktopControl &&
+        DESKTOP_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
+      )
         return false;
       if (!config.exposeNetworkTools && NETWORK_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
         return false;
@@ -191,7 +201,10 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
         NETBOX_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
       )
         return false;
-      if (!config.exposeTwingateTools && TWINGATE_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+      if (
+        !config.exposeTwingateTools &&
+        TWINGATE_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
+      )
         return false;
       return true;
     });

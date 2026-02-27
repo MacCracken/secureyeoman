@@ -31,12 +31,15 @@ const agentReports = new Map<string, AgentReport>();
 // Evict stale reports (no heartbeat for > 10 minutes) every 5 minutes.
 // .unref() ensures this timer does not prevent process exit.
 const AGENT_REPORT_TTL_MS = 10 * 60 * 1000;
-const agentReportEvictTimer = setInterval(() => {
-  const cutoff = Date.now() - AGENT_REPORT_TTL_MS;
-  for (const [id, report] of agentReports) {
-    if (report.reportedAt < cutoff) agentReports.delete(id);
-  }
-}, 5 * 60 * 1000);
+const agentReportEvictTimer = setInterval(
+  () => {
+    const cutoff = Date.now() - AGENT_REPORT_TTL_MS;
+    for (const [id, report] of agentReports) {
+      if (report.reportedAt < cutoff) agentReports.delete(id);
+    }
+  },
+  5 * 60 * 1000
+);
 agentReportEvictTimer.unref();
 
 export interface DiagnosticRoutesOptions {
@@ -78,10 +81,7 @@ export function registerDiagnosticRoutes(
 
   app.get(
     '/api/v1/diagnostics/agent-report/:agentId',
-    async (
-      request: FastifyRequest<{ Params: { agentId: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { agentId: string } }>, reply: FastifyReply) => {
       const report = agentReports.get(request.params.agentId);
       if (!report) {
         return reply.code(404).send({
@@ -130,7 +130,9 @@ export function registerDiagnosticRoutes(
                   latencyMs = Date.now() - start;
                   reachable = res.ok;
                 }
-              } catch { /* unreachable */ }
+              } catch {
+                /* unreachable */
+              }
             }
             return {
               id: serverId,
@@ -150,9 +152,7 @@ export function registerDiagnosticRoutes(
           checkedAt: new Date().toISOString(),
         };
       } catch (err) {
-        return reply
-          .code(500)
-          .send({ error: 'Failed to ping integrations', details: String(err) });
+        return reply.code(500).send({ error: 'Failed to ping integrations', details: String(err) });
       }
     }
   );

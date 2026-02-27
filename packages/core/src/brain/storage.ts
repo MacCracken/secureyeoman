@@ -120,7 +120,9 @@ function rowToSkill(row: SkillRow): Skill {
     useWhen: row.use_when ?? '',
     doNotUseWhen: row.do_not_use_when ?? '',
     successCriteria: row.success_criteria ?? '',
-    mcpToolsAllowed: Array.isArray(row.mcp_tools_allowed) ? (row.mcp_tools_allowed as string[]) : [],
+    mcpToolsAllowed: Array.isArray(row.mcp_tools_allowed)
+      ? (row.mcp_tools_allowed as string[])
+      : [],
     routing: (row.routing ?? 'fuzzy') as Skill['routing'],
     linkedWorkflowId: null,
     // ADR 021: Skill Actions
@@ -346,7 +348,16 @@ export class BrainStorage extends PgBaseStorage {
     await this.query(
       `INSERT INTO brain.knowledge (id, personality_id, topic, content, source, confidence, supersedes, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, NULL, $7, $8)`,
-      [id, personalityId ?? null, data.topic, data.content, data.source, data.confidence ?? 0.8, now, now]
+      [
+        id,
+        personalityId ?? null,
+        data.topic,
+        data.content,
+        data.source,
+        data.confidence ?? 0.8,
+        now,
+        now,
+      ]
     );
 
     const result = await this.getKnowledge(id);
@@ -529,8 +540,12 @@ export class BrainStorage extends PgBaseStorage {
         data.routing ?? existing.routing,
         data.autonomyLevel ?? existing.autonomyLevel,
         data.outputSchema !== undefined
-          ? (data.outputSchema != null ? JSON.stringify(data.outputSchema) : null)
-          : (existing.outputSchema != null ? JSON.stringify(existing.outputSchema) : null),
+          ? data.outputSchema != null
+            ? JSON.stringify(data.outputSchema)
+            : null
+          : existing.outputSchema != null
+            ? JSON.stringify(existing.outputSchema)
+            : null,
         data.enabled !== undefined ? data.enabled : existing.enabled,
         data.source ?? existing.source,
         data.status ?? existing.status,

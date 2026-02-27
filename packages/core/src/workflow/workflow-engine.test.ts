@@ -89,9 +89,9 @@ function makeStepRun(stepId = 'step1'): WorkflowStepRun {
 function makeStorage(): WorkflowStorage {
   return {
     updateRun: vi.fn().mockResolvedValue(makeRun()),
-    createStepRun: vi.fn().mockImplementation(async (_runId: string, stepId: string) =>
-      makeStepRun(stepId)
-    ),
+    createStepRun: vi
+      .fn()
+      .mockImplementation(async (_runId: string, stepId: string) => makeStepRun(stepId)),
     updateStepRun: vi.fn().mockResolvedValue(null),
     getDefinition: vi.fn().mockResolvedValue(null),
     createRun: vi.fn().mockResolvedValue(makeRun()),
@@ -110,12 +110,14 @@ function makeLogger(): SecureLogger {
   } as unknown as SecureLogger;
 }
 
-function makeEngine(opts: {
-  storage?: WorkflowStorage;
-  subAgentManager?: unknown;
-  swarmManager?: unknown;
-  logger?: SecureLogger;
-} = {}): WorkflowEngine {
+function makeEngine(
+  opts: {
+    storage?: WorkflowStorage;
+    subAgentManager?: unknown;
+    swarmManager?: unknown;
+    logger?: SecureLogger;
+  } = {}
+): WorkflowEngine {
   return new WorkflowEngine({
     storage: opts.storage ?? makeStorage(),
     subAgentManager: (opts.subAgentManager ?? null) as never,
@@ -253,8 +255,18 @@ describe('WorkflowEngine.execute — topological sort', () => {
     );
     const engine = makeEngine({ storage });
 
-    const stepA = makeStep({ id: 'a', type: 'transform', config: { outputTemplate: 'a' }, dependsOn: [] });
-    const stepB = makeStep({ id: 'b', type: 'transform', config: { outputTemplate: 'b' }, dependsOn: ['a'] });
+    const stepA = makeStep({
+      id: 'a',
+      type: 'transform',
+      config: { outputTemplate: 'a' },
+      dependsOn: [],
+    });
+    const stepB = makeStep({
+      id: 'b',
+      type: 'transform',
+      config: { outputTemplate: 'b' },
+      dependsOn: ['a'],
+    });
 
     await engine.execute(makeRun(), makeDefinition([stepA, stepB]));
 
@@ -375,7 +387,11 @@ describe('WorkflowEngine.execute — step dispatch: agent', () => {
     const storage = makeStorage();
     const engine = makeEngine({ storage, subAgentManager: null });
 
-    const step = makeStep({ id: 'agent1', type: 'agent', config: { profile: 'p', taskTemplate: 't' } });
+    const step = makeStep({
+      id: 'agent1',
+      type: 'agent',
+      config: { profile: 'p', taskTemplate: 't' },
+    });
     await engine.execute(makeRun(), makeDefinition([step]));
 
     expect(storage.updateRun).toHaveBeenCalledWith(
@@ -415,7 +431,11 @@ describe('WorkflowEngine.execute — step dispatch: swarm', () => {
     const storage = makeStorage();
     const engine = makeEngine({ storage, swarmManager: null });
 
-    const step = makeStep({ id: 'sw1', type: 'swarm', config: { templateId: 'team', taskTemplate: 'build' } });
+    const step = makeStep({
+      id: 'sw1',
+      type: 'swarm',
+      config: { templateId: 'team', taskTemplate: 'build' },
+    });
     await engine.execute(makeRun(), makeDefinition([step]));
 
     expect(storage.updateRun).toHaveBeenCalledWith(
@@ -441,7 +461,11 @@ describe('WorkflowEngine.execute — step dispatch: swarm', () => {
     await engine.execute(run, makeDefinition([step]));
 
     expect(swarmManager.executeSwarm).toHaveBeenCalledWith(
-      expect.objectContaining({ templateId: 'research-team', task: 'build something', initiatedBy: 'workflow' })
+      expect.objectContaining({
+        templateId: 'research-team',
+        task: 'build something',
+        initiatedBy: 'workflow',
+      })
     );
     expect(storage.updateRun).toHaveBeenCalledWith(
       run.id,

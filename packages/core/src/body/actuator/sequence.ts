@@ -5,19 +5,18 @@
  * Maximum 50 steps per sequence.
  */
 
-import {
-  moveMouse,
-  clickMouse,
-  scrollMouse,
-  typeText,
-  pressKey,
-  releaseKey,
-} from './input.js';
+import { moveMouse, clickMouse, scrollMouse, typeText, pressKey, releaseKey } from './input.js';
 import { readClipboard, writeClipboard } from './clipboard.js';
 
 export type InputAction =
   | { type: 'mouse_move'; x: number; y: number }
-  | { type: 'mouse_click'; x?: number; y?: number; button?: 'left' | 'right' | 'middle'; double?: boolean }
+  | {
+      type: 'mouse_click';
+      x?: number;
+      y?: number;
+      button?: 'left' | 'right' | 'middle';
+      double?: boolean;
+    }
   | { type: 'mouse_scroll'; dx: number; dy: number }
   | { type: 'type'; text: string }
   | { type: 'key_press'; combo: string }

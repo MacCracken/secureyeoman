@@ -182,11 +182,7 @@ Options:
           step(2, 'API Keys — Connect AI providers');
           if (serverReachable) {
             ctx.stdout.write('  The server is running. You can create a dashboard API key now.\n');
-            const createDashKey = await prompt(
-              rl,
-              '  Create a dashboard API key? (y/n/skip)',
-              'n'
-            );
+            const createDashKey = await prompt(rl, '  Create a dashboard API key? (y/n/skip)', 'n');
             if (createDashKey.toLowerCase() === 'y') {
               const keyName = await prompt(rl, '  Key name', `${agentName}-cli`);
               try {
@@ -195,9 +191,7 @@ Options:
                   body: { name: keyName },
                 });
                 if (result.ok && (result as { ok: boolean; data?: { key?: string } }).data?.key) {
-                  ctx.stdout.write(
-                    `\n  Dashboard API key created (save this — shown once):\n`
-                  );
+                  ctx.stdout.write(`\n  Dashboard API key created (save this — shown once):\n`);
                   ctx.stdout.write(
                     `    ${String((result as { ok: boolean; data?: { key?: string } }).data?.key)}\n`
                   );
@@ -209,18 +203,14 @@ Options:
               ctx.stdout.write('  Skipping dashboard API key creation.\n');
             }
           } else {
-            ctx.stdout.write(
-              '  Provider API keys will be prompted in the Model step (Step 4).\n'
-            );
+            ctx.stdout.write('  Provider API keys will be prompted in the Model step (Step 4).\n');
             ctx.stdout.write('  Press Enter to continue or type "skip" to skip this step.\n');
             await prompt(rl, '  [Enter to continue]', '');
           }
 
           // ── Step 3: Security — Security policy ─────────────────────────────
           step(3, 'Security — Security policy');
-          ctx.stdout.write(
-            '  Configure which capabilities your agent is allowed to use.\n'
-          );
+          ctx.stdout.write('  Configure which capabilities your agent is allowed to use.\n');
           ctx.stdout.write('  Press Enter to keep each default (y = allow, n = deny).\n\n');
 
           const prev = {

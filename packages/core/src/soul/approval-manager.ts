@@ -50,7 +50,9 @@ export class ApprovalManager extends PgBaseStorage {
     };
   }
 
-  async listApprovals(opts: ListApprovalsOptions = {}): Promise<{ approvals: PendingApproval[]; total: number }> {
+  async listApprovals(
+    opts: ListApprovalsOptions = {}
+  ): Promise<{ approvals: PendingApproval[]; total: number }> {
     const conditions: string[] = [];
     const params: unknown[] = [];
     let idx = 1;
@@ -74,8 +76,14 @@ export class ApprovalManager extends PgBaseStorage {
     const limit = opts.limit ?? 50;
     const offset = opts.offset ?? 0;
     const rows = await this.query<{
-      id: string; personality_id: string; tool_name: string; tool_args: Record<string, unknown>;
-      status: string; created_at: string; resolved_at: string | null; resolved_by: string | null;
+      id: string;
+      personality_id: string;
+      tool_name: string;
+      tool_args: Record<string, unknown>;
+      status: string;
+      created_at: string;
+      resolved_at: string | null;
+      resolved_by: string | null;
     }>(
       `SELECT id, personality_id, tool_name, tool_args, status, created_at, resolved_at, resolved_by
        FROM soul.pending_approvals ${where}
@@ -106,8 +114,14 @@ export class ApprovalManager extends PgBaseStorage {
   ): Promise<PendingApproval | null> {
     const now = Date.now();
     const result = await this.query<{
-      id: string; personality_id: string; tool_name: string; tool_args: Record<string, unknown>;
-      status: string; created_at: string; resolved_at: string; resolved_by: string;
+      id: string;
+      personality_id: string;
+      tool_name: string;
+      tool_args: Record<string, unknown>;
+      status: string;
+      created_at: string;
+      resolved_at: string;
+      resolved_by: string;
     }>(
       `UPDATE soul.pending_approvals
        SET status = $1, resolved_at = $2, resolved_by = $3
@@ -131,8 +145,14 @@ export class ApprovalManager extends PgBaseStorage {
 
   async getApproval(id: string): Promise<PendingApproval | null> {
     const result = await this.query<{
-      id: string; personality_id: string; tool_name: string; tool_args: Record<string, unknown>;
-      status: string; created_at: string; resolved_at: string | null; resolved_by: string | null;
+      id: string;
+      personality_id: string;
+      tool_name: string;
+      tool_args: Record<string, unknown>;
+      status: string;
+      created_at: string;
+      resolved_at: string | null;
+      resolved_by: string | null;
     }>(
       `SELECT id, personality_id, tool_name, tool_args, status, created_at, resolved_at, resolved_by
        FROM soul.pending_approvals WHERE id = $1`,
@@ -153,7 +173,9 @@ export class ApprovalManager extends PgBaseStorage {
   }
 
   async pendingCount(personalityId?: string): Promise<number> {
-    const where = personalityId ? `WHERE personality_id = $1 AND status = 'pending'` : `WHERE status = 'pending'`;
+    const where = personalityId
+      ? `WHERE personality_id = $1 AND status = 'pending'`
+      : `WHERE status = 'pending'`;
     const params = personalityId ? [personalityId] : [];
     const result = await this.query<{ count: string }>(
       `SELECT COUNT(*)::text AS count FROM soul.pending_approvals ${where}`,

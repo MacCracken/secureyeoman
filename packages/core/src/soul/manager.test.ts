@@ -1274,10 +1274,14 @@ describe('SoulManager', () => {
           },
         },
       };
-      const { manager } = makeManager({
-        getActivePersonality: vi.fn().mockResolvedValue(personality),
-        getPersonality: vi.fn().mockResolvedValue(personality),
-      }, {}, brain);
+      const { manager } = makeManager(
+        {
+          getActivePersonality: vi.fn().mockResolvedValue(personality),
+          getPersonality: vi.fn().mockResolvedValue(personality),
+        },
+        {},
+        brain
+      );
       const tools = await manager.getActiveTools();
       const names = tools.map((t) => t.name);
       expect(names).toContain('brain_tool');

@@ -142,10 +142,9 @@ export class TlsManager {
       this.getLogger().info('Auto-generated TLS cert expired — regenerating', { certDir });
     }
 
-    this.getLogger().warn(
-      'Generating self-signed TLS certificate — NOT suitable for production',
-      { certDir }
-    );
+    this.getLogger().warn('Generating self-signed TLS certificate — NOT suitable for production', {
+      certDir,
+    });
 
     this.generatedPaths = generateDevCerts(certDir);
     return {
@@ -171,7 +170,8 @@ export class TlsManager {
     const msPerDay = 86_400_000;
     const daysUntilExpiry = expiresAt !== null ? Math.floor((expiresAt - now) / msPerDay) : null;
     const expired = expiresAt !== null && expiresAt < now;
-    const expiryWarning = !expired && daysUntilExpiry !== null && daysUntilExpiry < EXPIRY_WARNING_DAYS;
+    const expiryWarning =
+      !expired && daysUntilExpiry !== null && daysUntilExpiry < EXPIRY_WARNING_DAYS;
 
     return {
       enabled: this.config.enabled,
@@ -216,7 +216,7 @@ export class TlsManager {
       }).toString();
       // Output: "notAfter=Jan  1 00:00:00 2026 GMT"
       const match = /notAfter=(.+)/.exec(out);
-      if (!match || !match[1]) return null;
+      if (!match?.[1]) return null;
       const date = new Date(match[1].trim());
       return isNaN(date.getTime()) ? null : date.getTime();
     } catch {

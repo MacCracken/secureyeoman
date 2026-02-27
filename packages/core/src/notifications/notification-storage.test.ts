@@ -12,17 +12,19 @@ import { NotificationStorage, type Notification } from './notification-storage.j
 
 const NOW = 1_700_000_000_000;
 
-function makeRow(overrides: Partial<{
-  id: string;
-  type: string;
-  title: string;
-  body: string;
-  level: string;
-  source: string | null;
-  metadata: Record<string, unknown> | null;
-  read_at: number | null;
-  created_at: number;
-}> = {}) {
+function makeRow(
+  overrides: Partial<{
+    id: string;
+    type: string;
+    title: string;
+    body: string;
+    level: string;
+    source: string | null;
+    metadata: Record<string, unknown> | null;
+    read_at: number | null;
+    created_at: number;
+  }> = {}
+) {
   return {
     id: 'notif-1',
     type: 'heartbeat_alert',
@@ -248,9 +250,7 @@ describe('row mapping', () => {
 
   it('maps source null to undefined', async () => {
     const storage = new NotificationStorage();
-    vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(
-      makeRow({ source: null })
-    );
+    vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(makeRow({ source: null }));
 
     const result = await storage.create({ type: 't', title: 'T', body: 'B' });
 

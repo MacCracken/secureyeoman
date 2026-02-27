@@ -92,17 +92,30 @@ function toolAction(toolName: string): string {
 
 // Prefix lists compiled once at module load — used inside filterMcpTools.
 const NETWORK_DEVICE_PREFIXES = [
-  'network_device_', 'network_show_', 'network_config_',
-  'network_health_', 'network_ping_', 'network_traceroute',
+  'network_device_',
+  'network_show_',
+  'network_config_',
+  'network_health_',
+  'network_ping_',
+  'network_traceroute',
 ];
 const NETWORK_DISCOVERY_PREFIXES = [
-  'network_discovery_', 'network_topology_', 'network_arp_', 'network_mac_',
-  'network_routing_', 'network_ospf_', 'network_bgp_',
-  'network_interface_', 'network_vlan_',
+  'network_discovery_',
+  'network_topology_',
+  'network_arp_',
+  'network_mac_',
+  'network_routing_',
+  'network_ospf_',
+  'network_bgp_',
+  'network_interface_',
+  'network_vlan_',
 ];
 const NETWORK_AUDIT_PREFIXES = [
-  'network_acl_', 'network_aaa_', 'network_port_',
-  'network_stp_', 'network_software_',
+  'network_acl_',
+  'network_aaa_',
+  'network_port_',
+  'network_stp_',
+  'network_software_',
 ];
 const NETWORK_UTIL_PREFIXES = ['subnet_', 'wildcard_', 'pcap_'];
 
@@ -117,32 +130,66 @@ function filterMcpTools(
   globalConfig: McpFeatureConfig,
   perPersonality: Partial<McpFeatures>
 ): Tool[] {
-  const globalNetworkOk = globalConfig.exposeNetworkTools === true;
-  const globalTwingateOk = globalConfig.exposeTwingateTools === true;
+  const globalNetworkOk = globalConfig.exposeNetworkTools;
+  const globalTwingateOk = globalConfig.exposeTwingateTools;
   const tools: Tool[] = [];
 
   for (const tool of allMcpTools) {
     if (tool.serverName === 'YEOMAN MCP') {
       const n = tool.name;
 
-      if ((n.startsWith('git_') || n.startsWith('github_')) && !(globalConfig.exposeGit && perPersonality.exposeGit)) continue;
-      if (n.startsWith('fs_') && !(globalConfig.exposeFilesystem && perPersonality.exposeFilesystem)) continue;
-      if ((n.startsWith('web_scrape') || n === 'web_extract_structured' || n === 'web_fetch_markdown') && !(globalConfig.exposeWebScraping ?? globalConfig.exposeWeb) && !perPersonality.exposeWebScraping) continue;
-      if (n.startsWith('web_search') && !(globalConfig.exposeWeb && perPersonality.exposeWebSearch)) continue;
-      if (n.startsWith('browser_') && !(globalConfig.exposeBrowser && perPersonality.exposeBrowser)) continue;
+      if (
+        (n.startsWith('git_') || n.startsWith('github_')) &&
+        !(globalConfig.exposeGit && perPersonality.exposeGit)
+      )
+        continue;
+      if (
+        n.startsWith('fs_') &&
+        !(globalConfig.exposeFilesystem && perPersonality.exposeFilesystem)
+      )
+        continue;
+      if (
+        (n.startsWith('web_scrape') ||
+          n === 'web_extract_structured' ||
+          n === 'web_fetch_markdown') &&
+        !(globalConfig.exposeWebScraping ?? globalConfig.exposeWeb) &&
+        !perPersonality.exposeWebScraping
+      )
+        continue;
+      if (n.startsWith('web_search') && !(globalConfig.exposeWeb && perPersonality.exposeWebSearch))
+        continue;
+      if (n.startsWith('browser_') && !(globalConfig.exposeBrowser && perPersonality.exposeBrowser))
+        continue;
 
-      if (NETWORK_DEVICE_PREFIXES.some((p) => n.startsWith(p)) && !(globalNetworkOk && perPersonality.exposeNetworkDevices)) continue;
-      if (NETWORK_DISCOVERY_PREFIXES.some((p) => n.startsWith(p)) && !(globalNetworkOk && perPersonality.exposeNetworkDiscovery)) continue;
-      if (NETWORK_AUDIT_PREFIXES.some((p) => n.startsWith(p)) && !(globalNetworkOk && perPersonality.exposeNetworkAudit)) continue;
+      if (
+        NETWORK_DEVICE_PREFIXES.some((p) => n.startsWith(p)) &&
+        !(globalNetworkOk && perPersonality.exposeNetworkDevices)
+      )
+        continue;
+      if (
+        NETWORK_DISCOVERY_PREFIXES.some((p) => n.startsWith(p)) &&
+        !(globalNetworkOk && perPersonality.exposeNetworkDiscovery)
+      )
+        continue;
+      if (
+        NETWORK_AUDIT_PREFIXES.some((p) => n.startsWith(p)) &&
+        !(globalNetworkOk && perPersonality.exposeNetworkAudit)
+      )
+        continue;
       if (n.startsWith('netbox_') && !(globalNetworkOk && perPersonality.exposeNetBox)) continue;
       if (n.startsWith('nvd_') && !(globalNetworkOk && perPersonality.exposeNvd)) continue;
-      if (NETWORK_UTIL_PREFIXES.some((p) => n.startsWith(p)) && !(globalNetworkOk && perPersonality.exposeNetworkUtils)) continue;
-      if (n.startsWith('twingate_') && !(globalTwingateOk && perPersonality.exposeTwingate)) continue;
+      if (
+        NETWORK_UTIL_PREFIXES.some((p) => n.startsWith(p)) &&
+        !(globalNetworkOk && perPersonality.exposeNetworkUtils)
+      )
+        continue;
+      if (n.startsWith('twingate_') && !(globalTwingateOk && perPersonality.exposeTwingate))
+        continue;
     } else {
       if (!selectedServers.includes(tool.serverName)) continue;
     }
 
-    const raw = (tool.inputSchema ?? {}) as Record<string, unknown>;
+    const raw = tool.inputSchema ?? {};
     const parameters: Tool['parameters'] = raw.type
       ? (raw as Tool['parameters'])
       : { type: 'object', properties: {}, ...(raw as object) };
@@ -190,13 +237,25 @@ async function gatherBrainContext(
   try {
     const brainManager = secureYeoman.getBrainManager();
     const [memories, knowledge] = await Promise.all([
-      brainManager.recall({ search: message, limit: 5, ...(personalityId ? { personalityId } : {}) }),
-      brainManager.queryKnowledge({ search: message, limit: 5, ...(personalityId ? { personalityId } : {}) }),
+      brainManager.recall({
+        search: message,
+        limit: 5,
+        ...(personalityId ? { personalityId } : {}),
+      }),
+      brainManager.queryKnowledge({
+        search: message,
+        limit: 5,
+        ...(personalityId ? { personalityId } : {}),
+      }),
     ]);
     const snippets: string[] = [];
     for (const m of memories) snippets.push(`[${m.type}] ${m.content}`);
     for (const k of knowledge) snippets.push(`[${k.topic}] ${k.content}`);
-    return { memoriesUsed: memories.length, knowledgeUsed: knowledge.length, contextSnippets: snippets };
+    return {
+      memoriesUsed: memories.length,
+      knowledgeUsed: knowledge.length,
+      contextSnippets: snippets,
+    };
   } catch {
     return { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] };
   }
@@ -300,7 +359,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       const viewportHint =
         clientContext?.viewportHint &&
         (VALID_VIEWPORTS as readonly string[]).includes(clientContext.viewportHint)
-          ? (clientContext.viewportHint as 'mobile' | 'tablet' | 'desktop')
+          ? clientContext.viewportHint
           : undefined;
 
       let aiClient;
@@ -322,9 +381,10 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         ? ((await soulManager.getPersonality(personalityId)) ??
           (await soulManager.getActivePersonality()))
         : await soulManager.getActivePersonality();
-      const effectivePersonalityId = (personality?.body?.omnipresentMind ?? false)
-        ? undefined
-        : (personality?.id ?? personalityId ?? undefined);
+      const effectivePersonalityId =
+        (personality?.body?.omnipresentMind ?? false)
+          ? undefined
+          : (personality?.id ?? personalityId ?? undefined);
 
       // Gather Brain context metadata (best-effort — Brain may not be available)
       const brainContext: BrainContextMeta = memoryEnabled
@@ -400,16 +460,18 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               keyType: 'user',
               onExceed: 'reject',
             });
-            const perResult = await Promise.resolve(
-              rateLimiter.check(ruleName, userId, rlCtx)
-            );
+            const perResult = await Promise.resolve(rateLimiter.check(ruleName, userId, rlCtx));
             if (!perResult.allowed) {
               void secureYeoman.getAuditChain().record({
                 event: 'rate_limit',
                 level: 'warn',
                 message: 'Chat rate limit exceeded (per-personality)',
                 userId: request.authUser?.userId,
-                metadata: { rule: ruleName, endpoint: '/api/v1/chat', personalityId: personality!.id },
+                metadata: {
+                  rule: ruleName,
+                  endpoint: '/api/v1/chat',
+                  personalityId: personality!.id,
+                },
               });
               return reply.code(429).send({
                 error: 'Too many requests for this personality.',
@@ -428,12 +490,14 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
 
       if (personality?.body?.enabled && mcpClient && mcpStorage) {
         const globalConfig = await mcpStorage.getConfig();
-        tools.push(...filterMcpTools(
-          mcpClient.getAllTools(),
-          personality.body.selectedServers ?? [],
-          globalConfig,
-          personality.body.mcpFeatures ?? {}
-        ));
+        tools.push(
+          ...filterMcpTools(
+            mcpClient.getAllTools(),
+            personality.body.selectedServers ?? [],
+            globalConfig,
+            personality.body.mcpFeatures ?? {}
+          )
+        );
       }
 
       // Proactive context compaction — summarise older turns before the API
@@ -469,10 +533,9 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       }
 
       // Read thinking config from personality body
-      const thinkingBudgetTokens =
-        personality?.body?.thinkingConfig?.enabled
-          ? (personality.body.thinkingConfig.budgetTokens ?? 10000)
-          : undefined;
+      const thinkingBudgetTokens = personality?.body?.thinkingConfig?.enabled
+        ? (personality.body.thinkingConfig.budgetTokens ?? 10000)
+        : undefined;
 
       const aiRequest: AIRequest = {
         messages,
@@ -528,8 +591,13 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         const thinkingParts: string[] = [];
 
         // Collect resource-action events to surface in the chat UI and task history.
-        const creationEvents: Array<{ tool: string; label: string; action: string; name: string; id?: string }> =
-          [];
+        const creationEvents: {
+          tool: string;
+          label: string;
+          action: string;
+          name: string;
+          id?: string;
+        }[] = [];
 
         // Resolve once — used inside the tool loop to record every resource action.
         const { uuidv7, sha256 } = await import('../utils/crypto.js');
@@ -572,7 +640,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 const activeIntent = _intentMgrForJudge?.getActiveIntent?.();
                 const judgeVerdict = await llmJudge.judge({
                   toolName: toolCall.name,
-                  toolArgs: (toolCall.arguments ?? {}) as Record<string, unknown>,
+                  toolArgs: toolCall.arguments ?? {},
                   personality: personality ?? null,
                   intentGoals: activeIntent?.goals?.map((g) => g.name),
                   intentBoundaries: activeIntent?.hardBoundaries?.map((b) => b.rule),
@@ -593,7 +661,11 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                     event: 'llm_judge_block',
                     level: 'warn',
                     message: `LLM Judge blocked tool: ${toolCall.name}`,
-                    metadata: { tool: toolCall.name, reason: judgeVerdict.reason, concerns: judgeVerdict.concerns },
+                    metadata: {
+                      tool: toolCall.name,
+                      reason: judgeVerdict.reason,
+                      concerns: judgeVerdict.concerns,
+                    },
                   });
                   continue;
                 }
@@ -602,7 +674,11 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                     event: 'llm_judge_warn',
                     level: 'warn',
                     message: `LLM Judge warned for tool: ${toolCall.name}`,
-                    metadata: { tool: toolCall.name, reason: judgeVerdict.reason, concerns: judgeVerdict.concerns },
+                    metadata: {
+                      tool: toolCall.name,
+                      reason: judgeVerdict.reason,
+                      concerns: judgeVerdict.concerns,
+                    },
                   });
                   try {
                     await _intentMgrForJudge?.logEnforcement({
@@ -611,9 +687,13 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                       actionAttempted: toolCall.name,
                       metadata: { tool: toolCall.name, reason: judgeVerdict.reason },
                     });
-                  } catch { /* best-effort */ }
+                  } catch {
+                    /* best-effort */
+                  }
                 }
-              } catch { /* fail-open: proceed */ }
+              } catch {
+                /* fail-open: proceed */
+              }
             }
 
             // ── Intent enforcement (Phase 48) ────────────────────────────────
@@ -696,7 +776,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 const mcpResult = await mcpClient!.callTool(
                   mcpTool.serverId,
                   toolCall.name,
-                  toolCall.arguments as Record<string, unknown>
+                  toolCall.arguments
                 );
                 result = { output: mcpResult, isError: false };
               } catch (err) {
@@ -713,15 +793,21 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             const label = CREATION_TOOL_LABELS[toolCall.name];
             if (label && !result.isError) {
               const out = result.output as Record<string, unknown>;
-              const item = (out.skill ?? out.task ?? out.personality ?? out.experiment ??
-                out.swarm ?? out.workflow ?? out.run) as Record<string, unknown> | undefined;
-              const args = toolCall.arguments as Record<string, unknown>;
+              const item = (out.skill ??
+                out.task ??
+                out.personality ??
+                out.experiment ??
+                out.swarm ??
+                out.workflow ??
+                out.run) as Record<string, unknown> | undefined;
+              const args = toolCall.arguments;
               const name = String(
-                item?.name ?? item?.workflowName ??
-                (typeof out.name === 'string' ? out.name : undefined) ??
-                (typeof args?.name === 'string' ? args.name : undefined) ??
-                (typeof args?.task === 'string' ? args.task : undefined) ??
-                toolCall.name
+                item?.name ??
+                  item?.workflowName ??
+                  (typeof out.name === 'string' ? out.name : undefined) ??
+                  (typeof args?.name === 'string' ? args.name : undefined) ??
+                  (typeof args?.task === 'string' ? args.task : undefined) ??
+                  toolCall.name
               );
               const action = toolAction(toolCall.name);
               const id = typeof item?.id === 'string' ? item.id : undefined;
@@ -792,7 +878,10 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               event: 'response_injection_detected',
               level: 'warn',
               message: 'ResponseGuard blocked LLM response',
-              metadata: { findingCount: rgResult.findings.length, findings: rgResult.findings.map((f) => f.patternName) },
+              metadata: {
+                findingCount: rgResult.findings.length,
+                findings: rgResult.findings.map((f) => f.patternName),
+              },
             });
             return sendError(reply, 400, 'Response blocked: safety policy violation');
           }
@@ -801,7 +890,10 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               event: 'response_injection_detected',
               level: 'warn',
               message: 'ResponseGuard findings in LLM response (warn mode)',
-              metadata: { findingCount: rgResult.findings.length, findings: rgResult.findings.map((f) => f.patternName) },
+              metadata: {
+                findingCount: rgResult.findings.length,
+                findings: rgResult.findings.map((f) => f.patternName),
+              },
             });
           }
           // Brain consistency check — warn-only
@@ -825,7 +917,9 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               });
             }
           }
-        } catch { /* best-effort */ }
+        } catch {
+          /* best-effort */
+        }
 
         // Assemble thinking content now so it's available for both persistence and response.
         const thinkingContent = thinkingParts.join('\n\n---\n\n') || undefined;
@@ -1005,7 +1099,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       const viewportHintS =
         clientContext?.viewportHint &&
         (VALID_VIEWPORTS_S as readonly string[]).includes(clientContext.viewportHint)
-          ? (clientContext.viewportHint as 'mobile' | 'tablet' | 'desktop')
+          ? clientContext.viewportHint
           : undefined;
 
       let aiClient;
@@ -1036,11 +1130,13 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         // Resolve personality early so we can scope brain operations correctly.
         // Omnipresent personalities access the shared pool (no filter); others use per-personality scoping.
         const personality = personalityId
-          ? ((await soulManager.getPersonality(personalityId)) ?? (await soulManager.getActivePersonality()))
+          ? ((await soulManager.getPersonality(personalityId)) ??
+            (await soulManager.getActivePersonality()))
           : await soulManager.getActivePersonality();
-        const effectivePersonalityId = (personality?.body?.omnipresentMind ?? false)
-          ? undefined
-          : (personality?.id ?? personalityId ?? undefined);
+        const effectivePersonalityId =
+          (personality?.body?.omnipresentMind ?? false)
+            ? undefined
+            : (personality?.id ?? personalityId ?? undefined);
 
         // Brain context
         const brainContext: BrainContextMeta = memoryEnabled
@@ -1048,8 +1144,12 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           : { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] };
 
         let systemPrompt = memoryEnabled
-          ? await soulManager.composeSoulPrompt(message, personalityId, { viewportHint: viewportHintS })
-          : await soulManager.composeSoulPrompt(undefined, personalityId, { viewportHint: viewportHintS });
+          ? await soulManager.composeSoulPrompt(message, personalityId, {
+              viewportHint: viewportHintS,
+            })
+          : await soulManager.composeSoulPrompt(undefined, personalityId, {
+              viewportHint: viewportHintS,
+            });
 
         // Inject learned preferences into system prompt (best-effort)
         if (memoryEnabled && systemPrompt) {
@@ -1106,16 +1206,18 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 keyType: 'user',
                 onExceed: 'reject',
               });
-              const perResult = await Promise.resolve(
-                rateLimiter.check(ruleName, userId, rlCtx)
-              );
+              const perResult = await Promise.resolve(rateLimiter.check(ruleName, userId, rlCtx));
               if (!perResult.allowed) {
                 void secureYeoman.getAuditChain().record({
                   event: 'rate_limit',
                   level: 'warn',
                   message: 'Stream chat rate limit exceeded (per-personality)',
                   userId: request.authUser?.userId,
-                  metadata: { rule: ruleName, endpoint: '/api/v1/chat/stream', personalityId: personality!.id },
+                  metadata: {
+                    rule: ruleName,
+                    endpoint: '/api/v1/chat/stream',
+                    personalityId: personality!.id,
+                  },
                 });
                 emit({ type: 'error', message: 'Rate limit exceeded for this personality.' });
                 reply.raw.end();
@@ -1132,27 +1234,38 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
 
         if (personality?.body?.enabled && mcpClientStream && mcpStorageStream) {
           const globalConfigS = await mcpStorageStream.getConfig();
-          tools.push(...filterMcpTools(
-            mcpClientStream.getAllTools(),
-            personality.body.selectedServers ?? [],
-            globalConfigS,
-            personality.body.mcpFeatures ?? {}
-          ));
+          tools.push(
+            ...filterMcpTools(
+              mcpClientStream.getAllTools(),
+              personality.body.selectedServers ?? [],
+              globalConfigS,
+              personality.body.mcpFeatures ?? {}
+            )
+          );
         }
 
         // Compaction
         const currentModel = personality?.defaultModel?.model ?? 'unknown';
         if (compactor.needsCompaction(messages, currentModel)) {
           try {
-            const compactionResult = await compactor.compact(messages, currentModel, async (prompt) => {
-              const summaryResp = await aiClient.chat({ messages: [{ role: 'user', content: prompt }], stream: false }, { source: 'context_compaction' });
-              return summaryResp.content;
-            });
+            const compactionResult = await compactor.compact(
+              messages,
+              currentModel,
+              async (prompt) => {
+                const summaryResp = await aiClient.chat(
+                  { messages: [{ role: 'user', content: prompt }], stream: false },
+                  { source: 'context_compaction' }
+                );
+                return summaryResp.content;
+              }
+            );
             if (compactionResult.compacted) {
               messages.length = 0;
               messages.push(...compactionResult.messages);
             }
-          } catch { /* best-effort */ }
+          } catch {
+            /* best-effort */
+          }
         }
 
         // Thinking config
@@ -1216,16 +1329,30 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         // messages array.  Sending cumulative text caused the model to
         // re-generate the full response preamble on every continuation turn.
         let iterContentStart = 0;
-        const creationEventsS: Array<{ tool: string; label: string; action: string; name: string; id?: string }> = [];
-        const toolCallsS: Array<{ toolName: string; label: string; serverName?: string; isMcp: boolean }> = [];
+        const creationEventsS: {
+          tool: string;
+          label: string;
+          action: string;
+          name: string;
+          id?: string;
+        }[] = [];
+        const toolCallsS: {
+          toolName: string;
+          label: string;
+          serverName?: string;
+          isMcp: boolean;
+        }[] = [];
         let totalTokensUsed = 0;
         let finalModel = '';
         let finalProvider = '';
-        let stopReason: string = 'end_turn';
+        let stopReason = 'end_turn';
 
         while (iterationCountS <= MAX_TOOL_ITERATIONS_S) {
           // Collect tool calls and final metadata from this iteration
-          const pendingToolCalls: Map<string, { id: string; name: string; argsJson: string }> = new Map();
+          const pendingToolCalls = new Map<
+            string,
+            { id: string; name: string; argsJson: string }
+          >();
           let currentToolId = '';
           stopReason = 'end_turn';
           // Mark start of this iteration's content so we can slice it out later
@@ -1263,7 +1390,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             }
           }
 
-            // Determine model/provider from personality config (once)
+          // Determine model/provider from personality config (once)
           if (!finalModel) {
             finalModel = personality?.defaultModel?.model ?? 'unknown';
             finalProvider = personality?.defaultModel?.provider ?? 'unknown';
@@ -1279,8 +1406,11 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             id: tc.id,
             name: tc.name,
             arguments: (() => {
-              try { return JSON.parse(tc.argsJson || '{}') as Record<string, unknown>; }
-              catch { return {} as Record<string, unknown>; }
+              try {
+                return JSON.parse(tc.argsJson || '{}') as Record<string, unknown>;
+              } catch {
+                return {} as Record<string, unknown>;
+              }
             })(),
           }));
 
@@ -1297,7 +1427,10 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           reply.raw.write(': keepalive\n\n');
 
           // Execute tools
-          const executionContextS = { personalityId: personality?.id ?? null, personalityName: personality?.name ?? null };
+          const executionContextS = {
+            personalityId: personality?.id ?? null,
+            personalityName: personality?.name ?? null,
+          };
           const _intentMgrJudgeS = secureYeoman.getIntentManager?.() ?? null;
           for (const toolCall of toolCallsForMsg) {
             // ── LLM-as-Judge (Phase 54) ─────────────────────────────────────
@@ -1306,19 +1439,26 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 const activeIntentS = _intentMgrJudgeS?.getActiveIntent?.();
                 const judgeVerdictS = await llmJudge.judge({
                   toolName: toolCall.name,
-                  toolArgs: (toolCall.arguments ?? {}) as Record<string, unknown>,
+                  toolArgs: toolCall.arguments ?? {},
                   personality: personality ?? null,
                   intentGoals: activeIntentS?.goals?.map((g) => g.name),
                   intentBoundaries: activeIntentS?.hardBoundaries?.map((b) => b.rule),
                   brainContextSnippets: brainContext?.contextSnippets,
                 });
                 if (judgeVerdictS.decision === 'block') {
-                  emit({ type: 'tool_result', toolName: toolCall.name, success: false, isError: true });
+                  emit({
+                    type: 'tool_result',
+                    toolName: toolCall.name,
+                    success: false,
+                    isError: true,
+                  });
                   messages.push({
                     role: 'tool' as const,
                     toolResult: {
                       toolCallId: toolCall.id,
-                      content: JSON.stringify({ error: `[BLOCKED by LLM Judge] ${judgeVerdictS.reason}` }),
+                      content: JSON.stringify({
+                        error: `[BLOCKED by LLM Judge] ${judgeVerdictS.reason}`,
+                      }),
                       isError: true,
                     },
                   });
@@ -1326,7 +1466,11 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                     event: 'llm_judge_block',
                     level: 'warn',
                     message: `LLM Judge blocked tool: ${toolCall.name}`,
-                    metadata: { tool: toolCall.name, reason: judgeVerdictS.reason, concerns: judgeVerdictS.concerns },
+                    metadata: {
+                      tool: toolCall.name,
+                      reason: judgeVerdictS.reason,
+                      concerns: judgeVerdictS.concerns,
+                    },
                   });
                   continue;
                 }
@@ -1335,42 +1479,110 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                     event: 'llm_judge_warn',
                     level: 'warn',
                     message: `LLM Judge warned for tool: ${toolCall.name}`,
-                    metadata: { tool: toolCall.name, reason: judgeVerdictS.reason, concerns: judgeVerdictS.concerns },
+                    metadata: {
+                      tool: toolCall.name,
+                      reason: judgeVerdictS.reason,
+                      concerns: judgeVerdictS.concerns,
+                    },
                   });
                 }
-              } catch { /* fail-open */ }
+              } catch {
+                /* fail-open */
+              }
             }
 
             const mcpToolS = mcpClientStream?.getAllTools().find((t) => t.name === toolCall.name);
 
             if (mcpToolS) {
-              emit({ type: 'mcp_tool_start', toolName: toolCall.name, serverName: mcpToolS.serverName, iteration: iterationCountS });
-              toolCallsS.push({ toolName: toolCall.name, label: toolCall.name, serverName: mcpToolS.serverName, isMcp: true });
+              emit({
+                type: 'mcp_tool_start',
+                toolName: toolCall.name,
+                serverName: mcpToolS.serverName,
+                iteration: iterationCountS,
+              });
+              toolCallsS.push({
+                toolName: toolCall.name,
+                label: toolCall.name,
+                serverName: mcpToolS.serverName,
+                isMcp: true,
+              });
               try {
-                const mcpResult = await mcpClientStream!.callTool(mcpToolS.serverId, toolCall.name, toolCall.arguments);
-                emit({ type: 'mcp_tool_result', toolName: toolCall.name, serverName: mcpToolS.serverName, success: true });
-                messages.push({ role: 'tool' as const, toolResult: { toolCallId: toolCall.id, content: JSON.stringify(mcpResult), isError: false } });
+                const mcpResult = await mcpClientStream!.callTool(
+                  mcpToolS.serverId,
+                  toolCall.name,
+                  toolCall.arguments
+                );
+                emit({
+                  type: 'mcp_tool_result',
+                  toolName: toolCall.name,
+                  serverName: mcpToolS.serverName,
+                  success: true,
+                });
+                messages.push({
+                  role: 'tool' as const,
+                  toolResult: {
+                    toolCallId: toolCall.id,
+                    content: JSON.stringify(mcpResult),
+                    isError: false,
+                  },
+                });
               } catch (err) {
-                emit({ type: 'mcp_tool_result', toolName: toolCall.name, serverName: mcpToolS.serverName, success: false });
-                messages.push({ role: 'tool' as const, toolResult: { toolCallId: toolCall.id, content: JSON.stringify({ error: String(err) }), isError: true } });
+                emit({
+                  type: 'mcp_tool_result',
+                  toolName: toolCall.name,
+                  serverName: mcpToolS.serverName,
+                  success: false,
+                });
+                messages.push({
+                  role: 'tool' as const,
+                  toolResult: {
+                    toolCallId: toolCall.id,
+                    content: JSON.stringify({ error: String(err) }),
+                    isError: true,
+                  },
+                });
               }
             } else {
               const baseLabel = CREATION_TOOL_LABELS[toolCall.name] ?? toolCall.name;
               // Enrich delegation label with agent profile and task snippet
-              const sArgsS = toolCall.arguments as Record<string, unknown>;
-              const label = toolCall.name === 'delegate_task'
-                ? `Delegation → ${String(sArgsS?.profile ?? 'agent')}: ${String(sArgsS?.task ?? '').slice(0, 50)}`
-                : baseLabel;
-              emit({ type: 'tool_start', toolName: toolCall.name, label, iteration: iterationCountS });
+              const sArgsS = toolCall.arguments;
+              const label =
+                toolCall.name === 'delegate_task'
+                  ? `Delegation → ${String(sArgsS?.profile ?? 'agent')}: ${String(sArgsS?.task ?? '').slice(0, 50)}`
+                  : baseLabel;
+              emit({
+                type: 'tool_start',
+                toolName: toolCall.name,
+                label,
+                iteration: iterationCountS,
+              });
               toolCallsS.push({ toolName: toolCall.name, label, isMcp: false });
               const result = await executeCreationTool(toolCall, secureYeoman, executionContextS);
-              emit({ type: 'tool_result', toolName: toolCall.name, success: !result.isError, isError: result.isError });
+              emit({
+                type: 'tool_result',
+                toolName: toolCall.name,
+                success: !result.isError,
+                isError: result.isError,
+              });
 
               if (!result.isError && CREATION_TOOL_LABELS[toolCall.name]) {
                 const out = result.output as Record<string, unknown>;
-                const item = (out.skill ?? out.task ?? out.personality ?? out.experiment ?? out.swarm ?? out.workflow ?? out.run) as Record<string, unknown> | undefined;
-                const sArgs = toolCall.arguments as Record<string, unknown>;
-                const name = String(item?.name ?? item?.workflowName ?? (typeof out.name === 'string' ? out.name : undefined) ?? (typeof sArgs?.name === 'string' ? sArgs.name : undefined) ?? (typeof sArgs?.task === 'string' ? sArgs.task : undefined) ?? toolCall.name);
+                const item = (out.skill ??
+                  out.task ??
+                  out.personality ??
+                  out.experiment ??
+                  out.swarm ??
+                  out.workflow ??
+                  out.run) as Record<string, unknown> | undefined;
+                const sArgs = toolCall.arguments;
+                const name = String(
+                  item?.name ??
+                    item?.workflowName ??
+                    (typeof out.name === 'string' ? out.name : undefined) ??
+                    (typeof sArgs?.name === 'string' ? sArgs.name : undefined) ??
+                    (typeof sArgs?.task === 'string' ? sArgs.task : undefined) ??
+                    toolCall.name
+                );
                 const action = toolAction(toolCall.name);
                 const id = typeof item?.id === 'string' ? item.id : undefined;
                 const evt = { tool: toolCall.name, label, action, name, id };
@@ -1378,12 +1590,16 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 emit({ type: 'creation_event', event: evt });
 
                 if (taskStorage) {
-                  const status = typeof item?.status === 'string' ? (item.status as any) : TaskStatus.COMPLETED;
+                  const status =
+                    typeof item?.status === 'string' ? (item.status as any) : TaskStatus.COMPLETED;
                   const now = Date.now();
                   await taskStorage.storeTask({
-                    id: uuidv7(), type: 'execute' as any,
-                    name: `${label} ${action}: ${name}`, description: toolCall.name,
-                    status, createdAt: now,
+                    id: uuidv7(),
+                    type: 'execute' as any,
+                    name: `${label} ${action}: ${name}`,
+                    description: toolCall.name,
+                    status,
+                    createdAt: now,
                     ...(status === TaskStatus.COMPLETED ? { completedAt: now, durationMs: 0 } : {}),
                     inputHash: sha256(JSON.stringify(toolCall.arguments ?? {})),
                     securityContext: {
@@ -1397,7 +1613,14 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                   });
                 }
               }
-              messages.push({ role: 'tool' as const, toolResult: { toolCallId: toolCall.id, content: JSON.stringify(result.output), isError: result.isError } });
+              messages.push({
+                role: 'tool' as const,
+                toolResult: {
+                  toolCallId: toolCall.id,
+                  content: JSON.stringify(result.output),
+                  isError: result.isError,
+                },
+              });
             }
           }
 
@@ -1419,7 +1642,10 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               event: 'response_injection_detected',
               level: 'warn',
               message: 'ResponseGuard blocked streamed LLM response',
-              metadata: { findingCount: rgResult.findings.length, findings: rgResult.findings.map((f) => f.patternName) },
+              metadata: {
+                findingCount: rgResult.findings.length,
+                findings: rgResult.findings.map((f) => f.patternName),
+              },
             });
             emit({ type: 'error', message: 'Response blocked: safety policy violation' });
             return;
@@ -1429,7 +1655,10 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               event: 'response_injection_detected',
               level: 'warn',
               message: 'ResponseGuard findings in streamed LLM response (warn mode)',
-              metadata: { findingCount: rgResult.findings.length, findings: rgResult.findings.map((f) => f.patternName) },
+              metadata: {
+                findingCount: rgResult.findings.length,
+                findings: rgResult.findings.map((f) => f.patternName),
+              },
             });
           }
           responseGuard.checkBrainConsistency(safeContent, {
@@ -1452,31 +1681,52 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               });
             }
           }
-        } catch { /* best-effort */ }
+        } catch {
+          /* best-effort */
+        }
 
         // Persist conversation
         if (conversationId) {
           try {
             const convStorage = secureYeoman.getConversationStorage();
             if (convStorage) {
-              await convStorage.addMessage({ conversationId, role: 'user', content: message.trim() });
               await convStorage.addMessage({
-                conversationId, role: 'assistant', content: safeContent,
-                model: finalModel, provider: finalProvider,
-                tokensUsed: totalTokensUsed, brainContext,
+                conversationId,
+                role: 'user',
+                content: message.trim(),
+              });
+              await convStorage.addMessage({
+                conversationId,
+                role: 'assistant',
+                content: safeContent,
+                model: finalModel,
+                provider: finalProvider,
+                tokensUsed: totalTokensUsed,
+                brainContext,
                 creationEvents: creationEventsS.length > 0 ? creationEventsS : null,
                 thinkingContent: finalThinking ?? null,
                 toolCalls: toolCallsS.length > 0 ? toolCallsS : null,
               });
             }
-          } catch { /* best-effort */ }
+          } catch {
+            /* best-effort */
+          }
         }
 
         if (memoryEnabled && saveAsMemory) {
           try {
             const brainManager = secureYeoman.getBrainManager();
-            await brainManager.remember('episodic', `User: ${message.trim()}\nAssistant: ${safeContent}`, 'dashboard_chat', { personalityId: personalityId ?? 'default' }, undefined, effectivePersonalityId);
-          } catch { /* best-effort */ }
+            await brainManager.remember(
+              'episodic',
+              `User: ${message.trim()}\nAssistant: ${safeContent}`,
+              'dashboard_chat',
+              { personalityId: personalityId ?? 'default' },
+              undefined,
+              effectivePersonalityId
+            );
+          } catch {
+            /* best-effort */
+          }
         }
 
         emit({

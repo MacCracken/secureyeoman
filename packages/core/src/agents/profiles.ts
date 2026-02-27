@@ -27,7 +27,13 @@ Guidelines:
     maxTokenBudget: 50000,
     // Web search/scraping + memory + knowledge base — no filesystem, git, or
     // security tools needed for research tasks (~8–10 tools vs 200+).
-    allowedTools: ['web_*', 'memory_recall', 'knowledge_search', 'knowledge_get', 'knowledge_store'],
+    allowedTools: [
+      'web_*',
+      'memory_recall',
+      'knowledge_search',
+      'knowledge_get',
+      'knowledge_store',
+    ],
     defaultModel: null,
     isBuiltin: true,
   },
@@ -71,11 +77,20 @@ Guidelines:
     // Targeted web lookup + memory + knowledge + system/audit metrics.
     // No filesystem writes, git, or security tools.
     allowedTools: [
-      'web_search', 'web_search_batch', 'web_fetch_markdown', 'web_extract_structured',
-      'memory_recall', 'knowledge_search', 'knowledge_get', 'knowledge_store',
-      'system_health', 'system_metrics',
-      'audit_query', 'audit_stats',
-      'task_list', 'task_get',
+      'web_search',
+      'web_search_batch',
+      'web_fetch_markdown',
+      'web_extract_structured',
+      'memory_recall',
+      'knowledge_search',
+      'knowledge_get',
+      'knowledge_store',
+      'system_health',
+      'system_metrics',
+      'audit_query',
+      'audit_stats',
+      'task_list',
+      'task_get',
     ],
     defaultModel: null,
     isBuiltin: true,

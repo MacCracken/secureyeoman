@@ -306,7 +306,14 @@ describe('CollabManager', () => {
 
   it('seeds skill docId with instructions fieldName', async () => {
     const ws = new FakeWebSocket();
-    await manager.join('skill:aaaaaaaa-0000-0000-0000-000000000001', 'c1', ws as never, 'u1', 'Dev', 'do stuff');
+    await manager.join(
+      'skill:aaaaaaaa-0000-0000-0000-000000000001',
+      'c1',
+      ws as never,
+      'u1',
+      'Dev',
+      'do stuff'
+    );
     // Should send join messages without throwing
     expect(ws.sent.length).toBeGreaterThanOrEqual(2);
   });

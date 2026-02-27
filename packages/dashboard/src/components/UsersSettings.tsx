@@ -82,7 +82,9 @@ export function UsersSettings() {
           </div>
           {!showCreateForm && !editingUser && (
             <button
-              onClick={() => setShowCreateForm(true)}
+              onClick={() => {
+                setShowCreateForm(true);
+              }}
               className="btn btn-ghost text-sm flex items-center gap-1"
             >
               <Plus className="w-4 h-4" />
@@ -102,7 +104,9 @@ export function UsersSettings() {
                   <input
                     type="email"
                     value={createForm.email}
-                    onChange={(e) => setCreateForm((f) => ({ ...f, email: e.target.value }))}
+                    onChange={(e) => {
+                      setCreateForm((f) => ({ ...f, email: e.target.value }));
+                    }}
                     className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="user@example.com"
                   />
@@ -112,7 +116,9 @@ export function UsersSettings() {
                   <input
                     type="text"
                     value={createForm.displayName}
-                    onChange={(e) => setCreateForm((f) => ({ ...f, displayName: e.target.value }))}
+                    onChange={(e) => {
+                      setCreateForm((f) => ({ ...f, displayName: e.target.value }));
+                    }}
                     className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="Jane Doe"
                   />
@@ -122,7 +128,9 @@ export function UsersSettings() {
                   <input
                     type="password"
                     value={createForm.password}
-                    onChange={(e) => setCreateForm((f) => ({ ...f, password: e.target.value }))}
+                    onChange={(e) => {
+                      setCreateForm((f) => ({ ...f, password: e.target.value }));
+                    }}
                     className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="••••••••"
                   />
@@ -132,7 +140,9 @@ export function UsersSettings() {
                     id="create-isAdmin"
                     type="checkbox"
                     checked={createForm.isAdmin}
-                    onChange={(e) => setCreateForm((f) => ({ ...f, isAdmin: e.target.checked }))}
+                    onChange={(e) => {
+                      setCreateForm((f) => ({ ...f, isAdmin: e.target.checked }));
+                    }}
                     className="w-4 h-4"
                   />
                   <label htmlFor="create-isAdmin" className="text-xs text-muted-foreground">
@@ -141,13 +151,13 @@ export function UsersSettings() {
                 </div>
               </div>
               {createMutation.error && (
-                <p className="text-xs text-destructive">
-                  {(createMutation.error as Error).message}
-                </p>
+                <p className="text-xs text-destructive">{createMutation.error.message}</p>
               )}
               <div className="flex gap-2">
                 <button
-                  onClick={() => createMutation.mutate(createForm)}
+                  onClick={() => {
+                    createMutation.mutate(createForm);
+                  }}
                   disabled={createMutation.isPending}
                   className="btn btn-ghost text-sm px-3 py-1"
                 >
@@ -194,7 +204,9 @@ export function UsersSettings() {
                         <input
                           type="text"
                           value={editDisplayName}
-                          onChange={(e) => setEditDisplayName(e.target.value)}
+                          onChange={(e) => {
+                            setEditDisplayName(e.target.value);
+                          }}
                           className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                       </div>
@@ -203,7 +215,9 @@ export function UsersSettings() {
                           id={`edit-admin-${user.id}`}
                           type="checkbox"
                           checked={editIsAdmin}
-                          onChange={(e) => setEditIsAdmin(e.target.checked)}
+                          onChange={(e) => {
+                            setEditIsAdmin(e.target.checked);
+                          }}
                           className="w-4 h-4"
                         />
                         <label
@@ -215,18 +229,16 @@ export function UsersSettings() {
                       </div>
                     </div>
                     {updateMutation.error && (
-                      <p className="text-xs text-destructive">
-                        {(updateMutation.error as Error).message}
-                      </p>
+                      <p className="text-xs text-destructive">{updateMutation.error.message}</p>
                     )}
                     <div className="flex gap-2">
                       <button
-                        onClick={() =>
+                        onClick={() => {
                           updateMutation.mutate({
                             id: user.id,
                             data: { displayName: editDisplayName, isAdmin: editIsAdmin },
-                          })
-                        }
+                          });
+                        }}
                         disabled={updateMutation.isPending}
                         className="btn btn-ghost text-sm px-3 py-1"
                       >
@@ -237,7 +249,9 @@ export function UsersSettings() {
                         )}
                       </button>
                       <button
-                        onClick={() => setEditingUser(null)}
+                        onClick={() => {
+                          setEditingUser(null);
+                        }}
                         className="btn btn-ghost text-sm px-3 py-1"
                       >
                         Cancel
@@ -267,15 +281,15 @@ export function UsersSettings() {
                         <p className="text-xs text-muted-foreground">{user.email}</p>
                         <p className="text-xs text-muted-foreground">
                           Joined {formatDate(user.createdAt)}
-                          {user.lastLoginAt
-                            ? ` · Last login ${formatDate(user.lastLoginAt)}`
-                            : ''}
+                          {user.lastLoginAt ? ` · Last login ${formatDate(user.lastLoginAt)}` : ''}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <button
-                        onClick={() => startEdit(user)}
+                        onClick={() => {
+                          startEdit(user);
+                        }}
                         className="btn btn-ghost text-xs p-1.5"
                         title="Edit user"
                       >
@@ -283,7 +297,9 @@ export function UsersSettings() {
                       </button>
                       {!user.isBuiltin && (
                         <button
-                          onClick={() => setConfirmDelete(user)}
+                          onClick={() => {
+                            setConfirmDelete(user);
+                          }}
                           className="btn btn-ghost text-xs p-1.5 text-destructive hover:text-destructive"
                           title="Delete user"
                         >
@@ -302,7 +318,9 @@ export function UsersSettings() {
                     </p>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => deleteMutation.mutate(user.id)}
+                        onClick={() => {
+                          deleteMutation.mutate(user.id);
+                        }}
                         disabled={deleteMutation.isPending}
                         className="btn btn-destructive text-xs px-3 py-1.5"
                       >
@@ -313,7 +331,9 @@ export function UsersSettings() {
                         )}
                       </button>
                       <button
-                        onClick={() => setConfirmDelete(null)}
+                        onClick={() => {
+                          setConfirmDelete(null);
+                        }}
                         className="btn btn-ghost text-xs px-3 py-1.5"
                       >
                         Cancel

@@ -43,8 +43,8 @@ export function initPool(config: PgPoolConfig): pg.Pool {
   if (config.ssl && !rejectUnauthorized) {
     getLogger().warn(
       'PostgreSQL SSL certificate verification is DISABLED (DATABASE_SSL_REJECT_UNAUTHORIZED=false). ' +
-      'This leaves database connections vulnerable to MITM attacks. ' +
-      'Only use this setting for local development with self-signed certificates.'
+        'This leaves database connections vulnerable to MITM attacks. ' +
+        'Only use this setting for local development with self-signed certificates.'
     );
   }
 
@@ -80,7 +80,7 @@ export function initPoolFromConfig(dbConfig: DatabaseConfig): pg.Pool {
   if (!envPassword && process.env.NODE_ENV === 'production') {
     throw new Error(
       `Required environment variable ${dbConfig.passwordEnv} is not set. ` +
-      `Database password must be explicitly configured in production.`
+        `Database password must be explicitly configured in production.`
     );
   }
 

@@ -428,13 +428,29 @@ export class GatewayServer {
     try {
       const soulManager = this.secureYeoman.getSoulManager();
       let approvalManager;
-      try { approvalManager = this.secureYeoman.getApprovalManager(); } catch { /* optional */ }
+      try {
+        approvalManager = this.secureYeoman.getApprovalManager();
+      } catch {
+        /* optional */
+      }
       let soulValidator;
-      try { soulValidator = this.secureYeoman.getValidator(); } catch { /* optional */ }
+      try {
+        soulValidator = this.secureYeoman.getValidator();
+      } catch {
+        /* optional */
+      }
       let soulAuditChain;
-      try { soulAuditChain = this.secureYeoman.getAuditChain(); } catch { /* optional */ }
+      try {
+        soulAuditChain = this.secureYeoman.getAuditChain();
+      } catch {
+        /* optional */
+      }
       let soulDataDir: string | undefined;
-      try { soulDataDir = this.secureYeoman.getDataDir(); } catch { /* optional */ }
+      try {
+        soulDataDir = this.secureYeoman.getDataDir();
+      } catch {
+        /* optional */
+      }
       registerSoulRoutes(this.app, {
         soulManager,
         approvalManager,
@@ -470,7 +486,13 @@ export class GatewayServer {
         /* may not be available */
       }
       const heartbeatLogStorage = this.secureYeoman.getHeartbeatLogStorage() ?? undefined;
-      registerBrainRoutes(this.app, { brainManager, heartbeatManager, heartbeatLogStorage, externalSync, soulManager });
+      registerBrainRoutes(this.app, {
+        brainManager,
+        heartbeatManager,
+        heartbeatLogStorage,
+        externalSync,
+        soulManager,
+      });
     } catch {
       // Brain manager may not be available — skip routes
     }
@@ -665,7 +687,11 @@ export class GatewayServer {
       const intentManager = this.secureYeoman.getIntentManager();
       if (intentManager) {
         let intentAuditChain;
-        try { intentAuditChain = this.secureYeoman.getAuditChain(); } catch { /* optional */ }
+        try {
+          intentAuditChain = this.secureYeoman.getAuditChain();
+        } catch {
+          /* optional */
+        }
         registerIntentRoutes(this.app, { intentManager, auditChain: intentAuditChain });
         this.getLogger().info('Intent routes registered');
       }
@@ -680,7 +706,11 @@ export class GatewayServer {
       const autonomyAuditManager = this.secureYeoman.getAutonomyAuditManager();
       if (autonomyAuditManager) {
         let autonomyAuditChain;
-        try { autonomyAuditChain = this.secureYeoman.getAuditChain(); } catch { /* optional */ }
+        try {
+          autonomyAuditChain = this.secureYeoman.getAuditChain();
+        } catch {
+          /* optional */
+        }
         registerAutonomyRoutes(this.app, { autonomyAuditManager, auditChain: autonomyAuditChain });
         this.getLogger().info('Autonomy audit routes registered');
       }
@@ -697,9 +727,9 @@ export class GatewayServer {
         // Wire the broadcast callback so server-persisted notifications reach WS clients.
         // This is done here (rather than at init) because broadcast() requires the gateway
         // to be fully constructed.
-        notificationManager.setBroadcast((payload: unknown) =>
-          this.broadcast('notifications', payload)
-        );
+        notificationManager.setBroadcast((payload: unknown) => {
+          this.broadcast('notifications', payload);
+        });
         registerNotificationRoutes(this.app, { notificationManager });
         this.getLogger().info('Notification routes registered');
       }
@@ -817,7 +847,8 @@ export class GatewayServer {
     // Desktop Control routes
     try {
       registerDesktopRoutes(this.app, {
-        getAllowDesktopControl: () => this.secureYeoman.getConfig().security.allowDesktopControl ?? false,
+        getAllowDesktopControl: () =>
+          this.secureYeoman.getConfig().security.allowDesktopControl ?? false,
         getAllowCamera: () => this.secureYeoman.getConfig().security.allowCamera ?? false,
         getAllowMultimodal: () => this.secureYeoman.getConfig().security.allowMultimodal ?? false,
       });
@@ -1022,7 +1053,10 @@ export class GatewayServer {
       }
 
       // Auth service
-      components.auth = { ok: !!this.authService, detail: this.authService ? 'active' : 'disabled' };
+      components.auth = {
+        ok: !!this.authService,
+        detail: this.authService ? 'active' : 'disabled',
+      };
 
       // WebSocket clients
       components.websocket = {
@@ -1033,7 +1067,10 @@ export class GatewayServer {
       // Intent / governance manager
       try {
         const intentManager = this.secureYeoman.getIntentManager?.();
-        components.intent = { ok: !!intentManager, detail: intentManager ? 'active' : 'not configured' };
+        components.intent = {
+          ok: !!intentManager,
+          detail: intentManager ? 'active' : 'not configured',
+        };
       } catch {
         components.intent = { ok: false, detail: 'unavailable' };
       }
@@ -1116,7 +1153,10 @@ export class GatewayServer {
       ) => {
         const usageStorage = this.secureYeoman.getUsageStorage();
         if (!usageStorage) {
-          return { records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } };
+          return {
+            records: [],
+            totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+          };
         }
 
         const q = request.query;
@@ -1707,14 +1747,11 @@ export class GatewayServer {
           'sandbox_violation',
           'secret_access',
         ] as const;
-        const clamp = (v: number, lo: number, hi: number) =>
-          Math.max(lo, Math.min(hi, v));
+        const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
         const rawPeriod = request.query.period;
         const period: '24h' | '7d' | '30d' =
-          rawPeriod === '24h' || rawPeriod === '7d' || rawPeriod === '30d'
-            ? rawPeriod
-            : '7d';
+          rawPeriod === '24h' || rawPeriod === '7d' || rawPeriod === '30d' ? rawPeriod : '7d';
 
         const now = Date.now();
         const periodMs =
@@ -1804,8 +1841,7 @@ export class GatewayServer {
               const d = new Date(timestamp);
               const pad = (n: number) => String(n).padStart(2, '0');
               const dateStr = `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
-              const bucket =
-                period === '24h' ? `${dateStr}T${pad(d.getUTCHours())}:00` : dateStr;
+              const bucket = period === '24h' ? `${dateStr}T${pad(d.getUTCHours())}:00` : dateStr;
               return { bucket, timestamp, count };
             });
 

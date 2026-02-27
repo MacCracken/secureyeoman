@@ -66,7 +66,9 @@ function makeConfig(overrides?: Partial<McpServiceConfig>): McpServiceConfig {
   } as McpServiceConfig;
 }
 
-type ToolEntry = { handler: (args: unknown) => Promise<{ content: Array<{ text: string }>; isError?: boolean }> };
+interface ToolEntry {
+  handler: (args: unknown) => Promise<{ content: Array<{ text: string }>; isError?: boolean }>;
+}
 type ToolRecord = Record<string, ToolEntry>;
 
 function getRegistered(server: McpServer): ToolRecord {
@@ -114,12 +116,19 @@ describe('registerTwingateTools — disabled mode', () => {
 
     const tools = getRegistered(server);
     const expected = [
-      'twingate_resources_list', 'twingate_resource_get', 'twingate_groups_list',
-      'twingate_service_accounts_list', 'twingate_service_account_create',
-      'twingate_service_key_create', 'twingate_service_key_revoke',
-      'twingate_connectors_list', 'twingate_remote_networks_list',
-      'twingate_mcp_connect', 'twingate_mcp_list_tools',
-      'twingate_mcp_call_tool', 'twingate_mcp_disconnect',
+      'twingate_resources_list',
+      'twingate_resource_get',
+      'twingate_groups_list',
+      'twingate_service_accounts_list',
+      'twingate_service_account_create',
+      'twingate_service_key_create',
+      'twingate_service_key_revoke',
+      'twingate_connectors_list',
+      'twingate_remote_networks_list',
+      'twingate_mcp_connect',
+      'twingate_mcp_list_tools',
+      'twingate_mcp_call_tool',
+      'twingate_mcp_disconnect',
     ];
     for (const name of expected) {
       expect(name in tools, `Expected ${name} to be registered`).toBe(true);
@@ -141,7 +150,9 @@ describe('twingate_resources_list', () => {
     ];
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
-      json: async () => ({ data: { resources: { edges: mockResources.map((n) => ({ node: n })) } } }),
+      json: async () => ({
+        data: { resources: { edges: mockResources.map((n) => ({ node: n })) } },
+      }),
     } as Response);
 
     const server = new McpServer({ name: 'test', version: '1.0.0' });
@@ -224,7 +235,9 @@ describe('twingate_service_key_create', () => {
     expect(result.content[0]!.text).not.toContain(rawToken);
 
     // Secret stored via client.put
-    expect(client.put).toHaveBeenCalledWith('/api/v1/secrets/TWINGATE_SVC_KEY_sa-123', { value: rawToken });
+    expect(client.put).toHaveBeenCalledWith('/api/v1/secrets/TWINGATE_SVC_KEY_sa-123', {
+      value: rawToken,
+    });
 
     // Response confirms storage
     const parsed = JSON.parse(result.content[0]!.text);
@@ -452,7 +465,11 @@ describe('error handling — missing credentials', () => {
     const config = makeConfig({ twingateNetwork: undefined });
     registerTwingateTools(server, makeMockClient(), config, noopMiddleware());
 
-    const toolNames = ['twingate_groups_list', 'twingate_connectors_list', 'twingate_remote_networks_list'];
+    const toolNames = [
+      'twingate_groups_list',
+      'twingate_connectors_list',
+      'twingate_remote_networks_list',
+    ];
     for (const name of toolNames) {
       const result = await getTool(server, name).handler({});
       expect(result.isError).toBe(true);

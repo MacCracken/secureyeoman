@@ -78,7 +78,11 @@ export function registerWorkflowRoutes(
         });
         return reply.code(201).send({ definition });
       } catch (err) {
-        return sendError(reply, 400, err instanceof Error ? err.message : 'Failed to create workflow');
+        return sendError(
+          reply,
+          400,
+          err instanceof Error ? err.message : 'Failed to create workflow'
+        );
       }
     }
   );
@@ -106,9 +110,14 @@ export function registerWorkflowRoutes(
       try {
         const prev = await workflowManager.getDefinition(request.params.id);
         prevLevel = prev?.autonomyLevel;
-      } catch { /* best-effort */ }
+      } catch {
+        /* best-effort */
+      }
 
-      const definition = await workflowManager.updateDefinition(request.params.id, request.body as any);
+      const definition = await workflowManager.updateDefinition(
+        request.params.id,
+        request.body as any
+      );
       if (!definition) return sendError(reply, 404, 'Workflow not found');
 
       const warnings: string[] = [];
@@ -156,7 +165,11 @@ export function registerWorkflowRoutes(
         );
         return reply.code(202).send({ run });
       } catch (err) {
-        return sendError(reply, 400, err instanceof Error ? err.message : 'Failed to trigger workflow');
+        return sendError(
+          reply,
+          400,
+          err instanceof Error ? err.message : 'Failed to trigger workflow'
+        );
       }
     }
   );

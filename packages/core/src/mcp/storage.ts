@@ -179,10 +179,11 @@ export class McpStorage extends PgBaseStorage {
   }
 
   async updateServerUrl(id: string, url: string): Promise<void> {
-    await this.execute(
-      'UPDATE mcp.servers SET url = $1, updated_at = $2 WHERE id = $3',
-      [url, Date.now(), id]
-    );
+    await this.execute('UPDATE mcp.servers SET url = $1, updated_at = $2 WHERE id = $3', [
+      url,
+      Date.now(),
+      id,
+    ]);
   }
 
   async deleteServer(id: string): Promise<boolean> {

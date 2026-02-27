@@ -43,10 +43,22 @@ const HEARTBEAT_STATUS_COLOR: Record<'ok' | 'warning' | 'error', string> = {
 // ── Date preset helpers ───────────────────────────────────────────────────────
 
 const HB_DATE_PRESETS = [
-  { label: 'Last hour',    from: () => new Date(Date.now() - 3_600_000).toISOString(),   to: () => new Date().toISOString() },
-  { label: 'Last 24h',    from: () => new Date(Date.now() - 86_400_000).toISOString(),  to: () => new Date().toISOString() },
-  { label: 'Last 7 days', from: () => new Date(Date.now() - 604_800_000).toISOString(), to: () => new Date().toISOString() },
-  { label: 'All time',    from: () => '',                                                 to: () => '' },
+  {
+    label: 'Last hour',
+    from: () => new Date(Date.now() - 3_600_000).toISOString(),
+    to: () => new Date().toISOString(),
+  },
+  {
+    label: 'Last 24h',
+    from: () => new Date(Date.now() - 86_400_000).toISOString(),
+    to: () => new Date().toISOString(),
+  },
+  {
+    label: 'Last 7 days',
+    from: () => new Date(Date.now() - 604_800_000).toISOString(),
+    to: () => new Date().toISOString(),
+  },
+  { label: 'All time', from: () => '', to: () => '' },
 ] as const;
 
 // ── HeartbeatsView ────────────────────────────────────────────────────────────
@@ -92,14 +104,18 @@ export function HeartbeatsView() {
     if (enabledFilter === 'enabled') tasks = tasks.filter((t) => t.enabled);
     if (enabledFilter === 'disabled') tasks = tasks.filter((t) => !t.enabled);
     if (typeFilter) tasks = tasks.filter((t) => t.type === typeFilter);
-    if (dateFrom) tasks = tasks.filter((t) => t.lastRunAt != null && t.lastRunAt >= new Date(dateFrom).getTime());
-    if (dateTo) tasks = tasks.filter((t) => t.lastRunAt != null && t.lastRunAt <= new Date(dateTo).getTime());
+    if (dateFrom)
+      tasks = tasks.filter(
+        (t) => t.lastRunAt != null && t.lastRunAt >= new Date(dateFrom).getTime()
+      );
+    if (dateTo)
+      tasks = tasks.filter((t) => t.lastRunAt != null && t.lastRunAt <= new Date(dateTo).getTime());
     return tasks;
   }, [allTasks, search, enabledFilter, typeFilter, dateFrom, dateTo]);
 
   const hasFilters = search.trim() || enabledFilter !== 'all' || typeFilter || dateFrom || dateTo;
 
-  const handleDatePreset = (preset: typeof HB_DATE_PRESETS[number]) => {
+  const handleDatePreset = (preset: (typeof HB_DATE_PRESETS)[number]) => {
     setDateFrom(preset.from());
     setDateTo(preset.to());
     setDatePreset(preset.label);
@@ -144,7 +160,9 @@ export function HeartbeatsView() {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+            }}
             placeholder="Search monitors…"
             className="pl-8 pr-3 py-1.5 text-sm border rounded-md bg-background w-44"
             aria-label="Search heartbeat monitors"
@@ -154,7 +172,9 @@ export function HeartbeatsView() {
         {/* Enabled/disabled filter */}
         <select
           value={enabledFilter}
-          onChange={(e) => setEnabledFilter(e.target.value as 'all' | 'enabled' | 'disabled')}
+          onChange={(e) => {
+            setEnabledFilter(e.target.value as 'all' | 'enabled' | 'disabled');
+          }}
           className="px-3 py-1.5 text-sm border rounded-md bg-background"
           aria-label="Filter by state"
         >
@@ -167,20 +187,31 @@ export function HeartbeatsView() {
         {taskTypes.length > 1 && (
           <select
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
+            onChange={(e) => {
+              setTypeFilter(e.target.value);
+            }}
             className="px-3 py-1.5 text-sm border rounded-md bg-background"
             aria-label="Filter by type"
           >
             <option value="">All Types</option>
             {taskTypes.map((t) => (
-              <option key={t} value={t}>{t}</option>
+              <option key={t} value={t}>
+                {t}
+              </option>
             ))}
           </select>
         )}
 
         {hasFilters && (
           <button
-            onClick={() => { setSearch(''); setEnabledFilter('all'); setTypeFilter(''); setDateFrom(''); setDateTo(''); setDatePreset(''); }}
+            onClick={() => {
+              setSearch('');
+              setEnabledFilter('all');
+              setTypeFilter('');
+              setDateFrom('');
+              setDateTo('');
+              setDatePreset('');
+            }}
             className="text-xs text-muted-foreground hover:text-foreground underline flex items-center gap-0.5"
           >
             <X className="w-3 h-3" /> Clear
@@ -200,7 +231,9 @@ export function HeartbeatsView() {
         {HB_DATE_PRESETS.map((preset) => (
           <button
             key={preset.label}
-            onClick={() => handleDatePreset(preset)}
+            onClick={() => {
+              handleDatePreset(preset);
+            }}
             className={`px-2.5 py-1 rounded-md text-xs border transition-colors ${
               datePreset === preset.label
                 ? 'bg-primary text-primary-foreground border-primary'
@@ -214,7 +247,9 @@ export function HeartbeatsView() {
         <input
           type="date"
           value={dateFrom ? dateFrom.slice(0, 10) : ''}
-          onChange={(e) => handleCustomDate('from', e.target.value)}
+          onChange={(e) => {
+            handleCustomDate('from', e.target.value);
+          }}
           className="px-2 py-1 text-xs border rounded-md bg-background"
           aria-label="From date"
         />
@@ -222,7 +257,9 @@ export function HeartbeatsView() {
         <input
           type="date"
           value={dateTo ? dateTo.slice(0, 10) : ''}
-          onChange={(e) => handleCustomDate('to', e.target.value)}
+          onChange={(e) => {
+            handleCustomDate('to', e.target.value);
+          }}
           className="px-2 py-1 text-xs border rounded-md bg-background"
           aria-label="To date"
         />
@@ -266,7 +303,11 @@ function HeartbeatCard({
   const { data: logData, isLoading: logLoading } = useQuery({
     queryKey: ['heartbeat-log', task.name, logPage],
     queryFn: () =>
-      fetchHeartbeatLog({ checkName: task.name, limit: logPageSize, offset: logPage * logPageSize }),
+      fetchHeartbeatLog({
+        checkName: task.name,
+        limit: logPageSize,
+        offset: logPage * logPageSize,
+      }),
     enabled: expanded,
     staleTime: 30_000,
     refetchInterval: expanded ? 30_000 : false,
@@ -402,15 +443,13 @@ function HeartbeatCard({
             </div>
           )}
           <button
-            onClick={() => setExpanded((e) => !e)}
+            onClick={() => {
+              setExpanded((e) => !e);
+            }}
             className="btn-ghost p-1 rounded"
             title="Toggle execution history"
           >
-            {expanded ? (
-              <ChevronUp className="w-4 h-4" />
-            ) : (
-              <ChevronDown className="w-4 h-4" />
-            )}
+            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         </div>
       </div>
@@ -440,7 +479,9 @@ function HeartbeatCard({
                     <th className="text-left pb-1 pr-4 font-normal">Status</th>
                     <th className="text-left pb-1 pr-4 font-normal">Agent</th>
                     <th className="text-left pb-1 pr-4 font-normal hidden sm:table-cell">Ran at</th>
-                    <th className="text-left pb-1 pr-4 font-normal hidden lg:table-cell">Duration</th>
+                    <th className="text-left pb-1 pr-4 font-normal hidden lg:table-cell">
+                      Duration
+                    </th>
                     <th className="text-left pb-1 font-normal">Message</th>
                   </tr>
                 </thead>
@@ -495,7 +536,9 @@ function HeartbeatCard({
                   </p>
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => setLogPage((p) => Math.max(0, p - 1))}
+                      onClick={() => {
+                        setLogPage((p) => Math.max(0, p - 1));
+                      }}
                       disabled={logPage === 0}
                       className="btn-ghost p-1 disabled:opacity-40"
                       aria-label="Previous page"
@@ -506,11 +549,11 @@ function HeartbeatCard({
                       {logPage + 1} / {Math.ceil(logData.total / logPageSize)}
                     </span>
                     <button
-                      onClick={() =>
+                      onClick={() => {
                         setLogPage((p) =>
                           Math.min(Math.ceil(logData.total / logPageSize) - 1, p + 1)
-                        )
-                      }
+                        );
+                      }}
                       disabled={logPage >= Math.ceil(logData.total / logPageSize) - 1}
                       className="btn-ghost p-1 disabled:opacity-40"
                       aria-label="Next page"

@@ -306,7 +306,14 @@ export class TaskStorage extends PgBaseStorage {
     ]);
 
     if (!statsRow) {
-      return { total: 0, tasksToday: 0, byStatus: {}, byType: {}, successRate: 0, avgDurationMs: 0 };
+      return {
+        total: 0,
+        tasksToday: 0,
+        byStatus: {},
+        byType: {},
+        successRate: 0,
+        avgDurationMs: 0,
+      };
     }
 
     const tasksToday = parseInt(todayRow?.count ?? '0', 10);

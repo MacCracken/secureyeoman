@@ -142,8 +142,12 @@ export class UsageTracker {
     // Update per-provider accumulator
     if (!this.providerStats[record.provider]) {
       this.providerStats[record.provider] = {
-        inputTokensUsed: 0, outputTokensUsed: 0, tokensUsed: 0,
-        costUsd: 0, calls: 0, errors: 0,
+        inputTokensUsed: 0,
+        outputTokensUsed: 0,
+        tokensUsed: 0,
+        costUsd: 0,
+        calls: 0,
+        errors: 0,
       };
     }
     const ps = this.providerStats[record.provider]!;

@@ -91,8 +91,8 @@ const DEFAULT_POLICY = {
   allowExperiments: false,
   allowStorybook: false,
   allowMultimodal: true,
-      allowDesktopControl: false,
-      allowCamera: false,
+  allowDesktopControl: false,
+  allowCamera: false,
   allowDynamicTools: false,
   sandboxDynamicTools: true,
   allowAnomalyDetection: false,
@@ -106,8 +106,8 @@ const DEFAULT_POLICY = {
   allowTwingate: false,
   allowOrgIntent: false,
   allowIntentEditor: false,
-      allowCodeEditor: true,
-      allowAdvancedEditor: false,
+  allowCodeEditor: true,
+  allowAdvancedEditor: false,
 };
 
 describe('AgentsPage', () => {

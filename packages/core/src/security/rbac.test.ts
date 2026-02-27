@@ -835,9 +835,9 @@ describe('RBAC — User-role assignments with storage', () => {
     };
     const storage = makeStorage({
       getAllRoleDefinitions: vi.fn().mockResolvedValue([customRole]),
-      listActiveAssignments: vi.fn().mockResolvedValue([
-        { userId: 'alice', roleId: 'role_operator' },
-      ]),
+      listActiveAssignments: vi
+        .fn()
+        .mockResolvedValue([{ userId: 'alice', roleId: 'role_operator' }]),
     });
     const rbac = new RBAC(storage as any);
     await rbac.loadFromStorage();
@@ -885,9 +885,11 @@ describe('RBAC — User-role assignments with storage', () => {
 
   it('getUserRoleHistory delegates to storage', async () => {
     const storage = makeStorage({
-      getAssignmentHistory: vi.fn().mockResolvedValue([
-        { role_id: 'role_operator', assigned_by: 'admin', assigned_at: 1000, revoked_at: null },
-      ]),
+      getAssignmentHistory: vi
+        .fn()
+        .mockResolvedValue([
+          { role_id: 'role_operator', assigned_by: 'admin', assigned_at: 1000, revoked_at: null },
+        ]),
     });
     const rbac = new RBAC(storage as any);
     const history = await rbac.getUserRoleHistory('alice');
@@ -919,7 +921,11 @@ describe('RBAC — evaluateCondition operators', () => {
   }
 
   function check(contextValue: unknown) {
-    return rbac.checkPermission('op_test', { resource: 'res', action: 'read', context: { x: contextValue } });
+    return rbac.checkPermission('op_test', {
+      resource: 'res',
+      action: 'read',
+      context: { x: contextValue },
+    });
   }
 
   beforeEach(() => {
@@ -982,7 +988,11 @@ describe('RBAC — evaluateCondition operators', () => {
         },
       ],
     });
-    const result = rbac.checkPermission('undef_val', { resource: 'secret', action: 'read', context: { x: 'anything' } });
+    const result = rbac.checkPermission('undef_val', {
+      resource: 'secret',
+      action: 'read',
+      context: { x: 'anything' },
+    });
     expect(result.granted).toBe(true); // condition was skipped
   });
 

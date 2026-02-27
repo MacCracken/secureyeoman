@@ -51,7 +51,7 @@ export function isIpInCidr(ip: string, cidr: string): boolean {
   if (!ipv4Re.test(ip) || !network || !ipv4Re.test(network)) return false;
   const toNum = (s: string): number =>
     s.split('.').reduce((acc, octet) => ((acc << 8) + parseInt(octet, 10)) >>> 0, 0) >>> 0;
-  const mask = bits === 0 ? 0 : ((~0) << (32 - bits)) >>> 0;
+  const mask = bits === 0 ? 0 : (~0 << (32 - bits)) >>> 0;
   return (toNum(ip) & mask) === (toNum(network) & mask);
 }
 
@@ -156,11 +156,11 @@ function buildCommandString(config: McpServiceConfig, toolBin: string, args: str
 // ─── Output Parsers ───────────────────────────────────────────────────────────
 
 export interface NmapResult {
-  hosts: Array<{
+  hosts: {
     ip: string;
     hostname: string;
-    ports: Array<{ port: number; protocol: string; state: string; service: string; version: string }>;
-  }>;
+    ports: { port: number; protocol: string; state: string; service: string; version: string }[];
+  }[];
 }
 
 export function parseNmapXml(xml: string): NmapResult {
@@ -169,19 +169,19 @@ export function parseNmapXml(xml: string): NmapResult {
     const hostMatches = xml.match(/<host\b[^>]*>([\s\S]*?)<\/host>/g);
     if (!hostMatches) return result;
     for (const hostBlock of hostMatches) {
-      const addrMatch = hostBlock.match(/<address\s+addr="([^"]+)"\s+addrtype="ipv4"/);
-      const hostnameMatch = hostBlock.match(/<hostname\s+name="([^"]+)"/);
+      const addrMatch = /<address\s+addr="([^"]+)"\s+addrtype="ipv4"/.exec(hostBlock);
+      const hostnameMatch = /<hostname\s+name="([^"]+)"/.exec(hostBlock);
       const ip = addrMatch?.[1] ?? '';
       const hostname = hostnameMatch?.[1] ?? ip;
       const ports: NmapResult['hosts'][0]['ports'] = [];
       const portBlocks = hostBlock.match(/<port\b[^>]*>([\s\S]*?)<\/port>/g);
       if (portBlocks) {
         for (const pb of portBlocks) {
-          const portIdMatch = pb.match(/portid="(\d+)"/);
-          const protocolMatch = pb.match(/protocol="(\w+)"/);
-          const stateMatch = pb.match(/<state\s+state="(\w+)"/);
-          const serviceMatch = pb.match(/<service\s+name="([^"]+)"/);
-          const versionMatch = pb.match(/version="([^"]+)"/);
+          const portIdMatch = /portid="(\d+)"/.exec(pb);
+          const protocolMatch = /protocol="(\w+)"/.exec(pb);
+          const stateMatch = /<state\s+state="(\w+)"/.exec(pb);
+          const serviceMatch = /<service\s+name="([^"]+)"/.exec(pb);
+          const versionMatch = /version="([^"]+)"/.exec(pb);
           if (portIdMatch?.[1]) {
             ports.push({
               port: parseInt(portIdMatch[1], 10),
@@ -202,7 +202,7 @@ export function parseNmapXml(xml: string): NmapResult {
 }
 
 export interface SqlmapResult {
-  injectable: Array<{ parameter: string; type: string }>;
+  injectable: { parameter: string; type: string }[];
   dbms: string | null;
 }
 
@@ -215,7 +215,7 @@ export function parseSqlmapOutput(text: string): SqlmapResult {
       const type = (m[2] ?? '').trim();
       result.injectable.push({ parameter, type });
     }
-    const dbmsMatch = text.match(/back-end DBMS:\s+([^\n]+)/i);
+    const dbmsMatch = /back-end DBMS:\s+([^\n]+)/i.exec(text);
     if (dbmsMatch?.[1]) result.dbms = dbmsMatch[1].trim();
   } catch {
     // Return partial results
@@ -224,7 +224,7 @@ export function parseSqlmapOutput(text: string): SqlmapResult {
 }
 
 export interface NucleiResult {
-  findings: Array<{ templateId: string; severity: string; host: string; matched: string; name: string }>;
+  findings: { templateId: string; severity: string; host: string; matched: string; name: string }[];
 }
 
 export function parseNucleiJsonl(text: string): NucleiResult {
@@ -252,14 +252,20 @@ export interface GobusterResult {
   mode: 'dir' | 'dns' | 'vhost';
 }
 
-export function parseGobusterOutput(text: string, mode: 'dir' | 'dns' | 'vhost' = 'dir'): GobusterResult {
+export function parseGobusterOutput(
+  text: string,
+  mode: 'dir' | 'dns' | 'vhost' = 'dir'
+): GobusterResult {
   const found: string[] = [];
   const lines = text.split('\n');
   for (const line of lines) {
     const trimmed = line.trim();
-    if (trimmed.startsWith('/') || (mode !== 'dir' && trimmed.length > 0 && !trimmed.startsWith('='))) {
+    if (
+      trimmed.startsWith('/') ||
+      (mode !== 'dir' && trimmed.length > 0 && !trimmed.startsWith('='))
+    ) {
       // Extract just the path/hostname from gobuster output lines
-      const match = trimmed.match(/^(\S+)/);
+      const match = /^(\S+)/.exec(trimmed);
       if (match?.[1]) found.push(match[1]);
     }
   }
@@ -267,7 +273,7 @@ export function parseGobusterOutput(text: string, mode: 'dir' | 'dns' | 'vhost' 
 }
 
 export interface HydraResult {
-  credentials: Array<{ login: string; password: string; host: string; port: string; service: string }>;
+  credentials: { login: string; password: string; host: string; port: string; service: string }[];
 }
 
 export function parseHydraOutput(text: string): HydraResult {
@@ -476,7 +482,10 @@ export async function registerSecurityTools(
         const envelope = buildEnvelope('ffuf', target, cmd, null, 0);
         return {
           content: [
-            { type: 'text' as const, text: formatSecResult('ffuf', target, cmd, stdout, stderr, envelope) },
+            {
+              type: 'text' as const,
+              text: formatSecResult('ffuf', target, cmd, stdout, stderr, envelope),
+            },
           ],
         };
       })
@@ -522,7 +531,10 @@ export async function registerSecurityTools(
         const envelope = buildEnvelope('sqlmap', target, cmd, parsed, 0);
         return {
           content: [
-            { type: 'text' as const, text: formatSecResult('sqlmap', target, cmd, stdout, stderr, envelope) },
+            {
+              type: 'text' as const,
+              text: formatSecResult('sqlmap', target, cmd, stdout, stderr, envelope),
+            },
           ],
         };
       })

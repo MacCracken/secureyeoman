@@ -50,7 +50,7 @@ export function registerMarketplaceRoutes(
         q.limit ? Number(q.limit) : undefined,
         q.offset ? Number(q.offset) : undefined,
         effectiveSource,
-        q.personalityId  // undefined when not provided → stored boolean fallback
+        q.personalityId // undefined when not provided → stored boolean fallback
       );
     }
   );
@@ -107,7 +107,8 @@ export function registerMarketplaceRoutes(
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const skill = await marketplaceManager.getSkill(request.params.id);
       if (!skill) return sendError(reply, 404, 'Skill not found');
-      if (skill.source === 'builtin') return sendError(reply, 403, 'Builtin skills cannot be deleted');
+      if (skill.source === 'builtin')
+        return sendError(reply, 403, 'Builtin skills cannot be deleted');
       if (!(await marketplaceManager.delete(request.params.id)))
         return sendError(reply, 404, 'Skill not found');
       return reply.code(204).send();

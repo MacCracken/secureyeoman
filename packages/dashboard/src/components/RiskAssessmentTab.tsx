@@ -73,7 +73,9 @@ const SEVERITY_ICONS: Record<RiskFindingSeverity | string, React.ReactNode> = {
 function LevelBadge({ level }: { level?: RiskLevel | string }) {
   const cls = LEVEL_COLORS[level ?? ''] ?? 'text-gray-600 bg-gray-50 border-gray-200';
   return (
-    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border uppercase ${cls}`}>
+    <span
+      className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border uppercase ${cls}`}
+    >
       {level ?? '—'}
     </span>
   );
@@ -84,10 +86,10 @@ function ScoreArc({ score, level }: { score: number; level?: RiskLevel }) {
     level === 'critical'
       ? '#dc2626'
       : level === 'high'
-      ? '#ea580c'
-      : level === 'medium'
-      ? '#d97706'
-      : '#16a34a';
+        ? '#ea580c'
+        : level === 'medium'
+          ? '#d97706'
+          : '#16a34a';
   const r = 54;
   const circ = 2 * Math.PI * r;
   const arcLen = (score / 100) * circ * 0.75;
@@ -96,7 +98,15 @@ function ScoreArc({ score, level }: { score: number; level?: RiskLevel }) {
   return (
     <div className="relative w-36 h-36 flex items-center justify-center">
       <svg width="144" height="144" viewBox="0 0 144 144" className="-rotate-[135deg]">
-        <circle cx="72" cy="72" r={r} fill="none" stroke="#e5e7eb" strokeWidth="12" strokeDasharray={`${circ * 0.75} ${circ * 0.25}`} />
+        <circle
+          cx="72"
+          cy="72"
+          r={r}
+          fill="none"
+          stroke="#e5e7eb"
+          strokeWidth="12"
+          strokeDasharray={`${circ * 0.75} ${circ * 0.25}`}
+        />
         <circle
           cx="72"
           cy="72"
@@ -110,22 +120,17 @@ function ScoreArc({ score, level }: { score: number; level?: RiskLevel }) {
         />
       </svg>
       <div className="absolute text-center">
-        <div className="text-2xl font-bold" style={{ color }}>{score}</div>
+        <div className="text-2xl font-bold" style={{ color }}>
+          {score}
+        </div>
         <div className="text-xs text-muted-foreground">/ 100</div>
       </div>
     </div>
   );
 }
 
-function DomainCard({
-  domain,
-  score,
-}: {
-  domain: string;
-  score: number;
-}) {
-  const level =
-    score >= 75 ? 'critical' : score >= 50 ? 'high' : score >= 25 ? 'medium' : 'low';
+function DomainCard({ domain, score }: { domain: string; score: number }) {
+  const level = score >= 75 ? 'critical' : score >= 50 ? 'high' : score >= 25 ? 'medium' : 'low';
   const color = LEVEL_COLORS[level];
   return (
     <div className="card card-compact bg-base-100 border border-border">
@@ -145,10 +150,10 @@ function DomainCard({
                 level === 'critical'
                   ? '#dc2626'
                   : level === 'high'
-                  ? '#ea580c'
-                  : level === 'medium'
-                  ? '#d97706'
-                  : '#16a34a',
+                    ? '#ea580c'
+                    : level === 'medium'
+                      ? '#d97706'
+                      : '#16a34a',
             }}
           />
         </div>
@@ -165,13 +170,7 @@ function formatTs(ts?: number) {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-function OverviewSection({
-  onRun,
-  running,
-}: {
-  onRun: () => void;
-  running: boolean;
-}) {
+function OverviewSection({ onRun, running }: { onRun: () => void; running: boolean }) {
   const { data, isLoading } = useQuery({
     queryKey: ['risk-assessments', 'latest'],
     queryFn: () => fetchRiskAssessments({ limit: 1, status: 'completed' }),
@@ -185,7 +184,11 @@ function OverviewSection({
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Risk Overview</h3>
         <button className="btn btn-ghost btn-sm gap-2" onClick={onRun} disabled={running}>
-          {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+          {running ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <RefreshCw className="w-4 h-4" />
+          )}
           Run Assessment
         </button>
       </div>
@@ -224,7 +227,7 @@ function OverviewSection({
           {latest.domainScores && (
             <div className="grid grid-cols-1 gap-2 content-start">
               {Object.entries(latest.domainScores).map(([d, s]) => (
-                <DomainCard key={d} domain={d} score={s as number} />
+                <DomainCard key={d} domain={d} score={s} />
               ))}
             </div>
           )}
@@ -250,32 +253,29 @@ function AssessmentsSection() {
     enabled: !!expanded,
   });
 
-  const handleDownload = useCallback(
-    async (id: string, fmt: string) => {
-      setDownloading(`${id}-${fmt}`);
-      try {
-        const content = await downloadRiskReport(id, fmt);
-        const mimes: Record<string, string> = {
-          json: 'application/json',
-          html: 'text/html',
-          markdown: 'text/markdown',
-          csv: 'text/csv',
-        };
-        const blob = new Blob([content], { type: mimes[fmt] ?? 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `risk-report-${id}.${fmt}`;
-        a.click();
-        URL.revokeObjectURL(url);
-      } catch (e) {
-        console.error('Download failed', e);
-      } finally {
-        setDownloading(null);
-      }
-    },
-    []
-  );
+  const handleDownload = useCallback(async (id: string, fmt: string) => {
+    setDownloading(`${id}-${fmt}`);
+    try {
+      const content = await downloadRiskReport(id, fmt);
+      const mimes: Record<string, string> = {
+        json: 'application/json',
+        html: 'text/html',
+        markdown: 'text/markdown',
+        csv: 'text/csv',
+      };
+      const blob = new Blob([content], { type: mimes[fmt] ?? 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `risk-report-${id}.${fmt}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Download failed', e);
+    } finally {
+      setDownloading(null);
+    }
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -301,7 +301,9 @@ function AssessmentsSection() {
           <div key={a.id} className="card bg-base-100 border border-border shadow-sm">
             <div
               className="card-body cursor-pointer select-none"
-              onClick={() => setExpanded(expanded === a.id ? null : a.id)}
+              onClick={() => {
+                setExpanded(expanded === a.id ? null : a.id);
+              }}
             >
               <div className="flex items-center gap-3">
                 {a.status === 'completed' ? (
@@ -319,7 +321,9 @@ function AssessmentsSection() {
                 </div>
                 {a.riskLevel && <LevelBadge level={a.riskLevel} />}
                 {a.compositeScore != null && (
-                  <span className="text-sm font-bold text-muted-foreground">{a.compositeScore}/100</span>
+                  <span className="text-sm font-bold text-muted-foreground">
+                    {a.compositeScore}/100
+                  </span>
                 )}
                 <span className="text-xs text-muted-foreground">{a.findingsCount} findings</span>
                 {expanded === a.id ? (
@@ -335,10 +339,12 @@ function AssessmentsSection() {
                 {/* Domain scores */}
                 {expandedData.domainScores && (
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Domain Scores</p>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">
+                      Domain Scores
+                    </p>
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {Object.entries(expandedData.domainScores).map(([d, s]) => (
-                        <DomainCard key={d} domain={d} score={s as number} />
+                        <DomainCard key={d} domain={d} score={s} />
                       ))}
                     </div>
                   </div>
@@ -361,7 +367,9 @@ function AssessmentsSection() {
                 {/* Download buttons */}
                 {expandedData.status === 'completed' && (
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Download Report</p>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">
+                      Download Report
+                    </p>
                     <div className="flex gap-2 flex-wrap">
                       {(['json', 'html', 'markdown', 'csv'] as const).map((fmt) => (
                         <button
@@ -406,8 +414,8 @@ function FindingRow({
   onResolve?: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const domain = 'domain' in finding ? (finding as RiskFinding).domain : undefined;
-  const status = 'status' in finding ? (finding as ExternalFinding).status : undefined;
+  const domain = 'domain' in finding ? finding.domain : undefined;
+  const status = 'status' in finding ? finding.status : undefined;
 
   return (
     <div className={`rounded border border-border ${compact ? 'p-2' : 'p-3'} space-y-1`}>
@@ -417,7 +425,9 @@ function FindingRow({
       >
         <span className="mt-0.5 shrink-0">{SEVERITY_ICONS[finding.severity]}</span>
         <div className="flex-1 min-w-0">
-          <p className={`${compact ? 'text-xs' : 'text-sm'} font-medium truncate`}>{finding.title}</p>
+          <p className={`${compact ? 'text-xs' : 'text-sm'} font-medium truncate`}>
+            {finding.title}
+          </p>
           {!compact && (
             <p className="text-xs text-muted-foreground truncate">{finding.description}</p>
           )}
@@ -432,26 +442,47 @@ function FindingRow({
               status === 'open'
                 ? 'bg-red-50 text-red-600'
                 : status === 'acknowledged'
-                ? 'bg-yellow-50 text-yellow-700'
-                : 'bg-green-50 text-green-700'
+                  ? 'bg-yellow-50 text-yellow-700'
+                  : 'bg-green-50 text-green-700'
             }`}
           >
             {status}
           </span>
         )}
-        {!compact && (open ? <ChevronUp className="w-4 h-4 shrink-0" /> : <ChevronDown className="w-4 h-4 shrink-0" />)}
+        {!compact &&
+          (open ? (
+            <ChevronUp className="w-4 h-4 shrink-0" />
+          ) : (
+            <ChevronDown className="w-4 h-4 shrink-0" />
+          ))}
       </div>
 
       {open && !compact && (
         <div className="pl-6 space-y-1 text-xs text-muted-foreground border-t border-border pt-2 mt-2">
-          {finding.description && <p><strong>Description:</strong> {finding.description}</p>}
-          {finding.affectedResource && <p><strong>Affected Resource:</strong> {finding.affectedResource}</p>}
-          {finding.recommendation && <p><strong>Recommendation:</strong> {finding.recommendation}</p>}
+          {finding.description && (
+            <p>
+              <strong>Description:</strong> {finding.description}
+            </p>
+          )}
+          {finding.affectedResource && (
+            <p>
+              <strong>Affected Resource:</strong> {finding.affectedResource}
+            </p>
+          )}
+          {finding.recommendation && (
+            <p>
+              <strong>Recommendation:</strong> {finding.recommendation}
+            </p>
+          )}
           {onAcknowledge && status === 'open' && (
-            <button className="btn btn-xs btn-ghost mt-1" onClick={onAcknowledge}>Acknowledge</button>
+            <button className="btn btn-xs btn-ghost mt-1" onClick={onAcknowledge}>
+              Acknowledge
+            </button>
           )}
           {onResolve && status !== 'resolved' && (
-            <button className="btn btn-xs btn-ghost mt-1" onClick={onResolve}>Resolve</button>
+            <button className="btn btn-xs btn-ghost mt-1" onClick={onResolve}>
+              Resolve
+            </button>
           )}
         </div>
       )}
@@ -492,7 +523,9 @@ function FindingsSection() {
         <select
           className="bg-card border border-border rounded-lg px-3 py-1.5 text-sm ml-auto"
           value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
+          onChange={(e) => {
+            setFilterStatus(e.target.value);
+          }}
         >
           <option value="">All Statuses</option>
           <option value="open">Open</option>
@@ -502,7 +535,9 @@ function FindingsSection() {
         <select
           className="bg-card border border-border rounded-lg px-3 py-1.5 text-sm"
           value={filterSeverity}
-          onChange={(e) => setFilterSeverity(e.target.value)}
+          onChange={(e) => {
+            setFilterSeverity(e.target.value);
+          }}
         >
           <option value="">All Severities</option>
           <option value="critical">Critical</option>
@@ -528,8 +563,12 @@ function FindingsSection() {
           <FindingRow
             key={f.id}
             finding={f}
-            onAcknowledge={() => ackMutation.mutate(f.id)}
-            onResolve={() => resolveMutation.mutate(f.id)}
+            onAcknowledge={() => {
+              ackMutation.mutate(f.id);
+            }}
+            onResolve={() => {
+              resolveMutation.mutate(f.id);
+            }}
           />
         ))}
       </div>
@@ -548,7 +587,9 @@ function FeedsSection() {
   });
   const [ingestFeedId, setIngestFeedId] = useState<string | null>(null);
   const [ingestText, setIngestText] = useState('');
-  const [ingestResult, setIngestResult] = useState<{ created: number; skipped: number } | null>(null);
+  const [ingestResult, setIngestResult] = useState<{ created: number; skipped: number } | null>(
+    null
+  );
 
   const { data: feeds, isLoading } = useQuery({
     queryKey: ['risk-feeds'],
@@ -602,7 +643,9 @@ function FeedsSection() {
         <h3 className="text-lg font-semibold">External Feeds</h3>
         <button
           className="btn btn-ghost btn-sm gap-2 ml-auto"
-          onClick={() => setShowAdd(!showAdd)}
+          onClick={() => {
+            setShowAdd(!showAdd);
+          }}
         >
           <Plus className="w-4 h-4" /> Add Feed
         </button>
@@ -618,7 +661,9 @@ function FeedsSection() {
                 <input
                   className="input input-bordered input-sm w-full"
                   value={newFeed.name}
-                  onChange={(e) => setNewFeed((p) => ({ ...p, name: e.target.value }))}
+                  onChange={(e) => {
+                    setNewFeed((p) => ({ ...p, name: e.target.value }));
+                  }}
                   placeholder="e.g. NVD CVE Feed"
                 />
               </div>
@@ -627,7 +672,12 @@ function FeedsSection() {
                 <select
                   className="select select-bordered select-sm w-full"
                   value={newFeed.sourceType}
-                  onChange={(e) => setNewFeed((p) => ({ ...p, sourceType: e.target.value as ExternalFeedSourceType }))}
+                  onChange={(e) => {
+                    setNewFeed((p) => ({
+                      ...p,
+                      sourceType: e.target.value as ExternalFeedSourceType,
+                    }));
+                  }}
                 >
                   <option value="manual">Manual</option>
                   <option value="upload">Upload</option>
@@ -639,7 +689,9 @@ function FeedsSection() {
                 <select
                   className="select select-bordered select-sm w-full"
                   value={newFeed.category}
-                  onChange={(e) => setNewFeed((p) => ({ ...p, category: e.target.value as ExternalFeedCategory }))}
+                  onChange={(e) => {
+                    setNewFeed((p) => ({ ...p, category: e.target.value as ExternalFeedCategory }));
+                  }}
                 >
                   <option value="cyber">Cyber</option>
                   <option value="compliance">Compliance</option>
@@ -652,17 +704,28 @@ function FeedsSection() {
                 <input
                   className="input input-bordered input-sm w-full"
                   value={newFeed.description}
-                  onChange={(e) => setNewFeed((p) => ({ ...p, description: e.target.value }))}
+                  onChange={(e) => {
+                    setNewFeed((p) => ({ ...p, description: e.target.value }));
+                  }}
                   placeholder="Optional description"
                 />
               </div>
             </div>
             <div className="flex gap-2 justify-end">
-              <button className="btn btn-ghost btn-sm" onClick={() => setShowAdd(false)}>Cancel</button>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => {
+                  setShowAdd(false);
+                }}
+              >
+                Cancel
+              </button>
               <button
                 className="btn btn-primary btn-sm"
                 disabled={!newFeed.name || createMutation.isPending}
-                onClick={() => createMutation.mutate(newFeed)}
+                onClick={() => {
+                  createMutation.mutate(newFeed);
+                }}
               >
                 {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
               </button>
@@ -696,7 +759,9 @@ function FeedsSection() {
                 </div>
                 <button
                   className="btn btn-ghost btn-xs gap-1"
-                  onClick={() => setIngestFeedId(ingestFeedId === feed.id ? null : feed.id)}
+                  onClick={() => {
+                    setIngestFeedId(ingestFeedId === feed.id ? null : feed.id);
+                  }}
                 >
                   <Upload className="w-3 h-3" /> Ingest
                 </button>
@@ -721,7 +786,9 @@ function FeedsSection() {
                   <textarea
                     className="textarea textarea-bordered w-full text-xs font-mono h-28"
                     value={ingestText}
-                    onChange={(e) => setIngestText(e.target.value)}
+                    onChange={(e) => {
+                      setIngestText(e.target.value);
+                    }}
                     placeholder='[{"title":"CVE-2024-XXXX","severity":"high","category":"cyber","description":"..."}]'
                   />
                   {ingestResult && (
@@ -737,11 +804,14 @@ function FeedsSection() {
                     >
                       <Upload className="w-3 h-3" /> Import
                     </button>
-                    <button className="btn btn-ghost btn-xs" onClick={() => {
-                      setIngestFeedId(null);
-                      setIngestResult(null);
-                      setIngestText('');
-                    }}>
+                    <button
+                      className="btn btn-ghost btn-xs"
+                      onClick={() => {
+                        setIngestFeedId(null);
+                        setIngestResult(null);
+                        setIngestText('');
+                      }}
+                    >
                       Cancel
                     </button>
                   </div>
@@ -810,7 +880,9 @@ export function RiskAssessmentTab() {
                 ? 'bg-primary/10 text-primary border-b-2 border-primary'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
-            onClick={() => setSubTab(t.id)}
+            onClick={() => {
+              setSubTab(t.id);
+            }}
           >
             {t.icon}
             {t.label}
@@ -837,7 +909,9 @@ export function RiskAssessmentTab() {
               <input
                 className="input input-bordered input-sm w-full"
                 value={assessmentName}
-                onChange={(e) => setAssessmentName(e.target.value)}
+                onChange={(e) => {
+                  setAssessmentName(e.target.value);
+                }}
                 placeholder={`Assessment ${new Date().toISOString().slice(0, 10)}`}
               />
             </div>
@@ -871,18 +945,27 @@ export function RiskAssessmentTab() {
                 value={windowDays}
                 min={1}
                 max={365}
-                onChange={(e) => setWindowDays(Number(e.target.value))}
+                onChange={(e) => {
+                  setWindowDays(Number(e.target.value));
+                }}
               />
             </div>
 
             <div className="flex gap-2 justify-end pt-2">
-              <button className="btn btn-ghost btn-sm" onClick={() => setRunModal(false)}>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => {
+                  setRunModal(false);
+                }}
+              >
                 Cancel
               </button>
               <button
                 className="btn btn-primary btn-sm gap-2"
                 disabled={selectedDomains.length === 0 || runMutation.isPending}
-                onClick={() => runMutation.mutate()}
+                onClick={() => {
+                  runMutation.mutate();
+                }}
               >
                 {runMutation.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -895,7 +978,8 @@ export function RiskAssessmentTab() {
 
             {runMutation.isError && (
               <p className="text-sm text-destructive">
-                Error: {runMutation.error instanceof Error ? runMutation.error.message : 'Unknown error'}
+                Error:{' '}
+                {runMutation.error instanceof Error ? runMutation.error.message : 'Unknown error'}
               </p>
             )}
           </div>

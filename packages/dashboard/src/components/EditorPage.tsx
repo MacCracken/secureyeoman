@@ -427,7 +427,11 @@ function ExecutionGated({ children }: { children: React.ReactNode }) {
 // ── Main Component ───────────────────────────────────────────────
 
 export function EditorPage() {
-  const { data: policy } = useQuery({ queryKey: ['security-policy'], queryFn: fetchSecurityPolicy, staleTime: 30000 });
+  const { data: policy } = useQuery({
+    queryKey: ['security-policy'],
+    queryFn: fetchSecurityPolicy,
+    staleTime: 30000,
+  });
   if (policy?.allowAdvancedEditor) return <AdvancedEditorPage />;
   return <StandardEditorPage />;
 }
@@ -440,8 +444,8 @@ function StandardEditorPage() {
   const [cwd, setCwd] = useState('/tmp');
   const [renamingTabId, setRenamingTabId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
-  const [selectedPersonalityId, setSelectedPersonalityIdRaw] = useState<string | null>(
-    () => localStorage.getItem('soul:editorPersonalityId')
+  const [selectedPersonalityId, setSelectedPersonalityIdRaw] = useState<string | null>(() =>
+    localStorage.getItem('soul:editorPersonalityId')
   );
   const setSelectedPersonalityId = (id: string | null) => {
     if (id) localStorage.setItem('soul:editorPersonalityId', id);
@@ -520,8 +524,9 @@ function StandardEditorPage() {
   });
 
   const personalities = personalitiesData?.personalities ?? [];
-  const defaultPersonality = personalities.find((p) => p.isDefault)
-    ?? [...personalities].sort((a, b) => a.name.localeCompare(b.name))[0];
+  const defaultPersonality =
+    personalities.find((p) => p.isDefault) ??
+    [...personalities].sort((a, b) => a.name.localeCompare(b.name))[0];
   const effectivePersonalityId = selectedPersonalityId ?? defaultPersonality?.id ?? null;
   const currentPersonality = personalities.find((p) => p.id === effectivePersonalityId);
 
@@ -533,8 +538,14 @@ function StandardEditorPage() {
     .join('\n');
 
   const {
-    messages, input, setInput, handleSend, isPending,
-    streamingThinking, streamingContent, activeToolCalls,
+    messages,
+    input,
+    setInput,
+    handleSend,
+    isPending,
+    streamingThinking,
+    streamingContent,
+    activeToolCalls,
   } = useChatStream({
     personalityId: effectivePersonalityId,
     editorContent: watchEnabled && terminalOutput ? terminalOutput : undefined,
@@ -846,7 +857,9 @@ function StandardEditorPage() {
       {/* Page header */}
       <div className="pb-3 border-b mb-3">
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Editor</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Write, run, and debug code with AI-assisted execution and sandboxed sessions</p>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Write, run, and debug code with AI-assisted execution and sandboxed sessions
+        </p>
       </div>
 
       {/* Three-panel responsive layout: Editor | Chat side by side, Bottom panel */}
@@ -879,7 +892,9 @@ function StandardEditorPage() {
                         ? 'bg-primary/10 text-primary border border-primary/30'
                         : 'hover:bg-muted/50 text-muted-foreground'
                     }`}
-                    onClick={() => { setActiveTabId(tab.id); }}
+                    onClick={() => {
+                      setActiveTabId(tab.id);
+                    }}
                   >
                     {renamingTabId === tab.id ? (
                       <input
@@ -887,17 +902,29 @@ function StandardEditorPage() {
                         value={renameValue}
                         autoFocus
                         className="max-w-[100px] bg-transparent border-b border-primary outline-none font-mono text-xs w-[80px]"
-                        onChange={(e) => setRenameValue(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => {
+                          setRenameValue(e.target.value);
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
                             if (renameValue.trim()) {
-                              setTabs((prev) => prev.map((t) =>
-                                t.id === tab.id
-                                  ? { ...t, name: renameValue.trim(), path: `${cwd}/${renameValue.trim()}`, language: detectLanguage(renameValue.trim()), isDirty: true }
-                                  : t
-                              ));
+                              setTabs((prev) =>
+                                prev.map((t) =>
+                                  t.id === tab.id
+                                    ? {
+                                        ...t,
+                                        name: renameValue.trim(),
+                                        path: `${cwd}/${renameValue.trim()}`,
+                                        language: detectLanguage(renameValue.trim()),
+                                        isDirty: true,
+                                      }
+                                    : t
+                                )
+                              );
                             }
                             setRenamingTabId(null);
                           } else if (e.key === 'Escape') {
@@ -906,11 +933,19 @@ function StandardEditorPage() {
                         }}
                         onBlur={() => {
                           if (renameValue.trim()) {
-                            setTabs((prev) => prev.map((t) =>
-                              t.id === tab.id
-                                ? { ...t, name: renameValue.trim(), path: `${cwd}/${renameValue.trim()}`, language: detectLanguage(renameValue.trim()), isDirty: true }
-                                : t
-                            ));
+                            setTabs((prev) =>
+                              prev.map((t) =>
+                                t.id === tab.id
+                                  ? {
+                                      ...t,
+                                      name: renameValue.trim(),
+                                      path: `${cwd}/${renameValue.trim()}`,
+                                      language: detectLanguage(renameValue.trim()),
+                                      isDirty: true,
+                                    }
+                                  : t
+                              )
+                            );
                           }
                           setRenamingTabId(null);
                         }}
@@ -929,7 +964,9 @@ function StandardEditorPage() {
                         {tab.name}
                       </span>
                     )}
-                    {tab.isDirty && renamingTabId !== tab.id && <span className="text-primary">●</span>}
+                    {tab.isDirty && renamingTabId !== tab.id && (
+                      <span className="text-primary">●</span>
+                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1153,7 +1190,9 @@ function StandardEditorPage() {
             <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
               <Bot className="w-4 h-4 text-primary flex-shrink-0" />
               {currentPersonality?.isDefault && (
-                <span title="Default personality"><Star className="w-3 h-3 fill-current text-primary flex-shrink-0" /></span>
+                <span title="Default personality">
+                  <Star className="w-3 h-3 fill-current text-primary flex-shrink-0" />
+                </span>
               )}
 
               {/* Personality selector */}
@@ -1169,7 +1208,8 @@ function StandardEditorPage() {
                   {personalities.map((p: Personality) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
-                      {p.isActive ? ' (active)' : ''}{p.isDefault ? ' (default)' : ''}
+                      {p.isActive ? ' (active)' : ''}
+                      {p.isDefault ? ' (default)' : ''}
                     </option>
                   ))}
                 </select>
@@ -1229,7 +1269,8 @@ function StandardEditorPage() {
 
                     {/* Phase 2 — Tool use (badges + creation outcomes), shown before the response */}
                     {msg.role === 'assistant' &&
-                      ((msg.toolCalls?.length ?? 0) > 0 || (msg.creationEvents?.length ?? 0) > 0) && (
+                      ((msg.toolCalls?.length ?? 0) > 0 ||
+                        (msg.creationEvents?.length ?? 0) > 0) && (
                         <div
                           className={`space-y-0.5 mb-1.5 ${msg.thinkingContent ? 'border-t border-muted-foreground/15 pt-1.5 mt-1' : ''}`}
                         >
@@ -1352,15 +1393,29 @@ function StandardEditorPage() {
                       >
                         <p className="text-xs whitespace-pre-wrap">{streamingContent}</p>
                       </div>
-                    ) : !streamingThinking && activeToolCalls.length === 0 && (
-                      <div className="flex items-center gap-1.5 mt-1.5">
-                        <span className="text-[10px] text-muted-foreground animate-pulse">Thinking</span>
-                        <div className="flex gap-1">
-                          <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    ) : (
+                      !streamingThinking &&
+                      activeToolCalls.length === 0 && (
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <span className="text-[10px] text-muted-foreground animate-pulse">
+                            Thinking
+                          </span>
+                          <div className="flex gap-1">
+                            <span
+                              className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
+                              style={{ animationDelay: '0ms' }}
+                            />
+                            <span
+                              className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
+                              style={{ animationDelay: '150ms' }}
+                            />
+                            <span
+                              className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
+                              style={{ animationDelay: '300ms' }}
+                            />
+                          </div>
                         </div>
-                      </div>
+                      )
                     )}
                   </div>
                 </div>
@@ -1401,11 +1456,17 @@ function StandardEditorPage() {
                 </button>
                 {hasVision && (
                   <button
-                    onClick={() => setWatchEnabled((v) => !v)}
+                    onClick={() => {
+                      setWatchEnabled((v) => !v);
+                    }}
                     className={`btn px-3 py-2 rounded h-[52px] ${
                       watchEnabled ? 'btn-primary' : 'btn-ghost'
                     }`}
-                    title={watchEnabled ? 'Watch on — terminal output visible to personality' : 'Watch off — enable terminal vision'}
+                    title={
+                      watchEnabled
+                        ? 'Watch on — terminal output visible to personality'
+                        : 'Watch off — enable terminal vision'
+                    }
                   >
                     <Eye className="w-3 h-3" />
                   </button>
@@ -1458,7 +1519,9 @@ function StandardEditorPage() {
             {activeBottomTab === 'terminal' && (
               <div className="flex items-center gap-2 ml-auto px-2 min-w-0 overflow-hidden">
                 <FolderOpen className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                <span className="text-xs font-mono text-muted-foreground truncate max-w-[160px]">{cwd}</span>
+                <span className="text-xs font-mono text-muted-foreground truncate max-w-[160px]">
+                  {cwd}
+                </span>
                 <button
                   onClick={clearTerminal}
                   className="btn-ghost text-xs p-1 rounded hover:text-destructive flex-shrink-0"
@@ -1485,16 +1548,10 @@ function StandardEditorPage() {
               {terminalHistory.map((entry) => (
                 <div key={entry.id} className="space-y-1">
                   <div className="flex items-start gap-1">
-                    <span className={isDark ? 'text-green-400' : 'text-green-600'}>
-                      ➜
-                    </span>
-                    <span className={isDark ? 'text-blue-400' : 'text-blue-600'}>
-                      {cwd}
-                    </span>
+                    <span className={isDark ? 'text-green-400' : 'text-green-600'}>➜</span>
+                    <span className={isDark ? 'text-blue-400' : 'text-blue-600'}>{cwd}</span>
                     <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>$</span>
-                    <span className={isDark ? 'text-white' : 'text-gray-900'}>
-                      {entry.command}
-                    </span>
+                    <span className={isDark ? 'text-white' : 'text-gray-900'}>{entry.command}</span>
                   </div>
                   {entry.output && (
                     <div
@@ -1511,9 +1568,7 @@ function StandardEditorPage() {
                     </div>
                   )}
                   {entry.exitCode !== 0 && (
-                    <div
-                      className={`text-[10px] pl-4 ${isDark ? 'text-red-500' : 'text-red-600'}`}
-                    >
+                    <div className={`text-[10px] pl-4 ${isDark ? 'text-red-500' : 'text-red-600'}`}>
                       Exit code: {entry.exitCode}
                     </div>
                   )}

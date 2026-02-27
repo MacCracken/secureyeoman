@@ -152,7 +152,10 @@ describe('POST /api/v1/group-chat/channels/:integrationId/:chatId/messages', () 
   });
 
   it('returns 500 when sendMessage throws', async () => {
-    const app = buildApp({}, { sendMessage: vi.fn().mockRejectedValue(new Error('Network error')) });
+    const app = buildApp(
+      {},
+      { sendMessage: vi.fn().mockRejectedValue(new Error('Network error')) }
+    );
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/group-chat/channels/int-1/chat-1/messages',
@@ -172,6 +175,8 @@ describe('POST /api/v1/group-chat/channels/:integrationId/:chatId/messages', () 
     });
     expect(res.statusCode).toBe(201);
     expect(res.json().text).toBe('hello');
-    expect(sendSpy).toHaveBeenCalledWith('int-1', 'chat-1', 'hello', { source: 'group_chat_dashboard' });
+    expect(sendSpy).toHaveBeenCalledWith('int-1', 'chat-1', 'hello', {
+      source: 'group_chat_dashboard',
+    });
   });
 });

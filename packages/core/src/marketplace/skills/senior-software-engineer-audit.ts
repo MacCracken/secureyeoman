@@ -68,8 +68,10 @@ export const seniorSoftwareEngineerAuditSkill: Partial<MarketplaceSkill> = {
     'what.{0,20}(wrong|issue|problem|bug).{0,20}(with )?(this|the|my) (code|function|implementation)',
   ],
   useWhen: 'User asks for a code review, audit, or quality assessment of existing code',
-  doNotUseWhen: 'User needs new code written or architecture designed — use the Senior Software Engineer skill instead',
-  successCriteria: 'Structured review with severity-rated findings (HIGH/MEDIUM/LOW), suggested fixes, and a summary checklist',
+  doNotUseWhen:
+    'User needs new code written or architecture designed — use the Senior Software Engineer skill instead',
+  successCriteria:
+    'Structured review with severity-rated findings (HIGH/MEDIUM/LOW), suggested fixes, and a summary checklist',
   routing: 'fuzzy',
   autonomyLevel: 'L1',
 };

@@ -46,7 +46,7 @@ export function detectCredentials(text: string): string[] {
   const warnings: string[] = [];
   const VAR_REF = /^\$[A-Z_][A-Z0-9_]*$/;
 
-  const patterns: Array<{ re: RegExp; label: string }> = [
+  const patterns: { re: RegExp; label: string }[] = [
     { re: /Bearer\s+([A-Za-z0-9\-._~+/]{20,})/g, label: 'Bearer token' },
     { re: /\bsk-[A-Za-z0-9]{20,}/g, label: 'API key (sk-)' },
     { re: /\b(ghp_|gho_|github_pat_)[A-Za-z0-9_]{10,}/g, label: 'GitHub token' },
@@ -77,7 +77,15 @@ const MIME_EXT: Record<string, string> = {
 };
 
 export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions): void {
-  const { soulManager, approvalManager, broadcast, heartbeatManager, validator, auditChain, dataDir } = opts;
+  const {
+    soulManager,
+    approvalManager,
+    broadcast,
+    heartbeatManager,
+    validator,
+    auditChain,
+    dataDir,
+  } = opts;
 
   function withActiveHours(p: Personality): Personality & { isWithinActiveHours: boolean } {
     return { ...p, isWithinActiveHours: isPersonalityWithinActiveHours(p) };
@@ -169,7 +177,11 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
             heartbeatManager.setActivePersonalityId(personality.id);
           }
           heartbeatManager.setActivePersonalityIds(
-            allResult.personalities.map((p) => ({ id: p.id, name: p.name, omnipresentMind: p.body?.omnipresentMind ?? false }))
+            allResult.personalities.map((p) => ({
+              id: p.id,
+              name: p.name,
+              omnipresentMind: p.body?.omnipresentMind ?? false,
+            }))
           );
         }
         return { personality };
@@ -202,7 +214,11 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
           heartbeatManager.setPersonalitySchedule(personality.body?.activeHours ?? null);
           heartbeatManager.setActivePersonalityId(personality.id);
           heartbeatManager.setActivePersonalityIds(
-            allResult.personalities.map((p) => ({ id: p.id, name: p.name, omnipresentMind: p.body?.omnipresentMind ?? false }))
+            allResult.personalities.map((p) => ({
+              id: p.id,
+              name: p.name,
+              omnipresentMind: p.body?.omnipresentMind ?? false,
+            }))
           );
         }
         return { personality: personality ? withActiveHours(personality) : null };
@@ -345,7 +361,9 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         try {
           const prevSkill = await soulManager.getSkill(request.params.id);
           prevLevel = prevSkill?.autonomyLevel;
-        } catch { /* ignore — escalation warning is best-effort */ }
+        } catch {
+          /* ignore — escalation warning is best-effort */
+        }
 
         const skill = await soulManager.updateSkill(request.params.id, b);
         broadcast?.({ event: 'updated', type: 'skill', id: skill.id });
@@ -705,10 +723,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
 
   app.post(
     '/api/v1/soul/approvals/:id/approve',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!approvalManager) return sendError(reply, 503, 'Approval manager not available');
       const approval = await approvalManager.resolveApproval(request.params.id, 'approved');
       if (!approval) return sendError(reply, 404, 'Approval not found or already resolved');
@@ -718,10 +733,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
 
   app.post(
     '/api/v1/soul/approvals/:id/reject',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!approvalManager) return sendError(reply, 503, 'Approval manager not available');
       const approval = await approvalManager.resolveApproval(request.params.id, 'rejected');
       if (!approval) return sendError(reply, 404, 'Approval not found or already resolved');
@@ -754,7 +766,9 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
       try {
         const existing = readdirSync(avatarDir).filter((f) => f.startsWith(`${id}.`));
         await Promise.all(existing.map((f) => unlink(join(avatarDir, f))));
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
 
       const destPath = join(avatarDir, `${id}${ext}`);
       await pipeline(data.file, createWriteStream(destPath));
@@ -787,7 +801,9 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         try {
           const existing = readdirSync(avatarDir).filter((f) => f.startsWith(`${id}.`));
           await Promise.all(existing.map((f) => unlink(join(avatarDir, f))));
-        } catch { /* ignore — directory may not exist */ }
+        } catch {
+          /* ignore — directory may not exist */
+        }
       }
 
       const updated = await soulManager.updatePersonalityAvatar(id, null);
@@ -806,7 +822,9 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
       let avatarFile: string | undefined;
       try {
         avatarFile = readdirSync(avatarDir).find((f) => f.startsWith(`${id}.`));
-      } catch { /* directory doesn't exist */ }
+      } catch {
+        /* directory doesn't exist */
+      }
 
       if (!avatarFile) return sendError(reply, 404, 'No avatar found');
 

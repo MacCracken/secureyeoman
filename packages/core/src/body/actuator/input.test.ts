@@ -248,7 +248,9 @@ describe('focusWindow()', () => {
 
 describe('resizeWindow()', () => {
   it('does not throw', async () => {
-    await expect(resizeWindow('win-123', { x: 0, y: 0, width: 800, height: 600 })).resolves.not.toThrow();
+    await expect(
+      resizeWindow('win-123', { x: 0, y: 0, width: 800, height: 600 })
+    ).resolves.not.toThrow();
   });
 });
 

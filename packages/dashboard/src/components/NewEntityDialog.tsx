@@ -24,7 +24,16 @@ import {
   Crosshair,
   Plus,
 } from 'lucide-react';
-import { fetchModelInfo, createProactiveTrigger, registerExtension, createUser, createWorkspace, addMemory, learnKnowledge, createIntent } from '../api/client';
+import {
+  fetchModelInfo,
+  createProactiveTrigger,
+  registerExtension,
+  createUser,
+  createWorkspace,
+  addMemory,
+  learnKnowledge,
+  createIntent,
+} from '../api/client';
 
 type IconComp = React.ComponentType<{ className?: string }>;
 
@@ -44,10 +53,21 @@ type DialogStep =
   | 'intent';
 
 type ConfigItem =
-  | { kind: 'form'; step: Exclude<DialogStep, 'select'>; icon: IconComp; label: string; desc: string }
+  | {
+      kind: 'form';
+      step: Exclude<DialogStep, 'select'>;
+      icon: IconComp;
+      label: string;
+      desc: string;
+    }
   | { kind: 'nav'; path: string; icon: IconComp; label: string; desc: string };
 
-type NavItem = { path: string; icon: IconComp; label: string; desc: string };
+interface NavItem {
+  path: string;
+  icon: IconComp;
+  label: string;
+  desc: string;
+}
 
 interface NewEntityDialogProps {
   open: boolean;
@@ -57,32 +77,84 @@ interface NewEntityDialogProps {
 // ── Create & Configure — 3-column, 4 rows ─────────────────────────────────
 const CONFIG_ITEMS: ConfigItem[] = [
   // Row 1 — core building blocks
-  { kind: 'form', step: 'skill',       icon: Zap,       label: 'Skill',      desc: 'New skill definition'      },
-  { kind: 'form', step: 'task',        icon: ListTodo,  label: 'Task',       desc: 'Schedule a task'           },
-  { kind: 'form', step: 'memory',      icon: Database,  label: 'Memory',     desc: 'Vector memory or knowledge' },
+  { kind: 'form', step: 'skill', icon: Zap, label: 'Skill', desc: 'New skill definition' },
+  { kind: 'form', step: 'task', icon: ListTodo, label: 'Task', desc: 'Schedule a task' },
+  {
+    kind: 'form',
+    step: 'memory',
+    icon: Database,
+    label: 'Memory',
+    desc: 'Vector memory or knowledge',
+  },
   // Row 2 — AI agents
-  { kind: 'form', step: 'personality', icon: Brain,     label: 'Personality', desc: 'New AI personality'       },
-  { kind: 'form', step: 'sub-agent',   icon: Bot,       label: 'Sub-Agent',  desc: 'Create an agent profile'   },
-  { kind: 'form', step: 'intent',      icon: Crosshair, label: 'Intent',     desc: 'Define org intent'          },
+  {
+    kind: 'form',
+    step: 'personality',
+    icon: Brain,
+    label: 'Personality',
+    desc: 'New AI personality',
+  },
+  {
+    kind: 'form',
+    step: 'sub-agent',
+    icon: Bot,
+    label: 'Sub-Agent',
+    desc: 'Create an agent profile',
+  },
+  { kind: 'form', step: 'intent', icon: Crosshair, label: 'Intent', desc: 'Define org intent' },
   // Row 3 — automation & research
-  { kind: 'form', step: 'proactive',   icon: Bell,  label: 'Proactive Trigger', desc: 'Proactive assistance rule' },
-  { kind: 'form', step: 'extension',   icon: Package,   label: 'Extension',  desc: 'Add an extension'          },
-  { kind: 'form', step: 'experiment',  icon: FlaskConical, label: 'Experiment', desc: 'Try a new feature'      },
+  {
+    kind: 'form',
+    step: 'proactive',
+    icon: Bell,
+    label: 'Proactive Trigger',
+    desc: 'Proactive assistance rule',
+  },
+  { kind: 'form', step: 'extension', icon: Package, label: 'Extension', desc: 'Add an extension' },
+  {
+    kind: 'form',
+    step: 'experiment',
+    icon: FlaskConical,
+    label: 'Experiment',
+    desc: 'Try a new feature',
+  },
   // Row 4 — access & workspace
-  { kind: 'form', step: 'user',        icon: UserPlus,  label: 'User',       desc: 'Invite a new user'         },
-  { kind: 'form', step: 'workspace',   icon: Building2, label: 'Workspace',  desc: 'Create a new workspace'    },
-  { kind: 'form', step: 'custom-role', icon: ShieldCheck, label: 'Custom Role', desc: 'Define an access role'  },
+  { kind: 'form', step: 'user', icon: UserPlus, label: 'User', desc: 'Invite a new user' },
+  {
+    kind: 'form',
+    step: 'workspace',
+    icon: Building2,
+    label: 'Workspace',
+    desc: 'Create a new workspace',
+  },
+  {
+    kind: 'form',
+    step: 'custom-role',
+    icon: ShieldCheck,
+    label: 'Custom Role',
+    desc: 'Define an access role',
+  },
 ];
 
 // ── Navigate & Create — opens the relevant page directly ──────────────────
 const NAV_ITEMS: NavItem[] = [
-  { path: '/chat',                    icon: MessageSquare, label: 'Conversation',     desc: 'Start a new chat'        },
-  { path: '/connections',             icon: Puzzle,        label: 'MCP Server',       desc: 'Connect a server'        },
-  { path: '/agents',                  icon: Network,       label: 'A2A Peer',         desc: 'Agent-to-agent link'     },
-  { path: '/reports',                 icon: FileText,      label: 'Report',           desc: 'Generate a report'       },
-  { path: '/connections?tab=routing', icon: GitBranch,     label: 'Routing Rule',     desc: 'Route AI responses'      },
-  { path: '/connections',             icon: Plug,          label: 'Integration',      desc: 'Add an integration'      },
-  { path: '/automation?tab=workflows', icon: GitMerge,      label: 'Workflow',         desc: 'Create an automation'    },
+  { path: '/chat', icon: MessageSquare, label: 'Conversation', desc: 'Start a new chat' },
+  { path: '/connections', icon: Puzzle, label: 'MCP Server', desc: 'Connect a server' },
+  { path: '/agents', icon: Network, label: 'A2A Peer', desc: 'Agent-to-agent link' },
+  { path: '/reports', icon: FileText, label: 'Report', desc: 'Generate a report' },
+  {
+    path: '/connections?tab=routing',
+    icon: GitBranch,
+    label: 'Routing Rule',
+    desc: 'Route AI responses',
+  },
+  { path: '/connections', icon: Plug, label: 'Integration', desc: 'Add an integration' },
+  {
+    path: '/automation?tab=workflows',
+    icon: GitMerge,
+    label: 'Workflow',
+    desc: 'Create an automation',
+  },
 ];
 
 export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
@@ -132,9 +204,14 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
   });
   const [intent, setIntent] = useState({
     name: '',
-    goals: [] as Array<{ id: string; name: string; description: string; priority: number }>,
-    hardBoundaries: [] as Array<{ id: string; rule: string; rationale: string }>,
-    policies: [] as Array<{ id: string; rule: string; enforcement: 'warn' | 'block'; rationale: string }>,
+    goals: [] as { id: string; name: string; description: string; priority: number }[],
+    hardBoundaries: [] as { id: string; rule: string; rationale: string }[],
+    policies: [] as {
+      id: string;
+      rule: string;
+      enforcement: 'warn' | 'block';
+      rationale: string;
+    }[],
     importJson: '',
     importError: '',
     activeTab: 'basics' as 'basics' | 'boundaries' | 'policies' | 'import',
@@ -156,7 +233,10 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
       handleClose();
     },
     onError: (err) => {
-      setExtension((e) => ({ ...e, error: err instanceof Error ? err.message : 'Registration failed' }));
+      setExtension((e) => ({
+        ...e,
+        error: err instanceof Error ? err.message : 'Registration failed',
+      }));
     },
   });
 
@@ -167,7 +247,10 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
       handleClose();
     },
     onError: (err) => {
-      setUser((u) => ({ ...u, error: err instanceof Error ? err.message : 'Failed to create user' }));
+      setUser((u) => ({
+        ...u,
+        error: err instanceof Error ? err.message : 'Failed to create user',
+      }));
     },
   });
 
@@ -178,7 +261,10 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
       handleClose();
     },
     onError: (err) => {
-      setWorkspace((w) => ({ ...w, error: err instanceof Error ? err.message : 'Failed to create workspace' }));
+      setWorkspace((w) => ({
+        ...w,
+        error: err instanceof Error ? err.message : 'Failed to create workspace',
+      }));
     },
   });
 
@@ -189,7 +275,10 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
       handleClose();
     },
     onError: (err) => {
-      setMemory((m) => ({ ...m, error: err instanceof Error ? err.message : 'Failed to add memory' }));
+      setMemory((m) => ({
+        ...m,
+        error: err instanceof Error ? err.message : 'Failed to add memory',
+      }));
     },
   });
 
@@ -201,7 +290,10 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
       handleClose();
     },
     onError: (err) => {
-      setMemory((m) => ({ ...m, error: err instanceof Error ? err.message : 'Failed to save knowledge' }));
+      setMemory((m) => ({
+        ...m,
+        error: err instanceof Error ? err.message : 'Failed to save knowledge',
+      }));
     },
   });
 
@@ -213,7 +305,10 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
       window.location.href = '/intent';
     },
     onError: (err) => {
-      setIntent((s) => ({ ...s, importError: err instanceof Error ? err.message : 'Failed to create intent' }));
+      setIntent((s) => ({
+        ...s,
+        importError: err instanceof Error ? err.message : 'Failed to create intent',
+      }));
     },
   });
 
@@ -244,8 +339,25 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     setExtension({ id: '', name: '', version: '1.0.0', hooksText: '', error: '' });
     setUser({ email: '', displayName: '', password: '', isAdmin: false, error: '' });
     setWorkspace({ name: '', description: '', error: '' });
-    setMemory({ subtype: 'memory', memType: 'semantic', content: '', source: '', importance: 0.5, topic: '', knowledgeContent: '', error: '' });
-    setIntent({ name: '', goals: [], hardBoundaries: [], policies: [], importJson: '', importError: '', activeTab: 'basics' });
+    setMemory({
+      subtype: 'memory',
+      memType: 'semantic',
+      content: '',
+      source: '',
+      importance: 0.5,
+      topic: '',
+      knowledgeContent: '',
+      error: '',
+    });
+    setIntent({
+      name: '',
+      goals: [],
+      hardBoundaries: [],
+      policies: [],
+      importJson: '',
+      importError: '',
+      activeTab: 'basics',
+    });
   };
 
   const handleClose = () => {
@@ -253,7 +365,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     onClose();
   };
 
-  const goBack = () => setStep('select');
+  const goBack = () => {
+    setStep('select');
+  };
 
   const navigateTo = (path: string) => {
     handleClose();
@@ -277,9 +391,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
             return (
               <button
                 key={i}
-                onClick={() =>
-                  item.kind === 'form' ? setStep(item.step) : navigateTo(item.path)
-                }
+                onClick={() => {
+                  item.kind === 'form' ? setStep(item.step) : navigateTo(item.path);
+                }}
                 className={`p-3 rounded-lg hover:bg-muted/50 transition-colors text-left border ${
                   isNav ? 'border-dashed' : ''
                 }`}
@@ -304,7 +418,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           {NAV_ITEMS.map(({ path, icon: Icon, label, desc }) => (
             <button
               key={path + label}
-              onClick={() => navigateTo(path)}
+              onClick={() => {
+                navigateTo(path);
+              }}
               className="p-3 border border-dashed rounded-lg hover:bg-muted/50 transition-colors text-left"
             >
               <Icon className="w-5 h-5 mb-1.5 text-muted-foreground" />
@@ -332,7 +448,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={personality.name}
-          onChange={(e) => setPersonality({ ...personality, name: e.target.value })}
+          onChange={(e) => {
+            setPersonality({ ...personality, name: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="e.g., Coding Assistant"
         />
@@ -342,7 +460,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={personality.description}
-          onChange={(e) => setPersonality({ ...personality, description: e.target.value })}
+          onChange={(e) => {
+            setPersonality({ ...personality, description: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="Optional description"
         />
@@ -352,7 +472,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         {Object.keys(modelsByProvider).length > 0 ? (
           <select
             value={personality.model}
-            onChange={(e) => setPersonality({ ...personality, model: e.target.value })}
+            onChange={(e) => {
+              setPersonality({ ...personality, model: e.target.value });
+            }}
             className="w-full px-3 py-2 rounded border bg-background"
           >
             <option value="">Default (system)</option>
@@ -370,22 +492,26 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           <input
             type="text"
             value={personality.model}
-            onChange={(e) => setPersonality({ ...personality, model: e.target.value })}
+            onChange={(e) => {
+              setPersonality({ ...personality, model: e.target.value });
+            }}
             className="w-full px-3 py-2 rounded border bg-background"
             placeholder="e.g., claude-3-5-sonnet-20241022"
           />
         )}
       </div>
       <div className="flex justify-end gap-2 pt-2">
-        <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
+        <button onClick={handleClose} className="btn btn-ghost">
+          Cancel
+        </button>
         <button
           disabled={!personality.name.trim()}
           className="btn btn-ghost"
-          onClick={() =>
+          onClick={() => {
             navigateTo(
               `/personality?create=true&name=${encodeURIComponent(personality.name)}&description=${encodeURIComponent(personality.description)}&model=${encodeURIComponent(personality.model)}`
-            )
-          }
+            );
+          }}
         >
           Create
         </button>
@@ -406,7 +532,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={task.name}
-          onChange={(e) => setTask({ ...task, name: e.target.value })}
+          onChange={(e) => {
+            setTask({ ...task, name: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="e.g., Run backup"
         />
@@ -415,7 +543,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <label className="block text-sm font-medium mb-1">Type</label>
         <select
           value={task.type}
-          onChange={(e) => setTask({ ...task, type: e.target.value })}
+          onChange={(e) => {
+            setTask({ ...task, type: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
         >
           <option value="execute">Execute</option>
@@ -430,7 +560,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={task.description}
-          onChange={(e) => setTask({ ...task, description: e.target.value })}
+          onChange={(e) => {
+            setTask({ ...task, description: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="Optional description"
         />
@@ -439,22 +571,26 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <label className="block text-sm font-medium mb-1">Input (JSON)</label>
         <textarea
           value={task.input}
-          onChange={(e) => setTask({ ...task, input: e.target.value })}
+          onChange={(e) => {
+            setTask({ ...task, input: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background font-mono text-sm"
           rows={3}
           placeholder='{"key": "value"}'
         />
       </div>
       <div className="flex justify-end gap-2 pt-2">
-        <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
+        <button onClick={handleClose} className="btn btn-ghost">
+          Cancel
+        </button>
         <button
           disabled={!task.name.trim()}
           className="btn btn-ghost"
-          onClick={() =>
+          onClick={() => {
             navigateTo(
               `/automation?create=true&name=${encodeURIComponent(task.name)}&type=${encodeURIComponent(task.type)}&description=${encodeURIComponent(task.description)}&input=${encodeURIComponent(task.input)}`
-            )
-          }
+            );
+          }}
         >
           Create
         </button>
@@ -475,7 +611,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={skill.name}
-          onChange={(e) => setSkill({ ...skill, name: e.target.value })}
+          onChange={(e) => {
+            setSkill({ ...skill, name: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="e.g., Git Helper"
         />
@@ -485,7 +623,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={skill.description}
-          onChange={(e) => setSkill({ ...skill, description: e.target.value })}
+          onChange={(e) => {
+            setSkill({ ...skill, description: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="What this skill does"
         />
@@ -495,7 +635,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={skill.trigger}
-          onChange={(e) => setSkill({ ...skill, trigger: e.target.value })}
+          onChange={(e) => {
+            setSkill({ ...skill, trigger: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="e.g., /git or on_push"
         />
@@ -504,22 +646,26 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <label className="block text-sm font-medium mb-1">Action</label>
         <textarea
           value={skill.action}
-          onChange={(e) => setSkill({ ...skill, action: e.target.value })}
+          onChange={(e) => {
+            setSkill({ ...skill, action: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background font-mono text-sm"
           rows={3}
           placeholder="What the skill does..."
         />
       </div>
       <div className="flex justify-end gap-2 pt-2">
-        <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
+        <button onClick={handleClose} className="btn btn-ghost">
+          Cancel
+        </button>
         <button
           disabled={!skill.name.trim()}
           className="btn btn-ghost"
-          onClick={() =>
+          onClick={() => {
             navigateTo(
               `/skills?create=true&name=${encodeURIComponent(skill.name)}&description=${encodeURIComponent(skill.description)}&trigger=${encodeURIComponent(skill.trigger)}&action=${encodeURIComponent(skill.action)}`
-            )
-          }
+            );
+          }}
         >
           Create
         </button>
@@ -540,7 +686,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={experiment.name}
-          onChange={(e) => setExperiment({ ...experiment, name: e.target.value })}
+          onChange={(e) => {
+            setExperiment({ ...experiment, name: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="e.g., New Voice UI"
         />
@@ -550,7 +698,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={experiment.description}
-          onChange={(e) => setExperiment({ ...experiment, description: e.target.value })}
+          onChange={(e) => {
+            setExperiment({ ...experiment, description: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="What you're testing"
         />
@@ -559,15 +709,17 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         Creates an experiment with Control and Variant A variants (50% traffic each).
       </p>
       <div className="flex justify-end gap-2 pt-2">
-        <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
+        <button onClick={handleClose} className="btn btn-ghost">
+          Cancel
+        </button>
         <button
           disabled={!experiment.name.trim()}
           className="btn btn-ghost"
-          onClick={() =>
+          onClick={() => {
             navigateTo(
               `/experiments?create=true&name=${encodeURIComponent(experiment.name)}&description=${encodeURIComponent(experiment.description)}`
-            )
-          }
+            );
+          }}
         >
           Create
         </button>
@@ -588,7 +740,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={subAgent.name}
-          onChange={(e) => setSubAgent({ ...subAgent, name: e.target.value })}
+          onChange={(e) => {
+            setSubAgent({ ...subAgent, name: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="e.g., Research Agent"
         />
@@ -598,7 +752,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={subAgent.description}
-          onChange={(e) => setSubAgent({ ...subAgent, description: e.target.value })}
+          onChange={(e) => {
+            setSubAgent({ ...subAgent, description: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="What this agent specialises in"
         />
@@ -607,15 +763,17 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         Opens the Agents page where you can configure the full agent profile.
       </p>
       <div className="flex justify-end gap-2 pt-2">
-        <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
+        <button onClick={handleClose} className="btn btn-ghost">
+          Cancel
+        </button>
         <button
           disabled={!subAgent.name.trim()}
           className="btn btn-ghost"
-          onClick={() =>
+          onClick={() => {
             navigateTo(
               `/agents?create=true&tab=profiles&name=${encodeURIComponent(subAgent.name)}&description=${encodeURIComponent(subAgent.description)}`
-            )
-          }
+            );
+          }}
         >
           Continue
         </button>
@@ -636,7 +794,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={customRole.name}
-          onChange={(e) => setCustomRole({ ...customRole, name: e.target.value })}
+          onChange={(e) => {
+            setCustomRole({ ...customRole, name: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="e.g., Data Analyst"
         />
@@ -646,7 +806,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={customRole.description}
-          onChange={(e) => setCustomRole({ ...customRole, description: e.target.value })}
+          onChange={(e) => {
+            setCustomRole({ ...customRole, description: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="Role purpose and capabilities"
         />
@@ -655,15 +817,17 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         Opens Security Settings where you can assign permissions to this role.
       </p>
       <div className="flex justify-end gap-2 pt-2">
-        <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
+        <button onClick={handleClose} className="btn btn-ghost">
+          Cancel
+        </button>
         <button
           disabled={!customRole.name.trim()}
           className="btn btn-ghost"
-          onClick={() =>
+          onClick={() => {
             navigateTo(
               `/settings?tab=security&create=true&name=${encodeURIComponent(customRole.name)}&description=${encodeURIComponent(customRole.description)}`
-            )
-          }
+            );
+          }}
         >
           Continue
         </button>
@@ -672,7 +836,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
   );
 
   const renderProactiveTrigger = () => {
-    const set = (patch: Partial<typeof proactive>) => setProactive((p) => ({ ...p, ...patch }));
+    const set = (patch: Partial<typeof proactive>) => {
+      setProactive((p) => ({ ...p, ...patch }));
+    };
     const canSubmit = !!proactive.name.trim() && !!proactive.actionContent.trim();
 
     const handleSubmit = () => {
@@ -685,7 +851,11 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
               ? { type: 'pattern' as const, patternId: '', minConfidence: 0.7 }
               : proactive.type === 'webhook'
                 ? { type: 'webhook' as const, path: '/proactive/hook', method: 'POST' as const }
-                : { type: 'llm' as const, prompt: proactive.actionContent, evaluationIntervalMs: 3600000 };
+                : {
+                    type: 'llm' as const,
+                    prompt: proactive.actionContent,
+                    evaluationIntervalMs: 3600000,
+                  };
 
       const action =
         proactive.actionType === 'message'
@@ -719,7 +889,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
             <input
               type="text"
               value={proactive.name}
-              onChange={(e) => set({ name: e.target.value })}
+              onChange={(e) => {
+                set({ name: e.target.value });
+              }}
               className="w-full px-3 py-2 rounded border bg-background"
               placeholder="My trigger"
             />
@@ -728,7 +900,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
             <label className="block text-sm font-medium mb-1">Type</label>
             <select
               value={proactive.type}
-              onChange={(e) => set({ type: e.target.value as typeof proactive.type })}
+              onChange={(e) => {
+                set({ type: e.target.value as typeof proactive.type });
+              }}
               className="w-full px-3 py-2 rounded border bg-background"
             >
               <option value="schedule">Schedule (Cron)</option>
@@ -746,7 +920,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
             <input
               type="text"
               value={proactive.cron}
-              onChange={(e) => set({ cron: e.target.value })}
+              onChange={(e) => {
+                set({ cron: e.target.value });
+              }}
               className="w-full px-3 py-2 rounded border bg-background font-mono"
               placeholder="0 9 * * 1-5"
             />
@@ -759,7 +935,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
             <input
               type="text"
               value={proactive.eventType}
-              onChange={(e) => set({ eventType: e.target.value })}
+              onChange={(e) => {
+                set({ eventType: e.target.value });
+              }}
               className="w-full px-3 py-2 rounded border bg-background"
               placeholder="integration_disconnected"
             />
@@ -771,7 +949,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
             <label className="block text-sm font-medium mb-1">Action Type</label>
             <select
               value={proactive.actionType}
-              onChange={(e) => set({ actionType: e.target.value as typeof proactive.actionType })}
+              onChange={(e) => {
+                set({ actionType: e.target.value as typeof proactive.actionType });
+              }}
               className="w-full px-3 py-2 rounded border bg-background"
             >
               <option value="message">Message</option>
@@ -782,7 +962,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
             <label className="block text-sm font-medium mb-1">Approval Mode</label>
             <select
               value={proactive.approvalMode}
-              onChange={(e) => set({ approvalMode: e.target.value as typeof proactive.approvalMode })}
+              onChange={(e) => {
+                set({ approvalMode: e.target.value as typeof proactive.approvalMode });
+              }}
               className="w-full px-3 py-2 rounded border bg-background"
             >
               <option value="auto">Auto-execute</option>
@@ -796,7 +978,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           <label className="block text-sm font-medium mb-1">Content *</label>
           <textarea
             value={proactive.actionContent}
-            onChange={(e) => set({ actionContent: e.target.value })}
+            onChange={(e) => {
+              set({ actionContent: e.target.value });
+            }}
             className="w-full px-3 py-2 rounded border bg-background font-mono text-sm resize-none"
             rows={3}
             placeholder="Enter the message or reminder content..."
@@ -804,7 +988,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
-          <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
+          <button onClick={handleClose} className="btn btn-ghost">
+            Cancel
+          </button>
           <button
             disabled={!canSubmit || createTriggerMut.isPending}
             className="btn btn-ghost"
@@ -818,8 +1004,11 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
   };
 
   const renderExtension = () => {
-    const set = (patch: Partial<typeof extension>) => setExtension((e) => ({ ...e, ...patch }));
-    const canSubmit = !!extension.id.trim() && !!extension.name.trim() && !!extension.version.trim();
+    const set = (patch: Partial<typeof extension>) => {
+      setExtension((e) => ({ ...e, ...patch }));
+    };
+    const canSubmit =
+      !!extension.id.trim() && !!extension.name.trim() && !!extension.version.trim();
 
     const handleSubmit = () => {
       const hooks = extension.hooksText
@@ -854,7 +1043,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
             <input
               type="text"
               value={extension.id}
-              onChange={(e) => set({ id: e.target.value, error: '' })}
+              onChange={(e) => {
+                set({ id: e.target.value, error: '' });
+              }}
               className="w-full px-3 py-2 rounded border bg-background"
               placeholder="e.g. my-extension"
             />
@@ -864,7 +1055,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
             <input
               type="text"
               value={extension.version}
-              onChange={(e) => set({ version: e.target.value })}
+              onChange={(e) => {
+                set({ version: e.target.value });
+              }}
               className="w-full px-3 py-2 rounded border bg-background font-mono"
               placeholder="1.0.0"
             />
@@ -876,7 +1069,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           <input
             type="text"
             value={extension.name}
-            onChange={(e) => set({ name: e.target.value })}
+            onChange={(e) => {
+              set({ name: e.target.value });
+            }}
             className="w-full px-3 py-2 rounded border bg-background"
             placeholder="My Extension"
           />
@@ -886,20 +1081,24 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           <label className="block text-sm font-medium mb-1">Hooks</label>
           <textarea
             value={extension.hooksText}
-            onChange={(e) => set({ hooksText: e.target.value })}
+            onChange={(e) => {
+              set({ hooksText: e.target.value });
+            }}
             className="w-full px-3 py-2 rounded border bg-background font-mono text-sm resize-none"
             rows={3}
             placeholder={'pre-chat, observe, 10\npost-task, transform, 20'}
           />
-          <p className="text-xs text-muted-foreground mt-1">One per line: point, semantics, priority (optional)</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            One per line: point, semantics, priority (optional)
+          </p>
         </div>
 
-        {extension.error && (
-          <p className="text-xs text-destructive">{extension.error}</p>
-        )}
+        {extension.error && <p className="text-xs text-destructive">{extension.error}</p>}
 
         <div className="flex justify-end gap-2 pt-2">
-          <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
+          <button onClick={handleClose} className="btn btn-ghost">
+            Cancel
+          </button>
           <button
             disabled={!canSubmit || registerExtensionMut.isPending}
             className="btn btn-ghost"
@@ -913,7 +1112,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
   };
 
   const renderUser = () => {
-    const set = (patch: Partial<typeof user>) => setUser((u) => ({ ...u, ...patch }));
+    const set = (patch: Partial<typeof user>) => {
+      setUser((u) => ({ ...u, ...patch }));
+    };
     const canSubmit = !!user.email.trim() && !!user.displayName.trim() && !!user.password.trim();
 
     const handleSubmit = () => {
@@ -939,7 +1140,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           <input
             type="email"
             value={user.email}
-            onChange={(e) => set({ email: e.target.value, error: '' })}
+            onChange={(e) => {
+              set({ email: e.target.value, error: '' });
+            }}
             className="w-full px-3 py-2 rounded border bg-background"
             placeholder="user@example.com"
           />
@@ -950,7 +1153,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           <input
             type="text"
             value={user.displayName}
-            onChange={(e) => set({ displayName: e.target.value })}
+            onChange={(e) => {
+              set({ displayName: e.target.value });
+            }}
             className="w-full px-3 py-2 rounded border bg-background"
             placeholder="Jane Doe"
           />
@@ -961,7 +1166,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           <input
             type="password"
             value={user.password}
-            onChange={(e) => set({ password: e.target.value })}
+            onChange={(e) => {
+              set({ password: e.target.value });
+            }}
             className="w-full px-3 py-2 rounded border bg-background"
             placeholder="••••••••"
           />
@@ -971,18 +1178,20 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           <input
             type="checkbox"
             checked={user.isAdmin}
-            onChange={(e) => set({ isAdmin: e.target.checked })}
+            onChange={(e) => {
+              set({ isAdmin: e.target.checked });
+            }}
             className="rounded"
           />
           Admin
         </label>
 
-        {user.error && (
-          <p className="text-xs text-destructive">{user.error}</p>
-        )}
+        {user.error && <p className="text-xs text-destructive">{user.error}</p>}
 
         <div className="flex justify-end gap-2 pt-2">
-          <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
+          <button onClick={handleClose} className="btn btn-ghost">
+            Cancel
+          </button>
           <button
             disabled={!canSubmit || createUserMut.isPending}
             className="btn btn-ghost"
@@ -996,7 +1205,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
   };
 
   const renderWorkspace = () => {
-    const set = (patch: Partial<typeof workspace>) => setWorkspace((w) => ({ ...w, ...patch }));
+    const set = (patch: Partial<typeof workspace>) => {
+      setWorkspace((w) => ({ ...w, ...patch }));
+    };
     const canSubmit = !!workspace.name.trim();
 
     return (
@@ -1013,7 +1224,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           <input
             type="text"
             value={workspace.name}
-            onChange={(e) => set({ name: e.target.value, error: '' })}
+            onChange={(e) => {
+              set({ name: e.target.value, error: '' });
+            }}
             className="w-full px-3 py-2 rounded border bg-background"
             placeholder="e.g. Engineering"
           />
@@ -1024,27 +1237,29 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           <input
             type="text"
             value={workspace.description}
-            onChange={(e) => set({ description: e.target.value })}
+            onChange={(e) => {
+              set({ description: e.target.value });
+            }}
             className="w-full px-3 py-2 rounded border bg-background"
             placeholder="Optional description"
           />
         </div>
 
-        {workspace.error && (
-          <p className="text-xs text-destructive">{workspace.error}</p>
-        )}
+        {workspace.error && <p className="text-xs text-destructive">{workspace.error}</p>}
 
         <div className="flex justify-end gap-2 pt-2">
-          <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
+          <button onClick={handleClose} className="btn btn-ghost">
+            Cancel
+          </button>
           <button
             disabled={!canSubmit || createWorkspaceMut.isPending}
             className="btn btn-ghost"
-            onClick={() =>
+            onClick={() => {
               createWorkspaceMut.mutate({
                 name: workspace.name.trim(),
                 description: workspace.description.trim() || undefined,
-              })
-            }
+              });
+            }}
           >
             {createWorkspaceMut.isPending ? 'Creating...' : 'Create Workspace'}
           </button>
@@ -1054,7 +1269,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
   };
 
   const renderMemory = () => {
-    const set = (patch: Partial<typeof memory>) => setMemory((m) => ({ ...m, ...patch }));
+    const set = (patch: Partial<typeof memory>) => {
+      setMemory((m) => ({ ...m, ...patch }));
+    };
     const isMemory = memory.subtype === 'memory';
     const canSubmit = isMemory
       ? !!memory.content.trim() && !!memory.source.trim()
@@ -1090,13 +1307,17 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         {/* Subtype switcher */}
         <div className="flex rounded-lg border overflow-hidden text-sm">
           <button
-            onClick={() => set({ subtype: 'memory', error: '' })}
+            onClick={() => {
+              set({ subtype: 'memory', error: '' });
+            }}
             className={`flex-1 py-2 transition-colors ${isMemory ? 'bg-primary text-primary-foreground' : 'hover:bg-muted/50'}`}
           >
             Vector Memory
           </button>
           <button
-            onClick={() => set({ subtype: 'knowledge', error: '' })}
+            onClick={() => {
+              set({ subtype: 'knowledge', error: '' });
+            }}
             className={`flex-1 py-2 transition-colors ${!isMemory ? 'bg-primary text-primary-foreground' : 'hover:bg-muted/50'}`}
           >
             Knowledge Base
@@ -1109,7 +1330,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
               <label className="block text-sm font-medium mb-1">Memory Type</label>
               <select
                 value={memory.memType}
-                onChange={(e) => set({ memType: e.target.value as typeof memory.memType })}
+                onChange={(e) => {
+                  set({ memType: e.target.value as typeof memory.memType });
+                }}
                 className="w-full px-3 py-2 rounded border bg-background"
               >
                 <option value="episodic">Episodic — specific events or experiences</option>
@@ -1122,7 +1345,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
               <label className="block text-sm font-medium mb-1">Content *</label>
               <textarea
                 value={memory.content}
-                onChange={(e) => set({ content: e.target.value, error: '' })}
+                onChange={(e) => {
+                  set({ content: e.target.value, error: '' });
+                }}
                 className="w-full px-3 py-2 rounded border bg-background text-sm resize-none"
                 rows={3}
                 placeholder="The memory content to store..."
@@ -1134,14 +1359,17 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
                 <input
                   type="text"
                   value={memory.source}
-                  onChange={(e) => set({ source: e.target.value, error: '' })}
+                  onChange={(e) => {
+                    set({ source: e.target.value, error: '' });
+                  }}
                   className="w-full px-3 py-2 rounded border bg-background"
                   placeholder="e.g. user, system, chat"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Importance <span className="text-muted-foreground">({memory.importance.toFixed(1)})</span>
+                  Importance{' '}
+                  <span className="text-muted-foreground">({memory.importance.toFixed(1)})</span>
                 </label>
                 <input
                   type="range"
@@ -1149,7 +1377,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
                   max="1"
                   step="0.1"
                   value={memory.importance}
-                  onChange={(e) => set({ importance: parseFloat(e.target.value) })}
+                  onChange={(e) => {
+                    set({ importance: parseFloat(e.target.value) });
+                  }}
                   className="w-full mt-2"
                 />
               </div>
@@ -1162,7 +1392,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
               <input
                 type="text"
                 value={memory.topic}
-                onChange={(e) => set({ topic: e.target.value, error: '' })}
+                onChange={(e) => {
+                  set({ topic: e.target.value, error: '' });
+                }}
                 className="w-full px-3 py-2 rounded border bg-background"
                 placeholder="e.g. Project Architecture, API Design"
               />
@@ -1171,7 +1403,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
               <label className="block text-sm font-medium mb-1">Content *</label>
               <textarea
                 value={memory.knowledgeContent}
-                onChange={(e) => set({ knowledgeContent: e.target.value, error: '' })}
+                onChange={(e) => {
+                  set({ knowledgeContent: e.target.value, error: '' });
+                }}
                 className="w-full px-3 py-2 rounded border bg-background text-sm resize-none"
                 rows={5}
                 placeholder="Markdown or plain text content to store in the knowledge base..."
@@ -1180,12 +1414,12 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           </>
         )}
 
-        {memory.error && (
-          <p className="text-xs text-destructive">{memory.error}</p>
-        )}
+        {memory.error && <p className="text-xs text-destructive">{memory.error}</p>}
 
         <div className="flex justify-end gap-2 pt-2">
-          <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
+          <button onClick={handleClose} className="btn btn-ghost">
+            Cancel
+          </button>
           <button
             disabled={!canSubmit || isPending}
             className="btn btn-ghost"
@@ -1199,23 +1433,51 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
   };
 
   const renderIntent = () => {
-    const set = (patch: Partial<typeof intent>) => setIntent((s) => ({ ...s, ...patch }));
+    const set = (patch: Partial<typeof intent>) => {
+      setIntent((s) => ({ ...s, ...patch }));
+    };
     const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 
-    const addGoal     = () => set({ goals: [...intent.goals, { id: `g-${uid()}`, name: '', description: '', priority: 5 }] });
-    const removeGoal  = (id: string) => set({ goals: intent.goals.filter((g) => g.id !== id) });
-    const updateGoal  = (id: string, patch: Partial<typeof intent.goals[0]>) =>
+    const addGoal = () => {
+      set({
+        goals: [...intent.goals, { id: `g-${uid()}`, name: '', description: '', priority: 5 }],
+      });
+    };
+    const removeGoal = (id: string) => {
+      set({ goals: intent.goals.filter((g) => g.id !== id) });
+    };
+    const updateGoal = (id: string, patch: Partial<(typeof intent.goals)[0]>) => {
       set({ goals: intent.goals.map((g) => (g.id === id ? { ...g, ...patch } : g)) });
+    };
 
-    const addBoundary    = () => set({ hardBoundaries: [...intent.hardBoundaries, { id: `b-${uid()}`, rule: '', rationale: '' }] });
-    const removeBoundary = (id: string) => set({ hardBoundaries: intent.hardBoundaries.filter((b) => b.id !== id) });
-    const updateBoundary = (id: string, patch: Partial<typeof intent.hardBoundaries[0]>) =>
-      set({ hardBoundaries: intent.hardBoundaries.map((b) => (b.id === id ? { ...b, ...patch } : b)) });
+    const addBoundary = () => {
+      set({
+        hardBoundaries: [...intent.hardBoundaries, { id: `b-${uid()}`, rule: '', rationale: '' }],
+      });
+    };
+    const removeBoundary = (id: string) => {
+      set({ hardBoundaries: intent.hardBoundaries.filter((b) => b.id !== id) });
+    };
+    const updateBoundary = (id: string, patch: Partial<(typeof intent.hardBoundaries)[0]>) => {
+      set({
+        hardBoundaries: intent.hardBoundaries.map((b) => (b.id === id ? { ...b, ...patch } : b)),
+      });
+    };
 
-    const addPolicy    = () => set({ policies: [...intent.policies, { id: `p-${uid()}`, rule: '', enforcement: 'warn' as const, rationale: '' }] });
-    const removePolicy = (id: string) => set({ policies: intent.policies.filter((p) => p.id !== id) });
-    const updatePolicy = (id: string, patch: Partial<typeof intent.policies[0]>) =>
+    const addPolicy = () => {
+      set({
+        policies: [
+          ...intent.policies,
+          { id: `p-${uid()}`, rule: '', enforcement: 'warn' as const, rationale: '' },
+        ],
+      });
+    };
+    const removePolicy = (id: string) => {
+      set({ policies: intent.policies.filter((p) => p.id !== id) });
+    };
+    const updatePolicy = (id: string, patch: Partial<(typeof intent.policies)[0]>) => {
       set({ policies: intent.policies.map((p) => (p.id === id ? { ...p, ...patch } : p)) });
+    };
 
     const handleImport = () => {
       try {
@@ -1223,16 +1485,26 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         set({
           name: typeof parsed.name === 'string' ? parsed.name : intent.name,
           goals: ((parsed.goals as Record<string, unknown>[] | undefined) ?? []).map((g, i) => ({
-            id: `g-${uid()}-${i}`, name: String(g.name ?? ''), description: String(g.description ?? ''), priority: Number(g.priority ?? 5),
+            id: `g-${uid()}-${i}`,
+            name: String(g.name ?? ''),
+            description: String(g.description ?? ''),
+            priority: Number(g.priority ?? 5),
           })),
-          hardBoundaries: ((parsed.hardBoundaries as Record<string, unknown>[] | undefined) ?? []).map((b, i) => ({
-            id: `b-${uid()}-${i}`, rule: String(b.rule ?? ''), rationale: String(b.rationale ?? ''),
+          hardBoundaries: (
+            (parsed.hardBoundaries as Record<string, unknown>[] | undefined) ?? []
+          ).map((b, i) => ({
+            id: `b-${uid()}-${i}`,
+            rule: String(b.rule ?? ''),
+            rationale: String(b.rationale ?? ''),
           })),
-          policies: ((parsed.policies as Record<string, unknown>[] | undefined) ?? []).map((p, i) => ({
-            id: `p-${uid()}-${i}`, rule: String(p.rule ?? ''),
-            enforcement: p.enforcement === 'block' ? 'block' as const : 'warn' as const,
-            rationale: String(p.rationale ?? ''),
-          })),
+          policies: ((parsed.policies as Record<string, unknown>[] | undefined) ?? []).map(
+            (p, i) => ({
+              id: `p-${uid()}-${i}`,
+              rule: String(p.rule ?? ''),
+              enforcement: p.enforcement === 'block' ? ('block' as const) : ('warn' as const),
+              rationale: String(p.rationale ?? ''),
+            })
+          ),
           importError: '',
           activeTab: 'basics',
         });
@@ -1245,27 +1517,48 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
       createIntentMut.mutate({
         name: intent.name.trim(),
         apiVersion: '1.0',
-        goals: intent.goals.filter((g) => g.name.trim()).map((g) => ({
-          id: g.id, name: g.name.trim(), description: g.description.trim(),
-          priority: g.priority, successCriteria: '', ownerRole: 'admin',
-          skills: [], signals: [], authorizedActions: [],
-        })),
-        hardBoundaries: intent.hardBoundaries.filter((b) => b.rule.trim()).map((b) => ({
-          id: b.id, rule: b.rule.trim(), rationale: b.rationale.trim(),
-        })),
-        policies: intent.policies.filter((p) => p.rule.trim()).map((p) => ({
-          id: p.id, rule: p.rule.trim(), enforcement: p.enforcement, rationale: p.rationale.trim(),
-        })),
-        signals: [], dataSources: [], authorizedActions: [], tradeoffProfiles: [],
-        delegationFramework: { tenants: [] }, context: [],
+        goals: intent.goals
+          .filter((g) => g.name.trim())
+          .map((g) => ({
+            id: g.id,
+            name: g.name.trim(),
+            description: g.description.trim(),
+            priority: g.priority,
+            successCriteria: '',
+            ownerRole: 'admin',
+            skills: [],
+            signals: [],
+            authorizedActions: [],
+          })),
+        hardBoundaries: intent.hardBoundaries
+          .filter((b) => b.rule.trim())
+          .map((b) => ({
+            id: b.id,
+            rule: b.rule.trim(),
+            rationale: b.rationale.trim(),
+          })),
+        policies: intent.policies
+          .filter((p) => p.rule.trim())
+          .map((p) => ({
+            id: p.id,
+            rule: p.rule.trim(),
+            enforcement: p.enforcement,
+            rationale: p.rationale.trim(),
+          })),
+        signals: [],
+        dataSources: [],
+        authorizedActions: [],
+        tradeoffProfiles: [],
+        delegationFramework: { tenants: [] },
+        context: [],
       });
     };
 
     const TABS = [
-      { id: 'basics' as const,     label: 'Basics' },
+      { id: 'basics' as const, label: 'Basics' },
       { id: 'boundaries' as const, label: 'Boundaries' },
-      { id: 'policies' as const,   label: 'Policies' },
-      { id: 'import' as const,     label: 'Import JSON' },
+      { id: 'policies' as const, label: 'Policies' },
+      { id: 'import' as const, label: 'Import JSON' },
     ];
 
     return (
@@ -1282,7 +1575,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           {TABS.map((t) => (
             <button
               key={t.id}
-              onClick={() => set({ activeTab: t.id })}
+              onClick={() => {
+                set({ activeTab: t.id });
+              }}
               className={`px-3 py-1.5 font-medium transition-colors border-b-2 -mb-px ${
                 intent.activeTab === t.id
                   ? 'border-primary text-foreground'
@@ -1302,7 +1597,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
               <input
                 type="text"
                 value={intent.name}
-                onChange={(e) => set({ name: e.target.value })}
+                onChange={(e) => {
+                  set({ name: e.target.value });
+                }}
                 className="w-full px-3 py-2 rounded border bg-background"
                 placeholder="e.g., Production Safety Intent"
               />
@@ -1324,26 +1621,38 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
                       <input
                         type="text"
                         value={g.name}
-                        onChange={(e) => updateGoal(g.id, { name: e.target.value })}
+                        onChange={(e) => {
+                          updateGoal(g.id, { name: e.target.value });
+                        }}
                         className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
                         placeholder="Goal name"
                       />
                       <input
                         type="number"
-                        min={1} max={10}
+                        min={1}
+                        max={10}
                         value={g.priority}
-                        onChange={(e) => updateGoal(g.id, { priority: parseInt(e.target.value) || 5 })}
+                        onChange={(e) => {
+                          updateGoal(g.id, { priority: parseInt(e.target.value) || 5 });
+                        }}
                         className="w-14 px-2 py-1.5 rounded border bg-background text-sm text-center"
                         title="Priority (1–10)"
                       />
-                      <button onClick={() => removeGoal(g.id)} className="p-1 text-muted-foreground hover:text-destructive transition-colors">
+                      <button
+                        onClick={() => {
+                          removeGoal(g.id);
+                        }}
+                        className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                      >
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
                     <input
                       type="text"
                       value={g.description}
-                      onChange={(e) => updateGoal(g.id, { description: e.target.value })}
+                      onChange={(e) => {
+                        updateGoal(g.id, { description: e.target.value });
+                      }}
                       className="w-full px-2 py-1.5 rounded border bg-background text-sm"
                       placeholder="Description"
                     />
@@ -1359,7 +1668,10 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">Rules the AI must never violate.</p>
-              <button onClick={addBoundary} className="btn btn-ghost text-xs flex items-center gap-1">
+              <button
+                onClick={addBoundary}
+                className="btn btn-ghost text-xs flex items-center gap-1"
+              >
                 <Plus className="w-3 h-3" /> Add Boundary
               </button>
             </div>
@@ -1373,18 +1685,27 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
                     <input
                       type="text"
                       value={b.rule}
-                      onChange={(e) => updateBoundary(b.id, { rule: e.target.value })}
+                      onChange={(e) => {
+                        updateBoundary(b.id, { rule: e.target.value });
+                      }}
                       className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
                       placeholder="e.g., Never delete production data"
                     />
-                    <button onClick={() => removeBoundary(b.id)} className="p-1 text-muted-foreground hover:text-destructive transition-colors">
+                    <button
+                      onClick={() => {
+                        removeBoundary(b.id);
+                      }}
+                      className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                    >
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
                   <input
                     type="text"
                     value={b.rationale}
-                    onChange={(e) => updateBoundary(b.id, { rationale: e.target.value })}
+                    onChange={(e) => {
+                      updateBoundary(b.id, { rationale: e.target.value });
+                    }}
                     className="w-full px-2 py-1.5 rounded border bg-background text-sm"
                     placeholder="Rationale"
                   />
@@ -1398,7 +1719,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         {intent.activeTab === 'policies' && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">Soft rules — warn or block on violation.</p>
+              <p className="text-sm text-muted-foreground">
+                Soft rules — warn or block on violation.
+              </p>
               <button onClick={addPolicy} className="btn btn-ghost text-xs flex items-center gap-1">
                 <Plus className="w-3 h-3" /> Add Policy
               </button>
@@ -1413,26 +1736,37 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
                     <input
                       type="text"
                       value={p.rule}
-                      onChange={(e) => updatePolicy(p.id, { rule: e.target.value })}
+                      onChange={(e) => {
+                        updatePolicy(p.id, { rule: e.target.value });
+                      }}
                       className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
                       placeholder="Policy rule"
                     />
                     <select
                       value={p.enforcement}
-                      onChange={(e) => updatePolicy(p.id, { enforcement: e.target.value as 'warn' | 'block' })}
+                      onChange={(e) => {
+                        updatePolicy(p.id, { enforcement: e.target.value as 'warn' | 'block' });
+                      }}
                       className="px-2 py-1.5 rounded border bg-background text-sm"
                     >
                       <option value="warn">Warn</option>
                       <option value="block">Block</option>
                     </select>
-                    <button onClick={() => removePolicy(p.id)} className="p-1 text-muted-foreground hover:text-destructive transition-colors">
+                    <button
+                      onClick={() => {
+                        removePolicy(p.id);
+                      }}
+                      className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                    >
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
                   <input
                     type="text"
                     value={p.rationale}
-                    onChange={(e) => updatePolicy(p.id, { rationale: e.target.value })}
+                    onChange={(e) => {
+                      updatePolicy(p.id, { rationale: e.target.value });
+                    }}
                     className="w-full px-2 py-1.5 rounded border bg-background text-sm"
                     placeholder="Rationale"
                   />
@@ -1445,13 +1779,19 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         {/* Import JSON */}
         {intent.activeTab === 'import' && (
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Paste a full intent JSON document to populate the form.</p>
+            <p className="text-sm text-muted-foreground">
+              Paste a full intent JSON document to populate the form.
+            </p>
             <textarea
               value={intent.importJson}
-              onChange={(e) => set({ importJson: e.target.value, importError: '' })}
+              onChange={(e) => {
+                set({ importJson: e.target.value, importError: '' });
+              }}
               className="w-full px-3 py-2 rounded border bg-background font-mono text-xs resize-none"
               rows={8}
-              placeholder={'{\n  "name": "...",\n  "goals": [],\n  "hardBoundaries": [],\n  "policies": []\n}'}
+              placeholder={
+                '{\n  "name": "...",\n  "goals": [],\n  "hardBoundaries": [],\n  "policies": []\n}'
+              }
             />
             {intent.importError && <p className="text-xs text-destructive">{intent.importError}</p>}
             <button
@@ -1465,7 +1805,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         )}
 
         <div className="flex justify-end gap-2 pt-2 border-t">
-          <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
+          <button onClick={handleClose} className="btn btn-ghost">
+            Cancel
+          </button>
           <button
             disabled={!intent.name.trim() || createIntentMut.isPending}
             className="btn btn-ghost disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1480,19 +1822,32 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
 
   const renderContent = () => {
     switch (step) {
-      case 'select':      return renderSelect();
-      case 'personality': return renderPersonality();
-      case 'task':        return renderTask();
-      case 'skill':       return renderSkill();
-      case 'experiment':  return renderExperiment();
-      case 'sub-agent':   return renderSubAgent();
-      case 'custom-role': return renderCustomRole();
-      case 'proactive':   return renderProactiveTrigger();
-      case 'extension':   return renderExtension();
-      case 'user':        return renderUser();
-      case 'workspace':   return renderWorkspace();
-      case 'memory':      return renderMemory();
-      case 'intent':      return renderIntent();
+      case 'select':
+        return renderSelect();
+      case 'personality':
+        return renderPersonality();
+      case 'task':
+        return renderTask();
+      case 'skill':
+        return renderSkill();
+      case 'experiment':
+        return renderExperiment();
+      case 'sub-agent':
+        return renderSubAgent();
+      case 'custom-role':
+        return renderCustomRole();
+      case 'proactive':
+        return renderProactiveTrigger();
+      case 'extension':
+        return renderExtension();
+      case 'user':
+        return renderUser();
+      case 'workspace':
+        return renderWorkspace();
+      case 'memory':
+        return renderMemory();
+      case 'intent':
+        return renderIntent();
     }
   };
 
@@ -1505,7 +1860,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     >
       <div
         className="bg-background border rounded-t-2xl sm:rounded-xl p-4 sm:p-6 w-full sm:max-w-xl md:max-w-2xl shadow-xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Create New</h3>

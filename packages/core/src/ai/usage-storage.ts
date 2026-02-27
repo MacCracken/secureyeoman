@@ -179,11 +179,27 @@ export class UsageStorage extends PgBaseStorage {
   }
 
   /** Return per-provider aggregates over the retention window, pre-aggregated in the DB. */
-  async loadProviderStats(): Promise<Record<string, { inputTokensUsed: number; outputTokensUsed: number; tokensUsed: number; costUsd: number; calls: number; errors: number }>> {
+  async loadProviderStats(): Promise<
+    Record<
+      string,
+      {
+        inputTokensUsed: number;
+        outputTokensUsed: number;
+        tokensUsed: number;
+        costUsd: number;
+        calls: number;
+        errors: number;
+      }
+    >
+  > {
     const since = Date.now() - RETENTION_MS;
     const rows = await this.queryMany<{
       provider: string;
-      input: string; output: string; total: string; cost: string; calls: string;
+      input: string;
+      output: string;
+      total: string;
+      cost: string;
+      calls: string;
     }>(
       `SELECT provider,
               SUM(input_tokens)  AS input,
@@ -196,7 +212,17 @@ export class UsageStorage extends PgBaseStorage {
         GROUP BY provider`,
       [since]
     );
-    const result: Record<string, { inputTokensUsed: number; outputTokensUsed: number; tokensUsed: number; costUsd: number; calls: number; errors: number }> = {};
+    const result: Record<
+      string,
+      {
+        inputTokensUsed: number;
+        outputTokensUsed: number;
+        tokensUsed: number;
+        costUsd: number;
+        calls: number;
+        errors: number;
+      }
+    > = {};
     for (const row of rows) {
       result[row.provider] = {
         inputTokensUsed: Number(row.input),
@@ -212,7 +238,9 @@ export class UsageStorage extends PgBaseStorage {
 
   /** Return the total number of successful call records in the DB (for seeding apiCallsTotal). */
   async getTotalCallCount(): Promise<number> {
-    const row = await this.queryOne<{ count: string }>('SELECT COUNT(*) AS count FROM usage_records');
+    const row = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) AS count FROM usage_records'
+    );
     return Number(row?.count ?? 0);
   }
 

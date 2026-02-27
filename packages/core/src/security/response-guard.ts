@@ -181,10 +181,7 @@ export class ResponseGuard {
     const lower = responseText.toLowerCase();
 
     // Memory denial: response says "I have no memory of" but memories were used
-    if (
-      (ctx.memoriesUsed ?? 0) > 0 &&
-      /I\s+have\s+no\s+memory\s+of/i.test(responseText)
-    ) {
+    if ((ctx.memoriesUsed ?? 0) > 0 && /I\s+have\s+no\s+memory\s+of/i.test(responseText)) {
       warnings.push({
         type: 'memory_denial',
         detail: `Response claims no memory, but ${ctx.memoriesUsed} memory entries were used`,
@@ -194,13 +191,18 @@ export class ResponseGuard {
     // Identity + factual claim checks from contextSnippets
     for (const snippet of ctx.contextSnippets ?? []) {
       // Extract "I am [Name]" from snippets
-      const iAmMatch = snippet.match(/\bI\s+am\s+([A-Z][A-Za-z0-9 _-]{1,40})/);
-      if (iAmMatch && iAmMatch[1]) {
+      const iAmMatch = /\bI\s+am\s+([A-Z][A-Za-z0-9 _-]{1,40})/.exec(snippet);
+      if (iAmMatch?.[1]) {
         const name = iAmMatch[1].trim();
         const nameLower = name.toLowerCase();
 
         // Flag "I am not [Name]" in response
-        if (new RegExp(`I\\s+am\\s+not\\s+${nameLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i').test(responseText)) {
+        if (
+          new RegExp(
+            `I\\s+am\\s+not\\s+${nameLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+            'i'
+          ).test(responseText)
+        ) {
           warnings.push({
             type: 'identity_denial',
             detail: `Response denies identity "${name}" which is established in context`,
@@ -209,8 +211,8 @@ export class ResponseGuard {
       }
 
       // Detect direct factual negation: "My name is X" in snippet → "not X" in response
-      const myNameMatch = snippet.match(/\bMy\s+name\s+is\s+([A-Z][A-Za-z0-9 _-]{1,40})/i);
-      if (myNameMatch && myNameMatch[1]) {
+      const myNameMatch = /\bMy\s+name\s+is\s+([A-Z][A-Za-z0-9 _-]{1,40})/i.exec(snippet);
+      if (myNameMatch?.[1]) {
         const claimedName = myNameMatch[1].trim();
         if (lower.includes(`not ${claimedName.toLowerCase()}`)) {
           warnings.push({

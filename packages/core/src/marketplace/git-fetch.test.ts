@@ -106,18 +106,16 @@ describe('gitCloneOrPull', () => {
     // First execFile call: rev-parse fails (not a git repo)
     // Subsequent calls: clone to temp + cpSync
     let callCount = 0;
-    mockExecFile.mockImplementation(
-      (_cmd: unknown, args: unknown, _opts: unknown, cb: unknown) => {
-        callCount++;
-        if (callCount === 1) {
-          // rev-parse — fail (not a git repo)
-          (cb as Function)(new Error('not a git repo'));
-        } else {
-          // clone — succeed
-          (cb as Function)(null, '', '');
-        }
+    mockExecFile.mockImplementation((_cmd: unknown, args: unknown, _opts: unknown, cb: unknown) => {
+      callCount++;
+      if (callCount === 1) {
+        // rev-parse — fail (not a git repo)
+        (cb as Function)(new Error('not a git repo'));
+      } else {
+        // clone — succeed
+        (cb as Function)(null, '', '');
       }
-    );
+    });
     // localPath exists, tmpPath does not
     (mockFs.existsSync as ReturnType<typeof vi.fn>)
       .mockReturnValueOnce(true) // localPath exists

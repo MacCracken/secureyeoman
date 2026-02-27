@@ -111,8 +111,8 @@ describe('completion command', () => {
     const { stdout, stderr, getStdout } = createStreams();
     await completionCommand.run({ argv: ['zsh'], stdout, stderr });
     const out = getStdout();
-    expect(out).toContain('setup');     // security subcommand
-    expect(out).toContain('teardown');  // security subcommand
+    expect(out).toContain('setup'); // security subcommand
+    expect(out).toContain('teardown'); // security subcommand
     expect(out).toContain('agnostic');
     expect(out).toContain('agents');
     expect(out).toContain('mcp-server');

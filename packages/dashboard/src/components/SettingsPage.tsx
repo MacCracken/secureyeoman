@@ -51,7 +51,16 @@ import { WorkspacesSettings } from './WorkspacesSettings';
 import { NotificationPrefsPanel } from './NotificationPrefsPanel';
 import { useTheme, THEMES, type ThemeId } from '../hooks/useTheme';
 
-type TabType = 'general' | 'appearance' | 'security' | 'keys' | 'workspaces' | 'users' | 'roles' | 'notifications' | 'backup';
+type TabType =
+  | 'general'
+  | 'appearance'
+  | 'security'
+  | 'keys'
+  | 'workspaces'
+  | 'users'
+  | 'roles'
+  | 'notifications'
+  | 'backup';
 
 function getTabFromPath(path: string): TabType {
   if (path.includes('/security-settings')) return 'security';
@@ -226,10 +235,12 @@ function AppearanceTab() {
   const lightEnterprise = THEMES.filter((t) => !t.isDark && t.enterprise);
   const systemTheme = THEMES.filter((t) => t.id === 'system');
 
-  const ThemeCard = ({ t }: { t: typeof THEMES[0] }) => (
+  const ThemeCard = ({ t }: { t: (typeof THEMES)[0] }) => (
     <button
       key={t.id}
-      onClick={() => setTheme(t.id as ThemeId)}
+      onClick={() => {
+        setTheme(t.id);
+      }}
       className={`relative flex flex-col rounded-lg border-2 overflow-hidden transition-all duration-150 ${
         theme === t.id
           ? 'border-primary shadow-md shadow-primary/20'
@@ -254,7 +265,9 @@ function AppearanceTab() {
     <div className="space-y-2">
       <h3 className="text-sm font-medium text-muted-foreground">{label}</h3>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-        {themes.map((t) => <ThemeCard key={t.id} t={t} />)}
+        {themes.map((t) => (
+          <ThemeCard key={t.id} t={t} />
+        ))}
       </div>
     </div>
   );
@@ -352,11 +365,15 @@ function BackupTab() {
             type="text"
             placeholder="Label (optional)"
             value={label}
-            onChange={(e) => setLabel(e.target.value)}
+            onChange={(e) => {
+              setLabel(e.target.value);
+            }}
             className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <button
-            onClick={() => createMutation.mutate()}
+            onClick={() => {
+              createMutation.mutate();
+            }}
             disabled={createMutation.isPending}
             className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
@@ -365,9 +382,7 @@ function BackupTab() {
           </button>
         </div>
         {createMutation.isError && (
-          <p className="text-sm text-destructive">
-            Failed to create backup
-          </p>
+          <p className="text-sm text-destructive">Failed to create backup</p>
         )}
       </div>
 
@@ -405,7 +420,9 @@ function BackupTab() {
                     >
                       {backup.status}
                     </span>
-                    <span className="text-xs text-muted-foreground">{formatBytes(backup.sizeBytes)}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatBytes(backup.sizeBytes)}
+                    </span>
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
                     Created {formatTs(backup.createdAt)}
@@ -427,7 +444,9 @@ function BackupTab() {
                     </button>
                   )}
                   <button
-                    onClick={() => deleteMutation.mutate(backup.id)}
+                    onClick={() => {
+                      deleteMutation.mutate(backup.id);
+                    }}
                     disabled={deleteMutation.isPending}
                     title="Delete"
                     className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
@@ -602,7 +621,9 @@ function GeneralTab() {
                   <button
                     className="btn btn-sm btn-ghost border border-destructive/40 text-destructive hover:bg-destructive/10 flex items-center gap-1.5 mt-1"
                     disabled={repairMutation.isPending}
-                    onClick={() => repairMutation.mutate()}
+                    onClick={() => {
+                      repairMutation.mutate();
+                    }}
                   >
                     <Wrench className="w-3.5 h-3.5" />
                     {repairMutation.isPending ? 'Repairing…' : 'Repair Chain'}
@@ -645,7 +666,9 @@ function GeneralTab() {
               type="button"
               role="switch"
               aria-checked={formEnabled}
-              onClick={() => setFormEnabled(!formEnabled)}
+              onClick={() => {
+                setFormEnabled(!formEnabled);
+              }}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
                 formEnabled ? 'bg-primary' : 'bg-muted'
               }`}
@@ -691,7 +714,9 @@ function GeneralTab() {
                 min={1}
                 max={200}
                 value={formMaxSkills}
-                onChange={(e) => setFormMaxSkills(Number(e.target.value))}
+                onChange={(e) => {
+                  setFormMaxSkills(Number(e.target.value));
+                }}
                 className="w-full px-2 py-1.5 text-sm rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <p className="text-[10px] text-muted-foreground mt-0.5">
@@ -706,7 +731,9 @@ function GeneralTab() {
                 max={100000}
                 step={1024}
                 value={formMaxPromptTokens}
-                onChange={(e) => setFormMaxPromptTokens(Number(e.target.value))}
+                onChange={(e) => {
+                  setFormMaxPromptTokens(Number(e.target.value));
+                }}
                 className="w-full px-2 py-1.5 text-sm rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <p className="text-[10px] text-muted-foreground mt-0.5">
@@ -730,14 +757,14 @@ function GeneralTab() {
           <div className="flex justify-end">
             <button
               type="button"
-              onClick={() =>
+              onClick={() => {
                 configMutation.mutate({
                   enabled: formEnabled,
                   learningMode: formLearningMode,
                   maxSkills: formMaxSkills,
                   maxPromptTokens: formMaxPromptTokens,
-                })
-              }
+                });
+              }}
               disabled={configMutation.isPending}
               className="btn btn-ghost btn-sm"
             >
@@ -776,11 +803,7 @@ function GeneralTab() {
               </div>
             )}
             {personalities.map((p) => (
-              <SoulRow
-                key={p.id}
-                personality={p}
-                globalMaxPromptTokens={globalMaxPromptTokens}
-              />
+              <SoulRow key={p.id} personality={p} globalMaxPromptTokens={globalMaxPromptTokens} />
             ))}
           </div>
         </div>
@@ -817,7 +840,6 @@ function GeneralTab() {
       </div>
 
       <LogRetentionSettings />
-
     </div>
   );
 }
@@ -827,10 +849,7 @@ interface SoulRowProps {
   globalMaxPromptTokens: number;
 }
 
-function SoulRow({
-  personality: p,
-  globalMaxPromptTokens,
-}: SoulRowProps) {
+function SoulRow({ personality: p, globalMaxPromptTokens }: SoulRowProps) {
   const activeHoursEnabled = p.body?.activeHours?.enabled;
   const alwaysOn = p.isActive && !activeHoursEnabled;
   const offHours = p.isActive && activeHoursEnabled && p.isWithinActiveHours === false;
@@ -886,8 +905,6 @@ function SoulRow({
           <p className="text-xs text-muted-foreground truncate mt-0.5">{p.description}</p>
         )}
       </div>
-
     </div>
   );
 }
-

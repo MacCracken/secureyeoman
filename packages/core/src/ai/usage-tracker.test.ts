@@ -255,7 +255,9 @@ describe('UsageTracker', () => {
       getResetAt: async () => 0,
       loadStats: async () => ({ errorCount: 0, latencyTotalMs: 0, latencyCallCount: 0 }),
       insert: async () => {},
-      insertError: async () => { insertErrorCalled = true; },
+      insertError: async () => {
+        insertErrorCalled = true;
+      },
       setResetAt: async () => {},
     } as any;
 
@@ -280,7 +282,10 @@ describe('UsageTracker', () => {
       loadStats: async () => ({ errorCount: 0, latencyTotalMs: 0, latencyCallCount: 0 }),
       insert: async () => {},
       insertError: async () => {},
-      setResetAt: async (type: string, ts: number) => { resetAtType = type; resetAtValue = ts; },
+      setResetAt: async (type: string, ts: number) => {
+        resetAtType = type;
+        resetAtValue = ts;
+      },
     } as any;
 
     const t = new UsageTracker(undefined, mockStorage);
@@ -305,7 +310,9 @@ describe('UsageTracker', () => {
       loadStats: async () => ({ errorCount: 0, latencyTotalMs: 0, latencyCallCount: 0 }),
       insert: async () => {},
       insertError: async () => {},
-      setResetAt: async (type: string) => { resetAtType = type; },
+      setResetAt: async (type: string) => {
+        resetAtType = type;
+      },
     } as any;
 
     const t = new UsageTracker(undefined, mockStorage);

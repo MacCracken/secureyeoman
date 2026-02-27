@@ -628,14 +628,20 @@ describe('AuditChain additional branches', () => {
   it('record() auto-initializes when initialize() was not called explicitly', async () => {
     const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
     // Do NOT call initialize() — record() should call it internally
-    const entry = await chain.record({ event: 'auto_init', level: 'info', message: 'No explicit init' });
+    const entry = await chain.record({
+      event: 'auto_init',
+      level: 'info',
+      message: 'No explicit init',
+    });
     expect(entry.integrity.previousEntryHash).toBe('0'.repeat(64));
   });
 
   it('updateSigningKey() rejects short keys', async () => {
     const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
     await chain.initialize();
-    await expect(chain.updateSigningKey('short')).rejects.toThrow('Signing key must be at least 32 characters');
+    await expect(chain.updateSigningKey('short')).rejects.toThrow(
+      'Signing key must be at least 32 characters'
+    );
   });
 
   it('updateSigningKey() records rotation entry and uses new key', async () => {
@@ -693,7 +699,7 @@ describe('AuditChain additional branches', () => {
       getById: async () => null,
       async *iterate(): AsyncIterableIterator<never> {
         throw new Error('Storage failure');
-        // eslint-disable-next-line no-unreachable
+
         yield undefined as never;
       },
     };
@@ -712,9 +718,8 @@ describe('AuditChain additional branches', () => {
       count: async () => 0,
       getById: async () => null,
       async *iterate(): AsyncIterableIterator<never> {
-        // eslint-disable-next-line no-throw-literal
         throw 'plain string error';
-        // eslint-disable-next-line no-unreachable
+
         yield undefined as never;
       },
     };

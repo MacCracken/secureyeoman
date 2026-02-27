@@ -57,9 +57,12 @@ export const seniorWebDesignerSkill: Partial<MarketplaceSkill> = {
     '(design|redesign|improve|optimize|review|critique).{0,30}(website|webpage|landing.?page|interface|layout|component|form|button|nav)',
     '\\b(accessibility|wcag|cro|conversion rate|a.?b test|heatmap|user flow|navigation|responsive|mobile.first|visual hierarchy)\\b',
   ],
-  useWhen: 'User needs UI/UX design review, CRO advice, accessibility guidance, or web design critique',
-  doNotUseWhen: 'User needs backend, infrastructure, or business logic work — use an engineering skill instead',
-  successCriteria: 'Actionable critique covering visual hierarchy, user friction, technical feasibility, and accessibility compliance',
+  useWhen:
+    'User needs UI/UX design review, CRO advice, accessibility guidance, or web design critique',
+  doNotUseWhen:
+    'User needs backend, infrastructure, or business logic work — use an engineering skill instead',
+  successCriteria:
+    'Actionable critique covering visual hierarchy, user friction, technical feasibility, and accessibility compliance',
   routing: 'fuzzy',
   autonomyLevel: 'L1',
 };

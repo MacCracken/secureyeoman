@@ -22,14 +22,14 @@
 // ─── Tokeniser ────────────────────────────────────────────────────────────────
 
 type TokenKind =
-  | 'string'   // "..." or '...'
-  | 'number'   // 42, 3.14
-  | 'bool'     // true / false
-  | 'ident'    // bare identifier
-  | 'op'       // == != < > <= >= && || ! = AND OR NOT
-  | 'lparen'   // (
-  | 'rparen'   // )
-  | 'dot'      // .
+  | 'string' // "..." or '...'
+  | 'number' // 42, 3.14
+  | 'bool' // true / false
+  | 'ident' // bare identifier
+  | 'op' // == != < > <= >= && || ! = AND OR NOT
+  | 'lparen' // (
+  | 'rparen' // )
+  | 'dot' // .
   | 'eof';
 
 interface Token {
@@ -42,21 +42,25 @@ function tokenise(expr: string): Token[] {
   let i = 0;
 
   while (i < expr.length) {
-    const ch = expr[i] as string;
+    const ch = expr[i]!;
 
     // Skip whitespace
-    if (/\s/.test(ch)) { i++; continue; }
+    if (/\s/.test(ch)) {
+      i++;
+      continue;
+    }
 
     // String literals
     if (ch === '"' || ch === "'") {
-      const quote = ch; i++;
+      const quote = ch;
+      i++;
       let s = '';
       while (i < expr.length && expr[i] !== quote) {
         if (expr[i] === '\\' && i + 1 < expr.length) {
           i++;
-          s += expr[i++] as string;
+          s += expr[i++]!;
         } else {
-          s += expr[i++] as string;
+          s += expr[i++]!;
         }
       }
       i++; // consume closing quote
@@ -67,47 +71,89 @@ function tokenise(expr: string): Token[] {
     // Number literals
     const next = expr[i + 1] ?? '';
     if (/[0-9]/.test(ch) || (ch === '-' && /[0-9]/.test(next))) {
-      let n = ch; i++;
-      while (i < expr.length && /[0-9.]/.test(expr[i] as string)) n += expr[i++] as string;
+      let n = ch;
+      i++;
+      while (i < expr.length && /[0-9.]/.test(expr[i]!)) n += expr[i++]!;
       tokens.push({ kind: 'number', value: n });
       continue;
     }
 
     // Parentheses
-    if (ch === '(') { tokens.push({ kind: 'lparen', value: '(' }); i++; continue; }
-    if (ch === ')') { tokens.push({ kind: 'rparen', value: ')' }); i++; continue; }
+    if (ch === '(') {
+      tokens.push({ kind: 'lparen', value: '(' });
+      i++;
+      continue;
+    }
+    if (ch === ')') {
+      tokens.push({ kind: 'rparen', value: ')' });
+      i++;
+      continue;
+    }
 
     // Dot
-    if (ch === '.') { tokens.push({ kind: 'dot', value: '.' }); i++; continue; }
+    if (ch === '.') {
+      tokens.push({ kind: 'dot', value: '.' });
+      i++;
+      continue;
+    }
 
     // Two-char operators
     const two = expr.slice(i, i + 2);
-    if (two === '==' || two === '!=' || two === '<=' || two === '>=' || two === '&&' || two === '||') {
-      tokens.push({ kind: 'op', value: two }); i += 2; continue;
+    if (
+      two === '==' ||
+      two === '!=' ||
+      two === '<=' ||
+      two === '>=' ||
+      two === '&&' ||
+      two === '||'
+    ) {
+      tokens.push({ kind: 'op', value: two });
+      i += 2;
+      continue;
     }
 
     // Single-char operators
     if ('<>=!'.includes(ch)) {
-      tokens.push({ kind: 'op', value: ch }); i++; continue;
+      tokens.push({ kind: 'op', value: ch });
+      i++;
+      continue;
     }
 
     // Identifiers, keywords, and legacy = sign
     if (/[a-zA-Z_]/.test(ch)) {
-      let id = ch; i++;
-      while (i < expr.length && /[a-zA-Z0-9_-]/.test(expr[i] as string)) id += expr[i++] as string;
+      let id = ch;
+      i++;
+      while (i < expr.length && /[a-zA-Z0-9_-]/.test(expr[i]!)) id += expr[i++]!;
       const upper = id.toUpperCase();
-      if (upper === 'TRUE')  { tokens.push({ kind: 'bool', value: 'true' });  continue; }
-      if (upper === 'FALSE') { tokens.push({ kind: 'bool', value: 'false' }); continue; }
-      if (upper === 'AND')   { tokens.push({ kind: 'op',   value: '&&' });    continue; }
-      if (upper === 'OR')    { tokens.push({ kind: 'op',   value: '||' });    continue; }
-      if (upper === 'NOT')   { tokens.push({ kind: 'op',   value: '!' });     continue; }
+      if (upper === 'TRUE') {
+        tokens.push({ kind: 'bool', value: 'true' });
+        continue;
+      }
+      if (upper === 'FALSE') {
+        tokens.push({ kind: 'bool', value: 'false' });
+        continue;
+      }
+      if (upper === 'AND') {
+        tokens.push({ kind: 'op', value: '&&' });
+        continue;
+      }
+      if (upper === 'OR') {
+        tokens.push({ kind: 'op', value: '||' });
+        continue;
+      }
+      if (upper === 'NOT') {
+        tokens.push({ kind: 'op', value: '!' });
+        continue;
+      }
       tokens.push({ kind: 'ident', value: id });
       continue;
     }
 
     // Legacy key=value (bare = sign not preceded by < > !)
     if (ch === '=') {
-      tokens.push({ kind: 'op', value: '==' }); i++; continue;
+      tokens.push({ kind: 'op', value: '==' });
+      i++;
+      continue;
     }
 
     // Skip unknown characters
@@ -132,8 +178,12 @@ class CelParser {
     this.ctx = ctx;
   }
 
-  private peek(): Token { return this.tokens[this.pos] as Token; }
-  private consume(): Token { return this.tokens[this.pos++] as Token; }
+  private peek(): Token {
+    return this.tokens[this.pos]!;
+  }
+  private consume(): Token {
+    return this.tokens[this.pos++]!;
+  }
 
   private expect(kind: TokenKind): Token {
     const t = this.peek();
@@ -197,9 +247,18 @@ class CelParser {
       return val;
     }
 
-    if (t.kind === 'string') { this.consume(); return t.value; }
-    if (t.kind === 'number') { this.consume(); return Number(t.value); }
-    if (t.kind === 'bool')   { this.consume(); return t.value === 'true'; }
+    if (t.kind === 'string') {
+      this.consume();
+      return t.value;
+    }
+    if (t.kind === 'number') {
+      this.consume();
+      return Number(t.value);
+    }
+    if (t.kind === 'bool') {
+      this.consume();
+      return t.value === 'true';
+    }
 
     if (t.kind === 'ident') {
       this.consume();
@@ -231,24 +290,36 @@ class CelParser {
 
     if (typeof l === 'number' && typeof r === 'number') {
       switch (op) {
-        case '==': return l === r;
-        case '!=': return l !== r;
-        case '<':  return l <  r;
-        case '>':  return l >  r;
-        case '<=': return l <= r;
-        case '>=': return l >= r;
+        case '==':
+          return l === r;
+        case '!=':
+          return l !== r;
+        case '<':
+          return l < r;
+        case '>':
+          return l > r;
+        case '<=':
+          return l <= r;
+        case '>=':
+          return l >= r;
       }
     }
 
     const ls = String(l);
     const rs = String(r);
     switch (op) {
-      case '==': return ls === rs;
-      case '!=': return ls !== rs;
-      case '<':  return ls <  rs;
-      case '>':  return ls >  rs;
-      case '<=': return ls <= rs;
-      case '>=': return ls >= rs;
+      case '==':
+        return ls === rs;
+      case '!=':
+        return ls !== rs;
+      case '<':
+        return ls < rs;
+      case '>':
+        return ls > rs;
+      case '<=':
+        return ls <= rs;
+      case '>=':
+        return ls >= rs;
     }
     return false;
   }
@@ -274,10 +345,7 @@ class CelParser {
  *     (&&, ||, !, parentheses) → evaluate as CEL.
  *   - Otherwise → evaluate as legacy key=value AND format for backward compat.
  */
-export function evalCel(
-  expr: string | undefined,
-  ctx: Record<string, string>
-): boolean {
+export function evalCel(expr: string | undefined, ctx: Record<string, string>): boolean {
   if (!expr || expr.trim() === '') return true;
 
   const upper = expr.toUpperCase();

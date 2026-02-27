@@ -172,7 +172,7 @@ function rowToSkill(row: SkillRow): Skill {
     useWhen: row.use_when ?? '',
     doNotUseWhen: row.do_not_use_when ?? '',
     successCriteria: row.success_criteria ?? '',
-    mcpToolsAllowed: (row.mcp_tools_allowed ?? []) as string[],
+    mcpToolsAllowed: row.mcp_tools_allowed ?? [],
     routing: (row.routing ?? 'fuzzy') as Skill['routing'],
     linkedWorkflowId: row.linked_workflow_id ?? null,
     // Autonomy classification (Phase 49)
@@ -276,7 +276,9 @@ export class SoulStorage extends PgBaseStorage {
   async setActivePersonality(id: string): Promise<void> {
     await this.withTransaction(async (client) => {
       await client.query('UPDATE soul.personalities SET is_active = false WHERE is_active = true');
-      await client.query('UPDATE soul.personalities SET is_default = false WHERE is_default = true');
+      await client.query(
+        'UPDATE soul.personalities SET is_default = false WHERE is_default = true'
+      );
       const result = await client.query(
         'UPDATE soul.personalities SET is_active = true, is_default = true, updated_at = $1 WHERE id = $2',
         [Date.now(), id]
@@ -309,7 +311,9 @@ export class SoulStorage extends PgBaseStorage {
 
   async setDefaultPersonality(id: string): Promise<void> {
     await this.withTransaction(async (client) => {
-      await client.query('UPDATE soul.personalities SET is_default = false WHERE is_default = true');
+      await client.query(
+        'UPDATE soul.personalities SET is_default = false WHERE is_default = true'
+      );
       const result = await client.query(
         'UPDATE soul.personalities SET is_default = true, updated_at = $1 WHERE id = $2',
         [Date.now(), id]
@@ -321,9 +325,7 @@ export class SoulStorage extends PgBaseStorage {
   }
 
   async clearDefaultPersonality(): Promise<void> {
-    await this.execute(
-      'UPDATE soul.personalities SET is_default = false WHERE is_default = true'
-    );
+    await this.execute('UPDATE soul.personalities SET is_default = false WHERE is_default = true');
   }
 
   async getEnabledPersonalities(): Promise<Personality[]> {
@@ -531,11 +533,15 @@ export class SoulStorage extends PgBaseStorage {
         data.useWhen !== undefined ? data.useWhen : existing.useWhen,
         data.doNotUseWhen !== undefined ? data.doNotUseWhen : existing.doNotUseWhen,
         data.successCriteria !== undefined ? data.successCriteria : existing.successCriteria,
-        JSON.stringify(data.mcpToolsAllowed !== undefined ? data.mcpToolsAllowed : existing.mcpToolsAllowed),
+        JSON.stringify(
+          data.mcpToolsAllowed !== undefined ? data.mcpToolsAllowed : existing.mcpToolsAllowed
+        ),
         data.routing ?? existing.routing,
         data.linkedWorkflowId !== undefined ? data.linkedWorkflowId : existing.linkedWorkflowId,
         data.autonomyLevel !== undefined ? data.autonomyLevel : (existing.autonomyLevel ?? 'L1'),
-        data.emergencyStopProcedure !== undefined ? (data.emergencyStopProcedure ?? null) : (existing.emergencyStopProcedure ?? null),
+        data.emergencyStopProcedure !== undefined
+          ? (data.emergencyStopProcedure ?? null)
+          : (existing.emergencyStopProcedure ?? null),
         data.enabled !== undefined ? data.enabled : existing.enabled,
         data.source ?? existing.source,
         data.status ?? existing.status,
@@ -585,10 +591,11 @@ export class SoulStorage extends PgBaseStorage {
        ORDER BY usage_count DESC, created_at DESC
        LIMIT $${idx++} OFFSET $${idx++}`;
 
-    const rows = await this.queryMany<SkillRow & { total_count: string }>(
-      sql,
-      [...params, limit, offset]
-    );
+    const rows = await this.queryMany<SkillRow & { total_count: string }>(sql, [
+      ...params,
+      limit,
+      offset,
+    ]);
     return {
       skills: rows.map(rowToSkill),
       total: rows.length > 0 ? parseInt(rows[0]!.total_count, 10) : 0,
@@ -617,10 +624,9 @@ export class SoulStorage extends PgBaseStorage {
   }
 
   async incrementInvoked(skillId: string): Promise<void> {
-    await this.execute(
-      'UPDATE soul.skills SET invoked_count = invoked_count + 1 WHERE id = $1',
-      [skillId]
-    );
+    await this.execute('UPDATE soul.skills SET invoked_count = invoked_count + 1 WHERE id = $1', [
+      skillId,
+    ]);
   }
 
   async getSkillCount(): Promise<number> {

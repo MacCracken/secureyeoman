@@ -90,9 +90,7 @@ export async function truncateAllTables(): Promise<void> {
  */
 export async function truncateWorkflowTables(): Promise<void> {
   const pool = getPool();
-  const res = await pool.query(
-    `SELECT tablename FROM pg_tables WHERE schemaname = 'workflow'`
-  );
+  const res = await pool.query(`SELECT tablename FROM pg_tables WHERE schemaname = 'workflow'`);
   for (const row of res.rows) {
     await pool.query(`TRUNCATE workflow."${row.tablename}" CASCADE`);
   }

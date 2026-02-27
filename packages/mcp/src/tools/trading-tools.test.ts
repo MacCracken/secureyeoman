@@ -5,7 +5,9 @@ import type { ToolMiddleware } from './index.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-type ToolHandler = (args: Record<string, unknown>) => Promise<{ content: { type: string; text: string }[]; isError?: boolean }>;
+type ToolHandler = (
+  args: Record<string, unknown>
+) => Promise<{ content: { type: string; text: string }[]; isError?: boolean }>;
 
 function noopMiddleware(): ToolMiddleware {
   return {
@@ -90,8 +92,12 @@ describe('trading-tools — registration', () => {
 
 describe('bullshift_health', () => {
   let originalFetch: typeof globalThis.fetch;
-  beforeEach(() => { originalFetch = globalThis.fetch; });
-  afterEach(() => { globalThis.fetch = originalFetch; });
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
 
   it('returns status ok from the API', async () => {
     mockFetchOk({ status: 'ok', service: 'bullshift-api' });
@@ -122,8 +128,12 @@ describe('bullshift_health', () => {
 
 describe('bullshift_get_account', () => {
   let originalFetch: typeof globalThis.fetch;
-  beforeEach(() => { originalFetch = globalThis.fetch; });
-  afterEach(() => { globalThis.fetch = originalFetch; });
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
 
   it('returns account details on success', async () => {
     const account = { balance: 10000.0, available: 8500.0, margin_used: 1500.0 };
@@ -154,12 +164,22 @@ describe('bullshift_get_account', () => {
 
 describe('bullshift_get_positions', () => {
   let originalFetch: typeof globalThis.fetch;
-  beforeEach(() => { originalFetch = globalThis.fetch; });
-  afterEach(() => { globalThis.fetch = originalFetch; });
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
 
   it('returns position array on success', async () => {
     const positions = [
-      { symbol: 'AAPL', quantity: 10, entry_price: 150.0, current_price: 175.0, unrealized_pnl: 250.0 },
+      {
+        symbol: 'AAPL',
+        quantity: 10,
+        entry_price: 150.0,
+        current_price: 175.0,
+        unrealized_pnl: 250.0,
+      },
     ];
     mockFetchOk(positions);
     const { bullshift_get_positions } = captureHandlers();
@@ -196,8 +216,12 @@ describe('bullshift_get_positions', () => {
 
 describe('bullshift_submit_order', () => {
   let originalFetch: typeof globalThis.fetch;
-  beforeEach(() => { originalFetch = globalThis.fetch; });
-  afterEach(() => { globalThis.fetch = originalFetch; });
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
 
   const marketOrder = { symbol: 'AAPL', side: 'buy', quantity: 10, order_type: 'market' };
 
@@ -224,7 +248,10 @@ describe('bullshift_submit_order', () => {
     mockFetchError(400, { error: 'limit orders require a price' });
     const { bullshift_submit_order } = captureHandlers();
     const result = await bullshift_submit_order({
-      symbol: 'AAPL', side: 'buy', quantity: 5, order_type: 'limit',
+      symbol: 'AAPL',
+      side: 'buy',
+      quantity: 5,
+      order_type: 'limit',
     });
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('bullshift_submit_order');
@@ -250,8 +277,12 @@ describe('bullshift_submit_order', () => {
 
 describe('bullshift_cancel_order', () => {
   let originalFetch: typeof globalThis.fetch;
-  beforeEach(() => { originalFetch = globalThis.fetch; });
-  afterEach(() => { globalThis.fetch = originalFetch; });
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
 
   it('returns cancelled: true on success', async () => {
     mockFetchOk({ cancelled: true });
@@ -289,8 +320,12 @@ describe('bullshift_cancel_order', () => {
 
 describe('rate limiter middleware', () => {
   let originalFetch: typeof globalThis.fetch;
-  beforeEach(() => { originalFetch = globalThis.fetch; });
-  afterEach(() => { globalThis.fetch = originalFetch; });
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
 
   it('returns isError when the rate limiter blocks the call', async () => {
     mockFetchOk({ status: 'ok' });
@@ -303,7 +338,11 @@ describe('rate limiter middleware', () => {
 
     const blockedMiddleware: ToolMiddleware = {
       ...noopMiddleware(),
-      rateLimiter: { check: () => ({ allowed: false, retryAfterMs: 1000 }), reset: vi.fn(), wrap: vi.fn() },
+      rateLimiter: {
+        check: () => ({ allowed: false, retryAfterMs: 1000 }),
+        reset: vi.fn(),
+        wrap: vi.fn(),
+      },
     } as unknown as ToolMiddleware;
 
     registerTradingTools(server, blockedMiddleware);

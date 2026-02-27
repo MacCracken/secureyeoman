@@ -327,7 +327,14 @@ describe('UsageStorage', () => {
     it('returns aggregated stats per provider', async () => {
       mockQuery.mockResolvedValueOnce({
         rows: [
-          { provider: 'anthropic', input: '1000', output: '500', total: '1500', cost: '0.05', calls: '10' },
+          {
+            provider: 'anthropic',
+            input: '1000',
+            output: '500',
+            total: '1500',
+            cost: '0.05',
+            calls: '10',
+          },
         ],
         rowCount: 1,
       });

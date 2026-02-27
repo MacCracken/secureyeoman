@@ -56,9 +56,7 @@ export function isPersonalityWithinActiveHours(p: Personality): boolean {
     .toLowerCase()
     .slice(0, 3); // 'mon', 'tue', ...
   if (!ah.daysOfWeek.includes(dayAbbr as (typeof ah.daysOfWeek)[number])) return false;
-  const hhmm = now
-    .toLocaleTimeString('en-US', { timeZone: tz, hour12: false })
-    .slice(0, 5); // 'HH:MM'
+  const hhmm = now.toLocaleTimeString('en-US', { timeZone: tz, hour12: false }).slice(0, 5); // 'HH:MM'
   return hhmm >= ah.start && hhmm <= ah.end;
 }
 
@@ -185,83 +183,86 @@ export class SoulManager {
   async createDefaultPersonality(): Promise<Personality> {
     const agentName = (await this.storage.getAgentName()) ?? 'FRIDAY';
 
-    const personality = await this.storage.createPersonality({
-      name: agentName,
-      description: 'Friendly, Reliable, Intelligent Digitally Adaptable Yeoman',
-      systemPrompt: `You are ${agentName}, a helpful and security-conscious AI assistant. You are direct, technically precise, and proactive about identifying risks.`,
-      traits: { formality: 'balanced', humor: 'subtle', verbosity: 'concise' },
-      sex: 'unspecified',
-      voice: '',
-      preferredLanguage: '',
-      defaultModel: null,
-      modelFallbacks: [],
-      includeArchetypes: agentName === 'FRIDAY',
-      injectDateTime: false,
-      empathyResonance: false,
-      avatarUrl: null,
-      body: {
-        enabled: false,
-        capabilities: [],
-        heartEnabled: true,
-        creationConfig: {
-          skills: false,
-          tasks: false,
-          personalities: false,
-          subAgents: false,
-          customRoles: false,
-          roleAssignments: false,
-          experiments: false,
-          allowA2A: false,
-          allowSwarms: false,
-          allowDynamicTools: false,
-          workflows: false,
-        },
-        selectedServers: [],
-        selectedIntegrations: [],
-        mcpFeatures: {
-          exposeGit: false,
-          exposeFilesystem: false,
-          exposeWeb: false,
-          exposeWebScraping: false,
-          exposeWebSearch: false,
-          exposeBrowser: false,
-          exposeDesktopControl: false,
-          exposeNetworkDevices: false,
-          exposeNetworkDiscovery: false,
-          exposeNetworkAudit: false,
-          exposeNetBox: false,
-          exposeNvd: false,
-          exposeNetworkUtils: false,
-          exposeTwingate: false,
-        },
-        proactiveConfig: {
+    const personality = await this.storage.createPersonality(
+      {
+        name: agentName,
+        description: 'Friendly, Reliable, Intelligent Digitally Adaptable Yeoman',
+        systemPrompt: `You are ${agentName}, a helpful and security-conscious AI assistant. You are direct, technically precise, and proactive about identifying risks.`,
+        traits: { formality: 'balanced', humor: 'subtle', verbosity: 'concise' },
+        sex: 'unspecified',
+        voice: '',
+        preferredLanguage: '',
+        defaultModel: null,
+        modelFallbacks: [],
+        includeArchetypes: agentName === 'FRIDAY',
+        injectDateTime: false,
+        empathyResonance: false,
+        avatarUrl: null,
+        body: {
           enabled: false,
-          builtins: {
-            dailyStandup: false,
-            weeklySummary: false,
-            contextualFollowup: false,
-            integrationHealthAlert: false,
-            securityAlertDigest: false,
+          capabilities: [],
+          heartEnabled: true,
+          creationConfig: {
+            skills: false,
+            tasks: false,
+            personalities: false,
+            subAgents: false,
+            customRoles: false,
+            roleAssignments: false,
+            experiments: false,
+            allowA2A: false,
+            allowSwarms: false,
+            allowDynamicTools: false,
+            workflows: false,
           },
-          builtinModes: {
-            dailyStandup: 'auto',
-            weeklySummary: 'suggest',
-            contextualFollowup: 'suggest',
-            integrationHealthAlert: 'auto',
-            securityAlertDigest: 'suggest',
+          selectedServers: [],
+          selectedIntegrations: [],
+          mcpFeatures: {
+            exposeGit: false,
+            exposeFilesystem: false,
+            exposeWeb: false,
+            exposeWebScraping: false,
+            exposeWebSearch: false,
+            exposeBrowser: false,
+            exposeDesktopControl: false,
+            exposeNetworkDevices: false,
+            exposeNetworkDiscovery: false,
+            exposeNetworkAudit: false,
+            exposeNetBox: false,
+            exposeNvd: false,
+            exposeNetworkUtils: false,
+            exposeTwingate: false,
           },
-          learning: { enabled: true, minConfidence: 0.7 },
+          proactiveConfig: {
+            enabled: false,
+            builtins: {
+              dailyStandup: false,
+              weeklySummary: false,
+              contextualFollowup: false,
+              integrationHealthAlert: false,
+              securityAlertDigest: false,
+            },
+            builtinModes: {
+              dailyStandup: 'auto',
+              weeklySummary: 'suggest',
+              contextualFollowup: 'suggest',
+              integrationHealthAlert: 'auto',
+              securityAlertDigest: 'suggest',
+            },
+            learning: { enabled: true, minConfidence: 0.7 },
+          },
+          activeHours: {
+            enabled: false,
+            start: '09:00',
+            end: '17:00',
+            daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
+            timezone: 'UTC',
+          },
+          omnipresentMind: false,
         },
-        activeHours: {
-          enabled: false,
-          start: '09:00',
-          end: '17:00',
-          daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
-          timezone: 'UTC',
-        },
-        omnipresentMind: false,
       },
-    }, { isArchetype: true });
+      { isArchetype: true }
+    );
 
     await this.storage.setActivePersonality(personality.id);
     return (await this.storage.getPersonality(personality.id))!;
@@ -288,7 +289,7 @@ export class SoulManager {
         name: agentName,
         systemPrompt: `You are ${agentName}, a helpful and security-conscious AI assistant. You are direct, technically precise, and proactive about identifying risks.`,
         includeArchetypes: agentName === 'FRIDAY',
-      injectDateTime: false,
+        injectDateTime: false,
       };
       const personality = await this.storage.createPersonality(data, { isArchetype: true });
       created.push(personality);
@@ -604,9 +605,14 @@ export class SoulManager {
     this.heartbeat = hb;
     this.heartManager = new HeartManager(hb);
     // Sync current default personality ID so log entries are attributed correctly
-    this.storage.getActivePersonality().then((p) => {
-      if (p) hb.setActivePersonalityId(p.id);
-    }).catch(() => { /* non-fatal */ });
+    this.storage
+      .getActivePersonality()
+      .then((p) => {
+        if (p) hb.setActivePersonalityId(p.id);
+      })
+      .catch(() => {
+        /* non-fatal */
+      });
   }
 
   private composeBodyPrompt(personality: Personality | null): string {
@@ -619,7 +625,13 @@ export class SoulManager {
     ];
 
     // Capabilities — show enabled/disabled from personality config
-    const allCapabilities = ['vision', 'limb_movement', 'auditory', 'haptic', 'diagnostics'] as const;
+    const allCapabilities = [
+      'vision',
+      'limb_movement',
+      'auditory',
+      'haptic',
+      'diagnostics',
+    ] as const;
     const enabledCaps = personality?.body?.capabilities ?? [];
     const capLines: string[] = [];
     for (const cap of allCapabilities) {
@@ -696,7 +708,7 @@ export class SoulManager {
         lines.push('### Creation Tools');
         lines.push(
           'You have been granted the following resource-creation tools. ' +
-          'Use them directly and confidently — do not ask for permission before calling them:'
+            'Use them directly and confidently — do not ask for permission before calling them:'
         );
         lines.push(...enabledLines);
       }
@@ -775,16 +787,16 @@ export class SoulManager {
         lines.push('- `desktop_window_list` — list open windows with IDs, titles, and bounds');
         lines.push('- `desktop_display_list` — list connected monitors');
         if (sec?.allowCamera) {
-          lines.push('- `desktop_camera_capture` — capture single camera frame + AI interpretation');
+          lines.push(
+            '- `desktop_camera_capture` — capture single camera frame + AI interpretation'
+          );
         }
         lines.push('');
         lines.push(
           'Tip: always call `desktop_screenshot` to observe the current screen state before using limb_movement tools.'
         );
       } else {
-        lines.push(
-          'vision: disabled (Desktop Control not enabled in Security Settings)'
-        );
+        lines.push('vision: disabled (Desktop Control not enabled in Security Settings)');
       }
     }
 
@@ -819,9 +831,7 @@ export class SoulManager {
           '- `desktop_input_sequence` — execute ordered list of input actions atomically (max 50 steps)'
         );
       } else {
-        lines.push(
-          'limb_movement: disabled (Desktop Control not enabled in Security Settings)'
-        );
+        lines.push('limb_movement: disabled (Desktop Control not enabled in Security Settings)');
       }
     }
 
@@ -1000,8 +1010,7 @@ export class SoulManager {
       let section = `\n\n## Skill: ${skill.name}\n${instructions}`;
       if ((skill.mcpToolsAllowed?.length ?? 0) > 0)
         section += `\n\n[MCP tool restriction: only ${skill.mcpToolsAllowed.join(', ')} may be used while this skill is active.]`;
-      if (skill.successCriteria)
-        section += `\n\nSuccess criteria: ${skill.successCriteria}`;
+      if (skill.successCriteria) section += `\n\nSuccess criteria: ${skill.successCriteria}`;
       if (prompt.length + section.length > maxChars) break;
       prompt += section;
       void this.incrementSkillInvoked(skill.id);
@@ -1010,9 +1019,11 @@ export class SoulManager {
     // Viewport hint — appended after skills so it doesn't inflate skill budget
     if (clientContext?.viewportHint) {
       const VIEWPORT_HINTS: Record<string, string> = {
-        mobile: '[Interface: mobile — prefer concise responses; avoid wide tables and long code blocks.]',
+        mobile:
+          '[Interface: mobile — prefer concise responses; avoid wide tables and long code blocks.]',
         tablet: '[Interface: tablet — use moderate formatting width.]',
-        desktop: '[Interface: desktop — wide formatting is available; tables and code blocks render well.]',
+        desktop:
+          '[Interface: desktop — wide formatting is available; tables and code blocks render well.]',
       };
       const hint = VIEWPORT_HINTS[clientContext.viewportHint];
       if (hint) prompt += `\n\n${hint}`;

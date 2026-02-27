@@ -66,7 +66,16 @@ import {
 } from '../api/client';
 import type { CostBreakdownResponse, CostHistoryParams, WorkflowDefinition } from '../api/client';
 import { ErrorBoundary } from './common/ErrorBoundary';
-import type { MetricsSnapshot, HealthStatus, McpServerConfig, Personality, HeartbeatStatus, Task, SecurityEvent, AuditEntry } from '../types';
+import type {
+  MetricsSnapshot,
+  HealthStatus,
+  McpServerConfig,
+  Personality,
+  HeartbeatStatus,
+  Task,
+  SecurityEvent,
+  AuditEntry,
+} from '../types';
 
 // Lazy-load ReactFlow graph — keeps it out of the initial MetricsPage chunk
 const MetricsGraph = lazy(() =>
@@ -184,7 +193,9 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
   const enabledMcp = mcpServers.filter((s) => s.enabled).length;
   // Use server-computed totals (personality-aware) when available, fall back to base counts
   const totalHbTasks = heartbeatStatus?.totalTasks ?? heartbeatTasks.length;
-  const enabledHb = heartbeatStatus?.enabledTasks ?? heartbeatTasks.filter((t: { enabled: boolean }) => t.enabled).length;
+  const enabledHb =
+    heartbeatStatus?.enabledTasks ??
+    heartbeatTasks.filter((t: { enabled: boolean }) => t.enabled).length;
   const personalities = personalitiesData?.personalities ?? [];
   const activePersonalities = personalities.filter((p: Personality) => p.isActive);
   const defaultPersonality = personalities.find((p: Personality) => p.isDefault);
@@ -215,7 +226,9 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
               key={tab}
               role="tab"
               aria-selected={activeTab === tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => {
+                setActiveTab(tab);
+              }}
               className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
                 activeTab === tab
                   ? 'bg-card shadow-sm text-foreground'
@@ -242,7 +255,9 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
           activePersonalities={activePersonalities}
           defaultPersonality={defaultPersonality}
           navigate={navigate}
-          onViewCosts={() => setActiveTab('costs')}
+          onViewCosts={() => {
+            setActiveTab('costs');
+          }}
         />
       )}
       {activeTab === 'costs' && <CostsTab />}
@@ -251,7 +266,9 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
           metrics={metrics}
           history={history}
           navigate={navigate}
-          onViewCosts={() => setActiveTab('costs')}
+          onViewCosts={() => {
+            setActiveTab('costs');
+          }}
         />
       )}
     </div>
@@ -355,7 +372,9 @@ function MissionControlTab({
             const subPart = activeDelegations?.delegations?.length
               ? ` · ${activeDelegations.delegations.length} sub-agent${activeDelegations.delegations.length !== 1 ? 's' : ''}`
               : '';
-            return defaultPersonality ? `${defaultPersonality.name}${subPart}` : `${soulPart}${subPart}`;
+            return defaultPersonality
+              ? `${defaultPersonality.name}${subPart}`
+              : `${soulPart}${subPart}`;
           })()}
           onClick={() => navigate('/personality')}
         />
@@ -429,8 +448,24 @@ function MissionControlTab({
                   <YAxis tick={{ fontSize: 9 }} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={TOOLTIP_STYLE} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Area type="monotone" dataKey="cpu" name="CPU %" stroke={C.primary} fill="url(#mcCpuGrad)" strokeWidth={2} dot={false} />
-                  <Area type="monotone" dataKey="memory" name="Memory MB" stroke={C.success} fill="url(#mcMemGrad)" strokeWidth={2} dot={false} />
+                  <Area
+                    type="monotone"
+                    dataKey="cpu"
+                    name="CPU %"
+                    stroke={C.primary}
+                    fill="url(#mcCpuGrad)"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="memory"
+                    name="Memory MB"
+                    stroke={C.success}
+                    fill="url(#mcMemGrad)"
+                    strokeWidth={2}
+                    dot={false}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
@@ -440,15 +475,21 @@ function MissionControlTab({
           <div className="grid grid-cols-4 gap-2">
             <div className="p-2 rounded-md bg-muted/30 text-center">
               <p className="text-xs text-muted-foreground">CPU</p>
-              <p className="text-sm font-bold">{(metrics?.resources?.cpuPercent ?? 0).toFixed(1)}%</p>
+              <p className="text-sm font-bold">
+                {(metrics?.resources?.cpuPercent ?? 0).toFixed(1)}%
+              </p>
             </div>
             <div className="p-2 rounded-md bg-muted/30 text-center">
               <p className="text-xs text-muted-foreground">Memory</p>
-              <p className="text-sm font-bold">{(metrics?.resources?.memoryUsedMb ?? 0).toFixed(0)} MB</p>
+              <p className="text-sm font-bold">
+                {(metrics?.resources?.memoryUsedMb ?? 0).toFixed(0)} MB
+              </p>
             </div>
             <div className="p-2 rounded-md bg-muted/30 text-center">
               <p className="text-xs text-muted-foreground">Tokens</p>
-              <p className="text-sm font-bold">{((metrics?.resources?.tokensUsedToday ?? 0) / 1000).toFixed(1)}k</p>
+              <p className="text-sm font-bold">
+                {((metrics?.resources?.tokensUsedToday ?? 0) / 1000).toFixed(1)}k
+              </p>
             </div>
             <div
               className="p-2 rounded-md bg-muted/30 text-center cursor-pointer hover:bg-muted/50 transition-colors"
@@ -456,7 +497,9 @@ function MissionControlTab({
               title="View cost analytics"
             >
               <p className="text-xs text-muted-foreground">Cost</p>
-              <p className="text-sm font-bold text-success">${(metrics?.resources?.costUsdToday ?? 0).toFixed(3)}</p>
+              <p className="text-sm font-bold text-success">
+                ${(metrics?.resources?.costUsdToday ?? 0).toFixed(3)}
+              </p>
             </div>
           </div>
         </div>
@@ -645,7 +688,9 @@ function MissionControlTab({
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="card-title text-base">Integrations</h2>
-                <p className="card-description text-xs">{enabledMcp}/{mcpServers.length} active</p>
+                <p className="card-description text-xs">
+                  {enabledMcp}/{mcpServers.length} active
+                </p>
               </div>
               <button
                 className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
@@ -657,7 +702,9 @@ function MissionControlTab({
           </div>
           <div className="card-content">
             {mcpServers.length === 0 ? (
-              <p className="text-center py-4 text-sm text-muted-foreground">No MCP servers configured</p>
+              <p className="text-center py-4 text-sm text-muted-foreground">
+                No MCP servers configured
+              </p>
             ) : (
               <div className="space-y-2">
                 {mcpServers.slice(0, 5).map((srv) => (
@@ -666,11 +713,15 @@ function MissionControlTab({
                       className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${srv.enabled ? 'bg-success' : 'bg-muted-foreground'}`}
                     />
                     <span className="truncate flex-1 font-medium">{srv.name}</span>
-                    <span className="text-muted-foreground flex-shrink-0">{srv.enabled ? 'Active' : 'Off'}</span>
+                    <span className="text-muted-foreground flex-shrink-0">
+                      {srv.enabled ? 'Active' : 'Off'}
+                    </span>
                   </div>
                 ))}
                 {mcpServers.length > 5 && (
-                  <p className="text-xs text-muted-foreground text-center">+{mcpServers.length - 5} more</p>
+                  <p className="text-xs text-muted-foreground text-center">
+                    +{mcpServers.length - 5} more
+                  </p>
                 )}
               </div>
             )}
@@ -704,7 +755,9 @@ function MissionControlTab({
                       className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${SEV_DOT[evt.severity] ?? 'bg-muted'}`}
                     />
                     <div className="min-w-0">
-                      <p className="font-medium truncate capitalize">{evt.type.replace(/_/g, ' ')}</p>
+                      <p className="font-medium truncate capitalize">
+                        {evt.type.replace(/_/g, ' ')}
+                      </p>
                       <p className="text-muted-foreground truncate">{evt.message}</p>
                     </div>
                   </div>
@@ -744,11 +797,16 @@ function MissionControlTab({
                       className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${LEVEL_DOT[entry.level] ?? 'bg-primary'}`}
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium truncate capitalize">{entry.event.replace(/_/g, ' ')}</p>
+                      <p className="font-medium truncate capitalize">
+                        {entry.event.replace(/_/g, ' ')}
+                      </p>
                       <p className="text-muted-foreground truncate">{entry.message}</p>
                     </div>
                     <span className="text-muted-foreground flex-shrink-0 font-mono text-[10px]">
-                      {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(entry.timestamp).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </span>
                   </div>
                 ))}
@@ -872,7 +930,9 @@ function CostsTab() {
         {(['summary', 'history'] as CostSubTab[]).map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveSubTab(tab)}
+            onClick={() => {
+              setActiveSubTab(tab);
+            }}
             className={`px-4 py-2 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
               activeSubTab === tab
                 ? 'border-primary text-primary'
@@ -946,7 +1006,9 @@ function CostSummaryTab() {
           label="Avg Latency"
           value={`${(resources?.apiLatencyAvgMs ?? 0).toFixed(0)} ms`}
           loading={metricsLoading}
-          onReset={() => resetMutation.mutate('latency')}
+          onReset={() => {
+            resetMutation.mutate('latency');
+          }}
           resetting={resetMutation.isPending && resetMutation.variables === 'latency'}
         />
       </div>
@@ -983,7 +1045,9 @@ function CostSummaryTab() {
             <button
               className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 disabled:opacity-50"
               disabled={resetMutation.isPending}
-              onClick={() => resetMutation.mutate('errors')}
+              onClick={() => {
+                resetMutation.mutate('errors');
+              }}
               title="Reset error counter"
             >
               {resetMutation.isPending && resetMutation.variables === 'errors' ? (
@@ -1030,9 +1094,7 @@ function CostSummaryTab() {
                     <th className="text-right py-3 px-4 font-medium text-muted-foreground">
                       Tokens Used
                     </th>
-                    <th className="text-right py-3 px-4 font-medium text-muted-foreground">
-                      Cost
-                    </th>
+                    <th className="text-right py-3 px-4 font-medium text-muted-foreground">Cost</th>
                     <th className="text-right py-3 px-4 font-medium text-muted-foreground">
                       Calls
                     </th>
@@ -1058,9 +1120,7 @@ function CostSummaryTab() {
                         </td>
                         <td className="py-3 px-4 text-right font-mono">
                           {data.errors > 0 ? (
-                            <span className="text-destructive">
-                              {data.errors.toLocaleString()}
-                            </span>
+                            <span className="text-destructive">{data.errors.toLocaleString()}</span>
                           ) : (
                             <span className="text-muted-foreground">0</span>
                           )}
@@ -1181,7 +1241,9 @@ function CostHistoryTab() {
     setAppliedFilters(EMPTY_FILTERS);
   };
 
-  const handleApply = () => setAppliedFilters({ ...filters });
+  const handleApply = () => {
+    setAppliedFilters({ ...filters });
+  };
 
   return (
     <div className="space-y-4">
@@ -1205,7 +1267,9 @@ function CostHistoryTab() {
             <input
               type="date"
               value={filters.from ?? ''}
-              onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
+              onChange={(e) => {
+                setFilters((f) => ({ ...f, from: e.target.value }));
+              }}
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
             />
           </div>
@@ -1214,7 +1278,9 @@ function CostHistoryTab() {
             <input
               type="date"
               value={filters.to ?? ''}
-              onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
+              onChange={(e) => {
+                setFilters((f) => ({ ...f, to: e.target.value }));
+              }}
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
             />
           </div>
@@ -1222,7 +1288,9 @@ function CostHistoryTab() {
             <label className="text-xs text-muted-foreground">Provider</label>
             <select
               value={filters.provider ?? ''}
-              onChange={(e) => setFilters((f) => ({ ...f, provider: e.target.value }))}
+              onChange={(e) => {
+                setFilters((f) => ({ ...f, provider: e.target.value }));
+              }}
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
             >
               <option value="">All providers</option>
@@ -1242,7 +1310,9 @@ function CostHistoryTab() {
             <input
               type="text"
               value={filters.model ?? ''}
-              onChange={(e) => setFilters((f) => ({ ...f, model: e.target.value }))}
+              onChange={(e) => {
+                setFilters((f) => ({ ...f, model: e.target.value }));
+              }}
               placeholder="Filter by model name…"
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
             />
@@ -1251,7 +1321,9 @@ function CostHistoryTab() {
             <label className="text-xs text-muted-foreground">Personality</label>
             <select
               value={filters.personalityId ?? ''}
-              onChange={(e) => setFilters((f) => ({ ...f, personalityId: e.target.value }))}
+              onChange={(e) => {
+                setFilters((f) => ({ ...f, personalityId: e.target.value }));
+              }}
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
             >
               <option value="">All personalities</option>
@@ -1266,9 +1338,9 @@ function CostHistoryTab() {
             <label className="text-xs text-muted-foreground">Group By</label>
             <select
               value={filters.groupBy ?? 'day'}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, groupBy: e.target.value as 'day' | 'hour' }))
-              }
+              onChange={(e) => {
+                setFilters((f) => ({ ...f, groupBy: e.target.value as 'day' | 'hour' }));
+              }}
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
             >
               <option value="day">Day</option>
@@ -1310,18 +1382,14 @@ function CostHistoryTab() {
                     <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                       Provider
                     </th>
-                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                      Model
-                    </th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Model</th>
                     <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                       Personality
                     </th>
                     <th className="text-right py-3 px-4 font-medium text-muted-foreground">
                       Tokens
                     </th>
-                    <th className="text-right py-3 px-4 font-medium text-muted-foreground">
-                      Cost
-                    </th>
+                    <th className="text-right py-3 px-4 font-medium text-muted-foreground">Cost</th>
                     <th className="text-right py-3 px-4 font-medium text-muted-foreground">
                       Calls
                     </th>
@@ -1359,9 +1427,7 @@ function CostHistoryTab() {
                     <td className="py-3 px-4 text-right font-mono">
                       {totals.totalTokens.toLocaleString()}
                     </td>
-                    <td className="py-3 px-4 text-right font-mono">
-                      ${totals.costUsd.toFixed(4)}
-                    </td>
+                    <td className="py-3 px-4 text-right font-mono">${totals.costUsd.toFixed(4)}</td>
                     <td className="py-3 px-4 text-right font-mono">{totals.calls}</td>
                   </tr>
                 </tfoot>
@@ -1395,7 +1461,12 @@ function KpiTile({
   highlight?: 'success' | 'warning' | 'destructive' | 'primary';
 }) {
   const valueClass = highlight
-    ? { success: 'text-success', warning: 'text-warning', destructive: 'text-destructive', primary: 'text-primary' }[highlight]
+    ? {
+        success: 'text-success',
+        warning: 'text-warning',
+        destructive: 'text-destructive',
+        primary: 'text-primary',
+      }[highlight]
     : '';
   return (
     <div className="card p-3 sm:p-4">
@@ -1578,10 +1649,28 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
               <div className="h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={durationData} barSize={30}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.1} vertical={false} />
-                    <XAxis dataKey="label" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(v) => fmtMs(v)} />
-                    <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => [fmtMs(v), 'Duration']} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="#333"
+                      opacity={0.1}
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(v) => fmtMs(v)}
+                    />
+                    <Tooltip
+                      contentStyle={TOOLTIP_STYLE}
+                      formatter={(v: number) => [fmtMs(v), 'Duration']}
+                    />
                     <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                       {durationData.map((_, i) => (
                         <Cell key={i} fill={durationColors[i % durationColors.length]} />
@@ -1593,17 +1682,23 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
               <div className="grid grid-cols-3 gap-2 mt-3 pt-2 border-t">
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground">p50</p>
-                  <p className="text-sm font-mono font-semibold">{fmtMs(metrics?.tasks?.p50DurationMs ?? 0)}</p>
+                  <p className="text-sm font-mono font-semibold">
+                    {fmtMs(metrics?.tasks?.p50DurationMs ?? 0)}
+                  </p>
                 </div>
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground">p95</p>
-                  <p className={`text-sm font-mono font-semibold ${(metrics?.tasks?.p95DurationMs ?? 0) > 5000 ? 'text-warning' : ''}`}>
+                  <p
+                    className={`text-sm font-mono font-semibold ${(metrics?.tasks?.p95DurationMs ?? 0) > 5000 ? 'text-warning' : ''}`}
+                  >
                     {fmtMs(metrics?.tasks?.p95DurationMs ?? 0)}
                   </p>
                 </div>
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground">p99</p>
-                  <p className={`text-sm font-mono font-semibold ${(metrics?.tasks?.p99DurationMs ?? 0) > 10000 ? 'text-destructive' : ''}`}>
+                  <p
+                    className={`text-sm font-mono font-semibold ${(metrics?.tasks?.p99DurationMs ?? 0) > 10000 ? 'text-destructive' : ''}`}
+                  >
                     {fmtMs(metrics?.tasks?.p99DurationMs ?? 0)}
                   </p>
                 </div>
@@ -1660,7 +1755,9 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
             <h2 className="font-semibold text-sm">Infrastructure</h2>
           </div>
           <div className="flex-1 h-px bg-border" />
-          <span className="text-xs text-muted-foreground flex-shrink-0">{history.length} samples</span>
+          <span className="text-xs text-muted-foreground flex-shrink-0">
+            {history.length} samples
+          </span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
@@ -1696,7 +1793,9 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
         <div className="card mb-4">
           <div className="card-header">
             <h3 className="card-title text-sm">CPU & Memory Over Time</h3>
-            <p className="card-description text-xs">Live samples — last {MAX_HISTORY} data points</p>
+            <p className="card-description text-xs">
+              Live samples — last {MAX_HISTORY} data points
+            </p>
           </div>
           <div className="card-content">
             <div className="h-[220px]">
@@ -1714,12 +1813,34 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.1} />
-                    <XAxis dataKey="time" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                    <XAxis
+                      dataKey="time"
+                      tick={{ fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                      interval="preserveStartEnd"
+                    />
                     <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
                     <Tooltip contentStyle={TOOLTIP_STYLE} />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Area type="monotone" dataKey="cpu" name="CPU %" stroke={C.primary} fill="url(#fmCpuGrad)" strokeWidth={2} dot={false} />
-                    <Area type="monotone" dataKey="memory" name="Memory MB" stroke={C.success} fill="url(#fmMemGrad)" strokeWidth={2} dot={false} />
+                    <Area
+                      type="monotone"
+                      dataKey="cpu"
+                      name="CPU %"
+                      stroke={C.primary}
+                      fill="url(#fmCpuGrad)"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="memory"
+                      name="Memory MB"
+                      stroke={C.success}
+                      fill="url(#fmMemGrad)"
+                      strokeWidth={2}
+                      dot={false}
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
@@ -1749,14 +1870,18 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
                 </div>
                 <div className="p-3 rounded-md bg-muted/30 text-center">
                   <p className="text-xs text-muted-foreground mb-1">Cached</p>
-                  <p className="text-lg font-bold text-success">{(cachedToday / 1000).toFixed(1)}k</p>
+                  <p className="text-lg font-bold text-success">
+                    {(cachedToday / 1000).toFixed(1)}k
+                  </p>
                 </div>
               </div>
               {tokensUsedPct !== null && (
                 <div>
                   <div className="flex items-center justify-between text-xs mb-1.5">
                     <span className="text-muted-foreground">Daily limit usage</span>
-                    <span className={`font-mono ${tokensUsedPct > 80 ? 'text-warning' : 'text-muted-foreground'}`}>
+                    <span
+                      className={`font-mono ${tokensUsedPct > 80 ? 'text-warning' : 'text-muted-foreground'}`}
+                    >
                       {tokensUsedPct}%
                     </span>
                   </div>
@@ -1767,7 +1892,8 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {tokensUsedToday.toLocaleString()} of {tokensLimitDaily!.toLocaleString()} tokens
+                    {tokensUsedToday.toLocaleString()} of {tokensLimitDaily!.toLocaleString()}{' '}
+                    tokens
                   </p>
                 </div>
               )}
@@ -1792,7 +1918,9 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Avg Latency</p>
-                  <p className={`text-2xl font-bold ${apiLatencyAvgMs > 500 ? 'text-warning' : ''}`}>
+                  <p
+                    className={`text-2xl font-bold ${apiLatencyAvgMs > 500 ? 'text-warning' : ''}`}
+                  >
                     {apiLatencyAvgMs.toFixed(0)} ms
                   </p>
                 </div>
@@ -1800,12 +1928,17 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
               <div>
                 <div className="flex items-center justify-between text-xs mb-1.5">
                   <span className="text-muted-foreground">Error rate</span>
-                  <span className={`font-mono ${apiErrorRate > 5 ? 'text-destructive' : apiErrorRate > 1 ? 'text-warning' : 'text-muted-foreground'}`}>
+                  <span
+                    className={`font-mono ${apiErrorRate > 5 ? 'text-destructive' : apiErrorRate > 1 ? 'text-warning' : 'text-muted-foreground'}`}
+                  >
                     {apiErrorRate.toFixed(2)}%
                   </span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-destructive rounded-full transition-all" style={{ width: `${Math.min(apiErrorRate, 100)}%` }} />
+                  <div
+                    className="h-full bg-destructive rounded-full transition-all"
+                    style={{ width: `${Math.min(apiErrorRate, 100)}%` }}
+                  />
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {apiErrorsTotal.toLocaleString()} errors of {apiCallsTotal.toLocaleString()} calls
@@ -1817,7 +1950,9 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
                     <span className="text-muted-foreground flex items-center gap-1">
                       <HardDrive className="w-3 h-3" /> Disk
                     </span>
-                    <span className={`font-mono ${diskPercent > 70 ? 'text-warning' : 'text-muted-foreground'}`}>
+                    <span
+                      className={`font-mono ${diskPercent > 70 ? 'text-warning' : 'text-muted-foreground'}`}
+                    >
                       {diskPercent.toFixed(1)}%
                     </span>
                   </div>
@@ -1828,7 +1963,8 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {(metrics.resources.diskUsedMb ?? 0).toFixed(0)} MB of {metrics.resources.diskLimitMb.toFixed(0)} MB
+                    {(metrics.resources.diskUsedMb ?? 0).toFixed(0)} MB of{' '}
+                    {metrics.resources.diskLimitMb.toFixed(0)} MB
                   </p>
                 </div>
               )}
@@ -1870,7 +2006,9 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
           <KpiTile
             label="Injection Attempts"
             value={(metrics?.security?.injectionAttemptsTotal ?? 0).toLocaleString()}
-            highlight={(metrics?.security?.injectionAttemptsTotal ?? 0) > 0 ? 'destructive' : undefined}
+            highlight={
+              (metrics?.security?.injectionAttemptsTotal ?? 0) > 0 ? 'destructive' : undefined
+            }
           />
           <KpiTile
             label="Active Sessions"
@@ -1893,11 +2031,15 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Success</p>
-                  <p className="text-2xl font-bold text-success">{authSuccessTotal.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-success">
+                    {authSuccessTotal.toLocaleString()}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Failed</p>
-                  <p className={`text-2xl font-bold ${authFailuresTotal > 0 ? 'text-destructive' : ''}`}>
+                  <p
+                    className={`text-2xl font-bold ${authFailuresTotal > 0 ? 'text-destructive' : ''}`}
+                  >
                     {authFailuresTotal.toLocaleString()}
                   </p>
                 </div>
@@ -1905,19 +2047,34 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
               <div>
                 <div className="flex items-center justify-between text-xs mb-1.5">
                   <span className="text-muted-foreground">Success rate</span>
-                  <span className={`font-mono ${authSuccessRate < 90 ? 'text-warning' : 'text-success'}`}>
+                  <span
+                    className={`font-mono ${authSuccessRate < 90 ? 'text-warning' : 'text-success'}`}
+                  >
                     {authSuccessRate}%
                   </span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-success rounded-full transition-all" style={{ width: `${authSuccessRate}%` }} />
+                  <div
+                    className="h-full bg-success rounded-full transition-all"
+                    style={{ width: `${authSuccessRate}%` }}
+                  />
                 </div>
               </div>
               <div className="h-[100px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={authData} barSize={52}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.1} vertical={false} />
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="#333"
+                      opacity={0.1}
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
                     <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
                     <Tooltip contentStyle={TOOLTIP_STYLE} />
                     <Bar dataKey="value" radius={[4, 4, 0, 0]}>
@@ -1950,14 +2107,19 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
                           </span>
                         </div>
                         <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: item.fill }} />
+                          <div
+                            className="h-full rounded-full"
+                            style={{ width: `${pct}%`, backgroundColor: item.fill }}
+                          />
                         </div>
                       </div>
                     );
                   })}
                   <div className="flex items-center justify-between pt-1.5 border-t text-xs text-muted-foreground">
                     <span>Total events</span>
-                    <span className="font-mono font-medium text-foreground">{severityTotal.toLocaleString()}</span>
+                    <span className="font-mono font-medium text-foreground">
+                      {severityTotal.toLocaleString()}
+                    </span>
                   </div>
                 </div>
               ) : (
@@ -2005,10 +2167,15 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xs text-muted-foreground">Denial rate</span>
-                  <span className="text-xs font-mono font-medium">{permDenialRate.toFixed(1)}%</span>
+                  <span className="text-xs font-mono font-medium">
+                    {permDenialRate.toFixed(1)}%
+                  </span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-warning rounded-full transition-all" style={{ width: `${permDenialRate}%` }} />
+                  <div
+                    className="h-full bg-warning rounded-full transition-all"
+                    style={{ width: `${permDenialRate}%` }}
+                  />
                 </div>
               </div>
               {eventTypeData.length > 0 && (
@@ -2017,7 +2184,9 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
                   <div className="space-y-1.5">
                     {eventTypeData.map((item) => (
                       <div key={item.name} className="flex items-center justify-between">
-                        <span className="text-xs capitalize text-muted-foreground">{item.name}</span>
+                        <span className="text-xs capitalize text-muted-foreground">
+                          {item.name}
+                        </span>
                         <span className="text-xs font-medium">{item.value}</span>
                       </div>
                     ))}
@@ -2034,7 +2203,9 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
             </div>
             <div className="card-content space-y-4">
               <div className="flex items-center gap-3">
-                <div className={`p-3 rounded-full ${metrics?.security?.auditChainValid ? 'bg-success/10' : 'bg-destructive/10'}`}>
+                <div
+                  className={`p-3 rounded-full ${metrics?.security?.auditChainValid ? 'bg-success/10' : 'bg-destructive/10'}`}
+                >
                   {metrics?.security?.auditChainValid ? (
                     <CheckCircle className="w-6 h-6 text-success" />
                   ) : (
@@ -2042,12 +2213,17 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
                   )}
                 </div>
                 <div>
-                  <p className={`text-sm font-semibold ${metrics?.security?.auditChainValid ? 'text-success' : 'text-destructive'}`}>
-                    {metrics?.security?.auditChainValid ? 'Chain Integrity Verified' : 'Chain Integrity Compromised'}
+                  <p
+                    className={`text-sm font-semibold ${metrics?.security?.auditChainValid ? 'text-success' : 'text-destructive'}`}
+                  >
+                    {metrics?.security?.auditChainValid
+                      ? 'Chain Integrity Verified'
+                      : 'Chain Integrity Compromised'}
                   </p>
                   {metrics?.security?.lastAuditVerification && (
                     <p className="text-xs text-muted-foreground">
-                      Last verified: {new Date(metrics.security.lastAuditVerification).toLocaleString()}
+                      Last verified:{' '}
+                      {new Date(metrics.security.lastAuditVerification).toLocaleString()}
                     </p>
                   )}
                 </div>
@@ -2055,17 +2231,23 @@ function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
               <div className="border-t pt-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Total Entries</span>
-                  <span className="text-sm font-bold">{(metrics?.security?.auditEntriesTotal ?? 0).toLocaleString()}</span>
+                  <span className="text-sm font-bold">
+                    {(metrics?.security?.auditEntriesTotal ?? 0).toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Blocked Requests</span>
-                  <span className={`text-sm font-bold ${(metrics?.security?.blockedRequestsTotal ?? 0) > 0 ? 'text-warning' : ''}`}>
+                  <span
+                    className={`text-sm font-bold ${(metrics?.security?.blockedRequestsTotal ?? 0) > 0 ? 'text-warning' : ''}`}
+                  >
                     {(metrics?.security?.blockedRequestsTotal ?? 0).toLocaleString()}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Injection Attempts</span>
-                  <span className={`text-sm font-bold ${(metrics?.security?.injectionAttemptsTotal ?? 0) > 0 ? 'text-destructive' : ''}`}>
+                  <span
+                    className={`text-sm font-bold ${(metrics?.security?.injectionAttemptsTotal ?? 0) > 0 ? 'text-destructive' : ''}`}
+                  >
                     {(metrics?.security?.injectionAttemptsTotal ?? 0).toLocaleString()}
                   </span>
                 </div>
@@ -2153,9 +2335,7 @@ function ServiceStatusRow({
   return (
     <div
       className={`flex items-center justify-between py-2 border-b last:border-0${
-        onClick
-          ? ' cursor-pointer hover:bg-muted/20 rounded px-1 -mx-1 transition-colors'
-          : ''
+        onClick ? ' cursor-pointer hover:bg-muted/20 rounded px-1 -mx-1 transition-colors' : ''
       }`}
       onClick={onClick}
     >
@@ -2195,15 +2375,7 @@ function EmptyChart({ message }: { message: string }) {
   );
 }
 
-function LegendItem({
-  color,
-  label,
-  value,
-}: {
-  color: string;
-  label: string;
-  value: string;
-}) {
+function LegendItem({ color, label, value }: { color: string; label: string; value: string }) {
   return (
     <div className="flex items-center gap-2">
       <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
@@ -2224,7 +2396,14 @@ interface CostSummaryCardProps {
   resetting?: boolean;
 }
 
-function CostSummaryCard({ icon, label, value, loading, onReset, resetting }: CostSummaryCardProps) {
+function CostSummaryCard({
+  icon,
+  label,
+  value,
+  loading,
+  onReset,
+  resetting,
+}: CostSummaryCardProps) {
   return (
     <div className="p-4 rounded-lg bg-muted/30">
       <div className="flex items-center justify-between mb-2">

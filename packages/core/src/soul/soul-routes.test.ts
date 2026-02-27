@@ -13,7 +13,15 @@ const PERSONALITY = {
   traits: {},
   isDefault: false,
   isArchetype: false,
-  body: { activeHours: { enabled: false, start: '09:00', end: '17:00', daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'], timezone: 'UTC' } },
+  body: {
+    activeHours: {
+      enabled: false,
+      start: '09:00',
+      end: '17:00',
+      daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
+      timezone: 'UTC',
+    },
+  },
 };
 const SKILL = { id: 'skill-1', name: 'Search', status: 'enabled', source: 'builtin' };
 const USER = { id: 'user-1', name: 'Alice', email: 'alice@example.com' };
@@ -49,7 +57,12 @@ function makeMockManager(overrides?: Partial<SoulManager>): SoulManager {
     deleteUser: vi.fn().mockResolvedValue(true),
     composeSoulPrompt: vi.fn().mockResolvedValue('You are FRIDAY.'),
     getActiveTools: vi.fn().mockResolvedValue(['search', 'code']),
-    getConfig: vi.fn().mockReturnValue({ enabled: true, maxSkills: 50, maxPromptTokens: 32000, learningMode: ['user_authored'] }),
+    getConfig: vi.fn().mockReturnValue({
+      enabled: true,
+      maxSkills: 50,
+      maxPromptTokens: 32000,
+      learningMode: ['user_authored'],
+    }),
     updateConfig: vi.fn().mockResolvedValue(undefined),
     getAgentName: vi.fn().mockResolvedValue('FRIDAY'),
     setAgentName: vi.fn().mockResolvedValue(undefined),
@@ -815,7 +828,13 @@ describe('isPersonalityWithinActiveHours', () => {
         },
         learning: { enabled: true, minConfidence: 0.7 },
       },
-      activeHours: { enabled: false, start: '09:00', end: '17:00', daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'], timezone: 'UTC' },
+      activeHours: {
+        enabled: false,
+        start: '09:00',
+        end: '17:00',
+        daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
+        timezone: 'UTC',
+      },
     },
     createdAt: 0,
     updatedAt: 0,

@@ -71,10 +71,7 @@ export class OpaClient {
    * Returns null on OPA unavailability (network error / timeout),
    * allowing callers to fall back to local evaluation.
    */
-  async evaluate(
-    path: string,
-    input: Record<string, unknown>
-  ): Promise<boolean | null> {
+  async evaluate(path: string, input: Record<string, unknown>): Promise<boolean | null> {
     try {
       const resp = await fetch(`${this.addr}/v1/data/${path}`, {
         method: 'POST',

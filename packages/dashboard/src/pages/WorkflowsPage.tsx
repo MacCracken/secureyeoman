@@ -103,7 +103,9 @@ export function WorkflowsPage() {
           )}
           {toast.message}
           <button
-            onClick={() => setToast(null)}
+            onClick={() => {
+              setToast(null);
+            }}
             className="ml-auto text-current opacity-60 hover:opacity-100"
           >
             ×
@@ -150,7 +152,10 @@ export function WorkflowsPage() {
             </thead>
             <tbody>
               {definitions.map((def) => (
-                <tr key={def.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                <tr
+                  key={def.id}
+                  className="border-b last:border-0 hover:bg-muted/30 transition-colors"
+                >
                   <td className="px-4 py-3">
                     <button
                       onClick={() => navigate(`/workflows/${def.id}/builder`)}
@@ -181,7 +186,9 @@ export function WorkflowsPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
                       <button
-                        onClick={() => handleRun(def)}
+                        onClick={() => {
+                          handleRun(def);
+                        }}
                         disabled={runningId === def.id || !def.isEnabled}
                         className="btn btn-ghost flex items-center gap-1.5 text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Run workflow"

@@ -15,7 +15,12 @@ describe('TenantStorage', () => {
   });
 
   it('creates a tenant record', async () => {
-    const rec = await storage.create({ id: 'tenant-001', name: 'Acme Corp', slug: 'acme', plan: 'pro' });
+    const rec = await storage.create({
+      id: 'tenant-001',
+      name: 'Acme Corp',
+      slug: 'acme',
+      plan: 'pro',
+    });
     expect(rec.id).toBe('tenant-001');
     expect(rec.slug).toBe('acme');
     expect(rec.plan).toBe('pro');

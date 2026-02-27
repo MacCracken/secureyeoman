@@ -409,8 +409,7 @@ export class HeartbeatManager {
 
     // Route to appropriate integration via real adapter dispatch (Phase 55)
     const integrationId = config.integrationId as string | undefined;
-    const metadata: Record<string, unknown> =
-      channel === 'email' ? { subject: check.name } : {};
+    const metadata: Record<string, unknown> = channel === 'email' ? { subject: check.name } : {};
 
     let adapters: import('../integrations/types.js').Integration[];
     if (integrationId) {
@@ -604,7 +603,9 @@ export class HeartbeatManager {
     this.logger.debug('Active personality ID updated', { personalityId: id });
   }
 
-  setActivePersonalityIds(personalities: { id: string; name: string; omnipresentMind?: boolean }[]): void {
+  setActivePersonalityIds(
+    personalities: { id: string; name: string; omnipresentMind?: boolean }[]
+  ): void {
     this.activePersonalityIds = personalities;
     this.logger.debug('Active personality roster updated', { count: personalities.length });
   }
@@ -821,7 +822,10 @@ export class HeartbeatManager {
     if (data.config !== undefined) check.config = data.config;
   }
 
-  private async runCheck(check: HeartbeatCheck, personalityId?: string): Promise<HeartbeatCheckResult> {
+  private async runCheck(
+    check: HeartbeatCheck,
+    personalityId?: string
+  ): Promise<HeartbeatCheckResult> {
     switch (check.type) {
       case 'system_health':
         return this.checkSystemHealth(check, personalityId);
@@ -878,7 +882,10 @@ export class HeartbeatManager {
     };
   }
 
-  private async checkSystemHealth(check: HeartbeatCheck, personalityId?: string): Promise<HeartbeatCheckResult> {
+  private async checkSystemHealth(
+    check: HeartbeatCheck,
+    personalityId?: string
+  ): Promise<HeartbeatCheckResult> {
     const stats = await this.brain.getStats(personalityId);
     const mem = process.memoryUsage();
 

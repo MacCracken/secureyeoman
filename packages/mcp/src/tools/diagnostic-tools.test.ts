@@ -20,7 +20,9 @@ function mockClientWithDiagnostics(hasCap = true): CoreApiClient {
         });
       }
       if (url.startsWith('/api/v1/diagnostics/agent-report/')) {
-        return Promise.resolve({ report: { agentId: 'agent-1', uptime: 120, reportedAt: Date.now() } });
+        return Promise.resolve({
+          report: { agentId: 'agent-1', uptime: 120, reportedAt: Date.now() },
+        });
       }
       if (url === '/api/v1/diagnostics/ping-integrations') {
         return Promise.resolve({

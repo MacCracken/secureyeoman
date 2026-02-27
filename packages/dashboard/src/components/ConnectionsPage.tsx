@@ -2250,19 +2250,29 @@ function McpTab({
       {localServer && (
         <LocalServerCard
           server={localServer}
-          toolCount={tools
-            .filter((t) => t.serverName === LOCAL_MCP_NAME)
-            .filter((t) => {
-              const NETWORK_PREFIXES = ['network_', 'netbox_', 'nvd_', 'subnet_', 'wildcard_', 'pcap_'];
-              if (NETWORK_PREFIXES.some((p) => t.name.startsWith(p)) && !featureConfig?.exposeNetworkTools)
-                return false;
-              if (t.name.startsWith('netbox_') && !securityPolicy?.allowNetBoxWrite)
-                return false;
-              if (t.name.startsWith('twingate_') && !featureConfig?.exposeTwingateTools)
-                return false;
-              return true;
-            })
-            .length}
+          toolCount={
+            tools
+              .filter((t) => t.serverName === LOCAL_MCP_NAME)
+              .filter((t) => {
+                const NETWORK_PREFIXES = [
+                  'network_',
+                  'netbox_',
+                  'nvd_',
+                  'subnet_',
+                  'wildcard_',
+                  'pcap_',
+                ];
+                if (
+                  NETWORK_PREFIXES.some((p) => t.name.startsWith(p)) &&
+                  !featureConfig?.exposeNetworkTools
+                )
+                  return false;
+                if (t.name.startsWith('netbox_') && !securityPolicy?.allowNetBoxWrite) return false;
+                if (t.name.startsWith('twingate_') && !featureConfig?.exposeTwingateTools)
+                  return false;
+                return true;
+              }).length
+          }
           onDelete={() => {
             onDelete(localServer.id);
           }}
@@ -2613,7 +2623,9 @@ function LocalServerCard({
               <input
                 type="checkbox"
                 checked={securityPolicy?.allowNetBoxWrite ?? false}
-                onChange={(e) => policyMut.mutate({ allowNetBoxWrite: e.target.checked })}
+                onChange={(e) => {
+                  policyMut.mutate({ allowNetBoxWrite: e.target.checked });
+                }}
                 disabled={policyMut.isPending || !featureConfig.exposeNetworkTools}
                 className="w-3.5 h-3.5 rounded accent-primary shrink-0"
               />
@@ -2683,7 +2695,9 @@ function LocalServerCard({
               <input
                 type="checkbox"
                 checked={featureConfig?.exposeTwingateTools ?? false}
-                onChange={(e) => onFeatureToggle({ exposeTwingateTools: e.target.checked })}
+                onChange={(e) => {
+                  onFeatureToggle({ exposeTwingateTools: e.target.checked });
+                }}
                 disabled={isFeatureToggling || !securityPolicy?.allowTwingate}
                 className="w-3.5 h-3.5 rounded accent-primary shrink-0"
               />

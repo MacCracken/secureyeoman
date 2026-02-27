@@ -230,7 +230,9 @@ Environment variables (set after start to wire MCP tools):
 
       if (!result.stdout) {
         if (jsonOutput) {
-          ctx.stdout.write(JSON.stringify({ containers: [], running: 0, total: 0 }, null, 2) + '\n');
+          ctx.stdout.write(
+            JSON.stringify({ containers: [], running: 0, total: 0 }, null, 2) + '\n'
+          );
         } else {
           ctx.stdout.write('No containers running. Run: secureyeoman agnostic start\n');
         }

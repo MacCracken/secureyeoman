@@ -35,11 +35,15 @@ export function ThinkingBlock({ thinking, live }: ThinkingBlockProps) {
   return (
     <div className="mb-2 border-l-2 border-muted-foreground/30 pl-3 rounded-r bg-muted/30">
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setOpen((v) => !v);
+        }}
         className="flex items-center gap-1.5 py-1.5 w-full text-left"
         aria-expanded={open}
       >
-        <Brain className={`w-3 h-3 text-muted-foreground/70 shrink-0 ${live ? 'animate-pulse' : ''}`} />
+        <Brain
+          className={`w-3 h-3 text-muted-foreground/70 shrink-0 ${live ? 'animate-pulse' : ''}`}
+        />
         <span className="text-xs text-muted-foreground/80 font-medium">
           {live ? 'Thinking…' : `Thought for ~${words} words`}
           {!live && iters > 1 && ` (${iters} iterations)`}

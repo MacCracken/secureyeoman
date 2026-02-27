@@ -99,12 +99,8 @@ Tools available when enabled (prefix: qbo_):
         ctx.stdout.write(`  ${key}=<your value>\n`);
       }
       ctx.stdout.write('  QUICKBOOKS_ENVIRONMENT=sandbox   # or: production\n\n');
-      ctx.stdout.write(
-        'Restart the SecureYeoman server and MCP service after updating .env.\n'
-      );
-      ctx.stdout.write(
-        "Run 'secureyeoman mcp-quickbooks status' to verify once restarted.\n\n"
-      );
+      ctx.stdout.write('Restart the SecureYeoman server and MCP service after updating .env.\n');
+      ctx.stdout.write("Run 'secureyeoman mcp-quickbooks status' to verify once restarted.\n\n");
       return 0;
     }
 
@@ -112,9 +108,7 @@ Tools available when enabled (prefix: qbo_):
       ctx.stdout.write('\nTo disable QuickBooks MCP tools, set this in your .env file:\n\n');
       ctx.stdout.write('  MCP_EXPOSE_QUICKBOOKS_TOOLS=false\n\n');
       ctx.stdout.write('Or remove the MCP_EXPOSE_QUICKBOOKS_TOOLS line entirely.\n\n');
-      ctx.stdout.write(
-        'Restart the SecureYeoman server and MCP service after updating .env.\n\n'
-      );
+      ctx.stdout.write('Restart the SecureYeoman server and MCP service after updating .env.\n\n');
       return 0;
     }
 

@@ -15,8 +15,16 @@ function makeCtx(argv: string[] = []) {
   const err: string[] = [];
   return {
     argv,
-    stdout: { write: (s: string) => { out.push(s); } },
-    stderr: { write: (s: string) => { err.push(s); } },
+    stdout: {
+      write: (s: string) => {
+        out.push(s);
+      },
+    },
+    stderr: {
+      write: (s: string) => {
+        err.push(s);
+      },
+    },
     output: out,
     errors: err,
     text: () => out.join(''),

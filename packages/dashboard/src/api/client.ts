@@ -480,7 +480,13 @@ export async function fetchMlSummary(params?: {
       period: params?.period ?? '7d',
       riskScore: 0,
       riskLevel: 'low',
-      detections: { anomaly: 0, injectionAttempt: 0, sandboxViolation: 0, secretAccess: 0, total: 0 },
+      detections: {
+        anomaly: 0,
+        injectionAttempt: 0,
+        sandboxViolation: 0,
+        secretAccess: 0,
+        total: 0,
+      },
       trend: [],
     };
   }
@@ -633,9 +639,7 @@ export async function uploadPersonalityAvatar(
   return response.json();
 }
 
-export async function deletePersonalityAvatar(
-  id: string
-): Promise<{ personality: Personality }> {
+export async function deletePersonalityAvatar(id: string): Promise<{ personality: Personality }> {
   return request(`/soul/personalities/${id}/avatar`, { method: 'DELETE' });
 }
 
@@ -995,7 +999,7 @@ export async function exportAuditLog(opts: {
 }): Promise<Blob> {
   const token = getAccessToken();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(`${API_BASE}/audit/export`, {
     method: 'POST',
     headers,
@@ -1480,9 +1484,7 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
   }
 }
 
-export async function patchMcpConfig(
-  data: Partial<McpConfigResponse>
-): Promise<McpConfigResponse> {
+export async function patchMcpConfig(data: Partial<McpConfigResponse>): Promise<McpConfigResponse> {
   return updateMcpConfig(data);
 }
 
@@ -2702,10 +2704,7 @@ export async function synthesizeSpeechStream(data: {
   return URL.createObjectURL(blob);
 }
 
-export async function updateMultimodalModel(
-  type: 'stt' | 'tts',
-  model: string
-): Promise<void> {
+export async function updateMultimodalModel(type: 'stt' | 'tts', model: string): Promise<void> {
   await request('/multimodal/model', {
     method: 'PATCH',
     body: JSON.stringify({ type, model }),
@@ -2803,7 +2802,13 @@ export interface CostHistoryRow {
 
 export interface CostHistoryResponse {
   records: CostHistoryRow[];
-  totals: { inputTokens: number; outputTokens: number; totalTokens: number; costUsd: number; calls: number };
+  totals: {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+    costUsd: number;
+    calls: number;
+  };
 }
 
 export interface CostHistoryParams {
@@ -2830,7 +2835,10 @@ export async function fetchCostHistory(
   try {
     return await request<CostHistoryResponse>(`/costs/history${query ? `?${query}` : ''}`);
   } catch {
-    return { records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } };
+    return {
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    };
   }
 }
 
@@ -3193,10 +3201,7 @@ export async function updateWorkspaceMemberRole(
   });
 }
 
-export async function removeWorkspaceMember(
-  workspaceId: string,
-  userId: string
-): Promise<void> {
+export async function removeWorkspaceMember(workspaceId: string, userId: string): Promise<void> {
   await request(`/workspaces/${workspaceId}/members/${userId}`, { method: 'DELETE' });
 }
 
@@ -3339,9 +3344,7 @@ export async function fetchWorkflowRun(
   return request(`/workflows/runs/${runId}`);
 }
 
-export async function cancelWorkflowRun(
-  runId: string
-): Promise<{ run: WorkflowRun }> {
+export async function cancelWorkflowRun(runId: string): Promise<{ run: WorkflowRun }> {
   return request(`/workflows/runs/${runId}`, { method: 'DELETE' });
 }
 
@@ -3570,12 +3573,20 @@ export async function fetchIntent(id: string): Promise<{ intent: OrgIntentDoc }>
   return request(`/intent/${encodeURIComponent(id)}`);
 }
 
-export async function createIntent(doc: Record<string, unknown>): Promise<{ intent: OrgIntentDoc }> {
+export async function createIntent(
+  doc: Record<string, unknown>
+): Promise<{ intent: OrgIntentDoc }> {
   return request('/intent', { method: 'POST', body: JSON.stringify(doc) });
 }
 
-export async function updateIntent(id: string, patch: Record<string, unknown>): Promise<{ intent: OrgIntentDoc }> {
-  return request(`/intent/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(patch) });
+export async function updateIntent(
+  id: string,
+  patch: Record<string, unknown>
+): Promise<{ intent: OrgIntentDoc }> {
+  return request(`/intent/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(patch),
+  });
 }
 
 export async function deleteIntent(id: string): Promise<void> {
@@ -3748,7 +3759,9 @@ export async function deleteNotificationPref(id: string): Promise<void> {
 
 // ── Risk Assessment API (Phase 53) ────────────────────────────────────────
 
-export async function runRiskAssessment(opts: CreateRiskAssessmentOptions): Promise<RiskAssessment> {
+export async function runRiskAssessment(
+  opts: CreateRiskAssessmentOptions
+): Promise<RiskAssessment> {
   const res = await request<{ assessment: RiskAssessment }>('/risk/assessments', {
     method: 'POST',
     body: JSON.stringify(opts),
@@ -3836,7 +3849,9 @@ export async function fetchRiskFindings(params?: {
   );
 }
 
-export async function createRiskFinding(data: CreateExternalFindingOptions): Promise<ExternalFinding> {
+export async function createRiskFinding(
+  data: CreateExternalFindingOptions
+): Promise<ExternalFinding> {
   const res = await request<{ finding: ExternalFinding }>('/risk/findings', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -3862,7 +3877,9 @@ export async function resolveRiskFinding(id: string): Promise<ExternalFinding> {
 
 // ── Tenants ────────────────────────────────────────────────────────
 
-export async function fetchTenants(opts: { limit?: number; offset?: number } = {}): Promise<{ tenants: TenantRecord[]; total: number }> {
+export async function fetchTenants(
+  opts: { limit?: number; offset?: number } = {}
+): Promise<{ tenants: TenantRecord[]; total: number }> {
   const params = new URLSearchParams();
   if (opts.limit) params.set('limit', String(opts.limit));
   if (opts.offset) params.set('offset', String(opts.offset));
@@ -3870,11 +3887,18 @@ export async function fetchTenants(opts: { limit?: number; offset?: number } = {
   return request(`/admin/tenants${qs ? `?${qs}` : ''}`);
 }
 
-export async function createTenant(data: { name: string; slug: string; plan?: string }): Promise<{ tenant: TenantRecord }> {
+export async function createTenant(data: {
+  name: string;
+  slug: string;
+  plan?: string;
+}): Promise<{ tenant: TenantRecord }> {
   return request('/admin/tenants', { method: 'POST', body: JSON.stringify(data) });
 }
 
-export async function updateTenant(id: string, data: Partial<{ name: string; plan: string; metadata: Record<string, unknown> }>): Promise<{ tenant: TenantRecord }> {
+export async function updateTenant(
+  id: string,
+  data: Partial<{ name: string; plan: string; metadata: Record<string, unknown> }>
+): Promise<{ tenant: TenantRecord }> {
   return request(`/admin/tenants/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 }
 
@@ -3884,7 +3908,9 @@ export async function deleteTenant(id: string): Promise<void> {
 
 // ── Backup & DR ────────────────────────────────────────────────────────────
 
-export async function fetchBackups(opts: { limit?: number; offset?: number } = {}): Promise<{ backups: BackupRecord[]; total: number }> {
+export async function fetchBackups(
+  opts: { limit?: number; offset?: number } = {}
+): Promise<{ backups: BackupRecord[]; total: number }> {
   const params = new URLSearchParams();
   if (opts.limit) params.set('limit', String(opts.limit));
   if (opts.offset) params.set('offset', String(opts.offset));
@@ -3899,7 +3925,7 @@ export async function createBackup(label: string): Promise<{ backup: BackupRecor
 export async function downloadBackup(id: string): Promise<Blob> {
   const token = getAccessToken();
   const headers: Record<string, string> = {};
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(`${API_BASE}/admin/backups/${id}/download`, {
     headers,
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),

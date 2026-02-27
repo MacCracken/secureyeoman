@@ -67,15 +67,12 @@ export function registerPersonalityResources(server: McpServer, client: CoreApiC
         isDefault: String(p.isDefault ?? false),
         isArchetype: String(p.isArchetype ?? false),
         model:
-          ((p.defaultModel as Record<string, unknown> | undefined)?.model as
-            | string
-            | undefined) ?? 'default',
+          ((p.defaultModel as Record<string, unknown> | undefined)?.model as string | undefined) ??
+          'default',
         tokens: Math.ceil(systemPrompt.length / 4),
       });
       return {
-        contents: [
-          { uri: uri.href, mimeType: 'text/markdown', text: frontMatter + systemPrompt },
-        ],
+        contents: [{ uri: uri.href, mimeType: 'text/markdown', text: frontMatter + systemPrompt }],
       };
     }
   );

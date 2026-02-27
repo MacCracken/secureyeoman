@@ -105,14 +105,12 @@ export function registerTradingTools(server: McpServer, middleware: ToolMiddlewa
         'order types. The BullShift API server must be running with valid broker credentials. ' +
         'IMPORTANT: This executes real (or paper) trades — confirm intent before calling.',
       inputSchema: {
-        symbol: z
-          .string()
-          .min(1)
-          .max(32)
-          .describe('Ticker symbol, e.g. "AAPL" or "BTC/USD"'),
+        symbol: z.string().min(1).max(32).describe('Ticker symbol, e.g. "AAPL" or "BTC/USD"'),
         side: z
           .enum(['buy', 'sell'])
-          .describe('Order direction: "buy" to open a long or close a short, "sell" to do the opposite'),
+          .describe(
+            'Order direction: "buy" to open a long or close a short, "sell" to do the opposite'
+          ),
         quantity: z.number().positive().describe('Number of shares or units to trade'),
         order_type: z
           .enum(['market', 'limit', 'stop', 'stop_limit'])
@@ -125,7 +123,9 @@ export function registerTradingTools(server: McpServer, middleware: ToolMiddlewa
         time_in_force: z
           .enum(['day', 'gtc', 'opg', 'cls', 'ioc', 'fok'])
           .optional()
-          .describe('How long the order stays active. "day" expires at market close (default), "gtc" = good-till-cancelled'),
+          .describe(
+            'How long the order stays active. "day" expires at market close (default), "gtc" = good-till-cancelled'
+          ),
       },
     },
     wrapToolHandler('bullshift_submit_order', middleware, async (args) => {

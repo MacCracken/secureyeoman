@@ -99,9 +99,13 @@ export const roleCommand: Command = {
           return 1;
         }
 
-        const { ok, data } = await apiCall(url, `/api/v1/auth/roles/${encodeURIComponent(roleId)}`, {
-          method: 'DELETE',
-        });
+        const { ok, data } = await apiCall(
+          url,
+          `/api/v1/auth/roles/${encodeURIComponent(roleId)}`,
+          {
+            method: 'DELETE',
+          }
+        );
         if (!ok) {
           stderr.write(`Error: ${JSON.stringify(data)}\n`);
           return 1;
@@ -142,9 +146,13 @@ export const roleCommand: Command = {
           return 1;
         }
 
-        const { ok, data } = await apiCall(url, `/api/v1/auth/assignments/${encodeURIComponent(userId)}`, {
-          method: 'DELETE',
-        });
+        const { ok, data } = await apiCall(
+          url,
+          `/api/v1/auth/assignments/${encodeURIComponent(userId)}`,
+          {
+            method: 'DELETE',
+          }
+        );
         if (!ok) {
           stderr.write(`Error: ${JSON.stringify(data)}\n`);
           return 1;

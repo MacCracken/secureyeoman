@@ -134,7 +134,8 @@ export class UserNotificationPrefsStorage extends PgBaseStorage {
     const now = Date.now();
     const merged = {
       channel: patch.channel ?? current.channel,
-      integrationId: patch.integrationId !== undefined ? patch.integrationId : current.integrationId,
+      integrationId:
+        patch.integrationId !== undefined ? patch.integrationId : current.integrationId,
       chatId: patch.chatId ?? current.chatId,
       enabled: patch.enabled !== undefined ? patch.enabled : current.enabled,
       quietHoursStart:

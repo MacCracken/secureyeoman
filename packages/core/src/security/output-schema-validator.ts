@@ -108,7 +108,7 @@ export class OutputSchemaValidator {
   }
 
   private _typeMatches(actual: string, expected: string): boolean {
-    if (expected === 'number' && (actual === 'number')) return true;
+    if (expected === 'number' && actual === 'number') return true;
     return actual === expected;
   }
 

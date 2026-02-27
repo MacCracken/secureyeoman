@@ -372,9 +372,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       <Copy className="w-4 h-4" />
                     </button>
                   </div>
-                  {keyCopied && (
-                    <p className="text-xs text-success">Copied to clipboard!</p>
-                  )}
+                  {keyCopied && <p className="text-xs text-success">Copied to clipboard!</p>}
                 </div>
               )}
 

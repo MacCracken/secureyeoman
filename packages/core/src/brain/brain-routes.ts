@@ -137,7 +137,13 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     '/api/v1/brain/knowledge',
     async (
       request: FastifyRequest<{
-        Querystring: { topic?: string; search?: string; minConfidence?: string; limit?: string; personalityId?: string };
+        Querystring: {
+          topic?: string;
+          search?: string;
+          minConfidence?: string;
+          limit?: string;
+          personalityId?: string;
+        };
       }>
     ) => {
       const q = request.query;
@@ -244,7 +250,8 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         return sendError(reply, 503, 'Heartbeat system not available');
       }
       const status = heartbeatManager.getStatus();
-      const enabledPersonalities = await (soulManager?.getEnabledPersonalities() ?? Promise.resolve([]));
+      const enabledPersonalities = await (soulManager?.getEnabledPersonalities() ??
+        Promise.resolve([]));
       const activePersonalityCount = Math.max(1, enabledPersonalities.length);
       return {
         ...status,

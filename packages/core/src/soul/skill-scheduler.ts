@@ -269,7 +269,13 @@ export class SkillScheduler {
     const parts = expression.trim().split(/\s+/);
     if (parts.length < 5) return from + this.checkIntervalMs;
 
-    const [minuteStr, hourStr, domStr, monthStr, dowStr] = parts as [string, string, string, string, string];
+    const [minuteStr, hourStr, domStr, monthStr, dowStr] = parts as [
+      string,
+      string,
+      string,
+      string,
+      string,
+    ];
 
     /** Expand a cron field into the set of matching integer values. */
     const parseField = (field: string, min: number, max: number): Set<number> => {
@@ -300,10 +306,10 @@ export class SkillScheduler {
     };
 
     const minutes = parseField(minuteStr, 0, 59);
-    const hours   = parseField(hourStr,   0, 23);
-    const doms    = parseField(domStr,    1, 31);
-    const months  = parseField(monthStr,  1, 12);
-    const dows    = parseField(dowStr,    0, 6);
+    const hours = parseField(hourStr, 0, 23);
+    const doms = parseField(domStr, 1, 31);
+    const months = parseField(monthStr, 1, 12);
+    const dows = parseField(dowStr, 0, 6);
     const domWild = domStr === '*';
     const dowWild = dowStr === '*';
 

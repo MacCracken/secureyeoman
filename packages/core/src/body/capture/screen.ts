@@ -66,10 +66,10 @@ async function captureViaScreenshotDesktop(options: {
     throw new Error('screenshot-desktop is not installed. Run: npm install screenshot-desktop');
   }
 
-  const buf = await screenshotDesktop({
+  const buf = (await screenshotDesktop({
     screen: options.screen,
     format: options.format === 'jpeg' ? 'jpg' : 'png',
-  }) as Buffer;
+  })) as Buffer;
   return buf;
 }
 
@@ -83,9 +83,7 @@ async function captureViaNapiScreenshot(): Promise<Buffer> {
     // @ts-ignore — @napi-rs/screenshot is an optional dependency
     napiScreenshot = await import('@napi-rs/screenshot');
   } catch {
-    throw new Error(
-      '@napi-rs/screenshot is not installed. Run: npm install @napi-rs/screenshot'
-    );
+    throw new Error('@napi-rs/screenshot is not installed. Run: npm install @napi-rs/screenshot');
   }
   const raw = await napiScreenshot.screenshot();
   if (typeof (raw as { toPng?: () => Buffer }).toPng === 'function') {

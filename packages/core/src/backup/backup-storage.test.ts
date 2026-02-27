@@ -38,23 +38,51 @@ describe('BackupStorage', () => {
   });
 
   it('updates a backup record', async () => {
-    await storage.create({ id: 'test-id-002', label: '', status: 'running', createdBy: null, createdAt: 1000 });
-    const updated = await storage.update('test-id-002', { status: 'completed', sizeBytes: 12345, completedAt: 2000 });
+    await storage.create({
+      id: 'test-id-002',
+      label: '',
+      status: 'running',
+      createdBy: null,
+      createdAt: 1000,
+    });
+    const updated = await storage.update('test-id-002', {
+      status: 'completed',
+      sizeBytes: 12345,
+      completedAt: 2000,
+    });
     expect(updated?.status).toBe('completed');
     expect(updated?.sizeBytes).toBe(12345);
     expect(updated?.completedAt).toBe(2000);
   });
 
   it('lists backup records with pagination', async () => {
-    await storage.create({ id: 'list-001', label: 'a', status: 'completed', createdBy: null, createdAt: 1000 });
-    await storage.create({ id: 'list-002', label: 'b', status: 'failed', createdBy: null, createdAt: 2000 });
+    await storage.create({
+      id: 'list-001',
+      label: 'a',
+      status: 'completed',
+      createdBy: null,
+      createdAt: 1000,
+    });
+    await storage.create({
+      id: 'list-002',
+      label: 'b',
+      status: 'failed',
+      createdBy: null,
+      createdAt: 2000,
+    });
     const result = await storage.list(10, 0);
     expect(result.total).toBeGreaterThanOrEqual(2);
     expect(result.records.length).toBeGreaterThanOrEqual(2);
   });
 
   it('gets a backup by id', async () => {
-    await storage.create({ id: 'get-001', label: 'x', status: 'completed', createdBy: 'u', createdAt: 3000 });
+    await storage.create({
+      id: 'get-001',
+      label: 'x',
+      status: 'completed',
+      createdBy: 'u',
+      createdAt: 3000,
+    });
     const rec = await storage.getById('get-001');
     expect(rec?.id).toBe('get-001');
     expect(rec?.createdBy).toBe('u');
@@ -66,7 +94,13 @@ describe('BackupStorage', () => {
   });
 
   it('deletes a backup record', async () => {
-    await storage.create({ id: 'del-001', label: '', status: 'completed', createdBy: null, createdAt: 4000 });
+    await storage.create({
+      id: 'del-001',
+      label: '',
+      status: 'completed',
+      createdBy: null,
+      createdAt: 4000,
+    });
     const deleted = await storage.delete('del-001');
     expect(deleted).toBe(true);
     const rec = await storage.getById('del-001');

@@ -204,7 +204,9 @@ describe('AuthStorage', () => {
     });
 
     it('should return null updateUser for unknown id', async () => {
-      const result = await storage.updateUser('00000000-0000-0000-0000-000000000000', { displayName: 'x' });
+      const result = await storage.updateUser('00000000-0000-0000-0000-000000000000', {
+        displayName: 'x',
+      });
       expect(result).toBeNull();
     });
 

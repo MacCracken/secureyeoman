@@ -33,10 +33,14 @@ const ROLES = ['owner', 'admin', 'member', 'viewer'] as const;
 type WorkspaceRole = (typeof ROLES)[number];
 
 const ROLE_META: Record<WorkspaceRole, { label: string; icon: React.ReactNode; color: string }> = {
-  owner:  { label: 'Owner',  icon: <Crown className="w-3.5 h-3.5" />,      color: 'text-yellow-500' },
-  admin:  { label: 'Admin',  icon: <ShieldCheck className="w-3.5 h-3.5" />, color: 'text-primary'    },
-  member: { label: 'Member', icon: <User className="w-3.5 h-3.5" />,        color: 'text-foreground' },
-  viewer: { label: 'Viewer', icon: <Eye className="w-3.5 h-3.5" />,         color: 'text-muted-foreground' },
+  owner: { label: 'Owner', icon: <Crown className="w-3.5 h-3.5" />, color: 'text-yellow-500' },
+  admin: { label: 'Admin', icon: <ShieldCheck className="w-3.5 h-3.5" />, color: 'text-primary' },
+  member: { label: 'Member', icon: <User className="w-3.5 h-3.5" />, color: 'text-foreground' },
+  viewer: {
+    label: 'Viewer',
+    icon: <Eye className="w-3.5 h-3.5" />,
+    color: 'text-muted-foreground',
+  },
 };
 
 function formatDate(ts: number) {
@@ -86,12 +90,16 @@ function MembersPanel({ workspaceId }: { workspaceId: string }) {
   const roleMut = useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: string }) =>
       updateWorkspaceMemberRole(workspaceId, userId, role),
-    onSuccess: () => invalidate(),
+    onSuccess: () => {
+      invalidate();
+    },
   });
 
   const removeMut = useMutation({
     mutationFn: (userId: string) => removeWorkspaceMember(workspaceId, userId),
-    onSuccess: () => invalidate(),
+    onSuccess: () => {
+      invalidate();
+    },
   });
 
   if (isLoading) {
@@ -109,7 +117,9 @@ function MembersPanel({ workspaceId }: { workspaceId: string }) {
           Members ({members.length})
         </p>
         <button
-          onClick={() => setShowAdd((v) => !v)}
+          onClick={() => {
+            setShowAdd((v) => !v);
+          }}
           className="flex items-center gap-1 text-xs px-2 py-1 rounded border hover:bg-muted/50 transition-colors"
         >
           <UserPlus className="w-3 h-3" />
@@ -122,7 +132,9 @@ function MembersPanel({ workspaceId }: { workspaceId: string }) {
           <div className="flex-1">
             <select
               value={addUserId}
-              onChange={(e) => setAddUserId(e.target.value)}
+              onChange={(e) => {
+                setAddUserId(e.target.value);
+              }}
               className="w-full px-2 py-1.5 text-sm rounded border bg-background"
             >
               <option value="">Select user…</option>
@@ -136,7 +148,9 @@ function MembersPanel({ workspaceId }: { workspaceId: string }) {
           <div>
             <select
               value={addRole}
-              onChange={(e) => setAddRole(e.target.value as WorkspaceRole)}
+              onChange={(e) => {
+                setAddRole(e.target.value as WorkspaceRole);
+              }}
               className="px-2 py-1.5 text-sm rounded border bg-background"
             >
               {ROLES.map((r) => (
@@ -148,12 +162,19 @@ function MembersPanel({ workspaceId }: { workspaceId: string }) {
           </div>
           <button
             disabled={!addUserId || addMut.isPending}
-            onClick={() => addMut.mutate()}
+            onClick={() => {
+              addMut.mutate();
+            }}
             className="px-3 py-1.5 text-sm btn btn-ghost"
           >
             {addMut.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Add'}
           </button>
-          <button onClick={() => setShowAdd(false)} className="p-1.5 rounded hover:bg-muted/50">
+          <button
+            onClick={() => {
+              setShowAdd(false);
+            }}
+            className="p-1.5 rounded hover:bg-muted/50"
+          >
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -164,16 +185,13 @@ function MembersPanel({ workspaceId }: { workspaceId: string }) {
       ) : (
         <div className="space-y-1">
           {members.map((m) => {
-            const meta = ROLE_META[m.role as WorkspaceRole] ?? ROLE_META.member;
+            const meta = ROLE_META[m.role] ?? ROLE_META.member;
             const userLabel =
               allUsers.find((u) => u.id === m.userId)?.displayName ||
               allUsers.find((u) => u.id === m.userId)?.email ||
               m.userId;
             return (
-              <div
-                key={m.userId}
-                className="flex items-center justify-between text-sm py-1 gap-2"
-              >
+              <div key={m.userId} className="flex items-center justify-between text-sm py-1 gap-2">
                 <span className="truncate flex-1 text-sm">{userLabel}</span>
                 <div className="flex items-center gap-1.5">
                   <span className={`flex items-center gap-1 text-xs ${meta.color}`}>
@@ -182,9 +200,9 @@ function MembersPanel({ workspaceId }: { workspaceId: string }) {
                   </span>
                   <select
                     value={m.role}
-                    onChange={(e) =>
-                      roleMut.mutate({ userId: m.userId, role: e.target.value })
-                    }
+                    onChange={(e) => {
+                      roleMut.mutate({ userId: m.userId, role: e.target.value });
+                    }}
                     className="text-xs px-1.5 py-0.5 rounded border bg-background"
                   >
                     {ROLES.map((r) => (
@@ -194,7 +212,9 @@ function MembersPanel({ workspaceId }: { workspaceId: string }) {
                     ))}
                   </select>
                   <button
-                    onClick={() => removeMut.mutate(m.userId)}
+                    onClick={() => {
+                      removeMut.mutate(m.userId);
+                    }}
                     disabled={removeMut.isPending}
                     className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors"
                     title="Remove member"
@@ -277,7 +297,9 @@ export function WorkspacesSettings() {
           </p>
         </div>
         <button
-          onClick={() => setShowCreate((v) => !v)}
+          onClick={() => {
+            setShowCreate((v) => !v);
+          }}
           className="btn btn-ghost text-sm flex items-center gap-1"
         >
           <Plus className="w-4 h-4" />
@@ -290,7 +312,12 @@ export function WorkspacesSettings() {
         <div className="card p-4 space-y-3 border-primary/30">
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-medium">New Workspace</h4>
-            <button onClick={() => setShowCreate(false)} className="p-1 rounded hover:bg-muted/50">
+            <button
+              onClick={() => {
+                setShowCreate(false);
+              }}
+              className="p-1 rounded hover:bg-muted/50"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -299,7 +326,9 @@ export function WorkspacesSettings() {
             <input
               type="text"
               value={createForm.name}
-              onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))}
+              onChange={(e) => {
+                setCreateForm((f) => ({ ...f, name: e.target.value }));
+              }}
               className="w-full px-3 py-2 text-sm rounded border bg-background"
               placeholder="e.g. Engineering"
             />
@@ -309,23 +338,30 @@ export function WorkspacesSettings() {
             <input
               type="text"
               value={createForm.description}
-              onChange={(e) => setCreateForm((f) => ({ ...f, description: e.target.value }))}
+              onChange={(e) => {
+                setCreateForm((f) => ({ ...f, description: e.target.value }));
+              }}
               className="w-full px-3 py-2 text-sm rounded border bg-background"
               placeholder="Optional description"
             />
           </div>
           <div className="flex justify-end gap-2">
-            <button onClick={() => setShowCreate(false)} className="btn btn-ghost text-sm">
+            <button
+              onClick={() => {
+                setShowCreate(false);
+              }}
+              className="btn btn-ghost text-sm"
+            >
               Cancel
             </button>
             <button
               disabled={!createForm.name.trim() || createMut.isPending}
-              onClick={() =>
+              onClick={() => {
                 createMut.mutate({
                   name: createForm.name.trim(),
                   description: createForm.description.trim() || undefined,
-                })
-              }
+                });
+              }}
               className="btn btn-ghost text-sm"
             >
               {createMut.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Create'}
@@ -364,28 +400,30 @@ export function WorkspacesSettings() {
                       <input
                         type="text"
                         value={editForm.name}
-                        onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                        onChange={(e) => {
+                          setEditForm((f) => ({ ...f, name: e.target.value }));
+                        }}
                         className="flex-1 px-2 py-1 text-sm rounded border bg-background"
                         placeholder="Workspace name"
                       />
                       <input
                         type="text"
                         value={editForm.description}
-                        onChange={(e) =>
-                          setEditForm((f) => ({ ...f, description: e.target.value }))
-                        }
+                        onChange={(e) => {
+                          setEditForm((f) => ({ ...f, description: e.target.value }));
+                        }}
                         className="flex-1 px-2 py-1 text-sm rounded border bg-background"
                         placeholder="Description (optional)"
                       />
                       <button
                         disabled={!editForm.name.trim() || updateMut.isPending}
-                        onClick={() =>
+                        onClick={() => {
                           updateMut.mutate({
                             id: ws.id,
                             name: editForm.name.trim(),
                             description: editForm.description.trim() || undefined,
-                          })
-                        }
+                          });
+                        }}
                         className="btn btn-ghost text-xs px-2 py-1"
                       >
                         {updateMut.isPending ? (
@@ -395,7 +433,9 @@ export function WorkspacesSettings() {
                         )}
                       </button>
                       <button
-                        onClick={() => setEditingId(null)}
+                        onClick={() => {
+                          setEditingId(null);
+                        }}
                         className="p-1 rounded hover:bg-muted/50"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -420,21 +460,27 @@ export function WorkspacesSettings() {
                         {formatDate(ws.createdAt)}
                       </span>
                       <button
-                        onClick={() => startEdit(ws)}
+                        onClick={() => {
+                          startEdit(ws);
+                        }}
                         className="p-1.5 rounded hover:bg-muted/50 transition-colors ml-1"
                         title="Edit"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => setConfirmDeleteId(ws.id)}
+                        onClick={() => {
+                          setConfirmDeleteId(ws.id);
+                        }}
                         className="p-1.5 rounded hover:bg-destructive/10 text-destructive transition-colors"
                         title="Delete"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => setExpandedId(isExpanded ? null : ws.id)}
+                        onClick={() => {
+                          setExpandedId(isExpanded ? null : ws.id);
+                        }}
                         className="p-1.5 rounded hover:bg-muted/50 transition-colors"
                         title="Members"
                       >
@@ -454,13 +500,17 @@ export function WorkspacesSettings() {
                       Delete <strong>{ws.name}</strong>? This cannot be undone.
                     </p>
                     <button
-                      onClick={() => setConfirmDeleteId(null)}
+                      onClick={() => {
+                        setConfirmDeleteId(null);
+                      }}
                       className="btn btn-ghost text-sm"
                     >
                       Cancel
                     </button>
                     <button
-                      onClick={() => deleteMut.mutate(ws.id)}
+                      onClick={() => {
+                        deleteMut.mutate(ws.id);
+                      }}
                       disabled={deleteMut.isPending}
                       className="btn btn-destructive text-sm"
                     >

@@ -130,8 +130,8 @@ describe('TlsManager — autoGenerate', () => {
 
   it('reuses on-disk certs when they exist and are not expired', async () => {
     // cert + key exist on disk
-    mockExistsSync.mockImplementation((p: string) =>
-      p.endsWith('server-cert.pem') || p.endsWith('server-key.pem')
+    mockExistsSync.mockImplementation(
+      (p: string) => p.endsWith('server-cert.pem') || p.endsWith('server-key.pem')
     );
     // expiry check: cert not expired (far future)
     const futureDate = new Date(Date.now() + 365 * 86400 * 1000).toUTCString();
@@ -148,8 +148,8 @@ describe('TlsManager — autoGenerate', () => {
   });
 
   it('regenerates when existing cert is expired', async () => {
-    mockExistsSync.mockImplementation((p: string) =>
-      p.endsWith('server-cert.pem') || p.endsWith('server-key.pem')
+    mockExistsSync.mockImplementation(
+      (p: string) => p.endsWith('server-cert.pem') || p.endsWith('server-key.pem')
     );
     // expired cert
     mockExecFileSync.mockReturnValue(Buffer.from('notAfter=Jan  1 00:00:00 2000 GMT\n'));

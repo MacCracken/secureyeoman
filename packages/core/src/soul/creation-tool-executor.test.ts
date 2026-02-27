@@ -29,20 +29,22 @@ vi.mock('../security/rbac.js', () => ({
 
 // ── Minimal DynamicToolManager mock ──────────────────────────────────────────
 
-function makeDtm(opts: {
-  has?: boolean;
-  registerResult?: unknown;
-  registerError?: Error;
-  executeResult?: { output: unknown; isError: boolean };
-} = {}) {
+function makeDtm(
+  opts: {
+    has?: boolean;
+    registerResult?: unknown;
+    registerError?: Error;
+    executeResult?: { output: unknown; isError: boolean };
+  } = {}
+) {
   return {
     has: vi.fn().mockReturnValue(opts.has ?? false),
     register: opts.registerError
       ? vi.fn().mockRejectedValue(opts.registerError)
       : vi.fn().mockResolvedValue(opts.registerResult ?? { id: 'dt-1', name: 'my_tool' }),
-    execute: vi.fn().mockResolvedValue(
-      opts.executeResult ?? { output: { answer: 42 }, isError: false }
-    ),
+    execute: vi
+      .fn()
+      .mockResolvedValue(opts.executeResult ?? { output: { answer: 42 }, isError: false }),
   };
 }
 
@@ -66,7 +68,13 @@ function makeSecureYeoman(dtm?: ReturnType<typeof makeDtm>) {
       getSkill: vi.fn().mockResolvedValue(null),
       getPersonality: vi.fn().mockResolvedValue({
         id: 'p-other',
-        body: { resourcePolicy: { deletionMode: 'auto', automationLevel: 'supervised_auto', emergencyStop: false } },
+        body: {
+          resourcePolicy: {
+            deletionMode: 'auto',
+            automationLevel: 'supervised_auto',
+            emergencyStop: false,
+          },
+        },
       }),
     }),
     getApprovalManager: vi.fn().mockReturnValue(makeApprovalManager()),
@@ -107,12 +115,9 @@ describe('executeCreationTool — create_task', () => {
       expect(task.status).toBe('pending');
     });
 
-    it('does not call getTaskStorage — storage is the caller\'s responsibility', async () => {
+    it("does not call getTaskStorage — storage is the caller's responsibility", async () => {
       const sy = makeSecureYeoman();
-      await executeCreationTool(
-        makeToolCall('create_task', { name: 'My Task' }),
-        sy as any
-      );
+      await executeCreationTool(makeToolCall('create_task', { name: 'My Task' }), sy as any);
       expect(sy.getTaskStorage).not.toHaveBeenCalled();
     });
 
@@ -146,7 +151,9 @@ describe('executeCreationTool — create_task', () => {
     });
 
     it('passes name, description, input, and timeoutMs to submit()', async () => {
-      const mockSubmit = vi.fn().mockResolvedValue({ id: 'exec-2', name: 'Typed Task', status: 'pending' });
+      const mockSubmit = vi
+        .fn()
+        .mockResolvedValue({ id: 'exec-2', name: 'Typed Task', status: 'pending' });
       const sy = {
         ...makeSecureYeoman(),
         getTaskExecutor: vi.fn().mockReturnValue({ submit: mockSubmit }),
@@ -224,7 +231,12 @@ describe('executeCreationTool — register_dynamic_tool', () => {
     it('does not call getDynamicToolManager.register', async () => {
       const sy = makeSecureYeoman();
       await executeCreationTool(
-        makeToolCall('register_dynamic_tool', { name: 'x', description: '', parameters: {}, implementation: '' }),
+        makeToolCall('register_dynamic_tool', {
+          name: 'x',
+          description: '',
+          parameters: {},
+          implementation: '',
+        }),
         sy as any
       );
       // getDynamicToolManager was called but returned null, so register was never reached
@@ -267,7 +279,12 @@ describe('executeCreationTool — register_dynamic_tool', () => {
       const sy = makeSecureYeoman(dtm);
 
       const result = await executeCreationTool(
-        makeToolCall('register_dynamic_tool', { name: 'my_tool', description: 'desc', parameters: {}, implementation: 'return 1;' }),
+        makeToolCall('register_dynamic_tool', {
+          name: 'my_tool',
+          description: 'desc',
+          parameters: {},
+          implementation: 'return 1;',
+        }),
         sy as any
       );
 
@@ -280,7 +297,12 @@ describe('executeCreationTool — register_dynamic_tool', () => {
       const sy = makeSecureYeoman(dtm);
 
       const result = await executeCreationTool(
-        makeToolCall('register_dynamic_tool', { name: 'bad', description: '', parameters: {}, implementation: 'eval("x")' }),
+        makeToolCall('register_dynamic_tool', {
+          name: 'bad',
+          description: '',
+          parameters: {},
+          implementation: 'eval("x")',
+        }),
         sy as any
       );
 
@@ -293,13 +315,15 @@ describe('executeCreationTool — register_dynamic_tool', () => {
       const sy = makeSecureYeoman(dtm);
 
       await executeCreationTool(
-        makeToolCall('register_dynamic_tool', { name: 'tool', parameters: {}, implementation: 'return 1;' }),
+        makeToolCall('register_dynamic_tool', {
+          name: 'tool',
+          parameters: {},
+          implementation: 'return 1;',
+        }),
         sy as any
       );
 
-      expect(dtm.register).toHaveBeenCalledWith(
-        expect.objectContaining({ description: '' })
-      );
+      expect(dtm.register).toHaveBeenCalledWith(expect.objectContaining({ description: '' }));
     });
 
     it('uses null personalityId and "ai" as createdBy when no context', async () => {
@@ -307,7 +331,12 @@ describe('executeCreationTool — register_dynamic_tool', () => {
       const sy = makeSecureYeoman(dtm);
 
       await executeCreationTool(
-        makeToolCall('register_dynamic_tool', { name: 'tool', description: '', parameters: {}, implementation: 'return 1;' }),
+        makeToolCall('register_dynamic_tool', {
+          name: 'tool',
+          description: '',
+          parameters: {},
+          implementation: 'return 1;',
+        }),
         sy as any
         // no context argument
       );
@@ -364,16 +393,16 @@ describe('executeCreationTool — dynamic tool dispatch (default case)', () => {
       const dtm = makeDtm({ has: true });
       const sy = makeSecureYeoman(dtm);
 
-      await executeCreationTool(
-        makeToolCall('my_custom_tool', { x: 10, y: 20 }),
-        sy as any
-      );
+      await executeCreationTool(makeToolCall('my_custom_tool', { x: 10, y: 20 }), sy as any);
 
       expect(dtm.execute).toHaveBeenCalledWith('my_custom_tool', { x: 10, y: 20 });
     });
 
     it('returns the result from dtm.execute on success', async () => {
-      const dtm = makeDtm({ has: true, executeResult: { output: { result: 'hello' }, isError: false } });
+      const dtm = makeDtm({
+        has: true,
+        executeResult: { output: { result: 'hello' }, isError: false },
+      });
       const sy = makeSecureYeoman(dtm);
 
       const result = await executeCreationTool(makeToolCall('my_custom_tool'), sy as any);
@@ -491,7 +520,13 @@ describe('executeCreationTool — emergencyStop gating', () => {
     const sy = makeSecureYeoman();
     sy.getSoulManager().getPersonality = vi.fn().mockResolvedValue({
       id: 'p-caller',
-      body: { resourcePolicy: { emergencyStop: true, automationLevel: 'supervised_auto', deletionMode: 'auto' } },
+      body: {
+        resourcePolicy: {
+          emergencyStop: true,
+          automationLevel: 'supervised_auto',
+          deletionMode: 'auto',
+        },
+      },
     });
 
     const result = await executeCreationTool(
@@ -510,7 +545,13 @@ describe('executeCreationTool — automationLevel gating', () => {
     const sy = makeSecureYeoman();
     sy.getSoulManager().getPersonality = vi.fn().mockResolvedValue({
       id: 'p-caller',
-      body: { resourcePolicy: { emergencyStop: false, automationLevel: 'full_manual', deletionMode: 'auto' } },
+      body: {
+        resourcePolicy: {
+          emergencyStop: false,
+          automationLevel: 'full_manual',
+          deletionMode: 'auto',
+        },
+      },
     });
 
     const result = await executeCreationTool(
@@ -532,7 +573,13 @@ describe('executeCreationTool — automationLevel gating', () => {
     const sy = makeSecureYeoman();
     sy.getSoulManager().getPersonality = vi.fn().mockResolvedValue({
       id: 'p-caller',
-      body: { resourcePolicy: { emergencyStop: false, automationLevel: 'semi_auto', deletionMode: 'auto' } },
+      body: {
+        resourcePolicy: {
+          emergencyStop: false,
+          automationLevel: 'semi_auto',
+          deletionMode: 'auto',
+        },
+      },
     });
 
     const result = await executeCreationTool(
@@ -549,7 +596,13 @@ describe('executeCreationTool — automationLevel gating', () => {
     const sy = makeSecureYeoman();
     sy.getSoulManager().getPersonality = vi.fn().mockResolvedValue({
       id: 'p-caller',
-      body: { resourcePolicy: { emergencyStop: false, automationLevel: 'semi_auto', deletionMode: 'auto' } },
+      body: {
+        resourcePolicy: {
+          emergencyStop: false,
+          automationLevel: 'semi_auto',
+          deletionMode: 'auto',
+        },
+      },
     });
 
     const result = await executeCreationTool(
@@ -610,10 +663,7 @@ describe('executeCreationTool — delete_custom_role', () => {
     mockRbac.removeRole.mockResolvedValue(true);
     const sy = makeSecureYeoman();
 
-    await executeCreationTool(
-      makeToolCall('delete_custom_role', { roleId: 'scanner' }),
-      sy as any
-    );
+    await executeCreationTool(makeToolCall('delete_custom_role', { roleId: 'scanner' }), sy as any);
 
     expect(mockRbac.removeRole).toHaveBeenCalledWith('scanner');
   });
@@ -637,10 +687,7 @@ describe('executeCreationTool — revoke_role', () => {
     mockRbac.revokeUserRole.mockResolvedValue(undefined);
     const sy = makeSecureYeoman();
 
-    await executeCreationTool(
-      makeToolCall('revoke_role', { userId: 'user-abc' }),
-      sy as any
-    );
+    await executeCreationTool(makeToolCall('revoke_role', { userId: 'user-abc' }), sy as any);
 
     expect(mockRbac.revokeUserRole).toHaveBeenCalledWith('user-abc');
   });
@@ -688,10 +735,7 @@ describe('executeCreationTool — delete_experiment', () => {
       getExperimentManager: vi.fn().mockReturnValue(mockExpManager),
     };
 
-    await executeCreationTool(
-      makeToolCall('delete_experiment', { id: 'exp-42' }),
-      sy as any
-    );
+    await executeCreationTool(makeToolCall('delete_experiment', { id: 'exp-42' }), sy as any);
 
     expect(mockExpManager.delete).toHaveBeenCalledWith('exp-42');
   });
@@ -703,7 +747,11 @@ describe('executeCreationTool — create_skill', () => {
   it('returns the created skill on success', async () => {
     const sy = makeSecureYeoman();
     const result = await executeCreationTool(
-      makeToolCall('create_skill', { name: 'Port Scanner', description: 'Scans ports', instructions: 'do it' }),
+      makeToolCall('create_skill', {
+        name: 'Port Scanner',
+        description: 'Scans ports',
+        instructions: 'do it',
+      }),
       sy as any
     );
     expect(result.isError).toBe(false);
@@ -724,10 +772,16 @@ describe('executeCreationTool — create_skill', () => {
     const sy = makeSecureYeoman();
     const mockCreate = sy.getSoulManager().createSkill;
     await executeCreationTool(
-      makeToolCall('create_skill', { name: 'network-audit-tool', description: '', instructions: '' }),
+      makeToolCall('create_skill', {
+        name: 'network-audit-tool',
+        description: '',
+        instructions: '',
+      }),
       sy as any
     );
-    expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({ name: 'Network Audit Tool' }));
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Network Audit Tool' })
+    );
   });
 
   it('scopes skill to calling personalityId', async () => {
@@ -764,7 +818,9 @@ describe('executeCreationTool — update_skill', () => {
     );
     expect(result.isError).toBe(false);
     expect((result.output as { skill: unknown }).skill).toBeDefined();
-    expect(sy.getSoulManager().updateSkill).toHaveBeenCalledWith('s-1', { description: 'Updated desc' });
+    expect(sy.getSoulManager().updateSkill).toHaveBeenCalledWith('s-1', {
+      description: 'Updated desc',
+    });
   });
 });
 
@@ -835,7 +891,11 @@ describe('executeCreationTool — create_personality', () => {
       }),
     };
     const result = await executeCreationTool(
-      makeToolCall('create_personality', { name: 'NewBot', description: 'A bot', systemPrompt: 'You are helpful.' }),
+      makeToolCall('create_personality', {
+        name: 'NewBot',
+        description: 'A bot',
+        systemPrompt: 'You are helpful.',
+      }),
       sy as any
     );
     expect(result.isError).toBe(false);
@@ -886,7 +946,10 @@ describe('executeCreationTool — update_personality', () => {
 describe('executeCreationTool — delegate_task', () => {
   it('returns isError true when agentManager is not available', async () => {
     const sy = makeSecureYeoman(); // getSubAgentManager returns null
-    const result = await executeCreationTool(makeToolCall('delegate_task', { task: 'do stuff' }), sy as any);
+    const result = await executeCreationTool(
+      makeToolCall('delegate_task', { task: 'do stuff' }),
+      sy as any
+    );
     expect(result.isError).toBe(true);
     expect((result.output as { error: string }).error).toMatch(/sub-agent manager not available/i);
   });
@@ -895,15 +958,26 @@ describe('executeCreationTool — delegate_task', () => {
     const mockDelegate = vi.fn().mockResolvedValue({ id: 'del-1', status: 'running' });
     const sy = {
       ...makeSecureYeoman(),
-      getSubAgentManager: vi.fn().mockReturnValue({ delegate: mockDelegate, list: vi.fn(), getResult: vi.fn() }),
+      getSubAgentManager: vi
+        .fn()
+        .mockReturnValue({ delegate: mockDelegate, list: vi.fn(), getResult: vi.fn() }),
     };
     const result = await executeCreationTool(
-      makeToolCall('delegate_task', { profile: 'scanner', task: 'scan network', context: { key: 'val' } }),
+      makeToolCall('delegate_task', {
+        profile: 'scanner',
+        task: 'scan network',
+        context: { key: 'val' },
+      }),
       sy as any
     );
     expect(result.isError).toBe(false);
-    expect((result.output as { delegation: unknown }).delegation).toEqual({ id: 'del-1', status: 'running' });
-    expect(mockDelegate).toHaveBeenCalledWith(expect.objectContaining({ profile: 'scanner', task: 'scan network' }));
+    expect((result.output as { delegation: unknown }).delegation).toEqual({
+      id: 'del-1',
+      status: 'running',
+    });
+    expect(mockDelegate).toHaveBeenCalledWith(
+      expect.objectContaining({ profile: 'scanner', task: 'scan network' })
+    );
   });
 });
 
@@ -982,7 +1056,9 @@ describe('executeCreationTool — create_swarm', () => {
     );
     expect(result.isError).toBe(false);
     expect((result.output as { swarm: { id: string } }).swarm.id).toBe('sw-1');
-    expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({ template: 'recon', task: 'scan net' }));
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ template: 'recon', task: 'scan net' })
+    );
   });
 });
 
@@ -1004,11 +1080,13 @@ describe('executeCreationTool — create_custom_role', () => {
     expect(result.isError).toBe(false);
     expect((result.output as { created: boolean; roleId: string }).created).toBe(true);
     expect((result.output as { roleId: string }).roleId).toBe('network_scanner');
-    expect(mockRbac.defineRole).toHaveBeenCalledWith(expect.objectContaining({
-      id: 'network_scanner',
-      name: 'Network Scanner',
-      inheritFrom: ['viewer'],
-    }));
+    expect(mockRbac.defineRole).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'network_scanner',
+        name: 'Network Scanner',
+        inheritFrom: ['viewer'],
+      })
+    );
   });
 
   it('handles action (singular) alongside actions (plural) in permissions', async () => {
@@ -1021,9 +1099,11 @@ describe('executeCreationTool — create_custom_role', () => {
       }),
       sy as any
     );
-    expect(mockRbac.defineRole).toHaveBeenCalledWith(expect.objectContaining({
-      permissions: [{ resource: 'docs', actions: ['read'] }],
-    }));
+    expect(mockRbac.defineRole).toHaveBeenCalledWith(
+      expect.objectContaining({
+        permissions: [{ resource: 'docs', actions: ['read'] }],
+      })
+    );
   });
 });
 
@@ -1067,16 +1147,22 @@ describe('executeCreationTool — create_experiment', () => {
       getExperimentManager: vi.fn().mockReturnValue(mockExpManager),
     };
     const result = await executeCreationTool(
-      makeToolCall('create_experiment', { name: 'Test Exp', description: 'desc', variants: ['A', 'B'] }),
+      makeToolCall('create_experiment', {
+        name: 'Test Exp',
+        description: 'desc',
+        variants: ['A', 'B'],
+      }),
       sy as any
     );
     expect(result.isError).toBe(false);
     expect((result.output as { experiment: { name: string } }).experiment.name).toBe('Test Exp');
-    expect(mockExpManager.create).toHaveBeenCalledWith(expect.objectContaining({
-      name: 'Test Exp',
-      description: 'desc',
-      variants: ['A', 'B'],
-    }));
+    expect(mockExpManager.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Test Exp',
+        description: 'desc',
+        variants: ['A', 'B'],
+      })
+    );
   });
 });
 
@@ -1086,7 +1172,10 @@ describe('executeCreationTool — a2a_connect', () => {
   it('returns isError true when a2aManager is not available', async () => {
     const sy = makeSecureYeoman();
     const result = await executeCreationTool(
-      makeToolCall('a2a_connect', { agentUrl: 'https://agent.example.com', agentName: 'RemoteAgent' }),
+      makeToolCall('a2a_connect', {
+        agentUrl: 'https://agent.example.com',
+        agentName: 'RemoteAgent',
+      }),
       sy as any
     );
     expect(result.isError).toBe(true);
@@ -1164,16 +1253,23 @@ describe('executeCreationTool — create_workflow', () => {
       }),
     };
     const result = await executeCreationTool(
-      makeToolCall('create_workflow', { name: 'My Workflow', description: 'does stuff', steps: [], edges: [] }),
+      makeToolCall('create_workflow', {
+        name: 'My Workflow',
+        description: 'does stuff',
+        steps: [],
+        edges: [],
+      }),
       sy as any,
       { personalityId: 'p-creator' }
     );
     expect(result.isError).toBe(false);
     expect((result.output as { workflow: { id: string } }).workflow.id).toBe('wf-1');
-    expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
-      name: 'My Workflow',
-      createdBy: 'p-creator',
-    }));
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'My Workflow',
+        createdBy: 'p-creator',
+      })
+    );
   });
 });
 
@@ -1215,7 +1311,10 @@ describe('executeCreationTool — update_workflow', () => {
 describe('executeCreationTool — delete_workflow', () => {
   it('returns isError true when workflowManager is not available', async () => {
     const sy = makeSecureYeoman();
-    const result = await executeCreationTool(makeToolCall('delete_workflow', { id: 'wf-1' }), sy as any);
+    const result = await executeCreationTool(
+      makeToolCall('delete_workflow', { id: 'wf-1' }),
+      sy as any
+    );
     expect(result.isError).toBe(true);
   });
 
@@ -1232,7 +1331,10 @@ describe('executeCreationTool — delete_workflow', () => {
         triggerRun: vi.fn(),
       }),
     };
-    const result = await executeCreationTool(makeToolCall('delete_workflow', { id: 'wf-5' }), sy as any);
+    const result = await executeCreationTool(
+      makeToolCall('delete_workflow', { id: 'wf-5' }),
+      sy as any
+    );
     expect(result.isError).toBe(false);
     expect(result.output).toMatchObject({ deleted: true, id: 'wf-5', name: 'Old Workflow' });
   });
@@ -1243,7 +1345,10 @@ describe('executeCreationTool — delete_workflow', () => {
 describe('executeCreationTool — trigger_workflow', () => {
   it('returns isError true when workflowManager is not available', async () => {
     const sy = makeSecureYeoman();
-    const result = await executeCreationTool(makeToolCall('trigger_workflow', { id: 'wf-1' }), sy as any);
+    const result = await executeCreationTool(
+      makeToolCall('trigger_workflow', { id: 'wf-1' }),
+      sy as any
+    );
     expect(result.isError).toBe(true);
   });
 
@@ -1265,10 +1370,13 @@ describe('executeCreationTool — trigger_workflow', () => {
     );
     expect(result.isError).toBe(false);
     expect((result.output as { run: { id: string } }).run.id).toBe('run-1');
-    expect(mockTrigger).toHaveBeenCalledWith('wf-1', expect.objectContaining({
-      triggeredBy: 'manual',
-      input: { key: 'value' },
-    }));
+    expect(mockTrigger).toHaveBeenCalledWith(
+      'wf-1',
+      expect.objectContaining({
+        triggeredBy: 'manual',
+        input: { key: 'value' },
+      })
+    );
   });
 });
 
@@ -1279,7 +1387,11 @@ describe('executeCreationTool — gating edge cases', () => {
     const sy = makeSecureYeoman();
     sy.getSoulManager().getPersonality = vi.fn().mockRejectedValue(new Error('DB gone'));
     const result = await executeCreationTool(
-      makeToolCall('create_skill', { name: 'Fallthrough Skill', description: '', instructions: '' }),
+      makeToolCall('create_skill', {
+        name: 'Fallthrough Skill',
+        description: '',
+        instructions: '',
+      }),
       sy as any,
       { personalityId: 'p-caller' }
     );

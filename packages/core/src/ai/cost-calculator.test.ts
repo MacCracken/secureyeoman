@@ -331,9 +331,7 @@ describe('getAvailableModelsAsync', () => {
         return Promise.resolve({
           ok: true,
           json: async () => ({
-            models: [
-              { id: 'letta-free', context_window: 32768 },
-            ],
+            models: [{ id: 'letta-free', context_window: 32768 }],
           }),
         });
       }

@@ -25,7 +25,10 @@ function makeMockManager() {
       stream: (() => {
         const { EventEmitter } = require('node:events');
         const s = new EventEmitter();
-        (s as any).pipe = (dest: any) => { process.nextTick(() => s.emit('end')); return dest; };
+        (s as any).pipe = (dest: any) => {
+          process.nextTick(() => s.emit('end'));
+          return dest;
+        };
         return s;
       })(),
       sizeBytes: 1024,
@@ -52,7 +55,11 @@ describe('Backup Routes', () => {
   });
 
   it('POST /api/v1/admin/backups creates a backup', async () => {
-    const res = await app.inject({ method: 'POST', url: '/api/v1/admin/backups', payload: { label: 'test' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/backups',
+      payload: { label: 'test' },
+    });
     expect(res.statusCode).toBe(202);
     const body = JSON.parse(res.body);
     expect(body.backup.status).toBe('running');
@@ -82,12 +89,20 @@ describe('Backup Routes', () => {
   });
 
   it('POST /api/v1/admin/backups/:id/restore requires RESTORE confirmation', async () => {
-    const res = await app.inject({ method: 'POST', url: '/api/v1/admin/backups/backup-001/restore', payload: { confirm: 'wrong' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/backups/backup-001/restore',
+      payload: { confirm: 'wrong' },
+    });
     expect(res.statusCode).toBe(400);
   });
 
   it('POST /api/v1/admin/backups/:id/restore succeeds with correct confirm', async () => {
-    const res = await app.inject({ method: 'POST', url: '/api/v1/admin/backups/backup-001/restore', payload: { confirm: 'RESTORE' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/backups/backup-001/restore',
+      payload: { confirm: 'RESTORE' },
+    });
     expect(res.statusCode).toBe(200);
     expect(manager.restoreBackup).toHaveBeenCalledWith('backup-001');
   });

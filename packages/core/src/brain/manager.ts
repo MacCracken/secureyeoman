@@ -180,7 +180,7 @@ export class BrainManager {
           query.search,
           limit,
           threshold,
-          resolvedPersonalityId  // undefined = omnipresent, string = scoped
+          resolvedPersonalityId // undefined = omnipresent, string = scoped
         );
 
         // FTS search — supplementary path, scoped via SQL personality filter
@@ -237,9 +237,10 @@ export class BrainManager {
     }
 
     // resolvedPersonalityId already computed above
-    const scopedQuery = resolvedPersonalityId !== undefined
-      ? { ...query, personalityId: resolvedPersonalityId }
-      : query;
+    const scopedQuery =
+      resolvedPersonalityId !== undefined
+        ? { ...query, personalityId: resolvedPersonalityId }
+        : query;
     const memories = await this.storage.queryMemories(scopedQuery);
 
     // Batch-touch accessed memories to keep them alive (single query instead of N)
@@ -340,9 +341,10 @@ export class BrainManager {
       return [];
     }
     const resolvedPersonalityId = this.resolvePersonalityId(query.personalityId);
-    const scopedQuery = resolvedPersonalityId !== undefined
-      ? { ...query, personalityId: resolvedPersonalityId }
-      : query;
+    const scopedQuery =
+      resolvedPersonalityId !== undefined
+        ? { ...query, personalityId: resolvedPersonalityId }
+        : query;
     return this.storage.queryKnowledge(scopedQuery);
   }
 
@@ -391,7 +393,7 @@ export class BrainManager {
           input,
           Math.ceil(maxItems / 2),
           threshold,
-          resolvedPid  // undefined = omnipresent, string = scoped
+          resolvedPid // undefined = omnipresent, string = scoped
         );
         const knowResults = await this.deps.vectorMemoryManager!.searchKnowledge(
           input,
@@ -671,7 +673,7 @@ export class BrainManager {
    * Legacy global self-identity entries (pre-Phase 52) are deleted and replaced with
    * personality-scoped ones.
    */
-  async seedBaseKnowledge(personalities: Array<{ id: string; name: string }> = []): Promise<void> {
+  async seedBaseKnowledge(personalities: { id: string; name: string }[] = []): Promise<void> {
     if (!this.config.enabled) return;
 
     // 1. Generic global entries (personality-agnostic)

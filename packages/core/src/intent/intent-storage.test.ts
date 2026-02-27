@@ -84,7 +84,10 @@ describe('IntentStorage.createIntent()', () => {
     vi.spyOn(storage as any, 'execute').mockResolvedValueOnce(1);
     vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(row);
 
-    const result = await storage.createIntent({ name: 'Minimal', apiVersion: 'v1' } as OrgIntentDoc);
+    const result = await storage.createIntent({
+      name: 'Minimal',
+      apiVersion: 'v1',
+    } as OrgIntentDoc);
     expect(result.goals).toEqual([]);
     expect(result.signals).toEqual([]);
     expect(result.delegationFramework).toEqual({ tenants: [] });
@@ -108,9 +111,10 @@ describe('IntentStorage.updateIntent()', () => {
     const existing = makeIntentRow();
     const updated = makeIntentRow({ name: 'Updated', doc: { ...makeDoc(), name: 'Updated' } });
 
-    const queryOneSpy = vi.spyOn(storage as any, 'queryOne')
-      .mockResolvedValueOnce(existing)  // first call: fetch existing
-      .mockResolvedValueOnce(updated);  // second call: fetch updated
+    const queryOneSpy = vi
+      .spyOn(storage as any, 'queryOne')
+      .mockResolvedValueOnce(existing) // first call: fetch existing
+      .mockResolvedValueOnce(updated); // second call: fetch updated
     vi.spyOn(storage as any, 'execute').mockResolvedValueOnce(1);
 
     const result = await storage.updateIntent('intent-1', { name: 'Updated' });
@@ -170,8 +174,22 @@ describe('IntentStorage.listIntents()', () => {
   it('returns list of intent metadata', async () => {
     const storage = new IntentStorage();
     vi.spyOn(storage as any, 'queryMany').mockResolvedValueOnce([
-      { id: 'i1', name: 'A', api_version: 'v1', is_active: true, created_at: String(NOW), updated_at: String(NOW) },
-      { id: 'i2', name: 'B', api_version: 'v1', is_active: false, created_at: String(NOW), updated_at: String(NOW) },
+      {
+        id: 'i1',
+        name: 'A',
+        api_version: 'v1',
+        is_active: true,
+        created_at: String(NOW),
+        updated_at: String(NOW),
+      },
+      {
+        id: 'i2',
+        name: 'B',
+        api_version: 'v1',
+        is_active: false,
+        created_at: String(NOW),
+        updated_at: String(NOW),
+      },
     ]);
 
     const result = await storage.listIntents();
@@ -230,8 +248,20 @@ describe('IntentStorage.getGoalSnapshots()', () => {
   it('returns a map keyed by goalId', async () => {
     const storage = new IntentStorage();
     vi.spyOn(storage as any, 'queryMany').mockResolvedValueOnce([
-      { intent_id: 'i1', goal_id: 'g1', is_active: true, activated_at: String(NOW), completed_at: null },
-      { intent_id: 'i1', goal_id: 'g2', is_active: false, activated_at: null, completed_at: String(NOW) },
+      {
+        intent_id: 'i1',
+        goal_id: 'g1',
+        is_active: true,
+        activated_at: String(NOW),
+        completed_at: null,
+      },
+      {
+        intent_id: 'i1',
+        goal_id: 'g2',
+        is_active: false,
+        activated_at: null,
+        completed_at: String(NOW),
+      },
     ]);
 
     const map = await storage.getGoalSnapshots('i1');
@@ -272,8 +302,8 @@ describe('IntentStorage.upsertGoalSnapshot()', () => {
     const executeSpy = vi.spyOn(storage as any, 'execute').mockResolvedValueOnce(1);
     await storage.upsertGoalSnapshot('i1', 'g1', false, NOW, false, true);
     const params = executeSpy.mock.calls[0][1];
-    expect(params[3]).toBeNull();  // activated_at
-    expect(params[4]).toBe(NOW);   // completed_at
+    expect(params[3]).toBeNull(); // activated_at
+    expect(params[4]).toBe(NOW); // completed_at
   });
 });
 

@@ -73,7 +73,9 @@ function CollapsibleJSON({ label, value }: { label: string; value: unknown }) {
   return (
     <div className="mt-2 border rounded-md overflow-hidden text-xs">
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setOpen((v) => !v);
+        }}
         className="w-full flex items-center justify-between px-3 py-1.5 bg-muted/30 hover:bg-muted/50 transition-colors font-medium text-muted-foreground"
       >
         {label}

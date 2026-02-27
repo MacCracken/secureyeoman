@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { detectNamespaceSupport, buildUnshareCommand, runInNamespace, NamespaceError } from './namespaces.js';
+import {
+  detectNamespaceSupport,
+  buildUnshareCommand,
+  runInNamespace,
+  NamespaceError,
+} from './namespaces.js';
 
 describe('namespaces', () => {
   it('should detect namespace capabilities', () => {

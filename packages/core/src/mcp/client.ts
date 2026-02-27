@@ -24,7 +24,13 @@ export interface McpClientManagerDeps {
 /** Mint a short-lived service JWT for core → MCP callthrough. */
 async function mintCallthruToken(secret: string): Promise<string> {
   const key = new TextEncoder().encode(secret);
-  return new SignJWT({ sub: 'core-callthru', role: 'admin', permissions: ['*:*'], type: 'access', jti: randomUUID() })
+  return new SignJWT({
+    sub: 'core-callthru',
+    role: 'admin',
+    permissions: ['*:*'],
+    type: 'access',
+    jti: randomUUID(),
+  })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('5m')

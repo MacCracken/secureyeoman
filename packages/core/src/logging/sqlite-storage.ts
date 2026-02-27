@@ -109,9 +109,7 @@ export class SQLiteAuditStorage extends PgBaseStorage implements AuditChainStora
   }
 
   async *iterate(): AsyncIterableIterator<AuditEntry> {
-    const rows = await this.queryMany<AuditRow>(
-      'SELECT * FROM audit.entries ORDER BY seq ASC'
-    );
+    const rows = await this.queryMany<AuditRow>('SELECT * FROM audit.entries ORDER BY seq ASC');
 
     for (const row of rows) {
       yield rowToEntry(row);

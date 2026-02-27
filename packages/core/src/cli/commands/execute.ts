@@ -3,7 +3,13 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, extractCommonFlags, formatTable, apiCall } from '../utils.js';
+import {
+  extractFlag,
+  extractBoolFlag,
+  extractCommonFlags,
+  formatTable,
+  apiCall,
+} from '../utils.js';
 
 export const executeCommand: Command = {
   name: 'execute',

@@ -329,7 +329,9 @@ describe('TaskExecutor', () => {
         run: vi.fn().mockResolvedValue({
           success: true,
           result: { ok: true },
-          violations: [{ type: 'filesystem', description: 'read /etc/passwd', timestamp: Date.now() }],
+          violations: [
+            { type: 'filesystem', description: 'read /etc/passwd', timestamp: Date.now() },
+          ],
           resourceUsage: { memoryPeakMb: 5, cpuTimeMs: 50 },
         }),
         getCapabilities: vi.fn(),
@@ -419,7 +421,11 @@ describe('TaskExecutor', () => {
       await ac.initialize();
 
       const longExecutor = createTaskExecutor(
-        new InputValidator({ maxInputLength: 10000, maxFileSize: 1048576, enableInjectionDetection: true }),
+        new InputValidator({
+          maxInputLength: 10000,
+          maxFileSize: 1048576,
+          enableInjectionDetection: true,
+        }),
         rl,
         ac,
         { maxConcurrent: 10, defaultTimeoutMs: 30000, maxTimeoutMs: 60000 }

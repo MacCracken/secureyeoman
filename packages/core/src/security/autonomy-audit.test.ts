@@ -40,7 +40,15 @@ function makeOverview(): AutonomyOverview {
       L2: [{ id: 'w1', name: 'Daily Report', type: 'workflow', autonomyLevel: 'L2' }],
       L3: [],
       L4: [],
-      L5: [{ id: 's5', name: 'AutoDeploy', type: 'skill', autonomyLevel: 'L5', emergencyStopProcedure: 'Disable in settings' }],
+      L5: [
+        {
+          id: 's5',
+          name: 'AutoDeploy',
+          type: 'skill',
+          autonomyLevel: 'L5',
+          emergencyStopProcedure: 'Disable in settings',
+        },
+      ],
     },
     totals: { L1: 1, L2: 1, L3: 0, L4: 0, L5: 1 },
   };
@@ -80,7 +88,9 @@ function makeStorage(overrides: Record<string, unknown> = {}) {
   return {
     createAuditRun: vi.fn().mockResolvedValue(makeAuditRun()),
     updateAuditItem: vi.fn().mockResolvedValue(makeAuditRun()),
-    finalizeRun: vi.fn().mockResolvedValue(makeAuditRun({ status: 'completed', reportMarkdown: '# Report' })),
+    finalizeRun: vi
+      .fn()
+      .mockResolvedValue(makeAuditRun({ status: 'completed', reportMarkdown: '# Report' })),
     listAuditRuns: vi.fn().mockResolvedValue([makeAuditRun()]),
     getAuditRun: vi.fn().mockResolvedValue(makeAuditRun()),
     getOverview: vi.fn().mockResolvedValue(makeOverview()),
@@ -124,9 +134,7 @@ describe('AutonomyAuditManager.createAuditRun()', () => {
     const run = await mgr.createAuditRun('Q1 Audit', 'alice');
     expect(storage.createAuditRun).toHaveBeenCalledWith(
       'Q1 Audit',
-      expect.arrayContaining([
-        expect.objectContaining({ id: 'A1', status: 'pending', note: '' }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ id: 'A1', status: 'pending', note: '' })]),
       'alice'
     );
     expect(run.id).toBe(RUN_ID);
@@ -152,7 +160,10 @@ describe('AutonomyAuditManager.updateAuditItem()', () => {
     const storage = makeStorage();
     const mgr = new AutonomyAuditManager(storage as any, null, null);
     await mgr.updateAuditItem(RUN_ID, 'A1', { status: 'pass', note: 'OK' });
-    expect(storage.updateAuditItem).toHaveBeenCalledWith(RUN_ID, 'A1', { status: 'pass', note: 'OK' });
+    expect(storage.updateAuditItem).toHaveBeenCalledWith(RUN_ID, 'A1', {
+      status: 'pass',
+      note: 'OK',
+    });
   });
 
   it('returns null when storage returns null (item not found)', async () => {
@@ -234,7 +245,9 @@ describe('AutonomyAuditManager.emergencyStop()', () => {
   it('throws when workflowManager not available for workflow stop', async () => {
     const storage = makeStorage();
     const mgr = new AutonomyAuditManager(storage as any, null, null);
-    await expect(mgr.emergencyStop('workflow', 'w1')).rejects.toThrow('WorkflowManager not available');
+    await expect(mgr.emergencyStop('workflow', 'w1')).rejects.toThrow(
+      'WorkflowManager not available'
+    );
   });
 });
 
@@ -244,7 +257,12 @@ function buildApp(managerOverrides: Record<string, unknown> = {}, isAdmin = fals
   const storage = makeStorage(managerOverrides);
   const soulMgr = makeSoulManager();
   const wfMgr = makeWorkflowManager();
-  const mgr = new AutonomyAuditManager(storage as any, soulMgr as any, wfMgr as any, makeAuditChain() as any);
+  const mgr = new AutonomyAuditManager(
+    storage as any,
+    soulMgr as any,
+    wfMgr as any,
+    makeAuditChain() as any
+  );
 
   const app = Fastify({ logger: false });
 
@@ -297,7 +315,10 @@ describe('POST /api/v1/autonomy/audits', () => {
 
 describe('GET /api/v1/autonomy/audits/:id', () => {
   it('returns run by id', async () => {
-    const res = await buildApp().inject({ method: 'GET', url: `/api/v1/autonomy/audits/${RUN_ID}` });
+    const res = await buildApp().inject({
+      method: 'GET',
+      url: `/api/v1/autonomy/audits/${RUN_ID}`,
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json().run.id).toBe(RUN_ID);
   });
@@ -419,7 +440,9 @@ describe('AutonomyAuditStorage.createAuditRun()', () => {
 
   it('passes createdBy to the query', async () => {
     const storage = new AutonomyAuditStorage();
-    const spy = vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(makeAuditRunRow({ created_by: 'alice' }));
+    const spy = vi
+      .spyOn(storage as any, 'queryOne')
+      .mockResolvedValueOnce(makeAuditRunRow({ created_by: 'alice' }));
 
     await storage.createAuditRun('Test', ITEMS, 'alice');
     const params = spy.mock.calls[0][1];
@@ -442,10 +465,12 @@ describe('AutonomyAuditStorage.updateAuditItem()', () => {
 
   it('updates the item and returns updated run', async () => {
     const storage = new AutonomyAuditStorage();
-    const updatedRow = makeAuditRunRow({ items: ITEMS.map((i) => (i.id === 'A1' ? { ...i, status: 'pass' } : i)) });
+    const updatedRow = makeAuditRunRow({
+      items: ITEMS.map((i) => (i.id === 'A1' ? { ...i, status: 'pass' } : i)),
+    });
     vi.spyOn(storage as any, 'queryOne')
-      .mockResolvedValueOnce(makeAuditRunRow())  // getAuditRun
-      .mockResolvedValueOnce(updatedRow);         // UPDATE ... RETURNING *
+      .mockResolvedValueOnce(makeAuditRunRow()) // getAuditRun
+      .mockResolvedValueOnce(updatedRow); // UPDATE ... RETURNING *
 
     const result = await storage.updateAuditItem('run-1', 'A1', { status: 'pass', note: 'good' });
     expect(result?.items.find((i: ChecklistItem) => i.id === 'A1')?.status).toBe('pass');
@@ -454,8 +479,8 @@ describe('AutonomyAuditStorage.updateAuditItem()', () => {
   it('returns null when UPDATE returns no row', async () => {
     const storage = new AutonomyAuditStorage();
     vi.spyOn(storage as any, 'queryOne')
-      .mockResolvedValueOnce(makeAuditRunRow())  // getAuditRun
-      .mockResolvedValueOnce(null);               // UPDATE returns null
+      .mockResolvedValueOnce(makeAuditRunRow()) // getAuditRun
+      .mockResolvedValueOnce(null); // UPDATE returns null
 
     const result = await storage.updateAuditItem('run-1', 'A1', { status: 'pass', note: '' });
     expect(result).toBeNull();

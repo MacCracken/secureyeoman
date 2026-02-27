@@ -78,7 +78,10 @@ export function wrapToolHandler<T extends Record<string, unknown>>(
 
   // Register in the global callthrough registry so the internal tool-call
   // endpoint can invoke handlers without going through the MCP protocol.
-  globalToolRegistry.set(toolName, wrapped as (args: Record<string, unknown>) => Promise<ToolResult>);
+  globalToolRegistry.set(
+    toolName,
+    wrapped as (args: Record<string, unknown>) => Promise<ToolResult>
+  );
 
   return wrapped;
 }

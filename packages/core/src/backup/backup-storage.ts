@@ -77,12 +77,30 @@ export class BackupStorage extends PgBaseStorage {
     const params: unknown[] = [];
     let idx = 1;
 
-    if (patch.status !== undefined) { sets.push(`status = $${idx++}`); params.push(patch.status); }
-    if (patch.sizeBytes !== undefined) { sets.push(`size_bytes = $${idx++}`); params.push(patch.sizeBytes); }
-    if (patch.filePath !== undefined) { sets.push(`file_path = $${idx++}`); params.push(patch.filePath); }
-    if (patch.error !== undefined) { sets.push(`error = $${idx++}`); params.push(patch.error); }
-    if (patch.pgDumpVersion !== undefined) { sets.push(`pg_dump_version = $${idx++}`); params.push(patch.pgDumpVersion); }
-    if (patch.completedAt !== undefined) { sets.push(`completed_at = $${idx++}`); params.push(patch.completedAt); }
+    if (patch.status !== undefined) {
+      sets.push(`status = $${idx++}`);
+      params.push(patch.status);
+    }
+    if (patch.sizeBytes !== undefined) {
+      sets.push(`size_bytes = $${idx++}`);
+      params.push(patch.sizeBytes);
+    }
+    if (patch.filePath !== undefined) {
+      sets.push(`file_path = $${idx++}`);
+      params.push(patch.filePath);
+    }
+    if (patch.error !== undefined) {
+      sets.push(`error = $${idx++}`);
+      params.push(patch.error);
+    }
+    if (patch.pgDumpVersion !== undefined) {
+      sets.push(`pg_dump_version = $${idx++}`);
+      params.push(patch.pgDumpVersion);
+    }
+    if (patch.completedAt !== undefined) {
+      sets.push(`completed_at = $${idx++}`);
+      params.push(patch.completedAt);
+    }
 
     if (sets.length === 0) return this.getById(id);
 
@@ -107,10 +125,7 @@ export class BackupStorage extends PgBaseStorage {
   }
 
   async getById(id: string): Promise<BackupRecord | null> {
-    const row = await this.queryOne<BackupRow>(
-      'SELECT * FROM admin.backups WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne<BackupRow>('SELECT * FROM admin.backups WHERE id = $1', [id]);
     return row ? rowToRecord(row) : null;
   }
 

@@ -122,7 +122,10 @@ describe('MarketplaceStorage', () => {
     });
 
     it('derives origin=marketplace for published source', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [{ ...skillRow, source: 'published' }], rowCount: 1 });
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...skillRow, source: 'published' }],
+        rowCount: 1,
+      });
       const result = await storage.getSkill('skill-1');
       expect(result!.origin).toBe('marketplace');
     });
@@ -134,7 +137,10 @@ describe('MarketplaceStorage', () => {
     });
 
     it('derives origin=community for community source', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [{ ...skillRow, source: 'community' }], rowCount: 1 });
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...skillRow, source: 'community' }],
+        rowCount: 1,
+      });
       const result = await storage.getSkill('skill-1');
       expect(result!.origin).toBe('community');
     });

@@ -31,9 +31,10 @@ function rowToRecord(row: TenantRow): TenantRecord {
     name: row.name,
     slug: row.slug,
     plan: row.plan,
-    metadata: typeof row.metadata === 'object' && row.metadata !== null
-      ? (row.metadata as Record<string, unknown>)
-      : {},
+    metadata:
+      typeof row.metadata === 'object' && row.metadata !== null
+        ? (row.metadata as Record<string, unknown>)
+        : {},
     createdAt: Number(row.created_at),
     updatedAt: Number(row.updated_at),
   };
@@ -78,18 +79,14 @@ export class TenantStorage extends PgBaseStorage {
   }
 
   async getById(id: string): Promise<TenantRecord | null> {
-    const row = await this.queryOne<TenantRow>(
-      'SELECT * FROM auth.tenants WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne<TenantRow>('SELECT * FROM auth.tenants WHERE id = $1', [id]);
     return row ? rowToRecord(row) : null;
   }
 
   async getBySlug(slug: string): Promise<TenantRecord | null> {
-    const row = await this.queryOne<TenantRow>(
-      'SELECT * FROM auth.tenants WHERE slug = $1',
-      [slug]
-    );
+    const row = await this.queryOne<TenantRow>('SELECT * FROM auth.tenants WHERE slug = $1', [
+      slug,
+    ]);
     return row ? rowToRecord(row) : null;
   }
 
@@ -101,9 +98,18 @@ export class TenantStorage extends PgBaseStorage {
     const params: unknown[] = [];
     let idx = 1;
 
-    if (patch.name !== undefined) { sets.push(`name = $${idx++}`); params.push(patch.name); }
-    if (patch.plan !== undefined) { sets.push(`plan = $${idx++}`); params.push(patch.plan); }
-    if (patch.metadata !== undefined) { sets.push(`metadata = $${idx++}`); params.push(JSON.stringify(patch.metadata)); }
+    if (patch.name !== undefined) {
+      sets.push(`name = $${idx++}`);
+      params.push(patch.name);
+    }
+    if (patch.plan !== undefined) {
+      sets.push(`plan = $${idx++}`);
+      params.push(patch.plan);
+    }
+    if (patch.metadata !== undefined) {
+      sets.push(`metadata = $${idx++}`);
+      params.push(JSON.stringify(patch.metadata));
+    }
     sets.push(`updated_at = $${idx++}`);
     params.push(Date.now());
     params.push(id);

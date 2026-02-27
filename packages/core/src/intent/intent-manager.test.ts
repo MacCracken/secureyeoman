@@ -63,8 +63,28 @@ describe('GoalResolver — resolveActiveGoals', () => {
   it('returns all goals when none have activeWhen', async () => {
     const intent = makeIntent({
       goals: [
-        { id: 'g1', name: 'Goal A', priority: 20, successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
-        { id: 'g2', name: 'Goal B', priority: 10, successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+        {
+          id: 'g1',
+          name: 'Goal A',
+          priority: 20,
+          successCriteria: '',
+          description: '',
+          ownerRole: 'admin',
+          skills: [],
+          signals: [],
+          authorizedActions: [],
+        },
+        {
+          id: 'g2',
+          name: 'Goal B',
+          priority: 10,
+          successCriteria: '',
+          description: '',
+          ownerRole: 'admin',
+          skills: [],
+          signals: [],
+          authorizedActions: [],
+        },
       ],
     });
     const storage = makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) });
@@ -80,8 +100,29 @@ describe('GoalResolver — resolveActiveGoals', () => {
   it('filters goals by activeWhen expression', async () => {
     const intent = makeIntent({
       goals: [
-        { id: 'g1', name: 'Q1 Goal', priority: 1, activeWhen: 'quarter=Q1', successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
-        { id: 'g2', name: 'Always Goal', priority: 2, successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+        {
+          id: 'g1',
+          name: 'Q1 Goal',
+          priority: 1,
+          activeWhen: 'quarter=Q1',
+          successCriteria: '',
+          description: '',
+          ownerRole: 'admin',
+          skills: [],
+          signals: [],
+          authorizedActions: [],
+        },
+        {
+          id: 'g2',
+          name: 'Always Goal',
+          priority: 2,
+          successCriteria: '',
+          description: '',
+          ownerRole: 'admin',
+          skills: [],
+          signals: [],
+          authorizedActions: [],
+        },
       ],
     });
     const storage = makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) });
@@ -98,10 +139,23 @@ describe('GoalResolver — resolveActiveGoals', () => {
   it('handles AND expressions in activeWhen', async () => {
     const intent = makeIntent({
       goals: [
-        { id: 'g1', name: 'Combo', priority: 1, activeWhen: 'env=prod AND region=us', successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+        {
+          id: 'g1',
+          name: 'Combo',
+          priority: 1,
+          activeWhen: 'env=prod AND region=us',
+          successCriteria: '',
+          description: '',
+          ownerRole: 'admin',
+          skills: [],
+          signals: [],
+          authorizedActions: [],
+        },
       ],
     });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
 
     expect(mgr.resolveActiveGoals({ env: 'prod', region: 'us' })).toHaveLength(1);
@@ -120,11 +174,27 @@ describe('TradeoffResolver — resolveTradeoffProfile', () => {
   it('returns the default profile', async () => {
     const intent = makeIntent({
       tradeoffProfiles: [
-        { id: 'tp1', name: 'Fast', isDefault: false, speedVsThoroughness: 0.1, costVsQuality: 0.5, autonomyVsConfirmation: 0.5 },
-        { id: 'tp2', name: 'Careful', isDefault: true, speedVsThoroughness: 0.9, costVsQuality: 0.9, autonomyVsConfirmation: 0.9 },
+        {
+          id: 'tp1',
+          name: 'Fast',
+          isDefault: false,
+          speedVsThoroughness: 0.1,
+          costVsQuality: 0.5,
+          autonomyVsConfirmation: 0.5,
+        },
+        {
+          id: 'tp2',
+          name: 'Careful',
+          isDefault: true,
+          speedVsThoroughness: 0.9,
+          costVsQuality: 0.9,
+          autonomyVsConfirmation: 0.9,
+        },
       ],
     });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
 
     const profile = mgr.resolveTradeoffProfile();
@@ -134,10 +204,19 @@ describe('TradeoffResolver — resolveTradeoffProfile', () => {
   it('applies overrides to the default profile', async () => {
     const intent = makeIntent({
       tradeoffProfiles: [
-        { id: 'tp1', name: 'Balanced', isDefault: true, speedVsThoroughness: 0.5, costVsQuality: 0.5, autonomyVsConfirmation: 0.5 },
+        {
+          id: 'tp1',
+          name: 'Balanced',
+          isDefault: true,
+          speedVsThoroughness: 0.5,
+          costVsQuality: 0.5,
+          autonomyVsConfirmation: 0.5,
+        },
       ],
     });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
 
     const profile = mgr.resolveTradeoffProfile({ speedVsThoroughness: 0.9 });
@@ -158,12 +237,18 @@ describe('DelegationFrameworkResolver — getDecisionBoundaries', () => {
     const intent = makeIntent({
       delegationFramework: {
         tenants: [
-          { id: 't1', principle: 'Least privilege', decisionBoundaries: ['Only read', 'No write prod'] },
+          {
+            id: 't1',
+            principle: 'Least privilege',
+            decisionBoundaries: ['Only read', 'No write prod'],
+          },
           { id: 't2', principle: 'Audit all', decisionBoundaries: [] },
         ],
       },
     });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
 
     const boundaries = mgr.getDecisionBoundaries();
@@ -189,7 +274,9 @@ describe('HardBoundaryEnforcer — checkHardBoundaries', () => {
         { id: 'hb1', rule: 'deny: drop production', rationale: 'Protect prod', rego: undefined },
       ],
     });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
 
     const result = await mgr.checkHardBoundaries('show metrics dashboard');
@@ -248,10 +335,18 @@ describe('AuthorizedActionChecker — checkAuthorizedAction', () => {
   it('blocks an unknown action', async () => {
     const intent = makeIntent({
       authorizedActions: [
-        { id: 'a1', description: 'Allowed action', appliesToGoals: [], appliesToSignals: [], mcpTools: [] },
+        {
+          id: 'a1',
+          description: 'Allowed action',
+          appliesToGoals: [],
+          appliesToSignals: [],
+          mcpTools: [],
+        },
       ],
     });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
 
     const result = await mgr.checkAuthorizedAction('unknown-action');
@@ -261,10 +356,18 @@ describe('AuthorizedActionChecker — checkAuthorizedAction', () => {
   it('allows a known action without role restriction', async () => {
     const intent = makeIntent({
       authorizedActions: [
-        { id: 'a1', description: 'Send alert', appliesToGoals: [], appliesToSignals: [], mcpTools: [] },
+        {
+          id: 'a1',
+          description: 'Send alert',
+          appliesToGoals: [],
+          appliesToSignals: [],
+          mcpTools: [],
+        },
       ],
     });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
 
     const result = await mgr.checkAuthorizedAction('a1');
@@ -275,7 +378,14 @@ describe('AuthorizedActionChecker — checkAuthorizedAction', () => {
     const logSpy = vi.fn().mockResolvedValue(undefined);
     const intent = makeIntent({
       authorizedActions: [
-        { id: 'a1', description: 'Admin action', requiredRole: 'admin', appliesToGoals: [], appliesToSignals: [], mcpTools: [] },
+        {
+          id: 'a1',
+          description: 'Admin action',
+          requiredRole: 'admin',
+          appliesToGoals: [],
+          appliesToSignals: [],
+          mcpTools: [],
+        },
       ],
     });
     const mgr = new IntentManager({
@@ -303,10 +413,18 @@ describe('getPermittedMcpTools', () => {
   it('returns null when active intent has no mcpTools on any action', async () => {
     const intent = makeIntent({
       authorizedActions: [
-        { id: 'a1', description: 'Generic action', appliesToGoals: [], appliesToSignals: [], mcpTools: [] },
+        {
+          id: 'a1',
+          description: 'Generic action',
+          appliesToGoals: [],
+          appliesToSignals: [],
+          mcpTools: [],
+        },
       ],
     });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
     expect(mgr.getPermittedMcpTools()).toBeNull();
   });
@@ -314,11 +432,25 @@ describe('getPermittedMcpTools', () => {
   it('returns Set of permitted tools when actions restrict mcpTools', async () => {
     const intent = makeIntent({
       authorizedActions: [
-        { id: 'a1', description: 'Read only', appliesToGoals: [], appliesToSignals: [], mcpTools: ['fs_read', 'http_get'] },
-        { id: 'a2', description: 'Metrics', appliesToGoals: [], appliesToSignals: [], mcpTools: ['prometheus_query'] },
+        {
+          id: 'a1',
+          description: 'Read only',
+          appliesToGoals: [],
+          appliesToSignals: [],
+          mcpTools: ['fs_read', 'http_get'],
+        },
+        {
+          id: 'a2',
+          description: 'Metrics',
+          appliesToGoals: [],
+          appliesToSignals: [],
+          mcpTools: ['prometheus_query'],
+        },
       ],
     });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
 
     const permitted = mgr.getPermittedMcpTools();
@@ -341,11 +473,33 @@ describe('getGoalSkillSlugs', () => {
   it('returns slugs from all active goals', async () => {
     const intent = makeIntent({
       goals: [
-        { id: 'g1', name: 'Goal A', priority: 1, successCriteria: '', description: '', ownerRole: 'admin', skills: ['deploy', 'rollback'], signals: [], authorizedActions: [] },
-        { id: 'g2', name: 'Goal B', priority: 2, successCriteria: '', description: '', ownerRole: 'admin', skills: ['monitor'], signals: [], authorizedActions: [] },
+        {
+          id: 'g1',
+          name: 'Goal A',
+          priority: 1,
+          successCriteria: '',
+          description: '',
+          ownerRole: 'admin',
+          skills: ['deploy', 'rollback'],
+          signals: [],
+          authorizedActions: [],
+        },
+        {
+          id: 'g2',
+          name: 'Goal B',
+          priority: 2,
+          successCriteria: '',
+          description: '',
+          ownerRole: 'admin',
+          skills: ['monitor'],
+          signals: [],
+          authorizedActions: [],
+        },
       ],
     });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
 
     const slugs = mgr.getGoalSkillSlugs();
@@ -367,7 +521,9 @@ describe('checkPolicies', () => {
 
   it('allows when no policies defined', async () => {
     const intent = makeIntent({ policies: [] });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
 
     const result = await mgr.checkPolicies('delete all records');
@@ -399,7 +555,12 @@ describe('checkPolicies', () => {
     const logSpy = vi.fn().mockResolvedValue(undefined);
     const intent = makeIntent({
       policies: [
-        { id: 'p2', rule: 'deny: send email', enforcement: 'block', rationale: 'No automated comms' },
+        {
+          id: 'p2',
+          rule: 'deny: send email',
+          enforcement: 'block',
+          rationale: 'No automated comms',
+        },
       ],
     });
     const mgr = new IntentManager({
@@ -419,10 +580,17 @@ describe('checkPolicies', () => {
   it('allows when rule does not match', async () => {
     const intent = makeIntent({
       policies: [
-        { id: 'p3', rule: 'deny: drop production', enforcement: 'block', rationale: 'Never drop prod' },
+        {
+          id: 'p3',
+          rule: 'deny: drop production',
+          enforcement: 'block',
+          rationale: 'Never drop prod',
+        },
       ],
     });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
 
     const result = await mgr.checkPolicies('call tool: read metrics');
@@ -463,9 +631,24 @@ describe('Signal degradation tracking', () => {
     await mgr.initialize();
 
     // Seed the cache with a healthy state
-    const signal = { id: 'sig1', name: 'Error Rate', direction: 'above' as const, threshold: 10, warningThreshold: 5, description: '', dataSources: [] };
+    const signal = {
+      id: 'sig1',
+      name: 'Error Rate',
+      direction: 'above' as const,
+      threshold: 10,
+      warningThreshold: 5,
+      description: '',
+      dataSources: [],
+    };
     (mgr as unknown as { signalCache: Map<string, unknown> }).signalCache.set('sig1', {
-      result: { signalId: 'sig1', value: 3, threshold: 10, direction: 'above', status: 'healthy', message: 'OK' },
+      result: {
+        signalId: 'sig1',
+        value: 3,
+        threshold: 10,
+        direction: 'above',
+        status: 'healthy',
+        message: 'OK',
+      },
       fetchedAt: Date.now(),
     });
 
@@ -479,13 +662,37 @@ describe('Signal degradation tracking', () => {
     // Directly call the private method via public signalCache manipulation + refresh trigger
     // We test by checking that if we set up the pre-condition and call _startSignalRefresh indirectly
     // via the fact that _fetchSignalValue returns a value we control via a spy:
-    const fetchSpy = vi.spyOn(mgr as unknown as { _fetchSignalValue: (...args: unknown[]) => unknown }, '_fetchSignalValue')
-      .mockResolvedValue({ signalId: 'sig1', value: 7, threshold: 10, direction: 'above', status: 'warning', message: 'Approaching' });
+    const fetchSpy = vi
+      .spyOn(
+        mgr as unknown as { _fetchSignalValue: (...args: unknown[]) => unknown },
+        '_fetchSignalValue'
+      )
+      .mockResolvedValue({
+        signalId: 'sig1',
+        value: 7,
+        threshold: 10,
+        direction: 'above',
+        status: 'warning',
+        message: 'Approaching',
+      });
 
     // Manually invoke the refresh logic (simulating interval tick)
     const intentSignals = intent.signals;
-    const prevStatus = (mgr as unknown as { signalCache: Map<string, { result: { status: string } }> }).signalCache.get('sig1')?.result.status;
-    const result = await (mgr as unknown as { _fetchSignalValue: (...args: unknown[]) => Promise<{ status: string; signalId: string; value: number; threshold: number; direction: string; message: string }> })._fetchSignalValue(intentSignals[0], intent);
+    const prevStatus = (
+      mgr as unknown as { signalCache: Map<string, { result: { status: string } }> }
+    ).signalCache.get('sig1')?.result.status;
+    const result = await (
+      mgr as unknown as {
+        _fetchSignalValue: (...args: unknown[]) => Promise<{
+          status: string;
+          signalId: string;
+          value: number;
+          threshold: number;
+          direction: string;
+          message: string;
+        }>;
+      }
+    )._fetchSignalValue(intentSignals[0], intent);
     const isDegraded =
       (prevStatus === 'healthy' && (result.status === 'warning' || result.status === 'critical')) ||
       (prevStatus === 'warning' && result.status === 'critical');
@@ -500,7 +707,9 @@ describe('Signal degradation tracking', () => {
     }
 
     expect(isDegraded).toBe(true);
-    expect(logSpy).toHaveBeenCalledWith(expect.objectContaining({ eventType: 'intent_signal_degraded' }));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: 'intent_signal_degraded' })
+    );
     fetchSpy.mockRestore();
   });
 
@@ -540,18 +749,40 @@ describe('Goal lifecycle — goal_activated event', () => {
     // Initial intent: goal has activeWhen that won't match on initialize (empty ctx)
     const initialIntent = makeIntent({
       goals: [
-        { id: 'g1', name: 'Q1 Goal', priority: 1, activeWhen: 'quarter=Q1', successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+        {
+          id: 'g1',
+          name: 'Q1 Goal',
+          priority: 1,
+          activeWhen: 'quarter=Q1',
+          successCriteria: '',
+          description: '',
+          ownerRole: 'admin',
+          skills: [],
+          signals: [],
+          authorizedActions: [],
+        },
       ],
     });
     // Reload intent: goal has no activeWhen (always active)
     const reloadedIntent = makeIntent({
       goals: [
-        { id: 'g1', name: 'Q1 Goal', priority: 1, successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+        {
+          id: 'g1',
+          name: 'Q1 Goal',
+          priority: 1,
+          successCriteria: '',
+          description: '',
+          ownerRole: 'admin',
+          skills: [],
+          signals: [],
+          authorizedActions: [],
+        },
       ],
     });
 
-    const getActiveIntentSpy = vi.fn()
-      .mockResolvedValueOnce(initialIntent)  // initialize()
+    const getActiveIntentSpy = vi
+      .fn()
+      .mockResolvedValueOnce(initialIntent) // initialize()
       .mockResolvedValueOnce(reloadedIntent); // reloadActiveIntent()
 
     const mgr = new IntentManager({
@@ -577,7 +808,17 @@ describe('Goal lifecycle — goal_activated event', () => {
 
     const intent = makeIntent({
       goals: [
-        { id: 'g1', name: 'Always Active', priority: 1, successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+        {
+          id: 'g1',
+          name: 'Always Active',
+          priority: 1,
+          successCriteria: '',
+          description: '',
+          ownerRole: 'admin',
+          skills: [],
+          signals: [],
+          authorizedActions: [],
+        },
       ],
     });
 
@@ -606,17 +847,41 @@ describe('Goal lifecycle — goal_completed event', () => {
     // Initial: g1 is always active (no activeWhen)
     const initialIntent = makeIntent({
       goals: [
-        { id: 'g1', name: 'Revenue Goal', priority: 1, completionCondition: 'signal:revenue crosses 1M', successCriteria: 'ARR > 1M', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+        {
+          id: 'g1',
+          name: 'Revenue Goal',
+          priority: 1,
+          completionCondition: 'signal:revenue crosses 1M',
+          successCriteria: 'ARR > 1M',
+          description: '',
+          ownerRole: 'admin',
+          skills: [],
+          signals: [],
+          authorizedActions: [],
+        },
       ],
     });
     // Reload: g1 is conditionally active but condition won't match (empty ctx)
     const reloadedIntent = makeIntent({
       goals: [
-        { id: 'g1', name: 'Revenue Goal', priority: 1, activeWhen: 'phase=growth', completionCondition: 'signal:revenue crosses 1M', successCriteria: 'ARR > 1M', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+        {
+          id: 'g1',
+          name: 'Revenue Goal',
+          priority: 1,
+          activeWhen: 'phase=growth',
+          completionCondition: 'signal:revenue crosses 1M',
+          successCriteria: 'ARR > 1M',
+          description: '',
+          ownerRole: 'admin',
+          skills: [],
+          signals: [],
+          authorizedActions: [],
+        },
       ],
     });
 
-    const getActiveIntentSpy = vi.fn()
+    const getActiveIntentSpy = vi
+      .fn()
       .mockResolvedValueOnce(initialIntent)
       .mockResolvedValueOnce(reloadedIntent);
 
@@ -643,16 +908,38 @@ describe('Goal lifecycle — goal_completed event', () => {
 
     const initialIntent = makeIntent({
       goals: [
-        { id: 'g1', name: 'Simple Goal', priority: 1, successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+        {
+          id: 'g1',
+          name: 'Simple Goal',
+          priority: 1,
+          successCriteria: '',
+          description: '',
+          ownerRole: 'admin',
+          skills: [],
+          signals: [],
+          authorizedActions: [],
+        },
       ],
     });
     const reloadedIntent = makeIntent({
       goals: [
-        { id: 'g1', name: 'Simple Goal', priority: 1, activeWhen: 'env=never', successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+        {
+          id: 'g1',
+          name: 'Simple Goal',
+          priority: 1,
+          activeWhen: 'env=never',
+          successCriteria: '',
+          description: '',
+          ownerRole: 'admin',
+          skills: [],
+          signals: [],
+          authorizedActions: [],
+        },
       ],
     });
 
-    const getActiveIntentSpy = vi.fn()
+    const getActiveIntentSpy = vi
+      .fn()
       .mockResolvedValueOnce(initialIntent)
       .mockResolvedValueOnce(reloadedIntent);
 
@@ -678,7 +965,17 @@ describe('Goal lifecycle — initialize seeds snapshot without events', () => {
 
     const intent = makeIntent({
       goals: [
-        { id: 'g1', name: 'Bootstrap Goal', priority: 1, successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+        {
+          id: 'g1',
+          name: 'Bootstrap Goal',
+          priority: 1,
+          successCriteria: '',
+          description: '',
+          ownerRole: 'admin',
+          skills: [],
+          signals: [],
+          authorizedActions: [],
+        },
       ],
     });
 
@@ -701,13 +998,32 @@ describe('Goal lifecycle — initialize seeds snapshot without events', () => {
     const intent = makeIntent({
       id: 'intent-db',
       goals: [
-        { id: 'g1', name: 'DB Goal', priority: 1, successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+        {
+          id: 'g1',
+          name: 'DB Goal',
+          priority: 1,
+          successCriteria: '',
+          description: '',
+          ownerRole: 'admin',
+          skills: [],
+          signals: [],
+          authorizedActions: [],
+        },
       ],
     });
 
     // DB snapshot already records g1 as active
     const dbSnapshot = new Map([
-      ['g1', { intentId: 'intent-db', goalId: 'g1', isActive: true, activatedAt: NOW, completedAt: null }],
+      [
+        'g1',
+        {
+          intentId: 'intent-db',
+          goalId: 'g1',
+          isActive: true,
+          activatedAt: NOW,
+          completedAt: null,
+        },
+      ],
     ]);
 
     const mgr = new IntentManager({
@@ -727,7 +1043,13 @@ describe('Goal lifecycle — initialize seeds snapshot without events', () => {
 describe('Goal lifecycle — getGoalTimeline passthrough', () => {
   it('delegates to storage.getGoalTimeline', async () => {
     const timelineSpy = vi.fn().mockResolvedValue([
-      { id: 'e1', eventType: 'goal_activated', itemId: 'g1', rule: 'unconditional', createdAt: NOW },
+      {
+        id: 'e1',
+        eventType: 'goal_activated',
+        itemId: 'g1',
+        rule: 'unconditional',
+        createdAt: NOW,
+      },
     ]);
     const mgr = new IntentManager({
       storage: makeStorage({
@@ -755,7 +1077,9 @@ describe('composeSoulContext', () => {
 
   it('returns null for empty intent doc', async () => {
     const intent = makeIntent(); // all empty arrays, no context
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
     const result = await mgr.composeSoulContext();
     expect(result).toBeNull();
@@ -764,10 +1088,22 @@ describe('composeSoulContext', () => {
   it('includes organizational goals section', async () => {
     const intent = makeIntent({
       goals: [
-        { id: 'g1', name: 'Grow ARR', priority: 1, successCriteria: 'ARR > 1M', description: 'Increase revenue', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+        {
+          id: 'g1',
+          name: 'Grow ARR',
+          priority: 1,
+          successCriteria: 'ARR > 1M',
+          description: 'Increase revenue',
+          ownerRole: 'admin',
+          skills: [],
+          signals: [],
+          authorizedActions: [],
+        },
       ],
     });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
 
     const result = await mgr.composeSoulContext();
@@ -783,7 +1119,9 @@ describe('composeSoulContext', () => {
         { key: 'industry', value: 'SaaS' },
       ],
     });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
 
     const result = await mgr.composeSoulContext();
@@ -795,10 +1133,19 @@ describe('composeSoulContext', () => {
   it('includes trade-off profile', async () => {
     const intent = makeIntent({
       tradeoffProfiles: [
-        { id: 'tp1', name: 'Careful', isDefault: true, speedVsThoroughness: 0.8, costVsQuality: 0.9, autonomyVsConfirmation: 0.7 },
+        {
+          id: 'tp1',
+          name: 'Careful',
+          isDefault: true,
+          speedVsThoroughness: 0.8,
+          costVsQuality: 0.9,
+          autonomyVsConfirmation: 0.7,
+        },
       ],
     });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
 
     const result = await mgr.composeSoulContext();
@@ -815,7 +1162,9 @@ describe('composeSoulContext', () => {
         ],
       },
     });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
 
     const result = await mgr.composeSoulContext();
@@ -831,10 +1180,23 @@ describe('Phase 50 — CEL activeWhen evaluation', () => {
   it('evaluates CEL == operator in activeWhen', async () => {
     const intent = makeIntent({
       goals: [
-        { id: 'g1', name: 'Prod Goal', priority: 1, activeWhen: 'env == "prod"', successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+        {
+          id: 'g1',
+          name: 'Prod Goal',
+          priority: 1,
+          activeWhen: 'env == "prod"',
+          successCriteria: '',
+          description: '',
+          ownerRole: 'admin',
+          skills: [],
+          signals: [],
+          authorizedActions: [],
+        },
       ],
     });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
 
     expect(mgr.resolveActiveGoals({ env: 'prod' })).toHaveLength(1);
@@ -844,10 +1206,23 @@ describe('Phase 50 — CEL activeWhen evaluation', () => {
   it('evaluates CEL && conjunction in activeWhen', async () => {
     const intent = makeIntent({
       goals: [
-        { id: 'g1', name: 'Combo Goal', priority: 1, activeWhen: 'env == "prod" && region == "us"', successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+        {
+          id: 'g1',
+          name: 'Combo Goal',
+          priority: 1,
+          activeWhen: 'env == "prod" && region == "us"',
+          successCriteria: '',
+          description: '',
+          ownerRole: 'admin',
+          skills: [],
+          signals: [],
+          authorizedActions: [],
+        },
       ],
     });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
 
     expect(mgr.resolveActiveGoals({ env: 'prod', region: 'us' })).toHaveLength(1);
@@ -857,10 +1232,23 @@ describe('Phase 50 — CEL activeWhen evaluation', () => {
   it('evaluates CEL || disjunction in activeWhen', async () => {
     const intent = makeIntent({
       goals: [
-        { id: 'g1', name: 'Multi-env Goal', priority: 1, activeWhen: 'env == "prod" || env == "staging"', successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+        {
+          id: 'g1',
+          name: 'Multi-env Goal',
+          priority: 1,
+          activeWhen: 'env == "prod" || env == "staging"',
+          successCriteria: '',
+          description: '',
+          ownerRole: 'admin',
+          skills: [],
+          signals: [],
+          authorizedActions: [],
+        },
       ],
     });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
 
     expect(mgr.resolveActiveGoals({ env: 'staging' })).toHaveLength(1);
@@ -870,10 +1258,23 @@ describe('Phase 50 — CEL activeWhen evaluation', () => {
   it('backward-compatible with legacy key=value AND format', async () => {
     const intent = makeIntent({
       goals: [
-        { id: 'g1', name: 'Legacy Goal', priority: 1, activeWhen: 'env=prod AND quarter=Q1', successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+        {
+          id: 'g1',
+          name: 'Legacy Goal',
+          priority: 1,
+          activeWhen: 'env=prod AND quarter=Q1',
+          successCriteria: '',
+          description: '',
+          ownerRole: 'admin',
+          skills: [],
+          signals: [],
+          authorizedActions: [],
+        },
       ],
     });
-    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
     await mgr.initialize();
 
     expect(mgr.resolveActiveGoals({ env: 'prod', quarter: 'Q1' })).toHaveLength(1);
@@ -889,7 +1290,12 @@ describe('Phase 50 — OPA hard boundary evaluation', () => {
 
     const intent = makeIntent({
       hardBoundaries: [
-        { id: 'hb1', rule: 'deny: drop tables', rego: 'package boundary_hb1\nallow = false', rationale: 'test' },
+        {
+          id: 'hb1',
+          rule: 'deny: drop tables',
+          rego: 'package boundary_hb1\nallow = false',
+          rationale: 'test',
+        },
       ],
     });
     const opa = new OpaClient('http://opa:8181');
@@ -900,7 +1306,10 @@ describe('Phase 50 — OPA hard boundary evaluation', () => {
     await mgr.initialize();
 
     const result = await mgr.checkHardBoundaries('some action', 'some_tool');
-    expect(evaluateSpy).toHaveBeenCalledWith('boundary_hb1/allow', { action: 'some action', tool: 'some_tool' });
+    expect(evaluateSpy).toHaveBeenCalledWith('boundary_hb1/allow', {
+      action: 'some action',
+      tool: 'some_tool',
+    });
     // OPA returned false (deny), so allowed=false
     expect(result.allowed).toBe(false);
     evaluateSpy.mockRestore();
@@ -911,7 +1320,12 @@ describe('Phase 50 — OPA hard boundary evaluation', () => {
 
     const intent = makeIntent({
       hardBoundaries: [
-        { id: 'hb1', rule: 'deny: delete prod', rego: 'package boundary_hb1\nallow = true', rationale: '' },
+        {
+          id: 'hb1',
+          rule: 'deny: delete prod',
+          rego: 'package boundary_hb1\nallow = true',
+          rationale: '',
+        },
       ],
     });
     const opa = new OpaClient('http://opa:8181');
@@ -947,9 +1361,7 @@ describe('Phase 50 — OPA hard boundary evaluation', () => {
 
   it('allows when boundary has no rego and action does not match rule', async () => {
     const intent = makeIntent({
-      hardBoundaries: [
-        { id: 'hb1', rule: 'deny: drop tables', rationale: '' },
-      ],
+      hardBoundaries: [{ id: 'hb1', rule: 'deny: drop tables', rationale: '' }],
     });
     const mgr = new IntentManager({
       storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
@@ -1015,7 +1427,13 @@ describe('Phase 50 — MCP tool signal dispatch', () => {
         { id: 's1', name: 'Latency', direction: 'above', threshold: 100, dataSources: ['ds1'] },
       ],
       dataSources: [
-        { id: 'ds1', name: 'Latency Tool', type: 'mcp_tool', connection: 'get_latency', schema: '$.p99' },
+        {
+          id: 'ds1',
+          name: 'Latency Tool',
+          type: 'mcp_tool',
+          connection: 'get_latency',
+          schema: '$.p99',
+        },
       ],
     });
     const mgr = new IntentManager({
@@ -1043,11 +1461,22 @@ describe('Phase 50 — syncPoliciesWithOpa', () => {
 
     const record = makeIntent({
       hardBoundaries: [
-        { id: 'hb1', rule: 'deny: drop', rego: 'package boundary_hb1\nallow = false', rationale: '' },
+        {
+          id: 'hb1',
+          rule: 'deny: drop',
+          rego: 'package boundary_hb1\nallow = false',
+          rationale: '',
+        },
         { id: 'hb2', rule: 'deny: delete', rationale: '' }, // no rego — skip
       ],
       policies: [
-        { id: 'p1', rule: 'no pii', rego: 'package policy_p1\nallow = false', enforcement: 'block', rationale: '' },
+        {
+          id: 'p1',
+          rule: 'no pii',
+          rego: 'package policy_p1\nallow = false',
+          enforcement: 'block',
+          rationale: '',
+        },
       ],
     });
 
@@ -1057,7 +1486,10 @@ describe('Phase 50 — syncPoliciesWithOpa', () => {
     expect(uploadSpy).toHaveBeenCalledTimes(3);
     expect(uploadSpy).toHaveBeenCalledWith('boundary_hb1', expect.stringContaining('allow'));
     expect(uploadSpy).toHaveBeenCalledWith('policy_p1', expect.stringContaining('allow'));
-    expect(uploadSpy).toHaveBeenCalledWith('output_compliance', expect.stringContaining('output_compliance'));
+    expect(uploadSpy).toHaveBeenCalledWith(
+      'output_compliance',
+      expect.stringContaining('output_compliance')
+    );
     // hb2 has no rego → should NOT be uploaded
     expect(uploadSpy).not.toHaveBeenCalledWith('boundary_hb2', expect.anything());
 
@@ -1072,7 +1504,13 @@ describe('Phase 50 — syncPoliciesWithOpa', () => {
 
     const record = makeIntent({
       policies: [
-        { id: 'p1', rule: 'no pii', rego: 'package p\nallow=false', enforcement: 'block', rationale: '' },
+        {
+          id: 'p1',
+          rule: 'no pii',
+          rego: 'package p\nallow=false',
+          enforcement: 'block',
+          rationale: '',
+        },
       ],
     });
 
@@ -1089,7 +1527,13 @@ describe('Phase 50 — syncPoliciesWithOpa', () => {
 
     const record = makeIntent({
       policies: [
-        { id: 'p1', rule: 'test', rego: 'package p\nallow=false', enforcement: 'warn', rationale: '' },
+        {
+          id: 'p1',
+          rule: 'test',
+          rego: 'package p\nallow=false',
+          enforcement: 'warn',
+          rationale: '',
+        },
       ],
     });
 
@@ -1150,7 +1594,9 @@ describe('Phase 54 — checkOutputCompliance', () => {
   });
 
   it('returns compliant:true (fail-open) when OPA throws', async () => {
-    const evaluateSpy = vi.spyOn(OpaClient.prototype, 'evaluate').mockRejectedValue(new Error('OPA error'));
+    const evaluateSpy = vi
+      .spyOn(OpaClient.prototype, 'evaluate')
+      .mockRejectedValue(new Error('OPA error'));
     const uploadSpy = vi.spyOn(OpaClient.prototype, 'uploadPolicy').mockResolvedValue(undefined);
 
     const opa = new OpaClient('http://opa:8181');
@@ -1176,7 +1622,10 @@ describe('Phase 54 — checkOutputCompliance', () => {
     const mgr = new IntentManager({ storage: makeStorage(), opaClient: opa });
     const record = makeIntent({ hardBoundaries: [], policies: [] });
     await mgr.syncPoliciesWithOpa(record);
-    expect(uploadSpy).toHaveBeenCalledWith('output_compliance', expect.stringContaining('package output_compliance'));
+    expect(uploadSpy).toHaveBeenCalledWith(
+      'output_compliance',
+      expect.stringContaining('package output_compliance')
+    );
     uploadSpy.mockRestore();
   });
 });

@@ -52,11 +52,21 @@ const STEP_TYPES = [
   { type: 'agent', label: 'Agent', icon: Bot, color: 'bg-blue-100 text-blue-800' },
   { type: 'tool', label: 'Tool', icon: Wrench, color: 'bg-purple-100 text-purple-800' },
   { type: 'mcp', label: 'MCP', icon: Cpu, color: 'bg-indigo-100 text-indigo-800' },
-  { type: 'condition', label: 'Condition', icon: GitBranch, color: 'bg-yellow-100 text-yellow-800' },
+  {
+    type: 'condition',
+    label: 'Condition',
+    icon: GitBranch,
+    color: 'bg-yellow-100 text-yellow-800',
+  },
   { type: 'transform', label: 'Transform', icon: Shuffle, color: 'bg-orange-100 text-orange-800' },
   { type: 'resource', label: 'Resource', icon: Database, color: 'bg-green-100 text-green-800' },
   { type: 'webhook', label: 'Webhook', icon: Webhook, color: 'bg-pink-100 text-pink-800' },
-  { type: 'subworkflow', label: 'Sub-Workflow', icon: GitMerge, color: 'bg-teal-100 text-teal-800' },
+  {
+    type: 'subworkflow',
+    label: 'Sub-Workflow',
+    icon: GitMerge,
+    color: 'bg-teal-100 text-teal-800',
+  },
   { type: 'swarm', label: 'Swarm', icon: Users, color: 'bg-red-100 text-red-800' },
 ] as const;
 
@@ -74,7 +84,9 @@ function StepNode({ data }: { data: { label: string; type: string; selected?: bo
         data.selected ? 'border-primary' : 'border-border'
       }`}
     >
-      <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium mb-1 ${colorClass}`}>
+      <div
+        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium mb-1 ${colorClass}`}
+      >
         {data.type}
       </div>
       <div className="text-sm font-medium truncate max-w-[140px]">{data.label}</div>
@@ -119,7 +131,7 @@ function flowToDefinition(
     const dependsOn = edges.filter((e) => e.target === n.id).map((e) => e.source);
     return {
       id: n.id,
-      type: (existing.type ?? 'agent') as WorkflowStep['type'],
+      type: existing.type ?? 'agent',
       name: n.data.label ?? n.id,
       description: existing.description,
       config: existing.config ?? {},
@@ -176,7 +188,9 @@ export function WorkflowBuilder() {
   }, [existingData]);
 
   const onConnect = useCallback(
-    (connection: Connection) => setEdges((eds) => addEdge({ ...connection, animated: true }, eds)),
+    (connection: Connection) => {
+      setEdges((eds) => addEdge({ ...connection, animated: true }, eds));
+    },
     [setEdges]
   );
 
@@ -188,7 +202,7 @@ export function WorkflowBuilder() {
       if (isNew) {
         return createWorkflow(payload);
       } else {
-        return updateWorkflow(id!, payload);
+        return updateWorkflow(id, payload);
       }
     },
     onSuccess: (result) => {
@@ -196,11 +210,15 @@ export function WorkflowBuilder() {
       if (isNew && result.definition?.id) {
         navigate(`/workflows/${result.definition.id}/builder`, { replace: true });
       }
-      setTimeout(() => setToast(null), 3000);
+      setTimeout(() => {
+        setToast(null);
+      }, 3000);
     },
     onError: (err) => {
       setToast(err instanceof Error ? err.message : 'Save failed');
-      setTimeout(() => setToast(null), 4000);
+      setTimeout(() => {
+        setToast(null);
+      }, 4000);
     },
   });
 
@@ -208,14 +226,16 @@ export function WorkflowBuilder() {
   const runMutation = useMutation({
     mutationFn: async () => {
       if (isNew) throw new Error('Save the workflow first before running');
-      return triggerWorkflow(id!);
+      return triggerWorkflow(id);
     },
     onSuccess: (result) => {
       navigate(`/workflows/runs/${result.run.id}`);
     },
     onError: (err) => {
       setToast(err instanceof Error ? err.message : 'Failed to run');
-      setTimeout(() => setToast(null), 4000);
+      setTimeout(() => {
+        setToast(null);
+      }, 4000);
     },
   });
 
@@ -262,7 +282,9 @@ export function WorkflowBuilder() {
         </button>
         <input
           value={wfName}
-          onChange={(e) => setWfName(e.target.value)}
+          onChange={(e) => {
+            setWfName(e.target.value);
+          }}
           className="flex-1 max-w-xs px-3 py-1.5 rounded-md border bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
           placeholder="Workflow name"
         />
@@ -270,17 +292,19 @@ export function WorkflowBuilder() {
           <input
             type="checkbox"
             checked={isEnabled}
-            onChange={(e) => setIsEnabled(e.target.checked)}
+            onChange={(e) => {
+              setIsEnabled(e.target.checked);
+            }}
             className="rounded"
           />
           Enabled
         </label>
         <div className="flex items-center gap-2 ml-auto">
-          {toast && (
-            <span className="text-xs text-muted-foreground">{toast}</span>
-          )}
+          {toast && <span className="text-xs text-muted-foreground">{toast}</span>}
           <button
-            onClick={() => saveMutation.mutate()}
+            onClick={() => {
+              saveMutation.mutate();
+            }}
             disabled={saveMutation.isPending}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm font-medium hover:bg-muted/50 disabled:opacity-50 transition-colors"
           >
@@ -292,7 +316,9 @@ export function WorkflowBuilder() {
             Save
           </button>
           <button
-            onClick={() => runMutation.mutate()}
+            onClick={() => {
+              runMutation.mutate();
+            }}
             disabled={runMutation.isPending || isNew}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
@@ -316,7 +342,9 @@ export function WorkflowBuilder() {
           {STEP_TYPES.map(({ type, label, icon: Icon, color }) => (
             <button
               key={type}
-              onClick={() => addStepNode(type, label)}
+              onClick={() => {
+                addStepNode(type, label);
+              }}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-muted/50 text-sm transition-colors text-left"
             >
               <span className={`p-1 rounded text-xs ${color}`}>
@@ -335,8 +363,12 @@ export function WorkflowBuilder() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
-            onNodeClick={(_, node) => setSelectedNode(node)}
-            onPaneClick={() => setSelectedNode(null)}
+            onNodeClick={(_, node) => {
+              setSelectedNode(node);
+            }}
+            onPaneClick={() => {
+              setSelectedNode(null);
+            }}
             nodeTypes={nodeTypes}
             fitView
           >
@@ -352,7 +384,9 @@ export function WorkflowBuilder() {
             <div className="flex items-center justify-between">
               <h3 className="font-medium text-sm">Step Config</h3>
               <button
-                onClick={() => setSelectedNode(null)}
+                onClick={() => {
+                  setSelectedNode(null);
+                }}
                 className="p-1 rounded hover:bg-muted/50"
               >
                 <X className="w-3.5 h-3.5" />
@@ -455,9 +489,7 @@ export function WorkflowBuilder() {
                 onClick={() => {
                   setNodes((nds) => nds.filter((n) => n.id !== selectedNode.id));
                   setEdges((eds) =>
-                    eds.filter(
-                      (e) => e.source !== selectedNode.id && e.target !== selectedNode.id
-                    )
+                    eds.filter((e) => e.source !== selectedNode.id && e.target !== selectedNode.id)
                   );
                   setSelectedNode(null);
                 }}

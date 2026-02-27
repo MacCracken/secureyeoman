@@ -46,7 +46,9 @@ export function AutomationPage() {
               key={tab}
               role="tab"
               aria-selected={activeTab === tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => {
+                setActiveTab(tab);
+              }}
               className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
                 activeTab === tab
                   ? 'bg-card shadow-sm text-foreground'

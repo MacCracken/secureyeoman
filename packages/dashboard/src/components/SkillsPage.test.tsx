@@ -211,9 +211,13 @@ describe('SkillsPage', () => {
     await screen.findByText('Skills');
 
     // Simulate selecting a file with a wrong schema marker via the hidden fallback input
-    const badSkillJson = JSON.stringify({ $schema: 'wrong/1', name: 'Bad Skill', instructions: 'x' });
+    const badSkillJson = JSON.stringify({
+      $schema: 'wrong/1',
+      name: 'Bad Skill',
+      instructions: 'x',
+    });
     const file = new File([badSkillJson], 'bad.skill.json', { type: 'application/json' });
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const input = document.querySelector('input[type="file"]')!;
     expect(input).not.toBeNull();
     Object.defineProperty(input, 'files', { value: [file], configurable: true });
     fireEvent.change(input);
@@ -227,7 +231,7 @@ describe('SkillsPage', () => {
     await screen.findByText('Skills');
 
     const file = new File(['<svg></svg>'], 'image.svg', { type: 'image/svg+xml' });
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const input = document.querySelector('input[type="file"]')!;
     expect(input).not.toBeNull();
     Object.defineProperty(input, 'files', { value: [file], configurable: true });
     fireEvent.change(input);

@@ -35,31 +35,46 @@ function buildFfmpegArgs(deviceId?: string): string[] {
     case 'darwin':
       return [
         '-y',
-        '-f', 'avfoundation',
-        '-framerate', '1',
-        '-i', deviceId ?? '0',
-        '-frames:v', '1',
-        '-q:v', '2',
+        '-f',
+        'avfoundation',
+        '-framerate',
+        '1',
+        '-i',
+        deviceId ?? '0',
+        '-frames:v',
+        '1',
+        '-q:v',
+        '2',
         outFile,
       ];
     case 'win32':
       return [
         '-y',
-        '-f', 'dshow',
-        '-framerate', '1',
-        '-i', `video=${deviceId ?? 'Integrated Camera'}`,
-        '-frames:v', '1',
-        '-q:v', '2',
+        '-f',
+        'dshow',
+        '-framerate',
+        '1',
+        '-i',
+        `video=${deviceId ?? 'Integrated Camera'}`,
+        '-frames:v',
+        '1',
+        '-q:v',
+        '2',
         outFile,
       ];
     default: // Linux
       return [
         '-y',
-        '-f', 'v4l2',
-        '-framerate', '1',
-        '-i', deviceId ?? '/dev/video0',
-        '-frames:v', '1',
-        '-q:v', '2',
+        '-f',
+        'v4l2',
+        '-framerate',
+        '1',
+        '-i',
+        deviceId ?? '/dev/video0',
+        '-frames:v',
+        '1',
+        '-q:v',
+        '2',
         outFile,
       ];
   }
@@ -85,7 +100,9 @@ export async function captureCamera(deviceId?: string): Promise<CameraFrame> {
     await execFileAsync('ffmpeg', args, { timeout: FFMPEG_TIMEOUT_MS });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    throw new Error(`Camera capture failed: ${msg}. Ensure ffmpeg is installed and a camera device is available.`);
+    throw new Error(
+      `Camera capture failed: ${msg}. Ensure ffmpeg is installed and a camera device is available.`
+    );
   }
 
   let imageBase64: string;

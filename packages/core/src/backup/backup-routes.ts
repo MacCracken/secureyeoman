@@ -23,10 +23,7 @@ export function registerBackupRoutes(app: FastifyInstance, opts: BackupRoutesOpt
   // Trigger backup
   app.post(
     '/api/v1/admin/backups',
-    async (
-      request: FastifyRequest<{ Body: { label?: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: { label?: string } }>, reply: FastifyReply) => {
       try {
         const label = request.body?.label ?? '';
         const userId = (request as any).authUser?.userId ?? 'unknown';

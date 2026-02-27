@@ -252,8 +252,12 @@ export function SkillsManager() {
         title="Autonomy Level Escalated"
         message={escalationWarning ?? ''}
         confirmLabel="Understood"
-        onConfirm={() => setEscalationWarning(null)}
-        onCancel={() => setEscalationWarning(null)}
+        onConfirm={() => {
+          setEscalationWarning(null);
+        }}
+        onCancel={() => {
+          setEscalationWarning(null);
+        }}
       />
 
       {/* Credential warning banner */}
@@ -267,11 +271,15 @@ export function SkillsManager() {
                 <li key={i}>{w}</li>
               ))}
             </ul>
-            <p className="text-xs mt-1 text-muted-foreground">Use <code>$VAR_NAME</code> references instead of literal credentials.</p>
+            <p className="text-xs mt-1 text-muted-foreground">
+              Use <code>$VAR_NAME</code> references instead of literal credentials.
+            </p>
           </div>
           <button
             className="ml-auto btn-ghost p-1 text-sm"
-            onClick={() => { setSaveWarnings([]); }}
+            onClick={() => {
+              setSaveWarnings([]);
+            }}
             aria-label="Dismiss warning"
           >
             ✕
@@ -397,7 +405,9 @@ export function SkillsManager() {
             <input
               type="text"
               value={form.useWhen ?? ''}
-              onChange={(e) => { setForm((f) => ({ ...f, useWhen: e.target.value })); }}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, useWhen: e.target.value }));
+              }}
               className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               maxLength={500}
               placeholder="e.g. user asks to review code, analyze a diff"
@@ -409,7 +419,9 @@ export function SkillsManager() {
             <input
               type="text"
               value={form.doNotUseWhen ?? ''}
-              onChange={(e) => { setForm((f) => ({ ...f, doNotUseWhen: e.target.value })); }}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, doNotUseWhen: e.target.value }));
+              }}
               className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               maxLength={500}
               placeholder="e.g. the task is not code-related"
@@ -421,7 +433,9 @@ export function SkillsManager() {
             <input
               type="text"
               value={form.successCriteria ?? ''}
-              onChange={(e) => { setForm((f) => ({ ...f, successCriteria: e.target.value })); }}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, successCriteria: e.target.value }));
+              }}
               className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               maxLength={300}
               placeholder="e.g. PR summary generated and key risks identified"
@@ -432,7 +446,9 @@ export function SkillsManager() {
             <label className="block text-sm font-medium mb-1">Routing Mode</label>
             <select
               value={form.routing ?? 'fuzzy'}
-              onChange={(e) => { setForm((f) => ({ ...f, routing: e.target.value as 'fuzzy' | 'explicit' })); }}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, routing: e.target.value as 'fuzzy' | 'explicit' }));
+              }}
               className="px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="fuzzy">Fuzzy (default)</option>
@@ -445,7 +461,9 @@ export function SkillsManager() {
             <input
               type="text"
               value={mcpToolsInput}
-              onChange={(e) => { setMcpToolsInput(e.target.value); }}
+              onChange={(e) => {
+                setMcpToolsInput(e.target.value);
+              }}
               className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               placeholder="Comma-separated tool names, e.g., read_file, web_search (empty = all allowed)"
             />
@@ -459,7 +477,9 @@ export function SkillsManager() {
             <input
               type="text"
               value={form.linkedWorkflowId ?? ''}
-              onChange={(e) => { setForm((f) => ({ ...f, linkedWorkflowId: e.target.value || null })); }}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, linkedWorkflowId: e.target.value || null }));
+              }}
               className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               placeholder="Workflow ID to trigger when this skill activates (optional)"
             />
@@ -469,7 +489,9 @@ export function SkillsManager() {
             <label className="block text-sm font-medium mb-1">Autonomy Level</label>
             <select
               value={form.autonomyLevel ?? 'L1'}
-              onChange={(e) => { setForm((f) => ({ ...f, autonomyLevel: e.target.value as any })); }}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, autonomyLevel: e.target.value as any }));
+              }}
               className="px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="L1">L1 — Human does (AI assists only)</option>
@@ -488,7 +510,9 @@ export function SkillsManager() {
               <label className="block text-sm font-medium mb-1">Emergency Stop Procedure</label>
               <textarea
                 value={form.emergencyStopProcedure ?? ''}
-                onChange={(e) => { setForm((f) => ({ ...f, emergencyStopProcedure: e.target.value })); }}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, emergencyStopProcedure: e.target.value }));
+                }}
                 className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-y"
                 rows={2}
                 maxLength={1000}
@@ -551,8 +575,7 @@ export function SkillsManager() {
                   <span>Used {s.usageCount} times</span>
                   {(s.invokedCount ?? 0) > 0 && (
                     <span>
-                      Routing precision:{' '}
-                      {Math.round((s.usageCount / (s.invokedCount ?? 1)) * 100)}%
+                      Routing precision: {Math.round((s.usageCount / (s.invokedCount ?? 1)) * 100)}%
                     </span>
                   )}
                   {s.lastUsedAt && <span>Last: {formatDate(s.lastUsedAt)}</span>}

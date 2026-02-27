@@ -7,7 +7,13 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import { mkdirSync, existsSync, readFileSync, appendFileSync } from 'node:fs';
 import type { Command, CommandContext } from '../router.js';
-import { extractBoolFlag, extractCommonFlags, formatUptime, apiCall, formatTable } from '../utils.js';
+import {
+  extractBoolFlag,
+  extractCommonFlags,
+  formatUptime,
+  apiCall,
+  formatTable,
+} from '../utils.js';
 
 const REPL_COMMANDS = ['health', 'config', 'integration', 'help', 'exit', 'quit'];
 const INTEGRATION_ACTIONS = ['list', 'show', 'create', 'delete', 'start', 'stop'];
@@ -188,13 +194,17 @@ async function replConfig(ctx: CommandContext, baseUrl: string): Promise<void> {
     const gatewayCfg = data.gateway as Record<string, unknown> | undefined;
 
     if (modelCfg?.provider || modelCfg?.model) {
-      ctx.stdout.write(`  Model:       ${String(modelCfg.provider ?? '')}/${String(modelCfg.model ?? '')}\n`);
+      ctx.stdout.write(
+        `  Model:       ${String(modelCfg.provider ?? '')}/${String(modelCfg.model ?? '')}\n`
+      );
     }
     if (coreCfg?.environment) {
       ctx.stdout.write(`  Environment: ${String(coreCfg.environment)}\n`);
     }
     if (gatewayCfg?.port) {
-      ctx.stdout.write(`  Gateway:     ${String(gatewayCfg.host ?? '0.0.0.0')}:${String(gatewayCfg.port)}\n`);
+      ctx.stdout.write(
+        `  Gateway:     ${String(gatewayCfg.host ?? '0.0.0.0')}:${String(gatewayCfg.port)}\n`
+      );
     }
     if (!modelCfg && !coreCfg && !gatewayCfg) {
       // Fallback: dump the whole config as JSON

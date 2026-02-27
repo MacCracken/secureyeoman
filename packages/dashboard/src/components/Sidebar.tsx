@@ -49,7 +49,12 @@ export interface SidebarProps {
   onLogout: () => void;
 }
 
-type NavItem = { to: string; label: string; icon: React.ReactNode; end?: boolean };
+interface NavItem {
+  to: string;
+  label: string;
+  icon: React.ReactNode;
+  end?: boolean;
+}
 
 const BASE_TOP_ITEMS: NavItem[] = [
   { to: '/metrics', label: 'Mission Control', icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -63,7 +68,6 @@ const BASE_TOP_ITEMS: NavItem[] = [
 const MID_ITEMS: NavItem[] = [
   { to: '/connections', label: 'Connections', icon: <Cable className="w-5 h-5" /> },
 ];
-
 
 const navLinkClass = (isActive: boolean, collapsed: boolean) =>
   `group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -147,10 +151,13 @@ export function Sidebar({
   const topItems = useMemo(() => {
     const top: NavItem[] = [...BASE_TOP_ITEMS];
     // Insert Editor after Chat (index 3) when allowed; Chat is at index 3 after removal from BASE_TOP_ITEMS
-    if (codeEditorAllowed) top.splice(4, 0, { to: '/editor', label: 'Editor', icon: <Code className="w-5 h-5" /> });
+    if (codeEditorAllowed)
+      top.splice(4, 0, { to: '/editor', label: 'Editor', icon: <Code className="w-5 h-5" /> });
     top.push({ to: '/intent', label: 'Intent', icon: <Target className="w-5 h-5" /> });
-    if (proactiveEnabled) top.push({ to: '/proactive', label: 'Proactive', icon: <Sparkles className="w-5 h-5" /> });
-    if (hasAgents) top.push({ to: '/agents', label: 'Agents', icon: <Users className="w-5 h-5" /> });
+    if (proactiveEnabled)
+      top.push({ to: '/proactive', label: 'Proactive', icon: <Sparkles className="w-5 h-5" /> });
+    if (hasAgents)
+      top.push({ to: '/agents', label: 'Agents', icon: <Users className="w-5 h-5" /> });
     return top;
   }, [hasAgents, proactiveEnabled, codeEditorAllowed]);
 
@@ -173,7 +180,6 @@ export function Sidebar({
     };
   }, []);
 
-
   const renderNavItem = (item: NavItem) => (
     <NavLink
       key={item.to}
@@ -182,7 +188,9 @@ export function Sidebar({
       className={({ isActive }) => navLinkClass(isActive, collapsed)}
     >
       <span className="w-5 h-5 flex-shrink-0">{item.icon}</span>
-      <span className={`transition-opacity duration-200 ${collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>
+      <span
+        className={`transition-opacity duration-200 ${collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
+      >
         {item.label}
       </span>
       {collapsed && <span className="sidebar-tooltip">{item.label}</span>}
@@ -222,13 +230,20 @@ export function Sidebar({
         {MID_ITEMS.map(renderNavItem)}
 
         {/* Developers — conditional, flat item */}
-        {(extensionsEnabled || experimentsEnabled || storybookEnabled) && renderNavItem(
-          { to: '/developers', label: 'Developers', icon: <Code2 className="w-5 h-5" /> }
-        )}
+        {(extensionsEnabled || experimentsEnabled || storybookEnabled) &&
+          renderNavItem({
+            to: '/developers',
+            label: 'Developers',
+            icon: <Code2 className="w-5 h-5" />,
+          })}
 
         {/* Administration */}
         <div className="border-t border-border/30 mx-2 my-1" />
-        {renderNavItem({ to: '/settings', label: 'Administration', icon: <SlidersHorizontal className="w-5 h-5" /> })}
+        {renderNavItem({
+          to: '/settings',
+          label: 'Administration',
+          icon: <SlidersHorizontal className="w-5 h-5" />,
+        })}
       </nav>
 
       <div className={`${collapsed ? 'px-2 py-2' : 'px-3 py-2'} border-t border-border`}>
@@ -375,31 +390,38 @@ export function Sidebar({
             ref={themeRef}
             className="fixed bg-card border rounded-md shadow-xl z-[60] w-56 overflow-y-auto"
             style={{
-              left: collapsed ? 'calc(var(--sidebar-collapsed) + 8px)' : 'calc(var(--sidebar-expanded) + 8px)',
+              left: collapsed
+                ? 'calc(var(--sidebar-collapsed) + 8px)'
+                : 'calc(var(--sidebar-expanded) + 8px)',
               bottom: '8px',
               maxHeight: '70vh',
             }}
           >
             <div className="px-3 py-2 border-b">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Choose Theme</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Choose Theme
+              </p>
             </div>
             {(['dark', 'light', 'system'] as const).map((group) => {
-              const groupThemes = group === 'system'
-                ? THEMES.filter((t) => t.id === 'system')
-                : group === 'dark'
-                  ? THEMES.filter((t) => t.isDark)
-                  : THEMES.filter((t) => !t.isDark && t.id !== 'system');
+              const groupThemes =
+                group === 'system'
+                  ? THEMES.filter((t) => t.id === 'system')
+                  : group === 'dark'
+                    ? THEMES.filter((t) => t.isDark)
+                    : THEMES.filter((t) => !t.isDark && t.id !== 'system');
               const label = group === 'dark' ? 'Dark' : group === 'light' ? 'Light' : 'System';
               return (
                 <div key={group}>
                   <div className="px-3 pt-2 pb-0.5">
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      {label}
+                    </span>
                   </div>
                   {groupThemes.map((t) => (
                     <button
                       key={t.id}
                       onClick={() => {
-                        setTheme(t.id as ThemeId);
+                        setTheme(t.id);
                         setThemeOpen(false);
                         setProfileOpen(false);
                       }}
@@ -415,7 +437,9 @@ export function Sidebar({
                         ))}
                       </span>
                       <span className="flex-1 text-left truncate">{t.name}</span>
-                      {theme === t.id && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
+                      {theme === t.id && (
+                        <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -504,9 +528,7 @@ export function Sidebar({
                 <span className="text-sm font-medium text-success">Connected</span>
               </div>
               <div className="pt-2">
-                <p className="text-xs text-muted text-center">
-                  Your AI Security Yeoman
-                </p>
+                <p className="text-xs text-muted text-center">Your AI Security Yeoman</p>
               </div>
             </div>
           </div>

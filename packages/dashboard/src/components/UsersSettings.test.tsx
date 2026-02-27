@@ -187,9 +187,7 @@ describe('UsersSettings', () => {
     await user.click(screen.getByRole('button', { name: 'Create' }));
 
     await waitFor(() => {
-      expect(mockCreateUser).toHaveBeenCalledWith(
-        expect.objectContaining({ isAdmin: true })
-      );
+      expect(mockCreateUser).toHaveBeenCalledWith(expect.objectContaining({ isAdmin: true }));
     });
   });
 

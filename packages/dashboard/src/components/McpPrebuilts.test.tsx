@@ -35,10 +35,7 @@ function renderComponent() {
 }
 
 /** Opens the picker then clicks the given server name to open its credential form. */
-async function openPickerAndSelect(
-  user: ReturnType<typeof userEvent.setup>,
-  serverName: string
-) {
+async function openPickerAndSelect(user: ReturnType<typeof userEvent.setup>, serverName: string) {
   const addBtn = await screen.findByText('Add Featured MCP');
   await user.click(addBtn);
   const serverNameEl = await screen.findByText(serverName);

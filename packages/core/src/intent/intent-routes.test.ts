@@ -66,7 +66,13 @@ function makeManager(storageOverrides: Partial<IntentStorage> = {}): IntentManag
       message: 'Error Rate is healthy (3.2)',
     }),
     getGoalTimeline: vi.fn().mockResolvedValue([
-      { id: 'e1', eventType: 'goal_activated', itemId: 'g1', rule: 'unconditional', createdAt: NOW },
+      {
+        id: 'e1',
+        eventType: 'goal_activated',
+        itemId: 'g1',
+        rule: 'unconditional',
+        createdAt: NOW,
+      },
     ]),
   } as unknown as IntentManager;
 }
@@ -289,9 +295,7 @@ describe('GET /api/v1/intent/enforcement-log', () => {
       method: 'GET',
       url: '/api/v1/intent/enforcement-log?itemId=g1',
     });
-    expect(querySpy).toHaveBeenCalledWith(
-      expect.objectContaining({ itemId: 'g1' })
-    );
+    expect(querySpy).toHaveBeenCalledWith(expect.objectContaining({ itemId: 'g1' }));
   });
 });
 

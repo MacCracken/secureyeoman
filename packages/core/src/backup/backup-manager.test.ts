@@ -70,7 +70,10 @@ function makeMockStorage() {
     }),
     list: vi.fn(async () => ({ records: Array.from(records.values()), total: records.size })),
     getById: vi.fn(async (id: string) => records.get(id) ?? null),
-    delete: vi.fn(async (id: string) => { records.delete(id); return true; }),
+    delete: vi.fn(async (id: string) => {
+      records.delete(id);
+      return true;
+    }),
   };
 }
 
@@ -87,7 +90,13 @@ describe('BackupManager', () => {
     manager = new BackupManager({
       storage: storage as any,
       dataDir: '/tmp/test-data',
-      dbConfig: { host: 'localhost', port: 5432, user: 'postgres', password: 'pw', database: 'testdb' },
+      dbConfig: {
+        host: 'localhost',
+        port: 5432,
+        user: 'postgres',
+        password: 'pw',
+        database: 'testdb',
+      },
       logger: makeLogger(),
     });
   });
@@ -114,7 +123,11 @@ describe('BackupManager', () => {
     await manager.createBackup('del', 'u');
     const id = (storage.create.mock.calls[0] as any[])[0].id;
     // Set completed state with file path
-    await storage.update(id, { status: 'completed', filePath: `/tmp/backup-${id}.pgdump`, completedAt: Date.now() });
+    await storage.update(id, {
+      status: 'completed',
+      filePath: `/tmp/backup-${id}.pgdump`,
+      completedAt: Date.now(),
+    });
     await manager.deleteBackup(id);
     expect(storage.delete).toHaveBeenCalledWith(id);
   });

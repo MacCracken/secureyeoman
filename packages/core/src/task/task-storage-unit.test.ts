@@ -187,16 +187,18 @@ describe('TaskStorage.getTask()', () => {
 
   it('maps optional row fields to undefined', async () => {
     const storage = new TaskStorage();
-    vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(makeRow({
-      correlation_id: 'c1',
-      parent_task_id: 'p1',
-      description: 'desc',
-      started_at: 2_000_000,
-      completed_at: 3_000_000,
-      duration_ms: 1_000_000,
-      result_json: { success: true },
-      resources_json: { tokensUsed: 50 },
-    }));
+    vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(
+      makeRow({
+        correlation_id: 'c1',
+        parent_task_id: 'p1',
+        description: 'desc',
+        started_at: 2_000_000,
+        completed_at: 3_000_000,
+        duration_ms: 1_000_000,
+        result_json: { success: true },
+        resources_json: { tokensUsed: 50 },
+      })
+    );
     const task = await storage.getTask('task-1');
     expect(task!.correlationId).toBe('c1');
     expect(task!.parentTaskId).toBe('p1');
@@ -208,9 +210,11 @@ describe('TaskStorage.getTask()', () => {
 
   it('uses default securityContext when missing', async () => {
     const storage = new TaskStorage();
-    vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(makeRow({
-      security_context_json: null,
-    }));
+    vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(
+      makeRow({
+        security_context_json: null,
+      })
+    );
     const task = await storage.getTask('task-1');
     expect(task!.securityContext.userId).toBe('unknown');
     expect(task!.securityContext.role).toBe('viewer');

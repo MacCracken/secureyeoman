@@ -140,13 +140,13 @@ async function listWindowsMacOS(): Promise<WindowInfo[]> {
 
 async function listDisplaysMacOS(): Promise<DisplayInfo[]> {
   try {
-    const { stdout } = await execFileAsync(
-      'system_profiler',
-      ['SPDisplaysDataType', '-json'],
-      { timeout: EXEC_TIMEOUT_MS }
-    );
+    const { stdout } = await execFileAsync('system_profiler', ['SPDisplaysDataType', '-json'], {
+      timeout: EXEC_TIMEOUT_MS,
+    });
     const data = JSON.parse(stdout) as {
-      SPDisplaysDataType?: { spdisplays_ndrvs?: { _name: string; spdisplays_resolution?: string }[] }[];
+      SPDisplaysDataType?: {
+        spdisplays_ndrvs?: { _name: string; spdisplays_resolution?: string }[];
+      }[];
     };
     const displays: DisplayInfo[] = [];
     let idx = 0;
@@ -181,11 +181,9 @@ async function listWindowsWin(): Promise<WindowInfo[]> {
     }
   `;
   try {
-    const { stdout } = await execFileAsync(
-      'powershell',
-      ['-NonInteractive', '-Command', script],
-      { timeout: EXEC_TIMEOUT_MS }
-    );
+    const { stdout } = await execFileAsync('powershell', ['-NonInteractive', '-Command', script], {
+      timeout: EXEC_TIMEOUT_MS,
+    });
     const windows: WindowInfo[] = [];
     for (const line of stdout.split('\n')) {
       const parts = line.trim().split('|');
@@ -219,11 +217,9 @@ async function listDisplaysWin(): Promise<DisplayInfo[]> {
     }
   `;
   try {
-    const { stdout } = await execFileAsync(
-      'powershell',
-      ['-NonInteractive', '-Command', script],
-      { timeout: EXEC_TIMEOUT_MS }
-    );
+    const { stdout } = await execFileAsync('powershell', ['-NonInteractive', '-Command', script], {
+      timeout: EXEC_TIMEOUT_MS,
+    });
     const displays: DisplayInfo[] = [];
     let idx = 0;
     for (const line of stdout.split('\n')) {

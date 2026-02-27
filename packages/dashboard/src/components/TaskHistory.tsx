@@ -21,13 +21,7 @@ import {
   Edit2,
   Trash2,
 } from 'lucide-react';
-import {
-  fetchTasks,
-  createTask,
-  deleteTask,
-  updateTask,
-  fetchPersonalities,
-} from '../api/client';
+import { fetchTasks, createTask, deleteTask, updateTask, fetchPersonalities } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type { Task } from '../types';
 import { sanitizeText } from '../utils/sanitize';
@@ -53,10 +47,22 @@ const STATUS_COLORS: Record<string, string> = {
 const TYPE_OPTIONS = ['execute', 'query', 'file', 'network', 'system'] as const;
 
 const DATE_PRESETS = [
-  { label: 'Last hour',   from: () => new Date(Date.now() - 3_600_000).toISOString(), to: () => new Date().toISOString() },
-  { label: 'Last 24h',   from: () => new Date(Date.now() - 86_400_000).toISOString(), to: () => new Date().toISOString() },
-  { label: 'Last 7 days', from: () => new Date(Date.now() - 604_800_000).toISOString(), to: () => new Date().toISOString() },
-  { label: 'All time',   from: () => '', to: () => '' },
+  {
+    label: 'Last hour',
+    from: () => new Date(Date.now() - 3_600_000).toISOString(),
+    to: () => new Date().toISOString(),
+  },
+  {
+    label: 'Last 24h',
+    from: () => new Date(Date.now() - 86_400_000).toISOString(),
+    to: () => new Date().toISOString(),
+  },
+  {
+    label: 'Last 7 days',
+    from: () => new Date(Date.now() - 604_800_000).toISOString(),
+    to: () => new Date().toISOString(),
+  },
+  { label: 'All time', from: () => '', to: () => '' },
 ] as const;
 
 export function OpenTasks() {
@@ -65,9 +71,9 @@ export function OpenTasks() {
   const [datePreset, setDatePreset] = useState('');
 
   const statusFilter = searchParams.get('status') ?? '';
-  const typeFilter   = searchParams.get('type')   ?? '';
-  const dateFrom     = searchParams.get('from')   ?? '';
-  const dateTo       = searchParams.get('to')     ?? '';
+  const typeFilter = searchParams.get('type') ?? '';
+  const dateFrom = searchParams.get('from') ?? '';
+  const dateTo = searchParams.get('to') ?? '';
 
   // Create task dialog state
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -197,7 +203,7 @@ export function OpenTasks() {
     setDatePreset('');
   };
 
-  const handleDatePreset = (preset: typeof DATE_PRESETS[number]) => {
+  const handleDatePreset = (preset: (typeof DATE_PRESETS)[number]) => {
     const from = preset.from();
     const to = preset.to();
     setDatePreset(preset.label);
@@ -416,148 +422,163 @@ export function OpenTasks() {
       )}
 
       {/* Header + Filters */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold">Open Tasks</h2>
-              <button
-                onClick={() => {
-                  setShowCreateDialog(true);
-                }}
-                className="btn btn-ghost text-sm px-3 py-1.5 flex items-center gap-1"
-              >
-                <Plus className="w-4 h-4" />
-                New Task
-              </button>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Filter className="w-4 h-4 text-muted-foreground" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold">Open Tasks</h2>
+          <button
+            onClick={() => {
+              setShowCreateDialog(true);
+            }}
+            className="btn btn-ghost text-sm px-3 py-1.5 flex items-center gap-1"
+          >
+            <Plus className="w-4 h-4" />
+            New Task
+          </button>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Filter className="w-4 h-4 text-muted-foreground" />
 
-              {/* Status filter — active statuses only */}
-              <select
-                value={statusFilter}
-                onChange={(e) => {
-                  updateParams({ status: e.target.value });
-                }}
-                className="px-3 py-1.5 text-sm border rounded-md bg-background"
-                aria-label="Filter by status"
-              >
-                <option value="">All Active</option>
-                <option value="pending">Pending</option>
-                <option value="running">In Progress</option>
-              </select>
+          {/* Status filter — active statuses only */}
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              updateParams({ status: e.target.value });
+            }}
+            className="px-3 py-1.5 text-sm border rounded-md bg-background"
+            aria-label="Filter by status"
+          >
+            <option value="">All Active</option>
+            <option value="pending">Pending</option>
+            <option value="running">In Progress</option>
+          </select>
 
-              {/* Type filter */}
-              <select
-                value={typeFilter}
-                onChange={(e) => {
-                  updateParams({ type: e.target.value });
-                }}
-                className="px-3 py-1.5 text-sm border rounded-md bg-background"
-                aria-label="Filter by type"
-              >
-                <option value="">All Types</option>
-                {TYPE_OPTIONS.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-
-              {/* Clear filters */}
-              {hasFilters && (
-                <button
-                  onClick={resetFilters}
-                  className="text-xs text-muted-foreground hover:text-foreground underline"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Date Range Filter */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            {DATE_PRESETS.map((preset) => (
-              <button
-                key={preset.label}
-                onClick={() => handleDatePreset(preset)}
-                className={`px-2.5 py-1 rounded-md text-xs border transition-colors ${
-                  datePreset === preset.label
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'border-border bg-background hover:bg-muted'
-                }`}
-              >
-                {preset.label}
-              </button>
+          {/* Type filter */}
+          <select
+            value={typeFilter}
+            onChange={(e) => {
+              updateParams({ type: e.target.value });
+            }}
+            className="px-3 py-1.5 text-sm border rounded-md bg-background"
+            aria-label="Filter by type"
+          >
+            <option value="">All Types</option>
+            {TYPE_OPTIONS.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
             ))}
-            <span className="text-muted-foreground text-xs">or</span>
-            <input
-              type="date"
-              value={dateFrom ? dateFrom.slice(0, 10) : ''}
-              onChange={(e) => handleCustomDate('from', e.target.value)}
-              className="px-2 py-1 text-xs border rounded-md bg-background"
-              aria-label="From date"
-            />
-            <span className="text-muted-foreground text-xs">–</span>
-            <input
-              type="date"
-              value={dateTo ? dateTo.slice(0, 10) : ''}
-              onChange={(e) => handleCustomDate('to', e.target.value)}
-              className="px-2 py-1 text-xs border rounded-md bg-background"
-              aria-label="To date"
-            />
-          </div>
+          </select>
 
-          {/* Task Table */}
-          <div className="card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="px-2 py-2 text-left font-medium text-xs hidden md:table-cell">Agent</th>
-                    <th className="px-2 py-2 text-left font-medium text-xs hidden sm:table-cell">ID</th>
-                    <th className="px-2 py-2 text-left font-medium text-xs">Name</th>
-                    <th className="px-2 py-2 text-left font-medium text-xs hidden lg:table-cell">Sub-Agent</th>
-                    <th className="px-2 py-2 text-left font-medium text-xs hidden md:table-cell">Type</th>
-                    <th className="px-2 py-2 text-left font-medium text-xs">Status</th>
-                    <th className="px-2 py-2 text-left font-medium text-xs hidden lg:table-cell">Duration</th>
-                    <th className="px-2 py-2 text-left font-medium text-xs hidden sm:table-cell">Created</th>
-                    <th className="px-2 py-2 text-left font-medium text-xs w-20">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {isLoading ? (
-                    <tr>
-                      <td colSpan={9} className="px-2 py-8 text-center text-muted-foreground">
-                        <Loader2 className="w-6 h-6 mx-auto animate-spin" />
-                        <p className="mt-2">Loading tasks...</p>
-                      </td>
-                    </tr>
-                  ) : tasks.length === 0 ? (
-                    <tr>
-                      <td colSpan={9} className="px-2 py-8 text-center text-muted-foreground">
-                        No active tasks
-                      </td>
-                    </tr>
-                  ) : (
-                    tasks.map((task) => (
-                      <TaskRow
-                        key={task.id}
-                        task={task}
-                        personalityMap={personalityMap}
-                        onEdit={setEditTask}
-                        onDelete={(t) => {
-                          setDeleteTarget(t);
-                        }}
-                      />
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          {/* Clear filters */}
+          {hasFilters && (
+            <button
+              onClick={resetFilters}
+              className="text-xs text-muted-foreground hover:text-foreground underline"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
 
+      {/* Date Range Filter */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        {DATE_PRESETS.map((preset) => (
+          <button
+            key={preset.label}
+            onClick={() => {
+              handleDatePreset(preset);
+            }}
+            className={`px-2.5 py-1 rounded-md text-xs border transition-colors ${
+              datePreset === preset.label
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'border-border bg-background hover:bg-muted'
+            }`}
+          >
+            {preset.label}
+          </button>
+        ))}
+        <span className="text-muted-foreground text-xs">or</span>
+        <input
+          type="date"
+          value={dateFrom ? dateFrom.slice(0, 10) : ''}
+          onChange={(e) => {
+            handleCustomDate('from', e.target.value);
+          }}
+          className="px-2 py-1 text-xs border rounded-md bg-background"
+          aria-label="From date"
+        />
+        <span className="text-muted-foreground text-xs">–</span>
+        <input
+          type="date"
+          value={dateTo ? dateTo.slice(0, 10) : ''}
+          onChange={(e) => {
+            handleCustomDate('to', e.target.value);
+          }}
+          className="px-2 py-1 text-xs border rounded-md bg-background"
+          aria-label="To date"
+        />
+      </div>
+
+      {/* Task Table */}
+      <div className="card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="px-2 py-2 text-left font-medium text-xs hidden md:table-cell">
+                  Agent
+                </th>
+                <th className="px-2 py-2 text-left font-medium text-xs hidden sm:table-cell">ID</th>
+                <th className="px-2 py-2 text-left font-medium text-xs">Name</th>
+                <th className="px-2 py-2 text-left font-medium text-xs hidden lg:table-cell">
+                  Sub-Agent
+                </th>
+                <th className="px-2 py-2 text-left font-medium text-xs hidden md:table-cell">
+                  Type
+                </th>
+                <th className="px-2 py-2 text-left font-medium text-xs">Status</th>
+                <th className="px-2 py-2 text-left font-medium text-xs hidden lg:table-cell">
+                  Duration
+                </th>
+                <th className="px-2 py-2 text-left font-medium text-xs hidden sm:table-cell">
+                  Created
+                </th>
+                <th className="px-2 py-2 text-left font-medium text-xs w-20">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={9} className="px-2 py-8 text-center text-muted-foreground">
+                    <Loader2 className="w-6 h-6 mx-auto animate-spin" />
+                    <p className="mt-2">Loading tasks...</p>
+                  </td>
+                </tr>
+              ) : tasks.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-2 py-8 text-center text-muted-foreground">
+                    No active tasks
+                  </td>
+                </tr>
+              ) : (
+                tasks.map((task) => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    personalityMap={personalityMap}
+                    onEdit={setEditTask}
+                    onDelete={(t) => {
+                      setDeleteTarget(t);
+                    }}
+                  />
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

@@ -100,7 +100,8 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreate[] = [
         name: 'Check Result',
         description: 'Branch based on whether review passed',
         config: {
-          expression: 'steps.review.output && steps.review.output.includes && steps.review.output.includes("LGTM")',
+          expression:
+            'steps.review.output && steps.review.output.includes && steps.review.output.includes("LGTM")',
           trueBranchStepId: 'notify-pass',
           falseBranchStepId: 'notify-fail',
         },
@@ -115,7 +116,8 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreate[] = [
         config: {
           url: '{{input.webhookUrl}}',
           method: 'POST',
-          bodyTemplate: '{"status":"passed","pr":"{{input.prTitle}}","review":"{{steps.review.output}}"}',
+          bodyTemplate:
+            '{"status":"passed","pr":"{{input.prTitle}}","review":"{{steps.review.output}}"}',
         },
         dependsOn: ['check'],
         onError: 'continue',
@@ -128,7 +130,8 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreate[] = [
         config: {
           url: '{{input.webhookUrl}}',
           method: 'POST',
-          bodyTemplate: '{"status":"failed","pr":"{{input.prTitle}}","review":"{{steps.review.output}}"}',
+          bodyTemplate:
+            '{"status":"failed","pr":"{{input.prTitle}}","review":"{{steps.review.output}}"}',
         },
         dependsOn: ['check'],
         onError: 'continue',

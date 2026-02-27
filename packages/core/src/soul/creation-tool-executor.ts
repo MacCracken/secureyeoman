@@ -70,16 +70,17 @@ export async function executeCreationTool(
 
       if (policy?.emergencyStop) {
         return {
-          output: { error: 'Emergency stop is active. All AI-initiated mutations are currently blocked. A human admin must disable the Emergency Stop in Body → Resources.' },
+          output: {
+            error:
+              'Emergency stop is active. All AI-initiated mutations are currently blocked. A human admin must disable the Emergency Stop in Body → Resources.',
+          },
           isError: true,
         };
       }
 
       const level = policy?.automationLevel ?? 'supervised_auto';
       const isDestructive = DESTRUCTIVE_TOOLS.has(toolCall.name);
-      const shouldQueue =
-        level === 'full_manual' ||
-        (level === 'semi_auto' && isDestructive);
+      const shouldQueue = level === 'full_manual' || (level === 'semi_auto' && isDestructive);
 
       if (shouldQueue) {
         try {
@@ -100,7 +101,9 @@ export async function executeCreationTool(
         } catch {
           // Approval store unavailable — fall through and block the action
           return {
-            output: { error: `Action '${toolCall.name}' requires human approval (automation level: ${level}) but the approval queue is unavailable. Please try again later.` },
+            output: {
+              error: `Action '${toolCall.name}' requires human approval (automation level: ${level}) but the approval queue is unavailable. Please try again later.`,
+            },
             isError: true,
           };
         }
@@ -158,7 +161,10 @@ export async function executeCreationTool(
         const soulManager = secureYeoman.getSoulManager();
         const skillToDelete = await soulManager.getSkill(str(args.id));
         await soulManager.deleteSkill(str(args.id));
-        return { output: { deleted: true, id: args.id, name: skillToDelete?.name ?? str(args.id) }, isError: false };
+        return {
+          output: { deleted: true, id: args.id, name: skillToDelete?.name ?? str(args.id) },
+          isError: false,
+        };
       }
 
       // ── Tasks ──────────────────────────────────────────────────────────
@@ -221,10 +227,9 @@ export async function executeCreationTool(
           description: typeof args.description === 'string' ? args.description : '',
           systemPrompt: typeof args.systemPrompt === 'string' ? args.systemPrompt : '',
           traits: (args.traits as Record<string, string>) ?? {},
-          sex:
-            (['male', 'female', 'non-binary', 'unspecified'].includes(args.sex as string)
-              ? args.sex
-              : 'unspecified') as any,
+          sex: (['male', 'female', 'non-binary', 'unspecified'].includes(args.sex as string)
+            ? args.sex
+            : 'unspecified') as any,
           voice: '',
           preferredLanguage: '',
           defaultModel: null,
@@ -250,7 +255,10 @@ export async function executeCreationTool(
         // A personality must not be able to delete itself.
         if (targetId === context?.personalityId) {
           return {
-            output: { error: 'A personality cannot delete itself. Ask another personality or an admin to perform this deletion.' },
+            output: {
+              error:
+                'A personality cannot delete itself. Ask another personality or an admin to perform this deletion.',
+            },
             isError: true,
           };
         }
@@ -260,18 +268,27 @@ export async function executeCreationTool(
         const mode = target?.body?.resourcePolicy?.deletionMode ?? 'auto';
         if (mode === 'manual') {
           return {
-            output: { error: 'Deletion is blocked (mode: manual). A human admin must change the deletion mode in Body → Resources before this personality can be deleted.' },
+            output: {
+              error:
+                'Deletion is blocked (mode: manual). A human admin must change the deletion mode in Body → Resources before this personality can be deleted.',
+            },
             isError: true,
           };
         }
         if (mode === 'request') {
           return {
-            output: { error: 'Deletion requires human confirmation (mode: suggest). AI-initiated deletion is not allowed for this personality. A human must confirm deletion via the dashboard.' },
+            output: {
+              error:
+                'Deletion requires human confirmation (mode: suggest). AI-initiated deletion is not allowed for this personality. A human must confirm deletion via the dashboard.',
+            },
             isError: true,
           };
         }
         await soulManager.deletePersonality(targetId);
-        return { output: { deleted: true, id: targetId, name: target?.name ?? targetId }, isError: false };
+        return {
+          output: { deleted: true, id: targetId, name: target?.name ?? targetId },
+          isError: false,
+        };
       }
 
       // ── Sub-Agents ─────────────────────────────────────────────────────
@@ -339,7 +356,10 @@ export async function executeCreationTool(
           })),
           inheritFrom: Array.isArray(args.inheritFrom) ? (args.inheritFrom as string[]) : [],
         });
-        return { output: { created: true, roleId: str(args.name).toLowerCase().replace(/\s+/g, '_') }, isError: false };
+        return {
+          output: { created: true, roleId: str(args.name).toLowerCase().replace(/\s+/g, '_') },
+          isError: false,
+        };
       }
 
       case 'delete_custom_role': {
@@ -347,9 +367,15 @@ export async function executeCreationTool(
         const rbac = getRBAC();
         const removed = await rbac.removeRole(str(args.roleId));
         if (!removed) {
-          return { output: { error: `Role '${args.roleId}' not found or cannot be deleted.` }, isError: true };
+          return {
+            output: { error: `Role '${args.roleId}' not found or cannot be deleted.` },
+            isError: true,
+          };
         }
-        return { output: { deleted: true, roleId: args.roleId, name: str(args.roleId) }, isError: false };
+        return {
+          output: { deleted: true, roleId: args.roleId, name: str(args.roleId) },
+          isError: false,
+        };
       }
 
       // ── Role Assignments ───────────────────────────────────────────────
@@ -357,7 +383,10 @@ export async function executeCreationTool(
         const { getRBAC } = await import('../security/rbac.js');
         const rbac = getRBAC();
         await rbac.assignUserRole(str(args.userId), str(args.roleId), 'ai');
-        return { output: { assigned: true, userId: args.userId, roleId: args.roleId }, isError: false };
+        return {
+          output: { assigned: true, userId: args.userId, roleId: args.roleId },
+          isError: false,
+        };
       }
 
       case 'revoke_role': {
@@ -388,7 +417,16 @@ export async function executeCreationTool(
         }
         const expToDelete = await experimentManager.get(str(args.id));
         await experimentManager.delete(str(args.id));
-        return { output: { deleted: true, id: args.id, name: (expToDelete as Record<string, unknown>)?.name ? String((expToDelete as Record<string, unknown>).name) : str(args.id) }, isError: false };
+        return {
+          output: {
+            deleted: true,
+            id: args.id,
+            name: (expToDelete as Record<string, unknown>)?.name
+              ? String((expToDelete as Record<string, unknown>).name)
+              : str(args.id),
+          },
+          isError: false,
+        };
       }
 
       // ── A2A ────────────────────────────────────────────────────────────
@@ -406,7 +444,10 @@ export async function executeCreationTool(
         if (!a2aManager) {
           return { output: { error: 'A2A manager not available' }, isError: true };
         }
-        const result = await (a2aManager as any).sendMessage?.(str(args.agentUrl), str(args.message));
+        const result = await (a2aManager as any).sendMessage?.(
+          str(args.agentUrl),
+          str(args.message)
+        );
         return { output: { sent: true, result }, isError: false };
       }
 
@@ -419,9 +460,9 @@ export async function executeCreationTool(
         const workflow = await workflowManager.createDefinition({
           name: str(args.name),
           description: typeof args.description === 'string' ? args.description : '',
-          steps: Array.isArray(args.steps) ? (args.steps as any[]) : [],
-          edges: Array.isArray(args.edges) ? (args.edges as any[]) : [],
-          triggers: Array.isArray(args.triggers) ? (args.triggers as any[]) : [],
+          steps: Array.isArray(args.steps) ? args.steps : [],
+          edges: Array.isArray(args.edges) ? args.edges : [],
+          triggers: Array.isArray(args.triggers) ? args.triggers : [],
           isEnabled: typeof args.isEnabled === 'boolean' ? args.isEnabled : true,
           createdBy: context?.personalityId ?? 'ai',
         } as any);
@@ -445,7 +486,10 @@ export async function executeCreationTool(
         }
         const wfToDelete = await workflowManager.getDefinition(str(args.id));
         await workflowManager.deleteDefinition(str(args.id));
-        return { output: { deleted: true, id: args.id, name: wfToDelete?.name ?? str(args.id) }, isError: false };
+        return {
+          output: { deleted: true, id: args.id, name: wfToDelete?.name ?? str(args.id) },
+          isError: false,
+        };
       }
 
       case 'trigger_workflow': {
@@ -493,7 +537,9 @@ export async function executeCreationTool(
           return await dtm.execute(toolCall.name, args);
         }
         return {
-          output: { error: `Unknown tool: ${toolCall.name}. This tool may require a different execution context.` },
+          output: {
+            error: `Unknown tool: ${toolCall.name}. This tool may require a different execution context.`,
+          },
           isError: true,
         };
       }

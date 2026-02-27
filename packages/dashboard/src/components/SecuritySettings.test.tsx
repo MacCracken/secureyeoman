@@ -737,7 +737,9 @@ describe('SecuritySettings', () => {
     renderComponent();
     await screen.findByText('Code Editor');
     // Find the Developers card and verify it doesn't contain the Code Editor toggle
-    const developersHeadings = screen.getAllByRole('heading').filter((h) => h.textContent === 'Developers');
+    const developersHeadings = screen
+      .getAllByRole('heading')
+      .filter((h) => h.textContent === 'Developers');
     if (developersHeadings.length > 0) {
       const developersCard = developersHeadings[0].closest('.card');
       expect(developersCard?.querySelector('[aria-label="Toggle Code Editor"]')).toBeNull();

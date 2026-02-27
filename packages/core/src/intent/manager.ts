@@ -88,7 +88,9 @@ export class IntentManager {
   private readonly storage: IntentStorage;
   private readonly signalRefreshIntervalMs: number;
   private readonly opa: OpaClient | null;
-  private readonly callMcpTool: ((toolName: string, input?: Record<string, unknown>) => Promise<number | null>) | null;
+  private readonly callMcpTool:
+    | ((toolName: string, input?: Record<string, unknown>) => Promise<number | null>)
+    | null;
 
   private activeIntent: OrgIntentRecord | null = null;
   private signalCache = new Map<string, CachedSignal>();
@@ -143,7 +145,10 @@ export class IntentManager {
         const isActive = currentActive.has(goal.id);
         this.goalSnapshot.set(goal.id, isActive);
         await this.storage.upsertGoalSnapshot(
-          intent.id, goal.id, isActive, Date.now(),
+          intent.id,
+          goal.id,
+          isActive,
+          Date.now(),
           /* setActivatedAt */ isActive,
           /* setCompletedAt */ false
         );
@@ -180,7 +185,10 @@ export class IntentManager {
           metadata: { intentId: intent.id, goalName: goal.name, priority: goal.priority },
         });
         await this.storage.upsertGoalSnapshot(
-          intent.id, goal.id, true, now,
+          intent.id,
+          goal.id,
+          true,
+          now,
           /* setActivatedAt */ true,
           /* setCompletedAt */ false
         );
@@ -197,7 +205,10 @@ export class IntentManager {
           });
         }
         await this.storage.upsertGoalSnapshot(
-          intent.id, goal.id, false, now,
+          intent.id,
+          goal.id,
+          false,
+          now,
           /* setActivatedAt */ false,
           /* setCompletedAt */ !!goal.completionCondition
         );
@@ -284,11 +295,13 @@ export class IntentManager {
     try {
       const resp = await fetch(url, { signal: AbortSignal.timeout(10_000) });
       if (!resp.ok) return null;
-      const body = await resp.json() as unknown;
+      const body = await resp.json();
       if (typeof body === 'number') return body;
       if (
-        typeof body === 'object' && body !== null &&
-        'value' in body && typeof (body as Record<string, unknown>).value === 'number'
+        typeof body === 'object' &&
+        body !== null &&
+        'value' in body &&
+        typeof (body as Record<string, unknown>).value === 'number'
       ) {
         return (body as { value: number }).value;
       }
@@ -304,10 +317,7 @@ export class IntentManager {
    * The `schema` hint (optional) is passed as `{ schema }` in the tool input
    * so the MCP tool knows how to parse its response.
    */
-  private async _fetchMcpToolSignal(
-    toolName: string,
-    schema?: string
-  ): Promise<number | null> {
+  private async _fetchMcpToolSignal(toolName: string, schema?: string): Promise<number | null> {
     if (!this.callMcpTool) return null;
     try {
       const input: Record<string, unknown> = {};
@@ -376,7 +386,8 @@ export class IntentManager {
           this.signalCache.set(signal.id, { result, fetchedAt: Date.now() });
 
           const isDegraded =
-            (prevStatus === 'healthy' && (result.status === 'warning' || result.status === 'critical')) ||
+            (prevStatus === 'healthy' &&
+              (result.status === 'warning' || result.status === 'critical')) ||
             (prevStatus === 'warning' && result.status === 'critical');
           if (isDegraded) {
             await this.storage.logEnforcement({
@@ -464,7 +475,7 @@ export class IntentManager {
           tool: mcpTool ?? null,
         });
         // OPA allow=false means the boundary is violated
-        if (result !== null) return result === false;
+        if (result !== null) return !result;
       } catch {
         // Fall through to natural-language matching on OPA error
       }
@@ -477,11 +488,7 @@ export class IntentManager {
    * Rules prefixed with "deny:" match if the action description contains the rest.
    * Rules prefixed with "tool:" match if the mcpTool name contains the rest.
    */
-  private _matchesBoundary(
-    rule: string,
-    actionDescription: string,
-    mcpTool?: string
-  ): boolean {
+  private _matchesBoundary(rule: string, actionDescription: string, mcpTool?: string): boolean {
     const lower = rule.toLowerCase().trim();
     if (lower.startsWith('deny:')) {
       const term = lower.slice(5).trim();
@@ -507,7 +514,10 @@ export class IntentManager {
     const action = actions.find((a) => a.id === actionId);
 
     if (!action) {
-      return { allowed: false, reason: `Action '${actionId}' is not in the authorized actions list` };
+      return {
+        allowed: false,
+        reason: `Action '${actionId}' is not in the authorized actions list`,
+      };
     }
 
     if (action.requiredRole && ctx.role && action.requiredRole !== ctx.role) {
@@ -584,10 +594,7 @@ export class IntentManager {
    * When OPA_ADDR env is set and the policy has a `rego` field, evaluates via OPA;
    * falls back to natural-language rule on fetch error.
    */
-  async checkPolicies(
-    actionDescription: string,
-    mcpTool?: string
-  ): Promise<PolicyCheckResult> {
+  async checkPolicies(actionDescription: string, mcpTool?: string): Promise<PolicyCheckResult> {
     if (!this.activeIntent) return { action: 'allow' };
 
     const policies = this.activeIntent.policies ?? [];
@@ -635,7 +642,7 @@ export class IntentManager {
           tool: mcpTool ?? null,
         });
         // OPA allow=false means the policy matches (is violated)
-        if (result !== null) return result === false;
+        if (result !== null) return !result;
       } catch {
         // Fall through to natural-language rule on OPA error
       }

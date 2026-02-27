@@ -107,16 +107,12 @@ describe('captureScreen() — basic capture', () => {
 describe('captureScreen() — display target', () => {
   it('passes display index to screenshotDesktop when target.type=display', async () => {
     await captureScreen({ target: { type: 'display', id: '2' } });
-    expect(screenshotDesktopFn).toHaveBeenCalledWith(
-      expect.objectContaining({ screen: 2 })
-    );
+    expect(screenshotDesktopFn).toHaveBeenCalledWith(expect.objectContaining({ screen: 2 }));
   });
 
   it('defaults to display 0 when target.id is not a valid number', async () => {
     await captureScreen({ target: { type: 'display', id: 'nan' } });
-    expect(screenshotDesktopFn).toHaveBeenCalledWith(
-      expect.objectContaining({ screen: 0 })
-    );
+    expect(screenshotDesktopFn).toHaveBeenCalledWith(expect.objectContaining({ screen: 0 }));
   });
 });
 

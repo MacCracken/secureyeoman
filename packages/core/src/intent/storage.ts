@@ -49,7 +49,7 @@ interface EnforcementLogRow {
 // ─── Row → Record mappers ─────────────────────────────────────────────────────
 
 function rowToRecord(row: IntentRow): OrgIntentRecord {
-  const doc = row.doc as OrgIntentDoc;
+  const doc = row.doc;
   return {
     id: row.id,
     apiVersion: row.api_version,
@@ -115,31 +115,24 @@ export class IntentStorage extends PgBaseStorage {
        VALUES ($1, $2, $3, $4, FALSE, $5, $6)`,
       [id, doc.name, doc.apiVersion ?? 'v1', JSON.stringify(doc), now, now]
     );
-    const row = await this.queryOne<IntentRow>(
-      'SELECT * FROM org_intents WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne<IntentRow>('SELECT * FROM org_intents WHERE id = $1', [id]);
     return rowToRecord(row!);
   }
 
   async updateIntent(id: string, patch: Partial<OrgIntentDoc>): Promise<OrgIntentRecord | null> {
-    const existing = await this.queryOne<IntentRow>(
-      'SELECT * FROM org_intents WHERE id = $1',
-      [id]
-    );
+    const existing = await this.queryOne<IntentRow>('SELECT * FROM org_intents WHERE id = $1', [
+      id,
+    ]);
     if (!existing) return null;
 
-    const merged: OrgIntentDoc = { ...(existing.doc as OrgIntentDoc), ...patch };
+    const merged: OrgIntentDoc = { ...existing.doc, ...patch };
     const now = Date.now();
     await this.execute(
       `UPDATE org_intents SET name = $1, api_version = $2, doc = $3, updated_at = $4
        WHERE id = $5`,
       [merged.name, merged.apiVersion ?? 'v1', JSON.stringify(merged), now, id]
     );
-    const updated = await this.queryOne<IntentRow>(
-      'SELECT * FROM org_intents WHERE id = $1',
-      [id]
-    );
+    const updated = await this.queryOne<IntentRow>('SELECT * FROM org_intents WHERE id = $1', [id]);
     return updated ? rowToRecord(updated) : null;
   }
 
@@ -149,10 +142,7 @@ export class IntentStorage extends PgBaseStorage {
   }
 
   async getIntentDoc(id: string): Promise<OrgIntentRecord | null> {
-    const row = await this.queryOne<IntentRow>(
-      'SELECT * FROM org_intents WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne<IntentRow>('SELECT * FROM org_intents WHERE id = $1', [id]);
     return row ? rowToRecord(row) : null;
   }
 
@@ -189,10 +179,10 @@ export class IntentStorage extends PgBaseStorage {
   async setActiveIntent(id: string): Promise<void> {
     await this.withTransaction(async (client) => {
       await client.query('UPDATE org_intents SET is_active = FALSE WHERE is_active = TRUE');
-      await client.query(
-        'UPDATE org_intents SET is_active = TRUE, updated_at = $1 WHERE id = $2',
-        [Date.now(), id]
-      );
+      await client.query('UPDATE org_intents SET is_active = TRUE, updated_at = $1 WHERE id = $2', [
+        Date.now(),
+        id,
+      ]);
     });
   }
 

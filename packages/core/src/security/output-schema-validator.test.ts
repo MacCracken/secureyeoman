@@ -58,10 +58,7 @@ describe('OutputSchemaValidator — object validation', () => {
   });
 
   it('fails when required field is missing', () => {
-    const result = validator.validate(
-      { age: 30 },
-      { type: 'object', required: ['name', 'age'] }
-    );
+    const result = validator.validate({ age: 30 }, { type: 'object', required: ['name', 'age'] });
     expect(result.valid).toBe(false);
     expect(result.errors.some((e) => e.message.includes('"name" is missing'))).toBe(true);
   });
@@ -102,20 +99,14 @@ describe('OutputSchemaValidator — array validation', () => {
   });
 
   it('validates array items against items schema', () => {
-    const result = validator.validate(
-      [1, 'two', 3],
-      { type: 'array', items: { type: 'number' } }
-    );
+    const result = validator.validate([1, 'two', 3], { type: 'array', items: { type: 'number' } });
     expect(result.valid).toBe(false);
     expect(result.errors[0].path).toBe('[1]');
     expect(result.errors[0].message).toMatch(/Expected type "number"/);
   });
 
   it('passes when all array items match items schema', () => {
-    const result = validator.validate(
-      [1, 2, 3],
-      { type: 'array', items: { type: 'number' } }
-    );
+    const result = validator.validate([1, 2, 3], { type: 'array', items: { type: 'number' } });
     expect(result.valid).toBe(true);
   });
 });
@@ -152,10 +143,7 @@ describe('OutputSchemaValidator — deeply nested', () => {
 
 describe('OutputSchemaValidator — no explicit type', () => {
   it('validates required fields even without explicit type', () => {
-    const result = validator.validate(
-      { age: 30 },
-      { required: ['name'] }
-    );
+    const result = validator.validate({ age: 30 }, { required: ['name'] });
     expect(result.valid).toBe(false);
     expect(result.errors[0].message).toContain('"name" is missing');
   });

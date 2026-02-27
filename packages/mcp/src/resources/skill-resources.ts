@@ -21,7 +21,7 @@ export function registerSkillResources(server: McpServer, client: CoreApiClient)
     },
     async (uri: URL) => {
       const id = uri.pathname.split('/').pop() ?? '';
-      const skill = (await client.get(`/api/v1/soul/skills/${id}`)) as Record<string, unknown> | null;
+      const skill = await client.get(`/api/v1/soul/skills/${id}`);
       if (!skill) throw new Error(`Skill ${id} not found`);
 
       const instructions = (skill.instructions as string) ?? '';

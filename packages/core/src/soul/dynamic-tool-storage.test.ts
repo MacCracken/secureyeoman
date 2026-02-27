@@ -16,7 +16,10 @@ function makeRow(overrides: Record<string, unknown> = {}) {
     id: 'dt-1',
     name: 'add_numbers',
     description: 'Adds two numbers',
-    parameters_schema: { type: 'object', properties: { a: { type: 'number' }, b: { type: 'number' } } },
+    parameters_schema: {
+      type: 'object',
+      properties: { a: { type: 'number' }, b: { type: 'number' } },
+    },
     implementation: 'return args.a + args.b;',
     personality_id: null,
     created_by: 'ai',
@@ -66,7 +69,17 @@ describe('DynamicToolStorage', () => {
       executeReturns(0);
       await storage.ensureTables();
       const sql = mockQuery.mock.calls[0][0] as string;
-      for (const col of ['id', 'name', 'description', 'parameters_schema', 'implementation', 'personality_id', 'created_by', 'created_at', 'updated_at']) {
+      for (const col of [
+        'id',
+        'name',
+        'description',
+        'parameters_schema',
+        'implementation',
+        'personality_id',
+        'created_by',
+        'created_at',
+        'updated_at',
+      ]) {
         expect(sql).toContain(col);
       }
     });

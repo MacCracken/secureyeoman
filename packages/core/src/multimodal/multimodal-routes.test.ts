@@ -23,9 +23,18 @@ function createMockManager(): MultimodalManager {
     }),
     getConfig: vi.fn().mockReturnValue({ enabled: true }),
     detectAvailableProviders: vi.fn().mockResolvedValue({
-      vision: { available: ['claude', 'openai', 'gemini'], configured: ['claude', 'openai'], active: 'claude' },
+      vision: {
+        available: ['claude', 'openai', 'gemini'],
+        configured: ['claude', 'openai'],
+        active: 'claude',
+      },
       tts: { available: ['openai', 'voicebox'], configured: ['openai'], active: 'openai' },
-      stt: { available: ['openai', 'voicebox'], configured: ['openai'], active: 'openai', model: 'whisper-1' },
+      stt: {
+        available: ['openai', 'voicebox'],
+        configured: ['openai'],
+        active: 'openai',
+        model: 'whisper-1',
+      },
     }),
     setProvider: vi.fn().mockResolvedValue(undefined),
     setModel: vi.fn().mockResolvedValue(undefined),
@@ -282,7 +291,11 @@ describe('Multimodal Routes — validation', () => {
     it('rejects provider not in configured list', async () => {
       // gemini is in available but not configured in our mock
       (manager.detectAvailableProviders as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-        vision: { available: ['claude', 'openai', 'gemini'], configured: ['claude'], active: 'claude' },
+        vision: {
+          available: ['claude', 'openai', 'gemini'],
+          configured: ['claude'],
+          active: 'claude',
+        },
         tts: { available: ['openai'], configured: ['openai'], active: 'openai' },
         stt: { available: ['openai'], configured: ['openai'], active: 'openai' },
       });
@@ -376,7 +389,13 @@ describe('Multimodal Routes — validation', () => {
     bitsPerSample?: number;
     sampleFill?: number;
   }): Buffer {
-    const { durationSec, sampleRate = 8000, channels = 1, bitsPerSample = 16, sampleFill = 0 } = opts;
+    const {
+      durationSec,
+      sampleRate = 8000,
+      channels = 1,
+      bitsPerSample = 16,
+      sampleFill = 0,
+    } = opts;
     const numSamples = sampleRate * durationSec;
     const dataSize = numSamples * channels * (bitsPerSample / 8);
     const buf = Buffer.alloc(44 + dataSize, 0);
@@ -388,8 +407,8 @@ describe('Multimodal Routes — validation', () => {
     buf.writeUInt16LE(1, 20);
     buf.writeUInt16LE(channels, 22);
     buf.writeUInt32LE(sampleRate, 24);
-    buf.writeUInt32LE(sampleRate * channels * bitsPerSample / 8, 28);
-    buf.writeUInt16LE(channels * bitsPerSample / 8, 32);
+    buf.writeUInt32LE((sampleRate * channels * bitsPerSample) / 8, 28);
+    buf.writeUInt16LE((channels * bitsPerSample) / 8, 32);
     buf.writeUInt16LE(bitsPerSample, 34);
     buf.write('data', 36);
     buf.writeUInt32LE(dataSize, 40);

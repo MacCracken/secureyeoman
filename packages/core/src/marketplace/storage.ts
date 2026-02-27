@@ -234,7 +234,10 @@ export class MarketplaceStorage extends PgBaseStorage {
       );
       const globalNames = new Set(rows.map((r) => r.name));
       for (const name of skillNames) {
-        result.set(name, { installed: globalNames.has(name), installedGlobally: globalNames.has(name) });
+        result.set(name, {
+          installed: globalNames.has(name),
+          installedGlobally: globalNames.has(name),
+        });
       }
     } else {
       // Personality context: installed = has personality-specific record; installedGlobally = has global record

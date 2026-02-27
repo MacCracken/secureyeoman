@@ -85,10 +85,15 @@ function SessionsPanel() {
           <p className="px-2 py-2 text-xs text-muted-foreground">No active sessions</p>
         )}
         {sessions.map((s) => (
-          <div key={s.id} className="flex items-center gap-2 px-2 py-1.5 rounded text-xs text-muted-foreground">
+          <div
+            key={s.id}
+            className="flex items-center gap-2 px-2 py-1.5 rounded text-xs text-muted-foreground"
+          >
             <Terminal className="w-3.5 h-3.5 flex-shrink-0" />
             <span className="truncate font-mono">{s.runtime}</span>
-            <span className={`ml-auto px-1 rounded text-[10px] ${s.status === 'running' ? 'text-blue-400' : 'text-muted-foreground'}`}>
+            <span
+              className={`ml-auto px-1 rounded text-[10px] ${s.status === 'running' ? 'text-blue-400' : 'text-muted-foreground'}`}
+            >
               {s.status}
             </span>
           </div>
@@ -118,25 +123,36 @@ function TaskPanel() {
           <ClipboardList className="w-3.5 h-3.5" />
           Tasks
           {activeCount > 0 && (
-            <span className="ml-1 bg-blue-500/20 text-blue-400 px-1 rounded text-[10px]">{activeCount} running</span>
+            <span className="ml-1 bg-blue-500/20 text-blue-400 px-1 rounded text-[10px]">
+              {activeCount} running
+            </span>
           )}
         </div>
-        <Link to="/automation" className="text-muted-foreground hover:text-foreground" title="Open in Automation">
+        <Link
+          to="/automation"
+          className="text-muted-foreground hover:text-foreground"
+          title="Open in Automation"
+        >
           <ExternalLink className="w-3 h-3" />
         </Link>
       </div>
       <div className="overflow-y-auto p-1">
-        {tasks.length === 0 && (
-          <p className="px-2 py-2 text-xs text-muted-foreground">No tasks</p>
-        )}
+        {tasks.length === 0 && <p className="px-2 py-2 text-xs text-muted-foreground">No tasks</p>}
         {tasks.map((task) => (
-          <div key={task.id} className="flex items-start gap-2 px-2 py-1 rounded hover:bg-muted/30 text-xs">
-            <span className={`mt-0.5 px-1 rounded text-[10px] font-medium flex-shrink-0 ${STATUS_COLOR[task.status] ?? 'bg-muted text-muted-foreground'}`}>
+          <div
+            key={task.id}
+            className="flex items-start gap-2 px-2 py-1 rounded hover:bg-muted/30 text-xs"
+          >
+            <span
+              className={`mt-0.5 px-1 rounded text-[10px] font-medium flex-shrink-0 ${STATUS_COLOR[task.status] ?? 'bg-muted text-muted-foreground'}`}
+            >
               {task.status.slice(0, 3).toUpperCase()}
             </span>
             <div className="flex-1 min-w-0">
               <p className="truncate text-foreground">{task.name}</p>
-              {task.type && <p className="truncate text-muted-foreground text-[10px]">{task.type}</p>}
+              {task.type && (
+                <p className="truncate text-muted-foreground text-[10px]">{task.type}</p>
+              )}
             </div>
           </div>
         ))}
@@ -193,9 +209,7 @@ function MultiTerminal({ outputRef, onCommandComplete }: MultiTerminalProps) {
     onMutate: ({ command }) => {
       setTabs((prev) =>
         prev.map((t) =>
-          t.id === activeId
-            ? { ...t, output: [...t.output, `$ ${command}`], running: true }
-            : t
+          t.id === activeId ? { ...t, output: [...t.output, `$ ${command}`], running: true } : t
         )
       );
     },
@@ -203,9 +217,7 @@ function MultiTerminal({ outputRef, onCommandComplete }: MultiTerminalProps) {
       const output = data.output || data.error || '(no output)';
       setTabs((prev) =>
         prev.map((t) =>
-          t.id === activeId
-            ? { ...t, output: [...t.output, output], input: '', running: false }
-            : t
+          t.id === activeId ? { ...t, output: [...t.output, output], input: '', running: false } : t
         )
       );
       onCommandComplete?.(command, output);
@@ -217,10 +229,7 @@ function MultiTerminal({ outputRef, onCommandComplete }: MultiTerminalProps) {
           t.id === activeId
             ? {
                 ...t,
-                output: [
-                  ...t.output,
-                  `Error: ${err instanceof Error ? err.message : String(err)}`,
-                ],
+                output: [...t.output, `Error: ${err instanceof Error ? err.message : String(err)}`],
                 running: false,
               }
             : t
@@ -254,12 +263,18 @@ function MultiTerminal({ outputRef, onCommandComplete }: MultiTerminalProps) {
                 ? 'bg-background text-foreground border border-b-background border-border'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
-            onClick={(e) => { e.stopPropagation(); setActiveId(t.id); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveId(t.id);
+            }}
           >
             <Terminal className="w-3 h-3" />
             {t.label}
             <button
-              onClick={(e) => { e.stopPropagation(); closeTab(t.id); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                closeTab(t.id);
+              }}
               className="ml-0.5 rounded hover:bg-muted p-0.5"
             >
               <X className="w-2.5 h-2.5" />
@@ -268,7 +283,10 @@ function MultiTerminal({ outputRef, onCommandComplete }: MultiTerminalProps) {
         ))}
         {tabs.length < MAX_TERMINAL_TABS && (
           <button
-            onClick={(e) => { e.stopPropagation(); addTab(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              addTab();
+            }}
             className="px-1.5 py-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted/50 transition-colors flex-shrink-0"
             title="New terminal"
           >
@@ -279,14 +297,16 @@ function MultiTerminal({ outputRef, onCommandComplete }: MultiTerminalProps) {
 
       {/* Output */}
       <div className="flex-1 overflow-y-auto font-mono text-xs p-3 space-y-0.5 bg-black/30">
-        {activeTab.output.length === 0 && (
-          <span className="text-muted-foreground">Ready.</span>
-        )}
+        {activeTab.output.length === 0 && <span className="text-muted-foreground">Ready.</span>}
         {activeTab.output.map((line, i) => (
           <div
             key={i}
             className={`whitespace-pre-wrap break-all ${
-              line.startsWith('$') ? 'text-muted-foreground' : line.startsWith('Error:') ? 'text-red-400/90' : 'text-green-400/90'
+              line.startsWith('$')
+                ? 'text-muted-foreground'
+                : line.startsWith('Error:')
+                  ? 'text-red-400/90'
+                  : 'text-green-400/90'
             }`}
           >
             {line}
@@ -304,9 +324,14 @@ function MultiTerminal({ outputRef, onCommandComplete }: MultiTerminalProps) {
             className="w-full bg-transparent font-mono text-xs outline-none text-foreground placeholder:text-muted-foreground/40 caret-primary"
             placeholder="command..."
             value={activeTab.input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+            }}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                submit();
+              }
             }}
             disabled={activeTab.running}
             autoComplete="off"
@@ -318,7 +343,11 @@ function MultiTerminal({ outputRef, onCommandComplete }: MultiTerminalProps) {
           disabled={activeTab.running || !activeTab.input.trim()}
           className="p-1 rounded text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors flex-shrink-0"
         >
-          {activeTab.running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+          {activeTab.running ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Play className="w-3.5 h-3.5" />
+          )}
         </button>
       </div>
     </div>
@@ -335,7 +364,13 @@ interface InlineChatProps {
   hasVision: boolean;
 }
 
-function InlineChat({ personalityId, personalityName, memoryEnabled, terminalContext, hasVision }: InlineChatProps) {
+function InlineChat({
+  personalityId,
+  personalityName,
+  memoryEnabled,
+  terminalContext,
+  hasVision,
+}: InlineChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -400,7 +435,9 @@ function InlineChat({ personalityId, personalityName, memoryEnabled, terminalCon
         )}
         {messages.length > 0 && (
           <button
-            onClick={() => setMessages([])}
+            onClick={() => {
+              setMessages([]);
+            }}
             className="ml-auto text-[10px] text-muted-foreground hover:text-foreground transition-colors"
           >
             clear
@@ -425,9 +462,7 @@ function InlineChat({ personalityId, personalityName, memoryEnabled, terminalCon
             )}
             <div
               className={`max-w-[85%] rounded px-2 py-1.5 text-xs whitespace-pre-wrap break-words ${
-                m.role === 'user'
-                  ? 'bg-primary/15 text-foreground'
-                  : 'bg-muted/50 text-foreground'
+                m.role === 'user' ? 'bg-primary/15 text-foreground' : 'bg-muted/50 text-foreground'
               }`}
             >
               {m.content}
@@ -458,8 +493,15 @@ function InlineChat({ personalityId, personalityName, memoryEnabled, terminalCon
           className="flex-1 bg-transparent text-xs outline-none text-foreground placeholder:text-muted-foreground/40 caret-primary"
           placeholder={`Message ${personalityName ?? 'assistant'}...`}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void send(); } }}
+          onChange={(e) => {
+            setInput(e.target.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              void send();
+            }
+          }}
           disabled={sending}
           autoComplete="off"
         />
@@ -468,7 +510,11 @@ function InlineChat({ personalityId, personalityName, memoryEnabled, terminalCon
           disabled={sending || !input.trim()}
           className="p-1 rounded text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors flex-shrink-0"
         >
-          {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+          {sending ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Send className="w-3.5 h-3.5" />
+          )}
         </button>
       </div>
     </div>
@@ -481,8 +527,8 @@ export function AdvancedEditorPage() {
   const queryClient = useQueryClient();
 
   // ── Personality ──
-  const [selectedPersonalityId, setSelectedPersonalityIdRaw] = useState<string | null>(
-    () => localStorage.getItem('soul:editorPersonalityId')
+  const [selectedPersonalityId, setSelectedPersonalityIdRaw] = useState<string | null>(() =>
+    localStorage.getItem('soul:editorPersonalityId')
   );
   const setSelectedPersonalityId = (id: string | null) => {
     if (id) localStorage.setItem('soul:editorPersonalityId', id);
@@ -496,10 +542,12 @@ export function AdvancedEditorPage() {
     staleTime: 30000,
   });
   const personalities = personalitiesData?.personalities ?? [];
-  const defaultPersonality = personalities.find((p) => p.isDefault)
-    ?? [...personalities].sort((a, b) => a.name.localeCompare(b.name))[0];
+  const defaultPersonality =
+    personalities.find((p) => p.isDefault) ??
+    [...personalities].sort((a, b) => a.name.localeCompare(b.name))[0];
   const effectivePersonalityId = selectedPersonalityId ?? defaultPersonality?.id ?? null;
-  const personality = personalities.find((p) => p.id === effectivePersonalityId) ?? defaultPersonality ?? null;
+  const personality =
+    personalities.find((p) => p.id === effectivePersonalityId) ?? defaultPersonality ?? null;
 
   // ── Memory ──
   const [memoryEnabled, setMemoryEnabled] = useState(
@@ -546,7 +594,7 @@ export function AdvancedEditorPage() {
         void queryClient.invalidateQueries({ queryKey: ['model-info'] });
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectivePersonalityId, queryClient]);
 
   // ── Vision / Watch ──
@@ -579,13 +627,19 @@ export function AdvancedEditorPage() {
           {/* Watch toggle (vision only) */}
           {hasVision && (
             <button
-              onClick={() => setWatchEnabled((v) => !v)}
+              onClick={() => {
+                setWatchEnabled((v) => !v);
+              }}
               className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
                 watchEnabled
                   ? 'bg-primary/15 border-primary text-primary'
                   : 'border-border text-muted-foreground hover:text-foreground'
               }`}
-              title={watchEnabled ? 'Watch on — personality can see terminal output' : 'Watch off — enable terminal vision'}
+              title={
+                watchEnabled
+                  ? 'Watch on — personality can see terminal output'
+                  : 'Watch off — enable terminal vision'
+              }
             >
               <Eye className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Watch</span>
@@ -596,7 +650,9 @@ export function AdvancedEditorPage() {
           <div className="relative">
             <button
               ref={modelBtnRef}
-              onClick={() => setModelOpen((v) => !v)}
+              onClick={() => {
+                setModelOpen((v) => !v);
+              }}
               className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-border text-muted-foreground hover:text-foreground transition-colors"
               title="Switch model"
             >
@@ -608,7 +664,9 @@ export function AdvancedEditorPage() {
             {modelOpen && (
               <div className="absolute right-0 top-full mt-1 z-50">
                 <ModelWidget
-                  onClose={() => setModelOpen(false)}
+                  onClose={() => {
+                    setModelOpen(false);
+                  }}
                   onModelSwitch={() => {
                     setModelOpen(false);
                     void queryClient.invalidateQueries({ queryKey: ['model-info'] });
@@ -622,13 +680,16 @@ export function AdvancedEditorPage() {
           {personalities.length > 0 && (
             <select
               value={effectivePersonalityId ?? ''}
-              onChange={(e) => setSelectedPersonalityId(e.target.value || null)}
+              onChange={(e) => {
+                setSelectedPersonalityId(e.target.value || null);
+              }}
               className="text-xs bg-background border border-border rounded px-2 py-1 text-foreground max-w-[120px]"
             >
               <option value="">No personality</option>
               {personalities.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name}{p.isDefault ? ' ★' : ''}
+                  {p.name}
+                  {p.isDefault ? ' ★' : ''}
                 </option>
               ))}
             </select>
@@ -648,10 +709,7 @@ export function AdvancedEditorPage() {
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
           {/* Terminal — dominant */}
           <div className="flex-[3] min-h-0 overflow-hidden">
-            <MultiTerminal
-              outputRef={terminalOutputRef}
-              onCommandComplete={saveMemory}
-            />
+            <MultiTerminal outputRef={terminalOutputRef} onCommandComplete={saveMemory} />
           </div>
 
           {/* Inline chat */}

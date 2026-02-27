@@ -122,8 +122,7 @@ function RoleForm({
       </div>
       <div>
         <label className="text-xs text-muted-foreground block mb-1">
-          Permissions{' '}
-          <span className="font-normal">(comma-separated resource:action)</span>
+          Permissions <span className="font-normal">(comma-separated resource:action)</span>
         </label>
         <input
           type="text"
@@ -137,8 +136,7 @@ function RoleForm({
       </div>
       <div>
         <label className="text-xs text-muted-foreground block mb-1">
-          Inherit From{' '}
-          <span className="font-normal">(comma-separated role IDs, optional)</span>
+          Inherit From <span className="font-normal">(comma-separated role IDs, optional)</span>
         </label>
         <input
           type="text"
@@ -160,11 +158,7 @@ function RoleForm({
         >
           {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
         </button>
-        <button
-          className="btn btn-ghost text-sm px-3 py-1"
-          onClick={onCancel}
-          disabled={isPending}
-        >
+        <button className="btn btn-ghost text-sm px-3 py-1" onClick={onCancel} disabled={isPending}>
           Cancel
         </button>
       </div>
@@ -690,7 +684,8 @@ export function SecuritySettings() {
         </div>
         <div className="p-4 space-y-4">
           <div className="border border-yellow-500/30 bg-yellow-500/10 rounded-lg p-2.5 text-xs text-yellow-600 dark:text-yellow-400">
-            ⚠️ Desktop Control grants agents the ability to capture your screen and control your keyboard and mouse. Only enable on trusted, dedicated machines.
+            ⚠️ Desktop Control grants agents the ability to capture your screen and control your
+            keyboard and mouse. Only enable on trusted, dedicated machines.
           </div>
           <PolicyToggle
             label="Desktop Control"
@@ -807,7 +802,10 @@ export function SecuritySettings() {
           {subAgentsAllowed && delegationEnabled && (
             <div className="flex items-center gap-2 text-xs text-success bg-success/5 border border-success/20 rounded px-3 py-2">
               <span>✓</span>
-              <span>Delegation is active — personalities with Sub-Agent Delegation enabled can use <code>delegate_task</code>.</span>
+              <span>
+                Delegation is active — personalities with Sub-Agent Delegation enabled can use{' '}
+                <code>delegate_task</code>.
+              </span>
             </div>
           )}
 
@@ -1059,7 +1057,9 @@ export function SecuritySettings() {
               />
             </div>
             {!codeEditorAllowed && (
-              <p className="text-xs text-muted-foreground mt-1">Requires Code Editor to be enabled.</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Requires Code Editor to be enabled.
+              </p>
             )}
           </div>
         </div>
@@ -1528,7 +1528,9 @@ export function SecretsPanel() {
         onConfirm={() => {
           if (confirmDelete) deleteMutation.mutate(confirmDelete);
         }}
-        onCancel={() => setConfirmDelete(null)}
+        onCancel={() => {
+          setConfirmDelete(null);
+        }}
       />
 
       <div>
@@ -1549,7 +1551,9 @@ export function SecretsPanel() {
           </h3>
           <button
             className="btn btn-ghost text-sm flex items-center gap-1"
-            onClick={() => setAdding((v) => !v)}
+            onClick={() => {
+              setAdding((v) => !v);
+            }}
           >
             <Plus className="w-4 h-4" />
             Add Secret
@@ -1564,7 +1568,9 @@ export function SecretsPanel() {
                 <input
                   type="text"
                   value={newName}
-                  onChange={(e) => setNewName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))}
+                  onChange={(e) => {
+                    setNewName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''));
+                  }}
                   placeholder="MY_SECRET_KEY"
                   className="px-2 py-1 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
                   autoFocus
@@ -1575,7 +1581,9 @@ export function SecretsPanel() {
                 <input
                   type="password"
                   value={newValue}
-                  onChange={(e) => setNewValue(e.target.value)}
+                  onChange={(e) => {
+                    setNewValue(e.target.value);
+                  }}
                   placeholder="••••••••"
                   className="px-2 py-1 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
                 />
@@ -1625,7 +1633,9 @@ export function SecretsPanel() {
                 </div>
                 <button
                   className="text-destructive hover:text-destructive/80"
-                  onClick={() => setConfirmDelete(key)}
+                  onClick={() => {
+                    setConfirmDelete(key);
+                  }}
                   aria-label={`Delete secret ${key}`}
                 >
                   <Trash2 className="w-3.5 h-3.5" />

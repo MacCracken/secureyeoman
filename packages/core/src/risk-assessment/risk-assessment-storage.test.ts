@@ -102,7 +102,10 @@ describe('RiskAssessmentStorage', () => {
     it('inserts and returns assessment with defaults', async () => {
       mockQuery.mockResolvedValueOnce({ rows: [makeAssessmentRow()], rowCount: 1 });
 
-      const result = await storage.create({ name: 'Q1 Risk Assessment', assessmentTypes: ['security', 'autonomy'], windowDays: 7 }, 'user-1');
+      const result = await storage.create(
+        { name: 'Q1 Risk Assessment', assessmentTypes: ['security', 'autonomy'], windowDays: 7 },
+        'user-1'
+      );
 
       expect(result.id).toBe(ASSESSMENT_ID);
       expect(result.name).toBe('Q1 Risk Assessment');
@@ -121,7 +124,10 @@ describe('RiskAssessmentStorage', () => {
     });
 
     it('generates a unique id', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [makeAssessmentRow({ id: 'auto-id' })], rowCount: 1 });
+      mockQuery.mockResolvedValueOnce({
+        rows: [makeAssessmentRow({ id: 'auto-id' })],
+        rowCount: 1,
+      });
       const result = await storage.create({ name: 'Test', assessmentTypes: [], windowDays: 7 });
       expect(result.id).toBe('auto-id');
     });
@@ -181,7 +187,13 @@ describe('RiskAssessmentStorage', () => {
 
     it('maps numeric fields from string DB values', async () => {
       mockQuery.mockResolvedValueOnce({
-        rows: [makeAssessmentRow({ findings_count: '3', window_days: '14', created_at: '1700000000000' })],
+        rows: [
+          makeAssessmentRow({
+            findings_count: '3',
+            window_days: '14',
+            created_at: '1700000000000',
+          }),
+        ],
         rowCount: 1,
       });
       const result = await storage.get(ASSESSMENT_ID);
@@ -215,7 +227,9 @@ describe('RiskAssessmentStorage', () => {
   describe('saveResults', () => {
     it('sets status to completed and returns updated assessment', async () => {
       mockQuery.mockResolvedValueOnce({
-        rows: [makeAssessmentRow({ status: 'completed', composite_score: 42, risk_level: 'medium' })],
+        rows: [
+          makeAssessmentRow({ status: 'completed', composite_score: 42, risk_level: 'medium' }),
+        ],
         rowCount: 1,
       });
 
@@ -256,7 +270,10 @@ describe('RiskAssessmentStorage', () => {
 
   describe('listFeeds', () => {
     it('returns all feeds', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [makeFeedRow(), makeFeedRow({ id: 'feed-002' })], rowCount: 2 });
+      mockQuery.mockResolvedValueOnce({
+        rows: [makeFeedRow(), makeFeedRow({ id: 'feed-002' })],
+        rowCount: 2,
+      });
       const feeds = await storage.listFeeds();
       expect(feeds).toHaveLength(2);
     });
@@ -321,8 +338,7 @@ describe('RiskAssessmentStorage', () => {
     });
 
     it('skips duplicate source_refs', async () => {
-      mockQuery
-        .mockResolvedValueOnce({ rows: [{ id: 'existing' }], rowCount: 1 }); // existing source_ref
+      mockQuery.mockResolvedValueOnce({ rows: [{ id: 'existing' }], rowCount: 1 }); // existing source_ref
 
       const result = await storage.ingestFindings(FEED_ID, [
         { category: 'cyber', severity: 'high', title: 'RCE', sourceRef: 'CVE-2024-0001' },
@@ -385,7 +401,13 @@ describe('RiskAssessmentStorage', () => {
   describe('updateFindingStatus', () => {
     it('returns updated finding for acknowledge', async () => {
       mockQuery.mockResolvedValueOnce({
-        rows: [makeFindingRow({ status: 'acknowledged', acknowledged_by: 'alice', acknowledged_at: NOW })],
+        rows: [
+          makeFindingRow({
+            status: 'acknowledged',
+            acknowledged_by: 'alice',
+            acknowledged_at: NOW,
+          }),
+        ],
         rowCount: 1,
       });
       const result = await storage.updateFindingStatus(FINDING_ID, 'acknowledged', 'alice');

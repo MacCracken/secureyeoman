@@ -45,8 +45,8 @@ describe('RoutingRulesStorage.list()', () => {
   it('returns rules and total count', async () => {
     const storage = new RoutingRulesStorage();
     vi.spyOn(storage as any, 'queryMany')
-      .mockResolvedValueOnce([makeRow()])           // rules
-      .mockResolvedValueOnce([{ total: 1 }]);        // count
+      .mockResolvedValueOnce([makeRow()]) // rules
+      .mockResolvedValueOnce([{ total: 1 }]); // count
 
     const result = await storage.list();
     expect(result.rules).toHaveLength(1);
@@ -56,8 +56,7 @@ describe('RoutingRulesStorage.list()', () => {
 
   it('filters by enabled', async () => {
     const storage = new RoutingRulesStorage();
-    const spy = vi.spyOn(storage as any, 'queryMany')
-      .mockResolvedValue([]);
+    const spy = vi.spyOn(storage as any, 'queryMany').mockResolvedValue([]);
 
     await storage.list({ enabled: true });
     const firstCall = spy.mock.calls[0];
@@ -68,13 +67,15 @@ describe('RoutingRulesStorage.list()', () => {
   it('maps all fields correctly', async () => {
     const storage = new RoutingRulesStorage();
     vi.spyOn(storage as any, 'queryMany')
-      .mockResolvedValueOnce([makeRow({
-        trigger_chat_id_pattern: 'general*',
-        trigger_keyword_pattern: 'help',
-        action_personality_id: 'p-1',
-        match_count: 5,
-        last_matched_at: NOW - 1000,
-      })])
+      .mockResolvedValueOnce([
+        makeRow({
+          trigger_chat_id_pattern: 'general*',
+          trigger_keyword_pattern: 'help',
+          action_personality_id: 'p-1',
+          match_count: 5,
+          last_matched_at: NOW - 1000,
+        }),
+      ])
       .mockResolvedValueOnce([{ total: 1 }]);
 
     const result = await storage.list();
@@ -131,16 +132,18 @@ describe('RoutingRulesStorage.create()', () => {
 
     expect(executeSpy).toHaveBeenCalledOnce();
     const params = executeSpy.mock.calls[0][1];
-    expect(params[1]).toBe('Test Rule');    // name
-    expect(params[3]).toBe(true);           // enabled default
-    expect(params[4]).toBe(100);            // priority default
+    expect(params[1]).toBe('Test Rule'); // name
+    expect(params[3]).toBe(true); // enabled default
+    expect(params[4]).toBe(100); // priority default
     expect(result?.id).toBe('rule-1');
   });
 
   it('uses provided optional fields', async () => {
     const storage = new RoutingRulesStorage();
     const executeSpy = vi.spyOn(storage as any, 'execute').mockResolvedValueOnce(1);
-    vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(makeRow({ enabled: false, priority: 50 }));
+    vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(
+      makeRow({ enabled: false, priority: 50 })
+    );
 
     await storage.create({
       name: 'Low Pri Rule',
@@ -151,9 +154,9 @@ describe('RoutingRulesStorage.create()', () => {
     });
 
     const params = executeSpy.mock.calls[0][1];
-    expect(params[3]).toBe(false);       // enabled
-    expect(params[4]).toBe(50);          // priority
-    expect(params[7]).toBe('dev-*');     // trigger_chat_id_pattern
+    expect(params[3]).toBe(false); // enabled
+    expect(params[4]).toBe(50); // priority
+    expect(params[7]).toBe('dev-*'); // trigger_chat_id_pattern
   });
 });
 
@@ -168,9 +171,10 @@ describe('RoutingRulesStorage.update()', () => {
 
   it('updates and returns the updated rule', async () => {
     const storage = new RoutingRulesStorage();
-    const queryOneSpy = vi.spyOn(storage as any, 'queryOne')
-      .mockResolvedValueOnce(makeRow())            // existing (in update)
-      .mockResolvedValueOnce(makeRow({ name: 'Updated' }));  // result (in get)
+    const queryOneSpy = vi
+      .spyOn(storage as any, 'queryOne')
+      .mockResolvedValueOnce(makeRow()) // existing (in update)
+      .mockResolvedValueOnce(makeRow({ name: 'Updated' })); // result (in get)
     vi.spyOn(storage as any, 'execute').mockResolvedValueOnce(1);
 
     const result = await storage.update('rule-1', { name: 'Updated' });
@@ -213,7 +217,10 @@ describe('RoutingRulesStorage.recordMatch()', () => {
 describe('RoutingRulesStorage.listEnabled()', () => {
   it('returns only enabled rules', async () => {
     const storage = new RoutingRulesStorage();
-    vi.spyOn(storage as any, 'queryMany').mockResolvedValueOnce([makeRow(), makeRow({ id: 'rule-2' })]);
+    vi.spyOn(storage as any, 'queryMany').mockResolvedValueOnce([
+      makeRow(),
+      makeRow({ id: 'rule-2' }),
+    ]);
 
     const rules = await storage.listEnabled();
     expect(rules).toHaveLength(2);

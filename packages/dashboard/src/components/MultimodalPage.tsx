@@ -440,10 +440,8 @@ function ProviderSection({
   const model = info?.model ?? '';
   const metadata = info?.metadata ?? {};
 
-  const getLabel = (p: string): string =>
-    metadata[p]?.label ?? PROVIDER_LABEL_FALLBACK[p] ?? p;
-  const getCategory = (p: string): 'local' | 'cloud' =>
-    metadata[p]?.category ?? 'cloud';
+  const getLabel = (p: string): string => metadata[p]?.label ?? PROVIDER_LABEL_FALLBACK[p] ?? p;
+  const getCategory = (p: string): 'local' | 'cloud' => metadata[p]?.category ?? 'cloud';
 
   const cloudProviders = configured.filter((p) => getCategory(p) === 'cloud');
   const localProviders = configured.filter((p) => getCategory(p) === 'local');
@@ -503,7 +501,9 @@ function ProviderSection({
                   disabled={isPending}
                 >
                   {WHISPER_MODELS.map((m) => (
-                    <option key={m} value={m}>{m}</option>
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
                   ))}
                 </select>
               ) : (
@@ -537,7 +537,9 @@ function ProviderCard({
       <div className="flex items-center gap-2 mb-3">
         <Radio className="w-4 h-4 text-muted-foreground" />
         <h2 className="text-sm font-medium">Providers</h2>
-        <span className="text-xs text-muted-foreground ml-auto">Click a configured provider to switch</span>
+        <span className="text-xs text-muted-foreground ml-auto">
+          Click a configured provider to switch
+        </span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <ProviderSection

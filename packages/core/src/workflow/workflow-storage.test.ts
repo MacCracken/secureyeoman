@@ -112,7 +112,10 @@ describe('WorkflowStorage', () => {
   describe('updateDefinition', () => {
     it('updates name and isEnabled', async () => {
       const def = await storage.createDefinition(defData('Old Name'));
-      const updated = await storage.updateDefinition(def.id, { name: 'New Name', isEnabled: false });
+      const updated = await storage.updateDefinition(def.id, {
+        name: 'New Name',
+        isEnabled: false,
+      });
       expect(updated?.name).toBe('New Name');
       expect(updated?.isEnabled).toBe(false);
     });
@@ -136,7 +139,9 @@ describe('WorkflowStorage', () => {
     });
 
     it('returns null when definition not found', async () => {
-      expect(await storage.updateDefinition('00000000-0000-0000-0000-000000000000', { name: 'x' })).toBeNull();
+      expect(
+        await storage.updateDefinition('00000000-0000-0000-0000-000000000000', { name: 'x' })
+      ).toBeNull();
     });
   });
 

@@ -52,8 +52,7 @@ export class SamlAdapter {
         decryptionPvk: cfg.spPrivateKey ?? undefined,
         wantAssertionsSigned: cfg.wantAssertionsSigned ?? true,
         identifierFormat:
-          cfg.nameIdFormat ??
-          'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
+          cfg.nameIdFormat ?? 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
       });
     }
     return this.saml;
@@ -86,7 +85,7 @@ export class SamlAdapter {
 
     return {
       nameId: profile!.nameID as string,
-      sessionIndex: (profile as any)?.sessionIndex as string | undefined,
+      sessionIndex: profile?.sessionIndex as string | undefined,
       attributes: attrs,
       role,
     };

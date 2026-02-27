@@ -20,8 +20,10 @@ export const summarizeTextSkill: Partial<MarketplaceSkill> = {
     'in (a )?(few|short|brief|concise) (words|sentences|points|bullets)',
   ],
   useWhen: 'User asks to summarize, condense, or shorten a piece of text',
-  doNotUseWhen: 'User wants the full original text preserved or is asking for expansion or elaboration',
-  successCriteria: 'A concise summary under 20% of the original length that captures all key points',
+  doNotUseWhen:
+    'User wants the full original text preserved or is asking for expansion or elaboration',
+  successCriteria:
+    'A concise summary under 20% of the original length that captures all key points',
   routing: 'fuzzy',
   autonomyLevel: 'L1',
 };

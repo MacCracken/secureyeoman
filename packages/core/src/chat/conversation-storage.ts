@@ -158,11 +158,13 @@ export class ConversationStorage extends PgBaseStorage {
     return row ? rowToConversation(row) : null;
   }
 
-  async listConversations(opts: {
-    limit?: number;
-    offset?: number;
-    personalityId?: string;
-  } = {}): Promise<{
+  async listConversations(
+    opts: {
+      limit?: number;
+      offset?: number;
+      personalityId?: string;
+    } = {}
+  ): Promise<{
     conversations: Conversation[];
     total: number;
   }> {
@@ -254,9 +256,7 @@ export class ConversationStorage extends PgBaseStorage {
             ? JSON.stringify(data.creationEvents)
             : null,
           data.thinkingContent ?? null,
-          data.toolCalls && data.toolCalls.length > 0
-            ? JSON.stringify(data.toolCalls)
-            : null,
+          data.toolCalls && data.toolCalls.length > 0 ? JSON.stringify(data.toolCalls) : null,
           now,
         ]
       );

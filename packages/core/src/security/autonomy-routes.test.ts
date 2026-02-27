@@ -17,14 +17,19 @@ function makeManager(overrides: Record<string, unknown> = {}) {
     listAuditRuns: vi.fn().mockResolvedValue([]),
     createAuditRun: vi.fn().mockResolvedValue({ id: 'run-1', name: 'Test Run', items: [] }),
     getAuditRun: vi.fn().mockResolvedValue({ id: 'run-1', name: 'Test Run', items: [] }),
-    updateAuditItem: vi.fn().mockResolvedValue({ id: 'run-1', items: [{ id: 'item-1', status: 'pass' }] }),
+    updateAuditItem: vi
+      .fn()
+      .mockResolvedValue({ id: 'run-1', items: [{ id: 'item-1', status: 'pass' }] }),
     finalizeRun: vi.fn().mockResolvedValue({ id: 'run-1', finalizedAt: Date.now() }),
     emergencyStop: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
 
-function buildApp(managerOverrides: Record<string, unknown> = {}, authUser?: Record<string, unknown>) {
+function buildApp(
+  managerOverrides: Record<string, unknown> = {},
+  authUser?: Record<string, unknown>
+) {
   const app = Fastify({ logger: false });
   const manager = makeManager(managerOverrides);
 

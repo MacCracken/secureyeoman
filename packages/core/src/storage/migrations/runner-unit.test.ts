@@ -70,14 +70,14 @@ describe('runMigrations() — full migration run', () => {
 
     // Client queries: lock, recheck, 001 check, 001 sql, 001 insert, 002 check, 002 sql, 002 insert, unlock
     mockClientQuery
-      .mockResolvedValueOnce({ rows: [] })  // pg_advisory_lock
-      .mockResolvedValueOnce({ rows: [] })  // recheck SELECT latest
-      .mockResolvedValueOnce({ rows: [] })  // SELECT 001 → not found
-      .mockResolvedValueOnce({ rows: [] })  // 001 SQL
-      .mockResolvedValueOnce({ rows: [] })  // INSERT 001
-      .mockResolvedValueOnce({ rows: [] })  // SELECT 002 → not found
-      .mockResolvedValueOnce({ rows: [] })  // 002 SQL
-      .mockResolvedValueOnce({ rows: [] })  // INSERT 002
+      .mockResolvedValueOnce({ rows: [] }) // pg_advisory_lock
+      .mockResolvedValueOnce({ rows: [] }) // recheck SELECT latest
+      .mockResolvedValueOnce({ rows: [] }) // SELECT 001 → not found
+      .mockResolvedValueOnce({ rows: [] }) // 001 SQL
+      .mockResolvedValueOnce({ rows: [] }) // INSERT 001
+      .mockResolvedValueOnce({ rows: [] }) // SELECT 002 → not found
+      .mockResolvedValueOnce({ rows: [] }) // 002 SQL
+      .mockResolvedValueOnce({ rows: [] }) // INSERT 002
       .mockResolvedValueOnce({ rows: [] }); // pg_advisory_unlock
 
     await runMigrations();
@@ -115,9 +115,9 @@ describe('runMigrations() — re-check fast path after lock', () => {
     mockPoolQuery.mockResolvedValueOnce({ rows: [] }); // SELECT latest → none
 
     mockClientQuery
-      .mockResolvedValueOnce({ rows: [] })                         // pg_advisory_lock
-      .mockResolvedValueOnce({ rows: [{ id: '002_users' }] })      // recheck → already done
-      .mockResolvedValueOnce({ rows: [] });                        // pg_advisory_unlock
+      .mockResolvedValueOnce({ rows: [] }) // pg_advisory_lock
+      .mockResolvedValueOnce({ rows: [{ id: '002_users' }] }) // recheck → already done
+      .mockResolvedValueOnce({ rows: [] }); // pg_advisory_unlock
 
     await runMigrations();
 
@@ -136,13 +136,13 @@ describe('runMigrations() — skip already-applied migrations', () => {
     mockPoolQuery.mockResolvedValueOnce({ rows: [] }); // SELECT latest → none
 
     mockClientQuery
-      .mockResolvedValueOnce({ rows: [] })                           // lock
-      .mockResolvedValueOnce({ rows: [] })                           // recheck
-      .mockResolvedValueOnce({ rows: [{ id: '001_initial' }] })     // SELECT 001 → already applied
-      .mockResolvedValueOnce({ rows: [] })                           // SELECT 002 → not applied
-      .mockResolvedValueOnce({ rows: [] })                           // 002 SQL
-      .mockResolvedValueOnce({ rows: [] })                           // INSERT 002
-      .mockResolvedValueOnce({ rows: [] });                          // unlock
+      .mockResolvedValueOnce({ rows: [] }) // lock
+      .mockResolvedValueOnce({ rows: [] }) // recheck
+      .mockResolvedValueOnce({ rows: [{ id: '001_initial' }] }) // SELECT 001 → already applied
+      .mockResolvedValueOnce({ rows: [] }) // SELECT 002 → not applied
+      .mockResolvedValueOnce({ rows: [] }) // 002 SQL
+      .mockResolvedValueOnce({ rows: [] }) // INSERT 002
+      .mockResolvedValueOnce({ rows: [] }); // unlock
 
     await runMigrations();
 

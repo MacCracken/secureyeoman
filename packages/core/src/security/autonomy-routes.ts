@@ -16,10 +16,7 @@ export interface AutonomyRoutesOptions {
   auditChain?: AuditChain | null;
 }
 
-export function registerAutonomyRoutes(
-  app: FastifyInstance,
-  opts: AutonomyRoutesOptions
-): void {
+export function registerAutonomyRoutes(app: FastifyInstance, opts: AutonomyRoutesOptions): void {
   const { autonomyAuditManager } = opts;
 
   // ── GET /api/v1/autonomy/overview ─────────────────────────────────────────
@@ -58,87 +55,71 @@ export function registerAutonomyRoutes(
   });
 
   // ── GET /api/v1/autonomy/audits/:id ───────────────────────────────────────
-  app.get(
-    '/api/v1/autonomy/audits/:id',
-    async (req, reply) => {
-      const { id } = req.params as { id: string };
-      try {
-        const run = await autonomyAuditManager.getAuditRun(id);
-        if (!run) return sendError(reply, 404, 'Audit run not found');
-        return reply.send({ run });
-      } catch (err) {
-        return sendError(reply, 500, toErrorMessage(err));
-      }
+  app.get('/api/v1/autonomy/audits/:id', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    try {
+      const run = await autonomyAuditManager.getAuditRun(id);
+      if (!run) return sendError(reply, 404, 'Audit run not found');
+      return reply.send({ run });
+    } catch (err) {
+      return sendError(reply, 500, toErrorMessage(err));
     }
-  );
+  });
 
   // ── PUT /api/v1/autonomy/audits/:id/items/:itemId ─────────────────────────
-  app.put(
-    '/api/v1/autonomy/audits/:id/items/:itemId',
-    async (req, reply) => {
-      const { id, itemId } = req.params as { id: string; itemId: string };
-      const body = req.body as { status?: string; note?: string };
-      if (!body?.status) {
-        return sendError(reply, 400, 'status is required');
-      }
-      const validStatuses: AuditItemStatus[] = ['pending', 'pass', 'fail', 'deferred'];
-      if (!validStatuses.includes(body.status as AuditItemStatus)) {
-        return sendError(reply, 400, `status must be one of: ${validStatuses.join(', ')}`);
-      }
-      try {
-        const run = await autonomyAuditManager.updateAuditItem(id, itemId, {
-          status: body.status as AuditItemStatus,
-          note: body.note ?? '',
-        });
-        if (!run) return sendError(reply, 404, 'Audit run or item not found');
-        return reply.send({ run });
-      } catch (err) {
-        return sendError(reply, 500, toErrorMessage(err));
-      }
+  app.put('/api/v1/autonomy/audits/:id/items/:itemId', async (req, reply) => {
+    const { id, itemId } = req.params as { id: string; itemId: string };
+    const body = req.body as { status?: string; note?: string };
+    if (!body?.status) {
+      return sendError(reply, 400, 'status is required');
     }
-  );
+    const validStatuses: AuditItemStatus[] = ['pending', 'pass', 'fail', 'deferred'];
+    if (!validStatuses.includes(body.status as AuditItemStatus)) {
+      return sendError(reply, 400, `status must be one of: ${validStatuses.join(', ')}`);
+    }
+    try {
+      const run = await autonomyAuditManager.updateAuditItem(id, itemId, {
+        status: body.status as AuditItemStatus,
+        note: body.note ?? '',
+      });
+      if (!run) return sendError(reply, 404, 'Audit run or item not found');
+      return reply.send({ run });
+    } catch (err) {
+      return sendError(reply, 500, toErrorMessage(err));
+    }
+  });
 
   // ── POST /api/v1/autonomy/audits/:id/finalize ─────────────────────────────
-  app.post(
-    '/api/v1/autonomy/audits/:id/finalize',
-    async (req, reply) => {
-      const { id } = req.params as { id: string };
-      try {
-        const run = await autonomyAuditManager.finalizeRun(id);
-        if (!run) return sendError(reply, 404, 'Audit run not found');
-        return reply.send({ run });
-      } catch (err) {
-        return sendError(reply, 500, toErrorMessage(err));
-      }
+  app.post('/api/v1/autonomy/audits/:id/finalize', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    try {
+      const run = await autonomyAuditManager.finalizeRun(id);
+      if (!run) return sendError(reply, 404, 'Audit run not found');
+      return reply.send({ run });
+    } catch (err) {
+      return sendError(reply, 500, toErrorMessage(err));
     }
-  );
+  });
 
   // ── POST /api/v1/autonomy/emergency-stop/:type/:id ────────────────────────
-  app.post(
-    '/api/v1/autonomy/emergency-stop/:type/:id',
-    async (req, reply) => {
-      const { type, id } = req.params as { type: string; id: string };
-      const authUser = (req as any).authUser;
+  app.post('/api/v1/autonomy/emergency-stop/:type/:id', async (req, reply) => {
+    const { type, id } = req.params as { type: string; id: string };
+    const authUser = (req as any).authUser;
 
-      // Admin role required
-      if (!authUser || authUser.role !== 'admin') {
-        return sendError(reply, 403, 'Admin role required for emergency stop');
-      }
-
-      if (type !== 'skill' && type !== 'workflow') {
-        return sendError(reply, 400, 'type must be skill or workflow');
-      }
-
-      try {
-        await autonomyAuditManager.emergencyStop(
-          type as 'skill' | 'workflow',
-          id,
-          authUser?.userId
-        );
-        return reply.send({ success: true, type, id });
-      } catch (err) {
-        return sendError(reply, 400, toErrorMessage(err));
-      }
+    // Admin role required
+    if (authUser?.role !== 'admin') {
+      return sendError(reply, 403, 'Admin role required for emergency stop');
     }
-  );
+
+    if (type !== 'skill' && type !== 'workflow') {
+      return sendError(reply, 400, 'type must be skill or workflow');
+    }
+
+    try {
+      await autonomyAuditManager.emergencyStop(type, id, authUser?.userId);
+      return reply.send({ success: true, type, id });
+    } catch (err) {
+      return sendError(reply, 400, toErrorMessage(err));
+    }
+  });
 }

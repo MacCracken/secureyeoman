@@ -129,8 +129,8 @@ export function ScopeManifestTab() {
         <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-warning">
           <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
           <span>
-            Security tools are enabled but no targets are in scope — all scans will be blocked.
-            Add at least one target below.
+            Security tools are enabled but no targets are in scope — all scans will be blocked. Add
+            at least one target below.
           </span>
         </div>
       )}
@@ -160,7 +160,9 @@ export function ScopeManifestTab() {
               >
                 {target}
                 <button
-                  onClick={() => handleRemoveTarget(target)}
+                  onClick={() => {
+                    handleRemoveTarget(target);
+                  }}
                   disabled={patchMut.isPending}
                   className="ml-1 hover:text-destructive transition-colors"
                   aria-label={`Remove ${target}`}
@@ -192,7 +194,11 @@ export function ScopeManifestTab() {
           />
           <button
             onClick={handleAddTarget}
-            disabled={patchMut.isPending || !newTarget.trim() || (newTarget.trim() === '*' && !wildcardAcknowledged)}
+            disabled={
+              patchMut.isPending ||
+              !newTarget.trim() ||
+              (newTarget.trim() === '*' && !wildcardAcknowledged)
+            }
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -206,7 +212,9 @@ export function ScopeManifestTab() {
             <input
               type="checkbox"
               checked={wildcardAcknowledged}
-              onChange={(e) => setWildcardAcknowledged(e.target.checked)}
+              onChange={(e) => {
+                setWildcardAcknowledged(e.target.checked);
+              }}
               className="mt-0.5"
             />
             <span>
@@ -216,9 +224,7 @@ export function ScopeManifestTab() {
           </label>
         )}
 
-        {validationError && (
-          <p className="text-xs text-destructive">{validationError}</p>
-        )}
+        {validationError && <p className="text-xs text-destructive">{validationError}</p>}
 
         <p className="text-xs text-muted-foreground">
           Supported formats: IPv4 (<code>10.10.10.5</code>), CIDR (<code>10.10.10.0/24</code>),

@@ -84,7 +84,7 @@ export function registerDiagnosticTools(
     'diag_query_agent',
     {
       description:
-        "Retrieve the most recent health report submitted by a spawned sub-agent. Returns the report or a 404 if the agent has not reported yet.",
+        'Retrieve the most recent health report submitted by a spawned sub-agent. Returns the report or a 404 if the agent has not reported yet.',
       inputSchema: {
         agentId: z.string().describe('Personality ID of the sub-agent to query'),
       },

@@ -43,7 +43,12 @@ describe('formatCsvRow', () => {
   });
 
   it('handles missing optional fields gracefully', () => {
-    const entry = { ...SAMPLE_ENTRY, userId: undefined, taskId: undefined, correlationId: undefined };
+    const entry = {
+      ...SAMPLE_ENTRY,
+      userId: undefined,
+      taskId: undefined,
+      correlationId: undefined,
+    };
     const result = formatCsvRow(entry);
     expect(result).not.toContain('undefined');
   });

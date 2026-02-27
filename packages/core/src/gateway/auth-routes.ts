@@ -109,7 +109,9 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
       reply: FastifyReply
     ) => {
       // Rate-limit by IP: max 3 per hour (high-value credential operation)
-      const rl = await rateLimiter.check('auth_reset_password', request.ip, { ipAddress: request.ip });
+      const rl = await rateLimiter.check('auth_reset_password', request.ip, {
+        ipAddress: request.ip,
+      });
       if (!rl.allowed) {
         reply.header('Retry-After', String(rl.retryAfter ?? 3600));
         return sendError(reply, 429, 'Too many password reset attempts. Please try again later.');

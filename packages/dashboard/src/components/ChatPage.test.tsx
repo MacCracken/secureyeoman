@@ -216,10 +216,16 @@ describe('ChatPage', () => {
     await user.type(textarea, 'Hello!{enter}');
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith('/api/v1/chat/stream', expect.objectContaining({ method: 'POST' }));
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/chat/stream',
+        expect.objectContaining({ method: 'POST' })
+      );
     });
 
-    const body = JSON.parse(mockFetch.mock.calls.find((c: unknown[]) => (c[0] as string) === '/api/v1/chat/stream')![1].body);
+    const body = JSON.parse(
+      mockFetch.mock.calls.find((c: unknown[]) => (c[0] as string) === '/api/v1/chat/stream')![1]
+        .body
+    );
     expect(body.message).toBe('Hello!');
 
     await waitFor(() => {
@@ -240,9 +246,14 @@ describe('ChatPage', () => {
 
     // The stream request should include the conversationId
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith('/api/v1/chat/stream', expect.objectContaining({ method: 'POST' }));
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/chat/stream',
+        expect.objectContaining({ method: 'POST' })
+      );
     });
-    const streamCall = mockFetch.mock.calls.find((c: unknown[]) => (c[0] as string) === '/api/v1/chat/stream')!;
+    const streamCall = mockFetch.mock.calls.find(
+      (c: unknown[]) => (c[0] as string) === '/api/v1/chat/stream'
+    )!;
     const body = JSON.parse(streamCall[1].body);
     expect(body.conversationId).toBe('conv-new');
   });
@@ -351,7 +362,7 @@ describe('ChatPage', () => {
           isArchetype: false,
           createdAt: Date.now(),
           updatedAt: Date.now(),
-                },
+        },
       ],
     });
 
@@ -375,10 +386,15 @@ describe('ChatPage', () => {
     await user.type(textarea, 'Hello JARVIS!{enter}');
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith('/api/v1/chat/stream', expect.objectContaining({ method: 'POST' }));
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/chat/stream',
+        expect.objectContaining({ method: 'POST' })
+      );
     });
 
-    const streamCall = mockFetch.mock.calls.find((c: unknown[]) => (c[0] as string) === '/api/v1/chat/stream')!;
+    const streamCall = mockFetch.mock.calls.find(
+      (c: unknown[]) => (c[0] as string) === '/api/v1/chat/stream'
+    )!;
     const body = JSON.parse(streamCall[1].body);
     expect(body.personalityId).toBe('p-2');
   });
@@ -388,14 +404,18 @@ describe('ChatPage', () => {
   it('shows Brain context indicator when brainContext is present', async () => {
     mockFetch.mockImplementation((url: string) => {
       if (url === '/api/v1/chat/stream') {
-        return Promise.resolve(createStreamResponse([{
-          ...DEFAULT_DONE_EVENT,
-          brainContext: {
-            memoriesUsed: 2,
-            knowledgeUsed: 1,
-            contextSnippets: ['[episodic] User likes TypeScript', '[coding] TS is typed JS'],
-          },
-        }]));
+        return Promise.resolve(
+          createStreamResponse([
+            {
+              ...DEFAULT_DONE_EVENT,
+              brainContext: {
+                memoriesUsed: 2,
+                knowledgeUsed: 1,
+                contextSnippets: ['[episodic] User likes TypeScript', '[coding] TS is typed JS'],
+              },
+            },
+          ])
+        );
       }
       return Promise.resolve(new Response('{}', { status: 200 }));
     });
@@ -417,10 +437,14 @@ describe('ChatPage', () => {
   it('hides Brain context indicator when no context was used', async () => {
     mockFetch.mockImplementation((url: string) => {
       if (url === '/api/v1/chat/stream') {
-        return Promise.resolve(createStreamResponse([{
-          ...DEFAULT_DONE_EVENT,
-          brainContext: { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] },
-        }]));
+        return Promise.resolve(
+          createStreamResponse([
+            {
+              ...DEFAULT_DONE_EVENT,
+              brainContext: { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] },
+            },
+          ])
+        );
       }
       return Promise.resolve(new Response('{}', { status: 200 }));
     });
@@ -614,9 +638,14 @@ describe('ChatPage', () => {
     await user.type(textarea, 'No memory!{enter}');
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith('/api/v1/chat/stream', expect.objectContaining({ method: 'POST' }));
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/chat/stream',
+        expect.objectContaining({ method: 'POST' })
+      );
     });
-    const streamCall = mockFetch.mock.calls.find((c: unknown[]) => (c[0] as string) === '/api/v1/chat/stream')!;
+    const streamCall = mockFetch.mock.calls.find(
+      (c: unknown[]) => (c[0] as string) === '/api/v1/chat/stream'
+    )!;
     const body = JSON.parse(streamCall[1].body);
     expect(body.memoryEnabled).toBe(false);
   });

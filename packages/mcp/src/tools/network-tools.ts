@@ -58,7 +58,7 @@ export function isIpInCidrNet(ip: string, cidr: string): boolean {
   if (!ipv4Re.test(ip) || !network || !ipv4Re.test(network)) return false;
   const toNum = (s: string): number =>
     s.split('.').reduce((acc, octet) => ((acc << 8) + parseInt(octet, 10)) >>> 0, 0) >>> 0;
-  const mask = bits === 0 ? 0 : ((~0) << (32 - bits)) >>> 0;
+  const mask = bits === 0 ? 0 : (~0 << (32 - bits)) >>> 0;
   return (toNum(ip) & mask) === (toNum(network) & mask);
 }
 
@@ -149,10 +149,7 @@ async function openSshSession(
       on(event: string, handler: (...args: unknown[]) => void): unknown;
       connect(opts: Record<string, unknown>): void;
       end(): void;
-      exec(
-        cmd: string,
-        cb: (err: Error | null, stream: unknown) => void
-      ): void;
+      exec(cmd: string, cb: (err: Error | null, stream: unknown) => void): void;
     };
   };
 
@@ -178,7 +175,9 @@ async function openSshSession(
 
     client.on('error', (err: unknown) => {
       clearTimeout(timer);
-      reject(new Error(`SSH connection failed: ${err instanceof Error ? err.message : String(err)}`));
+      reject(
+        new Error(`SSH connection failed: ${err instanceof Error ? err.message : String(err)}`)
+      );
     });
 
     const connectOpts: Record<string, unknown> = {
@@ -197,7 +196,9 @@ async function openSshSession(
 async function runSshCommand(sessionId: string, command: string): Promise<string> {
   const sess = sshSessions.get(sessionId);
   if (!sess) {
-    throw new Error(`Session "${sessionId}" not found or expired. Use network_device_connect first.`);
+    throw new Error(
+      `Session "${sessionId}" not found or expired. Use network_device_connect first.`
+    );
   }
   sess.lastUsed = Date.now();
 
@@ -207,7 +208,7 @@ async function runSshCommand(sessionId: string, command: string): Promise<string
     }, SSH_COMMAND_TIMEOUT_MS);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (sess.client as any).exec(command, (err: Error | null, stream: any) => {
+    sess.client.exec(command, (err: Error | null, stream: any) => {
       if (err) {
         clearTimeout(timer);
         reject(new Error(`SSH exec failed: ${err.message}`));
@@ -219,7 +220,9 @@ async function runSshCommand(sessionId: string, command: string): Promise<string
       stream.on('close', () => {
         clearTimeout(timer);
         const output = Buffer.concat(chunks).toString('utf8');
-        resolve(output.length > MAX_OUTPUT ? output.slice(0, MAX_OUTPUT) + '\n...[truncated]' : output);
+        resolve(
+          output.length > MAX_OUTPUT ? output.slice(0, MAX_OUTPUT) + '\n...[truncated]' : output
+        );
       });
     });
   });
@@ -248,7 +251,9 @@ function runTshark(args: string[]): Promise<string> {
 async function checkTshark(): Promise<boolean> {
   try {
     await new Promise<void>((resolve, reject) =>
-      execFile('which', ['tshark'], (err) => (err ? reject(err) : resolve()))
+      execFile('which', ['tshark'], (err) => {
+        err ? reject(err) : resolve();
+      })
     );
     return true;
   } catch {
@@ -288,12 +293,15 @@ async function netboxFetch(
 
 // ─── NVD helpers ─────────────────────────────────────────────────────────────
 
-async function nvdFetch(config: McpServiceConfig, params: Record<string, string>): Promise<unknown> {
+async function nvdFetch(
+  config: McpServiceConfig,
+  params: Record<string, string>
+): Promise<unknown> {
   const qs = new URLSearchParams(params);
   qs.set('resultsPerPage', String(NVD_RESULTS_PER_PAGE));
   const url = `${NVD_BASE}?${qs}`;
   const headers: Record<string, string> = { Accept: 'application/json' };
-  if (config.nvdApiKey) headers['apiKey'] = config.nvdApiKey;
+  if (config.nvdApiKey) headers.apiKey = config.nvdApiKey;
 
   const res = await fetch(url, { headers });
   if (!res.ok) {
@@ -314,16 +322,11 @@ function ipToNum(ip: string): number {
 }
 
 function numToIp(n: number): string {
-  return [
-    (n >>> 24) & 0xff,
-    (n >>> 16) & 0xff,
-    (n >>> 8) & 0xff,
-    n & 0xff,
-  ].join('.');
+  return [(n >>> 24) & 0xff, (n >>> 16) & 0xff, (n >>> 8) & 0xff, n & 0xff].join('.');
 }
 
 function prefixLenToMask(bits: number): number {
-  return bits === 0 ? 0 : ((~0) << (32 - bits)) >>> 0;
+  return bits === 0 ? 0 : (~0 << (32 - bits)) >>> 0;
 }
 
 export interface SubnetInfo {
@@ -342,12 +345,13 @@ export function calculateSubnet(cidr: string): SubnetInfo {
   const [ipPart, bitsStr] = cidr.split('/');
   if (!ipPart || !bitsStr) throw new Error(`Invalid CIDR notation: ${cidr}`);
   const bits = parseInt(bitsStr, 10);
-  if (Number.isNaN(bits) || bits < 0 || bits > 32) throw new Error(`Invalid prefix length: ${bitsStr}`);
+  if (Number.isNaN(bits) || bits < 0 || bits > 32)
+    throw new Error(`Invalid prefix length: ${bitsStr}`);
   const ipv4Re = /^\d{1,3}(\.\d{1,3}){3}$/;
   if (!ipv4Re.test(ipPart)) throw new Error(`Invalid IPv4 address: ${ipPart}`);
 
   const mask = prefixLenToMask(bits);
-  const wildcard = (~mask) >>> 0;
+  const wildcard = ~mask >>> 0;
   const networkNum = (ipToNum(ipPart) & mask) >>> 0;
   const broadcastNum = (networkNum | wildcard) >>> 0;
   const hostCount = bits >= 31 ? Math.pow(2, 32 - bits) : Math.max(0, Math.pow(2, 32 - bits) - 2);
@@ -392,7 +396,7 @@ export function calculateVlsm(parentCidr: string, hostRequirements: number[]): V
     if (bits === 0) throw new Error(`Cannot fit ${req} hosts in a /0`);
 
     const mask = prefixLenToMask(bits);
-    const wildcard = (~mask) >>> 0;
+    const wildcard = ~mask >>> 0;
     const netNum = (currentNum & mask) >>> 0;
     const broadNum = (netNum | wildcard) >>> 0;
 
@@ -432,9 +436,10 @@ export function subnetMaskToWildcard(input: string): string {
     bits = b;
   } else {
     bits = parseInt(input, 10);
-    if (Number.isNaN(bits) || bits < 0 || bits > 32) throw new Error(`Invalid prefix length: ${input}`);
+    if (Number.isNaN(bits) || bits < 0 || bits > 32)
+      throw new Error(`Invalid prefix length: ${input}`);
   }
-  const wildcard = (~prefixLenToMask(bits)) >>> 0;
+  const wildcard = ~prefixLenToMask(bits) >>> 0;
   return numToIp(wildcard);
 }
 
@@ -442,7 +447,12 @@ export function subnetMaskToWildcard(input: string): string {
 
 function textResponse(data: unknown) {
   return {
-    content: [{ type: 'text' as const, text: typeof data === 'string' ? data : JSON.stringify(data, null, 2) }],
+    content: [
+      {
+        type: 'text' as const,
+        text: typeof data === 'string' ? data : JSON.stringify(data, null, 2),
+      },
+    ],
   };
 }
 
@@ -523,7 +533,9 @@ export async function registerNetworkTools(
   const tsharkAvailable = await checkTshark();
   if (!tsharkAvailable) {
     // eslint-disable-next-line no-console
-    console.info('[network-tools] tshark: not found — PCAP tools will return an error at call time');
+    console.info(
+      '[network-tools] tshark: not found — PCAP tools will return an error at call time'
+    );
   }
 
   // ── 46.1 Device Automation ─────────────────────────────────────────────────
@@ -531,12 +543,16 @@ export async function registerNetworkTools(
   server.registerTool(
     'network_device_connect',
     {
-      description: 'Open an SSH session to a network device. Returns a sessionId for subsequent commands. Enforces MCP_ALLOWED_NETWORK_TARGETS scope.',
+      description:
+        'Open an SSH session to a network device. Returns a sessionId for subsequent commands. Enforces MCP_ALLOWED_NETWORK_TARGETS scope.',
       inputSchema: {
         host: z.string().describe('Device hostname or IP address'),
         port: z.number().int().min(1).max(65535).default(22).describe('SSH port (default 22)'),
         username: z.string().describe('SSH username'),
-        password: z.string().optional().describe('SSH password (use privateKey for key-based auth)'),
+        password: z
+          .string()
+          .optional()
+          .describe('SSH password (use privateKey for key-based auth)'),
         privateKey: z.string().optional().describe('PEM-encoded SSH private key'),
       },
     },
@@ -548,7 +564,14 @@ export async function registerNetworkTools(
         password?: string;
         privateKey?: string;
       };
-      const sessionId = await openSshSession(config, host, port ?? 22, username, password, privateKey);
+      const sessionId = await openSshSession(
+        config,
+        host,
+        port ?? 22,
+        username,
+        password,
+        privateKey
+      );
       return textResponse({ sessionId, host, username, connectedAt: new Date().toISOString() });
     })
   );
@@ -556,10 +579,15 @@ export async function registerNetworkTools(
   server.registerTool(
     'network_show_command',
     {
-      description: 'Execute one or more IOS-XE/NX-OS/IOS-XR/EOS show commands on a connected device.',
+      description:
+        'Execute one or more IOS-XE/NX-OS/IOS-XR/EOS show commands on a connected device.',
       inputSchema: {
         sessionId: z.string().describe('Session ID from network_device_connect'),
-        commands: z.array(z.string().startsWith('show')).min(1).max(10).describe('Show commands to run (must start with "show")'),
+        commands: z
+          .array(z.string().startsWith('show'))
+          .min(1)
+          .max(10)
+          .describe('Show commands to run (must start with "show")'),
       },
     },
     wrapToolHandler('network_show_command', middleware, async (args) => {
@@ -575,11 +603,18 @@ export async function registerNetworkTools(
   server.registerTool(
     'network_config_push',
     {
-      description: 'Push configuration lines to a device via SSH config mode. Use dryRun:true to validate without committing.',
+      description:
+        'Push configuration lines to a device via SSH config mode. Use dryRun:true to validate without committing.',
       inputSchema: {
         sessionId: z.string().describe('Session ID from network_device_connect'),
-        configLines: z.array(z.string()).min(1).describe('Configuration lines to push (IOS syntax)'),
-        dryRun: z.boolean().default(false).describe('If true, enter config mode and run "do show" only; do not commit'),
+        configLines: z
+          .array(z.string())
+          .min(1)
+          .describe('Configuration lines to push (IOS syntax)'),
+        dryRun: z
+          .boolean()
+          .default(false)
+          .describe('If true, enter config mode and run "do show" only; do not commit'),
       },
     },
     wrapToolHandler('network_config_push', middleware, async (args) => {
@@ -596,7 +631,10 @@ export async function registerNetworkTools(
         return textResponse({ dryRun: true, preview, message: 'Dry run — no changes committed.' });
       }
 
-      const output = await runSshCommand(sessionId, `configure terminal\n${configLines.join('\n')}\nend`);
+      const output = await runSshCommand(
+        sessionId,
+        `configure terminal\n${configLines.join('\n')}\nend`
+      );
       return textResponse({ pushed: configLines.length, output });
     })
   );
@@ -604,19 +642,26 @@ export async function registerNetworkTools(
   server.registerTool(
     'network_health_check',
     {
-      description: 'Run "show version" and "show interfaces" on a list of targets. Returns structured health summary.',
+      description:
+        'Run "show version" and "show interfaces" on a list of targets. Returns structured health summary.',
       inputSchema: {
-        targets: z.array(z.object({
-          host: z.string(),
-          port: z.number().int().min(1).max(65535).default(22),
-          username: z.string(),
-          password: z.string().optional(),
-        })).min(1).max(20).describe('List of devices to health-check (max 20)'),
+        targets: z
+          .array(
+            z.object({
+              host: z.string(),
+              port: z.number().int().min(1).max(65535).default(22),
+              username: z.string(),
+              password: z.string().optional(),
+            })
+          )
+          .min(1)
+          .max(20)
+          .describe('List of devices to health-check (max 20)'),
       },
     },
     wrapToolHandler('network_health_check', middleware, async (args) => {
       const { targets } = args as {
-        targets: Array<{ host: string; port: number; username: string; password?: string }>;
+        targets: { host: string; port: number; username: string; password?: string }[];
       };
       const results = await Promise.allSettled(
         targets.map(async (t) => {
@@ -627,9 +672,17 @@ export async function registerNetworkTools(
             runSshCommand(sid, 'show interfaces'),
           ]);
           const sess = sshSessions.get(sid);
-          try { sess?.client.end(); } catch { /**/ }
+          try {
+            sess?.client.end();
+          } catch {
+            /**/
+          }
           sshSessions.delete(sid);
-          return { host: t.host, version: version.slice(0, 500), interfaces: interfaces.slice(0, 500) };
+          return {
+            host: t.host,
+            version: version.slice(0, 500),
+            interfaces: interfaces.slice(0, 500),
+          };
         })
       );
       const summary = results.map((r, i) =>
@@ -644,7 +697,8 @@ export async function registerNetworkTools(
   server.registerTool(
     'network_ping_test',
     {
-      description: 'Execute ping from a connected device to a target IP. Returns loss %, RTT min/avg/max.',
+      description:
+        'Execute ping from a connected device to a target IP. Returns loss %, RTT min/avg/max.',
       inputSchema: {
         sessionId: z.string().describe('Session ID from network_device_connect'),
         target: z.string().describe('Target IP address to ping'),
@@ -652,7 +706,11 @@ export async function registerNetworkTools(
       },
     },
     wrapToolHandler('network_ping_test', middleware, async (args) => {
-      const { sessionId, target, count } = args as { sessionId: string; target: string; count: number };
+      const { sessionId, target, count } = args as {
+        sessionId: string;
+        target: string;
+        count: number;
+      };
       const output = await runSshCommand(sessionId, `ping ${target} repeat ${count ?? 5}`);
       return textResponse({ target, output });
     })
@@ -684,7 +742,8 @@ export async function registerNetworkTools(
   server.registerTool(
     'network_discovery_cdp',
     {
-      description: 'Run "show cdp neighbors detail" on a device. Returns structured neighbor list (device ID, IP, platform, interface).',
+      description:
+        'Run "show cdp neighbors detail" on a device. Returns structured neighbor list (device ID, IP, platform, interface).',
       inputSchema: {
         sessionId: z.string().describe('Session ID from network_device_connect'),
       },
@@ -699,7 +758,8 @@ export async function registerNetworkTools(
   server.registerTool(
     'network_discovery_lldp',
     {
-      description: 'Run "show lldp neighbors detail" on a device. Returns structured neighbor list.',
+      description:
+        'Run "show lldp neighbors detail" on a device. Returns structured neighbor list.',
       inputSchema: {
         sessionId: z.string().describe('Session ID from network_device_connect'),
       },
@@ -714,32 +774,48 @@ export async function registerNetworkTools(
   server.registerTool(
     'network_topology_build',
     {
-      description: 'Seed from a list of devices, recursively discover via CDP, build an adjacency graph. Returns JSON graph and Mermaid diagram.',
+      description:
+        'Seed from a list of devices, recursively discover via CDP, build an adjacency graph. Returns JSON graph and Mermaid diagram.',
       inputSchema: {
-        seeds: z.array(z.object({
-          host: z.string(),
-          username: z.string(),
-          password: z.string().optional(),
-        })).min(1).max(10).describe('Seed devices to start discovery from (max 10)'),
+        seeds: z
+          .array(
+            z.object({
+              host: z.string(),
+              username: z.string(),
+              password: z.string().optional(),
+            })
+          )
+          .min(1)
+          .max(10)
+          .describe('Seed devices to start discovery from (max 10)'),
         maxDepth: z.number().int().min(1).max(5).default(2).describe('Maximum discovery depth'),
       },
     },
     wrapToolHandler('network_topology_build', middleware, async (args) => {
       const { seeds, maxDepth } = args as {
-        seeds: Array<{ host: string; username: string; password?: string }>;
+        seeds: { host: string; username: string; password?: string }[];
         maxDepth: number;
       };
       const nodes = new Map<string, { hostname: string; ip: string; platform?: string }>();
-      const edges: Array<{ from: string; to: string; localIface: string; remoteIface: string }> = [];
+      const edges: { from: string; to: string; localIface: string; remoteIface: string }[] = [];
       const visited = new Set<string>();
 
-      const discover = async (host: string, username: string, password: string | undefined, depth: number): Promise<void> => {
+      const discover = async (
+        host: string,
+        username: string,
+        password: string | undefined,
+        depth: number
+      ): Promise<void> => {
         if (depth > (maxDepth ?? 2) || visited.has(host)) return;
         visited.add(host);
         validateNetworkTarget(host, config);
         const sid = await openSshSession(config, host, 22, username, password);
         const cdpOut = await runSshCommand(sid, 'show cdp neighbors detail');
-        try { sshSessions.get(sid)?.client.end(); } catch { /**/ }
+        try {
+          sshSessions.get(sid)?.client.end();
+        } catch {
+          /**/
+        }
         sshSessions.delete(sid);
 
         nodes.set(host, { hostname: host, ip: host });
@@ -748,7 +824,12 @@ export async function registerNetworkTools(
         for (const n of neighbors) {
           if (n.ip) {
             nodes.set(n.ip, { hostname: n.deviceId, ip: n.ip, platform: n.platform ?? undefined });
-            edges.push({ from: host, to: n.ip, localIface: n.localInterface, remoteIface: n.remoteInterface });
+            edges.push({
+              from: host,
+              to: n.ip,
+              localIface: n.localInterface,
+              remoteIface: n.remoteInterface,
+            });
             await discover(n.ip, username, password, depth + 1);
           }
         }
@@ -759,7 +840,10 @@ export async function registerNetworkTools(
       const nodeList = Array.from(nodes.values());
       const mermaid = [
         'graph TD',
-        ...edges.map((e) => `  ${e.from.replace(/\./g, '_')}["${e.from}"] -->|${e.localIface}| ${e.to.replace(/\./g, '_')}["${e.to}"]`),
+        ...edges.map(
+          (e) =>
+            `  ${e.from.replace(/\./g, '_')}["${e.from}"] -->|${e.localIface}| ${e.to.replace(/\./g, '_')}["${e.to}"]`
+        ),
       ].join('\n');
 
       return textResponse({ nodes: nodeList, edges, mermaid });
@@ -786,7 +870,8 @@ export async function registerNetworkTools(
   server.registerTool(
     'network_mac_table',
     {
-      description: 'Return parsed MAC address table (MAC → VLAN → interface) from a connected switch.',
+      description:
+        'Return parsed MAC address table (MAC → VLAN → interface) from a connected switch.',
       inputSchema: {
         sessionId: z.string().describe('Session ID from network_device_connect'),
         vlan: z.number().int().min(1).max(4094).optional().describe('Filter by VLAN ID'),
@@ -805,17 +890,24 @@ export async function registerNetworkTools(
   server.registerTool(
     'network_routing_table',
     {
-      description: 'Parse "show ip route" and return structured route entries with protocol, prefix, next-hop, AD/metric.',
+      description:
+        'Parse "show ip route" and return structured route entries with protocol, prefix, next-hop, AD/metric.',
       inputSchema: {
         sessionId: z.string().describe('Session ID from network_device_connect'),
         prefix: z.string().optional().describe('Filter by specific prefix (e.g. "10.0.0.0/8")'),
-        protocol: z.enum(['all', 'ospf', 'bgp', 'static', 'connected']).default('all').describe('Filter by routing protocol'),
+        protocol: z
+          .enum(['all', 'ospf', 'bgp', 'static', 'connected'])
+          .default('all')
+          .describe('Filter by routing protocol'),
         ipv6: z.boolean().default(false).describe('Show IPv6 routing table instead of IPv4'),
       },
     },
     wrapToolHandler('network_routing_table', middleware, async (args) => {
       const { sessionId, prefix, protocol, ipv6 } = args as {
-        sessionId: string; prefix?: string; protocol: string; ipv6: boolean;
+        sessionId: string;
+        prefix?: string;
+        protocol: string;
+        ipv6: boolean;
       };
       let cmd = ipv6 ? 'show ipv6 route' : 'show ip route';
       if (protocol && protocol !== 'all') cmd += ` ${protocol}`;
@@ -828,7 +920,8 @@ export async function registerNetworkTools(
   server.registerTool(
     'network_ospf_neighbors',
     {
-      description: 'Parse "show ip ospf neighbor" and return neighbor list with state, dead timer, interface.',
+      description:
+        'Parse "show ip ospf neighbor" and return neighbor list with state, dead timer, interface.',
       inputSchema: {
         sessionId: z.string().describe('Session ID from network_device_connect'),
       },
@@ -877,10 +970,14 @@ export async function registerNetworkTools(
   server.registerTool(
     'network_interface_status',
     {
-      description: 'Parse "show interfaces" and return per-interface admin/oper state, speed, duplex, errors.',
+      description:
+        'Parse "show interfaces" and return per-interface admin/oper state, speed, duplex, errors.',
       inputSchema: {
         sessionId: z.string().describe('Session ID from network_device_connect'),
-        interface: z.string().optional().describe('Filter to a specific interface (e.g. "GigabitEthernet0/1")'),
+        interface: z
+          .string()
+          .optional()
+          .describe('Filter to a specific interface (e.g. "GigabitEthernet0/1")'),
       },
     },
     wrapToolHandler('network_interface_status', middleware, async (args) => {
@@ -911,7 +1008,8 @@ export async function registerNetworkTools(
   server.registerTool(
     'network_acl_audit',
     {
-      description: 'Parse "show ip access-lists" and return ACL entries, match counts, and implicit deny analysis.',
+      description:
+        'Parse "show ip access-lists" and return ACL entries, match counts, and implicit deny analysis.',
       inputSchema: {
         sessionId: z.string().describe('Session ID from network_device_connect'),
         aclName: z.string().optional().describe('Filter to a specific ACL name'),
@@ -946,7 +1044,8 @@ export async function registerNetworkTools(
   server.registerTool(
     'network_port_security',
     {
-      description: 'Parse "show port-security" and return per-interface violations, max MAC, sticky config.',
+      description:
+        'Parse "show port-security" and return per-interface violations, max MAC, sticky config.',
       inputSchema: {
         sessionId: z.string().describe('Session ID from network_device_connect'),
         interface: z.string().optional().describe('Filter to a specific interface'),
@@ -963,7 +1062,8 @@ export async function registerNetworkTools(
   server.registerTool(
     'network_stp_status',
     {
-      description: 'Parse "show spanning-tree" and return root bridge, port roles/states, topology change count.',
+      description:
+        'Parse "show spanning-tree" and return root bridge, port roles/states, topology change count.',
       inputSchema: {
         sessionId: z.string().describe('Session ID from network_device_connect'),
         vlan: z.number().int().min(1).max(4094).optional().describe('Filter by VLAN ID'),
@@ -980,7 +1080,8 @@ export async function registerNetworkTools(
   server.registerTool(
     'network_software_version',
     {
-      description: 'Parse "show version" and return OS family, version string, uptime, platform, serial number.',
+      description:
+        'Parse "show version" and return OS family, version string, uptime, platform, serial number.',
       inputSchema: {
         sessionId: z.string().describe('Session ID from network_device_connect'),
       },
@@ -1002,13 +1103,19 @@ export async function registerNetworkTools(
         site: z.string().optional().describe('Filter by site slug'),
         role: z.string().optional().describe('Filter by device role slug'),
         tag: z.string().optional().describe('Filter by tag'),
-        status: z.enum(['active', 'planned', 'staged', 'failed', 'inventory', 'decommissioning']).optional(),
+        status: z
+          .enum(['active', 'planned', 'staged', 'failed', 'inventory', 'decommissioning'])
+          .optional(),
         limit: z.number().int().min(1).max(500).default(50).describe('Maximum results'),
       },
     },
     wrapToolHandler('netbox_devices_list', middleware, async (args) => {
       const { site, role, tag, status, limit } = args as {
-        site?: string; role?: string; tag?: string; status?: string; limit: number;
+        site?: string;
+        role?: string;
+        tag?: string;
+        status?: string;
+        limit: number;
       };
       const params: string[] = [`limit=${limit ?? 50}`];
       if (site) params.push(`site=${encodeURIComponent(site)}`);
@@ -1023,7 +1130,8 @@ export async function registerNetworkTools(
   server.registerTool(
     'netbox_interfaces_list',
     {
-      description: 'Query NetBox interfaces for a device. Returns interface list with IP assignments.',
+      description:
+        'Query NetBox interfaces for a device. Returns interface list with IP assignments.',
       inputSchema: {
         deviceName: z.string().describe('Device name in NetBox'),
         enabledOnly: z.boolean().default(false).describe('Filter to enabled interfaces only'),
@@ -1040,7 +1148,8 @@ export async function registerNetworkTools(
   server.registerTool(
     'netbox_ipam_ips',
     {
-      description: 'Query NetBox IP addresses with prefix or VRF filters. Returns IP–device assignment map.',
+      description:
+        'Query NetBox IP addresses with prefix or VRF filters. Returns IP–device assignment map.',
       inputSchema: {
         prefix: z.string().optional().describe('Filter by parent prefix (e.g. "10.0.0.0/8")'),
         vrf: z.string().optional().describe('Filter by VRF name'),
@@ -1050,7 +1159,10 @@ export async function registerNetworkTools(
     },
     wrapToolHandler('netbox_ipam_ips', middleware, async (args) => {
       const { prefix, vrf, deviceName, limit } = args as {
-        prefix?: string; vrf?: string; deviceName?: string; limit: number;
+        prefix?: string;
+        vrf?: string;
+        deviceName?: string;
+        limit: number;
       };
       const params: string[] = [`limit=${limit ?? 50}`];
       if (prefix) params.push(`parent=${encodeURIComponent(prefix)}`);
@@ -1064,7 +1176,8 @@ export async function registerNetworkTools(
   server.registerTool(
     'netbox_cables',
     {
-      description: 'Query NetBox cables. Returns cable list with endpoint A/B device and interface.',
+      description:
+        'Query NetBox cables. Returns cable list with endpoint A/B device and interface.',
       inputSchema: {
         site: z.string().optional().describe('Filter by site slug'),
         limit: z.number().int().min(1).max(500).default(50),
@@ -1082,9 +1195,12 @@ export async function registerNetworkTools(
   server.registerTool(
     'netbox_reconcile',
     {
-      description: 'Compare live CDP/LLDP topology against NetBox cables and interfaces. Returns structured drift report (missing in NetBox, missing on live, mismatches).',
+      description:
+        'Compare live CDP/LLDP topology against NetBox cables and interfaces. Returns structured drift report (missing in NetBox, missing on live, mismatches).',
       inputSchema: {
-        sessionId: z.string().describe('Session ID from network_device_connect (seed device for topology)'),
+        sessionId: z
+          .string()
+          .describe('Session ID from network_device_connect (seed device for topology)'),
         site: z.string().optional().describe('NetBox site slug to scope the comparison'),
       },
     },
@@ -1096,16 +1212,17 @@ export async function registerNetworkTools(
 
       const params = ['limit=500'];
       if (site) params.push(`site=${encodeURIComponent(site)}`);
-      const nbCables = await netboxFetch(config, `/dcim/cables/?${params.join('&')}`) as {
-        results: Array<{ id: number; termination_a: unknown; termination_b: unknown }>;
+      const nbCables = (await netboxFetch(config, `/dcim/cables/?${params.join('&')}`)) as {
+        results: { id: number; termination_a: unknown; termination_b: unknown }[];
       };
 
       const missingInNetbox: string[] = [];
       for (const n of liveNeighbors) {
-        const found = nbCables.results.some((c) =>
-          JSON.stringify(c).includes(n.deviceId) || JSON.stringify(c).includes(n.ip ?? '')
+        const found = nbCables.results.some(
+          (c) => JSON.stringify(c).includes(n.deviceId) || JSON.stringify(c).includes(n.ip ?? '')
         );
-        if (!found) missingInNetbox.push(`${n.deviceId} (${n.ip ?? 'no IP'}) via ${n.localInterface}`);
+        if (!found)
+          missingInNetbox.push(`${n.deviceId} (${n.ip ?? 'no IP'}) via ${n.localInterface}`);
       }
 
       return textResponse({
@@ -1123,17 +1240,30 @@ export async function registerNetworkTools(
   server.registerTool(
     'nvd_cve_search',
     {
-      description: 'Search NVD CVE database by keyword and optional CVSS score filter. Returns CVE ID, description, CVSS v3 score, published date.',
+      description:
+        'Search NVD CVE database by keyword and optional CVSS score filter. Returns CVE ID, description, CVSS v3 score, published date.',
       inputSchema: {
         keyword: z.string().min(2).describe('Search keyword (e.g. "cisco ios buffer overflow")'),
-        cvssV3SeverityMin: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional().describe('Minimum CVSS v3 severity'),
-        pubStartDate: z.string().optional().describe('Published after (ISO 8601 date, e.g. "2024-01-01")'),
-        pubEndDate: z.string().optional().describe('Published before (ISO 8601 date, e.g. "2025-01-01")'),
+        cvssV3SeverityMin: z
+          .enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])
+          .optional()
+          .describe('Minimum CVSS v3 severity'),
+        pubStartDate: z
+          .string()
+          .optional()
+          .describe('Published after (ISO 8601 date, e.g. "2024-01-01")'),
+        pubEndDate: z
+          .string()
+          .optional()
+          .describe('Published before (ISO 8601 date, e.g. "2025-01-01")'),
       },
     },
     wrapToolHandler('nvd_cve_search', middleware, async (args) => {
       const { keyword, cvssV3SeverityMin, pubStartDate, pubEndDate } = args as {
-        keyword: string; cvssV3SeverityMin?: string; pubStartDate?: string; pubEndDate?: string;
+        keyword: string;
+        cvssV3SeverityMin?: string;
+        pubStartDate?: string;
+        pubEndDate?: string;
       };
       const params: Record<string, string> = { keywordSearch: keyword };
       if (cvssV3SeverityMin) params.cvssV3Severity = cvssV3SeverityMin;
@@ -1147,7 +1277,8 @@ export async function registerNetworkTools(
   server.registerTool(
     'nvd_cve_by_software',
     {
-      description: 'Look up CVEs for a specific vendor + product + version using CPE match. Targeted for IOS XE version strings from network_software_version.',
+      description:
+        'Look up CVEs for a specific vendor + product + version using CPE match. Targeted for IOS XE version strings from network_software_version.',
       inputSchema: {
         vendor: z.string().describe('CPE vendor (e.g. "cisco")'),
         product: z.string().describe('CPE product (e.g. "ios_xe")'),
@@ -1157,7 +1288,10 @@ export async function registerNetworkTools(
     },
     wrapToolHandler('nvd_cve_by_software', middleware, async (args) => {
       const { vendor, product, version, cvssV3SeverityMin } = args as {
-        vendor: string; product: string; version?: string; cvssV3SeverityMin?: string;
+        vendor: string;
+        product: string;
+        version?: string;
+        cvssV3SeverityMin?: string;
       };
       const cpeName = version
         ? `cpe:2.3:o:${vendor}:${product}:${version}:*:*:*:*:*:*:*`
@@ -1172,9 +1306,13 @@ export async function registerNetworkTools(
   server.registerTool(
     'nvd_cve_get',
     {
-      description: 'Fetch full CVE record by CVE ID. Returns description, CVSS v3 vector, CWE, references.',
+      description:
+        'Fetch full CVE record by CVE ID. Returns description, CVSS v3 vector, CWE, references.',
       inputSchema: {
-        cveId: z.string().regex(/^CVE-\d{4}-\d+$/).describe('CVE ID (e.g. "CVE-2024-20399")'),
+        cveId: z
+          .string()
+          .regex(/^CVE-\d{4}-\d+$/)
+          .describe('CVE ID (e.g. "CVE-2024-20399")'),
       },
     },
     wrapToolHandler('nvd_cve_get', middleware, async (args) => {
@@ -1189,9 +1327,12 @@ export async function registerNetworkTools(
   server.registerTool(
     'subnet_calculator',
     {
-      description: 'Calculate IPv4 subnet details: network, broadcast, first/last host, mask, wildcard mask, host count.',
+      description:
+        'Calculate IPv4 subnet details: network, broadcast, first/last host, mask, wildcard mask, host count.',
       inputSchema: {
-        cidr: z.string().describe('IPv4 CIDR notation (e.g. "192.168.1.0/24" or "192.168.1.100/24")'),
+        cidr: z
+          .string()
+          .describe('IPv4 CIDR notation (e.g. "192.168.1.0/24" or "192.168.1.100/24")'),
       },
     },
     wrapToolHandler('subnet_calculator', middleware, async (args) => {
@@ -1207,14 +1348,22 @@ export async function registerNetworkTools(
   server.registerTool(
     'subnet_vlsm',
     {
-      description: 'VLSM (Variable Length Subnet Masking) — given a parent prefix and host requirements, return an allocation table ordered largest-first.',
+      description:
+        'VLSM (Variable Length Subnet Masking) — given a parent prefix and host requirements, return an allocation table ordered largest-first.',
       inputSchema: {
         parentCidr: z.string().describe('Parent IPv4 CIDR block to carve (e.g. "10.0.0.0/20")'),
-        hostRequirements: z.array(z.number().int().min(1)).min(1).max(20).describe('List of required host counts per subnet'),
+        hostRequirements: z
+          .array(z.number().int().min(1))
+          .min(1)
+          .max(20)
+          .describe('List of required host counts per subnet'),
       },
     },
     wrapToolHandler('subnet_vlsm', middleware, async (args) => {
-      const { parentCidr, hostRequirements } = args as { parentCidr: string; hostRequirements: number[] };
+      const { parentCidr, hostRequirements } = args as {
+        parentCidr: string;
+        hostRequirements: number[];
+      };
       try {
         return textResponse(calculateVlsm(parentCidr, hostRequirements));
       } catch (err) {
@@ -1228,7 +1377,11 @@ export async function registerNetworkTools(
     {
       description: 'Convert a subnet mask or prefix length to a wildcard mask (for ACL authoring).',
       inputSchema: {
-        input: z.string().describe('Dotted-decimal subnet mask (e.g. "255.255.255.0") or prefix length (e.g. "24")'),
+        input: z
+          .string()
+          .describe(
+            'Dotted-decimal subnet mask (e.g. "255.255.255.0") or prefix length (e.g. "24")'
+          ),
       },
     },
     wrapToolHandler('wildcard_mask_calc', middleware, async (args) => {
@@ -1252,7 +1405,8 @@ export async function registerNetworkTools(
   server.registerTool(
     'pcap_upload',
     {
-      description: 'Upload a pcap/pcapng file (base64-encoded) for analysis. Returns a pcapId for use with other pcap_* tools.',
+      description:
+        'Upload a pcap/pcapng file (base64-encoded) for analysis. Returns a pcapId for use with other pcap_* tools.',
       inputSchema: {
         data: z.string().describe('Base64-encoded pcap or pcapng file contents'),
         filename: z.string().optional().describe('Original filename (informational only)'),
@@ -1269,18 +1423,26 @@ export async function registerNetworkTools(
       await writeFile(tmpPath, buf);
       pcapStore.set(pcapId, tmpPath);
       // Auto-cleanup after 30 minutes
-      setTimeout(async () => {
-        pcapStore.delete(pcapId);
-        await unlink(tmpPath).catch(() => undefined);
-      }, 30 * 60 * 1000);
-      return textResponse({ pcapId, bytes: buf.length, message: 'File uploaded. Use pcapId with pcap_* tools.' });
+      setTimeout(
+        async () => {
+          pcapStore.delete(pcapId);
+          await unlink(tmpPath).catch(() => undefined);
+        },
+        30 * 60 * 1000
+      );
+      return textResponse({
+        pcapId,
+        bytes: buf.length,
+        message: 'File uploaded. Use pcapId with pcap_* tools.',
+      });
     })
   );
 
   server.registerTool(
     'pcap_protocol_hierarchy',
     {
-      description: 'Run tshark protocol hierarchy statistics on an uploaded pcap. Returns protocol tree with packet/byte counts.',
+      description:
+        'Run tshark protocol hierarchy statistics on an uploaded pcap. Returns protocol tree with packet/byte counts.',
       inputSchema: {
         pcapId: z.string().describe('pcapId from pcap_upload'),
       },
@@ -1289,7 +1451,8 @@ export async function registerNetworkTools(
       if (!tsharkAvailable) return errorResponse(PCAP_DISABLED_MSG);
       const { pcapId } = args as { pcapId: string };
       const path = pcapStore.get(pcapId);
-      if (!path) return errorResponse(`pcapId "${pcapId}" not found. Upload a file first with pcap_upload.`);
+      if (!path)
+        return errorResponse(`pcapId "${pcapId}" not found. Upload a file first with pcap_upload.`);
       const output = await runTshark(['-r', path, '-qz', 'io,phs']);
       return textResponse({ raw: output });
     })
@@ -1317,7 +1480,8 @@ export async function registerNetworkTools(
   server.registerTool(
     'pcap_dns_queries',
     {
-      description: 'Extract DNS query/response pairs from an uploaded pcap. Returns domain, record type, response, client IP.',
+      description:
+        'Extract DNS query/response pairs from an uploaded pcap. Returns domain, record type, response, client IP.',
       inputSchema: {
         pcapId: z.string().describe('pcapId from pcap_upload'),
       },
@@ -1328,16 +1492,26 @@ export async function registerNetworkTools(
       const path = pcapStore.get(pcapId);
       if (!path) return errorResponse(`pcapId "${pcapId}" not found.`);
       const output = await runTshark([
-        '-r', path,
-        '-Y', 'dns',
-        '-T', 'fields',
-        '-e', 'frame.time',
-        '-e', 'ip.src',
-        '-e', 'dns.qry.name',
-        '-e', 'dns.qry.type',
-        '-e', 'dns.resp.name',
-        '-E', 'header=y',
-        '-E', 'separator=\t',
+        '-r',
+        path,
+        '-Y',
+        'dns',
+        '-T',
+        'fields',
+        '-e',
+        'frame.time',
+        '-e',
+        'ip.src',
+        '-e',
+        'dns.qry.name',
+        '-e',
+        'dns.qry.type',
+        '-e',
+        'dns.resp.name',
+        '-E',
+        'header=y',
+        '-E',
+        'separator=\t',
       ]);
       return textResponse({ raw: output });
     })
@@ -1346,7 +1520,8 @@ export async function registerNetworkTools(
   server.registerTool(
     'pcap_http_requests',
     {
-      description: 'Extract HTTP request/response metadata from an uploaded pcap. Returns method, host, URI, status, content-type.',
+      description:
+        'Extract HTTP request/response metadata from an uploaded pcap. Returns method, host, URI, status, content-type.',
       inputSchema: {
         pcapId: z.string().describe('pcapId from pcap_upload'),
       },
@@ -1357,19 +1532,32 @@ export async function registerNetworkTools(
       const path = pcapStore.get(pcapId);
       if (!path) return errorResponse(`pcapId "${pcapId}" not found.`);
       const output = await runTshark([
-        '-r', path,
-        '-Y', 'http',
-        '-T', 'fields',
-        '-e', 'frame.time',
-        '-e', 'ip.src',
-        '-e', 'ip.dst',
-        '-e', 'http.request.method',
-        '-e', 'http.host',
-        '-e', 'http.request.uri',
-        '-e', 'http.response.code',
-        '-e', 'http.content_type',
-        '-E', 'header=y',
-        '-E', 'separator=\t',
+        '-r',
+        path,
+        '-Y',
+        'http',
+        '-T',
+        'fields',
+        '-e',
+        'frame.time',
+        '-e',
+        'ip.src',
+        '-e',
+        'ip.dst',
+        '-e',
+        'http.request.method',
+        '-e',
+        'http.host',
+        '-e',
+        'http.request.uri',
+        '-e',
+        'http.response.code',
+        '-e',
+        'http.content_type',
+        '-E',
+        'header=y',
+        '-E',
+        'separator=\t',
       ]);
       return textResponse({ raw: output });
     })
@@ -1392,14 +1580,14 @@ function parseCdpNeighbors(raw: string): CdpNeighbor[] {
   const blocks = raw.split(/(?=Device ID:)/i).filter((b) => b.trim());
 
   for (const block of blocks) {
-    const deviceId = block.match(/Device ID:\s*(\S+)/i)?.[1] ?? '';
+    const deviceId = /Device ID:\s*(\S+)/i.exec(block)?.[1] ?? '';
     const ip =
-      block.match(/IP(?:v4)? [Aa]ddress:\s*(\d+\.\d+\.\d+\.\d+)/)?.[1] ??
-      block.match(/Entry address\(es\):\s*\n\s*IP address:\s*(\S+)/i)?.[1] ??
+      /IP(?:v4)? [Aa]ddress:\s*(\d+\.\d+\.\d+\.\d+)/.exec(block)?.[1] ??
+      /Entry address\(es\):\s*\n\s*IP address:\s*(\S+)/i.exec(block)?.[1] ??
       null;
-    const platform = block.match(/Platform:\s*([^,\n]+)/i)?.[1]?.trim() ?? null;
-    const localInterface = block.match(/Interface:\s*(\S+)/i)?.[1] ?? '';
-    const remoteInterface = block.match(/Port ID \(outgoing port\):\s*(\S+)/i)?.[1] ?? '';
+    const platform = /Platform:\s*([^,\n]+)/i.exec(block)?.[1]?.trim() ?? null;
+    const localInterface = /Interface:\s*(\S+)/i.exec(block)?.[1] ?? '';
+    const remoteInterface = /Port ID \(outgoing port\):\s*(\S+)/i.exec(block)?.[1] ?? '';
 
     if (deviceId) {
       neighbors.push({ deviceId, ip, platform, localInterface, remoteInterface });
@@ -1419,18 +1607,19 @@ interface ShowVersionInfo {
 
 function parseShowVersion(raw: string): ShowVersionInfo {
   return {
-    iosFamily:
-      raw.match(/Cisco IOS (XE|XR|NX-OS) Software/i)?.[1]
-        ? `IOS ${raw.match(/Cisco IOS (XE|XR|NX-OS) Software/i)![1]}`
-        : raw.match(/Cisco (IOS|NX-OS) Software/i)?.[1] ?? null,
-    version: raw.match(/Version ([\d.()A-Za-z]+)/i)?.[1] ?? null,
-    hostname: raw.match(/^(\S+)\s+uptime/im)?.[1] ?? null,
-    uptime: raw.match(/uptime is (.+)/i)?.[1]?.trim() ?? null,
+    iosFamily: /Cisco IOS (XE|XR|NX-OS) Software/i.exec(raw)?.[1]
+      ? `IOS ${/Cisco IOS (XE|XR|NX-OS) Software/i.exec(raw)![1]}`
+      : (/Cisco (IOS|NX-OS) Software/i.exec(raw)?.[1] ?? null),
+    version: /Version ([\d.()A-Za-z]+)/i.exec(raw)?.[1] ?? null,
+    hostname: /^(\S+)\s+uptime/im.exec(raw)?.[1] ?? null,
+    uptime: /uptime is (.+)/i.exec(raw)?.[1]?.trim() ?? null,
     platform:
-      raw.match(/Cisco (\S+ \S+) \(revision/i)?.[1] ??
-      raw.match(/Hardware:\s+(.+)/i)?.[1]?.trim() ?? null,
+      /Cisco (\S+ \S+) \(revision/i.exec(raw)?.[1] ??
+      /Hardware:\s+(.+)/i.exec(raw)?.[1]?.trim() ??
+      null,
     serialNumber:
-      raw.match(/Processor board ID\s+(\S+)/i)?.[1] ??
-      raw.match(/System serial number\s*:\s*(\S+)/i)?.[1] ?? null,
+      /Processor board ID\s+(\S+)/i.exec(raw)?.[1] ??
+      /System serial number\s*:\s*(\S+)/i.exec(raw)?.[1] ??
+      null,
   };
 }

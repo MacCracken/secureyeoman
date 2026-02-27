@@ -121,9 +121,7 @@ async function mcpJsonRpc(
   return json.result;
 }
 
-function requireCredentials(
-  config: McpServiceConfig
-): { network: string; apiKey: string } | null {
+function requireCredentials(config: McpServiceConfig): { network: string; apiKey: string } | null {
   const network = config.twingateNetwork;
   const apiKey = config.twingateApiKey;
   if (!network || !apiKey) return null;
@@ -178,9 +176,12 @@ export function registerTwingateTools(
     },
     wrapToolHandler('twingate_resources_list', middleware, async () => {
       const creds = requireCredentials(config);
-      if (!creds) return errorResponse('Twingate credentials not configured. Set TWINGATE_API_KEY and TWINGATE_NETWORK.');
+      if (!creds)
+        return errorResponse(
+          'Twingate credentials not configured. Set TWINGATE_API_KEY and TWINGATE_NETWORK.'
+        );
 
-      const data = await twingateQuery(
+      const data = (await twingateQuery(
         creds.network,
         creds.apiKey,
         `query {
@@ -196,7 +197,7 @@ export function registerTwingateTools(
             }
           }
         }`
-      ) as { resources: { edges: { node: unknown }[] } };
+      )) as { resources: { edges: { node: unknown }[] } };
 
       const resources = data.resources.edges.map((e) => e.node);
       return textResponse({ resources, count: resources.length });
@@ -215,9 +216,12 @@ export function registerTwingateTools(
     wrapToolHandler('twingate_resource_get', middleware, async (args) => {
       const { id } = args as { id: string };
       const creds = requireCredentials(config);
-      if (!creds) return errorResponse('Twingate credentials not configured. Set TWINGATE_API_KEY and TWINGATE_NETWORK.');
+      if (!creds)
+        return errorResponse(
+          'Twingate credentials not configured. Set TWINGATE_API_KEY and TWINGATE_NETWORK.'
+        );
 
-      const data = await twingateQuery(
+      const data = (await twingateQuery(
         creds.network,
         creds.apiKey,
         `query($id: ID!) {
@@ -231,7 +235,7 @@ export function registerTwingateTools(
           }
         }`,
         { id }
-      ) as { resource: unknown };
+      )) as { resource: unknown };
 
       return textResponse(data.resource);
     })
@@ -246,9 +250,12 @@ export function registerTwingateTools(
     },
     wrapToolHandler('twingate_groups_list', middleware, async () => {
       const creds = requireCredentials(config);
-      if (!creds) return errorResponse('Twingate credentials not configured. Set TWINGATE_API_KEY and TWINGATE_NETWORK.');
+      if (!creds)
+        return errorResponse(
+          'Twingate credentials not configured. Set TWINGATE_API_KEY and TWINGATE_NETWORK.'
+        );
 
-      const data = await twingateQuery(
+      const data = (await twingateQuery(
         creds.network,
         creds.apiKey,
         `query {
@@ -263,7 +270,7 @@ export function registerTwingateTools(
             }
           }
         }`
-      ) as { groups: { edges: { node: unknown }[] } };
+      )) as { groups: { edges: { node: unknown }[] } };
 
       const groups = data.groups.edges.map((e) => e.node);
       return textResponse({ groups, count: groups.length });
@@ -279,9 +286,12 @@ export function registerTwingateTools(
     },
     wrapToolHandler('twingate_service_accounts_list', middleware, async () => {
       const creds = requireCredentials(config);
-      if (!creds) return errorResponse('Twingate credentials not configured. Set TWINGATE_API_KEY and TWINGATE_NETWORK.');
+      if (!creds)
+        return errorResponse(
+          'Twingate credentials not configured. Set TWINGATE_API_KEY and TWINGATE_NETWORK.'
+        );
 
-      const data = await twingateQuery(
+      const data = (await twingateQuery(
         creds.network,
         creds.apiKey,
         `query {
@@ -296,7 +306,7 @@ export function registerTwingateTools(
             }
           }
         }`
-      ) as { serviceAccounts: { edges: { node: unknown }[] } };
+      )) as { serviceAccounts: { edges: { node: unknown }[] } };
 
       const accounts = data.serviceAccounts.edges.map((e) => e.node);
       return textResponse({ serviceAccounts: accounts, count: accounts.length });
@@ -316,9 +326,12 @@ export function registerTwingateTools(
     wrapToolHandler('twingate_service_account_create', middleware, async (args) => {
       const { name, resourceIds } = args as { name: string; resourceIds?: string[] };
       const creds = requireCredentials(config);
-      if (!creds) return errorResponse('Twingate credentials not configured. Set TWINGATE_API_KEY and TWINGATE_NETWORK.');
+      if (!creds)
+        return errorResponse(
+          'Twingate credentials not configured. Set TWINGATE_API_KEY and TWINGATE_NETWORK.'
+        );
 
-      const data = await twingateQuery(
+      const data = (await twingateQuery(
         creds.network,
         creds.apiKey,
         `mutation($name: String!, $resourceIds: [ID!]) {
@@ -331,7 +344,7 @@ export function registerTwingateTools(
           }
         }`,
         { name, resourceIds }
-      ) as { serviceAccountCreate: { entity: { id: string; name: string } } };
+      )) as { serviceAccountCreate: { entity: { id: string; name: string } } };
 
       return textResponse(data.serviceAccountCreate.entity);
     })
@@ -350,9 +363,12 @@ export function registerTwingateTools(
     wrapToolHandler('twingate_service_key_create', middleware, async (args) => {
       const { serviceAccountId, name } = args as { serviceAccountId: string; name?: string };
       const creds = requireCredentials(config);
-      if (!creds) return errorResponse('Twingate credentials not configured. Set TWINGATE_API_KEY and TWINGATE_NETWORK.');
+      if (!creds)
+        return errorResponse(
+          'Twingate credentials not configured. Set TWINGATE_API_KEY and TWINGATE_NETWORK.'
+        );
 
-      const data = await twingateQuery(
+      const data = (await twingateQuery(
         creds.network,
         creds.apiKey,
         `mutation($serviceAccountId: ID!, $name: String) {
@@ -365,7 +381,7 @@ export function registerTwingateTools(
           }
         }`,
         { serviceAccountId, name }
-      ) as { serviceAccountKeyCreate: { entity: { id: string; name: string; token: string } } };
+      )) as { serviceAccountKeyCreate: { entity: { id: string; name: string; token: string } } };
 
       const { id: keyId, name: keyName, token } = data.serviceAccountKeyCreate.entity;
       const secretName = `TWINGATE_SVC_KEY_${serviceAccountId}`;
@@ -403,7 +419,10 @@ export function registerTwingateTools(
     wrapToolHandler('twingate_service_key_revoke', middleware, async (args) => {
       const { id } = args as { id: string };
       const creds = requireCredentials(config);
-      if (!creds) return errorResponse('Twingate credentials not configured. Set TWINGATE_API_KEY and TWINGATE_NETWORK.');
+      if (!creds)
+        return errorResponse(
+          'Twingate credentials not configured. Set TWINGATE_API_KEY and TWINGATE_NETWORK.'
+        );
 
       await twingateQuery(
         creds.network,
@@ -436,9 +455,12 @@ export function registerTwingateTools(
     },
     wrapToolHandler('twingate_connectors_list', middleware, async () => {
       const creds = requireCredentials(config);
-      if (!creds) return errorResponse('Twingate credentials not configured. Set TWINGATE_API_KEY and TWINGATE_NETWORK.');
+      if (!creds)
+        return errorResponse(
+          'Twingate credentials not configured. Set TWINGATE_API_KEY and TWINGATE_NETWORK.'
+        );
 
-      const data = await twingateQuery(
+      const data = (await twingateQuery(
         creds.network,
         creds.apiKey,
         `query {
@@ -454,7 +476,7 @@ export function registerTwingateTools(
             }
           }
         }`
-      ) as { connectors: { edges: { node: unknown }[] } };
+      )) as { connectors: { edges: { node: unknown }[] } };
 
       const connectors = data.connectors.edges.map((e) => e.node);
       return textResponse({ connectors, count: connectors.length });
@@ -464,15 +486,17 @@ export function registerTwingateTools(
   server.registerTool(
     'twingate_remote_networks_list',
     {
-      description:
-        'List Twingate Remote Networks (private network segments behind Connectors)',
+      description: 'List Twingate Remote Networks (private network segments behind Connectors)',
       inputSchema: {},
     },
     wrapToolHandler('twingate_remote_networks_list', middleware, async () => {
       const creds = requireCredentials(config);
-      if (!creds) return errorResponse('Twingate credentials not configured. Set TWINGATE_API_KEY and TWINGATE_NETWORK.');
+      if (!creds)
+        return errorResponse(
+          'Twingate credentials not configured. Set TWINGATE_API_KEY and TWINGATE_NETWORK.'
+        );
 
-      const data = await twingateQuery(
+      const data = (await twingateQuery(
         creds.network,
         creds.apiKey,
         `query {
@@ -488,7 +512,7 @@ export function registerTwingateTools(
             }
           }
         }`
-      ) as { remoteNetworks: { edges: { node: unknown }[] } };
+      )) as { remoteNetworks: { edges: { node: unknown }[] } };
 
       const remoteNetworks = data.remoteNetworks.edges.map((e) => e.node);
       return textResponse({ remoteNetworks, count: remoteNetworks.length });
@@ -505,7 +529,9 @@ export function registerTwingateTools(
       inputSchema: {
         resourceAddress: z
           .string()
-          .describe('Hostname or IP of the private MCP server (must be reachable via Twingate tunnel)'),
+          .describe(
+            'Hostname or IP of the private MCP server (must be reachable via Twingate tunnel)'
+          ),
         port: z
           .number()
           .int()
@@ -570,7 +596,11 @@ export function registerTwingateTools(
       },
     },
     wrapToolHandler('twingate_mcp_call_tool', middleware, async (args) => {
-      const { sessionId, toolName, args: toolArgs } = args as {
+      const {
+        sessionId,
+        toolName,
+        args: toolArgs,
+      } = args as {
         sessionId: string;
         toolName: string;
         args?: Record<string, unknown>;

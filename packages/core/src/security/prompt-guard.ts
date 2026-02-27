@@ -68,8 +68,7 @@ const GUARD_PATTERNS: {
   // Scoped to non-system messages; system prompt has legitimate structural headers.
   {
     name: 'authority_claim',
-    pattern:
-      /(?:^|\n)\s*(?:SYSTEM|ADMINISTRATOR|ADMIN|AI_OVERRIDE|ROOT|PRIVILEGED|RUNTIME)\s*:/gim,
+    pattern: /(?:^|\n)\s*(?:SYSTEM|ADMINISTRATOR|ADMIN|AI_OVERRIDE|ROOT|PRIVILEGED|RUNTIME)\s*:/gim,
     severity: 'high',
     scanSystem: false,
   },
@@ -158,7 +157,7 @@ export class PromptGuard {
    *          at least one high-severity finding is present.
    */
   scan(
-    messages: Array<{ role: string; content?: string | unknown }>,
+    messages: { role: string; content?: string | unknown }[],
     context: { userId?: string; source?: string } = {}
   ): PromptGuardResult {
     if (this.mode === 'disabled') {
@@ -186,10 +185,7 @@ export class PromptGuard {
         const match = pattern.exec(content);
 
         if (match) {
-          const snippet = content.slice(
-            Math.max(0, match.index - 20),
-            match.index + 100
-          );
+          const snippet = content.slice(Math.max(0, match.index - 20), match.index + 100);
           findings.push({
             messageIndex: idx,
             messageRole: role,

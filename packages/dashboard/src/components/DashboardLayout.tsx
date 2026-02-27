@@ -15,9 +15,7 @@ import { OnboardingWizard } from './OnboardingWizard';
 import type { HealthStatus } from '../types';
 
 // Lazy-loaded route components — each becomes its own JS chunk
-const MetricsPage = lazy(() =>
-  import('./MetricsPage').then((m) => ({ default: m.MetricsPage }))
-);
+const MetricsPage = lazy(() => import('./MetricsPage').then((m) => ({ default: m.MetricsPage })));
 const PersonalityEditor = lazy(() =>
   import('./PersonalityEditor').then((m) => ({ default: m.PersonalityEditor }))
 );
@@ -49,9 +47,7 @@ const WorkflowBuilder = lazy(() =>
 const WorkflowRunDetail = lazy(() =>
   import('../pages/WorkflowRunDetail').then((m) => ({ default: m.WorkflowRunDetail }))
 );
-const IntentPage = lazy(() =>
-  import('./IntentEditor').then((m) => ({ default: m.IntentEditor }))
-);
+const IntentPage = lazy(() => import('./IntentEditor').then((m) => ({ default: m.IntentEditor })));
 
 export function DashboardLayout() {
   const { logout } = useAuth();
@@ -180,7 +176,10 @@ export function DashboardLayout() {
                   <Route path="/security" element={<SecurityPage />} />
                   <Route path="/automation" element={<AutomationPage />} />
                   <Route path="/tasks" element={<Navigate to="/automation" replace />} />
-                  <Route path="/workflows" element={<Navigate to="/automation?tab=workflows" replace />} />
+                  <Route
+                    path="/workflows"
+                    element={<Navigate to="/automation?tab=workflows" replace />}
+                  />
                   <Route path="/workflows/:id/builder" element={<WorkflowBuilder />} />
                   <Route path="/workflows/runs/:runId" element={<WorkflowRunDetail />} />
                   <Route path="/reports" element={<SecurityPage />} />
@@ -230,4 +229,3 @@ function PageSkeleton() {
     </div>
   );
 }
-

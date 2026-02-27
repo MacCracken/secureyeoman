@@ -82,14 +82,24 @@ function exportSkill(skill: Skill) {
     lastUsedAt: _la,
     personalityName: _pn,
     ...exportable
-  } = skill as Skill & { id: string; createdAt: number; updatedAt: number; usageCount: number; lastUsedAt: number | null; personalityName?: string | null };
+  } = skill as Skill & {
+    id: string;
+    createdAt: number;
+    updatedAt: number;
+    usageCount: number;
+    lastUsedAt: number | null;
+    personalityName?: string | null;
+  };
 
   const payload = JSON.stringify({ $schema: 'sy-skill/1', ...exportable }, null, 2);
   const blob = new Blob([payload], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${skill.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}.skill.json`;
+  a.download = `${skill.name
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')}.skill.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -380,7 +390,7 @@ function MySkillsTab() {
         // Schema validation
         if (raw.$schema !== 'sy-skill/1') {
           setImportError(
-            `Invalid file: $schema must be "sy-skill/1" (got ${JSON.stringify(raw.$schema ?? null)}).`,
+            `Invalid file: $schema must be "sy-skill/1" (got ${JSON.stringify(raw.$schema ?? null)}).`
           );
           return;
         }
@@ -406,10 +416,13 @@ function MySkillsTab() {
         createMut.mutate(
           { ...(skillData as unknown as SkillCreate), source: 'user' },
           {
-            onSuccess: () => setImportSuccess(`"${raw.name as string}" imported successfully.`),
-            onError: (err: unknown) =>
-              setImportError(err instanceof Error ? err.message : 'Import failed.'),
-          },
+            onSuccess: () => {
+              setImportSuccess(`"${raw.name as string}" imported successfully.`);
+            },
+            onError: (err: unknown) => {
+              setImportError(err instanceof Error ? err.message : 'Import failed.');
+            },
+          }
         );
       } catch {
         setImportError('Could not parse file — ensure it is valid JSON.');
@@ -440,10 +453,10 @@ function MySkillsTab() {
 
     type ShowOpenFilePicker = (opts?: {
       startIn?: string;
-      types?: Array<{ description: string; accept: Record<string, string[]> }>;
+      types?: { description: string; accept: Record<string, string[]> }[];
       multiple?: boolean;
       excludeAcceptAllOption?: boolean;
-    }) => Promise<Array<{ getFile(): Promise<File> }>>;
+    }) => Promise<{ getFile(): Promise<File> }[]>;
 
     const picker = (window as Window & { showOpenFilePicker?: ShowOpenFilePicker })
       .showOpenFilePicker;
@@ -517,7 +530,8 @@ function MySkillsTab() {
         >
           <Plus className="w-4 h-4 mr-1" /> Add Skill
         </button>
-        <button onClick={() => void handleImportClick()}
+        <button
+          onClick={() => void handleImportClick()}
           className="btn btn-secondary"
           title="Import a .skill.json file"
         >
@@ -558,7 +572,12 @@ function MySkillsTab() {
         <div className="flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span className="flex-1">{importError}</span>
-          <button onClick={() => setImportError(null)} className="btn btn-ghost p-1">
+          <button
+            onClick={() => {
+              setImportError(null);
+            }}
+            className="btn btn-ghost p-1"
+          >
             <X className="w-3 h-3" />
           </button>
         </div>
@@ -568,7 +587,12 @@ function MySkillsTab() {
         <div className="flex items-center gap-2 rounded-lg border border-success/40 bg-success/10 px-3 py-2 text-sm text-success">
           <CheckCircle className="w-4 h-4 shrink-0" />
           <span className="flex-1">{importSuccess}</span>
-          <button onClick={() => setImportSuccess(null)} className="btn btn-ghost p-1">
+          <button
+            onClick={() => {
+              setImportSuccess(null);
+            }}
+            className="btn btn-ghost p-1"
+          >
             <X className="w-3 h-3" />
           </button>
         </div>
@@ -737,9 +761,14 @@ function MySkillsTab() {
                   </p>
                   {(skill.triggerPatterns || []).length > 0 && (
                     <div className="flex items-center flex-wrap gap-1 mt-2">
-                      <span className="text-xs font-medium text-muted-foreground mr-1">Triggers:</span>
+                      <span className="text-xs font-medium text-muted-foreground mr-1">
+                        Triggers:
+                      </span>
                       {(skill.triggerPatterns || []).map((p, i) => (
-                        <span key={i} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded font-mono">
+                        <span
+                          key={i}
+                          className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded font-mono"
+                        >
                           {p}
                         </span>
                       ))}
@@ -748,9 +777,14 @@ function MySkillsTab() {
                   {(skill.mcpToolsAllowed || []).length > 0 && (
                     <div className="flex items-center flex-wrap gap-1 mt-1.5">
                       <Shield className="w-3 h-3 text-warning shrink-0" />
-                      <span className="text-xs font-medium text-muted-foreground mr-1">MCP Restricted:</span>
+                      <span className="text-xs font-medium text-muted-foreground mr-1">
+                        MCP Restricted:
+                      </span>
                       {(skill.mcpToolsAllowed || []).map((t, i) => (
-                        <span key={i} className="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded font-mono">
+                        <span
+                          key={i}
+                          className="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded font-mono"
+                        >
                           {t}
                         </span>
                       ))}
@@ -819,7 +853,9 @@ function MySkillsTab() {
                   </button>
                   {AI_SOURCES.has(skill.source) && (
                     <button
-                      onClick={() => exportSkill(skill)}
+                      onClick={() => {
+                        exportSkill(skill);
+                      }}
                       className="btn btn-ghost p-2"
                       title="Export as JSON"
                     >
@@ -1026,7 +1062,9 @@ function InstalledSkillsTab({ onNavigateTab }: { onNavigateTab?: (tab: TabType) 
                 className={`card p-4 space-y-2 ${section.tabTarget ? 'cursor-pointer hover:border-primary/50 transition-colors' : ''}`}
                 onClick={
                   section.tabTarget && onNavigateTab
-                    ? () => onNavigateTab(section.tabTarget as TabType)
+                    ? () => {
+                        onNavigateTab(section.tabTarget as TabType);
+                      }
                     : undefined
                 }
               >
@@ -1044,9 +1082,7 @@ function InstalledSkillsTab({ onNavigateTab }: { onNavigateTab?: (tab: TabType) 
         </div>
       ) : filteredSkills.length === 0 ? (
         <div className="card p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            No skills for the selected filter.
-          </p>
+          <p className="text-sm text-muted-foreground">No skills for the selected filter.</p>
         </div>
       ) : (
         /* ── Grouped by source ─────────────────────────────────────────── */
@@ -1061,13 +1097,14 @@ function InstalledSkillsTab({ onNavigateTab }: { onNavigateTab?: (tab: TabType) 
                   <h3 className="text-sm font-semibold">{section.label}</h3>
                   <span className="text-xs text-muted-foreground">({sectionSkills.length})</span>
                 </div>
-                <div className="space-y-2">{groupSkillsByName(sectionSkills).map(renderSkillGroup)}</div>
+                <div className="space-y-2">
+                  {groupSkillsByName(sectionSkills).map(renderSkillGroup)}
+                </div>
               </section>
             );
           })}
         </div>
       )}
-
     </div>
   );
 }
@@ -1138,7 +1175,11 @@ function SkillCard({
                 disabled={uninstalling}
                 className="btn btn-ghost text-destructive flex items-center gap-2 w-full justify-center text-xs py-2"
               >
-                {uninstalling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                {uninstalling ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
                 Uninstall
               </button>
             ) : skill.installedGlobally ? (
@@ -1189,13 +1230,17 @@ function SkillPreviewModal({
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    return () => {
+      document.removeEventListener('keydown', handler);
+    };
   }, [onClose]);
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="bg-card border border-border rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-xl">
         {/* Header */}
@@ -1261,7 +1306,10 @@ function SkillPreviewModal({
           {skill.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {skill.tags.map((tag) => (
-                <span key={tag} className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground">
+                <span
+                  key={tag}
+                  className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground"
+                >
                   {tag}
                 </span>
               ))}
@@ -1271,15 +1319,21 @@ function SkillPreviewModal({
           {/* Description */}
           {skill.description && (
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">Description</h3>
-              <p className="text-sm text-foreground leading-relaxed">{sanitizeText(skill.description)}</p>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                Description
+              </h3>
+              <p className="text-sm text-foreground leading-relaxed">
+                {sanitizeText(skill.description)}
+              </p>
             </div>
           )}
 
           {/* Instructions */}
           {skill.instructions && (
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">Instructions</h3>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                Instructions
+              </h3>
               <pre className="text-xs bg-muted rounded-lg p-3 whitespace-pre-wrap break-words font-mono leading-relaxed max-h-64 overflow-y-auto">
                 {skill.instructions}
               </pre>
@@ -1294,7 +1348,10 @@ function SkillPreviewModal({
               </h3>
               <div className="space-y-1">
                 {skill.triggerPatterns.map((pattern, i) => (
-                  <code key={i} className="block text-xs bg-muted rounded px-2 py-1 font-mono text-foreground">
+                  <code
+                    key={i}
+                    className="block text-xs bg-muted rounded px-2 py-1 font-mono text-foreground"
+                  >
                     {pattern}
                   </code>
                 ))}
@@ -1310,7 +1367,10 @@ function SkillPreviewModal({
               </h3>
               <div className="flex flex-wrap gap-1.5">
                 {skill.tools.map((tool) => (
-                  <span key={tool.name} className="text-[10px] bg-muted px-2 py-0.5 rounded font-mono text-foreground">
+                  <span
+                    key={tool.name}
+                    className="text-[10px] bg-muted px-2 py-0.5 rounded font-mono text-foreground"
+                  >
                     {tool.name}
                   </span>
                 ))}
@@ -1325,17 +1385,21 @@ function SkillPreviewModal({
                 <Shield className="w-3.5 h-3.5 text-warning" />
                 MCP Restricted To ({(skill.mcpToolsAllowed || []).length})
               </h3>
-              <p className="text-xs text-muted-foreground mb-1.5">Only these tools are available while this skill is active.</p>
+              <p className="text-xs text-muted-foreground mb-1.5">
+                Only these tools are available while this skill is active.
+              </p>
               <div className="flex flex-wrap gap-1.5">
                 {(skill.mcpToolsAllowed || []).map((t, i) => (
-                  <span key={i} className="text-[10px] bg-warning/10 text-warning px-2 py-0.5 rounded font-mono">
+                  <span
+                    key={i}
+                    className="text-[10px] bg-warning/10 text-warning px-2 py-0.5 rounded font-mono"
+                  >
                     {t}
                   </span>
                 ))}
               </div>
             </div>
           )}
-
         </div>
 
         {/* Footer */}
@@ -1353,7 +1417,11 @@ function SkillPreviewModal({
                 disabled={uninstalling}
                 className="btn btn-ghost text-destructive flex items-center gap-2 text-sm px-4"
               >
-                {uninstalling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {uninstalling ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
                 Uninstall
               </button>
             ) : skill.installedGlobally ? (
@@ -1367,7 +1435,11 @@ function SkillPreviewModal({
                 disabled={installing}
                 className="btn btn-ghost flex items-center gap-2 text-sm px-4"
               >
-                {installing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                {installing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
                 Install
               </button>
             )}
@@ -1505,14 +1577,19 @@ function MarketplaceTab() {
           badge={badgeFn?.(skill)}
           installing={installingId === skill.id && installMut.isPending}
           uninstalling={uninstallingId === skill.id && uninstallMut.isPending}
-          onPreview={() => setPreviewSkill(skill)}
+          onPreview={() => {
+            setPreviewSkill(skill);
+          }}
           onInstall={() => {
             setInstallingId(skill.id);
             installMut.mutate({ id: skill.id, personalityId: selectedPersonalityId || undefined });
           }}
           onUninstall={() => {
             setUninstallingId(skill.id);
-            uninstallMut.mutate({ id: skill.id, personalityId: selectedPersonalityId || undefined });
+            uninstallMut.mutate({
+              id: skill.id,
+              personalityId: selectedPersonalityId || undefined,
+            });
           }}
         />
       ))}
@@ -1521,89 +1598,97 @@ function MarketplaceTab() {
 
   return (
     <>
-    {previewSkill && (
-      <SkillPreviewModal
-        skill={previewSkill}
-        onClose={() => setPreviewSkill(null)}
-        installing={installingId === previewSkill.id && installMut.isPending}
-        uninstalling={uninstallingId === previewSkill.id && uninstallMut.isPending}
-        onInstall={() => {
-          setInstallingId(previewSkill.id);
-          installMut.mutate({ id: previewSkill.id, personalityId: selectedPersonalityId || undefined });
-          setPreviewSkill(null);
-        }}
-        onUninstall={() => {
-          setUninstallingId(previewSkill.id);
-          uninstallMut.mutate({ id: previewSkill.id, personalityId: selectedPersonalityId || undefined });
-          setPreviewSkill(null);
-        }}
-      />
-    )}
-    <div className="space-y-6">
-      {/* Toolbar */}
-      <div className="flex flex-col lg:flex-row gap-4">
-        <div className="relative flex-1 max-w-2xl">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-            placeholder="Search skills by name, description, or author..."
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-            }}
+      {previewSkill && (
+        <SkillPreviewModal
+          skill={previewSkill}
+          onClose={() => {
+            setPreviewSkill(null);
+          }}
+          installing={installingId === previewSkill.id && installMut.isPending}
+          uninstalling={uninstallingId === previewSkill.id && uninstallMut.isPending}
+          onInstall={() => {
+            setInstallingId(previewSkill.id);
+            installMut.mutate({
+              id: previewSkill.id,
+              personalityId: selectedPersonalityId || undefined,
+            });
+            setPreviewSkill(null);
+          }}
+          onUninstall={() => {
+            setUninstallingId(previewSkill.id);
+            uninstallMut.mutate({
+              id: previewSkill.id,
+              personalityId: selectedPersonalityId || undefined,
+            });
+            setPreviewSkill(null);
+          }}
+        />
+      )}
+      <div className="space-y-6">
+        {/* Toolbar */}
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="relative flex-1 max-w-2xl">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              placeholder="Search skills by name, description, or author..."
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+              }}
+            />
+          </div>
+          <PersonalitySelector
+            personalities={personalities}
+            value={selectedPersonalityId}
+            onChange={setSelectedPersonalityId}
           />
         </div>
-        <PersonalitySelector
-          personalities={personalities}
-          value={selectedPersonalityId}
-          onChange={setSelectedPersonalityId}
-        />
+
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : allSkills.length === 0 ? (
+          <div className="card p-12 text-center">
+            <Store className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+            <p className="text-muted-foreground">
+              {query ? 'No skills found' : 'Marketplace is empty'}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {/* YEOMAN Built-ins */}
+            {builtinSkills.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <Shield className="w-4 h-4 text-primary" />
+                  <h3 className="text-sm font-semibold text-foreground">YEOMAN Built-ins</h3>
+                  <span className="text-xs text-muted-foreground">({builtinSkills.length})</span>
+                </div>
+                {renderGrid(builtinSkills, () => (
+                  <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                    <Shield className="w-2.5 h-2.5" />
+                    YEOMAN
+                  </span>
+                ))}
+              </section>
+            )}
+
+            {/* Published */}
+            {publishedSkills.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <Store className="w-4 h-4 text-muted-foreground" />
+                  <h3 className="text-sm font-semibold text-foreground">Published</h3>
+                  <span className="text-xs text-muted-foreground">({publishedSkills.length})</span>
+                </div>
+                {renderGrid(publishedSkills)}
+              </section>
+            )}
+          </div>
+        )}
       </div>
-
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-        </div>
-      ) : allSkills.length === 0 ? (
-        <div className="card p-12 text-center">
-          <Store className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-          <p className="text-muted-foreground">
-            {query ? 'No skills found' : 'Marketplace is empty'}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {/* YEOMAN Built-ins */}
-          {builtinSkills.length > 0 && (
-            <section>
-              <div className="flex items-center gap-2 mb-4">
-                <Shield className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-semibold text-foreground">YEOMAN Built-ins</h3>
-                <span className="text-xs text-muted-foreground">({builtinSkills.length})</span>
-              </div>
-              {renderGrid(builtinSkills, () => (
-                <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                  <Shield className="w-2.5 h-2.5" />
-                  YEOMAN
-                </span>
-              ))}
-            </section>
-          )}
-
-          {/* Published */}
-          {publishedSkills.length > 0 && (
-            <section>
-              <div className="flex items-center gap-2 mb-4">
-                <Store className="w-4 h-4 text-muted-foreground" />
-                <h3 className="text-sm font-semibold text-foreground">Published</h3>
-                <span className="text-xs text-muted-foreground">({publishedSkills.length})</span>
-              </div>
-              {renderGrid(publishedSkills)}
-            </section>
-          )}
-        </div>
-      )}
-    </div>
     </>
   );
 }
@@ -1631,7 +1716,15 @@ function CommunityTab() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['marketplace-community', query, selectedPersonalityId, page],
-    queryFn: () => fetchMarketplaceSkills(query || undefined, 'community', selectedPersonalityId, undefined, COMMUNITY_PAGE_SIZE, page * COMMUNITY_PAGE_SIZE),
+    queryFn: () =>
+      fetchMarketplaceSkills(
+        query || undefined,
+        'community',
+        selectedPersonalityId,
+        undefined,
+        COMMUNITY_PAGE_SIZE,
+        page * COMMUNITY_PAGE_SIZE
+      ),
     enabled: hasInitialized,
   });
 
@@ -1657,7 +1750,9 @@ function CommunityTab() {
   }, [activePersonality, hasInitialized]);
 
   // Reset to first page when search or personality filter changes
-  useEffect(() => { setPage(0); }, [query, selectedPersonalityId]);
+  useEffect(() => {
+    setPage(0);
+  }, [query, selectedPersonalityId]);
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['marketplace-community'] });
@@ -1706,200 +1801,218 @@ function CommunityTab() {
 
   return (
     <>
-    {previewSkill && (
-      <SkillPreviewModal
-        skill={previewSkill}
-        onClose={() => setPreviewSkill(null)}
-        installing={installingId === previewSkill.id && installMut.isPending}
-        uninstalling={uninstallingId === previewSkill.id && uninstallMut.isPending}
-        onInstall={() => {
-          if (!canInstall) return;
-          setInstallingId(previewSkill.id);
-          installMut.mutate({ id: previewSkill.id, personalityId: selectedPersonalityId });
-          setPreviewSkill(null);
-        }}
-        onUninstall={() => {
-          setUninstallingId(previewSkill.id);
-          uninstallMut.mutate({ id: previewSkill.id, personalityId: selectedPersonalityId || undefined });
-          setPreviewSkill(null);
-        }}
-      />
-    )}
-    <div className="space-y-6">
-      {/* Header bar */}
-      <div className="flex flex-col lg:flex-row gap-4">
-        <div className="relative flex-1 max-w-2xl">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-            placeholder="Search community skills..."
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-            }}
-          />
-        </div>
-
-        {/* Per-personality required */}
-        <PersonalitySelector
-          personalities={personalities}
-          value={selectedPersonalityId}
-          onChange={setSelectedPersonalityId}
-          required
-        />
-
-        {/* Sync button */}
-        <button
-          onClick={() => {
-            setSyncResult(null);
-            syncMut.mutate();
+      {previewSkill && (
+        <SkillPreviewModal
+          skill={previewSkill}
+          onClose={() => {
+            setPreviewSkill(null);
           }}
-          disabled={syncMut.isPending}
-          className="btn btn-secondary flex items-center gap-2 whitespace-nowrap"
-          title={
-            statusData?.communityRepoPath
-              ? `Sync from ${statusData.communityRepoPath}`
-              : 'Sync from community repo'
-          }
-        >
-          <RefreshCw className={`w-4 h-4 ${syncMut.isPending ? 'animate-spin' : ''}`} />
-          {syncMut.isPending ? 'Syncing…' : 'Sync'}
-        </button>
-      </div>
-
-      {/* Repo path + last synced info */}
-      {statusData && (
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <GitBranch className="w-3.5 h-3.5 shrink-0" />
-          <span className="font-mono truncate">
-            {statusData.communityRepoPath ?? 'No path configured'}
-          </span>
-          {lastSynced && <span className="shrink-0">· Last synced {lastSynced}</span>}
-        </div>
+          installing={installingId === previewSkill.id && installMut.isPending}
+          uninstalling={uninstallingId === previewSkill.id && uninstallMut.isPending}
+          onInstall={() => {
+            if (!canInstall) return;
+            setInstallingId(previewSkill.id);
+            installMut.mutate({ id: previewSkill.id, personalityId: selectedPersonalityId });
+            setPreviewSkill(null);
+          }}
+          onUninstall={() => {
+            setUninstallingId(previewSkill.id);
+            uninstallMut.mutate({
+              id: previewSkill.id,
+              personalityId: selectedPersonalityId || undefined,
+            });
+            setPreviewSkill(null);
+          }}
+        />
       )}
-
-      {/* Per-personality notice */}
-      {!canInstall && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-warning/10 border border-warning/20 text-xs text-warning-foreground">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          Select a personality above — community skills must be installed per-personality.
-        </div>
-      )}
-
-      {/* Sync result */}
-      {syncResult && (
-        <div
-          className={`p-3 rounded-lg border text-xs space-y-1 ${
-            syncResult.errors.length > 0
-              ? 'bg-warning/10 border-warning/20'
-              : 'bg-success/10 border-success/20'
-          }`}
-        >
-          <div className="flex items-center gap-2 font-medium">
-            {syncResult.errors.length > 0 ? (
-              <AlertCircle className="w-4 h-4 text-warning" />
-            ) : (
-              <CheckCircle className="w-4 h-4 text-success" />
-            )}
-            Sync complete — {syncResult.added} added, {syncResult.updated} updated,{' '}
-            {syncResult.skipped} skipped
-            {syncResult.removed > 0 && `, ${syncResult.removed} removed`}
-            {syncResult.errors.length > 0 && `, ${syncResult.errors.length} error(s)`}
+      <div className="space-y-6">
+        {/* Header bar */}
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="relative flex-1 max-w-2xl">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              placeholder="Search community skills..."
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+              }}
+            />
           </div>
-          {syncResult.errors.length > 0 && (
-            <ul className="mt-1 space-y-0.5 text-muted-foreground">
-              {syncResult.errors.map((e, i) => (
-                <li key={i} className="truncate">
-                  · {e}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
 
-      {/* Skills grid */}
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          {/* Per-personality required */}
+          <PersonalitySelector
+            personalities={personalities}
+            value={selectedPersonalityId}
+            onChange={setSelectedPersonalityId}
+            required
+          />
+
+          {/* Sync button */}
+          <button
+            onClick={() => {
+              setSyncResult(null);
+              syncMut.mutate();
+            }}
+            disabled={syncMut.isPending}
+            className="btn btn-secondary flex items-center gap-2 whitespace-nowrap"
+            title={
+              statusData?.communityRepoPath
+                ? `Sync from ${statusData.communityRepoPath}`
+                : 'Sync from community repo'
+            }
+          >
+            <RefreshCw className={`w-4 h-4 ${syncMut.isPending ? 'animate-spin' : ''}`} />
+            {syncMut.isPending ? 'Syncing…' : 'Sync'}
+          </button>
         </div>
-      ) : skills.length === 0 ? (
-        <div className="card p-12 text-center space-y-3">
-          <Users className="w-12 h-12 mx-auto text-muted-foreground" />
-          <p className="text-muted-foreground font-medium">No community skills found</p>
-          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-            Click <strong>Sync</strong> to import skills from the community repo — git fetch runs
-            automatically when <span className="font-mono">allowCommunityGitFetch</span> is
-            enabled.
-          </p>
-          {statusData?.communityRepoPath && (
-            <p className="text-xs text-muted-foreground font-mono">
-              {statusData.communityRepoPath}
-            </p>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <GitBranch className="w-4 h-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold text-foreground">Community Skills</h3>
-            <span className="text-xs text-muted-foreground">({data?.total ?? skills.length})</span>
+
+        {/* Repo path + last synced info */}
+        {statusData && (
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <GitBranch className="w-3.5 h-3.5 shrink-0" />
+            <span className="font-mono truncate">
+              {statusData.communityRepoPath ?? 'No path configured'}
+            </span>
+            {lastSynced && <span className="shrink-0">· Last synced {lastSynced}</span>}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {skills.map((skill) => (
-              <SkillCard
-                key={skill.id}
-                skill={skill}
-                badge={
-                  <span className="inline-flex items-center gap-1 text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
-                    <GitBranch className="w-2.5 h-2.5" />
-                    Community
-                  </span>
-                }
-                installing={installingId === skill.id && installMut.isPending}
-                uninstalling={uninstallingId === skill.id && uninstallMut.isPending}
-                onPreview={() => setPreviewSkill(skill)}
-                onInstall={() => {
-                  if (!canInstall) return;
-                  setInstallingId(skill.id);
-                  installMut.mutate({ id: skill.id, personalityId: selectedPersonalityId });
-                }}
-                onUninstall={() => {
-                  setUninstallingId(skill.id);
-                  uninstallMut.mutate({ id: skill.id, personalityId: selectedPersonalityId || undefined });
-                }}
-              />
-            ))}
+        )}
+
+        {/* Per-personality notice */}
+        {!canInstall && (
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-warning/10 border border-warning/20 text-xs text-warning-foreground">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            Select a personality above — community skills must be installed per-personality.
           </div>
-          {(data?.total ?? 0) > COMMUNITY_PAGE_SIZE && (
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-muted-foreground">
-                Showing {page * COMMUNITY_PAGE_SIZE + 1}–{Math.min((page + 1) * COMMUNITY_PAGE_SIZE, data?.total ?? 0)} of {data?.total ?? 0}
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  className="btn btn-ghost btn-sm"
-                  disabled={page === 0}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  ← Prev
-                </button>
-                <span className="text-xs text-muted-foreground">
-                  Page {page + 1} of {Math.ceil((data?.total ?? 0) / COMMUNITY_PAGE_SIZE)}
-                </span>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  disabled={(page + 1) * COMMUNITY_PAGE_SIZE >= (data?.total ?? 0)}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next →
-                </button>
-              </div>
+        )}
+
+        {/* Sync result */}
+        {syncResult && (
+          <div
+            className={`p-3 rounded-lg border text-xs space-y-1 ${
+              syncResult.errors.length > 0
+                ? 'bg-warning/10 border-warning/20'
+                : 'bg-success/10 border-success/20'
+            }`}
+          >
+            <div className="flex items-center gap-2 font-medium">
+              {syncResult.errors.length > 0 ? (
+                <AlertCircle className="w-4 h-4 text-warning" />
+              ) : (
+                <CheckCircle className="w-4 h-4 text-success" />
+              )}
+              Sync complete — {syncResult.added} added, {syncResult.updated} updated,{' '}
+              {syncResult.skipped} skipped
+              {syncResult.removed > 0 && `, ${syncResult.removed} removed`}
+              {syncResult.errors.length > 0 && `, ${syncResult.errors.length} error(s)`}
             </div>
-          )}
-        </div>
-      )}
-    </div>
+            {syncResult.errors.length > 0 && (
+              <ul className="mt-1 space-y-0.5 text-muted-foreground">
+                {syncResult.errors.map((e, i) => (
+                  <li key={i} className="truncate">
+                    · {e}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {/* Skills grid */}
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : skills.length === 0 ? (
+          <div className="card p-12 text-center space-y-3">
+            <Users className="w-12 h-12 mx-auto text-muted-foreground" />
+            <p className="text-muted-foreground font-medium">No community skills found</p>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+              Click <strong>Sync</strong> to import skills from the community repo — git fetch runs
+              automatically when <span className="font-mono">allowCommunityGitFetch</span> is
+              enabled.
+            </p>
+            {statusData?.communityRepoPath && (
+              <p className="text-xs text-muted-foreground font-mono">
+                {statusData.communityRepoPath}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <GitBranch className="w-4 h-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold text-foreground">Community Skills</h3>
+              <span className="text-xs text-muted-foreground">
+                ({data?.total ?? skills.length})
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {skills.map((skill) => (
+                <SkillCard
+                  key={skill.id}
+                  skill={skill}
+                  badge={
+                    <span className="inline-flex items-center gap-1 text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+                      <GitBranch className="w-2.5 h-2.5" />
+                      Community
+                    </span>
+                  }
+                  installing={installingId === skill.id && installMut.isPending}
+                  uninstalling={uninstallingId === skill.id && uninstallMut.isPending}
+                  onPreview={() => {
+                    setPreviewSkill(skill);
+                  }}
+                  onInstall={() => {
+                    if (!canInstall) return;
+                    setInstallingId(skill.id);
+                    installMut.mutate({ id: skill.id, personalityId: selectedPersonalityId });
+                  }}
+                  onUninstall={() => {
+                    setUninstallingId(skill.id);
+                    uninstallMut.mutate({
+                      id: skill.id,
+                      personalityId: selectedPersonalityId || undefined,
+                    });
+                  }}
+                />
+              ))}
+            </div>
+            {(data?.total ?? 0) > COMMUNITY_PAGE_SIZE && (
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-xs text-muted-foreground">
+                  Showing {page * COMMUNITY_PAGE_SIZE + 1}–
+                  {Math.min((page + 1) * COMMUNITY_PAGE_SIZE, data?.total ?? 0)} of{' '}
+                  {data?.total ?? 0}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    disabled={page === 0}
+                    onClick={() => {
+                      setPage((p) => p - 1);
+                    }}
+                  >
+                    ← Prev
+                  </button>
+                  <span className="text-xs text-muted-foreground">
+                    Page {page + 1} of {Math.ceil((data?.total ?? 0) / COMMUNITY_PAGE_SIZE)}
+                  </span>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    disabled={(page + 1) * COMMUNITY_PAGE_SIZE >= (data?.total ?? 0)}
+                    onClick={() => {
+                      setPage((p) => p + 1);
+                    }}
+                  >
+                    Next →
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </>
   );
 }

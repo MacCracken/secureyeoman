@@ -53,6 +53,8 @@ for TARGET in bun-linux-x64 bun-linux-arm64 bun-darwin-arm64 bun-windows-x64; do
     --external "playwright" --external "playwright-core" \
     --external "electron" --external "chromium-bidi" \
     --external "node-saml" \
+    --external "canvas" \
+    --external "kokoro-js" \
     "${REPO_ROOT}/packages/core/src/cli.ts" \
     --outfile "${DIST_DIR}/secureyeoman-${PLATFORM}${EXT}"
 done
@@ -69,6 +71,8 @@ for TARGET in bun-linux-x64 bun-linux-arm64 bun-windows-x64; do
     --external "playwright" --external "playwright-core" \
     --external "electron" --external "chromium-bidi" \
     --external "node-saml" \
+    --external "canvas" \
+    --external "kokoro-js" \
     "${REPO_ROOT}/packages/core/src/cli.ts" \
     --outfile "${DIST_DIR}/secureyeoman-lite-${PLATFORM}${EXT}"
 done

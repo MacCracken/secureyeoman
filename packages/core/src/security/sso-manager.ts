@@ -214,11 +214,12 @@ export class SsoManager {
     const localUser = await this.provisionUser(
       provider,
       callback.nameId,
-      callback.attributes['email']?.[0] ?? callback.nameId,
-      callback.attributes['displayName']?.[0] ?? callback.nameId
+      callback.attributes.email?.[0] ?? callback.nameId,
+      callback.attributes.displayName?.[0] ?? callback.nameId
     );
 
-    const roleToUse = (callback.role ?? provider.defaultRole) as import('@secureyeoman/shared').Role;
+    const roleToUse = (callback.role ??
+      provider.defaultRole) as import('@secureyeoman/shared').Role;
     const result = await this.authService.createUserSession(localUser.userId, roleToUse);
 
     this.logger.info('SAML login successful', {

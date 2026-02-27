@@ -10,11 +10,7 @@ import { OpaClient } from './opa-client.js';
 
 // ─── fetch mock helpers ───────────────────────────────────────────────────────
 
-function mockFetch(
-  status: number,
-  body: unknown,
-  contentType = 'application/json'
-): void {
+function mockFetch(status: number, body: unknown, contentType = 'application/json'): void {
   const text = typeof body === 'string' ? body : JSON.stringify(body);
   vi.stubGlobal(
     'fetch',

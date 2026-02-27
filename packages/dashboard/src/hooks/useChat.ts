@@ -1,6 +1,11 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { sendChatMessage, createConversation, fetchConversation, getAccessToken } from '../api/client';
+import {
+  sendChatMessage,
+  createConversation,
+  fetchConversation,
+  getAccessToken,
+} from '../api/client';
 import type { ChatMessage, CreationEvent, ToolCallRecord } from '../types';
 
 export interface UseChatOptions {
@@ -155,11 +160,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
       saveAsMemory: memoryOn,
       clientContext: {
         viewportHint:
-          window.innerWidth < 768
-            ? 'mobile'
-            : window.innerWidth < 1024
-              ? 'tablet'
-              : 'desktop',
+          window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop',
       },
     });
   }, [input, messages, chatMutation, options, activeConversationId, queryClient]);
@@ -377,18 +378,18 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
         body: JSON.stringify({
           message: trimmed,
           history: history.slice(0, -1),
-          ...(latestOptions.current?.personalityId ? { personalityId: latestOptions.current.personalityId } : {}),
+          ...(latestOptions.current?.personalityId
+            ? { personalityId: latestOptions.current.personalityId }
+            : {}),
           ...(convId ? { conversationId: convId } : {}),
-          ...(latestOptions.current?.editorContent ? { editorContent: latestOptions.current.editorContent } : {}),
+          ...(latestOptions.current?.editorContent
+            ? { editorContent: latestOptions.current.editorContent }
+            : {}),
           memoryEnabled: memoryOn,
           saveAsMemory: memoryOn,
           clientContext: {
             viewportHint:
-              window.innerWidth < 768
-                ? 'mobile'
-                : window.innerWidth < 1024
-                  ? 'tablet'
-                  : 'desktop',
+              window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop',
           },
         }),
       });
@@ -420,7 +421,11 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
           const json = line.slice(6).trim();
           if (!json) continue;
           let event: Record<string, unknown>;
-          try { event = JSON.parse(json); } catch { continue; }
+          try {
+            event = JSON.parse(json);
+          } catch {
+            continue;
+          }
 
           const type = event.type as string;
 
@@ -431,23 +436,40 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
             contentAcc += event.content as string;
             setStreamingContent(contentAcc);
           } else if (type === 'tool_start') {
-            const tc: ToolCallRecord = { toolName: event.toolName as string, label: event.label as string, isMcp: false };
+            const tc: ToolCallRecord = {
+              toolName: event.toolName as string,
+              label: event.label as string,
+              isMcp: false,
+            };
             setActiveToolCalls((prev) => [...prev, tc]);
             completedToolCalls.push(tc);
           } else if (type === 'tool_result') {
-            setActiveToolCalls((prev) => prev.filter((t) => t.toolName !== (event.toolName as string)));
+            setActiveToolCalls((prev) =>
+              prev.filter((t) => t.toolName !== (event.toolName as string))
+            );
           } else if (type === 'mcp_tool_start') {
-            const tc: ToolCallRecord = { toolName: event.toolName as string, label: event.toolName as string, serverName: event.serverName as string, isMcp: true };
+            const tc: ToolCallRecord = {
+              toolName: event.toolName as string,
+              label: event.toolName as string,
+              serverName: event.serverName as string,
+              isMcp: true,
+            };
             setActiveToolCalls((prev) => [...prev, tc]);
             completedToolCalls.push(tc);
           } else if (type === 'mcp_tool_result') {
-            setActiveToolCalls((prev) => prev.filter((t) => t.toolName !== (event.toolName as string)));
+            setActiveToolCalls((prev) =>
+              prev.filter((t) => t.toolName !== (event.toolName as string))
+            );
           } else if (type === 'creation_event') {
             pendingEvents.push(event.event as CreationEvent);
           } else if (type === 'done') {
             const doneEvent = event as {
-              content: string; model: string; provider: string;
-              tokensUsed?: number; thinkingContent?: string; creationEvents: CreationEvent[];
+              content: string;
+              model: string;
+              provider: string;
+              tokensUsed?: number;
+              thinkingContent?: string;
+              creationEvents: CreationEvent[];
               brainContext?: ChatMessage['brainContext'];
             };
             setMessages((prev) => [
@@ -461,7 +483,8 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
                 tokensUsed: doneEvent.tokensUsed,
                 thinkingContent: doneEvent.thinkingContent,
                 brainContext: doneEvent.brainContext,
-                creationEvents: doneEvent.creationEvents.length > 0 ? doneEvent.creationEvents : undefined,
+                creationEvents:
+                  doneEvent.creationEvents.length > 0 ? doneEvent.creationEvents : undefined,
                 toolCalls: completedToolCalls.length > 0 ? [...completedToolCalls] : undefined,
               },
             ]);
@@ -472,7 +495,11 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
           } else if (type === 'error') {
             setMessages((prev) => [
               ...prev,
-              { role: 'assistant', content: `Error: ${event.message as string}`, timestamp: Date.now() },
+              {
+                role: 'assistant',
+                content: `Error: ${event.message as string}`,
+                timestamp: Date.now(),
+              },
             ]);
           }
         }
@@ -481,7 +508,11 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
       if (err instanceof Error && err.name === 'AbortError') return;
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: `Error: ${err instanceof Error ? err.message : String(err)}`, timestamp: Date.now() },
+        {
+          role: 'assistant',
+          content: `Error: ${err instanceof Error ? err.message : String(err)}`,
+          timestamp: Date.now(),
+        },
       ]);
     } finally {
       setIsPending(false);

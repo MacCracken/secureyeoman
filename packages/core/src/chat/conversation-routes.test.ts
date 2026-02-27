@@ -67,7 +67,11 @@ describe('GET /api/v1/conversations', () => {
     const app = Fastify();
     registerConversationRoutes(app, { conversationStorage: storage });
     await app.inject({ method: 'GET', url: '/api/v1/conversations?limit=10&offset=5' });
-    expect(storage.listConversations).toHaveBeenCalledWith({ limit: 10, offset: 5, personalityId: undefined });
+    expect(storage.listConversations).toHaveBeenCalledWith({
+      limit: 10,
+      offset: 5,
+      personalityId: undefined,
+    });
   });
 
   it('passes personalityId filter to storage', async () => {

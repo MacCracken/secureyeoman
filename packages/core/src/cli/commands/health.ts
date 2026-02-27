@@ -3,7 +3,13 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractBoolFlag, extractCommonFlags, formatUptime, apiCall, colorContext } from '../utils.js';
+import {
+  extractBoolFlag,
+  extractCommonFlags,
+  formatUptime,
+  apiCall,
+  colorContext,
+} from '../utils.js';
 
 export const healthCommand: Command = {
   name: 'health',

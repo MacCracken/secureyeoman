@@ -808,10 +808,7 @@ describe('BrainManager', () => {
       const { manager, storage } = makeManager();
       manager.setActivePersonality('p-1');
       await manager.remember('semantic', 'test', 'user', undefined, undefined, 'p-override');
-      expect(storage.createMemory).toHaveBeenCalledWith(
-        expect.anything(),
-        'p-override'
-      );
+      expect(storage.createMemory).toHaveBeenCalledWith(expect.anything(), 'p-override');
     });
 
     it('setActivePersonality with null clears active personality', async () => {
@@ -819,10 +816,7 @@ describe('BrainManager', () => {
       manager.setActivePersonality('p-1');
       manager.setActivePersonality(null);
       await manager.remember('semantic', 'test', 'user');
-      expect(storage.createMemory).toHaveBeenCalledWith(
-        expect.anything(),
-        undefined
-      );
+      expect(storage.createMemory).toHaveBeenCalledWith(expect.anything(), undefined);
     });
 
     it('getStats passes personalityId when set', async () => {

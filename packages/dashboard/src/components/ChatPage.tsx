@@ -51,8 +51,8 @@ import { Link } from 'react-router-dom';
 export function ChatPage() {
   const [showModelWidget, setShowModelWidget] = useState(false);
   const [showPersonalityPicker, setShowPersonalityPicker] = useState(false);
-  const [selectedPersonalityId, setSelectedPersonalityIdRaw] = useState<string | null>(
-    () => localStorage.getItem('soul:chatPersonalityId')
+  const [selectedPersonalityId, setSelectedPersonalityIdRaw] = useState<string | null>(() =>
+    localStorage.getItem('soul:chatPersonalityId')
   );
   const setSelectedPersonalityId = (id: string | null) => {
     if (id) localStorage.setItem('soul:chatPersonalityId', id);
@@ -81,8 +81,9 @@ export function ChatPage() {
   });
 
   const personalities = personalitiesData?.personalities ?? [];
-  const defaultPersonality = personalities.find((p) => p.isDefault)
-    ?? [...personalities].sort((a, b) => a.name.localeCompare(b.name))[0];
+  const defaultPersonality =
+    personalities.find((p) => p.isDefault) ??
+    [...personalities].sort((a, b) => a.name.localeCompare(b.name))[0];
   const effectivePersonalityId = selectedPersonalityId ?? defaultPersonality?.id ?? null;
   const personality =
     personalities.find((p) => p.id === effectivePersonalityId) ?? defaultPersonality ?? null;
@@ -124,10 +125,10 @@ export function ChatPage() {
     streamingContent,
     activeToolCalls,
   } = useChatStream({
-      personalityId: effectivePersonalityId,
-      conversationId: selectedConversationId,
-      memoryEnabled,
-    });
+    personalityId: effectivePersonalityId,
+    conversationId: selectedConversationId,
+    memoryEnabled,
+  });
 
   // Track whether any tool calls occurred during the current stream so we can
   // draw a separator before the response even after the badges have cleared.
@@ -313,7 +314,10 @@ export function ChatPage() {
       {/* Page header */}
       <div className="pb-2 shrink-0">
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Chat</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Converse with your AI personalities — switch agents, recall memory, or go hands-free with voice</p>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Converse with your AI personalities — switch agents, recall memory, or go hands-free with
+          voice
+        </p>
       </div>
       {/* Tab bar */}
       <div className="flex border-b border-border shrink-0">
@@ -517,7 +521,9 @@ export function ChatPage() {
                         Chat{personality ? ` with ${personality.name}` : ''}
                       </h2>
                       {personality?.isDefault && (
-                        <span title="Default personality"><Star className="w-3.5 h-3.5 fill-current text-primary flex-shrink-0" /></span>
+                        <span title="Default personality">
+                          <Star className="w-3.5 h-3.5 fill-current text-primary flex-shrink-0" />
+                        </span>
                       )}
                       <ChevronDown className="w-4 h-4 text-muted-foreground" />
                     </div>
@@ -643,7 +649,9 @@ export function ChatPage() {
                           Start a conversation{personality ? ` with ${personality.name}` : ''}.
                         </p>
                         {currentModel && (
-                          <p className="text-xs mt-1 text-primary/70">Using Model: {currentModel}</p>
+                          <p className="text-xs mt-1 text-primary/70">
+                            Using Model: {currentModel}
+                          </p>
                         )}
                         <p className="text-xs mt-1">Conversations are automatically saved.</p>
                       </>
@@ -687,8 +695,16 @@ export function ChatPage() {
                         {msg.model && <span className="text-xs opacity-50">{msg.model}</span>}
                         {msg.timestamp != null && (
                           <span className="text-xs opacity-40 ml-auto">
-                            {new Date(msg.timestamp).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })}{' '}
-                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            {new Date(msg.timestamp).toLocaleDateString([], {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                            })}{' '}
+                            {new Date(msg.timestamp).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit',
+                            })}
                           </span>
                         )}
 
@@ -755,7 +771,8 @@ export function ChatPage() {
 
                       {/* Phase 2 — Tool use (badges + creation outcomes), shown before the response */}
                       {msg.role === 'assistant' &&
-                        ((msg.toolCalls?.length ?? 0) > 0 || (msg.creationEvents?.length ?? 0) > 0) && (
+                        ((msg.toolCalls?.length ?? 0) > 0 ||
+                          (msg.creationEvents?.length ?? 0) > 0) && (
                           <div
                             className={`space-y-1 mb-2 ${msg.thinkingContent ? 'border-t border-muted-foreground/15 pt-2 mt-1' : ''}`}
                           >
@@ -935,15 +952,29 @@ export function ChatPage() {
                       >
                         <div className="text-sm whitespace-pre-wrap">{streamingContent}</div>
                       </div>
-                    ) : !streamingThinking && activeToolCalls.length === 0 && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs text-muted-foreground animate-pulse">Thinking</span>
-                        <div className="flex gap-1">
-                          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    ) : (
+                      !streamingThinking &&
+                      activeToolCalls.length === 0 && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs text-muted-foreground animate-pulse">
+                            Thinking
+                          </span>
+                          <div className="flex gap-1">
+                            <span
+                              className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"
+                              style={{ animationDelay: '0ms' }}
+                            />
+                            <span
+                              className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"
+                              style={{ animationDelay: '150ms' }}
+                            />
+                            <span
+                              className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"
+                              style={{ animationDelay: '300ms' }}
+                            />
+                          </div>
                         </div>
-                      </div>
+                      )
                     )}
                   </div>
                 </div>

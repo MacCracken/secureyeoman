@@ -72,7 +72,12 @@ import {
   fetchPersonalities,
   exportAuditLog,
 } from '../api/client';
-import type { ReportSummary, MlSecuritySummary, WorkflowDefinition, WorkflowRun } from '../api/client';
+import type {
+  ReportSummary,
+  MlSecuritySummary,
+  WorkflowDefinition,
+  WorkflowRun,
+} from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import { RiskAssessmentTab } from './RiskAssessmentTab';
 import { ScopeManifestTab } from './ScopeManifestTab';
@@ -92,7 +97,16 @@ import type {
   Task,
 } from '../types';
 
-type TabType = 'overview' | 'audit' | 'automations' | 'ml' | 'reports' | 'nodes' | 'autonomy' | 'risk' | 'scope';
+type TabType =
+  | 'overview'
+  | 'audit'
+  | 'automations'
+  | 'ml'
+  | 'reports'
+  | 'nodes'
+  | 'autonomy'
+  | 'risk'
+  | 'scope';
 
 const SEVERITY_ICONS: Record<string, React.ReactNode> = {
   info: <Info className="w-4 h-4 text-info" />,
@@ -122,7 +136,6 @@ function loadAcknowledged(): Set<string> {
 function saveAcknowledged(ids: Set<string>): void {
   localStorage.setItem(ACK_STORAGE_KEY, JSON.stringify(Array.from(ids)));
 }
-
 
 export function SecurityPage() {
   const location = useLocation();
@@ -240,7 +253,9 @@ export function SecurityPage() {
 
       <div className="flex gap-1 border-b border-border overflow-x-auto">
         <button
-          onClick={() => setActiveTab('overview')}
+          onClick={() => {
+            setActiveTab('overview');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'overview'
               ? 'border-primary text-primary'
@@ -251,7 +266,9 @@ export function SecurityPage() {
           Overview
         </button>
         <button
-          onClick={() => setActiveTab('audit')}
+          onClick={() => {
+            setActiveTab('audit');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'audit'
               ? 'border-primary text-primary'
@@ -262,7 +279,9 @@ export function SecurityPage() {
           Audit Log
         </button>
         <button
-          onClick={() => setActiveTab('automations')}
+          onClick={() => {
+            setActiveTab('automations');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'automations'
               ? 'border-primary text-primary'
@@ -273,7 +292,9 @@ export function SecurityPage() {
           Automations
         </button>
         <button
-          onClick={() => setActiveTab('autonomy')}
+          onClick={() => {
+            setActiveTab('autonomy');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'autonomy'
               ? 'border-primary text-primary'
@@ -285,7 +306,9 @@ export function SecurityPage() {
         </button>
         {mlEnabled && (
           <button
-            onClick={() => setActiveTab('ml')}
+            onClick={() => {
+              setActiveTab('ml');
+            }}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === 'ml'
                 ? 'border-primary text-primary'
@@ -298,7 +321,9 @@ export function SecurityPage() {
           </button>
         )}
         <button
-          onClick={() => setActiveTab('reports')}
+          onClick={() => {
+            setActiveTab('reports');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'reports'
               ? 'border-primary text-primary'
@@ -309,7 +334,9 @@ export function SecurityPage() {
           Reports
         </button>
         <button
-          onClick={() => setActiveTab('risk')}
+          onClick={() => {
+            setActiveTab('risk');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'risk'
               ? 'border-primary text-primary'
@@ -320,7 +347,9 @@ export function SecurityPage() {
           Risk
         </button>
         <button
-          onClick={() => setActiveTab('scope')}
+          onClick={() => {
+            setActiveTab('scope');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'scope'
               ? 'border-primary text-primary'
@@ -331,7 +360,9 @@ export function SecurityPage() {
           Scope
         </button>
         <button
-          onClick={() => setActiveTab('nodes')}
+          onClick={() => {
+            setActiveTab('nodes');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'nodes'
               ? 'border-primary text-primary'
@@ -445,7 +476,9 @@ function AutomationsSecurityTab() {
               key={v}
               role="tab"
               aria-selected={subview === v}
-              onClick={() => setSubview(v)}
+              onClick={() => {
+                setSubview(v);
+              }}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                 subview === v
                   ? 'bg-card shadow-sm text-foreground'
@@ -468,10 +501,22 @@ function AutomationsSecurityTab() {
 const TASK_TYPE_OPTIONS = ['execute', 'query', 'file', 'network', 'system'] as const;
 
 const SEC_DATE_PRESETS = [
-  { label: 'Last hour',    from: () => new Date(Date.now() - 3_600_000).toISOString(),    to: () => new Date().toISOString() },
-  { label: 'Last 24h',    from: () => new Date(Date.now() - 86_400_000).toISOString(),   to: () => new Date().toISOString() },
-  { label: 'Last 7 days', from: () => new Date(Date.now() - 604_800_000).toISOString(),  to: () => new Date().toISOString() },
-  { label: 'All time',    from: () => '',                                                  to: () => '' },
+  {
+    label: 'Last hour',
+    from: () => new Date(Date.now() - 3_600_000).toISOString(),
+    to: () => new Date().toISOString(),
+  },
+  {
+    label: 'Last 24h',
+    from: () => new Date(Date.now() - 86_400_000).toISOString(),
+    to: () => new Date().toISOString(),
+  },
+  {
+    label: 'Last 7 days',
+    from: () => new Date(Date.now() - 604_800_000).toISOString(),
+    to: () => new Date().toISOString(),
+  },
+  { label: 'All time', from: () => '', to: () => '' },
 ] as const;
 
 function AutomationsTasksView() {
@@ -526,7 +571,7 @@ function AutomationsTasksView() {
 
   const hasFilters = statusFilter || typeFilter || dateFrom || dateTo;
 
-  const handleDatePreset = (preset: typeof SEC_DATE_PRESETS[number]) => {
+  const handleDatePreset = (preset: (typeof SEC_DATE_PRESETS)[number]) => {
     setDateFrom(preset.from());
     setDateTo(preset.to());
     setDatePreset(preset.label);
@@ -540,48 +585,60 @@ function AutomationsTasksView() {
     setPage(0);
   };
 
-  const exportTasks = useCallback(async (format: 'csv' | 'json') => {
-    const allData = await fetchTasks({
-      status: statusFilter || undefined,
-      type: typeFilter || undefined,
-      from: dateFrom || undefined,
-      to: dateTo || undefined,
-      limit: 10000,
-      offset: 0,
-    });
-    let content: string;
-    let mimeType: string;
-    let ext: string;
-    if (format === 'json') {
-      content = JSON.stringify(allData.tasks, null, 2);
-      mimeType = 'application/json';
-      ext = 'json';
-    } else {
-      const headers = ['ID', 'Agent', 'Name', 'Sub-Agent', 'Type', 'Status', 'Duration (ms)', 'Created At'];
-      const rows = allData.tasks.map((t: Task) => [
-        t.id,
-        t.securityContext?.personalityName ?? '',
-        `"${t.name.replace(/"/g, '""')}"`,
-        t.parentTaskId ?? '',
-        t.type,
-        t.status,
-        t.durationMs?.toString() ?? '',
-        new Date(t.createdAt).toISOString(),
-      ]);
-      content = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-      mimeType = 'text/csv';
-      ext = 'csv';
-    }
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tasks-export-${new Date().toISOString().slice(0, 10)}.${ext}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, [statusFilter, typeFilter, dateFrom, dateTo]);
+  const exportTasks = useCallback(
+    async (format: 'csv' | 'json') => {
+      const allData = await fetchTasks({
+        status: statusFilter || undefined,
+        type: typeFilter || undefined,
+        from: dateFrom || undefined,
+        to: dateTo || undefined,
+        limit: 10000,
+        offset: 0,
+      });
+      let content: string;
+      let mimeType: string;
+      let ext: string;
+      if (format === 'json') {
+        content = JSON.stringify(allData.tasks, null, 2);
+        mimeType = 'application/json';
+        ext = 'json';
+      } else {
+        const headers = [
+          'ID',
+          'Agent',
+          'Name',
+          'Sub-Agent',
+          'Type',
+          'Status',
+          'Duration (ms)',
+          'Created At',
+        ];
+        const rows = allData.tasks.map((t: Task) => [
+          t.id,
+          t.securityContext?.personalityName ?? '',
+          `"${t.name.replace(/"/g, '""')}"`,
+          t.parentTaskId ?? '',
+          t.type,
+          t.status,
+          t.durationMs?.toString() ?? '',
+          new Date(t.createdAt).toISOString(),
+        ]);
+        content = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+        mimeType = 'text/csv';
+        ext = 'csv';
+      }
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tasks-export-${new Date().toISOString().slice(0, 10)}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    },
+    [statusFilter, typeFilter, dateFrom, dateTo]
+  );
 
   return (
     <div className="space-y-3">
@@ -590,7 +647,10 @@ function AutomationsTasksView() {
         <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
         <select
           value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(0);
+          }}
           className="px-3 py-1.5 text-sm border rounded-md bg-background"
           aria-label="Filter by status"
         >
@@ -604,18 +664,30 @@ function AutomationsTasksView() {
         </select>
         <select
           value={typeFilter}
-          onChange={(e) => { setTypeFilter(e.target.value); setPage(0); }}
+          onChange={(e) => {
+            setTypeFilter(e.target.value);
+            setPage(0);
+          }}
           className="px-3 py-1.5 text-sm border rounded-md bg-background"
           aria-label="Filter by type"
         >
           <option value="">All Types</option>
           {TASK_TYPE_OPTIONS.map((t) => (
-            <option key={t} value={t}>{t}</option>
+            <option key={t} value={t}>
+              {t}
+            </option>
           ))}
         </select>
         {hasFilters && (
           <button
-            onClick={() => { setStatusFilter(''); setTypeFilter(''); setDateFrom(''); setDateTo(''); setDatePreset(''); setPage(0); }}
+            onClick={() => {
+              setStatusFilter('');
+              setTypeFilter('');
+              setDateFrom('');
+              setDateTo('');
+              setDatePreset('');
+              setPage(0);
+            }}
             className="text-xs text-muted-foreground hover:text-foreground underline"
           >
             Clear
@@ -648,7 +720,9 @@ function AutomationsTasksView() {
         {SEC_DATE_PRESETS.map((preset) => (
           <button
             key={preset.label}
-            onClick={() => handleDatePreset(preset)}
+            onClick={() => {
+              handleDatePreset(preset);
+            }}
             className={`px-2.5 py-1 rounded-md text-xs border transition-colors ${
               datePreset === preset.label
                 ? 'bg-primary text-primary-foreground border-primary'
@@ -662,7 +736,9 @@ function AutomationsTasksView() {
         <input
           type="date"
           value={dateFrom ? dateFrom.slice(0, 10) : ''}
-          onChange={(e) => handleCustomDate('from', e.target.value)}
+          onChange={(e) => {
+            handleCustomDate('from', e.target.value);
+          }}
           className="px-2 py-1 text-xs border rounded-md bg-background"
           aria-label="From date"
         />
@@ -670,7 +746,9 @@ function AutomationsTasksView() {
         <input
           type="date"
           value={dateTo ? dateTo.slice(0, 10) : ''}
-          onChange={(e) => handleCustomDate('to', e.target.value)}
+          onChange={(e) => {
+            handleCustomDate('to', e.target.value);
+          }}
           className="px-2 py-1 text-xs border rounded-md bg-background"
           aria-label="To date"
         />
@@ -688,14 +766,26 @@ function AutomationsTasksView() {
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
                 <tr>
-                  <th className="px-2 py-2 text-left font-medium text-xs hidden md:table-cell">Agent</th>
-                  <th className="px-2 py-2 text-left font-medium text-xs hidden sm:table-cell">ID</th>
+                  <th className="px-2 py-2 text-left font-medium text-xs hidden md:table-cell">
+                    Agent
+                  </th>
+                  <th className="px-2 py-2 text-left font-medium text-xs hidden sm:table-cell">
+                    ID
+                  </th>
                   <th className="px-2 py-2 text-left font-medium text-xs">Name</th>
-                  <th className="px-2 py-2 text-left font-medium text-xs hidden lg:table-cell">Sub-Agent</th>
-                  <th className="px-2 py-2 text-left font-medium text-xs hidden md:table-cell">Type</th>
+                  <th className="px-2 py-2 text-left font-medium text-xs hidden lg:table-cell">
+                    Sub-Agent
+                  </th>
+                  <th className="px-2 py-2 text-left font-medium text-xs hidden md:table-cell">
+                    Type
+                  </th>
                   <th className="px-2 py-2 text-left font-medium text-xs">Status</th>
-                  <th className="px-2 py-2 text-left font-medium text-xs hidden lg:table-cell">Duration</th>
-                  <th className="px-2 py-2 text-left font-medium text-xs hidden sm:table-cell">Created</th>
+                  <th className="px-2 py-2 text-left font-medium text-xs hidden lg:table-cell">
+                    Duration
+                  </th>
+                  <th className="px-2 py-2 text-left font-medium text-xs hidden sm:table-cell">
+                    Created
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -720,7 +810,10 @@ function AutomationsTasksView() {
                         {task.id.slice(0, 8)}…
                       </td>
                       <td className="px-2 py-2.5">
-                        <div className="font-medium text-sm truncate max-w-[140px] sm:max-w-xs" title={task.name}>
+                        <div
+                          className="font-medium text-sm truncate max-w-[140px] sm:max-w-xs"
+                          title={task.name}
+                        >
                           {task.name}
                         </div>
                         {task.description && (
@@ -742,18 +835,24 @@ function AutomationsTasksView() {
                         )}
                       </td>
                       <td className="px-2 py-2.5 hidden md:table-cell">
-                        <span className="badge badge-sm text-xs capitalize">{task.type ?? '—'}</span>
+                        <span className="badge badge-sm text-xs capitalize">
+                          {task.type ?? '—'}
+                        </span>
                       </td>
                       <td className="px-2 py-2.5">
                         <div className="flex items-center gap-1.5">
                           {TASK_STATUS_ICONS[task.status]}
-                          <span className={`badge badge-sm text-xs ${TASK_STATUS_COLORS[task.status] ?? 'badge'}`}>
+                          <span
+                            className={`badge badge-sm text-xs ${TASK_STATUS_COLORS[task.status] ?? 'badge'}`}
+                          >
                             {task.status}
                           </span>
                         </div>
                         {task.result?.success === false && task.result.error?.message && (
-                          <div className="text-xs text-destructive truncate max-w-[180px] mt-0.5"
-                            title={task.result.error.message}>
+                          <div
+                            className="text-xs text-destructive truncate max-w-[180px] mt-0.5"
+                            title={task.result.error.message}
+                          >
                             {task.result.error.message}
                           </div>
                         )}
@@ -778,7 +877,9 @@ function AutomationsTasksView() {
               <div className="flex items-center gap-1">
                 <button
                   disabled={page === 0}
-                  onClick={() => setPage((p) => p - 1)}
+                  onClick={() => {
+                    setPage((p) => p - 1);
+                  }}
                   className="btn-ghost p-1.5 disabled:opacity-40"
                   aria-label="Previous page"
                 >
@@ -789,7 +890,9 @@ function AutomationsTasksView() {
                 </span>
                 <button
                   disabled={page >= totalPages - 1}
-                  onClick={() => setPage((p) => p + 1)}
+                  onClick={() => {
+                    setPage((p) => p + 1);
+                  }}
                   className="btn-ghost p-1.5 disabled:opacity-40"
                   aria-label="Next page"
                 >
@@ -805,10 +908,22 @@ function AutomationsTasksView() {
 }
 
 const WF_DATE_PRESETS = [
-  { label: 'Last hour',    from: () => new Date(Date.now() - 3_600_000).toISOString(),   to: () => new Date().toISOString() },
-  { label: 'Last 24h',    from: () => new Date(Date.now() - 86_400_000).toISOString(),  to: () => new Date().toISOString() },
-  { label: 'Last 7 days', from: () => new Date(Date.now() - 604_800_000).toISOString(), to: () => new Date().toISOString() },
-  { label: 'All time',    from: () => '',                                                 to: () => '' },
+  {
+    label: 'Last hour',
+    from: () => new Date(Date.now() - 3_600_000).toISOString(),
+    to: () => new Date().toISOString(),
+  },
+  {
+    label: 'Last 24h',
+    from: () => new Date(Date.now() - 86_400_000).toISOString(),
+    to: () => new Date().toISOString(),
+  },
+  {
+    label: 'Last 7 days',
+    from: () => new Date(Date.now() - 604_800_000).toISOString(),
+    to: () => new Date().toISOString(),
+  },
+  { label: 'All time', from: () => '', to: () => '' },
 ] as const;
 
 function AutomationsWorkflowsView() {
@@ -840,7 +955,7 @@ function AutomationsWorkflowsView() {
 
   const hasDateFilters = dateFrom || dateTo;
 
-  const handleDatePreset = (preset: typeof WF_DATE_PRESETS[number]) => {
+  const handleDatePreset = (preset: (typeof WF_DATE_PRESETS)[number]) => {
     setDateFrom(preset.from());
     setDateTo(preset.to());
     setDatePreset(preset.label);
@@ -860,7 +975,9 @@ function AutomationsWorkflowsView() {
         {WF_DATE_PRESETS.map((preset) => (
           <button
             key={preset.label}
-            onClick={() => handleDatePreset(preset)}
+            onClick={() => {
+              handleDatePreset(preset);
+            }}
             className={`px-2.5 py-1 rounded-md text-xs border transition-colors ${
               datePreset === preset.label
                 ? 'bg-primary text-primary-foreground border-primary'
@@ -874,7 +991,9 @@ function AutomationsWorkflowsView() {
         <input
           type="date"
           value={dateFrom ? dateFrom.slice(0, 10) : ''}
-          onChange={(e) => handleCustomDate('from', e.target.value)}
+          onChange={(e) => {
+            handleCustomDate('from', e.target.value);
+          }}
           className="px-2 py-1 text-xs border rounded-md bg-background"
           aria-label="From date"
         />
@@ -882,13 +1001,19 @@ function AutomationsWorkflowsView() {
         <input
           type="date"
           value={dateTo ? dateTo.slice(0, 10) : ''}
-          onChange={(e) => handleCustomDate('to', e.target.value)}
+          onChange={(e) => {
+            handleCustomDate('to', e.target.value);
+          }}
           className="px-2 py-1 text-xs border rounded-md bg-background"
           aria-label="To date"
         />
         {hasDateFilters && (
           <button
-            onClick={() => { setDateFrom(''); setDateTo(''); setDatePreset(''); }}
+            onClick={() => {
+              setDateFrom('');
+              setDateTo('');
+              setDatePreset('');
+            }}
             className="text-xs text-muted-foreground hover:text-foreground underline"
           >
             Clear
@@ -912,7 +1037,9 @@ function AutomationsWorkflowsView() {
           {definitions.map((wf: WorkflowDefinition) => (
             <div key={wf.id} className="rounded-lg border border-border overflow-hidden">
               <button
-                onClick={() => setExpanded(expanded === wf.id ? null : wf.id)}
+                onClick={() => {
+                  setExpanded(expanded === wf.id ? null : wf.id);
+                }}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors text-left"
               >
                 <GitMerge className="w-4 h-4 text-muted-foreground flex-shrink-0" />
@@ -923,7 +1050,9 @@ function AutomationsWorkflowsView() {
                     {wf.autonomyLevel ? ` · ${wf.autonomyLevel}` : ''}
                   </p>
                 </div>
-                <span className={`badge badge-sm text-xs ${wf.isEnabled ? 'badge-success' : 'badge'}`}>
+                <span
+                  className={`badge badge-sm text-xs ${wf.isEnabled ? 'badge-success' : 'badge'}`}
+                >
                   {wf.isEnabled ? 'Enabled' : 'Disabled'}
                 </span>
                 {expanded === wf.id ? (
@@ -951,7 +1080,9 @@ function AutomationsWorkflowsView() {
                             <span className="font-medium truncate flex-1" title={step.name}>
                               {step.name}
                             </span>
-                            <span className="badge badge-sm text-xs flex-shrink-0">{step.type}</span>
+                            <span className="badge badge-sm text-xs flex-shrink-0">
+                              {step.type}
+                            </span>
                             {step.onError !== 'fail' && (
                               <span className="text-muted-foreground/60 text-xs flex-shrink-0">
                                 on error: {step.onError}
@@ -979,7 +1110,9 @@ function AutomationsWorkflowsView() {
                             key={run.id}
                             className="flex items-center gap-3 text-xs py-1.5 border-b border-border/30 last:border-0"
                           >
-                            <span className={`badge badge-sm ${WF_RUN_STATUS_COLORS[run.status] ?? 'badge'}`}>
+                            <span
+                              className={`badge badge-sm ${WF_RUN_STATUS_COLORS[run.status] ?? 'badge'}`}
+                            >
                               {run.status}
                             </span>
                             <span className="text-muted-foreground whitespace-nowrap">
@@ -989,7 +1122,10 @@ function AutomationsWorkflowsView() {
                               by {run.triggeredBy}
                             </span>
                             {run.error && (
-                              <span className="text-destructive truncate max-w-[140px]" title={run.error}>
+                              <span
+                                className="text-destructive truncate max-w-[140px]"
+                                title={run.error}
+                              >
                                 {run.error}
                               </span>
                             )}
@@ -1045,8 +1181,15 @@ function AutonomyTab() {
   });
 
   const updateItemMut = useMutation({
-    mutationFn: ({ itemId, status, note }: { itemId: string; status: AuditItemStatus; note: string }) =>
-      updateAuditItem(wizardRunId!, itemId, { status, note }),
+    mutationFn: ({
+      itemId,
+      status,
+      note,
+    }: {
+      itemId: string;
+      status: AuditItemStatus;
+      note: string;
+    }) => updateAuditItem(wizardRunId!, itemId, { status, note }),
     onSuccess: () => void refetchRun(),
   });
 
@@ -1076,20 +1219,20 @@ function AutonomyTab() {
     L5: 'text-destructive bg-destructive/10',
   };
 
-  const allItems = overview
-    ? (Object.values(overview.byLevel).flat() as AutonomyOverviewItem[])
-    : [];
-  const filteredItems = filterLevel ? allItems.filter((i) => i.autonomyLevel === filterLevel) : allItems;
-  const l5Items = overview ? overview.byLevel['L5'] ?? [] : [];
+  const allItems = overview ? Object.values(overview.byLevel).flat() : [];
+  const filteredItems = filterLevel
+    ? allItems.filter((i) => i.autonomyLevel === filterLevel)
+    : allItems;
+  const l5Items = overview ? (overview.byLevel.L5 ?? []) : [];
 
-  const sections: Array<{ key: 'A' | 'B' | 'C' | 'D'; label: string }> = [
+  const sections: { key: 'A' | 'B' | 'C' | 'D'; label: string }[] = [
     { key: 'A', label: 'Section A — Inventory' },
     { key: 'B', label: 'Section B — Level Review' },
     { key: 'C', label: 'Section C — Authority & Accountability' },
     { key: 'D', label: 'Section D — Gap Remediation' },
   ];
 
-  const sectionOrder: Array<0 | 'A' | 'B' | 'C' | 'D' | 'done'> = [0, 'A', 'B', 'C', 'D', 'done'];
+  const sectionOrder: (0 | 'A' | 'B' | 'C' | 'D' | 'done')[] = [0, 'A', 'B', 'C', 'D', 'done'];
 
   const nextSection = (cur: 'A' | 'B' | 'C' | 'D' | 'done'): 'B' | 'C' | 'D' | 'done' => {
     const map: Record<string, 'B' | 'C' | 'D' | 'done'> = { A: 'B', B: 'C', C: 'D', D: 'done' };
@@ -1106,8 +1249,12 @@ function AutonomyTab() {
           message={`Disable ${stopTarget.type} "${stopTarget.name}" (${stopTarget.autonomyLevel})? This will set it to disabled. The action will be audited.`}
           confirmLabel="Stop"
           destructive
-          onConfirm={() => stopMut.mutate({ type: stopTarget.type, id: stopTarget.id })}
-          onCancel={() => setStopTarget(null)}
+          onConfirm={() => {
+            stopMut.mutate({ type: stopTarget.type, id: stopTarget.id });
+          }}
+          onCancel={() => {
+            setStopTarget(null);
+          }}
         />
       )}
 
@@ -1116,12 +1263,20 @@ function AutonomyTab() {
         {(['overview', 'wizard', 'registry'] as const).map((p) => (
           <button
             key={p}
-            onClick={() => setActivePanel(p)}
+            onClick={() => {
+              setActivePanel(p);
+            }}
             className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
-              activePanel === p ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              activePanel === p
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
             }`}
           >
-            {p === 'overview' ? 'Overview' : p === 'wizard' ? 'Audit Wizard' : 'Emergency Stop Registry'}
+            {p === 'overview'
+              ? 'Overview'
+              : p === 'wizard'
+                ? 'Audit Wizard'
+                : 'Emergency Stop Registry'}
           </button>
         ))}
       </div>
@@ -1134,7 +1289,9 @@ function AutonomyTab() {
             {(['L1', 'L2', 'L3', 'L4', 'L5'] as AutonomyLevel[]).map((l) => (
               <button
                 key={l}
-                onClick={() => setFilterLevel(filterLevel === l ? '' : l)}
+                onClick={() => {
+                  setFilterLevel(filterLevel === l ? '' : l);
+                }}
                 className={`card p-3 text-center cursor-pointer border-2 transition-colors ${
                   filterLevel === l ? 'border-primary' : 'border-transparent'
                 }`}
@@ -1167,7 +1324,9 @@ function AutonomyTab() {
                       <td className="p-3 font-medium">{item.name}</td>
                       <td className="p-3 text-muted-foreground capitalize">{item.type}</td>
                       <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded text-xs font-semibold ${LEVEL_COLORS[item.autonomyLevel]}`}>
+                        <span
+                          className={`px-2 py-0.5 rounded text-xs font-semibold ${LEVEL_COLORS[item.autonomyLevel]}`}
+                        >
                           {item.autonomyLevel}
                         </span>
                       </td>
@@ -1181,7 +1340,9 @@ function AutonomyTab() {
             </div>
           )}
           {!overviewLoading && filteredItems.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-8">No items at this level.</p>
+            <p className="text-sm text-muted-foreground text-center py-8">
+              No items at this level.
+            </p>
           )}
         </div>
       )}
@@ -1193,18 +1354,23 @@ function AutonomyTab() {
             <div className="card p-6 space-y-4">
               <h3 className="font-semibold text-lg">Start Autonomy Audit</h3>
               <p className="text-sm text-muted-foreground">
-                Enter a name for this audit run, then work through sections A–D to document your review.
+                Enter a name for this audit run, then work through sections A–D to document your
+                review.
               </p>
               <input
                 className="input w-full"
                 placeholder="Audit name (e.g. Q1 2026 Autonomy Review)"
                 value={wizardName}
-                onChange={(e) => setWizardName(e.target.value)}
+                onChange={(e) => {
+                  setWizardName(e.target.value);
+                }}
               />
               <button
                 className="btn btn-ghost"
                 disabled={!wizardName.trim() || createRunMut.isPending}
-                onClick={() => createRunMut.mutate(wizardName.trim())}
+                onClick={() => {
+                  createRunMut.mutate(wizardName.trim());
+                }}
               >
                 {createRunMut.isPending ? 'Starting…' : 'Start Audit'}
               </button>
@@ -1224,7 +1390,9 @@ function AutonomyTab() {
                         }}
                       >
                         <span>{run.name}</span>
-                        <span className={`text-xs ${run.status === 'completed' ? 'text-success' : 'text-warning'}`}>
+                        <span
+                          className={`text-xs ${run.status === 'completed' ? 'text-success' : 'text-warning'}`}
+                        >
                           {run.status}
                         </span>
                       </button>
@@ -1253,15 +1421,18 @@ function AutonomyTab() {
                         {(['pass', 'fail', 'deferred', 'pending'] as AuditItemStatus[]).map((s) => (
                           <button
                             key={s}
-                            onClick={() =>
-                              updateItemMut.mutate({ itemId: item.id, status: s, note: item.note })
-                            }
+                            onClick={() => {
+                              updateItemMut.mutate({ itemId: item.id, status: s, note: item.note });
+                            }}
                             className={`px-2 py-1 text-xs rounded font-medium transition-colors ${
                               item.status === s
-                                ? s === 'pass' ? 'bg-success text-success-foreground' :
-                                  s === 'fail' ? 'bg-destructive text-destructive-foreground' :
-                                  s === 'deferred' ? 'bg-warning text-warning-foreground' :
-                                  'bg-muted text-muted-foreground'
+                                ? s === 'pass'
+                                  ? 'bg-success text-success-foreground'
+                                  : s === 'fail'
+                                    ? 'bg-destructive text-destructive-foreground'
+                                    : s === 'deferred'
+                                      ? 'bg-warning text-warning-foreground'
+                                      : 'bg-muted text-muted-foreground'
                                 : 'bg-muted text-muted-foreground hover:bg-muted/80'
                             }`}
                           >
@@ -1273,21 +1444,32 @@ function AutonomyTab() {
                         className="input w-full text-xs"
                         placeholder="Notes (optional)"
                         value={item.note}
-                        onChange={(e) =>
-                          updateItemMut.mutate({ itemId: item.id, status: item.status, note: e.target.value })
-                        }
+                        onChange={(e) => {
+                          updateItemMut.mutate({
+                            itemId: item.id,
+                            status: item.status,
+                            note: e.target.value,
+                          });
+                        }}
                       />
                     </div>
                   ))}
               </div>
               <div className="flex justify-between pt-2">
-                <button className="btn btn-ghost text-sm" onClick={() => setWizardStep(0)}>
+                <button
+                  className="btn btn-ghost text-sm"
+                  onClick={() => {
+                    setWizardStep(0);
+                  }}
+                >
                   Back to list
                 </button>
                 {wizardStep !== 'D' ? (
                   <button
                     className="btn btn-ghost text-sm"
-                    onClick={() => setWizardStep(nextSection(wizardStep as 'A' | 'B' | 'C' | 'D'))}
+                    onClick={() => {
+                      setWizardStep(nextSection(wizardStep as 'A' | 'B' | 'C' | 'D'));
+                    }}
                   >
                     Next section →
                   </button>
@@ -1295,7 +1477,9 @@ function AutonomyTab() {
                   <button
                     className="btn btn-ghost text-sm"
                     disabled={finalizeMut.isPending}
-                    onClick={() => finalizeMut.mutate()}
+                    onClick={() => {
+                      finalizeMut.mutate();
+                    }}
                   >
                     {finalizeMut.isPending ? 'Generating…' : 'Finalize & Generate Report'}
                   </button>
@@ -1311,9 +1495,18 @@ function AutonomyTab() {
                 <h3 className="font-semibold">Audit Complete: {activeRun.name}</h3>
               </div>
               <div className="flex gap-4 text-sm">
-                <span className="text-success">✅ Pass: {activeRun.items.filter((i: ChecklistItem) => i.status === 'pass').length}</span>
-                <span className="text-destructive">❌ Fail: {activeRun.items.filter((i: ChecklistItem) => i.status === 'fail').length}</span>
-                <span className="text-warning">⏳ Deferred: {activeRun.items.filter((i: ChecklistItem) => i.status === 'deferred').length}</span>
+                <span className="text-success">
+                  ✅ Pass:{' '}
+                  {activeRun.items.filter((i: ChecklistItem) => i.status === 'pass').length}
+                </span>
+                <span className="text-destructive">
+                  ❌ Fail:{' '}
+                  {activeRun.items.filter((i: ChecklistItem) => i.status === 'fail').length}
+                </span>
+                <span className="text-warning">
+                  ⏳ Deferred:{' '}
+                  {activeRun.items.filter((i: ChecklistItem) => i.status === 'deferred').length}
+                </span>
               </div>
               {activeRun.reportMarkdown && (
                 <details className="text-sm">
@@ -1323,7 +1516,12 @@ function AutonomyTab() {
                   </pre>
                 </details>
               )}
-              <button className="btn btn-ghost text-sm" onClick={() => setWizardStep(0)}>
+              <button
+                className="btn btn-ghost text-sm"
+                onClick={() => {
+                  setWizardStep(0);
+                }}
+              >
                 ← Back to audit list
               </button>
             </div>
@@ -1337,8 +1535,8 @@ function AutonomyTab() {
           <div className="flex items-start gap-2 p-4 bg-destructive/10 rounded-lg text-sm text-destructive">
             <ShieldAlert className="w-5 h-5 flex-shrink-0 mt-0.5" />
             <p>
-              Emergency stop immediately disables the skill or workflow. In-flight runs are not cancelled.
-              This action is audited. Admin role required.
+              Emergency stop immediately disables the skill or workflow. In-flight runs are not
+              cancelled. This action is audited. Admin role required.
             </p>
           </div>
 
@@ -1365,12 +1563,16 @@ function AutonomyTab() {
                       <td className="p-3 font-medium">{item.name}</td>
                       <td className="p-3 capitalize text-muted-foreground">{item.type}</td>
                       <td className="p-3 text-xs text-muted-foreground max-w-xs">
-                        {item.emergencyStopProcedure ?? <span className="italic text-warning">No procedure documented</span>}
+                        {item.emergencyStopProcedure ?? (
+                          <span className="italic text-warning">No procedure documented</span>
+                        )}
                       </td>
                       <td className="p-3">
                         <button
                           className="btn btn-sm bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs"
-                          onClick={() => setStopTarget(item)}
+                          onClick={() => {
+                            setStopTarget(item);
+                          }}
                         >
                           Emergency Stop
                         </button>
@@ -1641,7 +1843,9 @@ function TlsCertStatusCard() {
         </div>
         {tlsStatus.enabled && tlsStatus.autoGenerated && (
           <button
-            onClick={() => generateMutation.mutate()}
+            onClick={() => {
+              generateMutation.mutate();
+            }}
             disabled={generateMutation.isPending}
             title="Regenerate self-signed cert"
             className="btn btn-ghost btn-xs shrink-0 flex items-center gap-1"
@@ -1828,7 +2032,9 @@ function AuditLogTab({
           </button>
           <div className="relative">
             <button
-              onClick={() => setExportOpen((v) => !v)}
+              onClick={() => {
+                setExportOpen((v) => !v);
+              }}
               disabled={exporting}
               className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 disabled:opacity-50"
             >
@@ -2311,7 +2517,9 @@ function MLSecurityTab() {
           {(['24h', '7d', '30d'] as const).map((p) => (
             <button
               key={p}
-              onClick={() => handlePeriodChange(p)}
+              onClick={() => {
+                handlePeriodChange(p);
+              }}
               className={`px-3 py-1 rounded-md font-medium transition-colors ${
                 period === p
                   ? 'bg-primary text-primary-foreground'
@@ -2332,7 +2540,9 @@ function MLSecurityTab() {
             ML anomaly detection is disabled.{' '}
             <button
               className="underline font-medium"
-              onClick={() => window.location.assign('/security?tab=nodes')}
+              onClick={() => {
+                window.location.assign('/security?tab=nodes');
+              }}
             >
               Enable in Security Settings
             </button>
@@ -2423,7 +2633,9 @@ function MLSecurityTab() {
             <Filter className="w-3.5 h-3.5 text-muted-foreground" />
             <select
               value={typeFilter}
-              onChange={(e) => handleTypeFilter(e.target.value)}
+              onChange={(e) => {
+                handleTypeFilter(e.target.value);
+              }}
               className="text-xs border border-border rounded px-2 py-1 bg-background text-foreground"
             >
               <option value="">All ML Types</option>
@@ -2434,7 +2646,9 @@ function MLSecurityTab() {
             </select>
             {typeFilter && (
               <button
-                onClick={() => handleTypeFilter('')}
+                onClick={() => {
+                  handleTypeFilter('');
+                }}
                 className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
               >
                 <X className="w-3 h-3" />
@@ -2459,9 +2673,9 @@ function MLSecurityTab() {
               <div
                 key={event.id}
                 className={`card border-l-4 ${SEVERITY_COLORS[event.severity] ?? 'border-l-border'} cursor-pointer`}
-                onClick={() =>
-                  setExpandedEvent(expandedEvent === event.id ? null : event.id)
-                }
+                onClick={() => {
+                  setExpandedEvent(expandedEvent === event.id ? null : event.id);
+                }}
               >
                 <div className="p-3 flex items-start gap-3">
                   <div className="mt-0.5 shrink-0">
@@ -2476,14 +2690,10 @@ function MLSecurityTab() {
                         {new Date(event.timestamp).toLocaleString()}
                       </span>
                       {event.userId && (
-                        <span className="text-xs text-muted-foreground">
-                          user: {event.userId}
-                        </span>
+                        <span className="text-xs text-muted-foreground">user: {event.userId}</span>
                       )}
                       {event.ipAddress && (
-                        <span className="text-xs text-muted-foreground">
-                          ip: {event.ipAddress}
-                        </span>
+                        <span className="text-xs text-muted-foreground">ip: {event.ipAddress}</span>
                       )}
                     </div>
                     <p className="text-sm mt-1 truncate">{event.message}</p>
@@ -2531,7 +2741,9 @@ function MLSecurityTab() {
             </span>
             <div className="flex gap-2">
               <button
-                onClick={() => setOffset(Math.max(0, offset - ML_PAGE_SIZE))}
+                onClick={() => {
+                  setOffset(Math.max(0, offset - ML_PAGE_SIZE));
+                }}
                 disabled={offset === 0}
                 className="btn btn-ghost btn-sm flex items-center gap-1 disabled:opacity-40"
               >
@@ -2539,7 +2751,9 @@ function MLSecurityTab() {
                 Prev
               </button>
               <button
-                onClick={() => setOffset(offset + ML_PAGE_SIZE)}
+                onClick={() => {
+                  setOffset(offset + ML_PAGE_SIZE);
+                }}
                 disabled={offset + ML_PAGE_SIZE >= total}
                 className="btn btn-ghost btn-sm flex items-center gap-1 disabled:opacity-40"
               >

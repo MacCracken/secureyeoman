@@ -155,7 +155,9 @@ export function registerDesktopTools(
     desktopHandler('desktop_screenshot', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
-        return capabilityDisabledResponse('Desktop Control is disabled. Enable it in Security Settings.');
+        return capabilityDisabledResponse(
+          'Desktop Control is disabled. Enable it in Security Settings.'
+        );
       }
       if (!(await hasVisionCapability(client))) {
         return capabilityDisabledResponse("'vision' capability not enabled on active personality");
@@ -246,7 +248,9 @@ export function registerDesktopTools(
         return capabilityDisabledResponse('Desktop Control is disabled.');
       }
       if (!policy.allowCamera) {
-        return capabilityDisabledResponse('Camera capture is disabled. Enable allowCamera in Security Settings.');
+        return capabilityDisabledResponse(
+          'Camera capture is disabled. Enable allowCamera in Security Settings.'
+        );
       }
       if (!(await hasVisionCapability(client))) {
         return capabilityDisabledResponse("'vision' capability not enabled on active personality");
@@ -282,7 +286,9 @@ export function registerDesktopTools(
         return capabilityDisabledResponse('Desktop Control is disabled.');
       }
       if (!(await hasLimbMovementCapability(client))) {
-        return capabilityDisabledResponse("'limb_movement' capability not enabled on active personality");
+        return capabilityDisabledResponse(
+          "'limb_movement' capability not enabled on active personality"
+        );
       }
       try {
         const result = await client.post('/api/v1/desktop/window/focus', args);
@@ -376,11 +382,14 @@ export function registerDesktopTools(
     'desktop_click',
     {
       description:
-        "Click a mouse button. Optionally move to coordinates first. Supports left, right, middle buttons and double-click.",
+        'Click a mouse button. Optionally move to coordinates first. Supports left, right, middle buttons and double-click.',
       inputSchema: {
         x: z.number().int().nonnegative().optional().describe('X coordinate to click'),
         y: z.number().int().nonnegative().optional().describe('Y coordinate to click'),
-        button: z.enum(['left', 'right', 'middle']).optional().describe("Mouse button (default: 'left')"),
+        button: z
+          .enum(['left', 'right', 'middle'])
+          .optional()
+          .describe("Mouse button (default: 'left')"),
         double: z.boolean().optional().describe('Double-click (default: false)'),
       },
     },
@@ -449,7 +458,13 @@ export function registerDesktopTools(
       description: 'Type text into the currently focused window.',
       inputSchema: {
         text: z.string().min(1).max(10000).describe('Text to type'),
-        delayMs: z.number().int().nonnegative().max(500).optional().describe('Delay between keystrokes in ms (default: 0)'),
+        delayMs: z
+          .number()
+          .int()
+          .nonnegative()
+          .max(500)
+          .optional()
+          .describe('Delay between keystrokes in ms (default: 0)'),
       },
     },
     desktopHandler('desktop_click', async (args) => {
@@ -483,8 +498,15 @@ export function registerDesktopTools(
       description:
         "Press a key combination. Use '+' to combine modifiers: e.g., 'ctrl+c', 'shift+alt+tab', 'enter', 'escape'.",
       inputSchema: {
-        combo: z.string().min(1).max(100).describe("Key combination (e.g., 'ctrl+c', 'enter', 'shift+tab')"),
-        release: z.boolean().optional().describe('If true, release the key instead of pressing (default: false)'),
+        combo: z
+          .string()
+          .min(1)
+          .max(100)
+          .describe("Key combination (e.g., 'ctrl+c', 'enter', 'shift+tab')"),
+        release: z
+          .boolean()
+          .optional()
+          .describe('If true, release the key instead of pressing (default: false)'),
       },
     },
     desktopHandler('desktop_scroll', async (args) => {

@@ -48,7 +48,8 @@ describe('ApprovalManager.createApproval()', () => {
 describe('ApprovalManager.listApprovals()', () => {
   it('returns approvals and total count', async () => {
     const mgr = new ApprovalManager();
-    const querySpy = vi.spyOn(mgr as any, 'query')
+    const querySpy = vi
+      .spyOn(mgr as any, 'query')
       .mockResolvedValueOnce({ rows: [{ count: '2' }], rowCount: 1 }) // count query
       .mockResolvedValueOnce({ rows: [makeRow(), makeRow({ id: 'approval-2' })], rowCount: 2 }); // data query
 
@@ -61,7 +62,8 @@ describe('ApprovalManager.listApprovals()', () => {
 
   it('filters by personalityId', async () => {
     const mgr = new ApprovalManager();
-    const querySpy = vi.spyOn(mgr as any, 'query')
+    const querySpy = vi
+      .spyOn(mgr as any, 'query')
       .mockResolvedValueOnce({ rows: [{ count: '1' }], rowCount: 1 })
       .mockResolvedValueOnce({ rows: [makeRow()], rowCount: 1 });
 
@@ -73,7 +75,8 @@ describe('ApprovalManager.listApprovals()', () => {
 
   it('filters by status', async () => {
     const mgr = new ApprovalManager();
-    const querySpy = vi.spyOn(mgr as any, 'query')
+    const querySpy = vi
+      .spyOn(mgr as any, 'query')
       .mockResolvedValueOnce({ rows: [{ count: '0' }], rowCount: 1 })
       .mockResolvedValueOnce({ rows: [], rowCount: 0 });
 
@@ -85,14 +88,15 @@ describe('ApprovalManager.listApprovals()', () => {
 
   it('uses default limit and offset', async () => {
     const mgr = new ApprovalManager();
-    const querySpy = vi.spyOn(mgr as any, 'query')
+    const querySpy = vi
+      .spyOn(mgr as any, 'query')
       .mockResolvedValueOnce({ rows: [{ count: '0' }], rowCount: 1 })
       .mockResolvedValueOnce({ rows: [], rowCount: 0 });
 
     await mgr.listApprovals();
     const dataCall = querySpy.mock.calls[1];
-    expect(dataCall[1]).toContain(50);  // default limit
-    expect(dataCall[1]).toContain(0);   // default offset
+    expect(dataCall[1]).toContain(50); // default limit
+    expect(dataCall[1]).toContain(0); // default offset
   });
 
   it('maps resolvedAt and resolvedBy when present', async () => {
@@ -100,7 +104,9 @@ describe('ApprovalManager.listApprovals()', () => {
     vi.spyOn(mgr as any, 'query')
       .mockResolvedValueOnce({ rows: [{ count: '1' }], rowCount: 1 })
       .mockResolvedValueOnce({
-        rows: [makeRow({ status: 'approved', resolved_at: String(NOW + 1000), resolved_by: 'admin' })],
+        rows: [
+          makeRow({ status: 'approved', resolved_at: String(NOW + 1000), resolved_by: 'admin' }),
+        ],
         rowCount: 1,
       });
 
@@ -182,7 +188,9 @@ describe('ApprovalManager.pendingCount()', () => {
 
   it('filters by personalityId when provided', async () => {
     const mgr = new ApprovalManager();
-    const spy = vi.spyOn(mgr as any, 'query').mockResolvedValueOnce({ rows: [{ count: '3' }], rowCount: 1 });
+    const spy = vi
+      .spyOn(mgr as any, 'query')
+      .mockResolvedValueOnce({ rows: [{ count: '3' }], rowCount: 1 });
     await mgr.pendingCount('p-1');
     expect(spy.mock.calls[0][0]).toContain('personality_id');
     expect(spy.mock.calls[0][1]).toContain('p-1');

@@ -218,7 +218,12 @@ describe('WorkflowManager.triggerRun', () => {
 
     const run = await manager.triggerRun('wf-1', { key: 'value' }, 'api');
     expect(run.id).toBe('run-1');
-    expect(storage.createRun).toHaveBeenCalledWith('wf-1', 'Test Workflow', { key: 'value' }, 'api');
+    expect(storage.createRun).toHaveBeenCalledWith(
+      'wf-1',
+      'Test Workflow',
+      { key: 'value' },
+      'api'
+    );
   });
 
   it('defaults triggeredBy to "manual"', async () => {

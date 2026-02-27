@@ -72,8 +72,20 @@ const MOCK_TASK_PENDING = {
 
 const MOCK_SESSIONS = {
   sessions: [
-    { id: 'sess-1', runtime: 'node', status: 'running', createdAt: Date.now() - 60000, lastActivity: Date.now() - 1000 },
-    { id: 'sess-2', runtime: 'python', status: 'idle', createdAt: Date.now() - 120000, lastActivity: Date.now() - 30000 },
+    {
+      id: 'sess-1',
+      runtime: 'node',
+      status: 'running',
+      createdAt: Date.now() - 60000,
+      lastActivity: Date.now() - 1000,
+    },
+    {
+      id: 'sess-2',
+      runtime: 'python',
+      status: 'idle',
+      createdAt: Date.now() - 120000,
+      lastActivity: Date.now() - 30000,
+    },
   ],
 };
 

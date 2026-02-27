@@ -45,12 +45,14 @@ function createMockServer() {
 
 // ── Mock Core API Client ──────────────────────────────────────────
 
-function mockClient(opts: {
-  allowDesktopControl?: boolean;
-  allowCamera?: boolean;
-  hasVision?: boolean;
-  hasLimbMovement?: boolean;
-} = {}): CoreApiClient {
+function mockClient(
+  opts: {
+    allowDesktopControl?: boolean;
+    allowCamera?: boolean;
+    hasVision?: boolean;
+    hasLimbMovement?: boolean;
+  } = {}
+): CoreApiClient {
   const {
     allowDesktopControl = true,
     allowCamera = true,
@@ -211,12 +213,7 @@ describe('exposeDesktopControl=false gate', () => {
 
   beforeEach(() => {
     server = createMockServer();
-    registerDesktopTools(
-      server as any,
-      mockClient(),
-      createConfig(false),
-      noopMiddleware()
-    );
+    registerDesktopTools(server as any, mockClient(), createConfig(false), noopMiddleware());
   });
 
   for (const toolName of DESKTOP_TOOLS) {
@@ -244,10 +241,7 @@ describe('exposeDesktopControl=true — tool routing', () => {
   it('desktop_screenshot posts to /api/v1/desktop/screenshot and returns image', async () => {
     const handler = server.getHandler('desktop_screenshot')!;
     const result = await handler({ format: 'png', target: 'display' });
-    expect(client.post).toHaveBeenCalledWith(
-      '/api/v1/desktop/screenshot',
-      expect.any(Object)
-    );
+    expect(client.post).toHaveBeenCalledWith('/api/v1/desktop/screenshot', expect.any(Object));
     expect(result.isError).toBeUndefined();
     const parsed = JSON.parse(result.content[0].text);
     expect(parsed.imageBase64).toBe('abc123');
@@ -291,82 +285,55 @@ describe('exposeDesktopControl=true — tool routing', () => {
   it('desktop_click posts to /api/v1/desktop/mouse/click', async () => {
     const handler = server.getHandler('desktop_click')!;
     await handler({ x: 100, y: 200, button: 'left' });
-    expect(client.post).toHaveBeenCalledWith(
-      '/api/v1/desktop/mouse/click',
-      expect.any(Object)
-    );
+    expect(client.post).toHaveBeenCalledWith('/api/v1/desktop/mouse/click', expect.any(Object));
   });
 
   it('desktop_type posts to /api/v1/desktop/keyboard/type', async () => {
     const handler = server.getHandler('desktop_type')!;
     await handler({ text: 'hello world' });
-    expect(client.post).toHaveBeenCalledWith(
-      '/api/v1/desktop/keyboard/type',
-      expect.any(Object)
-    );
+    expect(client.post).toHaveBeenCalledWith('/api/v1/desktop/keyboard/type', expect.any(Object));
   });
 
   it('desktop_key posts to /api/v1/desktop/keyboard/key', async () => {
     const handler = server.getHandler('desktop_key')!;
     await handler({ key: 'ctrl+c' });
-    expect(client.post).toHaveBeenCalledWith(
-      '/api/v1/desktop/keyboard/key',
-      expect.any(Object)
-    );
+    expect(client.post).toHaveBeenCalledWith('/api/v1/desktop/keyboard/key', expect.any(Object));
   });
 
   it('desktop_mouse_move posts to /api/v1/desktop/mouse/move', async () => {
     const handler = server.getHandler('desktop_mouse_move')!;
     await handler({ x: 400, y: 300 });
-    expect(client.post).toHaveBeenCalledWith(
-      '/api/v1/desktop/mouse/move',
-      expect.any(Object)
-    );
+    expect(client.post).toHaveBeenCalledWith('/api/v1/desktop/mouse/move', expect.any(Object));
   });
 
   it('desktop_scroll posts to /api/v1/desktop/mouse/scroll', async () => {
     const handler = server.getHandler('desktop_scroll')!;
     await handler({ dx: 0, dy: -3 });
-    expect(client.post).toHaveBeenCalledWith(
-      '/api/v1/desktop/mouse/scroll',
-      expect.any(Object)
-    );
+    expect(client.post).toHaveBeenCalledWith('/api/v1/desktop/mouse/scroll', expect.any(Object));
   });
 
   it('desktop_window_focus posts to /api/v1/desktop/window/focus', async () => {
     const handler = server.getHandler('desktop_window_focus')!;
     await handler({ windowId: 'w1' });
-    expect(client.post).toHaveBeenCalledWith(
-      '/api/v1/desktop/window/focus',
-      expect.any(Object)
-    );
+    expect(client.post).toHaveBeenCalledWith('/api/v1/desktop/window/focus', expect.any(Object));
   });
 
   it('desktop_window_resize posts to /api/v1/desktop/window/resize', async () => {
     const handler = server.getHandler('desktop_window_resize')!;
     await handler({ windowId: 'w1', width: 1024, height: 768 });
-    expect(client.post).toHaveBeenCalledWith(
-      '/api/v1/desktop/window/resize',
-      expect.any(Object)
-    );
+    expect(client.post).toHaveBeenCalledWith('/api/v1/desktop/window/resize', expect.any(Object));
   });
 
   it('desktop_input_sequence posts to /api/v1/desktop/input/sequence', async () => {
     const handler = server.getHandler('desktop_input_sequence')!;
     await handler({ steps: [{ action: 'type', text: 'hi' }] });
-    expect(client.post).toHaveBeenCalledWith(
-      '/api/v1/desktop/input/sequence',
-      expect.any(Object)
-    );
+    expect(client.post).toHaveBeenCalledWith('/api/v1/desktop/input/sequence', expect.any(Object));
   });
 
   it('desktop_clipboard_write posts to /api/v1/desktop/clipboard', async () => {
     const handler = server.getHandler('desktop_clipboard_write')!;
     await handler({ text: 'copied text' });
-    expect(client.post).toHaveBeenCalledWith(
-      '/api/v1/desktop/clipboard',
-      expect.any(Object)
-    );
+    expect(client.post).toHaveBeenCalledWith('/api/v1/desktop/clipboard', expect.any(Object));
   });
 });
 

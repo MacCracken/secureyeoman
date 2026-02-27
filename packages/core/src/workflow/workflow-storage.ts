@@ -340,10 +340,9 @@ export class WorkflowStorage extends PgBaseStorage {
   }
 
   async getRun(id: string): Promise<WorkflowRun | null> {
-    const row = await this.queryOne<WorkflowRunRow>(
-      `SELECT * FROM workflow.runs WHERE id = $1`,
-      [id]
-    );
+    const row = await this.queryOne<WorkflowRunRow>(`SELECT * FROM workflow.runs WHERE id = $1`, [
+      id,
+    ]);
     return row ? runFromRow(row) : null;
   }
 

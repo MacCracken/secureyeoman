@@ -111,7 +111,9 @@ function createQueryClient() {
   return new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
 }
 
-function renderMetricsPage(props: { metrics?: ReturnType<typeof createMetricsSnapshot>; health?: HealthStatus } = {}) {
+function renderMetricsPage(
+  props: { metrics?: ReturnType<typeof createMetricsSnapshot>; health?: HealthStatus } = {}
+) {
   const { metrics = createMetricsSnapshot(), health = HEALTH } = props;
   const qc = createQueryClient();
   return render(
@@ -137,13 +139,26 @@ describe('MetricsPage — layout and header', () => {
       intervalMs: 60_000,
       beatCount: 42,
       lastBeat: null,
-      tasks: [{ enabled: true, name: 'health', type: 'health', lastRunAt: null, config: {}, personalityId: null, personalityName: null }],
+      tasks: [
+        {
+          enabled: true,
+          name: 'health',
+          type: 'health',
+          lastRunAt: null,
+          config: {},
+          personalityId: null,
+          personalityName: null,
+        },
+      ],
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
     mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
-    mockFetchCostHistory.mockResolvedValue({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } });
+    mockFetchCostHistory.mockResolvedValue({
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
     mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
@@ -194,7 +209,10 @@ describe('MetricsPage — Mission Control tab', () => {
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
     mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
-    mockFetchCostHistory.mockResolvedValue({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } });
+    mockFetchCostHistory.mockResolvedValue({
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
     mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
@@ -252,7 +270,10 @@ describe('MetricsPage — tab switching', () => {
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
     mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
-    mockFetchCostHistory.mockResolvedValue({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } });
+    mockFetchCostHistory.mockResolvedValue({
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
     mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
@@ -323,7 +344,10 @@ describe('MetricsPage — Mission Control node click routing', () => {
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
     mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
-    mockFetchCostHistory.mockResolvedValue({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } });
+    mockFetchCostHistory.mockResolvedValue({
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
     mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
@@ -396,7 +420,10 @@ describe('MetricsPage — Full Metrics data display', () => {
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
     mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
-    mockFetchCostHistory.mockResolvedValue({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } });
+    mockFetchCostHistory.mockResolvedValue({
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
     mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
@@ -427,14 +454,18 @@ describe('MetricsPage — Full Metrics data display', () => {
   });
 
   it('displays Chain Integrity Verified when auditChainValid is true', () => {
-    const metrics = createMetricsSnapshot({ security: { ...createMetricsSnapshot().security, auditChainValid: true } });
+    const metrics = createMetricsSnapshot({
+      security: { ...createMetricsSnapshot().security, auditChainValid: true },
+    });
     renderMetricsPage({ metrics });
     fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
     expect(screen.getByText('Chain Integrity Verified')).toBeInTheDocument();
   });
 
   it('displays Chain Integrity Compromised when auditChainValid is false', () => {
-    const metrics = createMetricsSnapshot({ security: { ...createMetricsSnapshot().security, auditChainValid: false } });
+    const metrics = createMetricsSnapshot({
+      security: { ...createMetricsSnapshot().security, auditChainValid: false },
+    });
     renderMetricsPage({ metrics });
     fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
     expect(screen.getByText('Chain Integrity Compromised')).toBeInTheDocument();
@@ -456,7 +487,10 @@ describe('MetricsPage — Costs tab', () => {
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
     mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
-    mockFetchCostHistory.mockResolvedValue({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } });
+    mockFetchCostHistory.mockResolvedValue({
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
     mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
@@ -485,8 +519,14 @@ describe('MetricsPage — Costs tab', () => {
     const costsBtn = screen.getByRole('tab', { name: /costs/i });
     fireEvent.click(costsBtn);
     expect(costsBtn).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tab', { name: /mission control/i })).toHaveAttribute('aria-selected', 'false');
-    expect(screen.getByRole('tab', { name: /full metrics/i })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('tab', { name: /mission control/i })).toHaveAttribute(
+      'aria-selected',
+      'false'
+    );
+    expect(screen.getByRole('tab', { name: /full metrics/i })).toHaveAttribute(
+      'aria-selected',
+      'false'
+    );
   });
 
   it('shows Summary and History sub-tab buttons in Costs tab', () => {
@@ -506,13 +546,19 @@ describe('MetricsPage — Costs tab', () => {
     renderMetricsPage();
     fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
     fireEvent.click(screen.getByRole('tab', { name: /mission control/i }));
-    expect(screen.getByRole('tab', { name: /mission control/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /mission control/i })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
   });
 
   it('can navigate from Costs to Full Metrics tab', () => {
     renderMetricsPage();
     fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
     fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
-    expect(screen.getByRole('tab', { name: /full metrics/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /full metrics/i })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
   });
 });

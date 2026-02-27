@@ -90,10 +90,13 @@ describe('MessageRouter.handleInbound()', () => {
 
     await router.handleInbound(makeMessage());
 
-    expect(dispatcher.dispatch).toHaveBeenCalledWith('message.inbound', expect.objectContaining({
-      platform: 'slack',
-      chatId: 'chat-1',
-    }));
+    expect(dispatcher.dispatch).toHaveBeenCalledWith(
+      'message.inbound',
+      expect.objectContaining({
+        platform: 'slack',
+        chatId: 'chat-1',
+      })
+    );
   });
 
   it('blocks message when integration not in personality allowlist', async () => {
@@ -140,10 +143,12 @@ describe('MessageRouter.handleInbound()', () => {
   it('sends response when task completes synchronously', async () => {
     const deps = makeDeps({
       taskExecutor: {
-        submit: vi.fn().mockResolvedValue(makeTask({
-          status: 'completed',
-          result: { success: true },
-        })),
+        submit: vi.fn().mockResolvedValue(
+          makeTask({
+            status: 'completed',
+            result: { success: true },
+          })
+        ),
       },
     });
     const router = new MessageRouter(deps as any);
@@ -151,14 +156,19 @@ describe('MessageRouter.handleInbound()', () => {
     await router.handleInbound(makeMessage());
 
     expect(deps.integrationManager.sendMessage).toHaveBeenCalledWith(
-      'int-1', 'chat-1', expect.stringContaining('Task'), expect.any(Object)
+      'int-1',
+      'chat-1',
+      expect.stringContaining('Task'),
+      expect.any(Object)
     );
   });
 
   it('sends TTS audio when multimodal manager is available and task completes', async () => {
     const deps = makeDeps({
       taskExecutor: {
-        submit: vi.fn().mockResolvedValue(makeTask({ status: 'completed', result: { success: true } })),
+        submit: vi
+          .fn()
+          .mockResolvedValue(makeTask({ status: 'completed', result: { success: true } })),
       },
       multimodalManager: {
         synthesizeSpeech: vi.fn().mockResolvedValue({ audioBase64: 'audio123', format: 'mp3' }),
@@ -176,7 +186,9 @@ describe('MessageRouter.handleInbound()', () => {
     const synthSpy = vi.fn().mockResolvedValue({ audioBase64: 'a', format: 'mp3' });
     const deps = makeDeps({
       taskExecutor: {
-        submit: vi.fn().mockResolvedValue(makeTask({ status: 'completed', result: { success: true } })),
+        submit: vi
+          .fn()
+          .mockResolvedValue(makeTask({ status: 'completed', result: { success: true } })),
       },
       multimodalManager: { synthesizeSpeech: synthSpy },
       getActivePersonality: vi.fn().mockResolvedValue({ voice: 'nova' }),
@@ -191,7 +203,9 @@ describe('MessageRouter.handleInbound()', () => {
     const synthSpy = vi.fn().mockResolvedValue({ audioBase64: 'a', format: 'mp3' });
     const deps = makeDeps({
       taskExecutor: {
-        submit: vi.fn().mockResolvedValue(makeTask({ status: 'completed', result: { success: true } })),
+        submit: vi
+          .fn()
+          .mockResolvedValue(makeTask({ status: 'completed', result: { success: true } })),
       },
       multimodalManager: { synthesizeSpeech: synthSpy },
       getActivePersonality: vi.fn().mockResolvedValue({ voice: 'invalid-voice' }),
@@ -205,7 +219,9 @@ describe('MessageRouter.handleInbound()', () => {
   it('logs warning when TTS fails', async () => {
     const deps = makeDeps({
       taskExecutor: {
-        submit: vi.fn().mockResolvedValue(makeTask({ status: 'completed', result: { success: true } })),
+        submit: vi
+          .fn()
+          .mockResolvedValue(makeTask({ status: 'completed', result: { success: true } })),
       },
       multimodalManager: {
         synthesizeSpeech: vi.fn().mockRejectedValue(new Error('TTS unavailable')),
@@ -226,11 +242,12 @@ describe('MessageRouter.handleInbound()', () => {
     const router = new MessageRouter(deps as any);
     await router.handleInbound(makeMessage());
 
-    expect(deps.logger.error).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to process')
-    );
+    expect(deps.logger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to process'));
     expect(deps.integrationManager.sendMessage).toHaveBeenCalledWith(
-      'int-1', 'chat-1', expect.stringContaining('error'), expect.any(Object)
+      'int-1',
+      'chat-1',
+      expect.stringContaining('error'),
+      expect.any(Object)
     );
   });
 
@@ -257,7 +274,9 @@ describe('MessageRouter.handleInbound()', () => {
 
     await router.handleInbound(makeMessage());
 
-    expect(routingManager.processMessage).toHaveBeenCalledWith(expect.objectContaining({ chatId: 'chat-1' }));
+    expect(routingManager.processMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ chatId: 'chat-1' })
+    );
   });
 });
 

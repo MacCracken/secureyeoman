@@ -320,7 +320,9 @@ describe('GET /api/v1/auth/oauth/:provider/callback — edge cases', () => {
         createdAt: Date.now(),
       }),
       generateOAuthConnectionToken: vi.fn().mockReturnValue('gmail-conn-tok-2'),
-      getUserInfo: vi.fn().mockResolvedValue({ id: 'u-gmail', email: 'user@gmail.com', name: 'User' }),
+      getUserInfo: vi
+        .fn()
+        .mockResolvedValue({ id: 'u-gmail', email: 'user@gmail.com', name: 'User' }),
     });
     const ts = makeMockTokenService();
     registerOAuthRoutes(fastifyApp, {
@@ -347,7 +349,9 @@ describe('GET /api/v1/auth/oauth/:provider/callback — edge cases', () => {
         createdAt: Date.now(),
       }),
       generateOAuthConnectionToken: vi.fn().mockReturnValue('cal-conn-tok'),
-      getUserInfo: vi.fn().mockResolvedValue({ id: 'u-cal', email: 'user@gmail.com', name: 'User' }),
+      getUserInfo: vi
+        .fn()
+        .mockResolvedValue({ id: 'u-cal', email: 'user@gmail.com', name: 'User' }),
     });
     const ts = makeMockTokenService();
     registerOAuthRoutes(fastifyApp, {
@@ -374,7 +378,9 @@ describe('GET /api/v1/auth/oauth/:provider/callback — edge cases', () => {
         createdAt: Date.now(),
       }),
       generateOAuthConnectionToken: vi.fn().mockReturnValue('drive-conn-tok'),
-      getUserInfo: vi.fn().mockResolvedValue({ id: 'u-drive', email: 'user@gmail.com', name: 'User' }),
+      getUserInfo: vi
+        .fn()
+        .mockResolvedValue({ id: 'u-drive', email: 'user@gmail.com', name: 'User' }),
     });
     const ts = makeMockTokenService();
     registerOAuthRoutes(fastifyApp, {
@@ -404,7 +410,9 @@ describe('POST /api/v1/auth/oauth/claim — success and token paths', () => {
         createdAt: Date.now(),
       }),
       generateOAuthConnectionToken: vi.fn().mockReturnValue('valid-claim-tok'),
-      getUserInfo: vi.fn().mockResolvedValue({ id: 'u-1', email: 'claim@gmail.com', name: 'Claim User' }),
+      getUserInfo: vi
+        .fn()
+        .mockResolvedValue({ id: 'u-1', email: 'claim@gmail.com', name: 'Claim User' }),
     });
     registerOAuthRoutes(fastifyApp, {
       authService: {} as AuthService,
@@ -536,10 +544,13 @@ describe('OAuthService unit tests', () => {
 describe('OAuthService.exchangeCode()', () => {
   it('fetches and returns accessToken and refreshToken on success', async () => {
     const svc = new OAuthService({ google: { clientId: 'cid', clientSecret: 'csec' } });
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ access_token: 'acc-tok', refresh_token: 'ref-tok' }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ access_token: 'acc-tok', refresh_token: 'ref-tok' }),
+      })
+    );
     const result = await svc.exchangeCode('google', 'auth-code', 'http://localhost/cb');
     expect(result.accessToken).toBe('acc-tok');
     expect(result.refreshToken).toBe('ref-tok');
@@ -548,10 +559,13 @@ describe('OAuthService.exchangeCode()', () => {
 
   it('returns undefined refreshToken when not present', async () => {
     const svc = new OAuthService({ google: { clientId: 'cid', clientSecret: 'csec' } });
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ access_token: 'acc-only' }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ access_token: 'acc-only' }),
+      })
+    );
     const result = await svc.exchangeCode('google', 'code', 'http://localhost/cb');
     expect(result.refreshToken).toBeUndefined();
     vi.unstubAllGlobals();
@@ -559,27 +573,42 @@ describe('OAuthService.exchangeCode()', () => {
 
   it('throws when token exchange returns non-ok', async () => {
     const svc = new OAuthService({ google: { clientId: 'cid', clientSecret: 'csec' } });
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: false,
-      text: async () => 'Bad Request',
-    }));
-    await expect(svc.exchangeCode('google', 'code', 'http://localhost')).rejects.toThrow('Token exchange failed');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        text: async () => 'Bad Request',
+      })
+    );
+    await expect(svc.exchangeCode('google', 'code', 'http://localhost')).rejects.toThrow(
+      'Token exchange failed'
+    );
     vi.unstubAllGlobals();
   });
 
   it('throws when provider not configured', async () => {
     const svc = new OAuthService({});
-    await expect(svc.exchangeCode('google', 'code', 'http://localhost')).rejects.toThrow('not configured');
+    await expect(svc.exchangeCode('google', 'code', 'http://localhost')).rejects.toThrow(
+      'not configured'
+    );
   });
 });
 
 describe('OAuthService.getUserInfo()', () => {
   it('maps google response fields', async () => {
     const svc = new OAuthService({});
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ id: 'g-1', email: 'user@gmail.com', name: 'Test User', picture: 'https://photo.url' }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          id: 'g-1',
+          email: 'user@gmail.com',
+          name: 'Test User',
+          picture: 'https://photo.url',
+        }),
+      })
+    );
     const info = await svc.getUserInfo('google', 'tok');
     expect(info.id).toBe('g-1');
     expect(info.email).toBe('user@gmail.com');
@@ -589,10 +618,13 @@ describe('OAuthService.getUserInfo()', () => {
 
   it('maps gmail response the same as google', async () => {
     const svc = new OAuthService({});
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ id: 'gm-1', email: 'user@gmail.com', name: 'Gmail User' }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ id: 'gm-1', email: 'user@gmail.com', name: 'Gmail User' }),
+      })
+    );
     const info = await svc.getUserInfo('gmail', 'tok');
     expect(info.id).toBe('gm-1');
     vi.unstubAllGlobals();
@@ -600,10 +632,18 @@ describe('OAuthService.getUserInfo()', () => {
 
   it('maps github response fields including avatar_url', async () => {
     const svc = new OAuthService({});
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ id: 'gh-1', email: 'dev@github.com', name: 'Dev', avatar_url: 'https://avatar.url' }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          id: 'gh-1',
+          email: 'dev@github.com',
+          name: 'Dev',
+          avatar_url: 'https://avatar.url',
+        }),
+      })
+    );
     const info = await svc.getUserInfo('github', 'tok');
     expect(info.id).toBe('gh-1');
     expect(info.avatarUrl).toBe('https://avatar.url');
@@ -612,10 +652,13 @@ describe('OAuthService.getUserInfo()', () => {
 
   it('throws Unsupported provider for googlecalendar (no getUserInfo mapping)', async () => {
     const svc = new OAuthService({});
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ id: 'cal-1' }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ id: 'cal-1' }),
+      })
+    );
     await expect(svc.getUserInfo('googlecalendar', 'tok')).rejects.toThrow('Unsupported provider');
     vi.unstubAllGlobals();
   });
@@ -627,10 +670,13 @@ describe('OAuthService.getUserInfo()', () => {
 
   it('throws when getUserInfo fetch returns non-ok', async () => {
     const svc = new OAuthService({});
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: false,
-      statusText: 'Unauthorized',
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        statusText: 'Unauthorized',
+      })
+    );
     await expect(svc.getUserInfo('google', 'bad-tok')).rejects.toThrow('Failed to get user info');
     vi.unstubAllGlobals();
   });

@@ -74,7 +74,10 @@ export function registerUserNotificationPrefsRoutes(
       if (typeof chatId !== 'string' || chatId.trim() === '') {
         return sendError(reply, 400, 'chatId is required');
       }
-      if (minLevel !== undefined && !VALID_LEVELS.includes(minLevel as (typeof VALID_LEVELS)[number])) {
+      if (
+        minLevel !== undefined &&
+        !VALID_LEVELS.includes(minLevel as (typeof VALID_LEVELS)[number])
+      ) {
         return sendError(
           reply,
           400,
@@ -85,7 +88,7 @@ export function registerUserNotificationPrefsRoutes(
       try {
         const pref = await userNotificationPrefsStorage.upsert(userId, {
           channel: channel as string,
-          chatId: (chatId as string).trim(),
+          chatId: chatId.trim(),
           integrationId: typeof integrationId === 'string' ? integrationId : null,
           enabled: enabled !== undefined ? Boolean(enabled) : true,
           quietHoursStart:
@@ -93,9 +96,7 @@ export function registerUserNotificationPrefsRoutes(
               ? Number(quietHoursStart)
               : null,
           quietHoursEnd:
-            quietHoursEnd != null && !isNaN(Number(quietHoursEnd))
-              ? Number(quietHoursEnd)
-              : null,
+            quietHoursEnd != null && !isNaN(Number(quietHoursEnd)) ? Number(quietHoursEnd) : null,
           minLevel: ((minLevel as string) ?? 'info') as NotificationLevel,
         });
         return reply.code(201).send({ pref });

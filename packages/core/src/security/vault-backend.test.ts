@@ -77,10 +77,7 @@ describe('VaultBackend — static token', () => {
   });
 
   it('has() returns true when value exists', async () => {
-    vi.stubGlobal(
-      'fetch',
-      makeFetch([{ status: 200, body: { data: { data: { value: 'x' } } } }])
-    );
+    vi.stubGlobal('fetch', makeFetch([{ status: 200, body: { data: { data: { value: 'x' } } } }]));
     expect(await new VaultBackend(cfg).has('K')).toBe(true);
   });
 

@@ -69,7 +69,12 @@ function makeMockManager(overrides?: Partial<SoulManager>): SoulManager {
     deleteUser: vi.fn().mockResolvedValue(true),
     composeSoulPrompt: vi.fn().mockResolvedValue('You are FRIDAY.'),
     getActiveTools: vi.fn().mockResolvedValue([]),
-    getConfig: vi.fn().mockReturnValue({ enabled: true, maxSkills: 50, maxPromptTokens: 32000, learningMode: ['user_authored'] }),
+    getConfig: vi.fn().mockReturnValue({
+      enabled: true,
+      maxSkills: 50,
+      maxPromptTokens: 32000,
+      learningMode: ['user_authored'],
+    }),
     updateConfig: vi.fn().mockResolvedValue(undefined),
     getAgentName: vi.fn().mockResolvedValue('FRIDAY'),
     setAgentName: vi.fn().mockResolvedValue(undefined),
@@ -160,7 +165,9 @@ describe('POST /api/v1/soul/personalities/:id/avatar', () => {
 
     const avatarDir = join(tmpDir, 'avatars');
     const files = existsSync(avatarDir)
-      ? (await import('node:fs')).readdirSync(avatarDir).filter((f: string) => f.startsWith('pers-1.'))
+      ? (await import('node:fs'))
+          .readdirSync(avatarDir)
+          .filter((f: string) => f.startsWith('pers-1.'))
       : [];
     expect(files.length).toBeGreaterThan(0);
   });
@@ -168,7 +175,13 @@ describe('POST /api/v1/soul/personalities/:id/avatar', () => {
   it('returns 400 for unsupported MIME type', async () => {
     const app = buildApp();
     const boundary = 'badboundary';
-    const payload = buildMultipart(boundary, 'avatar', 'file.pdf', 'application/pdf', Buffer.from('data'));
+    const payload = buildMultipart(
+      boundary,
+      'avatar',
+      'file.pdf',
+      'application/pdf',
+      Buffer.from('data')
+    );
 
     const res = await app.inject({
       method: 'POST',
@@ -184,7 +197,13 @@ describe('POST /api/v1/soul/personalities/:id/avatar', () => {
   it('returns 404 when personality not found', async () => {
     const app = buildApp({ getPersonality: vi.fn().mockResolvedValue(null) });
     const boundary = 'notfoundboundary';
-    const payload = buildMultipart(boundary, 'avatar', 'photo.png', 'image/png', Buffer.from([0x89, 0x50]));
+    const payload = buildMultipart(
+      boundary,
+      'avatar',
+      'photo.png',
+      'image/png',
+      Buffer.from([0x89, 0x50])
+    );
 
     const res = await app.inject({
       method: 'POST',
@@ -265,7 +284,13 @@ describe('POST /api/v1/soul/personalities/:id/avatar', () => {
     void app.register(fastifyMultipart, { limits: { fileSize: 2 * 1024 * 1024 } });
     registerSoulRoutes(app, { soulManager: makeMockManager() });
     const boundary = 'nodataboundary';
-    const payload = buildMultipart(boundary, 'avatar', 'photo.png', 'image/png', Buffer.from([0x89]));
+    const payload = buildMultipart(
+      boundary,
+      'avatar',
+      'photo.png',
+      'image/png',
+      Buffer.from([0x89])
+    );
 
     const res = await app.inject({
       method: 'POST',

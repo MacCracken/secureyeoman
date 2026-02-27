@@ -13,7 +13,12 @@ import { listWindows, listDisplays } from './windows.js';
 
 function setupMockExec(stdout: string) {
   mockExecFile.mockImplementation(
-    (_cmd: string, _args: string[], _opts: unknown, cb: (err: null, result: { stdout: string; stderr: string }) => void) => {
+    (
+      _cmd: string,
+      _args: string[],
+      _opts: unknown,
+      cb: (err: null, result: { stdout: string; stderr: string }) => void
+    ) => {
       cb(null, { stdout, stderr: '' });
     }
   );
@@ -80,12 +85,14 @@ describe('windows.ts', () => {
       const originalPlatform = process.platform;
       Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
 
-      setupMockExec([
-        'Screen 0: minimum 8 x 8, current 1920 x 1080, maximum 32767 x 32767',
-        'eDP-1 connected primary 1920x1080+0+0 (normal left inverted right x axis y axis) 309mm x 174mm',
-        '   1920x1080     60.00*+  40.00',
-        'HDMI-1 disconnected (normal left inverted right x axis y axis)',
-      ].join('\n'));
+      setupMockExec(
+        [
+          'Screen 0: minimum 8 x 8, current 1920 x 1080, maximum 32767 x 32767',
+          'eDP-1 connected primary 1920x1080+0+0 (normal left inverted right x axis y axis) 309mm x 174mm',
+          '   1920x1080     60.00*+  40.00',
+          'HDMI-1 disconnected (normal left inverted right x axis y axis)',
+        ].join('\n')
+      );
 
       const displays = await listDisplays();
       expect(displays.length).toBeGreaterThan(0);
@@ -104,7 +111,9 @@ describe('windows.ts', () => {
       const originalPlatform = process.platform;
       Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
 
-      setupMockExec('HDMI-1 connected 2560x1440+1920+0 (normal left inverted right x axis y axis)\n');
+      setupMockExec(
+        'HDMI-1 connected 2560x1440+1920+0 (normal left inverted right x axis y axis)\n'
+      );
 
       const displays = await listDisplays();
       expect(displays.length).toBeGreaterThan(0);
@@ -176,7 +185,9 @@ describe('windows.ts', () => {
     });
 
     it('listWindows returns windows from osascript output', async () => {
-      setupMockExec('Firefox|Tab Title|100|200|1280|720\nTerminal|bash|50|50|800|600\nShort|line\n\n');
+      setupMockExec(
+        'Firefox|Tab Title|100|200|1280|720\nTerminal|bash|50|50|800|600\nShort|line\n\n'
+      );
       const windows = await listWindows();
       expect(windows).toHaveLength(2);
       expect(windows[0]).toMatchObject({
@@ -255,7 +266,9 @@ describe('windows.ts', () => {
     });
 
     it('listDisplays returns displays from powershell output', async () => {
-      setupMockExec('Monitor\\Display1|Generic PnP Monitor|1920|1080\nMonitor\\Display2|LG|3840|2160\nbad\n');
+      setupMockExec(
+        'Monitor\\Display1|Generic PnP Monitor|1920|1080\nMonitor\\Display2|LG|3840|2160\nbad\n'
+      );
       const displays = await listDisplays();
       expect(displays).toHaveLength(2);
       expect(displays[0]).toMatchObject({

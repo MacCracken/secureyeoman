@@ -58,7 +58,9 @@ export function ProactivePage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Proactive Assistance</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Automated triggers, suggestions, and behavioral patterns — act before being asked</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Automated triggers, suggestions, and behavioral patterns — act before being asked
+          </p>
         </div>
         <div className="card p-8 text-center">
           <ShieldAlert className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -83,7 +85,9 @@ export function ProactivePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Proactive Assistance</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Automated triggers, suggestions, and behavioral patterns — act before being asked</p>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Automated triggers, suggestions, and behavioral patterns — act before being asked
+        </p>
       </div>
 
       <div className="flex gap-1 border-b">
@@ -773,7 +777,8 @@ function PatternsTab() {
         </div>
       ) : patterns.length === 0 ? (
         <div className="card p-8 text-center text-muted-foreground">
-          No patterns detected yet. Patterns will appear as your Personalities learn from your interactions.
+          No patterns detected yet. Patterns will appear as your Personalities learn from your
+          interactions.
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">

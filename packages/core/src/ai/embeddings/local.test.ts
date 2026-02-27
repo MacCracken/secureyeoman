@@ -31,7 +31,9 @@ function makeProcessMock() {
   proc.stdout = stdout;
   proc.stderr = stderr;
   proc.killed = false;
-  proc.kill = vi.fn(() => { proc.killed = true; });
+  proc.kill = vi.fn(() => {
+    proc.killed = true;
+  });
 
   return proc;
 }
@@ -149,10 +151,15 @@ describe('LocalEmbeddingProvider.embed()', () => {
     const p2 = provider.embed(['t2']);
     await flushMicrotasks();
 
-    proc.stdout.emit('data', Buffer.from(
-      JSON.stringify({ embeddings: [[0.1]] }) + '\n' +
-      JSON.stringify({ embeddings: [[0.2]] }) + '\n'
-    ));
+    proc.stdout.emit(
+      'data',
+      Buffer.from(
+        JSON.stringify({ embeddings: [[0.1]] }) +
+          '\n' +
+          JSON.stringify({ embeddings: [[0.2]] }) +
+          '\n'
+      )
+    );
 
     const [r1, r2] = await Promise.all([p1, p2]);
     expect(r1).toEqual([[0.1]]);

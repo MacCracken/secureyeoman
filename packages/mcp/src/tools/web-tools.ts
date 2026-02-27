@@ -46,7 +46,7 @@ class ContentSignalBlockedError extends Error {
   constructor(url: string) {
     super(
       `Content-Signal: ai-input=no — "${url}" signals this content is not intended for AI input. ` +
-      `Set MCP_RESPECT_CONTENT_SIGNAL=false to override.`
+        `Set MCP_RESPECT_CONTENT_SIGNAL=false to override.`
     );
     this.name = 'ContentSignalBlockedError';
   }
@@ -67,7 +67,10 @@ function parseFrontMatter(content: string): { metadata: Record<string, string>; 
     const colonIdx = line.indexOf(':');
     if (colonIdx === -1) continue;
     const key = line.slice(0, colonIdx).trim();
-    const value = line.slice(colonIdx + 1).trim().replace(/^["']|["']$/g, '');
+    const value = line
+      .slice(colonIdx + 1)
+      .trim()
+      .replace(/^["']|["']$/g, '');
     if (key) metadata[key] = value;
   }
   return { metadata, body };
@@ -163,7 +166,12 @@ async function safeFetch(
     );
   }
 
-  const doFetch = async (): Promise<{ body: string; finalUrl: string; contentType: string; markdownTokens: number | null }> => {
+  const doFetch = async (): Promise<{
+    body: string;
+    finalUrl: string;
+    contentType: string;
+    markdownTokens: number | null;
+  }> => {
     let currentUrl = urlStr;
     let redirectCount = 0;
 

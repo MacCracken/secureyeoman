@@ -9,7 +9,7 @@ import { configureAxe } from 'vitest-axe';
 import * as axeMatchers from 'vitest-axe/matchers';
 
 // Only fail on critical a11y violations to avoid pre-existing minor issues blocking CI
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 const axe = (configureAxe as any)({ impactLevels: ['critical'] });
 
 expect.extend(axeMatchers);
@@ -114,7 +114,12 @@ beforeEach(() => {
   vi.clearAllMocks();
 
   vi.mocked(api.fetchSecurityEvents).mockResolvedValue({ events: [], total: 0 });
-  vi.mocked(api.fetchAuditEntries).mockResolvedValue({ entries: [], total: 0, limit: 50, offset: 0 });
+  vi.mocked(api.fetchAuditEntries).mockResolvedValue({
+    entries: [],
+    total: 0,
+    limit: 50,
+    offset: 0,
+  });
   vi.mocked(api.verifyAuditChain).mockResolvedValue({ valid: true, entriesChecked: 0 });
   vi.mocked(api.fetchTasks).mockResolvedValue({ tasks: [], total: 0 });
   vi.mocked(api.fetchHeartbeatStatus).mockResolvedValue({ enabledTasks: 0, totalTasks: 0 } as any);
@@ -127,15 +132,32 @@ beforeEach(() => {
   vi.mocked(api.fetchMlSummary).mockResolvedValue({ enabled: false } as any);
   vi.mocked(api.fetchTlsStatus).mockResolvedValue({ enabled: false } as any);
   vi.mocked(api.fetchSecurityPolicy).mockResolvedValue({
-    allowSubAgents: false, allowA2A: false, allowSwarms: false,
-    allowExtensions: false, allowExecution: true, allowProactive: false,
-    allowWorkflows: false, allowCommunityGitFetch: false, allowExperiments: false,
-    allowStorybook: false, allowMultimodal: false, allowDesktopControl: false,
-    allowCamera: false, allowDynamicTools: false, sandboxDynamicTools: true,
-    allowAnomalyDetection: false, sandboxGvisor: false, sandboxWasm: false,
-    sandboxCredentialProxy: false, allowNetworkTools: false, allowNetBoxWrite: false,
-    allowTwingate: false, allowOrgIntent: false, allowIntentEditor: true,
-    allowCodeEditor: true, allowAdvancedEditor: false,
+    allowSubAgents: false,
+    allowA2A: false,
+    allowSwarms: false,
+    allowExtensions: false,
+    allowExecution: true,
+    allowProactive: false,
+    allowWorkflows: false,
+    allowCommunityGitFetch: false,
+    allowExperiments: false,
+    allowStorybook: false,
+    allowMultimodal: false,
+    allowDesktopControl: false,
+    allowCamera: false,
+    allowDynamicTools: false,
+    sandboxDynamicTools: true,
+    allowAnomalyDetection: false,
+    sandboxGvisor: false,
+    sandboxWasm: false,
+    sandboxCredentialProxy: false,
+    allowNetworkTools: false,
+    allowNetBoxWrite: false,
+    allowTwingate: false,
+    allowOrgIntent: false,
+    allowIntentEditor: true,
+    allowCodeEditor: true,
+    allowAdvancedEditor: false,
   });
   vi.mocked(api.fetchAutonomyOverview).mockResolvedValue({} as any);
   vi.mocked(api.fetchAuditRuns).mockResolvedValue({ runs: [] } as any);
@@ -173,9 +195,9 @@ describe('a11y smoke tests (axe-core)', () => {
         <SecurityPage />
       </Wrapper>
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const results = await (axe as any)(container);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     (expect(results) as any).toHaveNoViolations();
   });
 
@@ -186,9 +208,9 @@ describe('a11y smoke tests (axe-core)', () => {
         <McpPrebuilts />
       </Wrapper>
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const results = await (axe as any)(container);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     (expect(results) as any).toHaveNoViolations();
   });
 
@@ -199,9 +221,9 @@ describe('a11y smoke tests (axe-core)', () => {
         <SettingsPage />
       </Wrapper>
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const results = await (axe as any)(container);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     (expect(results) as any).toHaveNoViolations();
   });
 
@@ -212,9 +234,9 @@ describe('a11y smoke tests (axe-core)', () => {
         <OnboardingWizard onComplete={() => undefined} />
       </Wrapper>
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const results = await (axe as any)(container);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     (expect(results) as any).toHaveNoViolations();
   });
 });

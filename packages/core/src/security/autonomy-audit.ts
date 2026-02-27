@@ -193,21 +193,28 @@ function rowToAuditRun(row: AuditRunRow): AuditRun {
     id: row.id,
     name: row.name,
     status: row.status,
-    items: (row.items ?? []) as ChecklistItem[],
+    items: row.items ?? [],
     reportMarkdown: row.report_markdown ?? undefined,
     reportJson: row.report_json ?? undefined,
     createdBy: row.created_by ?? undefined,
     createdAt: typeof row.created_at === 'string' ? Number(row.created_at) : row.created_at,
-    completedAt: row.completed_at != null
-      ? (typeof row.completed_at === 'string' ? Number(row.completed_at) : row.completed_at)
-      : undefined,
+    completedAt:
+      row.completed_at != null
+        ? typeof row.completed_at === 'string'
+          ? Number(row.completed_at)
+          : row.completed_at
+        : undefined,
   };
 }
 
 // ─── Storage ─────────────────────────────────────────────────────────────────
 
 export class AutonomyAuditStorage extends PgBaseStorage {
-  async createAuditRun(name: string, items: ChecklistItem[], createdBy?: string): Promise<AuditRun> {
+  async createAuditRun(
+    name: string,
+    items: ChecklistItem[],
+    createdBy?: string
+  ): Promise<AuditRun> {
     const id = uuidv7();
     const now = Date.now();
     const row = await this.queryOne<AuditRunRow>(
@@ -272,18 +279,26 @@ export class AutonomyAuditStorage extends PgBaseStorage {
       name: string;
       autonomy_level: string;
       emergency_stop_procedure: string | null;
-    }>(`SELECT id, name, autonomy_level, emergency_stop_procedure FROM soul.skills WHERE enabled = true`);
+    }>(
+      `SELECT id, name, autonomy_level, emergency_stop_procedure FROM soul.skills WHERE enabled = true`
+    );
 
     const workflowRows = await this.queryMany<{
       id: string;
       name: string;
       autonomy_level: string | null;
       emergency_stop_procedure: string | null;
-    }>(`SELECT id, name, autonomy_level, emergency_stop_procedure FROM workflow.definitions WHERE is_enabled = true`);
+    }>(
+      `SELECT id, name, autonomy_level, emergency_stop_procedure FROM workflow.definitions WHERE is_enabled = true`
+    );
 
     const levels: AutonomyLevel[] = ['L1', 'L2', 'L3', 'L4', 'L5'];
     const byLevel: Record<AutonomyLevel, AutonomyOverviewItem[]> = {
-      L1: [], L2: [], L3: [], L4: [], L5: [],
+      L1: [],
+      L2: [],
+      L3: [],
+      L4: [],
+      L5: [],
     };
 
     for (const row of skillRows) {
@@ -379,11 +394,7 @@ export class AutonomyAuditManager {
     return this.storage.finalizeRun(runId, reportMarkdown, reportJson);
   }
 
-  async emergencyStop(
-    type: 'skill' | 'workflow',
-    id: string,
-    actorId?: string
-  ): Promise<void> {
+  async emergencyStop(type: 'skill' | 'workflow', id: string, actorId?: string): Promise<void> {
     if (type === 'skill') {
       if (!this.soulManager) throw new Error('SoulManager not available');
       await this.soulManager.updateSkill(id, { enabled: false });
@@ -445,10 +456,16 @@ export class AutonomyAuditManager {
       lines.push(`|---|------|--------|-------|`);
       for (const item of run.items.filter((i) => i.section === section)) {
         const statusEmoji =
-          item.status === 'pass' ? '✅' :
-          item.status === 'fail' ? '❌' :
-          item.status === 'deferred' ? '⏳' : '⬜';
-        lines.push(`| ${item.id} | ${item.text} | ${statusEmoji} ${item.status} | ${item.note || '—'} |`);
+          item.status === 'pass'
+            ? '✅'
+            : item.status === 'fail'
+              ? '❌'
+              : item.status === 'deferred'
+                ? '⏳'
+                : '⬜';
+        lines.push(
+          `| ${item.id} | ${item.text} | ${statusEmoji} ${item.status} | ${item.note || '—'} |`
+        );
       }
       lines.push('');
     }

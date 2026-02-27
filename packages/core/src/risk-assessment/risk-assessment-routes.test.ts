@@ -170,9 +170,7 @@ describe('GET /api/v1/risk/assessments', () => {
   it('caps limit at 100', async () => {
     const { app, mgr } = buildApp();
     await app.inject({ method: 'GET', url: '/api/v1/risk/assessments?limit=999' });
-    expect(mgr.listAssessments).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 100 })
-    );
+    expect(mgr.listAssessments).toHaveBeenCalledWith(expect.objectContaining({ limit: 100 }));
   });
 });
 

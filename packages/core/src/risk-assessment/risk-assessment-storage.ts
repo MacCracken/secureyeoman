@@ -88,9 +88,7 @@ function rowToAssessment(row: AssessmentRow): RiskAssessment {
     domainScores: (row.domain_scores as Record<string, number>) ?? undefined,
     findings: (row.findings as RiskFinding[]) ?? undefined,
     findingsCount:
-      typeof row.findings_count === 'string'
-        ? Number(row.findings_count)
-        : row.findings_count,
+      typeof row.findings_count === 'string' ? Number(row.findings_count) : row.findings_count,
     options: (row.options as Record<string, unknown>) ?? undefined,
     createdBy: row.created_by ?? undefined,
     createdAt: typeof row.created_at === 'string' ? Number(row.created_at) : row.created_at,
@@ -119,8 +117,7 @@ function rowToFeed(row: FeedRow): ExternalFeed {
           ? Number(row.last_ingested_at)
           : row.last_ingested_at
         : undefined,
-    recordCount:
-      typeof row.record_count === 'string' ? Number(row.record_count) : row.record_count,
+    recordCount: typeof row.record_count === 'string' ? Number(row.record_count) : row.record_count,
     createdAt: typeof row.created_at === 'string' ? Number(row.created_at) : row.created_at,
     updatedAt: typeof row.updated_at === 'string' ? Number(row.updated_at) : row.updated_at,
   };
@@ -158,8 +155,7 @@ function rowToFinding(row: FindingRow): ExternalFinding {
           ? Number(row.source_date)
           : row.source_date
         : undefined,
-    importedAt:
-      typeof row.imported_at === 'string' ? Number(row.imported_at) : row.imported_at,
+    importedAt: typeof row.imported_at === 'string' ? Number(row.imported_at) : row.imported_at,
   };
 }
 
@@ -193,7 +189,15 @@ export class RiskAssessmentStorage extends PgBaseStorage {
       [
         id,
         opts.name,
-        JSON.stringify(opts.assessmentTypes ?? ['security', 'autonomy', 'governance', 'infrastructure', 'external']),
+        JSON.stringify(
+          opts.assessmentTypes ?? [
+            'security',
+            'autonomy',
+            'governance',
+            'infrastructure',
+            'external',
+          ]
+        ),
         opts.windowDays ?? 7,
         JSON.stringify(opts.options ?? {}),
         createdBy ?? null,
@@ -230,18 +234,18 @@ export class RiskAssessmentStorage extends PgBaseStorage {
   }
 
   async get(id: string): Promise<RiskAssessment | null> {
-    const row = await this.queryOne<AssessmentRow>(
-      `SELECT * FROM risk.assessments WHERE id = $1`,
-      [id]
-    );
+    const row = await this.queryOne<AssessmentRow>(`SELECT * FROM risk.assessments WHERE id = $1`, [
+      id,
+    ]);
     return row ? rowToAssessment(row) : null;
   }
 
   async updateStatus(id: string, status: string, error?: string): Promise<void> {
-    await this.execute(
-      `UPDATE risk.assessments SET status = $1, error = $2 WHERE id = $3`,
-      [status, error ?? null, id]
-    );
+    await this.execute(`UPDATE risk.assessments SET status = $1, error = $2 WHERE id = $3`, [
+      status,
+      error ?? null,
+      id,
+    ]);
   }
 
   async saveResults(id: string, results: AssessmentResults): Promise<RiskAssessment> {
@@ -310,14 +314,16 @@ export class RiskAssessmentStorage extends PgBaseStorage {
   }
 
   async getFeed(id: string): Promise<ExternalFeed | null> {
-    const row = await this.queryOne<FeedRow>(
-      `SELECT * FROM risk.external_feeds WHERE id = $1`,
-      [id]
-    );
+    const row = await this.queryOne<FeedRow>(`SELECT * FROM risk.external_feeds WHERE id = $1`, [
+      id,
+    ]);
     return row ? rowToFeed(row) : null;
   }
 
-  async updateFeed(id: string, updates: Partial<Pick<ExternalFeed, 'name' | 'description' | 'enabled' | 'config'>>): Promise<ExternalFeed | null> {
+  async updateFeed(
+    id: string,
+    updates: Partial<Pick<ExternalFeed, 'name' | 'description' | 'enabled' | 'config'>>
+  ): Promise<ExternalFeed | null> {
     const now = Date.now();
     const row = await this.queryOne<FeedRow>(
       `UPDATE risk.external_feeds
@@ -341,10 +347,7 @@ export class RiskAssessmentStorage extends PgBaseStorage {
   }
 
   async deleteFeed(id: string): Promise<boolean> {
-    const count = await this.execute(
-      `DELETE FROM risk.external_feeds WHERE id = $1`,
-      [id]
-    );
+    const count = await this.execute(`DELETE FROM risk.external_feeds WHERE id = $1`, [id]);
     return count > 0;
   }
 
@@ -415,13 +418,15 @@ export class RiskAssessmentStorage extends PgBaseStorage {
     return { created, skipped };
   }
 
-  async listFindings(opts: {
-    feedId?: string;
-    status?: string;
-    severity?: string;
-    limit?: number;
-    offset?: number;
-  } = {}): Promise<{ items: ExternalFinding[]; total: number }> {
+  async listFindings(
+    opts: {
+      feedId?: string;
+      status?: string;
+      severity?: string;
+      limit?: number;
+      offset?: number;
+    } = {}
+  ): Promise<{ items: ExternalFinding[]; total: number }> {
     const { feedId, status, severity, limit = 50, offset = 0 } = opts;
     const conditions: string[] = [];
     const params: unknown[] = [];

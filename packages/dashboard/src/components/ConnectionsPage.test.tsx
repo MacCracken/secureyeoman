@@ -650,7 +650,9 @@ describe('ConnectionsPage', () => {
     } as never);
 
     renderComponent();
-    expect(await screen.findByText('Enable Twingate in Security settings first')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Enable Twingate in Security settings first')
+    ).toBeInTheDocument();
   });
 
   it('shows Twingate description when allowTwingate is true', async () => {

@@ -56,7 +56,8 @@ function riskLevelBg(level: string): string {
 }
 
 function scoreBar(score: number): string {
-  const color = score >= 75 ? '#dc2626' : score >= 50 ? '#ea580c' : score >= 25 ? '#d97706' : '#16a34a';
+  const color =
+    score >= 75 ? '#dc2626' : score >= 50 ? '#ea580c' : score >= 25 ? '#d97706' : '#16a34a';
   return `<div style="background:#e5e7eb;border-radius:4px;height:8px;width:100%;margin-top:4px">
     <div style="background:${color};border-radius:4px;height:8px;width:${score}%"></div>
   </div>`;
@@ -82,13 +83,13 @@ export class RiskReportGenerator {
 
     const domainRows = Object.entries(domainScores)
       .map(([domain, s]) => {
-        const lv = scoreToLevel(s as number);
+        const lv = scoreToLevel(s);
         return `<tr>
           <td style="padding:8px 12px;text-transform:capitalize">${escapeHtml(domain)}</td>
           <td style="padding:8px 12px;text-align:center">
             <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;background:${riskLevelBg(lv)};color:${riskLevelColor(lv)}">${lv.toUpperCase()}</span>
           </td>
-          <td style="padding:8px 12px;width:200px">${scoreBar(s as number)}<span style="font-size:11px;color:#6b7280">${s}/100</span></td>
+          <td style="padding:8px 12px;width:200px">${scoreBar(s)}<span style="font-size:11px;color:#6b7280">${s}/100</span></td>
         </tr>`;
       })
       .join('\n');
@@ -112,12 +113,13 @@ export class RiskReportGenerator {
       })
       .join('\n');
 
-    const critHighSummary = critHigh.length > 0
-      ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin-bottom:24px">
+    const critHighSummary =
+      critHigh.length > 0
+        ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin-bottom:24px">
           <h3 style="margin:0 0 8px 0;color:#991b1b;font-size:15px">⚠ ${critHigh.length} Critical/High Finding${critHigh.length > 1 ? 's' : ''} Require Immediate Attention</h3>
           ${critHigh.map((f) => `<div style="margin:4px 0;font-size:13px"><strong>${escapeHtml(f.title)}</strong> — ${escapeHtml(f.description)}</div>`).join('\n')}
         </div>`
-      : '';
+        : '';
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -183,7 +185,7 @@ export class RiskReportGenerator {
     const medium = findings.filter((f) => f.severity === 'medium');
 
     const domainTable = Object.entries(domainScores)
-      .map(([d, s]) => `| ${capitalize(d)} | ${s}/100 | ${capitalize(scoreToLevel(s as number))} |`)
+      .map(([d, s]) => `| ${capitalize(d)} | ${s}/100 | ${capitalize(scoreToLevel(s))} |`)
       .join('\n');
 
     const critHighSection =
@@ -197,11 +199,16 @@ export class RiskReportGenerator {
         : '## All Findings\n\n_No findings._\n';
 
     const recommendations: string[] = [];
-    if (critHigh.length > 0) recommendations.push(`Address ${critHigh.length} critical/high finding(s) immediately.`);
-    if (medium.length > 0) recommendations.push(`Review ${medium.length} medium finding(s) within 30 days.`);
-    if (score >= 75) recommendations.push('Composite score is CRITICAL — escalate to security team.');
-    else if (score >= 50) recommendations.push('Composite score is HIGH — schedule remediation sprint.');
-    if (recommendations.length === 0) recommendations.push('No immediate action required. Continue regular monitoring.');
+    if (critHigh.length > 0)
+      recommendations.push(`Address ${critHigh.length} critical/high finding(s) immediately.`);
+    if (medium.length > 0)
+      recommendations.push(`Review ${medium.length} medium finding(s) within 30 days.`);
+    if (score >= 75)
+      recommendations.push('Composite score is CRITICAL — escalate to security team.');
+    else if (score >= 50)
+      recommendations.push('Composite score is HIGH — schedule remediation sprint.');
+    if (recommendations.length === 0)
+      recommendations.push('No immediate action required. Continue regular monitoring.');
 
     return `# Risk Assessment Report — ${assessment.name}
 
@@ -230,7 +237,12 @@ ${recommendations.map((r) => `- ${r}`).join('\n')}
 
 ## Appendix: Evidence
 
-${findings.filter((f) => f.evidence && Object.keys(f.evidence).length > 0).map((f) => `### ${f.title}\n\n\`\`\`json\n${JSON.stringify(f.evidence, null, 2)}\n\`\`\``).join('\n\n') || '_No evidence attached._'}
+${
+  findings
+    .filter((f) => f.evidence && Object.keys(f.evidence).length > 0)
+    .map((f) => `### ${f.title}\n\n\`\`\`json\n${JSON.stringify(f.evidence, null, 2)}\n\`\`\``)
+    .join('\n\n') || '_No evidence attached._'
+}
 `;
   }
 

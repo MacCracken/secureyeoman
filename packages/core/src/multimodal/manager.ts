@@ -266,7 +266,9 @@ export class MultimodalManager {
 
     // Build metadata subset for only the configured providers in each category
     const metaFor = (ids: string[]): Record<string, ProviderMeta> =>
-      Object.fromEntries(ids.map((id) => [id, PROVIDER_META[id] ?? { label: id, category: 'cloud' as const }]));
+      Object.fromEntries(
+        ids.map((id) => [id, PROVIDER_META[id] ?? { label: id, category: 'cloud' as const }])
+      );
 
     return {
       vision: {
@@ -276,14 +278,33 @@ export class MultimodalManager {
         metadata: metaFor(visionConfigured),
       },
       tts: {
-        available: ['openai', 'voicebox', 'elevenlabs', 'deepgram', 'cartesia', 'google', 'azure', 'playht', 'openedai', 'kokoro'],
+        available: [
+          'openai',
+          'voicebox',
+          'elevenlabs',
+          'deepgram',
+          'cartesia',
+          'google',
+          'azure',
+          'playht',
+          'openedai',
+          'kokoro',
+        ],
         configured: ttsConfigured,
         active: activeTTS,
         voiceboxUrl,
         metadata: metaFor(ttsConfigured),
       },
       stt: {
-        available: ['openai', 'voicebox', 'deepgram', 'elevenlabs', 'assemblyai', 'google', 'azure'],
+        available: [
+          'openai',
+          'voicebox',
+          'deepgram',
+          'elevenlabs',
+          'assemblyai',
+          'google',
+          'azure',
+        ],
         configured: sttConfigured,
         active: activeSTT,
         model: activeSTTModel,
@@ -414,15 +435,18 @@ export class MultimodalManager {
         ? request.voice
         : (process.env.DEEPGRAM_TTS_MODEL ?? 'aura-2-thalia-en');
 
-    const res = await fetch(`https://api.deepgram.com/v1/speak?model=${encodeURIComponent(model)}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Token ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ text: request.text }),
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
+    const res = await fetch(
+      `https://api.deepgram.com/v1/speak?model=${encodeURIComponent(model)}`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Token ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: request.text }),
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      }
+    );
     if (!res.ok) {
       const err = await res.text();
       throw new Error(`Deepgram TTS error (${res.status}): ${err}`);
@@ -505,28 +529,26 @@ export class MultimodalManager {
   ): Promise<{ audioBase64: string; format: string }> {
     const speechKey = process.env.SPEECH_KEY;
     const region = process.env.SPEECH_REGION;
-    if (!speechKey || !region) throw new Error('SPEECH_KEY and SPEECH_REGION are required for Azure TTS');
+    if (!speechKey || !region)
+      throw new Error('SPEECH_KEY and SPEECH_REGION are required for Azure TTS');
 
     const voiceName =
       request.voice !== 'alloy'
         ? request.voice
         : (process.env.AZURE_TTS_VOICE ?? 'en-US-AvaMultilingualNeural');
 
-    const ssml = `<speak version='1.0' xml:lang='en-US'><voice name='${voiceName}'>${request.text.replace(/[<>&'"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c] ?? c))}</voice></speak>`;
+    const ssml = `<speak version='1.0' xml:lang='en-US'><voice name='${voiceName}'>${request.text.replace(/[<>&'"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' })[c] ?? c)}</voice></speak>`;
 
-    const res = await fetch(
-      `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,
-      {
-        method: 'POST',
-        headers: {
-          'Ocp-Apim-Subscription-Key': speechKey,
-          'Content-Type': 'application/ssml+xml',
-          'X-Microsoft-OutputFormat': 'audio-16khz-32kbitrate-mono-mp3',
-        },
-        body: ssml,
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      }
-    );
+    const res = await fetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`, {
+      method: 'POST',
+      headers: {
+        'Ocp-Apim-Subscription-Key': speechKey,
+        'Content-Type': 'application/ssml+xml',
+        'X-Microsoft-OutputFormat': 'audio-16khz-32kbitrate-mono-mp3',
+      },
+      body: ssml,
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
     if (!res.ok) {
       const err = await res.text();
       throw new Error(`Azure TTS error (${res.status}): ${err}`);
@@ -546,7 +568,8 @@ export class MultimodalManager {
     const voice =
       request.voice !== 'alloy'
         ? request.voice
-        : (process.env.PLAYHT_VOICE ?? 's3://peregrine-voices/oliver_narrative2_parrot_saad/manifest.json');
+        : (process.env.PLAYHT_VOICE ??
+          's3://peregrine-voices/oliver_narrative2_parrot_saad/manifest.json');
 
     const res = await fetch('https://api.play.ht/api/v2/tts/stream', {
       method: 'POST',
@@ -602,7 +625,17 @@ export class MultimodalManager {
   private async synthesizeViaKokoro(
     request: TTSRequest
   ): Promise<{ audioBase64: string; format: string }> {
-    let KokoroTTS: { from_pretrained: (model: string, opts: { dtype: string }) => Promise<{ generate: (text: string, opts: { voice: string }) => Promise<{ save: (path: string) => Promise<void> }> }> };
+    let KokoroTTS: {
+      from_pretrained: (
+        model: string,
+        opts: { dtype: string }
+      ) => Promise<{
+        generate: (
+          text: string,
+          opts: { voice: string }
+        ) => Promise<{ save: (path: string) => Promise<void> }>;
+      }>;
+    };
     try {
       // @ts-ignore — kokoro-js is an optional dependency
       const mod = await import('kokoro-js');
@@ -621,7 +654,9 @@ export class MultimodalManager {
     const tmpFile = path.join(os.tmpdir(), `kokoro_${Date.now()}.wav`);
 
     try {
-      const tts = await KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-v1.0', { dtype: 'q8' });
+      const tts = await KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-v1.0', {
+        dtype: 'q8',
+      });
       const audio = await tts.generate(request.text, { voice });
       await audio.save(tmpFile);
       const buf = await fs.readFile(tmpFile);
@@ -776,23 +811,20 @@ export class MultimodalManager {
     };
     const encoding = encodingMap[request.format ?? 'wav'] ?? 'LINEAR16';
 
-    const res = await fetch(
-      `https://speech.googleapis.com/v1/speech:recognize?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          config: {
-            encoding,
-            languageCode: request.language ?? 'en-US',
-            model: process.env.GOOGLE_STT_MODEL ?? 'latest_long',
-            enableAutomaticPunctuation: true,
-          },
-          audio: { content: request.audioBase64 },
-        }),
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      }
-    );
+    const res = await fetch(`https://speech.googleapis.com/v1/speech:recognize?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        config: {
+          encoding,
+          languageCode: request.language ?? 'en-US',
+          model: process.env.GOOGLE_STT_MODEL ?? 'latest_long',
+          enableAutomaticPunctuation: true,
+        },
+        audio: { content: request.audioBase64 },
+      }),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
     if (!res.ok) {
       const err = await res.text();
       throw new Error(`Google STT error (${res.status}): ${err}`);
@@ -810,7 +842,8 @@ export class MultimodalManager {
   ): Promise<{ text: string; language?: string }> {
     const speechKey = process.env.SPEECH_KEY;
     const region = process.env.SPEECH_REGION;
-    if (!speechKey || !region) throw new Error('SPEECH_KEY and SPEECH_REGION are required for Azure STT');
+    if (!speechKey || !region)
+      throw new Error('SPEECH_KEY and SPEECH_REGION are required for Azure STT');
 
     const language = request.language ?? 'en-US';
     const audioBuffer = Buffer.from(request.audioBase64, 'base64');
@@ -820,7 +853,8 @@ export class MultimodalManager {
       ogg: 'audio/ogg; codec=opus',
       webm: 'audio/webm; codec=opus',
     };
-    const contentType = formatMap[request.format ?? 'wav'] ?? 'audio/wav; codec=audio/pcm; samplerate=16000';
+    const contentType =
+      formatMap[request.format ?? 'wav'] ?? 'audio/wav; codec=audio/pcm; samplerate=16000';
 
     const res = await fetch(
       `https://${region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=${language}`,
@@ -907,7 +941,8 @@ export class MultimodalManager {
         description = data.choices[0]?.message?.content ?? '';
       } else if (provider === 'gemini') {
         const apiKey = process.env.GOOGLE_API_KEY ?? process.env.GEMINI_API_KEY;
-        if (!apiKey) throw new Error('GOOGLE_API_KEY or GEMINI_API_KEY environment variable is not set');
+        if (!apiKey)
+          throw new Error('GOOGLE_API_KEY or GEMINI_API_KEY environment variable is not set');
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
         const body = {
           contents: [
@@ -1134,7 +1169,10 @@ export class MultimodalManager {
               throw new Error(`TTS API error (${response.status}): ${errBody}`);
             }
             const arrayBuffer = await response.arrayBuffer();
-            return { audioBase64: Buffer.from(arrayBuffer).toString('base64'), format: request.responseFormat };
+            return {
+              audioBase64: Buffer.from(arrayBuffer).toString('base64'),
+              format: request.responseFormat,
+            };
           }
         }
       };
@@ -1187,7 +1225,17 @@ export class MultimodalManager {
       let buffer: Buffer;
       let format: string;
 
-      const OTHER_PROVIDERS = ['voicebox', 'elevenlabs', 'deepgram', 'cartesia', 'google', 'azure', 'playht', 'openedai', 'kokoro'];
+      const OTHER_PROVIDERS = [
+        'voicebox',
+        'elevenlabs',
+        'deepgram',
+        'cartesia',
+        'google',
+        'azure',
+        'playht',
+        'openedai',
+        'kokoro',
+      ];
 
       if (!OTHER_PROVIDERS.includes(provider)) {
         // OpenAI (default): fetch binary directly — no base64 roundtrip
@@ -1218,16 +1266,35 @@ export class MultimodalManager {
         // All other providers: use their existing base64-returning methods
         let b64result: { audioBase64: string; format: string };
         switch (provider) {
-          case 'voicebox': b64result = await this.synthesizeViaVoicebox(request); break;
-          case 'elevenlabs': b64result = await this.synthesizeViaElevenLabs(request); break;
-          case 'deepgram': b64result = await this.synthesizeViaDeepgram(request); break;
-          case 'cartesia': b64result = await this.synthesizeViaCartesia(request); break;
-          case 'google': b64result = await this.synthesizeViaGoogle(request); break;
-          case 'azure': b64result = await this.synthesizeViaAzure(request); break;
-          case 'playht': b64result = await this.synthesizeViaPlayHT(request); break;
-          case 'openedai': b64result = await this.synthesizeViaOpenedAI(request); break;
-          case 'kokoro': b64result = await this.synthesizeViaKokoro(request); break;
-          default: throw new Error(`Unknown TTS provider: ${provider}`);
+          case 'voicebox':
+            b64result = await this.synthesizeViaVoicebox(request);
+            break;
+          case 'elevenlabs':
+            b64result = await this.synthesizeViaElevenLabs(request);
+            break;
+          case 'deepgram':
+            b64result = await this.synthesizeViaDeepgram(request);
+            break;
+          case 'cartesia':
+            b64result = await this.synthesizeViaCartesia(request);
+            break;
+          case 'google':
+            b64result = await this.synthesizeViaGoogle(request);
+            break;
+          case 'azure':
+            b64result = await this.synthesizeViaAzure(request);
+            break;
+          case 'playht':
+            b64result = await this.synthesizeViaPlayHT(request);
+            break;
+          case 'openedai':
+            b64result = await this.synthesizeViaOpenedAI(request);
+            break;
+          case 'kokoro':
+            b64result = await this.synthesizeViaKokoro(request);
+            break;
+          default:
+            throw new Error(`Unknown TTS provider: ${provider}`);
         }
         buffer = Buffer.from(b64result.audioBase64, 'base64');
         format = b64result.format;

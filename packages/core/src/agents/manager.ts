@@ -418,7 +418,7 @@ export class SubAgentManager {
               // Ensure the schema always has type:'object' — the Anthropic API
               // rejects tool input_schemas that are missing the type property,
               // which happens when inputSchema is registered as an empty {} object.
-              const raw = (t.inputSchema ?? {}) as Record<string, unknown>;
+              const raw = t.inputSchema ?? {};
               const parameters: Tool['parameters'] = raw.type
                 ? (raw as Tool['parameters'])
                 : { type: 'object', properties: {}, ...(raw as object) };

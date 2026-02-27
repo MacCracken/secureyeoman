@@ -12,11 +12,7 @@ import type { SwarmManager } from '../agents/swarm-manager.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import { WorkflowStorage } from './workflow-storage.js';
 import { OutputSchemaValidator } from '../security/output-schema-validator.js';
-import type {
-  WorkflowDefinition,
-  WorkflowRun,
-  WorkflowStep,
-} from '@secureyeoman/shared';
+import type { WorkflowDefinition, WorkflowRun, WorkflowStep } from '@secureyeoman/shared';
 
 const _outputSchemaValidator = new OutputSchemaValidator();
 
@@ -64,7 +60,7 @@ export class WorkflowEngine {
 
     const ctx: WorkflowEngineContext = {
       steps: {},
-      input: (run.input as Record<string, unknown>) ?? {},
+      input: run.input! ?? {},
     };
 
     try {
@@ -151,9 +147,9 @@ export class WorkflowEngine {
         const condResult = this.evaluateCondition(step.condition, ctx);
         if (!condResult) {
           ctx.steps[stepId] = { output: null, status: 'skipped' };
-          await this.storage.createStepRun(runId, step.id, step.name, step.type).then((sr) =>
-            this.storage.updateStepRun(sr.id, { status: 'skipped' })
-          );
+          await this.storage
+            .createStepRun(runId, step.id, step.name, step.type)
+            .then((sr) => this.storage.updateStepRun(sr.id, { status: 'skipped' }));
           return;
         }
       } catch {
@@ -281,11 +277,8 @@ export class WorkflowEngine {
 
   // ── Step Dispatchers ──────────────────────────────────────────
 
-  private async dispatchStep(
-    step: WorkflowStep,
-    ctx: WorkflowEngineContext
-  ): Promise<unknown> {
-    const cfg = step.config as Record<string, unknown>;
+  private async dispatchStep(step: WorkflowStep, ctx: WorkflowEngineContext): Promise<unknown> {
+    const cfg = step.config;
 
     switch (step.type) {
       case 'agent': {
@@ -328,7 +321,11 @@ export class WorkflowEngine {
         // Log resource write intent — actual BrainManager wiring is optional
         const resourceType = String(cfg.resourceType ?? 'memory');
         const data = this.resolveTemplate(String(cfg.dataTemplate ?? ''), ctx);
-        this.logger.info('Workflow resource step', { resourceType, stepId: step.id, dataLength: data.length });
+        this.logger.info('Workflow resource step', {
+          resourceType,
+          stepId: step.id,
+          dataLength: data.length,
+        });
         return { resourceType, data };
       }
 

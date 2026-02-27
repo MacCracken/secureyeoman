@@ -79,7 +79,10 @@ function AddPrefForm({ onSave, saving }: AddPrefFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 p-4 border border-dashed border-border rounded-md bg-muted/30">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-3 p-4 border border-dashed border-border rounded-md bg-muted/30"
+    >
       <h4 className="text-sm font-medium flex items-center gap-2">
         <Plus className="w-4 h-4" />
         Add Notification Channel
@@ -90,7 +93,9 @@ function AddPrefForm({ onSave, saving }: AddPrefFormProps) {
           <label className="block text-xs text-muted-foreground mb-1">Channel</label>
           <select
             value={channel}
-            onChange={(e) => setChannel(e.target.value as typeof channel)}
+            onChange={(e) => {
+              setChannel(e.target.value as typeof channel);
+            }}
             className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background"
           >
             <option value="telegram">Telegram</option>
@@ -107,7 +112,9 @@ function AddPrefForm({ onSave, saving }: AddPrefFormProps) {
           <input
             type="text"
             value={chatId}
-            onChange={(e) => setChatId(e.target.value)}
+            onChange={(e) => {
+              setChatId(e.target.value);
+            }}
             placeholder={channel === 'email' ? 'you@example.com' : '@channelusername or -100...'}
             className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background"
             required
@@ -115,12 +122,12 @@ function AddPrefForm({ onSave, saving }: AddPrefFormProps) {
         </div>
 
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">
-            Minimum level
-          </label>
+          <label className="block text-xs text-muted-foreground mb-1">Minimum level</label>
           <select
             value={minLevel}
-            onChange={(e) => setMinLevel(e.target.value as typeof minLevel)}
+            onChange={(e) => {
+              setMinLevel(e.target.value as typeof minLevel);
+            }}
             className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background"
           >
             <option value="info">Info and above</option>
@@ -137,7 +144,9 @@ function AddPrefForm({ onSave, saving }: AddPrefFormProps) {
           <input
             type="text"
             value={integrationId}
-            onChange={(e) => setIntegrationId(e.target.value)}
+            onChange={(e) => {
+              setIntegrationId(e.target.value);
+            }}
             placeholder="Leave blank to auto-select"
             className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background"
           />
@@ -152,7 +161,9 @@ function AddPrefForm({ onSave, saving }: AddPrefFormProps) {
             min={0}
             max={23}
             value={quietStart}
-            onChange={(e) => setQuietStart(e.target.value)}
+            onChange={(e) => {
+              setQuietStart(e.target.value);
+            }}
             placeholder="e.g. 22"
             className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background"
           />
@@ -167,7 +178,9 @@ function AddPrefForm({ onSave, saving }: AddPrefFormProps) {
             min={0}
             max={23}
             value={quietEnd}
-            onChange={(e) => setQuietEnd(e.target.value)}
+            onChange={(e) => {
+              setQuietEnd(e.target.value);
+            }}
             placeholder="e.g. 8"
             className="w-full text-sm border border-border rounded px-2 py-1.5 bg-background"
           />
@@ -226,7 +239,9 @@ export function NotificationPrefsPanel() {
           <h3 className="font-medium">Notification Channels</h3>
         </div>
         <button
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            setShowForm((v) => !v);
+          }}
           className="btn btn-ghost btn-sm flex items-center gap-1"
         >
           <Plus className="w-4 h-4" />
@@ -237,7 +252,9 @@ export function NotificationPrefsPanel() {
       <div className="p-4 space-y-4">
         {showForm && (
           <AddPrefForm
-            onSave={(body) => createMut.mutate(body)}
+            onSave={(body) => {
+              createMut.mutate(body);
+            }}
             saving={createMut.isPending}
           />
         )}
@@ -263,7 +280,11 @@ export function NotificationPrefsPanel() {
                       </span>
                       {(pref.quietHoursStart != null || pref.quietHoursEnd != null) && (
                         <span className="text-xs text-muted-foreground">
-                          · Quiet: <QuietHoursDisplay start={pref.quietHoursStart} end={pref.quietHoursEnd} />
+                          · Quiet:{' '}
+                          <QuietHoursDisplay
+                            start={pref.quietHoursStart}
+                            end={pref.quietHoursEnd}
+                          />
                         </span>
                       )}
                       {pref.integrationId && (
@@ -278,7 +299,9 @@ export function NotificationPrefsPanel() {
                 <div className="flex items-center gap-2 shrink-0">
                   {/* Enabled toggle */}
                   <button
-                    onClick={() => toggleMut.mutate({ id: pref.id, enabled: !pref.enabled })}
+                    onClick={() => {
+                      toggleMut.mutate({ id: pref.id, enabled: !pref.enabled });
+                    }}
                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
                       pref.enabled ? 'bg-primary' : 'bg-muted-foreground/30'
                     }`}
@@ -293,7 +316,9 @@ export function NotificationPrefsPanel() {
                   </button>
 
                   <button
-                    onClick={() => deleteMut.mutate(pref.id)}
+                    onClick={() => {
+                      deleteMut.mutate(pref.id);
+                    }}
                     disabled={deleteMut.isPending}
                     className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                     title="Delete"

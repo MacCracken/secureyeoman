@@ -6,7 +6,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { UserNotificationPrefsStorage, type UserNotificationPref } from './user-notification-prefs-storage.js';
+import {
+  UserNotificationPrefsStorage,
+  type UserNotificationPref,
+} from './user-notification-prefs-storage.js';
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -139,9 +142,11 @@ describe('UserNotificationPrefsStorage.upsert()', () => {
 
   it('passes all fields to the INSERT query', async () => {
     const storage = new UserNotificationPrefsStorage();
-    const spy = vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(
-      makeRow({ channel: 'slack', chat_id: '#alerts', quiet_hours_start: 22, quiet_hours_end: 8 })
-    );
+    const spy = vi
+      .spyOn(storage as any, 'queryOne')
+      .mockResolvedValueOnce(
+        makeRow({ channel: 'slack', chat_id: '#alerts', quiet_hours_start: 22, quiet_hours_end: 8 })
+      );
 
     await storage.upsert('user-1', {
       channel: 'slack',
@@ -211,7 +216,12 @@ describe('row mapping', () => {
   it('maps camelCase fields from snake_case row', async () => {
     const storage = new UserNotificationPrefsStorage();
     vi.spyOn(storage as any, 'queryMany').mockResolvedValueOnce([
-      makeRow({ integration_id: 'integ-abc', quiet_hours_start: 22, quiet_hours_end: 8, min_level: 'error' }),
+      makeRow({
+        integration_id: 'integ-abc',
+        quiet_hours_start: 22,
+        quiet_hours_end: 8,
+        min_level: 'error',
+      }),
     ]);
 
     const [pref] = await storage.list('user-1');

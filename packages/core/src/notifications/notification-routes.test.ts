@@ -66,57 +66,43 @@ describe('GET /api/v1/notifications', () => {
   it('passes unreadOnly=true to manager when queried', async () => {
     const { app, mgr } = buildApp();
     await app.inject({ method: 'GET', url: '/api/v1/notifications?unreadOnly=true' });
-    expect(mgr.list).toHaveBeenCalledWith(
-      expect.objectContaining({ unreadOnly: true })
-    );
+    expect(mgr.list).toHaveBeenCalledWith(expect.objectContaining({ unreadOnly: true }));
   });
 
   it('caps limit at 100', async () => {
     const { app, mgr } = buildApp();
     await app.inject({ method: 'GET', url: '/api/v1/notifications?limit=999' });
-    expect(mgr.list).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 100 })
-    );
+    expect(mgr.list).toHaveBeenCalledWith(expect.objectContaining({ limit: 100 }));
   });
 
   it('uses default limit=50 when not provided', async () => {
     const { app, mgr } = buildApp();
     await app.inject({ method: 'GET', url: '/api/v1/notifications' });
-    expect(mgr.list).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 50, offset: 0 })
-    );
+    expect(mgr.list).toHaveBeenCalledWith(expect.objectContaining({ limit: 50, offset: 0 }));
   });
 
   it('accepts unreadOnly=1 as truthy', async () => {
     const { app, mgr } = buildApp();
     await app.inject({ method: 'GET', url: '/api/v1/notifications?unreadOnly=1' });
-    expect(mgr.list).toHaveBeenCalledWith(
-      expect.objectContaining({ unreadOnly: true })
-    );
+    expect(mgr.list).toHaveBeenCalledWith(expect.objectContaining({ unreadOnly: true }));
   });
 
   it('uses default limit=50 when limit is non-numeric', async () => {
     const { app, mgr } = buildApp();
     await app.inject({ method: 'GET', url: '/api/v1/notifications?limit=abc' });
-    expect(mgr.list).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 50 })
-    );
+    expect(mgr.list).toHaveBeenCalledWith(expect.objectContaining({ limit: 50 }));
   });
 
   it('passes offset query param to manager', async () => {
     const { app, mgr } = buildApp();
     await app.inject({ method: 'GET', url: '/api/v1/notifications?offset=20' });
-    expect(mgr.list).toHaveBeenCalledWith(
-      expect.objectContaining({ offset: 20 })
-    );
+    expect(mgr.list).toHaveBeenCalledWith(expect.objectContaining({ offset: 20 }));
   });
 
   it('uses default offset=0 when offset is non-numeric', async () => {
     const { app, mgr } = buildApp();
     await app.inject({ method: 'GET', url: '/api/v1/notifications?offset=abc' });
-    expect(mgr.list).toHaveBeenCalledWith(
-      expect.objectContaining({ offset: 0 })
-    );
+    expect(mgr.list).toHaveBeenCalledWith(expect.objectContaining({ offset: 0 }));
   });
 
   it('returns 500 on storage error', async () => {

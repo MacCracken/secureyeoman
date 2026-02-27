@@ -287,7 +287,9 @@ class TuiRenderer {
     if (msg.thinkingContent && msg.role === 'assistant') {
       const words = msg.thinkingContent.trim().split(/\s+/).filter(Boolean).length;
       const border = '─'.repeat(Math.min(maxWidth - 4, 40));
-      lines.push(`${A.dim}┌─ Thinking (${words} words) ─${border.slice(0, Math.max(0, maxWidth - 22 - String(words).length))}┐${A.reset}`);
+      lines.push(
+        `${A.dim}┌─ Thinking (${words} words) ─${border.slice(0, Math.max(0, maxWidth - 22 - String(words).length))}┐${A.reset}`
+      );
       const thinkLines = msg.thinkingContent.split('\n').slice(0, 6);
       for (const tl of thinkLines) {
         const truncated = tl.length > maxWidth - 4 ? tl.slice(0, maxWidth - 5) + '…' : tl;
@@ -521,7 +523,11 @@ Options:
 
         if (!res.ok || !res.body) {
           renderer.setThinking(false);
-          renderer.addMessage({ role: 'error', content: `Request failed: ${res.status}`, timestamp: now() });
+          renderer.addMessage({
+            role: 'error',
+            content: `Request failed: ${res.status}`,
+            timestamp: now(),
+          });
           return;
         }
 
@@ -541,7 +547,11 @@ Options:
             const json = line.slice(6).trim();
             if (!json) continue;
             let event: Record<string, unknown>;
-            try { event = JSON.parse(json); } catch { continue; }
+            try {
+              event = JSON.parse(json);
+            } catch {
+              continue;
+            }
 
             const type = event.type as string;
             if (type === 'thinking_delta') {
@@ -550,13 +560,18 @@ Options:
               contentAcc += event.content as string;
               renderer.setThinking(false);
             } else if (type === 'tool_start' || type === 'mcp_tool_start') {
-              const label = type === 'mcp_tool_start'
-                ? `${event.serverName as string}: ${event.toolName as string}`
-                : (event.label as string) ?? (event.toolName as string);
-              renderer.addMessage({ role: 'system', content: `  ⚙ Using ${label}…`, timestamp: now() });
+              const label =
+                type === 'mcp_tool_start'
+                  ? `${event.serverName as string}: ${event.toolName as string}`
+                  : ((event.label as string) ?? (event.toolName as string));
+              renderer.addMessage({
+                role: 'system',
+                content: `  ⚙ Using ${label}…`,
+                timestamp: now(),
+              });
               renderer.render();
             } else if (type === 'done') {
-              const data = event as Record<string, unknown>;
+              const data = event;
               if (data.conversationId) conversationId = data.conversationId as string;
               renderer.setThinking(false);
               renderer.addMessage({
@@ -568,7 +583,11 @@ Options:
               renderer.render();
             } else if (type === 'error') {
               renderer.setThinking(false);
-              renderer.addMessage({ role: 'error', content: `Error: ${event.message as string}`, timestamp: now() });
+              renderer.addMessage({
+                role: 'error',
+                content: `Error: ${event.message as string}`,
+                timestamp: now(),
+              });
               renderer.render();
             }
           }

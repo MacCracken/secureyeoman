@@ -135,7 +135,8 @@ describe('ResponseGuard — pattern: base64_exfiltration', () => {
   const guard = makeGuard('warn');
 
   it('detects ≥80 continuous base64 chars', () => {
-    const b64 = 'SGVsbG8gV29ybGQhIFRoaXMgaXMgYSBsb25nIGJhc2U2NCBzdHJpbmcgZm9yIHRlc3RpbmcgcHVycG9zZXMh';
+    const b64 =
+      'SGVsbG8gV29ybGQhIFRoaXMgaXMgYSBsb25nIGJhc2U2NCBzdHJpbmcgZm9yIHRlc3RpbmcgcHVycG9zZXMh';
     expect(b64.length).toBeGreaterThanOrEqual(80);
     const result = guard.scan(`Data: ${b64}`);
     const finding = result.findings.find((f) => f.patternName === 'base64_exfiltration');
@@ -184,42 +185,36 @@ describe('ResponseGuard — checkBrainConsistency', () => {
   });
 
   it('flags memory denial when memoriesUsed > 0', () => {
-    const warnings = guard.checkBrainConsistency(
-      'I have no memory of that conversation.',
-      { memoriesUsed: 3 }
-    );
+    const warnings = guard.checkBrainConsistency('I have no memory of that conversation.', {
+      memoriesUsed: 3,
+    });
     expect(warnings.some((w) => w.type === 'memory_denial')).toBe(true);
   });
 
   it('flags factual negation when response contains "not [claimed name]"', () => {
-    const warnings = guard.checkBrainConsistency(
-      'My name is not Aria, I have no name.',
-      { contextSnippets: ['My name is Aria'] }
-    );
+    const warnings = guard.checkBrainConsistency('My name is not Aria, I have no name.', {
+      contextSnippets: ['My name is Aria'],
+    });
     expect(warnings.some((w) => w.type === 'factual_negation')).toBe(true);
   });
 
   it('returns no warnings on clean response with matching identity', () => {
-    const warnings = guard.checkBrainConsistency(
-      'Hello! I am Aria and I am here to help you.',
-      { contextSnippets: ['I am Aria, your helpful assistant.'], memoriesUsed: 2 }
-    );
+    const warnings = guard.checkBrainConsistency('Hello! I am Aria and I am here to help you.', {
+      contextSnippets: ['I am Aria, your helpful assistant.'],
+      memoriesUsed: 2,
+    });
     expect(warnings).toHaveLength(0);
   });
 
   it('returns no warnings when memoriesUsed is 0 and "no memory" is in response', () => {
-    const warnings = guard.checkBrainConsistency(
-      'I have no memory of that.',
-      { memoriesUsed: 0 }
-    );
+    const warnings = guard.checkBrainConsistency('I have no memory of that.', { memoriesUsed: 0 });
     expect(warnings.filter((w) => w.type === 'memory_denial')).toHaveLength(0);
   });
 
   it('returns no warnings when contextSnippets is empty', () => {
-    const warnings = guard.checkBrainConsistency(
-      'I am not anyone, I am just an assistant.',
-      { contextSnippets: [] }
-    );
+    const warnings = guard.checkBrainConsistency('I am not anyone, I am just an assistant.', {
+      contextSnippets: [],
+    });
     expect(warnings).toHaveLength(0);
   });
 });

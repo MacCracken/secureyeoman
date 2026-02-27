@@ -87,11 +87,16 @@ describe('quickbooks-tools', () => {
     const config = makeConfig({ exposeQuickBooksTools: false });
     registerQuickBooksTools(server, config, noopMiddleware());
 
-    const tools = (server as unknown as { _tools: Map<string, { handler: (args: unknown) => Promise<unknown> }> })._tools;
+    const tools = (
+      server as unknown as { _tools: Map<string, { handler: (args: unknown) => Promise<unknown> }> }
+    )._tools;
     const health = tools?.get('qbo_health');
     if (!health) return; // registration method varies by SDK version
 
-    const result = await health.handler({}) as { content: Array<{ text: string }>; isError?: boolean };
+    const result = (await health.handler({})) as {
+      content: Array<{ text: string }>;
+      isError?: boolean;
+    };
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toMatch(/disabled/i);
   });
@@ -107,8 +112,17 @@ describe('quickbooks-tools', () => {
 
     const registered = spy.mock.calls.map((c) => c[0] as string);
     const entities = [
-      'account', 'bill', 'billpayment', 'customer', 'employee',
-      'estimate', 'invoice', 'item', 'journalentry', 'purchase', 'vendor',
+      'account',
+      'bill',
+      'billpayment',
+      'customer',
+      'employee',
+      'estimate',
+      'invoice',
+      'item',
+      'journalentry',
+      'purchase',
+      'vendor',
     ];
     for (const e of entities) {
       for (const op of ['create', 'get', 'search', 'update']) {

@@ -198,8 +198,8 @@ beforeEach(() => {
     allowExperiments: false,
     allowStorybook: false,
     allowMultimodal: false,
-      allowDesktopControl: false,
-      allowCamera: false,
+    allowDesktopControl: false,
+    allowCamera: false,
     allowDynamicTools: false,
     sandboxDynamicTools: false,
     allowAnomalyDetection: false,
@@ -213,8 +213,8 @@ beforeEach(() => {
     allowTwingate: false,
     allowOrgIntent: false,
     allowIntentEditor: false,
-      allowCodeEditor: true,
-      allowAdvancedEditor: false,
+    allowCodeEditor: true,
+    allowAdvancedEditor: false,
   });
 });
 
@@ -385,8 +385,8 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
-    allowNetworkTools: false,
-    allowNetBoxWrite: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
       allowTwingate: false,
@@ -399,7 +399,9 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
     renderComponent();
     await openResourcesOrchestration(user);
 
-    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all orchestration/i });
+    const enableAllToggle = await screen.findByRole('checkbox', {
+      name: /enable all orchestration/i,
+    });
     await user.click(enableAllToggle);
 
     // Sub-Agent Delegation must be enabled before A2A sub-toggle appears
@@ -431,8 +433,8 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
-    allowNetworkTools: false,
-    allowNetBoxWrite: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
       allowTwingate: false,
@@ -445,7 +447,9 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
     renderComponent();
     await openResourcesOrchestration(user);
 
-    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all orchestration/i });
+    const enableAllToggle = await screen.findByRole('checkbox', {
+      name: /enable all orchestration/i,
+    });
     await user.click(enableAllToggle);
 
     const swarmsToggle = await screen.findByRole('checkbox', { name: /agent swarms/i });
@@ -472,8 +476,8 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
-    allowNetworkTools: false,
-    allowNetBoxWrite: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
       allowTwingate: false,
@@ -486,7 +490,9 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
     renderComponent();
     await openResourcesOrchestration(user);
 
-    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all orchestration/i });
+    const enableAllToggle = await screen.findByRole('checkbox', {
+      name: /enable all orchestration/i,
+    });
     await user.click(enableAllToggle);
 
     const a2aToggle = await screen.findByRole('checkbox', { name: /a2a networks/i });
@@ -513,8 +519,8 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
-    allowNetworkTools: false,
-    allowNetBoxWrite: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
       allowTwingate: false,
@@ -527,7 +533,9 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
     renderComponent();
     await openResourcesOrchestration(user);
 
-    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all orchestration/i });
+    const enableAllToggle = await screen.findByRole('checkbox', {
+      name: /enable all orchestration/i,
+    });
     await user.click(enableAllToggle);
 
     const swarmsToggle = await screen.findByRole('checkbox', { name: /agent swarms/i });
@@ -647,6 +655,8 @@ describe('PersonalityEditor — Organizational Intent toggle', () => {
 
     const toggle = await screen.findByRole('checkbox', { name: /organizational intent signal/i });
     expect(toggle).not.toBeDisabled();
-    expect(screen.getByText('Allow this personality to read live org intent signals')).toBeInTheDocument();
+    expect(
+      screen.getByText('Allow this personality to read live org intent signals')
+    ).toBeInTheDocument();
   });
 });

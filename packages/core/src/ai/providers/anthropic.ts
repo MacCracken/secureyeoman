@@ -131,25 +131,25 @@ export class AnthropicProvider extends BaseProvider {
       for await (const event of stream) {
         if (event.type === 'content_block_start') {
           const block = event.content_block as unknown as Record<string, unknown>;
-          if (block['type'] === 'tool_use') {
-            currentToolId = block['id'] as string;
-            currentToolName = block['name'] as string;
+          if (block.type === 'tool_use') {
+            currentToolId = block.id as string;
+            currentToolName = block.name as string;
             currentToolArgs = '';
             inThinkingBlock = false;
-          } else if (block['type'] === 'thinking') {
+          } else if (block.type === 'thinking') {
             inThinkingBlock = true;
           } else {
             inThinkingBlock = false;
           }
         } else if (event.type === 'content_block_delta') {
           const delta = event.delta as unknown as Record<string, unknown>;
-          if (delta['type'] === 'thinking_delta') {
-            yield { type: 'thinking_delta', thinking: (delta['thinking'] as string) ?? '' };
-          } else if (delta['type'] === 'text_delta') {
+          if (delta.type === 'thinking_delta') {
+            yield { type: 'thinking_delta', thinking: (delta.thinking as string) ?? '' };
+          } else if (delta.type === 'text_delta') {
             inThinkingBlock = false;
-            yield { type: 'content_delta', content: (delta['text'] as string) ?? '' };
-          } else if (delta['type'] === 'input_json_delta') {
-            currentToolArgs += (delta['partial_json'] as string) ?? '';
+            yield { type: 'content_delta', content: (delta.text as string) ?? '' };
+          } else if (delta.type === 'input_json_delta') {
+            currentToolArgs += (delta.partial_json as string) ?? '';
             yield {
               type: 'tool_call_delta',
               toolCall: { id: currentToolId, name: currentToolName },
@@ -166,15 +166,15 @@ export class AnthropicProvider extends BaseProvider {
           const doneThinkingBlocks: ThinkingBlock[] = [];
           for (const rawFinalBlock of finalMessage.content) {
             const fb = rawFinalBlock as unknown as Record<string, unknown>;
-            if (fb['type'] === 'tool_use') {
+            if (fb.type === 'tool_use') {
               doneToolCalls.push({
-                id: fb['id'] as string,
-                name: fb['name'] as string,
-                arguments: fb['input'] as Record<string, unknown>,
+                id: fb.id as string,
+                name: fb.name as string,
+                arguments: fb.input as Record<string, unknown>,
               });
-            } else if (fb['type'] === 'thinking') {
-              const thinking = fb['thinking'] as string;
-              const signature = (fb['signature'] as string | undefined) ?? '';
+            } else if (fb.type === 'thinking') {
+              const thinking = fb.thinking as string;
+              const signature = (fb.signature as string | undefined) ?? '';
               doneThinkingBlocks.push({ thinking, signature });
             }
           }
@@ -275,17 +275,17 @@ export class AnthropicProvider extends BaseProvider {
 
     for (const rawBlock of response.content) {
       const block = rawBlock as unknown as Record<string, unknown>;
-      if (block['type'] === 'text') {
-        content += block['text'] as string;
-      } else if (block['type'] === 'tool_use') {
+      if (block.type === 'text') {
+        content += block.text as string;
+      } else if (block.type === 'tool_use') {
         toolCalls.push({
-          id: block['id'] as string,
-          name: block['name'] as string,
-          arguments: block['input'] as Record<string, unknown>,
+          id: block.id as string,
+          name: block.name as string,
+          arguments: block.input as Record<string, unknown>,
         });
-      } else if (block['type'] === 'thinking') {
-        const thinking = block['thinking'] as string;
-        const signature = (block['signature'] as string | undefined) ?? '';
+      } else if (block.type === 'thinking') {
+        const thinking = block.thinking as string;
+        const signature = (block.signature as string | undefined) ?? '';
         thinkingText += thinking;
         thinkingBlocks.push({ thinking, signature });
       }

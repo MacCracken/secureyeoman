@@ -76,7 +76,9 @@ function createMockStorage(): BrainStorage {
     queryKnowledgeBySimilarity: vi.fn(async () => []),
     updateMemoryEmbedding: vi.fn(async () => {}),
     updateKnowledgeEmbedding: vi.fn(async () => {}),
-    getMemoryBatch: vi.fn(async (ids: string[]) => ids.map((id) => makeMemory(id, `content for ${id}`))),
+    getMemoryBatch: vi.fn(async (ids: string[]) =>
+      ids.map((id) => makeMemory(id, `content for ${id}`))
+    ),
     queryMemoriesByRRF: vi.fn(async () => []),
     queryKnowledgeByRRF: vi.fn(async () => []),
     createChunks: vi.fn(async () => {}),

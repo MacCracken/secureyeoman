@@ -7,10 +7,7 @@
 
 import pg from 'pg';
 import { uuidv7 } from '../utils/crypto.js';
-import {
-  RiskAssessmentStorage,
-  type AssessmentResults,
-} from './risk-assessment-storage.js';
+import { RiskAssessmentStorage, type AssessmentResults } from './risk-assessment-storage.js';
 import { RiskReportGenerator } from './risk-assessment-report.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { TlsManager } from '../security/tls-manager.js';
@@ -91,10 +88,7 @@ export class RiskAssessmentManager {
 
   // ── Core ─────────────────────────────────────────────────────────────────────
 
-  async runAssessment(
-    opts: CreateRiskAssessment,
-    createdBy?: string
-  ): Promise<RiskAssessment> {
+  async runAssessment(opts: CreateRiskAssessment, createdBy?: string): Promise<RiskAssessment> {
     const assessment = await this.storage.create(opts, createdBy);
     await this.storage.updateStatus(assessment.id, 'running');
 
@@ -134,11 +128,11 @@ export class RiskAssessmentManager {
 
       // Composite score with domain weights
       const weights: Record<string, number> = {
-        security: 0.30,
+        security: 0.3,
         autonomy: 0.25,
-        governance: 0.20,
+        governance: 0.2,
         infrastructure: 0.15,
-        external: 0.10,
+        external: 0.1,
       };
 
       let weightedSum = 0;
@@ -153,9 +147,7 @@ export class RiskAssessmentManager {
         }
       }
 
-      const compositeScore = totalWeight > 0
-        ? Math.round(weightedSum / totalWeight)
-        : 0;
+      const compositeScore = totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 0;
 
       const riskLevel = scoreToLevel(compositeScore);
 
@@ -249,11 +241,21 @@ export class RiskAssessmentManager {
       for (const row of result.rows) {
         const n = Number(row.cnt);
         switch (row.event_type) {
-          case 'injection_attempt': injectionCount = n; break;
-          case 'sandbox_violation': sandboxCount = n; break;
-          case 'anomaly_detected': anomalyCount = n; break;
-          case 'auth_failure': authFailCount = n; break;
-          case 'secret_access': secretAccessCount = n; break;
+          case 'injection_attempt':
+            injectionCount = n;
+            break;
+          case 'sandbox_violation':
+            sandboxCount = n;
+            break;
+          case 'anomaly_detected':
+            anomalyCount = n;
+            break;
+          case 'auth_failure':
+            authFailCount = n;
+            break;
+          case 'secret_access':
+            secretAccessCount = n;
+            break;
         }
       }
     } catch {
@@ -285,7 +287,10 @@ export class RiskAssessmentManager {
 
     if (injectionCount > 0) {
       findings.push(
-        makeFinding('security', 'high', 'Injection Attempts Detected',
+        makeFinding(
+          'security',
+          'high',
+          'Injection Attempts Detected',
           `${injectionCount} injection attempt(s) detected in the last ${windowDays} days.`,
           { recommendation: 'Review audit log, enforce input validation.' }
         )
@@ -293,7 +298,10 @@ export class RiskAssessmentManager {
     }
     if (sandboxCount > 0) {
       findings.push(
-        makeFinding('security', 'critical', 'Sandbox Violations',
+        makeFinding(
+          'security',
+          'critical',
+          'Sandbox Violations',
           `${sandboxCount} sandbox violation(s) detected in the last ${windowDays} days.`,
           { recommendation: 'Investigate and tighten sandbox policies immediately.' }
         )
@@ -301,7 +309,10 @@ export class RiskAssessmentManager {
     }
     if (!chainValid) {
       findings.push(
-        makeFinding('security', 'critical', 'Audit Chain Integrity Compromised',
+        makeFinding(
+          'security',
+          'critical',
+          'Audit Chain Integrity Compromised',
           'The audit log chain verification failed. Evidence of tampering or corruption.',
           { recommendation: 'Investigate audit storage immediately and rotate signing key.' }
         )
@@ -309,7 +320,10 @@ export class RiskAssessmentManager {
     }
     if (authFailCount > 10) {
       findings.push(
-        makeFinding('security', 'medium', 'Elevated Authentication Failures',
+        makeFinding(
+          'security',
+          'medium',
+          'Elevated Authentication Failures',
           `${authFailCount} authentication failure(s) in the last ${windowDays} days.`,
           { recommendation: 'Enable brute-force protection and review account activity.' }
         )
@@ -317,7 +331,10 @@ export class RiskAssessmentManager {
     }
     if (secretAccessCount > 5) {
       findings.push(
-        makeFinding('security', 'high', 'Elevated Secret Access Events',
+        makeFinding(
+          'security',
+          'high',
+          'Elevated Secret Access Events',
           `${secretAccessCount} secret access events in the last ${windowDays} days.`,
           { recommendation: 'Audit secret access patterns and review least-privilege assignments.' }
         )
@@ -328,7 +345,14 @@ export class RiskAssessmentManager {
       score,
       riskLevel: scoreToLevel(score),
       findings,
-      metadata: { injectionCount, sandboxCount, anomalyCount, authFailCount, secretAccessCount, chainValid },
+      metadata: {
+        injectionCount,
+        sandboxCount,
+        anomalyCount,
+        authFailCount,
+        secretAccessCount,
+        chainValid,
+      },
     };
   }
 
@@ -387,7 +411,7 @@ export class RiskAssessmentManager {
           `SELECT items FROM autonomy.audit_runs WHERE status = 'completed' ORDER BY created_at DESC LIMIT 1`
         );
         if (latestRun.rows[0]?.items) {
-          const items = latestRun.rows[0].items as Array<{ status: string }>;
+          const items = latestRun.rows[0].items as { status: string }[];
           openItems = Array.isArray(items)
             ? items.filter((i) => i.status === 'pending' || i.status === 'fail').length
             : 0;
@@ -406,7 +430,10 @@ export class RiskAssessmentManager {
 
     for (let i = 0; i < l5NoStop; i++) {
       findings.push(
-        makeFinding('autonomy', 'critical', 'L5 Item Without Emergency Stop',
+        makeFinding(
+          'autonomy',
+          'critical',
+          'L5 Item Without Emergency Stop',
           'An L5 (fully autonomous) skill or workflow has no emergency stop procedure defined.',
           { recommendation: 'Define an emergency stop procedure for all L4/L5 items.' }
         )
@@ -414,7 +441,10 @@ export class RiskAssessmentManager {
     }
     for (let i = 0; i < l4NoStop; i++) {
       findings.push(
-        makeFinding('autonomy', 'critical', 'L4 Item Without Emergency Stop',
+        makeFinding(
+          'autonomy',
+          'critical',
+          'L4 Item Without Emergency Stop',
           'An L4 (supervised autonomous) skill or workflow has no emergency stop procedure defined.',
           { recommendation: 'Define an emergency stop procedure for all L4/L5 items.' }
         )
@@ -422,7 +452,10 @@ export class RiskAssessmentManager {
     }
     if (noAudit) {
       findings.push(
-        makeFinding('autonomy', 'high', 'No Completed Autonomy Audit',
+        makeFinding(
+          'autonomy',
+          'high',
+          'No Completed Autonomy Audit',
           'No completed autonomy audit runs exist. L3+ items have not been formally assessed.',
           { recommendation: 'Run an autonomy audit to assess all L3+ items.' }
         )
@@ -430,7 +463,10 @@ export class RiskAssessmentManager {
     }
     if (openItems > 0) {
       findings.push(
-        makeFinding('autonomy', 'medium', 'Incomplete Audit Checklist Items',
+        makeFinding(
+          'autonomy',
+          'medium',
+          'Incomplete Audit Checklist Items',
           `${openItems} checklist item(s) are pending or failed in the latest audit run.`,
           { recommendation: 'Review and resolve all open audit checklist items.' }
         )
@@ -489,7 +525,10 @@ export class RiskAssessmentManager {
 
     if (boundaryViolations > 0) {
       findings.push(
-        makeFinding('governance', 'critical', 'Hard Boundary Violations',
+        makeFinding(
+          'governance',
+          'critical',
+          'Hard Boundary Violations',
           `${boundaryViolations} hard boundary violation(s) in the last 30 days.`,
           { recommendation: 'Review org intent boundaries and retrain affected agents.' }
         )
@@ -497,7 +536,10 @@ export class RiskAssessmentManager {
     }
     if (noIntent) {
       findings.push(
-        makeFinding('governance', 'high', 'No Active Organizational Intent',
+        makeFinding(
+          'governance',
+          'high',
+          'No Active Organizational Intent',
           'No active org intent document found. Governance constraints are not enforced.',
           { recommendation: 'Create and activate an organizational intent document.' }
         )
@@ -506,7 +548,10 @@ export class RiskAssessmentManager {
     const weeklyPolicyRate = policyBlocks / (30 / 7);
     if (weeklyPolicyRate > 5) {
       findings.push(
-        makeFinding('governance', 'medium', 'Elevated Policy Block Rate',
+        makeFinding(
+          'governance',
+          'medium',
+          'Elevated Policy Block Rate',
           `Policy block rate is ${weeklyPolicyRate.toFixed(1)}/week (threshold: 5/week).`,
           { recommendation: 'Review policy configuration and agent permissions.' }
         )
@@ -537,21 +582,27 @@ export class RiskAssessmentManager {
         `SELECT COUNT(*) AS count FROM mcp.server_health WHERE status IN ('unhealthy', 'degraded')`
       );
       unhealthyMcp = Number(mcpResult.rows[0]?.count ?? 0);
-    } catch { /* table may not exist */ }
+    } catch {
+      /* table may not exist */
+    }
 
     try {
       const integResult = await this.pool.query<{ count: string }>(
         `SELECT COUNT(*) AS count FROM integrations WHERE status = 'disconnected'`
       );
       failedInteg = Number(integResult.rows[0]?.count ?? 0);
-    } catch { /* table may not exist */ }
+    } catch {
+      /* table may not exist */
+    }
 
     try {
       const peersResult = await this.pool.query<{ count: string }>(
         `SELECT COUNT(*) AS count FROM a2a.peers WHERE trust_level = 'untrusted' AND is_online = TRUE`
       );
       untrustedPeers = Number(peersResult.rows[0]?.count ?? 0);
-    } catch { /* table may not exist */ }
+    } catch {
+      /* table may not exist */
+    }
 
     try {
       const hbResult = await this.pool.query<{ count: string }>(
@@ -559,7 +610,9 @@ export class RiskAssessmentManager {
         [since24h]
       );
       heartbeatErrors = Number(hbResult.rows[0]?.count ?? 0);
-    } catch { /* table may not exist */ }
+    } catch {
+      /* table may not exist */
+    }
 
     // Check TLS cert expiry
     if (this.tlsManager) {
@@ -568,7 +621,9 @@ export class RiskAssessmentManager {
         if (certStatus.enabled && certStatus.daysUntilExpiry != null) {
           certExpiringSoon = certStatus.daysUntilExpiry <= 30;
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
 
     const mcpScore = clamp(unhealthyMcp * 15, 0, 30);
@@ -581,7 +636,10 @@ export class RiskAssessmentManager {
 
     if (unhealthyMcp > 0) {
       findings.push(
-        makeFinding('infrastructure', 'high', 'Unhealthy MCP Servers',
+        makeFinding(
+          'infrastructure',
+          'high',
+          'Unhealthy MCP Servers',
           `${unhealthyMcp} MCP server(s) are in unhealthy or degraded state.`,
           { recommendation: 'Investigate MCP server health and restart affected servers.' }
         )
@@ -589,7 +647,10 @@ export class RiskAssessmentManager {
     }
     if (failedInteg > 0) {
       findings.push(
-        makeFinding('infrastructure', 'medium', 'Disconnected Integrations',
+        makeFinding(
+          'infrastructure',
+          'medium',
+          'Disconnected Integrations',
           `${failedInteg} integration(s) are in disconnected state.`,
           { recommendation: 'Reconnect or remove stale integration configs.' }
         )
@@ -597,7 +658,10 @@ export class RiskAssessmentManager {
     }
     if (untrustedPeers > 0) {
       findings.push(
-        makeFinding('infrastructure', 'high', 'Online Untrusted A2A Peers',
+        makeFinding(
+          'infrastructure',
+          'high',
+          'Online Untrusted A2A Peers',
           `${untrustedPeers} untrusted A2A peer(s) are currently online.`,
           { recommendation: 'Review and approve or remove untrusted A2A peers.' }
         )
@@ -605,7 +669,10 @@ export class RiskAssessmentManager {
     }
     if (certExpiringSoon) {
       findings.push(
-        makeFinding('infrastructure', 'critical', 'TLS Certificate Expiring Soon',
+        makeFinding(
+          'infrastructure',
+          'critical',
+          'TLS Certificate Expiring Soon',
           'TLS certificate will expire within 30 days.',
           { recommendation: 'Renew the TLS certificate immediately.' }
         )
@@ -654,7 +721,10 @@ export class RiskAssessmentManager {
 
     if (criticalCount > 0) {
       findings.push(
-        makeFinding('external', 'critical', 'Critical External Findings Open',
+        makeFinding(
+          'external',
+          'critical',
+          'Critical External Findings Open',
           `${criticalCount} critical external finding(s) remain open.`,
           { recommendation: 'Immediately address all critical external findings.' }
         )
@@ -662,7 +732,10 @@ export class RiskAssessmentManager {
     }
     if (highCount > 0) {
       findings.push(
-        makeFinding('external', 'high', 'High External Findings Open',
+        makeFinding(
+          'external',
+          'high',
+          'High External Findings Open',
           `${highCount} high-severity external finding(s) remain open.`,
           { recommendation: 'Prioritize remediation of high-severity external findings.' }
         )
@@ -670,7 +743,10 @@ export class RiskAssessmentManager {
     }
     if (mediumCount > 0) {
       findings.push(
-        makeFinding('external', 'medium', 'Medium External Findings Open',
+        makeFinding(
+          'external',
+          'medium',
+          'Medium External Findings Open',
           `${mediumCount} medium-severity external finding(s) remain open.`,
           { recommendation: 'Schedule remediation within 30 days.' }
         )

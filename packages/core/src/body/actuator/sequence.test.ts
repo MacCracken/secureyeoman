@@ -37,85 +37,71 @@ describe('executeSequence', () => {
   });
 
   it('executes mouse_move step', async () => {
-    const result = await executeSequence([
-      { action: { type: 'mouse_move', x: 100, y: 200 } },
-    ]);
+    const result = await executeSequence([{ action: { type: 'mouse_move', x: 100, y: 200 } }]);
     expect(inputMod.moveMouse).toHaveBeenCalledWith(100, 200);
     expect(result.stepsCompleted).toBe(1);
   });
 
   it('executes mouse_click step with defaults', async () => {
-    await executeSequence([
-      { action: { type: 'mouse_click' } },
-    ]);
+    await executeSequence([{ action: { type: 'mouse_click' } }]);
     expect(inputMod.clickMouse).toHaveBeenCalledWith(undefined, undefined, 'left', false);
   });
 
   it('executes mouse_scroll step', async () => {
-    await executeSequence([
-      { action: { type: 'mouse_scroll', dx: 0, dy: -3 } },
-    ]);
+    await executeSequence([{ action: { type: 'mouse_scroll', dx: 0, dy: -3 } }]);
     expect(inputMod.scrollMouse).toHaveBeenCalledWith(0, -3);
   });
 
   it('executes type step', async () => {
-    await executeSequence([
-      { action: { type: 'type', text: 'hello world' } },
-    ]);
+    await executeSequence([{ action: { type: 'type', text: 'hello world' } }]);
     expect(inputMod.typeText).toHaveBeenCalledWith('hello world');
   });
 
   it('executes key_press step', async () => {
-    await executeSequence([
-      { action: { type: 'key_press', combo: 'ctrl+c' } },
-    ]);
+    await executeSequence([{ action: { type: 'key_press', combo: 'ctrl+c' } }]);
     expect(inputMod.pressKey).toHaveBeenCalledWith('ctrl+c');
   });
 
   it('executes key_release step', async () => {
-    await executeSequence([
-      { action: { type: 'key_release', combo: 'ctrl' } },
-    ]);
+    await executeSequence([{ action: { type: 'key_release', combo: 'ctrl' } }]);
     expect(inputMod.releaseKey).toHaveBeenCalledWith('ctrl');
   });
 
   it('executes clipboard_write step', async () => {
-    await executeSequence([
-      { action: { type: 'clipboard_write', text: 'copy this' } },
-    ]);
+    await executeSequence([{ action: { type: 'clipboard_write', text: 'copy this' } }]);
     expect(clipboardMod.writeClipboard).toHaveBeenCalledWith('copy this');
   });
 
   it('executes clipboard_read step and collects result', async () => {
-    const result = await executeSequence([
-      { action: { type: 'clipboard_read' } },
-    ]);
+    const result = await executeSequence([{ action: { type: 'clipboard_read' } }]);
     expect(result.clipboardReads).toEqual(['mocked clipboard']);
     expect(result.stepsCompleted).toBe(1);
   });
 
   it('executes wait step without calling input drivers', async () => {
     // Use a very short wait to keep tests fast
-    const result = await executeSequence([
-      { action: { type: 'wait', ms: 1 } },
-    ]);
+    const result = await executeSequence([{ action: { type: 'wait', ms: 1 } }]);
     expect(result.stepsCompleted).toBe(1);
     expect(inputMod.moveMouse).not.toHaveBeenCalled();
   });
 
   it('clamps wait to MAX_WAIT_MS (5000ms) without throwing', async () => {
     // Passing a very large wait — should clamp silently (we fake sleep so it's instant)
-    const result = await executeSequence([
-      { action: { type: 'wait', ms: 999_999 } },
-    ]);
+    const result = await executeSequence([{ action: { type: 'wait', ms: 999_999 } }]);
     expect(result.stepsCompleted).toBe(1);
   });
 
   it('executes multi-step sequence in order', async () => {
     const calls: string[] = [];
-    vi.mocked(inputMod.moveMouse).mockImplementation(async () => { calls.push('move'); });
-    vi.mocked(inputMod.typeText).mockImplementation(async () => { calls.push('type'); });
-    vi.mocked(clipboardMod.writeClipboard).mockImplementation(async () => { calls.push('write'); });
+    vi.mocked(inputMod.moveMouse).mockImplementation(async () => {
+      calls.push('move');
+    });
+    vi.mocked(inputMod.typeText).mockImplementation(async () => {
+      calls.push('type');
+    });
+    vi.mocked(clipboardMod.writeClipboard).mockImplementation(async () => {
+      calls.push('write');
+    });
 
     const result = await executeSequence([
       { action: { type: 'mouse_move', x: 0, y: 0 } },

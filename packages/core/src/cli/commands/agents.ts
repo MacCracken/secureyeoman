@@ -183,9 +183,7 @@ async function runToggle(
   const c = colorContext(ctx.stdout);
   const label = enable ? c.green('enabled') : c.red('disabled');
   ctx.stdout.write(`  ${feature} ${label}\n`);
-  ctx.stdout.write(
-    c.dim('  (runtime only — edit secureyeoman.yaml to persist across restarts)\n')
-  );
+  ctx.stdout.write(c.dim('  (runtime only — edit secureyeoman.yaml to persist across restarts)\n'));
   ctx.stdout.write('\n');
   return 0;
 }

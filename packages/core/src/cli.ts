@@ -84,8 +84,7 @@ router.registerLazy({
   aliases: ['int'],
   description: 'Manage integrations',
   usage: 'secureyeoman integration <action> [options]',
-  loader: () =>
-    import('./cli/commands/integration.js').then((m) => m.integrationCommand),
+  loader: () => import('./cli/commands/integration.js').then((m) => m.integrationCommand),
 });
 
 router.registerLazy({
@@ -99,16 +98,14 @@ router.registerLazy({
   name: 'extension',
   description: 'Manage lifecycle extension hooks',
   usage: 'secureyeoman extension <subcommand> [options]',
-  loader: () =>
-    import('./cli/commands/extension.js').then((m) => m.extensionCommand),
+  loader: () => import('./cli/commands/extension.js').then((m) => m.extensionCommand),
 });
 
 router.registerLazy({
   name: 'execute',
   description: 'Sandboxed code execution',
   usage: 'secureyeoman execute <subcommand> [options]',
-  loader: () =>
-    import('./cli/commands/execute.js').then((m) => m.executeCommand),
+  loader: () => import('./cli/commands/execute.js').then((m) => m.executeCommand),
 });
 
 router.registerLazy({
@@ -131,8 +128,7 @@ router.registerLazy({
   aliases: ['br'],
   description: 'Manage browser automation sessions',
   usage: 'secureyeoman browser <list|stats|config|session ID>',
-  loader: () =>
-    import('./cli/commands/browser.js').then((m) => m.browserCommand),
+  loader: () => import('./cli/commands/browser.js').then((m) => m.browserCommand),
 });
 
 router.registerLazy({
@@ -140,8 +136,7 @@ router.registerLazy({
   aliases: ['mem'],
   description: 'Manage vector memory and brain operations',
   usage: 'secureyeoman memory <search|memories|knowledge|stats|consolidate>',
-  loader: () =>
-    import('./cli/commands/memory.js').then((m) => m.memoryCommand),
+  loader: () => import('./cli/commands/memory.js').then((m) => m.memoryCommand),
 });
 
 router.registerLazy({
@@ -149,8 +144,7 @@ router.registerLazy({
   aliases: ['sc'],
   description: 'Manage web scraping and MCP web tools',
   usage: 'secureyeoman scraper <config|tools|servers>',
-  loader: () =>
-    import('./cli/commands/scraper.js').then((m) => m.scraperCommand),
+  loader: () => import('./cli/commands/scraper.js').then((m) => m.scraperCommand),
 });
 
 router.registerLazy({
@@ -158,8 +152,7 @@ router.registerLazy({
   aliases: ['mm'],
   description: 'Manage multimodal I/O operations (vision, audio, image generation)',
   usage: 'secureyeoman multimodal <config|jobs>',
-  loader: () =>
-    import('./cli/commands/multimodal.js').then((m) => m.multimodalCommand),
+  loader: () => import('./cli/commands/multimodal.js').then((m) => m.multimodalCommand),
 });
 
 router.registerLazy({
@@ -173,40 +166,35 @@ router.registerLazy({
   name: 'policy',
   description: 'View and manage the global security policy',
   usage: 'secureyeoman policy <action> [options]',
-  loader: () =>
-    import('./cli/commands/policy.js').then((m) => m.policyCommand),
+  loader: () => import('./cli/commands/policy.js').then((m) => m.policyCommand),
 });
 
 router.registerLazy({
   name: 'completion',
   description: 'Generate shell completion scripts',
   usage: 'secureyeoman completion <bash|zsh|fish>',
-  loader: () =>
-    import('./cli/commands/completion.js').then((m) => m.completionCommand),
+  loader: () => import('./cli/commands/completion.js').then((m) => m.completionCommand),
 });
 
 router.registerLazy({
   name: 'plugin',
   description: 'Manage integration plugins',
   usage: 'secureyeoman plugin <action> [options]',
-  loader: () =>
-    import('./cli/commands/plugin.js').then((m) => m.pluginCommand),
+  loader: () => import('./cli/commands/plugin.js').then((m) => m.pluginCommand),
 });
 
 router.registerLazy({
   name: 'mcp-server',
   description: 'Start the MCP (Model Context Protocol) server',
   usage: 'secureyeoman mcp-server [options]',
-  loader: () =>
-    import('./cli/commands/mcp-server.js').then((m) => m.mcpServerCommand),
+  loader: () => import('./cli/commands/mcp-server.js').then((m) => m.mcpServerCommand),
 });
 
 router.registerLazy({
   name: 'migrate',
   description: 'Run database migrations and exit',
   usage: 'secureyeoman migrate [--help]',
-  loader: () =>
-    import('./cli/commands/migrate.js').then((m) => m.migrateCommand),
+  loader: () => import('./cli/commands/migrate.js').then((m) => m.migrateCommand),
 });
 
 router.registerLazy({
@@ -214,8 +202,7 @@ router.registerLazy({
   aliases: ['sec'],
   description: 'Manage the Kali security toolkit container',
   usage: 'secureyeoman security <setup|teardown|update|status>',
-  loader: () =>
-    import('./cli/commands/security.js').then((m) => m.securityCommand),
+  loader: () => import('./cli/commands/security.js').then((m) => m.securityCommand),
 });
 
 router.registerLazy({
@@ -223,8 +210,7 @@ router.registerLazy({
   aliases: ['mcp-qbo'],
   description: 'Manage the QuickBooks Online MCP toolset',
   usage: 'secureyeoman mcp-quickbooks <status|enable|disable>',
-  loader: () =>
-    import('./cli/commands/mcp-quickbooks.js').then((m) => m.mcpQuickbooksCommand),
+  loader: () => import('./cli/commands/mcp-quickbooks.js').then((m) => m.mcpQuickbooksCommand),
 });
 
 router.registerLazy({
@@ -232,8 +218,7 @@ router.registerLazy({
   aliases: ['ag'],
   description: 'Manage the Agnostic QA sub-agent team Docker Compose stack',
   usage: 'secureyeoman agnostic <start|stop|status|logs|pull> [options]',
-  loader: () =>
-    import('./cli/commands/agnostic.js').then((m) => m.agnosticCommand),
+  loader: () => import('./cli/commands/agnostic.js').then((m) => m.agnosticCommand),
 });
 
 router.registerLazy({
@@ -248,8 +233,7 @@ router.registerLazy({
   name: 'agents',
   description: 'View and toggle agent feature flags (sub-agents, A2A, swarms)',
   usage: 'secureyeoman agents <status|enable|disable> [feature] [options]',
-  loader: () =>
-    import('./cli/commands/agents.js').then((m) => m.agentsCommand),
+  loader: () => import('./cli/commands/agents.js').then((m) => m.agentsCommand),
 });
 
 // ── Help command (eager — uses router directly) ────────────────────────────

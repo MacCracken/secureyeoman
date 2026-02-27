@@ -38,8 +38,7 @@ function buildCatalogEntry(s: {
   if (s.useWhen) entry += ` Use when: ${s.useWhen}.`;
   if (s.doNotUseWhen) entry += ` Don't use when: ${s.doNotUseWhen}.`;
   if (s.linkedWorkflowId) entry += ` Triggers workflow: ${s.linkedWorkflowId}.`;
-  if (s.routing === 'explicit')
-    entry += ` To perform ${s.name} tasks, use the ${s.name} skill.`;
+  if (s.routing === 'explicit') entry += ` To perform ${s.name} tasks, use the ${s.name} skill.`;
   return entry;
 }
 
@@ -89,7 +88,9 @@ describe('expandOutputDir', () => {
 
 describe('detectCredentials', () => {
   it('flags a Bearer token longer than 20 chars', () => {
-    const warnings = detectCredentials('Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9');
+    const warnings = detectCredentials(
+      'Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9'
+    );
     expect(warnings.length).toBeGreaterThan(0);
     expect(warnings[0]).toContain('Bearer token');
   });

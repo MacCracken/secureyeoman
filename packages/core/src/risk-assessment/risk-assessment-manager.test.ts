@@ -39,13 +39,36 @@ function makeStorage(overrides: Record<string, unknown> = {}) {
     list: vi.fn().mockResolvedValue({ items: [base], total: 1 }),
     updateStatus: vi.fn().mockResolvedValue(undefined),
     saveResults: vi.fn().mockResolvedValue({ ...base, status: 'completed' }),
-    createFeed: vi.fn().mockResolvedValue({ id: 'feed-1', name: 'Test Feed', sourceType: 'manual', category: 'cyber', enabled: true, recordCount: 0, createdAt: NOW, updatedAt: NOW }),
+    createFeed: vi.fn().mockResolvedValue({
+      id: 'feed-1',
+      name: 'Test Feed',
+      sourceType: 'manual',
+      category: 'cyber',
+      enabled: true,
+      recordCount: 0,
+      createdAt: NOW,
+      updatedAt: NOW,
+    }),
     listFeeds: vi.fn().mockResolvedValue([]),
     deleteFeed: vi.fn().mockResolvedValue(true),
     ingestFindings: vi.fn().mockResolvedValue({ created: 3, skipped: 1 }),
     listFindings: vi.fn().mockResolvedValue({ items: [], total: 0 }),
-    updateFindingStatus: vi.fn().mockResolvedValue({ id: 'finding-1', status: 'acknowledged', category: 'cyber', severity: 'high', title: 'Test', importedAt: NOW }),
-    createFinding: vi.fn().mockResolvedValue({ id: 'finding-1', status: 'open', category: 'cyber', severity: 'high', title: 'Test', importedAt: NOW }),
+    updateFindingStatus: vi.fn().mockResolvedValue({
+      id: 'finding-1',
+      status: 'acknowledged',
+      category: 'cyber',
+      severity: 'high',
+      title: 'Test',
+      importedAt: NOW,
+    }),
+    createFinding: vi.fn().mockResolvedValue({
+      id: 'finding-1',
+      status: 'open',
+      category: 'cyber',
+      severity: 'high',
+      title: 'Test',
+      importedAt: NOW,
+    }),
     getFeed: vi.fn().mockResolvedValue(null),
     updateFeed: vi.fn().mockResolvedValue(null),
     ...overrides,
@@ -84,12 +107,14 @@ function makeTlsManager(daysUntilExpiry: number | null = null) {
   };
 }
 
-function buildManager(opts: {
-  storageOverrides?: Record<string, unknown>;
-  poolResults?: Record<string, unknown>[][];
-  chainValid?: boolean;
-  daysUntilExpiry?: number | null;
-} = {}) {
+function buildManager(
+  opts: {
+    storageOverrides?: Record<string, unknown>;
+    poolResults?: Record<string, unknown>[][];
+    chainValid?: boolean;
+    daysUntilExpiry?: number | null;
+  } = {}
+) {
   const storage = makeStorage(opts.storageOverrides ?? {});
   const pool = makePool(opts.poolResults ?? []);
   const auditChain = makeAuditChain(opts.chainValid ?? true);
@@ -211,7 +236,10 @@ describe('RiskAssessmentManager', () => {
           [{ count: '0' }], // no audit runs
           [], // governance log
           [{ count: '1' }], // intent
-          [], [], [], [], // infra
+          [],
+          [],
+          [],
+          [], // infra
           [], // external
         ],
       });
@@ -312,7 +340,9 @@ describe('RiskAssessmentManager', () => {
       const saved = (storage.saveResults as any).mock.calls[0][1];
       expect(saved.domainScores.infrastructure).toBe(25);
       const findings = saved.findings as Array<{ domain: string; severity: string }>;
-      expect(findings.some((f) => f.domain === 'infrastructure' && f.severity === 'critical')).toBe(true);
+      expect(findings.some((f) => f.domain === 'infrastructure' && f.severity === 'critical')).toBe(
+        true
+      );
     });
 
     it('scores 0 when infrastructure is clean', async () => {
@@ -452,7 +482,9 @@ describe('RiskAssessmentManager', () => {
   describe('ingestFindings', () => {
     it('delegates to storage.ingestFindings', async () => {
       const { mgr, storage } = buildManager();
-      const result = await mgr.ingestFindings('feed-1', [{ category: 'cyber', severity: 'high', title: 'T' }] as any);
+      const result = await mgr.ingestFindings('feed-1', [
+        { category: 'cyber', severity: 'high', title: 'T' },
+      ] as any);
       expect(storage.ingestFindings).toHaveBeenCalledWith('feed-1', expect.any(Array));
       expect(result.created).toBe(3);
     });
@@ -462,7 +494,11 @@ describe('RiskAssessmentManager', () => {
     it('calls storage.updateFindingStatus with acknowledged', async () => {
       const { mgr, storage } = buildManager();
       await mgr.acknowledgeFinding('finding-1', 'alice');
-      expect(storage.updateFindingStatus).toHaveBeenCalledWith('finding-1', 'acknowledged', 'alice');
+      expect(storage.updateFindingStatus).toHaveBeenCalledWith(
+        'finding-1',
+        'acknowledged',
+        'alice'
+      );
     });
   });
 
@@ -545,7 +581,9 @@ describe('RiskReportGenerator', () => {
   it('generateCsv has header and finding row', () => {
     const out = gen.generateCsv(assessment);
     const lines = out.split('\n');
-    expect(lines[0]).toBe('id,domain,severity,title,affected_resource,recommendation,evidence_summary');
+    expect(lines[0]).toBe(
+      'id,domain,severity,title,affected_resource,recommendation,evidence_summary'
+    );
     expect(lines[1]).toContain('Critical Vuln');
     expect(lines[1]).toContain('critical');
     expect(lines[1]).toContain('security');

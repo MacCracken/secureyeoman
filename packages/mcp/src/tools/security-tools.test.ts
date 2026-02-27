@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { registerSecurityTools, isIpInCidr, matchesScope, parseNmapXml, parseSqlmapOutput, parseNucleiJsonl, parseGobusterOutput, parseHydraOutput } from './security-tools.js';
+import {
+  registerSecurityTools,
+  isIpInCidr,
+  matchesScope,
+  parseNmapXml,
+  parseSqlmapOutput,
+  parseNucleiJsonl,
+  parseGobusterOutput,
+  parseHydraOutput,
+} from './security-tools.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
 
@@ -316,8 +325,18 @@ describe('security-tools', () => {
     describe('parseNucleiJsonl', () => {
       it('parses two findings from JSONL', () => {
         const text = [
-          JSON.stringify({ 'template-id': 'cve-2021-1234', info: { severity: 'critical', name: 'RCE' }, host: 'http://target.com', 'matched-at': 'http://target.com/vuln' }),
-          JSON.stringify({ 'template-id': 'xss-reflected', info: { severity: 'medium', name: 'XSS' }, host: 'http://target.com', 'matched-at': 'http://target.com/search?q=<script>' }),
+          JSON.stringify({
+            'template-id': 'cve-2021-1234',
+            info: { severity: 'critical', name: 'RCE' },
+            host: 'http://target.com',
+            'matched-at': 'http://target.com/vuln',
+          }),
+          JSON.stringify({
+            'template-id': 'xss-reflected',
+            info: { severity: 'medium', name: 'XSS' },
+            host: 'http://target.com',
+            'matched-at': 'http://target.com/search?q=<script>',
+          }),
         ].join('\n');
         const result = parseNucleiJsonl(text);
         expect(result.findings).toHaveLength(2);
@@ -331,7 +350,14 @@ describe('security-tools', () => {
       });
 
       it('skips malformed JSON lines gracefully', () => {
-        const text = 'not-json\n' + JSON.stringify({ 'template-id': 'xss', info: { severity: 'low', name: 'XSS' }, host: 'h', 'matched-at': 'm' });
+        const text =
+          'not-json\n' +
+          JSON.stringify({
+            'template-id': 'xss',
+            info: { severity: 'low', name: 'XSS' },
+            host: 'h',
+            'matched-at': 'm',
+          });
         const result = parseNucleiJsonl(text);
         expect(result.findings).toHaveLength(1);
       });
@@ -380,13 +406,21 @@ describe('security-tools', () => {
 
     it('registers without error when allowBruteForce=true and hydra available', async () => {
       const server = new McpServer({ name: 'test', version: '1.0.0' });
-      const config = makeConfig({ exposeSecurityTools: true, allowBruteForce: true, allowedTargets: ['*'] });
+      const config = makeConfig({
+        exposeSecurityTools: true,
+        allowBruteForce: true,
+        allowedTargets: ['*'],
+      });
       await expect(registerSecurityTools(server, config, noopMiddleware())).resolves.not.toThrow();
     });
 
     it('registers without error when allowBruteForce=false (default)', async () => {
       const server = new McpServer({ name: 'test', version: '1.0.0' });
-      const config = makeConfig({ exposeSecurityTools: true, allowBruteForce: false, allowedTargets: ['*'] });
+      const config = makeConfig({
+        exposeSecurityTools: true,
+        allowBruteForce: false,
+        allowedTargets: ['*'],
+      });
       await expect(registerSecurityTools(server, config, noopMiddleware())).resolves.not.toThrow();
     });
   });

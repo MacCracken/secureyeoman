@@ -348,8 +348,8 @@ describe('GatewayServer', () => {
             core: { environment: 'development' },
             security: {
               promptGuard: { mode: 'disabled' },
-        responseGuard: { mode: 'disabled' },
-        llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
+              responseGuard: { mode: 'disabled' },
+              llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
               allowSubAgents: false,
               allowA2A: false,
               allowMultimodal: false,
@@ -382,35 +382,35 @@ describe('GatewayServer', () => {
     it('GET /api/v1/metrics returns metrics object', async () => {
       const res = await fetch(`${apiBase}/api/v1/metrics`);
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json).toMatchObject({ cpu: 10, mem: 50 });
     });
 
     it('GET /api/v1/costs/breakdown returns byProvider object', async () => {
       const res = await fetch(`${apiBase}/api/v1/costs/breakdown`);
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json).toHaveProperty('byProvider');
     });
 
     it('GET /api/v1/costs/history returns empty records when storage unavailable', async () => {
       const res = await fetch(`${apiBase}/api/v1/costs/history`);
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json).toHaveProperty('records');
     });
 
     it('GET /api/v1/sandbox/status returns disabled when manager unavailable', async () => {
       const res = await fetch(`${apiBase}/api/v1/sandbox/status`);
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json.enabled).toBe(false);
     });
 
     it('GET /api/v1/security/events returns events list', async () => {
       const res = await fetch(`${apiBase}/api/v1/security/events`);
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(Array.isArray(json.events)).toBe(true);
     });
 
@@ -422,7 +422,7 @@ describe('GatewayServer', () => {
     it('GET /api/v1/security/policy returns policy fields', async () => {
       const res = await fetch(`${apiBase}/api/v1/security/policy`);
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json).toHaveProperty('allowSubAgents', false);
     });
 
@@ -438,7 +438,7 @@ describe('GatewayServer', () => {
     it('GET /api/v1/security/policy returns allowCodeEditor and allowAdvancedEditor', async () => {
       const res = await fetch(`${apiBase}/api/v1/security/policy`);
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json).toHaveProperty('allowCodeEditor', true);
       expect(json).toHaveProperty('allowAdvancedEditor', false);
     });
@@ -450,7 +450,7 @@ describe('GatewayServer', () => {
         body: JSON.stringify({ allowCodeEditor: false }),
       });
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json).toHaveProperty('allowCodeEditor');
     });
 
@@ -466,7 +466,7 @@ describe('GatewayServer', () => {
     it('GET /api/v1/security/ml/summary returns risk summary', async () => {
       const res = await fetch(`${apiBase}/api/v1/security/ml/summary`);
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json).toHaveProperty('riskScore');
       expect(json).toHaveProperty('detections');
     });
@@ -474,21 +474,21 @@ describe('GatewayServer', () => {
     it('GET /api/v1/security/ml/summary with period=24h', async () => {
       const res = await fetch(`${apiBase}/api/v1/security/ml/summary?period=24h`);
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json.period).toBe('24h');
     });
 
     it('GET /api/v1/audit returns audit entries', async () => {
       const res = await fetch(`${apiBase}/api/v1/audit`);
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json).toHaveProperty('entries');
     });
 
     it('POST /api/v1/audit/verify returns chain status', async () => {
       const res = await fetch(`${apiBase}/api/v1/audit/verify`, { method: 'POST' });
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json).toHaveProperty('valid', true);
     });
 
@@ -549,7 +549,7 @@ describe('GatewayServer', () => {
         body: JSON.stringify({ stat: 'errors' }),
       });
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json.success).toBe(true);
     });
 
@@ -565,7 +565,7 @@ describe('GatewayServer', () => {
     it('GET /api/v1/tasks returns empty list when storage unavailable', async () => {
       const res = await fetch(`${apiBase}/api/v1/tasks`);
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json).toHaveProperty('tasks');
     });
 
@@ -586,25 +586,31 @@ describe('GatewayServer', () => {
     it('GET /api/v1/costs/history with query params returns records', async () => {
       const res = await fetch(`${apiBase}/api/v1/costs/history?groupBy=hour&provider=anthropic`);
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json).toHaveProperty('records');
     });
 
     it('GET /api/v1/security/events with from/to/limit/offset covers ternary arms', async () => {
       const now = Date.now();
-      const res = await fetch(`${apiBase}/api/v1/security/events?from=${now - 3600000}&to=${now}&limit=10&offset=5`);
+      const res = await fetch(
+        `${apiBase}/api/v1/security/events?from=${now - 3600000}&to=${now}&limit=10&offset=5`
+      );
       expect(res.status).toBe(200);
     });
 
     it('GET /api/v1/audit with all params covers ternary arms', async () => {
       const now = Date.now();
-      const res = await fetch(`${apiBase}/api/v1/audit?from=${now - 3600000}&to=${now}&level=info&event=ai_request&limit=10&offset=5`);
+      const res = await fetch(
+        `${apiBase}/api/v1/audit?from=${now - 3600000}&to=${now}&level=info&event=ai_request&limit=10&offset=5`
+      );
       expect(res.status).toBe(200);
     });
 
     it('GET /api/v1/audit/export with params covers ternary arms', async () => {
       const now = Date.now();
-      const res = await fetch(`${apiBase}/api/v1/audit/export?from=${now - 3600000}&to=${now}&limit=500`);
+      const res = await fetch(
+        `${apiBase}/api/v1/audit/export?from=${now - 3600000}&to=${now}&limit=500`
+      );
       expect(res.status).toBe(200);
       const ct = res.headers.get('content-type') ?? '';
       expect(ct).toContain('application/json');
@@ -664,7 +670,7 @@ describe('GatewayServer', () => {
     it('GET /api/v1/security/ml/summary with period=30d covers 30-day branch', async () => {
       const res = await fetch(`${apiBase}/api/v1/security/ml/summary?period=30d`);
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json.period).toBe('30d');
     });
   });
@@ -699,8 +705,8 @@ describe('GatewayServer', () => {
             core: { environment: 'development' },
             security: {
               promptGuard: { mode: 'disabled' },
-        responseGuard: { mode: 'disabled' },
-        llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
+              responseGuard: { mode: 'disabled' },
+              llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
               allowSubAgents: false,
               allowA2A: false,
               allowMultimodal: false,
@@ -726,7 +732,7 @@ describe('GatewayServer', () => {
     it('GET /api/v1/tasks returns tasks list when storage available', async () => {
       const res = await fetch(`${taskBase}/api/v1/tasks`);
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json).toHaveProperty('tasks');
       expect(json).toHaveProperty('total');
     });
@@ -762,7 +768,7 @@ describe('GatewayServer', () => {
         body: JSON.stringify({ name: 'Test Task', description: 'A test task' }),
       });
       expect(res.status).toBe(201);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json.name).toBe('Test Task');
     });
 
@@ -778,12 +784,12 @@ describe('GatewayServer', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: 'Lookup Task' }),
       });
-      const created = await createRes.json() as Record<string, unknown>;
+      const created = (await createRes.json()) as Record<string, unknown>;
 
       // Now get it by ID
       const res = await fetch(`${taskBase}/api/v1/tasks/${created.id}`);
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json.id).toBe(created.id);
     });
 
@@ -812,8 +818,8 @@ describe('GatewayServer', () => {
             core: { environment: 'development' },
             security: {
               promptGuard: { mode: 'disabled' },
-        responseGuard: { mode: 'disabled' },
-        llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
+              responseGuard: { mode: 'disabled' },
+              llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
               allowSubAgents: false,
               allowA2A: false,
               allowMultimodal: false,
@@ -839,7 +845,7 @@ describe('GatewayServer', () => {
     it('GET /api/v1/costs/history returns records and totals when storage available', async () => {
       const res = await fetch(`${storageBase}/api/v1/costs/history`);
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json).toHaveProperty('records');
       expect(json).toHaveProperty('totals');
       const totals = json.totals as Record<string, number>;
@@ -881,8 +887,8 @@ describe('GatewayServer', () => {
             core: { environment: 'development' },
             security: {
               promptGuard: { mode: 'disabled' },
-        responseGuard: { mode: 'disabled' },
-        llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
+              responseGuard: { mode: 'disabled' },
+              llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
               allowSubAgents: false,
               allowA2A: false,
               allowMultimodal: false,
@@ -906,7 +912,7 @@ describe('GatewayServer', () => {
     it('returns elevated riskScore and critical riskLevel with many entries', async () => {
       const res = await fetch(`${mlBase}/api/v1/security/ml/summary`);
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json.enabled).toBe(true);
       expect(json.riskScore as number).toBeGreaterThan(0);
       expect(json.riskLevel).toBe('critical');
@@ -917,7 +923,7 @@ describe('GatewayServer', () => {
     it('covers 24h bucket logic with entries present', async () => {
       const res = await fetch(`${mlBase}/api/v1/security/ml/summary?period=24h`);
       expect(res.status).toBe(200);
-      const json = await res.json() as Record<string, unknown>;
+      const json = (await res.json()) as Record<string, unknown>;
       expect(json.period).toBe('24h');
       expect(Array.isArray(json.trend)).toBe(true);
     });
@@ -962,7 +968,7 @@ describe('GatewayServer', () => {
       const id = res.headers.get('x-correlation-id');
       expect(id).toBeTruthy();
       expect(typeof id).toBe('string');
-      expect((id as string).length).toBeGreaterThan(0);
+      expect(id!.length).toBeGreaterThan(0);
     });
 
     it('response echoes a provided X-Correlation-ID header', async () => {

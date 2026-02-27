@@ -241,7 +241,13 @@ export class MarketplaceManager {
    */
   async syncFromCommunity(localPath?: string, repoUrl?: string): Promise<CommunitySyncResult> {
     const repoPath = localPath ?? this.communityRepoPath;
-    const result: CommunitySyncResult = { added: 0, updated: 0, skipped: 0, removed: 0, errors: [] };
+    const result: CommunitySyncResult = {
+      added: 0,
+      updated: 0,
+      skipped: 0,
+      removed: 0,
+      errors: [],
+    };
 
     // Git fetch — only when policy allows and a git URL is available
     const effectiveGitUrl = repoUrl ?? this.communityGitUrl;
@@ -316,9 +322,11 @@ export class MarketplaceManager {
           useWhen: typeof data.useWhen === 'string' ? data.useWhen : '',
           doNotUseWhen: typeof data.doNotUseWhen === 'string' ? data.doNotUseWhen : '',
           successCriteria: typeof data.successCriteria === 'string' ? data.successCriteria : '',
-          mcpToolsAllowed: Array.isArray(data.mcpToolsAllowed) ? (data.mcpToolsAllowed as string[]) : [],
-          routing: (data.routing === 'explicit' ? 'explicit' : 'fuzzy') as 'fuzzy' | 'explicit',
-          autonomyLevel: (['L1','L2','L3','L4','L5'].includes(data.autonomyLevel as string)
+          mcpToolsAllowed: Array.isArray(data.mcpToolsAllowed)
+            ? (data.mcpToolsAllowed as string[])
+            : [],
+          routing: data.routing === 'explicit' ? 'explicit' : 'fuzzy',
+          autonomyLevel: (['L1', 'L2', 'L3', 'L4', 'L5'].includes(data.autonomyLevel as string)
             ? data.autonomyLevel
             : 'L1') as 'L1' | 'L2' | 'L3' | 'L4' | 'L5',
           source: 'community',
@@ -343,7 +351,11 @@ export class MarketplaceManager {
 
     // Prune community skills from the DB that no longer exist in the repo
     const { skills: allCommunity } = await this.storage.search(
-      undefined, undefined, 1000, 0, 'community'
+      undefined,
+      undefined,
+      1000,
+      0,
+      'community'
     );
     for (const stale of allCommunity) {
       if (!syncedNames.has(stale.name)) {

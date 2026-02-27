@@ -78,7 +78,10 @@ const CREATE_TASK_TOOL: Tool = {
     type: 'object',
     properties: {
       name: { type: 'string', description: 'Short descriptive name for the task' },
-      description: { type: 'string', description: 'Detailed description of what the task should do' },
+      description: {
+        type: 'string',
+        description: 'Detailed description of what the task should do',
+      },
       type: {
         type: 'string',
         description: 'Task type — defaults to "execute". Examples: "query", "execute", "analyze"',
@@ -167,7 +170,11 @@ const DELETE_PERSONALITY_TOOL: Tool = {
   },
 };
 
-const PERSONALITY_TOOLS: Tool[] = [CREATE_PERSONALITY_TOOL, UPDATE_PERSONALITY_TOOL, DELETE_PERSONALITY_TOOL];
+const PERSONALITY_TOOLS: Tool[] = [
+  CREATE_PERSONALITY_TOOL,
+  UPDATE_PERSONALITY_TOOL,
+  DELETE_PERSONALITY_TOOL,
+];
 
 // ── Custom Role Tools ─────────────────────────────────────────────────────
 
@@ -199,7 +206,8 @@ const CREATE_CUSTOM_ROLE_TOOL: Tool = {
 
 const DELETE_CUSTOM_ROLE_TOOL: Tool = {
   name: 'delete_custom_role',
-  description: 'Permanently delete a custom RBAC role by its ID. Built-in roles (admin, operator, user) cannot be deleted.',
+  description:
+    'Permanently delete a custom RBAC role by its ID. Built-in roles (admin, operator, user) cannot be deleted.',
   parameters: {
     type: 'object',
     properties: {
@@ -322,7 +330,7 @@ const REGISTER_DYNAMIC_TOOL: Tool = {
       description: { type: 'string', description: 'What the tool does' },
       parameters: {
         type: 'object',
-        description: 'JSON Schema describing the tool\'s input parameters',
+        description: "JSON Schema describing the tool's input parameters",
       },
       implementation: {
         type: 'string',
@@ -434,7 +442,10 @@ const WORKFLOW_TOOLS: Tool[] = [
  * Sub-agent delegation tools (`subAgents`) and swarm tools (`allowSwarms`)
  * are sourced from `agents/tools.ts` so the definitions stay canonical.
  */
-export function getCreationTools(config: Partial<CreationConfig> | undefined, bodyEnabled: boolean): Tool[] {
+export function getCreationTools(
+  config: Partial<CreationConfig> | undefined,
+  bodyEnabled: boolean
+): Tool[] {
   if (!config) return [];
   if (!bodyEnabled) return [];
 

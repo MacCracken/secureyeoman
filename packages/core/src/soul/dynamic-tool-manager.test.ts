@@ -63,21 +63,27 @@ function makeSandboxManager(opts: { succeed?: boolean } = {}) {
   };
 }
 
-function makePolicy(overrides: Partial<{ allowDynamicTools: boolean; sandboxDynamicTools: boolean }> = {}) {
+function makePolicy(
+  overrides: Partial<{ allowDynamicTools: boolean; sandboxDynamicTools: boolean }> = {}
+) {
   return { allowDynamicTools: true, sandboxDynamicTools: false, ...overrides };
 }
 
-function makeManager(opts: {
-  tools?: DynamicTool[];
-  policy?: Partial<{ allowDynamicTools: boolean; sandboxDynamicTools: boolean }>;
-  withSandbox?: boolean;
-  sandboxSucceeds?: boolean;
-} = {}) {
+function makeManager(
+  opts: {
+    tools?: DynamicTool[];
+    policy?: Partial<{ allowDynamicTools: boolean; sandboxDynamicTools: boolean }>;
+    withSandbox?: boolean;
+    sandboxSucceeds?: boolean;
+  } = {}
+) {
   const logger = makeLogger();
   const audit = makeAuditChain();
   const storage = makeStorage(opts.tools ?? []);
   const policy = makePolicy(opts.policy);
-  const sandboxManager = opts.withSandbox ? makeSandboxManager({ succeed: opts.sandboxSucceeds }) : undefined;
+  const sandboxManager = opts.withSandbox
+    ? makeSandboxManager({ succeed: opts.sandboxSucceeds })
+    : undefined;
 
   const manager = new DynamicToolManager(storage as any, policy, {
     logger: logger as any,
@@ -92,7 +98,10 @@ function makeTool(overrides: Partial<DynamicTool> = {}): DynamicTool {
     id: 'dt-1',
     name: 'add_numbers',
     description: 'Adds a and b',
-    parametersSchema: { type: 'object', properties: { a: { type: 'number' }, b: { type: 'number' } } },
+    parametersSchema: {
+      type: 'object',
+      properties: { a: { type: 'number' }, b: { type: 'number' } },
+    },
     implementation: 'return args.a + args.b;',
     personalityId: null,
     createdBy: 'ai',
@@ -105,7 +114,6 @@ function makeTool(overrides: Partial<DynamicTool> = {}): DynamicTool {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('DynamicToolManager', () => {
-
   // ── initialize ────────────────────────────────────────────────────────────
 
   describe('initialize', () => {
@@ -153,7 +161,12 @@ describe('DynamicToolManager', () => {
       it('throws when allowDynamicTools is false', async () => {
         const { manager } = makeManager({ policy: { allowDynamicTools: false } });
         await expect(
-          manager.register({ name: 'my_tool', description: '', parametersSchema: {}, implementation: 'return 1;' })
+          manager.register({
+            name: 'my_tool',
+            description: '',
+            parametersSchema: {},
+            implementation: 'return 1;',
+          })
         ).rejects.toThrow('disabled by security policy');
       });
     });
@@ -162,35 +175,60 @@ describe('DynamicToolManager', () => {
       it('throws on an empty name', async () => {
         const { manager } = makeManager();
         await expect(
-          manager.register({ name: '', description: '', parametersSchema: {}, implementation: 'return 1;' })
+          manager.register({
+            name: '',
+            description: '',
+            parametersSchema: {},
+            implementation: 'return 1;',
+          })
         ).rejects.toThrow('Invalid tool name');
       });
 
       it('throws when name starts with a digit', async () => {
         const { manager } = makeManager();
         await expect(
-          manager.register({ name: '1bad', description: '', parametersSchema: {}, implementation: 'return 1;' })
+          manager.register({
+            name: '1bad',
+            description: '',
+            parametersSchema: {},
+            implementation: 'return 1;',
+          })
         ).rejects.toThrow('Invalid tool name');
       });
 
       it('throws when name contains uppercase letters', async () => {
         const { manager } = makeManager();
         await expect(
-          manager.register({ name: 'myTool', description: '', parametersSchema: {}, implementation: 'return 1;' })
+          manager.register({
+            name: 'myTool',
+            description: '',
+            parametersSchema: {},
+            implementation: 'return 1;',
+          })
         ).rejects.toThrow('Invalid tool name');
       });
 
       it('throws when name contains hyphens', async () => {
         const { manager } = makeManager();
         await expect(
-          manager.register({ name: 'my-tool', description: '', parametersSchema: {}, implementation: 'return 1;' })
+          manager.register({
+            name: 'my-tool',
+            description: '',
+            parametersSchema: {},
+            implementation: 'return 1;',
+          })
         ).rejects.toThrow('Invalid tool name');
       });
 
       it('accepts a valid snake_case name', async () => {
         const { manager } = makeManager();
         await expect(
-          manager.register({ name: 'my_tool', description: '', parametersSchema: {}, implementation: 'return 1;' })
+          manager.register({
+            name: 'my_tool',
+            description: '',
+            parametersSchema: {},
+            implementation: 'return 1;',
+          })
         ).resolves.toBeDefined();
       });
     });
@@ -200,7 +238,12 @@ describe('DynamicToolManager', () => {
         const { manager } = makeManager();
         const bigCode = 'x'.repeat(16_385);
         await expect(
-          manager.register({ name: 'tool', description: '', parametersSchema: {}, implementation: bigCode })
+          manager.register({
+            name: 'tool',
+            description: '',
+            parametersSchema: {},
+            implementation: bigCode,
+          })
         ).rejects.toThrow('too large');
       });
 
@@ -210,7 +253,12 @@ describe('DynamicToolManager', () => {
         const code = `// ${'x'.repeat(pad.length)}\nreturn 1;`;
         // Only check it doesn't throw a size error (may throw for other reasons)
         const err = await manager
-          .register({ name: 'tool', description: '', parametersSchema: {}, implementation: code.slice(0, 16_384) })
+          .register({
+            name: 'tool',
+            description: '',
+            parametersSchema: {},
+            implementation: code.slice(0, 16_384),
+          })
           .catch((e: Error) => e);
         if (err instanceof Error) {
           expect(err.message).not.toMatch('too large');
@@ -237,7 +285,12 @@ describe('DynamicToolManager', () => {
       it.each(forbidden)('rejects implementation containing %s', async (_label, code) => {
         const { manager } = makeManager();
         await expect(
-          manager.register({ name: 'tool', description: '', parametersSchema: {}, implementation: code })
+          manager.register({
+            name: 'tool',
+            description: '',
+            parametersSchema: {},
+            implementation: code,
+          })
         ).rejects.toThrow('forbidden pattern');
       });
     });
@@ -246,7 +299,12 @@ describe('DynamicToolManager', () => {
       it('throws when implementation has a syntax error', async () => {
         const { manager } = makeManager();
         await expect(
-          manager.register({ name: 'bad', description: '', parametersSchema: {}, implementation: '}{{{ not js' })
+          manager.register({
+            name: 'bad',
+            description: '',
+            parametersSchema: {},
+            implementation: '}{{{ not js',
+          })
         ).rejects.toThrow();
       });
     });
@@ -275,20 +333,35 @@ describe('DynamicToolManager', () => {
       it('adds the tool to the in-memory registry', async () => {
         const { manager } = makeManager();
         expect(manager.has('add_numbers')).toBe(false);
-        await manager.register({ name: 'add_numbers', description: '', parametersSchema: {}, implementation: 'return 1;' });
+        await manager.register({
+          name: 'add_numbers',
+          description: '',
+          parametersSchema: {},
+          implementation: 'return 1;',
+        });
         expect(manager.has('add_numbers')).toBe(true);
       });
 
       it('returns the persisted DynamicTool', async () => {
         const { manager } = makeManager();
-        const tool = await manager.register({ name: 'my_tool', description: 'desc', parametersSchema: {}, implementation: 'return 42;' });
+        const tool = await manager.register({
+          name: 'my_tool',
+          description: 'desc',
+          parametersSchema: {},
+          implementation: 'return 42;',
+        });
         expect(tool.name).toBe('my_tool');
         expect(tool.id).toBeDefined();
       });
 
       it('records an audit event', async () => {
         const { manager, audit } = makeManager();
-        await manager.register({ name: 'my_tool', description: '', parametersSchema: {}, implementation: 'return 1;' });
+        await manager.register({
+          name: 'my_tool',
+          description: '',
+          parametersSchema: {},
+          implementation: 'return 1;',
+        });
         expect(audit.record).toHaveBeenCalledWith(
           expect.objectContaining({ event: 'dynamic_tool_registered' })
         );
@@ -296,14 +369,29 @@ describe('DynamicToolManager', () => {
 
       it('logs at info level', async () => {
         const { manager, logger } = makeManager();
-        await manager.register({ name: 'my_tool', description: '', parametersSchema: {}, implementation: 'return 1;' });
+        await manager.register({
+          name: 'my_tool',
+          description: '',
+          parametersSchema: {},
+          implementation: 'return 1;',
+        });
         expect(logger.info).toHaveBeenCalledWith('Dynamic tool registered', expect.any(Object));
       });
 
       it('re-registering the same name updates the tool (upsert)', async () => {
         const { manager, storage } = makeManager();
-        await manager.register({ name: 'my_tool', description: 'v1', parametersSchema: {}, implementation: 'return 1;' });
-        await manager.register({ name: 'my_tool', description: 'v2', parametersSchema: {}, implementation: 'return 2;' });
+        await manager.register({
+          name: 'my_tool',
+          description: 'v1',
+          parametersSchema: {},
+          implementation: 'return 1;',
+        });
+        await manager.register({
+          name: 'my_tool',
+          description: 'v2',
+          parametersSchema: {},
+          implementation: 'return 2;',
+        });
         expect(storage.upsertTool).toHaveBeenCalledTimes(2);
       });
     });
@@ -321,7 +409,12 @@ describe('DynamicToolManager', () => {
 
     it('executes a simple arithmetic tool', async () => {
       const { manager } = makeManager();
-      await manager.register({ name: 'add', description: '', parametersSchema: {}, implementation: 'return args.a + args.b;' });
+      await manager.register({
+        name: 'add',
+        description: '',
+        parametersSchema: {},
+        implementation: 'return args.a + args.b;',
+      });
       const result = await manager.execute('add', { a: 3, b: 4 });
       expect(result.isError).toBe(false);
       expect(result.output).toBe(7);
@@ -342,7 +435,12 @@ describe('DynamicToolManager', () => {
 
     it('returns isError true when the implementation throws', async () => {
       const { manager } = makeManager();
-      await manager.register({ name: 'exploding', description: '', parametersSchema: {}, implementation: 'throw new Error("boom");' });
+      await manager.register({
+        name: 'exploding',
+        description: '',
+        parametersSchema: {},
+        implementation: 'throw new Error("boom");',
+      });
       const result = await manager.execute('exploding', {});
       expect(result.isError).toBe(true);
       expect((result.output as { error: string }).error).toContain('boom');
@@ -363,7 +461,12 @@ describe('DynamicToolManager', () => {
 
     it('records an audit event on successful execution', async () => {
       const { manager, audit } = makeManager();
-      await manager.register({ name: 'tool', description: '', parametersSchema: {}, implementation: 'return 1;' });
+      await manager.register({
+        name: 'tool',
+        description: '',
+        parametersSchema: {},
+        implementation: 'return 1;',
+      });
       await manager.execute('tool', {});
       expect(audit.record).toHaveBeenCalledWith(
         expect.objectContaining({ event: 'dynamic_tool_executed' })
@@ -376,7 +479,12 @@ describe('DynamicToolManager', () => {
           policy: { allowDynamicTools: true, sandboxDynamicTools: true },
           withSandbox: true,
         });
-        await manager.register({ name: 'sandboxed', description: '', parametersSchema: {}, implementation: 'return 99;' });
+        await manager.register({
+          name: 'sandboxed',
+          description: '',
+          parametersSchema: {},
+          implementation: 'return 99;',
+        });
         await manager.execute('sandboxed', {});
         const sandbox = sandboxManager!.createSandbox();
         expect(sandbox.run).toHaveBeenCalled();
@@ -387,7 +495,12 @@ describe('DynamicToolManager', () => {
           policy: { allowDynamicTools: true, sandboxDynamicTools: false },
           withSandbox: true,
         });
-        await manager.register({ name: 'unsandboxed', description: '', parametersSchema: {}, implementation: 'return 42;' });
+        await manager.register({
+          name: 'unsandboxed',
+          description: '',
+          parametersSchema: {},
+          implementation: 'return 42;',
+        });
         const result = await manager.execute('unsandboxed', {});
         expect(result.isError).toBe(false);
         expect(result.output).toBe(42);
@@ -406,7 +519,12 @@ describe('DynamicToolManager', () => {
           withSandbox: true,
           sandboxSucceeds: false,
         });
-        await manager.register({ name: 'tool', description: '', parametersSchema: {}, implementation: 'return 1;' });
+        await manager.register({
+          name: 'tool',
+          description: '',
+          parametersSchema: {},
+          implementation: 'return 1;',
+        });
         const result = await manager.execute('tool', {});
         expect(result.isError).toBe(true);
         expect((result.output as { error: string }).error).toContain('failed');
@@ -422,7 +540,12 @@ describe('DynamicToolManager', () => {
           sandboxManager: sandboxManager as any,
         });
 
-        await manager.register({ name: 'tool', description: '', parametersSchema: {}, implementation: 'return 1;' });
+        await manager.register({
+          name: 'tool',
+          description: '',
+          parametersSchema: {},
+          implementation: 'return 1;',
+        });
 
         // Execute with sandbox OFF — sandbox.run should not be used
         await manager.execute('tool', {});
@@ -500,13 +623,23 @@ describe('DynamicToolManager', () => {
 
     it('returns true after a tool is registered', async () => {
       const { manager } = makeManager();
-      await manager.register({ name: 'my_tool', description: '', parametersSchema: {}, implementation: 'return 1;' });
+      await manager.register({
+        name: 'my_tool',
+        description: '',
+        parametersSchema: {},
+        implementation: 'return 1;',
+      });
       expect(manager.has('my_tool')).toBe(true);
     });
 
     it('returns false after a tool is deleted', async () => {
       const { manager } = makeManager();
-      await manager.register({ name: 'my_tool', description: '', parametersSchema: {}, implementation: 'return 1;' });
+      await manager.register({
+        name: 'my_tool',
+        description: '',
+        parametersSchema: {},
+        implementation: 'return 1;',
+      });
       await manager.deleteByName('my_tool');
       expect(manager.has('my_tool')).toBe(false);
     });
@@ -523,7 +656,12 @@ describe('DynamicToolManager', () => {
     it('returns Tool schemas with name, description, and parameters', async () => {
       const schema = { type: 'object', properties: { a: { type: 'number' } } };
       const { manager } = makeManager();
-      await manager.register({ name: 'add', description: 'Adds numbers', parametersSchema: schema, implementation: 'return 1;' });
+      await manager.register({
+        name: 'add',
+        description: 'Adds numbers',
+        parametersSchema: schema,
+        implementation: 'return 1;',
+      });
       const schemas = manager.getSchemas();
       expect(schemas).toHaveLength(1);
       expect(schemas[0]).toEqual({ name: 'add', description: 'Adds numbers', parameters: schema });
@@ -531,8 +669,18 @@ describe('DynamicToolManager', () => {
 
     it('returns one schema per registered tool', async () => {
       const { manager } = makeManager();
-      await manager.register({ name: 'tool_a', description: '', parametersSchema: {}, implementation: 'return 1;' });
-      await manager.register({ name: 'tool_b', description: '', parametersSchema: {}, implementation: 'return 2;' });
+      await manager.register({
+        name: 'tool_a',
+        description: '',
+        parametersSchema: {},
+        implementation: 'return 1;',
+      });
+      await manager.register({
+        name: 'tool_b',
+        description: '',
+        parametersSchema: {},
+        implementation: 'return 2;',
+      });
       expect(manager.getSchemas()).toHaveLength(2);
     });
   });
@@ -547,7 +695,12 @@ describe('DynamicToolManager', () => {
 
     it('returns tool metadata without the implementation field', async () => {
       const { manager } = makeManager();
-      await manager.register({ name: 'my_tool', description: 'desc', parametersSchema: {}, implementation: 'return 1;' });
+      await manager.register({
+        name: 'my_tool',
+        description: 'desc',
+        parametersSchema: {},
+        implementation: 'return 1;',
+      });
       const tools = manager.listTools();
       expect(tools).toHaveLength(1);
       expect(tools[0]).not.toHaveProperty('implementation');
@@ -566,7 +719,12 @@ describe('DynamicToolManager', () => {
 
     it('returns true and removes from registry when the tool exists', async () => {
       const { manager } = makeManager();
-      await manager.register({ name: 'my_tool', description: '', parametersSchema: {}, implementation: 'return 1;' });
+      await manager.register({
+        name: 'my_tool',
+        description: '',
+        parametersSchema: {},
+        implementation: 'return 1;',
+      });
       expect(manager.has('my_tool')).toBe(true);
       const deleted = await manager.deleteByName('my_tool');
       expect(deleted).toBe(true);
@@ -575,14 +733,24 @@ describe('DynamicToolManager', () => {
 
     it('calls storage.deleteTool with the tool name', async () => {
       const { manager, storage } = makeManager();
-      await manager.register({ name: 'my_tool', description: '', parametersSchema: {}, implementation: 'return 1;' });
+      await manager.register({
+        name: 'my_tool',
+        description: '',
+        parametersSchema: {},
+        implementation: 'return 1;',
+      });
       await manager.deleteByName('my_tool');
       expect(storage.deleteTool).toHaveBeenCalledWith('my_tool');
     });
 
     it('records an audit event on deletion', async () => {
       const { manager, audit } = makeManager();
-      await manager.register({ name: 'my_tool', description: '', parametersSchema: {}, implementation: 'return 1;' });
+      await manager.register({
+        name: 'my_tool',
+        description: '',
+        parametersSchema: {},
+        implementation: 'return 1;',
+      });
       await manager.deleteByName('my_tool');
       expect(audit.record).toHaveBeenCalledWith(
         expect.objectContaining({ event: 'dynamic_tool_deleted' })

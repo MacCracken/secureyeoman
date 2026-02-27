@@ -220,10 +220,7 @@ export function registerAgentRoutes(
 
   app.patch(
     '/api/v1/agents/config',
-    async (
-      request: FastifyRequest<{ Body: { enabled?: boolean } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: { enabled?: boolean } }>, reply: FastifyReply) => {
       const { enabled } = request.body ?? {};
       if (enabled !== undefined) {
         await subAgentManager.setEnabled(enabled);

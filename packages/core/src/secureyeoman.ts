@@ -875,7 +875,11 @@ export class SecureYeoman {
               hbmRef.setActivePersonalityId(active.id);
             }
             hbmRef.setActivePersonalityIds(
-              allResult.personalities.map((p) => ({ id: p.id, name: p.name, omnipresentMind: p.body?.omnipresentMind ?? false }))
+              allResult.personalities.map((p) => ({
+                id: p.id,
+                name: p.name,
+                omnipresentMind: p.body?.omnipresentMind ?? false,
+              }))
             );
           })
           .catch((err: unknown) => {
@@ -903,7 +907,11 @@ export class SecureYeoman {
       if (this.config.mcp?.enabled) {
         this.mcpStorage = new McpStorage();
         const mcpTokenSecret = (() => {
-          try { return requireSecret(this.config.gateway.auth.tokenSecret); } catch { return undefined; }
+          try {
+            return requireSecret(this.config.gateway.auth.tokenSecret);
+          } catch {
+            return undefined;
+          }
         })();
         this.mcpClientManager = new McpClientManager(this.mcpStorage, {
           logger: this.logger.child({ component: 'McpClient' }),
@@ -962,7 +970,10 @@ export class SecureYeoman {
         brainManager: this.brainManager ?? undefined,
         communityRepoPath: process.env.COMMUNITY_REPO_PATH ?? './community-skills',
         allowCommunityGitFetch: this.config.security.allowCommunityGitFetch,
-        communityGitUrl: this.config.security.communityGitUrl ?? process.env.COMMUNITY_GIT_URL ?? 'https://github.com/MacCracken/secureyeoman-community-skills',
+        communityGitUrl:
+          this.config.security.communityGitUrl ??
+          process.env.COMMUNITY_GIT_URL ??
+          'https://github.com/MacCracken/secureyeoman-community-skills',
       });
       await this.marketplaceManager.seedBuiltinSkills();
       // Wire marketplace into soul so skill deletion keeps installed state in sync

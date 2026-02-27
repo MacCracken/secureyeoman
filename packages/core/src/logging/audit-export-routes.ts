@@ -47,7 +47,15 @@ export function registerAuditExportRoutes(
       }>,
       reply: FastifyReply
     ) => {
-      const { format = 'jsonl', from, to, level, event, userId, limit = 100_000 } = request.body ?? {};
+      const {
+        format = 'jsonl',
+        from,
+        to,
+        level,
+        event,
+        userId,
+        limit = 100_000,
+      } = request.body ?? {};
 
       const validFormats: ExportFormat[] = ['jsonl', 'csv', 'syslog'];
       if (!validFormats.includes(format)) {
@@ -63,10 +71,7 @@ export function registerAuditExportRoutes(
             : 'text/csv; charset=utf-8';
 
       reply.raw.setHeader('Content-Type', contentType);
-      reply.raw.setHeader(
-        'Content-Disposition',
-        `attachment; filename="audit-export.${ext}"`
-      );
+      reply.raw.setHeader('Content-Disposition', `attachment; filename="audit-export.${ext}"`);
       reply.raw.writeHead(200);
 
       if (format === 'csv') {

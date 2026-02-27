@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock node-saml before importing saml-adapter
-const mockGetAuthorizeUrlAsync = vi.fn().mockResolvedValue('https://idp.example.com/sso?SAMLRequest=XXX');
+const mockGetAuthorizeUrlAsync = vi
+  .fn()
+  .mockResolvedValue('https://idp.example.com/sso?SAMLRequest=XXX');
 const mockValidatePostResponseAsync = vi.fn().mockResolvedValue({
   profile: {
     nameID: 'user@example.com',

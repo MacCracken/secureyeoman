@@ -53,9 +53,11 @@ export const veteranFinancialManagerSkill: Partial<MarketplaceSkill> = {
     '\\b(bull|bear|risk.?reward|position sizing|stop.?loss|drawdown|alpha|beta|sharpe|volatility|correlation|hedge|leverage)\\b',
     '(analyze|analyse|analysis|assess|evaluate|review).{0,20}(market|position|portfolio|investment|asset|trade|ticker)',
   ],
-  useWhen: 'User asks about investments, trading, portfolio analysis, financial risk, or market conditions',
+  useWhen:
+    'User asks about investments, trading, portfolio analysis, financial risk, or market conditions',
   doNotUseWhen: 'User needs general advice unrelated to finance, markets, or capital allocation',
-  successCriteria: 'Bear/bull case analysis with explicit risk/reward ratio, position sizing guidance, and contrarian insight',
+  successCriteria:
+    'Bear/bull case analysis with explicit risk/reward ratio, position sizing guidance, and contrarian insight',
   routing: 'fuzzy',
   autonomyLevel: 'L1',
 };

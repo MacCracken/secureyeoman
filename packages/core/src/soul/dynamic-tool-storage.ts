@@ -132,10 +132,7 @@ export class DynamicToolStorage extends PgBaseStorage {
 
   /** Delete a tool by name.  Returns true if a row was deleted. */
   async deleteTool(name: string): Promise<boolean> {
-    const count = await this.execute(
-      'DELETE FROM soul.dynamic_tools WHERE name = $1',
-      [name]
-    );
+    const count = await this.execute('DELETE FROM soul.dynamic_tools WHERE name = $1', [name]);
     return count > 0;
   }
 }

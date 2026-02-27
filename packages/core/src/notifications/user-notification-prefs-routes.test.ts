@@ -101,7 +101,10 @@ describe('POST /api/v1/users/me/notification-prefs', () => {
     expect(res.statusCode).toBe(201);
     const body = res.json();
     expect(body.pref.channel).toBe('telegram');
-    expect(storage.upsert).toHaveBeenCalledWith('user-1', expect.objectContaining({ channel: 'telegram' }));
+    expect(storage.upsert).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ channel: 'telegram' })
+    );
   });
 
   it('returns 400 for invalid channel', async () => {
@@ -177,7 +180,11 @@ describe('PUT /api/v1/users/me/notification-prefs/:id', () => {
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.pref.enabled).toBe(false);
-    expect(storage.update).toHaveBeenCalledWith('user-1', 'pref-1', expect.objectContaining({ enabled: false }));
+    expect(storage.update).toHaveBeenCalledWith(
+      'user-1',
+      'pref-1',
+      expect.objectContaining({ enabled: false })
+    );
   });
 
   it('returns 404 when pref not found', async () => {

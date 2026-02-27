@@ -46,8 +46,8 @@ const FULL_POLICY = {
   allowExperiments: true,
   allowStorybook: true,
   allowMultimodal: false,
-      allowDesktopControl: false,
-      allowCamera: false,
+  allowDesktopControl: false,
+  allowCamera: false,
   allowDynamicTools: false,
   sandboxDynamicTools: true,
   allowAnomalyDetection: false,
@@ -61,8 +61,8 @@ const FULL_POLICY = {
   allowTwingate: false,
   allowOrgIntent: false,
   allowIntentEditor: false,
-      allowCodeEditor: true,
-      allowAdvancedEditor: false,
+  allowCodeEditor: true,
+  allowAdvancedEditor: false,
 };
 
 describe('DeveloperPage', () => {

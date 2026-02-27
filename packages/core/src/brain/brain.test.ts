@@ -773,7 +773,9 @@ describe('BrainManager', () => {
     it('should seed correct name in self-identity content', async () => {
       await manager.seedBaseKnowledge(personalities);
       const all = await manager.queryKnowledge({});
-      const fridayId = all.find((k) => k.topic === 'self-identity' && k.personalityId === 'p-friday');
+      const fridayId = all.find(
+        (k) => k.topic === 'self-identity' && k.personalityId === 'p-friday'
+      );
       const tronId = all.find((k) => k.topic === 'self-identity' && k.personalityId === 'p-tron');
       expect(fridayId?.content).toBe('I am FRIDAY');
       expect(tronId?.content).toBe('I am T.Ron');

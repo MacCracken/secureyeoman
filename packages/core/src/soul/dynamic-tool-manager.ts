@@ -26,7 +26,11 @@ import type { Tool } from '@secureyeoman/shared';
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { SandboxManager } from '../sandbox/manager.js';
-import { DynamicToolStorage, type DynamicTool, type DynamicToolCreate } from './dynamic-tool-storage.js';
+import {
+  DynamicToolStorage,
+  type DynamicTool,
+  type DynamicToolCreate,
+} from './dynamic-tool-storage.js';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -234,18 +238,15 @@ export class DynamicToolManager {
 
       if (sandboxEnabled) {
         const sandbox = this.deps.sandboxManager!.createSandbox();
-        const sandboxResult = await sandbox.run(
-          () => this.runWithTimeout(entry.fn, args),
-          {
-            resources: {
-              maxMemoryMb: 64,
-              maxCpuPercent: 25,
-              maxFileSizeMb: 1,
-            },
-            network: { allowed: false },
-            timeoutMs: EXECUTION_TIMEOUT_MS,
-          }
-        );
+        const sandboxResult = await sandbox.run(() => this.runWithTimeout(entry.fn, args), {
+          resources: {
+            maxMemoryMb: 64,
+            maxCpuPercent: 25,
+            maxFileSizeMb: 1,
+          },
+          network: { allowed: false },
+          timeoutMs: EXECUTION_TIMEOUT_MS,
+        });
         if (!sandboxResult.success) {
           return {
             output: {
@@ -402,12 +403,15 @@ export class DynamicToolManager {
       Promise,
       // Limited console — routes to the structured logger, not stdout
       console: {
-        log: (...args: unknown[]) =>
-          this.deps.logger.debug('[dynamic-tool]', { args: args.map(String) }),
-        warn: (...args: unknown[]) =>
-          this.deps.logger.warn('[dynamic-tool]', { args: args.map(String) }),
-        error: (...args: unknown[]) =>
-          this.deps.logger.error('[dynamic-tool]', { args: args.map(String) }),
+        log: (...args: unknown[]) => {
+          this.deps.logger.debug('[dynamic-tool]', { args: args.map(String) });
+        },
+        warn: (...args: unknown[]) => {
+          this.deps.logger.warn('[dynamic-tool]', { args: args.map(String) });
+        },
+        error: (...args: unknown[]) => {
+          this.deps.logger.error('[dynamic-tool]', { args: args.map(String) });
+        },
       },
     });
 
@@ -426,15 +430,11 @@ export class DynamicToolManager {
   }
 
   /** Run the compiled function with a hard execution timeout. */
-  private async runWithTimeout(
-    fn: CompiledFn,
-    args: Record<string, unknown>
-  ): Promise<unknown> {
+  private async runWithTimeout(fn: CompiledFn, args: Record<string, unknown>): Promise<unknown> {
     const timeout = new Promise<never>((_, reject) =>
-      setTimeout(
-        () => reject(new Error(`Dynamic tool execution timed out after ${EXECUTION_TIMEOUT_MS}ms`)),
-        EXECUTION_TIMEOUT_MS
-      )
+      setTimeout(() => {
+        reject(new Error(`Dynamic tool execution timed out after ${EXECUTION_TIMEOUT_MS}ms`));
+      }, EXECUTION_TIMEOUT_MS)
     );
     return Promise.race([fn(args), timeout]);
   }

@@ -7,8 +7,13 @@ function makeStorage() {
   const slugs = new Map<string, TenantRecord>();
 
   const defaultRecord: TenantRecord = {
-    id: 'default', name: 'Default', slug: 'default', plan: 'enterprise',
-    metadata: {}, createdAt: 0, updatedAt: 0,
+    id: 'default',
+    name: 'Default',
+    slug: 'default',
+    plan: 'enterprise',
+    metadata: {},
+    createdAt: 0,
+    updatedAt: 0,
   };
   records.set('default', defaultRecord);
   slugs.set('default', defaultRecord);
@@ -64,7 +69,9 @@ describe('TenantManager', () => {
 
   it('rejects duplicate slug', async () => {
     await manager.create({ name: 'First', slug: 'first-slug' });
-    await expect(manager.create({ name: 'Second', slug: 'first-slug' })).rejects.toThrow('Slug already exists');
+    await expect(manager.create({ name: 'Second', slug: 'first-slug' })).rejects.toThrow(
+      'Slug already exists'
+    );
   });
 
   it('delete throws for default tenant', async () => {

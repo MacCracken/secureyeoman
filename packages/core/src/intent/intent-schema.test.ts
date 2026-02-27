@@ -91,7 +91,12 @@ describe('SignalSchema', () => {
   });
 
   it('rejects invalid direction', () => {
-    const result = SignalSchema.safeParse({ id: 's3', name: 'x', threshold: 1, direction: 'sideways' });
+    const result = SignalSchema.safeParse({
+      id: 's3',
+      name: 'x',
+      threshold: 1,
+      direction: 'sideways',
+    });
     expect(result.success).toBe(false);
   });
 });
@@ -196,12 +201,18 @@ describe('OrgIntentDocSchema', () => {
       name: 'ACME Org Intent',
       goals: [{ id: 'g1', name: 'Grow ARR', threshold: undefined }],
       signals: [{ id: 's1', name: 'Error Rate', threshold: 5 }],
-      dataSources: [{ id: 'ds1', name: 'Prometheus', type: 'http', connection: 'http://localhost:9090' }],
+      dataSources: [
+        { id: 'ds1', name: 'Prometheus', type: 'http', connection: 'http://localhost:9090' },
+      ],
       tradeoffProfiles: [{ id: 'tp1', name: 'Balanced', isDefault: true }],
       hardBoundaries: [{ id: 'hb1', rule: 'deny: drop table' }],
       delegationFramework: {
         tenants: [
-          { id: 't1', principle: 'Principle of least privilege', decisionBoundaries: ['Only read prod'] },
+          {
+            id: 't1',
+            principle: 'Principle of least privilege',
+            decisionBoundaries: ['Only read prod'],
+          },
         ],
       },
       context: [

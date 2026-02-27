@@ -13,7 +13,9 @@ export function DeveloperPage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Developers</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Extensions, experiments, and component development tools</p>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Extensions, experiments, and component development tools
+        </p>
       </div>
 
       <div className="flex gap-1 p-1 bg-muted/50 rounded-lg w-fit">

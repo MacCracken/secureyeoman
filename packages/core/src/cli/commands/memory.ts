@@ -3,7 +3,14 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, extractCommonFlags, formatTable, apiCall, Spinner } from '../utils.js';
+import {
+  extractFlag,
+  extractBoolFlag,
+  extractCommonFlags,
+  formatTable,
+  apiCall,
+  Spinner,
+} from '../utils.js';
 
 export const memoryCommand: Command = {
   name: 'memory',

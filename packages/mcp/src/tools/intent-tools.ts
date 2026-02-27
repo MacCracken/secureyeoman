@@ -34,20 +34,24 @@ export function registerIntentTools(
   config: McpServiceConfig,
   middleware: ToolMiddleware
 ): void {
-  const enabled = !!(config.exposeOrgIntentTools);
+  const enabled = !!config.exposeOrgIntentTools;
 
   // ── intent_signal_read ──────────────────────────────────────────────────────
   server.tool(
     'intent_signal_read',
     'Read the current value of a named signal from the active organizational intent document. Returns the signal value, threshold, direction, status (healthy/warning/critical), and a human-readable message.',
     {
-      signalId: z.string().describe('The ID of the signal to read, as defined in the OrgIntent doc'),
+      signalId: z
+        .string()
+        .describe('The ID of the signal to read, as defined in the OrgIntent doc'),
     },
     wrapToolHandler('intent_signal_read', middleware, async ({ signalId }) => {
       if (!enabled) return textResponse({ error: DISABLED_MSG });
 
       try {
-        const result = await client.get<unknown>(`/api/v1/intent/signals/${encodeURIComponent(signalId)}/value`);
+        const result = await client.get(
+          `/api/v1/intent/signals/${encodeURIComponent(signalId)}/value`
+        );
         return textResponse(result);
       } catch (err) {
         return textResponse({

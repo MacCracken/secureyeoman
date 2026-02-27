@@ -26,11 +26,13 @@ function makeMcpClientManager(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function buildApp(overrides: {
-  integrationManager?: Record<string, unknown>;
-  personality?: unknown;
-  mcpClientManager?: Record<string, unknown> | null;
-} = {}) {
+function buildApp(
+  overrides: {
+    integrationManager?: Record<string, unknown>;
+    personality?: unknown;
+    mcpClientManager?: Record<string, unknown> | null;
+  } = {}
+) {
   const app = Fastify({ logger: false });
   registerDiagnosticRoutes(app, {
     integrationManager: makeIntegrationManager(overrides.integrationManager ?? {}) as any,

@@ -201,8 +201,8 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
         </select>
         {selectedPersonalityId !== ALL_PERSONALITIES && (
           <span className="text-xs text-muted-foreground">
-            Showing memories scoped to <span className="font-medium">{selectedPersonalityName}</span>{' '}
-            + global
+            Showing memories scoped to{' '}
+            <span className="font-medium">{selectedPersonalityName}</span> + global
           </span>
         )}
       </div>
@@ -373,7 +373,11 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
               </div>
             ) : memories.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground text-sm">
-                No memories stored{selectedPersonalityId !== ALL_PERSONALITIES ? ` for ${selectedPersonalityName}` : ''}.
+                No memories stored
+                {selectedPersonalityId !== ALL_PERSONALITIES
+                  ? ` for ${selectedPersonalityName}`
+                  : ''}
+                .
               </div>
             ) : (
               <div className="space-y-0">
@@ -479,7 +483,11 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
               </div>
             ) : knowledge.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground text-sm">
-                No knowledge entries stored{selectedPersonalityId !== ALL_PERSONALITIES ? ` for ${selectedPersonalityName}` : ''}.
+                No knowledge entries stored
+                {selectedPersonalityId !== ALL_PERSONALITIES
+                  ? ` for ${selectedPersonalityName}`
+                  : ''}
+                .
               </div>
             ) : (
               <div className="space-y-0">
@@ -524,8 +532,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                             <span className="font-medium">ID:</span> {entry.id}
                           </div>
                           <div>
-                            <span className="font-medium">Personality:</span>{' '}
-                            {entryPersonalityName}
+                            <span className="font-medium">Personality:</span> {entryPersonalityName}
                           </div>
                           <div>
                             <span className="font-medium">Source:</span> {entry.source}

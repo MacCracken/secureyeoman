@@ -12,7 +12,17 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Bell, X, Check, Trash2, Shield, CheckCircle, XCircle, AlertTriangle, Activity } from 'lucide-react';
+import {
+  Bell,
+  X,
+  Check,
+  Trash2,
+  Shield,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Activity,
+} from 'lucide-react';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { sanitizeText } from '../utils/sanitize';
 import { markNotificationRead, markAllNotificationsRead, deleteNotification } from '../api/client';
@@ -182,10 +192,7 @@ export function NotificationBell() {
     read: n.read,
   }));
 
-  const allNotifications: DisplayNotification[] = [
-    ...serverNotifications,
-    ...localDisplays,
-  ]
+  const allNotifications: DisplayNotification[] = [...serverNotifications, ...localDisplays]
     .sort((a, b) => b.timestamp - a.timestamp)
     .slice(0, 50);
 
@@ -196,14 +203,18 @@ export function NotificationBell() {
   const markAsRead = useCallback(
     (item: DisplayNotification) => {
       if (item.origin === 'server' && item.dbId) {
-        void markNotificationRead(item.dbId).catch(() => {/* non-fatal */});
+        void markNotificationRead(item.dbId).catch(() => {
+          /* non-fatal */
+        });
         setServerNotifications((prev) =>
           prev.map((n) => (n.key === item.key ? { ...n, read: true } : n))
         );
         void queryClient.invalidateQueries({ queryKey: ['notifications'] });
       } else {
         setLocalNotifications((prev) => {
-          const next = prev.map((n) => (n.id === item.key.replace('loc-', '') ? { ...n, read: true } : n));
+          const next = prev.map((n) =>
+            n.id === item.key.replace('loc-', '') ? { ...n, read: true } : n
+          );
           saveLocal(next);
           return next;
         });
@@ -214,7 +225,9 @@ export function NotificationBell() {
 
   const markAllRead = useCallback(() => {
     // Mark server notifications
-    void markAllNotificationsRead().catch(() => {/* non-fatal */});
+    void markAllNotificationsRead().catch(() => {
+      /* non-fatal */
+    });
     setServerNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     // Mark local notifications
     setLocalNotifications((prev) => {
@@ -228,7 +241,9 @@ export function NotificationBell() {
   const removeItem = useCallback(
     (item: DisplayNotification) => {
       if (item.origin === 'server' && item.dbId) {
-        void deleteNotification(item.dbId).catch(() => {/* non-fatal */});
+        void deleteNotification(item.dbId).catch(() => {
+          /* non-fatal */
+        });
         setServerNotifications((prev) => prev.filter((n) => n.key !== item.key));
         void queryClient.invalidateQueries({ queryKey: ['notifications'] });
       } else {
@@ -246,7 +261,10 @@ export function NotificationBell() {
   const clearAll = useCallback(() => {
     // Server notifications: delete each (fire-and-forget)
     for (const n of serverNotifications) {
-      if (n.dbId) void deleteNotification(n.dbId).catch(() => {/* non-fatal */});
+      if (n.dbId)
+        void deleteNotification(n.dbId).catch(() => {
+          /* non-fatal */
+        });
     }
     setServerNotifications([]);
     // Local notifications
@@ -344,7 +362,9 @@ export function NotificationBell() {
                   }`}
                 >
                   <button
-                    onClick={() => markAsRead(n)}
+                    onClick={() => {
+                      markAsRead(n);
+                    }}
                     className="flex gap-2 flex-1 min-w-0 text-left hover:bg-muted/30 transition-colors rounded"
                   >
                     {iconForType(n.type)}
@@ -368,7 +388,9 @@ export function NotificationBell() {
                     </div>
                   </button>
                   <button
-                    onClick={() => removeItem(n)}
+                    onClick={() => {
+                      removeItem(n);
+                    }}
                     className="btn-ghost p-1 text-muted-foreground hover:text-destructive flex-shrink-0 self-start mt-0.5"
                     aria-label="Dismiss notification"
                     title="Dismiss"

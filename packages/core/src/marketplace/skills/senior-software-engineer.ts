@@ -55,9 +55,12 @@ export const seniorSoftwareEngineerSkill: Partial<MarketplaceSkill> = {
     '\\b(design pattern|clean architecture|solid principle|dependency injection|microservice|event.driven|distributed system|cqrs|event sourcing)\\b',
     'how (do|should|would|can).{0,20}(implement|build|design|structure|scale|handle|approach)',
   ],
-  useWhen: 'User needs architecture advice, code design, technical trade-offs, or production-ready implementation',
-  doNotUseWhen: 'User needs a code review or audit — use the Sr. Software Engineer - Audit skill instead',
-  successCriteria: 'Scalable, maintainable solution delivered with rationale, trade-offs, and production-ready error handling',
+  useWhen:
+    'User needs architecture advice, code design, technical trade-offs, or production-ready implementation',
+  doNotUseWhen:
+    'User needs a code review or audit — use the Sr. Software Engineer - Audit skill instead',
+  successCriteria:
+    'Scalable, maintainable solution delivered with rationale, trade-offs, and production-ready error handling',
   routing: 'fuzzy',
   autonomyLevel: 'L1',
 };

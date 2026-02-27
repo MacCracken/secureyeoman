@@ -53,8 +53,18 @@ const SENSITIVE_PATH_PREFIXES = ['/etc', '/root', '/boot', '/proc', '/sys', '/de
  * reports, or logging.
  */
 const SAFE_ENV_KEYS = new Set([
-  'PATH', 'HOME', 'USER', 'LOGNAME', 'LANG', 'LC_ALL', 'LC_CTYPE',
-  'TERM', 'SHELL', 'TMPDIR', 'TZ', 'XDG_RUNTIME_DIR',
+  'PATH',
+  'HOME',
+  'USER',
+  'LOGNAME',
+  'LANG',
+  'LC_ALL',
+  'LC_CTYPE',
+  'TERM',
+  'SHELL',
+  'TMPDIR',
+  'TZ',
+  'XDG_RUNTIME_DIR',
 ]);
 
 function buildSafeEnv(): NodeJS.ProcessEnv {
@@ -163,9 +173,7 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
         const target = resolvePath(workingDir, expanded);
 
         // Apply the same security checks to the target directory
-        if (
-          SENSITIVE_PATH_PREFIXES.some((p) => target === p || target.startsWith(p + '/'))
-        ) {
+        if (SENSITIVE_PATH_PREFIXES.some((p) => target === p || target.startsWith(p + '/'))) {
           return {
             output: '',
             error: `cd: ${target}: Permission denied`,
@@ -175,9 +183,8 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
         }
 
         const targetAllowed =
-          allowedPrefixes.some(
-            (prefix) => target === prefix || target.startsWith(prefix + '/')
-          ) || target.startsWith(process.cwd() + '/');
+          allowedPrefixes.some((prefix) => target === prefix || target.startsWith(prefix + '/')) ||
+          target.startsWith(process.cwd() + '/');
 
         if (!targetAllowed) {
           return {

@@ -108,7 +108,9 @@ export function A2APage({ embedded }: { embedded?: boolean } = {}) {
   if (!enabled) {
     return (
       <div className="space-y-4 min-w-0 overflow-hidden">
-        {!embedded && <h1 className="text-xl sm:text-2xl font-bold tracking-tight">A2A Protocol</h1>}
+        {!embedded && (
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">A2A Protocol</h1>
+        )}
         <div className="card p-4 sm:p-8 text-center">
           <Network className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-muted-foreground mb-3 sm:mb-4" />
           <h2 className="text-base sm:text-lg font-semibold mb-2">A2A Protocol Not Enabled</h2>
@@ -135,7 +137,9 @@ export function A2APage({ embedded }: { embedded?: boolean } = {}) {
   return (
     <div className="space-y-3 sm:space-y-6 min-w-0 overflow-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
-        {!embedded && <h1 className="text-xl sm:text-2xl font-bold tracking-tight">A2A Protocol</h1>}
+        {!embedded && (
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">A2A Protocol</h1>
+        )}
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => {

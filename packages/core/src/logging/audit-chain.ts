@@ -71,13 +71,10 @@ function sortedKeysReplacer(_key: string, value: unknown): unknown {
     const obj = value as Record<string, unknown>;
     return Object.keys(obj)
       .sort()
-      .reduce(
-        (sorted, k) => {
-          sorted[k] = obj[k];
-          return sorted;
-        },
-        {} as Record<string, unknown>
-      );
+      .reduce<Record<string, unknown>>((sorted, k) => {
+        sorted[k] = obj[k];
+        return sorted;
+      }, {});
   }
   return value;
 }

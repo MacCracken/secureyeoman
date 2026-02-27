@@ -74,8 +74,7 @@ function rowToNotification(row: NotificationRow): Notification {
           ? Number(row.read_at)
           : row.read_at
         : null,
-    createdAt:
-      typeof row.created_at === 'string' ? Number(row.created_at) : row.created_at,
+    createdAt: typeof row.created_at === 'string' ? Number(row.created_at) : row.created_at,
   };
 }
 
@@ -135,10 +134,9 @@ export class NotificationStorage extends PgBaseStorage {
   }
 
   async markAllRead(): Promise<number> {
-    return this.execute(
-      `UPDATE notifications SET read_at = $1 WHERE read_at IS NULL`,
-      [Date.now()]
-    );
+    return this.execute(`UPDATE notifications SET read_at = $1 WHERE read_at IS NULL`, [
+      Date.now(),
+    ]);
   }
 
   async delete(id: string): Promise<boolean> {

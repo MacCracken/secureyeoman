@@ -46,11 +46,15 @@ async function getAccessToken(config: McpServiceConfig): Promise<string> {
   if (_tokenCache && _tokenCache.expiresAt > Date.now() + 60_000) {
     return _tokenCache.accessToken;
   }
-  if (!config.quickBooksClientId || !config.quickBooksClientSecret || !config.quickBooksRefreshToken) {
+  if (
+    !config.quickBooksClientId ||
+    !config.quickBooksClientSecret ||
+    !config.quickBooksRefreshToken
+  ) {
     throw new Error(
       'QuickBooks not configured. Set QUICKBOOKS_CLIENT_ID, QUICKBOOKS_CLIENT_SECRET, ' +
-      'and QUICKBOOKS_REFRESH_TOKEN. Obtain a refresh token at ' +
-      'https://developer.intuit.com/app/developer/playground'
+        'and QUICKBOOKS_REFRESH_TOKEN. Obtain a refresh token at ' +
+        'https://developer.intuit.com/app/developer/playground'
     );
   }
   const credentials = Buffer.from(
@@ -106,8 +110,8 @@ async function qboFetch(
     throw new Error(`QuickBooks API returned non-JSON (HTTP ${res.status})`);
   }
   if (!res.ok) {
-    const fault = (body as { Fault?: { Error?: Array<{ Message?: string; Detail?: string }> } })
-      ?.Fault?.Error?.[0];
+    const fault = (body as { Fault?: { Error?: { Message?: string; Detail?: string }[] } })?.Fault
+      ?.Error?.[0];
     const msg = fault ? `${fault.Message ?? ''}: ${fault.Detail ?? ''}` : `HTTP ${res.status}`;
     throw new Error(`QuickBooks API error: ${msg}`);
   }
@@ -126,19 +130,25 @@ function txt(data: unknown): { content: [{ type: 'text'; text: string }] } {
 // ─── Shared schemas ───────────────────────────────────────────────────────────
 
 const idSchema = z.string().min(1).describe('Entity ID');
-const syncTokenSchema = z.string().min(1).describe(
-  'SyncToken from a previous get/search response — required to prevent lost-update conflicts'
-);
-const bodySchema = z.string().min(1).describe(
-  'JSON string of the entity fields to set. See the Intuit QBO REST API reference for available fields.'
-);
+const syncTokenSchema = z
+  .string()
+  .min(1)
+  .describe(
+    'SyncToken from a previous get/search response — required to prevent lost-update conflicts'
+  );
+const bodySchema = z
+  .string()
+  .min(1)
+  .describe(
+    'JSON string of the entity fields to set. See the Intuit QBO REST API reference for available fields.'
+  );
 const querySchema = z
   .string()
   .max(1000)
   .optional()
   .describe(
     'SQL-like WHERE clause, e.g. "Active = true AND Balance > \'0.00\'". ' +
-    'Leave empty to return all records.'
+      'Leave empty to return all records.'
   );
 const limitSchema = z
   .number()
@@ -168,16 +178,61 @@ interface EntityConfig {
 }
 
 const ENTITIES: EntityConfig[] = [
-  { entity: 'Account', plural: 'accounts', deletable: false, blurb: 'chart-of-accounts entry (asset, liability, equity, income, or expense)' },
-  { entity: 'Bill', plural: 'bills', deletable: true, blurb: 'vendor bill (accounts-payable transaction)' },
-  { entity: 'BillPayment', plural: 'bill payments', deletable: true, blurb: 'payment applied to one or more vendor bills' },
+  {
+    entity: 'Account',
+    plural: 'accounts',
+    deletable: false,
+    blurb: 'chart-of-accounts entry (asset, liability, equity, income, or expense)',
+  },
+  {
+    entity: 'Bill',
+    plural: 'bills',
+    deletable: true,
+    blurb: 'vendor bill (accounts-payable transaction)',
+  },
+  {
+    entity: 'BillPayment',
+    plural: 'bill payments',
+    deletable: true,
+    blurb: 'payment applied to one or more vendor bills',
+  },
   { entity: 'Customer', plural: 'customers', deletable: false, blurb: 'customer or client record' },
-  { entity: 'Employee', plural: 'employees', deletable: false, blurb: 'employee record (used in payroll and time-tracking)' },
-  { entity: 'Estimate', plural: 'estimates', deletable: true, blurb: 'sales estimate / quote that can be converted to an invoice' },
-  { entity: 'Invoice', plural: 'invoices', deletable: true, blurb: 'accounts-receivable invoice sent to a customer' },
-  { entity: 'Item', plural: 'items', deletable: false, blurb: 'product or service item (used on invoices, bills, and estimates)' },
-  { entity: 'JournalEntry', plural: 'journal entries', deletable: true, blurb: 'manual double-entry accounting journal entry' },
-  { entity: 'Purchase', plural: 'purchases', deletable: true, blurb: 'expense or purchase (cash, credit card, or check)' },
+  {
+    entity: 'Employee',
+    plural: 'employees',
+    deletable: false,
+    blurb: 'employee record (used in payroll and time-tracking)',
+  },
+  {
+    entity: 'Estimate',
+    plural: 'estimates',
+    deletable: true,
+    blurb: 'sales estimate / quote that can be converted to an invoice',
+  },
+  {
+    entity: 'Invoice',
+    plural: 'invoices',
+    deletable: true,
+    blurb: 'accounts-receivable invoice sent to a customer',
+  },
+  {
+    entity: 'Item',
+    plural: 'items',
+    deletable: false,
+    blurb: 'product or service item (used on invoices, bills, and estimates)',
+  },
+  {
+    entity: 'JournalEntry',
+    plural: 'journal entries',
+    deletable: true,
+    blurb: 'manual double-entry accounting journal entry',
+  },
+  {
+    entity: 'Purchase',
+    plural: 'purchases',
+    deletable: true,
+    blurb: 'expense or purchase (cash, credit card, or check)',
+  },
   { entity: 'Vendor', plural: 'vendors', deletable: false, blurb: 'vendor / supplier record' },
 ];
 
@@ -305,14 +360,10 @@ function registerEntityTools(
         `qbo_delete_${eLower}`,
         middleware,
         async (args: { id: string; sync_token: string }) => {
-          const result = await qboFetch(
-            config,
-            companyPath(realmId, eLower, 'operation=delete'),
-            {
-              method: 'POST',
-              body: JSON.stringify({ Id: args.id, SyncToken: args.sync_token }),
-            }
-          );
+          const result = await qboFetch(config, companyPath(realmId, eLower, 'operation=delete'), {
+            method: 'POST',
+            body: JSON.stringify({ Id: args.id, SyncToken: args.sync_token }),
+          });
           return txt(result);
         }
       )
@@ -340,19 +391,23 @@ export function registerQuickBooksTools(
     wrapToolHandler('qbo_health', middleware, async () => {
       if (!config.exposeQuickBooksTools) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: 'QuickBooks tools are disabled. Set MCP_EXPOSE_QUICKBOOKS_TOOLS=true to enable.',
-          }],
+          content: [
+            {
+              type: 'text' as const,
+              text: 'QuickBooks tools are disabled. Set MCP_EXPOSE_QUICKBOOKS_TOOLS=true to enable.',
+            },
+          ],
           isError: true,
         };
       }
       if (!config.quickBooksRealmId) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: 'QUICKBOOKS_REALM_ID is not set. Find your Realm ID in the QBO URL: intuit.com/app/qbo/company/{realmId}/...',
-          }],
+          content: [
+            {
+              type: 'text' as const,
+              text: 'QUICKBOOKS_REALM_ID is not set. Find your Realm ID in the QBO URL: intuit.com/app/qbo/company/{realmId}/...',
+            },
+          ],
           isError: true,
         };
       }
@@ -368,17 +423,15 @@ export function registerQuickBooksTools(
     // Register disabled stubs for all entity tools so MCP clients can discover them
     for (const ec of ENTITIES) {
       const eLower = ec.entity.toLowerCase();
-      const disabledHandler = wrapToolHandler(
-        `qbo_${eLower}_disabled`,
-        middleware,
-        async () => ({
-          content: [{
+      const disabledHandler = wrapToolHandler(`qbo_${eLower}_disabled`, middleware, async () => ({
+        content: [
+          {
             type: 'text' as const,
             text: 'QuickBooks tools are disabled. Set MCP_EXPOSE_QUICKBOOKS_TOOLS=true and provide credentials.',
-          }],
-          isError: true,
-        })
-      );
+          },
+        ],
+        isError: true,
+      }));
       for (const op of ['create', 'get', 'search', 'update', ...(ec.deletable ? ['delete'] : [])]) {
         server.registerTool(
           `qbo_${op}_${eLower}`,
@@ -409,10 +462,7 @@ export function registerQuickBooksTools(
     },
     wrapToolHandler('qbo_get_company_info', middleware, async () => {
       const realmId = config.quickBooksRealmId!;
-      const result = await qboFetch(
-        config,
-        companyPath(realmId, 'companyinfo/' + realmId)
-      );
+      const result = await qboFetch(config, companyPath(realmId, 'companyinfo/' + realmId));
       return txt(result);
     })
   );

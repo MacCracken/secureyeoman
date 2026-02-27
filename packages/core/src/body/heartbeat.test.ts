@@ -1048,10 +1048,23 @@ describe('HeartbeatManager', () => {
       const logStorage = mockLogStorage();
       const config = defaultConfig({
         checks: [
-          { name: 'system_health', type: 'system_health', enabled: true, intervalMs: 0, config: {} },
+          {
+            name: 'system_health',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+          },
         ],
       });
-      const hb = new HeartbeatManager(brain, audit, logger, config as any, undefined, logStorage as any);
+      const hb = new HeartbeatManager(
+        brain,
+        audit,
+        logger,
+        config as any,
+        undefined,
+        logStorage as any
+      );
       await hb.beat();
       expect(logStorage.persist).toHaveBeenCalledWith(
         expect.objectContaining({ personalityId: null })
@@ -1062,10 +1075,23 @@ describe('HeartbeatManager', () => {
       const logStorage = mockLogStorage();
       const config = defaultConfig({
         checks: [
-          { name: 'system_health', type: 'system_health', enabled: true, intervalMs: 0, config: {} },
+          {
+            name: 'system_health',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+          },
         ],
       });
-      const hb = new HeartbeatManager(brain, audit, logger, config as any, undefined, logStorage as any);
+      const hb = new HeartbeatManager(
+        brain,
+        audit,
+        logger,
+        config as any,
+        undefined,
+        logStorage as any
+      );
       hb.setActivePersonalityId('pers-42');
       await hb.beat();
       expect(logStorage.persist).toHaveBeenCalledWith(
@@ -1077,10 +1103,23 @@ describe('HeartbeatManager', () => {
       const logStorage = mockLogStorage();
       const config = defaultConfig({
         checks: [
-          { name: 'system_health', type: 'system_health', enabled: true, intervalMs: 0, config: {} },
+          {
+            name: 'system_health',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+          },
         ],
       });
-      const hb = new HeartbeatManager(brain, audit, logger, config as any, undefined, logStorage as any);
+      const hb = new HeartbeatManager(
+        brain,
+        audit,
+        logger,
+        config as any,
+        undefined,
+        logStorage as any
+      );
       hb.setActivePersonalityId('pers-42');
       hb.setActivePersonalityId(null);
       await hb.beat();
@@ -1666,9 +1705,7 @@ describe('HeartbeatManager', () => {
       hb.setNotificationManager(notificationManager);
       await hb.beat();
       await new Promise((r) => setTimeout(r, 10));
-      expect(mockNotify).toHaveBeenCalledWith(
-        expect.objectContaining({ level: 'warn' })
-      );
+      expect(mockNotify).toHaveBeenCalledWith(expect.objectContaining({ level: 'warn' }));
     });
 
     it('notify action uses error level when unknown check type produces error status', async () => {
@@ -1698,9 +1735,7 @@ describe('HeartbeatManager', () => {
       hb.setNotificationManager(notificationManager);
       await hb.beat();
       await new Promise((r) => setTimeout(r, 10));
-      expect(mockNotify).toHaveBeenCalledWith(
-        expect.objectContaining({ level: 'error' })
-      );
+      expect(mockNotify).toHaveBeenCalledWith(expect.objectContaining({ level: 'error' }));
     });
 
     it('logs warn when notify() rejects with Error (catch handler)', async () => {

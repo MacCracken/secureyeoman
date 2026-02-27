@@ -247,7 +247,9 @@ export function registerMultimodalRoutes(
       }
 
       try {
-        const { buffer, format, durationMs } = await multimodalManager.synthesizeSpeechBinary(parsed.data);
+        const { buffer, format, durationMs } = await multimodalManager.synthesizeSpeechBinary(
+          parsed.data
+        );
         const contentType = AUDIO_CONTENT_TYPES[format] ?? 'audio/mpeg';
         void reply.header('Content-Type', contentType);
         void reply.header('Content-Length', buffer.length);

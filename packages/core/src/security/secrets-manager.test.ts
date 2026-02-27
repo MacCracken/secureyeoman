@@ -162,7 +162,9 @@ describe('SecretsManager — vault backend', () => {
 
   it('falls back to env on vault error when vaultFallback=true', async () => {
     const vb = {
-      get: vi.fn(async () => { throw new Error('vault unreachable'); }),
+      get: vi.fn(async () => {
+        throw new Error('vault unreachable');
+      }),
       set: vi.fn(),
       delete: vi.fn(),
       has: vi.fn(),
@@ -181,7 +183,9 @@ describe('SecretsManager — vault backend', () => {
 
   it('throws on vault error when vaultFallback=false', async () => {
     const vb = {
-      get: vi.fn(async () => { throw new Error('vault unreachable'); }),
+      get: vi.fn(async () => {
+        throw new Error('vault unreachable');
+      }),
       set: vi.fn(),
       delete: vi.fn(),
       has: vi.fn(),

@@ -200,8 +200,18 @@ describe('calculateVlsm', () => {
     for (let i = 1; i < allocs.length; i++) {
       const prevBroadcastParts = allocs[i - 1]!.broadcast.split('.').map(Number);
       const currNetworkParts = allocs[i]!.network.split('.').map(Number);
-      const prevBroad = (prevBroadcastParts[0]! << 24 | prevBroadcastParts[1]! << 16 | prevBroadcastParts[2]! << 8 | prevBroadcastParts[3]!) >>> 0;
-      const currNet = (currNetworkParts[0]! << 24 | currNetworkParts[1]! << 16 | currNetworkParts[2]! << 8 | currNetworkParts[3]!) >>> 0;
+      const prevBroad =
+        ((prevBroadcastParts[0]! << 24) |
+          (prevBroadcastParts[1]! << 16) |
+          (prevBroadcastParts[2]! << 8) |
+          prevBroadcastParts[3]!) >>>
+        0;
+      const currNet =
+        ((currNetworkParts[0]! << 24) |
+          (currNetworkParts[1]! << 16) |
+          (currNetworkParts[2]! << 8) |
+          currNetworkParts[3]!) >>>
+        0;
       expect(currNet).toBe(prevBroad + 1);
     }
   });
@@ -246,9 +256,16 @@ describe('subnetMaskToWildcard', () => {
 describe('registerNetworkTools — disabled mode', () => {
   beforeEach(() => {
     vi.mock('node:child_process', () => ({
-      execFile: vi.fn((_cmd: string, _args: string[], _opts: unknown, cb: (err: null, stdout: string, stderr: string) => void) => {
-        cb(null, '', '');
-      }),
+      execFile: vi.fn(
+        (
+          _cmd: string,
+          _args: string[],
+          _opts: unknown,
+          cb: (err: null, stdout: string, stderr: string) => void
+        ) => {
+          cb(null, '', '');
+        }
+      ),
     }));
   });
 
@@ -275,10 +292,17 @@ describe('registerNetworkTools — disabled mode', () => {
 describe('registerNetworkTools — enabled mode', () => {
   beforeEach(() => {
     vi.mock('node:child_process', () => ({
-      execFile: vi.fn((_cmd: string, _args: string[], _opts: unknown, cb: (err: null, stdout: string, stderr: string) => void) => {
-        // Simulate tshark availability for `which tshark`
-        cb(null, '/usr/bin/tshark', '');
-      }),
+      execFile: vi.fn(
+        (
+          _cmd: string,
+          _args: string[],
+          _opts: unknown,
+          cb: (err: null, stdout: string, stderr: string) => void
+        ) => {
+          // Simulate tshark availability for `which tshark`
+          cb(null, '/usr/bin/tshark', '');
+        }
+      ),
     }));
   });
 
@@ -291,22 +315,47 @@ describe('registerNetworkTools — enabled mode', () => {
     const config = makeConfig({ exposeNetworkTools: true, allowedNetworkTargets: ['*'] });
     await registerNetworkTools(server, config, noopMiddleware());
 
-    const registered = (server as unknown as { _registeredTools: Map<string, unknown> })._registeredTools;
+    const registered = (server as unknown as { _registeredTools: Map<string, unknown> })
+      ._registeredTools;
     const expectedTools = [
-      'network_device_connect', 'network_show_command', 'network_config_push',
-      'network_health_check', 'network_ping_test', 'network_traceroute',
-      'network_discovery_cdp', 'network_discovery_lldp', 'network_topology_build',
-      'network_arp_table', 'network_mac_table',
-      'network_routing_table', 'network_ospf_neighbors', 'network_ospf_lsdb',
-      'network_bgp_peers', 'network_interface_status', 'network_vlan_list',
-      'network_acl_audit', 'network_aaa_status', 'network_port_security',
-      'network_stp_status', 'network_software_version',
-      'netbox_devices_list', 'netbox_interfaces_list', 'netbox_ipam_ips',
-      'netbox_cables', 'netbox_reconcile',
-      'nvd_cve_search', 'nvd_cve_by_software', 'nvd_cve_get',
-      'subnet_calculator', 'subnet_vlsm', 'wildcard_mask_calc',
-      'pcap_upload', 'pcap_protocol_hierarchy', 'pcap_conversations',
-      'pcap_dns_queries', 'pcap_http_requests',
+      'network_device_connect',
+      'network_show_command',
+      'network_config_push',
+      'network_health_check',
+      'network_ping_test',
+      'network_traceroute',
+      'network_discovery_cdp',
+      'network_discovery_lldp',
+      'network_topology_build',
+      'network_arp_table',
+      'network_mac_table',
+      'network_routing_table',
+      'network_ospf_neighbors',
+      'network_ospf_lsdb',
+      'network_bgp_peers',
+      'network_interface_status',
+      'network_vlan_list',
+      'network_acl_audit',
+      'network_aaa_status',
+      'network_port_security',
+      'network_stp_status',
+      'network_software_version',
+      'netbox_devices_list',
+      'netbox_interfaces_list',
+      'netbox_ipam_ips',
+      'netbox_cables',
+      'netbox_reconcile',
+      'nvd_cve_search',
+      'nvd_cve_by_software',
+      'nvd_cve_get',
+      'subnet_calculator',
+      'subnet_vlsm',
+      'wildcard_mask_calc',
+      'pcap_upload',
+      'pcap_protocol_hierarchy',
+      'pcap_conversations',
+      'pcap_dns_queries',
+      'pcap_http_requests',
     ];
     for (const name of expectedTools) {
       expect(registered.has(name), `Expected tool ${name} to be registered`).toBe(true);
@@ -319,9 +368,16 @@ describe('registerNetworkTools — enabled mode', () => {
 describe('subnet_calculator tool handler', () => {
   beforeEach(() => {
     vi.mock('node:child_process', () => ({
-      execFile: vi.fn((_cmd: string, _args: string[], _opts: unknown, cb: (err: null, stdout: string, stderr: string) => void) => {
-        cb(null, '/usr/bin/tshark', '');
-      }),
+      execFile: vi.fn(
+        (
+          _cmd: string,
+          _args: string[],
+          _opts: unknown,
+          cb: (err: null, stdout: string, stderr: string) => void
+        ) => {
+          cb(null, '/usr/bin/tshark', '');
+        }
+      ),
     }));
   });
 
@@ -335,7 +391,14 @@ describe('subnet_calculator tool handler', () => {
     const config = makeConfig();
     await registerNetworkTools(server, config, middleware);
 
-    const tool = (server as unknown as { _registeredTools: Map<string, { handler: (args: unknown) => Promise<{ content: Array<{ text: string }> }> }> })._registeredTools.get('subnet_calculator');
+    const tool = (
+      server as unknown as {
+        _registeredTools: Map<
+          string,
+          { handler: (args: unknown) => Promise<{ content: Array<{ text: string }> }> }
+        >;
+      }
+    )._registeredTools.get('subnet_calculator');
     const result = await tool!.handler({ cidr: '192.168.1.0/24' });
     const parsed = JSON.parse(result.content[0]!.text);
     expect(parsed.network).toBe('192.168.1.0');
@@ -347,7 +410,18 @@ describe('subnet_calculator tool handler', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     await registerNetworkTools(server, makeConfig(), noopMiddleware());
 
-    const tool = (server as unknown as { _registeredTools: Map<string, { handler: (args: unknown) => Promise<{ content: Array<{ text: string }>; isError?: boolean }> }> })._registeredTools.get('subnet_calculator');
+    const tool = (
+      server as unknown as {
+        _registeredTools: Map<
+          string,
+          {
+            handler: (
+              args: unknown
+            ) => Promise<{ content: Array<{ text: string }>; isError?: boolean }>;
+          }
+        >;
+      }
+    )._registeredTools.get('subnet_calculator');
     const result = await tool!.handler({ cidr: 'invalid' });
     expect(result.isError).toBe(true);
   });
@@ -356,9 +430,16 @@ describe('subnet_calculator tool handler', () => {
 describe('wildcard_mask_calc tool handler', () => {
   beforeEach(() => {
     vi.mock('node:child_process', () => ({
-      execFile: vi.fn((_cmd: string, _args: string[], _opts: unknown, cb: (err: null, stdout: string, stderr: string) => void) => {
-        cb(null, '/usr/bin/tshark', '');
-      }),
+      execFile: vi.fn(
+        (
+          _cmd: string,
+          _args: string[],
+          _opts: unknown,
+          cb: (err: null, stdout: string, stderr: string) => void
+        ) => {
+          cb(null, '/usr/bin/tshark', '');
+        }
+      ),
     }));
   });
 
@@ -370,7 +451,14 @@ describe('wildcard_mask_calc tool handler', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     await registerNetworkTools(server, makeConfig(), noopMiddleware());
 
-    const tool = (server as unknown as { _registeredTools: Map<string, { handler: (args: unknown) => Promise<{ content: Array<{ text: string }> }> }> })._registeredTools.get('wildcard_mask_calc');
+    const tool = (
+      server as unknown as {
+        _registeredTools: Map<
+          string,
+          { handler: (args: unknown) => Promise<{ content: Array<{ text: string }> }> }
+        >;
+      }
+    )._registeredTools.get('wildcard_mask_calc');
     const result = await tool!.handler({ input: '24' });
     const parsed = JSON.parse(result.content[0]!.text);
     expect(parsed.wildcardMask).toBe('0.0.0.255');
@@ -382,9 +470,16 @@ describe('wildcard_mask_calc tool handler', () => {
 describe('network scope enforcement', () => {
   beforeEach(() => {
     vi.mock('node:child_process', () => ({
-      execFile: vi.fn((_cmd: string, _args: string[], _opts: unknown, cb: (err: null, stdout: string, stderr: string) => void) => {
-        cb(null, '/usr/bin/tshark', '');
-      }),
+      execFile: vi.fn(
+        (
+          _cmd: string,
+          _args: string[],
+          _opts: unknown,
+          cb: (err: null, stdout: string, stderr: string) => void
+        ) => {
+          cb(null, '/usr/bin/tshark', '');
+        }
+      ),
     }));
     // Mock ssh2 dynamic import
     vi.mock('ssh2', () => ({
@@ -405,7 +500,18 @@ describe('network scope enforcement', () => {
     const config = makeConfig({ allowedNetworkTargets: ['10.0.0.0/8'] });
     await registerNetworkTools(server, config, noopMiddleware());
 
-    const tool = (server as unknown as { _registeredTools: Map<string, { handler: (args: unknown) => Promise<{ content: Array<{ text: string }>; isError?: boolean }> }> })._registeredTools.get('network_device_connect');
+    const tool = (
+      server as unknown as {
+        _registeredTools: Map<
+          string,
+          {
+            handler: (
+              args: unknown
+            ) => Promise<{ content: Array<{ text: string }>; isError?: boolean }>;
+          }
+        >;
+      }
+    )._registeredTools.get('network_device_connect');
     // 192.168.1.1 is not in 10.0.0.0/8
     const result = await tool!.handler({ host: '192.168.1.1', port: 22, username: 'admin' });
     expect(result.isError).toBe(true);
@@ -417,7 +523,18 @@ describe('network scope enforcement', () => {
     const config = makeConfig({ allowedNetworkTargets: ['*'] });
     await registerNetworkTools(server, config, noopMiddleware());
 
-    const tool = (server as unknown as { _registeredTools: Map<string, { handler: (args: unknown) => Promise<{ content: Array<{ text: string }>; isError?: boolean }> }> })._registeredTools.get('network_device_connect');
+    const tool = (
+      server as unknown as {
+        _registeredTools: Map<
+          string,
+          {
+            handler: (
+              args: unknown
+            ) => Promise<{ content: Array<{ text: string }>; isError?: boolean }>;
+          }
+        >;
+      }
+    )._registeredTools.get('network_device_connect');
     // With wildcard scope and a mocked SSH client that never fires 'ready',
     // this will timeout — but the scope check passes (no ScopeViolationError)
     const result = await tool!.handler({ host: '8.8.8.8', port: 22, username: 'admin' });
@@ -432,7 +549,18 @@ describe('network scope enforcement', () => {
     const config = makeConfig({ allowedNetworkTargets: [] });
     await registerNetworkTools(server, config, noopMiddleware());
 
-    const tool = (server as unknown as { _registeredTools: Map<string, { handler: (args: unknown) => Promise<{ content: Array<{ text: string }>; isError?: boolean }> }> })._registeredTools.get('network_device_connect');
+    const tool = (
+      server as unknown as {
+        _registeredTools: Map<
+          string,
+          {
+            handler: (
+              args: unknown
+            ) => Promise<{ content: Array<{ text: string }>; isError?: boolean }>;
+          }
+        >;
+      }
+    )._registeredTools.get('network_device_connect');
     const result = await tool!.handler({ host: '10.0.0.1', port: 22, username: 'admin' });
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toContain('none configured');
@@ -444,9 +572,16 @@ describe('network scope enforcement', () => {
 describe('netbox_devices_list — missing config', () => {
   beforeEach(() => {
     vi.mock('node:child_process', () => ({
-      execFile: vi.fn((_cmd: string, _args: string[], _opts: unknown, cb: (err: null, stdout: string, stderr: string) => void) => {
-        cb(null, '/usr/bin/tshark', '');
-      }),
+      execFile: vi.fn(
+        (
+          _cmd: string,
+          _args: string[],
+          _opts: unknown,
+          cb: (err: null, stdout: string, stderr: string) => void
+        ) => {
+          cb(null, '/usr/bin/tshark', '');
+        }
+      ),
     }));
   });
 
@@ -459,7 +594,18 @@ describe('netbox_devices_list — missing config', () => {
     const config = makeConfig({ netboxUrl: undefined, netboxToken: undefined });
     await registerNetworkTools(server, config, noopMiddleware());
 
-    const tool = (server as unknown as { _registeredTools: Map<string, { handler: (args: unknown) => Promise<{ content: Array<{ text: string }>; isError?: boolean }> }> })._registeredTools.get('netbox_devices_list');
+    const tool = (
+      server as unknown as {
+        _registeredTools: Map<
+          string,
+          {
+            handler: (
+              args: unknown
+            ) => Promise<{ content: Array<{ text: string }>; isError?: boolean }>;
+          }
+        >;
+      }
+    )._registeredTools.get('netbox_devices_list');
     const result = await tool!.handler({ limit: 10 });
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toContain('NetBox is not configured');
@@ -471,9 +617,16 @@ describe('netbox_devices_list — missing config', () => {
 describe('pcap tools — tshark unavailable', () => {
   beforeEach(() => {
     vi.mock('node:child_process', () => ({
-      execFile: vi.fn((_cmd: string, _args: string[], _opts: unknown, cb: (err: Error, stdout: string, stderr: string) => void) => {
-        cb(new Error('not found'), '', 'tshark: command not found');
-      }),
+      execFile: vi.fn(
+        (
+          _cmd: string,
+          _args: string[],
+          _opts: unknown,
+          cb: (err: Error, stdout: string, stderr: string) => void
+        ) => {
+          cb(new Error('not found'), '', 'tshark: command not found');
+        }
+      ),
     }));
   });
 
@@ -485,7 +638,18 @@ describe('pcap tools — tshark unavailable', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     await registerNetworkTools(server, makeConfig(), noopMiddleware());
 
-    const tool = (server as unknown as { _registeredTools: Map<string, { handler: (args: unknown) => Promise<{ content: Array<{ text: string }>; isError?: boolean }> }> })._registeredTools.get('pcap_upload');
+    const tool = (
+      server as unknown as {
+        _registeredTools: Map<
+          string,
+          {
+            handler: (
+              args: unknown
+            ) => Promise<{ content: Array<{ text: string }>; isError?: boolean }>;
+          }
+        >;
+      }
+    )._registeredTools.get('pcap_upload');
     const result = await tool!.handler({ data: Buffer.from('dummy').toString('base64') });
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toContain('tshark');

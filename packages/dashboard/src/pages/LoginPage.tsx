@@ -15,7 +15,11 @@ export function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
-  const { data: health } = useQuery({ queryKey: ['health'], queryFn: fetchHealth, staleTime: 30000 });
+  const { data: health } = useQuery({
+    queryKey: ['health'],
+    queryFn: fetchHealth,
+    staleTime: 30000,
+  });
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();

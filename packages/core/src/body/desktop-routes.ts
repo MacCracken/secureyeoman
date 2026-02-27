@@ -26,16 +26,8 @@ function sanitizeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export function registerDesktopRoutes(
-  app: FastifyInstance,
-  opts: DesktopRoutesOpts
-): void {
-  const {
-    getAllowDesktopControl,
-    getAllowCamera,
-    getAllowMultimodal,
-    analyzeImage,
-  } = opts;
+export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesOpts): void {
+  const { getAllowDesktopControl, getAllowCamera, getAllowMultimodal, analyzeImage } = opts;
 
   // ── Screenshot ─────────────────────────────────────────────────────────────
 
@@ -61,9 +53,7 @@ export function registerDesktopRoutes(
         const { target, targetId, region, format, prompt } = request.body ?? {};
 
         const result = await captureScreen({
-          target: target
-            ? { type: target, id: targetId, region }
-            : undefined,
+          target: target ? { type: target, id: targetId, region } : undefined,
           format: format ?? 'png',
         });
 
@@ -161,10 +151,7 @@ export function registerDesktopRoutes(
 
   app.post(
     '/api/v1/desktop/mouse/move',
-    async (
-      request: FastifyRequest<{ Body: { x: number; y: number } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: { x: number; y: number } }>, reply: FastifyReply) => {
       if (!getAllowDesktopControl()) {
         return sendError(reply, 403, 'Desktop Control is not enabled');
       }
@@ -211,10 +198,7 @@ export function registerDesktopRoutes(
 
   app.post(
     '/api/v1/desktop/mouse/scroll',
-    async (
-      request: FastifyRequest<{ Body: { dx: number; dy: number } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: { dx: number; dy: number } }>, reply: FastifyReply) => {
       if (!getAllowDesktopControl()) {
         return sendError(reply, 403, 'Desktop Control is not enabled');
       }
@@ -278,10 +262,7 @@ export function registerDesktopRoutes(
 
   app.post(
     '/api/v1/desktop/window/focus',
-    async (
-      request: FastifyRequest<{ Body: { windowId: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: { windowId: string } }>, reply: FastifyReply) => {
       if (!getAllowDesktopControl()) {
         return sendError(reply, 403, 'Desktop Control is not enabled');
       }
@@ -338,10 +319,7 @@ export function registerDesktopRoutes(
 
   app.post(
     '/api/v1/desktop/clipboard',
-    async (
-      request: FastifyRequest<{ Body: { text: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: { text: string } }>, reply: FastifyReply) => {
       if (!getAllowDesktopControl()) {
         return sendError(reply, 403, 'Desktop Control is not enabled');
       }
@@ -359,10 +337,7 @@ export function registerDesktopRoutes(
 
   app.post(
     '/api/v1/desktop/input/sequence',
-    async (
-      request: FastifyRequest<{ Body: { steps: unknown[] } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: { steps: unknown[] } }>, reply: FastifyReply) => {
       if (!getAllowDesktopControl()) {
         return sendError(reply, 403, 'Desktop Control is not enabled');
       }

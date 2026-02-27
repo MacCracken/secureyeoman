@@ -25,7 +25,9 @@ export function MarketplacePage() {
   const [page, setPage] = useState(0);
 
   // Reset to first page when filter or search changes
-  useEffect(() => { setPage(0); }, [query, originFilter]);
+  useEffect(() => {
+    setPage(0);
+  }, [query, originFilter]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['marketplace', query, originFilter, page],
@@ -74,7 +76,9 @@ export function MarketplacePage() {
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
-            onClick={() => setOriginFilter(tab.value)}
+            onClick={() => {
+              setOriginFilter(tab.value);
+            }}
           >
             {tab.label}
           </button>
@@ -168,7 +172,9 @@ export function MarketplacePage() {
                 <button
                   className="btn btn-ghost btn-sm"
                   disabled={page === 0}
-                  onClick={() => setPage((p) => p - 1)}
+                  onClick={() => {
+                    setPage((p) => p - 1);
+                  }}
                 >
                   ← Prev
                 </button>
@@ -178,7 +184,9 @@ export function MarketplacePage() {
                 <button
                   className="btn btn-ghost btn-sm"
                   disabled={page >= totalPages - 1}
-                  onClick={() => setPage((p) => p + 1)}
+                  onClick={() => {
+                    setPage((p) => p + 1);
+                  }}
                 >
                   Next →
                 </button>

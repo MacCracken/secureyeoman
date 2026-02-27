@@ -154,9 +154,12 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          {!embedded && <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Sub-Agents</h1>}
+          {!embedded && (
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Sub-Agents</h1>
+          )}
           <p className="text-xs text-muted-foreground">
-            Swarm infers task complexity and scales automatically — from a single focused sub-agent to multiple agents working in parallel.
+            Swarm infers task complexity and scales automatically — from a single focused sub-agent
+            to multiple agents working in parallel.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -840,11 +843,17 @@ function ProfilesTab({
             <label className="text-sm font-medium block mb-1">Allowed Tools</label>
             <textarea
               value={profileTools}
-              onChange={(e) => setProfileTools(e.target.value)}
+              onChange={(e) => {
+                setProfileTools(e.target.value);
+              }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm min-h-[60px] resize-y font-mono text-xs"
-              placeholder={'Leave blank for all tools\nOr enter patterns, one per line:\n  web_*\n  fs_*\n  memory_recall'}
+              placeholder={
+                'Leave blank for all tools\nOr enter patterns, one per line:\n  web_*\n  fs_*\n  memory_recall'
+              }
             />
-            <p className="text-[10px] text-muted-foreground mt-0.5">Blank = all tools. Supports prefix wildcards (web_*) and exact names.</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              Blank = all tools. Supports prefix wildcards (web_*) and exact names.
+            </p>
           </div>
           <button
             className="btn btn-ghost"
@@ -903,10 +912,13 @@ function ProfilesTab({
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span>{p.maxTokenBudget.toLocaleString()} tokens</span>
               {p.defaultModel && <span>Model: {p.defaultModel}</span>}
-              {p.allowedTools.length > 0
-                ? <span title={p.allowedTools.join(', ')}>{p.allowedTools.length} tool pattern{p.allowedTools.length !== 1 ? 's' : ''}</span>
-                : <span className="opacity-50">All tools</span>
-              }
+              {p.allowedTools.length > 0 ? (
+                <span title={p.allowedTools.join(', ')}>
+                  {p.allowedTools.length} tool pattern{p.allowedTools.length !== 1 ? 's' : ''}
+                </span>
+              ) : (
+                <span className="opacity-50">All tools</span>
+              )}
             </div>
           </div>
         ))}

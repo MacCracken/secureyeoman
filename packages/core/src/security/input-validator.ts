@@ -414,10 +414,7 @@ export class InputValidator {
    * Returns the first failure found, or a passing result if all strings are clean.
    * Used by HTTP entry points that receive structured request bodies.
    */
-  validateObject(
-    obj: Record<string, unknown>,
-    context: ValidationContext = {}
-  ): ValidationResult {
+  validateObject(obj: Record<string, unknown>, context: ValidationContext = {}): ValidationResult {
     const stack: unknown[] = [obj];
 
     while (stack.length > 0) {

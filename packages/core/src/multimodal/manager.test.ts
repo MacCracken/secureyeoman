@@ -596,7 +596,12 @@ describe('MultimodalManager — new TTS providers', () => {
     delete process.env.ELEVENLABS_API_KEY;
 
     await expect(
-      manager.synthesizeSpeech({ text: 'Hi', voice: 'alloy', model: 'tts-1', responseFormat: 'mp3' })
+      manager.synthesizeSpeech({
+        text: 'Hi',
+        voice: 'alloy',
+        model: 'tts-1',
+        responseFormat: 'mp3',
+      })
     ).rejects.toThrow('ELEVENLABS_API_KEY');
 
     delete process.env.TTS_PROVIDER;
@@ -635,7 +640,12 @@ describe('MultimodalManager — new TTS providers', () => {
     delete process.env.DEEPGRAM_API_KEY;
 
     await expect(
-      manager.synthesizeSpeech({ text: 'Hi', voice: 'alloy', model: 'tts-1', responseFormat: 'mp3' })
+      manager.synthesizeSpeech({
+        text: 'Hi',
+        voice: 'alloy',
+        model: 'tts-1',
+        responseFormat: 'mp3',
+      })
     ).rejects.toThrow('DEEPGRAM_API_KEY');
 
     delete process.env.TTS_PROVIDER;
@@ -690,7 +700,9 @@ describe('MultimodalManager — new STT providers', () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        results: { channels: [{ alternatives: [{ transcript: 'hello deepgram', confidence: 0.99 }] }] },
+        results: {
+          channels: [{ alternatives: [{ transcript: 'hello deepgram', confidence: 0.99 }] }],
+        },
       }),
     });
     vi.stubGlobal('fetch', mockFetch);
@@ -834,10 +846,20 @@ describe('MultimodalManager — detectAvailableProviders', () => {
   it('does not include providers in configured[] without API keys', async () => {
     // Clean slate — remove any provider env vars that might be set
     const savedKeys: Record<string, string | undefined> = {};
-    for (const k of ['ELEVENLABS_API_KEY', 'DEEPGRAM_API_KEY', 'CARTESIA_API_KEY',
-                     'ASSEMBLYAI_API_KEY', 'GOOGLE_API_KEY', 'AZURE_SPEECH_KEY',
-                     'PLAYHT_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY',
-                     'SPEECH_KEY', 'SPEECH_REGION', 'PLAYHT_USER_ID']) {
+    for (const k of [
+      'ELEVENLABS_API_KEY',
+      'DEEPGRAM_API_KEY',
+      'CARTESIA_API_KEY',
+      'ASSEMBLYAI_API_KEY',
+      'GOOGLE_API_KEY',
+      'AZURE_SPEECH_KEY',
+      'PLAYHT_API_KEY',
+      'OPENAI_API_KEY',
+      'ANTHROPIC_API_KEY',
+      'SPEECH_KEY',
+      'SPEECH_REGION',
+      'PLAYHT_USER_ID',
+    ]) {
       savedKeys[k] = process.env[k];
       delete process.env[k];
     }
@@ -881,10 +903,13 @@ describe('MultimodalManager — provider resolution via prefsStorage', () => {
     await mgr.initialize();
 
     process.env.GEMINI_API_KEY = 'key';
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ candidates: [{ content: { parts: [{ text: 'gemini desc' }] } }] }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ candidates: [{ content: { parts: [{ text: 'gemini desc' }] } }] }),
+      })
+    );
 
     // Trigger resolveVisionProvider indirectly by calling detectAvailableProviders
     // to check resolveVisionProvider is wired to prefsStorage
@@ -943,8 +968,15 @@ describe('MultimodalManager — additional TTS providers', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    for (const k of ['TTS_PROVIDER', 'GOOGLE_API_KEY', 'SPEECH_KEY', 'SPEECH_REGION',
-                     'PLAYHT_API_KEY', 'PLAYHT_USER_ID', 'OPENEDAI_SPEECH_URL']) {
+    for (const k of [
+      'TTS_PROVIDER',
+      'GOOGLE_API_KEY',
+      'SPEECH_KEY',
+      'SPEECH_REGION',
+      'PLAYHT_API_KEY',
+      'PLAYHT_USER_ID',
+      'OPENEDAI_SPEECH_URL',
+    ]) {
       delete process.env[k];
     }
   });
@@ -953,10 +985,13 @@ describe('MultimodalManager — additional TTS providers', () => {
     process.env.TTS_PROVIDER = 'google';
     process.env.GOOGLE_API_KEY = 'gapi-key';
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ audioContent: Buffer.from('google-audio').toString('base64') }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ audioContent: Buffer.from('google-audio').toString('base64') }),
+      })
+    );
 
     const result = await manager.synthesizeSpeech({
       text: 'Hello Google',
@@ -973,7 +1008,12 @@ describe('MultimodalManager — additional TTS providers', () => {
     delete process.env.GOOGLE_API_KEY;
 
     await expect(
-      manager.synthesizeSpeech({ text: 'Hi', voice: 'alloy', model: 'tts-1', responseFormat: 'mp3' })
+      manager.synthesizeSpeech({
+        text: 'Hi',
+        voice: 'alloy',
+        model: 'tts-1',
+        responseFormat: 'mp3',
+      })
     ).rejects.toThrow('GOOGLE_API_KEY');
   });
 
@@ -982,10 +1022,13 @@ describe('MultimodalManager — additional TTS providers', () => {
     process.env.SPEECH_KEY = 'speech-key';
     process.env.SPEECH_REGION = 'eastus';
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      arrayBuffer: async () => Buffer.from('azure-audio').buffer,
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => Buffer.from('azure-audio').buffer,
+      })
+    );
 
     const result = await manager.synthesizeSpeech({
       text: 'Hello Azure',
@@ -1002,7 +1045,12 @@ describe('MultimodalManager — additional TTS providers', () => {
     delete process.env.SPEECH_REGION;
 
     await expect(
-      manager.synthesizeSpeech({ text: 'Hi', voice: 'alloy', model: 'tts-1', responseFormat: 'mp3' })
+      manager.synthesizeSpeech({
+        text: 'Hi',
+        voice: 'alloy',
+        model: 'tts-1',
+        responseFormat: 'mp3',
+      })
     ).rejects.toThrow('SPEECH_KEY and SPEECH_REGION');
   });
 
@@ -1011,10 +1059,13 @@ describe('MultimodalManager — additional TTS providers', () => {
     process.env.PLAYHT_API_KEY = 'ph-key';
     process.env.PLAYHT_USER_ID = 'ph-user';
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      arrayBuffer: async () => Buffer.from('playht-audio').buffer,
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => Buffer.from('playht-audio').buffer,
+      })
+    );
 
     const result = await manager.synthesizeSpeech({
       text: 'Hello PlayHT',
@@ -1031,7 +1082,12 @@ describe('MultimodalManager — additional TTS providers', () => {
     delete process.env.PLAYHT_USER_ID;
 
     await expect(
-      manager.synthesizeSpeech({ text: 'Hi', voice: 'alloy', model: 'tts-1', responseFormat: 'mp3' })
+      manager.synthesizeSpeech({
+        text: 'Hi',
+        voice: 'alloy',
+        model: 'tts-1',
+        responseFormat: 'mp3',
+      })
     ).rejects.toThrow('PLAYHT_API_KEY and PLAYHT_USER_ID');
   });
 
@@ -1039,10 +1095,13 @@ describe('MultimodalManager — additional TTS providers', () => {
     process.env.TTS_PROVIDER = 'openedai';
     process.env.OPENEDAI_SPEECH_URL = 'http://localhost:8000';
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      arrayBuffer: async () => Buffer.from('openedai-audio').buffer,
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => Buffer.from('openedai-audio').buffer,
+      })
+    );
 
     const result = await manager.synthesizeSpeech({
       text: 'Hello OpenedAI',
@@ -1058,7 +1117,12 @@ describe('MultimodalManager — additional TTS providers', () => {
     delete process.env.OPENEDAI_SPEECH_URL;
 
     await expect(
-      manager.synthesizeSpeech({ text: 'Hi', voice: 'alloy', model: 'tts-1', responseFormat: 'mp3' })
+      manager.synthesizeSpeech({
+        text: 'Hi',
+        voice: 'alloy',
+        model: 'tts-1',
+        responseFormat: 'mp3',
+      })
     ).rejects.toThrow('OPENEDAI_SPEECH_URL');
   });
 
@@ -1067,20 +1131,28 @@ describe('MultimodalManager — additional TTS providers', () => {
     process.env.VOICEBOX_PROFILE_ID = 'profile-x';
     process.env.VOICEBOX_URL = 'http://localhost:17493';
 
-    vi.stubGlobal('fetch', vi.fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ id: 'gen-abc' }),
-        text: async () => '',
-      })
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-      })
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ id: 'gen-abc' }),
+          text: async () => '',
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+        })
     );
 
     await expect(
-      manager.synthesizeSpeech({ text: 'Hi', voice: 'alloy', model: 'tts-1', responseFormat: 'mp3' })
+      manager.synthesizeSpeech({
+        text: 'Hi',
+        voice: 'alloy',
+        model: 'tts-1',
+        responseFormat: 'mp3',
+      })
     ).rejects.toThrow('Voicebox audio fetch error (404)');
 
     delete process.env.TTS_PROVIDER;
@@ -1108,8 +1180,13 @@ describe('MultimodalManager — additional STT providers', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    for (const k of ['STT_PROVIDER', 'GOOGLE_API_KEY', 'SPEECH_KEY', 'SPEECH_REGION',
-                     'ASSEMBLYAI_API_KEY']) {
+    for (const k of [
+      'STT_PROVIDER',
+      'GOOGLE_API_KEY',
+      'SPEECH_KEY',
+      'SPEECH_REGION',
+      'ASSEMBLYAI_API_KEY',
+    ]) {
       delete process.env[k];
     }
   });
@@ -1118,12 +1195,15 @@ describe('MultimodalManager — additional STT providers', () => {
     process.env.STT_PROVIDER = 'google';
     process.env.GOOGLE_API_KEY = 'gapi-key';
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        results: [{ alternatives: [{ transcript: 'hello google stt' }] }],
-      }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          results: [{ alternatives: [{ transcript: 'hello google stt' }] }],
+        }),
+      })
+    );
 
     const result = await manager.transcribeAudio({ audioBase64: 'dGVzdA==', format: 'wav' });
     expect(result.text).toBe('hello google stt');
@@ -1143,10 +1223,13 @@ describe('MultimodalManager — additional STT providers', () => {
     process.env.SPEECH_KEY = 'speech-key';
     process.env.SPEECH_REGION = 'westus';
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ RecognitionStatus: 'Success', DisplayText: 'hello azure stt' }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ RecognitionStatus: 'Success', DisplayText: 'hello azure stt' }),
+      })
+    );
 
     const result = await manager.transcribeAudio({ audioBase64: 'dGVzdA==', format: 'wav' });
     expect(result.text).toBe('hello azure stt');
@@ -1157,10 +1240,13 @@ describe('MultimodalManager — additional STT providers', () => {
     process.env.SPEECH_KEY = 'speech-key';
     process.env.SPEECH_REGION = 'westus';
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ RecognitionStatus: 'NoMatch', DisplayText: '' }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ RecognitionStatus: 'NoMatch', DisplayText: '' }),
+      })
+    );
 
     await expect(
       manager.transcribeAudio({ audioBase64: 'dGVzdA==', format: 'wav' })
@@ -1181,19 +1267,26 @@ describe('MultimodalManager — additional STT providers', () => {
     process.env.STT_PROVIDER = 'assemblyai';
     process.env.ASSEMBLYAI_API_KEY = 'aai-key';
 
-    vi.stubGlobal('fetch', vi.fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ upload_url: 'https://cdn.assemblyai.com/upload/test' }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ id: 'transcript-123' }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ status: 'completed', text: 'hello assemblyai', language_code: 'en' }),
-      })
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ upload_url: 'https://cdn.assemblyai.com/upload/test' }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ id: 'transcript-123' }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: 'completed',
+            text: 'hello assemblyai',
+            language_code: 'en',
+          }),
+        })
     );
 
     const result = await manager.transcribeAudio({ audioBase64: 'dGVzdA==', format: 'wav' });
@@ -1205,11 +1298,14 @@ describe('MultimodalManager — additional STT providers', () => {
     process.env.STT_PROVIDER = 'assemblyai';
     process.env.ASSEMBLYAI_API_KEY = 'aai-key';
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: false,
-      status: 500,
-      text: async () => 'Server Error',
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: async () => 'Server Error',
+      })
+    );
 
     await expect(
       manager.transcribeAudio({ audioBase64: 'dGVzdA==', format: 'wav' })
@@ -1220,19 +1316,22 @@ describe('MultimodalManager — additional STT providers', () => {
     process.env.STT_PROVIDER = 'assemblyai';
     process.env.ASSEMBLYAI_API_KEY = 'aai-key';
 
-    vi.stubGlobal('fetch', vi.fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ upload_url: 'https://cdn.assemblyai.com/upload/test' }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ id: 'transcript-err' }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ status: 'error', error: 'Audio too short' }),
-      })
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ upload_url: 'https://cdn.assemblyai.com/upload/test' }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ id: 'transcript-err' }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ status: 'error', error: 'Audio too short' }),
+        })
     );
 
     await expect(
@@ -1261,8 +1360,12 @@ describe('MultimodalManager — synthesizeSpeechBinary', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     for (const k of [
-      'TTS_PROVIDER', 'OPENAI_API_KEY', 'VOICEBOX_PROFILE_ID', 'VOICEBOX_URL',
-      'ELEVENLABS_API_KEY', 'DEEPGRAM_API_KEY',
+      'TTS_PROVIDER',
+      'OPENAI_API_KEY',
+      'VOICEBOX_PROFILE_ID',
+      'VOICEBOX_URL',
+      'ELEVENLABS_API_KEY',
+      'DEEPGRAM_API_KEY',
     ]) {
       delete process.env[k];
     }
@@ -1288,12 +1391,18 @@ describe('MultimodalManager — synthesizeSpeechBinary', () => {
   it('returns Buffer from OpenAI (default provider), creates and completes job, emits hook', async () => {
     process.env.OPENAI_API_KEY = 'sk-test-key-for-unit-test';
     const audioBytes = Buffer.from('fake-mp3-audio');
-    const ab = audioBytes.buffer.slice(audioBytes.byteOffset, audioBytes.byteOffset + audioBytes.byteLength);
+    const ab = audioBytes.buffer.slice(
+      audioBytes.byteOffset,
+      audioBytes.byteOffset + audioBytes.byteLength
+    );
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      arrayBuffer: async () => ab,
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => ab,
+      })
+    );
 
     const result = await manager.synthesizeSpeechBinary({
       text: 'Hello world',
@@ -1332,11 +1441,14 @@ describe('MultimodalManager — synthesizeSpeechBinary', () => {
   it('throws and fails job when OpenAI returns non-ok status', async () => {
     process.env.OPENAI_API_KEY = 'sk-test-key-for-unit-test';
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: false,
-      status: 400,
-      text: async () => 'Bad Request',
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        text: async () => 'Bad Request',
+      })
+    );
 
     await expect(
       manager.synthesizeSpeechBinary({
@@ -1356,18 +1468,24 @@ describe('MultimodalManager — synthesizeSpeechBinary', () => {
     process.env.VOICEBOX_URL = 'http://localhost:17493';
 
     const audioBytes = Buffer.from('fake-voicebox-audio');
-    const ab = audioBytes.buffer.slice(audioBytes.byteOffset, audioBytes.byteOffset + audioBytes.byteLength);
+    const ab = audioBytes.buffer.slice(
+      audioBytes.byteOffset,
+      audioBytes.byteOffset + audioBytes.byteLength
+    );
 
-    vi.stubGlobal('fetch', vi.fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ id: 'gen-123' }),
-        text: async () => '',
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        arrayBuffer: async () => ab,
-      })
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ id: 'gen-123' }),
+          text: async () => '',
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          arrayBuffer: async () => ab,
+        })
     );
 
     const result = await manager.synthesizeSpeechBinary({
@@ -1387,12 +1505,18 @@ describe('MultimodalManager — synthesizeSpeechBinary', () => {
     process.env.ELEVENLABS_API_KEY = 'sk_test_elevenlabs_key';
 
     const audioBytes = Buffer.from('elevenlabs-audio-data');
-    const ab = audioBytes.buffer.slice(audioBytes.byteOffset, audioBytes.byteOffset + audioBytes.byteLength);
+    const ab = audioBytes.buffer.slice(
+      audioBytes.byteOffset,
+      audioBytes.byteOffset + audioBytes.byteLength
+    );
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      arrayBuffer: async () => ab,
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => ab,
+      })
+    );
 
     const result = await manager.synthesizeSpeechBinary({
       text: 'Hello ElevenLabs',
@@ -1410,12 +1534,18 @@ describe('MultimodalManager — synthesizeSpeechBinary', () => {
     process.env.DEEPGRAM_API_KEY = 'dg-test-key';
 
     const audioBytes = Buffer.from('deepgram-audio-data');
-    const ab = audioBytes.buffer.slice(audioBytes.byteOffset, audioBytes.byteOffset + audioBytes.byteLength);
+    const ab = audioBytes.buffer.slice(
+      audioBytes.byteOffset,
+      audioBytes.byteOffset + audioBytes.byteLength
+    );
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      arrayBuffer: async () => ab,
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => ab,
+      })
+    );
 
     const result = await manager.synthesizeSpeechBinary({
       text: 'Hello Deepgram',

@@ -176,7 +176,9 @@ function AvatarUpload({
         )}
       </div>
       <div className="flex flex-col gap-2">
-        <label className={`btn btn-sm btn-outline cursor-pointer${uploading ? ' opacity-50 pointer-events-none' : ''}`}>
+        <label
+          className={`btn btn-sm btn-outline cursor-pointer${uploading ? ' opacity-50 pointer-events-none' : ''}`}
+        >
           {uploading ? 'Uploading…' : 'Upload Photo'}
           <input
             type="file"
@@ -264,7 +266,12 @@ function CollapsibleSection({
           {title}
         </button>
         {headerRight && (
-          <div onClick={(e) => e.stopPropagation()} className="ml-2 shrink-0">
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+            className="ml-2 shrink-0"
+          >
             {headerRight}
           </div>
         )}
@@ -565,13 +572,18 @@ function SpiritSection({
       <div className="flex items-center justify-between" data-testid="archetype-toggle">
         <div className="flex flex-col gap-0.5">
           <span className="text-sm">Morphogenesis</span>
-          <span className="text-xs text-muted-foreground">Weaves the Sacred Archetypes into the system prompt — these are the foundational patterns that give this personality its actual shape and character</span>
+          <span className="text-xs text-muted-foreground">
+            Weaves the Sacred Archetypes into the system prompt — these are the foundational
+            patterns that give this personality its actual shape and character
+          </span>
         </div>
         <label className="relative inline-flex items-center cursor-pointer">
           <input
             type="checkbox"
             checked={includeArchetypes}
-            onChange={(e) => { onIncludeArchetypesChange(e.target.checked); }}
+            onChange={(e) => {
+              onIncludeArchetypesChange(e.target.checked);
+            }}
             className="sr-only peer"
           />
           <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
@@ -582,13 +594,18 @@ function SpiritSection({
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-0.5">
           <span className="text-sm">Empathy Resonance</span>
-          <span className="text-xs text-muted-foreground">When enabled, the personality mirrors and adapts to the user's detected emotional register — matching tone, pacing, and affect to what the user is feeling</span>
+          <span className="text-xs text-muted-foreground">
+            When enabled, the personality mirrors and adapts to the user's detected emotional
+            register — matching tone, pacing, and affect to what the user is feeling
+          </span>
         </div>
         <label className="relative inline-flex items-center cursor-pointer">
           <input
             type="checkbox"
             checked={empathyResonance}
-            onChange={(e) => { onEmpathyResonanceChange(e.target.checked); }}
+            onChange={(e) => {
+              onEmpathyResonanceChange(e.target.checked);
+            }}
             className="sr-only peer"
           />
           <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
@@ -701,7 +718,10 @@ function BrainSection({
   const [editConfidence, setEditConfidence] = useState(0.5);
   const [deleteTarget, setDeleteTarget] = useState<KnowledgeEntry | null>(null);
 
-  const { data: knowledgeData } = useQuery({ queryKey: ['knowledge'], queryFn: () => fetchKnowledge() });
+  const { data: knowledgeData } = useQuery({
+    queryKey: ['knowledge'],
+    queryFn: () => fetchKnowledge(),
+  });
   const knowledge = knowledgeData?.knowledge ?? [];
 
   const { data: allSkillsData } = useQuery({ queryKey: ['skills'], queryFn: () => fetchSkills() });
@@ -792,310 +812,359 @@ function BrainSection({
   return (
     <CollapsibleSection title="Brain - Intellect">
       <CollapsibleSection title="Thinking" defaultOpen={true}>
-      {/* Organizational Intent Signal */}
-      {orgIntentMcpEnabled ? (
-        <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Target className="w-4 h-4 text-primary shrink-0" />
-            <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="text-sm font-medium">Organizational Intent</span>
-              <span className="text-xs text-muted-foreground">
-                Allow this personality to read live org intent signals
+        {/* Organizational Intent Signal */}
+        {orgIntentMcpEnabled ? (
+          <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Target className="w-4 h-4 text-primary shrink-0" />
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-sm font-medium">Organizational Intent</span>
+                <span className="text-xs text-muted-foreground">
+                  Allow this personality to read live org intent signals
+                </span>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={exposeOrgIntentTools}
+                onChange={(e) => {
+                  onExposeOrgIntentToolsChange(e.target.checked);
+                }}
+                aria-label="Organizational Intent Signal"
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+            </label>
+          </div>
+        ) : (
+          <div className="flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5">
+            <Lock className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+            <div className="flex flex-col gap-1 min-w-0">
+              <span className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                Organizational Intent — Not Enabled
               </span>
+              <span className="text-xs text-muted-foreground">
+                Intent Document Editor must be active before assigning org intent access to a
+                personality.
+              </span>
+              <button
+                type="button"
+                onClick={() => navigate('/security-settings')}
+                className="mt-1 inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 hover:underline self-start"
+              >
+                <ExternalLink className="w-3 h-3" />
+                Security → Developers → Intent Document Editor
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Omnipresent Mind toggle */}
+        <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <p className="text-sm font-medium">Omnipresent Mind</p>
+              <p className="text-xs text-muted-foreground">
+                When enabled, this personality accesses the shared memory pool across all agents.
+                Disable to keep memories and knowledge private to this personality.
+              </p>
             </div>
           </div>
           <label className="relative inline-flex items-center cursor-pointer shrink-0">
             <input
               type="checkbox"
-              checked={exposeOrgIntentTools}
-              onChange={(e) => onExposeOrgIntentToolsChange(e.target.checked)}
-              aria-label="Organizational Intent Signal"
+              checked={omnipresentMind}
+              onChange={(e) => {
+                onOmnipresentMindChange(e.target.checked);
+              }}
+              aria-label="Omnipresent Mind"
               className="sr-only peer"
             />
             <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
           </label>
         </div>
-      ) : (
-        <div className="flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5">
-          <Lock className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-          <div className="flex flex-col gap-1 min-w-0">
-            <span className="text-sm font-medium text-amber-700 dark:text-amber-400">Organizational Intent — Not Enabled</span>
-            <span className="text-xs text-muted-foreground">
-              Intent Document Editor must be active before assigning org intent access to a personality.
-            </span>
-            <button
-              type="button"
-              onClick={() => navigate('/security-settings')}
-              className="mt-1 inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 hover:underline self-start"
+
+        {/* Chronoception */}
+        <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <p className="text-sm font-medium">Chronoception</p>
+              <p className="text-xs text-muted-foreground">
+                Injects the current date and time into the system prompt so the personality always
+                knows when it is
+              </p>
+            </div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer shrink-0">
+            <input
+              type="checkbox"
+              checked={injectDateTime}
+              onChange={(e) => {
+                onInjectDateTimeChange(e.target.checked);
+              }}
+              className="sr-only peer"
+            />
+            <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+          </label>
+        </div>
+
+        {/* Default Model */}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Default Model</label>
+            <select
+              value={defaultModel ? `${defaultModel.provider}/${defaultModel.model}` : ''}
+              onChange={(e) => {
+                if (!e.target.value) {
+                  onDefaultModelChange(null);
+                } else {
+                  const [provider, ...rest] = e.target.value.split('/');
+                  onDefaultModelChange({ provider, model: rest.join('/') });
+                }
+              }}
+              className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              <ExternalLink className="w-3 h-3" />
-              Security → Developers → Intent Document Editor
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Omnipresent Mind toggle */}
-      <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
-          <div className="flex flex-col gap-0.5 min-w-0">
-            <p className="text-sm font-medium">Omnipresent Mind</p>
-            <p className="text-xs text-muted-foreground">
-              When enabled, this personality accesses the shared memory pool across all agents.
-              Disable to keep memories and knowledge private to this personality.
+              <option value="">Use system default</option>
+              {modelData?.available &&
+                Object.entries(modelData.available).map(([provider, models]) => (
+                  <optgroup key={provider} label={PROVIDER_LABELS[provider] ?? provider}>
+                    {models.map((m) => (
+                      <option key={`${provider}/${m.model}`} value={`${provider}/${m.model}`}>
+                        {m.model}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+            </select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Model to use when chatting with this personality. Can be overridden per-session.
             </p>
           </div>
-        </div>
-        <label className="relative inline-flex items-center cursor-pointer shrink-0">
-          <input
-            type="checkbox"
-            checked={omnipresentMind}
-            onChange={(e) => onOmnipresentMindChange(e.target.checked)}
-            aria-label="Omnipresent Mind"
-            className="sr-only peer"
-          />
-          <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
-        </label>
-      </div>
 
-      {/* Chronoception */}
-      <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
-          <div className="flex flex-col gap-0.5 min-w-0">
-            <p className="text-sm font-medium">Chronoception</p>
-            <p className="text-xs text-muted-foreground">Injects the current date and time into the system prompt so the personality always knows when it is</p>
+          {/* Model Fallbacks */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Model Fallbacks</label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Ordered list of fallback models (max 5). Tried in order if the primary model fails due
+              to rate limits or unavailability.
+            </p>
+            {modelFallbacks.length > 0 && (
+              <div className="space-y-1 mb-2" data-testid="fallback-list">
+                {modelFallbacks.map((fb, idx) => (
+                  <div
+                    key={`${fb.provider}/${fb.model}-${String(idx)}`}
+                    className="flex items-center gap-2 text-sm bg-muted/40 px-2 py-1 rounded"
+                  >
+                    <span className="text-muted-foreground text-xs w-4">{idx + 1}.</span>
+                    <span className="flex-1 font-mono text-xs">
+                      {fb.provider}/{fb.model}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onModelFallbacksChange(modelFallbacks.filter((_, i) => i !== idx));
+                      }}
+                      className="text-muted-foreground hover:text-destructive text-xs px-1"
+                      aria-label="Remove fallback"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {modelFallbacks.length < 5 && (
+              <div className="flex gap-2">
+                <select
+                  value={pendingFallback}
+                  onChange={(e) => {
+                    setPendingFallback(e.target.value);
+                  }}
+                  className="flex-1 px-3 py-2 rounded border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  data-testid="fallback-add-select"
+                >
+                  <option value="">Add fallback model…</option>
+                  {modelData?.available &&
+                    Object.entries(modelData.available).map(([provider, models]) => {
+                      const filtered = models.filter((m) => {
+                        const key = `${provider}/${m.model}`;
+                        const isDefault = defaultModel
+                          ? `${defaultModel.provider}/${defaultModel.model}` === key
+                          : false;
+                        const alreadyAdded = modelFallbacks.some(
+                          (fb) => `${fb.provider}/${fb.model}` === key
+                        );
+                        return !isDefault && !alreadyAdded;
+                      });
+                      if (filtered.length === 0) return null;
+                      return (
+                        <optgroup key={provider} label={PROVIDER_LABELS[provider] ?? provider}>
+                          {filtered.map((m) => (
+                            <option key={`${provider}/${m.model}`} value={`${provider}/${m.model}`}>
+                              {m.model}
+                            </option>
+                          ))}
+                        </optgroup>
+                      );
+                    })}
+                </select>
+                <button
+                  type="button"
+                  disabled={!pendingFallback}
+                  onClick={() => {
+                    if (!pendingFallback) return;
+                    const [provider, ...rest] = pendingFallback.split('/');
+                    onModelFallbacksChange([
+                      ...modelFallbacks,
+                      { provider, model: rest.join('/') },
+                    ]);
+                    setPendingFallback('');
+                  }}
+                  className="px-3 py-2 rounded border bg-primary text-primary-foreground text-sm disabled:opacity-40"
+                  data-testid="fallback-add-btn"
+                >
+                  Add
+                </button>
+              </div>
+            )}
           </div>
-        </div>
-        <label className="relative inline-flex items-center cursor-pointer shrink-0">
-          <input
-            type="checkbox"
-            checked={injectDateTime}
-            onChange={(e) => { onInjectDateTimeChange(e.target.checked); }}
-            className="sr-only peer"
-          />
-          <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
-        </label>
-      </div>
 
-      {/* Default Model */}
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Default Model</label>
-          <select
-            value={defaultModel ? `${defaultModel.provider}/${defaultModel.model}` : ''}
-            onChange={(e) => {
-              if (!e.target.value) {
-                onDefaultModelChange(null);
-              } else {
-                const [provider, ...rest] = e.target.value.split('/');
-                onDefaultModelChange({ provider, model: rest.join('/') });
-              }
-            }}
-            className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="">Use system default</option>
-            {modelData?.available &&
-              Object.entries(modelData.available).map(([provider, models]) => (
-                <optgroup key={provider} label={PROVIDER_LABELS[provider] ?? provider}>
-                  {models.map((m) => (
-                    <option key={`${provider}/${m.model}`} value={`${provider}/${m.model}`}>
-                      {m.model}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-          </select>
-          <p className="text-xs text-muted-foreground mt-1">Model to use when chatting with this personality. Can be overridden per-session.</p>
-        </div>
-
-        {/* Model Fallbacks */}
-        <div>
-          <label className="block text-sm font-medium mb-1">Model Fallbacks</label>
-          <p className="text-xs text-muted-foreground mb-2">Ordered list of fallback models (max 5). Tried in order if the primary model fails due to rate limits or unavailability.</p>
-          {modelFallbacks.length > 0 && (
-            <div className="space-y-1 mb-2" data-testid="fallback-list">
-              {modelFallbacks.map((fb, idx) => (
-                <div key={`${fb.provider}/${fb.model}-${String(idx)}`} className="flex items-center gap-2 text-sm bg-muted/40 px-2 py-1 rounded">
-                  <span className="text-muted-foreground text-xs w-4">{idx + 1}.</span>
-                  <span className="flex-1 font-mono text-xs">{fb.provider}/{fb.model}</span>
-                  <button
-                    type="button"
-                    onClick={() => { onModelFallbacksChange(modelFallbacks.filter((_, i) => i !== idx)); }}
-                    className="text-muted-foreground hover:text-destructive text-xs px-1"
-                    aria-label="Remove fallback"
-                  >×</button>
-                </div>
+          {/* Analytical Depth */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Analytical Depth</label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Controls the reasoning effort budget. Higher depth = more thorough thinking but more
+              tokens consumed. Anthropic models only.
+            </p>
+            <div className="flex gap-1 flex-wrap">
+              {(
+                [
+                  { value: 'off', label: 'Off', desc: 'No extended thinking' },
+                  { value: 'focused', label: 'Focused', desc: '~4k tokens' },
+                  { value: 'standard', label: 'Standard', desc: '~16k tokens' },
+                  { value: 'deep', label: 'Deep', desc: '~32k tokens' },
+                  { value: 'maximum', label: 'Maximum', desc: '64k tokens' },
+                ] as const
+              ).map(({ value, label, desc }) => (
+                <button
+                  key={value}
+                  type="button"
+                  title={desc}
+                  onClick={() => {
+                    setAnalyticalDepth(value, onThinkingConfigChange);
+                  }}
+                  className={`px-2.5 py-1 text-xs rounded border transition-colors ${
+                    getAnalyticalDepth(thinkingConfig) === value
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background hover:bg-muted'
+                  }`}
+                >
+                  {label}
+                </button>
               ))}
             </div>
-          )}
-          {modelFallbacks.length < 5 && (
-            <div className="flex gap-2">
-              <select
-                value={pendingFallback}
-                onChange={(e) => { setPendingFallback(e.target.value); }}
-                className="flex-1 px-3 py-2 rounded border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                data-testid="fallback-add-select"
-              >
-                <option value="">Add fallback model…</option>
-                {modelData?.available &&
-                  Object.entries(modelData.available).map(([provider, models]) => {
-                    const filtered = models.filter((m) => {
-                      const key = `${provider}/${m.model}`;
-                      const isDefault = defaultModel ? `${defaultModel.provider}/${defaultModel.model}` === key : false;
-                      const alreadyAdded = modelFallbacks.some((fb) => `${fb.provider}/${fb.model}` === key);
-                      return !isDefault && !alreadyAdded;
+          </div>
+        </div>
+
+        {/* Extended Thinking — raw token budget for power users */}
+        <CollapsibleSection title="Extended Thinking" defaultOpen={false}>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Fine-grained token budget control. Analytical Depth above is the simplified version;
+              use this for exact budget values. Anthropic models only.
+            </p>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm">Enable extended thinking</span>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={thinkingConfig.enabled}
+                  onChange={(e) => {
+                    onThinkingConfigChange({ ...thinkingConfig, enabled: e.target.checked });
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+              </label>
+            </div>
+            {thinkingConfig.enabled && (
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground block">
+                  Token budget: {thinkingConfig.budgetTokens.toLocaleString()} tokens
+                </label>
+                <input
+                  type="range"
+                  min={1024}
+                  max={64000}
+                  step={256}
+                  value={thinkingConfig.budgetTokens}
+                  onChange={(e) => {
+                    onThinkingConfigChange({
+                      ...thinkingConfig,
+                      budgetTokens: Number(e.target.value),
                     });
-                    if (filtered.length === 0) return null;
-                    return (
-                      <optgroup key={provider} label={PROVIDER_LABELS[provider] ?? provider}>
-                        {filtered.map((m) => (
-                          <option key={`${provider}/${m.model}`} value={`${provider}/${m.model}`}>{m.model}</option>
-                        ))}
-                      </optgroup>
-                    );
-                  })}
-              </select>
-              <button
-                type="button"
-                disabled={!pendingFallback}
-                onClick={() => {
-                  if (!pendingFallback) return;
-                  const [provider, ...rest] = pendingFallback.split('/');
-                  onModelFallbacksChange([...modelFallbacks, { provider, model: rest.join('/') }]);
-                  setPendingFallback('');
-                }}
-                className="px-3 py-2 rounded border bg-primary text-primary-foreground text-sm disabled:opacity-40"
-                data-testid="fallback-add-btn"
-              >Add</button>
-            </div>
-          )}
-        </div>
-
-        {/* Analytical Depth */}
-        <div>
-          <label className="block text-sm font-medium mb-1">Analytical Depth</label>
-          <p className="text-xs text-muted-foreground mb-2">Controls the reasoning effort budget. Higher depth = more thorough thinking but more tokens consumed. Anthropic models only.</p>
-          <div className="flex gap-1 flex-wrap">
-            {(
-              [
-                { value: 'off', label: 'Off', desc: 'No extended thinking' },
-                { value: 'focused', label: 'Focused', desc: '~4k tokens' },
-                { value: 'standard', label: 'Standard', desc: '~16k tokens' },
-                { value: 'deep', label: 'Deep', desc: '~32k tokens' },
-                { value: 'maximum', label: 'Maximum', desc: '64k tokens' },
-              ] as const
-            ).map(({ value, label, desc }) => (
-              <button
-                key={value}
-                type="button"
-                title={desc}
-                onClick={() => { setAnalyticalDepth(value, onThinkingConfigChange); }}
-                className={`px-2.5 py-1 text-xs rounded border transition-colors ${
-                  getAnalyticalDepth(thinkingConfig) === value
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-background hover:bg-muted'
-                }`}
-              >{label}</button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Extended Thinking — raw token budget for power users */}
-      <CollapsibleSection title="Extended Thinking" defaultOpen={false}>
-        <div className="space-y-3">
-          <p className="text-xs text-muted-foreground">
-            Fine-grained token budget control. Analytical Depth above is the simplified version;
-            use this for exact budget values. Anthropic models only.
-          </p>
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm">Enable extended thinking</span>
-            <label className="relative inline-flex items-center cursor-pointer shrink-0">
-              <input
-                type="checkbox"
-                checked={thinkingConfig.enabled}
-                onChange={(e) => {
-                  onThinkingConfigChange({ ...thinkingConfig, enabled: e.target.checked });
-                }}
-                className="sr-only peer"
-              />
-              <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
-            </label>
-          </div>
-          {thinkingConfig.enabled && (
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground block">
-                Token budget: {thinkingConfig.budgetTokens.toLocaleString()} tokens
-              </label>
-              <input
-                type="range"
-                min={1024}
-                max={64000}
-                step={256}
-                value={thinkingConfig.budgetTokens}
-                onChange={(e) => {
-                  onThinkingConfigChange({ ...thinkingConfig, budgetTokens: Number(e.target.value) });
-                }}
-                className="w-full"
-              />
-              <div className="flex justify-between text-[10px] text-muted-foreground">
-                <span>1,024</span>
-                <span>64,000</span>
+                  }}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <span>1,024</span>
+                  <span>64,000</span>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      </CollapsibleSection>
-      <CollapsibleSection title="Prompt Budget" defaultOpen={false}>
-        <div className="space-y-3">
-          <p className="text-xs text-muted-foreground">
-            Controls how many tokens are reserved for this soul&apos;s composed system prompt (identity,
-            skills, context). Overrides the global server default when set.
-          </p>
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm">Override global prompt budget</span>
-            <label className="relative inline-flex items-center cursor-pointer shrink-0">
-              <input
-                type="checkbox"
-                checked={maxPromptTokens !== null}
-                onChange={(e) => {
-                  onMaxPromptTokensChange(e.target.checked ? globalMaxPromptTokens : null);
-                }}
-                className="sr-only peer"
-              />
-              <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
-            </label>
+            )}
           </div>
-          {maxPromptTokens !== null ? (
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground block">
-                Budget: {maxPromptTokens.toLocaleString()} tokens
-              </label>
-              <input
-                type="range"
-                min={1024}
-                max={100000}
-                step={1024}
-                value={maxPromptTokens}
-                onChange={(e) => {
-                  onMaxPromptTokensChange(Number(e.target.value));
-                }}
-                className="w-full"
-              />
-              <div className="flex justify-between text-[10px] text-muted-foreground">
-                <span>1,024</span>
-                <span>100,000</span>
-              </div>
-            </div>
-          ) : (
+        </CollapsibleSection>
+        <CollapsibleSection title="Prompt Budget" defaultOpen={false}>
+          <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              Using global default ({globalMaxPromptTokens.toLocaleString()} tokens)
+              Controls how many tokens are reserved for this soul&apos;s composed system prompt
+              (identity, skills, context). Overrides the global server default when set.
             </p>
-          )}
-        </div>
-      </CollapsibleSection>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm">Override global prompt budget</span>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={maxPromptTokens !== null}
+                  onChange={(e) => {
+                    onMaxPromptTokensChange(e.target.checked ? globalMaxPromptTokens : null);
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+              </label>
+            </div>
+            {maxPromptTokens !== null ? (
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground block">
+                  Budget: {maxPromptTokens.toLocaleString()} tokens
+                </label>
+                <input
+                  type="range"
+                  min={1024}
+                  max={100000}
+                  step={1024}
+                  value={maxPromptTokens}
+                  onChange={(e) => {
+                    onMaxPromptTokensChange(Number(e.target.value));
+                  }}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <span>1,024</span>
+                  <span>100,000</span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Using global default ({globalMaxPromptTokens.toLocaleString()} tokens)
+              </p>
+            )}
+          </div>
+        </CollapsibleSection>
       </CollapsibleSection>
 
       {/* Active Hours */}
@@ -1405,7 +1474,6 @@ function BrainSection({
           </div>
         )}
       </CollapsibleSection>
-
 
       {/* External Brain Sync */}
       <div className="border-b pb-3 mb-1">
@@ -1846,7 +1914,14 @@ function BodySection({
   resourcePolicy,
   onResourcePolicyChange,
 }: BodySectionProps) {
-  const capabilities = ['auditory', 'diagnostics', 'haptic', 'limb_movement', 'vision', 'vocalization'] as const;
+  const capabilities = [
+    'auditory',
+    'diagnostics',
+    'haptic',
+    'limb_movement',
+    'vision',
+    'vocalization',
+  ] as const;
   const { data: serversData, isLoading: serversLoading } = useQuery({
     queryKey: ['mcpServers'],
     queryFn: () => fetch('/api/v1/mcp/servers').then((r) => r.json()),
@@ -1961,7 +2036,6 @@ function BodySection({
     });
   };
 
-
   const capabilityInfo: Record<string, { icon: string; description: string; available: boolean }> =
     {
       auditory: {
@@ -2065,11 +2139,13 @@ function BodySection({
 
         {/* Delegation status — shown when Sub-Agent Delegation toggle is on */}
         {item.key === 'subAgents' && creationConfig.subAgents && (
-          <div className={`mx-1 px-3 py-2 rounded text-xs flex items-start gap-2 ${
-            subAgentsBlockedByPolicy
-              ? 'bg-destructive/5 border border-destructive/20 text-destructive'
-              : 'bg-success/5 border border-success/20 text-success'
-          }`}>
+          <div
+            className={`mx-1 px-3 py-2 rounded text-xs flex items-start gap-2 ${
+              subAgentsBlockedByPolicy
+                ? 'bg-destructive/5 border border-destructive/20 text-destructive'
+                : 'bg-success/5 border border-success/20 text-success'
+            }`}
+          >
             <span className="mt-0.5 shrink-0">{subAgentsBlockedByPolicy ? '⚠' : '✓'}</span>
             <span>
               {subAgentsBlockedByPolicy
@@ -2153,7 +2229,9 @@ function BodySection({
           <input
             type="text"
             value={voice}
-            onChange={(e) => { onVoiceChange(e.target.value); }}
+            onChange={(e) => {
+              onVoiceChange(e.target.value);
+            }}
             className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             placeholder="e.g., warm, professional"
             maxLength={200}
@@ -2164,7 +2242,9 @@ function BodySection({
           <input
             type="text"
             value={preferredLanguage}
-            onChange={(e) => { onPreferredLanguageChange(e.target.value); }}
+            onChange={(e) => {
+              onPreferredLanguageChange(e.target.value);
+            }}
             className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             placeholder="e.g., English"
             maxLength={100}
@@ -2229,7 +2309,10 @@ function BodySection({
                         { key: 'dailyStandup' as const, label: 'Daily Standup Reminder' },
                         { key: 'weeklySummary' as const, label: 'Weekly Summary' },
                         { key: 'contextualFollowup' as const, label: 'Contextual Follow-up' },
-                        { key: 'integrationHealthAlert' as const, label: 'Integration Health Alert' },
+                        {
+                          key: 'integrationHealthAlert' as const,
+                          label: 'Integration Health Alert',
+                        },
                         { key: 'securityAlertDigest' as const, label: 'Security Alert Digest' },
                       ].map((item) => {
                         const isOn = proactiveConfig.builtins[item.key];
@@ -2878,7 +2961,8 @@ function BodySection({
                               {/* NetBox */}
                               <label
                                 className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
-                                  globalMcpConfig?.exposeNetworkTools && securityPolicy?.allowNetBoxWrite
+                                  globalMcpConfig?.exposeNetworkTools &&
+                                  securityPolicy?.allowNetBoxWrite
                                     ? 'cursor-pointer hover:bg-muted/50'
                                     : 'opacity-50 cursor-not-allowed'
                                 }`}
@@ -2890,11 +2974,12 @@ function BodySection({
                                       — enable Network Tools in Connections first
                                     </span>
                                   )}
-                                  {globalMcpConfig?.exposeNetworkTools && !securityPolicy?.allowNetBoxWrite && (
-                                    <span className="text-[10px] text-muted-foreground ml-1">
-                                      — enable NetBox Write in Connections first
-                                    </span>
-                                  )}
+                                  {globalMcpConfig?.exposeNetworkTools &&
+                                    !securityPolicy?.allowNetBoxWrite && (
+                                      <span className="text-[10px] text-muted-foreground ml-1">
+                                        — enable NetBox Write in Connections first
+                                      </span>
+                                    )}
                                 </span>
                                 <input
                                   type="checkbox"
@@ -2905,7 +2990,10 @@ function BodySection({
                                       exposeNetBox: e.target.checked,
                                     });
                                   }}
-                                  disabled={!globalMcpConfig?.exposeNetworkTools || !securityPolicy?.allowNetBoxWrite}
+                                  disabled={
+                                    !globalMcpConfig?.exposeNetworkTools ||
+                                    !securityPolicy?.allowNetBoxWrite
+                                  }
                                   className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                                 />
                               </label>
@@ -2945,7 +3033,6 @@ function BodySection({
                                 />
                               </label>
                             </div>
-
                           </div>
                         )}
                       </div>
@@ -3072,15 +3159,29 @@ function BodySection({
             <div className="flex gap-1">
               {(
                 [
-                  { value: 'auto', label: 'Auto', activeClass: 'bg-green-600 text-white border-green-600' },
-                  { value: 'request', label: 'Suggest', activeClass: 'bg-amber-500 text-white border-amber-500' },
-                  { value: 'manual', label: 'Manual', activeClass: 'bg-blue-600 text-white border-blue-600' },
+                  {
+                    value: 'auto',
+                    label: 'Auto',
+                    activeClass: 'bg-green-600 text-white border-green-600',
+                  },
+                  {
+                    value: 'request',
+                    label: 'Suggest',
+                    activeClass: 'bg-amber-500 text-white border-amber-500',
+                  },
+                  {
+                    value: 'manual',
+                    label: 'Manual',
+                    activeClass: 'bg-blue-600 text-white border-blue-600',
+                  },
                 ] as const
               ).map(({ value, label, activeClass }) => (
                 <button
                   key={value}
                   type="button"
-                  onClick={() => { onResourcePolicyChange({ ...resourcePolicy, deletionMode: value }); }}
+                  onClick={() => {
+                    onResourcePolicyChange({ ...resourcePolicy, deletionMode: value });
+                  }}
                   className={`px-2.5 py-1 text-xs rounded border transition-colors ${
                     resourcePolicy.deletionMode === value
                       ? activeClass
@@ -3093,9 +3194,12 @@ function BodySection({
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            {resourcePolicy.deletionMode === 'auto' && 'Deletion happens immediately with no prompt.'}
-            {resourcePolicy.deletionMode === 'request' && 'Deletion requires a confirmation step. AI cannot delete this personality.'}
-            {resourcePolicy.deletionMode === 'manual' && 'Deletion is fully blocked. Change this setting to delete.'}
+            {resourcePolicy.deletionMode === 'auto' &&
+              'Deletion happens immediately with no prompt.'}
+            {resourcePolicy.deletionMode === 'request' &&
+              'Deletion requires a confirmation step. AI cannot delete this personality.'}
+            {resourcePolicy.deletionMode === 'manual' &&
+              'Deletion is fully blocked. Change this setting to delete.'}
           </p>
         </div>
 
@@ -3105,15 +3209,29 @@ function BodySection({
             <div className="flex gap-1">
               {(
                 [
-                  { value: 'supervised_auto', label: 'Supervised', activeClass: 'bg-green-600 text-white border-green-600' },
-                  { value: 'semi_auto', label: 'Semi-Auto', activeClass: 'bg-amber-500 text-white border-amber-500' },
-                  { value: 'full_manual', label: 'Full Manual', activeClass: 'bg-blue-600 text-white border-blue-600' },
+                  {
+                    value: 'supervised_auto',
+                    label: 'Supervised',
+                    activeClass: 'bg-green-600 text-white border-green-600',
+                  },
+                  {
+                    value: 'semi_auto',
+                    label: 'Semi-Auto',
+                    activeClass: 'bg-amber-500 text-white border-amber-500',
+                  },
+                  {
+                    value: 'full_manual',
+                    label: 'Full Manual',
+                    activeClass: 'bg-blue-600 text-white border-blue-600',
+                  },
                 ] as const
               ).map(({ value, label, activeClass }) => (
                 <button
                   key={value}
                   type="button"
-                  onClick={() => { onResourcePolicyChange({ ...resourcePolicy, automationLevel: value }); }}
+                  onClick={() => {
+                    onResourcePolicyChange({ ...resourcePolicy, automationLevel: value });
+                  }}
                   className={`px-2.5 py-1 text-xs rounded border transition-colors ${
                     resourcePolicy.automationLevel === value
                       ? activeClass
@@ -3126,20 +3244,30 @@ function BodySection({
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            {resourcePolicy.automationLevel === 'supervised_auto' && 'AI actions proceed immediately. You receive notifications.'}
-            {resourcePolicy.automationLevel === 'semi_auto' && 'Destructive AI actions (delete) are queued for your approval. Creative actions proceed.'}
-            {resourcePolicy.automationLevel === 'full_manual' && 'Every AI-initiated creation or deletion is queued for your approval.'}
+            {resourcePolicy.automationLevel === 'supervised_auto' &&
+              'AI actions proceed immediately. You receive notifications.'}
+            {resourcePolicy.automationLevel === 'semi_auto' &&
+              'Destructive AI actions (delete) are queued for your approval. Creative actions proceed.'}
+            {resourcePolicy.automationLevel === 'full_manual' &&
+              'Every AI-initiated creation or deletion is queued for your approval.'}
           </p>
         </div>
 
         <div className="space-y-1.5 px-1">
           <div className="flex items-center justify-between">
-            <span className={`text-sm font-medium ${resourcePolicy.emergencyStop ? 'text-destructive' : ''}`}>
+            <span
+              className={`text-sm font-medium ${resourcePolicy.emergencyStop ? 'text-destructive' : ''}`}
+            >
               Emergency Stop
             </span>
             <button
               type="button"
-              onClick={() => { onResourcePolicyChange({ ...resourcePolicy, emergencyStop: !resourcePolicy.emergencyStop }); }}
+              onClick={() => {
+                onResourcePolicyChange({
+                  ...resourcePolicy,
+                  emergencyStop: !resourcePolicy.emergencyStop,
+                });
+              }}
               className="px-3 py-1 text-xs font-semibold rounded border transition-colors whitespace-nowrap bg-destructive text-white border-destructive hover:bg-destructive/90"
             >
               {resourcePolicy.emergencyStop ? '⏹ Stop Active' : '⏹ Emergency Stop'}
@@ -3491,8 +3619,8 @@ export function PersonalityEditor() {
       body,
     });
     setResourcePolicy({
-      deletionMode: (p.body?.resourcePolicy?.deletionMode ?? 'auto') as 'auto' | 'request' | 'manual',
-      automationLevel: (p.body?.resourcePolicy?.automationLevel ?? 'supervised_auto') as 'full_manual' | 'semi_auto' | 'supervised_auto',
+      deletionMode: p.body?.resourcePolicy?.deletionMode ?? 'auto',
+      automationLevel: p.body?.resourcePolicy?.automationLevel ?? 'supervised_auto',
       emergencyStop: p.body?.resourcePolicy?.emergencyStop ?? false,
     });
     setCreationConfig({
@@ -3550,7 +3678,8 @@ export function PersonalityEditor() {
         dailyStandup: body.proactiveConfig?.builtinModes?.dailyStandup ?? 'auto',
         weeklySummary: body.proactiveConfig?.builtinModes?.weeklySummary ?? 'suggest',
         contextualFollowup: body.proactiveConfig?.builtinModes?.contextualFollowup ?? 'suggest',
-        integrationHealthAlert: body.proactiveConfig?.builtinModes?.integrationHealthAlert ?? 'auto',
+        integrationHealthAlert:
+          body.proactiveConfig?.builtinModes?.integrationHealthAlert ?? 'auto',
         securityAlertDigest: body.proactiveConfig?.builtinModes?.securityAlertDigest ?? 'suggest',
       },
       learning: {
@@ -3603,7 +3732,11 @@ export function PersonalityEditor() {
       includeArchetypes: false,
       body,
     });
-    setResourcePolicy({ deletionMode: 'auto', automationLevel: 'supervised_auto', emergencyStop: false });
+    setResourcePolicy({
+      deletionMode: 'auto',
+      automationLevel: 'supervised_auto',
+      emergencyStop: false,
+    });
     setCreationConfig({
       skills: false,
       tasks: false,
@@ -3672,7 +3805,11 @@ export function PersonalityEditor() {
     setThinkingConfig({ enabled: false, budgetTokens: 10000 });
     setMaxPromptTokens(null);
     setOmnipresentMind(false);
-    setResourcePolicy({ deletionMode: 'auto', automationLevel: 'supervised_auto', emergencyStop: false });
+    setResourcePolicy({
+      deletionMode: 'auto',
+      automationLevel: 'supervised_auto',
+      emergencyStop: false,
+    });
     setSetActiveOnSave(false);
     setEditing('new');
   };
@@ -3724,7 +3861,9 @@ export function PersonalityEditor() {
         <div className="card p-3 border-warning bg-warning/10 text-warning-foreground text-sm flex items-center justify-between">
           <span>{deleteLockedMsg}</span>
           <button
-            onClick={() => { setDeleteLockedMsg(null); }}
+            onClick={() => {
+              setDeleteLockedMsg(null);
+            }}
             className="btn-ghost p-1 ml-2"
           >
             <X className="w-3 h-3" />
@@ -3749,7 +3888,9 @@ export function PersonalityEditor() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Personalities</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Define the agents that power your assistant</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Define the agents that power your assistant
+          </p>
         </div>
         <button
           onClick={startCreate}
@@ -3782,9 +3923,7 @@ export function PersonalityEditor() {
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <h3 className="font-medium truncate">
-                {editing === 'new'
-                  ? 'Create Personality'
-                  : (form.name?.trim() || 'Edit Personality')}
+                {editing === 'new' ? 'Create Personality' : form.name?.trim() || 'Edit Personality'}
               </h3>
               {editingPersonality?.isDefault && (
                 <p className="text-xs text-primary flex items-center gap-1 mt-0.5">
@@ -3878,7 +4017,10 @@ export function PersonalityEditor() {
             <div className="flex items-center justify-between">
               <div className="flex flex-col gap-0.5">
                 <span className="text-sm">Ontostasis</span>
-                <span className="text-xs text-muted-foreground">Locks this personality's existence — prevents any AI-initiated deletion. Only a human admin can remove it from the dashboard</span>
+                <span className="text-xs text-muted-foreground">
+                  Locks this personality's existence — prevents any AI-initiated deletion. Only a
+                  human admin can remove it from the dashboard
+                </span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -3908,11 +4050,17 @@ export function PersonalityEditor() {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={editing === 'new' ? setActiveOnSave : (editingPersonality?.isDefault ?? false)}
+                  checked={
+                    editing === 'new' ? setActiveOnSave : (editingPersonality?.isDefault ?? false)
+                  }
                   onChange={(e) => {
                     if (editing === 'new') {
                       setSetActiveOnSave(e.target.checked);
-                    } else if (e.target.checked && editingPersonality && !editingPersonality.isDefault) {
+                    } else if (
+                      e.target.checked &&
+                      editingPersonality &&
+                      !editingPersonality.isDefault
+                    ) {
                       setDefaultMut.mutate(editingPersonality.id);
                     } else if (!e.target.checked && editingPersonality?.isDefault) {
                       clearDefaultMut.mutate();
@@ -3958,15 +4106,18 @@ export function PersonalityEditor() {
                 ))}
               </div>
             </div>
-
           </CollapsibleSection>
 
           {/* Spirit Section */}
           <SpiritSection
             includeArchetypes={form.includeArchetypes ?? true}
-            onIncludeArchetypesChange={(v) => { setForm((f) => ({ ...f, includeArchetypes: v })); }}
+            onIncludeArchetypesChange={(v) => {
+              setForm((f) => ({ ...f, includeArchetypes: v }));
+            }}
             empathyResonance={form.empathyResonance ?? false}
-            onEmpathyResonanceChange={(v) => { setForm((f) => ({ ...f, empathyResonance: v })); }}
+            onEmpathyResonanceChange={(v) => {
+              setForm((f) => ({ ...f, empathyResonance: v }));
+            }}
           />
 
           {/* Brain Section */}
@@ -3980,25 +4131,37 @@ export function PersonalityEditor() {
             onMaxPromptTokensChange={setMaxPromptTokens}
             globalMaxPromptTokens={soulConfig?.maxPromptTokens ?? 16000}
             exposeOrgIntentTools={mcpFeatures.exposeOrgIntentTools}
-            onExposeOrgIntentToolsChange={(v) => setMcpFeatures((f) => ({ ...f, exposeOrgIntentTools: v }))}
+            onExposeOrgIntentToolsChange={(v) => {
+              setMcpFeatures((f) => ({ ...f, exposeOrgIntentTools: v }));
+            }}
             orgIntentMcpEnabled={securityPolicy?.allowIntentEditor ?? false}
             omnipresentMind={omnipresentMind}
             onOmnipresentMindChange={setOmnipresentMind}
             injectDateTime={form.injectDateTime ?? false}
-            onInjectDateTimeChange={(v) => { setForm((f) => ({ ...f, injectDateTime: v })); }}
+            onInjectDateTimeChange={(v) => {
+              setForm((f) => ({ ...f, injectDateTime: v }));
+            }}
             defaultModel={form.defaultModel ?? null}
-            onDefaultModelChange={(v) => { setForm((f) => ({ ...f, defaultModel: v })); }}
+            onDefaultModelChange={(v) => {
+              setForm((f) => ({ ...f, defaultModel: v }));
+            }}
             modelFallbacks={form.modelFallbacks ?? []}
-            onModelFallbacksChange={(v) => { setForm((f) => ({ ...f, modelFallbacks: v })); }}
+            onModelFallbacksChange={(v) => {
+              setForm((f) => ({ ...f, modelFallbacks: v }));
+            }}
             modelData={modelData}
           />
 
           {/* Body Section */}
           <BodySection
             voice={form.voice ?? ''}
-            onVoiceChange={(v) => { setForm((f) => ({ ...f, voice: v })); }}
+            onVoiceChange={(v) => {
+              setForm((f) => ({ ...f, voice: v }));
+            }}
             preferredLanguage={form.preferredLanguage ?? ''}
-            onPreferredLanguageChange={(v) => { setForm((f) => ({ ...f, preferredLanguage: v })); }}
+            onPreferredLanguageChange={(v) => {
+              setForm((f) => ({ ...f, preferredLanguage: v }));
+            }}
             allowConnections={allowConnections}
             onAllowConnectionsChange={setAllowConnections}
             selectedServers={selectedServers}
@@ -4071,13 +4234,19 @@ export function PersonalityEditor() {
                           </span>
                         )}
                         {p.isWithinActiveHours && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400" title="Within active hours">
+                          <span
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400"
+                            title="Within active hours"
+                          >
                             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
                             Online
                           </span>
                         )}
                         {p.isArchetype && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground" title="System preset — cannot be deleted">
+                          <span
+                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground"
+                            title="System preset — cannot be deleted"
+                          >
                             Preset
                           </span>
                         )}
@@ -4097,7 +4266,9 @@ export function PersonalityEditor() {
                       </span>
                     ) : (
                       <button
-                        onClick={() => { setDefaultMut.mutate(p.id); }}
+                        onClick={() => {
+                          setDefaultMut.mutate(p.id);
+                        }}
                         disabled={setDefaultMut.isPending}
                         className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-primary rounded-lg"
                         title={`Set ${p.name} as default`}
@@ -4109,12 +4280,17 @@ export function PersonalityEditor() {
                     {/* Enable / disable */}
                     {p.isActive ? (
                       p.isDefault ? (
-                        <span className="p-1.5 sm:p-2 text-green-500" title="Active — default personality is always on">
+                        <span
+                          className="p-1.5 sm:p-2 text-green-500"
+                          title="Active — default personality is always on"
+                        >
                           <Power className="w-4 h-4 sm:w-5 sm:h-5" />
                         </span>
                       ) : (
                         <button
-                          onClick={() => { disableMut.mutate(p.id); }}
+                          onClick={() => {
+                            disableMut.mutate(p.id);
+                          }}
                           disabled={disableMut.isPending}
                           className="btn-ghost p-1.5 sm:p-2 text-green-500 hover:text-muted-foreground rounded-lg"
                           title={`Disable ${p.name}`}
@@ -4125,7 +4301,9 @@ export function PersonalityEditor() {
                       )
                     ) : (
                       <button
-                        onClick={() => { enableMut.mutate(p.id); }}
+                        onClick={() => {
+                          enableMut.mutate(p.id);
+                        }}
                         disabled={enableMut.isPending}
                         className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-green-500 rounded-lg"
                         title={`Enable ${p.name}`}
@@ -4147,11 +4325,15 @@ export function PersonalityEditor() {
                     <button
                       onClick={() => {
                         if (p.isArchetype) {
-                          setDeleteLockedMsg(`"${p.name}" is a system preset and cannot be deleted.`);
+                          setDeleteLockedMsg(
+                            `"${p.name}" is a system preset and cannot be deleted.`
+                          );
                         } else {
                           const mode = p.body?.resourcePolicy?.deletionMode ?? 'auto';
                           if (mode === 'manual') {
-                            setDeleteLockedMsg(`"${p.name}" has deletion locked (Manual mode). Change the deletion mode in Body → Resources to delete it.`);
+                            setDeleteLockedMsg(
+                              `"${p.name}" has deletion locked (Manual mode). Change the deletion mode in Body → Resources to delete it.`
+                            );
                           } else {
                             setDeleteTarget(p);
                           }
@@ -4164,9 +4346,9 @@ export function PersonalityEditor() {
                           ? 'System preset — cannot be deleted'
                           : p.isDefault
                             ? 'Switch to another personality before deleting'
-                            : (p.body?.resourcePolicy?.deletionMode === 'manual'
-                                ? 'Deletion locked — change mode in Body → Resources'
-                                : `Delete ${p.name}`)
+                            : p.body?.resourcePolicy?.deletionMode === 'manual'
+                              ? 'Deletion locked — change mode in Body → Resources'
+                              : `Delete ${p.name}`
                       }
                       aria-label={
                         p.isArchetype

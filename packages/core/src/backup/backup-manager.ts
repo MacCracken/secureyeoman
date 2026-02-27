@@ -26,8 +26,18 @@ export interface BackupManagerDeps {
 }
 
 const SAFE_ENV_KEYS = new Set([
-  'PATH', 'HOME', 'USER', 'LOGNAME', 'LANG', 'LC_ALL', 'LC_CTYPE',
-  'TERM', 'SHELL', 'TMPDIR', 'TZ', 'XDG_RUNTIME_DIR',
+  'PATH',
+  'HOME',
+  'USER',
+  'LOGNAME',
+  'LANG',
+  'LC_ALL',
+  'LC_CTYPE',
+  'TERM',
+  'SHELL',
+  'TMPDIR',
+  'TZ',
+  'XDG_RUNTIME_DIR',
 ]);
 
 function buildSafeEnv(): NodeJS.ProcessEnv {
@@ -104,18 +114,27 @@ export class BackupManager {
     try {
       const env: NodeJS.ProcessEnv = { ...buildSafeEnv() };
       if (this.dbConfig.password) {
-        env['PGPASSWORD'] = this.dbConfig.password;
+        env.PGPASSWORD = this.dbConfig.password;
       }
 
-      await spawnAsync('pg_dump', [
-        '-h', this.dbConfig.host,
-        '-p', String(this.dbConfig.port),
-        '-U', this.dbConfig.user,
-        '-d', this.dbConfig.database,
-        '--format=custom',
-        '--no-password',
-        '-f', filePath,
-      ], { env });
+      await spawnAsync(
+        'pg_dump',
+        [
+          '-h',
+          this.dbConfig.host,
+          '-p',
+          String(this.dbConfig.port),
+          '-U',
+          this.dbConfig.user,
+          '-d',
+          this.dbConfig.database,
+          '--format=custom',
+          '--no-password',
+          '-f',
+          filePath,
+        ],
+        { env }
+      );
 
       const stat = await fs.stat(filePath);
       await this.storage.update(id, {
@@ -140,19 +159,27 @@ export class BackupManager {
 
     const env: NodeJS.ProcessEnv = { ...buildSafeEnv() };
     if (this.dbConfig.password) {
-      env['PGPASSWORD'] = this.dbConfig.password;
+      env.PGPASSWORD = this.dbConfig.password;
     }
 
-    await spawnAsync('pg_restore', [
-      '-h', this.dbConfig.host,
-      '-p', String(this.dbConfig.port),
-      '-U', this.dbConfig.user,
-      '-d', this.dbConfig.database,
-      '--clean',
-      '--if-exists',
-      '--no-password',
-      rec.filePath,
-    ], { env });
+    await spawnAsync(
+      'pg_restore',
+      [
+        '-h',
+        this.dbConfig.host,
+        '-p',
+        String(this.dbConfig.port),
+        '-U',
+        this.dbConfig.user,
+        '-d',
+        this.dbConfig.database,
+        '--clean',
+        '--if-exists',
+        '--no-password',
+        rec.filePath,
+      ],
+      { env }
+    );
 
     this.logger.info('Restore completed', { id });
   }

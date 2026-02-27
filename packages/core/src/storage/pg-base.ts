@@ -73,9 +73,7 @@ export class PgBaseStorage {
    * Execute a function inside a transaction with row-level security bypassed.
    * Used for admin operations that must see all tenants' data.
    */
-  protected async bypassRls<T>(
-    fn: (client: import('pg').PoolClient) => Promise<T>
-  ): Promise<T> {
+  protected async bypassRls<T>(fn: (client: import('pg').PoolClient) => Promise<T>): Promise<T> {
     return this.withTransaction(async (client) => {
       await client.query('SET LOCAL row_security = off');
       return fn(client);

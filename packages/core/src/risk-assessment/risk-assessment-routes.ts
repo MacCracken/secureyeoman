@@ -185,14 +185,14 @@ export function registerRiskAssessmentRoutes(
 
   app.post('/api/v1/risk/feeds/:feedId/ingest', async (req, reply) => {
     const { feedId } = req.params as { feedId: string };
-    const body = req.body as unknown;
+    const body = req.body;
 
     if (!Array.isArray(body)) {
       return sendError(reply, 400, 'Request body must be a JSON array of findings');
     }
 
     try {
-      const result = await mgr.ingestFindings(feedId, body as any[]);
+      const result = await mgr.ingestFindings(feedId, body);
       return reply.send(result);
     } catch (err) {
       return sendError(reply, 500, toErrorMessage(err));

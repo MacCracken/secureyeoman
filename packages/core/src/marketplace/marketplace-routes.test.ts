@@ -51,21 +51,45 @@ describe('GET /api/v1/marketplace', () => {
     const searchMock = vi.fn().mockResolvedValue({ skills: [], total: 0 });
     const app = buildApp({ search: searchMock });
     await app.inject({ method: 'GET', url: '/api/v1/marketplace?origin=community' });
-    expect(searchMock).toHaveBeenCalledWith(undefined, undefined, undefined, undefined, 'community', undefined);
+    expect(searchMock).toHaveBeenCalledWith(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'community',
+      undefined
+    );
   });
 
   it('translates origin=marketplace to source=marketplace (builtin+published filter)', async () => {
     const searchMock = vi.fn().mockResolvedValue({ skills: [], total: 0 });
     const app = buildApp({ search: searchMock });
     await app.inject({ method: 'GET', url: '/api/v1/marketplace?origin=marketplace' });
-    expect(searchMock).toHaveBeenCalledWith(undefined, undefined, undefined, undefined, 'marketplace', undefined);
+    expect(searchMock).toHaveBeenCalledWith(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'marketplace',
+      undefined
+    );
   });
 
   it('origin takes precedence over source when both present', async () => {
     const searchMock = vi.fn().mockResolvedValue({ skills: [], total: 0 });
     const app = buildApp({ search: searchMock });
-    await app.inject({ method: 'GET', url: '/api/v1/marketplace?origin=community&source=published' });
-    expect(searchMock).toHaveBeenCalledWith(undefined, undefined, undefined, undefined, 'community', undefined);
+    await app.inject({
+      method: 'GET',
+      url: '/api/v1/marketplace?origin=community&source=published',
+    });
+    expect(searchMock).toHaveBeenCalledWith(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'community',
+      undefined
+    );
   });
 });
 
@@ -186,7 +210,9 @@ describe('POST /api/v1/marketplace/publish', () => {
 
 describe('DELETE /api/v1/marketplace/:id', () => {
   it('deletes a non-builtin skill and returns 204', async () => {
-    const app = buildApp({ getSkill: vi.fn().mockResolvedValue({ ...SKILL, source: 'community' }) });
+    const app = buildApp({
+      getSkill: vi.fn().mockResolvedValue({ ...SKILL, source: 'community' }),
+    });
     const res = await app.inject({ method: 'DELETE', url: '/api/v1/marketplace/skill-1' });
     expect(res.statusCode).toBe(204);
   });

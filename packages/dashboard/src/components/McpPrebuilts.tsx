@@ -299,7 +299,7 @@ export function McpPrebuilts() {
 
   // Find the server whose form is open
   const activeServer = expandedServer
-    ? PREBUILT_SERVERS.find((s) => s.name === expandedServer) ?? null
+    ? (PREBUILT_SERVERS.find((s) => s.name === expandedServer) ?? null)
     : null;
 
   return (
@@ -312,7 +312,9 @@ export function McpPrebuilts() {
         </div>
         {addableServers.length > 0 && !expandedServer && (
           <button
-            onClick={() => setShowPicker((v) => !v)}
+            onClick={() => {
+              setShowPicker((v) => !v);
+            }}
             className="btn btn-ghost text-xs px-3 py-1.5 flex items-center gap-1"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -327,7 +329,9 @@ export function McpPrebuilts() {
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium">Choose a server</h3>
             <button
-              onClick={() => setShowPicker(false)}
+              onClick={() => {
+                setShowPicker(false);
+              }}
               className="text-xs text-muted-foreground hover:text-foreground"
             >
               Cancel
@@ -399,12 +403,12 @@ export function McpPrebuilts() {
                   <input
                     type={isUrl ? 'text' : 'password'}
                     value={envValues[`${activeServer.name}:${v.key}`] ?? ''}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setEnvValues((prev) => ({
                         ...prev,
                         [`${activeServer.name}:${v.key}`]: e.target.value,
-                      }))
-                    }
+                      }));
+                    }}
                     placeholder={isUrl ? 'https://' : v.key}
                     className="input w-full text-xs"
                   />
@@ -416,7 +420,9 @@ export function McpPrebuilts() {
             )}
             <div className="flex gap-2">
               <button
-                onClick={() => connectMut.mutate(activeServer)}
+                onClick={() => {
+                  connectMut.mutate(activeServer);
+                }}
                 disabled={connectMut.isPending && connectMut.variables?.name === activeServer.name}
                 className="btn btn-ghost text-xs px-3 py-1.5"
               >
