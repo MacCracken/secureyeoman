@@ -614,7 +614,7 @@ function MissionControlTab({
                   >
                     {p.avatarUrl ? (
                       <img
-                        src={p.avatarUrl}
+                        src={`/api/v1${p.avatarUrl}`}
                         alt={p.name}
                         className="w-5 h-5 rounded-full object-cover flex-shrink-0"
                       />
