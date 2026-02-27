@@ -183,6 +183,90 @@ describe('AuditChain', () => {
     });
   });
 
+  describe('initialize() with repairOnInit', () => {
+    it('auto-repairs when the last entry has an invalid signature', async () => {
+      await chain.record({ event: 'e1', level: 'info', message: 'First' });
+
+      // Corrupt the only entry's signature directly
+      const entries: any[] = [];
+      for await (const e of storage.iterate()) entries.push(e);
+      entries[0].integrity.signature = 'bad'.padEnd(64, '0');
+
+      const brokenStorage = new InMemoryAuditStorage();
+      for (const e of entries) await brokenStorage.append(e);
+
+      const repairChain = new AuditChain({
+        storage: brokenStorage,
+        signingKey: SIGNING_KEY,
+        repairOnInit: true,
+      });
+      await repairChain.initialize(); // should not throw
+
+      const result = await repairChain.verify();
+      expect(result.valid).toBe(true);
+    });
+
+    it('auto-repairs a broken link in the middle of the chain even when last entry looks valid', async () => {
+      // Build a 3-entry chain
+      await chain.record({ event: 'e1', level: 'info', message: 'First' });
+      await chain.record({ event: 'e2', level: 'info', message: 'Second' });
+      await chain.record({ event: 'e3', level: 'info', message: 'Third' });
+
+      // Break entry[1]'s previousEntryHash but leave entry[2] (last) untouched.
+      // The last entry's signature remains valid in isolation, so the OLD
+      // single-entry check would not have triggered repair.
+      const entries: any[] = [];
+      for await (const e of storage.iterate()) entries.push(e);
+      entries[1] = {
+        ...entries[1],
+        integrity: { ...entries[1].integrity, previousEntryHash: '0'.repeat(64) },
+      };
+
+      const brokenStorage = new InMemoryAuditStorage();
+      for (const e of entries) await brokenStorage.append(e);
+
+      // Without repairOnInit this chain can be initialized (last entry is fine)
+      // but verify() would fail.  With repairOnInit the full verify runs and
+      // triggers auto-repair so the chain is clean when initialize() returns.
+      const repairChain = new AuditChain({
+        storage: brokenStorage,
+        signingKey: SIGNING_KEY,
+        repairOnInit: true,
+      });
+      await repairChain.initialize();
+
+      const result = await repairChain.verify();
+      expect(result.valid).toBe(true);
+      expect(result.entriesChecked).toBe(3);
+    });
+
+    it('continues the chain correctly after auto-repair on init', async () => {
+      await chain.record({ event: 'e1', level: 'info', message: 'First' });
+
+      // Corrupt entry
+      const entries: any[] = [];
+      for await (const e of storage.iterate()) entries.push(e);
+      entries[0].integrity.previousEntryHash = '0'.repeat(63) + '1';
+
+      const brokenStorage = new InMemoryAuditStorage();
+      for (const e of entries) await brokenStorage.append(e);
+
+      const repairChain = new AuditChain({
+        storage: brokenStorage,
+        signingKey: SIGNING_KEY,
+        repairOnInit: true,
+      });
+      await repairChain.initialize();
+
+      // New entries should chain correctly after repair
+      await repairChain.record({ event: 'e2', level: 'info', message: 'After repair' });
+
+      const result = await repairChain.verify();
+      expect(result.valid).toBe(true);
+      expect(result.entriesChecked).toBe(2);
+    });
+  });
+
   describe('record() concurrency', () => {
     it('produces a valid chain when many records are fired concurrently', async () => {
       // Simulate the fire-and-forget pattern used throughout the codebase
@@ -354,8 +438,8 @@ describe('AuditChain', () => {
   describe('getStats() — error details', () => {
     it('returns chainError and chainBrokenAt when chain is invalid', async () => {
       // Record two entries so we can tamper with the FIRST (not last) entry.
-      // initialize() only verifies the last entry, so tampering the first
-      // entry makes the chain invalid but still allows initialization.
+      // repairOnInit is false (default) so initialize() only verifies the last
+      // entry — tampering the first entry allows initialization but breaks verify().
       await chain.record({ event: 'e1', level: 'info', message: 'First' });
       await chain.record({ event: 'e2', level: 'info', message: 'Second' });
 
@@ -367,7 +451,8 @@ describe('AuditChain', () => {
       const tampered = new InMemoryAuditStorage();
       for (const e of entries) await tampered.append(e);
 
-      // initialize() checks the LAST entry only — that's still valid
+      // repairOnInit is false (default) — initialize() fast-path only checks the last
+      // entry's signature, so tampering the first entry is undetected at init time.
       const tamperedChain = new AuditChain({ storage: tampered, signingKey: SIGNING_KEY });
       await tamperedChain.initialize();
 
@@ -586,7 +671,8 @@ describe('AuditChain additional branches', () => {
     const tamperedStorage = new InMemoryAuditStorage();
     for (const e of entries) await tamperedStorage.append(e);
 
-    // Initialize succeeds — the last entry (entry[2]) is untampered
+    // repairOnInit false (default) — initialize() fast-path accepts the chain because
+    // the last entry (entry[2]) is untampered.
     const verifyChain = new AuditChain({ storage: tamperedStorage, signingKey: SIGNING_KEY });
     await verifyChain.initialize();
 

@@ -1,3 +1,15 @@
+## [2026.2.26q] — 2026-02-26
+
+### Fixed
+
+#### Audit Chain — Mid-Chain Break Not Caught by `repairOnInit`
+
+- **Root cause** — `initialize()` with `repairOnInit: true` only checked the **last entry's** signature. If the last entry had a valid signature (e.g. its metadata was already alphabetically sorted so the JSONB key-order fix did not change its hash), auto-repair did not trigger — even though earlier entries in the chain had broken `previousEntryHash` links.
+- **Fix** — When `repairOnInit: true`, `initialize()` now runs a full `verify()` pass instead of the single-entry signature check. If verify fails for any reason (mid-chain `previousEntryHash` mismatch, signature failure, any entry), repair runs automatically. When `repairOnInit: false` (the default), the existing fast-path single-entry check is unchanged.
+- **Tests** — `audit-chain.test.ts` grows from 41 to 44 tests: three new `repairOnInit` tests covering last-entry signature failure, mid-chain break with valid last entry, and chain continuity after auto-repair on init. Stale comments updated.
+
+---
+
 ## [2026.2.26p] — 2026-02-26
 
 ### Security / Performance / Stability — Phase 59 Hardening

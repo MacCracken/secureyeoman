@@ -184,38 +184,46 @@ export class AuditChain {
     const lastEntry = await this.storage.getLast();
 
     if (lastEntry) {
-      // Verify the last entry before continuing
-      const entryHash = computeEntryHash(lastEntry);
-      const expectedSig = computeSignature(
-        entryHash,
-        lastEntry.integrity.previousEntryHash,
-        this.signingKey
-      );
+      this.lastHash = computeEntryHash(lastEntry);
 
-      if (!secureCompare(lastEntry.integrity.signature, expectedSig)) {
-        if (this.repairOnInit) {
-          this.logger?.warn('Audit chain signature mismatch on last entry — running automatic repair', {
-            lastEntryId: lastEntry.id,
+      if (this.repairOnInit) {
+        // Full chain verification — a single-entry signature check is not sufficient
+        // because a broken link in the *middle* of the chain may leave the last
+        // entry's signature accidentally valid (e.g. after the JSONB metadata
+        // key-order fix where only some entries had unsorted metadata keys).
+        // Mark initialized before calling verify/repair to prevent re-entrant initialize().
+        this.initialized = true;
+        const verification = await this.verify();
+        if (!verification.valid) {
+          this.logger?.warn('Audit chain integrity check failed — running automatic repair', {
+            brokenAt: verification.brokenAt,
+            error: verification.error,
           });
-          // Mark initialized first to prevent recursive initialize() call inside repair()
-          this.initialized = true;
           const { repairedCount, entriesTotal } = await this.repair();
           this.logger?.info('Audit chain auto-repair complete', { repairedCount, entriesTotal });
           return;
         }
-        throw new Error('Audit chain integrity compromised: last entry signature invalid');
+      } else {
+        // Fast path: only verify the last entry's signature before accepting the chain.
+        const expectedSig = computeSignature(
+          this.lastHash,
+          lastEntry.integrity.previousEntryHash,
+          this.signingKey
+        );
+        if (!secureCompare(lastEntry.integrity.signature, expectedSig)) {
+          throw new Error('Audit chain integrity compromised: last entry signature invalid');
+        }
+        this.initialized = true;
       }
 
-      this.lastHash = entryHash;
       this.logger?.info('Audit chain initialized', {
         entriesCount: await this.storage.count(),
         lastEntryId: lastEntry.id,
       });
     } else {
       this.logger?.info('Audit chain initialized (empty chain)');
+      this.initialized = true;
     }
-
-    this.initialized = true;
   }
 
   /**
