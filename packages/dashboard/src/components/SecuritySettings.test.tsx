@@ -126,6 +126,8 @@ describe('SecuritySettings', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
     mockUpdateSecurityPolicy.mockResolvedValue({
       allowSubAgents: true,
@@ -152,6 +154,8 @@ describe('SecuritySettings', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
     vi.mocked(api.fetchModelDefault).mockResolvedValue({ provider: null, model: null });
@@ -209,6 +213,8 @@ describe('SecuritySettings', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle A2A Networks');
@@ -319,6 +325,8 @@ describe('SecuritySettings', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle A2A Networks');
@@ -361,6 +369,8 @@ describe('SecuritySettings', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle Agent Swarms');
@@ -393,6 +403,8 @@ describe('SecuritySettings', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle Agent Swarms');
@@ -519,6 +531,8 @@ describe('SecuritySettings', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
     renderComponent();
     const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
@@ -551,6 +565,8 @@ describe('SecuritySettings', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
     renderComponent();
     const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
@@ -593,6 +609,8 @@ describe('SecuritySettings', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
     renderComponent();
     const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
@@ -703,5 +721,83 @@ describe('SecuritySettings', () => {
       expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
       expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowTwingate: true });
     });
+  });
+
+  // ── Code Editor ────────────────────────────────────────────────────
+
+  it('renders Code Editor toggle enabled by default', async () => {
+    renderComponent();
+    expect(await screen.findByText('Code Editor')).toBeInTheDocument();
+    const toggle = screen.getByLabelText('Toggle Code Editor');
+    expect(toggle).toBeInTheDocument();
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('calls updateSecurityPolicy with allowCodeEditor when toggled', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Code Editor');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowCodeEditor: false });
+    });
+  });
+
+  it('renders Advanced Editor Mode toggle disabled by default', async () => {
+    renderComponent();
+    expect(await screen.findByText('Advanced Editor Mode')).toBeInTheDocument();
+    const toggle = screen.getByLabelText('Toggle Advanced Editor Mode');
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('calls updateSecurityPolicy with allowAdvancedEditor when toggled', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Advanced Editor Mode');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowAdvancedEditor: true });
+    });
+  });
+
+  it('greyed-out wrapper is absent when Code Editor is enabled', async () => {
+    renderComponent();
+    await screen.findByText('Advanced Editor Mode');
+    // When codeEditorAllowed=true the opacity-40 wrapper should not be present
+    const wrapper = document.querySelector('.opacity-40.pointer-events-none');
+    expect(wrapper).not.toBeInTheDocument();
+  });
+
+  it('shows "Requires Code Editor" hint when Code Editor is off', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: false,
+      allowA2A: false,
+      allowSwarms: false,
+      allowExtensions: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowStorybook: false,
+      allowMultimodal: false,
+      allowDesktopControl: false,
+      allowCamera: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
+      sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
+      allowIntentEditor: false,
+      allowCodeEditor: false,
+      allowAdvancedEditor: false,
+    });
+    renderComponent();
+    expect(await screen.findByText(/requires code editor/i)).toBeInTheDocument();
   });
 });

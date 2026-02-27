@@ -68,6 +68,8 @@ describe('ExperimentsPage', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
 
     renderComponent();
@@ -103,6 +105,8 @@ describe('ExperimentsPage', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
 
     renderComponent();
@@ -137,6 +141,8 @@ describe('ExperimentsPage', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
 
     renderComponent();
@@ -169,6 +175,8 @@ describe('ExperimentsPage', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
 
     renderComponent();

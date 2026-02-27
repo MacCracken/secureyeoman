@@ -145,6 +145,8 @@ describe('SubAgentsPage', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
     mockFetchAgentProfiles.mockResolvedValue(MOCK_PROFILES);
     mockFetchActiveDelegations.mockResolvedValue(MOCK_ACTIVE_DELEGATIONS);
@@ -191,6 +193,8 @@ describe('SubAgentsPage', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
     renderComponent();
     expect(await screen.findByText('Delegation Not Enabled')).toBeInTheDocument();
@@ -226,6 +230,8 @@ describe('SubAgentsPage', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
     renderComponent();
     expect(await screen.findByText('Active')).toBeInTheDocument();
@@ -261,6 +267,8 @@ describe('SubAgentsPage', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
     renderComponent();
     expect(await screen.findByText('Active')).toBeInTheDocument();
@@ -316,6 +324,8 @@ describe('SubAgentsPage', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
     renderComponent();
     const tabs = await screen.findAllByRole('button', { name: /Active|Swarms|History|Profiles/i });

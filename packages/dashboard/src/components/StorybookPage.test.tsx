@@ -54,6 +54,8 @@ const BASE_POLICY = {
   allowTwingate: false,
   allowOrgIntent: false,
   allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
 };
 
 describe('StorybookPage', () => {

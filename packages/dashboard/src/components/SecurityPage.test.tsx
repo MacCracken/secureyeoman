@@ -159,6 +159,8 @@ beforeEach(() => {
     allowTwingate: false,
     allowOrgIntent: false,
     allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
   });
 });
 
@@ -391,6 +393,8 @@ function enableMlPolicy() {
     allowTwingate: false,
     allowOrgIntent: false,
     allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
   });
 }
 

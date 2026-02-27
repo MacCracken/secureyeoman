@@ -106,6 +106,8 @@ describe('ConnectionsPage', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     } as never);
   });
 
@@ -641,6 +643,8 @@ describe('ConnectionsPage', () => {
       allowNetworkTools: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     } as never);
 
     renderComponent();
@@ -672,6 +676,8 @@ describe('ConnectionsPage', () => {
       allowNetworkTools: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     } as never);
 
     renderComponent();

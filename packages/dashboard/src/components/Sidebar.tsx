@@ -57,7 +57,6 @@ const BASE_TOP_ITEMS: NavItem[] = [
   { to: '/security', label: 'Security', icon: <ShieldAlert className="w-5 h-5" /> },
   { to: '/automation', label: 'Automation', icon: <Layers className="w-5 h-5" /> },
   { to: '/chat', label: 'Chat', icon: <MessagesSquare className="w-5 h-5" /> },
-  { to: '/editor', label: 'Editor', icon: <Code className="w-5 h-5" /> },
   { to: '/personality', label: 'Personality', icon: <Brain className="w-5 h-5" /> },
   { to: '/skills', label: 'Skills', icon: <Zap className="w-5 h-5" /> },
 ];
@@ -142,14 +141,17 @@ export function Sidebar({
     (securityPolicy?.allowProactive ?? false) || (proactiveConfig?.config as any)?.enabled === true;
   const experimentsEnabled = securityPolicy?.allowExperiments ?? false;
   const storybookEnabled = securityPolicy?.allowStorybook ?? false;
+  const codeEditorAllowed = securityPolicy?.allowCodeEditor ?? true;
 
   const topItems = useMemo(() => {
     const top: NavItem[] = [...BASE_TOP_ITEMS];
+    // Insert Editor after Chat (index 3) when allowed; Chat is at index 3 after removal from BASE_TOP_ITEMS
+    if (codeEditorAllowed) top.splice(4, 0, { to: '/editor', label: 'Editor', icon: <Code className="w-5 h-5" /> });
     top.push({ to: '/intent', label: 'Intent', icon: <Target className="w-5 h-5" /> });
     if (proactiveEnabled) top.push({ to: '/proactive', label: 'Proactive', icon: <Sparkles className="w-5 h-5" /> });
     if (hasAgents) top.push({ to: '/agents', label: 'Agents', icon: <Users className="w-5 h-5" /> });
     return top;
-  }, [hasAgents, proactiveEnabled]);
+  }, [hasAgents, proactiveEnabled, codeEditorAllowed]);
 
   useEffect(() => {
     setMobileOpen(false);

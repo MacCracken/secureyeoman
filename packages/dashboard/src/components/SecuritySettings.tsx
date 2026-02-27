@@ -39,6 +39,8 @@ import {
   Camera,
   Globe,
   Target,
+  Code,
+  LayoutPanelLeft,
 } from 'lucide-react';
 import {
   fetchRoles,
@@ -421,6 +423,8 @@ export function SecuritySettings() {
   const experimentsAllowed = securityPolicy?.allowExperiments ?? false;
   const storybookAllowed = securityPolicy?.allowStorybook ?? false;
   const intentEditorAllowed = securityPolicy?.allowIntentEditor ?? false;
+  const codeEditorAllowed = securityPolicy?.allowCodeEditor ?? true;
+  const advancedEditorAllowed = securityPolicy?.allowAdvancedEditor ?? false;
   const dtcAllowed = securityPolicy?.allowDynamicTools ?? false;
   const sandboxDtcAllowed = securityPolicy?.sandboxDynamicTools ?? true;
   const anomalyDetectionAllowed = securityPolicy?.allowAnomalyDetection ?? false;
@@ -1012,6 +1016,43 @@ export function SecuritySettings() {
                   : 'Intent editor is disabled. Enable to access the structured editor for goals, signals, boundaries, policies, and delegation framework. Requires Organizational Intent to be enabled above.'
               }
             />
+          </div>
+          <div className="border-t border-border pt-4">
+            <PolicyToggle
+              label="Code Editor"
+              icon={<Code className="w-4 h-4 text-muted-foreground" />}
+              enabled={codeEditorAllowed}
+              isPending={policyMutation.isPending}
+              onToggle={() => {
+                policyMutation.mutate({ allowCodeEditor: !codeEditorAllowed });
+              }}
+              description={
+                codeEditorAllowed
+                  ? 'Code editor is enabled. The Editor entry appears in the sidebar.'
+                  : 'Code editor is hidden. No editor is accessible from the sidebar.'
+              }
+            />
+          </div>
+          <div className="border-t border-border pt-4">
+            <div className={!codeEditorAllowed ? 'opacity-40 pointer-events-none' : ''}>
+              <PolicyToggle
+                label="Advanced Editor Mode"
+                icon={<LayoutPanelLeft className="w-4 h-4 text-muted-foreground" />}
+                enabled={advancedEditorAllowed}
+                isPending={policyMutation.isPending}
+                onToggle={() => {
+                  policyMutation.mutate({ allowAdvancedEditor: !advancedEditorAllowed });
+                }}
+                description={
+                  advancedEditorAllowed
+                    ? 'Advanced workspace enabled: three-panel layout with Monaco editor, file manager, task panel, and multi-terminal.'
+                    : 'Standard editor mode. Enable to replace the editor with the advanced coding workspace.'
+                }
+              />
+            </div>
+            {!codeEditorAllowed && (
+              <p className="text-xs text-muted-foreground mt-1">Requires Code Editor to be enabled.</p>
+            )}
           </div>
         </div>
       </div>

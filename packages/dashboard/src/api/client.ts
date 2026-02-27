@@ -1968,6 +1968,8 @@ export interface SecurityPolicy {
   allowTwingate: boolean;
   allowOrgIntent: boolean;
   allowIntentEditor: boolean;
+  allowCodeEditor: boolean;
+  allowAdvancedEditor: boolean;
 }
 
 export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
@@ -1999,6 +2001,8 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     };
   }
 }

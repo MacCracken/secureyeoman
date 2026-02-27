@@ -50,6 +50,7 @@ import type { Personality, ChatMessage, CreationEvent } from '../types';
 import { sanitizeText } from '../utils/sanitize';
 import { ChatMarkdown } from './ChatMarkdown';
 import { Link } from 'react-router-dom';
+import { AdvancedEditorPage } from './AdvancedEditorPage';
 
 type MonacoEditor = Parameters<OnMount>[0];
 
@@ -425,6 +426,12 @@ function ExecutionGated({ children }: { children: React.ReactNode }) {
 // ── Main Component ───────────────────────────────────────────────
 
 export function EditorPage() {
+  const { data: policy } = useQuery({ queryKey: ['security-policy'], queryFn: fetchSecurityPolicy, staleTime: 30000 });
+  if (policy?.allowAdvancedEditor) return <AdvancedEditorPage />;
+  return <StandardEditorPage />;
+}
+
+function StandardEditorPage() {
   const { theme } = useTheme();
   const [tabs, setTabs] = useState<EditorTab[]>(() => [createEditorTab('untitled.ts', '/tmp')]);
   const [activeTabId, setActiveTabId] = useState<string>(tabs[0].id);

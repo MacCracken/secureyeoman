@@ -60,26 +60,29 @@ Core Kali toolkit shipped (ADR 089). This phase hardens its operational surface.
 
 **Status**: Planned — strategic priority for sovereign AI positioning
 
-Privacy-first, offline-capable AI processing via on-device models. Completes the "sovereign AI" positioning — currently all inference goes to cloud providers even in a self-hosted deployment.
+Privacy-first, offline-capable AI processing via on-device models. Completes the "sovereign AI" positioning for fully self-hosted deployments.
 
-**Feature toggle in `config.yml`:**
+> **Note:** Local LLM inference (Ollama, LM Studio, LocalAI), runtime model switching (`POST /api/v1/model/switch`), persistence (`POST /api/v1/model/default`), dashboard model picker, and CLI (`secureyeoman model switch/default`) are already fully implemented. The remaining items below close the gaps for local-first as a complete operational mode.
 
-```yaml
-ai:
-  localMode:
-    enabled: true
-    provider: "ollama"               # ollama | lmstudio | localai
-    model: "llama3.1:8b-instruct-q4_K_M"
-    embeddingModel: "nomic-embed-text"
-    fallbackToCloud: false
-```
+### Local-First Operational Mode
 
-- [ ] **Local model inference** — When `ai.localMode.enabled: true`, route LLM requests to the configured local provider instead of cloud APIs. Swap provider/model at runtime via config reload.
-- [ ] **Local embedding generation** — Use `nomic-embed-text` (or configured `embeddingModel`) for vectorizing memories, knowledge, and document chunks. Eliminates external embedding API calls.
-- [ ] **Hybrid cloud/local switch** — Runtime toggle between local-only, cloud-only, or local-first-with-cloud-fallback. Expose in dashboard settings alongside the existing model picker.
-- [ ] **Offline detection** — When `ai.localMode.enabled: true` and the local provider is unreachable, surface a clear "Local AI Unavailable" state in the dashboard — don't silently fall back to cloud unless `fallbackToCloud: true`.
-- [ ] **Model lifecycle management** — MCP tools for pulling, listing, and removing local models (`ollama pull`, `ollama list`, `ollama rm`). Surface model disk usage in dashboard.
-- [ ] **Quantization awareness** — Document recommended model quantizations (Q4_K_M, Q5_K_S, etc.) for different hardware tiers. Auto-detect available RAM and suggest appropriate model size.
+- [ ] **Local embedding generation** — Wire Ollama's native embedding endpoint (`/api/embeddings`) as an `EmbeddingProvider` alongside the existing SentenceTransformers and OpenAI/Gemini providers. Add `nomic-embed-text` and other Ollama-served models as selectable options in `brain.vector.api.provider`. The abstraction layer (`ai/embeddings/`) already exists; this is a new provider implementation + config enum entry.
+- [ ] **Hybrid cloud/local switch** — Add `localFirst` routing mode: primary request goes to the configured local provider; on `ProviderUnavailableError` automatically falls back to the first cloud entry in the fallback chain. Distinct from the existing fallback chain which requires explicit config. Expose as a toggle in dashboard settings alongside the model picker.
+- [ ] **Offline detection** — When the active provider is local and unreachable, surface a clear "Local AI Unavailable" banner in the dashboard rather than failing silently. Requires a `/api/v1/ai/health` endpoint that pings the configured local provider (Ollama `/api/tags`, LM Studio `/v1/models`) and returns reachability status. Error types already propagate correctly (`ProviderUnavailableError`); the gap is the health route and dashboard state.
+- [ ] **Model lifecycle management** — `ollama pull <model>`, `ollama rm <model>` CLI subcommands and MCP tools. `ollama list` already works via `secureyeoman model list --provider ollama` (backed by `OllamaProvider.fetchAvailableModels()`). The gap is write operations: download and delete, plus surfacing disk usage per model.
+- [ ] **Quantization awareness** — Document recommended quantizations (Q4_K_M, Q5_K_S, etc.) per hardware tier in a guide. Optionally: auto-detect host RAM via `os.totalmem()` at startup and emit a warning if the configured model's estimated VRAM requirement exceeds available memory.
+
+### Model Training & Customisation
+
+Train, fine-tune, and distill models directly from SecureYeoman's own data — conversations, memories, knowledge, and agent interactions. The goal is a closed loop: data lives here, models trained here, served here.
+
+*Prerequisites: GPU-capable host for fine-tuning and training phases. Dataset export and distillation can run CPU-only.*
+
+- [ ] **Training dataset export** — Export conversations, memories, knowledge entries, and heartbeat logs as structured training datasets. Output formats: ShareGPT JSONL (chat fine-tuning), instruction JSONL (Alpaca-style), and raw text corpus. Configurable filters: date range, personality, quality score, message length. Exposed via `POST /api/v1/training/export` and `secureyeoman training export` CLI. This is the prerequisite for all downstream training items.
+- [ ] **Model distillation** — Use a cloud model (Claude, GPT-4o, etc.) as teacher: generate synthetic completions for prompts drawn from the exported dataset, producing a high-quality fine-tuning corpus without labelling by hand. Distillation jobs run as heartbeat tasks; output is a JSONL dataset ready for the fine-tuning pipeline.
+- [ ] **LoRA / QLoRA fine-tuning** — Fine-tune a local base model (Llama 3, Mistral, Phi, etc.) on an exported dataset using parameter-efficient methods. Runs via a Docker sidecar container (Unsloth or HuggingFace PEFT + `accelerate`). SecureYeoman orchestrates job submission, streams training logs to the dashboard, and on completion registers the resulting adapter weights with Ollama for immediate use. Config: base model, LoRA rank/alpha, batch size, epochs, VRAM budget.
+- [ ] **Continual / online learning** — Incremental adapter updates from new interactions without a full retrain cycle. High complexity: requires replay buffer management, learning rate scheduling, and drift detection to prevent catastrophic forgetting. Treat as research-grade; implement only once fine-tuning pipeline is stable and battle-tested.
+- [ ] **Training from scratch** — Pre-train a model on a curated local corpus (documents, knowledge base, domain data). Extremely resource-intensive — even a 1B parameter model requires significant GPU-hours. Scope is constrained to small models (≤3B params) intended as lightweight specialists, not general-purpose replacements. Depends on the dataset export and fine-tuning pipeline being fully operational first.
 
 ---
 
@@ -158,4 +161,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-26 — Phases 53–55, 58 complete. Active queue: 62 (Dashboard UX) → 57 (Security Toolkit) → 56 (Local-First AI). Phases 59–61 remain demand-gated.*
+*Last updated: 2026-02-26 — Phases 53–55, 58 complete. Active queue: Phase 57 (Dashboard UX) → Phase 58 (Security Toolkit) → Phase 59 (Local-First AI). Phases 60–62 remain demand-gated.*

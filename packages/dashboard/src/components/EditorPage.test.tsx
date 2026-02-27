@@ -181,6 +181,8 @@ describe('EditorPage', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
     mockFetchExecutionSessions.mockResolvedValue(MOCK_SESSIONS);
     mockFetchExecutionHistory.mockResolvedValue({
@@ -252,6 +254,8 @@ describe('EditorPage', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
     });
     renderComponent();
     await screen.findByText('Terminal');

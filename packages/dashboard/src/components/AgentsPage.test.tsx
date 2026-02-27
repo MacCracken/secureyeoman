@@ -106,6 +106,8 @@ const DEFAULT_POLICY = {
   allowTwingate: false,
   allowOrgIntent: false,
   allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: false,
 };
 
 describe('AgentsPage', () => {

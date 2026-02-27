@@ -79,6 +79,8 @@ const BASE_POLICY = {
   allowTwingate: false,
   allowOrgIntent: false,
   allowIntentEditor: false,
+  allowCodeEditor: true,
+  allowAdvancedEditor: false,
 };
 
 function renderSidebar() {
@@ -164,5 +166,24 @@ describe('Sidebar nav order', () => {
     const skillsLink = await screen.findByRole('link', { name: /skills/i });
     const links = Array.from(document.querySelectorAll('a')) as HTMLElement[];
     expect(links.indexOf(automationLink)).toBeLessThan(links.indexOf(skillsLink));
+  });
+
+  it('shows Editor link when allowCodeEditor is true (default)', async () => {
+    renderSidebar();
+    const editorLink = await screen.findByRole('link', { name: /^editor$/i });
+    expect(editorLink).toBeInTheDocument();
+    expect(editorLink).toHaveAttribute('href', '/editor');
+  });
+
+  it('hides Editor link when allowCodeEditor is false', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      ...BASE_POLICY,
+      allowCodeEditor: false,
+    } as any);
+
+    renderSidebar();
+
+    await screen.findByRole('link', { name: /mission control/i });
+    expect(screen.queryByRole('link', { name: /^editor$/i })).not.toBeInTheDocument();
   });
 });
