@@ -45,6 +45,7 @@ import type {
   CreateExternalFeedOptions,
   CreateExternalFindingOptions,
   BackupRecord,
+  TenantRecord,
 } from '../types.js';
 
 const API_BASE = '/api/v1';
@@ -3857,6 +3858,28 @@ export async function resolveRiskFinding(id: string): Promise<ExternalFinding> {
     { method: 'PATCH' }
   );
   return res.finding;
+}
+
+// ── Tenants ────────────────────────────────────────────────────────
+
+export async function fetchTenants(opts: { limit?: number; offset?: number } = {}): Promise<{ tenants: TenantRecord[]; total: number }> {
+  const params = new URLSearchParams();
+  if (opts.limit) params.set('limit', String(opts.limit));
+  if (opts.offset) params.set('offset', String(opts.offset));
+  const qs = params.toString();
+  return request(`/admin/tenants${qs ? `?${qs}` : ''}`);
+}
+
+export async function createTenant(data: { name: string; slug: string; plan?: string }): Promise<{ tenant: TenantRecord }> {
+  return request('/admin/tenants', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function updateTenant(id: string, data: Partial<{ name: string; plan: string; metadata: Record<string, unknown> }>): Promise<{ tenant: TenantRecord }> {
+  return request(`/admin/tenants/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+
+export async function deleteTenant(id: string): Promise<void> {
+  await request(`/admin/tenants/${id}`, { method: 'DELETE' });
 }
 
 // ── Backup & DR ────────────────────────────────────────────────────────────

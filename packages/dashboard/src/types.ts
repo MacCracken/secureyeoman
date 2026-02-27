@@ -945,3 +945,15 @@ export interface BackupRecord {
   createdAt: number;
   completedAt: number | null;
 }
+
+// ── Multi-Tenancy ─────────────────────────────────────────────────
+
+export interface TenantRecord {
+  id: string;
+  name: string;
+  slug: string;
+  plan: string;
+  metadata: Record<string, unknown>;
+  createdAt: number;
+  updatedAt: number;
+}

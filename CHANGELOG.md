@@ -1,3 +1,18 @@
+## [2026.2.26s] — Phase 61: Enterprise Features
+
+### Added
+
+- **Audit Log Export** — `POST /api/v1/audit/export` streams audit entries in JSON-Lines, CSV, or syslog RFC 5424 format directly to the HTTP socket (no buffering). Filtering by timestamp range, level, event, userId, limit (max 1M). Dashboard adds "Export" dropdown button in Audit Log sub-tab. *(ADR 141)*
+- **Backup & DR API** — `BackupManager` orchestrates `pg_dump` (non-blocking) and `pg_restore`. Six REST endpoints at `/api/v1/admin/backups`: create, list, get, download, restore (requires `{ confirm: "RESTORE" }`), delete. Metadata in `admin.backups` (migration 057). Dashboard adds "Backup" tab to Settings page. *(ADR 142)*
+- **SAML 2.0 SSO** — `SamlAdapter` wraps `node-saml` for SP-initiated SSO. `SsoManager` branches on `provider.type === 'saml'`. New routes: `GET /api/v1/auth/sso/saml/:id/metadata` (SP metadata XML) and `POST /api/v1/auth/sso/saml/:id/acs` (ACS endpoint). Group→role mapping via `config.groupRoleMap`. Dashboard SSO form shows SAML-specific fields. *(ADR 143)*
+- **Multi-tenancy** — `auth.tenants` registry + `tenant_id DEFAULT 'default'` column on all user-data tables + PostgreSQL RLS policies (migration 058). `PgBaseStorage` gains `withTenantContext` and `bypassRls` helpers. `TenantManager` CRUD with slug validation; blocks deletion of `'default'` tenant. REST API at `/api/v1/admin/tenants`. Dashboard adds "Tenants" tab (admin-only). *(ADR 144)*
+
+### Documentation
+
+- ADRs 141–144 in `docs/adr/`
+
+---
+
 ## [2026.2.26r] — Phase 58: Security Toolkit Completion
 
 ### Added
