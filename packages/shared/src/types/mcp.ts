@@ -148,6 +148,7 @@ export const McpServiceConfigSchema = z.object({
   exposeOrgIntentTools: z.boolean().default(false),
   /** When true (default), honour Content-Signal: ai-input=no and refuse to feed blocked content to the agent. Set MCP_RESPECT_CONTENT_SIGNAL=false to override. */
   respectContentSignal: z.boolean().default(true),
+  allowBruteForce: z.boolean().default(false),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

@@ -78,6 +78,8 @@ describe('ConnectionsPage', () => {
       proxyProviders: [],
       proxyStrategy: 'round-robin',
       proxyDefaultCountry: '',
+      exposeSecurityTools: false,
+      allowedTargets: [],
     });
     mockFetchIntegrations.mockResolvedValue({ integrations: [], total: 0, running: 0 });
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: [] });

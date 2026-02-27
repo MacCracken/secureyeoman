@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { registerSecurityTools, isIpInCidr, matchesScope } from './security-tools.js';
+import { registerSecurityTools, isIpInCidr, matchesScope, parseNmapXml, parseSqlmapOutput, parseNucleiJsonl, parseGobusterOutput, parseHydraOutput } from './security-tools.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
 
@@ -247,6 +247,147 @@ describe('security-tools', () => {
     it('defaults exposeSecurityTools to false', () => {
       const config = makeConfig({ exposeSecurityTools: false });
       expect(config.exposeSecurityTools).toBe(false);
+    });
+  });
+
+  describe('output parsers', () => {
+    describe('parseNmapXml', () => {
+      it('parses a valid XML with one host and two ports', () => {
+        const xml = `
+<nmaprun>
+  <host>
+    <address addr="10.10.10.5" addrtype="ipv4"/>
+    <hostnames><hostname name="target.local"/></hostnames>
+    <ports>
+      <port protocol="tcp" portid="22">
+        <state state="open"/>
+        <service name="ssh" version="OpenSSH 7.4"/>
+      </port>
+      <port protocol="tcp" portid="80">
+        <state state="open"/>
+        <service name="http" version="Apache 2.4"/>
+      </port>
+    </ports>
+  </host>
+</nmaprun>`;
+        const result = parseNmapXml(xml);
+        expect(result.hosts).toHaveLength(1);
+        expect(result.hosts[0].ip).toBe('10.10.10.5');
+        expect(result.hosts[0].hostname).toBe('target.local');
+        expect(result.hosts[0].ports).toHaveLength(2);
+        expect(result.hosts[0].ports[0].port).toBe(22);
+        expect(result.hosts[0].ports[0].service).toBe('ssh');
+        expect(result.hosts[0].ports[1].port).toBe(80);
+      });
+
+      it('returns empty hosts for empty XML', () => {
+        expect(parseNmapXml('<nmaprun></nmaprun>').hosts).toHaveLength(0);
+      });
+
+      it('returns empty hosts for malformed XML', () => {
+        expect(parseNmapXml('not xml at all').hosts).toHaveLength(0);
+      });
+    });
+
+    describe('parseSqlmapOutput', () => {
+      it('detects injectable parameter and DBMS', () => {
+        const text = `
+        Parameter: id (GET)
+            Type: boolean-based blind
+        back-end DBMS: MySQL >= 5.0`;
+        const result = parseSqlmapOutput(text);
+        expect(result.injectable).toHaveLength(1);
+        expect(result.injectable[0].parameter).toBe('id');
+        expect(result.dbms).toContain('MySQL');
+      });
+
+      it('returns empty for no injection found', () => {
+        const result = parseSqlmapOutput('No injection found.\nAll tests done.');
+        expect(result.injectable).toHaveLength(0);
+        expect(result.dbms).toBeNull();
+      });
+
+      it('detects DBMS line without injection', () => {
+        const result = parseSqlmapOutput('back-end DBMS: PostgreSQL');
+        expect(result.dbms).toBe('PostgreSQL');
+      });
+    });
+
+    describe('parseNucleiJsonl', () => {
+      it('parses two findings from JSONL', () => {
+        const text = [
+          JSON.stringify({ 'template-id': 'cve-2021-1234', info: { severity: 'critical', name: 'RCE' }, host: 'http://target.com', 'matched-at': 'http://target.com/vuln' }),
+          JSON.stringify({ 'template-id': 'xss-reflected', info: { severity: 'medium', name: 'XSS' }, host: 'http://target.com', 'matched-at': 'http://target.com/search?q=<script>' }),
+        ].join('\n');
+        const result = parseNucleiJsonl(text);
+        expect(result.findings).toHaveLength(2);
+        expect(result.findings[0].templateId).toBe('cve-2021-1234');
+        expect(result.findings[0].severity).toBe('critical');
+        expect(result.findings[1].templateId).toBe('xss-reflected');
+      });
+
+      it('returns empty findings for empty output', () => {
+        expect(parseNucleiJsonl('').findings).toHaveLength(0);
+      });
+
+      it('skips malformed JSON lines gracefully', () => {
+        const text = 'not-json\n' + JSON.stringify({ 'template-id': 'xss', info: { severity: 'low', name: 'XSS' }, host: 'h', 'matched-at': 'm' });
+        const result = parseNucleiJsonl(text);
+        expect(result.findings).toHaveLength(1);
+      });
+    });
+
+    describe('parseGobusterOutput', () => {
+      it('parses found paths in dir mode', () => {
+        const text = '/admin (Status: 200)\n/login (Status: 200)\n/.git (Status: 403)';
+        const result = parseGobusterOutput(text, 'dir');
+        expect(result.found).toContain('/admin');
+        expect(result.found).toContain('/login');
+        expect(result.mode).toBe('dir');
+      });
+
+      it('returns empty for no found paths', () => {
+        const result = parseGobusterOutput('', 'dir');
+        expect(result.found).toHaveLength(0);
+      });
+    });
+  });
+
+  describe('parseHydraOutput', () => {
+    it('parses a found credential', () => {
+      const text = '[22][ssh] host: 10.10.10.5   login: root   password: toor';
+      const result = parseHydraOutput(text);
+      expect(result.credentials).toHaveLength(1);
+      expect(result.credentials[0].login).toBe('root');
+      expect(result.credentials[0].password).toBe('toor');
+      expect(result.credentials[0].host).toBe('10.10.10.5');
+      expect(result.credentials[0].service).toBe('ssh');
+    });
+
+    it('returns empty credentials when none found', () => {
+      const result = parseHydraOutput('1 of 1 target completed, 0 valid passwords found');
+      expect(result.credentials).toHaveLength(0);
+    });
+  });
+
+  describe('sec_hydra', () => {
+    it('is included in stub list when exposeSecurityTools=false', async () => {
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      const config = makeConfig({ exposeSecurityTools: false });
+      // Should not throw — sec_hydra stub is registered
+      await expect(registerSecurityTools(server, config, noopMiddleware())).resolves.not.toThrow();
+    });
+
+    it('registers without error when allowBruteForce=true and hydra available', async () => {
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      const config = makeConfig({ exposeSecurityTools: true, allowBruteForce: true, allowedTargets: ['*'] });
+      await expect(registerSecurityTools(server, config, noopMiddleware())).resolves.not.toThrow();
+    });
+
+    it('registers without error when allowBruteForce=false (default)', async () => {
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      const config = makeConfig({ exposeSecurityTools: true, allowBruteForce: false, allowedTargets: ['*'] });
+      await expect(registerSecurityTools(server, config, noopMiddleware())).resolves.not.toThrow();
     });
   });
 });

@@ -363,7 +363,7 @@ function MultiTerminal() {
 // ── Main Component ─────────────────────────────────────────────────
 
 export function AdvancedEditorPage() {
-  const { theme } = useTheme();
+  const { isDark } = useTheme();
   const [editorTabs, setEditorTabs] = useState<EditorTab[]>(() => [makeEditorTab()]);
   const [activeEditorTabId, setActiveEditorTabId] = useState(() => editorTabs[0].id);
   const [selectedPersonalityId, setSelectedPersonalityIdRaw] = useState<string | null>(
@@ -483,7 +483,7 @@ export function AdvancedEditorPage() {
               height="100%"
               language={activeEditorTab.language}
               value={activeEditorTab.content}
-              theme={theme === 'dark' ? 'vs-dark' : 'light'}
+              theme={isDark ? 'vs-dark' : 'light'}
               onChange={(val) => updateContent(val ?? '')}
               onMount={(editor) => { editorRef.current = editor; }}
               options={{

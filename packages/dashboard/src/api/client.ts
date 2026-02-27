@@ -1420,6 +1420,8 @@ export interface McpConfigResponse {
   proxyProviders: string[];
   proxyStrategy: string;
   proxyDefaultCountry: string;
+  exposeSecurityTools: boolean;
+  allowedTargets: string[];
 }
 
 export async function fetchMcpConfig(): Promise<McpConfigResponse> {
@@ -1444,8 +1446,16 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
       proxyProviders: [],
       proxyStrategy: 'round-robin',
       proxyDefaultCountry: '',
+      exposeSecurityTools: false,
+      allowedTargets: [],
     };
   }
+}
+
+export async function patchMcpConfig(
+  data: Partial<McpConfigResponse>
+): Promise<McpConfigResponse> {
+  return updateMcpConfig(data);
 }
 
 export async function updateMcpConfig(

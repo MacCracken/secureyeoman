@@ -135,12 +135,14 @@ function formatSecResult(
   target: string,
   command: string,
   stdout: string,
-  stderr: string
+  stderr: string,
+  envelope?: string
 ): string {
   const parts: string[] = [`Tool: ${tool}`, `Target: ${target}`, `Command: ${command}`, '---'];
   if (stdout.trim()) parts.push(stdout.trim());
   if (stderr.trim()) parts.push(`stderr:\n${stderr.trim()}`);
   if (!stdout.trim() && !stderr.trim()) parts.push('(no output)');
+  if (envelope) parts.push(`---JSON---\n${envelope}`);
   return parts.join('\n');
 }
 
@@ -149,6 +151,150 @@ function buildCommandString(config: McpServiceConfig, toolBin: string, args: str
     return `docker exec -i ${config.securityToolsContainer} ${toolBin} ${args.join(' ')}`;
   }
   return `${toolBin} ${args.join(' ')}`;
+}
+
+// ─── Output Parsers ───────────────────────────────────────────────────────────
+
+export interface NmapResult {
+  hosts: Array<{
+    ip: string;
+    hostname: string;
+    ports: Array<{ port: number; protocol: string; state: string; service: string; version: string }>;
+  }>;
+}
+
+export function parseNmapXml(xml: string): NmapResult {
+  const result: NmapResult = { hosts: [] };
+  try {
+    const hostMatches = xml.match(/<host\b[^>]*>([\s\S]*?)<\/host>/g);
+    if (!hostMatches) return result;
+    for (const hostBlock of hostMatches) {
+      const addrMatch = hostBlock.match(/<address\s+addr="([^"]+)"\s+addrtype="ipv4"/);
+      const hostnameMatch = hostBlock.match(/<hostname\s+name="([^"]+)"/);
+      const ip = addrMatch?.[1] ?? '';
+      const hostname = hostnameMatch?.[1] ?? ip;
+      const ports: NmapResult['hosts'][0]['ports'] = [];
+      const portBlocks = hostBlock.match(/<port\b[^>]*>([\s\S]*?)<\/port>/g);
+      if (portBlocks) {
+        for (const pb of portBlocks) {
+          const portIdMatch = pb.match(/portid="(\d+)"/);
+          const protocolMatch = pb.match(/protocol="(\w+)"/);
+          const stateMatch = pb.match(/<state\s+state="(\w+)"/);
+          const serviceMatch = pb.match(/<service\s+name="([^"]+)"/);
+          const versionMatch = pb.match(/version="([^"]+)"/);
+          if (portIdMatch?.[1]) {
+            ports.push({
+              port: parseInt(portIdMatch[1], 10),
+              protocol: protocolMatch?.[1] ?? 'tcp',
+              state: stateMatch?.[1] ?? 'unknown',
+              service: serviceMatch?.[1] ?? '',
+              version: versionMatch?.[1] ?? '',
+            });
+          }
+        }
+      }
+      result.hosts.push({ ip, hostname, ports });
+    }
+  } catch {
+    // Return partial results on parse error
+  }
+  return result;
+}
+
+export interface SqlmapResult {
+  injectable: Array<{ parameter: string; type: string }>;
+  dbms: string | null;
+}
+
+export function parseSqlmapOutput(text: string): SqlmapResult {
+  const result: SqlmapResult = { injectable: [], dbms: null };
+  try {
+    const paramMatches = text.matchAll(/Parameter:\s+(\S+)[^\n]*\n\s+Type:\s+([^\n]+)/g);
+    for (const m of paramMatches) {
+      const parameter = m[1] ?? '';
+      const type = (m[2] ?? '').trim();
+      result.injectable.push({ parameter, type });
+    }
+    const dbmsMatch = text.match(/back-end DBMS:\s+([^\n]+)/i);
+    if (dbmsMatch?.[1]) result.dbms = dbmsMatch[1].trim();
+  } catch {
+    // Return partial results
+  }
+  return result;
+}
+
+export interface NucleiResult {
+  findings: Array<{ templateId: string; severity: string; host: string; matched: string; name: string }>;
+}
+
+export function parseNucleiJsonl(text: string): NucleiResult {
+  const result: NucleiResult = { findings: [] };
+  const lines = text.split('\n').filter(Boolean);
+  for (const line of lines) {
+    try {
+      const obj = JSON.parse(line) as Record<string, unknown>;
+      result.findings.push({
+        templateId: (obj['template-id'] as string) ?? '',
+        severity: ((obj.info as Record<string, unknown>)?.severity as string) ?? '',
+        host: (obj.host as string) ?? '',
+        matched: (obj['matched-at'] as string) ?? '',
+        name: ((obj.info as Record<string, unknown>)?.name as string) ?? '',
+      });
+    } catch {
+      // Skip malformed lines
+    }
+  }
+  return result;
+}
+
+export interface GobusterResult {
+  found: string[];
+  mode: 'dir' | 'dns' | 'vhost';
+}
+
+export function parseGobusterOutput(text: string, mode: 'dir' | 'dns' | 'vhost' = 'dir'): GobusterResult {
+  const found: string[] = [];
+  const lines = text.split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('/') || (mode !== 'dir' && trimmed.length > 0 && !trimmed.startsWith('='))) {
+      // Extract just the path/hostname from gobuster output lines
+      const match = trimmed.match(/^(\S+)/);
+      if (match?.[1]) found.push(match[1]);
+    }
+  }
+  return { found, mode };
+}
+
+export interface HydraResult {
+  credentials: Array<{ login: string; password: string; host: string; port: string; service: string }>;
+}
+
+export function parseHydraOutput(text: string): HydraResult {
+  const result: HydraResult = { credentials: [] };
+  // Lines like: [22][ssh] host: 10.x.x.x   login: root   password: toor
+  const lineRe = /\[(\d+)\]\[(\w[\w-]*)\]\s+host:\s+(\S+)\s+login:\s+(\S+)\s+password:\s+(\S+)/g;
+  const matches = text.matchAll(lineRe);
+  for (const m of matches) {
+    result.credentials.push({
+      port: m[1] ?? '',
+      service: m[2] ?? '',
+      host: m[3] ?? '',
+      login: m[4] ?? '',
+      password: m[5] ?? '',
+    });
+  }
+  return result;
+}
+
+function buildEnvelope(
+  tool: string,
+  target: string,
+  command: string,
+  parsed: unknown,
+  exitCode: number
+): string {
+  return JSON.stringify({ tool, target, command, parsed, exit_code: exitCode });
 }
 
 async function checkAvailable(config: McpServiceConfig, bin: string): Promise<boolean> {
@@ -188,6 +334,7 @@ export async function registerSecurityTools(
       'sec_dig',
       'sec_whois',
       'sec_shodan',
+      'sec_hydra',
     ];
     for (const name of stubTools) {
       server.registerTool(
@@ -217,6 +364,7 @@ export async function registerSecurityTools(
     'theHarvester',
     'dig',
     'whois',
+    'hydra',
   ];
   const availability = await Promise.all(bins.map((b) => checkAvailable(config, b)));
   const available = new Map(bins.map((b, i) => [b, availability[i]]));
@@ -245,17 +393,19 @@ export async function registerSecurityTools(
       },
       wrapToolHandler('sec_nmap', middleware, async (args) => {
         validateTarget(args.target, config);
-        const nmapArgs = ['-v'];
+        const nmapArgs = ['-v', '-oX', '-'];
         if (args.ports) nmapArgs.push('-p', args.ports);
         if (args.flags) nmapArgs.push(...args.flags.split(/\s+/).filter(Boolean));
         nmapArgs.push(args.target);
         const { stdout, stderr } = await runTool(config, 'nmap', nmapArgs);
         const cmd = buildCommandString(config, 'nmap', nmapArgs);
+        const parsed = parseNmapXml(stdout);
+        const envelope = buildEnvelope('nmap', args.target, cmd, parsed, 0);
         return {
           content: [
             {
               type: 'text' as const,
-              text: formatSecResult('nmap', args.target, cmd, stdout, stderr),
+              text: formatSecResult('nmap', args.target, cmd, stdout, stderr, envelope),
             },
           ],
         };
@@ -282,11 +432,13 @@ export async function registerSecurityTools(
         const gbArgs = [args.mode, '-u', args.target, '-w', args.wordlist, '-q'];
         const { stdout, stderr } = await runTool(config, 'gobuster', gbArgs);
         const cmd = buildCommandString(config, 'gobuster', gbArgs);
+        const parsed = parseGobusterOutput(stdout, args.mode);
+        const envelope = buildEnvelope('gobuster', args.target, cmd, parsed, 0);
         return {
           content: [
             {
               type: 'text' as const,
-              text: formatSecResult('gobuster', args.target, cmd, stdout, stderr),
+              text: formatSecResult('gobuster', args.target, cmd, stdout, stderr, envelope),
             },
           ],
         };
@@ -321,9 +473,10 @@ export async function registerSecurityTools(
         if (args.filter) ffufArgs.push('-fc', args.filter);
         const { stdout, stderr } = await runTool(config, 'ffuf', ffufArgs);
         const cmd = buildCommandString(config, 'ffuf', ffufArgs);
+        const envelope = buildEnvelope('ffuf', target, cmd, null, 0);
         return {
           content: [
-            { type: 'text' as const, text: formatSecResult('ffuf', target, cmd, stdout, stderr) },
+            { type: 'text' as const, text: formatSecResult('ffuf', target, cmd, stdout, stderr, envelope) },
           ],
         };
       })
@@ -365,9 +518,11 @@ export async function registerSecurityTools(
         ];
         const { stdout, stderr } = await runTool(config, 'sqlmap', sqlArgs);
         const cmd = buildCommandString(config, 'sqlmap', sqlArgs);
+        const parsed = parseSqlmapOutput(stdout);
+        const envelope = buildEnvelope('sqlmap', target, cmd, parsed, 0);
         return {
           content: [
-            { type: 'text' as const, text: formatSecResult('sqlmap', target, cmd, stdout, stderr) },
+            { type: 'text' as const, text: formatSecResult('sqlmap', target, cmd, stdout, stderr, envelope) },
           ],
         };
       })
@@ -390,11 +545,12 @@ export async function registerSecurityTools(
         const niktoArgs = ['-h', args.target, '-nointeractive'];
         const { stdout, stderr } = await runTool(config, 'nikto', niktoArgs);
         const cmd = buildCommandString(config, 'nikto', niktoArgs);
+        const envelope = buildEnvelope('nikto', args.target, cmd, null, 0);
         return {
           content: [
             {
               type: 'text' as const,
-              text: formatSecResult('nikto', args.target, cmd, stdout, stderr),
+              text: formatSecResult('nikto', args.target, cmd, stdout, stderr, envelope),
             },
           ],
         };
@@ -422,15 +578,17 @@ export async function registerSecurityTools(
           /* keep raw */
         }
         validateTarget(scopeTarget, config);
-        const nucleiArgs = ['-u', args.target, '-silent'];
+        const nucleiArgs = ['-u', args.target, '-silent', '-j'];
         if (args.tags) nucleiArgs.push('-tags', args.tags);
         const { stdout, stderr } = await runTool(config, 'nuclei', nucleiArgs);
         const cmd = buildCommandString(config, 'nuclei', nucleiArgs);
+        const parsed = parseNucleiJsonl(stdout);
+        const envelope = buildEnvelope('nuclei', scopeTarget, cmd, parsed, 0);
         return {
           content: [
             {
               type: 'text' as const,
-              text: formatSecResult('nuclei', scopeTarget, cmd, stdout, stderr),
+              text: formatSecResult('nuclei', scopeTarget, cmd, stdout, stderr, envelope),
             },
           ],
         };
@@ -454,11 +612,12 @@ export async function registerSecurityTools(
         const wwArgs = [args.target, '--quiet'];
         const { stdout, stderr } = await runTool(config, 'whatweb', wwArgs);
         const cmd = buildCommandString(config, 'whatweb', wwArgs);
+        const envelope = buildEnvelope('whatweb', args.target, cmd, null, 0);
         return {
           content: [
             {
               type: 'text' as const,
-              text: formatSecResult('whatweb', args.target, cmd, stdout, stderr),
+              text: formatSecResult('whatweb', args.target, cmd, stdout, stderr, envelope),
             },
           ],
         };
@@ -488,11 +647,12 @@ export async function registerSecurityTools(
         const wpArgs = ['--url', args.target, '--no-banner', '--quiet'];
         const { stdout, stderr } = await runTool(config, 'wpscan', wpArgs);
         const cmd = buildCommandString(config, 'wpscan', wpArgs);
+        const envelope = buildEnvelope('wpscan', scopeTarget, cmd, null, 0);
         return {
           content: [
             {
               type: 'text' as const,
-              text: formatSecResult('wpscan', scopeTarget, cmd, stdout, stderr),
+              text: formatSecResult('wpscan', scopeTarget, cmd, stdout, stderr, envelope),
             },
           ],
         };
@@ -700,5 +860,80 @@ export async function registerSecurityTools(
   } else {
     // eslint-disable-next-line no-console
     console.info('[security-tools] shodan: skipped (SHODAN_API_KEY not set)');
+  }
+
+  // sec_hydra (requires allowBruteForce=true in addition to exposeSecurityTools)
+  log('hydra');
+  if (available.get('hydra')) {
+    server.registerTool(
+      'sec_hydra',
+      {
+        description:
+          'Credential brute-force against an authorized target service (requires MCP_ALLOW_BRUTE_FORCE=true)',
+        inputSchema: {
+          target: z.string().describe('IP address or hostname'),
+          port: z.number().int().min(1).max(65535).optional().describe('Service port'),
+          service: z
+            .enum([
+              'ssh',
+              'ftp',
+              'telnet',
+              'http-get',
+              'http-post-form',
+              'mysql',
+              'postgres',
+              'rdp',
+              'smb',
+              'smtp',
+            ])
+            .describe('Protocol/service to attack'),
+          userlist: z.string().describe('Path to username list file'),
+          passlist: z.string().describe('Path to password list file'),
+          maxThreads: z
+            .number()
+            .int()
+            .min(1)
+            .max(16)
+            .default(4)
+            .describe('Parallel threads (capped at 16)'),
+        },
+      },
+      wrapToolHandler('sec_hydra', middleware, async (args) => {
+        if (!config.allowBruteForce) {
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text: 'sec_hydra requires MCP_ALLOW_BRUTE_FORCE=true. This is a separate opt-in beyond MCP_EXPOSE_SECURITY_TOOLS.',
+              },
+            ],
+            isError: true,
+          };
+        }
+        validateTarget(args.target, config);
+        const hydraArgs = [
+          '-L',
+          args.userlist,
+          '-P',
+          args.passlist,
+          '-t',
+          String(args.maxThreads ?? 4),
+        ];
+        if (args.port) hydraArgs.push('-s', String(args.port));
+        hydraArgs.push(`${args.service}://${args.target}`);
+        const { stdout, stderr } = await runTool(config, 'hydra', hydraArgs);
+        const cmd = buildCommandString(config, 'hydra', hydraArgs);
+        const parsed = parseHydraOutput(stdout);
+        const envelope = buildEnvelope('hydra', args.target, cmd, parsed, 0);
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: formatSecResult('hydra', args.target, cmd, stdout, stderr, envelope),
+            },
+          ],
+        };
+      })
+    );
   }
 }

@@ -432,7 +432,7 @@ export function EditorPage() {
 }
 
 function StandardEditorPage() {
-  const { theme } = useTheme();
+  const { isDark } = useTheme();
   const [tabs, setTabs] = useState<EditorTab[]>(() => [createEditorTab('untitled.ts', '/tmp')]);
   const [activeTabId, setActiveTabId] = useState<string>(tabs[0].id);
   const [filesPanelOpen, setFilesPanelOpen] = useState(false);
@@ -636,13 +636,13 @@ function StandardEditorPage() {
 
   useEffect(() => {
     if (editorRef.current) {
-      editorRef.current.updateOptions({ theme: theme === 'dark' ? 'vs-dark' : 'vs' });
+      editorRef.current.updateOptions({ theme: isDark ? 'vs-dark' : 'vs' });
     }
-  }, [theme]);
+  }, [isDark]);
 
   const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
-    editor.updateOptions({ theme: theme === 'dark' ? 'vs-dark' : 'vs' });
+    editor.updateOptions({ theme: isDark ? 'vs-dark' : 'vs' });
   };
 
   const handleSendToChat = useCallback(() => {
@@ -1056,7 +1056,7 @@ function StandardEditorPage() {
                 height="100%"
                 width={splitView ? '50%' : '100%'}
                 language={language}
-                theme={theme === 'dark' ? 'vs-dark' : 'vs'}
+                theme={isDark ? 'vs-dark' : 'vs'}
                 value={editorContent}
                 onChange={(value) => {
                   updateTabContent(value ?? '');
@@ -1079,7 +1079,7 @@ function StandardEditorPage() {
                   height="100%"
                   width="50%"
                   language={language}
-                  theme={theme === 'dark' ? 'vs-dark' : 'vs'}
+                  theme={isDark ? 'vs-dark' : 'vs'}
                   value={editorContent}
                   onChange={(value) => {
                     updateTabContent(value ?? '');
@@ -1425,7 +1425,7 @@ function StandardEditorPage() {
           {activeBottomTab === 'terminal' && (
             <div
               className={`flex-1 overflow-y-auto px-3 py-2 font-mono text-xs space-y-1 ${
-                theme === 'dark' ? 'bg-black text-white' : 'bg-gray-100 text-gray-900'
+                isDark ? 'bg-black text-white' : 'bg-gray-100 text-gray-900'
               }`}
             >
               {terminalHistory.length === 0 && !terminalInput && (
@@ -1436,34 +1436,34 @@ function StandardEditorPage() {
               {terminalHistory.map((entry) => (
                 <div key={entry.id} className="space-y-1">
                   <div className="flex items-start gap-1">
-                    <span className={theme === 'dark' ? 'text-green-400' : 'text-green-600'}>
+                    <span className={isDark ? 'text-green-400' : 'text-green-600'}>
                       ➜
                     </span>
-                    <span className={theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}>
+                    <span className={isDark ? 'text-blue-400' : 'text-blue-600'}>
                       {cwd}
                     </span>
-                    <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>$</span>
-                    <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
+                    <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>$</span>
+                    <span className={isDark ? 'text-white' : 'text-gray-900'}>
                       {entry.command}
                     </span>
                   </div>
                   {entry.output && (
                     <div
-                      className={`whitespace-pre-wrap pl-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+                      className={`whitespace-pre-wrap pl-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
                     >
                       {entry.output}
                     </div>
                   )}
                   {entry.error && (
                     <div
-                      className={`whitespace-pre-wrap pl-4 ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}
+                      className={`whitespace-pre-wrap pl-4 ${isDark ? 'text-red-400' : 'text-red-600'}`}
                     >
                       {entry.error}
                     </div>
                   )}
                   {entry.exitCode !== 0 && (
                     <div
-                      className={`text-[10px] pl-4 ${theme === 'dark' ? 'text-red-500' : 'text-red-600'}`}
+                      className={`text-[10px] pl-4 ${isDark ? 'text-red-500' : 'text-red-600'}`}
                     >
                       Exit code: {entry.exitCode}
                     </div>
@@ -1478,9 +1478,9 @@ function StandardEditorPage() {
               )}
               {/* Current input line */}
               <div className="flex items-center gap-1">
-                <span className={theme === 'dark' ? 'text-green-400' : 'text-green-600'}>➜</span>
-                <span className={theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}>{cwd}</span>
-                <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>$</span>
+                <span className={isDark ? 'text-green-400' : 'text-green-600'}>➜</span>
+                <span className={isDark ? 'text-blue-400' : 'text-blue-600'}>{cwd}</span>
+                <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>$</span>
                 <input
                   ref={terminalInputRef}
                   type="text"
@@ -1491,7 +1491,7 @@ function StandardEditorPage() {
                   onKeyDown={handleTerminalKeyDown}
                   placeholder="Type command..."
                   disabled={terminalMutation.isPending}
-                  className={`flex-1 bg-transparent border-none px-0 py-0 text-xs font-mono focus:outline-none ${theme === 'dark' ? 'text-white placeholder:text-gray-500' : 'text-gray-900 placeholder:text-gray-400'} disabled:opacity-50`}
+                  className={`flex-1 bg-transparent border-none px-0 py-0 text-xs font-mono focus:outline-none ${isDark ? 'text-white placeholder:text-gray-500' : 'text-gray-900 placeholder:text-gray-400'} disabled:opacity-50`}
                 />
               </div>
               <div ref={terminalEndRef} />

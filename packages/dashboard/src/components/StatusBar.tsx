@@ -30,7 +30,7 @@ export function StatusBar({
   onRefresh,
   onLogout,
 }: StatusBarProps) {
-  const { theme, toggle } = useTheme();
+  const { isDark, toggle } = useTheme();
   const { showWarning, dismiss } = useSessionTimeout(3600);
   const [profileOpen, setProfileOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -122,8 +122,8 @@ export function StatusBar({
                 className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center gap-2 transition-colors"
                 role="menuitem"
               >
-                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                {isDark ? 'Light mode' : 'Dark mode'}
               </button>
 
               {/* Logout */}

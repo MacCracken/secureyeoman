@@ -21,7 +21,7 @@ vi.mock('@monaco-editor/react', () => ({
 }));
 
 vi.mock('../hooks/useTheme', () => ({
-  useTheme: () => ({ theme: 'dark', toggle: vi.fn() }),
+  useTheme: () => ({ theme: 'dark', isDark: true, setTheme: vi.fn(), toggle: vi.fn() }),
 }));
 
 vi.mock('../api/client', () => ({

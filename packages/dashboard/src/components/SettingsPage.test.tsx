@@ -7,6 +7,13 @@ import { MemoryRouter } from 'react-router-dom';
 import { SettingsPage } from './SettingsPage';
 import { createSoulConfig } from '../test/mocks';
 
+// ── Mock hooks ───────────────────────────────────────────────────
+
+vi.mock('../hooks/useTheme', () => ({
+  useTheme: () => ({ theme: 'dark', isDark: true, setTheme: vi.fn(), toggle: vi.fn() }),
+  THEMES: [],
+}));
+
 // ── Mock API client ──────────────────────────────────────────────
 // Must include every export that SettingsPage and its child tabs
 // (SecuritySettings, RolesSettings, ApiKeysSettings, etc.) import.
@@ -198,5 +205,32 @@ describe('SettingsPage', () => {
     await user.click(await screen.findByRole('button', { name: /Users/ }));
     expect(await screen.findByText('Test User')).toBeInTheDocument();
     expect(screen.getByText('test@example.com')).toBeInTheDocument();
+  });
+
+  it('renders the Appearance tab button', async () => {
+    renderComponent();
+    expect(await screen.findByRole('button', { name: /Appearance/i })).toBeInTheDocument();
+  });
+
+  it('switches to Appearance tab and shows theme chooser heading', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    await user.click(await screen.findByRole('button', { name: /Appearance/i }));
+    expect(await screen.findByText('Choose a theme for the dashboard')).toBeInTheDocument();
+  });
+
+  it('Appearance tab appears before Security tab in the tab bar', async () => {
+    renderComponent();
+    await screen.findByRole('button', { name: /Appearance/i });
+    const tabs = screen.getAllByRole('button', {
+      name: /General|Appearance|Security/,
+    });
+    const labels = tabs.map((t) => t.textContent?.trim());
+    const appearanceIdx = labels.findIndex((l) => l?.includes('Appearance'));
+    const securityIdx = labels.findIndex((l) => l?.includes('Security'));
+    expect(appearanceIdx).toBeGreaterThanOrEqual(0);
+    expect(securityIdx).toBeGreaterThanOrEqual(0);
+    expect(appearanceIdx).toBeLessThan(securityIdx);
   });
 });

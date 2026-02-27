@@ -92,6 +92,8 @@ describe('McpPrebuilts', () => {
       'Home Assistant',
       'Coolify (MetaMCP)',
       'ElevenLabs',
+      'QuickBooks Online',
+      'Security Toolkit (Kali)',
     ];
     for (const name of expectedServers) {
       expect(await screen.findByText(name)).toBeInTheDocument();
@@ -340,5 +342,12 @@ describe('McpPrebuilts', () => {
       expect(screen.getByText(/is required/i)).toBeInTheDocument();
     });
     expect(mockAddMcpServer).not.toHaveBeenCalled();
+  });
+
+  it('shows MCP_ALLOWED_TARGETS env var field for Security Toolkit', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await openPickerAndSelect(user, 'Security Toolkit (Kali)');
+    expect(screen.getByPlaceholderText('MCP_ALLOWED_TARGETS')).toBeInTheDocument();
   });
 });

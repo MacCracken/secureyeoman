@@ -16,6 +16,8 @@ import {
   Bell,
   Wrench,
   AlertTriangle,
+  Palette,
+  Check,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -38,8 +40,9 @@ import { ApiKeysSettings } from './ApiKeysSettings';
 import { UsersSettings } from './UsersSettings';
 import { WorkspacesSettings } from './WorkspacesSettings';
 import { NotificationPrefsPanel } from './NotificationPrefsPanel';
+import { useTheme, THEMES, type ThemeId } from '../hooks/useTheme';
 
-type TabType = 'general' | 'security' | 'keys' | 'workspaces' | 'users' | 'roles' | 'notifications';
+type TabType = 'general' | 'appearance' | 'security' | 'keys' | 'workspaces' | 'users' | 'roles' | 'notifications';
 
 function getTabFromPath(path: string): TabType {
   if (path.includes('/security-settings')) return 'security';
@@ -78,6 +81,19 @@ export function SettingsPage() {
         >
           <Settings className="w-4 h-4" />
           General
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab('appearance');
+          }}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'appearance'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Palette className="w-4 h-4" />
+          Appearance
         </button>
         <button
           onClick={() => {
@@ -160,6 +176,7 @@ export function SettingsPage() {
       </div>
 
       {activeTab === 'general' && <GeneralTab />}
+      {activeTab === 'appearance' && <AppearanceTab />}
       {activeTab === 'security' && <SecuritySettings />}
       {activeTab === 'keys' && (
         <div className="space-y-8">
@@ -171,6 +188,64 @@ export function SettingsPage() {
       {activeTab === 'users' && <UsersSettings />}
       {activeTab === 'roles' && <RolesSettings />}
       {activeTab === 'notifications' && <NotificationPrefsPanel />}
+    </div>
+  );
+}
+
+// ── Appearance Tab ────────────────────────────────────────────────
+
+function AppearanceTab() {
+  const { theme, setTheme } = useTheme();
+
+  const darkThemes = THEMES.filter((t) => t.isDark && !t.enterprise);
+  const darkEnterprise = THEMES.filter((t) => t.isDark && t.enterprise);
+  const lightThemes = THEMES.filter((t) => !t.isDark && t.id !== 'system' && !t.enterprise);
+  const lightEnterprise = THEMES.filter((t) => !t.isDark && t.enterprise);
+  const systemTheme = THEMES.filter((t) => t.id === 'system');
+
+  const ThemeCard = ({ t }: { t: typeof THEMES[0] }) => (
+    <button
+      key={t.id}
+      onClick={() => setTheme(t.id as ThemeId)}
+      className={`relative flex flex-col rounded-lg border-2 overflow-hidden transition-all duration-150 ${
+        theme === t.id
+          ? 'border-primary shadow-md shadow-primary/20'
+          : 'border-border hover:border-muted-foreground/50'
+      }`}
+    >
+      {/* Swatch strip */}
+      <div className="h-12 flex">
+        {t.preview.map((color, i) => (
+          <div key={i} className="flex-1" style={{ backgroundColor: color }} />
+        ))}
+      </div>
+      {/* Label */}
+      <div className="flex items-center gap-1.5 px-2 py-1.5 bg-card text-left">
+        <span className="text-xs font-medium truncate flex-1">{t.name}</span>
+        {theme === t.id && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
+      </div>
+    </button>
+  );
+
+  const Section = ({ label, themes }: { label: string; themes: typeof THEMES }) => (
+    <div className="space-y-2">
+      <h3 className="text-sm font-medium text-muted-foreground">{label}</h3>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        {themes.map((t) => <ThemeCard key={t.id} t={t} />)}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-lg font-semibold">Appearance</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">Choose a theme for the dashboard</p>
+      </div>
+      <Section label="System" themes={systemTheme} />
+      <Section label="Dark" themes={darkThemes} />
+      <Section label="Light" themes={lightThemes} />
+      <Section label="Enterprise" themes={[...darkEnterprise, ...lightEnterprise]} />
     </div>
   );
 }

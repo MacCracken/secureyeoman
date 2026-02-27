@@ -38,6 +38,9 @@ export interface McpFeatureConfig {
   twingateApiKey?: string;
   // Markdown for Agents (Phase Tier2-MA)
   respectContentSignal: boolean;
+  // Security tools (Phase 58)
+  exposeSecurityTools: boolean;
+  allowedTargets: string[];
 }
 
 const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
@@ -58,6 +61,8 @@ const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
   allowedNetworkTargets: [],
   exposeTwingateTools: false,
   respectContentSignal: true,
+  exposeSecurityTools: false,
+  allowedTargets: [],
 };
 
 export class McpStorage extends PgBaseStorage {

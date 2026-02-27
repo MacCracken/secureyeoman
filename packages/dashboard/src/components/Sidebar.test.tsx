@@ -16,7 +16,8 @@ vi.mock('../hooks/useSidebar', () => ({
 }));
 
 vi.mock('../hooks/useTheme', () => ({
-  useTheme: () => ({ theme: 'dark', toggle: vi.fn() }),
+  useTheme: () => ({ theme: 'dark', isDark: true, setTheme: vi.fn(), toggle: vi.fn() }),
+  THEMES: [],
 }));
 
 // ── Mock sub-components ──────────────────────────────────────────────
@@ -187,5 +188,17 @@ describe('Sidebar nav order', () => {
     await waitFor(() => {
       expect(screen.queryByRole('link', { name: /^editor$/i })).not.toBeInTheDocument();
     });
+  });
+
+  it('shows a Theme button in the profile dropdown', async () => {
+    const user = (await import('@testing-library/user-event')).default;
+    const u = user.setup();
+    renderSidebar();
+
+    // Open the profile dropdown
+    const profileBtn = await screen.findByRole('button', { name: /user menu/i });
+    await u.click(profileBtn);
+
+    expect(await screen.findByRole('menuitem', { name: /theme/i })).toBeInTheDocument();
   });
 });

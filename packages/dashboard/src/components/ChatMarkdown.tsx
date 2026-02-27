@@ -173,7 +173,7 @@ interface ChatMarkdownProps {
 }
 
 export function ChatMarkdown({ content, size = 'sm' }: ChatMarkdownProps) {
-  const { theme } = useTheme();
+  const { isDark } = useTheme();
   const isSm = size === 'sm';
   const textBase = isSm ? 'text-sm' : 'text-xs';
   const textSmall = isSm ? 'text-xs' : 'text-[10px]';
@@ -255,7 +255,7 @@ export function ChatMarkdown({ content, size = 'sm' }: ChatMarkdownProps) {
         const code = getHastText(codeEl).replace(/\n$/, '');
 
         if (lang === 'mermaid') {
-          return <MermaidDiagram code={code} theme={theme} />;
+          return <MermaidDiagram code={code} theme={isDark ? 'dark' : 'light'} />;
         }
 
         return (
@@ -267,7 +267,7 @@ export function ChatMarkdown({ content, size = 'sm' }: ChatMarkdownProps) {
             )}
             <SyntaxHighlighter
               language={lang || 'text'}
-              style={theme === 'dark' ? oneDark : oneLight}
+              style={isDark ? oneDark : oneLight}
               PreTag="div"
               customStyle={{
                 margin: 0,
@@ -383,7 +383,7 @@ export function ChatMarkdown({ content, size = 'sm' }: ChatMarkdownProps) {
       // ── Horizontal rule ──────────────────────────────────────────
       hr: () => <hr className="border-muted-foreground/20 my-3" />,
     }),
-    [isSm, textBase, textSmall, codeFontSize, theme]
+    [isSm, textBase, textSmall, codeFontSize, isDark]
   );
 
   return (

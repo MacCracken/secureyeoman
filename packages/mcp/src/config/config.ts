@@ -74,6 +74,7 @@ export function loadConfig(
     quickBooksRealmId: env.QUICKBOOKS_REALM_ID,
     quickBooksRefreshToken: env.QUICKBOOKS_REFRESH_TOKEN,
     respectContentSignal: parseBool(env.MCP_RESPECT_CONTENT_SIGNAL, true),
+    allowBruteForce: parseBool(env.MCP_ALLOW_BRUTE_FORCE, false),
   };
 
   return McpServiceConfigSchema.parse(raw);

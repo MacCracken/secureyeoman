@@ -18,6 +18,7 @@ import {
   Home,
   Mic2,
   Server,
+  Shield,
 } from 'lucide-react';
 import { addMcpServer, fetchMcpServers } from '../api/client';
 
@@ -218,6 +219,22 @@ const PREBUILT_SERVERS: PrebuiltServer[] = [
         label: 'MetaMCP API Key',
       },
     ],
+  },
+  {
+    icon: <Shield className="w-5 h-5" />,
+    name: 'Security Toolkit (Kali)',
+    description:
+      'Kali Linux pen-testing tools as MCP: nmap, sqlmap, nuclei, gobuster, hydra, and more',
+    transport: 'stdio',
+    command:
+      'docker run --rm -i -e MCP_ALLOWED_TARGETS ghcr.io/secureyeoman/mcp-security-toolkit:latest',
+    requiredEnvVars: [
+      {
+        key: 'MCP_ALLOWED_TARGETS',
+        label: 'Scope — Allowed Targets (comma-separated CIDRs/hostnames)',
+      },
+    ],
+    note: 'Requires Docker. Image: ghcr.io/secureyeoman/mcp-security-toolkit:latest. Use the Scope tab in Security settings to manage targets.',
   },
 ];
 

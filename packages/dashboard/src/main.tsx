@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './hooks/useAuth';
+import { applyTheme, type ThemeId } from './hooks/useTheme';
 import App from './App';
 import './index.css';
 
@@ -17,8 +18,8 @@ const queryClient = new QueryClient({
 });
 
 // Apply saved theme on load (before render to avoid flash)
-const savedTheme = localStorage.getItem('theme') || 'dark';
-document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+const savedTheme = (localStorage.getItem('theme') || 'dark') as ThemeId;
+applyTheme(savedTheme);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

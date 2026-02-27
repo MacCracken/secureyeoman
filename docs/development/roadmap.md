@@ -10,8 +10,8 @@
 |-------|------|--------|
 | XX | Find & Repair (Ongoing) | Ongoing |
 | 57 | Dashboard UX | In Progress |
-| 58 | Security Toolkit | Planned |
-| 59 | Local-First AI | Planned |
+| 58 | Security Toolkit | Complete |
+| 59 | Local-First AI | Near-Term |
 | 60 | Voice & Community | Demand-Gated |
 | 61 | Native Clients | Demand-Gated |
 | 62 | Infrastructure & Platform | Demand-Gated |
@@ -47,26 +47,27 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 Deferred visual polish and power-user tooling from Phase 53. CSS variable theming infrastructure is already in place; both items can be implemented independently.
 
 - [ ] **Intent creation form** — The "New → Intent" entry in the sidebar dialog currently navigates directly to the Intent Editor. Convert it to a guided creation form in the dialog: structured fields matching the intent schema (name, description, hard boundaries, policies, signal conditions) instead of raw JSON entry. Include an **Import JSON** button as an escape hatch for power users who already have an intent document. Form pre-fills the Intent Editor on submit; JSON import parses and validates against the intent schema before navigating.
-- [ ] **Switchable Theme Presets** — Expand beyond light/dark binary. Implement theme presets (e.g., opencode, vi, vscode) with a theme picker in dashboard settings. CSS variable-based theming already in place (`hsl(var(--X))` pattern). Pre-work required: audit remaining blue/primary buttons in dark theme — only light theme should use blue (`btn-primary`); dark theme uses muted/ghost variants. Complete button audit before adding preset switcher.
+- [x] **Switchable Theme Presets** — 18 named themes (dark + light + enterprise) with `data-theme` CSS variable overrides, `useTheme` hook (`ThemeId`, `isDark`, `setTheme`), floating theme picker in Sidebar, Appearance tab in Settings. *(Phase 60, 2026-02-26)*
+- [ ] **Manual test: Multi-Theme System** — End-to-end verification of Phase 60. Steps: (1) Open Sidebar → profile → Theme → select Tokyo Night → confirm navbar/card/primary colors update immediately; (2) Reload page → theme persists from localStorage; (3) Select "System" → match OS preference (light/dark); (4) Settings → Appearance → verify all 19 theme cards render with correct swatches; (5) Open Monaco editor (Editor page) → confirm `vs-dark`/`vs` follows `isDark`; (6) Send a chat message with a code block → confirm syntax highlighting style follows theme; (7) Toggle between a dark and light named theme → confirm Tailwind `dark:` variants (dark sidebar, dark cards) apply correctly.
 
 ---
 
 ## Phase 58: Security Toolkit Completion
 
-**Status**: Planned
+**Status**: Complete (2026-02-26)
 
 Core Kali toolkit shipped (ADR 089). This phase hardens its operational surface.
 
-- [ ] **Scope manifest UI** — Dashboard panel for managing `MCP_ALLOWED_TARGETS` — add/remove CIDRs, hostnames, URL prefixes. Wildcard (`*`) mode requires explicit acknowledgement checkbox. Reads/writes the running server's environment or a persisted config table.
-- [ ] **Structured output normalization** — Parse nmap XML (`-oX`), sqlmap JSON (`--output-format=json`), nuclei JSONL (`-j`), and gobuster output into a consistent `{ tool, target, command, parsed, exit_code }` MCP envelope for richer agent chaining.
-- [ ] **`ghcr.io/secureyeoman/mcp-security-toolkit` prebuilt image** — Publish a versioned Kali-based Docker image as a one-click MCP prebuilt in `McpPrebuilts.tsx` for cloud deployments.
-- [ ] **Hydra live brute-force** — Credential testing against authorized targets. Requires scope enforcement proven stable and an additional per-tool authorization flag beyond `MCP_ALLOWED_TARGETS`.
+- [x] **Scope manifest UI** — Dashboard panel for managing `MCP_ALLOWED_TARGETS` — add/remove CIDRs, hostnames, URL prefixes. Wildcard (`*`) mode requires explicit acknowledgement checkbox. Reads/writes `mcp.config` DB table. Security → Scope tab with `ScopeManifestTab`.
+- [x] **Structured output normalization** — Parse nmap XML (`-oX -`), sqlmap stdout, nuclei JSONL (`-j`), and gobuster output into a consistent `{ tool, target, command, parsed, exit_code }` MCP envelope for richer agent chaining.
+- [x] **`ghcr.io/secureyeoman/mcp-security-toolkit` prebuilt image** — `Dockerfile.security-toolkit` at repo root. Added as 16th entry in `McpPrebuilts.tsx`.
+- [x] **Hydra live brute-force** — `sec_hydra` with dual-flag authorization (`MCP_EXPOSE_SECURITY_TOOLS=true` AND `MCP_ALLOW_BRUTE_FORCE=true`). `parseHydraOutput` extracts credentials.
 
 ---
 
 ## Phase 59: Local-First AI
 
-**Status**: Planned — strategic priority for sovereign AI positioning
+**Status**: Near-Term — strategic priority for sovereign AI positioning
 
 Privacy-first, offline-capable AI processing via on-device models. Completes the "sovereign AI" positioning for fully self-hosted deployments.
 

@@ -64,7 +64,7 @@ vi.mock('../hooks/usePushToTalk', () => ({
 }));
 
 vi.mock('../hooks/useTheme', () => ({
-  useTheme: () => ({ theme: 'dark', toggle: vi.fn() }),
+  useTheme: () => ({ theme: 'dark', isDark: true, setTheme: vi.fn(), toggle: vi.fn() }),
 }));
 
 vi.mock('./VoiceOverlay', () => ({

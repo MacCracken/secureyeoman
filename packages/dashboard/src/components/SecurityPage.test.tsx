@@ -37,6 +37,8 @@ vi.mock('../api/client', () => ({
   emergencyStop: vi.fn(),
   fetchWorkflows: vi.fn(),
   fetchWorkflowRuns: vi.fn(),
+  fetchMcpConfig: vi.fn(),
+  patchMcpConfig: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -126,6 +128,28 @@ beforeEach(() => {
   mockFetchWorkflowRuns.mockResolvedValue({ runs: [], total: 0 });
   mockFetchReports.mockResolvedValue({ reports: [], total: 0 });
   mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0, limit: 20, offset: 0 });
+  vi.mocked(api.fetchMcpConfig).mockResolvedValue({
+    exposeGit: false,
+    exposeFilesystem: false,
+    exposeWeb: false,
+    exposeWebScraping: true,
+    exposeWebSearch: true,
+    exposeBrowser: false,
+    exposeDesktopControl: false,
+    exposeNetworkTools: false,
+    exposeTwingateTools: false,
+    exposeOrgIntentTools: false,
+    respectContentSignal: true,
+    allowedUrls: [],
+    webRateLimitPerMinute: 10,
+    proxyEnabled: false,
+    proxyProviders: [],
+    proxyStrategy: 'round-robin',
+    proxyDefaultCountry: '',
+    exposeSecurityTools: false,
+    allowedTargets: [],
+  } as any);
+  vi.mocked(api.patchMcpConfig).mockResolvedValue({} as any);
   mockFetchMlSummary.mockResolvedValue({
     enabled: false,
     period: '7d',
@@ -590,5 +614,30 @@ describe('SecurityPage — Automations tab', () => {
     renderWithRoute('/security?tab=automations');
     await screen.findByRole('tablist', { name: 'Automations views' });
     expect(await screen.findByText('No heartbeat monitors configured')).toBeInTheDocument();
+  });
+});
+
+describe('SecurityPage — Scope tab', () => {
+  it('renders the Scope tab button', () => {
+    renderWithRoute('/security');
+    expect(screen.getByText('Scope')).toBeInTheDocument();
+  });
+
+  it('clicking Scope tab renders ScopeManifestTab', async () => {
+    renderWithRoute('/security');
+    fireEvent.click(screen.getByText('Scope'));
+    expect(await screen.findByText('Scope Manifest')).toBeInTheDocument();
+  });
+
+  it('Scope tab is active when tab=scope in URL', async () => {
+    renderWithRoute('/security?tab=scope');
+    expect(await screen.findByText('Scope Manifest')).toBeInTheDocument();
+  });
+
+  it('fetchMcpConfig is called when Scope tab is active', async () => {
+    renderWithRoute('/security?tab=scope');
+    await waitFor(() => {
+      expect(vi.mocked(api.fetchMcpConfig)).toHaveBeenCalled();
+    });
   });
 });

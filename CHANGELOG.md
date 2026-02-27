@@ -1,3 +1,21 @@
+## [2026.2.26r] — Phase 58: Security Toolkit Completion
+
+### Added
+- **Structured Output Normalization**: `sec_nmap`, `sec_sqlmap`, `sec_nuclei`, `sec_gobuster` now append a `---JSON---` machine-parseable envelope `{ tool, target, command, parsed, exit_code }` to all output, enabling agent chaining without text parsing. Parser functions: `parseNmapXml`, `parseSqlmapOutput`, `parseNucleiJsonl`, `parseGobusterOutput`.
+- **Scope Manifest UI**: New **Security → Scope** tab with `ScopeManifestTab` component. Manage `allowedTargets` and enable/disable security tools via the dashboard without an env var restart. Wildcard `*` requires explicit checkbox acknowledgement.
+- **`allowedTargets` + `exposeSecurityTools`** added to `McpFeatureConfig` in `mcp.config` DB table.
+- **Security Toolkit Prebuilt Image**: `Dockerfile.security-toolkit` at repo root. 16th entry in Connections → Prebuilts: `ghcr.io/secureyeoman/mcp-security-toolkit:latest` with all Kali tools pre-installed.
+- **`sec_hydra`** — Live credential brute-force tool. Requires both `MCP_EXPOSE_SECURITY_TOOLS=true` **and** `MCP_ALLOW_BRUTE_FORCE=true` (dual-flag authorization). Supports ssh, ftp, telnet, http-get/post-form, mysql, postgres, rdp, smb, smtp. `parseHydraOutput` extracts found credentials.
+- **`allowBruteForce`** field in `McpServiceConfigSchema` and `loadConfig`. Set `MCP_ALLOW_BRUTE_FORCE=true` to enable.
+- nikto, ffuf, whatweb, wpscan also append `{ parsed: null }` envelope for consistency.
+
+### Documentation
+- ADR 141: Security Toolkit Completion decisions
+- Guide: `docs/guides/security-toolkit-scope.md`
+- Guide: `docs/guides/security-toolkit-image.md`
+
+---
+
 ## [2026.2.26q] — 2026-02-26
 
 ### Fixed

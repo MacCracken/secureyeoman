@@ -42,6 +42,7 @@ import {
   Search,
   Bot,
   Calendar,
+  Crosshair,
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import {
@@ -73,6 +74,7 @@ import {
 import type { ReportSummary, MlSecuritySummary, WorkflowDefinition, WorkflowRun } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import { RiskAssessmentTab } from './RiskAssessmentTab';
+import { ScopeManifestTab } from './ScopeManifestTab';
 import { HeartbeatsView } from './HeartbeatsView';
 import type {
   MetricsSnapshot,
@@ -89,7 +91,7 @@ import type {
   Task,
 } from '../types';
 
-type TabType = 'overview' | 'audit' | 'automations' | 'ml' | 'reports' | 'nodes' | 'autonomy' | 'risk';
+type TabType = 'overview' | 'audit' | 'automations' | 'ml' | 'reports' | 'nodes' | 'autonomy' | 'risk' | 'scope';
 
 const SEVERITY_ICONS: Record<string, React.ReactNode> = {
   info: <Info className="w-4 h-4 text-info" />,
@@ -134,6 +136,7 @@ export function SecurityPage() {
     if (tabParam === 'nodes') return 'nodes';
     if (tabParam === 'autonomy') return 'autonomy';
     if (tabParam === 'risk') return 'risk';
+    if (tabParam === 'scope') return 'scope';
     return 'overview';
   };
 
@@ -316,6 +319,17 @@ export function SecurityPage() {
           Risk
         </button>
         <button
+          onClick={() => setActiveTab('scope')}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'scope'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Crosshair className="w-4 h-4" />
+          Scope
+        </button>
+        <button
           onClick={() => setActiveTab('nodes')}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'nodes'
@@ -363,6 +377,8 @@ export function SecurityPage() {
       {activeTab === 'autonomy' && <AutonomyTab />}
 
       {activeTab === 'risk' && <RiskAssessmentTab />}
+
+      {activeTab === 'scope' && <ScopeManifestTab />}
     </div>
   );
 }

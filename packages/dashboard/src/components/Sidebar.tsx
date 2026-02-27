@@ -18,20 +18,19 @@ import {
   User,
   ChevronDown,
   LogOut,
-  Sun,
-  Moon,
+  Palette,
+  Check,
+  ChevronRight,
   Plus,
   Info,
   X,
   MessagesSquare,
-  ClipboardList,
-  GitMerge,
   Target,
   Layers,
   SlidersHorizontal,
 } from 'lucide-react';
 import { useSidebar } from '../hooks/useSidebar';
-import { useTheme } from '../hooks/useTheme';
+import { useTheme, THEMES, type ThemeId } from '../hooks/useTheme';
 import { getAccessToken } from '../api/client';
 import { Logo } from './Logo';
 import { NewEntityDialog } from './NewEntityDialog';
@@ -92,12 +91,14 @@ export function Sidebar({
   onLogout,
 }: SidebarProps) {
   const { collapsed, toggleCollapse, mobileOpen, setMobileOpen } = useSidebar();
-  const { theme, toggle: toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [themeOpen, setThemeOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [newDialogOpen, setNewDialogOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const themeRef = useRef<HTMLDivElement>(null);
   const role = parseJwtRole();
 
   const { data: agentsData } = useQuery({
@@ -161,6 +162,9 @@ export function Sidebar({
     const handler = (e: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setProfileOpen(false);
+      }
+      if (themeRef.current && !themeRef.current.contains(e.target as Node)) {
+        setThemeOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -329,14 +333,14 @@ export function Sidebar({
 
             <button
               onClick={() => {
-                toggleTheme();
-                setProfileOpen(false);
+                setThemeOpen((v) => !v);
               }}
               className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center gap-2 transition-all duration-200"
               role="menuitem"
             >
-              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+              <Palette className="w-4 h-4" />
+              <span className="flex-1">Theme</span>
+              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
 
             <button
@@ -362,6 +366,61 @@ export function Sidebar({
               <LogOut className="w-4 h-4" />
               Sign out
             </button>
+          </div>
+        )}
+
+        {/* Floating theme panel — anchored to right of sidebar */}
+        {themeOpen && (
+          <div
+            ref={themeRef}
+            className="fixed bg-card border rounded-md shadow-xl z-[60] w-56 overflow-y-auto"
+            style={{
+              left: collapsed ? 'calc(var(--sidebar-collapsed) + 8px)' : 'calc(var(--sidebar-expanded) + 8px)',
+              bottom: '8px',
+              maxHeight: '70vh',
+            }}
+          >
+            <div className="px-3 py-2 border-b">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Choose Theme</p>
+            </div>
+            {(['dark', 'light', 'system'] as const).map((group) => {
+              const groupThemes = group === 'system'
+                ? THEMES.filter((t) => t.id === 'system')
+                : group === 'dark'
+                  ? THEMES.filter((t) => t.isDark)
+                  : THEMES.filter((t) => !t.isDark && t.id !== 'system');
+              const label = group === 'dark' ? 'Dark' : group === 'light' ? 'Light' : 'System';
+              return (
+                <div key={group}>
+                  <div className="px-3 pt-2 pb-0.5">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
+                  </div>
+                  {groupThemes.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        setTheme(t.id as ThemeId);
+                        setThemeOpen(false);
+                        setProfileOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-1.5 text-sm hover:bg-muted/50 transition-colors"
+                    >
+                      <span className="flex gap-0.5 flex-shrink-0">
+                        {t.preview.map((color, i) => (
+                          <span
+                            key={i}
+                            className="w-3 h-3 rounded-full border border-black/10"
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </span>
+                      <span className="flex-1 text-left truncate">{t.name}</span>
+                      {theme === t.id && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

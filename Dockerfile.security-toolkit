@@ -1,0 +1,13 @@
+FROM kalilinux/kali-rolling
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    nodejs npm nmap gobuster ffuf nikto sqlmap nuclei whatweb \
+    wpscan hydra hashcat john theharvester dnsutils whois && \
+    rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY packages/mcp ./mcp
+COPY packages/shared ./shared
+RUN cd mcp && npm ci --omit=dev
+ENV MCP_EXPOSE_SECURITY_TOOLS=true \
+    MCP_SECURITY_TOOLS_MODE=native \
+    MCP_TRANSPORT=stdio
+CMD ["node", "mcp/dist/cli.js"]
