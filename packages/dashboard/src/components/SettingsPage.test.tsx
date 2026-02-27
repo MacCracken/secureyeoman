@@ -45,6 +45,10 @@ vi.mock('../api/client', () => ({
   createUser: vi.fn(),
   updateUser: vi.fn(),
   deleteUser: vi.fn(),
+  fetchBackups: vi.fn(),
+  createBackup: vi.fn(),
+  downloadBackup: vi.fn(),
+  deleteBackup: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -58,6 +62,7 @@ const mockFetchRoles = vi.mocked(api.fetchRoles);
 const mockFetchAssignments = vi.mocked(api.fetchAssignments);
 const mockFetchSecurityPolicy = vi.mocked(api.fetchSecurityPolicy);
 const mockFetchUsers = vi.mocked(api.fetchUsers);
+const mockFetchBackups = vi.mocked(api.fetchBackups);
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -97,6 +102,7 @@ describe('SettingsPage', () => {
     mockFetchRoles.mockResolvedValue({ roles: [] });
     mockFetchAssignments.mockResolvedValue({ assignments: [] });
     mockFetchUsers.mockResolvedValue({ users: [] });
+    mockFetchBackups.mockResolvedValue({ backups: [], total: 0 });
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,
@@ -232,5 +238,52 @@ describe('SettingsPage', () => {
     expect(appearanceIdx).toBeGreaterThanOrEqual(0);
     expect(securityIdx).toBeGreaterThanOrEqual(0);
     expect(appearanceIdx).toBeLessThan(securityIdx);
+  });
+
+  it('renders the Backup tab button', async () => {
+    renderComponent();
+    expect(await screen.findByRole('button', { name: /Backup/i })).toBeInTheDocument();
+  });
+
+  it('switches to Backup tab and shows backup heading', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    await user.click(await screen.findByRole('button', { name: /Backup/i }));
+    expect(await screen.findByText('Backup & Disaster Recovery')).toBeInTheDocument();
+  });
+
+  it('Backup tab shows empty state when no backups', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    await user.click(await screen.findByRole('button', { name: /Backup/i }));
+    expect(await screen.findByText('No backups yet. Create one above.')).toBeInTheDocument();
+  });
+
+  it('Backup tab shows backup list when backups exist', async () => {
+    const user = userEvent.setup();
+    mockFetchBackups.mockResolvedValue({
+      backups: [
+        {
+          id: 'bkp-001',
+          label: 'daily backup',
+          status: 'completed',
+          sizeBytes: 204800,
+          filePath: '/data/bkp-001.pgdump',
+          error: null,
+          pgDumpVersion: null,
+          createdBy: 'admin',
+          createdAt: 1700000000000,
+          completedAt: 1700000060000,
+        },
+      ],
+      total: 1,
+    });
+    renderComponent();
+
+    await user.click(await screen.findByRole('button', { name: /Backup/i }));
+    expect(await screen.findByText('daily backup')).toBeInTheDocument();
+    expect(screen.getByText('completed')).toBeInTheDocument();
   });
 });

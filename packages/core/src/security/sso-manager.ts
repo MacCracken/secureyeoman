@@ -10,6 +10,7 @@ import type { SecureLogger } from '../logging/logger.js';
 import type { AuthService } from './auth.js';
 import type { SsoStorage, IdentityProvider } from './sso-storage.js';
 import type { LoginResult } from './auth.js';
+import { SamlAdapter } from './saml-adapter.js';
 
 // openid-client is a lazy import so it doesn't break startup without the dep
 let oidcClient: typeof import('openid-client') | null = null;
@@ -30,6 +31,7 @@ export class SsoManager {
   private readonly storage: SsoStorage;
   private readonly authService: AuthService;
   private readonly logger: SecureLogger;
+  private _samlAdapters = new Map<string, SamlAdapter>();
 
   constructor(deps: SsoManagerDeps) {
     this.storage = deps.storage;
@@ -51,8 +53,22 @@ export class SsoManager {
     const provider = await this.storage.getIdentityProvider(providerId);
     if (!provider) throw new Error(`Identity provider not found: ${providerId}`);
     if (!provider.enabled) throw new Error(`Identity provider is disabled: ${providerId}`);
-    if (provider.type !== 'oidc') throw new Error('Only OIDC providers are supported currently');
 
+    if (provider.type === 'saml') {
+      const state = randomBytes(32).toString('hex');
+      await this.storage.createSsoState({
+        state,
+        providerId,
+        redirectUri,
+        codeVerifier: null,
+        workspaceId: workspaceId ?? null,
+        expiresAt: Date.now() + 10 * 60 * 1000,
+      });
+      const adapter = this.getSamlAdapter(provider);
+      return adapter.getAuthorizeUrl(state);
+    }
+
+    // OIDC flow
     const oidc = await getOidcClient();
     const issuer = await oidc.discovery(new URL(provider.issuerUrl!), provider.clientId!);
 
@@ -172,5 +188,58 @@ export class SsoManager {
     });
 
     return { userId: user.id, role: provider.defaultRole };
+  }
+
+  // ── SAML helpers ─────────────────────────────────────────────────
+
+  async handleSamlCallback(
+    providerId: string,
+    body: Record<string, string>
+  ): Promise<{ result: LoginResult; redirectUri: string }> {
+    const state = body.RelayState;
+    if (!state) throw new Error('Missing RelayState in SAML callback');
+
+    const storedState = await this.storage.getSsoState(state);
+    if (!storedState) throw new Error('Invalid or expired SSO state');
+    await this.storage.deleteSsoState(state);
+
+    if (storedState.providerId !== providerId) throw new Error('Provider mismatch');
+
+    const provider = await this.storage.getIdentityProvider(providerId);
+    if (!provider) throw new Error(`Identity provider not found: ${providerId}`);
+
+    const adapter = this.getSamlAdapter(provider);
+    const callback = await adapter.validateCallback(body);
+
+    const localUser = await this.provisionUser(
+      provider,
+      callback.nameId,
+      callback.attributes['email']?.[0] ?? callback.nameId,
+      callback.attributes['displayName']?.[0] ?? callback.nameId
+    );
+
+    const roleToUse = (callback.role ?? provider.defaultRole) as import('@secureyeoman/shared').Role;
+    const result = await this.authService.createUserSession(localUser.userId, roleToUse);
+
+    this.logger.info('SAML login successful', {
+      providerId,
+      nameId: callback.nameId,
+      userId: localUser.userId,
+    });
+
+    return { result, redirectUri: storedState.redirectUri };
+  }
+
+  private getSamlAdapter(provider: IdentityProvider): SamlAdapter {
+    let adapter = this._samlAdapters.get(provider.id);
+    if (!adapter) {
+      adapter = new SamlAdapter(provider);
+      this._samlAdapters.set(provider.id, adapter);
+    }
+    return adapter;
+  }
+
+  invalidateSamlAdapter(providerId: string): void {
+    this._samlAdapters.delete(providerId);
   }
 }

@@ -169,4 +169,46 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
       return { message: 'Provider deleted' };
     }
   );
+
+  // ── SAML SP Metadata (public) ─────────────────────────────────────
+  app.get(
+    '/api/v1/auth/sso/saml/:providerId/metadata',
+    async (request: FastifyRequest<{ Params: { providerId: string } }>, reply: FastifyReply) => {
+      try {
+        const provider = await ssoStorage.getIdentityProvider(request.params.providerId);
+        if (!provider) return sendError(reply, 404, 'Provider not found');
+        if (provider.type !== 'saml') return sendError(reply, 400, 'Provider is not a SAML provider');
+
+        const { SamlAdapter } = await import('../security/saml-adapter.js');
+        const adapter = new SamlAdapter(provider);
+        const xml = await adapter.getSpMetadataXml();
+        return reply
+          .header('Content-Type', 'application/xml; charset=utf-8')
+          .send(xml);
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
+    }
+  );
+
+  // ── SAML ACS (public) ─────────────────────────────────────────────
+  app.post(
+    '/api/v1/auth/sso/saml/:providerId/acs',
+    async (request: FastifyRequest<{ Params: { providerId: string }; Body: Record<string, string> }>, reply: FastifyReply) => {
+      try {
+        const { result, redirectUri } = await ssoManager.handleSamlCallback(
+          request.params.providerId,
+          request.body ?? {}
+        );
+
+        const target = new URL(redirectUri.startsWith('http') ? redirectUri : dashboardUrl);
+        target.hash = `access_token=${result.accessToken}&refresh_token=${result.refreshToken}&expires_in=${result.expiresIn}`;
+        return reply.redirect(target.toString());
+      } catch (err) {
+        const errUrl = new URL(dashboardUrl);
+        errUrl.searchParams.set('sso_error', toErrorMessage(err));
+        return reply.redirect(errUrl.toString());
+      }
+    }
+  );
 }

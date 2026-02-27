@@ -18,6 +18,11 @@ import {
   AlertTriangle,
   Palette,
   Check,
+  Database,
+  Download,
+  Trash2,
+  RefreshCw,
+  Plus,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -31,8 +36,12 @@ import {
   disablePersonality,
   setDefaultPersonality,
   clearDefaultPersonality,
+  fetchBackups,
+  createBackup,
+  downloadBackup,
+  deleteBackup,
 } from '../api/client';
-import type { Personality, SoulConfig } from '../types';
+import type { Personality, SoulConfig, BackupRecord } from '../types';
 import { NotificationSettings } from './NotificationSettings';
 import { LogRetentionSettings } from './LogRetentionSettings';
 import { SecuritySettings, RolesSettings, SecretsPanel } from './SecuritySettings';
@@ -42,7 +51,7 @@ import { WorkspacesSettings } from './WorkspacesSettings';
 import { NotificationPrefsPanel } from './NotificationPrefsPanel';
 import { useTheme, THEMES, type ThemeId } from '../hooks/useTheme';
 
-type TabType = 'general' | 'appearance' | 'security' | 'keys' | 'workspaces' | 'users' | 'roles' | 'notifications';
+type TabType = 'general' | 'appearance' | 'security' | 'keys' | 'workspaces' | 'users' | 'roles' | 'notifications' | 'backup';
 
 function getTabFromPath(path: string): TabType {
   if (path.includes('/security-settings')) return 'security';
@@ -173,6 +182,19 @@ export function SettingsPage() {
           <Bell className="w-4 h-4" />
           Notifications
         </button>
+        <button
+          onClick={() => {
+            setActiveTab('backup');
+          }}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'backup'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Database className="w-4 h-4" />
+          Backup
+        </button>
       </div>
 
       {activeTab === 'general' && <GeneralTab />}
@@ -188,6 +210,7 @@ export function SettingsPage() {
       {activeTab === 'users' && <UsersSettings />}
       {activeTab === 'roles' && <RolesSettings />}
       {activeTab === 'notifications' && <NotificationPrefsPanel />}
+      {activeTab === 'backup' && <BackupTab />}
     </div>
   );
 }
@@ -246,6 +269,182 @@ function AppearanceTab() {
       <Section label="Dark" themes={darkThemes} />
       <Section label="Light" themes={lightThemes} />
       <Section label="Enterprise" themes={[...darkEnterprise, ...lightEnterprise]} />
+    </div>
+  );
+}
+
+// ── Backup Tab ────────────────────────────────────────────────────
+
+const STATUS_BADGE: Record<BackupRecord['status'], string> = {
+  pending: 'bg-muted text-muted-foreground',
+  running: 'bg-blue-500/10 text-blue-500',
+  completed: 'bg-success/10 text-success',
+  failed: 'bg-destructive/10 text-destructive',
+};
+
+function formatBytes(n: number | null): string {
+  if (n === null) return '—';
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatTs(ts: number | null): string {
+  if (ts === null) return '—';
+  return new Date(ts).toLocaleString();
+}
+
+function BackupTab() {
+  const queryClient = useQueryClient();
+  const [label, setLabel] = useState('');
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['backups'],
+    queryFn: () => fetchBackups({ limit: 50 }),
+    refetchInterval: 5000,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: () => createBackup(label),
+    onSuccess: () => {
+      setLabel('');
+      void queryClient.invalidateQueries({ queryKey: ['backups'] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteBackup(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['backups'] });
+    },
+  });
+
+  const handleDownload = async (backup: BackupRecord) => {
+    try {
+      const blob = await downloadBackup(backup.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup-${backup.id}.pgdump`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // download error — silently ignore (user sees no file)
+    }
+  };
+
+  const backups = data?.backups ?? [];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold">Backup &amp; Disaster Recovery</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Create and manage database backups using pg_dump
+        </p>
+      </div>
+
+      {/* Create backup */}
+      <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+        <h3 className="text-sm font-medium">New Backup</h3>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Label (optional)"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <button
+            onClick={() => createMutation.mutate()}
+            disabled={createMutation.isPending}
+            className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            <Plus className="w-4 h-4" />
+            {createMutation.isPending ? 'Creating…' : 'Create Backup'}
+          </button>
+        </div>
+        {createMutation.isError && (
+          <p className="text-sm text-destructive">
+            Failed to create backup
+          </p>
+        )}
+      </div>
+
+      {/* Backup list */}
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <h3 className="text-sm font-medium">Backups</h3>
+          <button
+            onClick={() => void queryClient.invalidateQueries({ queryKey: ['backups'] })}
+            className="p-1 rounded hover:bg-muted text-muted-foreground"
+            title="Refresh"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {isLoading ? (
+          <div className="px-4 py-8 text-sm text-muted-foreground text-center">Loading…</div>
+        ) : backups.length === 0 ? (
+          <div className="px-4 py-8 text-sm text-muted-foreground text-center">
+            No backups yet. Create one above.
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {backups.map((backup) => (
+              <div key={backup.id} className="flex items-center gap-3 px-4 py-3">
+                <Database className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-medium truncate">
+                      {backup.label || `backup-${backup.id.slice(0, 8)}`}
+                    </span>
+                    <span
+                      className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${STATUS_BADGE[backup.status]}`}
+                    >
+                      {backup.status}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{formatBytes(backup.sizeBytes)}</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    Created {formatTs(backup.createdAt)}
+                    {backup.completedAt && ` · Completed ${formatTs(backup.completedAt)}`}
+                    {backup.createdBy && ` · by ${backup.createdBy}`}
+                  </div>
+                  {backup.error && (
+                    <p className="text-xs text-destructive mt-0.5 truncate">{backup.error}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {backup.status === 'completed' && (
+                    <button
+                      onClick={() => void handleDownload(backup)}
+                      title="Download"
+                      className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => deleteMutation.mutate(backup.id)}
+                    disabled={deleteMutation.isPending}
+                    title="Delete"
+                    className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {data && (
+          <div className="px-4 py-2 text-xs text-muted-foreground border-t border-border">
+            {data.total} backup{data.total !== 1 ? 's' : ''} total
+          </div>
+        )}
+      </div>
     </div>
   );
 }

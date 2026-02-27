@@ -55,6 +55,33 @@ export class PgBaseStorage {
     }
   }
 
+  /**
+   * Execute a function inside a transaction with tenant RLS context.
+   * Sets app.current_tenant GUC (transaction-scoped) before running fn.
+   */
+  protected async withTenantContext<T>(
+    tenantId: string,
+    fn: (client: import('pg').PoolClient) => Promise<T>
+  ): Promise<T> {
+    return this.withTransaction(async (client) => {
+      await client.query("SELECT set_config('app.current_tenant', $1, true)", [tenantId]);
+      return fn(client);
+    });
+  }
+
+  /**
+   * Execute a function inside a transaction with row-level security bypassed.
+   * Used for admin operations that must see all tenants' data.
+   */
+  protected async bypassRls<T>(
+    fn: (client: import('pg').PoolClient) => Promise<T>
+  ): Promise<T> {
+    return this.withTransaction(async (client) => {
+      await client.query('SET LOCAL row_security = off');
+      return fn(client);
+    });
+  }
+
   /** No-op — pool lifecycle is managed globally via closePool(). */
   close(): void {
     // intentionally empty

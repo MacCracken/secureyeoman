@@ -930,3 +930,18 @@ export interface CreateExternalFindingOptions {
   evidence?: Record<string, unknown>;
   sourceDate?: number;
 }
+
+// ── Backup & DR ──────────────────────────────────────────────────
+
+export interface BackupRecord {
+  id: string;
+  label: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  sizeBytes: number | null;
+  filePath: string | null;
+  error: string | null;
+  pgDumpVersion: string | null;
+  createdBy: string | null;
+  createdAt: number;
+  completedAt: number | null;
+}

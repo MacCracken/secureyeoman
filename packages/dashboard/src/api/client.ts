@@ -44,6 +44,7 @@ import type {
   CreateRiskAssessmentOptions,
   CreateExternalFeedOptions,
   CreateExternalFindingOptions,
+  BackupRecord,
 } from '../types.js';
 
 const API_BASE = '/api/v1';
@@ -978,6 +979,32 @@ export async function exportAuditBackup(): Promise<Blob> {
   if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(`${base}/audit/export`, { headers });
   if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+  return res.blob();
+}
+
+// Audit log export
+export async function exportAuditLog(opts: {
+  format: 'jsonl' | 'csv' | 'syslog';
+  from?: number;
+  to?: number;
+  level?: string[];
+  event?: string[];
+  userId?: string;
+  limit?: number;
+}): Promise<Blob> {
+  const token = getAccessToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}/audit/export`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(opts),
+    signal: AbortSignal.timeout(120_000), // large exports may take time
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new APIError(text || 'Export failed', res.status);
+  }
   return res.blob();
 }
 
@@ -3830,4 +3857,41 @@ export async function resolveRiskFinding(id: string): Promise<ExternalFinding> {
     { method: 'PATCH' }
   );
   return res.finding;
+}
+
+// ── Backup & DR ────────────────────────────────────────────────────────────
+
+export async function fetchBackups(opts: { limit?: number; offset?: number } = {}): Promise<{ backups: BackupRecord[]; total: number }> {
+  const params = new URLSearchParams();
+  if (opts.limit) params.set('limit', String(opts.limit));
+  if (opts.offset) params.set('offset', String(opts.offset));
+  const qs = params.toString();
+  return request(`/admin/backups${qs ? `?${qs}` : ''}`);
+}
+
+export async function createBackup(label: string): Promise<{ backup: BackupRecord }> {
+  return request('/admin/backups', { method: 'POST', body: JSON.stringify({ label }) });
+}
+
+export async function downloadBackup(id: string): Promise<Blob> {
+  const token = getAccessToken();
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}/admin/backups/${id}/download`, {
+    headers,
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new APIError('Download failed', res.status);
+  return res.blob();
+}
+
+export async function restoreBackup(id: string): Promise<{ message: string }> {
+  return request(`/admin/backups/${id}/restore`, {
+    method: 'POST',
+    body: JSON.stringify({ confirm: 'RESTORE' }),
+  });
+}
+
+export async function deleteBackup(id: string): Promise<void> {
+  await request(`/admin/backups/${id}`, { method: 'DELETE' });
 }

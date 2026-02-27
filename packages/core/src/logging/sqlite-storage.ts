@@ -274,6 +274,48 @@ export class SQLiteAuditStorage extends PgBaseStorage implements AuditChainStora
     return totalDeleted;
   }
 
+  async *iterateFiltered(opts: AuditQueryOptions = {}): AsyncIterableIterator<AuditEntry> {
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+    let paramIndex = 1;
+
+    if (opts.from !== undefined) {
+      conditions.push(`timestamp >= $${paramIndex++}`);
+      params.push(opts.from);
+    }
+    if (opts.to !== undefined) {
+      conditions.push(`timestamp <= $${paramIndex++}`);
+      params.push(opts.to);
+    }
+    if (opts.userId !== undefined) {
+      conditions.push(`user_id = $${paramIndex++}`);
+      params.push(opts.userId);
+    }
+    if (opts.taskId !== undefined) {
+      conditions.push(`task_id = $${paramIndex++}`);
+      params.push(opts.taskId);
+    }
+    if (opts.level?.length) {
+      const placeholders = opts.level.map(() => `$${paramIndex++}`);
+      conditions.push(`level IN (${placeholders.join(', ')})`);
+      params.push(...opts.level);
+    }
+    if (opts.event?.length) {
+      const placeholders = opts.event.map(() => `$${paramIndex++}`);
+      conditions.push(`event IN (${placeholders.join(', ')})`);
+      params.push(...opts.event);
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const rows = await this.queryMany<AuditRow>(
+      `SELECT * FROM audit.entries ${where} ORDER BY seq ASC`,
+      params
+    );
+    for (const row of rows) {
+      yield rowToEntry(row);
+    }
+  }
+
   override close(): void {
     // no-op — pool lifecycle is managed globally
   }

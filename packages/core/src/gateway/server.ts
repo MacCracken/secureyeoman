@@ -11,6 +11,7 @@
  */
 
 import { readFileSync, existsSync } from 'node:fs';
+import { hostname as osHostname } from 'node:os';
 import { getPool } from '../storage/pg-pool.js';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
@@ -70,6 +71,10 @@ import { registerAutonomyRoutes } from '../security/autonomy-routes.js';
 import { registerNotificationRoutes } from '../notifications/notification-routes.js';
 import { registerUserNotificationPrefsRoutes } from '../notifications/user-notification-prefs-routes.js';
 import { registerRiskAssessmentRoutes } from '../risk-assessment/risk-assessment-routes.js';
+import { registerAuditExportRoutes } from '../logging/audit-export-routes.js';
+import { SQLiteAuditStorage } from '../logging/sqlite-storage.js';
+import { registerBackupRoutes } from '../backup/backup-routes.js';
+import { registerTenantRoutes } from '../tenants/tenant-routes.js';
 import { CollabManager } from '../soul/collab.js';
 import { SoulStorage } from '../soul/storage.js';
 import { formatPrometheusMetrics } from './prometheus.js';
@@ -873,6 +878,48 @@ export class GatewayServer {
       }
     } catch (err) {
       this.getLogger().debug('Routing rules routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Audit Log Export routes (Phase 61)
+    try {
+      const auditStorage = this.secureYeoman.getAuditStorage();
+      if (auditStorage instanceof SQLiteAuditStorage) {
+        registerAuditExportRoutes(this.app, {
+          auditStorage,
+          hostname: osHostname(),
+        });
+        this.getLogger().info('Audit export routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Audit export routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Backup & DR routes (Phase 61)
+    try {
+      const backupManager = this.secureYeoman.getBackupManager();
+      if (backupManager) {
+        registerBackupRoutes(this.app, { backupManager });
+        this.getLogger().info('Backup routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Backup routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Tenant Management routes (Phase 61)
+    try {
+      const tenantManager = this.secureYeoman.getTenantManager();
+      if (tenantManager) {
+        registerTenantRoutes(this.app, { tenantManager });
+        this.getLogger().info('Tenant routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Tenant routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }

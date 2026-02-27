@@ -70,6 +70,7 @@ import {
   fetchWorkflows,
   fetchWorkflowRuns,
   fetchPersonalities,
+  exportAuditLog,
 } from '../api/client';
 import type { ReportSummary, MlSecuritySummary, WorkflowDefinition, WorkflowRun } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
@@ -1726,7 +1727,41 @@ function AuditLogTab({
   const [presets, setPresets] = useState<AuditFilterPreset[]>(loadPresets);
   const [presetName, setPresetName] = useState('');
   const [showSavePreset, setShowSavePreset] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const limit = 20;
+
+  const handleExport = useCallback(
+    async (format: 'jsonl' | 'csv' | 'syslog') => {
+      setExportOpen(false);
+      setExporting(true);
+      try {
+        const fromTs = filters.from ? new Date(filters.from).getTime() : undefined;
+        const toTs = filters.to ? new Date(filters.to + 'T23:59:59').getTime() : undefined;
+        const blob = await exportAuditLog({
+          format,
+          from: fromTs,
+          to: toTs,
+          level: filters.level ? [filters.level] : undefined,
+          event: filters.event ? [filters.event] : undefined,
+        });
+        const ext = format === 'jsonl' ? 'jsonl' : format === 'syslog' ? 'log' : 'csv';
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `audit-export.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch {
+        // silently ignore — user can retry
+      } finally {
+        setExporting(false);
+      }
+    },
+    [filters]
+  );
 
   const fromTs = filters.from ? new Date(filters.from).getTime() : undefined;
   const toTs = filters.to ? new Date(filters.to + 'T23:59:59').getTime() : undefined;
@@ -1791,6 +1826,42 @@ function AuditLogTab({
             <CheckCircle className="w-3 h-3" />
             Mark all reviewed
           </button>
+          <div className="relative">
+            <button
+              onClick={() => setExportOpen((v) => !v)}
+              disabled={exporting}
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 disabled:opacity-50"
+            >
+              {exporting ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Download className="w-3 h-3" />
+              )}
+              Export
+            </button>
+            {exportOpen && (
+              <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[120px]">
+                <button
+                  onClick={() => handleExport('jsonl')}
+                  className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted/50"
+                >
+                  JSONL
+                </button>
+                <button
+                  onClick={() => handleExport('csv')}
+                  className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted/50"
+                >
+                  CSV
+                </button>
+                <button
+                  onClick={() => handleExport('syslog')}
+                  className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted/50"
+                >
+                  Syslog
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

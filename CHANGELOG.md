@@ -3128,11 +3128,6 @@ Agnostic Priorities 1–4 are now implemented in `webgui/api.py`. The YEOMAN MCP
 - `agnostic/TODO.md` — P1–P4 marked ✅ Implemented; Integration Reference table fully green
 - `packages/core/src/cli/commands/agnostic.ts` — updated JSDoc comment to show `AGNOSTIC_API_KEY`
 
-### What remains deferred
-
-- A2A protocol bridge (Agnostic as a peer via structured delegation messages)
-- Auto-start toggle (`AGNOSTIC_AUTO_START=true` on `secureyeoman start`)
-
 ---
 
 ## Phase 33 Quality Gate Closed (2026-02-21)
@@ -3212,7 +3207,7 @@ All CI / Quality Gate open items uncovered during the Phase 34 Final Inspection 
 ### New Features
 
 - **`sec_*` MCP tools** — 14 security tools exposed via MCP: `sec_nmap`, `sec_gobuster`, `sec_ffuf`, `sec_sqlmap`, `sec_nikto`, `sec_nuclei`, `sec_whatweb`, `sec_wpscan`, `sec_hashcat`, `sec_john`, `sec_theharvester`, `sec_dig`, `sec_whois`, and `sec_shodan`. All tools are disabled by default and gated by `MCP_EXPOSE_SECURITY_TOOLS=true`.
-- **Three deployment modes** — `native` (run tools from host PATH), `docker-exec` (run via `docker exec` into a managed Kali container), and a future pre-built image path. Mode selected via `MCP_SECURITY_TOOLS_MODE`.
+- **Three deployment modes** — `native` (run tools from host PATH), `docker-exec` (run via `docker exec` into a managed Kali container), and a pre-built image path (`Dockerfile.security-toolkit`, completed in Phase 58). Mode selected via `MCP_SECURITY_TOOLS_MODE`.
 - **Scope enforcement** — `validateTarget()` checks every active-tool invocation against `MCP_ALLOWED_TARGETS` (comma-separated CIDRs, hostnames, URL prefixes). `*` wildcard available for lab/CTF mode. Scope violations throw a `ScopeViolationError` before any subprocess is spawned.
 - **Dynamic availability checks** — `registerSecurityTools()` is async; it runs `which <bin>` (or `docker exec <container> which <bin>` in docker-exec mode) at startup and only registers tools whose binaries are present. Missing tools are silently skipped.
 - **`secureyeoman security` CLI** — Four subcommands manage the Kali container lifecycle: `setup` (pull `kalilinux/kali-rolling`, start container, install tools), `teardown` (stop + rm container), `update` (apt-get upgrade inside container), `status` (container state + per-tool availability table + env var snapshot).
@@ -3236,7 +3231,7 @@ All CI / Quality Gate open items uncovered during the Phase 34 Final Inspection 
 - **`packages/mcp/src/tools/index.ts`** — `registerAllTools` made async; added `await registerSecurityTools()`
 - **`packages/mcp/src/cli.ts`** and **`packages/mcp/src/server.ts`** — `await registerAllTools()`
 - **`packages/core/src/cli.ts`** — Registered `securityCommand`
-- **`docs/development/roadmap.md`** — Added Kali Security Toolkit future enhancements section (CIDR-aware scope validation, scope manifest UI, prebuilt image, structured output normalization, Hydra)
+- **`docs/development/roadmap.md`** — Added Kali Security Toolkit enhancements section (CIDR-aware scope validation, scope manifest UI, prebuilt image, structured output normalization, Hydra — all completed in Phase 58)
 - **`docs/guides/getting-started.md`** — Added Security Toolkit (Optional) section with setup walkthrough, env vars, lifecycle commands, community skills note
 - **`docs/configuration.md`** — Added Security Toolkit subsection with 5-row env var table
 

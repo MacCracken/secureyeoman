@@ -138,6 +138,10 @@ import { NotificationManager } from './notifications/notification-manager.js';
 import { UserNotificationPrefsStorage } from './notifications/user-notification-prefs-storage.js';
 import { RiskAssessmentStorage } from './risk-assessment/risk-assessment-storage.js';
 import { RiskAssessmentManager } from './risk-assessment/risk-assessment-manager.js';
+import { BackupStorage } from './backup/backup-storage.js';
+import { BackupManager } from './backup/backup-manager.js';
+import { TenantStorage } from './tenants/tenant-storage.js';
+import { TenantManager } from './tenants/tenant-manager.js';
 import { SystemPreferencesStorage } from './config/system-preferences-storage.js';
 import { GroupChatStorage } from './integrations/group-chat-storage.js';
 import { RoutingRulesStorage } from './integrations/routing-rules-storage.js';
@@ -254,6 +258,10 @@ export class SecureYeoman {
   private groupChatStorage: GroupChatStorage | null = null;
   private routingRulesStorage: RoutingRulesStorage | null = null;
   private routingRulesManager: RoutingRulesManager | null = null;
+  private backupStorage: BackupStorage | null = null;
+  private backupManager: BackupManager | null = null;
+  private tenantStorage: TenantStorage | null = null;
+  private tenantManager: TenantManager | null = null;
   private modelDefaultSet = false;
   private initialized = false;
   private startedAt: number | null = null;
@@ -1222,6 +1230,32 @@ export class SecureYeoman {
         }
       }
 
+      // Step 6f: Initialize BackupManager (Phase 61)
+      {
+        this.backupStorage = new BackupStorage();
+        const dbCfg = this.config.core.database;
+        this.backupManager = new BackupManager({
+          storage: this.backupStorage,
+          dataDir: this.config.core.dataDir,
+          dbConfig: {
+            host: dbCfg.host,
+            port: dbCfg.port,
+            user: dbCfg.user,
+            password: process.env[dbCfg.passwordEnv] ?? undefined,
+            database: dbCfg.database,
+          },
+          logger: this.logger.child({ component: 'BackupManager' }),
+        });
+        this.logger.debug('BackupManager initialized');
+      }
+
+      // Step 6g: Initialize TenantManager (Phase 61)
+      {
+        this.tenantStorage = new TenantStorage();
+        this.tenantManager = new TenantManager(this.tenantStorage, this.auditChain);
+        this.logger.debug('TenantManager initialized');
+      }
+
       // Step 7: Record initialization in audit log
       await this.auditChain.record({
         event: 'system_initialized',
@@ -2013,6 +2047,29 @@ export class SecureYeoman {
    */
   getRoutingRulesManager(): RoutingRulesManager | null {
     return this.routingRulesManager;
+  }
+
+  /**
+   * Get the raw audit storage instance (for streaming export).
+   */
+  getAuditStorage(): import('./logging/audit-chain.js').AuditChainStorage | null {
+    return this.auditStorage;
+  }
+
+  /**
+   * Get the backup manager instance (Phase 61).
+   */
+  getBackupManager(): BackupManager | null {
+    this.ensureInitialized();
+    return this.backupManager;
+  }
+
+  /**
+   * Get the tenant manager instance (Phase 61).
+   */
+  getTenantManager(): TenantManager | null {
+    this.ensureInitialized();
+    return this.tenantManager;
   }
 
   /**
