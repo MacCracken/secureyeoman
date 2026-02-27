@@ -391,7 +391,8 @@ export class GatewayServer {
     if (this.authService) {
       const oauthService = new OAuthService();
       const scheme = this.config.tls.enabled ? 'https' : 'http';
-      const baseUrl = `${scheme}://${this.config.host === '0.0.0.0' ? 'localhost' : this.config.host}:${this.config.port}`;
+      const defaultBaseUrl = `${scheme}://${this.config.host === '0.0.0.0' ? 'localhost' : this.config.host}:${this.config.port}`;
+      const baseUrl = (process.env.SECUREYEOMAN_EXTERNAL_URL ?? '').replace(/\/$/, '') || defaultBaseUrl;
 
       // Unified OAuth token service — persists Google tokens across restarts
       const oauthTokenStorage = new OAuthTokenStorage();

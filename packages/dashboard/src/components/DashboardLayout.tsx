@@ -192,7 +192,7 @@ export function DashboardLayout() {
                     path="/routing-rules"
                     element={<Navigate to="/connections?tab=routing" replace />}
                   />
-                  <Route path="/connections" element={<ConnectionsPage />} />
+                  <Route path="/connections/*" element={<ConnectionsPage />} />
                   <Route path="/mcp" element={<ConnectionsPage />} />
                   <Route path="/developers" element={<DeveloperPage />} />
                   <Route path="/extensions" element={<Navigate to="/developers" replace />} />
