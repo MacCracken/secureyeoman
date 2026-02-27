@@ -336,6 +336,17 @@ export class IntegrationManager {
     return this.registry.get(id)?.integration ?? null;
   }
 
+  /** Return all running Integration instances whose config.platform matches the given platform. */
+  getAdaptersByPlatform(platform: string): Integration[] {
+    const result: Integration[] = [];
+    for (const entry of this.registry.values()) {
+      if (entry.config.platform === platform) {
+        result.push(entry.integration);
+      }
+    }
+    return result;
+  }
+
   startHealthChecks(): void {
     if (this.healthCheckTimer) return;
     this.healthCheckTimer = setInterval(

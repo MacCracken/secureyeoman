@@ -23,9 +23,8 @@ export function StorybookPage() {
   if (!storybookEnabled) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <BookOpen className="w-6 h-6 text-primary" />
-          <h1 className="text-2xl font-bold">Storybook</h1>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Storybook</h1>
         </div>
         <div className="card p-8 text-center">
           <ShieldAlert className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -43,7 +42,7 @@ export function StorybookPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <BookOpen className="w-6 h-6 text-primary" />
-        <h1 className="text-2xl font-bold">Storybook</h1>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Storybook</h1>
       </div>
 
       {/* Quick-start card */}

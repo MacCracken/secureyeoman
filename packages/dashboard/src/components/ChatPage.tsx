@@ -311,7 +311,9 @@ export function ChatPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-100px)] sm:h-[calc(100vh-140px)]">
       {/* Tab bar */}
-      <div className="flex border-b border-border shrink-0">
+      <div className="flex items-center border-b border-border shrink-0">
+        <h1 className="text-sm font-bold tracking-tight px-4 py-2.5 shrink-0 text-foreground">Chat</h1>
+        <div className="h-5 w-px bg-border shrink-0 mr-1" />
         <button
           onClick={() => {
             setActiveSection('personality');

@@ -38,6 +38,7 @@ vi.mock('../api/client', () => ({
   closeBrowserSession: vi.fn(),
   updateMcpConfig: vi.fn(),
   // VectorMemoryExplorerPage dependencies
+  fetchPersonalities: vi.fn(),
   fetchMemories: vi.fn(),
   fetchKnowledge: vi.fn(),
   searchSimilar: vi.fn(),
@@ -139,6 +140,7 @@ describe('AgentsPage', () => {
     // BrowserAutomationPage data
     mockFetchBrowserSessions.mockResolvedValue({ sessions: [], total: 0 });
     // VectorMemoryExplorerPage data
+    vi.mocked(api.fetchPersonalities).mockResolvedValue({ personalities: [] });
     mockFetchMemories.mockResolvedValue({ memories: [] });
     mockFetchKnowledge.mockResolvedValue({ knowledge: [] });
   });
@@ -155,7 +157,7 @@ describe('AgentsPage', () => {
   it('shows core tabs when features are enabled', async () => {
     renderComponent();
     expect(await screen.findByText('Multimodal')).toBeInTheDocument();
-    expect(screen.getByText('Sub-Agents')).toBeInTheDocument();
+    expect(screen.getByText('Swarm')).toBeInTheDocument();
     expect(screen.getByText('A2A Network')).toBeInTheDocument();
     expect(screen.getByText('Vector Memory')).toBeInTheDocument();
   });
@@ -199,11 +201,11 @@ describe('AgentsPage', () => {
       allowCamera: false,
     });
     renderComponent();
-    expect(await screen.findByText('Sub-Agents')).toBeInTheDocument();
+    expect(await screen.findByText('Swarm')).toBeInTheDocument();
     expect(screen.queryByText('Multimodal')).not.toBeInTheDocument();
   });
 
-  it('hides Sub-Agents tab when sub-agents are disabled', async () => {
+  it('hides Swarm tab when sub-agents are disabled', async () => {
     mockFetchAgentConfig.mockResolvedValue({
       config: { enabled: false },
       allowedBySecurityPolicy: false,
@@ -214,7 +216,7 @@ describe('AgentsPage', () => {
     });
     renderComponent();
     expect(await screen.findByText('Multimodal')).toBeInTheDocument();
-    expect(screen.queryByText('Sub-Agents')).not.toBeInTheDocument();
+    expect(screen.queryByText('Swarm')).not.toBeInTheDocument();
   });
 
   it('hides A2A tab when A2A is disabled', async () => {
@@ -224,22 +226,22 @@ describe('AgentsPage', () => {
     });
     mockFetchA2AConfig.mockResolvedValue({ config: { enabled: false } });
     renderComponent();
-    expect(await screen.findByText('Sub-Agents')).toBeInTheDocument();
+    expect(await screen.findByText('Swarm')).toBeInTheDocument();
     expect(screen.queryByText('A2A Network')).not.toBeInTheDocument();
   });
 
   // ── Tab Switching ───────────────────────────────────────────
 
-  it('defaults to Sub-Agents tab', async () => {
+  it('defaults to Vector Memory tab', async () => {
     renderComponent();
-    // Sub-Agents tab content (Active delegations area)
-    expect(await screen.findByText('No active delegations')).toBeInTheDocument();
+    // Vector Memory tab is the default — check for Semantic Search
+    expect((await screen.findAllByText('Semantic Search')).length).toBeGreaterThan(0);
   });
 
   it('switches to Multimodal tab on click', async () => {
     const user = userEvent.setup();
     renderComponent();
-    await screen.findByText('Sub-Agents');
+    await screen.findByText('Swarm');
     await user.click(screen.getByText('Multimodal'));
     expect(await screen.findByText('Jobs')).toBeInTheDocument();
   });

@@ -2,15 +2,36 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NotificationBell } from './NotificationBell';
 
 vi.mock('../hooks/useWebSocket', () => ({
   useWebSocket: vi.fn(),
 }));
 
+vi.mock('../api/client', () => ({
+  markNotificationRead: vi.fn().mockResolvedValue(undefined),
+  markAllNotificationsRead: vi.fn().mockResolvedValue(undefined),
+  deleteNotification: vi.fn().mockResolvedValue(undefined),
+  fetchNotifications: vi.fn().mockResolvedValue({ notifications: [], total: 0, unread: 0 }),
+  fetchUnreadNotificationCount: vi.fn().mockResolvedValue({ count: 0 }),
+}));
+
 import { useWebSocket } from '../hooks/useWebSocket';
 
 const mockUseWebSocket = vi.mocked(useWebSocket);
+
+function createQueryClient() {
+  return new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+}
+
+function renderBell() {
+  return render(
+    <QueryClientProvider client={createQueryClient()}>
+      <NotificationBell />
+    </QueryClientProvider>
+  );
+}
 
 describe('NotificationBell', () => {
   beforeEach(() => {
@@ -27,13 +48,13 @@ describe('NotificationBell', () => {
   });
 
   it('renders the notification bell button', () => {
-    render(<NotificationBell />);
+    renderBell();
     expect(screen.getByLabelText('Notifications')).toBeInTheDocument();
   });
 
   it('shows "No notifications" when dropdown is opened and empty', async () => {
     const user = userEvent.setup();
-    render(<NotificationBell />);
+    renderBell();
 
     await user.click(screen.getByLabelText('Notifications'));
     expect(screen.getByText('No notifications')).toBeInTheDocument();
@@ -41,7 +62,7 @@ describe('NotificationBell', () => {
 
   it('shows notifications header when opened', async () => {
     const user = userEvent.setup();
-    render(<NotificationBell />);
+    renderBell();
 
     await user.click(screen.getByLabelText('Notifications'));
     expect(screen.getByText('Notifications')).toBeInTheDocument();
@@ -61,7 +82,7 @@ describe('NotificationBell', () => {
     localStorage.setItem('friday_notifications', JSON.stringify(stored));
 
     const user = userEvent.setup();
-    render(<NotificationBell />);
+    renderBell();
 
     await user.click(screen.getByLabelText('Notifications'));
     expect(screen.getByText('Test Alert')).toBeInTheDocument();
@@ -75,7 +96,7 @@ describe('NotificationBell', () => {
     ];
     localStorage.setItem('friday_notifications', JSON.stringify(stored));
 
-    render(<NotificationBell />);
+    renderBell();
     expect(screen.getByText('2')).toBeInTheDocument();
   });
 
@@ -86,7 +107,7 @@ describe('NotificationBell', () => {
     localStorage.setItem('friday_notifications', JSON.stringify(stored));
 
     const user = userEvent.setup();
-    render(<NotificationBell />);
+    renderBell();
 
     await user.click(screen.getByLabelText('Notifications'));
     await user.click(screen.getByLabelText('Clear all notifications'));

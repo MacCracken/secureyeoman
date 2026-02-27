@@ -62,6 +62,7 @@ type NavItem = { to: string; label: string; icon: React.ReactNode; end?: boolean
 const BASE_TOP_ITEMS: NavItem[] = [
   { to: '/metrics', label: 'Mission Control', icon: <LayoutDashboard className="w-5 h-5" /> },
   { to: '/security', label: 'Security', icon: <ShieldAlert className="w-5 h-5" /> },
+  { to: '/automation', label: 'Automation', icon: <Layers className="w-5 h-5" /> },
   { to: '/chat', label: 'Chat', icon: <MessagesSquare className="w-5 h-5" /> },
   { to: '/editor', label: 'Editor', icon: <Code className="w-5 h-5" /> },
   { to: '/personality', label: 'Personality', icon: <Brain className="w-5 h-5" /> },
@@ -165,7 +166,6 @@ export function Sidebar({
     top.push({ to: '/intent', label: 'Intent', icon: <Target className="w-5 h-5" /> });
     if (proactiveEnabled) top.push({ to: '/proactive', label: 'Proactive', icon: <Sparkles className="w-5 h-5" /> });
     if (hasAgents) top.push({ to: '/agents', label: 'Agents', icon: <Users className="w-5 h-5" /> });
-    top.push({ to: '/automation', label: 'Automation', icon: <Layers className="w-5 h-5" /> });
 
     return { topItems: top, adminItems: [...BASE_ADMIN_ITEMS] };
   }, [hasAgents, extensionsEnabled, proactiveEnabled, experimentsEnabled, storybookEnabled]);
@@ -191,7 +191,7 @@ export function Sidebar({
   }, [adminOpen]);
 
   const groupHeaderClass =
-    'flex items-center gap-3 px-3 py-2 w-full rounded-lg text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200';
+    'flex items-center gap-3 px-3 py-2 w-full rounded-lg text-xs font-semibold tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200';
 
   const renderNavItem = (item: NavItem) => (
     <NavLink

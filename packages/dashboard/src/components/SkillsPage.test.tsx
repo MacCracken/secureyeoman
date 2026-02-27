@@ -85,6 +85,28 @@ function renderComponent(
   );
 }
 
+const MOCK_PERSONALITY = {
+  id: 'p1',
+  name: 'Test Agent',
+  description: '',
+  systemPrompt: '',
+  traits: {},
+  sex: 'unspecified' as const,
+  voice: '',
+  preferredLanguage: '',
+  defaultModel: null,
+  modelFallbacks: [] as Array<{ provider: string; model: string }>,
+  includeArchetypes: false,
+  injectDateTime: false,
+  empathyResonance: false,
+  avatarUrl: null,
+  isDefault: true,
+  isActive: true,
+  isArchetype: false,
+  createdAt: Date.now(),
+  updatedAt: Date.now(),
+};
+
 const MOCK_SKILL = {
   id: 's1',
   name: 'MyTestSkill',
@@ -97,7 +119,7 @@ const MOCK_SKILL = {
   status: 'active' as const,
   usageCount: 0,
   lastUsedAt: null,
-  personalityId: null,
+  personalityId: 'p1',
   createdAt: Date.now(),
   updatedAt: Date.now(),
 };
@@ -108,7 +130,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   mockNavigate.mockReset();
   mockFetchSkills.mockResolvedValue({ skills: [] });
-  mockFetchPersonalities.mockResolvedValue({ personalities: [] });
+  mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
   mockFetchMarketplaceSkills.mockResolvedValue({ skills: [], total: 0 });
   mockFetchCommunityStatus.mockResolvedValue({
     communityRepoPath: null,

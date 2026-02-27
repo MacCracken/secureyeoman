@@ -4,8 +4,8 @@ import { render, screen, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { TaskHistory } from './TaskHistory';
-import { createTask, createTaskList } from '../test/mocks';
+import { OpenTasks } from './TaskHistory';
+import { createTask } from '../test/mocks';
 
 // ── Mock API client ──────────────────────────────────────────────
 vi.mock('../api/client', () => ({
@@ -38,7 +38,7 @@ function renderComponent() {
   return render(
     <MemoryRouter>
       <QueryClientProvider client={qc}>
-        <TaskHistory />
+        <OpenTasks />
       </QueryClientProvider>
     </MemoryRouter>
   );
@@ -46,53 +46,57 @@ function renderComponent() {
 
 // ── Tests ────────────────────────────────────────────────────────
 
-describe('TaskHistory', () => {
+describe('OpenTasks', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
     vi.mocked(api.fetchPersonalities).mockResolvedValue({ personalities: [] });
   });
 
-  it('renders the Task History heading', async () => {
+  it('renders the Open Tasks heading', async () => {
     renderComponent();
-    expect(await screen.findByText('Task History')).toBeInTheDocument();
+    expect(await screen.findByText('Open Tasks')).toBeInTheDocument();
   });
 
-  it('shows "No tasks found" when no tasks are returned', async () => {
+  it('shows "No active tasks" when no active tasks are returned', async () => {
     renderComponent();
-    expect(await screen.findByText('No tasks found')).toBeInTheDocument();
+    expect(await screen.findByText('No active tasks')).toBeInTheDocument();
   });
 
-  it('renders task rows when tasks are returned', async () => {
-    const tasks = createTaskList(3);
-    mockFetchTasks.mockResolvedValue({ tasks, total: 3 });
+  it('filters out completed/failed tasks — only shows pending and running by default', async () => {
+    const tasks = [
+      createTask({ status: 'pending', name: 'Pending task' }),
+      createTask({ status: 'running', name: 'Running task', durationMs: undefined }),
+      createTask({ status: 'completed', name: 'Completed task' }),
+      createTask({ status: 'failed', name: 'Failed task' }),
+    ];
+    mockFetchTasks.mockResolvedValue({ tasks, total: 4 });
     renderComponent();
 
-    expect(await screen.findByText('Run deployment script')).toBeInTheDocument();
-    expect(screen.getByText('Query user database')).toBeInTheDocument();
-    expect(screen.getByText('Read config file')).toBeInTheDocument();
+    expect(await screen.findByText('Pending task')).toBeInTheDocument();
+    expect(screen.getByText('Running task')).toBeInTheDocument();
+    expect(screen.queryByText('Completed task')).not.toBeInTheDocument();
+    expect(screen.queryByText('Failed task')).not.toBeInTheDocument();
   });
 
-  it('displays task status text', async () => {
-    const tasks = createTaskList(3);
-    mockFetchTasks.mockResolvedValue({ tasks, total: 3 });
-    renderComponent();
-
-    expect(await screen.findByText('completed')).toBeInTheDocument();
-    expect(screen.getByText('failed')).toBeInTheDocument();
-    expect(screen.getByText('running')).toBeInTheDocument();
-  });
-
-  it('displays error message for failed tasks', async () => {
-    const tasks = createTaskList(2);
+  it('displays active task status text', async () => {
+    const tasks = [
+      createTask({ status: 'pending', name: 'Task A' }),
+      createTask({ status: 'running', name: 'Task B', durationMs: undefined }),
+    ];
     mockFetchTasks.mockResolvedValue({ tasks, total: 2 });
     renderComponent();
 
-    expect(await screen.findByText('Process exited with code 1')).toBeInTheDocument();
+    expect(await screen.findByText('pending')).toBeInTheDocument();
+    expect(screen.getByText('running')).toBeInTheDocument();
   });
 
   it('shows task type badges', async () => {
-    const tasks = createTaskList(3);
+    const tasks = [
+      createTask({ status: 'pending', type: 'execute', name: 'Task 1' }),
+      createTask({ status: 'running', type: 'query', name: 'Task 2', durationMs: undefined }),
+      createTask({ status: 'pending', type: 'file', name: 'Task 3' }),
+    ];
     mockFetchTasks.mockResolvedValue({ tasks, total: 3 });
     renderComponent();
 
@@ -101,11 +105,18 @@ describe('TaskHistory', () => {
     expect(screen.getByText('file')).toBeInTheDocument();
   });
 
-  it('renders status filter dropdown with expected options', async () => {
+  it('renders status filter dropdown with only active options', async () => {
     renderComponent();
     const statusSelect = await screen.findByLabelText('Filter by status');
     expect(statusSelect).toBeInTheDocument();
     expect(statusSelect).toHaveValue('');
+    // Active options present
+    expect(screen.getByRole('option', { name: 'All Active' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Pending' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'In Progress' })).toBeInTheDocument();
+    // Historical options NOT present
+    expect(screen.queryByRole('option', { name: 'Completed' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Failed' })).not.toBeInTheDocument();
   });
 
   it('renders type filter dropdown with expected options', async () => {
@@ -115,14 +126,29 @@ describe('TaskHistory', () => {
     expect(typeSelect).toHaveValue('');
   });
 
-  it('calls fetchTasks with status filter when changed', async () => {
+  it('calls fetchTasks with status filter when changed to pending', async () => {
     const user = userEvent.setup();
     renderComponent();
 
     const statusSelect = await screen.findByLabelText('Filter by status');
-    await user.selectOptions(statusSelect, 'failed');
+    await user.selectOptions(statusSelect, 'pending');
 
-    expect(mockFetchTasks).toHaveBeenCalledWith(expect.objectContaining({ status: 'failed' }));
+    expect(mockFetchTasks).toHaveBeenCalledWith(expect.objectContaining({ status: 'pending' }));
+  });
+
+  it('shows all running tasks when "In Progress" is selected', async () => {
+    const user = userEvent.setup();
+    const tasks = [
+      createTask({ status: 'running', name: 'Active job', durationMs: undefined }),
+      createTask({ status: 'pending', name: 'Queued job' }),
+    ];
+    mockFetchTasks.mockResolvedValue({ tasks, total: 2 });
+    renderComponent();
+
+    const statusSelect = await screen.findByLabelText('Filter by status');
+    await user.selectOptions(statusSelect, 'running');
+
+    expect(mockFetchTasks).toHaveBeenCalledWith(expect.objectContaining({ status: 'running' }));
   });
 
   it('calls fetchTasks with type filter when changed', async () => {
@@ -144,7 +170,7 @@ describe('TaskHistory', () => {
     expect(screen.queryByText('Clear')).not.toBeInTheDocument();
 
     const statusSelect = await screen.findByLabelText('Filter by status');
-    await user.selectOptions(statusSelect, 'completed');
+    await user.selectOptions(statusSelect, 'pending');
 
     const clearButton = await screen.findByText('Clear');
     expect(clearButton).toBeInTheDocument();
@@ -153,46 +179,30 @@ describe('TaskHistory', () => {
     expect(screen.queryByText('Clear')).not.toBeInTheDocument();
   });
 
-  it('shows pagination when total exceeds page size', async () => {
-    const tasks = createTaskList(10);
-    mockFetchTasks.mockResolvedValue({ tasks, total: 25 });
+  it('does not show pagination controls', async () => {
+    // OpenTasks uses client-side display, no pagination
+    const tasks = Array.from({ length: 15 }, (_, i) =>
+      createTask({ status: 'pending', name: `Task ${i + 1}` })
+    );
+    mockFetchTasks.mockResolvedValue({ tasks, total: 15 });
     renderComponent();
 
-    expect(await screen.findByText('Page 1 of 3')).toBeInTheDocument();
-    expect(screen.getByText(/Showing 1 to 10 of 25/)).toBeInTheDocument();
+    await screen.findByText('Task 1');
+    expect(screen.queryByText(/Page \d+ of/)).not.toBeInTheDocument();
   });
 
-  it('does not show pagination when total fits in one page', async () => {
-    const tasks = createTaskList(5);
-    mockFetchTasks.mockResolvedValue({ tasks, total: 5 });
+  it('renders date range inputs', async () => {
     renderComponent();
-
-    await screen.findByText('Run deployment script');
-    expect(screen.queryByText(/Page/)).not.toBeInTheDocument();
+    await screen.findByText('Open Tasks');
+    expect(screen.queryByLabelText('From date')).toBeInTheDocument();
+    expect(screen.queryByLabelText('To date')).toBeInTheDocument();
   });
 
-  // ── Date Range Tests ────────────────────────────────────────────
-
-  it('renders date range preset buttons', async () => {
+  it('does not render export buttons', async () => {
     renderComponent();
-    expect(await screen.findByText('Last hour')).toBeInTheDocument();
-    expect(screen.getByText('Last 24h')).toBeInTheDocument();
-    expect(screen.getByText('Last 7 days')).toBeInTheDocument();
-    expect(screen.getByText('All time')).toBeInTheDocument();
-  });
-
-  it('renders from and to date inputs', async () => {
-    renderComponent();
-    expect(await screen.findByLabelText('From date')).toBeInTheDocument();
-    expect(screen.getByLabelText('To date')).toBeInTheDocument();
-  });
-
-  // ── Export Tests ─────────────────────────────────────────────────
-
-  it('renders export CSV and JSON buttons', async () => {
-    renderComponent();
-    expect(await screen.findByLabelText('Export CSV')).toBeInTheDocument();
-    expect(screen.getByLabelText('Export JSON')).toBeInTheDocument();
+    await screen.findByText('Open Tasks');
+    expect(screen.queryByLabelText('Export CSV')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Export JSON')).not.toBeInTheDocument();
   });
 
   // ── Create Task Tests ─────────────────────────────────────────────
@@ -275,25 +285,26 @@ describe('TaskHistory', () => {
     const createButton = screen.getByText('Create Task');
     expect(createButton).toBeDisabled();
   });
+
   // ── Edit Task Tests ────────────────────────────────────────────────
 
   it('opens edit dialog when edit button is clicked', async () => {
     const user = userEvent.setup();
-    const tasks = createTaskList(1);
+    const tasks = [createTask({ status: 'pending', name: 'Pending deploy' })];
     mockFetchTasks.mockResolvedValue({ tasks, total: 1 });
     renderComponent();
 
-    await screen.findByText('Run deployment script');
+    await screen.findByText('Pending deploy');
     const editButton = screen.getByTitle('Edit task');
     await user.click(editButton);
 
     expect(screen.getByText('Edit Task')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Run deployment script')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Pending deploy')).toBeInTheDocument();
   });
 
   it('calls updateTask when edit form is saved', async () => {
     const user = userEvent.setup();
-    const tasks = createTaskList(1);
+    const tasks = [createTask({ status: 'pending', name: 'Pending deploy' })];
     mockFetchTasks.mockResolvedValue({ tasks, total: 1 });
     mockUpdateTask.mockResolvedValue({
       ...tasks[0],
@@ -301,10 +312,10 @@ describe('TaskHistory', () => {
     });
     renderComponent();
 
-    await screen.findByText('Run deployment script');
+    await screen.findByText('Pending deploy');
     await user.click(screen.getByTitle('Edit task'));
 
-    const nameInput = screen.getByDisplayValue('Run deployment script');
+    const nameInput = screen.getByDisplayValue('Pending deploy');
     await user.clear(nameInput);
     await user.type(nameInput, 'Updated Name');
 
@@ -320,11 +331,11 @@ describe('TaskHistory', () => {
 
   it('shows confirmation dialog when delete is clicked', async () => {
     const user = userEvent.setup();
-    const tasks = createTaskList(1);
+    const tasks = [createTask({ status: 'pending', name: 'Pending deploy' })];
     mockFetchTasks.mockResolvedValue({ tasks, total: 1 });
     renderComponent();
 
-    await screen.findByText('Run deployment script');
+    await screen.findByText('Pending deploy');
     const deleteButton = screen.getByTitle('Delete task');
     await user.click(deleteButton);
 
@@ -334,15 +345,14 @@ describe('TaskHistory', () => {
 
   it('calls deleteTask when confirmation is accepted', async () => {
     const user = userEvent.setup();
-    const tasks = createTaskList(1);
+    const tasks = [createTask({ status: 'pending', name: 'Pending deploy' })];
     mockFetchTasks.mockResolvedValue({ tasks, total: 1 });
     mockDeleteTask.mockResolvedValue(undefined);
     renderComponent();
 
-    await screen.findByText('Run deployment script');
+    await screen.findByText('Pending deploy');
     await user.click(screen.getByTitle('Delete task'));
 
-    // Click the Delete button in the confirmation dialog
     const deleteConfirmButton = screen.getByRole('button', { name: 'Delete' });
     await user.click(deleteConfirmButton);
 
@@ -351,16 +361,15 @@ describe('TaskHistory', () => {
 
   it('dismisses delete confirmation when Cancel is clicked', async () => {
     const user = userEvent.setup();
-    const tasks = createTaskList(1);
+    const tasks = [createTask({ status: 'pending', name: 'Pending deploy' })];
     mockFetchTasks.mockResolvedValue({ tasks, total: 1 });
     renderComponent();
 
-    await screen.findByText('Run deployment script');
+    await screen.findByText('Pending deploy');
     await user.click(screen.getByTitle('Delete task'));
 
     expect(screen.getByText('Delete Task')).toBeInTheDocument();
 
-    // Click Cancel
     const cancelButtons = screen.getAllByText('Cancel');
     await user.click(cancelButtons[cancelButtons.length - 1]);
 
@@ -386,7 +395,6 @@ describe('TaskHistory', () => {
 
       renderComponent();
 
-      // Flush the initial fetch
       await act(async () => {
         await vi.advanceTimersByTimeAsync(50);
       });
@@ -394,7 +402,6 @@ describe('TaskHistory', () => {
       const callsAfterInit = mockFetchTasks.mock.calls.length;
       expect(callsAfterInit).toBeGreaterThan(0);
 
-      // Advance past the 2s refetch interval
       await act(async () => {
         await vi.advanceTimersByTimeAsync(2100);
       });
@@ -446,7 +453,6 @@ describe('TaskHistory', () => {
       const callsAfterInit = mockFetchTasks.mock.calls.length;
       expect(callsAfterInit).toBeGreaterThan(0);
 
-      // Advance well beyond any poll interval — no additional fetches expected
       await act(async () => {
         await vi.advanceTimersByTimeAsync(10000);
       });
@@ -478,8 +484,6 @@ describe('TaskHistory', () => {
     });
 
     it('does not re-poll when the task list is empty', async () => {
-      // mockFetchTasks already returns { tasks: [], total: 0 } from global beforeEach
-
       renderComponent();
 
       await act(async () => {
@@ -497,7 +501,6 @@ describe('TaskHistory', () => {
     });
 
     it('stops polling once all tasks transition to a terminal state', async () => {
-      // First call returns a running task; subsequent calls return it as completed
       mockFetchTasks
         .mockResolvedValueOnce({
           tasks: [createTask({ status: 'running', completedAt: undefined, durationMs: undefined })],
@@ -510,12 +513,10 @@ describe('TaskHistory', () => {
 
       renderComponent();
 
-      // Initial fetch — returns running task, polling starts
       await act(async () => {
         await vi.advanceTimersByTimeAsync(50);
       });
 
-      // Trigger one poll — second call returns completed task, polling should stop
       await act(async () => {
         await vi.advanceTimersByTimeAsync(2100);
       });
@@ -523,7 +524,6 @@ describe('TaskHistory', () => {
       const callsAfterSecondFetch = mockFetchTasks.mock.calls.length;
       expect(callsAfterSecondFetch).toBeGreaterThanOrEqual(2);
 
-      // Advance further — no more fetches expected
       await act(async () => {
         await vi.advanceTimersByTimeAsync(10000);
       });
@@ -541,7 +541,7 @@ describe('TaskHistory', () => {
     );
 
     renderComponent();
-    await screen.findByText('Task History');
+    await screen.findByText('Open Tasks');
 
     const callsAfterInit = mockFetchTasks.mock.calls.length;
 
@@ -549,7 +549,6 @@ describe('TaskHistory', () => {
     await user.type(screen.getByPlaceholderText('e.g., Run backup'), 'Fresh Task');
     await user.click(screen.getByText('Create Task'));
 
-    // Dialog closes on success, confirming mutation + invalidation ran
     await waitFor(() => {
       expect(screen.queryByText('Create New Task')).not.toBeInTheDocument();
     });

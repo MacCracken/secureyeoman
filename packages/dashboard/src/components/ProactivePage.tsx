@@ -56,9 +56,8 @@ export function ProactivePage() {
   if (!proactiveEnabled) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Sparkles className="w-6 h-6 text-primary" />
-          <h1 className="text-2xl font-bold">Proactive Assistance</h1>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Proactive Assistance</h1>
         </div>
         <div className="card p-8 text-center">
           <ShieldAlert className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -83,7 +82,7 @@ export function ProactivePage() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Sparkles className="w-6 h-6 text-primary" />
-        <h1 className="text-2xl font-bold">Proactive Assistance</h1>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Proactive Assistance</h1>
       </div>
 
       <div className="flex gap-1 border-b">

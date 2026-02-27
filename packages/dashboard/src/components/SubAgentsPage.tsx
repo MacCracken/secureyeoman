@@ -123,7 +123,7 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
   if (!enabled) {
     return (
       <div className="space-y-4">
-        {!embedded && <h1 className="text-xl font-bold">Sub-Agents</h1>}
+        {!embedded && <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Sub-Agents</h1>}
         <div className="card p-8 text-center space-y-4">
           <Users className="w-12 h-12 mx-auto text-muted-foreground" />
           <div>
@@ -154,7 +154,7 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          {!embedded && <h1 className="text-xl font-bold">Sub-Agents</h1>}
+          {!embedded && <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Sub-Agents</h1>}
           <p className="text-xs text-muted-foreground">
             Swarm infers task complexity and scales automatically — from a single focused sub-agent to multiple agents working in parallel.
           </p>

@@ -67,6 +67,7 @@ export interface SecurityMetrics {
 export interface Task {
   id: string;
   correlationId?: string;
+  parentTaskId?: string;
   type: string;
   name: string;
   description?: string;
@@ -797,7 +798,7 @@ export interface SoulConfig {
   maxPromptTokens: number;
 }
 
-// ─── Notification Types (Phase 51) ─────────────────────────
+// ─── Notification Types (Phase 51 + 55) ─────────────────────────
 
 export type NotificationLevel = 'info' | 'warn' | 'error' | 'critical';
 
@@ -812,6 +813,21 @@ export interface ServerNotification {
   metadata?: Record<string, unknown>;
   readAt: number | null;
   createdAt: number;
+}
+
+/** Per-user external notification delivery preference (Phase 55). */
+export interface UserNotificationPref {
+  id: string;
+  userId: string;
+  channel: 'slack' | 'telegram' | 'discord' | 'email';
+  integrationId: string | null;
+  chatId: string;
+  enabled: boolean;
+  quietHoursStart: number | null;
+  quietHoursEnd: number | null;
+  minLevel: NotificationLevel;
+  createdAt: number;
+  updatedAt: number;
 }
 
 // ─── Risk Assessment Types (Phase 53) ────────────────────────────────────────

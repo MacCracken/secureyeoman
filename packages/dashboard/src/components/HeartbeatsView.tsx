@@ -1,10 +1,10 @@
 /**
  * HeartbeatsView — self-contained heartbeat monitor view.
  * Used in Security > Automations > Heartbeats.
- * Fetches its own data; renders per-monitor HeartbeatCard components.
+ * Fetches its own data; filters client-side; renders per-monitor HeartbeatCard components.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Heart,
@@ -18,6 +18,10 @@ import {
   ChevronUp,
   ChevronLeft,
   ChevronRight,
+  Filter,
+  Search,
+  Calendar,
+  X,
 } from 'lucide-react';
 import { fetchHeartbeatStatus, fetchHeartbeatLog, fetchPersonalities } from '../api/client';
 import type { HeartbeatTask, HeartbeatLogEntry } from '../types';
@@ -36,9 +40,25 @@ const HEARTBEAT_STATUS_COLOR: Record<'ok' | 'warning' | 'error', string> = {
   error: 'text-destructive',
 };
 
+// ── Date preset helpers ───────────────────────────────────────────────────────
+
+const HB_DATE_PRESETS = [
+  { label: 'Last hour',    from: () => new Date(Date.now() - 3_600_000).toISOString(),   to: () => new Date().toISOString() },
+  { label: 'Last 24h',    from: () => new Date(Date.now() - 86_400_000).toISOString(),  to: () => new Date().toISOString() },
+  { label: 'Last 7 days', from: () => new Date(Date.now() - 604_800_000).toISOString(), to: () => new Date().toISOString() },
+  { label: 'All time',    from: () => '',                                                 to: () => '' },
+] as const;
+
 // ── HeartbeatsView ────────────────────────────────────────────────────────────
 
 export function HeartbeatsView() {
+  const [search, setSearch] = useState('');
+  const [enabledFilter, setEnabledFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [datePreset, setDatePreset] = useState('');
+
   const { data: heartbeatData, isLoading: heartbeatLoading } = useQuery({
     queryKey: ['heartbeat-status'],
     queryFn: fetchHeartbeatStatus,
@@ -52,10 +72,44 @@ export function HeartbeatsView() {
     staleTime: 60000,
   });
 
-  const heartbeatTasks = heartbeatData?.tasks ?? [];
+  const allTasks = heartbeatData?.tasks ?? [];
   const personalityMap = new Map<string, string>(
     (personalitiesData?.personalities ?? []).map((p) => [p.id, p.name])
   );
+
+  // Collect unique types for the type filter dropdown
+  const taskTypes = useMemo(
+    () => Array.from(new Set(allTasks.map((t) => t.type))).sort(),
+    [allTasks]
+  );
+
+  const filteredTasks = useMemo(() => {
+    let tasks = allTasks;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      tasks = tasks.filter((t) => t.name.toLowerCase().includes(q));
+    }
+    if (enabledFilter === 'enabled') tasks = tasks.filter((t) => t.enabled);
+    if (enabledFilter === 'disabled') tasks = tasks.filter((t) => !t.enabled);
+    if (typeFilter) tasks = tasks.filter((t) => t.type === typeFilter);
+    if (dateFrom) tasks = tasks.filter((t) => t.lastRunAt != null && t.lastRunAt >= new Date(dateFrom).getTime());
+    if (dateTo) tasks = tasks.filter((t) => t.lastRunAt != null && t.lastRunAt <= new Date(dateTo).getTime());
+    return tasks;
+  }, [allTasks, search, enabledFilter, typeFilter, dateFrom, dateTo]);
+
+  const hasFilters = search.trim() || enabledFilter !== 'all' || typeFilter || dateFrom || dateTo;
+
+  const handleDatePreset = (preset: typeof HB_DATE_PRESETS[number]) => {
+    setDateFrom(preset.from());
+    setDateTo(preset.to());
+    setDatePreset(preset.label);
+  };
+
+  const handleCustomDate = (field: 'from' | 'to', value: string) => {
+    if (field === 'from') setDateFrom(value ? new Date(value).toISOString() : '');
+    else setDateTo(value ? new Date(value).toISOString() : '');
+    setDatePreset('');
+  };
 
   if (heartbeatLoading) {
     return (
@@ -66,7 +120,7 @@ export function HeartbeatsView() {
     );
   }
 
-  if (heartbeatTasks.length === 0) {
+  if (allTasks.length === 0) {
     return (
       <div className="card p-12 text-center">
         <Heart className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
@@ -79,10 +133,112 @@ export function HeartbeatsView() {
   }
 
   return (
-    <div className="card divide-y divide-border overflow-hidden">
-      {heartbeatTasks.map((task) => (
-        <HeartbeatCard key={task.name} task={task} globalPersonalityMap={personalityMap} />
-      ))}
+    <div className="space-y-3">
+      {/* Filter bar */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+
+        {/* Text search */}
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search monitors…"
+            className="pl-8 pr-3 py-1.5 text-sm border rounded-md bg-background w-44"
+            aria-label="Search heartbeat monitors"
+          />
+        </div>
+
+        {/* Enabled/disabled filter */}
+        <select
+          value={enabledFilter}
+          onChange={(e) => setEnabledFilter(e.target.value as 'all' | 'enabled' | 'disabled')}
+          className="px-3 py-1.5 text-sm border rounded-md bg-background"
+          aria-label="Filter by state"
+        >
+          <option value="all">All States</option>
+          <option value="enabled">Enabled</option>
+          <option value="disabled">Disabled</option>
+        </select>
+
+        {/* Type filter */}
+        {taskTypes.length > 1 && (
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="px-3 py-1.5 text-sm border rounded-md bg-background"
+            aria-label="Filter by type"
+          >
+            <option value="">All Types</option>
+            {taskTypes.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        )}
+
+        {hasFilters && (
+          <button
+            onClick={() => { setSearch(''); setEnabledFilter('all'); setTypeFilter(''); setDateFrom(''); setDateTo(''); setDatePreset(''); }}
+            className="text-xs text-muted-foreground hover:text-foreground underline flex items-center gap-0.5"
+          >
+            <X className="w-3 h-3" /> Clear
+          </button>
+        )}
+
+        <span className="ml-auto text-xs text-muted-foreground">
+          {filteredTasks.length === allTasks.length
+            ? `${allTasks.length} monitor${allTasks.length !== 1 ? 's' : ''}`
+            : `${filteredTasks.length} of ${allTasks.length}`}
+        </span>
+      </div>
+
+      {/* Date Range Filter — filters by last run time */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        {HB_DATE_PRESETS.map((preset) => (
+          <button
+            key={preset.label}
+            onClick={() => handleDatePreset(preset)}
+            className={`px-2.5 py-1 rounded-md text-xs border transition-colors ${
+              datePreset === preset.label
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'border-border bg-background hover:bg-muted'
+            }`}
+          >
+            {preset.label}
+          </button>
+        ))}
+        <span className="text-muted-foreground text-xs">or</span>
+        <input
+          type="date"
+          value={dateFrom ? dateFrom.slice(0, 10) : ''}
+          onChange={(e) => handleCustomDate('from', e.target.value)}
+          className="px-2 py-1 text-xs border rounded-md bg-background"
+          aria-label="From date"
+        />
+        <span className="text-muted-foreground text-xs">–</span>
+        <input
+          type="date"
+          value={dateTo ? dateTo.slice(0, 10) : ''}
+          onChange={(e) => handleCustomDate('to', e.target.value)}
+          className="px-2 py-1 text-xs border rounded-md bg-background"
+          aria-label="To date"
+        />
+      </div>
+
+      {filteredTasks.length === 0 ? (
+        <div className="card p-8 text-center">
+          <p className="text-sm text-muted-foreground">No monitors match the current filters.</p>
+        </div>
+      ) : (
+        <div className="card divide-y divide-border overflow-hidden">
+          {filteredTasks.map((task) => (
+            <HeartbeatCard key={task.name} task={task} globalPersonalityMap={personalityMap} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

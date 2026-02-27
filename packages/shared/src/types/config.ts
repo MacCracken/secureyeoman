@@ -579,6 +579,15 @@ export const IntentFileConfigSchema = z
 
 export type IntentFileConfig = z.infer<typeof IntentFileConfigSchema>;
 
+// Notifications configuration
+export const NotificationsConfigSchema = z
+  .object({
+    retentionDays: z.number().int().min(1).default(30),
+  })
+  .default({});
+
+export type NotificationsConfig = z.infer<typeof NotificationsConfigSchema>;
+
 // Complete configuration schema
 export const ConfigSchema = z.object({
   version: z.string().default('1.0'),
@@ -605,6 +614,7 @@ export const ConfigSchema = z.object({
   multimodal: MultimodalConfigSchema,
   storage: StorageBackendConfigSchema,
   intent: IntentFileConfigSchema,
+  notifications: NotificationsConfigSchema,
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

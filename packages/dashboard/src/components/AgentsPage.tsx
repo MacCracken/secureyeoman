@@ -73,9 +73,8 @@ export function AgentsPage() {
   if (neitherEnabled) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <Users className="w-6 h-6 text-primary" />
-          <h1 className="text-2xl font-bold">Agents</h1>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Agents</h1>
         </div>
         <div className="card p-8 text-center">
           <ShieldAlert className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -128,9 +127,8 @@ export function AgentsPage() {
   if (availableSections.length === 1) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <Users className="w-6 h-6 text-primary" />
-          <h1 className="text-2xl font-bold">Agents</h1>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Agents</h1>
         </div>
         {availableSections[0].id === 'multimodal' && <MultimodalPage embedded />}
         {availableSections[0].id === 'web' && <WebPage embedded />}
@@ -148,15 +146,8 @@ export function AgentsPage() {
 
   return (
     <div className="space-y-3 sm:space-y-4 min-w-0 overflow-hidden">
-      <div className="flex items-center gap-2 sm:gap-3">
-        {personalityData?.personality ? (
-          <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-muted text-primary">
-            <PersonalityAvatar personality={personalityData.personality} size={24} />
-          </div>
-        ) : (
-          <Users className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" />
-        )}
-        <h1 className="text-xl sm:text-2xl font-bold truncate">Agents</h1>
+      <div>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Agents</h1>
       </div>
 
       {/* Section tabs */}

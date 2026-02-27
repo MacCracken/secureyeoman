@@ -173,7 +173,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
     <div className="space-y-4 sm:space-y-6 min-w-0 overflow-hidden">
       {!embedded && (
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold truncate">Vector Memory Explorer</h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Vector Memory Explorer</h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Semantic search, similarity scores, and manual memory management
           </p>

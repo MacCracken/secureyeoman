@@ -21,7 +21,7 @@ export function WebPage({ embedded }: { embedded?: boolean } = {}) {
     <div className="space-y-3 sm:space-y-4 min-w-0 overflow-hidden">
       {!embedded && (
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Web</h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Web</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Browser automation sessions and web scraper configuration
           </p>

@@ -17,6 +17,7 @@ vi.mock('../api/client', () => ({
   createConversation: vi.fn(),
   deleteConversation: vi.fn(),
   renameConversation: vi.fn(),
+  getAccessToken: vi.fn().mockReturnValue(null),
 }));
 
 // ── Mock ModelWidget to keep test focused ────────────────────────

@@ -254,6 +254,7 @@ export function MetricsGraph({ metrics, health, mcpServers, onNodeClick }: Metri
           }}
           maskColor="rgba(0, 0, 0, 0.1)"
           className="hidden sm:block"
+          style={{ width: 90, height: 60 }}
         />
       </ReactFlow>
     </div>

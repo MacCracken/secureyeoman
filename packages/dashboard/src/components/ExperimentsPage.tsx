@@ -93,9 +93,8 @@ export function ExperimentsPage() {
   if (!experimentsEnabled) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <FlaskConical className="w-6 h-6 text-primary" />
-          <h1 className="text-2xl font-bold">Experiments</h1>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Experiments</h1>
         </div>
         <div className="card p-8 text-center">
           <ShieldAlert className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -116,7 +115,7 @@ export function ExperimentsPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <FlaskConical className="w-6 h-6 text-primary" />
-        <h1 className="text-2xl font-bold">Experiments</h1>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Experiments</h1>
       </div>
       <ExperimentsList />
     </div>

@@ -119,7 +119,7 @@ describe('SettingsPage', () => {
 
   it('renders the Settings heading', async () => {
     renderComponent();
-    expect(await screen.findByText('Settings')).toBeInTheDocument();
+    expect(await screen.findByText('Administration')).toBeInTheDocument();
     expect(screen.getByText('System configuration and preferences')).toBeInTheDocument();
   });
 

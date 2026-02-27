@@ -233,7 +233,7 @@ export function RoutingRulesPage() {
         <div className="flex items-center gap-3">
           <ArrowRightLeft className="w-6 h-6 text-primary" />
           <div>
-            <h1 className="text-xl font-bold">Routing Rules</h1>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Routing Rules</h1>
             <p className="text-sm text-muted-foreground">
               Route inbound messages between integrations, override personalities, or trigger
               webhooks.

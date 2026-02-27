@@ -100,7 +100,7 @@ export function ExtensionsPage() {
   if (!enabled) {
     return (
       <div className="space-y-4">
-        <h1 className="text-xl font-bold">Extensions</h1>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Extensions</h1>
         <div className="card p-8 text-center">
           <Puzzle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
           <h2 className="text-lg font-semibold mb-2">Extensions Not Enabled</h2>
@@ -126,7 +126,7 @@ export function ExtensionsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Extensions</h1>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Extensions</h1>
         <button
           onClick={() => {
             discoverMut.mutate();

@@ -579,9 +579,9 @@ describe('PersonalityEditor — default personality toggle', () => {
 // ── Org Intent toggle in Brain section ──────────────────────────────
 
 describe('PersonalityEditor — Organizational Intent toggle', () => {
-  it('Org Intent toggle is visible and disabled when policy is off', async () => {
+  it('Org Intent shows not-enabled state when allowIntentEditor is off', async () => {
     mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
-    // Default beforeEach: allowOrgIntent: false, mockFetchMcpConfig: {} → disabled
+    // Default beforeEach: allowIntentEditor: false → shows info box instead of toggle
     const user = userEvent.setup();
     renderComponent();
 
@@ -591,10 +591,7 @@ describe('PersonalityEditor — Organizational Intent toggle', () => {
     const brainHeader = await screen.findByText('Brain - Intellect');
     await user.click(brainHeader);
 
-    const toggle = await screen.findByRole('checkbox', { name: /organizational intent signal/i });
-    expect(toggle).toBeInTheDocument();
-    expect(toggle).toBeDisabled();
-    expect(screen.getByText('Enable Org Intent in Connections first')).toBeInTheDocument();
+    expect(await screen.findByText('Organizational Intent — Not Enabled')).toBeInTheDocument();
   });
 
   it('Org Intent toggle is enabled when both allowOrgIntent and exposeOrgIntentTools are true', async () => {
@@ -623,7 +620,7 @@ describe('PersonalityEditor — Organizational Intent toggle', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: true,
-      allowIntentEditor: false,
+      allowIntentEditor: true,
     });
     mockFetchMcpConfig.mockResolvedValue({ exposeOrgIntentTools: true } as any);
 

@@ -1,3 +1,66 @@
+## [2026.2.26k] — 2026-02-26
+
+### Changed
+
+#### Dashboard — Mission Control, Navigation & Consistency
+
+- **Mission Control layout restructured** (`MetricsPage.tsx`) — Operational row (Active Tasks · Workflows · Security Events) now appears **first** so actionable data is immediately visible. Infrastructure row (System Topology · Agent Health · System Health) moves below. System Topology reduced from 2/3 to 1/3 column width. Quick Actions removed (sidebar + New button covers creation flows).
+- **Agent Health promoted** — Moved from the bottom Live Feed row to the Infrastructure row alongside System Topology and System Health.
+- **Workflows card added** to both the operational live feed row and as a nav target (`/automation?tab=workflows`).
+- **ReactFlow MiniMap** made smaller (`width: 90, height: 60`) so it doesn't dominate the compact Topology card.
+- **Sidebar — Automation reordered** (`Sidebar.tsx`) — "Automation" moved to position 3 (right after Security) in the top nav, statically included in `BASE_TOP_ITEMS`.
+- **Sidebar — Administration casing fixed** — `groupHeaderClass` no longer includes `uppercase`; "Administration" label renders in proper title case.
+- **SettingsPage header relabeled** — `h2` changed from "Settings" to "Administration" to match the sidebar group label.
+- **Date filters added to all three Security > Automations views** — Tasks, Heartbeats, and Workflows now all include a date preset bar (Last hour · Last 24h · Last 7 days · All time) plus custom from/to date inputs. Tasks filter is server-side; Heartbeats filters by `lastRunAt`; Workflows filters by `createdAt` (both client-side).
+- **Date filters added to OpenTasks** — Date preset bar and custom date inputs added to Automation > Tasks. Date params forwarded to `fetchTasks` query (`from` / `to`).
+- **Navigation routing fixed**:
+  - `/workflows` redirect → `/automation?tab=workflows` (was stripping tab context)
+  - `NewEntityDialog` "Workflow" nav item → `/automation?tab=workflows`
+  - `NewEntityDialog` task creation navigates to `/automation?create=true&...` (was `/tasks?...` which stripped params)
+  - `AutomationPage` reads `?tab=workflows` URL param to initialize the correct active tab on load
+
+### Tests
+
+- `TaskHistory.test.tsx` — Updated `does not render date range inputs` → `renders date range inputs` (date inputs are now present).
+- `tsc --noEmit` = 0 errors; 106 tests pass across 4 test files.
+
+## [2026.2.26j] — 2026-02-26
+
+### Changed
+
+#### Phase 53 — Open Tasks view + Security Automations export
+
+- **`TaskHistory` → `OpenTasks`** (`src/components/TaskHistory.tsx`) — Component renamed from `TaskHistory` to `OpenTasks`; heading renamed "Open Tasks". Now a live view of active tasks only.
+- **Active-only display** — `OpenTasks` fetches up to 200 tasks and client-side filters to `pending` + `running`. Historical tasks (completed, failed, timeout, cancelled) are not shown.
+- **Status filter narrowed** — Dropdown options: "All Active" | "Pending" | "In Progress". Historical statuses removed. When a specific status is selected, the server-side filter is used directly (bypassing the client-side active filter).
+- **Pagination removed** — Not relevant for a live active-task view.
+- **Date range removed** — Date range bar and date preset buttons removed from `OpenTasks`.
+- **Export removed from `OpenTasks`** — CSV/JSON download buttons removed; export is available in Security > Automations > Tasks only.
+- **Agent ID column removed** from `OpenTasks` (was `hidden xl:table-cell`); the Agent name column already provides this information.
+- **Security > Automations > Tasks export added** — CSV/JSON export buttons added to the filter bar. Exports all tasks matching the current filters (up to 10,000 rows). CSV columns: ID, Agent, Name, Sub-Agent, Type, Status, Duration (ms), Created At.
+- **Security > Automations > Tasks keeps all status options** — Completed, Failed, Timeout, Running, Pending, Cancelled all available for full audit filtering.
+
+### Tests
+
+- `TaskHistory.test.tsx` (`OpenTasks`) — Fully rewritten: 34 tests updated to reflect active-only behavior; use `pending`/`running` tasks in row-level tests; removed pagination/date-range/export tests; added new tests asserting historical statuses are client-side filtered and that date/export controls are absent.
+- `DashboardLayout.test.tsx` — Updated mock from `TaskHistory` → `OpenTasks`; updated test description.
+- `SecurityPage.test.tsx` — All 35 tests pass unchanged.
+
+## [2026.2.26i] — 2026-02-26
+
+### Changed
+
+#### Phase 53 — Task table column reorder + sub-agent column
+
+- **Column order standardised** — Both `TaskHistory` and `Security > Automations > Tasks` now use a unified column order: **Agent | ID | Name | Sub-Agent | Type | Status | Duration | Created** (+ Agent ID / Actions in TaskHistory). Agent was promoted to the first column; Sub-Agent inserted between Name and Type.
+- **Sub-Agent column** — New column in both task tables. Displays `↳ <parentTaskId[0..8]>…` badge (monospace, `bg-muted`) when a task was spawned as a child of another task; `—` otherwise. Hidden below `lg` breakpoint. Reads `task.parentTaskId` (added to dashboard `Task` interface in `types.ts`).
+- **`Task` interface** (`packages/dashboard/src/types.ts`) — Added `parentTaskId?: string` field to mirror the backend `TaskSchema`.
+
+### Tests
+
+- `TaskHistory.test.tsx` — 34/34 pass; `colSpan` updated from 8 → 10 (two new visible columns: Sub-Agent, Agent moved from mid to first).
+- `SecurityPage.test.tsx` — 35/35 pass; no changes required (tests assert on content, not column structure).
+
 ## [2026.2.26h] — 2026-02-26
 
 ### Changed

@@ -136,11 +136,8 @@ export function SkillsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg sm:text-xl font-semibold text-primary flex items-center gap-2">
-            <Wrench className="w-5 h-5" />
-            Skills
-          </h2>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Skills</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
             Manage your skills, browse the marketplace, and sync community skills
           </p>
         </div>

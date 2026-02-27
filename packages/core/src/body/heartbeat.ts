@@ -405,37 +405,58 @@ export class HeartbeatManager {
       return;
     }
 
-    // Route to appropriate integration
-    // Note: Real delivery (Slack/Discord/email/Telegram) is gated on IntegrationManager
-    // interface audit. For now we log intent and return; external delivery ships in a
-    // follow-up phase once the integration dispatch API is confirmed stable.
-    switch (channel) {
-      case 'slack':
-        this.logger.info('Slack heartbeat notification pending integration', {
-          message,
-          recipients,
-        });
-        break;
-      case 'telegram':
-        this.logger.info('Telegram heartbeat notification pending integration', {
-          message,
-          recipients,
-        });
-        break;
-      case 'discord':
-        this.logger.info('Discord heartbeat notification pending integration', {
-          message,
-          recipients,
-        });
-        break;
-      case 'email':
-        this.logger.info('Email heartbeat notification pending integration', {
-          message,
-          recipients,
-        });
-        break;
-      default:
-        this.logger.warn('Unknown notification channel', { channel });
+    // Route to appropriate integration via real adapter dispatch (Phase 55)
+    const integrationId = config.integrationId as string | undefined;
+    const metadata: Record<string, unknown> =
+      channel === 'email' ? { subject: check.name } : {};
+
+    let adapters: import('../integrations/types.js').Integration[];
+    if (integrationId) {
+      const adapter = this.integrationManager.getAdapter(integrationId);
+      adapters = adapter ? [adapter] : [];
+    } else {
+      adapters = this.integrationManager.getAdaptersByPlatform(channel);
+    }
+
+    if (adapters.length === 0) {
+      this.logger.warn('No running adapters found for notification channel', {
+        channel,
+        integrationId,
+        check: check.name,
+      });
+      return;
+    }
+
+    for (const adapter of adapters) {
+      for (const recipient of recipients) {
+        try {
+          await adapter.sendMessage(recipient, message, metadata);
+          await this.auditChain.record({
+            event: 'notification_dispatched',
+            level: 'info',
+            message: `Heartbeat notification dispatched via ${channel}`,
+            metadata: { check: check.name, channel, recipient },
+          });
+        } catch (err) {
+          this.logger.warn('Heartbeat notification dispatch failed', {
+            check: check.name,
+            channel,
+            recipient,
+            error: err instanceof Error ? err.message : String(err),
+          });
+          await this.auditChain.record({
+            event: 'notification_dispatch_failed',
+            level: 'warn',
+            message: `Heartbeat notification dispatch failed via ${channel}`,
+            metadata: {
+              check: check.name,
+              channel,
+              recipient,
+              error: err instanceof Error ? err.message : String(err),
+            },
+          });
+        }
+      }
     }
   }
 

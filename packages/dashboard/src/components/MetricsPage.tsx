@@ -316,10 +316,17 @@ function MissionControlTab({
     refetchInterval: 30_000,
   });
 
+  const { data: costBreakdown } = useQuery<CostBreakdownResponse>({
+    queryKey: ['costs-breakdown-mc'],
+    queryFn: fetchCostBreakdown,
+    refetchInterval: 60_000,
+  });
+
   const activeTasks: Task[] = tasksData?.tasks ?? [];
   const securityEvents: SecurityEvent[] = eventsData?.events ?? [];
   const auditEntries: AuditEntry[] = auditData?.entries ?? [];
   const workflows: WorkflowDefinition[] = workflowsData?.definitions ?? [];
+  const costByProvider = costBreakdown?.byProvider ?? {};
 
   const SEV_DOT: Record<string, string> = {
     critical: 'bg-destructive',
@@ -396,118 +403,66 @@ function MissionControlTab({
         />
       </div>
 
-      {/* ── Topology + Health + Quick Actions ───────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* System Topology Graph — spans 2 cols */}
-        <div className="card lg:col-span-2">
-          <div className="card-header">
-            <h2 className="card-title text-base">System Topology</h2>
-            <p className="card-description text-xs">Live infrastructure — click nodes to drill down</p>
-          </div>
-          <div className="card-content">
-            <ErrorBoundary fallbackTitle="Graph failed to render">
-              <Suspense
-                fallback={
-                  <div className="h-64 flex items-center justify-center text-sm text-muted-foreground">
-                    Loading graph…
-                  </div>
-                }
-              >
-                <MetricsGraph
-                  metrics={metrics}
-                  health={health}
-                  mcpServers={mcpServers}
-                  onNodeClick={(nodeId) => {
-                    const routes: Record<string, string> = {
-                      security: '/security?tab=overview',
-                      audit: '/security?tab=audit',
-                      tasks: '/security?tab=tasks',
-                      mcp: '/mcp',
-                    };
-                    navigate(routes[nodeId] ?? `/security?tab=nodes&node=${nodeId}`);
-                  }}
-                />
-              </Suspense>
-            </ErrorBoundary>
-          </div>
+      {/* ── Resource Monitoring (full-width) ─────────────────────────── */}
+      <div className="card">
+        <div className="card-header">
+          <h2 className="card-title text-base">Resource Monitoring</h2>
+          <p className="card-description text-xs">CPU, memory, tokens over time</p>
         </div>
-
-        {/* Right column: System Health + Quick Actions */}
-        <div className="space-y-4">
-          <div className="card">
-            <div className="card-header">
-              <h2 className="card-title text-base">System Health</h2>
-            </div>
-            <div className="card-content space-y-0.5">
-              <ServiceStatusRow
-                label="Core"
-                ok={health?.status === 'ok'}
-                detail={health?.status ?? 'unknown'}
-                icon={<Server className="w-3.5 h-3.5" />}
-              />
-              <ServiceStatusRow
-                label="Database"
-                ok={health?.checks?.database ?? false}
-                detail={health?.checks?.database ? 'Connected' : 'Down'}
-                icon={<Database className="w-3.5 h-3.5" />}
-              />
-              <ServiceStatusRow
-                label="Audit Chain"
-                ok={health?.checks?.auditChain ?? false}
-                detail={health?.checks?.auditChain ? 'Valid' : 'Invalid'}
-                icon={<Shield className="w-3.5 h-3.5" />}
-              />
-              <ServiceStatusRow
-                label="MCP"
-                ok={enabledMcp > 0}
-                detail={`${enabledMcp}/${mcpServers.length} servers`}
-                icon={<Link className="w-3.5 h-3.5" />}
-                onClick={() => navigate('/mcp')}
-              />
-              <ServiceStatusRow
-                label="Uptime"
-                ok={true}
-                detail={health?.uptime ? formatUptime(health.uptime) : '—'}
-                icon={<Clock className="w-3.5 h-3.5" />}
-              />
-            </div>
+        <div className="card-content space-y-3">
+          <div className="h-[130px]">
+            {history.length > 1 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={history}>
+                  <defs>
+                    <linearGradient id="mcCpuGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={C.primary} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={C.primary} stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="mcMemGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={C.success} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={C.success} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.1} />
+                  <XAxis dataKey="time" tick={{ fontSize: 9 }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 9 }} tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Area type="monotone" dataKey="cpu" name="CPU %" stroke={C.primary} fill="url(#mcCpuGrad)" strokeWidth={2} dot={false} />
+                  <Area type="monotone" dataKey="memory" name="Memory MB" stroke={C.success} fill="url(#mcMemGrad)" strokeWidth={2} dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <EmptyChart message="Collecting data…" />
+            )}
           </div>
-
-          <div className="card">
-            <div className="card-header">
-              <h2 className="card-title text-base">Quick Actions</h2>
+          <div className="grid grid-cols-4 gap-2">
+            <div className="p-2 rounded-md bg-muted/30 text-center">
+              <p className="text-xs text-muted-foreground">CPU</p>
+              <p className="text-sm font-bold">{(metrics?.resources?.cpuPercent ?? 0).toFixed(1)}%</p>
             </div>
-            <div className="card-content space-y-1.5">
-              {[
-                { label: 'Active Tasks', icon: <ClipboardList className="w-4 h-4 text-primary" />, to: '/tasks' },
-                { label: 'Audit Log', icon: <Shield className="w-4 h-4 text-primary" />, to: '/security?tab=audit' },
-                { label: 'Connections', icon: <Link className="w-4 h-4 text-primary" />, to: '/connections' },
-                { label: 'Workflows', icon: <GitMerge className="w-4 h-4 text-primary" />, to: '/workflows' },
-              ].map((action) => (
-                <button
-                  key={action.to}
-                  className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm bg-muted/40 hover:bg-muted/70 transition-colors text-left"
-                  onClick={() => navigate(action.to)}
-                >
-                  {action.icon}
-                  <span>{action.label}</span>
-                  <ArrowRight className="w-3.5 h-3.5 ml-auto text-muted-foreground" />
-                </button>
-              ))}
-              <button
-                className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm bg-muted/40 hover:bg-muted/70 transition-colors text-left"
-                onClick={onViewCosts}
-              >
-                <DollarSign className="w-4 h-4 text-success" />
-                <span>Cost Analytics</span>
-                <ArrowRight className="w-3.5 h-3.5 ml-auto text-muted-foreground" />
-              </button>
+            <div className="p-2 rounded-md bg-muted/30 text-center">
+              <p className="text-xs text-muted-foreground">Memory</p>
+              <p className="text-sm font-bold">{(metrics?.resources?.memoryUsedMb ?? 0).toFixed(0)} MB</p>
+            </div>
+            <div className="p-2 rounded-md bg-muted/30 text-center">
+              <p className="text-xs text-muted-foreground">Tokens</p>
+              <p className="text-sm font-bold">{((metrics?.resources?.tokensUsedToday ?? 0) / 1000).toFixed(1)}k</p>
+            </div>
+            <div
+              className="p-2 rounded-md bg-muted/30 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={onViewCosts}
+              title="View cost analytics"
+            >
+              <p className="text-xs text-muted-foreground">Cost</p>
+              <p className="text-sm font-bold text-success">${(metrics?.resources?.costUsdToday ?? 0).toFixed(3)}</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Live Feed Row: Active Tasks · Security Events · Agent Health ── */}
+      {/* ── Operational Row: Active Tasks · Workflows · Agent Health ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Active Tasks feed */}
         <div className="card">
@@ -519,7 +474,7 @@ function MissionControlTab({
               </div>
               <button
                 className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
-                onClick={() => navigate('/tasks')}
+                onClick={() => navigate('/automation')}
               >
                 All <ArrowRight className="w-3 h-3" />
               </button>
@@ -546,36 +501,38 @@ function MissionControlTab({
           </div>
         </div>
 
-        {/* Security Events feed */}
+        {/* Workflows */}
         <div className="card">
           <div className="card-header">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="card-title text-sm">Security Events</h2>
-                <p className="card-description text-xs">Recent activity</p>
+                <h2 className="card-title text-sm">Workflows</h2>
+                <p className="card-description text-xs">Automation pipelines</p>
               </div>
               <button
                 className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
-                onClick={() => navigate('/security?tab=events')}
+                onClick={() => navigate('/automation?tab=workflows')}
               >
                 All <ArrowRight className="w-3 h-3" />
               </button>
             </div>
           </div>
           <div className="card-content">
-            {securityEvents.length === 0 ? (
-              <p className="text-center py-6 text-sm text-muted-foreground">No recent events</p>
+            {workflows.length === 0 ? (
+              <p className="text-center py-6 text-sm text-muted-foreground">No workflows</p>
             ) : (
               <div className="space-y-2">
-                {securityEvents.slice(0, 5).map((evt) => (
-                  <div key={evt.id} className="flex items-start gap-2 text-xs">
+                {workflows.slice(0, 5).map((wf) => (
+                  <div
+                    key={wf.id}
+                    className="flex items-center gap-2 p-1.5 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => navigate('/automation?tab=workflows')}
+                  >
+                    <GitMerge className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                    <span className="text-xs font-medium truncate flex-1">{wf.name}</span>
                     <span
-                      className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${SEV_DOT[evt.severity] ?? 'bg-muted'}`}
+                      className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${wf.isEnabled ? 'bg-success' : 'bg-muted-foreground'}`}
                     />
-                    <div className="min-w-0">
-                      <p className="font-medium truncate capitalize">{evt.type.replace(/_/g, ' ')}</p>
-                      <p className="text-muted-foreground truncate">{evt.message}</p>
-                    </div>
                   </div>
                 ))}
               </div>
@@ -583,7 +540,7 @@ function MissionControlTab({
           </div>
         </div>
 
-        {/* Agent Health / Heartbeat */}
+        {/* Agent Health */}
         <div className="card">
           <div className="card-header">
             <div className="flex items-center justify-between">
@@ -640,131 +597,130 @@ function MissionControlTab({
         </div>
       </div>
 
-      {/* ── Resource Monitor + Integration Grid ─────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Resource Monitor */}
+      {/* ── Infrastructure Row: System Health · Integrations · Security Events · Audit Stream ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        {/* System Health */}
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title text-base">Resource Monitoring</h2>
-            <p className="card-description text-xs">CPU, memory, tokens over time</p>
+            <h2 className="card-title text-base">System Health</h2>
           </div>
-          <div className="card-content space-y-3">
-            <div className="h-[130px]">
-              {history.length > 1 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={history}>
-                    <defs>
-                      <linearGradient id="mcCpuGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={C.primary} stopOpacity={0.3} />
-                        <stop offset="95%" stopColor={C.primary} stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="mcMemGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={C.success} stopOpacity={0.3} />
-                        <stop offset="95%" stopColor={C.success} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.1} />
-                    <XAxis dataKey="time" tick={{ fontSize: 9 }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fontSize: 9 }} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={TOOLTIP_STYLE} />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Area type="monotone" dataKey="cpu" name="CPU %" stroke={C.primary} fill="url(#mcCpuGrad)" strokeWidth={2} dot={false} />
-                    <Area type="monotone" dataKey="memory" name="Memory MB" stroke={C.success} fill="url(#mcMemGrad)" strokeWidth={2} dot={false} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <EmptyChart message="Collecting data…" />
-              )}
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              <div className="p-2 rounded-md bg-muted/30 text-center">
-                <p className="text-xs text-muted-foreground">CPU</p>
-                <p className="text-sm font-bold">{(metrics?.resources?.cpuPercent ?? 0).toFixed(1)}%</p>
-              </div>
-              <div className="p-2 rounded-md bg-muted/30 text-center">
-                <p className="text-xs text-muted-foreground">Memory</p>
-                <p className="text-sm font-bold">{(metrics?.resources?.memoryUsedMb ?? 0).toFixed(0)} MB</p>
-              </div>
-              <div className="p-2 rounded-md bg-muted/30 text-center">
-                <p className="text-xs text-muted-foreground">Tokens</p>
-                <p className="text-sm font-bold">{((metrics?.resources?.tokensUsedToday ?? 0) / 1000).toFixed(1)}k</p>
-              </div>
-              <div
-                className="p-2 rounded-md bg-muted/30 text-center cursor-pointer hover:bg-muted/50 transition-colors"
-                onClick={onViewCosts}
-                title="View cost analytics"
-              >
-                <p className="text-xs text-muted-foreground">Cost</p>
-                <p className="text-sm font-bold text-success">${(metrics?.resources?.costUsdToday ?? 0).toFixed(3)}</p>
-              </div>
-            </div>
+          <div className="card-content space-y-0.5">
+            <ServiceStatusRow
+              label="Core"
+              ok={health?.status === 'ok'}
+              detail={health?.status ?? 'unknown'}
+              icon={<Server className="w-3.5 h-3.5" />}
+            />
+            <ServiceStatusRow
+              label="Database"
+              ok={health?.checks?.database ?? false}
+              detail={health?.checks?.database ? 'Connected' : 'Down'}
+              icon={<Database className="w-3.5 h-3.5" />}
+            />
+            <ServiceStatusRow
+              label="Audit Chain"
+              ok={health?.checks?.auditChain ?? false}
+              detail={health?.checks?.auditChain ? 'Valid' : 'Invalid'}
+              icon={<Shield className="w-3.5 h-3.5" />}
+            />
+            <ServiceStatusRow
+              label="MCP"
+              ok={enabledMcp > 0}
+              detail={`${enabledMcp}/${mcpServers.length} servers`}
+              icon={<Link className="w-3.5 h-3.5" />}
+              onClick={() => navigate('/mcp')}
+            />
+            <ServiceStatusRow
+              label="Uptime"
+              ok={true}
+              detail={health?.uptime ? formatUptime(health.uptime) : '—'}
+              icon={<Clock className="w-3.5 h-3.5" />}
+            />
           </div>
         </div>
 
-        {/* Integration Status Grid */}
+        {/* Integrations (MCP Servers) */}
         <div className="card">
           <div className="card-header">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="card-title text-base">Integrations</h2>
-                <p className="card-description text-xs">MCP servers &amp; connections</p>
+                <p className="card-description text-xs">{enabledMcp}/{mcpServers.length} active</p>
               </div>
               <button
                 className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
-                onClick={() => navigate('/connections')}
+                onClick={() => navigate('/mcp')}
               >
-                Manage <ArrowRight className="w-3 h-3" />
+                All <ArrowRight className="w-3 h-3" />
               </button>
             </div>
           </div>
           <div className="card-content">
             {mcpServers.length === 0 ? (
-              <div className="text-center py-6 text-sm text-muted-foreground">
-                No MCP servers configured.{' '}
-                <button
-                  className="text-primary hover:underline"
-                  onClick={() => navigate('/connections')}
-                >
-                  Add one
-                </button>
-              </div>
+              <p className="text-center py-4 text-sm text-muted-foreground">No MCP servers configured</p>
             ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {mcpServers.slice(0, 8).map((srv) => (
-                  <div
-                    key={srv.id}
-                    className="flex items-center gap-2 p-2 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => navigate('/connections')}
-                  >
+              <div className="space-y-2">
+                {mcpServers.slice(0, 5).map((srv) => (
+                  <div key={srv.id} className="flex items-center gap-2 text-xs">
                     <span
-                      className={`w-2 h-2 rounded-full flex-shrink-0 ${srv.enabled ? 'bg-success' : 'bg-muted-foreground'}`}
+                      className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${srv.enabled ? 'bg-success' : 'bg-muted-foreground'}`}
                     />
-                    <span className="text-xs truncate">{srv.name}</span>
+                    <span className="truncate flex-1 font-medium">{srv.name}</span>
+                    <span className="text-muted-foreground flex-shrink-0">{srv.enabled ? 'Active' : 'Off'}</span>
                   </div>
                 ))}
-                {mcpServers.length > 8 && (
-                  <div
-                    className="flex items-center justify-center p-2 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 col-span-2 text-xs text-muted-foreground"
-                    onClick={() => navigate('/connections')}
-                  >
-                    +{mcpServers.length - 8} more servers
-                  </div>
+                {mcpServers.length > 5 && (
+                  <p className="text-xs text-muted-foreground text-center">+{mcpServers.length - 5} more</p>
                 )}
               </div>
             )}
           </div>
         </div>
-      </div>
 
-      {/* ── Audit Stream + Workflow Runs ─────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Security Events */}
+        <div className="card">
+          <div className="card-header">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="card-title text-base">Security Events</h2>
+                <p className="card-description text-xs">Recent activity</p>
+              </div>
+              <button
+                className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
+                onClick={() => navigate('/security?tab=events')}
+              >
+                All <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+          <div className="card-content">
+            {securityEvents.length === 0 ? (
+              <p className="text-center py-4 text-sm text-muted-foreground">No recent events</p>
+            ) : (
+              <div className="space-y-2">
+                {securityEvents.slice(0, 5).map((evt) => (
+                  <div key={evt.id} className="flex items-start gap-2 text-xs">
+                    <span
+                      className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${SEV_DOT[evt.severity] ?? 'bg-muted'}`}
+                    />
+                    <div className="min-w-0">
+                      <p className="font-medium truncate capitalize">{evt.type.replace(/_/g, ' ')}</p>
+                      <p className="text-muted-foreground truncate">{evt.message}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Audit Stream */}
         <div className="card">
           <div className="card-header">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="card-title text-sm">Audit Stream</h2>
-                <p className="card-description text-xs">Recent tamper-evident log entries</p>
+                <p className="card-description text-xs">Tamper-evident log</p>
               </div>
               <button
                 className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
@@ -776,7 +732,7 @@ function MissionControlTab({
           </div>
           <div className="card-content">
             {auditEntries.length === 0 ? (
-              <p className="text-center py-6 text-sm text-muted-foreground">No audit entries</p>
+              <p className="text-center py-4 text-sm text-muted-foreground">No audit entries</p>
             ) : (
               <div className="space-y-1.5">
                 {auditEntries.map((entry) => (
@@ -800,54 +756,99 @@ function MissionControlTab({
             )}
           </div>
         </div>
+      </div>
 
-        {/* Workflow Runs */}
+      {/* ── System Topology + Cost Breakdown ─────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* System Topology Graph */}
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title text-base">System Topology</h2>
+            <p className="card-description text-xs">Infrastructure overview</p>
+          </div>
+          <div className="card-content">
+            <ErrorBoundary fallbackTitle="Graph failed to render">
+              <Suspense
+                fallback={
+                  <div className="h-40 flex items-center justify-center text-sm text-muted-foreground">
+                    Loading graph…
+                  </div>
+                }
+              >
+                <MetricsGraph
+                  metrics={metrics}
+                  health={health}
+                  mcpServers={mcpServers}
+                  onNodeClick={(nodeId) => {
+                    const routes: Record<string, string> = {
+                      security: '/security?tab=overview',
+                      audit: '/security?tab=audit',
+                      tasks: '/security?tab=tasks',
+                      mcp: '/mcp',
+                    };
+                    navigate(routes[nodeId] ?? `/security?tab=nodes&node=${nodeId}`);
+                  }}
+                />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
+        </div>
+
+        {/* Cost Breakdown */}
         <div className="card">
           <div className="card-header">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="card-title text-sm">Workflows</h2>
-                <p className="card-description text-xs">Active workflow definitions</p>
+                <h2 className="card-title text-sm">Cost Breakdown</h2>
+                <p className="card-description text-xs">Tokens & provider costs today</p>
               </div>
               <button
                 className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
-                onClick={() => navigate('/workflows')}
+                onClick={onViewCosts}
               >
-                All <ArrowRight className="w-3 h-3" />
+                Detail <ArrowRight className="w-3 h-3" />
               </button>
             </div>
           </div>
-          <div className="card-content">
-            {workflows.length === 0 ? (
-              <div className="text-center py-6 text-sm text-muted-foreground">
-                No workflows.{' '}
-                <button
-                  className="text-primary hover:underline"
-                  onClick={() => navigate('/workflows')}
-                >
-                  Create one
-                </button>
+          <div className="card-content space-y-3">
+            <div className="grid grid-cols-3 gap-2">
+              <div className="p-2 rounded-md bg-muted/30 text-center">
+                <p className="text-xs text-muted-foreground">Tokens In</p>
+                <p className="text-sm font-bold">
+                  {((metrics?.resources?.inputTokensToday ?? 0) / 1000).toFixed(1)}k
+                </p>
               </div>
+              <div className="p-2 rounded-md bg-muted/30 text-center">
+                <p className="text-xs text-muted-foreground">Tokens Out</p>
+                <p className="text-sm font-bold">
+                  {((metrics?.resources?.outputTokensToday ?? 0) / 1000).toFixed(1)}k
+                </p>
+              </div>
+              <div className="p-2 rounded-md bg-muted/30 text-center">
+                <p className="text-xs text-muted-foreground">Cached</p>
+                <p className="text-sm font-bold">
+                  {((metrics?.resources?.tokensCachedToday ?? 0) / 1000).toFixed(1)}k
+                </p>
+              </div>
+            </div>
+            {Object.keys(costByProvider).length === 0 ? (
+              <p className="text-center py-3 text-sm text-muted-foreground">No provider data yet</p>
             ) : (
               <div className="space-y-1.5">
-                {workflows.map((wf) => (
-                  <div
-                    key={wf.id}
-                    className="flex items-center gap-2 p-2 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => navigate('/workflows')}
-                  >
-                    <GitMerge className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium truncate">{wf.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {wf.description ?? 'No description'}
-                      </p>
+                {Object.entries(costByProvider)
+                  .sort(([, a], [, b]) => b.costUsd - a.costUsd)
+                  .slice(0, 4)
+                  .map(([provider, data]) => (
+                    <div key={provider} className="flex items-center gap-2 text-xs">
+                      <span className="flex-1 font-medium truncate capitalize">{provider}</span>
+                      <span className="text-muted-foreground font-mono">
+                        {(data.tokensUsed / 1000).toFixed(1)}k tok
+                      </span>
+                      <span className="text-success font-mono font-semibold w-16 text-right">
+                        ${data.costUsd.toFixed(4)}
+                      </span>
                     </div>
-                    <span
-                      className={`w-2 h-2 rounded-full flex-shrink-0 ${wf.isEnabled ? 'bg-success' : 'bg-muted-foreground'}`}
-                    />
-                  </div>
-                ))}
+                  ))}
               </div>
             )}
           </div>
@@ -1382,33 +1383,37 @@ interface FullMetricsTabProps {
   onViewCosts: () => void;
 }
 
-function SectionHeader({
-  title,
-  subtitle,
-  icon,
+function KpiTile({
+  label,
+  value,
+  sub,
+  highlight,
 }: {
-  title: string;
-  subtitle?: string;
-  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+  sub?: string;
+  highlight?: 'success' | 'warning' | 'destructive' | 'primary';
 }) {
+  const valueClass = highlight
+    ? { success: 'text-success', warning: 'text-warning', destructive: 'text-destructive', primary: 'text-primary' }[highlight]
+    : '';
   return (
-    <div className="flex items-center gap-3 mb-4">
-      <div className="p-2 bg-primary/10 rounded-lg text-primary flex-shrink-0">{icon}</div>
-      <div>
-        <h2 className="text-base sm:text-lg font-semibold">{title}</h2>
-        {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
-      </div>
+    <div className="card p-3 sm:p-4">
+      <p className="text-xs text-muted-foreground truncate">{label}</p>
+      <p className={`text-xl font-bold mt-0.5 truncate ${valueClass}`}>{value}</p>
+      {sub && <p className="text-xs text-muted-foreground mt-0.5 truncate">{sub}</p>}
     </div>
   );
 }
 
-function FullMetricsTab({ metrics, history, onViewCosts }: FullMetricsTabProps) {
+function FullMetricsTab({ metrics, history }: FullMetricsTabProps) {
   // ── Task data ──────────────────────────────────────────────────────
   const TASK_STATUS_COLORS = [C.success, C.destructive, C.primary, C.warning, C.muted, C.purple];
 
   const taskStatusData = Object.entries(metrics?.tasks?.byStatus ?? {})
     .filter(([, v]) => v > 0)
     .map(([name, value]) => ({ name, value }));
+  const taskStatusTotal = taskStatusData.reduce((s, d) => s + d.value, 0);
 
   const taskTypeData = Object.entries(metrics?.tasks?.byType ?? {})
     .filter(([, v]) => v > 0)
@@ -1424,30 +1429,33 @@ function FullMetricsTab({ metrics, history, onViewCosts }: FullMetricsTabProps) 
     { label: 'Max', value: metrics?.tasks?.maxDurationMs ?? 0 },
   ];
   const durationColors = [C.success, C.primary, C.primary, C.warning, C.orange, C.destructive];
+  const taskSlaOk = (metrics?.tasks?.successRate ?? 0) > 0.9;
 
   // ── Resource data ──────────────────────────────────────────────────
-  const tokenData = [
-    { name: 'Input', value: metrics?.resources?.inputTokensToday ?? 0 },
-    { name: 'Output', value: metrics?.resources?.outputTokensToday ?? 0 },
-    { name: 'Cached', value: metrics?.resources?.tokensCachedToday ?? 0 },
-  ];
+  const inputTokensToday = metrics?.resources?.inputTokensToday ?? 0;
+  const outputTokensToday = metrics?.resources?.outputTokensToday ?? 0;
+  const cachedToday = metrics?.resources?.tokensCachedToday ?? 0;
+  const tokensUsedToday = metrics?.resources?.tokensUsedToday ?? 0;
+  const tokensLimitDaily = metrics?.resources?.tokensLimitDaily;
+  const tokensUsedPct = tokensLimitDaily ? safePct(tokensUsedToday, tokensLimitDaily) : null;
 
   const diskPercent = metrics?.resources?.diskLimitMb
-    ? Math.min(
-        ((metrics.resources.diskUsedMb ?? 0) / metrics.resources.diskLimitMb) * 100,
-        100
-      )
+    ? Math.min(((metrics.resources.diskUsedMb ?? 0) / metrics.resources.diskLimitMb) * 100, 100)
     : 0;
 
-  const apiErrorRate = safePct(
-    metrics?.resources?.apiErrorsTotal ?? 0,
-    metrics?.resources?.apiCallsTotal ?? 1
-  );
+  const apiCallsTotal = metrics?.resources?.apiCallsTotal ?? 0;
+  const apiErrorsTotal = metrics?.resources?.apiErrorsTotal ?? 0;
+  const apiLatencyAvgMs = metrics?.resources?.apiLatencyAvgMs ?? 0;
+  const apiErrorRate = safePct(apiErrorsTotal, apiCallsTotal || 1);
 
   // ── Security data ──────────────────────────────────────────────────
+  const authAttemptsTotal = metrics?.security?.authAttemptsTotal ?? 0;
+  const authSuccessTotal = metrics?.security?.authSuccessTotal ?? 0;
+  const authFailuresTotal = metrics?.security?.authFailuresTotal ?? 0;
+  const authSuccessRate = safePct(authSuccessTotal, authAttemptsTotal || 1);
   const authData = [
-    { name: 'Success', value: metrics?.security?.authSuccessTotal ?? 0 },
-    { name: 'Failures', value: metrics?.security?.authFailuresTotal ?? 0 },
+    { name: 'Success', value: authSuccessTotal },
+    { name: 'Failures', value: authFailuresTotal },
   ];
 
   const SEV_COLORS: Record<string, string> = {
@@ -1460,6 +1468,7 @@ function FullMetricsTab({ metrics, history, onViewCosts }: FullMetricsTabProps) 
   const severityData = Object.entries(metrics?.security?.eventsBySeverity ?? {})
     .filter(([, v]) => v > 0)
     .map(([name, value]) => ({ name, value, fill: SEV_COLORS[name] ?? C.muted }));
+  const severityTotal = severityData.reduce((s, d) => s + d.value, 0);
 
   const eventTypeData = Object.entries(metrics?.security?.eventsByType ?? {})
     .filter(([, v]) => v > 0)
@@ -1470,32 +1479,52 @@ function FullMetricsTab({ metrics, history, onViewCosts }: FullMetricsTabProps) 
     metrics?.security?.permissionDenialsTotal ?? 0,
     metrics?.security?.permissionChecksTotal ?? 1
   );
+  const hasThreats = (metrics?.security?.injectionAttemptsTotal ?? 0) > 0;
 
   return (
-    <div className="space-y-10">
-      {/* ── Task Performance ─────────────────────────────────────── */}
+    <div className="space-y-8">
+      {/* ── Section 1: Task Performance ─────────────────────────── */}
       <section aria-label="Task Performance">
-        <SectionHeader
-          title="Task Performance"
-          subtitle="Execution metrics, duration distribution, and queue status"
-          icon={<Activity className="w-5 h-5" />}
-        />
+        <div className="flex items-center gap-3 mb-5">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Activity className="w-4 h-4 text-primary" />
+            <h2 className="font-semibold text-sm">Task Performance</h2>
+          </div>
+          <div className="flex-1 h-px bg-border" />
+          {taskSlaOk ? (
+            <span className="text-xs text-success flex items-center gap-1 flex-shrink-0">
+              <CheckCircle className="w-3 h-3" /> SLA Met
+            </span>
+          ) : (
+            <span className="text-xs text-warning flex items-center gap-1 flex-shrink-0">
+              <AlertTriangle className="w-3 h-3" /> Below Target
+            </span>
+          )}
+        </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-          <MiniStatCard label="Total Tasks" value={metrics?.tasks?.total ?? 0} />
-          <MiniStatCard label="In Progress" value={metrics?.tasks?.inProgress ?? 0} />
-          <MiniStatCard label="Queue Depth" value={metrics?.tasks?.queueDepth ?? 0} />
-          <MiniStatCard
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+          <KpiTile label="Total Tasks" value={(metrics?.tasks?.total ?? 0).toLocaleString()} />
+          <KpiTile
+            label="In Progress"
+            value={metrics?.tasks?.inProgress ?? 0}
+            highlight={(metrics?.tasks?.inProgress ?? 0) > 0 ? 'primary' : undefined}
+          />
+          <KpiTile
             label="Success Rate"
             value={`${((metrics?.tasks?.successRate ?? 0) * 100).toFixed(1)}%`}
-            valueClass={
-              (metrics?.tasks?.successRate ?? 0) > 0.9 ? 'text-success' : 'text-warning'
+            highlight={
+              (metrics?.tasks?.successRate ?? 0) > 0.95
+                ? 'success'
+                : (metrics?.tasks?.successRate ?? 0) > 0.8
+                  ? 'warning'
+                  : 'destructive'
             }
           />
+          <KpiTile label="Avg Duration" value={fmtMs(metrics?.tasks?.avgDurationMs ?? 0)} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Status distribution donut */}
+          {/* Status distribution — horizontal bars */}
           <div className="card">
             <div className="card-header">
               <h3 className="card-title text-sm">Status Distribution</h3>
@@ -1503,37 +1532,34 @@ function FullMetricsTab({ metrics, history, onViewCosts }: FullMetricsTabProps) 
             </div>
             <div className="card-content">
               {taskStatusData.length > 0 ? (
-                <div className="flex items-center gap-6">
-                  <div className="h-[180px] w-[180px] flex-shrink-0">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={taskStatusData}
-                          innerRadius={52}
-                          outerRadius={78}
-                          paddingAngle={3}
-                          dataKey="value"
-                        >
-                          {taskStatusData.map((_, i) => (
-                            <Cell
-                              key={i}
-                              fill={TASK_STATUS_COLORS[i % TASK_STATUS_COLORS.length]}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip contentStyle={TOOLTIP_STYLE} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    {taskStatusData.map((item, i) => (
-                      <LegendItem
-                        key={item.name}
-                        color={TASK_STATUS_COLORS[i % TASK_STATUS_COLORS.length]}
-                        label={item.name}
-                        value={String(item.value)}
-                      />
-                    ))}
+                <div className="space-y-3">
+                  {taskStatusData.map((item, i) => {
+                    const pct = safePct(item.value, taskStatusTotal);
+                    return (
+                      <div key={item.name} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="capitalize font-medium">{item.name}</span>
+                          <span className="font-mono text-muted-foreground">
+                            {item.value} <span className="opacity-60">({pct}%)</span>
+                          </span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                              width: `${pct}%`,
+                              backgroundColor: TASK_STATUS_COLORS[i % TASK_STATUS_COLORS.length],
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="flex items-center justify-between pt-1.5 border-t text-xs text-muted-foreground">
+                    <span>Total</span>
+                    <span className="font-mono font-medium text-foreground">
+                      {taskStatusTotal.toLocaleString()}
+                    </span>
                   </div>
                 </div>
               ) : (
@@ -1542,38 +1568,20 @@ function FullMetricsTab({ metrics, history, onViewCosts }: FullMetricsTabProps) 
             </div>
           </div>
 
-          {/* Duration percentiles bar */}
+          {/* Duration percentiles */}
           <div className="card">
             <div className="card-header">
               <h3 className="card-title text-sm">Duration Percentiles</h3>
-              <p className="card-description text-xs">Task execution time distribution</p>
+              <p className="card-description text-xs">Execution time distribution</p>
             </div>
             <div className="card-content">
               <div className="h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={durationData} barSize={30}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="#333"
-                      opacity={0.1}
-                      vertical={false}
-                    />
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fontSize: 11 }}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 10 }}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(v) => fmtMs(v)}
-                    />
-                    <Tooltip
-                      contentStyle={TOOLTIP_STYLE}
-                      formatter={(v: number) => [fmtMs(v), 'Duration']}
-                    />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.1} vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(v) => fmtMs(v)} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => [fmtMs(v), 'Duration']} />
                     <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                       {durationData.map((_, i) => (
                         <Cell key={i} fill={durationColors[i % durationColors.length]} />
@@ -1581,6 +1589,24 @@ function FullMetricsTab({ metrics, history, onViewCosts }: FullMetricsTabProps) 
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
+              </div>
+              <div className="grid grid-cols-3 gap-2 mt-3 pt-2 border-t">
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">p50</p>
+                  <p className="text-sm font-mono font-semibold">{fmtMs(metrics?.tasks?.p50DurationMs ?? 0)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">p95</p>
+                  <p className={`text-sm font-mono font-semibold ${(metrics?.tasks?.p95DurationMs ?? 0) > 5000 ? 'text-warning' : ''}`}>
+                    {fmtMs(metrics?.tasks?.p95DurationMs ?? 0)}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">p99</p>
+                  <p className={`text-sm font-mono font-semibold ${(metrics?.tasks?.p99DurationMs ?? 0) > 10000 ? 'text-destructive' : ''}`}>
+                    {fmtMs(metrics?.tasks?.p99DurationMs ?? 0)}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -1626,338 +1652,272 @@ function FullMetricsTab({ metrics, history, onViewCosts }: FullMetricsTabProps) 
         )}
       </section>
 
-      {/* ── Resource Usage ────────────────────────────────────────── */}
-      <section aria-label="Resource Usage">
-        <SectionHeader
-          title="Resource Usage"
-          subtitle="CPU, memory, storage, tokens, API performance, and costs"
-          icon={<Cpu className="w-5 h-5" />}
-        />
+      {/* ── Section 2: Infrastructure ── */}
+      <section aria-label="Infrastructure">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Cpu className="w-4 h-4 text-primary" />
+            <h2 className="font-semibold text-sm">Infrastructure</h2>
+          </div>
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-xs text-muted-foreground flex-shrink-0">{history.length} samples</span>
+        </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-          <MiniStatCard
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+          <KpiTile
             label="CPU"
             value={`${(metrics?.resources?.cpuPercent ?? 0).toFixed(1)}%`}
-            valueClass={
+            highlight={
               (metrics?.resources?.cpuPercent ?? 0) > 80
-                ? 'text-destructive'
+                ? 'destructive'
                 : (metrics?.resources?.cpuPercent ?? 0) > 60
-                  ? 'text-warning'
-                  : ''
+                  ? 'warning'
+                  : undefined
             }
           />
-          <MiniStatCard
+          <KpiTile
             label="Memory"
             value={`${(metrics?.resources?.memoryUsedMb ?? 0).toFixed(0)} MB`}
+            sub={`${(metrics?.resources?.memoryPercent ?? 0).toFixed(0)}% used`}
           />
-          <MiniStatCard
+          <KpiTile
             label="API Latency"
-            value={`${(metrics?.resources?.apiLatencyAvgMs ?? 0).toFixed(0)} ms`}
-            valueClass={
-              (metrics?.resources?.apiLatencyAvgMs ?? 0) > 500 ? 'text-warning' : ''
-            }
+            value={`${apiLatencyAvgMs.toFixed(0)} ms`}
+            highlight={apiLatencyAvgMs > 500 ? 'warning' : undefined}
           />
-          <MiniStatCard
-            label="Cost / Month"
-            value={`$${(metrics?.resources?.costUsdMonth ?? 0).toFixed(2)}`}
+          <KpiTile
+            label="Disk Used"
+            value={`${(metrics?.resources?.diskUsedMb ?? 0).toFixed(0)} MB`}
+            highlight={diskPercent > 90 ? 'destructive' : diskPercent > 70 ? 'warning' : undefined}
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* CPU + Memory time series */}
-          <div className="card">
-            <div className="card-header">
-              <h3 className="card-title text-sm">CPU & Memory Over Time</h3>
-              <p className="card-description text-xs">Last {MAX_HISTORY} data points</p>
-            </div>
-            <div className="card-content">
-              <div className="h-[200px]">
-                {history.length > 1 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={history}>
-                      <defs>
-                        <linearGradient id="fmCpuGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={C.primary} stopOpacity={0.25} />
-                          <stop offset="95%" stopColor={C.primary} stopOpacity={0} />
-                        </linearGradient>
-                        <linearGradient id="fmMemGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={C.success} stopOpacity={0.25} />
-                          <stop offset="95%" stopColor={C.success} stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.1} />
-                      <XAxis
-                        dataKey="time"
-                        tick={{ fontSize: 10 }}
-                        tickLine={false}
-                        axisLine={false}
-                        interval="preserveStartEnd"
-                      />
-                      <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-                      <Tooltip contentStyle={TOOLTIP_STYLE} />
-                      <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Area
-                        type="monotone"
-                        dataKey="cpu"
-                        name="CPU %"
-                        stroke={C.primary}
-                        fill="url(#fmCpuGrad)"
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="memory"
-                        name="Memory MB"
-                        stroke={C.success}
-                        fill="url(#fmMemGrad)"
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <EmptyChart message="Collecting metrics data…" />
-                )}
-              </div>
-            </div>
+        {/* Full-width CPU + Memory time series */}
+        <div className="card mb-4">
+          <div className="card-header">
+            <h3 className="card-title text-sm">CPU & Memory Over Time</h3>
+            <p className="card-description text-xs">Live samples — last {MAX_HISTORY} data points</p>
           </div>
-
-          {/* Token usage + API health */}
-          <div className="card">
-            <div className="card-header">
-              <h3 className="card-title text-sm">Tokens & API Health</h3>
-              <p className="card-description text-xs">Daily token consumption and error rate</p>
-            </div>
-            <div className="card-content space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-[110px] h-[110px] flex-shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={tokenData}
-                        innerRadius={32}
-                        outerRadius={48}
-                        paddingAngle={3}
-                        dataKey="value"
-                      >
-                        <Cell fill={C.primary} />
-                        <Cell fill={C.success} />
-                      </Pie>
-                      <Tooltip
-                        contentStyle={TOOLTIP_STYLE}
-                        formatter={(v: number) => [v.toLocaleString(), '']}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex-1 space-y-2">
-                  <LegendItem
-                    color={C.primary}
-                    label="Input"
-                    value={(metrics?.resources?.inputTokensToday ?? 0).toLocaleString()}
-                  />
-                  <LegendItem
-                    color={C.warning}
-                    label="Output"
-                    value={(metrics?.resources?.outputTokensToday ?? 0).toLocaleString()}
-                  />
-                  <LegendItem
-                    color={C.success}
-                    label="Cached"
-                    value={(metrics?.resources?.tokensCachedToday ?? 0).toLocaleString()}
-                  />
-                  {metrics?.resources?.tokensLimitDaily && (
-                    <LegendItem
-                      color={C.muted}
-                      label="Daily Limit"
-                      value={metrics.resources.tokensLimitDaily.toLocaleString()}
-                    />
-                  )}
-                </div>
-              </div>
-
-              <div className="border-t pt-3 space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">API Calls</span>
-                  <div className="flex items-center gap-3">
-                    <span>{(metrics?.resources?.apiCallsTotal ?? 0).toLocaleString()} total</span>
-                    <span className="text-destructive">
-                      {(metrics?.resources?.apiErrorsTotal ?? 0).toLocaleString()} errors
-                    </span>
-                  </div>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-destructive rounded-full transition-all"
-                    style={{ width: `${apiErrorRate}%` }}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Error rate: {apiErrorRate.toFixed(1)}% &nbsp;·&nbsp; Avg latency:{' '}
-                  {(metrics?.resources?.apiLatencyAvgMs ?? 0).toFixed(0)} ms
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Disk + Cost */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-          <div className="card">
-            <div className="card-header">
-              <h3 className="card-title text-sm flex items-center gap-2">
-                <HardDrive className="w-4 h-4" /> Disk Usage
-              </h3>
-            </div>
-            <div className="card-content space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">
-                  {(metrics?.resources?.diskUsedMb ?? 0).toFixed(0)} MB used
-                </span>
-                {metrics?.resources?.diskLimitMb ? (
-                  <span className="text-muted-foreground">
-                    of {metrics.resources.diskLimitMb.toFixed(0)} MB
-                  </span>
-                ) : (
-                  <span className="text-xs text-muted-foreground">No limit set</span>
-                )}
-              </div>
-              {metrics?.resources?.diskLimitMb ? (
-                <>
-                  <div className="h-3 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${
-                        diskPercent > 90
-                          ? 'bg-destructive'
-                          : diskPercent > 70
-                            ? 'bg-warning'
-                            : 'bg-primary'
-                      }`}
-                      style={{ width: `${diskPercent}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {diskPercent.toFixed(1)}% utilization
-                  </p>
-                </>
+          <div className="card-content">
+            <div className="h-[220px]">
+              {history.length > 1 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={history}>
+                    <defs>
+                      <linearGradient id="fmCpuGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={C.primary} stopOpacity={0.25} />
+                        <stop offset="95%" stopColor={C.primary} stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="fmMemGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={C.success} stopOpacity={0.25} />
+                        <stop offset="95%" stopColor={C.success} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.1} />
+                    <XAxis dataKey="time" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                    <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Area type="monotone" dataKey="cpu" name="CPU %" stroke={C.primary} fill="url(#fmCpuGrad)" strokeWidth={2} dot={false} />
+                    <Area type="monotone" dataKey="memory" name="Memory MB" stroke={C.success} fill="url(#fmMemGrad)" strokeWidth={2} dot={false} />
+                  </AreaChart>
+                </ResponsiveContainer>
               ) : (
-                <p className="text-xs text-muted-foreground">
-                  Configure disk limits in settings to track utilization.
-                </p>
+                <EmptyChart message="Collecting metrics data…" />
               )}
             </div>
           </div>
+        </div>
 
-          {/* Cost card — clicking switches to Costs tab */}
-          <div
-            className="card cursor-pointer hover:bg-muted/30 transition-colors"
-            onClick={onViewCosts}
-            title="View cost analytics"
-          >
+        {/* Token Usage + API Performance */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Token Usage */}
+          <div className="card">
             <div className="card-header">
-              <h3 className="card-title text-sm flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-success" /> Cost Breakdown
-              </h3>
+              <h3 className="card-title text-sm">Token Usage</h3>
+              <p className="card-description text-xs">Daily consumption — input, output, cached</p>
             </div>
-            <div className="card-content">
-              <div className="flex items-baseline gap-6">
-                <div>
-                  <p className="text-2xl font-bold">
-                    ${(metrics?.resources?.costUsdToday ?? 0).toFixed(4)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Today</p>
+            <div className="card-content space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-3 rounded-md bg-muted/30 text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Input</p>
+                  <p className="text-lg font-bold">{(inputTokensToday / 1000).toFixed(1)}k</p>
                 </div>
-                <div>
-                  <p className="text-xl font-bold">
-                    ${(metrics?.resources?.costUsdMonth ?? 0).toFixed(2)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">This Month</p>
+                <div className="p-3 rounded-md bg-muted/30 text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Output</p>
+                  <p className="text-lg font-bold">{(outputTokensToday / 1000).toFixed(1)}k</p>
+                </div>
+                <div className="p-3 rounded-md bg-muted/30 text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Cached</p>
+                  <p className="text-lg font-bold text-success">{(cachedToday / 1000).toFixed(1)}k</p>
                 </div>
               </div>
-              <p className="text-xs text-primary mt-2">View cost analytics →</p>
+              {tokensUsedPct !== null && (
+                <div>
+                  <div className="flex items-center justify-between text-xs mb-1.5">
+                    <span className="text-muted-foreground">Daily limit usage</span>
+                    <span className={`font-mono ${tokensUsedPct > 80 ? 'text-warning' : 'text-muted-foreground'}`}>
+                      {tokensUsedPct}%
+                    </span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${tokensUsedPct > 90 ? 'bg-destructive' : tokensUsedPct > 70 ? 'bg-warning' : 'bg-primary'}`}
+                      style={{ width: `${tokensUsedPct}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {tokensUsedToday.toLocaleString()} of {tokensLimitDaily!.toLocaleString()} tokens
+                  </p>
+                </div>
+              )}
+              <div className="flex items-center justify-between pt-2 border-t text-sm">
+                <span className="text-xs text-muted-foreground">Total today</span>
+                <span className="font-bold font-mono">{tokensUsedToday.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* API Performance */}
+          <div className="card">
+            <div className="card-header">
+              <h3 className="card-title text-sm">API Performance</h3>
+              <p className="card-description text-xs">Call volume, latency, and error rate</p>
+            </div>
+            <div className="card-content space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Calls</p>
+                  <p className="text-2xl font-bold">{apiCallsTotal.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Avg Latency</p>
+                  <p className={`text-2xl font-bold ${apiLatencyAvgMs > 500 ? 'text-warning' : ''}`}>
+                    {apiLatencyAvgMs.toFixed(0)} ms
+                  </p>
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1.5">
+                  <span className="text-muted-foreground">Error rate</span>
+                  <span className={`font-mono ${apiErrorRate > 5 ? 'text-destructive' : apiErrorRate > 1 ? 'text-warning' : 'text-muted-foreground'}`}>
+                    {apiErrorRate.toFixed(2)}%
+                  </span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-destructive rounded-full transition-all" style={{ width: `${Math.min(apiErrorRate, 100)}%` }} />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {apiErrorsTotal.toLocaleString()} errors of {apiCallsTotal.toLocaleString()} calls
+                </p>
+              </div>
+              {metrics?.resources?.diskLimitMb && (
+                <div className="pt-2 border-t">
+                  <div className="flex items-center justify-between text-xs mb-1.5">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <HardDrive className="w-3 h-3" /> Disk
+                    </span>
+                    <span className={`font-mono ${diskPercent > 70 ? 'text-warning' : 'text-muted-foreground'}`}>
+                      {diskPercent.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${diskPercent > 90 ? 'bg-destructive' : diskPercent > 70 ? 'bg-warning' : 'bg-primary'}`}
+                      style={{ width: `${diskPercent}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {(metrics.resources.diskUsedMb ?? 0).toFixed(0)} MB of {metrics.resources.diskLimitMb.toFixed(0)} MB
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Security ──────────────────────────────────────────────── */}
+      {/* ── Section 3: Security ── */}
       <section aria-label="Security Metrics">
-        <SectionHeader
-          title="Security"
-          subtitle="Authentication, permissions, threat detection, and audit integrity"
-          icon={<Shield className="w-5 h-5" />}
-        />
+        <div className="flex items-center gap-3 mb-5">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Shield className="w-4 h-4 text-primary" />
+            <h2 className="font-semibold text-sm">Security</h2>
+          </div>
+          <div className="flex-1 h-px bg-border" />
+          {hasThreats ? (
+            <span className="text-xs text-destructive flex items-center gap-1 flex-shrink-0">
+              <AlertTriangle className="w-3 h-3" /> Threats Detected
+            </span>
+          ) : (
+            <span className="text-xs text-success flex items-center gap-1 flex-shrink-0">
+              <CheckCircle className="w-3 h-3" /> No Active Threats
+            </span>
+          )}
+        </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-          <MiniStatCard
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+          <KpiTile
             label="Blocked Requests"
-            value={metrics?.security?.blockedRequestsTotal ?? 0}
-            valueClass={(metrics?.security?.blockedRequestsTotal ?? 0) > 0 ? 'text-warning' : ''}
+            value={(metrics?.security?.blockedRequestsTotal ?? 0).toLocaleString()}
+            highlight={(metrics?.security?.blockedRequestsTotal ?? 0) > 0 ? 'warning' : undefined}
           />
-          <MiniStatCard
+          <KpiTile
             label="Rate Limit Hits"
-            value={metrics?.security?.rateLimitHitsTotal ?? 0}
-            valueClass={(metrics?.security?.rateLimitHitsTotal ?? 0) > 0 ? 'text-warning' : ''}
+            value={(metrics?.security?.rateLimitHitsTotal ?? 0).toLocaleString()}
+            highlight={(metrics?.security?.rateLimitHitsTotal ?? 0) > 0 ? 'warning' : undefined}
           />
-          <MiniStatCard
+          <KpiTile
             label="Injection Attempts"
-            value={metrics?.security?.injectionAttemptsTotal ?? 0}
-            valueClass={
-              (metrics?.security?.injectionAttemptsTotal ?? 0) > 0 ? 'text-destructive' : ''
-            }
+            value={(metrics?.security?.injectionAttemptsTotal ?? 0).toLocaleString()}
+            highlight={(metrics?.security?.injectionAttemptsTotal ?? 0) > 0 ? 'destructive' : undefined}
           />
-          <MiniStatCard
+          <KpiTile
             label="Active Sessions"
-            value={metrics?.security?.activeSessions ?? 0}
+            value={(metrics?.security?.activeSessions ?? 0).toLocaleString()}
           />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Authentication bar chart */}
+          {/* Authentication */}
           <div className="card">
             <div className="card-header">
               <h3 className="card-title text-sm">Authentication</h3>
               <p className="card-description text-xs">Login attempts — success vs failure</p>
             </div>
-            <div className="card-content space-y-3">
-              <div className="flex items-center justify-between">
+            <div className="card-content space-y-4">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <p className="text-2xl font-bold">
-                    {(metrics?.security?.authAttemptsTotal ?? 0).toLocaleString()}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Total attempts</p>
+                  <p className="text-xs text-muted-foreground">Total</p>
+                  <p className="text-2xl font-bold">{authAttemptsTotal.toLocaleString()}</p>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-success">
-                      {(metrics?.security?.authSuccessTotal ?? 0).toLocaleString()}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Success</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-destructive">
-                      {(metrics?.security?.authFailuresTotal ?? 0).toLocaleString()}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Failed</p>
-                  </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Success</p>
+                  <p className="text-2xl font-bold text-success">{authSuccessTotal.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Failed</p>
+                  <p className={`text-2xl font-bold ${authFailuresTotal > 0 ? 'text-destructive' : ''}`}>
+                    {authFailuresTotal.toLocaleString()}
+                  </p>
                 </div>
               </div>
-              <div className="h-[110px]">
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1.5">
+                  <span className="text-muted-foreground">Success rate</span>
+                  <span className={`font-mono ${authSuccessRate < 90 ? 'text-warning' : 'text-success'}`}>
+                    {authSuccessRate}%
+                  </span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-success rounded-full transition-all" style={{ width: `${authSuccessRate}%` }} />
+                </div>
+              </div>
+              <div className="h-[100px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={authData} barSize={52}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="#333"
-                      opacity={0.1}
-                      vertical={false}
-                    />
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fontSize: 12 }}
-                      tickLine={false}
-                      axisLine={false}
-                    />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.1} vertical={false} />
+                    <XAxis dataKey="name" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
                     <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
                     <Tooltip contentStyle={TOOLTIP_STYLE} />
                     <Bar dataKey="value" radius={[4, 4, 0, 0]}>
@@ -1970,7 +1930,7 @@ function FullMetricsTab({ metrics, history, onViewCosts }: FullMetricsTabProps) 
             </div>
           </div>
 
-          {/* Events by severity donut */}
+          {/* Events by severity — horizontal bars */}
           <div className="card">
             <div className="card-header">
               <h3 className="card-title text-sm">Events by Severity</h3>
@@ -1978,38 +1938,43 @@ function FullMetricsTab({ metrics, history, onViewCosts }: FullMetricsTabProps) 
             </div>
             <div className="card-content">
               {severityData.length > 0 ? (
-                <div className="flex items-center gap-6">
-                  <div className="h-[160px] w-[160px] flex-shrink-0">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={severityData}
-                          innerRadius={46}
-                          outerRadius={70}
-                          paddingAngle={3}
-                          dataKey="value"
-                        >
-                          {severityData.map((entry, i) => (
-                            <Cell key={i} fill={entry.fill} />
-                          ))}
-                        </Pie>
-                        <Tooltip contentStyle={TOOLTIP_STYLE} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    {severityData.map((item) => (
-                      <LegendItem
-                        key={item.name}
-                        color={item.fill}
-                        label={item.name.charAt(0).toUpperCase() + item.name.slice(1)}
-                        value={String(item.value)}
-                      />
-                    ))}
+                <div className="space-y-3">
+                  {severityData.map((item) => {
+                    const pct = safePct(item.value, severityTotal);
+                    return (
+                      <div key={item.name} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="capitalize font-medium">{item.name}</span>
+                          <span className="font-mono text-muted-foreground">
+                            {item.value} <span className="opacity-60">({pct}%)</span>
+                          </span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: item.fill }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="flex items-center justify-between pt-1.5 border-t text-xs text-muted-foreground">
+                    <span>Total events</span>
+                    <span className="font-mono font-medium text-foreground">{severityTotal.toLocaleString()}</span>
                   </div>
                 </div>
               ) : (
                 <EmptyChart message="No security events recorded" />
+              )}
+              {eventTypeData.length > 0 && (
+                <div className="mt-4 pt-3 border-t">
+                  <p className="text-xs text-muted-foreground mb-2">Top event types</p>
+                  <div className="space-y-1.5">
+                    {eventTypeData.map((item) => (
+                      <div key={item.name} className="flex items-center justify-between text-xs">
+                        <span className="capitalize text-muted-foreground">{item.name}</span>
+                        <span className="font-mono font-medium">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -2025,28 +1990,25 @@ function FullMetricsTab({ metrics, history, onViewCosts }: FullMetricsTabProps) 
             <div className="card-content space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
+                  <p className="text-xs text-muted-foreground">Total Checks</p>
                   <p className="text-2xl font-bold">
                     {(metrics?.security?.permissionChecksTotal ?? 0).toLocaleString()}
                   </p>
-                  <p className="text-xs text-muted-foreground">Total checks</p>
                 </div>
                 <div>
+                  <p className="text-xs text-muted-foreground">Denials</p>
                   <p className="text-2xl font-bold text-warning">
                     {(metrics?.security?.permissionDenialsTotal ?? 0).toLocaleString()}
                   </p>
-                  <p className="text-xs text-muted-foreground">Denials</p>
                 </div>
               </div>
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xs text-muted-foreground">Denial rate</span>
-                  <span className="text-xs font-medium">{permDenialRate.toFixed(1)}%</span>
+                  <span className="text-xs font-mono font-medium">{permDenialRate.toFixed(1)}%</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-warning rounded-full transition-all"
-                    style={{ width: `${permDenialRate}%` }}
-                  />
+                  <div className="h-full bg-warning rounded-full transition-all" style={{ width: `${permDenialRate}%` }} />
                 </div>
               </div>
               {eventTypeData.length > 0 && (
@@ -2072,11 +2034,7 @@ function FullMetricsTab({ metrics, history, onViewCosts }: FullMetricsTabProps) 
             </div>
             <div className="card-content space-y-4">
               <div className="flex items-center gap-3">
-                <div
-                  className={`p-3 rounded-full ${
-                    metrics?.security?.auditChainValid ? 'bg-success/10' : 'bg-destructive/10'
-                  }`}
-                >
+                <div className={`p-3 rounded-full ${metrics?.security?.auditChainValid ? 'bg-success/10' : 'bg-destructive/10'}`}>
                   {metrics?.security?.auditChainValid ? (
                     <CheckCircle className="w-6 h-6 text-success" />
                   ) : (
@@ -2084,49 +2042,30 @@ function FullMetricsTab({ metrics, history, onViewCosts }: FullMetricsTabProps) 
                   )}
                 </div>
                 <div>
-                  <p
-                    className={`text-sm font-semibold ${
-                      metrics?.security?.auditChainValid ? 'text-success' : 'text-destructive'
-                    }`}
-                  >
-                    {metrics?.security?.auditChainValid
-                      ? 'Chain Integrity Verified'
-                      : 'Chain Integrity Compromised'}
+                  <p className={`text-sm font-semibold ${metrics?.security?.auditChainValid ? 'text-success' : 'text-destructive'}`}>
+                    {metrics?.security?.auditChainValid ? 'Chain Integrity Verified' : 'Chain Integrity Compromised'}
                   </p>
                   {metrics?.security?.lastAuditVerification && (
                     <p className="text-xs text-muted-foreground">
-                      Last verified:{' '}
-                      {new Date(metrics.security.lastAuditVerification).toLocaleString()}
+                      Last verified: {new Date(metrics.security.lastAuditVerification).toLocaleString()}
                     </p>
                   )}
                 </div>
               </div>
               <div className="border-t pt-3 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Total Audit Entries</span>
-                  <span className="text-sm font-bold">
-                    {(metrics?.security?.auditEntriesTotal ?? 0).toLocaleString()}
-                  </span>
+                  <span className="text-sm text-muted-foreground">Total Entries</span>
+                  <span className="text-sm font-bold">{(metrics?.security?.auditEntriesTotal ?? 0).toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Blocked Requests</span>
-                  <span
-                    className={`text-sm font-bold ${
-                      (metrics?.security?.blockedRequestsTotal ?? 0) > 0 ? 'text-warning' : ''
-                    }`}
-                  >
+                  <span className={`text-sm font-bold ${(metrics?.security?.blockedRequestsTotal ?? 0) > 0 ? 'text-warning' : ''}`}>
                     {(metrics?.security?.blockedRequestsTotal ?? 0).toLocaleString()}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Injection Attempts</span>
-                  <span
-                    className={`text-sm font-bold ${
-                      (metrics?.security?.injectionAttemptsTotal ?? 0) > 0
-                        ? 'text-destructive'
-                        : ''
-                    }`}
-                  >
+                  <span className={`text-sm font-bold ${(metrics?.security?.injectionAttemptsTotal ?? 0) > 0 ? 'text-destructive' : ''}`}>
                     {(metrics?.security?.injectionAttemptsTotal ?? 0).toLocaleString()}
                   </span>
                 </div>

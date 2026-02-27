@@ -5,8 +5,9 @@
  */
 
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Layers } from 'lucide-react';
-import { TaskHistory } from '../components/TaskHistory';
+import { OpenTasks } from '../components/TaskHistory';
 import { WorkflowsPage } from './WorkflowsPage';
 
 type AutoTab = 'tasks' | 'workflows';
@@ -17,8 +18,13 @@ const TAB_LABELS: Record<AutoTab, string> = {
 };
 
 export function AutomationPage() {
-  // Use local state to avoid URL param conflicts with TaskHistory's internal ?view= param.
-  const [activeTab, setActiveTab] = useState<AutoTab>('tasks');
+  const [searchParams] = useSearchParams();
+  // Initialize tab from URL param; create=true implies tasks tab.
+  const [activeTab, setActiveTab] = useState<AutoTab>(() => {
+    const t = searchParams.get('tab');
+    if (t === 'workflows') return 'workflows';
+    return 'tasks';
+  });
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -57,7 +63,7 @@ export function AutomationPage() {
       </div>
 
       {/* Subviews — each renders its full self-contained component */}
-      {activeTab === 'tasks' && <TaskHistory />}
+      {activeTab === 'tasks' && <OpenTasks />}
       {activeTab === 'workflows' && <WorkflowsPage />}
     </div>
   );

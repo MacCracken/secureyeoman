@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Users2,
   Zap,
+  Bell,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -33,8 +34,9 @@ import { SecuritySettings, RolesSettings, SecretsPanel } from './SecuritySetting
 import { ApiKeysSettings } from './ApiKeysSettings';
 import { UsersSettings } from './UsersSettings';
 import { WorkspacesSettings } from './WorkspacesSettings';
+import { NotificationPrefsPanel } from './NotificationPrefsPanel';
 
-type TabType = 'general' | 'security' | 'keys' | 'workspaces' | 'users' | 'roles';
+type TabType = 'general' | 'security' | 'keys' | 'workspaces' | 'users' | 'roles' | 'notifications';
 
 function getTabFromPath(path: string): TabType {
   if (path.includes('/security-settings')) return 'security';
@@ -56,11 +58,8 @@ export function SettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
-          <Settings className="w-5 h-5" />
-          Settings
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">System configuration and preferences</p>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Administration</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">System configuration and preferences</p>
       </div>
 
       <div className="flex gap-1 border-b border-border overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
@@ -142,6 +141,19 @@ export function SettingsPage() {
           <Users className="w-4 h-4" />
           Roles
         </button>
+        <button
+          onClick={() => {
+            setActiveTab('notifications');
+          }}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'notifications'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Bell className="w-4 h-4" />
+          Notifications
+        </button>
       </div>
 
       {activeTab === 'general' && <GeneralTab />}
@@ -155,6 +167,7 @@ export function SettingsPage() {
       {activeTab === 'workspaces' && <WorkspacesSettings />}
       {activeTab === 'users' && <UsersSettings />}
       {activeTab === 'roles' && <RolesSettings />}
+      {activeTab === 'notifications' && <NotificationPrefsPanel />}
     </div>
   );
 }

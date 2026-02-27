@@ -80,7 +80,7 @@ const NAV_ITEMS: NavItem[] = [
   { path: '/reports',                 icon: FileText,      label: 'Report',           desc: 'Generate a report'       },
   { path: '/connections?tab=routing', icon: GitBranch,     label: 'Routing Rule',     desc: 'Route AI responses'      },
   { path: '/connections',             icon: Plug,          label: 'Integration',      desc: 'Add an integration'      },
-  { path: '/workflows',               icon: GitMerge,      label: 'Workflow',         desc: 'Create an automation'    },
+  { path: '/automation?tab=workflows', icon: GitMerge,      label: 'Workflow',         desc: 'Create an automation'    },
 ];
 
 export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
@@ -441,7 +441,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           className="btn btn-ghost"
           onClick={() =>
             navigateTo(
-              `/tasks?create=true&name=${encodeURIComponent(task.name)}&type=${encodeURIComponent(task.type)}&description=${encodeURIComponent(task.description)}&input=${encodeURIComponent(task.input)}`
+              `/automation?create=true&name=${encodeURIComponent(task.name)}&type=${encodeURIComponent(task.type)}&description=${encodeURIComponent(task.description)}&input=${encodeURIComponent(task.input)}`
             )
           }
         >

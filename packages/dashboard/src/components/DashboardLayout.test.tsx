@@ -16,7 +16,7 @@ vi.mock('./SecurityPage', () => ({
 }));
 
 vi.mock('./TaskHistory', () => ({
-  TaskHistory: () => <div data-testid="task-history-page">TaskHistory</div>,
+  OpenTasks: () => <div data-testid="task-history-page">OpenTasks</div>,
 }));
 
 vi.mock('./PersonalityEditor', () => ({
@@ -175,7 +175,7 @@ describe('DashboardLayout routing', () => {
     expect(await screen.findByTestId('sidebar')).toBeInTheDocument();
   });
 
-  it('renders TaskHistory at /tasks', async () => {
+  it('renders OpenTasks (via /automation redirect) at /tasks', async () => {
     renderAt('/tasks');
     expect(await screen.findByTestId('task-history-page')).toBeInTheDocument();
   });

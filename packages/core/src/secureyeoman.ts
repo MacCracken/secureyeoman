@@ -135,6 +135,7 @@ import { IntentManager } from './intent/manager.js';
 import { AutonomyAuditStorage, AutonomyAuditManager } from './security/autonomy-audit.js';
 import { NotificationStorage } from './notifications/notification-storage.js';
 import { NotificationManager } from './notifications/notification-manager.js';
+import { UserNotificationPrefsStorage } from './notifications/user-notification-prefs-storage.js';
 import { RiskAssessmentStorage } from './risk-assessment/risk-assessment-storage.js';
 import { RiskAssessmentManager } from './risk-assessment/risk-assessment-manager.js';
 import { SystemPreferencesStorage } from './config/system-preferences-storage.js';
@@ -242,6 +243,7 @@ export class SecureYeoman {
   private autonomyAuditManager: AutonomyAuditManager | null = null;
   private notificationStorage: NotificationStorage | null = null;
   private notificationManager: NotificationManager | null = null;
+  private userNotificationPrefsStorage: UserNotificationPrefsStorage | null = null;
   private riskAssessmentStorage: RiskAssessmentStorage | null = null;
   private riskAssessmentManager: RiskAssessmentManager | null = null;
   private riskScheduleTimer: ReturnType<typeof setInterval> | null = null;
@@ -359,6 +361,9 @@ export class SecureYeoman {
       // Step 2.09: Initialize NotificationStorage (manager is wired with broadcast after gateway starts)
       this.notificationStorage = new NotificationStorage();
       this.notificationManager = new NotificationManager(this.notificationStorage);
+      this.userNotificationPrefsStorage = new UserNotificationPrefsStorage();
+      this.notificationManager.setUserPrefsStorage(this.userNotificationPrefsStorage);
+      this.notificationManager.startCleanupJob(this.config.notifications?.retentionDays);
       this.logger.debug('NotificationManager initialized (broadcast wired after gateway starts)');
 
       // Step 2.10: Initialize RiskAssessmentStorage
@@ -818,6 +823,11 @@ export class SecureYeoman {
 
       // Start auto-reconnect health checks
       this.integrationManager.startHealthChecks();
+
+      // Wire IntegrationManager into NotificationManager for external fan-out (Phase 55)
+      if (this.notificationManager) {
+        this.notificationManager.setIntegrationManager(this.integrationManager);
+      }
 
       this.logger.debug('Integration manager and message router initialized');
 
@@ -1926,6 +1936,12 @@ export class SecureYeoman {
   getNotificationManager(): NotificationManager | null {
     this.ensureInitialized();
     return this.notificationManager;
+  }
+
+  /** Get the user notification preferences storage (always available after initialization). */
+  getUserNotificationPrefsStorage(): UserNotificationPrefsStorage | null {
+    this.ensureInitialized();
+    return this.userNotificationPrefsStorage;
   }
 
   /**

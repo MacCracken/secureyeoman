@@ -278,3 +278,38 @@ describe('row mapping', () => {
     expect(result.total).toBe(0);
   });
 });
+
+describe('NotificationStorage.deleteOlderThan()', () => {
+  it('deletes rows older than maxAgeMs and returns count', async () => {
+    const storage = new NotificationStorage();
+    const spy = vi.spyOn(storage as any, 'execute').mockResolvedValueOnce(3);
+
+    const count = await storage.deleteOlderThan(30 * 24 * 60 * 60 * 1000);
+
+    expect(count).toBe(3);
+    expect(spy.mock.calls[0]![0]).toContain('DELETE FROM notifications WHERE created_at < $1');
+  });
+
+  it('passes correct cutoff timestamp', async () => {
+    const storage = new NotificationStorage();
+    const spy = vi.spyOn(storage as any, 'execute').mockResolvedValueOnce(0);
+    const before = Date.now();
+    const maxAgeMs = 7 * 24 * 60 * 60 * 1000;
+
+    await storage.deleteOlderThan(maxAgeMs);
+
+    const after = Date.now();
+    const cutoff = spy.mock.calls[0]![1] as number[];
+    expect(cutoff[0]).toBeGreaterThanOrEqual(before - maxAgeMs);
+    expect(cutoff[0]).toBeLessThanOrEqual(after - maxAgeMs + 100);
+  });
+
+  it('returns 0 when no rows matched', async () => {
+    const storage = new NotificationStorage();
+    vi.spyOn(storage as any, 'execute').mockResolvedValueOnce(0);
+
+    const count = await storage.deleteOlderThan(86_400_000);
+
+    expect(count).toBe(0);
+  });
+});

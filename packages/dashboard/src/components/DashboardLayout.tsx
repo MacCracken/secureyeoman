@@ -180,7 +180,7 @@ export function DashboardLayout() {
                   <Route path="/security" element={<SecurityPage />} />
                   <Route path="/automation" element={<AutomationPage />} />
                   <Route path="/tasks" element={<Navigate to="/automation" replace />} />
-                  <Route path="/workflows" element={<Navigate to="/automation" replace />} />
+                  <Route path="/workflows" element={<Navigate to="/automation?tab=workflows" replace />} />
                   <Route path="/workflows/:id/builder" element={<WorkflowBuilder />} />
                   <Route path="/workflows/runs/:runId" element={<WorkflowRunDetail />} />
                   <Route path="/reports" element={<SecurityPage />} />

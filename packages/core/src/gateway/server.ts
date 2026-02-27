@@ -67,6 +67,7 @@ import { registerRoutingRulesRoutes } from '../integrations/routing-rules-routes
 import { registerIntentRoutes } from '../intent/routes.js';
 import { registerAutonomyRoutes } from '../security/autonomy-routes.js';
 import { registerNotificationRoutes } from '../notifications/notification-routes.js';
+import { registerUserNotificationPrefsRoutes } from '../notifications/user-notification-prefs-routes.js';
 import { registerRiskAssessmentRoutes } from '../risk-assessment/risk-assessment-routes.js';
 import { CollabManager } from '../soul/collab.js';
 import { SoulStorage } from '../soul/storage.js';
@@ -648,7 +649,7 @@ export class GatewayServer {
       });
     }
 
-    // Notification routes (Phase 51)
+    // Notification routes (Phase 51 + 55)
     try {
       const notificationManager = this.secureYeoman.getNotificationManager();
       if (notificationManager) {
@@ -663,6 +664,19 @@ export class GatewayServer {
       }
     } catch (err) {
       this.getLogger().debug('Notification routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // User notification prefs routes (Phase 55)
+    try {
+      const userNotificationPrefsStorage = this.secureYeoman.getUserNotificationPrefsStorage();
+      if (userNotificationPrefsStorage) {
+        registerUserNotificationPrefsRoutes(this.app, { userNotificationPrefsStorage });
+        this.getLogger().info('User notification prefs routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('User notification prefs routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }

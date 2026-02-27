@@ -35,7 +35,7 @@ export function ReportsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Audit Reports</h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Audit Reports</h1>
           <p className="text-muted-foreground text-sm mt-1">Generate and download audit reports</p>
         </div>
         <div className="flex items-center gap-2">

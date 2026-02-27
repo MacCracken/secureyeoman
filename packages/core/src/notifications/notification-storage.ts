@@ -152,4 +152,9 @@ export class NotificationStorage extends PgBaseStorage {
     );
     return Number(row?.count ?? 0);
   }
+
+  async deleteOlderThan(maxAgeMs: number): Promise<number> {
+    const cutoff = Date.now() - maxAgeMs;
+    return this.execute(`DELETE FROM notifications WHERE created_at < $1`, [cutoff]);
+  }
 }

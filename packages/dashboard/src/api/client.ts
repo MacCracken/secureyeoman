@@ -37,6 +37,7 @@ import type {
   AuditRun,
   AuditItemStatus,
   ServerNotification,
+  UserNotificationPref,
   RiskAssessment,
   ExternalFeed,
   ExternalFinding,
@@ -3603,6 +3604,48 @@ export async function markAllNotificationsRead(): Promise<{ updated: number }> {
 
 export async function deleteNotification(id: string): Promise<void> {
   await request(`/notifications/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+// ── User Notification Prefs API (Phase 55) ────────────────────────────────
+
+export async function fetchNotificationPrefs(): Promise<{ prefs: UserNotificationPref[] }> {
+  return request<{ prefs: UserNotificationPref[] }>('/users/me/notification-prefs');
+}
+
+export interface CreateNotificationPrefBody {
+  channel: 'slack' | 'telegram' | 'discord' | 'email';
+  chatId: string;
+  integrationId?: string | null;
+  enabled?: boolean;
+  quietHoursStart?: number | null;
+  quietHoursEnd?: number | null;
+  minLevel?: 'info' | 'warn' | 'error' | 'critical';
+}
+
+export async function createNotificationPref(
+  body: CreateNotificationPrefBody
+): Promise<{ pref: UserNotificationPref }> {
+  return request<{ pref: UserNotificationPref }>('/users/me/notification-prefs', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function updateNotificationPref(
+  id: string,
+  patch: Partial<CreateNotificationPrefBody>
+): Promise<{ pref: UserNotificationPref }> {
+  return request<{ pref: UserNotificationPref }>(
+    `/users/me/notification-prefs/${encodeURIComponent(id)}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(patch),
+    }
+  );
+}
+
+export async function deleteNotificationPref(id: string): Promise<void> {
+  await request(`/users/me/notification-prefs/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
 // ── Risk Assessment API (Phase 53) ────────────────────────────────────────

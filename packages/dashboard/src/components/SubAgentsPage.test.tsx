@@ -196,13 +196,13 @@ describe('SubAgentsPage', () => {
     expect(await screen.findByText('Delegation Not Enabled')).toBeInTheDocument();
   });
 
-  it('shows enabled state when only agentConfig.allowedBySecurityPolicy is true', async () => {
+  it('shows enabled state when allowSubAgents policy is true', async () => {
     mockFetchAgentConfig.mockResolvedValue({
       config: { enabled: false },
       allowedBySecurityPolicy: true,
     });
     mockFetchSecurityPolicy.mockResolvedValue({
-      allowSubAgents: false,
+      allowSubAgents: true,
       allowA2A: false,
       allowSwarms: false,
       allowExtensions: false,

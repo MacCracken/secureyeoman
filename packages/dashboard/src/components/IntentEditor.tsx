@@ -701,10 +701,7 @@ export function IntentEditor() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
-          <Target className="w-5 h-5" />
-          Organizational Intent
-        </h2>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Organizational Intent</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Machine-readable goals, signals, boundaries, and context for agent guidance.
         </p>

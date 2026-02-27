@@ -158,11 +158,11 @@ describe('Sidebar nav order', () => {
     expect(link).toHaveAttribute('href', '/automation');
   });
 
-  it('Automation link appears after Skills in nav order', async () => {
+  it('Automation link appears before Skills in nav order', async () => {
     renderSidebar();
     const automationLink = await screen.findByRole('link', { name: /^automation$/i });
     const skillsLink = await screen.findByRole('link', { name: /skills/i });
     const links = Array.from(document.querySelectorAll('a')) as HTMLElement[];
-    expect(links.indexOf(skillsLink)).toBeLessThan(links.indexOf(automationLink));
+    expect(links.indexOf(automationLink)).toBeLessThan(links.indexOf(skillsLink));
   });
 });

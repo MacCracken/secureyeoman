@@ -11,9 +11,8 @@ export function DeveloperPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Code2 className="w-6 h-6 text-primary" />
-        <h1 className="text-xl font-bold">Developers</h1>
+      <div>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Developers</h1>
       </div>
 
       <div className="flex gap-1 p-1 bg-muted/50 rounded-lg w-fit">

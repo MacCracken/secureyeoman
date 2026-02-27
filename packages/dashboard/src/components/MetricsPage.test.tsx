@@ -277,10 +277,10 @@ describe('MetricsPage — tab switching', () => {
     expect(screen.getByText('Task Performance')).toBeInTheDocument();
   });
 
-  it('shows Resource Usage section in Full Metrics tab', () => {
+  it('shows Infrastructure section in Full Metrics tab', () => {
     renderMetricsPage();
     fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
-    expect(screen.getByText('Resource Usage')).toBeInTheDocument();
+    expect(screen.getByText('Infrastructure')).toBeInTheDocument();
   });
 
   it('shows Security section in Full Metrics tab', () => {
@@ -410,7 +410,7 @@ describe('MetricsPage — Full Metrics data display', () => {
     fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
     expect(screen.getByText('Total Tasks')).toBeInTheDocument();
     expect(screen.getByText('In Progress')).toBeInTheDocument();
-    expect(screen.getByText('Queue Depth')).toBeInTheDocument();
+    expect(screen.getByText('Avg Duration')).toBeInTheDocument();
     expect(screen.getByText('Success Rate')).toBeInTheDocument();
   });
 
