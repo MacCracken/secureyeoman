@@ -1,3 +1,21 @@
+## [2026.2.27d] — 2026-02-27
+
+### Added
+
+- **Marketplace "Global (All Personalities)" install** — The personality selector in the Marketplace and Community tabs now includes a "Global (All Personalities)" option (value = `''`). Selecting it installs the skill without a `personalityId`, creating a global brain skill available to every personality. The active personality is pre-selected on load; switching to Global is now sticky (not overridden on the next render).
+- **Community tab: always visible** — Removed the `hasInitialized` gate from `CommunityTab`. Community skills are now fetched and displayed immediately without requiring an active personality to be detected first.
+- **Personality selector ordering** — The active personality now sorts to the top of the Install-to dropdown; remaining personalities are alphabetical.
+
+### Fixed
+
+- **Marketplace showing only 3 of 6 builtin skills** — `MarketplaceStorage.updateSkill()` was missing the `source` column in its SQL `UPDATE`, so `seedBuiltinSkills()` could not correct the source of existing rows. Five of the six builtin skill files define `instructions` as `string[]`, which caused PostgreSQL type errors when inserting into the `TEXT` column; `addSkill()` and `updateSkill()` now normalize `string[]` → `'\n'.join()`. `seedBuiltinSkills()` now wraps each skill in an independent `try/catch` so one failure cannot abort the rest.
+- **Marketplace pagination hiding builtins** — `MarketplaceTab` fetched all skills with the default `limit=20`, which mixed community and builtin results and could leave builtin skills on page 2. The tab now requests `origin='marketplace'` + `limit=200` so only builtin and published skills are returned.
+- **"Global" selection immediately overridden** — Both `MarketplaceTab` and `CommunityTab` used `!selectedPersonalityId` as the guard in their personality-init `useEffect`. Because `'' ` (the "Global" value) is falsy, selecting Global instantly triggered the effect and reset the selector back to the active personality. Fixed with a `useRef` one-shot initialization flag.
+- **Chat conversation not restored on refresh** — Navigating away and returning to the Chat page no longer starts a new empty chat. The last active `conversationId` is persisted in `localStorage` (`soul:chatConversationId`) and restored on mount. On load the stored ID is validated against the current conversation list; if not found (different auth session, deleted conversation) it is cleared automatically. Only "New Chat" starts a fresh session.
+- **Gmail OAuth scope missing** — Added `https://www.googleapis.com/auth/gmail.compose` to the Gmail provider scopes in `oauth-routes.ts`. The `resolveGmailAccess` helper now prefers `provider='gmail'` tokens over generic `provider='google'` tokens (which only carry `openid email profile`). A new `gmailErrorMessage()` helper detects `SCOPE_INSUFFICIENT` / `insufficient_scopes` / `insufficientPermissions` in 403 responses and returns an actionable "reconnect your account" message instead of the raw API error.
+
+---
+
 ## [2026.2.27c] — 2026-02-27
 
 ### Added

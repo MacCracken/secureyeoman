@@ -121,6 +121,31 @@ describe('Gmail Routes', () => {
       expect(res.statusCode).toBe(401);
     });
 
+    it('returns actionable reconnect message on 401 token expiry', async () => {
+      const svc = mockOAuthTokenService();
+      const app = await buildApp(svc);
+      vi.stubGlobal('fetch', mockFetch({ error: 'Invalid credentials' }, 401));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/gmail/profile' });
+      expect(res.statusCode).toBe(401);
+      expect(res.json().message).toMatch(/reconnect your gmail account/i);
+    });
+
+    it('skips retry when forceRefreshById returns same stale token', async () => {
+      const svc = {
+        ...mockOAuthTokenService(),
+        forceRefreshById: vi.fn().mockResolvedValue('access-token-abc'), // same as getValidToken
+      } as unknown as OAuthTokenService;
+      (svc.listTokens as ReturnType<typeof vi.fn>).mockResolvedValue([TOKEN_ROW]);
+      (svc.getValidToken as ReturnType<typeof vi.fn>).mockResolvedValue('access-token-abc');
+      const app = await buildApp(svc);
+      const fetchMock = mockFetch({ error: 'Invalid credentials' }, 401);
+      vi.stubGlobal('fetch', fetchMock);
+      const res = await app.inject({ method: 'GET', url: '/api/v1/gmail/profile' });
+      // Only one upstream call made (no retry with same stale token)
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(res.statusCode).toBe(401);
+    });
+
     it('uses mode from active personality integrationAccess', async () => {
       const svc = mockOAuthTokenService();
       const sm = mockSoulManager('suggest');
@@ -252,6 +277,19 @@ describe('Gmail Routes', () => {
         payload: draftBody,
       });
       expect(res.statusCode).toBe(404);
+    });
+
+    it('returns actionable reconnect message when Google returns 401 for draft', async () => {
+      const svc = mockOAuthTokenService();
+      const app = await buildApp(svc);
+      vi.stubGlobal('fetch', mockFetch({ error: 'Invalid credentials' }, 401));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/gmail/drafts',
+        payload: draftBody,
+      });
+      expect(res.statusCode).toBe(401);
+      expect(res.json().message).toMatch(/reconnect your gmail account/i);
     });
   });
 

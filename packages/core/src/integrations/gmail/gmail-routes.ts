@@ -33,6 +33,9 @@ function gmailErrorMessage(status: number, body: string): string {
   ) {
     return 'Gmail access denied: your account is missing required permissions. Please reconnect your Gmail account via Settings → Connections → OAuth and re-authorize with Gmail scopes.';
   }
+  if (status === 401) {
+    return 'Gmail authentication failed: your access token is invalid or expired. Please reconnect your Gmail account via Settings → Connections → OAuth.';
+  }
   return `Gmail API error: ${body}`;
 }
 
@@ -56,7 +59,8 @@ async function fetchGmail(
 
   if (resp.status === 401) {
     const newToken = await oauthTokenService.forceRefreshById(tokenId);
-    if (newToken) {
+    // Only retry if we actually got a new token (not the same stale one returned on failed refresh)
+    if (newToken && newToken !== accessToken) {
       resp = await fetch(url, {
         ...opts,
         headers: { ...opts.headers, Authorization: `Bearer ${newToken}` },
