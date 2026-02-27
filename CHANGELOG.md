@@ -1,3 +1,53 @@
+## [2026.2.26p] — 2026-02-26
+
+### Security / Performance / Stability — Phase 59 Hardening
+
+#### Security
+
+- **Terminal env sanitization** (`terminal-routes.ts`) — Child processes spawned by the terminal route now receive only a strict whitelist of safe environment variables (`PATH`, `HOME`, `USER`, `LOGNAME`, `LANG`, `LC_ALL`, `LC_CTYPE`, `TERM`, `SHELL`, `TMPDIR`, `TZ`, `XDG_RUNTIME_DIR`). `PATH` is always overridden with a hardcoded safe value. Previously, all of `process.env` was spread into child processes, leaking every secret to spawned shells.
+- **PostgreSQL SSL verification** (`pg-pool.ts`) — `rejectUnauthorized` now defaults to `true` (secure). Opt-out via `DATABASE_SSL_REJECT_UNAUTHORIZED=false` for dev self-signed certs; custom CA via `DATABASE_CA` env var (PEM). A warning is logged whenever verification is disabled. In `NODE_ENV=production`, the DB password env var is required (throws if missing rather than silently using the dev default).
+- **Content-Security-Policy** (`server.ts`) — CSP header added to all API responses: `default-src 'self'`; `script-src 'self' 'unsafe-inline'`; `style-src 'self' 'unsafe-inline'`; `img-src 'self' data: blob:`; `font-src 'self' data:`; `connect-src 'self' ws: wss:`; `media-src 'self' blob:`; `object-src 'none'`; `frame-ancestors 'none'`. HSTS max-age bumped to 2 years with `preload`.
+- **Auth endpoint rate limiting wired** (`auth-routes.ts`) — The `rateLimiter` was injected but never called. Now enforced: login uses existing `auth_attempts` rule (5/15 min per IP), refresh uses new `auth_refresh` rule (10/min per IP), reset-password uses new `auth_reset_password` rule (3/hour per IP). All 429 responses include `Retry-After` header.
+- **Token refresh race condition** (`client.ts`) — Changed from inline flag reset to `.finally()` so `_isRefreshing` and `_refreshPromise` are cleared unconditionally even if `attemptTokenRefresh()` throws, preventing subsequent 401s from awaiting a permanently stale rejected promise.
+
+#### Performance
+
+- **Audit list single-query window function** (`sqlite-storage.ts`) — `queryEntries` and `searchFullText` previously fired two separate DB round-trips (COUNT + SELECT). Merged into a single query using `COUNT(*) OVER() AS total_count`, halving round-trips on every audit list request.
+
+#### Stability
+
+- **Audit chain concurrent-write lock** (`audit-chain.ts`) — `repair()` now runs through the `_recordQueue` so it never races with in-flight `record()` calls that are about to update `this.lastHash`. Internal work extracted to `_doRepair()`. `createSnapshot()` awaits the queue tail before reading `this.lastHash`.
+- **Health check split** (`server.ts`) — `/health` split into three Kubernetes-compatible probes: `GET /health/live` (liveness, no I/O), `GET /health/ready` (real DB ping, returns 503 on failure), `GET /health/deep` (full component diagnostics, 207 on partial). `/health` retained as backward-compat alias for ready semantics.
+- **Dashboard API request timeouts** (`client.ts`) — `AbortSignal.timeout()` added to all `fetch()` calls: 30 s for main requests (including retry), 10 s for token refresh. Respects caller-supplied `signal` (React Query abort controller remains functional).
+
+### Docs
+
+- **ADR 140** — `docs/adr/140-security-hardening-phase-59.md` — rationale and alternatives for all 10 items above.
+
+---
+
+## [2026.2.26o] — 2026-02-26
+
+### Added
+
+#### Phase 57 — Advanced Editor Mode + Code Editor Toggle
+
+- **`allowCodeEditor` policy flag** (`SecurityConfigSchema`) — new boolean (default `true`). Controls whether the Code Editor nav item appears in the sidebar. When `false`, the editor link is hidden and the Advanced Editor toggle in Security Settings is greyed out.
+- **`allowAdvancedEditor` policy flag** (`SecurityConfigSchema`) — new boolean (default `false`). When `true` (and Code Editor is enabled), `EditorPage` renders the new `AdvancedEditorPage` layout instead of the standard editor.
+- **`AdvancedEditorPage.tsx`** (new) — Three-panel advanced editor layout: Monaco editor (flex-3 left), right column with `FileManagerPanel` (top) + `TaskPanel` (bottom, flex-2), and `MultiTerminal` docked at the bottom (h-48). Personality selector uses `fetchPersonalities` → `data?.personalities`. Terminal integration via `executeTerminalCommand(cmd, cwd)`. Monaco loader config applied in `useEffect`.
+- **`EditorPage.tsx` refactored** — Now a thin wrapper: one `useQuery` for the security policy, conditional branch to `AdvancedEditorPage` when `allowAdvancedEditor` is true, otherwise renders the existing `StandardEditorPage`. Old body renamed to `StandardEditorPage`.
+- **`SecuritySettings.tsx` toggles** — Two new `PolicyToggle` cards after the Intent Document Editor row: "Code Editor" (`Code` icon, controls `allowCodeEditor`) and "Advanced Editor" (`LayoutPanelLeft` icon, controls `allowAdvancedEditor`). Advanced Editor toggle uses `opacity-40 pointer-events-none` with a hint text explaining it requires Code Editor to be on when `!codeEditorAllowed`.
+- **`Sidebar.tsx` conditional Editor link** — `Editor` removed from `BASE_TOP_ITEMS`. Re-added conditionally inside `useMemo` via `top.splice(4, 0, ...)` when `codeEditorAllowed`. `codeEditorAllowed` added to dependency array.
+- **`SecurityPolicy` interface** (`client.ts`) — `allowCodeEditor: boolean` and `allowAdvancedEditor: boolean` added; fallback default return updated to include both.
+
+### Tests
+
+- `SecuritySettings.test.tsx` — +6 tests: Code Editor toggle renders and calls correct update; Advanced Editor toggle renders; Advanced Editor toggle is greyed out with hint when Code Editor is off; enabling/disabling Code Editor calls correct update function.
+- `Sidebar.test.tsx` — +2 tests: Editor nav item shown when `codeEditorAllowed: true`; Editor nav item hidden when `codeEditorAllowed: false`.
+- All 57 core + 94 dashboard tests pass; `tsc --noEmit` = 0 errors.
+
+---
+
 ## [2026.2.26n] — 2026-02-26
 
 ### Fixed

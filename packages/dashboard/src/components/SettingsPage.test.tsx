@@ -15,6 +15,7 @@ vi.mock('../api/client', () => ({
   updateSoulConfig: vi.fn(),
   fetchMcpServers: vi.fn(),
   fetchAuditStats: vi.fn(),
+  repairAuditChain: vi.fn(),
   fetchMetrics: vi.fn(),
   fetchPersonalities: vi.fn(),
   enablePersonality: vi.fn(),
