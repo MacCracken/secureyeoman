@@ -242,7 +242,7 @@ export function RoutingRulesPage() {
         </div>
         <button
           onClick={startNew}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
+          className="btn btn-ghost flex items-center gap-2 text-sm px-4 py-2"
         >
           <Plus className="w-4 h-4" />
           New Rule

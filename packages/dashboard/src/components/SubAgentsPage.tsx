@@ -164,7 +164,7 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
             onClick={() => {
               setShowDelegate(!showDelegate);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            className="btn btn-ghost flex items-center gap-1.5 text-sm px-3 py-1.5"
           >
             <Play className="w-3.5 h-3.5" />
             Delegate Task

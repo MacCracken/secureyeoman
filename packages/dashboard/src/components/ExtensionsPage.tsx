@@ -132,7 +132,7 @@ export function ExtensionsPage() {
             discoverMut.mutate();
           }}
           disabled={discoverMut.isPending}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+          className="btn btn-ghost flex items-center gap-1.5 text-sm px-3 py-1.5 disabled:opacity-50"
         >
           {discoverMut.isPending ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -946,7 +946,7 @@ function DebuggerTab() {
           <button
             onClick={handleTest}
             disabled={testMut.isPending}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+            className="btn btn-ghost flex items-center gap-1.5 text-sm px-3 py-1.5 disabled:opacity-50"
           >
             {testMut.isPending ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

@@ -9,7 +9,7 @@
 | Phase | Name | Status |
 |-------|------|--------|
 | XX | Find & Repair (Ongoing) | Ongoing |
-| 57 | Dashboard UX | Near-Term |
+| 57 | Dashboard UX | In Progress |
 | 58 | Security Toolkit | Planned |
 | 59 | Local-First AI | Planned |
 | 60 | Voice & Community | Demand-Gated |
@@ -42,11 +42,10 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ## Phase 57: Dashboard UX
 
-**Status**: Near-Term
+**Status**: In Progress — Advanced Editor Mode shipped (2026-02-26); two items remain.
 
 Deferred visual polish and power-user tooling from Phase 53. CSS variable theming infrastructure is already in place; both items can be implemented independently.
 
-- [x] **Advanced Editor Mode** — `allowCodeEditor` (default on) hides/shows the Editor sidebar item. `allowAdvancedEditor` (default off) replaces the standard editor with a three-panel advanced workspace: Monaco editor (left), file manager + task panel (right), multi-terminal (bottom). Both toggles live in a dedicated **Settings > Security > Editor** card. *(Phase 57 complete — 2026-02-26)*
 - [ ] **Intent creation form** — The "New → Intent" entry in the sidebar dialog currently navigates directly to the Intent Editor. Convert it to a guided creation form in the dialog: structured fields matching the intent schema (name, description, hard boundaries, policies, signal conditions) instead of raw JSON entry. Include an **Import JSON** button as an escape hatch for power users who already have an intent document. Form pre-fills the Intent Editor on submit; JSON import parses and validates against the intent schema before navigating.
 - [ ] **Switchable Theme Presets** — Expand beyond light/dark binary. Implement theme presets (e.g., opencode, vi, vscode) with a theme picker in dashboard settings. CSS variable-based theming already in place (`hsl(var(--X))` pattern). Pre-work required: audit remaining blue/primary buttons in dark theme — only light theme should use blue (`btn-primary`); dark theme uses muted/ghost variants. Complete button audit before adding preset switcher.
 
@@ -170,4 +169,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-26 — Phases 53–55, 58 complete. Active queue: Phase 57 (Dashboard UX) → Phase 58 (Security Toolkit) → Phase 59 (Local-First AI). Phases 60–62 remain demand-gated.*
+*Last updated: 2026-02-26 — Phase 57 in progress (Advanced Editor Mode shipped; Intent form + Theme Presets open). Active queue: Phase 57 (Dashboard UX) → Phase 58 (Security Toolkit) → Phase 59 (Local-First AI). Phases 60–62 remain demand-gated.*

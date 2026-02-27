@@ -1917,8 +1917,8 @@ function IntegrationCard({
               <span className="hidden xs:inline">{statusConfig.label}</span>
             </span>
           </div>
-          <p className="text-xs text-muted mt-1">{meta.name}</p>
-          <div className="flex items-center gap-2 sm:gap-3 mt-2 text-xs text-muted flex-wrap">
+          <p className="text-xs text-muted-foreground mt-1">{meta.name}</p>
+          <div className="flex items-center gap-2 sm:gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
             <span>{integration.messageCount} msgs</span>
             {integration.lastMessageAt && (
               <span>Last: {formatRelativeTime(integration.lastMessageAt)}</span>
@@ -2972,7 +2972,7 @@ function EmailTab({
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted">
+      <p className="text-sm text-muted-foreground">
         Connect email accounts for direct email integration. SecureYeoman can read incoming emails
         and optionally send replies on your behalf. Supports Gmail (OAuth) and any IMAP/SMTP
         provider.
@@ -2987,7 +2987,7 @@ function EmailTab({
       {/* Connected Gmail integrations */}
       {hasGmail && (
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-muted">Connected Accounts</h3>
+          <h3 className="text-sm font-semibold text-foreground">Connected Accounts</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {integrations.map((integration) => (
               <IntegrationCard
@@ -3143,40 +3143,40 @@ function EmailTab({
       {/* Connect button */}
       {!showConfig && (
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-muted">Add Email Account</h3>
+          <h3 className="text-sm font-semibold text-foreground">Add Email Account</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <div className="card p-4">
               <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-surface text-muted">
+                <div className="p-2 rounded-lg bg-muted/30 text-foreground">
                   <Mail className="w-6 h-6" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <h3 className="font-medium text-sm">Gmail</h3>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-400">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                       Available
                     </span>
                   </div>
-                  <p className="text-xs text-muted mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Connect your Gmail account for email messaging
                   </p>
-                  <div className="mt-3 p-3 bg-surface rounded-md">
-                    <p className="text-xs font-medium text-muted mb-2">How it works</p>
+                  <div className="mt-3 p-3 bg-muted/20 rounded-md">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">How it works</p>
                     <ol className="text-xs space-y-1">
                       <li className="flex gap-2">
-                        <span className="text-muted">1.</span>
+                        <span className="text-muted-foreground">1.</span>
                         <span>Click &quot;Connect with Google&quot; to authorize</span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="text-muted">2.</span>
+                        <span className="text-muted-foreground">2.</span>
                         <span>Grant permissions to read and/or send emails</span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="text-muted">3.</span>
+                        <span className="text-muted-foreground">3.</span>
                         <span>Configure read/send preferences and label filter</span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="text-muted">4.</span>
+                        <span className="text-muted-foreground">4.</span>
                         <span>Gmail will be polled every 30 seconds for new messages</span>
                       </li>
                     </ol>
@@ -3418,19 +3418,19 @@ function EmailTab({
             ) : (
               <div className="card p-4">
                 <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-surface text-muted">
+                  <div className="p-2 rounded-lg bg-muted/30 text-foreground">
                     <Mail className="w-6 h-6" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <h3 className="font-medium text-sm">Email (IMAP/SMTP)</h3>
                       <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${availablePlatforms.has('email') ? 'bg-green-500/10 text-green-400' : 'bg-surface text-muted'}`}
+                        className={`text-xs px-2 py-0.5 rounded-full ${availablePlatforms.has('email') ? 'bg-muted text-muted-foreground' : 'bg-muted text-muted-foreground'}`}
                       >
                         {availablePlatforms.has('email') ? 'Available' : 'Coming Soon'}
                       </span>
                     </div>
-                    <p className="text-xs text-muted mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Connect any IMAP/SMTP provider: ProtonMail Bridge, Outlook, Yahoo, Fastmail
                     </p>
                     {availablePlatforms.has('email') && (
@@ -3488,14 +3488,14 @@ function OAuthTab({
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted">
+      <p className="text-sm text-muted-foreground">
         Connect your account with OAuth providers for secure authentication. OAuth connections allow
         you to sign in using your existing accounts from supported providers.
       </p>
 
       {connectedOAuth.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-muted">Connected OAuth Providers</h3>
+          <h3 className="text-sm font-semibold text-foreground">Connected OAuth Providers</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {connectedOAuth.map((integration) => (
               <div key={integration.id} className="card p-4">
@@ -3525,7 +3525,7 @@ function OAuthTab({
       )}
 
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted">Available OAuth Providers</h3>
+        <h3 className="text-sm font-semibold text-foreground">Available OAuth Providers</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {oauthProviders.map((provider) => {
             const isConnected = connectedOAuth.some((i) => i.platform === provider.id);
@@ -3533,21 +3533,21 @@ function OAuthTab({
             return (
               <div key={provider.id} className="card p-4">
                 <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-surface text-muted">{provider.icon}</div>
+                  <div className="p-2 rounded-lg bg-muted/30 text-foreground">{provider.icon}</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <h3 className="font-medium text-sm">{provider.name}</h3>
                       <span
                         className={`text-xs px-2 py-0.5 rounded-full ${
                           isConnected
-                            ? 'bg-green-500/10 text-green-400'
-                            : 'bg-green-500/10 text-green-400'
+                            ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                            : 'bg-muted text-muted-foreground'
                         }`}
                       >
                         {isConnected ? 'Connected' : 'Available'}
                       </span>
                     </div>
-                    <p className="text-xs text-muted mt-1">{provider.description}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{provider.description}</p>
                     {!isConnected && (
                       <button
                         onClick={() => {

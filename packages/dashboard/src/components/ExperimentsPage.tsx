@@ -161,7 +161,7 @@ function ExperimentsList() {
           onClick={() => {
             setShowCreate(!showCreate);
           }}
-          className="flex items-center gap-2 px-3 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+          className="btn btn-ghost flex items-center gap-2 text-sm px-3 py-2"
         >
           <Plus className="w-4 h-4" />
           New Experiment

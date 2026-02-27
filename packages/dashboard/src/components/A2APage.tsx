@@ -155,7 +155,7 @@ export function A2APage({ embedded }: { embedded?: boolean } = {}) {
             onClick={() => {
               setShowDelegate(!showDelegate);
             }}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            className="btn btn-ghost flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3 py-1.5"
           >
             <Send className="w-3.5 h-3.5" />
             Delegate Task
