@@ -723,7 +723,26 @@ describe('SecuritySettings', () => {
     });
   });
 
-  // ── Code Editor ────────────────────────────────────────────────────
+  // ── Editor card ────────────────────────────────────────────────────
+
+  it('renders a dedicated Editor card (separate from Developers)', async () => {
+    renderComponent();
+    // The Editor card heading should exist — it's a separate card from Developers
+    const headings = await screen.findAllByRole('heading');
+    const editorHeading = headings.find((h) => h.textContent === 'Editor');
+    expect(editorHeading).toBeDefined();
+  });
+
+  it('Code Editor and Advanced Editor Mode are NOT inside the Developers card', async () => {
+    renderComponent();
+    await screen.findByText('Code Editor');
+    // Find the Developers card and verify it doesn't contain the Code Editor toggle
+    const developersHeadings = screen.getAllByRole('heading').filter((h) => h.textContent === 'Developers');
+    if (developersHeadings.length > 0) {
+      const developersCard = developersHeadings[0].closest('.card');
+      expect(developersCard?.querySelector('[aria-label="Toggle Code Editor"]')).toBeNull();
+    }
+  });
 
   it('renders Code Editor toggle enabled by default', async () => {
     renderComponent();

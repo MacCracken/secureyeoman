@@ -238,7 +238,7 @@ Always connect AI providers using official API keys from their developer console
 | **Security Testing** | [Security Testing Guide](docs/guides/security-testing.md) |
 | **Troubleshooting** | [Troubleshooting Guide](docs/troubleshooting.md) |
 | **Architecture Overview** | [Architecture](docs/development/architecture.md) |
-| **Architecture Decisions** | [ADRs](docs/adr/) (133 records) |
+| **Architecture Decisions** | [ADRs](docs/adr/) (139 records) |
 | **Roadmap** | [Development Roadmap](docs/development/roadmap.md) |
 | **Changelog** | [CHANGELOG.md](CHANGELOG.md) |
 | **Contributing** | [Contributing Guide](CONTRIBUTING.md) |

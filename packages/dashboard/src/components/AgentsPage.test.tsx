@@ -154,6 +154,38 @@ describe('AgentsPage', () => {
     expect(await screen.findByText('Agents')).toBeInTheDocument();
   });
 
+  it('renders the page description in the multi-tab view', async () => {
+    renderComponent();
+    // Wait for page to settle (multiple tabs visible)
+    await screen.findByText('Multimodal');
+    expect(
+      screen.getByText('Sub-agent delegation, A2A networking, multimodal tools, and vector memory')
+    ).toBeInTheDocument();
+  });
+
+  it('renders the page description in the single-tab view', async () => {
+    // Only Vector Memory is always enabled; disable all others
+    mockFetchSecurityPolicy.mockResolvedValue({
+      ...DEFAULT_POLICY,
+      allowSubAgents: false,
+      allowA2A: false,
+      allowMultimodal: false,
+      allowDesktopControl: false,
+      allowCamera: false,
+    });
+    mockFetchAgentConfig.mockResolvedValue({
+      config: { enabled: false },
+      allowedBySecurityPolicy: false,
+    });
+    mockFetchA2AConfig.mockResolvedValue({ config: { enabled: false } });
+    renderComponent();
+    // Single section — description still rendered in the wrapper
+    await screen.findByText('Agents');
+    expect(
+      screen.getByText('Sub-agent delegation, A2A networking, multimodal tools, and vector memory')
+    ).toBeInTheDocument();
+  });
+
   // ── Tab Visibility ──────────────────────────────────────────
 
   it('shows core tabs when features are enabled', async () => {

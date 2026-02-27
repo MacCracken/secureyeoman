@@ -42,6 +42,41 @@ describe('ProactivePage', () => {
     vi.clearAllMocks();
   });
 
+  it('renders the page description when proactive is enabled', async () => {
+    (mockApi.fetchSecurityPolicy as any).mockResolvedValue({
+      allowProactive: true,
+    });
+    (mockApi.fetchProactiveStatus as any).mockResolvedValue({
+      triggers: { total: 0, enabled: 0, byType: {} },
+      suggestions: { pending: 0 },
+      patterns: { detected: 0 },
+    });
+    (mockApi.fetchBuiltinTriggers as any).mockResolvedValue({ triggers: [] });
+    (mockApi.fetchProactiveTriggers as any).mockResolvedValue({ triggers: [] });
+
+    render(<ProactivePage />, { wrapper: createWrapper() });
+
+    expect(
+      await screen.findByText(
+        'Automated triggers, suggestions, and behavioral patterns — act before being asked'
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('renders the page description in the disabled state', async () => {
+    (mockApi.fetchSecurityPolicy as any).mockResolvedValue({
+      allowProactive: false,
+    });
+
+    render(<ProactivePage />, { wrapper: createWrapper() });
+
+    expect(
+      await screen.findByText(
+        'Automated triggers, suggestions, and behavioral patterns — act before being asked'
+      )
+    ).toBeInTheDocument();
+  });
+
   it('shows disabled state when allowProactive is false', async () => {
     (mockApi.fetchSecurityPolicy as any).mockResolvedValue({
       allowSubAgents: false,

@@ -12,6 +12,7 @@
 
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { UserNotificationPrefsStorage } from './user-notification-prefs-storage.js';
+import type { NotificationLevel } from './notification-storage.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 
 const VALID_CHANNELS = ['slack', 'telegram', 'discord', 'email'] as const;
@@ -95,7 +96,7 @@ export function registerUserNotificationPrefsRoutes(
             quietHoursEnd != null && !isNaN(Number(quietHoursEnd))
               ? Number(quietHoursEnd)
               : null,
-          minLevel: (minLevel as string) ?? 'info',
+          minLevel: ((minLevel as string) ?? 'info') as NotificationLevel,
         });
         return reply.code(201).send({ pref });
       } catch (err) {

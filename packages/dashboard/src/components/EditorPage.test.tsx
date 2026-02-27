@@ -84,6 +84,10 @@ vi.mock('../api/client', () => ({
   fetchSecurityPolicy: vi.fn(),
 }));
 
+vi.mock('./AdvancedEditorPage', () => ({
+  AdvancedEditorPage: () => <div data-testid="advanced-editor-page">Advanced Editor</div>,
+}));
+
 import * as api from '../api/client';
 import { EditorPage } from './EditorPage';
 
@@ -189,6 +193,47 @@ describe('EditorPage', () => {
       ...MOCK_HISTORY,
       total: MOCK_HISTORY.executions.length,
     });
+  });
+
+  // ── Policy gate ────────────────────────────────────────────
+
+  it('renders AdvancedEditorPage when allowAdvancedEditor is true', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: false,
+      allowA2A: false,
+      allowSwarms: false,
+      allowExtensions: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowStorybook: false,
+      allowMultimodal: false,
+      allowDesktopControl: false,
+      allowCamera: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
+      sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
+      allowIntentEditor: false,
+      allowCodeEditor: true,
+      allowAdvancedEditor: true,
+    });
+    renderComponent();
+    expect(await screen.findByTestId('advanced-editor-page')).toBeInTheDocument();
+  });
+
+  it('renders standard editor when allowAdvancedEditor is false', async () => {
+    renderComponent();
+    expect(await screen.findByText('Editor')).toBeInTheDocument();
+    expect(screen.queryByTestId('advanced-editor-page')).not.toBeInTheDocument();
   });
 
   // ── Rendering ──────────────────────────────────────────────

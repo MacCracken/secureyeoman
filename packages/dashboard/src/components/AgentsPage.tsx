@@ -150,6 +150,7 @@ export function AgentsPage() {
     <div className="space-y-3 sm:space-y-4 min-w-0 overflow-hidden">
       <div>
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Agents</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Sub-agent delegation, A2A networking, multimodal tools, and vector memory</p>
       </div>
 
       {/* Section tabs */}

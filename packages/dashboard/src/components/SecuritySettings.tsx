@@ -1017,22 +1017,30 @@ export function SecuritySettings() {
               }
             />
           </div>
-          <div className="border-t border-border pt-4">
-            <PolicyToggle
-              label="Code Editor"
-              icon={<Code className="w-4 h-4 text-muted-foreground" />}
-              enabled={codeEditorAllowed}
-              isPending={policyMutation.isPending}
-              onToggle={() => {
-                policyMutation.mutate({ allowCodeEditor: !codeEditorAllowed });
-              }}
-              description={
-                codeEditorAllowed
-                  ? 'Code editor is enabled. The Editor entry appears in the sidebar.'
-                  : 'Code editor is hidden. No editor is accessible from the sidebar.'
-              }
-            />
-          </div>
+        </div>
+      </div>
+
+      {/* Editor Policy */}
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <Code className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Editor</h3>
+        </div>
+        <div className="p-4 space-y-4">
+          <PolicyToggle
+            label="Code Editor"
+            icon={<Code className="w-4 h-4 text-muted-foreground" />}
+            enabled={codeEditorAllowed}
+            isPending={policyMutation.isPending}
+            onToggle={() => {
+              policyMutation.mutate({ allowCodeEditor: !codeEditorAllowed });
+            }}
+            description={
+              codeEditorAllowed
+                ? 'Code editor is enabled. The Editor entry appears in the sidebar.'
+                : 'Code editor is hidden. No editor is accessible from the sidebar.'
+            }
+          />
           <div className="border-t border-border pt-4">
             <div className={!codeEditorAllowed ? 'opacity-40 pointer-events-none' : ''}>
               <PolicyToggle

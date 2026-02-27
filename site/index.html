@@ -153,7 +153,7 @@
           </div>
           <div class="hero-stats">
             <div class="stat">
-              <span class="stat-value">7,619+</span>
+              <span class="stat-value">8,420+</span>
               <span class="stat-label">Tests</span>
             </div>
             <div class="stat-divider"></div>
@@ -274,12 +274,15 @@
             <p class="feature-desc">
               HMAC-SHA256 cryptographic audit chain — every tool call, model response, and
               system event is logged, verifiably chained, and exportable. Prometheus metrics
-              with Grafana dashboards for real-time production monitoring.
+              with Grafana dashboards for real-time production monitoring. Built-in Risk
+              Assessment engine scores your deployment across five domains (security, autonomy,
+              governance, infrastructure, external) and produces board-ready reports.
             </p>
             <ul class="feature-list">
               <li>Cryptographic integrity (HMAC-SHA256)</li>
               <li>Prometheus + Grafana dashboards</li>
-              <li>JSON / HTML / CSV export</li>
+              <li>Risk Assessment — composite 0–100 score</li>
+              <li>JSON / HTML / Markdown / CSV export</li>
               <li>Immutable, tamper-evident logs</li>
             </ul>
           </div>
@@ -372,14 +375,14 @@
             </div>
             <h3 class="feature-title">Developer Experience</h3>
             <p class="feature-desc">
-              24-command CLI with shell completions and <code>--json</code> scripting output.
+              26-command CLI with shell completions and <code>--json</code> scripting output.
               Full-screen TUI (<code>secureyeoman tui</code>). 38 lifecycle hook points with
               observe/transform/veto semantics. Sandboxed code execution (Python, Node.js,
               shell). Desktop control — screen capture, keyboard/mouse, clipboard — gated by
               explicit consent and audit trail.
             </p>
             <ul class="feature-list">
-              <li>24 CLI commands + full-screen TUI</li>
+              <li>26 CLI commands + full-screen TUI</li>
               <li>38 lifecycle hook points</li>
               <li>Sandboxed code execution</li>
               <li>Desktop control (consent-gated)</li>
@@ -396,13 +399,38 @@
               Single ~80 MB binary (Linux x64/arm64, macOS arm64), Docker, or Kubernetes with
               Helm, HPA, PDB, and NetworkPolicies. Three network modes — Local, LAN, or Public
               TLS — with a live badge in the dashboard. Multi-user workspaces, voice I/O (10
-              TTS + 7 STT providers), and portable skill marketplace sync.
+              TTS + 7 STT providers with binary streaming and Whisper model selection), and
+              portable skill marketplace sync. Per-user notification preferences with quiet
+              hours and severity filters across 31 platforms.
             </p>
             <ul class="feature-list">
               <li>Single binary + Docker + K8s Helm</li>
               <li>Local / LAN / Public TLS modes</li>
               <li>Multi-user workspaces + SSO</li>
-              <li>Voice I/O + skill marketplace</li>
+              <li>Voice I/O — binary TTS streaming + Whisper model selector</li>
+              <li>Per-user notification prefs + quiet hours</li>
+              <li>Skill marketplace sync (community + marketplace origins)</li>
+            </ul>
+          </div>
+
+          <!-- 9. Skills & Marketplace — builders, power users, community -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-store"></i>
+            </div>
+            <h3 class="feature-title">Skills &amp; Marketplace</h3>
+            <p class="feature-desc">
+              Package any capability as a portable <code>.skill.json</code> and share it via
+              the built-in marketplace or community repo. Skill routing lets the agent
+              self-select the right tool using <code>useWhen</code>, <code>doNotUseWhen</code>,
+              and <code>successCriteria</code> fields. Import pipeline enforces Trust Tiers
+              so untrusted community skills are sandboxed before execution.
+            </p>
+            <ul class="feature-list">
+              <li>Portable <code>.skill.json</code> import / export</li>
+              <li>Marketplace + Community origins with unified schema</li>
+              <li>Skill routing quality — useWhen / successCriteria</li>
+              <li>Trust Tier install pipeline (sandboxed execution)</li>
             </ul>
           </div>
 
@@ -651,6 +679,11 @@
               <div class="diff-icon"><i class="fas fa-file-contract"></i></div>
               <h4>Organizational Intent</h4>
               <p>Machine-readable governance layer: define hard boundaries, authorized tool sets, soft policies (with OPA sidecar), signal monitoring, and goal-to-skill affinity — all enforced in the execution pipeline before any tool fires.</p>
+            </div>
+            <div class="diff-card">
+              <div class="diff-icon"><i class="fas fa-chart-bar"></i></div>
+              <h4>Risk Assessment Engine</h4>
+              <p>Five-domain composite risk scoring (security 30%, autonomy 25%, governance 20%, infrastructure 15%, external 10%) → 0–100 score → low/medium/high/critical. Exportable as JSON, HTML, Markdown, or CSV for board reporting.</p>
             </div>
           </div>
         </div>
@@ -1145,7 +1178,7 @@ SECUREYEOMAN_ADMIN_PASSWORD="..."</code></pre>
               </div>
               <div class="stat-row">
                 <span class="stat-name">Tests</span>
-                <span class="stat-value">7,619+</span>
+                <span class="stat-value">8,420+</span>
               </div>
               <div class="stat-row">
                 <span class="stat-name">TS Files</span>
