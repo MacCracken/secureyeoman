@@ -58,6 +58,7 @@ export function ProactivePage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Proactive Assistance</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Automated triggers, suggestions, and behavioral patterns — act before being asked</p>
         </div>
         <div className="card p-8 text-center">
           <ShieldAlert className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -80,8 +81,7 @@ export function ProactivePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Sparkles className="w-6 h-6 text-primary" />
+      <div>
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Proactive Assistance</h1>
       </div>
 

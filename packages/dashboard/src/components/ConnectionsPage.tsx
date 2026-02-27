@@ -1391,10 +1391,7 @@ export function ConnectionsPage() {
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg sm:text-xl font-semibold text-primary flex items-center gap-2">
-            <Cable className="w-5 h-5" />
-            Connections
-          </h2>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Connections</h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Manage integrations, MCP servers, and authentication
           </p>

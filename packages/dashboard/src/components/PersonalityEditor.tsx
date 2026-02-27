@@ -3747,7 +3747,10 @@ export function PersonalityEditor() {
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Personalities</h2>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Personalities</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Define the agents that power your assistant</p>
+        </div>
         <button
           onClick={startCreate}
           className="btn btn-ghost flex items-center justify-center gap-1 text-sm sm:text-base"

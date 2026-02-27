@@ -9,9 +9,9 @@
 | Phase | Name | Status |
 |-------|------|--------|
 | XX | Find & Repair (Ongoing) | Ongoing |
-| 53 | Dashboard Completion | **In Progress** |
+| 53 | Dashboard Completion | In Progress |
 | 54 | AI Safety Layer | Complete |
-| 55 | Notifications & Integrations | Planned |
+| 55 | Notifications & Integrations | Complete ✅ |
 | 56 | Local-First AI | Planned |
 | 57 | Security Toolkit | Planned |
 | 58 | Audio Quality | Planned |
@@ -39,83 +39,20 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 **Status**: In Progress
 
-Sidebar structural reorganization as the foundation, then Mission Control as the new home, advanced editor workspace, and visual polish. Risk Assessment UI shipped in Phase 53 (tab in SecurityPage, full backend at `/api/v1/risk/*`).
+Sidebar structural reorganization as the foundation, then Mission Control as the new home, advanced editor workspace, and visual polish. Most items complete (see Changelog for shipped work).
 
-### Sidebar Reorganization
-
-*Do first — structural foundation for all navigation changes below.*
-
-- [x] **Sidebar Reorganization** — Consolidate nav into mission-aligned sections. ✅ Phase 53
-
-  ```
-  Metrics (→ Mission Control)
-  Chat
-  Editor
-  Personality
-  Skills
-  Proactive
-  [Agents — conditional]
-  Intent                          ← promoted from Settings > Intent
-  ┌ Automation (collapsible, persisted)
-  │   ├ Tasks
-  │   └ Workflows
-  Connections
-  Security
-  ┌ Administration (collapsible, persisted)
-  │   ├ Settings
-  │   ├ Users          → /users (routes to Settings > Users tab)
-  │   ├ Workspaces     → /workspaces (routes to Settings > Workspaces tab)
-  │   ├ API Keys
-  │   └ Developers     (conditional)
-  ```
-
-### Mission Control Dashboard
-
-- [x] **Mission Control Dashboard** ✅ Phase 53 — Consolidated command-center view replacing Metrics as the default landing page. Multi-panel grid: (1) System status graph (expanded ReactFlow); (2) Active tasks with progress; (3) Live security event feed; (4) Resource monitoring (CPU, memory, tokens, costs); (5) Agent/Personality health heartbeats; (6) Integration status grid; (7) Audit stream; (8) Workflow runs with DAG preview; (9) Quick actions (emergency stop, pause all). Dark theme default, auto-refresh via WebSocket, click-to-drill. Costs tab preserved under Mission Control tabs.
-
-### Advanced Editor Mode
+### Remaining
 
 - [ ] **Advanced Editor Mode** — Add toggle in Settings > Security > Developers. When enabled, replaces the current EditView with an advanced coding workspace featuring: (1) Canvas with movable terminal prompt windows; (2) Clean file manager as a sidebar column or popout; (3) Task list panel with Jira-style priorities, supporting internal task management or external integrations (Trello, GitHub Projects, etc.).
-
-### Automation View Consolidation
-
-- [x] **Automation View — Unified Task + Workflow View** ✅ Phase 53 — Consolidated separate Tasks and Workflows sidebar entries into a single `/automation` route with a Tasks | Workflows tab switcher (`AutomationPage`). Old `/tasks` and `/workflows` routes now redirect to `/automation`. Sidebar Automation group replaced by a single flat nav link.
-
-### Security > Automations View
-
-- [x] **Security > Automations** ✅ Phase 53 — Replaces the former "Settings > Tasks" roadmap item. New "Automations" tab in SecurityPage (between Audit Log and Autonomy). Three subviews (order: Heartbeats → Tasks → Workflows): (1) **Heartbeats** — per-monitor `HeartbeatCard` list (extracted from TaskHistory), default view, `system_health` cards have no left-border highlight; (2) **Tasks** — read-only paginated audit table of all task executions, filterable by status, no create/edit/delete actions; (3) **Workflows** — list of all workflow definitions with enabled/disabled badge; expandable rows fetch the last 5 runs per workflow via `fetchWorkflowRuns`. Tab switcher uses Mission Control pill-tab style.
-
-### Visual Polish
-
-- [x] **Personality image upload** — Allow a personality to receive a custom avatar image. ✅ Phase 53 (ADR 136)
 - [ ] **Switchable Theme Presets** — Expand beyond light/dark binary. Implement theme presets (e.g., opencode, vi, vscode) with a theme picker in dashboard settings. CSS variable-based theming already in place (`hsl(var(--X))` pattern). Pre-work required: audit remaining blue/primary buttons in dark theme — only light theme should use blue (`btn-primary`); dark theme uses muted/ghost variants. Complete button audit before adding preset switcher.
 
 ---
 
 ## Phase 54: AI Safety Layer
 
-**Status**: Complete ✅
+**Status**: Complete ✅ (minor deferred item below)
 
-A symmetric output-side verification layer complementing existing input defenses (`input-validator.ts`, `prompt-guard.ts`).
-
-- [x] **ResponseGuard** — Pattern-based output scanner (`src/security/response-guard.ts`). Six patterns covering injection, self-escalation, role confusion, and exfiltration. Modes: `block | warn | disabled`. Hooked in both stream and non-stream chat paths.
-- [x] **LLM-as-Judge** — Secondary LLM review for high-autonomy tool calls (`src/security/llm-judge.ts`). Triggers on `supervised_auto` personalities (configurable). Verdicts: allow/warn/block. Fail-open.
-- [x] **OPA output compliance check** — `IntentManager.checkOutputCompliance()` evaluates `output_compliance/allow` against active hard boundaries. `syncPoliciesWithOpa()` uploads the package automatically.
-- [x] **Structured output schema validation** — `OutputSchemaValidator` (`src/security/output-schema-validator.ts`) validates workflow step outputs. Skills gain `outputSchema` field. Migration 055.
-- [x] **Brain consistency check** — `ResponseGuard.checkBrainConsistency()` warns when response contradicts identity/memory context. Always warn-only.
-- [ ] Skill-level autonomy (L4/L5) LLM-as-Judge trigger — deferred (requires storage call in tool hot path)
-
----
-
-## Phase 55: Notifications & Integrations
-
-**Status**: Planned
-
-Real external notification delivery — dispatch stubs were wired in Phase 51 but not implemented. Completes the notification system end-to-end.
-
-- [ ] **Real Slack/Discord/email/Telegram delivery** — Implement actual external dispatch behind the `executeNotifyAction()` stubs in `heartbeat.ts`, gated on IntegrationManager interface audit.
-- [ ] **Per-user notification preferences** — Per-user channel preferences and quiet-hours configuration.
-- [ ] **Notification retention/cleanup job** — TTL and auto-prune policy for the `notifications` table.
+- [ ] **Skill-level autonomy (L4/L5) LLM-as-Judge trigger** — Deferred; requires storage call in tool hot path. Post-Phase 54 optimization.
 
 ---
 
@@ -244,4 +181,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-26 — Mission Control shipped; Automation View Consolidation shipped (Tasks + Workflows); Security > Automations shipped (Heartbeats → Tasks → Workflows, pill-tab style, Heartbeats as default). Remaining: Advanced Editor, Switchable Theme Presets (dark-theme button audit required first).*
+*Last updated: 2026-02-26 — Phase 55 (Notifications & Integrations) complete. Phase 53 remaining: Advanced Editor, Switchable Theme Presets. Phase 54 deferred: LLM-as-Judge skill-level trigger.*

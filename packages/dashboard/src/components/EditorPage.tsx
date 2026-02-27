@@ -826,9 +826,9 @@ export function EditorPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-100px)] sm:h-[calc(100vh-140px)]">
       {/* Page header */}
-      <div className="flex items-center gap-3 pb-3 border-b mb-3">
-        <Code2 className="w-6 h-6 text-primary" />
-        <h2 className="text-lg font-semibold">Editor</h2>
+      <div className="pb-3 border-b mb-3">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Editor</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Write, run, and debug code with AI-assisted execution and sandboxed sessions</p>
       </div>
 
       {/* Three-panel responsive layout: Editor | Chat side by side, Bottom panel */}

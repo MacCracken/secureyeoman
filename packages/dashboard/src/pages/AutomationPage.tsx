@@ -31,10 +31,7 @@ export function AutomationPage() {
       {/* Page header with tab switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Layers className="w-6 h-6" />
-            Automation
-          </h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Automation</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Manage tasks and automated workflows
           </p>

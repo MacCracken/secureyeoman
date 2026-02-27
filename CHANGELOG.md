@@ -1,3 +1,51 @@
+## [2026.2.26l] — 2026-02-26
+
+### Added
+
+#### Phase 55 — Notifications & Integrations
+
+- **Real external dispatch** (`body/heartbeat.ts`) — `executeNotifyAction()` now calls running
+  integration adapters for `slack`, `telegram`, `discord`, and `email` channels instead of
+  logging stubs. `integrationId` in notify config targets a specific integration; omit to use
+  all running adapters for the platform. Audit events `notification_dispatched` (info) and
+  `notification_dispatch_failed` (warning) are recorded per recipient.
+- **`IntegrationManager.getAdaptersByPlatform(platform)`** — new method that returns all running
+  `Integration` instances for the given platform string. Used by both the heartbeat dispatch
+  path and the notification fan-out.
+- **Per-user notification preferences** — migration `056_user_notification_prefs.sql` adds
+  `auth.user_notification_prefs`. `UserNotificationPrefsStorage` provides full CRUD + upsert
+  with `ON CONFLICT (user_id, channel, chat_id) DO UPDATE`. Routes at
+  `GET/POST/PUT/DELETE /api/v1/users/me/notification-prefs` (auth required).
+- **Fan-out** (`notification-manager.ts`) — `NotificationManager._fanout()` is called on every
+  `notify()` and dispatches to each enabled pref's adapter, honouring `minLevel` and UTC quiet
+  hours (with overnight wrap-around support). Failure per pref is caught and non-fatal.
+- **Notification retention cleanup** — `NotificationStorage.deleteOlderThan(maxAgeMs)` added.
+  `NotificationManager.startCleanupJob(retentionDays?)` fires immediately and repeats daily.
+  `notifications.retentionDays: 30` config field added to shared `ConfigSchema`.
+- **Settings → Notifications tab** (`SettingsPage.tsx`) — new `NotificationPrefsPanel` component
+  shows current prefs with channel badge, chat ID, min level, quiet hours, enabled toggle, and
+  delete button. "Add channel" form with all fields including quiet hours.
+- **`UserNotificationPref`** type in `packages/dashboard/src/types.ts` and 4 client functions in
+  `client.ts`: `fetchNotificationPrefs`, `createNotificationPref`, `updateNotificationPref`,
+  `deleteNotificationPref`.
+
+### Tests
+
+- `notification-storage.test.ts` — 3 new tests for `deleteOlderThan()` (25 total)
+- `notification-manager.test.ts` — 12 new Phase 55 tests: fan-out level filtering, quiet hours,
+  integrationId dispatch, cleanup job start/stop (31 total)
+- `user-notification-prefs-storage.test.ts` — 13 new tests: CRUD, upsert, field mapping
+- `user-notification-prefs-routes.test.ts` — 14 new tests: all 4 routes, 401/400/404 coverage
+- `tsc --noEmit` = 0 errors
+
+### Docs
+
+- `docs/adr/138-notification-delivery-and-user-prefs.md` — new ADR
+- `docs/guides/notifications.md` — updated with External Dispatch, Per-User Preferences, and
+  Retention sections
+
+---
+
 ## [2026.2.26k] — 2026-02-26
 
 ### Changed

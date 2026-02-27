@@ -310,10 +310,13 @@ export function ChatPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-100px)] sm:h-[calc(100vh-140px)]">
+      {/* Page header */}
+      <div className="pb-2 shrink-0">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Chat</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Converse with your AI personalities — switch agents, recall memory, or go hands-free with voice</p>
+      </div>
       {/* Tab bar */}
-      <div className="flex items-center border-b border-border shrink-0">
-        <h1 className="text-sm font-bold tracking-tight px-4 py-2.5 shrink-0 text-foreground">Chat</h1>
-        <div className="h-5 w-px bg-border shrink-0 mr-1" />
+      <div className="flex border-b border-border shrink-0">
         <button
           onClick={() => {
             setActiveSection('personality');

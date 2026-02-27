@@ -75,6 +75,7 @@ export function AgentsPage() {
       <div className="space-y-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Agents</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Sub-agent delegation, A2A networking, multimodal tools, and vector memory</p>
         </div>
         <div className="card p-8 text-center">
           <ShieldAlert className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -129,6 +130,7 @@ export function AgentsPage() {
       <div className="space-y-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Agents</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Sub-agent delegation, A2A networking, multimodal tools, and vector memory</p>
         </div>
         {availableSections[0].id === 'multimodal' && <MultimodalPage embedded />}
         {availableSections[0].id === 'web' && <WebPage embedded />}

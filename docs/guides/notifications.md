@@ -50,8 +50,25 @@ heartbeat:
             messageTemplate: "{{check.name}} failed: {{result.message}}"
 ```
 
-The `channel` field routes to an external integration (Slack, Discord, email, Telegram) when
-`integrationManager` supports it. For now, all channels also persist an in-app notification.
+The `channel` field routes to a running integration adapter. `integrationId` (optional) targets
+a specific integration; if omitted, the first running adapter for that platform is used.
+All channels also always persist an in-app notification.
+
+### Optional `integrationId` field
+
+```yaml
+actions:
+  - condition: on_error
+    action: notify
+    config:
+      channel: telegram
+      integrationId: my-telegram-bot   # targets a specific integration
+      recipients:
+        - "-100123456789"
+      messageTemplate: "{{check.name}} failed: {{result.message}}"
+```
+
+When `integrationId` is omitted, all running adapters for the given platform are used.
 
 ---
 
@@ -204,9 +221,69 @@ CREATE TABLE notifications (
 
 ---
 
-## Out of Scope (Phase 51)
+## Per-User Notification Preferences (Phase 55)
 
-- External delivery via Slack, Discord, email, Telegram — stubs logged, wired in follow-up
-- Per-user notification preferences
-- Notification retention/cleanup job
+Each user can configure which external channels they receive alerts on, at what severity, and
+during which hours.
+
+### Dashboard
+
+Navigate to **Settings → Notifications**. Click **Add** to add a channel.
+
+### API
+
+```
+GET    /api/v1/users/me/notification-prefs
+POST   /api/v1/users/me/notification-prefs
+PUT    /api/v1/users/me/notification-prefs/:id
+DELETE /api/v1/users/me/notification-prefs/:id
+```
+
+#### Create a Telegram preference
+
+```json
+POST /api/v1/users/me/notification-prefs
+{
+  "channel": "telegram",
+  "chatId": "-100123456789",
+  "minLevel": "warn",
+  "quietHoursStart": 22,
+  "quietHoursEnd": 8
+}
+```
+
+`quietHoursStart` and `quietHoursEnd` are UTC hours (0–23). When `start > end`, the quiet window
+wraps overnight (e.g. 22→08 means no alerts from 22:00 to 08:00 UTC).
+
+#### Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `channel` | `slack\|telegram\|discord\|email` | Platform |
+| `chatId` | string | Slack channel ID, Telegram chat ID, or email address |
+| `integrationId` | string? | Specific integration to use; null = auto-select first running adapter |
+| `enabled` | boolean | Toggle without deletion |
+| `minLevel` | `info\|warn\|error\|critical` | Minimum severity to dispatch |
+| `quietHoursStart` | 0–23? | UTC hour to start suppressing alerts |
+| `quietHoursEnd` | 0–23? | UTC hour to stop suppressing alerts |
+
+---
+
+## Notification Retention (Phase 55)
+
+Old notifications are automatically deleted on a daily schedule. The retention window is configured
+via:
+
+```yaml
+notifications:
+  retentionDays: 30   # default; delete notifications older than 30 days
+```
+
+The cleanup job fires immediately on startup and repeats every 24 hours. It uses `unref()` so it
+does not prevent graceful shutdown.
+
+---
+
+## Out of Scope
+
 - Mobile push notifications

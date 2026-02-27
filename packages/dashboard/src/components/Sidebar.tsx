@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Shield,
   LayoutDashboard,
   ShieldAlert,
   Brain,
@@ -10,7 +9,6 @@ import {
   Cable,
   Code,
   Users,
-  Settings,
   Code2,
   Sparkles,
   PanelLeftOpen,
@@ -31,11 +29,6 @@ import {
   Target,
   Layers,
   SlidersHorizontal,
-  Building2,
-  Key,
-  UserCircle,
-  Users2,
-  ChevronRight,
 } from 'lucide-react';
 import { useSidebar } from '../hooks/useSidebar';
 import { useTheme } from '../hooks/useTheme';
@@ -73,14 +66,6 @@ const MID_ITEMS: NavItem[] = [
   { to: '/connections', label: 'Connections', icon: <Cable className="w-5 h-5" /> },
 ];
 
-const BASE_ADMIN_ITEMS: NavItem[] = [
-  { to: '/settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
-  { to: '/security-settings', label: 'Security', icon: <Shield className="w-5 h-5" /> },
-  { to: '/api-keys', label: 'Secrets', icon: <Key className="w-5 h-5" /> },
-  { to: '/workspaces', label: 'Workspaces', icon: <Building2 className="w-5 h-5" /> },
-  { to: '/users', label: 'Users', icon: <UserCircle className="w-5 h-5" /> },
-  { to: '/roles', label: 'Roles', icon: <Users2 className="w-5 h-5" /> },
-];
 
 const navLinkClass = (isActive: boolean, collapsed: boolean) =>
   `group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -113,9 +98,6 @@ export function Sidebar({
   const [profileOpen, setProfileOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [newDialogOpen, setNewDialogOpen] = useState(false);
-  const [adminOpen, setAdminOpen] = useState(
-    () => { try { return localStorage.getItem('sy_admin_open') !== 'false'; } catch { return true; } }
-  );
   const profileRef = useRef<HTMLDivElement>(null);
   const role = parseJwtRole();
 
@@ -161,14 +143,13 @@ export function Sidebar({
   const experimentsEnabled = securityPolicy?.allowExperiments ?? false;
   const storybookEnabled = securityPolicy?.allowStorybook ?? false;
 
-  const { topItems, adminItems } = useMemo(() => {
+  const topItems = useMemo(() => {
     const top: NavItem[] = [...BASE_TOP_ITEMS];
     top.push({ to: '/intent', label: 'Intent', icon: <Target className="w-5 h-5" /> });
     if (proactiveEnabled) top.push({ to: '/proactive', label: 'Proactive', icon: <Sparkles className="w-5 h-5" /> });
     if (hasAgents) top.push({ to: '/agents', label: 'Agents', icon: <Users className="w-5 h-5" /> });
-
-    return { topItems: top, adminItems: [...BASE_ADMIN_ITEMS] };
-  }, [hasAgents, extensionsEnabled, proactiveEnabled, experimentsEnabled, storybookEnabled]);
+    return top;
+  }, [hasAgents, proactiveEnabled]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -186,12 +167,6 @@ export function Sidebar({
     };
   }, []);
 
-  useEffect(() => {
-    try { localStorage.setItem('sy_admin_open', String(adminOpen)); } catch {}
-  }, [adminOpen]);
-
-  const groupHeaderClass =
-    'flex items-center gap-3 px-3 py-2 w-full rounded-lg text-xs font-semibold tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200';
 
   const renderNavItem = (item: NavItem) => (
     <NavLink
@@ -245,22 +220,9 @@ export function Sidebar({
           { to: '/developers', label: 'Developers', icon: <Code2 className="w-5 h-5" /> }
         )}
 
-        {/* Administration collapsible group */}
-        {collapsed && <div className="border-t border-border/30 mx-2 my-1" />}
-        <div className={collapsed ? '' : 'space-y-0.5 mt-1'}>
-          {!collapsed && (
-            <button onClick={() => setAdminOpen((v) => !v)} className={groupHeaderClass}>
-              <SlidersHorizontal className="w-5 h-5 flex-shrink-0" />
-              <span className="flex-1 text-left">Administration</span>
-              <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${adminOpen ? 'rotate-90' : ''}`} />
-            </button>
-          )}
-          {(collapsed || adminOpen) && (
-            <div className={!collapsed ? 'ml-3 pl-3 border-l border-border/50 space-y-0.5' : ''}>
-              {adminItems.map(renderNavItem)}
-            </div>
-          )}
-        </div>
+        {/* Administration */}
+        <div className="border-t border-border/30 mx-2 my-1" />
+        {renderNavItem({ to: '/settings', label: 'Administration', icon: <SlidersHorizontal className="w-5 h-5" /> })}
       </nav>
 
       <div className={`${collapsed ? 'px-2 py-2' : 'px-3 py-2'} border-t border-border`}>
