@@ -464,6 +464,7 @@ export class AIClient {
       retryDelayMs: this.primaryModelConfig.retryDelayMs,
       fallbacks: [],
       responseCache: this.primaryModelConfig.responseCache,
+      localFirst: this.primaryModelConfig.localFirst,
     };
 
     const provider = this.createProvider({ model: fullModelConfig, retryConfig: this.retryConfig });

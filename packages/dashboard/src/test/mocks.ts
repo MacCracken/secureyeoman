@@ -255,6 +255,7 @@ export function createModelInfoResponse(overrides?: Partial<ModelInfoResponse>):
       model: 'claude-sonnet-4-20250514',
       maxTokens: 16384,
       temperature: 0.7,
+      localFirst: false,
     },
     available: {
       anthropic: [

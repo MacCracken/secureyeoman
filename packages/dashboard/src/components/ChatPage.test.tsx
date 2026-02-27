@@ -587,7 +587,7 @@ describe('ChatPage', () => {
     qc.setQueryData(
       ['model-info'],
       createModelInfoResponse({
-        current: { provider: 'openai', model: 'gpt-4o', maxTokens: 4096, temperature: 0.7 },
+        current: { provider: 'openai', model: 'gpt-4o', maxTokens: 4096, temperature: 0.7, localFirst: false },
       })
     );
 

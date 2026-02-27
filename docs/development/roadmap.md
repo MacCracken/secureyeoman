@@ -9,7 +9,7 @@
 | Phase | Name | Status |
 |-------|------|--------|
 | XX | Find & Repair (Ongoing) | Ongoing |
-| 64 | AI Training Pipeline (Distillation, LoRA, Model Lifecycle) | Near-Term |
+| 64 | AI Training Pipeline | Complete (2026-02-27) |
 | 65 | Voice & Community | Demand-Gated |
 | 66 | Native Clients | Demand-Gated |
 | 67 | Infrastructure & Platform | Demand-Gated |
@@ -34,70 +34,12 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ---
 
-## Phase 57: Dashboard UX
+## Phase 64: AI Training Pipeline — Future Items
 
-**Status**: Complete (2026-02-27) — See [CHANGELOG.md](../../CHANGELOG.md) for details.
+*Core pipeline complete (2026-02-27). See [CHANGELOG.md](../../CHANGELOG.md).*
 
----
-
-## Phase 58: Security Toolkit Completion
-
-**Status**: Complete (2026-02-26) — See [CHANGELOG.md](../../CHANGELOG.md) for details.
-
----
-
-## Phase 59: Security Hardening
-
-**Status**: Complete (2026-02-26) — See [CHANGELOG.md](../../CHANGELOG.md) for details.
-
----
-
-## Phase 60: Multi-Theme System
-
-**Status**: Complete (2026-02-26) — See [CHANGELOG.md](../../CHANGELOG.md) for details.
-
----
-
-## Phase 61: Enterprise Features
-
-**Status**: Complete (2026-02-26) — See [CHANGELOG.md](../../CHANGELOG.md) for details.
-
----
-
-## Phase 62: Local-First AI + OAuth Improvements
-
-**Status**: Complete (2026-02-27) — See [CHANGELOG.md](../../CHANGELOG.md) for details.
-
----
-
-## Phase 63: Connected Account MCP (Gmail + Twitter/X)
-
-**Status**: Complete (2026-02-27) — See [CHANGELOG.md](../../CHANGELOG.md) for details.
-
----
-
-## Phase 64: AI Training Pipeline
-
-**Status**: Near-Term — builds on the training dataset export foundation from Phase 62.
-
-Local model lifecycle management and a closed-loop train-distill-fine-tune pipeline. Dataset export (Phase 62) is done; the remaining work enables on-device model improvement.
-
-*Prerequisites: GPU-capable host for fine-tuning and training phases. Distillation can run CPU-only.*
-
-### Local Model Lifecycle
-
-- [ ] **Hybrid cloud/local switch** — `localFirst` routing mode: primary request to the configured local provider; on `ProviderUnavailableError` falls back to the first cloud entry in the fallback chain. Toggle in dashboard Settings alongside the model picker.
-- [ ] **Model lifecycle management** — `ollama pull <model>` and `ollama rm <model>` CLI subcommands and MCP tools. `ollama list` already works. The gap is write operations: download, delete, and surfacing disk usage per model in the dashboard.
-- [ ] **Quantization awareness** — Guide for recommended quantizations (Q4_K_M, Q5_K_S, etc.) per hardware tier. Optionally: auto-detect host RAM via `os.totalmem()` at startup and warn if the configured model's estimated VRAM requirement exceeds available memory.
-
-### Model Training & Customisation
-
-Train, fine-tune, and distill models directly from SecureYeoman's own data — conversations, memories, knowledge, and agent interactions. The goal is a closed loop: data lives here, models trained here, served here.
-
-- [ ] **Model distillation** — Use a cloud model (Claude, GPT-4o) as teacher: generate synthetic completions from exported dataset prompts. Distillation jobs run as heartbeat tasks; output is a JSONL corpus ready for fine-tuning.
-- [ ] **LoRA / QLoRA fine-tuning** — Fine-tune a local base model (Llama 3, Mistral, Phi) via a Docker sidecar (Unsloth or HuggingFace PEFT + `accelerate`). SecureYeoman orchestrates job submission, streams training logs to the dashboard, and on completion registers adapter weights with Ollama. Config: base model, LoRA rank/alpha, batch size, epochs, VRAM budget.
-- [ ] **Continual / online learning** — Incremental adapter updates from new interactions without a full retrain. High complexity: replay buffer management, LR scheduling, drift detection. Research-grade; implement once fine-tuning pipeline is stable.
-- [ ] **Training from scratch** — Pre-train on a curated local corpus. Scoped to small models (≤3B params) as lightweight specialists. Depends on dataset export + fine-tuning pipeline being battle-tested.
+- [ ] **Continual / online learning** — Incremental adapter updates from new interactions without a full retrain. Replay buffer management, LR scheduling, drift detection. Research-grade; revisit once fine-tuning pipeline has real-world usage.
+- [ ] **Training from scratch** — Pre-train on a curated local corpus. Scoped to small models (≤3B params) as lightweight specialists. Depends on fine-tuning pipeline being battle-tested.
 
 ---
 
@@ -176,4 +118,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-27 — v2026.2.27b released. Timeline updated: phases 59–63 now marked complete; phases 64–67 renumbered to avoid conflicts with completed work. Phase 64 (AI Training Pipeline) is next near-term target.*
+*Last updated: 2026-02-27 — v2026.2.27e released. Phase 64 (AI Training Pipeline) complete. Phases 65–67 remain demand-gated.*
