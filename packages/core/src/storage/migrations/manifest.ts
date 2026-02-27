@@ -107,4 +107,8 @@ export const MIGRATION_MANIFEST: { id: string; sql: string }[] = [
   { id: '056_user_notification_prefs', sql: readSql('056_user_notification_prefs.sql') },
   { id: '057_backups', sql: readSql('057_backups.sql') },
   { id: '058_multi_tenancy', sql: readSql('058_multi_tenancy.sql') },
+  {
+    id: '059_mcp_gmail_twitter_defaults',
+    sql: readSql('059_mcp_gmail_twitter_defaults.sql'),
+  },
 ];

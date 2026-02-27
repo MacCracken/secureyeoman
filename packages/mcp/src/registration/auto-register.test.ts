@@ -71,6 +71,41 @@ describe('AutoRegistration', () => {
     expect(toolNames).toContain('fs_write');
   });
 
+  it('should include all gmail tools in the manifest', async () => {
+    const client = mockClient();
+    const reg = new AutoRegistration(client, makeConfig());
+
+    await reg.register();
+    const callArgs = (client.post as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    const toolNames = callArgs.tools.map((t: { name: string }) => t.name);
+    expect(toolNames).toContain('gmail_profile');
+    expect(toolNames).toContain('gmail_list_messages');
+    expect(toolNames).toContain('gmail_read_message');
+    expect(toolNames).toContain('gmail_read_thread');
+    expect(toolNames).toContain('gmail_list_labels');
+    expect(toolNames).toContain('gmail_compose_draft');
+    expect(toolNames).toContain('gmail_send_email');
+  });
+
+  it('should include all twitter tools in the manifest', async () => {
+    const client = mockClient();
+    const reg = new AutoRegistration(client, makeConfig());
+
+    await reg.register();
+    const callArgs = (client.post as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    const toolNames = callArgs.tools.map((t: { name: string }) => t.name);
+    expect(toolNames).toContain('twitter_profile');
+    expect(toolNames).toContain('twitter_search');
+    expect(toolNames).toContain('twitter_get_tweet');
+    expect(toolNames).toContain('twitter_get_user');
+    expect(toolNames).toContain('twitter_get_mentions');
+    expect(toolNames).toContain('twitter_get_timeline');
+    expect(toolNames).toContain('twitter_post_tweet');
+    expect(toolNames).toContain('twitter_like_tweet');
+    expect(toolNames).toContain('twitter_retweet');
+    expect(toolNames).toContain('twitter_unretweet');
+  });
+
   it('should skip registration when autoRegister=false', async () => {
     const client = mockClient();
     const reg = new AutoRegistration(client, makeConfig({ autoRegister: false }));

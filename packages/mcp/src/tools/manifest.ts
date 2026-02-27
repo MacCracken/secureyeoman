@@ -421,5 +421,26 @@ export function getToolManifest(): ToolManifestEntry[] {
       description:
         'Read the current value of a named signal from the active organizational intent document',
     },
+
+    // Gmail tools (Phase 63)
+    { name: 'gmail_profile', description: 'Get connected Gmail account email, mode, message and thread counts' },
+    { name: 'gmail_list_messages', description: 'List Gmail messages with Gmail search syntax (is:unread, from:alice@...)' },
+    { name: 'gmail_read_message', description: 'Read full Gmail message content by ID (headers + body + labels)' },
+    { name: 'gmail_read_thread', description: 'Read all messages in a Gmail thread (full conversation chain)' },
+    { name: 'gmail_list_labels', description: 'List all Gmail labels including system labels (INBOX, SENT, TRASH)' },
+    { name: 'gmail_compose_draft', description: 'Create a Gmail draft (not sent — requires human review)' },
+    { name: 'gmail_send_email', description: 'Send email immediately via Gmail (auto mode only)' },
+
+    // Twitter / X tools (Phase 63)
+    { name: 'twitter_profile', description: 'Get authenticated Twitter / X account profile' },
+    { name: 'twitter_search', description: 'Search recent tweets (supports Twitter search operators)' },
+    { name: 'twitter_get_tweet', description: 'Get a single tweet by ID' },
+    { name: 'twitter_get_user', description: 'Look up a Twitter / X user by username' },
+    { name: 'twitter_get_mentions', description: 'Get mentions of the authenticated Twitter / X account' },
+    { name: 'twitter_get_timeline', description: 'Get the authenticated Twitter / X account home timeline' },
+    { name: 'twitter_post_tweet', description: 'Post a tweet (or preview in draft mode without posting)' },
+    { name: 'twitter_like_tweet', description: 'Like a tweet (auto mode only)' },
+    { name: 'twitter_retweet', description: 'Retweet a tweet (auto mode only)' },
+    { name: 'twitter_unretweet', description: 'Undo a retweet (auto mode only)' },
   ];
 }

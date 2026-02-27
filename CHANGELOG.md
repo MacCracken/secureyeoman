@@ -15,6 +15,8 @@
 
 - **Security policy not saved across restarts** — `loadSecurityPolicyFromDb()` in `secureyeoman.ts` maintained an explicit `policyKeys` allowlist used to filter which DB rows are applied to `config.security` at startup. `allowCodeEditor`, `allowAdvancedEditor`, and `allowTrainingExport` were missing from this list, so toggling them in the dashboard was saved to the DB but silently ignored on the next restart. All three keys now included.
 - **Training Download button style** — Changed from `btn-primary` to `btn-ghost` in `TrainingTab.tsx` to match the visual style of other secondary-action buttons in the Developer page.
+- **Gmail/Twitter tools missing from YEOMAN MCP manifest** — `packages/mcp/src/tools/manifest.ts` did not include the 17 new `gmail_*` / `twitter_*` tools. Because `AutoRegistration` uses this manifest to register tools with `mcpClient.discoveredTools` at boot, the tools were never present in `getAllTools()`. This meant the filter in `GET /api/v1/mcp/tools` had nothing to filter, and the tool count badge in Connections → MCP → YEOMAN MCP never changed when toggling Gmail or Twitter. All 17 tools added to the manifest; 2 new manifest tests added to `auto-register.test.ts`.
+- **Gmail/Twitter default to off on fresh install** — Migration `059_mcp_gmail_twitter_defaults.sql` inserts `exposeGmail = false` and `exposeTwitter = false` into `mcp.config` with `ON CONFLICT DO NOTHING`. Fresh installs and upgrades that have never had these rows will start with both features disabled; existing deployments where a user explicitly enabled them are unaffected.
 
 ---
 
