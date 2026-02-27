@@ -1,10 +1,15 @@
 /**
  * Init Command — Interactive onboarding for SecureYeoman.
  *
- * Prompts for agent name, personality traits, AI provider, model, database
- * backend, and gateway port.  Generates security keys and writes a .env file
- * and a secureyeoman.yaml config file.  Zero external dependencies — uses
- * Node.js readline for prompts.
+ * Follows the same 5-step flow as the dashboard OnboardingWizard:
+ *   1. Personality  — agent name, description, style traits
+ *   2. API Keys     — create a dashboard API key (skippable)
+ *   3. Security     — 5 key policy toggles (skippable)
+ *   4. Model        — AI provider, model name, provider API key
+ *   5. Done         — gateway port, database, security key generation
+ *
+ * Generates a .env file and a secureyeoman.yaml config file.
+ * Zero external dependencies — uses Node.js readline for prompts.
  */
 
 import { createInterface } from 'node:readline';
@@ -57,11 +62,17 @@ export const initCommand: Command = {
 Usage: ${this.usage}
 
 Set up a new SecureYeoman instance interactively.
+Mirrors the 5-step dashboard wizard:
+  1. Personality — agent name & style
+  2. API Keys    — dashboard API key (skippable)
+  3. Security    — capability toggles (skippable)
+  4. Model       — AI provider & model
+  5. Done        — port, database, security keys
 
 Options:
       --url <url>         Server URL for API calls (default: http://127.0.0.1:3000)
       --non-interactive   Use all defaults without prompting
-      --env-only          Only generate .env file (skip personality setup and YAML)
+      --env-only          Only generate .env file (skip personality/policy steps)
   -h, --help              Show this help
 \n`);
       return 0;
@@ -81,6 +92,21 @@ Options:
   ╚════════════════════════════════════════════════╝
 \n`);
 
+    // Check server reachability upfront so we can tailor step prompts
+    let serverReachable = false;
+    try {
+      const healthResult = await apiCall(baseUrl, '/health');
+      serverReachable = healthResult.ok;
+    } catch {
+      // not running — fall through to config-file path
+    }
+
+    if (serverReachable) {
+      ctx.stdout.write(`  Server detected at ${baseUrl}\n`);
+    } else {
+      ctx.stdout.write(`  Server not running — will write config files instead.\n`);
+    }
+
     // ── Defaults ─────────────────────────────────────────────────────────────
 
     let agentName = 'FRIDAY';
@@ -98,29 +124,41 @@ Options:
     let generateKeys = true;
     let writeEnvFile = true;
 
+    // Security policy defaults (Step 3)
+    let allowCodeEditor = true;
+    let allowAdvancedEditor = false;
+    let allowIntentEditor = true;
+    let allowFileSystemAccess = false;
+    let allowNetworkAccess = false;
+    let securityPolicyChanged = false;
+
     if (!nonInteractive.value) {
       const rl = createInterface({
         input: process.stdin,
         output: process.stdout,
       });
 
-      const totalSteps = envOnly.value ? 5 : 8;
+      const WIZARD_STEPS = envOnly.value ? 2 : 5;
       const step = (n: number, label: string) => {
-        ctx.stdout.write(`\n  [${String(n)}/${String(totalSteps)}] ${label}\n`);
+        ctx.stdout.write(`\n  [${String(n)}/${String(WIZARD_STEPS)}] ${label}\n`);
+      };
+
+      // Helper: y/n toggle prompt
+      const readToggle = async (label: string, current: boolean): Promise<boolean> => {
+        const defaultVal = current ? 'y' : 'n';
+        const ans = await prompt(rl, `  ${label} [${defaultVal}]`, defaultVal);
+        const lower = ans.trim().toLowerCase();
+        return lower === '' ? current : lower === 'y' || lower === 'yes' || lower === '1';
       };
 
       try {
-        // ── Step 1: Agent name ────────────────────────────────────────────────
-        step(1, 'Agent identity');
-        const nameInput = await prompt(rl, '  Agent name', 'FRIDAY');
-        agentName = nameInput.slice(0, 50);
-
         if (!envOnly.value) {
-          // ── Step 2–4: Personality ─────────────────────────────────────────
-          step(2, 'Personality — description');
+          // ── Step 1: Personality — Meet your agent ───────────────────────────
+          step(1, 'Personality — Meet your agent');
+          const nameInput = await prompt(rl, '  Agent name', 'FRIDAY');
+          agentName = nameInput.slice(0, 50);
           description = await prompt(rl, '  Description', description);
 
-          step(3, 'Personality — style');
           const formalityChoices = ['casual', 'balanced', 'formal'];
           formality = (await promptChoice(
             rl,
@@ -139,29 +177,98 @@ Options:
             verbosityChoices,
             1
           )) as typeof verbosity;
-        }
 
-        // ── Step (env-only:2, full:5): AI Provider ────────────────────────────
-        step(envOnly.value ? 2 : 5, 'AI provider & model');
-        provider = (await promptChoice(rl, '  AI provider?', [...PROVIDERS], 0)) as Provider;
+          // ── Step 2: API Keys — Connect AI providers ─────────────────────────
+          step(2, 'API Keys — Connect AI providers');
+          if (serverReachable) {
+            ctx.stdout.write('  The server is running. You can create a dashboard API key now.\n');
+            const createDashKey = await prompt(
+              rl,
+              '  Create a dashboard API key? (y/n/skip)',
+              'n'
+            );
+            if (createDashKey.toLowerCase() === 'y') {
+              const keyName = await prompt(rl, '  Key name', `${agentName}-cli`);
+              try {
+                const result = await apiCall(baseUrl, '/api/v1/auth/api-keys', {
+                  method: 'POST',
+                  body: { name: keyName },
+                });
+                if (result.ok && (result as { ok: boolean; data?: { key?: string } }).data?.key) {
+                  ctx.stdout.write(
+                    `\n  Dashboard API key created (save this — shown once):\n`
+                  );
+                  ctx.stdout.write(
+                    `    ${String((result as { ok: boolean; data?: { key?: string } }).data?.key)}\n`
+                  );
+                }
+              } catch {
+                ctx.stdout.write('  (Could not create dashboard API key — skipping)\n');
+              }
+            } else {
+              ctx.stdout.write('  Skipping dashboard API key creation.\n');
+            }
+          } else {
+            ctx.stdout.write(
+              '  Provider API keys will be prompted in the Model step (Step 4).\n'
+            );
+            ctx.stdout.write('  Press Enter to continue or type "skip" to skip this step.\n');
+            await prompt(rl, '  [Enter to continue]', '');
+          }
 
-        const pDef = PROVIDER_DEFAULTS[provider];
+          // ── Step 3: Security — Security policy ─────────────────────────────
+          step(3, 'Security — Security policy');
+          ctx.stdout.write(
+            '  Configure which capabilities your agent is allowed to use.\n'
+          );
+          ctx.stdout.write('  Press Enter to keep each default (y = allow, n = deny).\n\n');
 
-        const modelInput = await prompt(rl, '  Model name', pDef.model);
-        modelName = modelInput || pDef.model;
+          const prev = {
+            allowCodeEditor,
+            allowAdvancedEditor,
+            allowIntentEditor,
+            allowFileSystemAccess,
+            allowNetworkAccess,
+          };
 
-        // ── Step (env-only:3, full:6): API key / base URL ─────────────────────
-        if (pDef.needsBaseUrl || pDef.apiKeyEnv) {
-          step(envOnly.value ? 3 : 6, 'Authentication');
-          if (pDef.needsBaseUrl) {
-            ollamaBaseUrl = await prompt(rl, '  Ollama base URL', ollamaBaseUrl);
-          } else if (pDef.apiKeyEnv) {
-            apiKey = await prompt(rl, `  ${pDef.apiKeyEnv} (leave blank to skip)`, '');
+          allowCodeEditor = await readToggle('Allow Code Editor?', allowCodeEditor);
+          allowAdvancedEditor = await readToggle('Allow Advanced Editor?', allowAdvancedEditor);
+          allowIntentEditor = await readToggle('Allow Intent Editor?', allowIntentEditor);
+          allowFileSystemAccess = await readToggle(
+            'Allow File System Access?',
+            allowFileSystemAccess
+          );
+          allowNetworkAccess = await readToggle('Allow Network Tools?', allowNetworkAccess);
+
+          securityPolicyChanged =
+            allowCodeEditor !== prev.allowCodeEditor ||
+            allowAdvancedEditor !== prev.allowAdvancedEditor ||
+            allowIntentEditor !== prev.allowIntentEditor ||
+            allowFileSystemAccess !== prev.allowFileSystemAccess ||
+            allowNetworkAccess !== prev.allowNetworkAccess;
+
+          const applyPolicy = await prompt(rl, '  Apply these settings? (y/skip)', 'y');
+          if (applyPolicy.toLowerCase() === 'skip') {
+            securityPolicyChanged = false;
           }
         }
 
-        // ── Step (env-only:4, full:7): Gateway port & database ───────────────
-        step(envOnly.value ? 4 : 7, 'Server & database');
+        // ── Step 4 (full) / Step 1 (env-only): Model — Default model ─────────
+        step(envOnly.value ? 1 : 4, 'Model — Default model');
+        provider = (await promptChoice(rl, '  AI provider?', [...PROVIDERS], 0)) as Provider;
+
+        const pDef = PROVIDER_DEFAULTS[provider];
+        const modelInput = await prompt(rl, '  Model name', pDef.model);
+        modelName = modelInput || pDef.model;
+
+        if (pDef.needsBaseUrl) {
+          ollamaBaseUrl = await prompt(rl, '  Ollama base URL', ollamaBaseUrl);
+        } else if (pDef.apiKeyEnv) {
+          apiKey = await prompt(rl, `  ${pDef.apiKeyEnv} (leave blank to skip)`, '');
+        }
+
+        // ── Step 5 (full) / Step 2 (env-only): Infrastructure & keys ─────────
+        step(envOnly.value ? 2 : 5, 'Done — Server & security keys');
         const portInput = await prompt(rl, '  Gateway port', '3000');
         gatewayPort = Math.max(1024, Math.min(65535, parseInt(portInput, 10) || 3000));
 
@@ -178,8 +285,6 @@ Options:
           );
         }
 
-        // ── Step (env-only:5, full:8): Security keys ──────────────────────────
-        step(envOnly.value ? 5 : 8, 'Security keys');
         const keysAnswer = await prompt(rl, '  Generate security keys? (y/n)', 'y');
         generateKeys = keysAnswer.toLowerCase() !== 'n';
 
@@ -192,7 +297,26 @@ Options:
       }
     }
 
-    // ── Generate keys ─────────────────────────────────────────────────────────
+    // ── Apply security policy via API (if server running & policy changed) ────
+
+    if (serverReachable && securityPolicyChanged) {
+      try {
+        await apiCall(baseUrl, '/api/v1/security/policy', {
+          method: 'PATCH',
+          body: {
+            allowCodeEditor,
+            allowAdvancedEditor,
+            allowIntentEditor,
+            allowNetworkTools: allowNetworkAccess,
+          },
+        });
+        ctx.stdout.write('\n  Security policy updated via API.\n');
+      } catch {
+        ctx.stdout.write('\n  (Could not update security policy — config defaults will apply)\n');
+      }
+    }
+
+    // ── Generate security keys ────────────────────────────────────────────────
 
     const keys: Record<string, string> = {};
     if (generateKeys) {
@@ -226,7 +350,6 @@ Options:
         }
       }
 
-      // Merge: security keys + optional API key + optional DATABASE_URL
       const envAdditions: Record<string, string> = { ...keys };
 
       const pDef = PROVIDER_DEFAULTS[provider];
@@ -247,22 +370,19 @@ Options:
       ctx.stdout.write(`\n  .env file written to ${envPath}\n`);
     }
 
-    // ── Try to call the onboarding API if the server is running ──────────────
+    // ── Complete onboarding via API or write config file ──────────────────────
 
     if (!envOnly.value) {
-      try {
-        const healthResult = await apiCall(baseUrl, '/health');
-        if (healthResult.ok) {
-          const personalityData = {
-            agentName,
-            name: `${agentName} Default`,
-            description,
-            traits: { formality, humor, verbosity },
-          };
-
+      if (serverReachable) {
+        try {
           const result = await apiCall(baseUrl, '/api/v1/soul/onboarding/complete', {
             method: 'POST',
-            body: personalityData,
+            body: {
+              agentName,
+              name: `${agentName} Default`,
+              description,
+              traits: { formality, humor, verbosity },
+            },
           });
 
           if (result.ok) {
@@ -271,13 +391,12 @@ Options:
             printNextSteps(ctx);
             return 0;
           }
+        } catch {
+          // fall through to config file
         }
-      } catch {
-        // Server not running — fall through to config file
       }
 
-      // ── Write secureyeoman.yaml ───────────────────────────────────────────
-
+      // Write secureyeoman.yaml when server is not available
       const pDef = PROVIDER_DEFAULTS[provider];
       const yamlLines = [
         '# SecureYeoman Configuration — generated by `secureyeoman init`',
@@ -308,6 +427,13 @@ Options:
         `      formality: "${formality}"`,
         `      humor: "${humor}"`,
         `      verbosity: "${verbosity}"`,
+        '',
+        'security:',
+        `  allowCodeEditor: ${String(allowCodeEditor)}`,
+        `  allowAdvancedEditor: ${String(allowAdvancedEditor)}`,
+        `  allowIntentEditor: ${String(allowIntentEditor)}`,
+        `  allowFileSystemAccess: ${String(allowFileSystemAccess)}`,
+        `  allowNetworkTools: ${String(allowNetworkAccess)}`,
         '',
       ];
 

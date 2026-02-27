@@ -20,6 +20,8 @@ function createMockSecureYeoman(overrides?: Record<string, unknown>) {
         allowDesktopControl: false,
         allowCamera: false,
         allowAnomalyDetection: false,
+        allowCodeEditor: true,
+        allowAdvancedEditor: false,
       },
     }),
     getMetrics: () => Promise.resolve({ cpu: 10, mem: 50 }),
@@ -354,6 +356,8 @@ describe('GatewayServer', () => {
               allowDesktopControl: false,
               allowCamera: false,
               allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
             },
           }),
         }) as any,
@@ -429,6 +433,25 @@ describe('GatewayServer', () => {
         body: JSON.stringify({ allowSubAgents: true }),
       });
       expect(res.status).toBe(200);
+    });
+
+    it('GET /api/v1/security/policy returns allowCodeEditor and allowAdvancedEditor', async () => {
+      const res = await fetch(`${apiBase}/api/v1/security/policy`);
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json).toHaveProperty('allowCodeEditor', true);
+      expect(json).toHaveProperty('allowAdvancedEditor', false);
+    });
+
+    it('PATCH /api/v1/security/policy with allowCodeEditor returns 200', async () => {
+      const res = await fetch(`${apiBase}/api/v1/security/policy`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ allowCodeEditor: false }),
+      });
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json).toHaveProperty('allowCodeEditor');
     });
 
     it('PATCH /api/v1/security/policy with empty body returns 400', async () => {
@@ -684,6 +707,8 @@ describe('GatewayServer', () => {
               allowDesktopControl: false,
               allowCamera: false,
               allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
             },
           }),
         }) as any,
@@ -795,6 +820,8 @@ describe('GatewayServer', () => {
               allowDesktopControl: false,
               allowCamera: false,
               allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
             },
           }),
         }) as any,
@@ -910,6 +937,52 @@ describe('GatewayServer', () => {
       } finally {
         await srv.stop();
       }
+    });
+  });
+
+  describe('X-Correlation-ID header', () => {
+    let corrPort: number;
+    let corrServer: GatewayServer;
+
+    beforeAll(async () => {
+      corrPort = 19700 + Math.floor(Math.random() * 50);
+      corrServer = new GatewayServer({
+        config: createMinimalConfig({ port: corrPort }) as any,
+        secureYeoman: createMockSecureYeoman() as any,
+      });
+      await corrServer.start();
+    });
+
+    afterAll(async () => {
+      await corrServer.stop();
+    });
+
+    it('response includes X-Correlation-ID header when none provided', async () => {
+      const res = await fetch(`http://127.0.0.1:${corrPort}/health`);
+      const id = res.headers.get('x-correlation-id');
+      expect(id).toBeTruthy();
+      expect(typeof id).toBe('string');
+      expect((id as string).length).toBeGreaterThan(0);
+    });
+
+    it('response echoes a provided X-Correlation-ID header', async () => {
+      const provided = 'my-test-correlation-id';
+      const res = await fetch(`http://127.0.0.1:${corrPort}/health`, {
+        headers: { 'X-Correlation-ID': provided },
+      });
+      expect(res.headers.get('x-correlation-id')).toBe(provided);
+    });
+
+    it('two concurrent requests get independent IDs', async () => {
+      const [res1, res2] = await Promise.all([
+        fetch(`http://127.0.0.1:${corrPort}/health`),
+        fetch(`http://127.0.0.1:${corrPort}/health`),
+      ]);
+      const id1 = res1.headers.get('x-correlation-id');
+      const id2 = res2.headers.get('x-correlation-id');
+      expect(id1).toBeTruthy();
+      expect(id2).toBeTruthy();
+      expect(id1).not.toBe(id2);
     });
   });
 });

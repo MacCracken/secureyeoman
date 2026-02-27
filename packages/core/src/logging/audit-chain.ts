@@ -12,6 +12,7 @@
 import { sha256, hmacSha256, secureCompare, uuidv7 } from '../utils/crypto.js';
 import { AuditEntrySchema, type AuditEntry } from '@secureyeoman/shared';
 import { getLogger, type SecureLogger } from './logger.js';
+import { getCorrelationId } from '../utils/correlation-context.js';
 
 const GENESIS_HASH = '0'.repeat(64); // Genesis block previous hash
 const CHAIN_VERSION = '1.0.0';
@@ -264,9 +265,12 @@ export class AuditChain {
       await this.initialize();
     }
 
+    // Auto-enrich correlationId from AsyncLocalStorage if caller did not supply one
+    const correlationId = params.correlationId ?? getCorrelationId();
+
     const entry: AuditEntry = {
       id: uuidv7(),
-      correlationId: params.correlationId,
+      correlationId,
       event: params.event,
       level: params.level,
       message: params.message,

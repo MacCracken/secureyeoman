@@ -46,11 +46,11 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 **Status**: In Progress — Advanced Editor Mode shipped (2026-02-26); two items remain.
 
-Deferred visual polish and power-user tooling from Phase 53. CSS variable theming infrastructure is already in place; both items can be implemented independently.
+Deferred visual polish and power-user tooling from Phase 53. Theme Presets shipped (2026-02-26). Remaining: Intent creation form + multi-theme manual test.
 
 - [ ] **Intent creation form** — The "New → Intent" entry in the sidebar dialog currently navigates directly to the Intent Editor. Convert it to a guided creation form in the dialog: structured fields matching the intent schema (name, description, hard boundaries, policies, signal conditions) instead of raw JSON entry. Include an **Import JSON** button as an escape hatch for power users who already have an intent document. Form pre-fills the Intent Editor on submit; JSON import parses and validates against the intent schema before navigating.
 - [x] **Switchable Theme Presets** — 18 named themes (dark + light + enterprise) with `data-theme` CSS variable overrides, `useTheme` hook (`ThemeId`, `isDark`, `setTheme`), floating theme picker in Sidebar, Appearance tab in Settings. *(Phase 60, 2026-02-26)*
-- [ ] **Manual test: Multi-Theme System** — End-to-end verification of Phase 60. Steps: (1) Open Sidebar → profile → Theme → select Tokyo Night → confirm navbar/card/primary colors update immediately; (2) Reload page → theme persists from localStorage; (3) Select "System" → match OS preference (light/dark); (4) Settings → Appearance → verify all 19 theme cards render with correct swatches; (5) Open Monaco editor (Editor page) → confirm `vs-dark`/`vs` follows `isDark`; (6) Send a chat message with a code block → confirm syntax highlighting style follows theme; (7) Toggle between a dark and light named theme → confirm Tailwind `dark:` variants (dark sidebar, dark cards) apply correctly.
+- [x] **Manual test: Multi-Theme System** — End-to-end verification of Phase 60. Steps: (1) Open Sidebar → profile → Theme → select Tokyo Night → confirm navbar/card/primary colors update immediately; (2) Reload page → theme persists from localStorage; (3) Select "System" → match OS preference (light/dark); (4) Settings → Appearance → verify all 19 theme cards render with correct swatches; (5) Open Monaco editor (Editor page) → confirm `vs-dark`/`vs` follows `isDark`; (6) Send a chat message with a code block → confirm syntax highlighting style follows theme; (7) Toggle between a dark and light named theme → confirm Tailwind `dark:` variants (dark sidebar, dark cards) apply correctly.
 
 ---
 
@@ -172,4 +172,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-26 — Phase 57 in progress (Advanced Editor Mode shipped; Intent form + Theme Presets open). Active queue: Phase 57 (Dashboard UX) → Phase 58 (Security Toolkit) → Phase 59 (Local-First AI). Phases 60–62 remain demand-gated.*
+*Last updated: 2026-02-26 — Phase 57 in progress (Advanced Editor Mode + Theme Presets shipped; Intent creation form open). Phase 58 (Security Toolkit) complete. Enterprise features complete (audit log export, backup DR, SAML 2.0, multi-tenancy). Consumer UX + Accessibility + Correlation IDs shipped (ADR 145): 5-step onboarding wizard, jsx-a11y lint, vitest-axe smoke tests, AsyncLocalStorage correlation ID threading. Active queue: Phase 59 (Local-First AI). Phases 60–62 remain demand-gated.*

@@ -2316,6 +2316,8 @@ export class SecureYeoman {
     allowTwingate?: boolean;
     allowOrgIntent?: boolean;
     allowIntentEditor?: boolean;
+    allowCodeEditor?: boolean;
+    allowAdvancedEditor?: boolean;
   }): void {
     this.ensureInitialized();
 
@@ -2409,6 +2411,12 @@ export class SecureYeoman {
     }
     if (updates.allowIntentEditor !== undefined) {
       this.config!.security.allowIntentEditor = updates.allowIntentEditor;
+    }
+    if (updates.allowCodeEditor !== undefined) {
+      this.config!.security.allowCodeEditor = updates.allowCodeEditor;
+    }
+    if (updates.allowAdvancedEditor !== undefined) {
+      this.config!.security.allowAdvancedEditor = updates.allowAdvancedEditor;
     }
 
     this.logger?.info('Security policy updated', updates);

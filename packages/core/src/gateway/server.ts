@@ -41,6 +41,7 @@ import { OutboundWebhookDispatcher } from '../integrations/outbound-webhook-disp
 import { registerChatRoutes } from '../ai/chat-routes.js';
 import { registerModelRoutes } from '../ai/model-routes.js';
 import { uuidv7, sha256 } from '../utils/crypto.js';
+import { runWithCorrelationId } from '../utils/correlation-context.js';
 import { Task, TaskType, TaskStatus } from '@secureyeoman/shared';
 import { registerMcpRoutes } from '../mcp/mcp-routes.js';
 import { McpCredentialManager } from '../mcp/credential-manager.js';
@@ -236,6 +237,15 @@ export class GatewayServer {
           message: 'Dashboard is only accessible from local network',
         });
       }
+    });
+
+    // Correlation ID — attach a UUIDv7 to every request and thread it via AsyncLocalStorage
+    this.app.decorateRequest('correlationId', '');
+    this.app.addHook('onRequest', function (req, reply, done) {
+      const id = (req.headers['x-correlation-id'] as string) || uuidv7();
+      (req as any).correlationId = id;
+      reply.header('X-Correlation-ID', id);
+      runWithCorrelationId(id, done);
     });
 
     // Security headers
@@ -1498,6 +1508,8 @@ export class GatewayServer {
         allowTwingate: config.security.allowTwingate,
         allowOrgIntent: config.security.allowOrgIntent,
         allowIntentEditor: config.security.allowIntentEditor,
+        allowCodeEditor: config.security.allowCodeEditor,
+        allowAdvancedEditor: config.security.allowAdvancedEditor,
       };
     });
 
@@ -1532,6 +1544,8 @@ export class GatewayServer {
             allowTwingate?: boolean;
             allowOrgIntent?: boolean;
             allowIntentEditor?: boolean;
+            allowCodeEditor?: boolean;
+            allowAdvancedEditor?: boolean;
           };
         }>,
         reply: FastifyReply
@@ -1563,6 +1577,8 @@ export class GatewayServer {
             allowTwingate,
             allowOrgIntent,
             allowIntentEditor,
+            allowCodeEditor,
+            allowAdvancedEditor,
           } = request.body;
           if (
             allowSubAgents === undefined &&
@@ -1589,7 +1605,9 @@ export class GatewayServer {
             allowNetBoxWrite === undefined &&
             allowTwingate === undefined &&
             allowOrgIntent === undefined &&
-            allowIntentEditor === undefined
+            allowIntentEditor === undefined &&
+            allowCodeEditor === undefined &&
+            allowAdvancedEditor === undefined
           ) {
             return sendError(reply, 400, 'No valid fields provided');
           }
@@ -1619,6 +1637,8 @@ export class GatewayServer {
             allowTwingate,
             allowOrgIntent,
             allowIntentEditor,
+            allowCodeEditor,
+            allowAdvancedEditor,
           });
 
           // Audit the policy change
@@ -1663,6 +1683,8 @@ export class GatewayServer {
             allowTwingate: config.security.allowTwingate,
             allowOrgIntent: config.security.allowOrgIntent,
             allowIntentEditor: config.security.allowIntentEditor,
+            allowCodeEditor: config.security.allowCodeEditor,
+            allowAdvancedEditor: config.security.allowAdvancedEditor,
           };
         } catch (err) {
           this.getLogger().error('Failed to update security policy', {

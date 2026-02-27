@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { AuditChain, InMemoryAuditStorage } from './audit-chain.js';
+import { runWithCorrelationId } from '../utils/correlation-context.js';
+import { uuidv7 } from '../utils/crypto.js';
 
 const SIGNING_KEY = 'a'.repeat(64); // 64 chars, well above 32 minimum
 
@@ -722,5 +724,30 @@ describe('AuditChain additional branches', () => {
     const result = await chain.verify();
     expect(result.valid).toBe(false);
     expect(result.error).toBe('Unknown error');
+  });
+});
+
+describe('AuditChain — correlation ID auto-enrichment', () => {
+  it('entry recorded inside runWithCorrelationId scope has correlationId set', async () => {
+    const storage = new InMemoryAuditStorage();
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    await chain.initialize();
+
+    const testId = uuidv7(); // must be a valid UUID to pass AuditEntrySchema
+    let entry: Awaited<ReturnType<typeof chain.record>> | undefined;
+    await runWithCorrelationId(testId, async () => {
+      entry = await chain.record({ event: 'test', level: 'info', message: 'hello' });
+    });
+
+    expect(entry?.correlationId).toBe(testId);
+  });
+
+  it('entry recorded outside ALS scope has no correlationId in entry', async () => {
+    const storage = new InMemoryAuditStorage();
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    await chain.initialize();
+
+    const entry = await chain.record({ event: 'test', level: 'info', message: 'outside' });
+    expect(entry.correlationId).toBeUndefined();
   });
 });

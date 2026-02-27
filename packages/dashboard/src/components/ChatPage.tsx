@@ -1003,7 +1003,7 @@ export function ChatPage() {
                 <button
                   onClick={doSend}
                   disabled={!input.trim() || isPending}
-                  className="btn-primary px-4 py-3 rounded-lg disabled:opacity-50 h-[52px]"
+                  className="btn btn-ghost px-3 py-3 rounded-lg disabled:opacity-50 h-[52px]"
                   title={editingMsgIdx !== null ? 'Update and resend' : 'Send message'}
                 >
                   {isPending ? (

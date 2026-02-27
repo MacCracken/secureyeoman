@@ -1,3 +1,56 @@
+## [2026.2.27c] — CLI Init Wizard Alignment
+
+### Changed
+
+- **`secureyeoman init` 5-step flow** — Interactive onboarding wizard restructured to mirror the dashboard `OnboardingWizard` step sequence: **Personality** (name, description, formality/humor/verbosity) → **API Keys** (create a dashboard API key if server is reachable, skippable) → **Security** (5 policy toggles — `allowCodeEditor`, `allowAdvancedEditor`, `allowIntentEditor`, `allowFileSystemAccess`, `allowNetworkAccess` — calls `PATCH /api/v1/security/policy` when dirty and server is reachable; skippable) → **Model** (provider picker + model name + provider API key) → **Done** (gateway port, database backend, security key generation). `--env-only` runs a shorter 2-step flow (Model → Infrastructure). `--non-interactive` uses all defaults unchanged.
+
+---
+
+## [2026.2.27b] — Editor UX Refinements
+
+### Changed
+
+- **Standard Editor — send button** — chat send button changed from `btn-primary` to `btn btn-ghost`, matching the Advanced Editor and Chat page styles.
+- **Standard Editor — Watch toggle** — when the active personality has `vision` capability, a Watch toggle button appears in the chat input bar. When on, the full terminal history is included as `editorContent` context in every chat message. Toggle uses `btn-primary` when active, `btn-ghost` when off.
+- **Standard Editor — no duplicate filename** — the standalone editable filename `<input>` in the Monaco editor toolbar removed; the tab label is the sole filename reference. The language badge remains.
+- **Standard Editor — read-only working directory** — the editable `cwd` text inputs in the Files panel and terminal bar replaced with plain read-only `<span>` elements. The working directory still updates dynamically from terminal command results (`result.cwd`); users just can't hand-edit it.
+- **Chat page send button** — also changed to `btn btn-ghost` (from previous session).
+- **`useChatStream`** — `editorContent?: string` added to `UseChatStreamOptions`; injected into stream body via `latestOptions` ref so it stays current without stale closures.
+
+---
+
+## [2026.2.27a] — Advanced Editor: Workspace Intelligence
+
+### Added
+
+- **Inline chat panel** — Personality chat embedded directly in the Workspace below the terminal. Terminal output is automatically shared with the personality as context when Watch is enabled. Messages use `editorContent` for terminal context and `saveAsMemory` to persist notable exchanges.
+- **Memory toggle** — Toolbar pill that enables/disables saving terminal commands and outputs as episodic memories (persisted to localStorage across sessions). When on, each completed command is written to the brain via `addMemory` and scoped to the active personality.
+- **Watch toggle** — Personality-gated (vision capability required) toolbar toggle. When on, the personality can see current terminal output in every chat message. A small eye indicator appears in the chat header when Watch is active. Gates on `personality.body.capabilities.includes('vision')`.
+- **Model selector** — Toolbar button shows the active model name; opens `ModelWidget` popup for inline model switching. Auto-switches to the personality's `defaultModel` when the personality selection changes.
+- **Default personality pre-selection** — The personality dropdown pre-selects the `isDefault` personality on first load; falls back to alphabetical first. Selection persisted to `localStorage` (`soul:editorPersonalityId`).
+
+### Changed
+
+- **Advanced Editor — terminal-first layout** — Monaco editor removed entirely. `MultiTerminal` dominates the right column (`flex-[3]`); inline chat below (`flex-[2]`). Narrow 224 px sidebar: Sessions + Task panels only (memory not displayed in sidebar — memories are available to the personality but not shown in the view). `caret-primary` cursor in all inputs.
+- **Security policy toggles (Code Editor / Advanced Editor)** fixed — `allowCodeEditor` and `allowAdvancedEditor` were missing from the `GET /api/v1/security/policy` response, PATCH body type, `updateSecurityPolicy()`, and the PATCH return. Toggling either flag in Settings → Security now persists correctly.
+- Task running count badge now renders as "N running" (was bare number).
+
+---
+
+## [2026.2.26t] — Consumer UX, Accessibility, and Correlation IDs
+
+### Added
+
+- **Onboarding Wizard Rework** — 4-step wizard replaced with a 5-step flow: `personality` (name + traits merged) → `api-keys` (create key + one-time copy banner; skippable) → `security` (5 policy toggles, calls `updateSecurityPolicy` only when dirty; skippable) → `model` (unchanged) → `done` ("Launch SecureYeoman" button). *(ADR 145)*
+- **Accessibility Audit** — `eslint-plugin-jsx-a11y` added at warn-only level via flat ESLint config. Global `:focus-visible` ring (`2px solid hsl(var(--ring))`) added to `index.css`. 44 px minimum touch targets for coarse-pointer devices (`@media (pointer: coarse)`). Four `vitest-axe` smoke tests for `SecurityPage`, `McpPrebuilts`, `SettingsPage`, and `OnboardingWizard`. *(ADR 145)*
+- **Correlation IDs** — `utils/correlation-context.ts` (AsyncLocalStorage). Every HTTP request auto-generates a UUIDv7 correlation ID (or echoes the `X-Correlation-ID` request header) and propagates it via ALS. `AuditChain._doRecord()` auto-enriches `entry.correlationId` from ALS — zero changes to existing call sites. Heartbeat beat cycles each get their own correlation ID. Response header `X-Correlation-ID` returned on all responses. *(ADR 145)*
+
+### Documentation
+
+- ADR 145 in `docs/adr/145-consumer-ux-a11y-correlation.md`
+
+---
+
 ## [2026.2.26s] — Phase 61: Enterprise Features
 
 ### Added

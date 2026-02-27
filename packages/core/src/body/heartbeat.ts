@@ -20,6 +20,8 @@ import type { IntegrationManager } from '../integrations/manager.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { HeartbeatLogStorage } from './heartbeat-log-storage.js';
 import type { NotificationManager } from '../notifications/notification-manager.js';
+import { runWithCorrelationId } from '../utils/correlation-context.js';
+import { uuidv7 } from '../utils/crypto.js';
 // Type definitions for proactive heartbeat features
 // These extend the shared types with action and scheduling capabilities
 
@@ -576,9 +578,11 @@ export class HeartbeatManager {
 
     this.running = true;
     this.interval = setInterval(() => {
-      void this.beat().catch((err: unknown) => {
-        this.logger.error('Heartbeat failed', {
-          error: err instanceof Error ? err.message : 'Unknown error',
+      runWithCorrelationId(uuidv7(), () => {
+        void this.beat().catch((err: unknown) => {
+          this.logger.error('Heartbeat failed', {
+            error: err instanceof Error ? err.message : 'Unknown error',
+          });
         });
       });
     }, this.config.intervalMs);

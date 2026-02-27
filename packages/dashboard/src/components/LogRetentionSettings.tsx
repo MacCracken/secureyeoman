@@ -89,8 +89,14 @@ export function LogRetentionSettings() {
         <p className="text-xs text-muted-foreground mb-2">Retention Policy</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-muted-foreground block mb-1">Max Retention Days</label>
+            <label
+              htmlFor="retention-max-days"
+              className="text-xs text-muted-foreground block mb-1"
+            >
+              Max Retention Days
+            </label>
             <input
+              id="retention-max-days"
               type="number"
               min={1}
               max={3650}
@@ -102,8 +108,14 @@ export function LogRetentionSettings() {
             />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground block mb-1">Max Entries</label>
+            <label
+              htmlFor="retention-max-entries"
+              className="text-xs text-muted-foreground block mb-1"
+            >
+              Max Entries
+            </label>
             <input
+              id="retention-max-entries"
               type="number"
               min={100}
               max={10000000}

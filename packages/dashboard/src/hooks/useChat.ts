@@ -234,6 +234,7 @@ export interface UseChatStreamOptions {
   personalityId?: string | null;
   conversationId?: string | null;
   memoryEnabled?: boolean;
+  editorContent?: string;
 }
 
 export interface UseChatStreamReturn {
@@ -265,6 +266,9 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
   const prevExternalId = useRef<string | null | undefined>(undefined);
   const autoCreatedIds = useRef(new Set<string>());
   const queryClient = useQueryClient();
+  // Keep a ref so handleSend always reads the latest options without stale closure
+  const latestOptions = useRef(options);
+  latestOptions.current = options;
 
   // Load existing conversation when the external conversationId changes
   useEffect(() => {
@@ -373,8 +377,9 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
         body: JSON.stringify({
           message: trimmed,
           history: history.slice(0, -1),
-          ...(options?.personalityId ? { personalityId: options.personalityId } : {}),
+          ...(latestOptions.current?.personalityId ? { personalityId: latestOptions.current.personalityId } : {}),
           ...(convId ? { conversationId: convId } : {}),
+          ...(latestOptions.current?.editorContent ? { editorContent: latestOptions.current.editorContent } : {}),
           memoryEnabled: memoryOn,
           saveAsMemory: memoryOn,
           clientContext: {

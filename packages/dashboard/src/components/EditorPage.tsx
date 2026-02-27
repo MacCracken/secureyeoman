@@ -28,6 +28,7 @@ import {
   Split,
   Wrench,
   Star,
+  Eye,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -437,6 +438,8 @@ function StandardEditorPage() {
   const [activeTabId, setActiveTabId] = useState<string>(tabs[0].id);
   const [filesPanelOpen, setFilesPanelOpen] = useState(false);
   const [cwd, setCwd] = useState('/tmp');
+  const [renamingTabId, setRenamingTabId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
   const [selectedPersonalityId, setSelectedPersonalityIdRaw] = useState<string | null>(
     () => localStorage.getItem('soul:editorPersonalityId')
   );
@@ -522,11 +525,19 @@ function StandardEditorPage() {
   const effectivePersonalityId = selectedPersonalityId ?? defaultPersonality?.id ?? null;
   const currentPersonality = personalities.find((p) => p.id === effectivePersonalityId);
 
+  const hasVision = currentPersonality?.body?.capabilities?.includes('vision') ?? false;
+  const [watchEnabled, setWatchEnabled] = useState(false);
+
+  const terminalOutput = terminalHistory
+    .map((t) => `$ ${t.command}\n${t.output || t.error}`)
+    .join('\n');
+
   const {
     messages, input, setInput, handleSend, isPending,
     streamingThinking, streamingContent, activeToolCalls,
   } = useChatStream({
     personalityId: effectivePersonalityId,
+    editorContent: watchEnabled && terminalOutput ? terminalOutput : undefined,
   });
 
   const [hadActiveTools, setHadActiveTools] = useState(false);
@@ -868,12 +879,57 @@ function StandardEditorPage() {
                         ? 'bg-primary/10 text-primary border border-primary/30'
                         : 'hover:bg-muted/50 text-muted-foreground'
                     }`}
-                    onClick={() => {
-                      setActiveTabId(tab.id);
-                    }}
+                    onClick={() => { setActiveTabId(tab.id); }}
                   >
-                    <span className="max-w-[80px] sm:max-w-[120px] truncate">{tab.name}</span>
-                    {tab.isDirty && <span className="text-primary">●</span>}
+                    {renamingTabId === tab.id ? (
+                      <input
+                        type="text"
+                        value={renameValue}
+                        autoFocus
+                        className="max-w-[100px] bg-transparent border-b border-primary outline-none font-mono text-xs w-[80px]"
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (renameValue.trim()) {
+                              setTabs((prev) => prev.map((t) =>
+                                t.id === tab.id
+                                  ? { ...t, name: renameValue.trim(), path: `${cwd}/${renameValue.trim()}`, language: detectLanguage(renameValue.trim()), isDirty: true }
+                                  : t
+                              ));
+                            }
+                            setRenamingTabId(null);
+                          } else if (e.key === 'Escape') {
+                            setRenamingTabId(null);
+                          }
+                        }}
+                        onBlur={() => {
+                          if (renameValue.trim()) {
+                            setTabs((prev) => prev.map((t) =>
+                              t.id === tab.id
+                                ? { ...t, name: renameValue.trim(), path: `${cwd}/${renameValue.trim()}`, language: detectLanguage(renameValue.trim()), isDirty: true }
+                                : t
+                            ));
+                          }
+                          setRenamingTabId(null);
+                        }}
+                      />
+                    ) : (
+                      <span
+                        className="max-w-[80px] sm:max-w-[120px] truncate"
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
+                          setActiveTabId(tab.id);
+                          setRenamingTabId(tab.id);
+                          setRenameValue(tab.name);
+                        }}
+                        title="Double-click to rename"
+                      >
+                        {tab.name}
+                      </span>
+                    )}
+                    {tab.isDirty && renamingTabId !== tab.id && <span className="text-primary">●</span>}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -889,17 +945,6 @@ function StandardEditorPage() {
                   <Plus className="w-3 h-3" />
                 </button>
               </div>
-
-              {/* Active filename input */}
-              <input
-                type="text"
-                value={filename}
-                onChange={(e) => {
-                  updateTabName(e.target.value);
-                }}
-                className="bg-transparent border border-border rounded px-2 py-1 text-sm font-mono w-24 sm:w-32 focus:outline-none focus:ring-1 focus:ring-primary"
-                placeholder="filename.ext"
-              />
               <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded hidden sm:inline">
                 {language}
               </span>
@@ -958,6 +1003,7 @@ function StandardEditorPage() {
                     }}
                     className="flex-1 bg-transparent border border-border rounded px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
                     placeholder="/path/to/folder"
+                    title="Working directory"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1353,10 +1399,21 @@ function StandardEditorPage() {
                     <Mic className="w-3 h-3 opacity-50" />
                   )}
                 </button>
+                {hasVision && (
+                  <button
+                    onClick={() => setWatchEnabled((v) => !v)}
+                    className={`btn px-3 py-2 rounded h-[52px] ${
+                      watchEnabled ? 'btn-primary' : 'btn-ghost'
+                    }`}
+                    title={watchEnabled ? 'Watch on — terminal output visible to personality' : 'Watch off — enable terminal vision'}
+                  >
+                    <Eye className="w-3 h-3" />
+                  </button>
+                )}
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || isPending}
-                  className="btn-primary px-3 py-2 rounded disabled:opacity-50 h-[52px]"
+                  className="btn btn-ghost px-3 py-2 rounded disabled:opacity-50 h-[52px]"
                 >
                   {isPending ? (
                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -1401,15 +1458,7 @@ function StandardEditorPage() {
             {activeBottomTab === 'terminal' && (
               <div className="flex items-center gap-2 ml-auto px-2 min-w-0 overflow-hidden">
                 <FolderOpen className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                <input
-                  type="text"
-                  value={cwd}
-                  onChange={(e) => {
-                    setCwd(e.target.value);
-                  }}
-                  className="bg-transparent border-none px-1 py-0.5 text-xs font-mono min-w-0 focus:outline-none focus:ring-1 focus:ring-primary rounded"
-                  placeholder="Working directory"
-                />
+                <span className="text-xs font-mono text-muted-foreground truncate max-w-[160px]">{cwd}</span>
                 <button
                   onClick={clearTerminal}
                   className="btn-ghost text-xs p-1 rounded hover:text-destructive flex-shrink-0"

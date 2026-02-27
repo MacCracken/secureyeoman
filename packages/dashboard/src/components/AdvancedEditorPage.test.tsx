@@ -10,25 +10,19 @@ Element.prototype.scrollIntoView = vi.fn();
 
 // ── Mocks ─────────────────────────────────────────────────────────────
 
-vi.mock('@monaco-editor/react', () => ({
-  default: ({ onChange }: { onChange?: (val: string) => void }) => (
-    <div
-      data-testid="monaco-editor"
-      onClick={() => onChange?.('// edited content')}
-    />
-  ),
-  loader: { config: vi.fn() },
-}));
-
-vi.mock('../hooks/useTheme', () => ({
-  useTheme: () => ({ theme: 'dark', isDark: true, setTheme: vi.fn(), toggle: vi.fn() }),
-}));
-
 vi.mock('../api/client', () => ({
   fetchPersonalities: vi.fn(),
   fetchTasks: vi.fn(),
   fetchExecutionSessions: vi.fn(),
   executeTerminalCommand: vi.fn(),
+  fetchModelInfo: vi.fn(),
+  switchModel: vi.fn(),
+  sendChatMessage: vi.fn(),
+  addMemory: vi.fn(),
+}));
+
+vi.mock('./ModelWidget', () => ({
+  ModelWidget: () => <div data-testid="model-widget" />,
 }));
 
 import * as api from '../api/client';
@@ -38,6 +32,8 @@ const mockFetchPersonalities = vi.mocked(api.fetchPersonalities);
 const mockFetchTasks = vi.mocked(api.fetchTasks);
 const mockFetchExecutionSessions = vi.mocked(api.fetchExecutionSessions);
 const mockExecuteTerminalCommand = vi.mocked(api.executeTerminalCommand);
+const mockFetchModelInfo = vi.mocked(api.fetchModelInfo);
+const mockSendChatMessage = vi.mocked(api.sendChatMessage);
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -90,23 +86,28 @@ describe('AdvancedEditorPage', () => {
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
     mockFetchExecutionSessions.mockResolvedValue({ sessions: [] });
+    mockFetchModelInfo.mockResolvedValue({
+      current: { provider: 'openai', model: 'gpt-4o', maxTokens: 4096, temperature: 0.7 },
+      available: {},
+    });
+    mockSendChatMessage.mockResolvedValue({
+      role: 'assistant',
+      content: 'ok',
+      model: 'gpt-4o',
+      provider: 'openai',
+    });
   });
 
   // ── Layout / rendering ─────────────────────────────────────────────
 
-  it('renders "Advanced Editor" heading', async () => {
+  it('renders "Workspace" heading', async () => {
     renderComponent();
-    expect(await screen.findByText('Advanced Editor')).toBeInTheDocument();
+    expect(await screen.findByText('Workspace')).toBeInTheDocument();
   });
 
-  it('renders Monaco editor', async () => {
+  it('renders Sessions section header in sidebar', async () => {
     renderComponent();
-    expect(await screen.findByTestId('monaco-editor')).toBeInTheDocument();
-  });
-
-  it('renders Files section header in file manager', async () => {
-    renderComponent();
-    expect(await screen.findByText('Files')).toBeInTheDocument();
+    expect(await screen.findByText('Sessions')).toBeInTheDocument();
   });
 
   it('renders Tasks section header in task panel', async () => {
@@ -124,109 +125,24 @@ describe('AdvancedEditorPage', () => {
     expect(await screen.findByText('Ready.')).toBeInTheDocument();
   });
 
-  // ── Editor tabs ────────────────────────────────────────────────────
-
-  it('renders initial untitled.ts tab in editor tab bar', async () => {
+  it('shows "No active sessions" when sessions list is empty', async () => {
     renderComponent();
-    // Both editor tab bar and file manager show untitled.ts; verify at least one exists
-    const tabs = await screen.findAllByText('untitled.ts');
-    expect(tabs.length).toBeGreaterThanOrEqual(1);
+    expect(await screen.findByText('No active sessions')).toBeInTheDocument();
   });
 
-  it('clicking new file button in editor bar adds a second tab', async () => {
-    const user = userEvent.setup();
-    renderComponent();
-    await screen.findAllByText('untitled.ts');
+  // ── Sessions Panel ─────────────────────────────────────────────────
 
-    // [0] = editor tab bar "New file"; [1] = file manager "New file"
-    const newFileBtns = screen.getAllByTitle('New file');
-    await user.click(newFileBtns[0]);
-
-    // After adding a tab, more untitled.ts entries exist
-    const tabs = screen.getAllByText('untitled.ts');
-    expect(tabs.length).toBeGreaterThan(2); // 2 in tab bar + 2 in file manager = 4
-  });
-
-  it('closing an editor tab removes it from the bar when another tab exists', async () => {
-    const user = userEvent.setup();
-    renderComponent();
-    await screen.findAllByText('untitled.ts');
-    const before = screen.getAllByText('untitled.ts').length;
-
-    // Create a second tab via editor bar button [0]
-    await user.click(screen.getAllByTitle('New file')[0]);
-    expect(screen.getAllByText('untitled.ts').length).toBeGreaterThan(before);
-
-    // Close a tab via the first close button inside the editor tab bar area
-    // The editor left column has overflow-x-auto tab bar; close buttons are inside it
-    const editorTabBar = document.querySelector('.overflow-x-auto.flex-shrink-0');
-    const closeBtns = editorTabBar?.querySelectorAll('button');
-    if (closeBtns && closeBtns.length > 0) {
-      fireEvent.click(closeBtns[0]);
-    }
-    await waitFor(() => {
-      expect(screen.getAllByText('untitled.ts').length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  it('closing the only editor tab creates a fresh untitled.ts tab', async () => {
-    renderComponent();
-    await screen.findAllByText('untitled.ts');
-
-    // Close the single editor tab via the close button in the editor tab bar
-    const editorTabBar = document.querySelector('.overflow-x-auto.flex-shrink-0');
-    const closeBtns = editorTabBar?.querySelectorAll('button');
-    if (closeBtns && closeBtns.length > 0) {
-      fireEvent.click(closeBtns[0]);
-      await waitFor(() => {
-        expect(screen.getAllByText('untitled.ts').length).toBeGreaterThanOrEqual(1);
-      });
-    }
-  });
-
-  // ── File Manager ──────────────────────────────────────────────────
-
-  it('file manager lists the open editor tab by name', async () => {
-    renderComponent();
-    // The file manager renders tab names as file entries
-    // There should be at least one "untitled.ts" in the file list
-    const fileEntries = await screen.findAllByText('untitled.ts');
-    expect(fileEntries.length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('file manager shows execution sessions when available', async () => {
+  it('sessions panel shows execution sessions when available', async () => {
     mockFetchExecutionSessions.mockResolvedValue(MOCK_SESSIONS);
     renderComponent();
     expect(await screen.findByText('node')).toBeInTheDocument();
     expect(screen.getByText('python')).toBeInTheDocument();
-    expect(screen.getByText('Sessions')).toBeInTheDocument();
   });
 
-  it('file manager new file button adds an editor tab', async () => {
-    const user = userEvent.setup();
+  it('sessions panel shows running status badge for running session', async () => {
+    mockFetchExecutionSessions.mockResolvedValue(MOCK_SESSIONS);
     renderComponent();
-    await screen.findByText('Files');
-
-    const before = screen.getAllByText('untitled.ts').length;
-    // [1] = file manager "New file" button (comes after the editor bar button)
-    const newFileBtns = screen.getAllByTitle('New file');
-    await user.click(newFileBtns[newFileBtns.length - 1]);
-
-    expect(screen.getAllByText('untitled.ts').length).toBeGreaterThan(before);
-  });
-
-  it('clicking a file name in the file manager highlights it', async () => {
-    const user = userEvent.setup();
-    renderComponent();
-    await screen.findByText('Files');
-
-    // Create a second tab so there are two to select between
-    await user.click(screen.getAllByTitle('New file')[0]);
-    const fileButtons = screen.getAllByText('untitled.ts');
-    expect(fileButtons.length).toBeGreaterThanOrEqual(2);
-    // Click one of the file entries — should not throw
-    await user.click(fileButtons[0]);
-    expect(screen.getAllByText('untitled.ts').length).toBeGreaterThanOrEqual(1);
+    expect(await screen.findByText('running')).toBeInTheDocument();
   });
 
   // ── Personality selector ──────────────────────────────────────────
@@ -234,7 +150,7 @@ describe('AdvancedEditorPage', () => {
   it('personality selector is hidden when no personalities returned', async () => {
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
     renderComponent();
-    await screen.findByText('Advanced Editor');
+    await screen.findByText('Workspace');
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
   });
 
@@ -248,8 +164,8 @@ describe('AdvancedEditorPage', () => {
     renderComponent();
     const select = await screen.findByRole('combobox');
     expect(select).toBeInTheDocument();
-    expect(screen.getByText('Aria')).toBeInTheDocument();
-    expect(screen.getByText('Nexus')).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Aria/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Nexus/ })).toBeInTheDocument();
   });
 
   it('personality selector includes "No personality" default option', async () => {
@@ -354,12 +270,9 @@ describe('AdvancedEditorPage', () => {
     renderComponent();
     await screen.findByText('Terminal 1');
 
-    // Add a second terminal tab so we can close one without hitting the reset logic
     await user.click(screen.getByTitle('New terminal'));
     await screen.findByText('Terminal 2');
 
-    // Close Terminal 2 (the newly created one is active)
-    // Find X buttons in the terminal tab bar area
     const terminalTabBar = document.querySelector('.bg-muted\\/30');
     const closeButtons = terminalTabBar?.querySelectorAll('button:not([title])');
     if (closeButtons && closeButtons.length > 0) {
@@ -381,7 +294,6 @@ describe('AdvancedEditorPage', () => {
       fireEvent.click(closeButtons[0]);
     }
 
-    // A fresh "Terminal 1" should still be present
     await waitFor(() => {
       expect(screen.getByText('Terminal 1')).toBeInTheDocument();
     });
@@ -482,13 +394,6 @@ describe('AdvancedEditorPage', () => {
   it('run button is disabled when input is empty', async () => {
     renderComponent();
     await screen.findByText('Ready.');
-
-    // The run/play button should be disabled when input is blank
-    // Find the submit button (it has no text, just an icon)
-    const playButton = screen
-      .getAllByRole('button')
-      .find((b) => (b as HTMLButtonElement).disabled && b.closest('.border-t.border-border'));
-    // Simply verify no calls happen if clicked when empty
     expect(mockExecuteTerminalCommand).not.toHaveBeenCalled();
   });
 
@@ -504,7 +409,6 @@ describe('AdvancedEditorPage', () => {
     await user.click(screen.getByTitle('New terminal'));
     await screen.findByText('Terminal 4');
 
-    // After reaching the limit, the "+" button should be gone
     expect(screen.queryByTitle('New terminal')).not.toBeInTheDocument();
   });
 
@@ -523,7 +427,6 @@ describe('AdvancedEditorPage', () => {
     const input = screen.getByPlaceholderText('command...');
     await user.type(input, 'pwd');
 
-    // Find the play/run button in the terminal input area (not disabled)
     const inputArea = input.closest('.border-t.border-border');
     const runButton = inputArea?.querySelector('button:not(:disabled)');
     if (runButton) {
