@@ -9,13 +9,6 @@
 | Phase | Name | Status |
 |-------|------|--------|
 | XX | Find & Repair (Ongoing) | Ongoing |
-| 57 | Dashboard UX | Complete ✅ |
-| 58 | Security Toolkit + Audio Quality | Complete ✅ |
-| 59 | Security Hardening | Complete ✅ |
-| 60 | Multi-Theme System | Complete ✅ |
-| 61 | Enterprise Features (Audit Export, Backup, SAML, Multi-tenancy) | Complete ✅ |
-| 62 | Local-First AI + OAuth Improvements | Complete ✅ |
-| 63 | Connected Account MCP (Gmail + Twitter/X) | Complete ✅ |
 | 64 | AI Training Pipeline (Distillation, LoRA, Model Lifecycle) | Near-Term |
 | 65 | Voice & Community | Demand-Gated |
 | 66 | Native Clients | Demand-Gated |

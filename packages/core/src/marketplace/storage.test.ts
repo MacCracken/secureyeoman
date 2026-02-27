@@ -108,6 +108,16 @@ describe('MarketplaceStorage', () => {
       const params = mockQuery.mock.calls[0][1] as unknown[];
       expect(params[5]).toBeNull(); // author_info
     });
+
+    it('normalizes array instructions to newline-joined string', async () => {
+      await storage.addSkill({
+        name: 'Test',
+        instructions: ['Line one', '', 'Line three'] as unknown as string,
+      });
+      const params = mockQuery.mock.calls[0][1] as unknown[];
+      // instructions is $11 (index 10)
+      expect(params[10]).toBe('Line one\n\nLine three');
+    });
   });
 
   describe('getSkill', () => {
@@ -232,6 +242,24 @@ describe('MarketplaceStorage', () => {
       const params = mockQuery.mock.calls[0][1] as unknown[];
       expect(params[0]).toBe('New Name');
       expect(params[1]).toBeNull(); // description not set
+    });
+
+    it('includes source in update params when provided', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+      await storage.updateSkill('skill-1', { name: 'X', source: 'builtin' });
+      const params = mockQuery.mock.calls[0][1] as unknown[];
+      // source is $17 (index 16)
+      expect(params[16]).toBe('builtin');
+    });
+
+    it('normalizes array instructions to newline-joined string', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+      await storage.updateSkill('skill-1', {
+        instructions: ['Line one', 'Line two'] as unknown as string,
+      });
+      const params = mockQuery.mock.calls[0][1] as unknown[];
+      // instructions is $8 (index 7)
+      expect(params[7]).toBe('Line one\nLine two');
     });
   });
 

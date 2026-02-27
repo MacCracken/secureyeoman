@@ -1504,17 +1504,9 @@ function MarketplaceTab() {
   const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
   const [selectedPersonalityId, setSelectedPersonalityId] = useState<string>('');
-  const [hasInitialized, setHasInitialized] = useState(false);
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [uninstallingId, setUninstallingId] = useState<string | null>(null);
   const [previewSkill, setPreviewSkill] = useState<CatalogSkill | null>(null);
-
-  // Fetch all non-community skills — keyed on personalityId so results refresh when selection changes
-  const { data, isLoading } = useQuery({
-    queryKey: ['marketplace', query, selectedPersonalityId],
-    queryFn: () => fetchMarketplaceSkills(query || undefined, undefined, selectedPersonalityId),
-    enabled: hasInitialized,
-  });
 
   const { data: personalitiesData } = useQuery({
     queryKey: ['personalities'],
@@ -1524,12 +1516,18 @@ function MarketplaceTab() {
   const personalities = personalitiesData?.personalities ?? [];
   const activePersonality = personalities.find((p) => p.isActive);
 
+  // Set selected personality to active personality once loaded (only on first load)
   useEffect(() => {
-    if (activePersonality && !hasInitialized) {
+    if (activePersonality && !selectedPersonalityId) {
       setSelectedPersonalityId(activePersonality.id);
-      setHasInitialized(true);
     }
-  }, [activePersonality, hasInitialized]);
+  }, [activePersonality, selectedPersonalityId]);
+
+  // Fetch all non-community skills — keyed on personalityId so install state refreshes when selection changes
+  const { data, isLoading } = useQuery({
+    queryKey: ['marketplace', query, selectedPersonalityId],
+    queryFn: () => fetchMarketplaceSkills(query || undefined, undefined, selectedPersonalityId),
+  });
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['marketplace'] });

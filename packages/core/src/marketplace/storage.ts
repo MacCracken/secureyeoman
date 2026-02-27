@@ -34,7 +34,10 @@ export class MarketplaceStorage extends PgBaseStorage {
       tags: data.tags ?? [],
       downloadCount: data.downloadCount ?? 0,
       rating: data.rating ?? 0,
-      instructions: data.instructions ?? '',
+      // Normalize instructions: skill files may define it as string[] for readability.
+      instructions: Array.isArray(data.instructions)
+        ? (data.instructions as string[]).join('\n')
+        : (data.instructions ?? ''),
       tools: data.tools ?? [],
       triggerPatterns: data.triggerPatterns ?? [],
       useWhen: data.useWhen ?? '',
@@ -103,6 +106,13 @@ export class MarketplaceStorage extends PgBaseStorage {
 
   async updateSkill(id: string, data: Partial<CatalogSkill>): Promise<boolean> {
     const now = Date.now();
+    // Normalize instructions: skill files may define it as string[] for readability.
+    const instructions =
+      data.instructions != null
+        ? Array.isArray(data.instructions)
+          ? (data.instructions as string[]).join('\n')
+          : data.instructions
+        : null;
     const changes = await this.execute(
       `UPDATE marketplace.skills SET
         name = COALESCE($1, name),
@@ -121,8 +131,9 @@ export class MarketplaceStorage extends PgBaseStorage {
         autonomy_level = COALESCE($14, autonomy_level),
         mcp_tools_allowed = COALESCE($15, mcp_tools_allowed),
         output_schema = COALESCE($16::jsonb, output_schema),
-        updated_at = $17
-       WHERE id = $18`,
+        source = COALESCE($17, source),
+        updated_at = $18
+       WHERE id = $19`,
       [
         data.name ?? null,
         data.description ?? null,
@@ -131,7 +142,7 @@ export class MarketplaceStorage extends PgBaseStorage {
         data.authorInfo != null ? JSON.stringify(data.authorInfo) : null,
         data.category ?? null,
         data.tags ? JSON.stringify(data.tags) : null,
-        data.instructions ?? null,
+        instructions,
         data.triggerPatterns ? JSON.stringify(data.triggerPatterns) : null,
         data.useWhen ?? null,
         data.doNotUseWhen ?? null,
@@ -140,6 +151,7 @@ export class MarketplaceStorage extends PgBaseStorage {
         data.autonomyLevel ?? null,
         data.mcpToolsAllowed ? JSON.stringify(data.mcpToolsAllowed) : null,
         data.outputSchema != null ? JSON.stringify(data.outputSchema) : null,
+        data.source ?? null,
         now,
         id,
       ]
@@ -333,15 +345,20 @@ export class MarketplaceStorage extends PgBaseStorage {
     ];
     for (const skill of BUILTIN_SKILLS) {
       if (!skill.name) continue;
-      const existing = await this.queryOne<{ id: string }>(
-        'SELECT id FROM marketplace.skills WHERE name = $1 AND author = $2',
-        [skill.name, skill.author]
-      );
-      if (existing) {
-        // Update routing quality fields on existing rows so re-deploys pick up changes
-        await this.updateSkill(existing.id, { ...skill, source: 'builtin' });
-      } else {
-        await this.addSkill({ ...skill, source: 'builtin' });
+      try {
+        const existing = await this.queryOne<{ id: string }>(
+          'SELECT id FROM marketplace.skills WHERE name = $1 AND author = $2',
+          [skill.name, skill.author]
+        );
+        if (existing) {
+          // Update all fields (including source) so re-deploys pick up changes
+          await this.updateSkill(existing.id, { ...skill, source: 'builtin' });
+        } else {
+          await this.addSkill({ ...skill, source: 'builtin' });
+        }
+      } catch (err) {
+        // Log and continue — one failing skill must not block the rest
+        console.error(`[MarketplaceStorage] Failed to seed builtin skill "${skill.name}":`, err);
       }
     }
   }

@@ -23,6 +23,20 @@ export interface GmailRoutesOptions {
 // ─── Helpers ──────────────────────────────────────────────────
 
 /**
+ * Return a human-readable Gmail API error message.
+ * Detects OAuth scope errors and returns an actionable reconnect prompt.
+ */
+function gmailErrorMessage(status: number, body: string): string {
+  if (
+    status === 403 &&
+    (body.includes('SCOPE_INSUFFICIENT') || body.includes('insufficient_scopes') || body.includes('insufficientPermissions'))
+  ) {
+    return 'Gmail access denied: your account is missing required permissions. Please reconnect your Gmail account via Settings → Connections → OAuth and re-authorize with Gmail scopes.';
+  }
+  return `Gmail API error: ${body}`;
+}
+
+/**
  * Fetch a Gmail API URL with automatic 401 recovery.
  * On a 401 response the token is force-refreshed and the request is retried
  * once with the new access token.
@@ -62,7 +76,10 @@ async function resolveGmailAccess(
   soulManager?: SoulManager
 ): Promise<{ accessToken: string; email: string; tokenId: string; mode: string } | null> {
   const tokens = await oauthTokenService.listTokens();
-  const gmailToken = tokens.find((t) => t.provider === 'gmail' || t.provider === 'google');
+  // Prefer the gmail-specific token (has Gmail API scopes) over a generic google token
+  const gmailToken =
+    tokens.find((t) => t.provider === 'gmail') ??
+    tokens.find((t) => t.provider === 'google');
   if (!gmailToken) return null;
 
   // Get a fresh access token (auto-refreshes if near expiry)
@@ -99,7 +116,7 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
     const resp = await fetchGmail(`${GMAIL_API}/profile`, {}, creds.tokenId, creds.accessToken, oauthTokenService);
     if (!resp.ok) {
       const body = await resp.text();
-      return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, `Gmail API error: ${body}`);
+      return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, gmailErrorMessage(resp.status, body));
     }
     const data = await resp.json();
     return reply.send({ ...(data as object), email: creds.email, mode: creds.mode, tokenId: creds.tokenId });
@@ -123,7 +140,7 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
       const resp = await fetchGmail(url.toString(), {}, creds.tokenId, creds.accessToken, oauthTokenService);
       if (!resp.ok) {
         const body = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, `Gmail API error: ${body}`);
+        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, gmailErrorMessage(resp.status, body));
       }
       const data = await resp.json();
       return reply.send(data);
@@ -149,7 +166,7 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
       );
       if (!resp.ok) {
         const body = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, `Gmail API error: ${body}`);
+        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, gmailErrorMessage(resp.status, body));
       }
       const data = await resp.json();
       return reply.send(data);
@@ -174,7 +191,7 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
       );
       if (!resp.ok) {
         const body = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, `Gmail API error: ${body}`);
+        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, gmailErrorMessage(resp.status, body));
       }
       const data = await resp.json();
       return reply.send(data);
@@ -230,7 +247,7 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
 
     if (!resp.ok) {
       const errBody = await resp.text();
-      return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, `Gmail API error: ${errBody}`);
+      return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, gmailErrorMessage(resp.status, errBody));
     }
 
     const data = await resp.json();
@@ -297,7 +314,7 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
 
     if (!resp.ok) {
       const errBody = await resp.text();
-      return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, `Gmail API error: ${errBody}`);
+      return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, gmailErrorMessage(resp.status, errBody));
     }
 
     const data = await resp.json();
@@ -313,7 +330,7 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
     const resp = await fetchGmail(`${GMAIL_API}/labels`, {}, creds.tokenId, creds.accessToken, oauthTokenService);
     if (!resp.ok) {
       const body = await resp.text();
-      return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, `Gmail API error: ${body}`);
+      return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, gmailErrorMessage(resp.status, body));
     }
     const data = await resp.json();
     return reply.send(data);

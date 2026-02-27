@@ -59,7 +59,14 @@ export function ChatPage() {
     else localStorage.removeItem('soul:chatPersonalityId');
     setSelectedPersonalityIdRaw(id);
   };
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [selectedConversationId, setSelectedConversationIdRaw] = useState<string | null>(() =>
+    localStorage.getItem('soul:chatConversationId')
+  );
+  const setSelectedConversationId = (id: string | null) => {
+    if (id) localStorage.setItem('soul:chatConversationId', id);
+    else localStorage.removeItem('soul:chatConversationId');
+    setSelectedConversationIdRaw(id);
+  };
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -96,6 +103,18 @@ export function ChatPage() {
   });
 
   const conversations = conversationsData?.conversations ?? [];
+
+  // Validate the restored conversation ID once conversations are loaded.
+  // If the stored ID is not found (different auth session, deleted conversation, etc.)
+  // clear it so we start with an empty chat instead of a broken state.
+  useEffect(() => {
+    if (!conversationsLoading && conversationsData && selectedConversationId) {
+      const found = conversations.some((c) => c.id === selectedConversationId);
+      if (!found) {
+        setSelectedConversationId(null);
+      }
+    }
+  }, [conversationsLoading, conversationsData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const currentModel = modelInfoData?.current
     ? `${modelInfoData.current.provider}/${modelInfoData.current.model}`

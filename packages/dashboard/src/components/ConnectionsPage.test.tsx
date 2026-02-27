@@ -25,6 +25,7 @@ vi.mock('../api/client', () => ({
   testIntegration: vi.fn(),
   fetchOAuthTokens: vi.fn(),
   revokeOAuthToken: vi.fn(),
+  refreshOAuthToken: vi.fn(),
 }));
 
 import * as api from '../api/client';

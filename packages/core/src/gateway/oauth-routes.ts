@@ -88,6 +88,7 @@ const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
       'email',
       'profile',
       'https://www.googleapis.com/auth/gmail.readonly',
+      'https://www.googleapis.com/auth/gmail.compose',
       'https://www.googleapis.com/auth/gmail.send',
       'https://www.googleapis.com/auth/gmail.modify',
     ],
