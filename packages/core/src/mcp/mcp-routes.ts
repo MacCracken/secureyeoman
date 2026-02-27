@@ -37,6 +37,8 @@ const DESKTOP_TOOL_PREFIXES = ['desktop_'];
 const NETWORK_TOOL_PREFIXES = ['network_', 'netbox_', 'nvd_', 'subnet_', 'wildcard_', 'pcap_'];
 const NETBOX_TOOL_PREFIXES = ['netbox_'];
 const TWINGATE_TOOL_PREFIXES = ['twingate_'];
+const GMAIL_TOOL_PREFIXES = ['gmail_'];
+const TWITTER_TOOL_PREFIXES = ['twitter_'];
 
 export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions): void {
   const {
@@ -206,6 +208,10 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
         TWINGATE_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
       )
         return false;
+      if (!config.exposeGmail && GMAIL_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
+      if (!config.exposeTwitter && TWITTER_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
       return true;
     });
 
@@ -269,6 +275,8 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
           proxyStrategy?: string;
           proxyDefaultCountry?: string;
           respectContentSignal?: boolean;
+          exposeGmail?: boolean;
+          exposeTwitter?: boolean;
         };
       }>
     ) => {

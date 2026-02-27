@@ -83,6 +83,8 @@ describe('ConnectionsPage', () => {
       proxyDefaultCountry: '',
       exposeSecurityTools: false,
       allowedTargets: [],
+      exposeGmail: false,
+      exposeTwitter: false,
     });
     mockFetchIntegrations.mockResolvedValue({ integrations: [], total: 0, running: 0 });
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: [] });

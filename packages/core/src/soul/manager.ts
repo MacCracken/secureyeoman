@@ -21,6 +21,7 @@ import type { BrainManager } from '../brain/manager.js';
 import type { MarketplaceManager } from '../marketplace/manager.js';
 import type { DynamicToolManager } from './dynamic-tool-manager.js';
 import type { IntentManager } from '../intent/manager.js';
+import type { IntegrationManager } from '../integrations/manager.js';
 import type { SpiritManager } from '../spirit/manager.js';
 import type { HeartbeatManager } from '../body/heartbeat.js';
 import { HeartManager } from '../body/heart.js';
@@ -125,6 +126,11 @@ export class SoulManager {
   private marketplace: MarketplaceManager | null = null;
   private dynamicToolManager: DynamicToolManager | null = null;
   private intentManager: IntentManager | null = null;
+  private integrationManager: IntegrationManager | null = null;
+
+  setIntegrationManager(mgr: IntegrationManager): void {
+    this.integrationManager = mgr;
+  }
 
   setMarketplaceManager(manager: MarketplaceManager): void {
     this.marketplace = manager;
@@ -233,6 +239,8 @@ export class SoulManager {
             exposeNvd: false,
             exposeNetworkUtils: false,
             exposeTwingate: false,
+            exposeGmail: false,
+            exposeTwitter: false,
           },
           proactiveConfig: {
             enabled: false,
@@ -751,7 +759,7 @@ export class SoulManager {
       const memMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
       const loadAvg = (os.loadavg()[0] ?? 0).toFixed(2);
       const serverCount = personality?.body?.selectedServers?.length ?? 0;
-      const integrationCount = personality?.body?.selectedIntegrations?.length ?? 0;
+      const integrationAccess = personality?.body?.integrationAccess ?? [];
 
       lines.push('');
       lines.push('### Diagnostics');
@@ -761,7 +769,7 @@ export class SoulManager {
       lines.push(`- **memory**: ${memMb} MB RSS`);
       lines.push(`- **cpu**: ${loadAvg} (1m load avg)`);
       lines.push(`- **mcp servers**: ${serverCount} connected`);
-      lines.push(`- **integrations**: ${integrationCount} connected`);
+      lines.push(`- **integrations**: ${integrationAccess.length > 0 ? integrationAccess.length + ' (see below)' : 'all accessible'}`);
 
       const sec = this.deps.securityConfig;
       lines.push('');
@@ -944,6 +952,88 @@ export class SoulManager {
     const bodyPrompt = this.composeBodyPrompt(personality);
     if (bodyPrompt) {
       parts.push(bodyPrompt);
+    }
+
+    // Connected Integrations — inject named integrations + OAuth accounts with permission modes
+    if (this.integrationManager) {
+      const integrationAccess = personality?.body?.integrationAccess ?? [];
+      const oauthTokens = await this.integrationManager.getOAuthTokens();
+      const entries: Array<{ name: string; platform: string; mode: string }> = [];
+
+      if (integrationAccess.length > 0) {
+        await Promise.all(
+          integrationAccess.map(async (access) => {
+            const integration = await this.integrationManager!.getIntegration(access.id);
+            if (integration) {
+              entries.push({
+                name: integration.displayName || integration.platform,
+                platform: integration.platform,
+                mode: access.mode,
+              });
+              return;
+            }
+            const token = oauthTokens.find((t) => t.id === access.id);
+            if (token) {
+              const providerName = token.provider.charAt(0).toUpperCase() + token.provider.slice(1);
+              entries.push({ name: `${providerName} (${token.email})`, platform: token.provider, mode: access.mode });
+            }
+          })
+        );
+      } else if (oauthTokens.length > 0) {
+        // No filter set — list all OAuth accounts as available
+        for (const token of oauthTokens) {
+          const providerName = token.provider.charAt(0).toUpperCase() + token.provider.slice(1);
+          entries.push({ name: `${providerName} (${token.email})`, platform: token.provider, mode: 'auto' });
+        }
+      }
+
+      if (entries.length > 0) {
+        const modeDesc: Record<string, string> = {
+          auto: 'act autonomously (send, post, reply)',
+          draft: 'compose and queue for approval — do not send without user confirmation',
+          suggest: 'recommend only — never act directly',
+        };
+        // Platform → available MCP tool names (for inline hints)
+        const platformTools: Record<string, string[]> = {
+          gmail: ['gmail_profile', 'gmail_list_messages', 'gmail_read_message', 'gmail_read_thread', 'gmail_list_labels', 'gmail_compose_draft', 'gmail_send_email'],
+          google: ['gmail_profile', 'gmail_list_messages', 'gmail_read_message', 'gmail_read_thread', 'gmail_list_labels', 'gmail_compose_draft', 'gmail_send_email'],
+          twitter: ['twitter_profile', 'twitter_search', 'twitter_get_tweet', 'twitter_get_user', 'twitter_get_mentions', 'twitter_get_timeline', 'twitter_post_tweet', 'twitter_like_tweet', 'twitter_retweet', 'twitter_unretweet'],
+        };
+        const integLines: string[] = [
+          '',
+          '### Connected Integrations',
+          integrationAccess.length > 0
+            ? 'The following integrations are available to you with their permission modes:'
+            : 'The following OAuth accounts are connected and available to you:',
+          '',
+        ];
+        for (const e of entries) {
+          let line = `- **${e.name}** (${e.platform}) — **${e.mode}**: ${modeDesc[e.mode] ?? e.mode}`;
+          const tools = platformTools[e.platform.toLowerCase()];
+          if (tools) {
+            // Write-only tools that are blocked at non-auto modes, per platform
+          const writeOnlyTools: Record<string, string[]> = {
+            gmail: ['gmail_compose_draft', 'gmail_send_email'],
+            google: ['gmail_compose_draft', 'gmail_send_email'],
+            twitter: ['twitter_post_tweet', 'twitter_like_tweet', 'twitter_retweet', 'twitter_unretweet'],
+          };
+          const draftBlockedTools: Record<string, string[]> = {
+            gmail: ['gmail_send_email'],
+            google: ['gmail_send_email'],
+            twitter: [],  // draft mode returns preview, doesn't block tool
+          };
+          const platformKey = e.platform.toLowerCase();
+          const availableTools = tools.filter((t) => {
+            if (e.mode === 'suggest') return !(writeOnlyTools[platformKey] ?? []).includes(t);
+            if (e.mode === 'draft') return !(draftBlockedTools[platformKey] ?? []).includes(t);
+            return true;
+          });
+            line += `. MCP tools: ${availableTools.join(', ')}`;
+          }
+          integLines.push(line);
+        }
+        parts.push(integLines.join('\n'));
+      }
     }
 
     // Skills from Brain or Soul storage — filter to this personality + global skills

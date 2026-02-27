@@ -83,6 +83,10 @@ export const McpFeaturesSchema = z
     exposeNetworkUtils: z.boolean().default(false),
     /** Twingate resource management + private MCP proxy. Requires global allowTwingate. */
     exposeTwingate: z.boolean().default(false),
+    /** Gmail tools (gmail_*). Requires global exposeGmail. */
+    exposeGmail: z.boolean().default(false),
+    /** Twitter/X tools (twitter_*). Requires global exposeTwitter. */
+    exposeTwitter: z.boolean().default(false),
   })
   .default({});
 

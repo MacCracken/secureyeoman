@@ -101,6 +101,14 @@ export class IntegrationManager {
     this.outboundWebhookDispatcher = dispatcher;
   }
 
+  /** List all stored OAuth tokens (provider accounts). Returns [] when service not configured. */
+  async getOAuthTokens(): Promise<Array<{ id: string; provider: string; email: string }>> {
+    const svc = this.deps.oauthTokenService;
+    if (!svc) return [];
+    const tokens = await svc.listTokens();
+    return tokens.map((t) => ({ id: t.id, provider: t.provider, email: t.email }));
+  }
+
   // ── Factory Registration ─────────────────────────────────
 
   registerPlatform(platform: Platform, factory: () => Integration, configSchema?: z.ZodType): void {

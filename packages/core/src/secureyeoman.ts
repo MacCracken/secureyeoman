@@ -853,6 +853,9 @@ export class SecureYeoman {
         );
         this.heartManager = new HeartManager(this.heartbeatManager);
         this.soulManager.setHeart(this.heartManager);
+        if (this.integrationManager) {
+          this.soulManager.setIntegrationManager(this.integrationManager);
+        }
         // Wire notification manager so heartbeat alerts create DB records
         if (this.notificationManager) {
           this.heartbeatManager.setNotificationManager(this.notificationManager);
@@ -2500,6 +2503,9 @@ export class SecureYeoman {
         'allowTwingate',
         'allowOrgIntent',
         'allowIntentEditor',
+        'allowCodeEditor',
+        'allowAdvancedEditor',
+        'allowTrainingExport',
       ] as const;
       for (const row of result.rows) {
         if (policyKeys.includes(row.key as (typeof policyKeys)[number])) {

@@ -183,7 +183,7 @@ export function TrainingTab() {
       <button
         onClick={() => exportMut.mutate()}
         disabled={exportMut.isPending || !stats || stats.conversations === 0}
-        className="btn btn-primary flex items-center gap-2"
+        className="btn btn-ghost flex items-center gap-2"
       >
         {exportMut.isPending ? (
           <Loader2 className="w-4 h-4 animate-spin" />

@@ -41,6 +41,9 @@ export interface McpFeatureConfig {
   // Security tools (Phase 58)
   exposeSecurityTools: boolean;
   allowedTargets: string[];
+  // Connected-account API tools
+  exposeGmail: boolean;
+  exposeTwitter: boolean;
 }
 
 const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
@@ -63,6 +66,8 @@ const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
   respectContentSignal: true,
   exposeSecurityTools: false,
   allowedTargets: [],
+  exposeGmail: false,
+  exposeTwitter: false,
 };
 
 export class McpStorage extends PgBaseStorage {

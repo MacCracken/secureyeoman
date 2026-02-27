@@ -141,6 +141,8 @@ services:
     environment:
       # VITE_GATEWAY_URL set via env_file (.env.dev) — defaults to http, override to https when TLS enabled
       VITE_HOST: "0.0.0.0"
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "300"
     depends_on:
       core:
         condition: service_healthy

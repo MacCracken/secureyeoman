@@ -77,6 +77,8 @@ import { SQLiteAuditStorage } from '../logging/sqlite-storage.js';
 import { registerBackupRoutes } from '../backup/backup-routes.js';
 import { registerTenantRoutes } from '../tenants/tenant-routes.js';
 import { registerTrainingRoutes } from '../training/training-routes.js';
+import { registerGmailRoutes } from '../integrations/gmail/gmail-routes.js';
+import { registerTwitterRoutes } from '../integrations/twitter/twitter-routes.js';
 import { CollabManager } from '../soul/collab.js';
 import { SoulStorage } from '../soul/storage.js';
 import { formatPrometheusMetrics } from './prometheus.js';
@@ -424,6 +426,19 @@ export class GatewayServer {
       } catch {
         // Integration manager may not be available — skip wiring
       }
+
+      // Gmail API proxy routes — uses stored OAuth tokens; respects personality integrationAccess mode
+      try {
+        let gmailSoulManager;
+        try {
+          gmailSoulManager = this.secureYeoman.getSoulManager();
+        } catch {
+          /* optional */
+        }
+        registerGmailRoutes(this.app, { oauthTokenService, soulManager: gmailSoulManager });
+      } catch {
+        // Gmail routes are optional — skip on error
+      }
     }
 
     // Soul routes
@@ -531,6 +546,20 @@ export class GatewayServer {
       });
     } catch {
       // Integration manager may not be available — skip routes
+    }
+
+    // Twitter API proxy routes — uses stored integration credentials; respects personality integrationAccess mode
+    try {
+      const twitterIntegrationManager = this.secureYeoman.getIntegrationManager();
+      let twitterSoulManager;
+      try {
+        twitterSoulManager = this.secureYeoman.getSoulManager();
+      } catch {
+        /* optional */
+      }
+      registerTwitterRoutes(this.app, { integrationManager: twitterIntegrationManager, soulManager: twitterSoulManager });
+    } catch {
+      // Twitter routes are optional — skip on error
     }
 
     // Diagnostic routes (Phase 39 — Channel B: sub-agent reporting + integration ping)

@@ -2272,6 +2272,8 @@ function McpTab({
                 if (t.name.startsWith('netbox_') && !securityPolicy?.allowNetBoxWrite) return false;
                 if (t.name.startsWith('twingate_') && !featureConfig?.exposeTwingateTools)
                   return false;
+                if (t.name.startsWith('gmail_') && !featureConfig?.exposeGmail) return false;
+                if (t.name.startsWith('twitter_') && !featureConfig?.exposeTwitter) return false;
                 return true;
               }).length
           }
@@ -2632,6 +2634,58 @@ function LocalServerCard({
                 className="w-3.5 h-3.5 rounded accent-primary shrink-0"
               />
             </label>
+          </div>
+
+          {/* Connected-account API tools — Gmail + Twitter */}
+          <div className="mt-3 pt-2 border-t border-border/50">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5 flex items-center gap-1">
+              <Mail className="w-3 h-3" />
+              Connected Account Tools
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <label
+                className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                title="Gmail tools — list, read, draft, and send emails via the Gmail API (gmail_*)"
+              >
+                <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs font-medium">Gmail</span>
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    gmail_list_messages, read, draft, send
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={featureConfig.exposeGmail ?? false}
+                  onChange={(e) => {
+                    onFeatureToggle({ exposeGmail: e.target.checked });
+                  }}
+                  disabled={isFeatureToggling}
+                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                />
+              </label>
+              <label
+                className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                title="Twitter/X tools — search, read timeline, post tweets, like, retweet (twitter_*)"
+              >
+                <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs font-medium">Twitter / X</span>
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    twitter_search, post, like, retweet
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={featureConfig.exposeTwitter ?? false}
+                  onChange={(e) => {
+                    onFeatureToggle({ exposeTwitter: e.target.checked });
+                  }}
+                  disabled={isFeatureToggling}
+                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                />
+              </label>
+            </div>
           </div>
 
           {/* Markdown for Agents — Content-Signal enforcement policy */}
@@ -3566,6 +3620,37 @@ function OAuthTab({
         </div>
       )}
 
+      {availableProviders.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">
+            {tokens.length > 0 ? 'Add Another Account' : 'Connect an Account'}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {availableProviders.map((providerId) => {
+              const meta = OAUTH_PROVIDER_META[providerId];
+              if (!meta) return null;
+              return (
+                <div key={providerId} className="card p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-muted/30">{meta.icon}</div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-sm">{meta.name}</h3>
+                      <p className="text-xs text-muted-foreground mt-1">{meta.description}</p>
+                      <button
+                        onClick={() => { window.location.href = meta.oauthUrl; }}
+                        className="btn btn-ghost text-xs px-3 py-1.5 mt-2"
+                      >
+                        Connect
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {tokens.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground">Connected Accounts</h3>
@@ -3598,37 +3683,6 @@ function OAuthTab({
                     >
                       Disconnect
                     </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {availableProviders.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">
-            {tokens.length > 0 ? 'Add Another Account' : 'Connect an Account'}
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {availableProviders.map((providerId) => {
-              const meta = OAUTH_PROVIDER_META[providerId];
-              if (!meta) return null;
-              return (
-                <div key={providerId} className="card p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-muted/30">{meta.icon}</div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-sm">{meta.name}</h3>
-                      <p className="text-xs text-muted-foreground mt-1">{meta.description}</p>
-                      <button
-                        onClick={() => { window.location.href = meta.oauthUrl; }}
-                        className="btn btn-ghost text-xs px-3 py-1.5 mt-2"
-                      >
-                        Connect
-                      </button>
-                    </div>
                   </div>
                 </div>
               );

@@ -31,6 +31,7 @@ export interface MessageRouterDeps {
   getActivePersonality?: () => Promise<{
     voice?: string | null;
     selectedIntegrations?: string[];
+    integrationAccess?: Array<{ id: string; mode: string }>;
   } | null>;
   /** Optional outbound webhook dispatcher — fires message.inbound events */
   outboundWebhookDispatcher?: OutboundWebhookDispatcher | null;
@@ -115,11 +116,14 @@ export class MessageRouter {
     }
 
     // Integration access enforcement — gate inbound routing by active personality's allowlist.
-    // An empty `selectedIntegrations` array means "allow all" (default / no restriction).
+    // An empty integrationAccess array means "allow all" (default / no restriction).
     if (this.deps.getActivePersonality) {
       const personality = await this.deps.getActivePersonality();
-      const allowedIntegrations = personality?.selectedIntegrations ?? [];
-      if (allowedIntegrations.length > 0 && !allowedIntegrations.includes(message.integrationId)) {
+      // Prefer integrationAccess (new), fall back to selectedIntegrations (legacy)
+      const accessList = personality?.integrationAccess ?? [];
+      const legacyList = personality?.selectedIntegrations ?? [];
+      const allowedIds = accessList.length > 0 ? accessList.map((a) => a.id) : legacyList;
+      if (allowedIds.length > 0 && !allowedIds.includes(message.integrationId)) {
         logger.info(
           `Inbound message from integration ${message.integrationId} (${message.platform}) ` +
             `blocked — not in active personality's integration allowlist`

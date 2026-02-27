@@ -1519,6 +1519,8 @@ export interface McpConfigResponse {
   proxyDefaultCountry: string;
   exposeSecurityTools: boolean;
   allowedTargets: string[];
+  exposeGmail: boolean;
+  exposeTwitter: boolean;
 }
 
 export async function fetchMcpConfig(): Promise<McpConfigResponse> {
@@ -1545,6 +1547,8 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
       proxyDefaultCountry: '',
       exposeSecurityTools: false,
       allowedTargets: [],
+      exposeGmail: false,
+      exposeTwitter: false,
     };
   }
 }

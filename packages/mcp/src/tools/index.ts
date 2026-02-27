@@ -30,6 +30,8 @@ import { registerDesktopTools } from './desktop-tools.js';
 import { registerNetworkTools } from './network-tools.js';
 import { registerTwingateTools } from './twingate-tools.js';
 import { registerIntentTools } from './intent-tools.js';
+import { registerGmailTools } from './gmail-tools.js';
+import { registerTwitterTools } from './twitter-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -70,4 +72,6 @@ export async function registerAllTools(
   await registerNetworkTools(server, config, middleware);
   registerTwingateTools(server, client, config, middleware);
   registerIntentTools(server, client, config, middleware);
+  registerGmailTools(server, client, middleware);
+  registerTwitterTools(server, client, middleware);
 }

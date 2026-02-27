@@ -185,6 +185,10 @@ function filterMcpTools(
         continue;
       if (n.startsWith('twingate_') && !(globalTwingateOk && perPersonality.exposeTwingate))
         continue;
+      if (n.startsWith('gmail_') && !(globalConfig.exposeGmail && perPersonality.exposeGmail))
+        continue;
+      if (n.startsWith('twitter_') && !(globalConfig.exposeTwitter && perPersonality.exposeTwitter))
+        continue;
     } else {
       if (!selectedServers.includes(tool.serverName)) continue;
     }

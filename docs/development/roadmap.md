@@ -153,4 +153,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-27 — v2026.2.27 released. Phase 62 (Local-First AI) in progress: Ollama embeddings, offline detection, and training dataset export complete. Model lifecycle management and hybrid cloud/local switch remain. Phases 60–61 enterprise work complete.*
+*Last updated: 2026-02-27 — v2026.2.27b released. Phase 63 (Connected Account MCP): Gmail (7 tools) and Twitter/X (10 tools) added to YEOMAN MCP with two-level gating (global + per-personality). Security policy persistence bug fixed (allowCodeEditor, allowAdvancedEditor, allowTrainingExport now survive restarts). ADR 147.*

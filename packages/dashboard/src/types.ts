@@ -197,6 +197,8 @@ export interface Personality {
       exposeNetworkUtils?: boolean;
       exposeTwingateTools?: boolean;
       exposeOrgIntentTools?: boolean;
+      exposeGmail?: boolean;
+      exposeTwitter?: boolean;
     };
     proactiveConfig?: {
       enabled?: boolean;
@@ -291,6 +293,8 @@ export interface PersonalityCreate {
       exposeNetworkUtils?: boolean;
       exposeTwingateTools?: boolean;
       exposeOrgIntentTools?: boolean;
+      exposeGmail?: boolean;
+      exposeTwitter?: boolean;
     };
     proactiveConfig?: {
       enabled?: boolean;
@@ -786,6 +790,8 @@ export interface McpFeatureConfig {
   exposeTwingateTools: boolean;
   exposeOrgIntentTools: boolean;
   respectContentSignal: boolean;
+  exposeGmail: boolean;
+  exposeTwitter: boolean;
 }
 
 export interface McpServerHealth {

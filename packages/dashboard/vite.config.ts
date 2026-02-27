@@ -29,6 +29,11 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       strictPort: true,
       allowedHosts,
+      watch: {
+        // Required for file change detection inside Docker containers
+        usePolling: true,
+        interval: 300,
+      },
       https:
         env.VITE_TLS_CERT && env.VITE_TLS_KEY
           ? {

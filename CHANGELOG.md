@@ -1,3 +1,23 @@
+## [2026.2.27b] — 2026-02-27
+
+### Added
+
+#### Gmail & Twitter MCP Tools (Phase 63)
+
+- **Gmail MCP Tools** — 7 native `gmail_*` tools added to the YEOMAN MCP server: `gmail_profile`, `gmail_list_messages`, `gmail_read_message`, `gmail_read_thread`, `gmail_list_labels`, `gmail_compose_draft`, `gmail_send_email`. All proxy through `/api/v1/gmail/*` routes backed by the Gmail REST API. Access token auto-refreshed via `OAuthTokenService`. *(ADR 147, Guide: gmail-twitter-mcp.md)*
+- **Twitter/X MCP Tools** — 10 native `twitter_*` tools: `twitter_profile`, `twitter_search`, `twitter_get_tweet`, `twitter_get_user`, `twitter_get_mentions`, `twitter_get_timeline`, `twitter_post_tweet`, `twitter_like_tweet`, `twitter_retweet`, `twitter_unretweet`. Proxy through `/api/v1/twitter/*` using `twitter-api-v2`. Bearer-token for read-only; OAuth 1.0a for write and user-context. *(ADR 147, Guide: gmail-twitter-mcp.md)*
+- **Twitter draft mode** — In `draft` integration access mode, `POST /api/v1/twitter/tweets` returns `{ draftMode: true, preview: {...}, message: "Tweet NOT posted. Show to user for confirmation." }` without calling the Twitter API (no native draft endpoint exists).
+- **Two-level feature gating** — Gmail and Twitter tools gated at: (1) global `McpFeatureConfig.exposeGmail/exposeTwitter` toggled in Connections → MCP → YEOMAN MCP; (2) per-personality `McpFeatures.exposeGmail/exposeTwitter` toggled in Edit Personality → Body → MCP. Both must be `true` for tools to appear. Personality-level toggles are greyed out when the global toggle is off.
+- **Tool count live update** — The "X tools" badge in the YEOMAN MCP card filters gmail_* and twitter_* client-side from `featureConfig`, so the count updates immediately on toggle without a round-trip.
+- **Soul prompt tool awareness** — `composeSoulPrompt()` now appends the available `gmail_*`/`twitter_*` tool names (filtered by integration access mode) inline with each connected integration line, so the personality knows exactly what it can do.
+
+### Fixed
+
+- **Security policy not saved across restarts** — `loadSecurityPolicyFromDb()` in `secureyeoman.ts` maintained an explicit `policyKeys` allowlist used to filter which DB rows are applied to `config.security` at startup. `allowCodeEditor`, `allowAdvancedEditor`, and `allowTrainingExport` were missing from this list, so toggling them in the dashboard was saved to the DB but silently ignored on the next restart. All three keys now included.
+- **Training Download button style** — Changed from `btn-primary` to `btn-ghost` in `TrainingTab.tsx` to match the visual style of other secondary-action buttons in the Developer page.
+
+---
+
 ## [2026.2.27] — 2026-02-27
 
 ### Added
