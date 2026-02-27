@@ -275,7 +275,7 @@ export class OAuthService {
     providerId: string,
     code: string,
     redirectUri: string
-  ): Promise<{ accessToken: string; refreshToken?: string }> {
+  ): Promise<{ accessToken: string; refreshToken?: string; grantedScope?: string }> {
     const provider = OAUTH_PROVIDERS[providerId];
     if (!provider || !this.isProviderConfigured(providerId)) {
       throw new Error(`OAuth provider ${providerId} not configured`);
@@ -312,6 +312,9 @@ export class OAuthService {
       accessToken: String(data.access_token ?? ''),
       // eslint-disable-next-line @typescript-eslint/no-base-to-string
       refreshToken: data.refresh_token ? String(data.refresh_token) : undefined,
+      // Google returns the actually-granted scopes; capture them so we can store truth, not request
+      // eslint-disable-next-line @typescript-eslint/no-base-to-string
+      grantedScope: data.scope ? String(data.scope) : undefined,
     };
   }
 
@@ -484,7 +487,8 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
               userId: userInfo.id,
               accessToken: tokens.accessToken,
               refreshToken: tokens.refreshToken,
-              scopes: OAUTH_PROVIDERS.gmail?.scopes.join(' ') ?? '',
+              // Use actually-granted scopes from Google's response; fall back to requested list
+              scopes: tokens.grantedScope ?? OAUTH_PROVIDERS.gmail?.scopes.join(' ') ?? '',
               expiresIn: 3600,
             });
           }
@@ -506,7 +510,7 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
             userId: userInfo.id,
             accessToken: tokens.accessToken,
             refreshToken: tokens.refreshToken,
-            scopes: OAUTH_PROVIDERS[providerId]?.scopes.join(' ') ?? '',
+            scopes: tokens.grantedScope ?? OAUTH_PROVIDERS[providerId]?.scopes.join(' ') ?? '',
             expiresIn: 3600,
           });
 
@@ -532,7 +536,7 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
             userId: userInfo.id,
             accessToken: tokens.accessToken,
             refreshToken: tokens.refreshToken,
-            scopes: OAUTH_PROVIDERS[providerId]?.scopes.join(' ') ?? '',
+            scopes: tokens.grantedScope ?? OAUTH_PROVIDERS[providerId]?.scopes.join(' ') ?? '',
             expiresIn: 3600,
           });
         }

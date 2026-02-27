@@ -26,6 +26,7 @@ vi.mock('../api/client', () => ({
   fetchOAuthTokens: vi.fn(),
   revokeOAuthToken: vi.fn(),
   refreshOAuthToken: vi.fn(),
+  createApiKey: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -38,6 +39,7 @@ const mockFetchIntegrations = vi.mocked(api.fetchIntegrations);
 const mockFetchAvailablePlatforms = vi.mocked(api.fetchAvailablePlatforms);
 const mockTestIntegration = vi.mocked(api.testIntegration);
 const mockFetchOAuthTokens = vi.mocked(api.fetchOAuthTokens);
+const mockCreateApiKey = vi.mocked(api.createApiKey);
 
 function createQueryClient() {
   return new QueryClient({
@@ -694,5 +696,74 @@ describe('ConnectionsPage', () => {
     expect(
       await screen.findByText('Agents can reach private MCP servers and resources via Twingate')
     ).toBeInTheDocument();
+  });
+
+  // ── Connection Setup section ────────────────────────────────────────
+
+  it('shows Connect your MCP client section with generate button for LocalServerCard', async () => {
+    mockFetchMcpServers.mockResolvedValue({
+      servers: [
+        {
+          id: 'local',
+          name: 'YEOMAN MCP',
+          transport: 'streamable-http',
+          enabled: true,
+          command: null,
+          args: [],
+          description: 'Local MCP',
+          url: 'http://localhost:18789/mcp/v1',
+          env: {},
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+
+    renderComponent();
+    expect(await screen.findByText('Connect your MCP client')).toBeInTheDocument();
+    expect(screen.getByText('Generate connection token')).toBeInTheDocument();
+    expect(screen.getByText('http://localhost:18789/mcp/v1')).toBeInTheDocument();
+  });
+
+  it('shows generated token after clicking generate button', async () => {
+    const user = userEvent.setup();
+    mockFetchMcpServers.mockResolvedValue({
+      servers: [
+        {
+          id: 'local',
+          name: 'YEOMAN MCP',
+          transport: 'streamable-http',
+          enabled: true,
+          command: null,
+          args: [],
+          description: 'Local MCP',
+          url: 'http://localhost:18789/mcp/v1',
+          env: {},
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+    mockCreateApiKey.mockResolvedValue({
+      id: 'key-1',
+      name: 'YEOMAN MCP',
+      role: 'operator',
+      rawKey: 'sck_test_abc123',
+      createdAt: new Date().toISOString(),
+    } as never);
+
+    renderComponent();
+    const generateBtn = await screen.findByText('Generate connection token');
+    await user.click(generateBtn);
+
+    // Token is masked by default; "Shown once" warning and copy button should appear
+    expect(await screen.findByText(/Shown once/)).toBeInTheDocument();
+    expect(mockCreateApiKey).toHaveBeenCalledWith({ name: 'YEOMAN MCP', role: 'operator' });
+    // Reveal the token
+    const revealBtn = screen.getByTitle('Reveal token');
+    await user.click(revealBtn);
+    expect(screen.getByText('sck_test_abc123')).toBeInTheDocument();
   });
 });

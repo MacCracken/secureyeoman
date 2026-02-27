@@ -1,3 +1,108 @@
+## [2026.2.27i] — 2026-02-27
+
+### Added
+
+- **MCP connection setup in dashboard** — The YEOMAN MCP card in Connections →
+  MCP now has a "Connect your MCP client" section. Shows the server URL with a
+  copy button and a "Generate connection token" button that creates an
+  `operator`-role API key (`sck_…`) in one click. After generation the token is
+  shown inline (highlighted in amber, shown once) alongside the full JSON config
+  snippet ready to paste into any MCP client. Keys are managed in Settings →
+  API Keys. (+2 tests in `ConnectionsPage.test.tsx`)
+
+---
+
+## [2026.2.27h] — 2026-02-27
+
+### Fixed
+
+- **MCP auth now accepts API keys** — `/api/v1/auth/verify` previously only
+  validated JWT session tokens, so MCP clients had to use short-lived tokens
+  that expired hourly. The endpoint now falls back to API key (`sck_…`)
+  validation when JWT validation fails. Create a permanent key in Settings →
+  API Keys and use it as the MCP Bearer token — no re-auth needed after
+  container restarts. (+2 tests in `auth-routes.test.ts`)
+
+- **Gmail scope improvements** — `checkWriteScopes()` now also accepts the
+  broad `https://mail.google.com/` scope, covering tokens granted via Google's
+  "Full Gmail access" flow. The profile endpoint (`GET /api/v1/gmail/profile`)
+  now returns the `scopes` field so the AI can call `gmail_profile` to diagnose
+  exactly which permissions are stored. (+3 tests in `gmail-routes.test.ts`)
+
+- **"Tool names must be unique" (Anthropic 400)** — Removed the short-lived
+  `gmail_create_draft` alias tool. With 186 tools registered, Claude Code was
+  combining a stale pre-rebuild tool list with the new one, producing duplicates
+  that Anthropic rejects. Restored to 185 unique tools. Root cause: fully
+  restart the Claude Code process after rebuilding containers to force a clean
+  MCP reconnect.
+
+- **`gmail_compose_draft` scope check** — `GMAIL_WRITE_SCOPES` extended with
+  `https://mail.google.com/` so broad-access tokens pass the pre-flight check
+  without hitting a 403.
+
+---
+
+## [2026.2.27g] — 2026-02-27
+
+### Added
+
+- **Agent World Evolution** — Phase 69 evolves the ASCII agent world into a
+  living 2D office where personalities move between named zones.
+
+  **CLI (`secureyeoman world`):**
+  - New `--size normal` (default) and `--size large` flags activate world-map
+    mode with BFS-navigated floor plans. Personalities move one step per
+    animation frame from their home desk to their target zone.
+  - New `--speed slow|normal|fast` flag overrides mood-driven animation speed.
+  - **Zone routing**: offline → Workspace, meeting pairs → Meeting Room,
+    system_health tasks → Server Room, idle >60 s → Break Room.
+  - **Meeting detection**: agents sharing a `correlationId` on running tasks, or
+    with `type` containing `'a2a'`, converge in the Meeting Room and show yellow
+    speech bubbles with the active task name.
+  - **World mood**: `calm` / `productive` / `busy` / `alert` / `celebration` —
+    drives fps, server rack color (alert→red), celebration stars.
+  - New exports: `buildFloorPlan()`, `findPath()`, `computeMood()` (all pure
+    functions, unit-tested without a TTY).
+  - Compact size (`--size compact`) retains the original card-grid layout.
+
+  **Dashboard (`AgentWorldWidget`):**
+  - **Grid/Map toggle** in the widget header; selection persisted to
+    `localStorage['world:viewMode']`.
+  - **Map view**: 2×2 CSS grid with zone boxes (Workspace, Meeting Room, Break
+    Room, Server Room). Agents appear as `face + name` pills that can be clicked.
+  - **`onAgentClick` prop** — both `MetricsPage` and `AdvancedEditorPage` wire
+    this to navigate to `/soul/personalities?focus=<id>`.
+  - Exported `computeZoneForAgent()` pure function for zone tests.
+  - New guide: `docs/guides/agent-world.md`.
+
+  Tests: +35 CLI (world.test.ts) + 14 dashboard (AgentWorldWidget.test.tsx)
+  + 1 MetricsPage = 50 new tests. ADR 152 updated.
+
+## [2026.2.27f] — 2026-02-27
+
+### Added
+
+- **Agent World dashboard integration** — The ASCII agent world is also available
+  directly in the dashboard via a shared `AgentWorldWidget` React component:
+  - **Mission Control card** — new "Agent World" card in the Mission Control tab
+    (between the Infrastructure Row and System Topology), showing up to 12 agents.
+  - **Advanced Editor panel** — collapsible "World" panel below the Inline Chat in
+    the Advanced Editor workspace, toggled via a Globe icon button in the toolbar.
+    State persisted in `localStorage` (`editor:showWorld`).
+  - Tests: 20 new tests in `AgentWorldWidget.test.tsx`; +6 in MetricsPage; +6 in
+    AdvancedEditorPage. ADR 152.
+
+- **ASCII Agent World** — New `secureyeoman world` CLI command (alias: `w`) renders
+  a full-screen animated ASCII "office" in the terminal. Each personality appears as
+  a character at their own workstation with a 4-frame state machine: `idle` (slow
+  blink), `thinking` (rotating dots), `typing` (flashing keyboard), `talking`
+  (recent audit event), `offline` (inactive personality). Character frames are
+  staggered so agents animate out of phase. Data is pulled from the running server
+  via polling (`/soul/personalities` every 10 s, `/tasks` every 3 s,
+  `/audit/entries` every 5 s). Activity log at the bottom streams new events as
+  they arrive. Key bindings: `r` refresh, `↑↓` scroll log, `q`/`Ctrl+C` quit.
+  No new dependencies — pure Node.js ANSI. ADR 152.
+
 ## [2026.2.27e] — 2026-02-27
 
 ### Added

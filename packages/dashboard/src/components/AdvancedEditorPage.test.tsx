@@ -424,6 +424,56 @@ describe('AdvancedEditorPage', () => {
     expect(screen.queryByTitle('New terminal')).not.toBeInTheDocument();
   });
 
+  // ── Agent World toggle ──────────────────────────────────────────────
+
+  it('shows a "World" toggle button in the toolbar', async () => {
+    renderComponent();
+    expect(await screen.findByTitle(/show agent world/i)).toBeInTheDocument();
+  });
+
+  it('agent world panel is hidden by default', async () => {
+    renderComponent();
+    await screen.findByText('Workspace');
+    expect(screen.queryByText('Agent World')).not.toBeInTheDocument();
+  });
+
+  it('clicking World button shows the Agent World panel', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    const btn = await screen.findByTitle(/show agent world/i);
+    await user.click(btn);
+    expect(await screen.findByText('Agent World')).toBeInTheDocument();
+  });
+
+  it('clicking X in the Agent World panel hides it', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    const openBtn = await screen.findByTitle(/show agent world/i);
+    await user.click(openBtn);
+    await screen.findByText('Agent World');
+    const closeBtn = await screen.findByTitle(/close agent world/i);
+    await user.click(closeBtn);
+    expect(screen.queryByText('Agent World')).not.toBeInTheDocument();
+  });
+
+  it('persists world panel state to localStorage on open', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    const btn = await screen.findByTitle(/show agent world/i);
+    await user.click(btn);
+    expect(localStorage.getItem('editor:showWorld')).toBe('true');
+  });
+
+  it('persists world panel state to localStorage on close', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    const openBtn = await screen.findByTitle(/show agent world/i);
+    await user.click(openBtn);
+    const closeBtn = await screen.findByTitle(/close agent world/i);
+    await user.click(closeBtn);
+    expect(localStorage.getItem('editor:showWorld')).toBe('false');
+  });
+
   it('submitting via click on run button calls executeTerminalCommand', async () => {
     const user = userEvent.setup();
     mockExecuteTerminalCommand.mockResolvedValue({

@@ -562,3 +562,80 @@ describe('MetricsPage — Costs tab', () => {
     );
   });
 });
+
+// ── Agent World card ────────────────────────────────────────────────────────────
+
+describe('MetricsPage — Agent World card', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    capturedOnNodeClick = undefined;
+    mockNavigate.mockReset();
+
+    mockFetchHeartbeatStatus.mockResolvedValue({
+      running: true, enabled: true, intervalMs: 60_000, beatCount: 0, lastBeat: null, tasks: [],
+    });
+    mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
+    mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
+    mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
+    mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
+    mockFetchCostHistory.mockResolvedValue({
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
+    mockFetchPersonalities.mockResolvedValue({ personalities: [] });
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
+    mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0, limit: 6, offset: 0 });
+    mockFetchWorkflows.mockResolvedValue({ definitions: [], total: 0 });
+  });
+
+  it('renders "Agent World" card heading in Mission Control tab', async () => {
+    renderMetricsPage();
+    expect(await screen.findByText('Agent World')).toBeInTheDocument();
+  });
+
+  it('renders "Live personality activity" card description', async () => {
+    renderMetricsPage();
+    expect(await screen.findByText('Live personality activity')).toBeInTheDocument();
+  });
+
+  it('shows empty message when no personalities returned', async () => {
+    renderMetricsPage();
+    expect(await screen.findByText(/no agents found/i)).toBeInTheDocument();
+  });
+
+  it('shows agent cards when personalities are available', async () => {
+    mockFetchPersonalities.mockResolvedValue({
+      personalities: [
+        { id: 'p-1', name: 'FRIDAY', isActive: true, createdAt: 1000, updatedAt: 1000 } as any,
+      ],
+    });
+    renderMetricsPage();
+    expect(await screen.findByText('FRIDAY')).toBeInTheDocument();
+  });
+
+  it('Agent World card is absent from the Costs tab', async () => {
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
+    await screen.findByRole('tab', { name: /costs/i });
+    expect(screen.queryByText('Agent World')).not.toBeInTheDocument();
+  });
+
+  it('clicking an agent card navigates to /soul/personalities?focus=<id>', async () => {
+    mockFetchPersonalities.mockResolvedValue({
+      personalities: [
+        {
+          id: 'p-nav-1',
+          name: 'NavAgent',
+          isActive: true,
+          createdAt: 1_000_000,
+          updatedAt: 1_000_000,
+        } as any,
+      ],
+    });
+    renderMetricsPage();
+    await screen.findByText('NavAgent');
+    fireEvent.click(screen.getByTitle(/NavAgent/i));
+    expect(mockNavigate).toHaveBeenCalledWith('/soul/personalities?focus=p-nav-1');
+  });
+});

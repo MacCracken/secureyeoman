@@ -15,6 +15,14 @@ import { sendError } from '../../utils/errors.js';
 
 const GMAIL_API = 'https://gmail.googleapis.com/gmail/v1/users/me';
 
+// Scopes required by write operations — must be present in the stored token grant.
+// Includes the broad https://mail.google.com/ scope as an acceptable alternative.
+const GMAIL_WRITE_SCOPES = [
+  'https://www.googleapis.com/auth/gmail.compose',
+  'https://www.googleapis.com/auth/gmail.modify',
+  'https://mail.google.com/',
+];
+
 export interface GmailRoutesOptions {
   oauthTokenService: OAuthTokenService;
   soulManager?: SoulManager;
@@ -72,13 +80,13 @@ async function fetchGmail(
 }
 
 /**
- * Find the first gmail OAuth token and return { accessToken, email, tokenId }.
+ * Find the first gmail OAuth token and return { accessToken, email, tokenId, mode, scopes }.
  * Also returns the mode from the active personality's integrationAccess, defaulting to 'auto'.
  */
 async function resolveGmailAccess(
   oauthTokenService: OAuthTokenService,
   soulManager?: SoulManager
-): Promise<{ accessToken: string; email: string; tokenId: string; mode: string } | null> {
+): Promise<{ accessToken: string; email: string; tokenId: string; mode: string; scopes: string } | null> {
   const tokens = await oauthTokenService.listTokens();
   // Prefer the gmail-specific token (has Gmail API scopes) over a generic google token
   const gmailToken =
@@ -103,7 +111,26 @@ async function resolveGmailAccess(
     }
   }
 
-  return { accessToken, email: gmailToken.email, tokenId: gmailToken.id, mode };
+  return { accessToken, email: gmailToken.email, tokenId: gmailToken.id, mode, scopes: gmailToken.scopes ?? '' };
+}
+
+/**
+ * Check whether the stored token scopes include at least one of the required write scopes.
+ * Returns an error message string if insufficient, or null if OK.
+ */
+function checkWriteScopes(scopes: string): string | null {
+  if (!scopes) return null; // no scope info stored — let the API decide
+  const granted = new Set(scopes.split(/\s+/));
+  const hasWrite = GMAIL_WRITE_SCOPES.some((s) => granted.has(s));
+  if (!hasWrite) {
+    return (
+      'Gmail access denied: your connected account was not granted compose/modify permissions. ' +
+      'Disconnect and reconnect your Gmail account — on the Google permissions screen make sure to ' +
+      'approve all requested Gmail permissions. If the problem persists, verify that your Google Cloud ' +
+      'project has the Gmail API enabled and the required scopes on the OAuth consent screen.'
+    );
+  }
+  return null;
 }
 
 // ─── Route registration ────────────────────────────────────────
@@ -123,7 +150,7 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
       return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, gmailErrorMessage(resp.status, body));
     }
     const data = await resp.json();
-    return reply.send({ ...(data as object), email: creds.email, mode: creds.mode, tokenId: creds.tokenId });
+    return reply.send({ ...(data as object), email: creds.email, mode: creds.mode, tokenId: creds.tokenId, scopes: creds.scopes });
   });
 
   // GET /api/v1/gmail/messages?q=&maxResults=&pageToken=
@@ -220,6 +247,8 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
     if (creds.mode === 'suggest') {
       return sendError(reply, 403, `Gmail mode is '${creds.mode}' — composing drafts is not permitted. The personality may only read messages.`);
     }
+    const scopeErr = checkWriteScopes(creds.scopes);
+    if (scopeErr) return sendError(reply, 403, scopeErr);
 
     const { to, subject, body: bodyText, threadId, cc, bcc } = req.body;
     const headers = [
@@ -285,6 +314,8 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
             : 'The personality may only read messages.')
       );
     }
+    const scopeErrSend = checkWriteScopes(creds.scopes);
+    if (scopeErrSend) return sendError(reply, 403, scopeErrSend);
 
     const { to, subject, body: bodyText, threadId, cc, bcc, inReplyTo, references } = req.body;
     const headers = [

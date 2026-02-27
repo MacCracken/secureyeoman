@@ -30,8 +30,8 @@ function makeMockAuthService(overrides?: Partial<AuthService>): AuthService {
     refresh: vi.fn().mockResolvedValue({ token: 'new-jwt', refreshToken: 'new-refresh' }),
     logout: vi.fn().mockResolvedValue(undefined),
     resetPassword: vi.fn().mockResolvedValue(undefined),
-    createApiKey: vi.fn().mockResolvedValue({ id: 'key-1', name: 'test-key', rawKey: 'sk-test' }),
-    listApiKeys: vi.fn().mockReturnValue([{ id: 'key-1', name: 'test-key' }]),
+    createApiKey: vi.fn().mockResolvedValue({ id: 'key-1', name: 'test-key', key: 'sk-test', keyPrefix: 'sck_test', role: 'viewer', createdAt: 1700000000000, expiresAt: null }),
+    listApiKeys: vi.fn().mockResolvedValue([{ id: 'key-1', name: 'test-key', key_prefix: 'sck_test', role: 'viewer', created_at: 1700000000000, expires_at: null, last_used_at: null, revoked_at: null, user_id: 'user-1' }]),
     validateToken: vi.fn().mockResolvedValue(AUTH_USER),
     revokeApiKey: vi.fn().mockResolvedValue(true),
     ...overrides,
@@ -292,6 +292,35 @@ describe('POST /api/v1/auth/verify', () => {
       payload: {},
     });
     expect(res.statusCode).toBe(400);
+  });
+
+  it('falls back to API key validation when JWT fails — allows MCP to auth with sck_ keys', async () => {
+    // JWT validation fails, but API key validation succeeds
+    const app = buildApp({
+      validateToken: vi.fn().mockRejectedValue(new Error('not a jwt')),
+      validateApiKey: vi.fn().mockResolvedValue({ ...AUTH_USER, authMethod: 'api_key' as const }),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/verify',
+      payload: { token: 'sck_abc123' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().valid).toBe(true);
+  });
+
+  it('returns valid: false when both JWT and API key validation fail', async () => {
+    const app = buildApp({
+      validateToken: vi.fn().mockRejectedValue(new Error('not a jwt')),
+      validateApiKey: vi.fn().mockRejectedValue(new Error('invalid api key')),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/verify',
+      payload: { token: 'garbage' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().valid).toBe(false);
   });
 });
 

@@ -45,6 +45,9 @@ import {
   PlayCircle,
   Monitor,
   Network,
+  Key,
+  Copy,
+  Check,
 } from 'lucide-react';
 import {
   fetchMcpServers,
@@ -67,6 +70,7 @@ import {
   fetchOAuthTokens,
   revokeOAuthToken,
   refreshOAuthToken,
+  createApiKey,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type { McpServerConfig, McpToolDef, McpFeatureConfig, IntegrationInfo, OAuthConnectedToken } from '../types';
@@ -2425,6 +2429,42 @@ function LocalServerCard({
       ]),
   });
 
+  const [mcpToken, setMcpToken] = useState<string | null>(null);
+  const [showToken, setShowToken] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+  const [copiedToken, setCopiedToken] = useState(false);
+  const [copiedConfig, setCopiedConfig] = useState(false);
+
+  const createMcpKeyMut = useMutation({
+    mutationFn: () => createApiKey({ name: 'YEOMAN MCP', role: 'operator' }),
+    onSuccess: (result) => {
+      setMcpToken(result.rawKey);
+      void queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
+    },
+  });
+
+  const mcpUrl = server.url ?? `${window.location.origin}/mcp/v1`;
+
+  function copyText(text: string, setter: (v: boolean) => void) {
+    void navigator.clipboard.writeText(text).then(() => {
+      setter(true);
+      setTimeout(() => setter(false), 2000);
+    });
+  }
+
+  const mcpJsonConfig = JSON.stringify(
+    {
+      mcpServers: {
+        yeoman: {
+          url: mcpUrl,
+          headers: { Authorization: `Bearer ${mcpToken ?? '<your-token>'}` },
+        },
+      },
+    },
+    null,
+    2
+  );
+
   return (
     <div className={`card p-3 sm:p-4 ${!server.enabled ? 'opacity-60' : ''}`}>
       <div className="flex items-start gap-2 sm:gap-3">
@@ -2467,6 +2507,92 @@ function LocalServerCard({
             {isRestarting && <span className="text-yellow-400 animate-pulse">Reloading...</span>}
           </div>
         </div>
+      </div>
+
+      {/* Connection Setup */}
+      <div className="mt-3 pt-3 border-t border-border">
+        <h4 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+          <Key className="w-3 h-3" />
+          Connect your MCP client
+        </h4>
+
+        {/* Server URL row */}
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-[10px] text-muted-foreground shrink-0">URL</span>
+          <code className="flex-1 text-[10px] bg-muted/40 rounded px-2 py-1 font-mono truncate">
+            {mcpUrl}
+          </code>
+          <button
+            onClick={() => copyText(mcpUrl, setCopiedUrl)}
+            className="shrink-0 p-1 rounded hover:bg-muted/50 transition-colors text-muted-foreground"
+            title="Copy URL"
+          >
+            {copiedUrl ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+          </button>
+        </div>
+
+        {/* Token row */}
+        {mcpToken ? (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-muted-foreground shrink-0">Token</span>
+              <code className="flex-1 text-[10px] bg-muted/40 rounded px-2 py-1 font-mono truncate text-amber-400">
+                {showToken ? mcpToken : '••••••••••••••••••••••••••••••••'}
+              </code>
+              <button
+                onClick={() => setShowToken((v) => !v)}
+                className="shrink-0 p-1 rounded hover:bg-muted/50 transition-colors text-muted-foreground"
+                title={showToken ? 'Hide token' : 'Reveal token'}
+              >
+                {showToken ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+              </button>
+              <button
+                onClick={() => copyText(mcpToken, setCopiedToken)}
+                className="shrink-0 p-1 rounded hover:bg-muted/50 transition-colors text-muted-foreground"
+                title="Copy token"
+              >
+                {copiedToken ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+              </button>
+            </div>
+            <p className="text-[10px] text-amber-500 flex items-center gap-1">
+              <Info className="w-2.5 h-2.5 shrink-0" />
+              Shown once — copy it now. Manage keys in Settings → API Keys.
+            </p>
+
+            {/* JSON config snippet */}
+            <div className="mt-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] text-muted-foreground">Config snippet</span>
+                <button
+                  onClick={() => copyText(mcpJsonConfig, setCopiedConfig)}
+                  className="text-[10px] flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {copiedConfig ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                  {copiedConfig ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+              <pre className="text-[9px] bg-muted/40 rounded p-2 font-mono overflow-x-auto whitespace-pre text-muted-foreground">
+                {mcpJsonConfig}
+              </pre>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => createMcpKeyMut.mutate()}
+            disabled={createMcpKeyMut.isPending}
+            className="w-full text-xs py-1.5 px-3 rounded-md bg-primary/10 hover:bg-primary/20 text-primary transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+          >
+            {createMcpKeyMut.isPending ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <Key className="w-3 h-3" />
+            )}
+            Generate connection token
+          </button>
+        )}
+        {createMcpKeyMut.isError && (
+          <p className="text-[10px] text-destructive mt-1">Failed to generate token — try again.</p>
+        )}
       </div>
 
       {featureConfig && server.enabled && (

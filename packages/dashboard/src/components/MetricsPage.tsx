@@ -66,6 +66,7 @@ import {
 } from '../api/client';
 import type { CostBreakdownResponse, CostHistoryParams, WorkflowDefinition } from '../api/client';
 import { ErrorBoundary } from './common/ErrorBoundary';
+import { AgentWorldWidget } from './AgentWorldWidget';
 import type {
   MetricsSnapshot,
   HealthStatus,
@@ -307,6 +308,15 @@ function MissionControlTab({
   onViewCosts,
 }: MissionControlTabProps) {
   const heartbeatRunning = heartbeatStatus?.running ?? false;
+
+  // Agent World view mode (lifted from widget so toggle lives in card-header)
+  const [worldViewMode, setWorldViewMode] = useState<'grid' | 'map'>(
+    () => (localStorage.getItem('world:viewMode') ?? 'grid') as 'grid' | 'map'
+  );
+  const setAndPersistWorldView = (m: 'grid' | 'map') => {
+    setWorldViewMode(m);
+    localStorage.setItem('world:viewMode', m);
+  };
 
   // Live data feeds
   const { data: tasksData } = useQuery({
@@ -813,6 +823,46 @@ function MissionControlTab({
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* ── Agent World ───────────────────────────────────────────────── */}
+      <div className="card">
+        <div className="card-header">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bot className="w-4 h-4 text-muted-foreground" />
+              <div>
+                <h2 className="card-title text-sm">Agent World</h2>
+                <p className="card-description text-xs">Live personality activity</p>
+              </div>
+            </div>
+            <div className="flex gap-0.5">
+              <button
+                onClick={() => setAndPersistWorldView('grid')}
+                className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'grid' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                title="Card grid view"
+                aria-pressed={worldViewMode === 'grid'}
+              >
+                ≡ Grid
+              </button>
+              <button
+                onClick={() => setAndPersistWorldView('map')}
+                className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'map' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                title="World map view"
+                aria-pressed={worldViewMode === 'map'}
+              >
+                ⊞ Map
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="card-content">
+          <AgentWorldWidget
+            maxAgents={12}
+            viewMode={worldViewMode}
+            onAgentClick={(id) => navigate(`/soul/personalities?focus=${id}`)}
+          />
         </div>
       </div>
 

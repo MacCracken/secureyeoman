@@ -601,16 +601,27 @@ export class BrainStorage extends PgBaseStorage {
   }
 
   async getEnabledSkills(personalityId?: string | null): Promise<Skill[]> {
-    let sql = "SELECT * FROM brain.skills WHERE enabled = true AND status = 'active'";
+    let sql: string;
     const params: unknown[] = [];
 
     if (personalityId !== undefined) {
-      // Return skills scoped to this personality OR global skills (personality_id IS NULL)
-      sql += ' AND (personality_id = $1 OR personality_id IS NULL)';
+      // Deduplicate by name: if both a personality-specific and a global skill share the
+      // same name, return only one row — preferring the personality-specific record so that
+      // per-personality overrides take effect rather than the global fallback appearing twice.
+      sql = `
+        SELECT DISTINCT ON (name) *
+        FROM brain.skills
+        WHERE enabled = true AND status = 'active'
+          AND (personality_id = $1 OR personality_id IS NULL)
+        ORDER BY name,
+                 (personality_id IS NOT NULL) DESC,
+                 usage_count DESC,
+                 created_at DESC
+      `;
       params.push(personalityId);
+    } else {
+      sql = "SELECT * FROM brain.skills WHERE enabled = true AND status = 'active' ORDER BY usage_count DESC, created_at DESC";
     }
-
-    sql += ' ORDER BY usage_count DESC, created_at DESC';
 
     const rows = await this.queryMany<SkillRow>(sql, params);
     return rows.map(rowToSkill);

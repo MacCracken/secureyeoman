@@ -33,6 +33,7 @@
  *   secureyeoman tui                  # Full-screen terminal dashboard
  *   secureyeoman agents               # View/toggle agent feature flags
  *   secureyeoman migrate              # Run database migrations
+ *   secureyeoman world                # ASCII animated agent world
  */
 
 import { createRouter } from './cli/router.js';
@@ -242,6 +243,14 @@ router.registerLazy({
   description: 'Export conversations and memories as LLM training datasets',
   usage: 'secureyeoman training <export|stats> [options]',
   loader: () => import('./cli/commands/training.js').then((m) => m.trainingCommand),
+});
+
+router.registerLazy({
+  name: 'world',
+  aliases: ['w'],
+  description: 'ASCII animated agent world — watch your personalities come alive',
+  usage: 'secureyeoman world [--url URL] [--fps N]',
+  loader: () => import('./cli/commands/world.js').then((m) => m.worldCommand),
 });
 
 // ── Help command (eager — uses router directly) ────────────────────────────

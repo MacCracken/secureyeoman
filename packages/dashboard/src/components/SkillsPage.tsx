@@ -1089,16 +1089,17 @@ function InstalledSkillsTab({ onNavigateTab }: { onNavigateTab?: (tab: TabType) 
         <div className="space-y-8">
           {SOURCE_SECTIONS.map((section) => {
             const sectionSkills = filteredSkills.filter((s) => section.key.includes(s.source));
-            if (sectionSkills.length === 0) return null;
+            const groupedSectionSkills = groupSkillsByName(sectionSkills);
+            if (groupedSectionSkills.length === 0) return null;
             return (
               <section key={section.key[0]}>
                 <div className="flex items-center gap-2 mb-3">
                   {section.icon}
                   <h3 className="text-sm font-semibold">{section.label}</h3>
-                  <span className="text-xs text-muted-foreground">({sectionSkills.length})</span>
+                  <span className="text-xs text-muted-foreground">({groupedSectionSkills.length})</span>
                 </div>
                 <div className="space-y-2">
-                  {groupSkillsByName(sectionSkills).map(renderSkillGroup)}
+                  {groupedSectionSkills.map(renderSkillGroup)}
                 </div>
               </section>
             );

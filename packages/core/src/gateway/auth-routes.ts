@@ -161,7 +161,15 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
           userId: request.authUser!.userId,
           expiresInDays,
         });
-        return reply.code(201).send(result);
+        return reply.code(201).send({
+          id: result.id,
+          name: result.name,
+          rawKey: result.key,
+          prefix: result.keyPrefix,
+          role: result.role,
+          createdAt: new Date(result.createdAt).toISOString(),
+          expiresAt: result.expiresAt ? new Date(result.expiresAt).toISOString() : undefined,
+        });
       } catch (err) {
         if (err instanceof AuthError) {
           return sendError(reply, err.statusCode, err.message);
@@ -173,11 +181,22 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
 
   // ── GET /api/v1/auth/api-keys ─────────────────────────────────────
   app.get('/api/v1/auth/api-keys', async (request: FastifyRequest) => {
-    const keys = authService.listApiKeys(request.authUser?.userId);
+    const rows = await authService.listApiKeys(request.authUser?.userId);
+    const keys = rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      prefix: r.key_prefix,
+      role: r.role,
+      createdAt: new Date(r.created_at).toISOString(),
+      expiresAt: r.expires_at ? new Date(r.expires_at).toISOString() : undefined,
+      lastUsedAt: r.last_used_at ? new Date(r.last_used_at).toISOString() : undefined,
+    }));
     return { keys };
   });
 
   // ── POST /api/v1/auth/verify ──────────────────────────────────
+  // Accepts both JWT session tokens AND long-lived API keys (sck_… prefix).
+  // This allows MCP clients to authenticate with either token type.
   app.post(
     '/api/v1/auth/verify',
     async (request: FastifyRequest<{ Body: { token: string } }>, reply: FastifyReply) => {
@@ -186,11 +205,18 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         return sendError(reply, 400, 'Token is required');
       }
 
+      // Try JWT first, then fall back to API key validation
       try {
         const user = await authService.validateToken(token);
         return { valid: true, userId: user.userId, role: user.role, permissions: user.permissions };
       } catch {
-        return { valid: false };
+        // JWT failed — try as an API key (sck_… prefix or any non-JWT token)
+        try {
+          const user = await authService.validateApiKey(token);
+          return { valid: true, userId: user.userId, role: user.role, permissions: user.permissions };
+        } catch {
+          return { valid: false };
+        }
       }
     }
   );

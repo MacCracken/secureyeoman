@@ -454,6 +454,21 @@ describe('BrainStorage', () => {
       const sql = mockQuery.mock.calls[0][0] as string;
       expect(sql).toContain('personality_id = $1 OR personality_id IS NULL');
     });
+
+    it('deduplicates by name when personalityId is provided, preferring personality-specific rows', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await storage.getEnabledSkills('pid-1');
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('DISTINCT ON (name)');
+      expect(sql).toContain('(personality_id IS NOT NULL) DESC');
+    });
+
+    it('does not use DISTINCT ON when no personalityId is provided', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [skillRow], rowCount: 1 });
+      await storage.getEnabledSkills();
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).not.toContain('DISTINCT ON');
+    });
   });
 
   describe('incrementUsage', () => {

@@ -14,8 +14,9 @@ import {
   Send,
   Bot,
   User,
+  Globe,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   fetchPersonalities,
   fetchTasks,
@@ -27,6 +28,7 @@ import {
   sendChatMessage,
 } from '../api/client';
 import { ModelWidget } from './ModelWidget';
+import { AgentWorldWidget } from './AgentWorldWidget';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -525,6 +527,7 @@ function InlineChat({
 
 export function AdvancedEditorPage() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // ── Personality ──
   const [selectedPersonalityId, setSelectedPersonalityIdRaw] = useState<string | null>(() =>
@@ -602,6 +605,25 @@ export function AdvancedEditorPage() {
   const [watchEnabled, setWatchEnabled] = useState(false);
   const terminalOutputRef = useRef<string>('');
 
+  // ── Agent World panel ──
+  const [showWorld, setShowWorld] = useState(
+    () => localStorage.getItem('editor:showWorld') === 'true'
+  );
+  const [worldViewMode, setWorldViewMode] = useState<'grid' | 'map'>(
+    () => (localStorage.getItem('world:viewMode') ?? 'grid') as 'grid' | 'map'
+  );
+  const setAndPersistWorldView = (m: 'grid' | 'map') => {
+    setWorldViewMode(m);
+    localStorage.setItem('world:viewMode', m);
+  };
+  const toggleWorld = () => {
+    setShowWorld((v) => {
+      const next = !v;
+      localStorage.setItem('editor:showWorld', String(next));
+      return next;
+    });
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background">
       {/* ── Toolbar ── */}
@@ -645,6 +667,20 @@ export function AdvancedEditorPage() {
               <span className="hidden sm:inline">Watch</span>
             </button>
           )}
+
+          {/* Agent World toggle */}
+          <button
+            onClick={toggleWorld}
+            className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
+              showWorld
+                ? 'bg-primary/15 border-primary text-primary'
+                : 'border-border text-muted-foreground hover:text-foreground'
+            }`}
+            title={showWorld ? 'Hide agent world' : 'Show agent world — live personality activity'}
+          >
+            <Globe className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">World</span>
+          </button>
 
           {/* Model selector */}
           <div className="relative">
@@ -722,6 +758,52 @@ export function AdvancedEditorPage() {
               hasVision={hasVision && watchEnabled}
             />
           </div>
+
+          {/* Agent World panel (collapsible) */}
+          {showWorld && (
+            <div className="flex-none border-t border-border bg-background overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-1.5 bg-muted/20 border-b border-border">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Globe className="w-3.5 h-3.5" />
+                  <span className="font-medium">Agent World</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="flex gap-0.5">
+                    <button
+                      onClick={() => setAndPersistWorldView('grid')}
+                      className={`px-1.5 py-0.5 text-[11px] rounded transition-colors ${worldViewMode === 'grid' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                      title="Card grid view"
+                      aria-pressed={worldViewMode === 'grid'}
+                    >
+                      ≡ Grid
+                    </button>
+                    <button
+                      onClick={() => setAndPersistWorldView('map')}
+                      className={`px-1.5 py-0.5 text-[11px] rounded transition-colors ${worldViewMode === 'map' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                      title="World map view"
+                      aria-pressed={worldViewMode === 'map'}
+                    >
+                      ⊞ Map
+                    </button>
+                  </div>
+                  <button
+                    onClick={toggleWorld}
+                    className="text-muted-foreground hover:text-foreground transition-colors ml-1"
+                    title="Close agent world"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              <div className="p-2 overflow-x-auto">
+                <AgentWorldWidget
+                  maxAgents={8}
+                  viewMode={worldViewMode}
+                  onAgentClick={(id) => navigate(`/soul/personalities?focus=${id}`)}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

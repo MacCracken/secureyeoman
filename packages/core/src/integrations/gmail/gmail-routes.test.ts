@@ -24,6 +24,7 @@ const TOKEN_ROW = {
   provider: 'google',
   email: 'user@example.com',
   scope: 'gmail',
+  scopes: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.modify',
   expiresAt: Date.now() + 3600_000,
   createdAt: Date.now(),
 };
@@ -153,6 +154,15 @@ describe('Gmail Routes', () => {
       vi.stubGlobal('fetch', mockFetch({ emailAddress: 'user@example.com' }));
       const res = await app.inject({ method: 'GET', url: '/api/v1/gmail/profile' });
       expect(res.json().mode).toBe('suggest');
+    });
+
+    it('includes scopes in profile response for AI diagnostics', async () => {
+      const svc = mockOAuthTokenService();
+      const app = await buildApp(svc);
+      vi.stubGlobal('fetch', mockFetch({ emailAddress: 'user@example.com', messagesTotal: 1 }));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/gmail/profile' });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toHaveProperty('scopes');
     });
   });
 
@@ -290,6 +300,42 @@ describe('Gmail Routes', () => {
       });
       expect(res.statusCode).toBe(401);
       expect(res.json().message).toMatch(/reconnect your gmail account/i);
+    });
+
+    it('accepts https://mail.google.com/ broad scope for drafts', async () => {
+      const svcWithMailScope = {
+        ...mockOAuthTokenService(),
+        listTokens: vi.fn().mockResolvedValue([
+          { ...TOKEN_ROW, scopes: 'https://mail.google.com/' },
+        ]),
+        getValidToken: vi.fn().mockResolvedValue('access-token-abc'),
+      } as unknown as OAuthTokenService;
+      const app = await buildApp(svcWithMailScope);
+      vi.stubGlobal('fetch', mockFetch({ id: 'draft-broad' }, 200));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/gmail/drafts',
+        payload: draftBody,
+      });
+      expect(res.statusCode).toBe(201);
+    });
+
+    it('returns 403 when stored scopes lack write permissions', async () => {
+      const svcReadOnly = {
+        ...mockOAuthTokenService(),
+        listTokens: vi.fn().mockResolvedValue([
+          { ...TOKEN_ROW, scopes: 'https://www.googleapis.com/auth/gmail.readonly' },
+        ]),
+        getValidToken: vi.fn().mockResolvedValue('access-token-abc'),
+      } as unknown as OAuthTokenService;
+      const app = await buildApp(svcReadOnly);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/gmail/drafts',
+        payload: draftBody,
+      });
+      expect(res.statusCode).toBe(403);
+      expect(res.json().message).toMatch(/compose\/modify permissions/i);
     });
   });
 
