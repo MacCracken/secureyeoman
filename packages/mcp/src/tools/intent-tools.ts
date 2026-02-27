@@ -34,7 +34,7 @@ export function registerIntentTools(
   config: McpServiceConfig,
   middleware: ToolMiddleware
 ): void {
-  const enabled = !!config.exposeOrgIntentTools;
+  const enabled = config.exposeOrgIntentTools;
 
   // ── intent_signal_read ──────────────────────────────────────────────────────
   server.tool(

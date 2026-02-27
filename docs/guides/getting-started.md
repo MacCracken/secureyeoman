@@ -69,14 +69,21 @@ cp .env.example .env
 # Edit .env with your configuration
 
 # Run with Docker Compose (core + PostgreSQL)
-docker compose up
+docker compose --env-file .env up
 
 # Run with MCP service included
-docker compose --profile mcp up
+docker compose --env-file .env --profile mcp up
 
 # Dashboard dev server (hot-reload Vite, for frontend development only)
-docker compose --profile dev up
+docker compose --env-file .env --profile dev up
 ```
+
+> **Important — `--env-file` flag:** Always pass `--env-file <your-env-file>` when running Docker Compose. The `docker-compose.yml` uses `${VAR:-}` substitution for optional credentials (OAuth, GitHub, etc.) in the `environment:` block. Without `--env-file`, Docker Compose can only resolve these from your shell environment — if they aren't exported there, they resolve to empty strings and **override** the values set in `env_file:`. The `--env-file` flag feeds your file into substitution as well, so shell takes priority and the file is the fallback.
+>
+> For the dev profile with `.env.dev`:
+> ```bash
+> docker compose --env-file .env.dev --profile dev up -d
+> ```
 
 Docker Compose services:
 

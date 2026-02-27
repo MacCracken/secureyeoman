@@ -24,7 +24,7 @@ export function formatCsvRow(entry: AuditEntry): string {
     new Date(entry.timestamp).toISOString(),
     JSON.stringify(entry.metadata ?? {}),
   ];
-  return fields.map((f) => `"${String(f).replace(/"/g, '""')}"`).join(',') + '\n';
+  return fields.map((f) => `"${f.replace(/"/g, '""')}"`).join(',') + '\n';
 }
 
 const LEVEL_SEVERITY: Record<string, number> = {

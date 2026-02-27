@@ -55,14 +55,14 @@ import type {
 
 type SubTab = 'overview' | 'assessments' | 'findings' | 'feeds';
 
-const LEVEL_COLORS: Record<RiskLevel | string, string> = {
+const LEVEL_COLORS: Record<string, string> = {
   critical: 'text-red-600 bg-red-50 border-red-200',
   high: 'text-orange-600 bg-orange-50 border-orange-200',
   medium: 'text-yellow-700 bg-yellow-50 border-yellow-200',
   low: 'text-green-700 bg-green-50 border-green-200',
 };
 
-const SEVERITY_ICONS: Record<RiskFindingSeverity | string, React.ReactNode> = {
+const SEVERITY_ICONS: Record<string, React.ReactNode> = {
   critical: <ShieldAlert className="w-4 h-4 text-red-600" />,
   high: <AlertTriangle className="w-4 h-4 text-orange-600" />,
   medium: <AlertTriangle className="w-4 h-4 text-yellow-600" />,
@@ -70,7 +70,7 @@ const SEVERITY_ICONS: Record<RiskFindingSeverity | string, React.ReactNode> = {
   info: <Info className="w-4 h-4 text-gray-500" />,
 };
 
-function LevelBadge({ level }: { level?: RiskLevel | string }) {
+function LevelBadge({ level }: { level?: string }) {
   const cls = LEVEL_COLORS[level ?? ''] ?? 'text-gray-600 bg-gray-50 border-gray-200';
   return (
     <span
@@ -421,7 +421,7 @@ function FindingRow({
     <div className={`rounded border border-border ${compact ? 'p-2' : 'p-3'} space-y-1`}>
       <div
         className="flex items-start gap-2 cursor-pointer"
-        onClick={() => !compact && setOpen(!open)}
+        onClick={() => { if (!compact) setOpen(!open); }}
       >
         <span className="mt-0.5 shrink-0">{SEVERITY_ICONS[finding.severity]}</span>
         <div className="flex-1 min-w-0">

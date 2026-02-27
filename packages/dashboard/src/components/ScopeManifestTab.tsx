@@ -10,7 +10,7 @@ function isValidScopeEntry(value: string): boolean {
   // IPv4/CIDR
   if (/^\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?$/.test(value)) return true;
   // Hostname/domain (with optional leading dot for suffix match)
-  if (/^\.?[a-z0-9][a-z0-9\-\.]*$/i.test(value)) return true;
+  if (/^\.?[a-z0-9][a-z0-9.-]*$/i.test(value)) return true;
   return false;
 }
 

@@ -55,7 +55,7 @@ async function getNut(): Promise<NutLib> {
   if (_nutLoadError) throw new Error(_nutLoadError);
   if (_nut) return _nut;
   try {
-    // @ts-ignore — @nut-tree/nut-js is an optional dependency
+    // @ts-expect-error — @nut-tree/nut-js is an optional dependency
     const mod = await import('@nut-tree/nut-js');
     _nut = mod as unknown as NutLib;
     return _nut;

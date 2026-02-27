@@ -103,7 +103,7 @@ export class WorkflowManager {
     const run = await this.storage.createRun(definition.id, definition.name, input, triggeredBy);
 
     setImmediate(() => {
-      this.engine.execute(run, definition).catch((err) => {
+      this.engine.execute(run, definition).catch((err: unknown) => {
         this.logger.error('Workflow engine execution error', {
           runId: run.id,
           error: err instanceof Error ? err.message : String(err),

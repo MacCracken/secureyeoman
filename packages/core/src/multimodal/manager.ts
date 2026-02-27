@@ -161,7 +161,7 @@ export class MultimodalManager {
   /** Check whether the Kokoro local TTS package is installed. */
   private async isKokoroAvailable(): Promise<boolean> {
     try {
-      // @ts-ignore — kokoro-js is an optional dependency
+      // @ts-expect-error — kokoro-js is an optional dependency
       await import('kokoro-js');
       return true;
     } catch {
@@ -637,7 +637,7 @@ export class MultimodalManager {
       }>;
     };
     try {
-      // @ts-ignore — kokoro-js is an optional dependency
+      // @ts-expect-error — kokoro-js is an optional dependency
       const mod = await import('kokoro-js');
       KokoroTTS = mod.KokoroTTS;
     } catch {
@@ -1123,9 +1123,6 @@ export class MultimodalManager {
     try {
       const provider = await this.resolveTTSProvider();
 
-      let audioBase64: string;
-      let format: string;
-
       const dispatchTTS = async (): Promise<{ audioBase64: string; format: string }> => {
         switch (provider) {
           case 'voicebox':
@@ -1177,7 +1174,7 @@ export class MultimodalManager {
         }
       };
 
-      ({ audioBase64, format } = await dispatchTTS());
+      const { audioBase64, format } = await dispatchTTS();
 
       const durationMs = Date.now() - start;
       const result: TTSResult = { audioBase64, format, durationMs };

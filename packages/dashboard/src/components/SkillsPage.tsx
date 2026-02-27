@@ -39,16 +39,16 @@ import {
   disableSkill,
   approveSkill,
   rejectSkill,
-  fetchMarketplaceSkills,
-  installMarketplaceSkill,
-  uninstallMarketplaceSkill,
+  fetchCatalogSkills,
+  installCatalogSkill,
+  uninstallCatalogSkill,
   syncCommunitySkills,
   fetchCommunityStatus,
   fetchPersonalities,
   fetchSecurityPolicy,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
-import type { Skill, SkillCreate, Personality, MarketplaceSkill } from '../types';
+import type { Skill, SkillCreate, Personality, CatalogSkill } from '../types';
 import { sanitizeText } from '../utils/sanitize';
 import { useCollabEditor } from '../hooks/useCollabEditor.js';
 import { PresenceBanner } from './PresenceBanner.js';
@@ -1120,7 +1120,7 @@ function SkillCard({
   uninstalling,
   badge,
 }: {
-  skill: MarketplaceSkill;
+  skill: CatalogSkill;
   onInstall: () => void;
   onUninstall: () => void;
   onPreview: () => void;
@@ -1218,7 +1218,7 @@ function SkillPreviewModal({
   installing,
   uninstalling,
 }: {
-  skill: MarketplaceSkill;
+  skill: CatalogSkill;
   onClose: () => void;
   onInstall: () => void;
   onUninstall: () => void;
@@ -1507,12 +1507,12 @@ function MarketplaceTab() {
   const [hasInitialized, setHasInitialized] = useState(false);
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [uninstallingId, setUninstallingId] = useState<string | null>(null);
-  const [previewSkill, setPreviewSkill] = useState<MarketplaceSkill | null>(null);
+  const [previewSkill, setPreviewSkill] = useState<CatalogSkill | null>(null);
 
   // Fetch all non-community skills — keyed on personalityId so results refresh when selection changes
   const { data, isLoading } = useQuery({
     queryKey: ['marketplace', query, selectedPersonalityId],
-    queryFn: () => fetchMarketplaceSkills(query || undefined, undefined, selectedPersonalityId),
+    queryFn: () => fetchCatalogSkills(query || undefined, undefined, selectedPersonalityId),
     enabled: hasInitialized,
   });
 
@@ -1538,7 +1538,7 @@ function MarketplaceTab() {
 
   const installMut = useMutation({
     mutationFn: ({ id, personalityId }: { id: string; personalityId?: string }) =>
-      installMarketplaceSkill(id, personalityId),
+      installCatalogSkill(id, personalityId),
     onSuccess: () => {
       invalidate();
       setInstallingId(null);
@@ -1550,7 +1550,7 @@ function MarketplaceTab() {
 
   const uninstallMut = useMutation({
     mutationFn: ({ id, personalityId }: { id: string; personalityId?: string }) =>
-      uninstallMarketplaceSkill(id, personalityId),
+      uninstallCatalogSkill(id, personalityId),
     onSuccess: () => {
       invalidate();
       setUninstallingId(null);
@@ -1566,8 +1566,8 @@ function MarketplaceTab() {
   const publishedSkills = allSkills.filter((s) => s.source === 'published');
 
   const renderGrid = (
-    skills: MarketplaceSkill[],
-    badgeFn?: (s: MarketplaceSkill) => React.ReactNode
+    skills: CatalogSkill[],
+    badgeFn?: (s: CatalogSkill) => React.ReactNode
   ) => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {skills.map((skill) => (
@@ -1705,7 +1705,7 @@ function CommunityTab() {
   const [page, setPage] = useState(0);
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [uninstallingId, setUninstallingId] = useState<string | null>(null);
-  const [previewSkill, setPreviewSkill] = useState<MarketplaceSkill | null>(null);
+  const [previewSkill, setPreviewSkill] = useState<CatalogSkill | null>(null);
   const [syncResult, setSyncResult] = useState<{
     added: number;
     updated: number;
@@ -1717,7 +1717,7 @@ function CommunityTab() {
   const { data, isLoading } = useQuery({
     queryKey: ['marketplace-community', query, selectedPersonalityId, page],
     queryFn: () =>
-      fetchMarketplaceSkills(
+      fetchCatalogSkills(
         query || undefined,
         'community',
         selectedPersonalityId,
@@ -1770,7 +1770,7 @@ function CommunityTab() {
 
   const installMut = useMutation({
     mutationFn: ({ id, personalityId }: { id: string; personalityId: string }) =>
-      installMarketplaceSkill(id, personalityId),
+      installCatalogSkill(id, personalityId),
     onSuccess: () => {
       invalidate();
       setInstallingId(null);
@@ -1782,7 +1782,7 @@ function CommunityTab() {
 
   const uninstallMut = useMutation({
     mutationFn: ({ id, personalityId }: { id: string; personalityId?: string }) =>
-      uninstallMarketplaceSkill(id, personalityId),
+      uninstallCatalogSkill(id, personalityId),
     onSuccess: () => {
       invalidate();
       setUninstallingId(null);

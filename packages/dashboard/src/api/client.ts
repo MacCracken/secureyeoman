@@ -1561,7 +1561,7 @@ export async function fetchMarketplaceSkills(
   origin?: 'marketplace' | 'community',
   limit?: number,
   offset?: number
-): Promise<{ skills: import('../types').MarketplaceSkill[]; total: number }> {
+): Promise<{ skills: import('../types').CatalogSkill[]; total: number }> {
   const params = new URLSearchParams();
   if (query) params.set('query', query);
   if (origin) {

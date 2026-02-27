@@ -60,7 +60,7 @@ export class WorkflowEngine {
 
     const ctx: WorkflowEngineContext = {
       steps: {},
-      input: run.input! ?? {},
+      input: run.input ?? {},
     };
 
     try {
@@ -418,6 +418,7 @@ export class WorkflowEngine {
 
   evaluateCondition(expr: string, ctx: WorkflowEngineContext): boolean {
     try {
+      // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
       const fn = new Function('steps', 'input', `"use strict"; return !!(${expr});`);
       return fn(ctx.steps, ctx.input) === true;
     } catch {

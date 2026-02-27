@@ -27,6 +27,7 @@ async function bullshiftFetch(path: string, options: RequestInit = {}): Promise<
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      // eslint-disable-next-line @typescript-eslint/no-misused-spread
       ...options.headers,
     },
   });

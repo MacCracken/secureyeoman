@@ -18,7 +18,7 @@ type CanvasModule = any;
 
 async function tryLoadCanvas(): Promise<CanvasModule | null> {
   try {
-    // @ts-ignore — canvas is an optional dependency
+    // @ts-expect-error — canvas is an optional dependency
     return await import('canvas');
   } catch {
     return null;
@@ -60,7 +60,7 @@ async function captureViaScreenshotDesktop(options: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let screenshotDesktop: any;
   try {
-    // @ts-ignore — screenshot-desktop types may not be available
+    // @ts-expect-error — screenshot-desktop types may not be available
     screenshotDesktop = (await import('screenshot-desktop')).default;
   } catch {
     throw new Error('screenshot-desktop is not installed. Run: npm install screenshot-desktop');
@@ -80,7 +80,7 @@ async function captureViaNapiScreenshot(): Promise<Buffer> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let napiScreenshot: any;
   try {
-    // @ts-ignore — @napi-rs/screenshot is an optional dependency
+    // @ts-expect-error — @napi-rs/screenshot is an optional dependency
     napiScreenshot = await import('@napi-rs/screenshot');
   } catch {
     throw new Error('@napi-rs/screenshot is not installed. Run: npm install @napi-rs/screenshot');

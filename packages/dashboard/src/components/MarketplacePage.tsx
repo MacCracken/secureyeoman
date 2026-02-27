@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Store, Download, Trash2, Loader2, Search } from 'lucide-react';
 import {
-  fetchMarketplaceSkills,
-  installMarketplaceSkill,
-  uninstallMarketplaceSkill,
+  fetchCatalogSkills,
+  installCatalogSkill,
+  uninstallCatalogSkill,
 } from '../api/client';
-import type { MarketplaceSkill } from '../types';
+import type { CatalogSkill } from '../types';
 
 type OriginFilter = 'all' | 'marketplace' | 'community';
 
@@ -32,7 +32,7 @@ export function MarketplacePage() {
   const { data, isLoading } = useQuery({
     queryKey: ['marketplace', query, originFilter, page],
     queryFn: () =>
-      fetchMarketplaceSkills(
+      fetchCatalogSkills(
         query || undefined,
         undefined,
         undefined,
@@ -47,11 +47,11 @@ export function MarketplacePage() {
     void queryClient.invalidateQueries({ queryKey: ['skills'] });
   };
   const installMut = useMutation({
-    mutationFn: (id: string) => installMarketplaceSkill(id),
+    mutationFn: (id: string) => installCatalogSkill(id),
     onSuccess: invalidate,
   });
   const uninstallMut = useMutation({
-    mutationFn: (id: string) => uninstallMarketplaceSkill(id),
+    mutationFn: (id: string) => uninstallCatalogSkill(id),
     onSuccess: invalidate,
   });
 
@@ -111,7 +111,7 @@ export function MarketplacePage() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {skills.map((skill: MarketplaceSkill) => (
+            {skills.map((skill: CatalogSkill) => (
               <div key={skill.id} className="card p-4 flex flex-col">
                 <div className="flex-1">
                   <div className="flex items-center justify-between">

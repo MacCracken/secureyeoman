@@ -45,6 +45,29 @@ ps aux | grep secureyeoman
 **Cause:** Too many failed login attempts (5 per 15 minutes).
 **Fix:** Wait 15 minutes or restart the server to clear rate limit state.
 
+## OAuth / Docker Issues
+
+### OAuth provider not configured — `configuredProviders: []`
+**Cause:** `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` (or GitHub equivalents) are reaching the container as empty strings.
+
+**Why this happens:** `docker-compose.yml` has an `environment:` block with entries like `GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}`. Docker Compose resolves `${VAR:-}` from your **shell environment** or a **`.env` file** — not from `env_file:`. When the var isn't in your shell and there's no `.env` in the project root, it resolves to an empty string which overrides the value in `env_file:`.
+
+**Fix:** Pass `--env-file` explicitly so Docker Compose uses your env file for variable substitution too:
+
+```bash
+# Restart with env file for substitution
+docker compose --env-file .env.dev --profile dev down
+docker compose --env-file .env.dev --profile dev up -d
+```
+
+**Verify the vars are populated in the container:**
+```bash
+docker compose --profile dev exec core env | grep GOOGLE_OAUTH
+# Should show non-empty values
+```
+
+**Note:** `restart` can cache old environment values. Always use `down` + `up` after env changes.
+
 ## Integration Issues
 
 ### Telegram bot not responding

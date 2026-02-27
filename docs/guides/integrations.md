@@ -282,6 +282,12 @@ GMAIL_OAUTH_CLIENT_SECRET=your-google-client-secret
 # Can reuse GOOGLE_OAUTH_CLIENT_ID/SECRET if same GCP project
 ```
 
+> **Docker users:** Pass `--env-file` when starting the stack so these values are picked up for variable substitution as well as container environment injection:
+> ```bash
+> docker compose --env-file .env --profile dev up -d
+> ```
+> Without `--env-file`, the compose file's `${GMAIL_OAUTH_CLIENT_ID:-}` entries resolve to empty and override your `env_file:` values. See [Troubleshooting](../troubleshooting.md#oauth--docker-issues) for details.
+
 ### API Setup
 ```bash
 curl -X POST http://localhost:18789/api/v1/integrations \
@@ -629,6 +635,8 @@ curl -X POST http://localhost:18789/api/v1/integrations \
 ### Environment Variables
 - `GOOGLE_OAUTH_CLIENT_ID` — OAuth client ID for token refresh
 - `GOOGLE_OAUTH_CLIENT_SECRET` — OAuth client secret for token refresh
+
+> **Docker users:** See the [Gmail Prerequisites note](#prerequisites-1) above — the same `--env-file` requirement applies here.
 
 ### How It Works
 - **Inbound**: Polls for new/updated events at the configured interval
