@@ -219,6 +219,173 @@ describe('AuditChain', () => {
     });
   });
 
+  describe('metadata key-order stability (JSONB round-trip)', () => {
+    it('verifies correctly when metadata keys are not in alphabetical order', async () => {
+      // Simulate a JSONB round-trip: metadata stored with keys in one order,
+      // retrieved with keys in alphabetical order.
+      await chain.record({
+        event: 'e1',
+        level: 'info',
+        message: 'With metadata',
+        // Keys deliberately out of alphabetical order: z before a
+        metadata: { userId: 'u1', ip: '1.2.3.4', action: 'login' },
+      });
+
+      // Simulate a JSONB round-trip by re-creating the entry with keys in
+      // alphabetical order (as PostgreSQL JSONB would return them).
+      const entries: any[] = [];
+      for await (const e of storage.iterate()) entries.push(e);
+      entries[0].metadata = { action: 'login', ip: '1.2.3.4', userId: 'u1' };
+
+      const roundTripStorage = new InMemoryAuditStorage();
+      for (const e of entries) await roundTripStorage.append(e);
+
+      const roundTripChain = new AuditChain({ storage: roundTripStorage, signingKey: SIGNING_KEY });
+      await roundTripChain.initialize();
+      const result = await roundTripChain.verify();
+      expect(result.valid).toBe(true);
+    });
+
+    it('chain with metadata in non-alphabetical key order remains valid after a simulated JSONB read', async () => {
+      // Write entry with keys: { z, a, m } — not alphabetical
+      await chain.record({
+        event: 'hash_test',
+        level: 'info',
+        message: 'A',
+        metadata: { z: 1, a: 2, m: 3 },
+      });
+
+      // Simulate JSONB round-trip: alphabetise the keys (a, m, z)
+      const entries: any[] = [];
+      for await (const e of storage.iterate()) entries.push(e);
+      entries[0].metadata = { a: 2, m: 3, z: 1 };
+
+      const roundTrip = new InMemoryAuditStorage();
+      for (const e of entries) await roundTrip.append(e);
+
+      const rtChain = new AuditChain({ storage: roundTrip, signingKey: SIGNING_KEY });
+      await rtChain.initialize();
+      expect((await rtChain.verify()).valid).toBe(true);
+    });
+  });
+
+  describe('repair()', () => {
+    it('returns zero repairedCount for an already-valid chain', async () => {
+      await chain.record({ event: 'e1', level: 'info', message: 'A' });
+      await chain.record({ event: 'e2', level: 'info', message: 'B' });
+
+      const result = await chain.repair();
+      expect(result.entriesTotal).toBe(2);
+      expect(result.repairedCount).toBe(0);
+      expect((await chain.verify()).valid).toBe(true);
+    });
+
+    it('fixes a chain whose entries have wrong previousEntryHash', async () => {
+      await chain.record({ event: 'e1', level: 'info', message: 'First' });
+      await chain.record({ event: 'e2', level: 'info', message: 'Second' });
+
+      // Corrupt the second entry's previousEntryHash
+      const entries: any[] = [];
+      for await (const e of storage.iterate()) entries.push(e);
+      entries[1].integrity.previousEntryHash = 'corrupted' + '0'.repeat(57);
+
+      // Chain should now be invalid
+      const result1 = await chain.verify();
+      expect(result1.valid).toBe(false);
+
+      // Repair should fix it
+      const repairResult = await chain.repair();
+      expect(repairResult.repairedCount).toBeGreaterThan(0);
+
+      const result2 = await chain.verify();
+      expect(result2.valid).toBe(true);
+    });
+
+    it('re-signs entries whose metadata keys were in non-sorted order', async () => {
+      // Record entry with non-alphabetical metadata key order
+      await chain.record({
+        event: 'login',
+        level: 'info',
+        message: 'Logged in',
+        metadata: { userId: 'u1', ip: '10.0.0.1' },
+      });
+
+      // Simulate JSONB round-trip: replace metadata with alphabetically-sorted version
+      const entries: any[] = [];
+      for await (const e of storage.iterate()) entries.push(e);
+      entries[0].metadata = { ip: '10.0.0.1', userId: 'u1' };
+
+      // This corrupts the signature because the hash was computed with original key order
+      // but now the metadata has sorted keys
+      const broken = new InMemoryAuditStorage();
+      for (const e of entries) await broken.append(e);
+
+      const brokenChain = new AuditChain({ storage: broken, signingKey: SIGNING_KEY });
+      await brokenChain.initialize();
+
+      // With deep-sort fix, the chain should already be valid after the round-trip
+      // (repair should find 0 entries that need fixing)
+      const repairResult = await brokenChain.repair();
+      const verifyResult = await brokenChain.verify();
+      expect(verifyResult.valid).toBe(true);
+      // 0 repairs needed because deep-sort already makes write==verify hash
+      expect(repairResult.repairedCount).toBe(0);
+    });
+
+    it('chain remains valid after appending entries post-repair', async () => {
+      await chain.record({ event: 'e1', level: 'info', message: 'Before repair' });
+
+      // Corrupt and repair
+      const entries: any[] = [];
+      for await (const e of storage.iterate()) entries.push(e);
+      entries[0].integrity.previousEntryHash = '0'.repeat(63) + '1'; // wrong
+
+      await chain.repair();
+
+      // Append new entry — should chain correctly
+      await chain.record({ event: 'e2', level: 'info', message: 'After repair' });
+
+      const result = await chain.verify();
+      expect(result.valid).toBe(true);
+      expect(result.entriesChecked).toBe(2);
+    });
+  });
+
+  describe('getStats() — error details', () => {
+    it('returns chainError and chainBrokenAt when chain is invalid', async () => {
+      // Record two entries so we can tamper with the FIRST (not last) entry.
+      // initialize() only verifies the last entry, so tampering the first
+      // entry makes the chain invalid but still allows initialization.
+      await chain.record({ event: 'e1', level: 'info', message: 'First' });
+      await chain.record({ event: 'e2', level: 'info', message: 'Second' });
+
+      // Corrupt the FIRST entry's message
+      const entries: any[] = [];
+      for await (const e of storage.iterate()) entries.push(e);
+      entries[0].message = 'TAMPERED';
+
+      const tampered = new InMemoryAuditStorage();
+      for (const e of entries) await tampered.append(e);
+
+      // initialize() checks the LAST entry only — that's still valid
+      const tamperedChain = new AuditChain({ storage: tampered, signingKey: SIGNING_KEY });
+      await tamperedChain.initialize();
+
+      const stats = await tamperedChain.getStats();
+      expect(stats.chainValid).toBe(false);
+      expect(stats.chainError).toBeDefined();
+      expect(stats.chainBrokenAt).toBeDefined();
+    });
+
+    it('returns undefined chainError and chainBrokenAt for a valid chain', async () => {
+      await chain.record({ event: 'e1', level: 'info', message: 'Fine' });
+      const stats = await chain.getStats();
+      expect(stats.chainValid).toBe(true);
+      expect(stats.chainError).toBeUndefined();
+      expect(stats.chainBrokenAt).toBeUndefined();
+    });
+  });
+
   describe('record() validation', () => {
     it('should set id, timestamp, and integrity fields automatically', async () => {
       const entry = await chain.record({

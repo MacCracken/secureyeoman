@@ -1658,6 +1658,16 @@ export class GatewayServer {
       return this.secureYeoman.verifyAuditChain();
     });
 
+    // Re-sign chain after a hash-function change (e.g. JSONB metadata key ordering fix)
+    this.app.post('/api/v1/audit/repair', async (_request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const result = await this.secureYeoman.repairAuditChain();
+        return result;
+      } catch {
+        return sendError(reply, 500, 'Failed to repair audit chain');
+      }
+    });
+
     // Audit stats
     this.app.get('/api/v1/audit/stats', async () => {
       const stats = await this.secureYeoman.getAuditStats();

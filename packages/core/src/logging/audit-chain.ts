@@ -27,6 +27,11 @@ export interface AuditChainStorage {
   count(): Promise<number>;
   /** Get entry by ID */
   getById(id: string): Promise<AuditEntry | null>;
+  /**
+   * Update the integrity fields of an existing entry in-place.
+   * Used exclusively by AuditChain.repair() to re-sign after a hash-function change.
+   */
+  updateIntegrity(id: string, signature: string, previousEntryHash: string): Promise<void>;
 }
 
 export interface AuditChainConfig {
@@ -41,6 +46,32 @@ export interface VerificationResult {
   entriesChecked: number;
   brokenAt?: string;
   error?: string;
+}
+
+/**
+ * Replacer that recursively sorts all plain-object keys before serialization.
+ *
+ * This is needed because the `metadata` column is JSONB in PostgreSQL. JSONB
+ * normalises key ordering alphabetically on storage, so when an entry is read
+ * back the key order inside nested objects may differ from the original.
+ * Using a deep-sorted replacer makes `computeEntryHash` return the same value
+ * regardless of whether it is called at write time or at verify time after a
+ * JSONB round-trip.
+ */
+function sortedKeysReplacer(_key: string, value: unknown): unknown {
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    const obj = value as Record<string, unknown>;
+    return Object.keys(obj)
+      .sort()
+      .reduce(
+        (sorted, k) => {
+          sorted[k] = obj[k];
+          return sorted;
+        },
+        {} as Record<string, unknown>
+      );
+  }
+  return value;
 }
 
 /**
@@ -60,8 +91,10 @@ function computeEntryHash(entry: AuditEntry): string {
     timestamp: entry.timestamp,
   };
 
-  // Deterministic JSON serialization
-  const serialized = JSON.stringify(hashData, Object.keys(hashData).sort());
+  // Deep-sorted serialization: all object keys at every depth are sorted so
+  // the hash is stable across JSONB round-trips and key-insertion-order
+  // differences.
+  const serialized = JSON.stringify(hashData, sortedKeysReplacer);
   return sha256(serialized);
 }
 
@@ -346,6 +379,8 @@ export class AuditChain {
     entriesCount: number;
     chainValid: boolean;
     lastVerification?: number;
+    chainError?: string;
+    chainBrokenAt?: string;
   }> {
     const count = await this.storage.count();
     const verification = await this.verify();
@@ -354,7 +389,56 @@ export class AuditChain {
       entriesCount: count,
       chainValid: verification.valid,
       lastVerification: Date.now(),
+      chainError: verification.error,
+      chainBrokenAt: verification.brokenAt,
     };
+  }
+
+  /**
+   * Repair the audit chain by re-signing every entry with the current signing
+   * key and the deep-sorted hash function.
+   *
+   * This is needed when the chain was built with an older version of
+   * `computeEntryHash` (e.g. before JSONB metadata key-order normalisation was
+   * introduced).  The operation is idempotent: entries whose hash + signature
+   * already match are left untouched.
+   *
+   * Returns the number of entries that were actually re-signed and the final
+   * chain hash.
+   */
+  async repair(): Promise<{ repairedCount: number; entriesTotal: number }> {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+
+    let previousHash = GENESIS_HASH;
+    let repairedCount = 0;
+    let entriesTotal = 0;
+
+    for await (const entry of this.storage.iterate()) {
+      entriesTotal++;
+
+      const entryHash = computeEntryHash(entry);
+      const expectedSig = computeSignature(entryHash, previousHash, this.signingKey);
+
+      const needsRepair =
+        entry.integrity.previousEntryHash !== previousHash ||
+        !secureCompare(entry.integrity.signature, expectedSig);
+
+      if (needsRepair) {
+        await this.storage.updateIntegrity(entry.id, expectedSig, previousHash);
+        repairedCount++;
+      }
+
+      previousHash = entryHash;
+    }
+
+    // Update in-memory last hash so new records chain correctly
+    this.lastHash = previousHash;
+
+    this.logger?.info('Audit chain repair complete', { repairedCount, entriesTotal });
+
+    return { repairedCount, entriesTotal };
   }
 
   /**
@@ -408,6 +492,14 @@ export class InMemoryAuditStorage implements AuditChainStorage {
 
   async getById(id: string): Promise<AuditEntry | null> {
     return this.entries.find((e) => e.id === id) ?? null;
+  }
+
+  async updateIntegrity(id: string, signature: string, previousEntryHash: string): Promise<void> {
+    const entry = this.entries.find((e) => e.id === id);
+    if (entry) {
+      entry.integrity.signature = signature;
+      entry.integrity.previousEntryHash = previousEntryHash;
+    }
   }
 
   async query(opts: AuditQueryOptions = {}): Promise<AuditQueryResult> {

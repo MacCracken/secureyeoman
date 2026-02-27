@@ -1,3 +1,20 @@
+## [2026.2.26n] — 2026-02-26
+
+### Fixed
+
+#### Phase XX — Audit Chain Integrity (JSONB metadata key ordering)
+
+- **Root cause** — `computeEntryHash` serialised metadata keys in their JavaScript insertion order. The `metadata` column is `JSONB` in PostgreSQL, which sorts keys alphabetically on storage. When an entry was read back during `verify()`, the alphabetically-sorted keys produced a different hash than the one computed at write time, causing every entry with out-of-order metadata keys to fail signature verification and report `Chain Status: Invalid`.
+- **Fix** — Replaced `JSON.stringify(hashData, Object.keys(hashData).sort())` with a deep-sorted `sortedKeysReplacer` function that recursively sorts all plain-object keys at every nesting depth before serialisation. This is now consistent with what PostgreSQL JSONB returns.
+- **Repair route** — `POST /api/v1/audit/repair` re-signs the entire chain using the current signing key and the corrected hash function. Entries that are already valid are skipped. Returns `{ repairedCount, entriesTotal }`.
+- **`AuditChain.repair()`** — New method on the `AuditChain` class; also updates `this.lastHash` so subsequent `record()` calls chain correctly post-repair.
+- **`AuditChainStorage.updateIntegrity()`** — New method on the storage interface; implemented on both `SQLiteAuditStorage` (PostgreSQL `UPDATE`) and `InMemoryAuditStorage`.
+- **`getStats()` error details** — Now returns `chainError?: string` and `chainBrokenAt?: string` when the chain is invalid, forwarded through `SecureYeoman.getAuditStats()` and `fetchAuditStats()` in the dashboard.
+- **Dashboard repair UI** — Settings → Audit Chain card shows the error message and first broken entry ID when `chainValid` is false, along with a "Repair Chain" button that calls `POST /audit/repair` and invalidates the `audit-stats` query on success.
+- **Tests** — `audit-chain.test.ts` grows from 27 to 41 tests: JSONB round-trip metadata stability (2 tests), `repair()` coverage (4 tests), `getStats()` error-detail coverage (2 tests).
+
+---
+
 ## [2026.2.26m] — 2026-02-26
 
 ### Added

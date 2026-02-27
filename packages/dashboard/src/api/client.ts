@@ -924,12 +924,21 @@ export async function fetchAuditStats(): Promise<{
   lastVerification?: number;
   chainValid: boolean;
   dbSizeEstimateMb?: number;
+  chainError?: string;
+  chainBrokenAt?: string;
 }> {
   try {
     return await request('/audit/stats');
   } catch {
     return { totalEntries: 0, chainValid: false };
   }
+}
+
+export async function repairAuditChain(): Promise<{
+  repairedCount: number;
+  entriesTotal: number;
+}> {
+  return request('/audit/repair', { method: 'POST' });
 }
 
 // ─── Audit Retention & Export ─────────────────────────────────

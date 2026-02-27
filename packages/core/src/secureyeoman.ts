@@ -1489,6 +1489,8 @@ export class SecureYeoman {
     lastVerification?: number;
     oldestEntry?: number;
     dbSizeEstimateMb?: number;
+    chainError?: string;
+    chainBrokenAt?: string;
   }> {
     this.ensureInitialized();
     const stats = await this.auditChain!.getStats();
@@ -1514,9 +1516,20 @@ export class SecureYeoman {
       totalEntries: stats.entriesCount,
       chainValid: stats.chainValid,
       lastVerification: stats.lastVerification,
+      chainError: stats.chainError,
+      chainBrokenAt: stats.chainBrokenAt,
       oldestEntry,
       dbSizeEstimateMb,
     };
+  }
+
+  /**
+   * Re-sign the entire audit chain using the current signing key and the
+   * deep-sorted hash function.  Entries that are already valid are skipped.
+   */
+  async repairAuditChain(): Promise<{ repairedCount: number; entriesTotal: number }> {
+    this.ensureInitialized();
+    return this.auditChain!.repair();
   }
 
   /**

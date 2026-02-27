@@ -129,6 +129,13 @@ export class SQLiteAuditStorage extends PgBaseStorage implements AuditChainStora
     return row ? rowToEntry(row) : null;
   }
 
+  async updateIntegrity(id: string, signature: string, previousEntryHash: string): Promise<void> {
+    await this.execute(
+      'UPDATE audit.entries SET integrity_signature = $1, integrity_previous_hash = $2 WHERE id = $3',
+      [signature, previousEntryHash, id]
+    );
+  }
+
   async queryEntries(opts: AuditQueryOptions = {}): Promise<AuditQueryResult> {
     const limit = Math.min(opts.limit ?? 50, 1000);
     const offset = opts.offset ?? 0;

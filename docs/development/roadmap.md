@@ -38,7 +38,7 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 Deferred visual polish and power-user tooling from Phase 53. CSS variable theming infrastructure is already in place; both items can be implemented independently.
 
-- [ ] **Advanced Editor Mode** — Add toggle in Settings > Security > Developers. When enabled, replaces the current EditView with an advanced coding workspace featuring: (1) Canvas with movable terminal prompt windows; (2) Clean file manager as a sidebar column or popout; (3) Task list panel with Jira-style priorities, supporting internal task management or external integrations (Trello, GitHub Projects, etc.).
+- [x] **Advanced Editor Mode** — `allowCodeEditor` (default on) hides/shows the Editor sidebar item. `allowAdvancedEditor` (default off) replaces the standard editor with a three-panel advanced workspace: Monaco editor (left), file manager + task panel (right), multi-terminal (bottom). Both toggles live in a dedicated **Settings > Security > Editor** card. *(Phase 57 complete — 2026-02-26)*
 - [ ] **Switchable Theme Presets** — Expand beyond light/dark binary. Implement theme presets (e.g., opencode, vi, vscode) with a theme picker in dashboard settings. CSS variable-based theming already in place (`hsl(var(--X))` pattern). Pre-work required: audit remaining blue/primary buttons in dark theme — only light theme should use blue (`btn-primary`); dark theme uses muted/ghost variants. Complete button audit before adding preset switcher.
 
 ---
