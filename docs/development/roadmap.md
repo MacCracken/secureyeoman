@@ -9,12 +9,9 @@
 | Phase | Name | Status |
 |-------|------|--------|
 | XX | Find & Repair (Ongoing) | Ongoing |
-| 53 | Dashboard Completion | In Progress |
-| 54 | AI Safety Layer | Complete ✅ |
-| 55 | Notifications & Integrations | Complete ✅ |
-| 56 | Local-First AI | Planned |
+| 62 | Dashboard UX | Near-Term |
 | 57 | Security Toolkit | Planned |
-| 58 | Audio Quality | Complete ✅ |
+| 56 | Local-First AI | Planned |
 | 59 | Voice & Community | Demand-Gated |
 | 60 | Native Clients | Demand-Gated |
 | 61 | Infrastructure & Platform | Demand-Gated |
@@ -35,24 +32,27 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ---
 
-## Phase 53: Dashboard Completion
+## Phase 62: Dashboard UX
 
-**Status**: In Progress
+**Status**: Near-Term
 
-Sidebar structural reorganization as the foundation, then Mission Control as the new home, advanced editor workspace, and visual polish. Most items complete (see Changelog for shipped work).
-
-### Remaining
+Deferred visual polish and power-user tooling from Phase 53. CSS variable theming infrastructure is already in place; both items can be implemented independently.
 
 - [ ] **Advanced Editor Mode** — Add toggle in Settings > Security > Developers. When enabled, replaces the current EditView with an advanced coding workspace featuring: (1) Canvas with movable terminal prompt windows; (2) Clean file manager as a sidebar column or popout; (3) Task list panel with Jira-style priorities, supporting internal task management or external integrations (Trello, GitHub Projects, etc.).
 - [ ] **Switchable Theme Presets** — Expand beyond light/dark binary. Implement theme presets (e.g., opencode, vi, vscode) with a theme picker in dashboard settings. CSS variable-based theming already in place (`hsl(var(--X))` pattern). Pre-work required: audit remaining blue/primary buttons in dark theme — only light theme should use blue (`btn-primary`); dark theme uses muted/ghost variants. Complete button audit before adding preset switcher.
 
 ---
 
-## Phase 54: AI Safety Layer
+## Phase 57: Security Toolkit Completion
 
-**Status**: Complete ✅ (minor deferred item below)
+**Status**: Planned
 
-- [ ] **Skill-level autonomy (L4/L5) LLM-as-Judge trigger** — Deferred; requires storage call in tool hot path. Post-Phase 54 optimization.
+Core Kali toolkit shipped (ADR 089). This phase hardens its operational surface.
+
+- [ ] **Scope manifest UI** — Dashboard panel for managing `MCP_ALLOWED_TARGETS` — add/remove CIDRs, hostnames, URL prefixes. Wildcard (`*`) mode requires explicit acknowledgement checkbox. Reads/writes the running server's environment or a persisted config table.
+- [ ] **Structured output normalization** — Parse nmap XML (`-oX`), sqlmap JSON (`--output-format=json`), nuclei JSONL (`-j`), and gobuster output into a consistent `{ tool, target, command, parsed, exit_code }` MCP envelope for richer agent chaining.
+- [ ] **`ghcr.io/secureyeoman/mcp-security-toolkit` prebuilt image** — Publish a versioned Kali-based Docker image as a one-click MCP prebuilt in `McpPrebuilts.tsx` for cloud deployments.
+- [ ] **Hydra live brute-force** — Credential testing against authorized targets. Requires scope enforcement proven stable and an additional per-tool authorization flag beyond `MCP_ALLOWED_TARGETS`.
 
 ---
 
@@ -80,19 +80,6 @@ ai:
 - [ ] **Offline detection** — When `ai.localMode.enabled: true` and the local provider is unreachable, surface a clear "Local AI Unavailable" state in the dashboard — don't silently fall back to cloud unless `fallbackToCloud: true`.
 - [ ] **Model lifecycle management** — MCP tools for pulling, listing, and removing local models (`ollama pull`, `ollama list`, `ollama rm`). Surface model disk usage in dashboard.
 - [ ] **Quantization awareness** — Document recommended model quantizations (Q4_K_M, Q5_K_S, etc.) for different hardware tiers. Auto-detect available RAM and suggest appropriate model size.
-
----
-
-## Phase 57: Security Toolkit Completion
-
-**Status**: Planned
-
-Core Kali toolkit shipped (ADR 089). This phase hardens its operational surface.
-
-- [ ] **Scope manifest UI** — Dashboard panel for managing `MCP_ALLOWED_TARGETS` — add/remove CIDRs, hostnames, URL prefixes. Wildcard (`*`) mode requires explicit acknowledgement checkbox. Reads/writes the running server's environment or a persisted config table.
-- [ ] **Structured output normalization** — Parse nmap XML (`-oX`), sqlmap JSON (`--output-format=json`), nuclei JSONL (`-j`), and gobuster output into a consistent `{ tool, target, command, parsed, exit_code }` MCP envelope for richer agent chaining.
-- [ ] **`ghcr.io/secureyeoman/mcp-security-toolkit` prebuilt image** — Publish a versioned Kali-based Docker image as a one-click MCP prebuilt in `McpPrebuilts.tsx` for cloud deployments.
-- [ ] **Hydra live brute-force** — Credential testing against authorized targets. Requires scope enforcement proven stable and an additional per-tool authorization flag beyond `MCP_ALLOWED_TARGETS`.
 
 ---
 
@@ -171,4 +158,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-26 — Phase 58 (Audio Quality) complete. Phase 55 (Notifications & Integrations) complete. Phase 53 remaining: Advanced Editor, Switchable Theme Presets. Phase 54 deferred: LLM-as-Judge skill-level trigger.*
+*Last updated: 2026-02-26 — Phases 53–55, 58 complete. Active queue: 62 (Dashboard UX) → 57 (Security Toolkit) → 56 (Local-First AI). Phases 59–61 remain demand-gated.*
