@@ -609,6 +609,14 @@ export function createAuthHook(opts: AuthHookOptions) {
 
     if (PUBLIC_ROUTES.has(path)) return;
 
+    // Personality avatar images are loaded by browsers as <img src> without auth headers
+    if (
+      request.method === 'GET' &&
+      path.startsWith('/api/v1/soul/personalities/') &&
+      path.endsWith('/avatar')
+    )
+      return;
+
     // SPA routes and static assets don't require auth — only API and WS paths do
     if (!path.startsWith('/api/') && !path.startsWith('/ws/')) return;
 
@@ -680,6 +688,14 @@ export function createRbacHook(opts: RbacHookOptions) {
 
     // Skip public + token-only routes
     if (PUBLIC_ROUTES.has(path) || TOKEN_ONLY_ROUTES.has(path)) return;
+
+    // Personality avatar images are public (no auth set by auth hook)
+    if (
+      request.method === 'GET' &&
+      path.startsWith('/api/v1/soul/personalities/') &&
+      path.endsWith('/avatar')
+    )
+      return;
 
     // SPA routes and static assets are not subject to RBAC
     if (!path.startsWith('/api/') && !path.startsWith('/ws/')) return;

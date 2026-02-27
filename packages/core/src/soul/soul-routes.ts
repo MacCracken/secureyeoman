@@ -782,7 +782,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         return sendError(reply, 413, 'File too large (max 2 MB)');
       }
 
-      const avatarUrl = `/api/v1/soul/personalities/${id}/avatar`;
+      const avatarUrl = `/soul/personalities/${id}/avatar`;
       const updated = await soulManager.updatePersonalityAvatar(id, avatarUrl);
       broadcast?.({ event: 'updated', type: 'personality', id });
       return reply.code(200).send({ personality: updated });

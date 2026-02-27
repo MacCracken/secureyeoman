@@ -628,7 +628,7 @@ export async function uploadPersonalityAvatar(
 ): Promise<{ personality: Personality }> {
   const formData = new FormData();
   formData.append('avatar', file);
-  const token = localStorage.getItem('auth_token');
+  const token = getAccessToken();
   const response = await fetch(`${API_BASE}/soul/personalities/${id}/avatar`, {
     method: 'POST',
     body: formData,

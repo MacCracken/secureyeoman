@@ -38,7 +38,7 @@ const PERSONALITY = {
 
 const PERSONALITY_WITH_AVATAR = {
   ...PERSONALITY,
-  avatarUrl: '/api/v1/soul/personalities/pers-1/avatar',
+  avatarUrl: '/soul/personalities/pers-1/avatar',
 };
 
 function makeMockManager(overrides?: Partial<SoulManager>): SoulManager {
@@ -147,7 +147,7 @@ describe('POST /api/v1/soul/personalities/:id/avatar', () => {
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.personality).toBeDefined();
-    expect(body.personality.avatarUrl).toBe('/api/v1/soul/personalities/pers-1/avatar');
+    expect(body.personality.avatarUrl).toBe('/soul/personalities/pers-1/avatar');
   });
 
   it('creates avatar file on the filesystem', async () => {
