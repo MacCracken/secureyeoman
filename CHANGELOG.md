@@ -1,3 +1,49 @@
+## [2026.2.27e] — 2026-02-27
+
+### Added
+
+- **Local-first routing** — New `localFirst` toggle in the Model Selection widget. When enabled, the
+  AI client attempts all configured local providers (Ollama, LM Studio, LocalAI) before the primary
+  cloud provider. Falls back to cloud if the local server is unreachable. Persisted across restarts.
+  REST: `PATCH /api/v1/model/config { localFirst }`. ADR 148.
+
+- **Ollama model lifecycle** — Pull and delete Ollama models from the dashboard or CLI:
+  - Dashboard Model Selection widget: disk size per model, trash button per model, pull-with-progress
+    form at the bottom of the Ollama section.
+  - CLI: `secureyeoman model pull <model>` and `secureyeoman model rm <model>`.
+  - MCP tools: `ollama_pull` and `ollama_rm` for AI-driven model management.
+  - REST: `POST /api/v1/model/ollama/pull` (SSE stream), `DELETE /api/v1/model/ollama/:name`.
+  - ADR 149.
+
+- **Quantization guide** — `docs/guides/model-quantization.md`: hardware tier recommendations,
+  VRAM estimates per model family, and Ollama pull commands for common quants (Q4_K_M, Q5_K_S,
+  Q8_0, Q2_K).
+
+- **Model distillation pipeline** — `DistillationManager` backed by `training.distillation_jobs`
+  (migration 060). Teacher LLM (any configured provider) re-answers user turns from conversation
+  history and writes ShareGPT or instruction JSONL. Dashboard: new **Distillation** sub-tab in
+  Developer → Training with job creation form, progress bar, and status chips.
+  REST: `POST/GET/GET/:id/DELETE/:id /api/v1/training/distillation/jobs`. ADR 150.
+
+- **LoRA/QLoRA fine-tuning via Docker** — `FinetuneManager` backed by `training.finetune_jobs`
+  (migration 061). Manages Docker-based fine-tuning jobs using the `unsloth-trainer` sidecar image.
+  Supports LoRA rank/alpha, batch size, epochs, and VRAM budget configuration. After training,
+  adapters can be registered with Ollama via one-click "Register" button.
+  Dashboard: new **Fine-tune** sub-tab in Developer → Training.
+  REST: full CRUD + SSE log streaming + Ollama registration endpoint.
+  New files: `Dockerfile.unsloth-trainer`, `scripts/train.py`. ADR 151.
+
+### New Tests
+
+- 5 model-routes localFirst tests, 6 Ollama lifecycle route tests
+- 3 pull() + 3 deleteModel() tests in ollama.test.ts
+- 16 distillation manager tests (`distillation-manager.test.ts`)
+- 22 finetune manager tests (`finetune-manager.test.ts`)
+- 27 distillation + finetune route tests (`training-distillation-routes.test.ts`)
+- Total new tests: **82** (running total: ~8793)
+
+---
+
 ## [2026.2.27d] — 2026-02-27
 
 ### Added

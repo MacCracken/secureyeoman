@@ -150,6 +150,10 @@ import { initPoolFromConfig, getPool } from './storage/pg-pool.js';
 import { runMigrations } from './storage/migrations/runner.js';
 import { closePool } from './storage/pg-pool.js';
 import type { Config, TaskCreate, Task, MetricsSnapshot, AuditEntry } from '@secureyeoman/shared';
+import os from 'os';
+import { OllamaProvider } from './ai/providers/ollama.js';
+import { DistillationManager } from './training/distillation-manager.js';
+import { FinetuneManager } from './training/finetune-manager.js';
 
 export interface SecureYeomanOptions {
   /** Configuration options */
@@ -262,6 +266,8 @@ export class SecureYeoman {
   private backupManager: BackupManager | null = null;
   private tenantStorage: TenantStorage | null = null;
   private tenantManager: TenantManager | null = null;
+  private distillationManager: DistillationManager | null = null;
+  private finetuneManager: FinetuneManager | null = null;
   private modelDefaultSet = false;
   private initialized = false;
   private startedAt: number | null = null;
@@ -588,6 +594,42 @@ export class SecureYeoman {
               provider: storedProvider,
               model: storedModel,
             });
+          }
+
+          // Restore persisted localFirst setting
+          const storedLocalFirst = await this.systemPreferences.get('model.localFirst');
+          if (storedLocalFirst === 'true' && this.config) {
+            this.config = {
+              ...this.config,
+              model: { ...this.config.model, localFirst: true },
+            };
+            this.logger.debug('Applied persisted localFirst=true');
+          }
+        }
+
+        // Quantization memory check: warn if configured Ollama model may exceed RAM
+        if (this.config?.model.provider === 'ollama') {
+          const ollamaBaseUrl = this.config.model.baseUrl ?? 'http://localhost:11434';
+          const ollamaModel = this.config.model.model;
+          try {
+            const models = await OllamaProvider.fetchAvailableModels(ollamaBaseUrl);
+            const info = models.find(
+              (m) => m.id === ollamaModel || m.id.startsWith(ollamaModel + ':')
+            );
+            if (info?.size) {
+              const totalMem = os.totalmem();
+              if (info.size > totalMem * 0.8) {
+                const sizeGb = (info.size / 1e9).toFixed(1);
+                const memGb = (totalMem / 1e9).toFixed(1);
+                this.logger.warn(
+                  `Ollama model "${ollamaModel}" (${sizeGb} GB) may exceed available RAM ` +
+                    `(${memGb} GB). Consider a lower quantization (e.g. Q4_K_M). ` +
+                    `See docs/guides/model-quantization.md`
+                );
+              }
+            }
+          } catch {
+            // non-fatal
           }
         }
       } catch (error) {
@@ -1268,6 +1310,26 @@ export class SecureYeoman {
         this.tenantStorage = new TenantStorage();
         this.tenantManager = new TenantManager(this.tenantStorage, this.auditChain);
         this.logger.debug('TenantManager initialized');
+      }
+
+      // Step 6h: Initialize DistillationManager (Phase 64)
+      {
+        const pool = getPool();
+        this.distillationManager = new DistillationManager(
+          pool,
+          this.logger.child({ component: 'DistillationManager' })
+        );
+        this.logger.debug('DistillationManager initialized');
+      }
+
+      // Step 6i: Initialize FinetuneManager (Phase 64)
+      {
+        const pool = getPool();
+        this.finetuneManager = new FinetuneManager(
+          pool,
+          this.logger.child({ component: 'FinetuneManager' })
+        );
+        this.logger.debug('FinetuneManager initialized');
       }
 
       // Step 7: Record initialization in audit log
@@ -2087,6 +2149,22 @@ export class SecureYeoman {
   }
 
   /**
+   * Get the distillation manager instance (Phase 64).
+   */
+  getDistillationManager(): DistillationManager | null {
+    this.ensureInitialized();
+    return this.distillationManager;
+  }
+
+  /**
+   * Get the finetune manager instance (Phase 64).
+   */
+  getFinetuneManager(): FinetuneManager | null {
+    this.ensureInitialized();
+    return this.finetuneManager;
+  }
+
+  /**
    * Switch the AI model at runtime by recreating the AIClient.
    * The switch is not persisted across restarts.
    */
@@ -2214,6 +2292,52 @@ export class SecureYeoman {
     const config = this.config;
     if (!config) return null;
     return { provider: config.model.provider, model: config.model.model };
+  }
+
+  /**
+   * Enable or disable local-first routing and persist the setting.
+   * When enabled, local providers (ollama/lmstudio/localai) in the fallback
+   * chain are tried before the primary cloud provider.
+   */
+  async setLocalFirst(enabled: boolean): Promise<void> {
+    if (!this.config) throw new Error('Not initialized');
+    this.config = {
+      ...this.config,
+      model: { ...this.config.model, localFirst: enabled },
+    };
+
+    // Recreate AIClient with updated config so the change takes effect immediately
+    if (this.aiClient) {
+      const newModelConfig = { ...this.config.model };
+      this.aiClient = new AIClient(
+        {
+          model: newModelConfig,
+          retryConfig: {
+            maxRetries: newModelConfig.maxRetries,
+            baseDelayMs: newModelConfig.retryDelayMs,
+          },
+        },
+        {
+          auditChain: this.auditChain ?? undefined,
+          logger: this.logger?.child({ component: 'AIClient' }),
+          usageStorage: this.usageStorage ?? undefined,
+          usageTracker: this.aiClient.getUsageTracker(),
+        }
+      );
+    }
+
+    if (this.systemPreferences) {
+      await this.systemPreferences.set('model.localFirst', String(enabled));
+    }
+
+    this.logger?.info('Local-first routing updated', { enabled });
+  }
+
+  /**
+   * Return the current localFirst setting.
+   */
+  getLocalFirst(): boolean {
+    return this.config?.model.localFirst ?? false;
   }
 
   /**

@@ -55,6 +55,14 @@ export interface OllamaModelInfo {
   size: number;
 }
 
+export interface OllamaPullProgress {
+  status: string;
+  digest?: string;
+  total?: number;
+  completed?: number;
+  error?: string;
+}
+
 export class OllamaProvider extends BaseProvider {
   readonly name: AIProviderName = 'ollama';
   private readonly baseUrl: string;
@@ -78,6 +86,82 @@ export class OllamaProvider extends BaseProvider {
       }));
     } catch {
       return [];
+    }
+  }
+
+  /**
+   * Stream model pull progress from Ollama's pull API (NDJSON).
+   * Yields OllamaPullProgress objects as the model downloads.
+   * Throws on error lines.
+   */
+  static async *pull(
+    baseUrl: string,
+    model: string
+  ): AsyncGenerator<OllamaPullProgress, void, unknown> {
+    const res = await fetch(`${baseUrl}/api/pull`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, stream: true }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Ollama pull failed: HTTP ${res.status}`);
+    }
+
+    if (!res.body) {
+      throw new Error('No response body for pull stream');
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          const progress = JSON.parse(line) as OllamaPullProgress;
+          if (progress.error) {
+            throw new Error(progress.error);
+          }
+          yield progress;
+        }
+      }
+
+      // Handle any remaining data
+      if (buffer.trim()) {
+        const progress = JSON.parse(buffer) as OllamaPullProgress;
+        if (progress.error) throw new Error(progress.error);
+        yield progress;
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
+  /**
+   * Delete a locally downloaded model from Ollama.
+   * Throws Error('Model not found') on 404.
+   */
+  static async deleteModel(baseUrl: string, model: string): Promise<void> {
+    const res = await fetch(`${baseUrl}/api/delete`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: model }),
+    });
+
+    if (res.status === 404) {
+      throw new Error('Model not found');
+    }
+    if (!res.ok) {
+      throw new Error(`Ollama delete failed: HTTP ${res.status}`);
     }
   }
 

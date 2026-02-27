@@ -747,6 +747,7 @@ export interface ModelCurrentConfig {
   model: string;
   maxTokens: number;
   temperature: number;
+  localFirst: boolean;
 }
 
 export interface ModelInfoResponse {

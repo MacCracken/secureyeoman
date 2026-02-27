@@ -32,6 +32,7 @@ import { registerTwingateTools } from './twingate-tools.js';
 import { registerIntentTools } from './intent-tools.js';
 import { registerGmailTools } from './gmail-tools.js';
 import { registerTwitterTools } from './twitter-tools.js';
+import { registerOllamaTools } from './ollama-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -74,4 +75,5 @@ export async function registerAllTools(
   registerIntentTools(server, client, config, middleware);
   registerGmailTools(server, client, middleware);
   registerTwitterTools(server, client, middleware);
+  registerOllamaTools(server, client, middleware);
 }

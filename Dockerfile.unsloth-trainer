@@ -1,0 +1,38 @@
+# Dockerfile.unsloth-trainer
+# LoRA/QLoRA fine-tuning sidecar for SecureYeoman Phase 64.
+#
+# Build:
+#   docker build -f Dockerfile.unsloth-trainer -t ghcr.io/secureyeoman/unsloth-trainer:latest .
+#
+# Run (managed by FinetuneManager):
+#   docker run --rm --gpus all \
+#     -v /tmp/secureyeoman-finetune/<jobId>:/workspace \
+#     ghcr.io/secureyeoman/unsloth-trainer:latest
+#
+# The container expects /workspace/config.json to contain the training config
+# and writes adapter weights to /workspace/adapter/.
+
+FROM pytorch/pytorch:2.4.0-cuda12.1-cudnn9-runtime
+
+# System deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python deps
+RUN pip install --no-cache-dir \
+    unsloth \
+    "unsloth[colab-new]" \
+    accelerate \
+    peft \
+    transformers \
+    datasets \
+    trl \
+    bitsandbytes \
+    scipy
+
+WORKDIR /workspace
+
+COPY scripts/train.py /usr/local/bin/train.py
+
+ENTRYPOINT ["python", "/usr/local/bin/train.py"]

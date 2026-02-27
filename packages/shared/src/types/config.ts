@@ -559,6 +559,9 @@ export const ModelConfigSchema = z.object({
 
   // Response caching (ADR 101)
   responseCache: ResponseCacheConfigSchema,
+
+  // Local-first routing — try local providers before cloud (ADR 148)
+  localFirst: z.boolean().default(false),
 });
 
 export type ModelConfig = z.infer<typeof ModelConfigSchema>;

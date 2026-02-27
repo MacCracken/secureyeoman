@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, Fragment } from 'react';
+import { useState, useCallback, useEffect, useRef, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
@@ -30,6 +30,8 @@ import {
   ExternalLink,
   Mail,
   MessageSquare,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -99,23 +101,163 @@ const SEX_OPTIONS = ['unspecified', 'male', 'female', 'non-binary'] as const;
 
 const API_BASE = '/api/v1';
 
+/** Full-screen lightbox with zoom + pan for a personality avatar image. */
+function AvatarLightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const dragging = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+  const offsetAtDragStart = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  function clampScale(s: number) {
+    return Math.min(5, Math.max(0.5, s));
+  }
+
+  function onWheel(e: React.WheelEvent) {
+    e.preventDefault();
+    setScale((s) => clampScale(s - e.deltaY * 0.001));
+  }
+
+  function onMouseDown(e: React.MouseEvent) {
+    if (scale <= 1) return;
+    dragging.current = true;
+    dragStart.current = { x: e.clientX, y: e.clientY };
+    offsetAtDragStart.current = { ...offset };
+    e.preventDefault();
+  }
+
+  function onMouseMove(e: React.MouseEvent) {
+    if (!dragging.current) return;
+    setOffset({
+      x: offsetAtDragStart.current.x + (e.clientX - dragStart.current.x),
+      y: offsetAtDragStart.current.y + (e.clientY - dragStart.current.y),
+    });
+  }
+
+  function onMouseUp() {
+    dragging.current = false;
+  }
+
+  function resetZoom() {
+    setScale(1);
+    setOffset({ x: 0, y: 0 });
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+      onClick={onClose}
+      onWheel={onWheel}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+    >
+      {/* caption */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/80 text-sm font-medium pointer-events-none select-none">
+        {alt}
+      </div>
+
+      {/* close */}
+      <button
+        type="button"
+        className="absolute top-4 right-4 text-white/70 hover:text-white"
+        onClick={onClose}
+      >
+        <X className="w-6 h-6" />
+      </button>
+
+      {/* image */}
+      <img
+        src={src}
+        alt={alt}
+        draggable={false}
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={onMouseDown}
+        style={{
+          transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+          transition: dragging.current ? 'none' : 'transform 0.1s ease',
+          cursor: scale > 1 ? 'grab' : 'default',
+          maxWidth: '80vw',
+          maxHeight: '80vh',
+          objectFit: 'contain',
+          borderRadius: '0.5rem',
+          userSelect: 'none',
+        }}
+      />
+
+      {/* zoom controls */}
+      <div
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 rounded-full px-4 py-2"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          className="text-white/80 hover:text-white"
+          onClick={() => setScale((s) => clampScale(s - 0.25))}
+        >
+          <ZoomOut className="w-5 h-5" />
+        </button>
+        <button
+          type="button"
+          className="text-white/70 hover:text-white text-xs w-12 text-center tabular-nums"
+          onClick={resetZoom}
+          title="Reset zoom"
+        >
+          {Math.round(scale * 100)}%
+        </button>
+        <button
+          type="button"
+          className="text-white/80 hover:text-white"
+          onClick={() => setScale((s) => clampScale(s + 0.25))}
+        >
+          <ZoomIn className="w-5 h-5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** Renders a personality avatar as a circle image, or falls back to the Bot icon. */
 export function PersonalityAvatar({
   personality,
   size = 24,
+  zoomable = false,
 }: {
   personality: Personality;
   size?: number;
+  zoomable?: boolean;
 }) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
   if (!personality.avatarUrl) {
     return <Bot style={{ width: size, height: size }} />;
   }
+  const src = `${API_BASE}${personality.avatarUrl}?v=${personality.updatedAt}`;
   return (
-    <img
-      src={`${API_BASE}${personality.avatarUrl}?v=${personality.updatedAt}`}
-      alt={personality.name}
-      style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover' }}
-    />
+    <>
+      <img
+        src={src}
+        alt={personality.name}
+        onClick={zoomable ? () => setLightboxOpen(true) : undefined}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          objectFit: 'cover',
+          cursor: zoomable ? 'zoom-in' : undefined,
+        }}
+      />
+      {lightboxOpen && (
+        <AvatarLightbox src={src} alt={personality.name} onClose={() => setLightboxOpen(false)} />
+      )}
+    </>
   );
 }
 
@@ -129,6 +271,7 @@ function AvatarUpload({
 }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const MAX_SIZE = 2 * 1024 * 1024;
   const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
@@ -169,7 +312,11 @@ function AvatarUpload({
 
   return (
     <div className="flex items-center gap-4 mb-4">
-      <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-border flex items-center justify-center bg-muted flex-shrink-0">
+      <div
+        className={`w-24 h-24 rounded-full overflow-hidden border-2 border-border flex items-center justify-center bg-muted flex-shrink-0${personality.avatarUrl ? ' cursor-zoom-in' : ''}`}
+        onClick={personality.avatarUrl ? () => setLightboxOpen(true) : undefined}
+        title={personality.avatarUrl ? 'Click to zoom' : undefined}
+      >
         {personality.avatarUrl ? (
           <img
             src={`${API_BASE}${personality.avatarUrl}?v=${personality.updatedAt}`}
@@ -180,6 +327,13 @@ function AvatarUpload({
           <Bot className="w-10 h-10 text-muted-foreground" />
         )}
       </div>
+      {lightboxOpen && personality.avatarUrl && (
+        <AvatarLightbox
+          src={`${API_BASE}${personality.avatarUrl}?v=${personality.updatedAt}`}
+          alt={personality.name}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
       <div className="flex flex-col gap-2">
         <label
           className={`btn btn-sm btn-outline cursor-pointer${uploading ? ' opacity-50 pointer-events-none' : ''}`}

@@ -15,6 +15,8 @@ Actions:
   default get                                   Show the persistent model default
   default set <provider> <model>                Set persistent model default (survives restarts)
   default clear                                 Remove persistent model default
+  pull <model>                                  Pull an Ollama model (streams progress)
+  rm <model>                                    Remove an Ollama model
   personality-fallbacks get [--personality-id ID]                    Show fallback list for a personality
   personality-fallbacks set [--personality-id ID] <prov/model> ...   Set ordered fallback list (max 5)
   personality-fallbacks clear [--personality-id ID]                  Clear fallback list
@@ -67,6 +69,10 @@ export const modelCommand: Command = {
           return await modelSwitch(ctx, baseUrl, token, jsonOutput, actionArgs);
         case 'default':
           return await modelDefault(ctx, baseUrl, token, jsonOutput, actionArgs);
+        case 'pull':
+          return await ollamaPull(ctx, baseUrl, token, actionArgs);
+        case 'rm':
+          return await ollamaRm(ctx, baseUrl, token, actionArgs);
         case 'personality-fallbacks':
           return await personalityFallbacks(
             ctx,
@@ -501,5 +507,122 @@ async function pfClear(
   }
 
   ctx.stdout.write(`Model fallbacks cleared for personality ${personality.id}.\n`);
+  return 0;
+}
+
+// ── ollama pull ────────────────────────────────────────────────────────────
+
+async function ollamaPull(
+  ctx: CommandContext,
+  baseUrl: string,
+  token: string | undefined,
+  args: string[]
+): Promise<number> {
+  const model = args[0];
+  if (!model) {
+    ctx.stderr.write('Usage: secureyeoman model pull <model>\n');
+    return 1;
+  }
+
+  ctx.stdout.write(`Pulling ${model}...\n`);
+
+  const url = `${baseUrl}/api/v1/model/ollama/pull`;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ model }),
+    });
+  } catch (err) {
+    ctx.stderr.write(`Connection failed: ${err instanceof Error ? err.message : String(err)}\n`);
+    return 1;
+  }
+
+  if (!response.body) {
+    ctx.stderr.write('No response body\n');
+    return 1;
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        const trimmed = line.replace(/^data: /, '').trim();
+        if (!trimmed) continue;
+        try {
+          const parsed = JSON.parse(trimmed) as {
+            status?: string;
+            completed?: number;
+            total?: number;
+            error?: string;
+          };
+          if (parsed.error) {
+            ctx.stderr.write(`Error: ${parsed.error}\n`);
+            return 1;
+          }
+          if (parsed.status === 'done') {
+            ctx.stdout.write(`✓ ${model} pulled successfully\n`);
+            return 0;
+          }
+          if (parsed.total && parsed.completed !== undefined) {
+            const pct = Math.round((parsed.completed / parsed.total) * 100);
+            const bar = '='.repeat(Math.floor(pct / 5)).padEnd(20);
+            ctx.stdout.write(`\r[${bar}] ${String(pct)}% ${parsed.status ?? ''}`);
+          } else if (parsed.status) {
+            ctx.stdout.write(`  ${parsed.status}\n`);
+          }
+        } catch {
+          // ignore parse errors
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  ctx.stdout.write(`✓ ${model} pulled successfully\n`);
+  return 0;
+}
+
+// ── ollama rm ─────────────────────────────────────────────────────────────
+
+async function ollamaRm(
+  ctx: CommandContext,
+  baseUrl: string,
+  token: string | undefined,
+  args: string[]
+): Promise<number> {
+  const model = args[0];
+  if (!model) {
+    ctx.stderr.write('Usage: secureyeoman model rm <model>\n');
+    return 1;
+  }
+
+  const encodedName = encodeURIComponent(model);
+  const result = await apiCall(baseUrl, `/api/v1/model/ollama/${encodedName}`, {
+    method: 'DELETE',
+    token,
+  });
+
+  if (!result.ok) {
+    const err = (result.data as Record<string, string>)?.message ?? `HTTP ${String(result.status)}`;
+    ctx.stderr.write(`Failed to remove model: ${err}\n`);
+    return 1;
+  }
+
+  ctx.stdout.write(`✓ ${model} removed\n`);
   return 0;
 }

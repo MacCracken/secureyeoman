@@ -8,6 +8,8 @@ import { getAvailableModelsAsync } from './cost-calculator.js';
 import { ModelRouter, profileTask } from './model-router.js';
 import { sendError } from '../utils/errors.js';
 import { getSecret } from '../config/loader.js';
+import { OllamaProvider } from './providers/ollama.js';
+import os from 'os';
 
 const LOCAL_PROVIDERS = new Set(['ollama', 'lmstudio', 'localai']);
 
@@ -36,6 +38,10 @@ interface SwitchModelBody {
   model: string;
 }
 
+interface ModelConfigPatchBody {
+  localFirst: boolean;
+}
+
 export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptions): void {
   const { secureYeoman } = opts;
 
@@ -50,6 +56,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
           model: modelConfig.model,
           maxTokens: modelConfig.maxTokens,
           temperature: modelConfig.temperature,
+          localFirst: modelConfig.localFirst ?? false,
         },
         available: await getAvailableModelsAsync(true),
       };
@@ -58,6 +65,26 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
       return sendError(reply, 500, message);
     }
   });
+
+  app.patch(
+    '/api/v1/model/config',
+    async (
+      request: FastifyRequest<{ Body: ModelConfigPatchBody }>,
+      reply: FastifyReply
+    ) => {
+      const { localFirst } = request.body;
+      if (typeof localFirst !== 'boolean') {
+        return sendError(reply, 400, 'localFirst (boolean) is required');
+      }
+      try {
+        await secureYeoman.setLocalFirst(localFirst);
+        return { success: true, localFirst };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        return sendError(reply, 500, message);
+      }
+    }
+  );
 
   app.post(
     '/api/v1/model/switch',
@@ -230,6 +257,78 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
     }
   );
 
+  // ── Ollama Model Lifecycle ─────────────────────────────────────────────────
+
+  app.post(
+    '/api/v1/model/ollama/pull',
+    async (
+      request: FastifyRequest<{ Body: { model: string } }>,
+      reply: FastifyReply
+    ) => {
+      const { model } = request.body;
+      if (!model || typeof model !== 'string') {
+        return sendError(reply, 400, 'model is required');
+      }
+
+      const config = secureYeoman.getConfig();
+      const { provider, baseUrl } = config.model;
+      if (provider !== 'ollama') {
+        return sendError(reply, 400, 'Pull is only available when Ollama is the configured provider');
+      }
+
+      const ollamaBaseUrl = baseUrl ?? 'http://localhost:11434';
+
+      // SSE stream
+      void reply.raw.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      });
+
+      try {
+        for await (const progress of OllamaProvider.pull(ollamaBaseUrl, model)) {
+          reply.raw.write(`data: ${JSON.stringify(progress)}\n\n`);
+        }
+        reply.raw.write(`data: ${JSON.stringify({ status: 'done' })}\n\n`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        reply.raw.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+      } finally {
+        reply.raw.end();
+      }
+      return reply;
+    }
+  );
+
+  app.delete(
+    '/api/v1/model/ollama/:name',
+    async (
+      request: FastifyRequest<{ Params: { name: string } }>,
+      reply: FastifyReply
+    ) => {
+      const { name } = request.params;
+
+      const config = secureYeoman.getConfig();
+      const { provider, baseUrl } = config.model;
+      if (provider !== 'ollama') {
+        return sendError(reply, 400, 'Delete is only available when Ollama is the configured provider');
+      }
+
+      const ollamaBaseUrl = baseUrl ?? 'http://localhost:11434';
+
+      try {
+        await OllamaProvider.deleteModel(ollamaBaseUrl, name);
+        return reply.code(204).send();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        if (message === 'Model not found') {
+          return sendError(reply, 404, message);
+        }
+        return sendError(reply, 500, message);
+      }
+    }
+  );
+
   // ── AI Provider Health ───────────────────────────────────────────────────
   // Pings the active provider to check reachability.
   // Local providers (ollama, lmstudio, localai) are pinged via HTTP.
@@ -250,6 +349,32 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
               ? 'http://localhost:1234'
               : 'http://localhost:8080');
         const { reachable, latencyMs } = await pingLocalProvider(provider, providerBaseUrl);
+
+        // Quantization memory warning for Ollama
+        let modelSize: number | undefined;
+        let memoryWarning: string | undefined;
+        if (provider === 'ollama' && reachable) {
+          try {
+            const models = await OllamaProvider.fetchAvailableModels(providerBaseUrl);
+            const info = models.find(
+              (m) => m.id === model || m.id.startsWith(model + ':')
+            );
+            if (info?.size) {
+              modelSize = info.size;
+              const totalMem = os.totalmem();
+              if (info.size > totalMem * 0.8) {
+                const sizeGb = (info.size / 1e9).toFixed(1);
+                const memGb = (totalMem / 1e9).toFixed(1);
+                memoryWarning =
+                  `Model "${model}" (${sizeGb} GB) may exceed available RAM (${memGb} GB). ` +
+                  `Consider a lower quantization (e.g. Q4_K_M). See docs/guides/model-quantization.md`;
+              }
+            }
+          } catch {
+            // non-fatal
+          }
+        }
+
         return {
           status: reachable ? 'reachable' : 'unreachable',
           provider,
@@ -257,6 +382,8 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
           local: true,
           baseUrl: providerBaseUrl,
           latencyMs: reachable ? latencyMs : undefined,
+          ...(modelSize !== undefined ? { modelSize } : {}),
+          ...(memoryWarning ? { memoryWarning } : {}),
         };
       }
 

@@ -1,8 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, ChevronRight, Check, Loader2, X, Cpu } from 'lucide-react';
-import { fetchModelInfo, switchModel } from '../api/client';
+import { ChevronDown, ChevronRight, Check, Loader2, X, Cpu, Download, Trash2 } from 'lucide-react';
+import { fetchModelInfo, switchModel, patchModelConfig, fetchOllamaPull, deleteOllamaModel } from '../api/client';
 import type { ModelInfo } from '../types';
+
+const LOCAL_PROVIDER_KEYS = new Set(['ollama', 'lmstudio', 'localai']);
+
+function formatDiskSize(bytes: number): string {
+  if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
+  if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(0)} MB`;
+  return `${(bytes / 1e3).toFixed(0)} KB`;
+}
 
 interface ModelWidgetProps {
   onClose: () => void;
@@ -49,6 +57,60 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
     },
   });
 
+  const localFirstMutation = useMutation({
+    mutationFn: patchModelConfig,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['model-info'] });
+    },
+  });
+
+  const [pullModel, setPullModel] = useState('');
+  const [pullStatus, setPullStatus] = useState<string | null>(null);
+  const [pullProgress, setPullProgress] = useState<number | null>(null);
+  const [pullError, setPullError] = useState<string | null>(null);
+  const [isPulling, setIsPulling] = useState(false);
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteOllamaModel,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['model-info'] });
+    },
+  });
+
+  const handlePull = async () => {
+    if (!pullModel.trim() || isPulling) return;
+    setIsPulling(true);
+    setPullStatus(null);
+    setPullProgress(null);
+    setPullError(null);
+    try {
+      for await (const progress of fetchOllamaPull(pullModel.trim())) {
+        if (progress.error) {
+          setPullError(progress.error);
+          setIsPulling(false);
+          return;
+        }
+        if (progress.status === 'done') {
+          setPullStatus('done');
+          setPullProgress(100);
+          void queryClient.invalidateQueries({ queryKey: ['model-info'] });
+          setPullModel('');
+          break;
+        }
+        if (progress.total && progress.completed !== undefined) {
+          setPullProgress(Math.round((progress.completed / progress.total) * 100));
+        }
+        if (progress.status) {
+          setPullStatus(progress.status);
+        }
+      }
+    } catch (err) {
+      setPullError(err instanceof Error ? err.message : 'Pull failed');
+    } finally {
+      setIsPulling(false);
+    }
+  };
+
   const toggleProvider = (provider: string) => {
     setExpandedProviders((prev) => {
       const next = new Set(prev);
@@ -80,6 +142,8 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
 
   const currentProvider = data.current.provider;
   const currentModel = data.current.model;
+  const localFirst = data.current.localFirst ?? false;
+  const hasLocalProvider = Object.keys(data.available).some((p) => LOCAL_PROVIDER_KEYS.has(p));
 
   return (
     <div className="card w-80 shadow-lg max-h-[500px] overflow-hidden flex flex-col">
@@ -108,6 +172,35 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
         </p>
       </div>
 
+      {/* Local-first toggle */}
+      {hasLocalProvider && (
+        <div className="px-3 py-2 border-b flex items-start justify-between gap-2">
+          <div>
+            <p className="text-xs font-medium">Local-first mode</p>
+            <p className="text-xs text-muted-foreground">
+              Try local model before cloud. Falls back to cloud if local is unreachable.
+            </p>
+          </div>
+          <button
+            role="switch"
+            aria-checked={localFirst}
+            onClick={() => {
+              localFirstMutation.mutate({ localFirst: !localFirst });
+            }}
+            disabled={localFirstMutation.isPending}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0 mt-0.5 ${
+              localFirst ? 'bg-primary' : 'bg-muted'
+            }`}
+          >
+            <span
+              className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                localFirst ? 'translate-x-4' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
+        </div>
+      )}
+
       {/* Model list */}
       <div className="overflow-y-auto flex-1">
         {Object.entries(data.available).map(([provider, models]) => (
@@ -135,29 +228,110 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
                     switchMutation.isPending &&
                     switchMutation.variables?.provider === m.provider &&
                     switchMutation.variables?.model === m.model;
+                  const isDeleting =
+                    deleteMutation.isPending && deleteMutation.variables === m.model;
+                  const isOllama = provider === 'ollama';
+                  const modelSize = (m as ModelInfo & { size?: number }).size;
 
                   return (
-                    <button
+                    <div
                       key={m.model}
-                      onClick={() => {
-                        handleSwitch(m.provider, m.model);
-                      }}
-                      disabled={isActive || switchMutation.isPending}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-muted/50 disabled:opacity-60 ${
-                        isActive ? 'bg-primary/15 border-l-2 border-primary' : ''
-                      }`}
+                      className={`flex items-center ${isActive ? 'bg-primary/15 border-l-2 border-primary' : ''}`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs">{m.model}</span>
-                        {isActive && <Check className="w-3 h-3 text-primary" />}
-                        {isSwitching && <Loader2 className="w-3 h-3 animate-spin" />}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {formatPrice(m.inputPer1M, m.outputPer1M)}
-                      </p>
-                    </button>
+                      <button
+                        onClick={() => {
+                          handleSwitch(m.provider, m.model);
+                        }}
+                        disabled={isActive || switchMutation.isPending}
+                        className="flex-1 text-left px-4 py-2 text-sm hover:bg-muted/50 disabled:opacity-60"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-xs">{m.model}</span>
+                          <div className="flex items-center gap-1">
+                            {isOllama && modelSize && (
+                              <span className="text-xs text-muted-foreground">
+                                {formatDiskSize(modelSize)}
+                              </span>
+                            )}
+                            {isActive && <Check className="w-3 h-3 text-primary" />}
+                            {isSwitching && <Loader2 className="w-3 h-3 animate-spin" />}
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {formatPrice(m.inputPer1M, m.outputPer1M)}
+                        </p>
+                      </button>
+                      {isOllama && (
+                        <button
+                          onClick={() => deleteMutation.mutate(m.model)}
+                          disabled={deleteMutation.isPending}
+                          className="p-2 hover:bg-destructive/10 hover:text-destructive rounded mr-1"
+                          title={`Remove ${m.model}`}
+                        >
+                          {isDeleting ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3 h-3" />
+                          )}
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
+
+                {/* Ollama pull form */}
+                {provider === 'ollama' && (
+                  <div className="px-3 py-2 border-t">
+                    <p className="text-xs text-muted-foreground mb-1">Pull new model</p>
+                    <div className="flex gap-1">
+                      <input
+                        type="text"
+                        value={pullModel}
+                        onChange={(e) => setPullModel(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') void handlePull();
+                        }}
+                        placeholder="e.g. llama3:8b"
+                        className="flex-1 px-2 py-1 text-xs border rounded bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                        disabled={isPulling}
+                      />
+                      <button
+                        onClick={() => void handlePull()}
+                        disabled={isPulling || !pullModel.trim()}
+                        className="btn-ghost p-1 rounded"
+                        title="Pull model"
+                      >
+                        {isPulling ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Download className="w-3 h-3" />
+                        )}
+                      </button>
+                    </div>
+                    {isPulling && pullStatus && (
+                      <div className="mt-1">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{pullStatus}</span>
+                          {pullProgress !== null && <span>{pullProgress}%</span>}
+                        </div>
+                        {pullProgress !== null && (
+                          <div className="h-1 bg-muted rounded mt-0.5">
+                            <div
+                              className="h-1 bg-primary rounded transition-all"
+                              style={{ width: `${pullProgress}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {pullStatus === 'done' && (
+                      <p className="text-xs text-green-600 mt-1">✓ Pulled successfully</p>
+                    )}
+                    {pullError && (
+                      <p className="text-xs text-destructive mt-1">{pullError}</p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -70,6 +70,8 @@ export interface AIClientDeps {
   responseCache?: ResponseCache;
 }
 
+const LOCAL_PROVIDERS = new Set(['ollama', 'lmstudio', 'localai']);
+
 export class AIClient {
   private readonly provider: AIProvider;
   private readonly costCalculator: CostCalculator;
@@ -105,6 +107,18 @@ export class AIClient {
   /** Inject or replace the SoulManager after construction. */
   setSoulManager(manager: SoulManager): void {
     this.soulManager = manager;
+  }
+
+  /**
+   * Returns fallback indices that are local providers, used for localFirst pre-attempts.
+   * Returns an empty array when localFirst is false or primary is already local.
+   */
+  private getLocalFirstPreAttemptIndices(): number[] {
+    if (!this.primaryModelConfig.localFirst) return [];
+    if (LOCAL_PROVIDERS.has(this.primaryModelConfig.provider)) return [];
+    return this.fallbackConfigs
+      .map((fb, i) => (LOCAL_PROVIDERS.has(fb.provider) ? i : -1))
+      .filter((i) => i >= 0);
   }
 
   /**
@@ -146,6 +160,33 @@ export class AIClient {
 
     const fallbacks = requestFallbacks ?? this.fallbackConfigs;
 
+    // Local-first pre-attempts: try local fallbacks before cloud primary
+    const preAttemptIndices = this.getLocalFirstPreAttemptIndices();
+    const triedIndices = new Set<number>();
+    for (const idx of preAttemptIndices) {
+      const fbConfig = fallbacks[idx];
+      if (!fbConfig) continue;
+      triedIndices.add(idx);
+      try {
+        const fbProvider = this.getOrCreateFallbackProvider(idx, fbConfig);
+        const response = await this.doChatWithProvider(
+          fbProvider,
+          fbConfig.provider,
+          request,
+          context
+        );
+        await this.auditRecord('ai_local_first_success', {
+          index: idx,
+          provider: fbConfig.provider,
+          model: fbConfig.model,
+        });
+        return response;
+      } catch (error) {
+        if (!(error instanceof ProviderUnavailableError)) throw error;
+        // local unavailable — continue to next pre-attempt or primary
+      }
+    }
+
     // Try primary provider
     let primaryError: Error | undefined;
     try {
@@ -175,6 +216,7 @@ export class AIClient {
     });
 
     for (let i = 0; i < fallbacks.length; i++) {
+      if (triedIndices.has(i)) continue; // skip already-tried local pre-attempts
       const fbConfig = fallbacks[i]!;
       const fbProviderName = fbConfig.provider;
 
@@ -238,6 +280,29 @@ export class AIClient {
 
     const fallbacks = requestFallbacks ?? this.fallbackConfigs;
 
+    // Local-first pre-attempts: try local fallbacks before cloud primary
+    const preAttemptIndices = this.getLocalFirstPreAttemptIndices();
+    const triedIndices = new Set<number>();
+    for (const idx of preAttemptIndices) {
+      const fbConfig = fallbacks[idx];
+      if (!fbConfig) continue;
+      triedIndices.add(idx);
+      try {
+        const fbProvider = this.getOrCreateFallbackProvider(idx, fbConfig);
+        yield* this.doChatStreamWithProvider(fbProvider, fbConfig.provider, request, context);
+        await this.auditRecord('ai_local_first_success', {
+          index: idx,
+          provider: fbConfig.provider,
+          model: fbConfig.model,
+          stream: true,
+        });
+        return;
+      } catch (error) {
+        if (!(error instanceof ProviderUnavailableError)) throw error;
+        // local unavailable — continue
+      }
+    }
+
     // Try primary provider
     let primaryError: Error | undefined;
     try {
@@ -259,6 +324,7 @@ export class AIClient {
     });
 
     for (let i = 0; i < fallbacks.length; i++) {
+      if (triedIndices.has(i)) continue; // skip already-tried local pre-attempts
       const fbConfig = fallbacks[i]!;
       const fbProviderName = fbConfig.provider;
 

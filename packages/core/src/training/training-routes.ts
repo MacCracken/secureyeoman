@@ -6,12 +6,16 @@
  *   instruction — Alpaca-style instruction JSONL
  *   raw         — Plain text corpus (one conversation per block)
  *
+ * Also provides distillation and fine-tuning job management (Phase 64).
+ *
  * All exports stream line-by-line to avoid buffering large datasets in memory.
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SecureYeoman } from '../secureyeoman.js';
 import { sendError } from '../utils/errors.js';
+import type { DistillationJobConfig } from './distillation-manager.js';
+import type { FinetuneJobConfig } from './finetune-manager.js';
 
 export interface TrainingRoutesOptions {
   secureYeoman: SecureYeoman;
@@ -225,4 +229,210 @@ export function registerTrainingRoutes(
 
     return { conversations, memories, knowledge };
   });
+
+  // ── Distillation endpoints ────────────────────────────────────────────────
+
+  /**
+   * POST /api/v1/training/distillation/jobs
+   * Create a new distillation job.
+   */
+  app.post(
+    '/api/v1/training/distillation/jobs',
+    async (
+      request: FastifyRequest<{ Body: DistillationJobConfig }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getDistillationManager();
+      if (!manager) return sendError(reply, 503, 'Distillation manager not available');
+
+      const body = request.body as DistillationJobConfig;
+      if (!body.name?.trim()) return sendError(reply, 400, 'name is required');
+      if (!body.teacherProvider?.trim()) return sendError(reply, 400, 'teacherProvider is required');
+      if (!body.teacherModel?.trim()) return sendError(reply, 400, 'teacherModel is required');
+      if (!body.outputPath?.trim()) return sendError(reply, 400, 'outputPath is required');
+
+      const job = await manager.createJob(body);
+      return reply.status(201).send(job);
+    }
+  );
+
+  /**
+   * GET /api/v1/training/distillation/jobs
+   * List all distillation jobs.
+   */
+  app.get('/api/v1/training/distillation/jobs', async (_request, reply: FastifyReply) => {
+    const manager = secureYeoman.getDistillationManager();
+    if (!manager) return sendError(reply, 503, 'Distillation manager not available');
+
+    const jobs = await manager.listJobs();
+    return { jobs };
+  });
+
+  /**
+   * GET /api/v1/training/distillation/jobs/:id
+   * Get a specific distillation job.
+   */
+  app.get(
+    '/api/v1/training/distillation/jobs/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getDistillationManager();
+      if (!manager) return sendError(reply, 503, 'Distillation manager not available');
+
+      const job = await manager.getJob(request.params.id);
+      if (!job) return sendError(reply, 404, 'Job not found');
+      return job;
+    }
+  );
+
+  /**
+   * DELETE /api/v1/training/distillation/jobs/:id
+   * Cancel and delete a distillation job.
+   */
+  app.delete(
+    '/api/v1/training/distillation/jobs/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getDistillationManager();
+      if (!manager) return sendError(reply, 503, 'Distillation manager not available');
+
+      const deleted = await manager.deleteJob(request.params.id);
+      if (!deleted) return sendError(reply, 404, 'Job not found');
+      return reply.status(204).send();
+    }
+  );
+
+  // ── Fine-tuning endpoints ─────────────────────────────────────────────────
+
+  /**
+   * POST /api/v1/training/finetune/jobs
+   * Create a new fine-tuning job.
+   */
+  app.post(
+    '/api/v1/training/finetune/jobs',
+    async (
+      request: FastifyRequest<{ Body: FinetuneJobConfig }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getFinetuneManager();
+      if (!manager) return sendError(reply, 503, 'Finetune manager not available');
+
+      const body = request.body as FinetuneJobConfig;
+      if (!body.name?.trim()) return sendError(reply, 400, 'name is required');
+      if (!body.baseModel?.trim()) return sendError(reply, 400, 'baseModel is required');
+      if (!body.adapterName?.trim()) return sendError(reply, 400, 'adapterName is required');
+      if (!body.datasetPath?.trim()) return sendError(reply, 400, 'datasetPath is required');
+
+      const job = await manager.createJob(body);
+
+      // Start the Docker container
+      try {
+        await manager.startJob(job.id);
+      } catch (err) {
+        // Non-fatal: job is created, Docker may not be available in dev
+        const msg = err instanceof Error ? err.message : 'Docker error';
+        return reply.status(201).send({ ...job, startError: msg });
+      }
+
+      const started = await manager.getJob(job.id);
+      return reply.status(201).send(started ?? job);
+    }
+  );
+
+  /**
+   * GET /api/v1/training/finetune/jobs
+   * List all fine-tuning jobs.
+   */
+  app.get('/api/v1/training/finetune/jobs', async (_request, reply: FastifyReply) => {
+    const manager = secureYeoman.getFinetuneManager();
+    if (!manager) return sendError(reply, 503, 'Finetune manager not available');
+
+    const jobs = await manager.listJobs();
+    return { jobs };
+  });
+
+  /**
+   * GET /api/v1/training/finetune/jobs/:id
+   * Get a specific fine-tuning job.
+   */
+  app.get(
+    '/api/v1/training/finetune/jobs/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getFinetuneManager();
+      if (!manager) return sendError(reply, 503, 'Finetune manager not available');
+
+      const job = await manager.getJob(request.params.id);
+      if (!job) return sendError(reply, 404, 'Job not found');
+      return job;
+    }
+  );
+
+  /**
+   * GET /api/v1/training/finetune/jobs/:id/logs
+   * SSE stream of Docker container logs.
+   */
+  app.get(
+    '/api/v1/training/finetune/jobs/:id/logs',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getFinetuneManager();
+      if (!manager) return sendError(reply, 503, 'Finetune manager not available');
+
+      const job = await manager.getJob(request.params.id);
+      if (!job) return sendError(reply, 404, 'Job not found');
+
+      reply.raw.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      });
+
+      try {
+        for await (const line of manager.streamLogs(request.params.id)) {
+          reply.raw.write(`data: ${JSON.stringify({ log: line })}\n\n`);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Log stream error';
+        reply.raw.write(`data: ${JSON.stringify({ error: msg })}\n\n`);
+      }
+
+      reply.raw.end();
+      return reply;
+    }
+  );
+
+  /**
+   * POST /api/v1/training/finetune/jobs/:id/register
+   * Register a completed adapter with Ollama.
+   */
+  app.post(
+    '/api/v1/training/finetune/jobs/:id/register',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getFinetuneManager();
+      if (!manager) return sendError(reply, 503, 'Finetune manager not available');
+
+      const job = await manager.getJob(request.params.id);
+      if (!job) return sendError(reply, 404, 'Job not found');
+      if (job.status !== 'complete') {
+        return sendError(reply, 400, `Job is not complete (status=${job.status})`);
+      }
+
+      const ollamaBaseUrl = 'http://localhost:11434';
+      await manager.registerWithOllama(request.params.id, ollamaBaseUrl);
+      return { success: true, adapterName: job.adapterName };
+    }
+  );
+
+  /**
+   * DELETE /api/v1/training/finetune/jobs/:id
+   * Cancel and delete a fine-tuning job.
+   */
+  app.delete(
+    '/api/v1/training/finetune/jobs/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getFinetuneManager();
+      if (!manager) return sendError(reply, 503, 'Finetune manager not available');
+
+      const deleted = await manager.deleteJob(request.params.id);
+      if (!deleted) return sendError(reply, 404, 'Job not found');
+      return reply.status(204).send();
+    }
+  );
 }

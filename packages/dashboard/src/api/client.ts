@@ -859,6 +859,113 @@ export async function exportTrainingDataset(opts: {
   return { url, filename };
 }
 
+// ─── Distillation Jobs ─────────────────────────────────────────────
+
+export interface DistillationJob {
+  id: string;
+  name: string;
+  teacherProvider: string;
+  teacherModel: string;
+  exportFormat: 'sharegpt' | 'instruction';
+  maxSamples: number;
+  personalityIds: string[];
+  outputPath: string;
+  status: 'pending' | 'running' | 'complete' | 'failed' | 'cancelled';
+  samplesGenerated: number;
+  errorMessage: string | null;
+  createdAt: number;
+  completedAt: number | null;
+}
+
+export interface CreateDistillationJobRequest {
+  name: string;
+  teacherProvider: string;
+  teacherModel: string;
+  exportFormat?: 'sharegpt' | 'instruction';
+  maxSamples?: number;
+  personalityIds?: string[];
+  outputPath: string;
+}
+
+export async function fetchDistillationJobs(): Promise<DistillationJob[]> {
+  const data = await request<{ jobs: DistillationJob[] }>('/training/distillation/jobs');
+  return data.jobs;
+}
+
+export async function createDistillationJob(
+  req: CreateDistillationJobRequest
+): Promise<DistillationJob> {
+  return request<DistillationJob>('/training/distillation/jobs', {
+    method: 'POST',
+    body: JSON.stringify(req),
+  });
+}
+
+export async function deleteDistillationJob(id: string): Promise<void> {
+  await request<void>(`/training/distillation/jobs/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+}
+
+// ─── Finetune Jobs ─────────────────────────────────────────────────
+
+export interface FinetuneJob {
+  id: string;
+  name: string;
+  baseModel: string;
+  adapterName: string;
+  datasetPath: string;
+  loraRank: number;
+  loraAlpha: number;
+  batchSize: number;
+  epochs: number;
+  vramBudgetGb: number;
+  image: string;
+  containerId: string | null;
+  status: 'pending' | 'running' | 'complete' | 'failed' | 'cancelled';
+  adapterPath: string | null;
+  errorMessage: string | null;
+  createdAt: number;
+  completedAt: number | null;
+}
+
+export interface CreateFinetuneJobRequest {
+  name: string;
+  baseModel: string;
+  adapterName: string;
+  datasetPath: string;
+  loraRank?: number;
+  loraAlpha?: number;
+  batchSize?: number;
+  epochs?: number;
+  vramBudgetGb?: number;
+}
+
+export async function fetchFinetuneJobs(): Promise<FinetuneJob[]> {
+  const data = await request<{ jobs: FinetuneJob[] }>('/training/finetune/jobs');
+  return data.jobs;
+}
+
+export async function createFinetuneJob(req: CreateFinetuneJobRequest): Promise<FinetuneJob> {
+  return request<FinetuneJob>('/training/finetune/jobs', {
+    method: 'POST',
+    body: JSON.stringify(req),
+  });
+}
+
+export async function deleteFinetuneJob(id: string): Promise<void> {
+  await request<void>(`/training/finetune/jobs/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function registerFinetuneAdapter(id: string): Promise<{ success: boolean; adapterName: string }> {
+  return request<{ success: boolean; adapterName: string }>(
+    `/training/finetune/jobs/${encodeURIComponent(id)}/register`,
+    { method: 'POST' }
+  );
+}
+
 // ─── AI Health ────────────────────────────────────────────────────
 
 export async function fetchAiHealth(): Promise<AiHealthStatus> {
@@ -1168,6 +1275,71 @@ export async function switchModel(data: {
     method: 'POST',
     body: JSON.stringify(data),
   });
+}
+
+export async function patchModelConfig(data: {
+  localFirst: boolean;
+}): Promise<{ success: boolean; localFirst: boolean }> {
+  return request('/model/config', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+// ─── Ollama Model Lifecycle ────────────────────────────────────
+
+export interface OllamaPullProgress {
+  status: string;
+  digest?: string;
+  total?: number;
+  completed?: number;
+  error?: string;
+}
+
+export async function* fetchOllamaPull(
+  model: string
+): AsyncGenerator<OllamaPullProgress, void, unknown> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (_accessToken) headers['Authorization'] = `Bearer ${_accessToken}`;
+
+  const response = await fetch(`${API_BASE}/model/ollama/pull`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ model }),
+    signal: AbortSignal.timeout(300_000),
+  });
+
+  if (!response.body) throw new Error('No response body');
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+      for (const line of lines) {
+        const trimmed = line.replace(/^data: /, '').trim();
+        if (!trimmed) continue;
+        try {
+          yield JSON.parse(trimmed) as OllamaPullProgress;
+        } catch {
+          // ignore parse errors
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+export async function deleteOllamaModel(model: string): Promise<void> {
+  const encodedName = encodeURIComponent(model);
+  await request(`/model/ollama/${encodedName}`, { method: 'DELETE' });
 }
 
 // ─── Model Default (persistent) ───────────────────────────────

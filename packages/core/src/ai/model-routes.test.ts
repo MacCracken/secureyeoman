@@ -4,6 +4,18 @@ import { registerModelRoutes } from './model-routes.js';
 import { _clearDynamicCache } from './cost-calculator.js';
 import type { SecureYeoman } from '../secureyeoman.js';
 
+// Mock OllamaProvider static methods
+vi.mock('./providers/ollama.js', () => ({
+  OllamaProvider: {
+    fetchAvailableModels: vi.fn().mockResolvedValue([{ id: 'llama3:latest', size: 4700000000 }]),
+    pull: vi.fn().mockImplementation(async function* () {
+      yield { status: 'pulling manifest' };
+      yield { status: 'done' };
+    }),
+    deleteModel: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 // Mock global fetch so getAvailableModelsAsync doesn't make real network calls
 const mockFetch = vi.fn().mockImplementation((url: string) => {
   // Gemini ListModels
@@ -94,6 +106,11 @@ function createMockSecureYeoman(
     clearModelDefaultError: string | null;
     costOptimizer: object | null | 'missing';
     costCalculator: object | null | 'missing';
+    setLocalFirstError: string | null;
+    localFirst: boolean;
+    provider: string;
+    model: string;
+    baseUrl: string | undefined;
   }> = {}
 ) {
   const mock = {
@@ -103,10 +120,13 @@ function createMockSecureYeoman(
         })
       : vi.fn().mockReturnValue({
           model: {
-            provider: 'anthropic',
-            model: 'claude-sonnet-4-20250514',
+            provider: overrides.provider ?? 'anthropic',
+            model: overrides.model ?? 'claude-sonnet-4-20250514',
             maxTokens: 16384,
             temperature: 0.7,
+            localFirst: overrides.localFirst ?? false,
+            baseUrl: overrides.baseUrl,
+            apiKeyEnv: 'ANTHROPIC_API_KEY',
           },
         }),
     switchModel: overrides.switchModelError
@@ -125,6 +145,10 @@ function createMockSecureYeoman(
     clearModelDefault: overrides.clearModelDefaultError
       ? vi.fn().mockRejectedValue(new Error(overrides.clearModelDefaultError!))
       : vi.fn().mockResolvedValue(undefined),
+    setLocalFirst: overrides.setLocalFirstError
+      ? vi.fn().mockRejectedValue(new Error(overrides.setLocalFirstError!))
+      : vi.fn().mockResolvedValue(undefined),
+    getLocalFirst: vi.fn().mockReturnValue(overrides.localFirst ?? false),
     getCostOptimizer:
       overrides.costOptimizer === 'missing'
         ? vi.fn().mockReturnValue(null)
@@ -152,6 +176,7 @@ describe('Model Routes', () => {
   beforeEach(() => {
     app = Fastify();
     _clearDynamicCache();
+    vi.clearAllMocks();
   });
 
   it('GET /api/v1/model/info returns current config and available models', async () => {
@@ -170,6 +195,7 @@ describe('Model Routes', () => {
       model: 'claude-sonnet-4-20250514',
       maxTokens: 16384,
       temperature: 0.7,
+      localFirst: false,
     });
     expect(body.available).toBeDefined();
     expect(body.available.anthropic).toBeDefined();
@@ -484,5 +510,172 @@ describe('Model Routes', () => {
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.payload);
     expect(body.roleCount).toBe(3);
+  });
+
+  // ── GET /api/v1/model/info includes localFirst ─────────────────────────────
+
+  it('GET /api/v1/model/info includes localFirst in current', async () => {
+    const mock = createMockSecureYeoman({ localFirst: true });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/model/info' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.current.localFirst).toBe(true);
+  });
+
+  it('GET /api/v1/model/info includes localFirst=false by default', async () => {
+    const mock = createMockSecureYeoman();
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/model/info' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.current.localFirst).toBe(false);
+  });
+
+  // ── PATCH /api/v1/model/config ─────────────────────────────────────────────
+
+  it('PATCH /api/v1/model/config succeeds with localFirst: true', async () => {
+    const mock = createMockSecureYeoman();
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/model/config',
+      payload: { localFirst: true },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.success).toBe(true);
+    expect(body.localFirst).toBe(true);
+    expect(mock.setLocalFirst).toHaveBeenCalledWith(true);
+  });
+
+  it('PATCH /api/v1/model/config succeeds with localFirst: false', async () => {
+    const mock = createMockSecureYeoman();
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/model/config',
+      payload: { localFirst: false },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.localFirst).toBe(false);
+  });
+
+  it('PATCH /api/v1/model/config returns 400 if localFirst is missing', async () => {
+    const mock = createMockSecureYeoman();
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/model/config',
+      payload: {},
+    });
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.payload).message).toContain('localFirst');
+  });
+
+  it('PATCH /api/v1/model/config returns 500 on setLocalFirst error', async () => {
+    const mock = createMockSecureYeoman({ setLocalFirstError: 'storage error' });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/model/config',
+      payload: { localFirst: true },
+    });
+    expect(res.statusCode).toBe(500);
+    expect(JSON.parse(res.payload).message).toContain('storage error');
+  });
+
+  // ── POST /api/v1/model/ollama/pull ─────────────────────────────────────────
+
+  it('POST /api/v1/model/ollama/pull streams progress events for ollama provider', async () => {
+    const mock = createMockSecureYeoman({ provider: 'ollama', model: 'llama3:latest' });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/model/ollama/pull',
+      payload: { model: 'phi3:mini' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toContain('text/event-stream');
+    expect(res.payload).toContain('data:');
+  });
+
+  it('POST /api/v1/model/ollama/pull returns 400 for non-ollama provider', async () => {
+    const mock = createMockSecureYeoman({ provider: 'anthropic' });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/model/ollama/pull',
+      payload: { model: 'llama3:latest' },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.payload).message).toContain('Ollama');
+  });
+
+  it('POST /api/v1/model/ollama/pull returns 400 when model is missing', async () => {
+    const mock = createMockSecureYeoman({ provider: 'ollama' });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/model/ollama/pull',
+      payload: {},
+    });
+
+    expect(res.statusCode).toBe(400);
+  });
+
+  // ── DELETE /api/v1/model/ollama/:name ──────────────────────────────────────
+
+  it('DELETE /api/v1/model/ollama/:name returns 204 on success', async () => {
+    const mock = createMockSecureYeoman({ provider: 'ollama', model: 'llama3:latest' });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/model/ollama/llama3%3Alatest',
+    });
+
+    expect(res.statusCode).toBe(204);
+  });
+
+  it('DELETE /api/v1/model/ollama/:name returns 400 for non-ollama provider', async () => {
+    const mock = createMockSecureYeoman({ provider: 'anthropic' });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/model/ollama/llama3%3Alatest',
+    });
+
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('DELETE /api/v1/model/ollama/:name returns 404 for unknown model', async () => {
+    // Override deleteModel to throw "Model not found"
+    const { OllamaProvider } = await import('./providers/ollama.js');
+    vi.mocked(OllamaProvider.deleteModel).mockRejectedValueOnce(new Error('Model not found'));
+
+    const mock = createMockSecureYeoman({ provider: 'ollama', model: 'llama3:latest' });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/model/ollama/nonexistent',
+    });
+
+    expect(res.statusCode).toBe(404);
+    expect(JSON.parse(res.payload).message).toBe('Model not found');
   });
 });

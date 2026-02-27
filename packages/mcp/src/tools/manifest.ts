@@ -442,5 +442,17 @@ export function getToolManifest(): ToolManifestEntry[] {
     { name: 'twitter_like_tweet', description: 'Like a tweet (auto mode only)' },
     { name: 'twitter_retweet', description: 'Retweet a tweet (auto mode only)' },
     { name: 'twitter_unretweet', description: 'Undo a retweet (auto mode only)' },
+
+    // Ollama model lifecycle tools (Phase 64)
+    {
+      name: 'ollama_pull',
+      description:
+        'Pull (download) an Ollama model from the registry — only available when provider is ollama',
+    },
+    {
+      name: 'ollama_rm',
+      description:
+        'Remove a locally downloaded Ollama model to free disk space — only available when provider is ollama',
+    },
   ];
 }

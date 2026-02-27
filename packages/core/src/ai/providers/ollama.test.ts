@@ -275,4 +275,96 @@ describe('OllamaProvider', () => {
       expect(doneChunk.usage.totalTokens).toBe(15);
     });
   });
+
+  describe('pull()', () => {
+    function makeNdjsonStream(lines: object[]): ReadableStream {
+      const encoder = new TextEncoder();
+      const ndjson = lines.map((l) => JSON.stringify(l)).join('\n') + '\n';
+      return new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode(ndjson));
+          controller.close();
+        },
+      });
+    }
+
+    it('yields progress lines from NDJSON stream', async () => {
+      const lines = [
+        { status: 'pulling manifest' },
+        { status: 'downloading', total: 100, completed: 50 },
+        { status: 'downloading', total: 100, completed: 100 },
+      ];
+      vi.spyOn(global, 'fetch').mockResolvedValue(
+        new Response(makeNdjsonStream(lines), { status: 200 })
+      );
+
+      const collected: any[] = [];
+      for await (const p of OllamaProvider.pull('http://localhost:11434', 'llama3:8b')) {
+        collected.push(p);
+      }
+
+      expect(collected.length).toBe(3);
+      expect(collected[0].status).toBe('pulling manifest');
+      expect(collected[1].completed).toBe(50);
+    });
+
+    it('throws on error line', async () => {
+      const lines = [
+        { status: 'pulling manifest' },
+        { error: 'model not found' },
+      ];
+      vi.spyOn(global, 'fetch').mockResolvedValue(
+        new Response(makeNdjsonStream(lines), { status: 200 })
+      );
+
+      await expect(async () => {
+        for await (const _p of OllamaProvider.pull('http://localhost:11434', 'bad-model')) {
+          // consume
+        }
+      }).rejects.toThrow('model not found');
+    });
+
+    it('throws when HTTP response is not ok', async () => {
+      vi.spyOn(global, 'fetch').mockResolvedValue(new Response('', { status: 500 }));
+      await expect(async () => {
+        for await (const _p of OllamaProvider.pull('http://localhost:11434', 'llama3:8b')) {
+          // consume
+        }
+      }).rejects.toThrow('Ollama pull failed: HTTP 500');
+    });
+  });
+
+  describe('deleteModel()', () => {
+    it('calls DELETE /api/delete and resolves on 200', async () => {
+      const mockFetch = vi.spyOn(global, 'fetch').mockResolvedValue(
+        new Response('', { status: 200 })
+      );
+
+      await expect(
+        OllamaProvider.deleteModel('http://localhost:11434', 'llama3:8b')
+      ).resolves.toBeUndefined();
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:11434/api/delete',
+        expect.objectContaining({
+          method: 'DELETE',
+          body: JSON.stringify({ name: 'llama3:8b' }),
+        })
+      );
+    });
+
+    it('throws "Model not found" on 404', async () => {
+      vi.spyOn(global, 'fetch').mockResolvedValue(new Response('', { status: 404 }));
+      await expect(
+        OllamaProvider.deleteModel('http://localhost:11434', 'nonexistent')
+      ).rejects.toThrow('Model not found');
+    });
+
+    it('throws on other HTTP errors', async () => {
+      vi.spyOn(global, 'fetch').mockResolvedValue(new Response('', { status: 500 }));
+      await expect(
+        OllamaProvider.deleteModel('http://localhost:11434', 'llama3:8b')
+      ).rejects.toThrow('Ollama delete failed: HTTP 500');
+    });
+  });
 });

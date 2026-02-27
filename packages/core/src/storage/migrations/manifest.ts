@@ -111,4 +111,6 @@ export const MIGRATION_MANIFEST: { id: string; sql: string }[] = [
     id: '059_mcp_gmail_twitter_defaults',
     sql: readSql('059_mcp_gmail_twitter_defaults.sql'),
   },
+  { id: '060_distillation_jobs', sql: readSql('060_distillation_jobs.sql') },
+  { id: '061_finetune_jobs', sql: readSql('061_finetune_jobs.sql') },
 ];
