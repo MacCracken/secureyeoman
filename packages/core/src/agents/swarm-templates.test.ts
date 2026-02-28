@@ -57,4 +57,42 @@ describe('BUILTIN_SWARM_TEMPLATES', () => {
     expect(tpl!.roles.some((r) => r.role === 'coder')).toBe(true);
     expect(tpl!.roles.some((r) => r.role === 'reviewer')).toBe(true);
   });
+
+  it('includes prompt-engineering-quartet template', () => {
+    const tpl = BUILTIN_SWARM_TEMPLATES.find((t) => t.id === 'prompt-engineering-quartet');
+    expect(tpl).toBeDefined();
+    expect(tpl!.strategy).toBe('sequential');
+    expect(tpl!.isBuiltin).toBe(true);
+    expect(tpl!.coordinatorProfile).toBeNull();
+    expect(tpl!.roles).toHaveLength(4);
+  });
+
+  it('prompt-engineering-quartet roles execute in correct order', () => {
+    const tpl = BUILTIN_SWARM_TEMPLATES.find((t) => t.id === 'prompt-engineering-quartet')!;
+    const roleNames = tpl.roles.map((r) => r.role);
+    expect(roleNames).toEqual([
+      'intent-engineer',
+      'context-engineer',
+      'prompt-crafter',
+      'spec-engineer',
+    ]);
+  });
+
+  it('prompt-engineering-quartet roles reference correct profiles', () => {
+    const tpl = BUILTIN_SWARM_TEMPLATES.find((t) => t.id === 'prompt-engineering-quartet')!;
+    const profileNames = tpl.roles.map((r) => r.profileName);
+    expect(profileNames).toEqual([
+      'intent-engineer',
+      'context-engineer',
+      'prompt-crafter',
+      'spec-engineer',
+    ]);
+  });
+
+  it('all prompt-engineering-quartet roles have non-empty descriptions', () => {
+    const tpl = BUILTIN_SWARM_TEMPLATES.find((t) => t.id === 'prompt-engineering-quartet')!;
+    for (const role of tpl.roles) {
+      expect(role.description.length).toBeGreaterThan(0);
+    }
+  });
 });

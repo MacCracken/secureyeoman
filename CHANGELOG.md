@@ -1,3 +1,47 @@
+## [2026.2.28m] — 2026-02-28
+
+### Added
+
+#### Prompt Engineering Quartet Swarm Template (Phase 72b)
+
+- **`prompt-engineering-quartet` swarm template** — a builtin sequential swarm that runs four specialist agents in a fixed pipeline:
+  1. **intent-engineer** — resolves ambiguity and confirms what is actually wanted before any prompt is written
+  2. **context-engineer** — designs the context window architecture (what to retrieve, compress, and include) with a token budget breakdown
+  3. **prompt-crafter** — diagnoses weaknesses, selects the optimal technique (zero-shot / few-shot / CoT / role / chaining), and rewrites the prompt
+  4. **spec-engineer** — formalizes the result as a verifiable contract (self-contained problem statement, acceptance criteria, tiered constraints, decomposition map)
+  Each agent receives the prior agent's output as context — the chain accumulates understanding as it progresses. Top-level `result` is the spec-engineer's final spec.
+
+- **4 new builtin agent profiles** distilled from the marketplace skills:
+  - `builtin-intent-engineer` (`intent-engineer`) — 40k token budget; memory + knowledge (read); distilled from Intent Engineering skill
+  - `builtin-context-engineer` (`context-engineer`) — 50k tokens; memory + knowledge (read/write); distilled from Context Engineering skill
+  - `builtin-prompt-crafter` (`prompt-crafter`) — 50k tokens; memory + knowledge (read); distilled from Prompt Craft skill
+  - `builtin-spec-engineer` (`spec-engineer`) — 60k tokens; memory + knowledge (read/write); distilled from Specification Engineering skill
+  All four are reasoning-only profiles (no filesystem, git, or web tools) — they operate on provided context plus knowledge base lookups.
+
+- **Builtin profile count**: 4 → 8. **Builtin template count**: 4 → 5.
+- **Tests**: profiles.test.ts updated (4→8 count, 5 new tests for quartet profiles + tool-scope guard); swarm-templates.test.ts updated (4 new tests for quartet template structure, role order, profile references, and role descriptions).
+- **ADR 156** — `docs/adr/156-prompt-engineering-quartet-swarm.md`
+- **Guide** — `docs/guides/prompt-engineering-quartet-swarm.md`
+
+---
+
+## [2026.2.28l] — 2026-02-28
+
+### Added
+
+#### Marketplace Builtin Skills — Prompt Engineering Quartet
+
+- **4 new builtin marketplace skills** promoted from the community repo into the core `marketplace/skills/` directory:
+  - **Prompt Craft** — diagnoses weaknesses in existing prompts and rewrites them using the right technique (zero-shot, few-shot, CoT, role prompting, chaining). Delivers: diagnosis, rewritten prompt, and bulleted change rationale.
+  - **Context Engineering** — designs and optimizes what enters an AI's context window using the Write / Select / Compress / Isolate framework. Delivers: context audit, redesigned architecture, and token budget breakdown.
+  - **Intent Engineering** — resolves ambiguous or underspecified requests before any prompt is written. Four-step process: parse → surface ambiguities → restate → decompose implicit sub-goals.
+  - **Specification Engineering** — translates confirmed intent into a rigorous, verifiable task contract with self-contained problem statement, acceptance criteria, tiered constraint architecture (Never / Ask First / Default), and decomposition map.
+- All four are seeded as `source: 'builtin'` on startup via `seedBuiltinSkills()`. Builtin skill count: 6 → 10.
+- Removed the corresponding JSON files from the community skills repo (`skills/productivity/`).
+- **8 new tests**: 4 integration tests in `marketplace.test.ts` (one per skill, asserting category, author, `authorInfo.github`, source, and tag membership); unit mock + count assertion updated in `storage.test.ts`.
+
+---
+
 ## [2026.2.28k] — 2026-02-28
 
 ### Added

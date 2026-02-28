@@ -79,4 +79,39 @@ export const BUILTIN_SWARM_TEMPLATES: Omit<SwarmTemplate, 'createdAt'>[] = [
     coordinatorProfile: null,
     isBuiltin: true,
   },
+  {
+    id: 'prompt-engineering-quartet',
+    name: 'prompt-engineering-quartet',
+    description:
+      'Sequential four-stage prompt engineering pipeline: intent-engineer clarifies what is wanted, context-engineer designs the information architecture, prompt-crafter writes the optimized prompt, spec-engineer formalizes it as a verifiable contract with acceptance criteria and constraints.',
+    strategy: 'sequential',
+    roles: [
+      {
+        role: 'intent-engineer',
+        profileName: 'intent-engineer',
+        description:
+          'Resolve ambiguity and confirm what is actually wanted before any prompt is written',
+      },
+      {
+        role: 'context-engineer',
+        profileName: 'context-engineer',
+        description:
+          'Design the context window architecture — what to retrieve, compress, and include',
+      },
+      {
+        role: 'prompt-crafter',
+        profileName: 'prompt-crafter',
+        description:
+          'Diagnose weaknesses and rewrite the prompt using the optimal technique',
+      },
+      {
+        role: 'spec-engineer',
+        profileName: 'spec-engineer',
+        description:
+          'Formalize the result as a verifiable contract with acceptance criteria and tiered constraints',
+      },
+    ],
+    coordinatorProfile: null,
+    isBuiltin: true,
+  },
 ];
