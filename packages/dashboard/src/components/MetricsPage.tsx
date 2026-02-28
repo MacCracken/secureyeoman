@@ -318,6 +318,27 @@ function MissionControlTab({
     localStorage.setItem('world:viewMode', m);
   };
 
+  // Agent World zoom (0.5–2.0, step 0.25, persisted)
+  const [worldZoom, setWorldZoom] = useState<number>(
+    () => parseFloat(localStorage.getItem('world:zoom') ?? '1')
+  );
+  const adjustZoom = (delta: number) => {
+    setWorldZoom(prev => {
+      const next = Math.max(0.5, Math.min(2.0, Math.round((prev + delta) * 4) / 4));
+      localStorage.setItem('world:zoom', String(next));
+      return next;
+    });
+  };
+
+  // Agent World fullscreen (transient — not persisted)
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsFullscreen(false); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isFullscreen]);
+
   // Live data feeds
   const { data: tasksData } = useQuery({
     queryKey: ['tasks-running'],
@@ -828,7 +849,11 @@ function MissionControlTab({
 
       {/* ── Agent World ───────────────────────────────────────────────── */}
       <div className="card">
-        <div className="card-header">
+        <div
+          className="card-header cursor-default select-none"
+          title="Double-click to expand"
+          onDoubleClick={() => setIsFullscreen(true)}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Bot className="w-4 h-4 text-muted-foreground" />
@@ -837,31 +862,49 @@ function MissionControlTab({
                 <p className="card-description text-xs">Live personality activity</p>
               </div>
             </div>
-            <div className="flex gap-0.5">
-              <button
-                onClick={() => setAndPersistWorldView('grid')}
-                className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'grid' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                title="Card grid view"
-                aria-pressed={worldViewMode === 'grid'}
-              >
-                ≡ Grid
-              </button>
-              <button
-                onClick={() => setAndPersistWorldView('map')}
-                className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'map' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                title="World map view"
-                aria-pressed={worldViewMode === 'map'}
-              >
-                ⊞ Map
-              </button>
-              <button
-                onClick={() => setAndPersistWorldView('large')}
-                className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'large' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                title="Large zone view"
-                aria-pressed={worldViewMode === 'large'}
-              >
-                ⊟ Large
-              </button>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <button
+                  onClick={(e) => { e.stopPropagation(); adjustZoom(-0.25); }}
+                  disabled={worldZoom <= 0.5}
+                  className="px-1.5 py-0.5 rounded hover:text-foreground disabled:opacity-30"
+                  aria-label="Zoom out"
+                >−</button>
+                <span className="tabular-nums w-9 text-center">{Math.round(worldZoom * 100)}%</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); adjustZoom(0.25); }}
+                  disabled={worldZoom >= 2.0}
+                  className="px-1.5 py-0.5 rounded hover:text-foreground disabled:opacity-30"
+                  aria-label="Zoom in"
+                >+</button>
+              </div>
+              <span className="text-border text-xs">|</span>
+              <div className="flex gap-0.5">
+                <button
+                  onClick={() => setAndPersistWorldView('grid')}
+                  className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'grid' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                  title="Card grid view"
+                  aria-pressed={worldViewMode === 'grid'}
+                >
+                  ≡ Grid
+                </button>
+                <button
+                  onClick={() => setAndPersistWorldView('map')}
+                  className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'map' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                  title="World map view"
+                  aria-pressed={worldViewMode === 'map'}
+                >
+                  ⊞ Map
+                </button>
+                <button
+                  onClick={() => setAndPersistWorldView('large')}
+                  className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'large' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                  title="Large zone view"
+                  aria-pressed={worldViewMode === 'large'}
+                >
+                  ⊟ Large
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -869,10 +912,88 @@ function MissionControlTab({
           <AgentWorldWidget
             maxAgents={12}
             viewMode={worldViewMode}
+            zoom={worldZoom}
             onAgentClick={(id) => navigate(`/soul/personalities?focus=${id}`)}
           />
         </div>
       </div>
+
+      {/* ── Agent World fullscreen overlay ────────────────────────────── */}
+      {isFullscreen && (
+        <div
+          className="fixed inset-0 z-50 bg-background flex flex-col"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Agent World — fullscreen"
+        >
+          <div className="flex items-center justify-between px-4 py-2 border-b flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <Bot className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Agent World</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <button
+                  onClick={() => adjustZoom(-0.25)}
+                  disabled={worldZoom <= 0.5}
+                  className="px-1.5 py-0.5 rounded hover:text-foreground disabled:opacity-30"
+                  aria-label="Zoom out"
+                >−</button>
+                <span className="tabular-nums w-9 text-center">{Math.round(worldZoom * 100)}%</span>
+                <button
+                  onClick={() => adjustZoom(0.25)}
+                  disabled={worldZoom >= 2.0}
+                  className="px-1.5 py-0.5 rounded hover:text-foreground disabled:opacity-30"
+                  aria-label="Zoom in"
+                >+</button>
+              </div>
+              <span className="text-border text-sm">|</span>
+              <div className="flex gap-0.5">
+                <button
+                  onClick={() => setAndPersistWorldView('grid')}
+                  className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'grid' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                  title="Card grid view"
+                  aria-pressed={worldViewMode === 'grid'}
+                >
+                  ≡ Grid
+                </button>
+                <button
+                  onClick={() => setAndPersistWorldView('map')}
+                  className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'map' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                  title="World map view"
+                  aria-pressed={worldViewMode === 'map'}
+                >
+                  ⊞ Map
+                </button>
+                <button
+                  onClick={() => setAndPersistWorldView('large')}
+                  className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'large' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                  title="Large zone view"
+                  aria-pressed={worldViewMode === 'large'}
+                >
+                  ⊟ Large
+                </button>
+              </div>
+              <span className="text-border text-sm">|</span>
+              <button
+                onClick={() => setIsFullscreen(false)}
+                aria-label="Exit fullscreen"
+                className="p-1 rounded hover:bg-muted transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 overflow-auto p-4">
+            <AgentWorldWidget
+              viewMode={worldViewMode}
+              zoom={worldZoom}
+              onAgentClick={(id) => { setIsFullscreen(false); navigate(`/soul/personalities?focus=${id}`); }}
+              maxAgents={999}
+            />
+          </div>
+        </div>
+      )}
 
       {/* ── System Topology + Cost Breakdown ─────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

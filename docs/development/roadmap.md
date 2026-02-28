@@ -589,18 +589,7 @@ Grounding is the difference between "I retrieved something relevant" and "here i
 
 ### Agent World Extensions
 
-*Core world map + dashboard widget shipped (Phase 69). Remaining enhancements:*
-
-- [ ] **Map / Grid toggle** — `⊞ Map` / `≡ Grid` button in `AgentWorldWidget` header switches between world-map and card-grid views
-- [ ] **Agent click-through** — clicking an agent sprite opens that personality's detail panel
-- [ ] **Zoom control** — `+` / `−` buttons scale the map via CSS `font-size` on the `font-mono` container
-- [ ] **Fullscreen expand** — double-click widget header to expand to full Mission Control width
-- [ ] **Configurable FPS** — fps slider in card settings popover (1–16 fps), persisted in layout config
-- [ ] **World map model** — `WorldCell` grid, `ZoneId` enum, zone waypoints, static floor plan definitions per `--size`
-- [ ] **Agent position model** — `AgentPosition` per personality; BFS pathfinding; zone routing on state change
-- [ ] **A2A / shared-workflow detection** — cross-reference running tasks for same `workflowId`; trigger Meeting Room convergence + speech bubbles
-- [ ] **World mood** — compute mood from poll data; apply color, fps, and particle overrides
-- [ ] **`--size` flag for large floor plan** — additional desk rows and all four zones
+*Core world map + dashboard widget shipped (Phase 69). Map/Grid/Large toggle, agent click-through, BFS pathfinding, A2A detection, world mood, --size flag, zoom controls, and fullscreen expand shipped. No outstanding items — FPS slider moved to demand-gated.*
 
 ---
 
@@ -637,6 +626,7 @@ Grounding is the difference between "I retrieved something relevant" and "here i
 - [ ] **HSM Integration** — Hardware Security Module integration for key management.
 - [ ] **Optimistic Locking** — `version` field on personalities and skills; API returns `409 Conflict` on stale saves; dashboard shows "Someone else edited this — reload?" banner.
 - [ ] **ELK Integration** — Eclipse Layout Kernel for advanced constraint-based graph layouts. ~2 MB WASM bundle — justified only when graph complexity outgrows Dagre.
+- [ ] **Agent World — Configurable FPS** — fps slider in card settings popover (1–16 fps), persisted in layout config. Only worthwhile if users report animation overhead on low-power devices.
 
 ---
 

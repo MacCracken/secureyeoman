@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { createMetricsSnapshot } from '../test/mocks';
@@ -637,5 +637,54 @@ describe('MetricsPage — Agent World card', () => {
     await screen.findByText('NavAgent');
     fireEvent.click(screen.getByTitle(/NavAgent/i));
     expect(mockNavigate).toHaveBeenCalledWith('/soul/personalities?focus=p-nav-1');
+  });
+
+  it('zoom buttons appear in the Agent World card header', async () => {
+    renderMetricsPage();
+    await screen.findByText('Agent World');
+    expect(screen.getByRole('button', { name: /zoom in/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /zoom out/i })).toBeInTheDocument();
+  });
+
+  it('double-clicking the card header opens the fullscreen overlay', async () => {
+    renderMetricsPage();
+    const header = await screen.findByTitle('Double-click to expand');
+    fireEvent.dblClick(header);
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /agent world.*fullscreen/i })).toBeInTheDocument();
+    });
+  });
+
+  it('clicking the × button in fullscreen closes the overlay', async () => {
+    renderMetricsPage();
+    const header = await screen.findByTitle('Double-click to expand');
+    fireEvent.dblClick(header);
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /exit fullscreen/i }));
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+
+  it('pressing Escape closes the fullscreen overlay', async () => {
+    renderMetricsPage();
+    const header = await screen.findByTitle('Double-click to expand');
+    fireEvent.dblClick(header);
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+    fireEvent.keyDown(window, { key: 'Escape' });
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+
+  it('fullscreen overlay contains view-mode toggle buttons', async () => {
+    renderMetricsPage();
+    const header = await screen.findByTitle('Double-click to expand');
+    fireEvent.dblClick(header);
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.querySelector('[title="Card grid view"]')).toBeInTheDocument();
+    expect(dialog.querySelector('[title="World map view"]')).toBeInTheDocument();
+    expect(dialog.querySelector('[title="Large zone view"]')).toBeInTheDocument();
   });
 });

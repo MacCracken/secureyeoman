@@ -38,6 +38,7 @@ function renderWidget(props: {
   maxAgents?: number;
   onAgentClick?: (id: string) => void;
   viewMode?: 'grid' | 'map' | 'large';
+  zoom?: number;
 } = {}) {
   const qc = makeQueryClient();
   return render(
@@ -747,5 +748,47 @@ describe('sub-agent delegation cards', () => {
       expect(screen.getByText('idle')).toBeInTheDocument();
     });
     expect(screen.queryByText('meeting')).not.toBeInTheDocument();
+  });
+});
+
+// ── Zoom prop ─────────────────────────────────────────────────────────────────
+
+describe('zoom prop', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    localStorage.clear();
+    mockFetchPersonalities.mockResolvedValue({
+      personalities: [makePersonality({ id: 'p-1', name: 'Alice', isActive: true })],
+    });
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
+  });
+
+  it('map container has fontSize 11px when zoom=1', async () => {
+    renderWidget({ viewMode: 'map', zoom: 1 });
+    await waitFor(() => expect(screen.getByText('Workspace')).toBeInTheDocument());
+    const list = screen.getByRole('list', { name: /agent world map/i });
+    expect(list).toHaveStyle({ fontSize: '11px' });
+  });
+
+  it('map container has fontSize 22px when zoom=2', async () => {
+    renderWidget({ viewMode: 'map', zoom: 2 });
+    await waitFor(() => expect(screen.getByText('Workspace')).toBeInTheDocument());
+    const list = screen.getByRole('list', { name: /agent world map/i });
+    expect(list).toHaveStyle({ fontSize: '22px' });
+  });
+
+  it('map container has fontSize 6px when zoom=0.5 (Math.round(5.5)=6)', async () => {
+    renderWidget({ viewMode: 'map', zoom: 0.5 });
+    await waitFor(() => expect(screen.getByText('Workspace')).toBeInTheDocument());
+    const list = screen.getByRole('list', { name: /agent world map/i });
+    expect(list).toHaveStyle({ fontSize: '6px' });
+  });
+
+  it('grid view applies scale transform when zoom=2', async () => {
+    renderWidget({ viewMode: 'grid', zoom: 2 });
+    await waitFor(() => expect(screen.getByRole('list', { name: /^agent world$/i })).toBeInTheDocument());
+    const list = screen.getByRole('list', { name: /^agent world$/i });
+    expect(list).toHaveStyle({ transform: 'scale(2)' });
   });
 });
