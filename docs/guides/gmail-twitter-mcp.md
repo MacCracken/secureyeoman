@@ -8,8 +8,123 @@ and retweet — all without browser automation, and all subject to the access mo
 
 | Service | Requirement |
 |---------|------------|
-| Gmail | A Google account connected via Settings → Connections → OAuth |
-| Twitter/X | A Twitter integration added via Settings → Connections → Add Integration |
+| Gmail | A Google Cloud project with Gmail API enabled and OAuth credentials configured (see setup below) |
+| Twitter/X | A Twitter Developer App with OAuth 1.0a credentials |
+
+---
+
+## Google Cloud Console Setup (Gmail)
+
+This section is for **operators** deploying SecureYeoman. Each step is required before users can
+connect Gmail accounts.
+
+### 1 — Create or select a GCP project
+
+Go to [console.cloud.google.com](https://console.cloud.google.com) and create a new project (or
+use an existing one).
+
+### 2 — Enable the Gmail API
+
+1. Navigate to **APIs & Services → Library**.
+2. Search for **Gmail API** and click it.
+3. Click **Enable**.
+
+> Without this step, all Gmail tool calls will return 403 errors even with correct OAuth tokens.
+
+### 3 — Configure the OAuth consent screen
+
+1. Go to **APIs & Services → OAuth consent screen**.
+2. Choose **External** (or Internal if this is a Google Workspace org).
+3. Fill in App name, support email, and developer contact.
+4. On the **Scopes** step, click **Add or Remove Scopes** and add **all** of the following:
+   - `openid`
+   - `email`
+   - `profile`
+   - `https://www.googleapis.com/auth/gmail.readonly`
+   - `https://www.googleapis.com/auth/gmail.compose`
+   - `https://www.googleapis.com/auth/gmail.send`
+   - `https://www.googleapis.com/auth/gmail.modify`
+
+   > **Important**: Every scope the app requests at runtime must be listed here. If even one scope
+   > is missing from the consent screen, Google will show "Something went wrong. Try again." when
+   > the user clicks Continue — even if they are already a listed test user.
+5. Save and continue through remaining steps.
+
+> **Testing vs Production**: While your app is in **Testing** mode (default), only explicitly added
+> test users can authorize it. See step 5 below. For production use, you must submit for Google
+> verification, which is required before unrecognized users can grant Gmail scopes.
+
+### 4 — Create OAuth 2.0 credentials
+
+1. Go to **APIs & Services → Credentials**.
+2. Click **+ Create Credentials → OAuth client ID**.
+3. Application type: **Web application**.
+4. Under **Authorized redirect URIs**, add **all** of the following (replace `<BASE_URL>` with
+   your `OAUTH_REDIRECT_BASE_URL` value from `.env`):
+
+   ```
+   <BASE_URL>/api/v1/auth/oauth/google/callback
+   <BASE_URL>/api/v1/auth/oauth/gmail/callback
+   ```
+
+   Example for local development:
+   ```
+   http://localhost:3000/api/v1/auth/oauth/google/callback
+   http://localhost:3000/api/v1/auth/oauth/gmail/callback
+   ```
+
+   Example for a dev server:
+   ```
+   https://dev.example.com:3000/api/v1/auth/oauth/google/callback
+   https://dev.example.com:3000/api/v1/auth/oauth/gmail/callback
+   ```
+
+   > **Why two URIs?** SecureYeoman uses **separate OAuth providers** for generic Google sign-in
+   > (`/google/callback`) and Gmail-scoped access (`/gmail/callback`). Both must be registered or
+   > one of the flows will fail with `redirect_uri_mismatch`.
+
+5. Click **Create**, then copy the **Client ID** and **Client Secret**.
+
+### 5 — Add test users (Testing mode only)
+
+If your app is still in **Testing** mode on the OAuth consent screen, only listed test users can
+authorize it. If the authorizing account is not in the list, Google shows "Something went wrong.
+Try again." after clicking Continue on the unverified-app warning screen.
+
+1. Go to **APIs & Services → OAuth consent screen**.
+2. Scroll to **Test users**.
+3. Click **+ Add Users** and enter the Gmail address of every account that needs access.
+4. Save.
+
+> **Also check scopes**: "Something went wrong. Try again." appears for both missing test users AND
+> missing scopes. If you've already added the user, verify that all four Gmail scopes are on the
+> consent screen (see step 3 above).
+
+> Once you publish the app (verified status), test user restrictions are lifted and any Google
+> account can authorize.
+
+### 6 — Configure SecureYeoman environment
+
+Add the credentials to your `.env` (or `.env.dev`):
+
+```env
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+OAUTH_REDIRECT_BASE_URL=https://your-domain.com:port
+```
+
+`OAUTH_REDIRECT_BASE_URL` must exactly match the base of the redirect URIs registered in step 4
+(no trailing slash).
+
+### 7 — Connect a Gmail account in the dashboard
+
+1. Go to **Settings → Connections → OAuth**.
+2. Under **Add Account**, select the **Gmail** provider (not Google — that is the generic sign-in
+   flow without Gmail scopes).
+3. Click **Connect** and complete the OAuth flow.
+4. The account now appears under **Connected Accounts** with its email address.
+
+---
 
 ## Enabling the Tools
 

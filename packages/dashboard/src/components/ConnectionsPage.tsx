@@ -48,6 +48,11 @@ import {
   Key,
   Copy,
   Check,
+  Pencil,
+  X,
+  Save,
+  ToggleLeft,
+  ToggleRight,
 } from 'lucide-react';
 import {
   fetchMcpServers,
@@ -64,6 +69,7 @@ import {
   startIntegration,
   stopIntegration,
   deleteIntegration,
+  updateIntegration,
   testIntegration,
   fetchSecurityPolicy,
   updateSecurityPolicy,
@@ -1709,80 +1715,103 @@ function MessagingTab({
     <div className="space-y-6">
       {/* ── Connect form (inline, replaces picker when a platform is selected) ── */}
       {connectingPlatform && PLATFORM_META[connectingPlatform] && (
-        <div className="card p-4 border-primary border-2">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-surface text-muted">
+        <div className="card overflow-hidden border-primary/60">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 bg-primary/5 border-b border-primary/20">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-lg bg-primary/10 text-primary">
                 {PLATFORM_META[connectingPlatform].icon}
               </div>
-              <h3 className="font-medium text-sm">
-                Connect {PLATFORM_META[connectingPlatform].name}
-              </h3>
-            </div>
-          </div>
-          {PLATFORM_META[connectingPlatform].setupSteps && (
-            <div className="mb-4 p-3 bg-surface rounded-md">
-              <p className="text-xs font-medium text-muted mb-2">Setup Steps</p>
-              <ol className="text-xs space-y-1">
-                {PLATFORM_META[connectingPlatform].setupSteps.map((step, idx) => (
-                  <li key={idx} className="flex gap-2">
-                    <span className="text-muted">{idx + 1}.</span>
-                    <span>{step}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              onCreateIntegration();
-            }}
-            className="space-y-3"
-          >
-            {PLATFORM_META[connectingPlatform].fields.map((field) => (
-              <div key={field.key}>
-                <label className="text-xs text-muted block mb-1">{field.label}</label>
-                <input
-                  type={field.type}
-                  placeholder={field.placeholder}
-                  value={formData[field.key] || ''}
-                  onChange={(e) => {
-                    onFormDataChange({ ...formData, [field.key]: e.target.value });
-                  }}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                />
-                {field.helpText && (
-                  <p className="text-xs text-muted mt-1 flex items-center gap-1">
-                    <HelpCircle className="w-3 h-3" />
-                    {field.helpText}
-                  </p>
-                )}
+              <div>
+                <h3 className="font-semibold text-sm">Connect {PLATFORM_META[connectingPlatform].name}</h3>
+                <p className="text-xs text-muted-foreground">{PLATFORM_META[connectingPlatform].description}</p>
               </div>
-            ))}
-            {createError && (
-              <p className="text-xs text-red-400">{createError.message || 'Connection failed'}</p>
-            )}
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={!formData.displayName || isCreating}
-                className="btn btn-ghost text-xs px-3 py-1.5"
-              >
-                {isCreating ? 'Connecting...' : 'Connect'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onConnectPlatform(null);
-                  setShowAddPicker(false);
-                }}
-                className="btn btn-ghost text-xs px-3 py-1.5"
-              >
-                Cancel
-              </button>
             </div>
-          </form>
+            <button
+              type="button"
+              onClick={() => {
+                onConnectPlatform(null);
+                setShowAddPicker(false);
+              }}
+              className="text-muted-foreground hover:text-foreground text-lg leading-none"
+              aria-label="Cancel"
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="p-4 space-y-4">
+            {/* Setup steps */}
+            {PLATFORM_META[connectingPlatform].setupSteps && (
+              <div className="p-3 bg-muted/40 rounded-lg border border-border/60">
+                <p className="text-xs font-semibold text-foreground mb-2">Setup Steps</p>
+                <ol className="space-y-1.5">
+                  {PLATFORM_META[connectingPlatform].setupSteps.map((step, idx) => (
+                    <li key={idx} className="flex gap-2.5 text-xs text-muted-foreground">
+                      <span className="text-primary font-medium shrink-0">{idx + 1}.</span>
+                      <span>{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {/* Fields */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                onCreateIntegration();
+              }}
+              className="space-y-3"
+            >
+              {PLATFORM_META[connectingPlatform].fields.map((field) => (
+                <div key={field.key}>
+                  <label className="text-sm font-medium text-foreground block mb-1.5">{field.label}</label>
+                  <input
+                    type={field.type}
+                    placeholder={field.placeholder}
+                    value={formData[field.key] || ''}
+                    onChange={(e) => {
+                      onFormDataChange({ ...formData, [field.key]: e.target.value });
+                    }}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  {field.helpText && (
+                    <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1.5">
+                      <HelpCircle className="w-3.5 h-3.5 shrink-0" />
+                      {field.helpText}
+                    </p>
+                  )}
+                </div>
+              ))}
+
+              {createError && (
+                <div className="p-2.5 rounded-md bg-red-500/10 border border-red-500/20">
+                  <p className="text-sm text-red-600 dark:text-red-400">{createError.message || 'Connection failed'}</p>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="submit"
+                  disabled={!formData.displayName || isCreating}
+                  className="btn btn-primary text-sm px-4 py-2"
+                >
+                  {isCreating ? 'Connecting…' : 'Connect'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onConnectPlatform(null);
+                    setShowAddPicker(false);
+                  }}
+                  className="btn btn-ghost text-sm px-4 py-2"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -1914,99 +1943,230 @@ function IntegrationCard({
   const isConnected = integration.status === 'connected';
   const isLoading = isStarting || isStopping || isDeleting;
 
+  const accountEmail = integration.config?.email as string | undefined;
+  const isEmailPlatform = integration.platform === 'gmail' || integration.platform === 'email';
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editEnabled, setEditEnabled] = useState(integration.enabled);
+  const [editRead, setEditRead] = useState((integration.config?.enableRead as boolean) ?? true);
+  const [editSend, setEditSend] = useState((integration.config?.enableSend as boolean) ?? false);
+
+  const queryClient = useQueryClient();
+  const saveMut = useMutation({
+    mutationFn: () =>
+      updateIntegration(integration.id, {
+        enabled: editEnabled,
+        config: isEmailPlatform
+          ? { ...integration.config, enableRead: editRead, enableSend: editSend }
+          : undefined,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['integrations'] });
+      setIsEditing(false);
+    },
+  });
+
   return (
-    <div className="card p-3 sm:p-4">
-      <div className="flex items-start gap-2.5 sm:gap-3">
-        <div className="p-1.5 sm:p-2 rounded-lg bg-surface text-muted shrink-0">{meta.icon}</div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="font-medium text-sm truncate">{integration.displayName}</h3>
-            <span className={`text-xs flex items-center gap-1 shrink-0 ${statusConfig.color}`}>
-              {statusConfig.icon}
-              <span className="hidden xs:inline">{statusConfig.label}</span>
-            </span>
+    <div className={`card overflow-hidden transition-colors ${
+      isConnected
+        ? 'border-green-500/50 bg-green-500/5'
+        : integration.status === 'error'
+        ? 'border-red-500/50 bg-red-500/5'
+        : ''
+    }`}>
+      {/* Status bar across top */}
+      <div className={`h-1 w-full ${
+        isConnected ? 'bg-green-500' : integration.status === 'error' ? 'bg-red-500' : 'bg-border'
+      }`} />
+
+      <div className="p-4">
+        {/* Header row */}
+        <div className="flex items-start gap-3">
+          <div className={`p-2.5 rounded-xl shrink-0 ${
+            isConnected
+              ? 'bg-green-500/15 text-green-500'
+              : integration.status === 'error'
+              ? 'bg-red-500/15 text-red-500'
+              : 'bg-muted/50 text-muted-foreground'
+          }`}>
+            {meta.icon}
           </div>
-          <p className="text-xs text-muted-foreground mt-1">{meta.name}</p>
-          <div className="flex items-center gap-2 sm:gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
-            <span>{integration.messageCount} msgs</span>
-            {integration.lastMessageAt && (
-              <span>Last: {formatRelativeTime(integration.lastMessageAt)}</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <h3 className="font-semibold text-sm leading-tight truncate">{integration.displayName}</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">{meta.name}</p>
+              </div>
+              <span className={`text-xs flex items-center gap-1 shrink-0 px-2 py-1 rounded-full font-medium border ${
+                isConnected
+                  ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30'
+                  : integration.status === 'error'
+                  ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30'
+                  : 'bg-muted/50 text-muted-foreground border-border'
+              }`}>
+                {statusConfig.icon}
+                <span>{statusConfig.label}</span>
+              </span>
+            </div>
+
+            {/* Account email */}
+            {accountEmail && (
+              <p className="text-xs text-foreground/70 mt-1.5 font-mono truncate">{accountEmail}</p>
             )}
           </div>
-          {integration.errorMessage && (
-            <p
-              className="text-xs text-red-400 mt-1 truncate"
-              title={sanitizeText(integration.errorMessage ?? '')}
-            >
-              {sanitizeText(integration.errorMessage ?? '')}
-            </p>
+        </div>
+
+        {/* Stats row */}
+        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border/60 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>{integration.messageCount} messages</span>
+          </div>
+          {integration.lastMessageAt && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-border">·</span>
+              <span>Last activity {formatRelativeTime(integration.lastMessageAt)}</span>
+            </div>
           )}
-          {integration.status === 'error' && (
+        </div>
+
+        {/* Error message */}
+        {integration.errorMessage && (
+          <div className="mt-2 p-2 rounded bg-red-500/10 border border-red-500/20">
+            <p className="text-xs text-red-600 dark:text-red-400 break-words">
+              {sanitizeText(integration.errorMessage)}
+            </p>
+          </div>
+        )}
+
+        {/* Test result */}
+        {testResult && (
+          <div className={`flex items-center gap-1.5 mt-2 px-2.5 py-1.5 rounded-md text-xs border ${
+            testResult.ok
+              ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20'
+              : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
+          }`}>
+            {testResult.ok ? <CheckCircle className="w-3.5 h-3.5 shrink-0" /> : <XCircle className="w-3.5 h-3.5 shrink-0" />}
+            {testResult.message}
+          </div>
+        )}
+
+        {/* Inline edit form */}
+        {isEditing && (
+          <div className="mt-3 pt-3 border-t border-border/60 space-y-3">
+            {/* Enabled toggle */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">Account enabled</p>
+                <p className="text-xs text-muted-foreground">Disable to pause without deleting</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setEditEnabled((v) => !v); }}
+                className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${editEnabled ? 'text-green-500' : 'text-muted-foreground'}`}
+              >
+                {editEnabled ? <ToggleRight className="w-7 h-7" /> : <ToggleLeft className="w-7 h-7" />}
+                {editEnabled ? 'Enabled' : 'Disabled'}
+              </button>
+            </div>
+
+            {/* Read / Send permissions (email platforms only) */}
+            {isEmailPlatform && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Permissions</p>
+                <label className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
+                  <div>
+                    <span className="text-sm font-medium block">Read emails</span>
+                    <span className="text-xs text-muted-foreground">Poll inbox for new messages</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={editRead}
+                    onChange={(e) => { setEditRead(e.target.checked); }}
+                    className="w-4 h-4 rounded accent-primary"
+                  />
+                </label>
+                <label className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
+                  <div>
+                    <span className="text-sm font-medium block">Send emails</span>
+                    <span className="text-xs text-muted-foreground">Allow sending and replying</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={editSend}
+                    onChange={(e) => { setEditSend(e.target.checked); }}
+                    className="w-4 h-4 rounded accent-primary"
+                  />
+                </label>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => { saveMut.mutate(); }}
+                disabled={saveMut.isPending}
+                className="btn btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5"
+              >
+                <Save className="w-3.5 h-3.5" />
+                {saveMut.isPending ? 'Saving…' : 'Save'}
+              </button>
+              <button
+                onClick={() => { setIsEditing(false); }}
+                className="btn btn-ghost text-xs px-3 py-1.5"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/60">
+          {isConnected ? (
             <button
-              onClick={() => {
-                onStart(integration.id);
-              }}
+              onClick={() => { onStop(integration.id); }}
               disabled={isLoading}
-              className="text-xs text-primary mt-1"
+              className="btn btn-ghost text-xs px-3 py-1.5"
             >
-              Retry
+              Stop
+            </button>
+          ) : (
+            <button
+              onClick={() => { onStart(integration.id); }}
+              disabled={isLoading}
+              className="btn btn-ghost text-xs px-3 py-1.5"
+            >
+              {integration.status === 'error' ? 'Retry' : 'Start'}
             </button>
           )}
-        </div>
-      </div>
-      {testResult && (
-        <div
-          className={`flex items-center gap-1.5 mt-2 px-2 py-1 rounded text-xs ${
-            testResult.ok ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
-          }`}
-        >
-          {testResult.ok ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-          {testResult.message}
-        </div>
-      )}
-      <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border">
-        {isConnected ? (
+          {onTest && (
+            <button
+              onClick={() => { onTest(integration.id); }}
+              disabled={isLoading || isTesting}
+              className="btn btn-ghost text-xs px-3 py-1.5 flex items-center gap-1.5"
+            >
+              {isTesting ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+              Test
+            </button>
+          )}
+          <button
+            onClick={() => { setIsEditing((v) => !v); }}
+            className={`btn btn-ghost text-xs px-3 py-1.5 flex items-center gap-1.5 ${isEditing ? 'text-primary' : ''}`}
+            title="Edit settings"
+          >
+            {isEditing ? <X className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+            {isEditing ? 'Close' : 'Edit'}
+          </button>
           <button
             onClick={() => {
-              onStop(integration.id);
+              if (confirm(`Delete ${integration.displayName}?`)) onDelete(integration.id);
             }}
             disabled={isLoading}
-            className="text-xs text-muted hover:text-destructive transition-colors"
+            className="btn btn-ghost text-xs px-3 py-1.5 text-destructive hover:bg-destructive/10 ml-auto"
           >
-            Stop
+            Delete
           </button>
-        ) : (
-          <button
-            onClick={() => {
-              onStart(integration.id);
-            }}
-            disabled={isLoading}
-            className="text-xs text-muted hover:text-primary transition-colors"
-          >
-            Start
-          </button>
-        )}
-        {onTest && (
-          <button
-            onClick={() => {
-              onTest(integration.id);
-            }}
-            disabled={isLoading || isTesting}
-            className="text-xs text-muted hover:text-primary transition-colors flex items-center gap-1"
-          >
-            {isTesting ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-            Test
-          </button>
-        )}
-        <button
-          onClick={() => {
-            if (confirm(`Delete ${integration.displayName}?`)) onDelete(integration.id);
-          }}
-          disabled={isLoading}
-          className="text-xs text-muted hover:text-destructive transition-colors ml-auto"
-        >
-          Delete
-        </button>
+        </div>
       </div>
     </div>
   );
@@ -3130,6 +3290,8 @@ function EmailTab({
       window.history.replaceState({}, '', '/connections/email');
     },
     onError: (err: Error) => {
+      // Still refresh the list — the integration was created even if start failed
+      void queryClient.invalidateQueries({ queryKey: ['integrations'] });
       setClaimError(err.message || 'Failed to set up Gmail integration');
     },
   });

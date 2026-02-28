@@ -2396,14 +2396,27 @@ function BodySection({
       return body.tokens ?? [];
     },
   });
+  // OAuth tokens that have a matching Integration (same platform + email) should supersede
+  // the integration entry — MCP tools use OAuth tokens, not the integration adapter credentials.
+  const oauthTokens = (oauthTokensData ?? []).map((t) => ({
+    id: t.id,
+    displayName: `${t.provider.charAt(0).toUpperCase() + t.provider.slice(1)} — ${t.email}`,
+    platform: t.provider,
+    status: 'active',
+    _email: t.email,
+  }));
+  const oauthCovered = new Set(
+    oauthTokens.map((t) => `${t.platform}:${t._email}`)
+  );
+  const dedupedIntegrations = (integrationsData?.integrations ?? []).filter(
+    (i: { platform: string; config?: Record<string, unknown> }) => {
+      const email = i.config?.email as string | undefined;
+      return !oauthCovered.has(`${i.platform}:${email}`);
+    }
+  );
   const integrations: { id: string; displayName: string; platform: string; status: string }[] = [
-    ...(integrationsData?.integrations ?? []),
-    ...(oauthTokensData ?? []).map((t) => ({
-      id: t.id,
-      displayName: `${t.provider.charAt(0).toUpperCase() + t.provider.slice(1)} — ${t.email}`,
-      platform: t.provider,
-      status: 'active',
-    })),
+    ...dedupedIntegrations,
+    ...oauthTokens,
   ];
   const integrationsLoadingAll = integrationsLoading || oauthTokensLoading;
 
