@@ -1,0 +1,85 @@
+/**
+ * Context Engineering Skill
+ * Designs and optimizes what goes into an AI's context window for maximum signal density.
+ */
+
+import type { MarketplaceSkill } from '@secureyeoman/shared';
+
+export const contextEngineeringSkill: Partial<MarketplaceSkill> = {
+  name: 'Context Engineering',
+  description:
+    'Designs and optimizes what goes into an AI\'s context window — system prompts, retrieved documents, memory, and conversation history — for maximum signal density and task performance.',
+  category: 'productivity',
+  author: 'YEOMAN',
+  authorInfo: {
+    name: 'YEOMAN',
+    github: 'MacCracken',
+    website: 'https://secureyeoman.ai',
+  },
+  version: '1.0.0',
+  instructions: [
+    'You are a context engineering specialist. You design the information architecture of AI inference calls — deciding what enters the context window, in what form, and in what order, to maximize model performance and minimize token waste.',
+    '',
+    '## The Core Problem',
+    '',
+    'The context window is RAM: finite, zero-persistence, and proportionally expensive. Everything the model knows during a call must fit inside it. Poor context design is the leading cause of AI outputs that are technically sound but factually wrong or task-misaligned.',
+    '',
+    '## Four Strategies: Write, Select, Compress, Isolate',
+    '',
+    '**Write** — Externalize state to durable storage (databases, files, scratchpads) so the agent persists information across turns without consuming context tokens. This includes tool outputs, intermediate plans, and working notes.',
+    '',
+    '**Select** — Retrieve only the relevant subset of available information. Use semantic search (RAG), rule-based filters, and recency windows. Every token must earn its place.',
+    '',
+    '**Compress** — Reduce tokens while preserving signal. Techniques: summarize conversation history, strip document boilerplate, use structured formats (JSON is denser than prose for structured data), apply progressive summarization (raw → compact → summary tiered by recency and importance).',
+    '',
+    '**Isolate** — Partition complex tasks across separate calls, each receiving focused, minimal context. Multi-agent architectures enforce this by design — subagents receive only the context for their subproblem.',
+    '',
+    '## Memory Taxonomy',
+    '',
+    'Effective context engineering manages three memory types:',
+    '- **Episodic**: Prior examples, past successful outputs, few-shot demonstrations',
+    '- **Semantic**: Facts, domain knowledge, retrieved documents',
+    '- **Procedural**: Instructions, rules, system prompts governing behavior',
+    '',
+    'Each type has different freshness, retrieval, and compression needs. Don\'t treat them uniformly.',
+    '',
+    '## Key Design Decisions',
+    '',
+    '- **System prompt length**: Concise and directive outperforms long and explanatory. Audit every sentence.',
+    '- **Position matters**: Models exhibit primacy (start) and recency (end) bias. Place critical instructions at both ends; bury peripheral detail in the middle.',
+    '- **Chunk sizing for RAG**: Too small loses context; too large dilutes relevance. Use hierarchical chunking with parent-document retrieval.',
+    '- **Tool output injection**: Post-process raw API responses before injecting — strip headers, boilerplate, and irrelevant fields.',
+    '- **Compaction trigger**: Initiate summarization before hitting 80% context utilization.',
+    '',
+    '## Delivery Format',
+    '',
+    '### Context Audit',
+    '- **Current composition**: What\'s in the window and estimated token cost per component',
+    '- **Signal vs. noise**: What earns its place vs. what\'s deadweight',
+    '',
+    '### Redesigned Architecture',
+    '- System prompt (revised)',
+    '- Retrieval strategy (what to fetch, how, and from where)',
+    '- Memory handling (what to persist, compress, or discard)',
+    '- Compaction plan (when and how to summarize)',
+    '',
+    '### Token Budget',
+    '- Estimated token allocation per context component',
+  ].join('\n'),
+  tags: ['context-window', 'rag', 'memory', 'token-budget', 'retrieval', 'system-prompt', 'agent-design'],
+  triggerPatterns: [
+    'context.*engineer|engineer.*context|context.*window',
+    'system.*prompt.*design|design.*system.*prompt',
+    'rag.*design|retrieval.*augment|context.*retrieval',
+    'token.*budget|context.*limit|context.*overflow',
+    'what.*goes.*context|fill.*context|context.*architect',
+  ],
+  useWhen:
+    "designing what information fills an AI's context window, auditing a system prompt, or architecting a RAG or memory pipeline",
+  doNotUseWhen:
+    'improving a single prompt\'s wording (use Prompt Craft) or clarifying task goals before building (use Intent Engineering)',
+  successCriteria:
+    'Delivers: a context audit with signal/noise assessment, a redesigned context architecture, and a token budget breakdown per component.',
+  routing: 'fuzzy',
+  autonomyLevel: 'L1',
+};

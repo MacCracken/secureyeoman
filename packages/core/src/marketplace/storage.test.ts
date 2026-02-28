@@ -22,6 +22,14 @@ vi.mock('./skills/index.js', () => ({
     version: '1.0.0',
   },
   devopsSreSkill: { name: 'DevOps SRE', author: 'system', version: '1.0.0' },
+  promptCraftSkill: { name: 'Prompt Craft', author: 'YEOMAN', version: '1.0.0' },
+  contextEngineeringSkill: { name: 'Context Engineering', author: 'YEOMAN', version: '1.0.0' },
+  intentEngineeringSkill: { name: 'Intent Engineering', author: 'YEOMAN', version: '1.0.0' },
+  specificationEngineeringSkill: {
+    name: 'Specification Engineering',
+    author: 'YEOMAN',
+    version: '1.0.0',
+  },
 }));
 
 // ─── Test Data ────────────────────────────────────────────────
@@ -349,11 +357,9 @@ describe('MarketplaceStorage', () => {
 
   describe('seedBuiltinSkills', () => {
     it('inserts skills that do not already exist', async () => {
-      // 6 skills total; alternate: odd ones exist, even ones don't
-      // All return null (no existing) → all 6 get inserted
-      // Each addSkill: one execute INSERT
-      // Each check: one queryOne
-      // That's 12 queries total
+      // 10 skills total; all return null (no existing) → all 10 get inserted
+      // Each skill: one queryOne (SELECT id) + one execute (INSERT)
+      // That's 20 queries total
       mockQuery.mockResolvedValue({ rows: [], rowCount: 0 }); // all checks return null, all inserts succeed
 
       await storage.seedBuiltinSkills();
@@ -362,7 +368,7 @@ describe('MarketplaceStorage', () => {
       const selectCalls = mockQuery.mock.calls.filter(
         (c: any[]) => typeof c[0] === 'string' && c[0].includes('SELECT id FROM marketplace.skills')
       );
-      expect(selectCalls).toHaveLength(6);
+      expect(selectCalls).toHaveLength(10);
     });
 
     it('skips skills that already exist', async () => {

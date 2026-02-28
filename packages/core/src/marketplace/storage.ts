@@ -13,6 +13,10 @@ import {
   seniorSoftwareEngineerSkill,
   seniorSoftwareEngineerAuditSkill,
   devopsSreSkill,
+  promptCraftSkill,
+  contextEngineeringSkill,
+  intentEngineeringSkill,
+  specificationEngineeringSkill,
 } from './skills/index.js';
 
 export class MarketplaceStorage extends PgBaseStorage {
@@ -343,6 +347,10 @@ export class MarketplaceStorage extends PgBaseStorage {
       seniorSoftwareEngineerSkill,
       seniorSoftwareEngineerAuditSkill,
       devopsSreSkill,
+      promptCraftSkill,
+      contextEngineeringSkill,
+      intentEngineeringSkill,
+      specificationEngineeringSkill,
     ];
     for (const skill of BUILTIN_SKILLS) {
       if (!skill.name) continue;

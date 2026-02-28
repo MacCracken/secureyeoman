@@ -95,7 +95,7 @@ describe('MarketplaceStorage', () => {
   it('should seed builtin skills', async () => {
     await storage.seedBuiltinSkills();
     const { skills, total } = await storage.search();
-    expect(total).toBe(6);
+    expect(total).toBe(10);
     const summarizeSkill = skills.find((s) => s.name === 'Summarize Text');
     expect(summarizeSkill).toBeDefined();
     expect(summarizeSkill!.author).toBe('YEOMAN');
@@ -103,6 +103,56 @@ describe('MarketplaceStorage', () => {
     const designerSkill = skills.find((s) => s.name === 'Senior Web Designer');
     expect(designerSkill).toBeDefined();
     expect(designerSkill!.category).toBe('design');
+  });
+
+  it('should seed Prompt Craft with correct metadata', async () => {
+    await storage.seedBuiltinSkills();
+    const { skills } = await storage.search();
+    const skill = skills.find((s) => s.name === 'Prompt Craft');
+    expect(skill).toBeDefined();
+    expect(skill!.category).toBe('productivity');
+    expect(skill!.author).toBe('YEOMAN');
+    expect(skill!.authorInfo?.github).toBe('MacCracken');
+    expect(skill!.source).toBe('builtin');
+    expect(skill!.triggerPatterns.length).toBeGreaterThan(0);
+    expect(skill!.useWhen).toBeTruthy();
+    expect(skill!.doNotUseWhen).toBeTruthy();
+    expect(skill!.successCriteria).toBeTruthy();
+  });
+
+  it('should seed Context Engineering with correct metadata', async () => {
+    await storage.seedBuiltinSkills();
+    const { skills } = await storage.search();
+    const skill = skills.find((s) => s.name === 'Context Engineering');
+    expect(skill).toBeDefined();
+    expect(skill!.category).toBe('productivity');
+    expect(skill!.author).toBe('YEOMAN');
+    expect(skill!.source).toBe('builtin');
+    expect(skill!.tags).toContain('rag');
+    expect(skill!.tags).toContain('token-budget');
+  });
+
+  it('should seed Intent Engineering with correct metadata', async () => {
+    await storage.seedBuiltinSkills();
+    const { skills } = await storage.search();
+    const skill = skills.find((s) => s.name === 'Intent Engineering');
+    expect(skill).toBeDefined();
+    expect(skill!.category).toBe('productivity');
+    expect(skill!.author).toBe('YEOMAN');
+    expect(skill!.source).toBe('builtin');
+    expect(skill!.tags).toContain('disambiguation');
+  });
+
+  it('should seed Specification Engineering with correct metadata', async () => {
+    await storage.seedBuiltinSkills();
+    const { skills } = await storage.search();
+    const skill = skills.find((s) => s.name === 'Specification Engineering');
+    expect(skill).toBeDefined();
+    expect(skill!.category).toBe('productivity');
+    expect(skill!.author).toBe('YEOMAN');
+    expect(skill!.source).toBe('builtin');
+    expect(skill!.tags).toContain('acceptance-criteria');
+    expect(skill!.tags).toContain('decomposition');
   });
 
   it('should seed builtin skills with routing quality fields', async () => {
@@ -173,7 +223,7 @@ describe('MarketplaceManager', () => {
   it('should seed builtin skills via manager', async () => {
     await manager.seedBuiltinSkills();
     const { skills, total } = await manager.search();
-    expect(total).toBe(6);
+    expect(total).toBe(10);
     const summarizeSkill = skills.find((s) => s.name === 'Summarize Text');
     expect(summarizeSkill).toBeDefined();
   });
