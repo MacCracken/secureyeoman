@@ -981,6 +981,14 @@ export async function fetchAiHealth(): Promise<AiHealthStatus> {
 
 // ─── OAuth Connected Tokens ────────────────────────────────────────
 
+export async function fetchOAuthConfig(): Promise<{ providers: { id: string; name: string }[] }> {
+  try {
+    return await request<{ providers: { id: string; name: string }[] }>('/auth/oauth/config');
+  } catch {
+    return { providers: [] };
+  }
+}
+
 export async function fetchOAuthTokens(): Promise<OAuthConnectedToken[]> {
   try {
     const data = await request<{ tokens: OAuthConnectedToken[] }>('/auth/oauth/tokens');

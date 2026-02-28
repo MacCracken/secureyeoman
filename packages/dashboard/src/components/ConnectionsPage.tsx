@@ -73,6 +73,7 @@ import {
   testIntegration,
   fetchSecurityPolicy,
   updateSecurityPolicy,
+  fetchOAuthConfig,
   fetchOAuthTokens,
   revokeOAuthToken,
   refreshOAuthToken,
@@ -3913,6 +3914,11 @@ function OAuthTab({
     }
   }, [location.search, queryClient]);
 
+  const { data: oauthConfig } = useQuery({
+    queryKey: ['oauth-config'],
+    queryFn: fetchOAuthConfig,
+  });
+
   const { data: tokens = [], isLoading: tokensLoading } = useQuery({
     queryKey: ['oauth-tokens'],
     queryFn: fetchOAuthTokens,
@@ -3933,9 +3939,9 @@ function OAuthTab({
     },
   });
 
-  // Always show all providers — multiple accounts per provider are supported
-  // (storage uniqueness is per (provider, email), not per provider)
-  const availableProviders = AVAILABLE_OAUTH_PROVIDERS;
+  // Only show providers that are actually configured on the server
+  const configuredIds = new Set((oauthConfig?.providers ?? []).map((p) => p.id));
+  const availableProviders = AVAILABLE_OAUTH_PROVIDERS.filter((id) => configuredIds.has(id));
 
   return (
     <div className="space-y-6">

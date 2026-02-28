@@ -23,6 +23,7 @@ vi.mock('../api/client', () => ({
   stopIntegration: vi.fn(),
   deleteIntegration: vi.fn(),
   testIntegration: vi.fn(),
+  fetchOAuthConfig: vi.fn(),
   fetchOAuthTokens: vi.fn(),
   revokeOAuthToken: vi.fn(),
   refreshOAuthToken: vi.fn(),
@@ -40,6 +41,7 @@ const mockFetchSecurityPolicy = vi.mocked(api.fetchSecurityPolicy);
 const mockFetchIntegrations = vi.mocked(api.fetchIntegrations);
 const mockFetchAvailablePlatforms = vi.mocked(api.fetchAvailablePlatforms);
 const mockTestIntegration = vi.mocked(api.testIntegration);
+const mockFetchOAuthConfig = vi.mocked(api.fetchOAuthConfig);
 const mockFetchOAuthTokens = vi.mocked(api.fetchOAuthTokens);
 const mockCreateApiKey = vi.mocked(api.createApiKey);
 const mockFetchApiKeys = vi.mocked(api.fetchApiKeys);
@@ -95,6 +97,12 @@ describe('ConnectionsPage', () => {
     });
     mockFetchIntegrations.mockResolvedValue({ integrations: [], total: 0, running: 0 });
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: [] });
+    mockFetchOAuthConfig.mockResolvedValue({
+      providers: [
+        { id: 'google', name: 'Google' },
+        { id: 'github', name: 'GitHub' },
+      ],
+    });
     mockFetchOAuthTokens.mockResolvedValue([]);
     mockFetchApiKeys.mockResolvedValue({ keys: [] });
     mockCreateApiKey.mockResolvedValue({
