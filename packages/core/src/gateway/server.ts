@@ -79,6 +79,7 @@ import { registerTenantRoutes } from '../tenants/tenant-routes.js';
 import { registerTrainingRoutes } from '../training/training-routes.js';
 import { registerGmailRoutes } from '../integrations/gmail/gmail-routes.js';
 import { registerTwitterRoutes } from '../integrations/twitter/twitter-routes.js';
+import { registerGithubApiRoutes } from '../integrations/github/github-api-routes.js';
 import { CollabManager } from '../soul/collab.js';
 import { SoulStorage } from '../soul/storage.js';
 import { formatPrometheusMetrics } from './prometheus.js';
@@ -406,12 +407,18 @@ export class GatewayServer {
         process.env.GOOGLE_OAUTH_CLIENT_ID ?? process.env.GMAIL_OAUTH_CLIENT_ID;
       const googleClientSecret =
         process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? process.env.GMAIL_OAUTH_CLIENT_SECRET;
+      const githubClientId = process.env.GITHUB_OAUTH_CLIENT_ID;
+      const githubClientSecret = process.env.GITHUB_OAUTH_CLIENT_SECRET;
       const oauthTokenService = new OAuthTokenService({
         storage: oauthTokenStorage,
         logger: this.logger ?? createNoopLogger(),
         googleCredentials:
           googleClientId && googleClientSecret
             ? { clientId: googleClientId, clientSecret: googleClientSecret }
+            : undefined,
+        githubCredentials:
+          githubClientId && githubClientSecret
+            ? { clientId: githubClientId, clientSecret: githubClientSecret }
             : undefined,
       });
 
@@ -442,6 +449,15 @@ export class GatewayServer {
         registerGmailRoutes(this.app, { oauthTokenService, soulManager: gmailSoulManager });
       } catch {
         // Gmail routes are optional — skip on error
+      }
+
+      // GitHub API proxy routes — uses stored OAuth tokens; respects personality integrationAccess mode
+      try {
+        let githubSoulManager;
+        try { githubSoulManager = this.secureYeoman.getSoulManager(); } catch { /* optional */ }
+        registerGithubApiRoutes(this.app, { oauthTokenService, soulManager: githubSoulManager });
+      } catch {
+        // GitHub routes are optional — skip on error
       }
     }
 

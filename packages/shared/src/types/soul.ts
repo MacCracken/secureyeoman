@@ -87,6 +87,8 @@ export const McpFeaturesSchema = z
     exposeGmail: z.boolean().default(false),
     /** Twitter/X tools (twitter_*). Requires global exposeTwitter. */
     exposeTwitter: z.boolean().default(false),
+    /** GitHub API tools (github_*). Requires global exposeGithub. */
+    exposeGithub: z.boolean().default(false),
   })
   .default({});
 

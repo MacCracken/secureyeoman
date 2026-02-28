@@ -75,7 +75,7 @@ const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
     authorizeUrl: 'https://github.com/login/oauth/authorize',
     tokenUrl: 'https://github.com/login/oauth/access_token',
     userInfoUrl: 'https://api.github.com/user',
-    scopes: ['read:user', 'user:email'],
+    scopes: ['read:user', 'user:email', 'repo', 'public_repo'],
   },
   gmail: {
     id: 'gmail',
@@ -361,13 +361,23 @@ export class OAuthService {
     }
 
     if (providerId === 'github') {
+      // eslint-disable-next-line @typescript-eslint/no-base-to-string
+      const login = data.login ? String(data.login) : '';
+      // GitHub users with "Keep my email private" have null email on /user.
+      // Fall back to GitHub's noreply format so the token is always stored.
+      // eslint-disable-next-line @typescript-eslint/no-base-to-string
+      const numericId = String(data.id ?? '');
+      const email = data.email
+        ? // eslint-disable-next-line @typescript-eslint/no-base-to-string
+          String(data.email)
+        : login
+          ? `${numericId}+${login}@users.noreply.github.com`
+          : undefined;
       return {
+        id: numericId,
+        email,
         // eslint-disable-next-line @typescript-eslint/no-base-to-string
-        id: String(data.id ?? ''),
-        // eslint-disable-next-line @typescript-eslint/no-base-to-string
-        email: data.email ? String(data.email) : undefined,
-        // eslint-disable-next-line @typescript-eslint/no-base-to-string
-        name: data.name ? String(data.name) : undefined,
+        name: data.name ? String(data.name) : login || undefined,
         // eslint-disable-next-line @typescript-eslint/no-base-to-string
         avatarUrl: data.avatar_url ? String(data.avatar_url) : undefined,
       };
@@ -576,7 +586,8 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
             accessToken: tokens.accessToken,
             refreshToken: tokens.refreshToken,
             scopes: tokens.grantedScope ?? OAUTH_PROVIDERS[providerId]?.scopes.join(' ') ?? '',
-            expiresIn: 3600,
+            // GitHub OAuth App tokens don't expire — omit expiresIn so expiresAt is stored as null
+            expiresIn: providerId === 'github' ? undefined : 3600,
           });
         }
 

@@ -2250,6 +2250,7 @@ interface BodySectionProps {
     exposeOrgIntentTools: boolean;
     exposeGmail: boolean;
     exposeTwitter: boolean;
+    exposeGithub: boolean;
   };
   onMcpFeaturesChange: (features: {
     exposeGit: boolean;
@@ -2269,6 +2270,7 @@ interface BodySectionProps {
     exposeOrgIntentTools: boolean;
     exposeGmail: boolean;
     exposeTwitter: boolean;
+    exposeGithub: boolean;
   }) => void;
   creationConfig: {
     skills: boolean;
@@ -3584,6 +3586,36 @@ function BodySection({
                                   className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                                 />
                               </label>
+                              {/* GitHub */}
+                              <label
+                                className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
+                                  globalMcpConfig?.exposeGithub
+                                    ? 'cursor-pointer hover:bg-muted/50'
+                                    : 'opacity-50 cursor-not-allowed'
+                                }`}
+                              >
+                                <GitBranch className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                <span className="text-xs flex-1">
+                                  GitHub
+                                  {!globalMcpConfig?.exposeGithub && (
+                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                      — enable GitHub in Connections &gt; MCP first
+                                    </span>
+                                  )}
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={mcpFeatures.exposeGithub}
+                                  onChange={(e) => {
+                                    onMcpFeaturesChange({
+                                      ...mcpFeatures,
+                                      exposeGithub: e.target.checked,
+                                    });
+                                  }}
+                                  disabled={!globalMcpConfig?.exposeGithub}
+                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                />
+                              </label>
                             </div>
                           </div>
                         )}
@@ -3971,6 +4003,7 @@ export function PersonalityEditor() {
     exposeOrgIntentTools: boolean;
     exposeGmail: boolean;
     exposeTwitter: boolean;
+    exposeGithub: boolean;
   }>({
     exposeGit: false,
     exposeFilesystem: false,
@@ -3989,6 +4022,7 @@ export function PersonalityEditor() {
     exposeOrgIntentTools: false,
     exposeGmail: false,
     exposeTwitter: false,
+    exposeGithub: false,
   });
   const [proactiveConfig, setProactiveConfig] = useState<{
     enabled: boolean;
@@ -4267,6 +4301,7 @@ export function PersonalityEditor() {
       exposeOrgIntentTools: body.mcpFeatures?.exposeOrgIntentTools ?? false,
       exposeGmail: body.mcpFeatures?.exposeGmail ?? false,
       exposeTwitter: body.mcpFeatures?.exposeTwitter ?? false,
+      exposeGithub: body.mcpFeatures?.exposeGithub ?? false,
     });
     setProactiveConfig({
       enabled: body.proactiveConfig?.enabled ?? false,
@@ -4381,6 +4416,7 @@ export function PersonalityEditor() {
       exposeOrgIntentTools: false,
       exposeGmail: false,
       exposeTwitter: false,
+      exposeGithub: false,
     });
     setProactiveConfig({
       enabled: false,

@@ -1,3 +1,21 @@
+## [2026.2.28g] — 2026-02-28
+
+### Added
+
+- **GitHub API MCP Tools (Phase 70)** — 10 new MCP tools backed by the stored GitHub OAuth token:
+  `github_profile`, `github_list_repos`, `github_get_repo`, `github_list_prs`, `github_get_pr`,
+  `github_list_issues`, `github_get_issue`, `github_create_issue`, `github_create_pr`, `github_comment`.
+  Enforces per-personality `integrationAccess` mode (`suggest` = read-only, `draft` = issues + PR preview,
+  `auto` = full write access). Gated by global `exposeGithub` MCP toggle + per-personality toggle.
+- **GitHub OAuth scope expansion** — scopes now include `repo` and `public_repo` (in addition to
+  `read:user`/`user:email`) so issue creation, PR creation, and commenting work without reconnecting
+  for newly connected accounts. Users who connected before this release will need to reconnect.
+- **GitHub token refresh infrastructure** — `OAuthTokenService` gains `githubCredentials` dep and
+  `GITHUB_TOKEN_URL` constant; `refreshAndStore()` branches on provider for the correct token URL.
+- **Soul prompt corrected** — `platformTools.github` now lists the 10 OAuth-backed API tool names
+  instead of the old server-local CLI tool names; `writeOnlyTools.github` and `draftBlockedTools.github`
+  added so the prompt accurately reports available tools per access mode.
+
 ## [2026.2.28f] — 2026-02-28
 
 ### Added

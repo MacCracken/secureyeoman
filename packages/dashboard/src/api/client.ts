@@ -1712,6 +1712,7 @@ export interface McpConfigResponse {
   allowedTargets: string[];
   exposeGmail: boolean;
   exposeTwitter: boolean;
+  exposeGithub: boolean;
 }
 
 export async function fetchMcpConfig(): Promise<McpConfigResponse> {
@@ -1740,6 +1741,7 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
       allowedTargets: [],
       exposeGmail: false,
       exposeTwitter: false,
+      exposeGithub: false,
     };
   }
 }

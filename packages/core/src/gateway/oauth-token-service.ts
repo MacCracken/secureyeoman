@@ -13,6 +13,7 @@ import type { OAuthTokenStorage, OAuthToken } from './oauth-token-storage.js';
 import type { SecureLogger } from '../logging/logger.js';
 
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token';
 const REFRESH_BUFFER_MS = 5 * 60 * 1000; // refresh 5 minutes before expiry
 
 export interface GoogleClientCredentials {
@@ -25,17 +26,21 @@ export interface OAuthTokenServiceDeps {
   logger: SecureLogger;
   /** Google OAuth2 client credentials (used for Calendar, Drive, Gmail refresh). */
   googleCredentials?: GoogleClientCredentials;
+  /** GitHub OAuth App credentials (used for token refresh if needed). */
+  githubCredentials?: GoogleClientCredentials;
 }
 
 export class OAuthTokenService {
   private readonly storage: OAuthTokenStorage;
   private readonly logger: SecureLogger;
   private readonly googleCredentials?: GoogleClientCredentials;
+  private readonly githubCredentials?: GoogleClientCredentials;
 
   constructor(deps: OAuthTokenServiceDeps) {
     this.storage = deps.storage;
     this.logger = deps.logger;
     this.googleCredentials = deps.googleCredentials;
+    this.githubCredentials = deps.githubCredentials;
   }
 
   // ── Public API ──────────────────────────────────────────────
@@ -128,8 +133,10 @@ export class OAuthTokenService {
       return record.accessToken;
     }
 
+    const tokenUrl = record.provider === 'github' ? GITHUB_TOKEN_URL : GOOGLE_TOKEN_URL;
+
     try {
-      const resp = await fetch(GOOGLE_TOKEN_URL, {
+      const resp = await fetch(tokenUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
@@ -165,7 +172,7 @@ export class OAuthTokenService {
     }
   }
 
-  /** Returns Google credentials for any Google-family provider. */
+  /** Returns credentials for a given OAuth provider. */
   private getCredentials(provider: string): GoogleClientCredentials | undefined {
     if (
       provider === 'google' ||
@@ -174,6 +181,9 @@ export class OAuthTokenService {
       provider === 'googledrive'
     ) {
       return this.googleCredentials;
+    }
+    if (provider === 'github') {
+      return this.githubCredentials;
     }
     return undefined;
   }

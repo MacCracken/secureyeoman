@@ -2442,6 +2442,7 @@ function McpTab({
                   return false;
                 if (t.name.startsWith('gmail_') && !featureConfig?.exposeGmail) return false;
                 if (t.name.startsWith('twitter_') && !featureConfig?.exposeTwitter) return false;
+                if (t.name.startsWith('github_') && !featureConfig?.exposeGithub) return false;
                 return true;
               }).length
           }
@@ -3014,6 +3015,27 @@ function LocalServerCard({
                   checked={featureConfig.exposeTwitter ?? false}
                   onChange={(e) => {
                     onFeatureToggle({ exposeTwitter: e.target.checked });
+                  }}
+                  disabled={isFeatureToggling}
+                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                />
+              </label>
+              <label
+                className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                title="GitHub API tools — list repos, read issues/PRs, create issues, open PRs, comment (github_*)"
+              >
+                <GitBranch className="w-4 h-4 text-muted-foreground shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs font-medium">GitHub</span>
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    github_list_repos, issues, PRs, comment
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={featureConfig.exposeGithub ?? false}
+                  onChange={(e) => {
+                    onFeatureToggle({ exposeGithub: e.target.checked });
                   }}
                   disabled={isFeatureToggling}
                   className="w-3.5 h-3.5 rounded accent-primary shrink-0"
@@ -3880,6 +3902,24 @@ const OAUTH_PROVIDER_META: Record<string, { name: string; icon: ReactNode; descr
     description: 'Sign in with your GitHub account',
     icon: <GitBranchIcon className="w-5 h-5" />,
     oauthUrl: '/api/v1/auth/oauth/github',
+  },
+  gmail: {
+    name: 'Gmail',
+    description: 'Connected Gmail account (managed via Email tab)',
+    icon: <Mail className="w-5 h-5" />,
+    oauthUrl: '/api/v1/auth/oauth/gmail',
+  },
+  googlecalendar: {
+    name: 'Google Calendar',
+    description: 'Connected Google Calendar account',
+    icon: <Calendar className="w-5 h-5" />,
+    oauthUrl: '/api/v1/auth/oauth/googlecalendar',
+  },
+  googledrive: {
+    name: 'Google Drive',
+    description: 'Connected Google Drive account',
+    icon: <FolderOpen className="w-5 h-5" />,
+    oauthUrl: '/api/v1/auth/oauth/googledrive',
   },
 };
 

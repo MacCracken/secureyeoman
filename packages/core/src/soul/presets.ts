@@ -59,6 +59,7 @@ const BASE_BODY: PersonalityCreate['body'] = {
     exposeTwingate: false,
     exposeGmail: false,
     exposeTwitter: false,
+    exposeGithub: false,
   },
   proactiveConfig: {
     enabled: false,

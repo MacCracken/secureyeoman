@@ -44,6 +44,7 @@ export interface McpFeatureConfig {
   // Connected-account API tools
   exposeGmail: boolean;
   exposeTwitter: boolean;
+  exposeGithub: boolean;
 }
 
 const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
@@ -68,6 +69,7 @@ const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
   allowedTargets: [],
   exposeGmail: false,
   exposeTwitter: false,
+  exposeGithub: false,
 };
 
 export class McpStorage extends PgBaseStorage {

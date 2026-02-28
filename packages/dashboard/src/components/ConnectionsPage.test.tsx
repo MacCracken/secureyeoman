@@ -94,6 +94,7 @@ describe('ConnectionsPage', () => {
       allowedTargets: [],
       exposeGmail: false,
       exposeTwitter: false,
+      exposeGithub: false,
     });
     mockFetchIntegrations.mockResolvedValue({ integrations: [], total: 0, running: 0 });
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: [] });

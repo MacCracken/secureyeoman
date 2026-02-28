@@ -199,6 +199,7 @@ export interface Personality {
       exposeOrgIntentTools?: boolean;
       exposeGmail?: boolean;
       exposeTwitter?: boolean;
+      exposeGithub?: boolean;
     };
     proactiveConfig?: {
       enabled?: boolean;
@@ -295,6 +296,7 @@ export interface PersonalityCreate {
       exposeOrgIntentTools?: boolean;
       exposeGmail?: boolean;
       exposeTwitter?: boolean;
+      exposeGithub?: boolean;
     };
     proactiveConfig?: {
       enabled?: boolean;
@@ -793,6 +795,7 @@ export interface McpFeatureConfig {
   respectContentSignal: boolean;
   exposeGmail: boolean;
   exposeTwitter: boolean;
+  exposeGithub: boolean;
 }
 
 export interface McpServerHealth {
