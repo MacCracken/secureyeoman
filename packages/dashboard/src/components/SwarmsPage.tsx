@@ -11,12 +11,16 @@ import {
   ChevronRight,
   ChevronDown,
   X,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import {
   fetchSwarmTemplates,
   executeSwarm,
   fetchSwarmRuns,
   cancelSwarmRun,
+  createSwarmTemplate,
+  deleteSwarmTemplate,
   type SwarmTemplate,
   type SwarmRun,
   type SwarmMember,
@@ -46,6 +50,14 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: 'bg-muted text-muted-foreground border-border',
 };
 
+type Strategy = 'sequential' | 'parallel' | 'dynamic';
+
+interface RoleDraft {
+  role: string;
+  profileName: string;
+  description: string;
+}
+
 // ── Main component ────────────────────────────────────────────────
 
 export function SwarmsPage({ allowSubAgents }: { allowSubAgents: boolean }) {
@@ -53,6 +65,7 @@ export function SwarmsPage({ allowSubAgents }: { allowSubAgents: boolean }) {
   const [task, setTask] = useState('');
   const [context, setContext] = useState('');
   const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
+  const [showCreateTemplate, setShowCreateTemplate] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: templatesData, isLoading: templatesLoading } = useQuery({
@@ -85,6 +98,21 @@ export function SwarmsPage({ allowSubAgents }: { allowSubAgents: boolean }) {
     },
   });
 
+  const createMut = useMutation({
+    mutationFn: createSwarmTemplate,
+    onSuccess: () => {
+      setShowCreateTemplate(false);
+      void queryClient.invalidateQueries({ queryKey: ['swarmTemplates'] });
+    },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: deleteSwarmTemplate,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['swarmTemplates'] });
+    },
+  });
+
   if (!allowSubAgents) {
     return (
       <div className="space-y-4">
@@ -107,7 +135,32 @@ export function SwarmsPage({ allowSubAgents }: { allowSubAgents: boolean }) {
     <div className="space-y-6">
       {/* Templates grid */}
       <div>
-        <h2 className="text-base font-semibold mb-3">Templates</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold">Templates</h2>
+          <button
+            onClick={() => {
+              setShowCreateTemplate(!showCreateTemplate);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-lg hover:bg-muted/50 transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            New Template
+          </button>
+        </div>
+
+        {/* Create template form */}
+        {showCreateTemplate && (
+          <CreateTemplateForm
+            isPending={createMut.isPending}
+            onCancel={() => {
+              setShowCreateTemplate(false);
+            }}
+            onSubmit={(data) => {
+              createMut.mutate(data);
+            }}
+          />
+        )}
+
         {templatesLoading ? (
           <div className="flex justify-center py-6">
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -119,11 +172,19 @@ export function SwarmsPage({ allowSubAgents }: { allowSubAgents: boolean }) {
                 key={tmpl.id}
                 template={tmpl}
                 isSelected={selectedTemplate?.id === tmpl.id}
+                isDeleting={deleteMut.isPending}
                 onLaunch={() => {
                   setSelectedTemplate(selectedTemplate?.id === tmpl.id ? null : tmpl);
                   setTask('');
                   setContext('');
                 }}
+                onDelete={
+                  !tmpl.isBuiltin
+                    ? () => {
+                        deleteMut.mutate(tmpl.id);
+                      }
+                    : undefined
+                }
               />
             ))}
           </div>
@@ -270,35 +331,236 @@ export function SwarmsPage({ allowSubAgents }: { allowSubAgents: boolean }) {
   );
 }
 
+// ── Create Template Form ──────────────────────────────────────────
+
+function CreateTemplateForm({
+  isPending,
+  onCancel,
+  onSubmit,
+}: {
+  isPending: boolean;
+  onCancel: () => void;
+  onSubmit: (data: {
+    name: string;
+    description: string;
+    strategy: Strategy;
+    roles: RoleDraft[];
+    coordinatorProfile: string | null;
+  }) => void;
+}) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [strategy, setStrategy] = useState<Strategy>('sequential');
+  const [roles, setRoles] = useState<RoleDraft[]>([
+    { role: '', profileName: '', description: '' },
+  ]);
+  const [coordinatorProfile, setCoordinatorProfile] = useState('');
+
+  function addRole() {
+    setRoles([...roles, { role: '', profileName: '', description: '' }]);
+  }
+
+  function removeRole(i: number) {
+    setRoles(roles.filter((_, idx) => idx !== i));
+  }
+
+  function updateRole(i: number, field: keyof RoleDraft, value: string) {
+    setRoles(roles.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
+  }
+
+  const rolesValid = roles.length > 0 && roles.every((r) => r.role.trim() && r.profileName.trim());
+  const canSubmit = name.trim() && rolesValid && !isPending;
+
+  return (
+    <div className="card p-4 space-y-4 mb-3">
+      <div className="flex items-center justify-between">
+        <span className="font-medium text-sm">New Swarm Template</span>
+        <button onClick={onCancel} className="btn-ghost p-1 rounded">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Name */}
+      <div>
+        <label className="text-sm font-medium block mb-1">Name</label>
+        <input
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+          }}
+          className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+          placeholder="e.g. review-and-deploy"
+        />
+      </div>
+
+      {/* Description */}
+      <div>
+        <label className="text-sm font-medium block mb-1">Description</label>
+        <textarea
+          value={description}
+          onChange={(e) => {
+            setDescription(e.target.value);
+          }}
+          className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm min-h-[60px] resize-y"
+          placeholder="What this swarm does..."
+        />
+      </div>
+
+      {/* Strategy */}
+      <div>
+        <label className="text-sm font-medium block mb-1">Strategy</label>
+        <select
+          value={strategy}
+          onChange={(e) => {
+            setStrategy(e.target.value as Strategy);
+          }}
+          className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+        >
+          <option value="sequential">Sequential — roles execute one after another, each receiving the previous result</option>
+          <option value="parallel">Parallel — all roles execute simultaneously; optional coordinator synthesizes</option>
+          <option value="dynamic">Dynamic — a coordinator agent decides how to delegate at runtime</option>
+        </select>
+      </div>
+
+      {/* Roles */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-sm font-medium">Roles</label>
+          <button
+            onClick={addRole}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Plus className="w-3 h-3" />
+            Add Role
+          </button>
+        </div>
+        <div className="space-y-2">
+          {roles.map((role, i) => (
+            <div key={i} className="flex items-start gap-2 p-2 bg-muted/30 rounded-lg">
+              <div className="flex-1 grid grid-cols-2 gap-2">
+                <input
+                  value={role.role}
+                  onChange={(e) => {
+                    updateRole(i, 'role', e.target.value);
+                  }}
+                  className="bg-card border border-border rounded px-2 py-1.5 text-xs font-mono"
+                  placeholder="role (e.g. reviewer)"
+                />
+                <input
+                  value={role.profileName}
+                  onChange={(e) => {
+                    updateRole(i, 'profileName', e.target.value);
+                  }}
+                  className="bg-card border border-border rounded px-2 py-1.5 text-xs font-mono"
+                  placeholder="profile (e.g. reviewer)"
+                />
+                <input
+                  value={role.description}
+                  onChange={(e) => {
+                    updateRole(i, 'description', e.target.value);
+                  }}
+                  className="col-span-2 bg-card border border-border rounded px-2 py-1.5 text-xs"
+                  placeholder="What this role does (optional)"
+                />
+              </div>
+              <button
+                onClick={() => {
+                  removeRole(i);
+                }}
+                className="btn-ghost p-1 rounded text-muted-foreground hover:text-destructive mt-0.5 shrink-0"
+                disabled={roles.length === 1}
+                aria-label="Remove role"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+        <p className="text-[10px] text-muted-foreground mt-1">
+          Role = identifier used in pipeline. Profile = builtin or custom agent profile name.
+        </p>
+      </div>
+
+      {/* Coordinator Profile (optional) */}
+      <div>
+        <label className="text-sm font-medium block mb-1">
+          Coordinator Profile{' '}
+          <span className="text-muted-foreground font-normal">(optional)</span>
+        </label>
+        <input
+          value={coordinatorProfile}
+          onChange={(e) => {
+            setCoordinatorProfile(e.target.value);
+          }}
+          className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+          placeholder="e.g. analyst — synthesizes parallel results"
+        />
+        <p className="text-[10px] text-muted-foreground mt-0.5">
+          Required for parallel strategy. Leave blank for sequential/dynamic.
+        </p>
+      </div>
+
+      <button
+        className="btn btn-ghost"
+        disabled={!canSubmit}
+        onClick={() => {
+          onSubmit({
+            name: name.trim(),
+            description: description.trim(),
+            strategy,
+            roles,
+            coordinatorProfile: coordinatorProfile.trim() || null,
+          });
+        }}
+      >
+        {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create Template'}
+      </button>
+    </div>
+  );
+}
+
 // ── Template card ─────────────────────────────────────────────────
 
 function TemplateCard({
   template,
   isSelected,
+  isDeleting,
   onLaunch,
+  onDelete,
 }: {
   template: SwarmTemplate;
   isSelected: boolean;
+  isDeleting: boolean;
   onLaunch: () => void;
+  onDelete?: () => void;
 }) {
   return (
     <div className={`card p-4 transition-colors ${isSelected ? 'ring-2 ring-primary' : ''}`}>
       <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold">{template.name}</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm font-semibold truncate">{template.name}</span>
           <span
-            className={`text-xs px-1.5 py-0.5 rounded border ${STRATEGY_COLORS[template.strategy] ?? ''}`}
+            className={`text-xs px-1.5 py-0.5 rounded border shrink-0 ${STRATEGY_COLORS[template.strategy] ?? ''}`}
           >
             {template.strategy}
           </span>
         </div>
-        <button
-          onClick={onLaunch}
-          className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors shrink-0"
-        >
-          <Play className="w-3 h-3" />
-          Launch
-        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          {onDelete && (
+            <button
+              onClick={onDelete}
+              disabled={isDeleting}
+              className="btn-ghost p-1 rounded text-muted-foreground hover:text-destructive"
+              aria-label="Delete template"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <button onClick={onLaunch} className="btn btn-ghost text-xs flex items-center gap-1">
+            <Play className="w-3 h-3" />
+            Launch
+          </button>
+        </div>
       </div>
 
       <p className="text-xs text-muted-foreground mb-3">{template.description}</p>

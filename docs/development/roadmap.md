@@ -22,25 +22,6 @@
 
 Continuous bug discovery and repair pass — no fixed scope. As real-world usage surfaces regressions or rough edges, they are filed here, fixed, and moved to the Changelog. This phase never closes; it rolls forward with the project.
 
-### Prompting Disciplines
-
-remove skills from community; include into marketplace.
-
-IDEA: would we benifet from workflows, or sub-agent templates as marketplace and / or community available sharables
-
-update personality to apply/install skills to a sub-agent - not just use templated swarms.
-
-Swarm of Concept given to Prompt Craft and cascaeds to create all items for a project.  Or take an exsisting project and what its future needs are and apply it through the cycle.
-
-- [ ] Prompt Craft
-- [ ] Context Engineering
-- [ ] Intent Engineering
-- [ ] Specification Engineering
-    1. self contained problem statements
-    2. learn about acceptance criteria
-    3. constraint architecture
-    4. decomposition (modularity)
-
 ### Open Items
 
 - [ ] **Manual test: Per-Personality Memory Scoping** — End-to-end verification of ADR 134. Steps: (1) Chat with T.Ron → save a memory, confirm it appears in T.Ron recall but NOT in FRIDAY recall; (2) Check heartbeat stats show different Memories counts for T.Ron and FRIDAY; (3) Enable Omnipresent Mind on FRIDAY → confirm FRIDAY can now recall T.Ron's memories; (4) Disable Omnipresent Mind → scoping restored; (5) Verify `/api/v1/brain/stats?personalityId=<id>` returns per-personality counts. *(No automated DB integration test yet)*
@@ -338,6 +319,63 @@ Per-workspace state survives page refresh:
 ## Future Features
 
 Items below are planned but demand-gated or lower priority. Grouped by theme for reference; implementation order will be determined by adoption signals and user demand.
+
+---
+
+### Marketplace & Community Shareables
+
+*Currently the marketplace hosts skills and the community tab hosts community skills. This section explores extending that surface to workflows and swarm templates — making the full composition layer shareable and installable.*
+
+#### Should workflows and swarm templates be marketplace/community sharables?
+
+**The question:** Skills are already sharable units of instruction. Workflows (multi-step automation sequences) and swarm templates (multi-agent coordination blueprints) represent higher-order compositions. Should users be able to publish and install these the same way they install skills?
+
+**The case for it:**
+- Workflows encode reusable business logic (e.g. "review PR → summarize → post Slack update"). Today they live only in the instance that created them — no portability.
+- Swarm templates encode proven multi-agent patterns (e.g. the Prompt Engineering Quartet). Today they are builtins only — community can't contribute new ones.
+- A shared template for "Security Audit Swarm" or "Code Review Pipeline" is high-value and non-trivial to build from scratch; discovery solves a real user problem.
+- The install model (clone into local instance, optionally bind to personalities) is well-understood from skills.
+
+**The case against / risks:**
+- Workflows reference concrete integration credentials and tool availability — a shared workflow may silently fail on an instance without the required integrations (e.g. a Gmail workflow on a non-Gmail instance).
+- Swarm templates reference personality profiles by role tag — templates assume the target instance has matching profiles or the user knows to create them.
+- Versioning and compatibility become harder when the shareable unit has runtime dependencies.
+
+**Proposed approach (if pursued):**
+- Workflows: export as JSON with a `requires: { integrations[], tools[] }` manifest. Marketplace lists compatibility badges. Install = import + validate requirements + prompt user to resolve gaps.
+- Swarm templates: export as JSON with `requires: { profileRoles[] }`. Install = register as a named template + prompt user to map existing personalities to required roles (or create new ones).
+- Community tab hosts user-contributed versions; marketplace hosts curated/builtin versions — same two-tier pattern as skills.
+
+**Decision gate:** Pursue this once the marketplace has meaningful usage (>100 active skill installs across instances) and users ask for workflow/template portability. Premature abstraction risk is real here.
+
+- [ ] **Investigation spike** — Survey 5–10 active users: do they share workflows across instances today (manually)? Would installable swarm templates change how they build agents?
+- [ ] **Compatibility manifest spec** — Define `requires` schema for workflows and swarm templates; validate on install.
+- [ ] **Workflow export/import routes** — `GET /api/v1/workflows/:id/export` (JSON blob) + `POST /api/v1/workflows/import` (validate + create).
+- [ ] **Swarm template export/import routes** — Same pattern; map roles to local personalities on import.
+- [ ] **Marketplace/community UI** — Add "Workflows" and "Swarm Templates" tabs to marketplace and community pages; install flow with compatibility check.
+
+---
+
+#### Install skills directly onto a sub-agent (not just via swarm templates)
+
+*Today, skills are installed on a personality. When a swarm runs, sub-agents are spun up from profiles — but they don't inherit the parent personality's installed skills, and there's no way to install a skill directly onto a named sub-agent profile.*
+
+**The gap:** A user who wants their `prompt-crafter` sub-agent to have the "Prompt Craft" skill must either (a) use a swarm template that bakes the instructions in, or (b) manually copy the skill text into the profile. Neither is ergonomic. The intent is: open a personality or sub-agent profile, go to Skills tab, install a skill — and the agent uses it when it runs, whether as a primary personality or as a sub-agent.
+
+**Proposed approach:**
+- Sub-agent profiles (builtin or custom) gain a Skills tab in the personality editor, identical to the one on full personalities.
+- `skill.personalityId` already supports arbitrary personality IDs — sub-agent profiles are just personalities with `isSubAgent: true` (or matched by role tag).
+- Skills installed on a sub-agent profile are injected into that agent's system prompt when it is activated in a swarm, same as they are for a primary personality in chat.
+- The swarm runner's `buildAgentPrompt()` already calls `composeSoulPrompt()` — that function already loads installed skills for the personality ID. So the backend change may be zero if sub-agent profiles are stored as personalities.
+
+**Open questions:**
+- Are sub-agent profiles persisted as personality rows today? If yes, skills already work — the gap is purely UI (no Skills tab shown for sub-agent profiles in the editor).
+- If not, do we promote sub-agent profiles to full personality rows, or add a lighter `agent_profiles` table that the skill system also reads?
+
+- [ ] **Audit current data model** — Confirm whether builtin agent profiles (`builtin-intent-engineer`, etc.) are stored as `soul.personality` rows or separate. If not, plan migration path.
+- [ ] **Skills tab on sub-agent profiles** — Show the Skills tab in PersonalityEditor when viewing a sub-agent profile. Conditionally hide persona-specific tabs (voice, avatar) if not relevant.
+- [ ] **Swarm runner skill injection** — Confirm `buildAgentPrompt()` loads installed skills for sub-agent personality IDs; add test coverage.
+- [ ] **UX: install skill → select target agent** — In the marketplace install flow, allow selecting a sub-agent profile as the install target (today only primary personalities are listed).
 
 ---
 

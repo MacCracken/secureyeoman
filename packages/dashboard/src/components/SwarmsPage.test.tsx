@@ -11,6 +11,8 @@ vi.mock('../api/client', () => ({
   executeSwarm: vi.fn(),
   fetchSwarmRuns: vi.fn(),
   cancelSwarmRun: vi.fn(),
+  createSwarmTemplate: vi.fn(),
+  deleteSwarmTemplate: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -18,6 +20,8 @@ import * as api from '../api/client';
 const mockFetchSwarmTemplates = vi.mocked(api.fetchSwarmTemplates);
 const mockFetchSwarmRuns = vi.mocked(api.fetchSwarmRuns);
 const mockExecuteSwarm = vi.mocked(api.executeSwarm);
+const mockCreateSwarmTemplate = vi.mocked(api.createSwarmTemplate);
+const mockDeleteSwarmTemplate = vi.mocked(api.deleteSwarmTemplate);
 
 function createQueryClient() {
   return new QueryClient({
@@ -35,36 +39,37 @@ function renderComponent(allowSubAgents = true) {
   );
 }
 
-const MOCK_TEMPLATES = {
-  templates: [
-    {
-      id: 'research-and-code',
-      name: 'research-and-code',
-      description: 'Sequential: researcher → coder → reviewer',
-      strategy: 'sequential' as const,
-      roles: [
-        { role: 'researcher', profileName: 'researcher', description: 'Gather info' },
-        { role: 'coder', profileName: 'coder', description: 'Implement' },
-        { role: 'reviewer', profileName: 'reviewer', description: 'Review' },
-      ],
-      coordinatorProfile: null,
-      isBuiltin: true,
-      createdAt: Date.now(),
-    },
-    {
-      id: 'code-review',
-      name: 'code-review',
-      description: 'Sequential: coder → reviewer',
-      strategy: 'sequential' as const,
-      roles: [
-        { role: 'coder', profileName: 'coder', description: 'Code' },
-        { role: 'reviewer', profileName: 'reviewer', description: 'Review' },
-      ],
-      coordinatorProfile: null,
-      isBuiltin: true,
-      createdAt: Date.now(),
-    },
+const BUILTIN_TEMPLATE = {
+  id: 'research-and-code',
+  name: 'research-and-code',
+  description: 'Sequential: researcher → coder → reviewer',
+  strategy: 'sequential' as const,
+  roles: [
+    { role: 'researcher', profileName: 'researcher', description: 'Gather info' },
+    { role: 'coder', profileName: 'coder', description: 'Implement' },
+    { role: 'reviewer', profileName: 'reviewer', description: 'Review' },
   ],
+  coordinatorProfile: null,
+  isBuiltin: true,
+  createdAt: Date.now(),
+};
+
+const CUSTOM_TEMPLATE = {
+  id: 'my-custom',
+  name: 'my-custom',
+  description: 'A custom user-created template',
+  strategy: 'sequential' as const,
+  roles: [
+    { role: 'coder', profileName: 'coder', description: 'Code' },
+    { role: 'reviewer', profileName: 'reviewer', description: 'Review' },
+  ],
+  coordinatorProfile: null,
+  isBuiltin: false,
+  createdAt: Date.now(),
+};
+
+const MOCK_TEMPLATES = {
+  templates: [BUILTIN_TEMPLATE, CUSTOM_TEMPLATE],
 };
 
 const MOCK_RUNS = {
@@ -111,6 +116,8 @@ describe('SwarmsPage', () => {
     vi.resetAllMocks();
     mockFetchSwarmTemplates.mockResolvedValue(MOCK_TEMPLATES);
     mockFetchSwarmRuns.mockResolvedValue(MOCK_RUNS);
+    mockCreateSwarmTemplate.mockResolvedValue({ template: BUILTIN_TEMPLATE });
+    mockDeleteSwarmTemplate.mockResolvedValue({ success: true });
   });
 
   // ── Disabled state ──────────────────────────────────────────
@@ -133,18 +140,16 @@ describe('SwarmsPage', () => {
 
   it('shows template cards when enabled', async () => {
     renderComponent(true);
-    // Template names appear in both cards and run history; use heading context
     const heading = await screen.findByText('Templates');
     expect(heading).toBeInTheDocument();
     const allMatches = await screen.findAllByText('research-and-code');
     expect(allMatches.length).toBeGreaterThan(0);
   });
 
-  it('shows template name on card', async () => {
+  it('shows custom template name on card', async () => {
     renderComponent(true);
-    // 'code-review' only appears in the Templates section for this mock set
     await screen.findByText('Templates');
-    expect(await screen.findByText('code-review')).toBeInTheDocument();
+    expect(await screen.findByText('my-custom')).toBeInTheDocument();
   });
 
   it('shows strategy badge on template card', async () => {
@@ -153,11 +158,32 @@ describe('SwarmsPage', () => {
     expect(badges.length).toBeGreaterThan(0);
   });
 
-  it('renders Launch button per template', async () => {
+  it('renders Launch button per template with ghost styling', async () => {
     renderComponent(true);
     await screen.findByText('Templates');
     const launchButtons = await screen.findAllByText('Launch');
     expect(launchButtons).toHaveLength(2);
+    // Each Launch button should use btn btn-ghost (not bg-primary)
+    for (const btn of launchButtons) {
+      expect(btn.closest('button')?.className).toContain('btn-ghost');
+      expect(btn.closest('button')?.className).not.toContain('bg-primary');
+    }
+  });
+
+  it('shows delete button only on custom (non-builtin) templates', async () => {
+    renderComponent(true);
+    await screen.findByText('my-custom');
+    const deleteButtons = screen.queryAllByLabelText('Delete template');
+    expect(deleteButtons).toHaveLength(1);
+  });
+
+  it('calls deleteSwarmTemplate when delete button clicked', async () => {
+    const user = userEvent.setup();
+    renderComponent(true);
+    await screen.findByText('my-custom');
+    const deleteBtn = screen.getByLabelText('Delete template');
+    await user.click(deleteBtn);
+    expect(mockDeleteSwarmTemplate).toHaveBeenCalledWith('my-custom', expect.any(Object));
   });
 
   // ── Launch form ─────────────────────────────────────────────
@@ -171,6 +197,139 @@ describe('SwarmsPage', () => {
     expect(
       await screen.findByPlaceholderText('Describe the task for the swarm...')
     ).toBeInTheDocument();
+  });
+
+  // ── New Template button ─────────────────────────────────────
+
+  it('shows New Template button', async () => {
+    renderComponent(true);
+    await screen.findByText('Templates');
+    expect(await screen.findByText('New Template')).toBeInTheDocument();
+  });
+
+  it('shows create template form when New Template is clicked', async () => {
+    const user = userEvent.setup();
+    renderComponent(true);
+    const newBtn = await screen.findByText('New Template');
+    await user.click(newBtn);
+    expect(await screen.findByText('New Swarm Template')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('e.g. review-and-deploy')).toBeInTheDocument();
+  });
+
+  it('hides create template form when X is clicked', async () => {
+    const user = userEvent.setup();
+    renderComponent(true);
+    const newBtn = await screen.findByText('New Template');
+    await user.click(newBtn);
+    await screen.findByText('New Swarm Template');
+    const closeBtn = screen.getByRole('button', { name: '' });
+    // Find the X button inside the form header
+    const formHeader = screen.getByText('New Swarm Template').parentElement!;
+    const xBtn = formHeader.querySelector('button')!;
+    await user.click(xBtn);
+    await waitFor(() => {
+      expect(screen.queryByText('New Swarm Template')).not.toBeInTheDocument();
+    });
+  });
+
+  it('Create Template button is disabled when name is empty', async () => {
+    const user = userEvent.setup();
+    renderComponent(true);
+    const newBtn = await screen.findByText('New Template');
+    await user.click(newBtn);
+    await screen.findByText('New Swarm Template');
+    const createBtn = screen.getByRole('button', { name: 'Create Template' });
+    expect(createBtn).toBeDisabled();
+  });
+
+  it('Create Template button is disabled when role fields are incomplete', async () => {
+    const user = userEvent.setup();
+    renderComponent(true);
+    const newBtn = await screen.findByText('New Template');
+    await user.click(newBtn);
+    await screen.findByText('New Swarm Template');
+    // Fill name but leave role empty
+    await user.type(screen.getByPlaceholderText('e.g. review-and-deploy'), 'my-template');
+    const createBtn = screen.getByRole('button', { name: 'Create Template' });
+    expect(createBtn).toBeDisabled();
+  });
+
+  it('calls createSwarmTemplate with correct data on submit', async () => {
+    const user = userEvent.setup();
+    renderComponent(true);
+    const newBtn = await screen.findByText('New Template');
+    await user.click(newBtn);
+    await screen.findByText('New Swarm Template');
+
+    await user.type(screen.getByPlaceholderText('e.g. review-and-deploy'), 'my-pipeline');
+    await user.type(
+      screen.getByPlaceholderText('What this swarm does...'),
+      'A test pipeline'
+    );
+
+    // Fill in the first role row
+    const roleInputs = screen.getAllByPlaceholderText('role (e.g. reviewer)');
+    const profileInputs = screen.getAllByPlaceholderText('profile (e.g. reviewer)');
+    await user.type(roleInputs[0]!, 'coder');
+    await user.type(profileInputs[0]!, 'coder');
+
+    const createBtn = screen.getByRole('button', { name: 'Create Template' });
+    await user.click(createBtn);
+
+    expect(mockCreateSwarmTemplate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'my-pipeline',
+        description: 'A test pipeline',
+        strategy: 'sequential',
+        roles: expect.arrayContaining([
+          expect.objectContaining({ role: 'coder', profileName: 'coder' }),
+        ]),
+        coordinatorProfile: null,
+      }),
+      expect.any(Object)
+    );
+  });
+
+  it('can add a second role row', async () => {
+    const user = userEvent.setup();
+    renderComponent(true);
+    const newBtn = await screen.findByText('New Template');
+    await user.click(newBtn);
+    await screen.findByText('New Swarm Template');
+
+    const addRoleBtn = screen.getByText('Add Role');
+    await user.click(addRoleBtn);
+
+    const roleInputs = screen.getAllByPlaceholderText('role (e.g. reviewer)');
+    expect(roleInputs).toHaveLength(2);
+  });
+
+  it('remove role button is disabled when only one role remains', async () => {
+    const user = userEvent.setup();
+    renderComponent(true);
+    const newBtn = await screen.findByText('New Template');
+    await user.click(newBtn);
+    await screen.findByText('New Swarm Template');
+
+    const removeButtons = screen.getAllByLabelText('Remove role');
+    expect(removeButtons[0]).toBeDisabled();
+  });
+
+  it('can remove a role row when multiple exist', async () => {
+    const user = userEvent.setup();
+    renderComponent(true);
+    const newBtn = await screen.findByText('New Template');
+    await user.click(newBtn);
+    await screen.findByText('New Swarm Template');
+
+    await user.click(screen.getByText('Add Role'));
+    let roleInputs = screen.getAllByPlaceholderText('role (e.g. reviewer)');
+    expect(roleInputs).toHaveLength(2);
+
+    const removeButtons = screen.getAllByLabelText('Remove role');
+    await user.click(removeButtons[0]!);
+    roleInputs = screen.getAllByPlaceholderText('role (e.g. reviewer)');
+    expect(roleInputs).toHaveLength(1);
   });
 
   // ── Run history ─────────────────────────────────────────────
