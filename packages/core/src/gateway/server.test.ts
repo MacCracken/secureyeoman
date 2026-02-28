@@ -667,6 +667,11 @@ describe('GatewayServer', () => {
       expect(res.status).toBe(503);
     });
 
+    it('GET /api/v1/internal/ssh-keys returns 503 when secrets manager unavailable', async () => {
+      const res = await fetch(`${apiBase}/api/v1/internal/ssh-keys`);
+      expect(res.status).toBe(503);
+    });
+
     it('GET /api/v1/security/ml/summary with period=30d covers 30-day branch', async () => {
       const res = await fetch(`${apiBase}/api/v1/security/ml/summary?period=30d`);
       expect(res.status).toBe(200);
@@ -989,6 +994,74 @@ describe('GatewayServer', () => {
       expect(id1).toBeTruthy();
       expect(id2).toBeTruthy();
       expect(id1).not.toBe(id2);
+    });
+  });
+
+  // ── Internal SSH key store route ─────────────────────────────────────────────
+
+  describe('GET /api/v1/internal/ssh-keys with mock SecretsManager', () => {
+    let sshKeyServer: GatewayServer | null = null;
+    let sshKeyPort: number;
+
+    beforeAll(async () => {
+      const secretStore = new Map<string, string>([
+        ['GITHUB_SSH_PROD_MCP', 'encrypted-blob-1'],
+        ['GITHUB_SSH_DEV_BOX', 'encrypted-blob-2'],
+        ['SOME_OTHER_KEY', 'should-not-appear'],
+      ]);
+      const mockSecretsManager = {
+        keys: async () => Array.from(secretStore.keys()),
+        get: async (name: string) => secretStore.get(name),
+      };
+
+      sshKeyPort = 19899;
+      sshKeyServer = new GatewayServer({
+        config: createMinimalConfig({ port: sshKeyPort }) as any,
+        secureYeoman: createMockSecureYeoman({
+          getSecretsManager: () => mockSecretsManager,
+          getAuditChain: () => ({ record: async () => {} }),
+        }) as any,
+      });
+      await sshKeyServer.start();
+    });
+
+    afterAll(async () => {
+      if (sshKeyServer) {
+        await sshKeyServer.stop();
+        sshKeyServer = null;
+      }
+    });
+
+    it('returns only GITHUB_SSH_ prefixed keys with their ciphertexts', async () => {
+      const res = await fetch(`http://127.0.0.1:${sshKeyPort}/api/v1/internal/ssh-keys`);
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as { keys: Array<{ name: string; ciphertext: string }> };
+      expect(json.keys).toHaveLength(2);
+      const names = json.keys.map((k) => k.name).sort();
+      expect(names).toEqual(['GITHUB_SSH_DEV_BOX', 'GITHUB_SSH_PROD_MCP']);
+      const prod = json.keys.find((k) => k.name === 'GITHUB_SSH_PROD_MCP');
+      expect(prod?.ciphertext).toBe('encrypted-blob-1');
+      // SOME_OTHER_KEY must not appear
+      expect(json.keys.find((k) => k.name === 'SOME_OTHER_KEY')).toBeUndefined();
+    });
+
+    it('returns empty list when no GITHUB_SSH_ keys exist', async () => {
+      const emptyStore = new Map<string, string>([['API_KEY', 'val']]);
+      const emptyMgr = { keys: async () => Array.from(emptyStore.keys()), get: async (n: string) => emptyStore.get(n) };
+      const emptyPort = 19898;
+      const emptyServer = new GatewayServer({
+        config: createMinimalConfig({ port: emptyPort }) as any,
+        secureYeoman: createMockSecureYeoman({ getSecretsManager: () => emptyMgr }) as any,
+      });
+      await emptyServer.start();
+      try {
+        const res = await fetch(`http://127.0.0.1:${emptyPort}/api/v1/internal/ssh-keys`);
+        expect(res.status).toBe(200);
+        const json = (await res.json()) as { keys: unknown[] };
+        expect(json.keys).toHaveLength(0);
+      } finally {
+        await emptyServer.stop();
+      }
     });
   });
 });

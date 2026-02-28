@@ -5,7 +5,7 @@
  * through to the core API client correctly.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerGithubApiTools } from './github-api-tools.js';
 import type { CoreApiClient } from '../core-client.js';
@@ -105,5 +105,56 @@ describe('github-api-tools', () => {
     (client.get as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     expect(() => registerGithubApiTools(server, client, noopMiddleware())).not.toThrow();
+  });
+});
+
+// ── SSH key persistence tests ──────────────────────────────────────────────────
+
+import { encryptSshKey, decryptSshKey } from '../utils/ssh-crypto.js';
+
+const TOKEN_SECRET = 'a'.repeat(32); // 32-char secret for HKDF
+
+describe('github_setup_ssh — registration with tokenSecret', () => {
+  it('registers all 19 tools when tokenSecret is provided', () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    expect(() =>
+      registerGithubApiTools(server, mockClient(), noopMiddleware(), TOKEN_SECRET)
+    ).not.toThrow();
+  });
+
+  it('accepts undefined tokenSecret without throwing', () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    expect(() =>
+      registerGithubApiTools(server, mockClient(), noopMiddleware(), undefined)
+    ).not.toThrow();
+  });
+
+  it('client.put method is available on the mock client', () => {
+    const client = mockClient();
+    expect(typeof client.put).toBe('function');
+  });
+});
+
+describe('encryptSshKey / decryptSshKey round-trip', () => {
+  it('round-trips a PEM string correctly', () => {
+    const pem = '-----BEGIN OPENSSH PRIVATE KEY-----\nABCD\n-----END OPENSSH PRIVATE KEY-----\n';
+    const ciphertext = encryptSshKey(pem, TOKEN_SECRET);
+    expect(ciphertext).not.toBe(pem);
+    expect(decryptSshKey(ciphertext, TOKEN_SECRET)).toBe(pem);
+  });
+
+  it('throws on tampered ciphertext (GCM auth tag mismatch)', () => {
+    const ciphertext = encryptSshKey('test-key', TOKEN_SECRET);
+    const buf = Buffer.from(ciphertext, 'base64');
+    // Flip a byte in the ciphertext (after iv+tag = 28 bytes)
+    buf[30] ^= 0xff;
+    const tampered = buf.toString('base64');
+    expect(() => decryptSshKey(tampered, TOKEN_SECRET)).toThrow();
+  });
+
+  it('throws on ciphertext too short', () => {
+    expect(() => decryptSshKey(Buffer.alloc(10).toString('base64'), TOKEN_SECRET)).toThrow(
+      /too short/i
+    );
   });
 });

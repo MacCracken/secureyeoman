@@ -4,6 +4,8 @@
  * Lifecycle: validate core → register tools/resources/prompts → auto-register → listen.
  */
 
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
@@ -21,6 +23,7 @@ import { createInputValidator } from './middleware/input-validator.js';
 import { createAuditLogger } from './middleware/audit-logger.js';
 import { createSecretRedactor } from './middleware/secret-redactor.js';
 import { registerDashboardRoutes } from './dashboard/routes.js';
+import { decryptSshKey } from './utils/ssh-crypto.js';
 
 export interface McpServiceServerOptions {
   config: McpServiceConfig;
@@ -74,6 +77,9 @@ export class McpServiceServer {
     });
     registerAllResources(this.mcpServer, this.coreClient);
     registerAllPrompts(this.mcpServer, this.coreClient);
+
+    // 3.5 Restore SSH keys from SecretsManager (encrypted at rest; decrypted locally)
+    await this.restoreSshKeys();
 
     // 4. Register transports
     if (this.config.transport === 'streamable-http') {
@@ -134,6 +140,58 @@ export class McpServiceServer {
 
     // 8. Start listening
     await this.app.listen({ host: this.config.host, port: this.config.port });
+  }
+
+  /**
+   * Restore SSH private keys from encrypted SecretsManager entries.
+   *
+   * On container restart ~/.ssh/ is empty.  Any GITHUB_SSH_* secrets stored
+   * during a previous session are fetched from core, decrypted with the shared
+   * tokenSecret, and written back to ~/.ssh/yeoman_github_ed25519 (the last one
+   * stored wins — there is normally only one active key at a time).
+   *
+   * The matching ~/.ssh/config block is also restored so git can push/pull.
+   * Failures are non-fatal — we just log a warning.
+   */
+  private async restoreSshKeys(): Promise<void> {
+    const tokenSecret = this.config.tokenSecret;
+    if (!tokenSecret) return; // no token → can't decrypt; skip
+
+    try {
+      const result = await this.coreClient.get<{ keys: Array<{ name: string; ciphertext: string }> }>(
+        '/api/v1/internal/ssh-keys'
+      );
+      if (!result?.keys?.length) return;
+
+      const sshDir  = `${homedir()}/.ssh`;
+      const keyPath = `${sshDir}/yeoman_github_ed25519`;
+      await mkdir(sshDir, { recursive: true });
+
+      for (const { name, ciphertext } of result.keys) {
+        try {
+          const privateKey = decryptSshKey(ciphertext, tokenSecret);
+          await writeFile(keyPath, privateKey, { mode: 0o600 });
+
+          // Restore ~/.ssh/config block if not already present
+          const configPath    = `${sshDir}/config`;
+          const configEntry   =
+            '\n# --- SecureYeoman managed — do not edit this block manually ---\n' +
+            `Host github.com\n  IdentityFile ${keyPath}\n  IdentitiesOnly yes\n  StrictHostKeyChecking accept-new\n` +
+            '# --- end SecureYeoman managed ---\n';
+          let existing = '';
+          try { existing = await readFile(configPath, 'utf8'); } catch { /* first run */ }
+          if (!existing.includes('SecureYeoman managed')) {
+            await writeFile(configPath, existing + configEntry, { mode: 0o600 });
+          }
+          console.info(`[secureyeoman-mcp] Restored SSH key from secret ${name} → ${keyPath}`);
+        } catch (err) {
+          console.warn(`[secureyeoman-mcp] Failed to restore SSH key ${name}: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+    } catch (err) {
+      // Core may not have SSH keys or the route may not be registered yet — non-fatal
+      console.warn(`[secureyeoman-mcp] restoreSshKeys: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   async stop(): Promise<void> {

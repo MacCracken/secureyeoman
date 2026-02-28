@@ -1,3 +1,25 @@
+## [2026.2.28h] — 2026-02-28
+
+### Added
+
+- **GitHub SSH key management tools (Phase 70b)** — 7 additional GitHub MCP tools:
+  `github_list_ssh_keys`, `github_add_ssh_key`, `github_delete_ssh_key`,
+  `github_setup_ssh` (generate ed25519 key in-container; register with GitHub; write to `~/.ssh/`),
+  `github_rotate_ssh_key` (rotate key: generate new → register → revoke old),
+  `github_create_repo`, `github_fork_repo`.
+- **SSH key E2E encryption** — private SSH keys are encrypted with AES-256-GCM before being stored
+  in the SecretsManager (`packages/mcp/src/utils/ssh-crypto.ts`). Encryption key is derived via
+  HKDF-SHA256 from the shared `SECUREYEOMAN_TOKEN_SECRET` — only the MCP service can decrypt.
+  Keys are stored under names like `GITHUB_SSH_*` and appear in the Security → Secrets panel
+  (values masked, like all other secrets).
+- **SSH key auto-restore on container restart** — `McpServiceServer.restoreSshKeys()` runs at
+  startup, fetches encrypted blobs from the new `GET /api/v1/internal/ssh-keys` route, decrypts
+  them locally, and writes them back to `~/.ssh/`. The `~/.ssh/config` block is also restored.
+- **Internal SSH keys route** — `GET /api/v1/internal/ssh-keys` in core returns `GITHUB_SSH_*`
+  ciphertext entries to the authenticated MCP service (core never sees the plaintext private key).
+- **`admin:public_key` OAuth scope** — added to the GitHub provider so SSH key management works.
+  Users who connected GitHub before this release must reconnect to grant the new scope.
+
 ## [2026.2.28g] — 2026-02-28
 
 ### Added

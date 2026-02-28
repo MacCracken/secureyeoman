@@ -573,6 +573,8 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/github/ssh-keys/:key_id': { DELETE: { resource: 'integrations', action: 'write' } },
   '/api/v1/github/repos/:owner/:repo/forks': { POST: { resource: 'integrations', action: 'write' } },
   '/api/v1/github/repos/:owner/:repo/issues/:number/comments': { POST: { resource: 'integrations', action: 'write' } },
+  // Internal SSH key store (MCP → core; returns ciphertexts for GITHUB_SSH_* secrets)
+  '/api/v1/internal/ssh-keys': { GET: { resource: 'integrations', action: 'read' } },
   // Integration extras
   '/api/v1/integrations/:id/test': { POST: { resource: 'integrations', action: 'write' } },
   '/api/v1/integrations/:id/reload': { POST: { resource: 'integrations', action: 'write' } },

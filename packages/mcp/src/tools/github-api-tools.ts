@@ -16,6 +16,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
 import { wrapToolHandler } from './tool-utils.js';
+import { encryptSshKey } from '../utils/ssh-crypto.js';
 
 // ── SSH key generation (pure Node 20 crypto, no external binary) ──────────────
 
@@ -97,7 +98,8 @@ function generateSSHKeyPair(comment: string): { privateKey: string; publicKey: s
 export function registerGithubApiTools(
   server: McpServer,
   client: CoreApiClient,
-  middleware: ToolMiddleware
+  middleware: ToolMiddleware,
+  tokenSecret?: string
 ): void {
   // ── github_profile ───────────────────────────────────────────
   server.registerTool(
@@ -427,11 +429,24 @@ export function registerGithubApiTools(
       );
       await writeFile(configPath, cleaned + configEntry, { mode: 0o600 });
 
-      // Persist key metadata for rotation
+      // Derive secret name for SecretsManager (uppercase, underscores only)
+      const secretName = `GITHUB_SSH_${String(args.title).toUpperCase().replace(/[^A-Z0-9]/g, '_')}`;
+
+      // Persist key metadata for rotation (include secretName for later rotation/delete)
       await writeFile(metaPath, JSON.stringify(
-        { githubKeyId, title: args.title, keyPath, createdAt: new Date().toISOString() },
+        { githubKeyId, title: args.title, keyPath, secretName, createdAt: new Date().toISOString() },
         null, 2
       ));
+
+      // Encrypt and store private key in SecretsManager via core (fire-and-forget; warn on error)
+      if (tokenSecret) {
+        try {
+          const encrypted = encryptSshKey(privateKey, tokenSecret);
+          await client.put(`/api/v1/secrets/${secretName}`, { value: encrypted });
+        } catch (err) {
+          console.warn(`[github_setup_ssh] Failed to persist encrypted key to SecretsManager: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
 
       return {
         content: [{
@@ -440,10 +455,11 @@ export function registerGithubApiTools(
             success: true,
             githubKeyId,
             keyPath,
+            secretName,
             publicKey,
             message:
               `SSH key registered with GitHub (id: ${githubKeyId}). ` +
-              `Private key written to ${keyPath}. ` +
+              `Private key written to ${keyPath} and encrypted in SecretsManager as ${secretName}. ` +
               `~/.ssh/config updated for github.com. ` +
               `Git can now push/pull via SSH. ` +
               `Run: git remote set-url origin git@github.com:<owner>/<repo>.git`,
@@ -517,11 +533,38 @@ export function registerGithubApiTools(
       await mkdir(sshDir, { recursive: true });
       await writeFile(keyPath, privateKey, { mode: 0o600 });
 
+      // Read old secret name from previous metadata (for SecretsManager cleanup)
+      let oldSecretName: string | null = null;
+      try {
+        const prevMeta = JSON.parse(await readFile(metaPath, 'utf8')) as Record<string, unknown>;
+        if (typeof prevMeta.secretName === 'string') oldSecretName = prevMeta.secretName;
+      } catch { /* meta may have been overwritten — ok */ }
+
+      const newSecretName = `GITHUB_SSH_${String(args.title).toUpperCase().replace(/[^A-Z0-9]/g, '_')}`;
+
       // Update metadata
       await writeFile(metaPath, JSON.stringify(
-        { githubKeyId: newKeyId, title: args.title, keyPath, createdAt: new Date().toISOString() },
+        { githubKeyId: newKeyId, title: args.title, keyPath, secretName: newSecretName, createdAt: new Date().toISOString() },
         null, 2
       ));
+
+      // Encrypt and store new key; delete old secret from SecretsManager
+      let secretNote = '';
+      if (tokenSecret) {
+        try {
+          const encrypted = encryptSshKey(privateKey, tokenSecret);
+          await client.put(`/api/v1/secrets/${newSecretName}`, { value: encrypted });
+          secretNote += ` New key encrypted in SecretsManager as ${newSecretName}.`;
+        } catch (err) {
+          console.warn(`[github_rotate_ssh_key] Failed to persist encrypted key: ${err instanceof Error ? err.message : String(err)}`);
+        }
+        if (oldSecretName && oldSecretName !== newSecretName) {
+          try {
+            await client.delete(`/api/v1/secrets/${oldSecretName}`);
+            secretNote += ` Old secret ${oldSecretName} removed from SecretsManager.`;
+          } catch { /* old secret may not exist — ignore */ }
+        }
+      }
 
       return {
         content: [{
@@ -531,8 +574,9 @@ export function registerGithubApiTools(
             newKeyId,
             revokeNote,
             keyPath,
+            secretName: newSecretName,
             publicKey,
-            message: `SSH key rotated. New key id: ${newKeyId}. ${revokeNote}.`,
+            message: `SSH key rotated. New key id: ${newKeyId}. ${revokeNote}.${secretNote}`,
           }, null, 2),
         }],
       };

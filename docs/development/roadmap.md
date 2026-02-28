@@ -385,23 +385,9 @@ Items below are planned but demand-gated or lower priority. Grouped by theme for
 
 *Demand-Gated — implement once operational scale or compliance requirements justify the investment.*
 
-- [ ] **SSH Key Persistence via SecretsManager** — Currently `github_setup_ssh` writes the ed25519 private key to the MCP container's `~/.ssh/yeoman_github_ed25519`; the file is lost on container restart and the user must call `github_setup_ssh` again to regenerate.
+- [x] **SSH Key Persistence via SecretsManager** ✅ *Implemented 2026-02-28 (Phase 70b)*
 
-  **Decision required:** use `SecretsManager` (already supports Vault KV v2, OS keyring, and AES-256-GCM file) to persist the private key across MCP restarts.
-
-  *Proposed approach:*
-  - On `github_setup_ssh`: after generating the key pair in the MCP tool, send the private key to a new **admin-only** core route `POST /api/v1/internal/ssh-keys` which calls `secretsManager.storeSecret('github_ssh.<title>', privateKeyPem)`.
-  - On MCP container startup (`server.ts`): call `GET /api/v1/internal/ssh-keys` → write retrieved key to `~/.ssh/` before the service becomes healthy.
-  - On `github_rotate_ssh_key`: call the store endpoint with the new key and delete the old one via `secretsManager.deleteSecret(...)`.
-
-  *Backend options (already wired in `SecretsManager`):*
-  - **Vault / OpenBao** — best for production; secrets survive pod replacement and can be audited. Requires `VAULT_ADDR` + token/AppRole in env.
-  - **Encrypted file** (`file` backend, AES-256-GCM) — good for single-node deployments; persist the `.enc` file on a named Docker volume.
-  - **OS keyring** — not applicable in headless containers; skip this option.
-
-  *Security note:* the private key must transit the internal Docker network (core → MCP) over the admin-authenticated proxy. This is acceptable on the internal bridge network but should be TLS-terminated if core is ever exposed directly.
-
-  *Scope:* ~1 day. No new dependencies. `SecretsManager` is already instantiated in `secureyeoman.ts`; the only additions are the two internal routes and a startup restore step in `packages/mcp/src/server.ts`.
+  `github_setup_ssh` and `github_rotate_ssh_key` now encrypt the ed25519 private key with AES-256-GCM (HKDF-SHA256 from `SECUREYEOMAN_TOKEN_SECRET`) via `packages/mcp/src/utils/ssh-crypto.ts` before persisting under `GITHUB_SSH_*` names in the SecretsManager. Core stores opaque ciphertext only. `McpServiceServer.restoreSshKeys()` decrypts and restores on startup. Keys appear in Security → Secrets panel (masked). See CHANGELOG `[2026.2.28h]` and ADR 153 addendum.
 
 - [ ] **HSM Integration** — Hardware Security Module integration for key management.
 - [ ] **Optimistic Locking** — `version` field on personalities and skills; API returns `409 Conflict` on stale saves; dashboard shows "Someone else edited this — reload?" banner.
@@ -427,4 +413,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-28 — Added SSH Key Persistence via SecretsManager decision item (Infrastructure & Platform). GitHub MCP tools expanded to 19 tools across Phases 70–70.x.*
+*Last updated: 2026-02-28 — Phase 70b complete: SSH key persistence via SecretsManager (E2E AES-256-GCM encryption); `github_create_repo`, `github_fork_repo`, SSH management tools (list/add/delete/setup/rotate). GitHub MCP tools now 19 tools total.*

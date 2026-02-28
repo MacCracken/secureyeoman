@@ -2160,6 +2160,30 @@ export class GatewayServer {
       }
     );
 
+    // ── Internal SSH key store — MCP-only; returns ciphertext for GITHUB_SSH_ secrets ──
+    // The MCP service stores AES-256-GCM encrypted SSH private keys under GITHUB_SSH_* names
+    // in the SecretsManager.  On container restart, MCP calls this endpoint to retrieve
+    // ciphertexts it can decrypt locally (core never sees the plaintext private key material).
+    this.app.get('/api/v1/internal/ssh-keys', async (_request, reply) => {
+      const sm = this.secureYeoman.getSecretsManager();
+      if (!sm) return sendError(reply, 503, 'Secrets manager not available');
+      try {
+        const allKeys = await sm.keys();
+        const sshKeys = allKeys.filter((k) => k.startsWith('GITHUB_SSH_'));
+        const entries: Array<{ name: string; ciphertext: string }> = [];
+        for (const name of sshKeys) {
+          const val = await sm.get(name);
+          if (val) entries.push({ name, ciphertext: val });
+        }
+        return { keys: entries };
+      } catch (err) {
+        this.getLogger().error('Failed to list internal SSH keys', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+        return sendError(reply, 500, 'Failed to list SSH keys');
+      }
+    });
+
     // ── Phase 42: TLS Certificate Routes ────────────────────────────────────
 
     // GET /api/v1/security/tls — TLS cert status for dashboard display

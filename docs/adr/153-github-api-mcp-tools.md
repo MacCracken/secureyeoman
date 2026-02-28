@@ -48,13 +48,49 @@ The GitHub OAuth provider scopes were expanded from `['read:user', 'user:email']
 
 `OAuthTokenService` gained a `githubCredentials` dependency and a `GITHUB_TOKEN_URL` constant. The `refreshAndStore()` method now branches on provider to use the correct token URL. GitHub OAuth App tokens don't expire by default (`expiresAt = null`) so refresh rarely triggers, but the infrastructure is ready for GitHub Apps in future.
 
+## Phase 70b — SSH Key Management & Encrypted Persistence
+
+### Addendum (2026-02-28)
+
+Additional tools were added to the GitHub API layer:
+
+| Tool | Purpose |
+|---|---|
+| `github_list_ssh_keys` | List SSH keys on the account |
+| `github_add_ssh_key` | Add an existing public key |
+| `github_delete_ssh_key` | Revoke a key by ID |
+| `github_setup_ssh` | Generate ed25519 key pair in-container; register with GitHub; write to `~/.ssh/` |
+| `github_rotate_ssh_key` | Rotate key: generate new → register → revoke old |
+| `github_create_repo` | Create a new repository |
+| `github_fork_repo` | Fork an existing repository |
+
+#### SSH key generation (no binary dependency)
+
+Alpine Linux containers have no `ssh-keygen`. Keys are generated using Node 20 `crypto.generateKeyPairSync('ed25519')` and serialised to the canonical OpenSSH private key format (`openssh-key-v1\0` envelope) in pure JavaScript.
+
+#### E2E-encrypted SSH key persistence
+
+Private SSH keys survive container restarts via the SecretsManager:
+
+1. **Encryption**: `packages/mcp/src/utils/ssh-crypto.ts` — AES-256-GCM with an HKDF-SHA256 key derived from the shared `SECUREYEOMAN_TOKEN_SECRET`. Wire format: `iv(12) ‖ authTag(16) ‖ ciphertext`.
+2. **Storage**: The MCP service stores ciphertexts in core's SecretsManager under names like `GITHUB_SSH_PROD_MCP` (uppercase). Core never sees the plaintext.
+3. **Retrieval**: A new internal route `GET /api/v1/internal/ssh-keys` returns `GITHUB_SSH_*` entries with their ciphertexts. MCP calls this at startup, decrypts locally, and writes keys to `~/.ssh/`.
+4. **Dashboard visibility**: SSH key entries appear in the Security → Secrets panel alongside other secrets. Values are masked (write-only display); only key names are visible.
+
+#### Scope expansion (addendum)
+
+`admin:public_key` scope added to the GitHub OAuth provider to enable SSH key management.
+
 ## Alternatives Considered
 
 - **Keep CLI tools in `platformTools.github`**: Rejected — CLI tools require the `gh` binary and are server-local; they have no relationship to the user's connected GitHub account.
 - **Single `github_*` catch-all tool**: Rejected — granular tools give the AI better semantic understanding and allow mode enforcement per operation type.
+- **Store SSH keys unencrypted**: Rejected — private key material must never be stored in plaintext; AES-256-GCM provides authenticated encryption with HKDF-derived keys.
+- **Use `/api/v1/secrets/:name` GET for restore**: Rejected — that route only returns existence status, not value. A dedicated internal route returns ciphertexts to the trusted MCP service.
 
 ## Consequences
 
-- Users with existing GitHub OAuth connections must reconnect to get write scopes.
+- Users with existing GitHub OAuth connections must reconnect to get write scopes (`repo`, `public_repo`, `admin:public_key`).
 - The `platformTools.github` entry in `soul/manager.ts` now correctly lists API tools tied to the OAuth token.
 - The soul prompt will accurately reflect available GitHub tools and their access modes.
+- SSH private keys survive container restarts if `SECUREYEOMAN_TOKEN_SECRET` is stable across restarts (which it is — it is part of the deployment secrets).

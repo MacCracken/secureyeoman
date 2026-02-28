@@ -76,6 +76,6 @@ export async function registerAllTools(
   registerIntentTools(server, client, config, middleware);
   registerGmailTools(server, client, middleware);
   registerTwitterTools(server, client, middleware);
-  registerGithubApiTools(server, client, middleware);
+  registerGithubApiTools(server, client, middleware, config.tokenSecret);
   registerOllamaTools(server, client, middleware);
 }
