@@ -1,6 +1,6 @@
 # Functionality Audit: SecureYeoman vs Competitors
 
-> Comparative analysis as of **2026-02-27** — SecureYeoman against OpenClaw, Agent Zero, PicoClaw, and Ironclaw.
+> Comparative analysis as of **2026-02-28** — SecureYeoman against OpenClaw, Agent Zero, PicoClaw, and Ironclaw.
 
 ---
 
@@ -8,11 +8,13 @@
 
 | | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
 |---|---|---|---|---|---|
-| **Vendor** | Open source | Open source (foundation) | agent0ai | Sipeed (sipeed/picoclaw) | NEAR AI |
+| **Vendor** | Open source | Open source (→ foundation; creator joined OpenAI Feb 14) | agent0ai | Sipeed (sipeed/picoclaw) | NEAR AI |
+| **Latest version** | 2026.2.27 | 2026.2.26 | v0.9.8.2 | v0.1.2 (Feb 17) | **v0.12.0** (Feb 26) |
+| **GitHub stars** | — | ~227K (1.36M npm/week) | ~13.5K | ~21K (launched Feb 9) | ~3.6K |
 | **Language** | TypeScript | TypeScript | Python | Go | **Rust** |
 | **Focus** | Enterprise self-hosted AI agent | Feature-rich personal AI | Personal assistant / agentic | Ultralight embedded AI | Privacy-first, TEE-backed runtime |
-| **Deployment** | Local / LAN / public TLS; K8s Helm | Local desktop / server | Docker | Single binary, $10 hardware | TEE on NEAR AI Cloud or self-hosted |
-| **RAM** | ~1 GB | ~1.5 GB baseline (2 GB min; 8 GB for browser skills) | 4 GB recommended | **< 10 MB** | Not published |
+| **Deployment** | Local / LAN / public TLS; K8s Helm | Local desktop / server | Docker | Single binary, $10 hardware | TEE on NEAR AI Cloud **(no air-gap)** |
+| **RAM** | ~1 GB | ~1.5 GB baseline (2 GB min; 8 GB for browser skills) | 4 GB recommended | **10–20 MB** (v0.1.2) | Not published |
 | **Startup** | ~30 s | ~6 s | > 30 s | **< 1 s** | Not published |
 | **Security** | ✅ RBAC · encryption · audit chain · sandboxing · SecretsManager/Vault · TLS lifecycle · ResponseGuard · OPA/CEL governance | ⚠️ CVE-2026-25253 RCE (CVSS 8.8) + CVE-2026-25157, CVE-2026-24763 + 6 more; 1,184+ malicious ClawHub skills (ClawHavoc); Gartner: "unacceptable enterprise risk" | Basic (Docker isolation) | Experimental; network security issues (self-disclosed) | ✅ TEE · WASM sandbox · AES-256-GCM · credential vault |
 | **MCP** | ✅ Full server + client (170+ tools) | Limited client integration | ✅ Client + server | ❌ (on roadmap) | ✅ As tool implementation path |
@@ -23,11 +25,11 @@
 ## Competitor Profiles
 
 ### OpenClaw
-Open-source AI agent at **180,000+ GitHub stars** as of Feb 2026 (peaked from 160K after going viral). Written in TypeScript (~430,000 lines). Latest release: `2026.2.23`. Active development, but serious and ongoing security and governance concerns:
+Open-source AI agent at **~227,000 GitHub stars** (43,412 forks; 1.36 million npm downloads/week) as of Feb 28, 2026 — one of the fastest-growing open source projects in history. Written in TypeScript (~430,000 lines). Latest release: `2026.2.26`. Creator Peter Steinberger announced joining OpenAI on **February 14, 2026** (Sam Altman personally announced it on X); project transitioning to an open-source foundation with OpenAI as sponsor. Active development continues, but serious and ongoing security and governance concerns:
 
 - **CVE-2026-25253** (CVSS 8.8) — one-click RCE. The Control UI trusted `gatewayUrl` from query strings without validation and forwarded auth tokens over WebSocket. Clicking a single link fully compromises the instance. Patched in `2026.1.29`.
 - **CVE-2026-25157** and **CVE-2026-24763** — two additional command injection CVEs published the same week. A subsequent Endor Labs audit found **6 more** issues (SSRF, missing auth, path traversal).
-- **ClawHavoc supply chain attack** — Koi Security initially found 341 malicious skills in ClawHub; by Feb 16, 2026, confirmed malicious count grew to **824+** across an expanded registry of 10,700+ skills, with Bitdefender placing the total at ~900 (≈ 20% of the ecosystem). A separate `Cline CLI 2.3.0` supply chain attack installed OpenClaw on developer systems without consent.
+- **ClawHavoc supply chain attack** — Koi Security initially found 341 malicious skills in ClawHub; by Feb 16, 2026, confirmed malicious count grew to **824–1,184+** across an expanded registry of 10,700+ skills (Bitdefender: ~900, ≈ 20% of ecosystem). A separate `Cline CLI 2.3.0` supply chain attack installed OpenClaw on developer systems without consent. **30,000+ publicly exposed instances** detected (Censys: 21,639 by Jan 31, growing to 30,000+ by early Feb).
 - **Snyk ToxicSkills study** — prompt injection found in 36% of examined skills; 1,467 malicious payloads identified across the skill supply chain.
 - **Gartner rating**: "unacceptable cybersecurity risk" — immediate enterprise ban recommended.
 - **Palo Alto Networks**: called it "the potential biggest insider threat of 2026."
@@ -53,32 +55,31 @@ Python-based general-purpose agent framework. Latest release: **v0.9.8.2** (Febr
 - Docker recommended with **4 GB RAM** minimum (unchanged); local models require 8 GB+.
 
 ### PicoClaw
-Ultra-lightweight Go binary by Sipeed, launched **2026-02-09**. Growing rapidly with **270+ merged PRs** since launch:
+Ultra-lightweight Go binary by Sipeed, launched **2026-02-09**. Current version: **v0.1.2** (released Feb 17, 2026). ~**21,000 GitHub stars** (2,600 forks) — 5,000 stars in 4 days, 12,000 in one week:
 
-- Single binary < 10 MB; targets RISC-V, ARM, x86 — runs on $10 Sipeed LicheeRV-Nano (256 MB DDR3).
-- **No MCP support** (GitHub issue #77 — on the roadmap, not yet implemented).
-- **New additions via PRs**: Ollama local AI support, I2C/SPI hardware tools, **health check endpoints for Kubernetes** compatibility.
-- No GUI — CLI and chat apps only.
-- **Unresolved network security issues** per the project's own warnings (pre-v1.0 disclosure).
-- Limited tool ecosystem; no browser automation; no persistent memory.
-- Positioned as a constrained assistant, not an autonomous agent.
-- Hit 12,000 GitHub stars in its first week.
+- Single binary **10–20 MB** (originally <10 MB; grew in v0.1.2 with added features); targets RISC-V, ARM, x86 — runs on $10 Sipeed LicheeRV-Nano (256 MB DDR3). Boot time: < 1 s even on 0.6 GHz single-core.
+- **No MCP support** (GitHub issue #290 — roadmap, no release date). Roadmap describes MCP for connecting to Google Drive, Slack, GitHub, and local databases without custom skill code.
+- **v0.1.1 (Feb 13)**: Ollama local AI, I2C/SPI hardware tools, K8s health check endpoints, 32-bit arch support, Discord typing indicator, skill validation, Goreleaser CI/CD (270+ merged PRs).
+- **v0.1.2 (Feb 17)**: Heartbeat improvements, cron re-enabled, concurrency/persistence safety fixes, GitHub Copilot provider, **symlink workspace escape security fix**.
+- Messaging: Telegram, Discord, QQ, DingTalk, LINE, WeCom, Slack.
+- No GUI — CLI and chat apps only. No browser automation. No persistent memory. No RBAC, no SSO.
+- Positioned as a constrained assistant, not an autonomous agent. Not an enterprise competitor.
 
 ### Ironclaw
-NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23** alongside a **Confidential GPU Marketplace** and **Multimodal Confidential Inference** service. Current version: **v0.8.0** (released 2026-02-20):
+NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23**. Latest version: **v0.12.0** (released Feb 26, 2026). ~**3,600 GitHub stars**:
 
-- Deployed inside encrypted **TEEs (Trusted Execution Environments)** on NEAR AI Cloud; also self-hostable.
-- All tools run in **WASM containers** with capability-based permissions; endpoint allowlisting enforced.
-- **v0.8.0 additions**: Ollama embeddings provider (`EMBEDDING_PROVIDER=ollama`), flexible embedding dimensions (migration V9), refactored OpenAI-compatible routing via `rig` adapter and `RetryProvider`, improved tool-message sanitization across providers.
-- **NVIDIA Inception program** membership for enhanced hardware isolation and privacy verification.
-- **Confidential GPU marketplace** launched alongside v0.8.0 for compute access with privacy guarantees.
-- **Multimodal Confidential Inference** — runs vision/audio models inside TEEs.
+- Deployed inside encrypted **TEEs (Trusted Execution Environments)** on NEAR AI Cloud. **Cannot be self-hosted in an air-gapped environment** — requires NEAR AI Cloud infrastructure for TEE execution (dealbreaker for regulated industries).
+- All tools run in **WASM containers** (wasmtime) with capability-based permissions; endpoint allowlisting enforced. Dynamic tool building: describe what you need, system builds it as a WASM tool at runtime.
+- **v0.4.0 (Feb 17)**: Per-invocation approval checks, boot screen polish, lifecycle hooks system (6 interception points), tool-message sanitization, multi-tool approval resume flow.
+- **v0.12.0 (Feb 26)**: Web improvements for WASM channel setup, **Signal channel implemented**, OpenRouter preset in setup wizard, thread session resolution improvements, sandbox config defaults updated.
+- **NVIDIA Inception program** membership for hardware isolation and privacy verification.
+- **Confidential GPU marketplace** — TEE-secured compute network for enterprise/government AI; hardware-signed attestation in < 30 s.
+- **Multimodal Confidential Inference** — vision/audio models inside TEEs.
 - RAM and startup benchmarks not published; Rust static binary expected well below 200 MB.
 - Local PostgreSQL encrypted with **AES-256-GCM**; credentials isolated in an encrypted vault; secrets never passed to the model.
-- Continuous activity monitoring for prompt injection and resource abuse.
 - Audit log stored in local DB — functional but not cryptographically chained.
 - No RBAC, SSO/OIDC, Kubernetes, or dashboard.
-- ~2 messaging integrations (Telegram WASM, Slack WASM); Signal channel PR #271 status unconfirmed.
+- Messaging integrations: Telegram WASM, Slack WASM, **Signal** (v0.12.0).
 - Free Starter tier (one hosted agent instance) on NEAR AI Cloud.
 
 ---
@@ -93,7 +94,7 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 | Database | PostgreSQL + SQLite | File-based (Markdown) | File-based | File-based | PostgreSQL + libSQL |
 | AI providers | 11+ | Multiple | Multiple | 9+ | 5 (NEAR AI, Tinfoil TEE, OpenAI, Anthropic, Ollama) |
 | MCP server + client | ✅ 170+ tools | Limited | ✅ | ❌ (roadmap) | ✅ |
-| RAM footprint | ~1 GB | ~1.5 GB (8 GB for browser skills; peaks 6 GB under load) | 4 GB recommended | **< 10 MB** | Not published |
+| RAM footprint | ~1 GB | ~1.5 GB (8 GB for browser skills; peaks 6 GB under load) | 4 GB recommended | **10–20 MB** | Not published |
 | Startup time | ~30 s | ~6 s | > 30 s | **< 1 s** | Not published |
 | Enterprise-ready | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Single binary | ✅ ~80 MB | ❌ | ❌ | ✅ < 10 MB | ✅ Rust static |
@@ -171,7 +172,7 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 | **Discord** | ✅ | ✅ | ❌ | ✅ | ❌ |
 | **Slack** | ✅ | ✅ | ❌ | ❌ | ✅ WASM |
 | **WhatsApp** | ✅ | ✅ | ❌ | ❌ | ❌ |
-| **Signal** | ✅ | ✅ | ❌ | ❌ | Unconfirmed (PR #271) |
+| **Signal** | ✅ | ✅ | ❌ | ❌ | ✅ (v0.12.0, Feb 26) |
 | **MS Teams** | ✅ | ❌ | ❌ | ❌ | ❌ |
 | **Google Chat / Gmail / Calendar** | ✅ | ✅ | ❌ | ❌ | ❌ |
 | **Email (SMTP/IMAP)** | ✅ | ✅ | ❌ | ❌ | ❌ |
@@ -182,7 +183,7 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 | **OAuth2 (Google)** | ✅ Auto token refresh | ❌ | ❌ | ❌ | ❌ |
 | **Webhook** | ✅ | ✅ | ❌ | ❌ | ✅ Triggers |
 | **Per-user notification prefs** | ✅ Quiet hours, min level, fan-out dispatch | ❌ | ❌ | ❌ | ❌ |
-| **Total platforms** | **31** | **23+** | CLI / Web | **10+** | **~2 stable** |
+| **Total platforms** | **31** | **23+** | CLI / Web | **10+** | **3 stable** |
 
 ### 6 · Dashboard & UX
 
@@ -202,7 +203,7 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 | Global navigate/create | ✅ Shortcut dialog — Chat / Skill / Workflow / Personality / Task | ❌ | ❌ | ❌ | ❌ |
 | Network mode badge | ✅ Live: Local Only / Network (No TLS) / Public (TLS Secured) | ❌ | ❌ | ❌ | ❌ |
 | Collaborative editing | ✅ Yjs CRDT; presence indicators; group chat | ❌ | ❌ | ❌ | ❌ |
-| Mobile | ❌ (roadmap Tier 3) | ✅ Android native (v2026.2.23: 4-step onboarding, 5-tab interface) | ❌ | ❌ | ❌ |
+| Mobile | ❌ (roadmap Tier 3) | ✅ Android native (4-step onboarding, 5-tab interface; added v2026.2.23) | ❌ | ❌ | ❌ |
 
 ### 7 · Enterprise & Deployment
 
@@ -213,11 +214,12 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 | Multi-user workspaces | ✅ | ❌ | ✅ | ❌ | ❌ |
 | SSO / OIDC + SAML 2.0 | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Multi-tenancy | ✅ RLS-enforced; tenant CRUD; slug validation | ❌ | ❌ | ❌ | ❌ |
-| Single binary | ✅ ~80 MB | ❌ | ❌ | ✅ < 10 MB | ✅ Rust static |
+| Single binary | ✅ ~80 MB | ❌ | ❌ | ✅ 10–20 MB | ✅ Rust static |
 | Docker | ✅ ~80 MB | ✅ | ✅ | ❌ | ✅ |
 | Dual DB backend | ✅ PostgreSQL + SQLite | ❌ | ❌ | ❌ | ✅ PostgreSQL + libSQL |
 | CLI | ✅ 26 commands; completions; `--json`; 5-step init wizard | ✅ | ✅ | ✅ | ✅ REPL |
-| Lite binary (edge/IoT) | ✅ SQLite tier | ❌ | ❌ | ✅ (standard binary is already <10 MB) | ✅ libSQL backend |
+| Lite binary (edge/IoT) | ✅ SQLite tier | ❌ | ❌ | ✅ (standard binary is 10–20 MB) | ✅ libSQL backend |
+| Air-gap / offline | ✅ Full self-hosted | ✅ | ✅ | ✅ | ❌ Requires NEAR AI Cloud |
 | Backup & DR | ✅ Automated `pg_dump`/`pg_restore`; download + restore API | ❌ | ❌ | ❌ | ❌ |
 | Audit log export | ✅ JSONL / CSV / syslog; filtered streaming | ❌ | ❌ | ❌ | ❌ |
 
@@ -225,10 +227,10 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 
 | | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
 |--|--|--|--|--|--|
-| Test count | **8,420** | Limited (community-driven) | Minimal | Minimal | Not published (Rust type safety provides baseline) |
+| Test count | **9,533** | Limited (community-driven) | Minimal | Minimal | Not published (Rust type safety provides baseline) |
 | Line coverage | **≥ 87%** | Not tracked | Not tracked | Not tracked | Not tracked |
-| Test files | **400** | Unknown | Unknown | Unknown | Unknown |
-| ADR records | **145** | Unknown | Unknown | Unknown | Unknown |
+| Test files | **378** | Unknown | Unknown | Unknown | Unknown |
+| ADR records | **153** | Unknown | Unknown | Unknown | Unknown |
 | CI/CD | ✅ lint · typecheck · test · build · security audit · docker-push · helm-lint | ✅ | Basic | Minimal | ✅ Cargo CI |
 | Security test suite | ✅ Dedicated security + chaos suites; vitest-axe a11y smoke tests | ❌ Multiple CVEs 2026 | ❌ | ❌ | ✅ Memory-safe by language; WASM sandbox tests |
 | Storybook | ✅ | ❌ | ❌ | ❌ | ❌ |
@@ -280,11 +282,12 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 ## Gaps & Opportunities
 
 ### vs OpenClaw — What We Lack
-- **Community skill volume** — ~3,286 validated ClawHub skills (post-cleanup) vs SecureYeoman's marketplace. Note: ClawHub had two coordinated malicious skill campaigns in early 2026 (ClawHavoc; Snyk ToxicSkills), resulting in removal of 2,419+ skills and highlighting the importance of SecureYeoman's Skill Trust Tier model.
-- **Native mobile app** — OpenClaw added Android native app (4-step onboarding, 5-tab interface) in v2026.2.23; SecureYeoman remains web/CLI only (roadmap Tier 3).
+- **Community skill volume** — ~3,286 validated ClawHub skills (post-cleanup from 5,705; 2,419+ removed) vs SecureYeoman's marketplace. The two coordinated supply-chain attacks (ClawHavoc; Snyk ToxicSkills at 36% injection rate) underscore SecureYeoman's Skill Trust Tier advantage.
+- **Native mobile app** — OpenClaw added Android native (4-step onboarding, 5-tab) in v2026.2.23; SecureYeoman remains web/CLI only (roadmap Tier 3).
+- **Governance uncertainty** — Creator Peter Steinberger joined OpenAI (Feb 14, 2026); project in foundation transition. This cuts both ways: less continuity risk for SecureYeoman, but also possible enterprise hesitation about OpenClaw's roadmap.
 
 ### vs PicoClaw — By Design Trade-offs
-- **Ultra-low memory / sub-second startup** — < 10 MB / < 1 s is a Go + embedded-first trade-off that conflicts with the enterprise feature set. The SecureYeoman Lite binary (SQLite, ~80 MB) partially addresses this for edge deployments.
+- **Ultra-low memory / sub-second startup** — 10–20 MB / < 1 s is a Go + embedded-first trade-off that conflicts with the enterprise feature set. The SecureYeoman Lite binary (SQLite, ~80 MB) partially addresses this for edge deployments. PicoClaw's lack of MCP support remains its biggest limitation for AI-tool integrations.
 
 ### vs Ironclaw — Gaps Already Resolved
 
@@ -292,15 +295,17 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 |-----|------------------|---------------------|
 | LLM response caching | Hash-keyed cache (model + system prompt + messages) | ✅ `ResponseCache` — configurable TTL; off by default |
 | Outbound credential proxy | HTTP proxy in sandbox network namespace | ✅ `CredentialProxy` (ADR 099) |
-| Flexible embedding dimensions | V9 migration in v0.8.0 | ✅ Configurable via vector backend |
-| Confidential GPU access | Decentralized GPU marketplace (launched Feb 23, 2026) | Not applicable (local-first architecture) |
+| Flexible embedding dimensions | V9 migration | ✅ Configurable via vector backend |
+| Confidential GPU access | Decentralized GPU marketplace on NEAR AI Cloud | Not applicable (local-first; no cloud dependency) |
+| Signal channel | Added v0.12.0 (Feb 26) | ✅ Already shipped |
+| Dynamic tool building | WASM tool generated at runtime from description | ✅ `allowDynamicTools` policy flag |
 
-**Where SecureYeoman leads over Ironclaw**: RBAC, SSO/OIDC/SAML, mTLS, HMAC audit chain, multi-tenancy, backup & DR, Kubernetes, personality system with active hours and presets, multi-agent (A2A, swarms, DAG orchestration, Agnostic QA bridge), 31 integrations, workflow visual builder, React dashboard, community marketplace, ResponseGuard, OPA/CEL governance, risk assessment, multi-theme system, correlation IDs.
+**Where SecureYeoman leads over Ironclaw**: RBAC, SSO/OIDC/SAML, mTLS, HMAC audit chain, multi-tenancy, backup & DR, Kubernetes, air-gap / on-premises deployment, personality system with active hours and presets, multi-agent (A2A, swarms, DAG orchestration, Agnostic QA bridge), 31 integrations, workflow visual builder, React dashboard, community marketplace, ResponseGuard, OPA/CEL governance, risk assessment, multi-theme system, correlation IDs.
 
-**Where Ironclaw leads over SecureYeoman**: Rust memory safety (~200 MB estimated, < 10 ms startup), TEE-backed execution on NEAR AI Cloud with hardware attestation, WASM tool sandboxing as the default (not a policy flag), Confidential GPU marketplace.
+**Where Ironclaw leads over SecureYeoman**: Rust memory safety (~200 MB estimated, < 10 ms startup), TEE-backed execution with hardware attestation, WASM tool sandboxing as the default (not a policy flag), Confidential GPU marketplace.
 
 ### vs Market
-- **Native mobile app** — iOS/Android (roadmap Tier 3); OpenClaw now has Android native
+- **Native mobile app** — iOS/Android (roadmap Tier 3); OpenClaw has Android native
 
 ---
 
@@ -314,8 +319,8 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 | **Embedded / IoT AI** | Challenger | PicoClaw leads on hardware constraints; SecureYeoman Lite binary available for edge deployments |
 | **Managed SaaS** | Not positioned | Self-hosted only by design; Ironclaw offers TEE-backed cloud hosting |
 
-**Key differentiator**: SecureYeoman is the only enterprise-grade, self-hosted AI agent platform that combines full RBAC/SSO/SAML, multi-tenancy, cryptographic audit chain, Vault/OpenBao secrets management, zero-trust network access (Twingate), a network security toolkit (37 MCP tools + Kali), ResponseGuard + OPA/CEL governance, vector memory with hybrid FTS+RRF and per-personality scoping, DAG workflow orchestration with a visual builder, backup & DR, audit log export, correlation ID observability, and Kubernetes production readiness — all in a single ~80 MB binary with 8,420 tests at ≥ 87% coverage.
+**Key differentiator**: SecureYeoman is the only enterprise-grade, self-hosted AI agent platform that combines full RBAC/SSO/SAML, multi-tenancy, cryptographic audit chain, Vault/OpenBao secrets management, zero-trust network access (Twingate), a network security toolkit (37 MCP tools + Kali), ResponseGuard + OPA/CEL governance, vector memory with hybrid FTS+RRF and per-personality scoping, DAG workflow orchestration with a visual builder, backup & DR, audit log export, correlation ID observability, and Kubernetes production readiness — all in a single ~80 MB binary deployable fully air-gapped, with 9,533 tests at ≥ 87% coverage.
 
 ---
 
-*Updated: 2026-02-27 — SecureYeoman: 8,420 tests (≥ 87% coverage), 400 test files, 145 ADRs; added SAML 2.0, multi-tenancy, backup & DR, audit export, ResponseGuard, OPA/CEL governance, LLM-as-Judge, correlation IDs, risk assessment, multi-theme (18 themes), mission control dashboard, per-personality memory scoping, per-user notification prefs, Whisper model selector, streaming TTS, 5-step onboarding wizard (dashboard + CLI). OpenClaw: 180,000+ stars, ClawHavoc grew to 824–1,184+ malicious skills (ToxicSkills study: 36% prompt injection rate), latest v2026.2.23 with Android native app; foundation transition ongoing. Agent Zero: v0.9.8.2 with Skills framework, WebSocket state sync, UI redesign, 4 new LLM providers. PicoClaw: 270+ merged PRs (Ollama support, I2C/SPI tools, K8s health checks); MCP on roadmap. Ironclaw: v0.8.0 (Feb 20) + Confidential GPU Marketplace launched Feb 23, 2026; Ollama embeddings added.*
+*Updated: 2026-02-28 — SecureYeoman: 9,533 tests (≥ 87% coverage), 378 test files, 153 ADRs; v2026.2.27 adds GitHub API MCP tools (17 tools + SSH key management with E2E encryption), Twitter OAuth 2.0, avatar crop modal, MCP API key auth, agent world evolution, local-first AI routing, model distillation + LoRA fine-tuning pipeline, Gmail/Twitter MCP tools, multi-theme system (18 themes), mission control dashboard, per-personality memory scoping, per-user notification prefs. OpenClaw: ~227K stars (1.36M npm/week), latest v2026.2.26; creator Peter Steinberger joined OpenAI (Feb 14, 2026); 30,000+ exposed instances; ClawHavoc 824–1,184+ malicious skills; foundation transition ongoing. Agent Zero: v0.9.8.2 with Skills framework (SKILL.md cross-platform compatible with Claude Code/Cursor/Codex CLI), WebSocket state sync, UI redesign. PicoClaw: v0.1.2 (Feb 17), ~21K stars, 10–20 MB; symlink escape patched; MCP on roadmap (Issue #290). Ironclaw: v0.12.0 (Feb 26), ~3.6K stars; Signal channel added; no air-gap capability (NEAR AI Cloud required for TEE).*
