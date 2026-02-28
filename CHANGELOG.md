@@ -1,3 +1,20 @@
+## [2026.2.28q] — 2026-02-28
+
+### Changed
+
+#### Skill Version Format — Semantic → Date-Based
+
+All skill files and the skill schema now use the project's date-based release format (`YYYY.M.D`) instead of semantic versioning (`major.minor.patch`). Same-day patches use a numeric suffix (`2026.2.28-1`). This aligns skill versioning with the Changelog and roadmap release format used across the project.
+
+- **Community skill schema** (`secureyeoman-community-skills/schema/skill.schema.json`): `version.pattern` updated from `^\d+\.\d+\.\d+$` to `^\d{4}\.\d{1,2}\.\d{1,2}(-\d+)?$`; default changed from `"1.0.0"` to `"2026.2.28"`; description updated to document the format.
+- **21 community skill JSON files**: `"version": "1.0.0"` → `"version": "2026.2.28"`.
+- **10 marketplace skill TypeScript files** (`packages/core/src/marketplace/skills/`): `version: '1.0.0'` → `version: '2026.2.28'`.
+- **`CatalogSkillSchema`** (`packages/shared/src/types/marketplace.ts`): `version` field default updated from `'1.0.0'` to `'2026.2.28'`.
+
+**Migration for contributors**: new skills and updates to existing skills should use the current date as the version (`YYYY.M.D`). Use the `-N` suffix for same-day updates (e.g., `2026.3.1-1`).
+
+---
+
 ## [2026.2.28p] — 2026-02-28
 
 ### Added
