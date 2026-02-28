@@ -454,6 +454,13 @@ export function getToolManifest(): ToolManifestEntry[] {
     { name: 'github_create_issue', description: 'Create a new GitHub issue' },
     { name: 'github_create_pr', description: 'Create a new pull request (draft mode returns preview)' },
     { name: 'github_comment', description: 'Add a comment to a GitHub issue or PR (auto mode only)' },
+    { name: 'github_list_ssh_keys', description: 'List SSH public keys on the connected GitHub account (all modes)' },
+    { name: 'github_add_ssh_key', description: 'Add an SSH public key to the connected GitHub account (draft → preview, suggest → blocked)' },
+    { name: 'github_delete_ssh_key', description: 'Remove an SSH public key from the connected GitHub account by key_id (auto mode only)' },
+    { name: 'github_setup_ssh', description: 'Generate ed25519 SSH key pair in this container, register public key with GitHub, configure ~/.ssh/ for git push/pull via SSH' },
+    { name: 'github_rotate_ssh_key', description: 'Rotate the container SSH key: generate new key, register with GitHub, revoke old key, update ~/.ssh/' },
+    { name: 'github_create_repo', description: 'Create a new GitHub repository (draft → preview, suggest → blocked)' },
+    { name: 'github_fork_repo', description: 'Fork a GitHub repository into the authenticated user or org (draft → preview, suggest → blocked)' },
 
     // Ollama model lifecycle tools (Phase 64)
     {

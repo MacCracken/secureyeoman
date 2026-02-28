@@ -75,7 +75,7 @@ const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
     authorizeUrl: 'https://github.com/login/oauth/authorize',
     tokenUrl: 'https://github.com/login/oauth/access_token',
     userInfoUrl: 'https://api.github.com/user',
-    scopes: ['read:user', 'user:email', 'repo', 'public_repo'],
+    scopes: ['read:user', 'user:email', 'repo', 'public_repo', 'admin:public_key'],
   },
   gmail: {
     id: 'gmail',

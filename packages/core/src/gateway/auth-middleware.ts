@@ -554,7 +554,10 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/twitter/tweets/:id/retweet': { POST: { resource: 'integrations', action: 'write' } },
   '/api/v1/twitter/tweets/:id/unretweet': { POST: { resource: 'integrations', action: 'write' } },
   '/api/v1/github/profile': { GET: { resource: 'integrations', action: 'read' } },
-  '/api/v1/github/repos': { GET: { resource: 'integrations', action: 'read' } },
+  '/api/v1/github/repos': {
+    GET: { resource: 'integrations', action: 'read' },
+    POST: { resource: 'integrations', action: 'write' },
+  },
   '/api/v1/github/repos/:owner/:repo': { GET: { resource: 'integrations', action: 'read' } },
   '/api/v1/github/repos/:owner/:repo/pulls': { GET: { resource: 'integrations', action: 'read' } },
   '/api/v1/github/repos/:owner/:repo/pulls/:number': { GET: { resource: 'integrations', action: 'read' } },
@@ -563,6 +566,12 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
     POST: { resource: 'integrations', action: 'write' },
   },
   '/api/v1/github/repos/:owner/:repo/issues/:number': { GET: { resource: 'integrations', action: 'read' } },
+  '/api/v1/github/ssh-keys': {
+    GET: { resource: 'integrations', action: 'read' },
+    POST: { resource: 'integrations', action: 'write' },
+  },
+  '/api/v1/github/ssh-keys/:key_id': { DELETE: { resource: 'integrations', action: 'write' } },
+  '/api/v1/github/repos/:owner/:repo/forks': { POST: { resource: 'integrations', action: 'write' } },
   '/api/v1/github/repos/:owner/:repo/issues/:number/comments': { POST: { resource: 'integrations', action: 'write' } },
   // Integration extras
   '/api/v1/integrations/:id/test': { POST: { resource: 'integrations', action: 'write' } },

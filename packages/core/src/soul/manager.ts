@@ -999,7 +999,7 @@ export class SoulManager {
           gmail: ['gmail_profile', 'gmail_list_messages', 'gmail_read_message', 'gmail_read_thread', 'gmail_list_labels', 'gmail_compose_draft', 'gmail_send_email'],
           google: ['gmail_profile', 'gmail_list_messages', 'gmail_read_message', 'gmail_read_thread', 'gmail_list_labels', 'gmail_compose_draft', 'gmail_send_email'],
           twitter: ['twitter_profile', 'twitter_search', 'twitter_get_tweet', 'twitter_get_user', 'twitter_get_mentions', 'twitter_get_timeline', 'twitter_post_tweet', 'twitter_like_tweet', 'twitter_retweet', 'twitter_unretweet'],
-          github: ['github_profile', 'github_list_repos', 'github_get_repo', 'github_list_prs', 'github_get_pr', 'github_list_issues', 'github_get_issue', 'github_create_issue', 'github_create_pr', 'github_comment'],
+          github: ['github_profile', 'github_list_repos', 'github_get_repo', 'github_list_prs', 'github_get_pr', 'github_list_issues', 'github_get_issue', 'github_create_issue', 'github_create_pr', 'github_comment', 'github_create_repo', 'github_fork_repo', 'github_list_ssh_keys', 'github_add_ssh_key', 'github_delete_ssh_key', 'github_setup_ssh', 'github_rotate_ssh_key'],
         };
         const integLines: string[] = [
           '',
@@ -1018,13 +1018,13 @@ export class SoulManager {
             gmail: ['gmail_compose_draft', 'gmail_send_email'],
             google: ['gmail_compose_draft', 'gmail_send_email'],
             twitter: ['twitter_post_tweet', 'twitter_like_tweet', 'twitter_retweet', 'twitter_unretweet'],
-            github: ['github_create_issue', 'github_create_pr', 'github_comment'],
+            github: ['github_create_issue', 'github_create_pr', 'github_comment', 'github_create_repo', 'github_fork_repo', 'github_add_ssh_key', 'github_delete_ssh_key', 'github_setup_ssh', 'github_rotate_ssh_key'],
           };
           const draftBlockedTools: Record<string, string[]> = {
             gmail: ['gmail_send_email'],
             google: ['gmail_send_email'],
             twitter: [],  // draft mode returns preview, doesn't block tool
-            github: ['github_comment'],  // draft blocks direct comments; create_pr returns preview
+            github: ['github_comment', 'github_delete_ssh_key', 'github_rotate_ssh_key'],  // draft blocks comments, destructive key ops
           };
           const platformKey = e.platform.toLowerCase();
           const availableTools = tools.filter((t) => {

@@ -385,6 +385,24 @@ Items below are planned but demand-gated or lower priority. Grouped by theme for
 
 *Demand-Gated — implement once operational scale or compliance requirements justify the investment.*
 
+- [ ] **SSH Key Persistence via SecretsManager** — Currently `github_setup_ssh` writes the ed25519 private key to the MCP container's `~/.ssh/yeoman_github_ed25519`; the file is lost on container restart and the user must call `github_setup_ssh` again to regenerate.
+
+  **Decision required:** use `SecretsManager` (already supports Vault KV v2, OS keyring, and AES-256-GCM file) to persist the private key across MCP restarts.
+
+  *Proposed approach:*
+  - On `github_setup_ssh`: after generating the key pair in the MCP tool, send the private key to a new **admin-only** core route `POST /api/v1/internal/ssh-keys` which calls `secretsManager.storeSecret('github_ssh.<title>', privateKeyPem)`.
+  - On MCP container startup (`server.ts`): call `GET /api/v1/internal/ssh-keys` → write retrieved key to `~/.ssh/` before the service becomes healthy.
+  - On `github_rotate_ssh_key`: call the store endpoint with the new key and delete the old one via `secretsManager.deleteSecret(...)`.
+
+  *Backend options (already wired in `SecretsManager`):*
+  - **Vault / OpenBao** — best for production; secrets survive pod replacement and can be audited. Requires `VAULT_ADDR` + token/AppRole in env.
+  - **Encrypted file** (`file` backend, AES-256-GCM) — good for single-node deployments; persist the `.enc` file on a named Docker volume.
+  - **OS keyring** — not applicable in headless containers; skip this option.
+
+  *Security note:* the private key must transit the internal Docker network (core → MCP) over the admin-authenticated proxy. This is acceptable on the internal bridge network but should be TLS-terminated if core is ever exposed directly.
+
+  *Scope:* ~1 day. No new dependencies. `SecretsManager` is already instantiated in `secureyeoman.ts`; the only additions are the two internal routes and a startup restore step in `packages/mcp/src/server.ts`.
+
 - [ ] **HSM Integration** — Hardware Security Module integration for key management.
 - [ ] **Optimistic Locking** — `version` field on personalities and skills; API returns `409 Conflict` on stale saves; dashboard shows "Someone else edited this — reload?" banner.
 - [ ] **ELK Integration** — Eclipse Layout Kernel for advanced constraint-based graph layouts. ~2 MB WASM bundle — justified only when graph complexity outgrows Dagre.
@@ -409,4 +427,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-28 — Removed all completed items. Timeline simplified: Phase 68 (Mission Control Customization) and Phase 70 (Advanced Editor) are next priorities. Demand-gated and future work consolidated into a single Future Features section.*
+*Last updated: 2026-02-28 — Added SSH Key Persistence via SecretsManager decision item (Infrastructure & Platform). GitHub MCP tools expanded to 19 tools across Phases 70–70.x.*
