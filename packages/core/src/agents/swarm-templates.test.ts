@@ -71,9 +71,9 @@ describe('BUILTIN_SWARM_TEMPLATES', () => {
     const tpl = BUILTIN_SWARM_TEMPLATES.find((t) => t.id === 'prompt-engineering-quartet')!;
     const roleNames = tpl.roles.map((r) => r.role);
     expect(roleNames).toEqual([
-      'intent-engineer',
-      'context-engineer',
       'prompt-crafter',
+      'context-engineer',
+      'intent-engineer',
       'spec-engineer',
     ]);
   });
@@ -82,9 +82,9 @@ describe('BUILTIN_SWARM_TEMPLATES', () => {
     const tpl = BUILTIN_SWARM_TEMPLATES.find((t) => t.id === 'prompt-engineering-quartet')!;
     const profileNames = tpl.roles.map((r) => r.profileName);
     expect(profileNames).toEqual([
-      'intent-engineer',
-      'context-engineer',
       'prompt-crafter',
+      'context-engineer',
+      'intent-engineer',
       'spec-engineer',
     ]);
   });

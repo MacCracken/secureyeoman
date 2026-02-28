@@ -12,6 +12,7 @@ vi.mock('../api/client', () => ({
   fetchSwarmRuns: vi.fn(),
   cancelSwarmRun: vi.fn(),
   createSwarmTemplate: vi.fn(),
+  updateSwarmTemplate: vi.fn(),
   deleteSwarmTemplate: vi.fn(),
 }));
 
@@ -21,6 +22,7 @@ const mockFetchSwarmTemplates = vi.mocked(api.fetchSwarmTemplates);
 const mockFetchSwarmRuns = vi.mocked(api.fetchSwarmRuns);
 const mockExecuteSwarm = vi.mocked(api.executeSwarm);
 const mockCreateSwarmTemplate = vi.mocked(api.createSwarmTemplate);
+const mockUpdateSwarmTemplate = vi.mocked(api.updateSwarmTemplate);
 const mockDeleteSwarmTemplate = vi.mocked(api.deleteSwarmTemplate);
 
 function createQueryClient() {
@@ -117,6 +119,7 @@ describe('SwarmsPage', () => {
     mockFetchSwarmTemplates.mockResolvedValue(MOCK_TEMPLATES);
     mockFetchSwarmRuns.mockResolvedValue(MOCK_RUNS);
     mockCreateSwarmTemplate.mockResolvedValue({ template: BUILTIN_TEMPLATE });
+    mockUpdateSwarmTemplate.mockResolvedValue({ template: CUSTOM_TEMPLATE });
     mockDeleteSwarmTemplate.mockResolvedValue({ success: true });
   });
 
@@ -330,6 +333,54 @@ describe('SwarmsPage', () => {
     await user.click(removeButtons[0]!);
     roleInputs = screen.getAllByPlaceholderText('role (e.g. reviewer)');
     expect(roleInputs).toHaveLength(1);
+  });
+
+  // ── Edit template ────────────────────────────────────────────
+
+  it('shows edit button on custom template but not on builtin', async () => {
+    renderComponent(true);
+    await screen.findByText('my-custom');
+    const editButtons = screen.queryAllByLabelText('Edit template');
+    expect(editButtons).toHaveLength(1);
+  });
+
+  it('clicking edit opens pre-populated form with existing values', async () => {
+    const user = userEvent.setup();
+    renderComponent(true);
+    await screen.findByText('my-custom');
+    const editBtn = screen.getByLabelText('Edit template');
+    await user.click(editBtn);
+    expect(await screen.findByText('Edit Swarm Template')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('my-custom')).toBeInTheDocument();
+  });
+
+  it('submitting edit form calls updateSwarmTemplate with correct id and data', async () => {
+    const user = userEvent.setup();
+    renderComponent(true);
+    await screen.findByText('my-custom');
+    const editBtn = screen.getByLabelText('Edit template');
+    await user.click(editBtn);
+    await screen.findByText('Edit Swarm Template');
+    const saveBtn = screen.getByRole('button', { name: 'Save Changes' });
+    await user.click(saveBtn);
+    expect(mockUpdateSwarmTemplate).toHaveBeenCalledWith(
+      'my-custom',
+      expect.objectContaining({ name: 'my-custom' })
+    );
+  });
+
+  it('form closes after successful edit', async () => {
+    const user = userEvent.setup();
+    renderComponent(true);
+    await screen.findByText('my-custom');
+    const editBtn = screen.getByLabelText('Edit template');
+    await user.click(editBtn);
+    await screen.findByText('Edit Swarm Template');
+    const saveBtn = screen.getByRole('button', { name: 'Save Changes' });
+    await user.click(saveBtn);
+    await waitFor(() => {
+      expect(screen.queryByText('Edit Swarm Template')).not.toBeInTheDocument();
+    });
   });
 
   // ── Run history ─────────────────────────────────────────────

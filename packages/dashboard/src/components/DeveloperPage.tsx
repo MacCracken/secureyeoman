@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Puzzle, FlaskConical, BookOpen, Brain, Lock } from 'lucide-react';
+import { Puzzle, FlaskConical, BookOpen, Brain, Lock, BarChart2 } from 'lucide-react';
 import { ExtensionsPage } from './ExtensionsPage';
 import { ExperimentsPage } from './ExperimentsPage';
 import { StorybookPage } from './StorybookPage';
 import { TrainingTab } from './TrainingTab';
+import { GatewayAnalyticsTab } from './gateway/GatewayAnalyticsTab';
 import { fetchSecurityPolicy } from '../api/client';
 
-type DevTab = 'extensions' | 'experiments' | 'storybook' | 'training';
+type DevTab = 'extensions' | 'experiments' | 'storybook' | 'training' | 'gateway';
 
 export function DeveloperPage() {
   const [activeTab, setActiveTab] = useState<DevTab>('extensions');
@@ -25,6 +26,7 @@ export function DeveloperPage() {
     { id: 'experiments', label: 'Experiments', icon: <FlaskConical className="w-4 h-4" /> },
     { id: 'storybook', label: 'Storybook', icon: <BookOpen className="w-4 h-4" /> },
     { id: 'training', label: 'Training', icon: <Brain className="w-4 h-4" />, hidden: !trainingEnabled },
+    { id: 'gateway', label: 'Gateway Analytics', icon: <BarChart2 className="w-4 h-4" /> },
   ];
 
   const visibleTabs = tabs.filter((t) => !t.hidden);
@@ -68,6 +70,8 @@ export function DeveloperPage() {
             <p className="text-sm">Training export is disabled. Enable it in Security settings.</p>
           </div>
         )
+      ) : activeTab === 'gateway' ? (
+        <GatewayAnalyticsTab />
       ) : (
         <StorybookPage />
       )}

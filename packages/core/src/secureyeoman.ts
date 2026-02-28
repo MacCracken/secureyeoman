@@ -158,6 +158,8 @@ import { DataCurationManager } from './training/data-curation.js';
 import { EvaluationManager } from './training/evaluation-manager.js';
 import { PipelineApprovalManager } from './training/approval-manager.js';
 import { PipelineLineageStorage } from './training/pipeline-lineage.js';
+import { FederationStorage } from './federation/federation-storage.js';
+import { FederationManager } from './federation/federation-manager.js';
 
 export interface SecureYeomanOptions {
   /** Configuration options */
@@ -276,6 +278,8 @@ export class SecureYeoman {
   private evaluationManager: EvaluationManager | null = null;
   private pipelineApprovalManager: PipelineApprovalManager | null = null;
   private pipelineLineageStorage: PipelineLineageStorage | null = null;
+  private federationStorage: FederationStorage | null = null;
+  private federationManager: FederationManager | null = null;
   private modelDefaultSet = false;
   private initialized = false;
   private startedAt: number | null = null;
@@ -1366,6 +1370,22 @@ export class SecureYeoman {
         this.logger.debug('ML Pipeline managers initialized');
       }
 
+      // Step 6k: Initialize FederationManager (Phase 79)
+      {
+        this.federationStorage = new FederationStorage();
+        const masterSecret = requireSecret(this.config.gateway.auth.tokenSecret);
+        this.federationManager = new FederationManager({
+          storage: this.federationStorage,
+          masterSecret,
+          logger: this.logger.child({ component: 'FederationManager' }),
+          brainManager: this.brainManager ?? undefined,
+          marketplaceManager: this.marketplaceManager as any ?? undefined,
+          soulManager: this.soulManager ?? undefined,
+        });
+        this.federationManager.startHealthCycle();
+        this.logger.debug('FederationManager initialized');
+      }
+
       // Step 7: Record initialization in audit log
       await this.auditChain.record({
         event: 'system_initialized',
@@ -2180,6 +2200,22 @@ export class SecureYeoman {
   getTenantManager(): TenantManager | null {
     this.ensureInitialized();
     return this.tenantManager;
+  }
+
+  /**
+   * Get the federation manager instance (Phase 79).
+   */
+  getFederationManager(): FederationManager | null {
+    return this.federationManager;
+  }
+
+  /**
+   * Get the auth storage instance.
+   */
+  getAuthStorage(): AuthStorage {
+    this.ensureInitialized();
+    if (!this.authStorage) throw new Error('Auth storage not available');
+    return this.authStorage;
   }
 
   /**
@@ -3084,6 +3120,16 @@ export class SecureYeoman {
     }
     this.reportGenerator = null;
     this.costOptimizer = null;
+
+    // Stop federation health cycle (Phase 79)
+    if (this.federationManager) {
+      this.federationManager.stopHealthCycle();
+      this.federationManager = null;
+    }
+    if (this.federationStorage) {
+      this.federationStorage.close();
+      this.federationStorage = null;
+    }
 
     // Close auth storage
     if (this.authStorage) {

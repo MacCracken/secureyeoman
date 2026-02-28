@@ -610,6 +610,42 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
     POST: { resource: 'model', action: 'write' },
     DELETE: { resource: 'model', action: 'write' },
   },
+  // Federation routes (Phase 79)
+  '/api/v1/federation/peers': {
+    GET: { resource: 'federation', action: 'read' },
+    POST: { resource: 'federation', action: 'write' },
+  },
+  '/api/v1/federation/peers/:id': {
+    DELETE: { resource: 'federation', action: 'write' },
+  },
+  '/api/v1/federation/peers/:id/features': {
+    PUT: { resource: 'federation', action: 'write' },
+  },
+  '/api/v1/federation/peers/:id/health': {
+    POST: { resource: 'federation', action: 'read' },
+  },
+  '/api/v1/federation/peers/:id/marketplace': {
+    GET: { resource: 'federation', action: 'read' },
+  },
+  '/api/v1/federation/peers/:id/marketplace/:skillId/install': {
+    POST: { resource: 'federation', action: 'write' },
+  },
+  '/api/v1/federation/personalities/:id/export': {
+    POST: { resource: 'federation', action: 'read' },
+  },
+  '/api/v1/federation/personalities/import': {
+    POST: { resource: 'federation', action: 'write' },
+  },
+  // Gateway routes (Phase 80)
+  '/api/v1/gateway': {
+    POST: { resource: 'chat', action: 'execute' },
+  },
+  '/api/v1/auth/api-keys/:id/usage': {
+    GET: { resource: 'auth', action: 'read' },
+  },
+  '/api/v1/auth/api-keys/usage/summary': {
+    GET: { resource: 'auth', action: 'read' },
+  },
 };
 
 const PUBLIC_ROUTES = new Set([
@@ -621,6 +657,10 @@ const PUBLIC_ROUTES = new Set([
   '/api/v1/auth/oauth/:provider/callback',
   '/api/v1/auth/oauth/config',
   '/api/v1/auth/oauth/claim',
+  // Federation peer-incoming routes — use custom preHandler (shared-secret Bearer auth)
+  '/api/v1/federation/knowledge/search',
+  '/api/v1/federation/marketplace',
+  '/api/v1/federation/marketplace/:skillId',
 ]);
 const TOKEN_ONLY_ROUTES = new Set([
   '/api/v1/auth/refresh',

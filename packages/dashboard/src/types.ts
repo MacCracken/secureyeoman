@@ -996,3 +996,39 @@ export interface TenantRecord {
   createdAt: number;
   updatedAt: number;
 }
+
+// ─── Federation Types (Phase 79) ───────────────────────────────────────
+
+export interface FederationPeer {
+  id: string;
+  name: string;
+  url: string;
+  status: 'online' | 'offline' | 'unknown';
+  features: { knowledge: boolean; marketplace: boolean; personalities: boolean };
+  lastSeen: string | null;
+  createdAt: string;
+}
+
+// ─── API Gateway Types (Phase 80) ──────────────────────────────────────
+
+export interface ApiKeyUsageSummary {
+  keyId: string;
+  keyPrefix: string;
+  personalityId: string | null;
+  requests24h: number;
+  tokens24h: number;
+  errors24h: number;
+  p50LatencyMs: number;
+  p95LatencyMs: number;
+}
+
+export interface ApiKeyUsageRow {
+  id: string;
+  keyId: string;
+  timestamp: number;
+  tokensUsed: number;
+  latencyMs: number | null;
+  personalityId: string | null;
+  statusCode: number;
+  errorMessage: string | null;
+}

@@ -244,6 +244,20 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
           </p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto">
+          {activeTab === 'control' && (
+            <button
+              onClick={() => {
+                setEditMode((e) => !e);
+                setCatalogueOpen((e) => !e);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors ${
+                editMode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              {editMode ? 'Editing…' : 'Customize'}
+            </button>
+          )}
           <div
             className="flex items-center gap-1 bg-muted/50 border rounded-lg p-1"
             role="tablist"
@@ -267,20 +281,6 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
               </button>
             ))}
           </div>
-          {activeTab === 'control' && (
-            <button
-              onClick={() => {
-                setEditMode((e) => !e);
-                setCatalogueOpen((e) => !e);
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors ${
-                editMode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
-              }`}
-            >
-              <Sliders className="w-3.5 h-3.5" />
-              {editMode ? 'Editing…' : 'Customize'}
-            </button>
-          )}
         </div>
       </div>
 

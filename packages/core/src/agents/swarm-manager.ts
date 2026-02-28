@@ -121,6 +121,16 @@ export class SwarmManager {
     return this.storage.createTemplate(data);
   }
 
+  async updateTemplate(
+    id: string,
+    data: Partial<SwarmTemplateCreate>
+  ): Promise<SwarmTemplate | null> {
+    const existing = await this.storage.getTemplate(id);
+    if (!existing) return null;
+    if (existing.isBuiltin) throw new Error('Cannot edit built-in templates');
+    return this.storage.updateTemplate(id, data);
+  }
+
   async deleteTemplate(id: string): Promise<boolean> {
     return this.storage.deleteTemplate(id);
   }

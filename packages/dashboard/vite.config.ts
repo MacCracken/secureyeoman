@@ -14,9 +14,10 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': resolve(__dirname, './src'),
       },
+      dedupe: ['react', 'react-dom', '@tanstack/react-virtual'],
     },
     optimizeDeps: {
-      include: ['monaco-editor'],
+      include: ['monaco-editor', '@tanstack/react-virtual', '@tanstack/virtual-core'],
       esbuildOptions: {
         define: {
           global: 'global',

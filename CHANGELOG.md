@@ -1,3 +1,25 @@
+## [2026.2.28u] — 2026-02-28
+
+### Added
+
+#### Swarm Template Editing
+
+User-created swarm templates can now be edited in place instead of requiring delete-and-recreate.
+
+**Backend**
+- `SwarmStorage.updateTemplate()` — dynamic SET clause builder matching only `is_builtin = false` rows; RETURNING updated row.
+- `SwarmManager.updateTemplate()` — builtin guard (throws `Cannot edit built-in templates` → 403); delegates to storage.
+- `PATCH /api/v1/agents/swarms/templates/:id` — returns `{ template }` on success, 404 if missing, 403 if builtin, 400 on other errors.
+
+**Frontend**
+- `updateSwarmTemplate()` in `client.ts` — sends PATCH to new endpoint.
+- `TemplateForm` (renamed from `CreateTemplateForm`) — accepts `mode: 'create' | 'edit'` and optional `initialValues` prop; pre-populates all fields when editing; button label changes to "Save Changes" in edit mode.
+- `TemplateCard` — pencil icon button (edit) shown beside trash for non-builtin templates; clicking it opens the edit form above the grid (mutually exclusive with create form).
+
+**Tests**: 5 new route tests (20 total), 4 new UI tests (23 total).
+
+---
+
 ## [2026.2.28t] — 2026-02-28
 
 ### Changed

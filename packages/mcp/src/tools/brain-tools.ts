@@ -16,13 +16,25 @@ export function registerBrainTools(
   server.registerTool(
     'knowledge_search',
     {
-      description: 'Search brain knowledge by query',
+      description:
+        'Search brain knowledge by query. Optionally pass instanceId to search on a federated peer instance.',
       inputSchema: {
         query: z.string().describe('Search query'),
         limit: z.number().int().min(1).max(100).default(10).describe('Max results'),
+        instanceId: z
+          .string()
+          .optional()
+          .describe('Federation peer ID to search on a remote instance'),
       },
     },
     wrapToolHandler('knowledge_search', middleware, async (args) => {
+      if (args.instanceId) {
+        const result = await client.get(
+          `/api/v1/federation/peers/${args.instanceId}/knowledge/search`,
+          { q: args.query, limit: String(args.limit) }
+        );
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      }
       const query: Record<string, string> = { q: args.query, limit: String(args.limit) };
       const result = await client.get('/api/v1/brain/knowledge', query);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };

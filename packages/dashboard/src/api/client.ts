@@ -48,6 +48,9 @@ import type {
   TenantRecord,
   OAuthConnectedToken,
   AiHealthStatus,
+  FederationPeer,
+  ApiKeyUsageSummary,
+  ApiKeyUsageRow,
 } from '../types.js';
 
 const API_BASE = '/api/v1';
@@ -3204,6 +3207,22 @@ export async function createSwarmTemplate(data: {
   });
 }
 
+export async function updateSwarmTemplate(
+  id: string,
+  data: {
+    name?: string;
+    description?: string;
+    strategy?: string;
+    roles?: SwarmRoleInfo[];
+    coordinatorProfile?: string | null;
+  }
+): Promise<{ template: SwarmTemplate }> {
+  return request(`/agents/swarms/templates/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
 export async function deleteSwarmTemplate(id: string): Promise<{ success: boolean }> {
   return request(`/agents/swarms/templates/${id}`, { method: 'DELETE' });
 }
@@ -4224,4 +4243,105 @@ export async function restoreBackup(id: string): Promise<{ message: string }> {
 
 export async function deleteBackup(id: string): Promise<void> {
   await request(`/admin/backups/${id}`, { method: 'DELETE' });
+}
+
+// ─── Federation API (Phase 79) ────────────────────────────────────────
+
+export async function fetchFederationPeers(): Promise<{ peers: FederationPeer[] }> {
+  return request('/federation/peers');
+}
+
+export async function addFederationPeer(data: {
+  url: string;
+  name: string;
+  sharedSecret: string;
+}): Promise<{ peer: FederationPeer }> {
+  return request('/federation/peers', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function removeFederationPeer(id: string): Promise<void> {
+  await request(`/federation/peers/${id}`, { method: 'DELETE' });
+}
+
+export async function updateFederationPeerFeatures(
+  id: string,
+  features: Partial<{ knowledge: boolean; marketplace: boolean; personalities: boolean }>
+): Promise<void> {
+  await request(`/federation/peers/${id}/features`, {
+    method: 'PUT',
+    body: JSON.stringify(features),
+  });
+}
+
+export async function checkFederationPeerHealth(id: string): Promise<{ status: string }> {
+  return request(`/federation/peers/${id}/health`, { method: 'POST' });
+}
+
+export async function fetchPeerMarketplace(
+  peerId: string,
+  query?: string
+): Promise<{ skills: unknown[] }> {
+  const qs = query ? `?query=${encodeURIComponent(query)}` : '';
+  return request(`/federation/peers/${peerId}/marketplace${qs}`);
+}
+
+export async function installSkillFromPeer(
+  peerId: string,
+  skillId: string,
+  personalityId?: string
+): Promise<void> {
+  await request(`/federation/peers/${peerId}/marketplace/${skillId}/install`, {
+    method: 'POST',
+    body: JSON.stringify({ personalityId }),
+  });
+}
+
+export async function exportPersonalityBundle(
+  personalityId: string,
+  passphrase: string
+): Promise<Blob> {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE}/federation/personalities/${personalityId}/export`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ passphrase }),
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new APIError(`Export failed: ${res.status}`, res.status);
+  return res.blob();
+}
+
+export async function importPersonalityBundle(
+  bundleBase64: string,
+  passphrase: string,
+  nameOverride?: string
+): Promise<{ personality: unknown }> {
+  return request('/federation/personalities/import', {
+    method: 'POST',
+    body: JSON.stringify({ bundle: bundleBase64, passphrase, nameOverride }),
+  });
+}
+
+// ─── Gateway Analytics API (Phase 80) ───────────────────────────────
+
+export async function fetchApiKeyUsage(
+  id: string,
+  from?: number,
+  to?: number
+): Promise<{ usage: ApiKeyUsageRow[] }> {
+  const params = new URLSearchParams();
+  if (from !== undefined) params.set('from', String(from));
+  if (to !== undefined) params.set('to', String(to));
+  const qs = params.toString() ? `?${params.toString()}` : '';
+  return request(`/auth/api-keys/${id}/usage${qs}`);
+}
+
+export async function fetchApiKeyUsageSummary(): Promise<{ summary: ApiKeyUsageSummary[] }> {
+  return request('/auth/api-keys/usage/summary');
 }

@@ -71,6 +71,49 @@ export function registerSwarmRoutes(
     }
   );
 
+  app.patch(
+    '/api/v1/agents/swarms/templates/:id',
+    async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Body: {
+          name?: string;
+          description?: string;
+          strategy?: string;
+          roles?: { role: string; profileName: string; description?: string }[];
+          coordinatorProfile?: string | null;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const body = request.body;
+        const updated = await swarmManager.updateTemplate(request.params.id, {
+          ...(body.name !== undefined && { name: body.name }),
+          ...(body.description !== undefined && { description: body.description }),
+          ...(body.strategy !== undefined && {
+            strategy: body.strategy as 'sequential' | 'parallel' | 'dynamic',
+          }),
+          ...(body.roles !== undefined && {
+            roles: body.roles.map((r) => ({
+              role: r.role,
+              profileName: r.profileName,
+              description: r.description ?? '',
+            })),
+          }),
+          ...('coordinatorProfile' in body && {
+            coordinatorProfile: body.coordinatorProfile ?? null,
+          }),
+        });
+        if (!updated) return sendError(reply, 404, 'Template not found');
+        return { template: updated };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Failed to update template';
+        return sendError(reply, msg.includes('built-in') ? 403 : 400, msg);
+      }
+    }
+  );
+
   app.delete(
     '/api/v1/agents/swarms/templates/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {

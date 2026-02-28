@@ -1,0 +1,285 @@
+/**
+ * Federation Routes — endpoints for managing federation peers,
+ * searching peer knowledge/marketplace, and personality bundle import/export.
+ *
+ * Two categories:
+ *   - Authenticated outward routes (JWT/API-key via standard auth middleware)
+ *   - Peer-incoming routes (shared-secret Bearer auth via custom preHandler)
+ */
+
+import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { sendError } from '../utils/errors.js';
+import type { FederationManager } from './federation-manager.js';
+import type { FederationStorage } from './federation-storage.js';
+
+export interface FederationRoutesOptions {
+  federationManager: FederationManager;
+  federationStorage: FederationStorage;
+  brainManager?: {
+    semanticSearch(query: string, opts?: { limit?: number }): Promise<unknown[]>;
+  };
+  marketplaceManager?: {
+    search(query?: string, opts?: { origin?: string; limit?: number }): Promise<unknown[]>;
+    getSkill(id: string): Promise<unknown | null>;
+  };
+  soulManager?: {
+    getPersonality(id: string): Promise<unknown>;
+    createPersonality(data: unknown): Promise<unknown>;
+  };
+}
+
+/**
+ * Validate the incoming federation Bearer token.
+ * Returns true if authenticated, false if a 401 was already sent via reply.
+ */
+async function peerAuthPreHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+  federationManager: FederationManager
+): Promise<boolean> {
+  const authHeader = request.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    await sendError(reply, 401, 'Missing federation Bearer token');
+    return false;
+  }
+  const rawSecret = authHeader.slice(7);
+  const peer = await federationManager.validateIncomingSecret(rawSecret);
+  if (!peer) {
+    await sendError(reply, 401, 'Invalid federation secret');
+    return false;
+  }
+  // Attach peer to request for downstream use
+  (request as any).federationPeer = peer;
+  return true;
+}
+
+export function registerFederationRoutes(
+  app: FastifyInstance,
+  opts: FederationRoutesOptions
+): void {
+  const { federationManager, federationStorage, brainManager, marketplaceManager } = opts;
+
+  // ── Authenticated outward routes ──────────────────────────────────────────
+
+  // List peers
+  app.get('/api/v1/federation/peers', async (_request, reply) => {
+    try {
+      const peers = await federationManager.listPeers();
+      return reply.send({ peers });
+    } catch (err) {
+      return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to list peers');
+    }
+  });
+
+  // Add peer
+  app.post(
+    '/api/v1/federation/peers',
+    async (
+      request: FastifyRequest<{ Body: { url: string; name: string; sharedSecret: string } }>,
+      reply
+    ) => {
+      const { url, name, sharedSecret } = request.body ?? {};
+      if (!url || !name || !sharedSecret) {
+        return sendError(reply, 400, 'url, name, and sharedSecret are required');
+      }
+      try {
+        const peer = await federationManager.addPeer(url, name, sharedSecret);
+        const { sharedSecretEnc: _enc, sharedSecretHash: _hash, ...safe } = peer as any;
+        return reply.code(201).send({ peer: safe });
+      } catch (err) {
+        return sendError(reply, 400, err instanceof Error ? err.message : 'Failed to add peer');
+      }
+    }
+  );
+
+  // Remove peer
+  app.delete(
+    '/api/v1/federation/peers/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+      try {
+        await federationManager.removePeer(request.params.id);
+        return reply.code(204).send();
+      } catch (err) {
+        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to remove peer');
+      }
+    }
+  );
+
+  // Update peer features
+  app.put(
+    '/api/v1/federation/peers/:id/features',
+    async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Body: { knowledge?: boolean; marketplace?: boolean; personalities?: boolean };
+      }>,
+      reply
+    ) => {
+      try {
+        await federationStorage.updateFeatures(request.params.id, request.body ?? {});
+        return reply.send({ ok: true });
+      } catch (err) {
+        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to update features');
+      }
+    }
+  );
+
+  // Check peer health
+  app.post(
+    '/api/v1/federation/peers/:id/health',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+      try {
+        const status = await federationManager.checkHealth(request.params.id);
+        return reply.send({ status });
+      } catch (err) {
+        return sendError(reply, 500, err instanceof Error ? err.message : 'Health check failed');
+      }
+    }
+  );
+
+  // List peer marketplace
+  app.get(
+    '/api/v1/federation/peers/:id/marketplace',
+    async (
+      request: FastifyRequest<{ Params: { id: string }; Querystring: { query?: string } }>,
+      reply
+    ) => {
+      try {
+        const skills = await federationManager.listPeerMarketplace(
+          request.params.id,
+          request.query.query
+        );
+        return reply.send({ skills });
+      } catch (err) {
+        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to list peer marketplace');
+      }
+    }
+  );
+
+  // Install skill from peer
+  app.post(
+    '/api/v1/federation/peers/:id/marketplace/:skillId/install',
+    async (
+      request: FastifyRequest<{
+        Params: { id: string; skillId: string };
+        Body: { personalityId?: string };
+      }>,
+      reply
+    ) => {
+      try {
+        await federationManager.installSkillFromPeer(
+          request.params.id,
+          request.params.skillId,
+          request.body?.personalityId
+        );
+        return reply.send({ ok: true });
+      } catch (err) {
+        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to install skill');
+      }
+    }
+  );
+
+  // Export personality bundle
+  app.post(
+    '/api/v1/federation/personalities/:id/export',
+    async (
+      request: FastifyRequest<{ Params: { id: string }; Body: { passphrase: string } }>,
+      reply
+    ) => {
+      const { passphrase } = request.body ?? {};
+      if (!passphrase) return sendError(reply, 400, 'passphrase is required');
+      try {
+        const bundle = await federationManager.exportPersonalityBundle(
+          request.params.id,
+          passphrase
+        );
+        return reply
+          .header('Content-Type', 'application/octet-stream')
+          .header('Content-Disposition', `attachment; filename="personality-${request.params.id}.syi"`)
+          .send(bundle);
+      } catch (err) {
+        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to export bundle');
+      }
+    }
+  );
+
+  // Import personality bundle
+  app.post(
+    '/api/v1/federation/personalities/import',
+    async (
+      request: FastifyRequest<{
+        Body: { bundle: string; passphrase: string; nameOverride?: string };
+      }>,
+      reply
+    ) => {
+      const { bundle, passphrase, nameOverride } = request.body ?? {};
+      if (!bundle || !passphrase) return sendError(reply, 400, 'bundle and passphrase are required');
+      try {
+        const personality = await federationManager.importPersonalityBundle(
+          Buffer.from(bundle, 'base64'),
+          passphrase,
+          nameOverride ? { nameOverride } : undefined
+        );
+        return reply.code(201).send({ personality });
+      } catch (err) {
+        return sendError(reply, 400, err instanceof Error ? err.message : 'Failed to import bundle');
+      }
+    }
+  );
+
+  // ── Peer-incoming routes (custom Bearer auth) ─────────────────────────────
+
+  // Federated knowledge search — called by peer instances
+  app.get(
+    '/api/v1/federation/knowledge/search',
+    async (request, reply) => {
+      const ok = await peerAuthPreHandler(request, reply, federationManager);
+      if (!ok) return;
+      if (!brainManager) return sendError(reply, 503, 'Brain manager not available');
+      const qs = request.query as Record<string, string>;
+      const query = qs.q ?? '';
+      const limit = Math.min(parseInt(qs.limit ?? '10', 10), 100);
+      try {
+        const entries = await brainManager.semanticSearch(query, { limit });
+        return reply.send({ entries });
+      } catch (err) {
+        return sendError(reply, 500, err instanceof Error ? err.message : 'Knowledge search failed');
+      }
+    }
+  );
+
+  // Federated marketplace listing — called by peer instances
+  app.get(
+    '/api/v1/federation/marketplace',
+    async (request, reply) => {
+      const ok = await peerAuthPreHandler(request, reply, federationManager);
+      if (!ok) return;
+      if (!marketplaceManager) return sendError(reply, 503, 'Marketplace manager not available');
+      const qs = request.query as Record<string, string>;
+      try {
+        const skills = await marketplaceManager.search(qs.query, { limit: 100 });
+        return reply.send({ skills });
+      } catch (err) {
+        return sendError(reply, 500, err instanceof Error ? err.message : 'Marketplace search failed');
+      }
+    }
+  );
+
+  // Federated skill detail — called by peer instances
+  app.get(
+    '/api/v1/federation/marketplace/:skillId',
+    async (request, reply) => {
+      const ok = await peerAuthPreHandler(request, reply, federationManager);
+      if (!ok) return;
+      if (!marketplaceManager) return sendError(reply, 503, 'Marketplace manager not available');
+      const { skillId } = request.params as { skillId: string };
+      try {
+        const skill = await marketplaceManager.getSkill(skillId);
+        if (!skill) return sendError(reply, 404, 'Skill not found');
+        return reply.send(skill);
+      } catch (err) {
+        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to get skill');
+      }
+    }
+  );
+}

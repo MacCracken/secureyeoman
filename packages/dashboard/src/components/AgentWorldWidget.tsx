@@ -538,11 +538,11 @@ export function AgentWorldWidget({ className = '', maxAgents = 16, onAgentClick,
   useEffect(() => {
     if (!lastMessage) return;
     if (lastMessage.channel === 'tasks') {
-      setWsTasksData(lastMessage.data as { tasks: Task[]; total: number });
+      setWsTasksData(lastMessage.payload as { tasks: Task[]; total: number });
       wsHasDataRef.current = true;
     }
     if (lastMessage.channel === 'soul') {
-      setWsPersonalitiesData(lastMessage.data as { personalities: Personality[] });
+      setWsPersonalitiesData(lastMessage.payload as { personalities: Personality[] });
       wsHasDataRef.current = true;
     }
   }, [lastMessage]);

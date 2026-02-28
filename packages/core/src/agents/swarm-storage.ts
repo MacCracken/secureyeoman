@@ -202,6 +202,45 @@ export class SwarmStorage extends PgBaseStorage {
     return templateFromRow(row!);
   }
 
+  async updateTemplate(
+    id: string,
+    data: Partial<SwarmTemplateCreate>
+  ): Promise<SwarmTemplate | null> {
+    const updates: string[] = [];
+    const values: unknown[] = [];
+    let p = 1;
+
+    if (data.name !== undefined) {
+      updates.push(`name = $${p++}`);
+      values.push(data.name);
+    }
+    if (data.description !== undefined) {
+      updates.push(`description = $${p++}`);
+      values.push(data.description);
+    }
+    if (data.strategy !== undefined) {
+      updates.push(`strategy = $${p++}`);
+      values.push(data.strategy);
+    }
+    if (data.roles !== undefined) {
+      updates.push(`roles = $${p++}::jsonb`);
+      values.push(JSON.stringify(data.roles));
+    }
+    if ('coordinatorProfile' in data) {
+      updates.push(`coordinator_profile = $${p++}`);
+      values.push(data.coordinatorProfile ?? null);
+    }
+
+    if (updates.length === 0) return null;
+    values.push(id);
+
+    const row = await this.queryOne<SwarmTemplateRow>(
+      `UPDATE agents.swarm_templates SET ${updates.join(', ')} WHERE id = $${p} AND is_builtin = false RETURNING *`,
+      values
+    );
+    return row ? templateFromRow(row) : null;
+  }
+
   async deleteTemplate(id: string): Promise<boolean> {
     const count = await this.execute(
       `DELETE FROM agents.swarm_templates WHERE id = $1 AND is_builtin = false`,

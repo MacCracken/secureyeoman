@@ -83,14 +83,14 @@ export const BUILTIN_SWARM_TEMPLATES: Omit<SwarmTemplate, 'createdAt'>[] = [
     id: 'prompt-engineering-quartet',
     name: 'prompt-engineering-quartet',
     description:
-      'Sequential four-stage prompt engineering pipeline: intent-engineer clarifies what is wanted, context-engineer designs the information architecture, prompt-crafter writes the optimized prompt, spec-engineer formalizes it as a verifiable contract with acceptance criteria and constraints.',
+      'Sequential four-stage prompt engineering pipeline: prompt-crafter drafts the initial optimized prompt, context-engineer designs the information architecture, intent-engineer resolves ambiguity and confirms what is actually wanted, spec-engineer formalizes it as a verifiable contract with acceptance criteria and constraints.',
     strategy: 'sequential',
     roles: [
       {
-        role: 'intent-engineer',
-        profileName: 'intent-engineer',
+        role: 'prompt-crafter',
+        profileName: 'prompt-crafter',
         description:
-          'Resolve ambiguity and confirm what is actually wanted before any prompt is written',
+          'Diagnose weaknesses and rewrite the prompt using the optimal technique',
       },
       {
         role: 'context-engineer',
@@ -99,10 +99,10 @@ export const BUILTIN_SWARM_TEMPLATES: Omit<SwarmTemplate, 'createdAt'>[] = [
           'Design the context window architecture — what to retrieve, compress, and include',
       },
       {
-        role: 'prompt-crafter',
-        profileName: 'prompt-crafter',
+        role: 'intent-engineer',
+        profileName: 'intent-engineer',
         description:
-          'Diagnose weaknesses and rewrite the prompt using the optimal technique',
+          'Resolve ambiguity and confirm what is actually wanted before any prompt is written',
       },
       {
         role: 'spec-engineer',

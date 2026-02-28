@@ -35,6 +35,7 @@ function makeMockManager(overrides?: Partial<SwarmManager>): SwarmManager {
     listTemplates: vi.fn().mockResolvedValue({ templates: [TEMPLATE], total: 1 }),
     getTemplate: vi.fn().mockResolvedValue(TEMPLATE),
     createTemplate: vi.fn().mockResolvedValue(TEMPLATE),
+    updateTemplate: vi.fn().mockResolvedValue({ ...TEMPLATE, name: 'updated-name' }),
     deleteTemplate: vi.fn().mockResolvedValue(true),
     executeSwarm: vi.fn().mockResolvedValue(SWARM_RUN),
     listSwarmRuns: vi.fn().mockResolvedValue({ runs: [SWARM_RUN], total: 1 }),
@@ -183,6 +184,66 @@ describe('GET /api/v1/agents/swarms/:id', () => {
     const app = buildApp({ getSwarmRun: vi.fn().mockResolvedValue(null) });
     const res = await app.inject({ method: 'GET', url: '/api/v1/agents/swarms/missing' });
     expect(res.statusCode).toBe(404);
+  });
+});
+
+describe('PATCH /api/v1/agents/swarms/templates/:id', () => {
+  it('returns 200 with updated template on success', async () => {
+    const customTemplate = { ...TEMPLATE, isBuiltin: false };
+    const updateMock = vi.fn().mockResolvedValue({ ...customTemplate, name: 'updated-name' });
+    const app = buildApp({ updateTemplate: updateMock });
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/agents/swarms/templates/custom-id',
+      payload: { name: 'updated-name' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().template.name).toBe('updated-name');
+  });
+
+  it('returns 404 when template not found', async () => {
+    const app = buildApp({ updateTemplate: vi.fn().mockResolvedValue(null) });
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/agents/swarms/templates/missing',
+      payload: { name: 'new-name' },
+    });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('returns 403 when template is builtin', async () => {
+    const app = buildApp({
+      updateTemplate: vi.fn().mockRejectedValue(new Error('Cannot edit built-in templates')),
+    });
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/agents/swarms/templates/research-and-code',
+      payload: { name: 'hacked' },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('returns 400 on generic error', async () => {
+    const app = buildApp({
+      updateTemplate: vi.fn().mockRejectedValue(new Error('validation failed')),
+    });
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/agents/swarms/templates/some-id',
+      payload: { strategy: 'invalid' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('calls updateTemplate with correct id and data', async () => {
+    const updateMock = vi.fn().mockResolvedValue({ ...TEMPLATE, isBuiltin: false, name: 'new' });
+    const app = buildApp({ updateTemplate: updateMock });
+    await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/agents/swarms/templates/my-tmpl',
+      payload: { name: 'new', description: 'updated desc' },
+    });
+    expect(updateMock).toHaveBeenCalledWith('my-tmpl', expect.objectContaining({ name: 'new', description: 'updated desc' }));
   });
 });
 

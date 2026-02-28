@@ -25,6 +25,10 @@ export interface AuthUser {
   jti?: string;
   exp?: number;
   apiKeyId?: string;
+  gatewayPersonalityId?: string;
+  gatewayRateLimitRpm?: number;
+  gatewayRateLimitTpd?: number;
+  isGatewayKey?: boolean;
 }
 
 export interface LoginResult {
@@ -289,6 +293,10 @@ export class AuthService {
     role: Role;
     userId: string;
     expiresInDays?: number;
+    personalityId?: string;
+    rateLimitRpm?: number;
+    rateLimitTpd?: number;
+    isGatewayKey?: boolean;
   }): Promise<ApiKeyCreateResult> {
     const id = uuidv7();
     const rawKey = `${API_KEY_PREFIX}${generateSecureToken(32)}`;
@@ -308,6 +316,10 @@ export class AuthService {
       expires_at: expiresAt,
       revoked_at: null,
       last_used_at: null,
+      personality_id: opts.personalityId ?? null,
+      rate_limit_rpm: opts.rateLimitRpm ?? null,
+      rate_limit_tpd: opts.rateLimitTpd ?? null,
+      is_gateway_key: opts.isGatewayKey ?? false,
     };
 
     await this.deps.storage.storeApiKey(row);
@@ -351,6 +363,10 @@ export class AuthService {
       permissions,
       authMethod: 'api_key',
       apiKeyId: row.id,
+      gatewayPersonalityId: row.personality_id ?? undefined,
+      gatewayRateLimitRpm: row.rate_limit_rpm ?? undefined,
+      gatewayRateLimitTpd: row.rate_limit_tpd ?? undefined,
+      isGatewayKey: row.is_gateway_key ?? false,
     };
   }
 

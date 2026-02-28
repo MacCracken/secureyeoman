@@ -54,6 +54,7 @@ import {
   ToggleLeft,
   ToggleRight,
   Box,
+  Share2,
 } from 'lucide-react';
 import {
   fetchMcpServers,
@@ -88,6 +89,7 @@ import type { SecurityPolicy } from '../api/client';
 import { sanitizeText } from '../utils/sanitize';
 import { McpPrebuilts } from './McpPrebuilts';
 import { RoutingRulesPage } from './RoutingRulesPage';
+import { FederationTab } from './federation/FederationTab';
 
 const LOCAL_MCP_NAME = 'YEOMAN MCP';
 
@@ -1047,7 +1049,7 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
   },
 };
 
-type TabType = 'integrations' | 'mcp' | 'routing';
+type TabType = 'integrations' | 'mcp' | 'routing' | 'federation';
 type IntegrationSubTab = 'messaging' | 'email' | 'productivity' | 'devops' | 'oauth';
 
 // Platform categorization for tab filtering
@@ -1436,6 +1438,7 @@ export function ConnectionsPage() {
             ['mcp', 'MCP', <Wrench key="mcp" className="w-4 h-4" />],
             ['integrations', 'Integrations', <Cable key="int" className="w-4 h-4" />],
             ['routing', 'Routing Rules', <ArrowRightLeft key="routing" className="w-4 h-4" />],
+            ['federation', 'Federation', <Share2 key="fed" className="w-4 h-4" />],
           ] as [TabType, string, React.ReactNode][]
         ).map(([tab, label, icon]) => (
           <button
@@ -1625,6 +1628,8 @@ export function ConnectionsPage() {
       )}
 
       {activeTab === 'routing' && <RoutingRulesTab />}
+
+      {activeTab === 'federation' && <FederationTab />}
 
       {activeTab === 'mcp' && (
         <>

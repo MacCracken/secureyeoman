@@ -13,6 +13,7 @@ import {
   X,
   Plus,
   Trash2,
+  Pencil,
 } from 'lucide-react';
 import {
   fetchSwarmTemplates,
@@ -20,6 +21,7 @@ import {
   fetchSwarmRuns,
   cancelSwarmRun,
   createSwarmTemplate,
+  updateSwarmTemplate,
   deleteSwarmTemplate,
   type SwarmTemplate,
   type SwarmRun,
@@ -66,6 +68,7 @@ export function SwarmsPage({ allowSubAgents }: { allowSubAgents: boolean }) {
   const [context, setContext] = useState('');
   const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
   const [showCreateTemplate, setShowCreateTemplate] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<SwarmTemplate | null>(null);
   const queryClient = useQueryClient();
 
   const { data: templatesData, isLoading: templatesLoading } = useQuery({
@@ -102,6 +105,15 @@ export function SwarmsPage({ allowSubAgents }: { allowSubAgents: boolean }) {
     mutationFn: createSwarmTemplate,
     onSuccess: () => {
       setShowCreateTemplate(false);
+      void queryClient.invalidateQueries({ queryKey: ['swarmTemplates'] });
+    },
+  });
+
+  const updateMut = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof updateSwarmTemplate>[1] }) =>
+      updateSwarmTemplate(id, data),
+    onSuccess: () => {
+      setEditingTemplate(null);
       void queryClient.invalidateQueries({ queryKey: ['swarmTemplates'] });
     },
   });
@@ -149,14 +161,30 @@ export function SwarmsPage({ allowSubAgents }: { allowSubAgents: boolean }) {
         </div>
 
         {/* Create template form */}
-        {showCreateTemplate && (
-          <CreateTemplateForm
+        {showCreateTemplate && !editingTemplate && (
+          <TemplateForm
+            mode="create"
             isPending={createMut.isPending}
             onCancel={() => {
               setShowCreateTemplate(false);
             }}
             onSubmit={(data) => {
               createMut.mutate(data);
+            }}
+          />
+        )}
+
+        {/* Edit template form */}
+        {editingTemplate && (
+          <TemplateForm
+            mode="edit"
+            initialValues={editingTemplate}
+            isPending={updateMut.isPending}
+            onCancel={() => {
+              setEditingTemplate(null);
+            }}
+            onSubmit={(data) => {
+              updateMut.mutate({ id: editingTemplate.id, data });
             }}
           />
         )}
@@ -178,6 +206,14 @@ export function SwarmsPage({ allowSubAgents }: { allowSubAgents: boolean }) {
                   setTask('');
                   setContext('');
                 }}
+                onEdit={
+                  !tmpl.isBuiltin
+                    ? () => {
+                        setShowCreateTemplate(false);
+                        setEditingTemplate(tmpl);
+                      }
+                    : undefined
+                }
                 onDelete={
                   !tmpl.isBuiltin
                     ? () => {
@@ -331,13 +367,17 @@ export function SwarmsPage({ allowSubAgents }: { allowSubAgents: boolean }) {
   );
 }
 
-// ── Create Template Form ──────────────────────────────────────────
+// ── Template Form (create + edit) ─────────────────────────────────
 
-function CreateTemplateForm({
+function TemplateForm({
+  mode,
+  initialValues,
   isPending,
   onCancel,
   onSubmit,
 }: {
+  mode: 'create' | 'edit';
+  initialValues?: SwarmTemplate;
   isPending: boolean;
   onCancel: () => void;
   onSubmit: (data: {
@@ -348,13 +388,15 @@ function CreateTemplateForm({
     coordinatorProfile: string | null;
   }) => void;
 }) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [strategy, setStrategy] = useState<Strategy>('sequential');
-  const [roles, setRoles] = useState<RoleDraft[]>([
-    { role: '', profileName: '', description: '' },
-  ]);
-  const [coordinatorProfile, setCoordinatorProfile] = useState('');
+  const [name, setName] = useState(initialValues?.name ?? '');
+  const [description, setDescription] = useState(initialValues?.description ?? '');
+  const [strategy, setStrategy] = useState<Strategy>((initialValues?.strategy as Strategy) ?? 'sequential');
+  const [roles, setRoles] = useState<RoleDraft[]>(
+    initialValues?.roles.length
+      ? initialValues.roles.map((r) => ({ role: r.role, profileName: r.profileName, description: r.description ?? '' }))
+      : [{ role: '', profileName: '', description: '' }]
+  );
+  const [coordinatorProfile, setCoordinatorProfile] = useState(initialValues?.coordinatorProfile ?? '');
 
   function addRole() {
     setRoles([...roles, { role: '', profileName: '', description: '' }]);
@@ -374,7 +416,9 @@ function CreateTemplateForm({
   return (
     <div className="card p-4 space-y-4 mb-3">
       <div className="flex items-center justify-between">
-        <span className="font-medium text-sm">New Swarm Template</span>
+        <span className="font-medium text-sm">
+          {mode === 'edit' ? 'Edit Swarm Template' : 'New Swarm Template'}
+        </span>
         <button onClick={onCancel} className="btn-ghost p-1 rounded">
           <X className="w-4 h-4" />
         </button>
@@ -513,7 +557,13 @@ function CreateTemplateForm({
           });
         }}
       >
-        {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create Template'}
+        {isPending ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : mode === 'edit' ? (
+          'Save Changes'
+        ) : (
+          'Create Template'
+        )}
       </button>
     </div>
   );
@@ -526,12 +576,14 @@ function TemplateCard({
   isSelected,
   isDeleting,
   onLaunch,
+  onEdit,
   onDelete,
 }: {
   template: SwarmTemplate;
   isSelected: boolean;
   isDeleting: boolean;
   onLaunch: () => void;
+  onEdit?: () => void;
   onDelete?: () => void;
 }) {
   return (
@@ -546,6 +598,15 @@ function TemplateCard({
           </span>
         </div>
         <div className="flex items-center gap-1 shrink-0">
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              className="btn-ghost p-1 rounded text-muted-foreground hover:text-foreground"
+              aria-label="Edit template"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          )}
           {onDelete && (
             <button
               onClick={onDelete}

@@ -20,6 +20,21 @@ export interface ApiKeyRow {
   expires_at: number | null;
   revoked_at: number | null;
   last_used_at: number | null;
+  personality_id?: string | null;
+  rate_limit_rpm?: number | null;
+  rate_limit_tpd?: number | null;
+  is_gateway_key?: boolean;
+}
+
+export interface ApiKeyUsageRow {
+  id: string;
+  key_id: string;
+  timestamp: number;
+  tokens_used: number;
+  latency_ms: number | null;
+  personality_id: string | null;
+  status_code: number;
+  error_message: string | null;
 }
 
 export class AuthStorage extends PgBaseStorage {
@@ -54,8 +69,8 @@ export class AuthStorage extends PgBaseStorage {
 
   async storeApiKey(row: ApiKeyRow): Promise<void> {
     await this.execute(
-      `INSERT INTO auth.api_keys (id, name, key_hash, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      `INSERT INTO auth.api_keys (id, name, key_hash, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at, personality_id, rate_limit_rpm, rate_limit_tpd, is_gateway_key)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
       [
         row.id,
         row.name,
@@ -67,13 +82,17 @@ export class AuthStorage extends PgBaseStorage {
         row.expires_at,
         row.revoked_at,
         row.last_used_at,
+        row.personality_id ?? null,
+        row.rate_limit_rpm ?? null,
+        row.rate_limit_tpd ?? null,
+        row.is_gateway_key ?? false,
       ]
     );
   }
 
   async findApiKeyByHash(hash: string): Promise<ApiKeyRow | null> {
     const row = await this.queryOne<ApiKeyRow>(
-      'SELECT * FROM auth.api_keys WHERE key_hash = $1 AND revoked_at IS NULL',
+      'SELECT id, name, key_hash, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at, personality_id, rate_limit_rpm, rate_limit_tpd, is_gateway_key FROM auth.api_keys WHERE key_hash = $1 AND revoked_at IS NULL',
       [hash]
     );
 
@@ -90,13 +109,13 @@ export class AuthStorage extends PgBaseStorage {
   async listApiKeys(userId?: string): Promise<Omit<ApiKeyRow, 'key_hash'>[]> {
     if (userId) {
       return this.queryMany<Omit<ApiKeyRow, 'key_hash'>>(
-        'SELECT id, name, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at FROM auth.api_keys WHERE user_id = $1 AND revoked_at IS NULL ORDER BY created_at DESC',
+        'SELECT id, name, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at, personality_id, rate_limit_rpm, rate_limit_tpd, is_gateway_key FROM auth.api_keys WHERE user_id = $1 AND revoked_at IS NULL ORDER BY created_at DESC',
         [userId]
       );
     }
 
     return this.queryMany<Omit<ApiKeyRow, 'key_hash'>>(
-      'SELECT id, name, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at FROM auth.api_keys WHERE revoked_at IS NULL ORDER BY created_at DESC'
+      'SELECT id, name, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at, personality_id, rate_limit_rpm, rate_limit_tpd, is_gateway_key FROM auth.api_keys WHERE revoked_at IS NULL ORDER BY created_at DESC'
     );
   }
 
@@ -110,6 +129,88 @@ export class AuthStorage extends PgBaseStorage {
 
   async updateLastUsed(id: string, ts: number): Promise<void> {
     await this.execute('UPDATE auth.api_keys SET last_used_at = $1 WHERE id = $2', [ts, id]);
+  }
+
+  async recordKeyUsage(entry: Omit<ApiKeyUsageRow, 'id'>): Promise<void> {
+    const { uuidv7: genId } = await import('../utils/crypto.js');
+    await this.execute(
+      `INSERT INTO auth.api_key_usage (id, key_id, timestamp, tokens_used, latency_ms, personality_id, status_code, error_message)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        genId(),
+        entry.key_id,
+        entry.timestamp,
+        entry.tokens_used,
+        entry.latency_ms ?? null,
+        entry.personality_id ?? null,
+        entry.status_code,
+        entry.error_message ?? null,
+      ]
+    );
+  }
+
+  async getTokensUsedToday(keyId: string): Promise<number> {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const result = await this.queryOne<{ total: string }>(
+      'SELECT COALESCE(SUM(tokens_used), 0)::text AS total FROM auth.api_key_usage WHERE key_id = $1 AND timestamp >= $2',
+      [keyId, startOfDay.getTime()]
+    );
+    return parseInt(result?.total ?? '0', 10);
+  }
+
+  async getKeyUsage(keyId: string, fromTs?: number, toTs?: number): Promise<ApiKeyUsageRow[]> {
+    let sql = 'SELECT * FROM auth.api_key_usage WHERE key_id = $1';
+    const params: unknown[] = [keyId];
+    let idx = 2;
+    if (fromTs !== undefined) {
+      sql += ` AND timestamp >= $${idx++}`;
+      params.push(fromTs);
+    }
+    if (toTs !== undefined) {
+      sql += ` AND timestamp <= $${idx++}`;
+      params.push(toTs);
+    }
+    sql += ' ORDER BY timestamp DESC LIMIT 1000';
+    return this.queryMany<ApiKeyUsageRow>(sql, params);
+  }
+
+  async getUsageSummary(): Promise<{
+    keyId: string; keyPrefix: string; personalityId: string | null;
+    requests24h: number; tokens24h: number; errors24h: number;
+    p50LatencyMs: number; p95LatencyMs: number;
+  }[]> {
+    const cutoff = Date.now() - 86_400_000;
+    const rows = await this.queryMany<{
+      key_id: string; key_prefix: string; personality_id: string | null;
+      requests24h: string; tokens24h: string; errors24h: string;
+      p50: string | null; p95: string | null;
+    }>(
+      `SELECT
+         u.key_id,
+         k.key_prefix,
+         k.personality_id,
+         COUNT(*)::text AS requests24h,
+         COALESCE(SUM(u.tokens_used), 0)::text AS tokens24h,
+         COUNT(CASE WHEN u.status_code >= 400 THEN 1 END)::text AS errors24h,
+         PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY u.latency_ms)::text AS p50,
+         PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY u.latency_ms)::text AS p95
+       FROM auth.api_key_usage u
+       JOIN auth.api_keys k ON k.id = u.key_id
+       WHERE u.timestamp >= $1
+       GROUP BY u.key_id, k.key_prefix, k.personality_id`,
+      [cutoff]
+    );
+    return rows.map((r) => ({
+      keyId: r.key_id,
+      keyPrefix: r.key_prefix,
+      personalityId: r.personality_id,
+      requests24h: parseInt(r.requests24h, 10),
+      tokens24h: parseInt(r.tokens24h, 10),
+      errors24h: parseInt(r.errors24h, 10),
+      p50LatencyMs: r.p50 ? Math.round(parseFloat(r.p50)) : 0,
+      p95LatencyMs: r.p95 ? Math.round(parseFloat(r.p95)) : 0,
+    }));
   }
 
   override close(): void {

@@ -77,6 +77,8 @@ import { SQLiteAuditStorage } from '../logging/sqlite-storage.js';
 import { registerBackupRoutes } from '../backup/backup-routes.js';
 import { registerTenantRoutes } from '../tenants/tenant-routes.js';
 import { registerTrainingRoutes } from '../training/training-routes.js';
+import { registerFederationRoutes } from '../federation/federation-routes.js';
+import { registerGatewayRoutes } from './gateway-routes.js';
 import { registerGmailRoutes } from '../integrations/gmail/gmail-routes.js';
 import { registerTwitterRoutes } from '../integrations/twitter/twitter-routes.js';
 import { registerGithubApiRoutes } from '../integrations/github/github-api-routes.js';
@@ -1022,6 +1024,47 @@ export class GatewayServer {
       this.getLogger().info('Training routes registered');
     } catch (err) {
       this.getLogger().debug('Training routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Federation routes (Phase 79)
+    try {
+      const federationManager = this.secureYeoman.getFederationManager();
+      if (federationManager) {
+        const brainManager = (() => {
+          try { return this.secureYeoman.getBrainManager(); } catch { return undefined; }
+        })();
+        const marketplaceManager = this.secureYeoman.getMarketplaceManager() ?? undefined;
+        const soulManager = (() => {
+          try { return this.secureYeoman.getSoulManager(); } catch { return undefined; }
+        })();
+        const federationStorage = (federationManager as any).storage as import('../federation/federation-storage.js').FederationStorage;
+        registerFederationRoutes(this.app, {
+          federationManager,
+          federationStorage,
+          brainManager,
+          marketplaceManager: marketplaceManager as any,
+          soulManager: soulManager as any,
+        });
+        this.getLogger().info('Federation routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Federation routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Gateway routes (Phase 80)
+    try {
+      const authStorage = this.secureYeoman.getAuthStorage();
+      registerGatewayRoutes(this.app, {
+        secureYeoman: this.secureYeoman,
+        authStorage,
+      });
+      this.getLogger().info('Gateway routes registered');
+    } catch (err) {
+      this.getLogger().debug('Gateway routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }
