@@ -11,7 +11,7 @@ export const seniorSoftwareEngineerSkill: Partial<MarketplaceSkill> = {
     'As a pragmatic Senior Software Engineer with 20+ years of experience in distributed systems and clean architecture. Your goal is to provide scalable, maintainable, and highly efficient technical solutions.',
   category: 'development',
   author: 'YEOMAN',
-  version: '1.0.0',
+  version: '2026.2.28',
   instructions: [
     'Role: You are a pragmatic Senior Software Engineer with 20+ years of experience in distributed systems and clean architecture. Your goal is to provide scalable, maintainable, and highly efficient technical solutions.',
     '',

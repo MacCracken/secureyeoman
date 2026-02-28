@@ -16,7 +16,7 @@ export const specificationEngineeringSkill: Partial<MarketplaceSkill> = {
     github: 'MacCracken',
     website: 'https://secureyeoman.ai',
   },
-  version: '1.0.0',
+  version: '2026.2.28',
   instructions: [
     "You are a specification engineering expert. You translate confirmed intent into rigorous, verifiable contracts for AI tasks — documents that define what must be produced, how to verify correctness, what constraints apply, and how complex work decomposes into composable modules.",
     '',

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { createMetricsSnapshot } from '../test/mocks';
@@ -92,6 +92,39 @@ vi.mock('./common/ErrorBoundary', () => ({
   ErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
+// ── Mock @dnd-kit (not available in jsdom) ────────────────────────────
+
+vi.mock('@dnd-kit/core', () => ({
+  DndContext: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  closestCenter: vi.fn(),
+  PointerSensor: class {},
+  KeyboardSensor: class {},
+  useSensor: vi.fn(),
+  useSensors: vi.fn(() => []),
+}));
+vi.mock('@dnd-kit/sortable', () => ({
+  SortableContext: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useSortable: () => ({
+    attributes: {},
+    listeners: {},
+    setNodeRef: vi.fn(),
+    transform: null,
+    transition: undefined,
+    isDragging: false,
+  }),
+  arrayMove: (arr: unknown[], from: number, to: number) => {
+    const a = [...arr];
+    const [x] = a.splice(from, 1);
+    a.splice(to, 0, x);
+    return a;
+  },
+  rectSortingStrategy: vi.fn(),
+  sortableKeyboardCoordinates: vi.fn(),
+}));
+vi.mock('@dnd-kit/utilities', () => ({
+  CSS: { Transform: { toString: () => '' } },
+}));
+
 // ── Import after mocks ────────────────────────────────────────────────
 
 import { MetricsPage } from './MetricsPage';
@@ -132,6 +165,7 @@ describe('MetricsPage — layout and header', () => {
     vi.resetAllMocks();
     capturedOnNodeClick = undefined;
     mockNavigate.mockReset();
+    localStorage.removeItem('mission-control:layout');
 
     mockFetchHeartbeatStatus.mockResolvedValue({
       running: true,
@@ -196,6 +230,7 @@ describe('MetricsPage — Mission Control tab', () => {
     vi.resetAllMocks();
     capturedOnNodeClick = undefined;
     mockNavigate.mockReset();
+    localStorage.removeItem('mission-control:layout');
 
     mockFetchHeartbeatStatus.mockResolvedValue({
       running: true,
@@ -258,6 +293,7 @@ describe('MetricsPage — Mission Control tab', () => {
 describe('MetricsPage — tab switching', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    localStorage.removeItem('mission-control:layout');
     mockFetchHeartbeatStatus.mockResolvedValue({
       running: false,
       enabled: false,
@@ -332,6 +368,7 @@ describe('MetricsPage — Mission Control node click routing', () => {
     vi.resetAllMocks();
     capturedOnNodeClick = undefined;
     mockNavigate.mockReset();
+    localStorage.removeItem('mission-control:layout');
     mockFetchHeartbeatStatus.mockResolvedValue({
       running: true,
       enabled: true,
@@ -408,6 +445,7 @@ describe('MetricsPage — Mission Control node click routing', () => {
 describe('MetricsPage — Full Metrics data display', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    localStorage.removeItem('mission-control:layout');
     mockFetchHeartbeatStatus.mockResolvedValue({
       running: false,
       enabled: false,
@@ -475,6 +513,7 @@ describe('MetricsPage — Full Metrics data display', () => {
 describe('MetricsPage — Costs tab', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    localStorage.removeItem('mission-control:layout');
     mockFetchHeartbeatStatus.mockResolvedValue({
       running: false,
       enabled: false,
@@ -570,6 +609,11 @@ describe('MetricsPage — Agent World card', () => {
     vi.resetAllMocks();
     capturedOnNodeClick = undefined;
     mockNavigate.mockReset();
+    // Make agent-world visible by default for this describe block
+    localStorage.setItem('mission-control:layout', JSON.stringify({
+      version: 1,
+      cards: [{ id: 'agent-world', visible: true, colSpan: 12, order: 0 }],
+    }));
 
     mockFetchHeartbeatStatus.mockResolvedValue({
       running: true, enabled: true, intervalMs: 60_000, beatCount: 0, lastBeat: null, tasks: [],
@@ -686,5 +730,165 @@ describe('MetricsPage — Agent World card', () => {
     expect(dialog.querySelector('[title="Card grid view"]')).toBeInTheDocument();
     expect(dialog.querySelector('[title="World map view"]')).toBeInTheDocument();
     expect(dialog.querySelector('[title="Large zone view"]')).toBeInTheDocument();
+  });
+});
+
+// ── Mission Control customization ────────────────────────────────────────────
+
+describe('MetricsPage — Mission Control customization', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    capturedOnNodeClick = undefined;
+    mockNavigate.mockReset();
+    localStorage.removeItem('mission-control:layout');
+
+    mockFetchHeartbeatStatus.mockResolvedValue({
+      running: true, enabled: true, intervalMs: 60_000, beatCount: 0, lastBeat: null, tasks: [],
+    });
+    mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
+    mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
+    mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
+    mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
+    mockFetchCostHistory.mockResolvedValue({
+      records: [],
+      totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 },
+    });
+    mockFetchPersonalities.mockResolvedValue({ personalities: [] });
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
+    mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0, limit: 6, offset: 0 });
+    mockFetchWorkflows.mockResolvedValue({ definitions: [], total: 0 });
+  });
+
+  it('renders the "Customize" button when Mission Control tab is active', () => {
+    renderMetricsPage();
+    expect(screen.getByRole('button', { name: /customize/i })).toBeInTheDocument();
+  });
+
+  it('does not show "Customize" button on the Costs tab', () => {
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
+    expect(screen.queryByRole('button', { name: /customize/i })).not.toBeInTheDocument();
+  });
+
+  it('clicking Customize opens the catalogue panel with heading "Customize Dashboard"', async () => {
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('button', { name: /customize/i }));
+    expect(await screen.findByText('Customize Dashboard')).toBeInTheDocument();
+  });
+
+  it('catalogue panel lists all 12 card labels', async () => {
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('button', { name: /customize/i }));
+    const heading = await screen.findByText('Customize Dashboard');
+    // Scope to the catalogue panel itself to avoid duplicate matches from the grid
+    const panel = heading.closest('div.fixed') as HTMLElement;
+    const expectedLabels = [
+      'Key Metrics Bar',
+      'Resource Monitoring',
+      'Active Tasks',
+      'Workflow Runs',
+      'Agent Health',
+      'System Health',
+      'Integration Status',
+      'Security Events',
+      'Audit Stream',
+      'System Topology',
+      'Cost Breakdown',
+      'Agent World',
+    ];
+    for (const label of expectedLabels) {
+      expect(within(panel).getByText(label)).toBeInTheDocument();
+    }
+  });
+
+  it('kpi-bar toggle is disabled (pinned card cannot be removed)', async () => {
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('button', { name: /customize/i }));
+    await screen.findByText('Customize Dashboard');
+    // Find the switch for Key Metrics Bar — it should be disabled
+    const switches = screen.getAllByRole('switch');
+    const kpiSwitch = switches.find(s => {
+      const row = s.closest('div.flex');
+      return row?.textContent?.includes('Key Metrics Bar');
+    });
+    expect(kpiSwitch).toBeDefined();
+    expect(kpiSwitch).toBeDisabled();
+  });
+
+  it('agent-world toggle is unchecked by default', async () => {
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('button', { name: /customize/i }));
+    await screen.findByText('Customize Dashboard');
+    const switches = screen.getAllByRole('switch');
+    const agentWorldSwitch = switches.find(s => {
+      const row = s.closest('div.flex');
+      return row?.textContent?.includes('Agent World');
+    });
+    expect(agentWorldSwitch).toBeDefined();
+    expect(agentWorldSwitch).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('toggling agent-world on makes the Agent World section appear in the grid', async () => {
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('button', { name: /customize/i }));
+    await screen.findByText('Customize Dashboard');
+    const switches = screen.getAllByRole('switch');
+    const agentWorldSwitch = switches.find(s => {
+      const row = s.closest('div.flex');
+      return row?.textContent?.includes('Agent World');
+    })!;
+    fireEvent.click(agentWorldSwitch);
+    // After toggling on, the Agent World section heading should appear in the grid
+    expect(await screen.findByText('Live personality activity')).toBeInTheDocument();
+  });
+
+  it('clicking Done closes the catalogue panel', async () => {
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('button', { name: /customize/i }));
+    await screen.findByText('Customize Dashboard');
+    fireEvent.click(screen.getByRole('button', { name: /^done$/i }));
+    await waitFor(() => {
+      expect(screen.queryByText('Customize Dashboard')).not.toBeInTheDocument();
+    });
+  });
+
+  it('Reset to defaults hides agent-world again after it was toggled on', async () => {
+    renderMetricsPage();
+    fireEvent.click(screen.getByRole('button', { name: /customize/i }));
+    await screen.findByText('Customize Dashboard');
+    // Toggle agent-world on
+    const switches = screen.getAllByRole('switch');
+    const agentWorldSwitch = switches.find(s => {
+      const row = s.closest('div.flex');
+      return row?.textContent?.includes('Agent World');
+    })!;
+    fireEvent.click(agentWorldSwitch);
+    await screen.findByText('Live personality activity');
+    // Reset
+    fireEvent.click(screen.getByRole('button', { name: /reset to defaults/i }));
+    await waitFor(() => {
+      expect(screen.queryByText('Live personality activity')).not.toBeInTheDocument();
+    });
+  });
+
+  it('toggling a non-pinned card off hides it from the grid', async () => {
+    renderMetricsPage();
+    // Cost Breakdown is visible by default
+    expect(await screen.findByText('Cost Breakdown')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /customize/i }));
+    await screen.findByText('Customize Dashboard');
+    const switches = screen.getAllByRole('switch');
+    const costSwitch = switches.find(s => {
+      const row = s.closest('div.flex');
+      return row?.textContent?.includes('Cost Breakdown');
+    })!;
+    fireEvent.click(costSwitch);
+    await waitFor(() => {
+      // Only the catalogue row label remains; the grid card heading is gone
+      const costBreakdownElements = screen.queryAllByText('Cost Breakdown');
+      // Only the catalogue row should remain (1 instance inside the panel)
+      expect(costBreakdownElements.length).toBeLessThanOrEqual(1);
+    });
   });
 });

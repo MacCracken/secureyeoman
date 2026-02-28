@@ -1,3 +1,21 @@
+## [2026.2.28p] — 2026-02-28
+
+### Added
+
+#### Mission Control Customization (Phase 76)
+
+The Mission Control dashboard is now fully configurable — users can show/hide cards, reorder them by dragging, and resize them via S/M/L presets. Layout is persisted to `localStorage` immediately; server-side sync is demand-gated for Phase 2.
+
+- **Card registry** (`packages/dashboard/src/components/MissionControl/registry.ts`): 12 `CardDef` entries with `id`, `label`, `description`, `defaultVisible`, optional `pinned`, `minColSpan`, and `defaultColSpan`. `kpi-bar` is permanently pinned; `agent-world` is opt-in (hidden by default).
+- **Layout model** (`packages/dashboard/src/components/MissionControl/layout.ts`): `loadLayout()` / `saveLayout()` / `defaultLayout()` under localStorage key `mission-control:layout`. Forward-compatible merging: new cards not in saved layout appear at their registry defaults.
+- **Dynamic grid**: 12 section components extracted from `MissionControlTab` (`KpiBarSection`, `ResourceMonitoringSection`, `ActiveTasksSection`, `WorkflowRunsSection`, `AgentHealthSection`, `SystemHealthSection`, `IntegrationGridSection`, `SecurityEventsSection`, `AuditStreamSection`, `AgentWorldSection`, `SystemTopologySection`, `CostBreakdownSection`). `MissionCardContent` switch dispatches by card ID. `DndContext` + `SortableContext` from `@dnd-kit` replaces hardcoded grid.
+- **`SortableCardWrapper`**: drag-handle (GripVertical), remove × button, and S/M/L size-preset pill — all visible only in edit mode. Pinned cards skip drag and remove UI.
+- **"Customize" button**: `Sliders` icon next to the Mission Control tab bar. Clicking toggles edit mode and opens the catalogue panel simultaneously.
+- **Card catalogue panel**: fixed right-side drawer listing all 12 cards with toggle switches for per-card visibility. "Reset to defaults" restores the registry defaults. "Done" closes the panel and exits edit mode.
+- **Tests**: 10 new tests in `MetricsPage.test.tsx` (55 total). `@dnd-kit` mocked in test env. `tsc --noEmit` 0 errors.
+
+---
+
 ## [2026.2.28o] — 2026-02-28
 
 ### Changed

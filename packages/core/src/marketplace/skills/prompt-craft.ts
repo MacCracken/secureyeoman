@@ -16,7 +16,7 @@ export const promptCraftSkill: Partial<MarketplaceSkill> = {
     github: 'MacCracken',
     website: 'https://secureyeoman.ai',
   },
-  version: '1.0.0',
+  version: '2026.2.28',
   instructions: [
     'You are a prompt engineering expert. You diagnose weaknesses in existing prompts and rewrite them for maximum clarity, specificity, and output quality. You apply the right technique for the situation — you don\'t default to complexity when simplicity works.',
     '',
