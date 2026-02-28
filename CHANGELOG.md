@@ -1,3 +1,44 @@
+## [2026.2.28e] — 2026-02-28
+
+### Fixed
+
+- **Personality list avatar buffer** — The personality list card wrapped `<PersonalityAvatar
+  size={20}>` inside a `w-8/w-10` circle container. The fixed 20px size left a
+  visible muted-background gap around the avatar. Replaced with an inline `<img
+  className="block w-full h-full object-cover">` that fills the circle, and a
+  proportionally-sized `<Bot>` icon fallback (`w-4/w-5`).
+
+---
+
+## [2026.2.28d] — 2026-02-28
+
+### Fixed
+
+- **Avatar crop zoom shifts image left** — Tailwind preflight sets `img { max-width: 100% }`
+  globally. The crop viewport is 300px wide, so once zoom exceeded `minScale` and
+  `imgW > 300px`, the browser silently capped the rendered width at 300px while
+  `left` was still computed against the unconstrained `imgW`. The position/size
+  disagreed on every zoom step, pulling the image hard to the left.
+  Fixed by adding `maxWidth: 'none'` and `maxHeight: 'none'` to the crop image's
+  inline style to override the preflight constraint.
+
+- **Avatar lightbox zoom blocked by passive listener** — `AvatarLightbox` used React's
+  synthetic `onWheel` which is a passive listener in React 18, making
+  `e.preventDefault()` a no-op. Replaced with a native `{ passive: false }` wheel
+  listener via `containerRef` + `useEffect`. Also switched from additive
+  (`s - deltaY * 0.001`) to multiplicative (`s * (1 - deltaY * 0.005)`) scale
+  factor for proportional feel. `scaleRef` keeps the handler closure up-to-date
+  without requiring the effect to re-run on every scale change.
+
+- **Avatar crop zoom proportionality** — `minScale` was set to `(CROP_RADIUS * 2) /
+  Math.min(w, h)` (260px) rather than `CROP_CONTAINER / Math.min(w, h)` (300px),
+  leaving a 20px gap between the image edge and the container boundary at minimum
+  zoom. As scale increased the image edge swept visibly across the dimmed corner
+  area. Updated to fill the container at `minScale` so the image edge is always
+  at or beyond the viewport boundary.
+
+---
+
 ## [2026.2.28c] — 2026-02-28
 
 ### Fixed

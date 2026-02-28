@@ -600,7 +600,7 @@ function AvatarUpload({
       )}
       <div className="flex items-center gap-4 mb-4">
         <div
-          className={`w-24 h-24 rounded-full overflow-hidden border-2 border-border flex items-center justify-center bg-muted flex-shrink-0${personality.avatarUrl ? ' cursor-zoom-in' : ''}`}
+          className={`w-24 h-24 rounded-full overflow-hidden flex items-center justify-center bg-muted flex-shrink-0${personality.avatarUrl ? ' cursor-zoom-in' : ''}`}
           onClick={personality.avatarUrl ? () => setLightboxOpen(true) : undefined}
           title={personality.avatarUrl ? 'Click to zoom' : undefined}
         >
@@ -608,7 +608,7 @@ function AvatarUpload({
             <img
               src={`${API_BASE}${personality.avatarUrl}?v=${personality.updatedAt}`}
               alt={personality.name}
-              className="w-full h-full object-cover"
+              className="block w-full h-full object-cover"
             />
           ) : (
             <Bot className="w-10 h-10 text-muted-foreground" />
@@ -4811,7 +4811,15 @@ export function PersonalityEditor() {
                     <div
                       className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${p.isDefault ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
                     >
-                      <PersonalityAvatar personality={p} size={20} />
+                      {p.avatarUrl ? (
+                        <img
+                          src={`${API_BASE}${p.avatarUrl}?v=${p.updatedAt}`}
+                          alt={p.name}
+                          className="block w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Bot className="w-4 h-4 sm:w-5 sm:h-5" />
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
