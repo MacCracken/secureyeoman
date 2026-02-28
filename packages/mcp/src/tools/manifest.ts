@@ -443,6 +443,18 @@ export function getToolManifest(): ToolManifestEntry[] {
     { name: 'twitter_retweet', description: 'Retweet a tweet (auto mode only)' },
     { name: 'twitter_unretweet', description: 'Undo a retweet (auto mode only)' },
 
+    // GitHub API tools (Phase 70)
+    { name: 'github_profile', description: 'Get the connected GitHub account profile — login, name, email, public repos count, access mode, and two_factor_authentication status (boolean). Use to surface 2FA security recommendations.' },
+    { name: 'github_list_repos', description: 'List repositories for the authenticated GitHub user' },
+    { name: 'github_get_repo', description: 'Get details for a specific GitHub repository' },
+    { name: 'github_list_prs', description: 'List pull requests for a GitHub repository' },
+    { name: 'github_get_pr', description: 'Get details of a specific pull request' },
+    { name: 'github_list_issues', description: 'List issues for a GitHub repository' },
+    { name: 'github_get_issue', description: 'Get details of a specific issue' },
+    { name: 'github_create_issue', description: 'Create a new GitHub issue' },
+    { name: 'github_create_pr', description: 'Create a new pull request (draft mode returns preview)' },
+    { name: 'github_comment', description: 'Add a comment to a GitHub issue or PR (auto mode only)' },
+
     // Ollama model lifecycle tools (Phase 64)
     {
       name: 'ollama_pull',

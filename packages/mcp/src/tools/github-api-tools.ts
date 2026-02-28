@@ -24,7 +24,7 @@ export function registerGithubApiTools(
     'github_profile',
     {
       description:
-        'Get the connected GitHub account profile — login, name, email, public repos count, and access mode (auto/draft/suggest).',
+        'Get the connected GitHub account profile — login, name, email, public repos count, access mode (auto/draft/suggest), and two_factor_authentication status (true/false). Use this to surface security recommendations like 2FA not being enabled.',
       inputSchema: {},
     },
     wrapToolHandler('github_profile', middleware, async () => {
