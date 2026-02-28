@@ -3609,7 +3609,7 @@ function BodySection({
               {integrations.map((integration) => {
                 const entry = integrationAccess.find((a) => a.id === integration.id);
                 const isSelected = !!entry;
-                const mode: IntegrationAccessMode = entry?.mode ?? 'auto';
+                const mode: IntegrationAccessMode = entry?.mode ?? 'suggest';
 
                 const setMode = (newMode: IntegrationAccessMode) => {
                   onIntegrationAccessChange(
@@ -3630,7 +3630,7 @@ function BodySection({
                             if (e.target.checked) {
                               onIntegrationAccessChange([
                                 ...integrationAccess,
-                                { id: integration.id, mode: 'auto' },
+                                { id: integration.id, mode: 'suggest' },
                               ]);
                             } else {
                               onIntegrationAccessChange(

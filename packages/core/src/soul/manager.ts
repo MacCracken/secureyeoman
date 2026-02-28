@@ -983,7 +983,7 @@ export class SoulManager {
         // No filter set — list all OAuth accounts as available
         for (const token of oauthTokens) {
           const providerName = token.provider.charAt(0).toUpperCase() + token.provider.slice(1);
-          entries.push({ name: `${providerName} (${token.email})`, platform: token.provider, mode: 'auto' });
+          entries.push({ name: `${providerName} (${token.email})`, platform: token.provider, mode: 'suggest' });
         }
       }
 

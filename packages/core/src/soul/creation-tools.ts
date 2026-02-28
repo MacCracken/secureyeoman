@@ -341,7 +341,31 @@ const REGISTER_DYNAMIC_TOOL: Tool = {
   },
 };
 
-const DYNAMIC_TOOL_TOOLS: Tool[] = [REGISTER_DYNAMIC_TOOL];
+const LIST_DYNAMIC_TOOLS: Tool = {
+  name: 'list_dynamic_tools',
+  description:
+    'List all currently registered dynamic tools (name, description, and whether they are in the registry). Use this to inspect or audit tools you have created.',
+  parameters: {
+    type: 'object',
+    properties: {},
+    required: [],
+  },
+};
+
+const DELETE_DYNAMIC_TOOL: Tool = {
+  name: 'delete_dynamic_tool',
+  description:
+    'Delete a previously registered dynamic tool by name. Use this to remove a broken or outdated tool from the registry.',
+  parameters: {
+    type: 'object',
+    properties: {
+      name: { type: 'string', description: 'Exact name of the tool to delete' },
+    },
+    required: ['name'],
+  },
+};
+
+const DYNAMIC_TOOL_TOOLS: Tool[] = [REGISTER_DYNAMIC_TOOL, LIST_DYNAMIC_TOOLS, DELETE_DYNAMIC_TOOL];
 
 // ── Workflow Tools ────────────────────────────────────────────────────────
 

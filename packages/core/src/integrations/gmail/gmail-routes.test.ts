@@ -111,7 +111,7 @@ describe('Gmail Routes', () => {
       const body = res.json();
       expect(body.emailAddress).toBe('user@example.com');
       expect(body.email).toBe('user@example.com');
-      expect(body.mode).toBe('auto');
+      expect(body.mode).toBe('suggest'); // default mode is now 'suggest'
     });
 
     it('returns Gmail API error status on upstream failure', async () => {
@@ -242,7 +242,8 @@ describe('Gmail Routes', () => {
 
     it('creates a draft in auto mode', async () => {
       const svc = mockOAuthTokenService();
-      const app = await buildApp(svc);
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
       vi.stubGlobal('fetch', mockFetch({ id: 'draft-1' }, 200));
       const res = await app.inject({
         method: 'POST',
@@ -291,7 +292,8 @@ describe('Gmail Routes', () => {
 
     it('returns actionable reconnect message when Google returns 401 for draft', async () => {
       const svc = mockOAuthTokenService();
-      const app = await buildApp(svc);
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
       vi.stubGlobal('fetch', mockFetch({ error: 'Invalid credentials' }, 401));
       const res = await app.inject({
         method: 'POST',
@@ -310,7 +312,8 @@ describe('Gmail Routes', () => {
         ]),
         getValidToken: vi.fn().mockResolvedValue('access-token-abc'),
       } as unknown as OAuthTokenService;
-      const app = await buildApp(svcWithMailScope);
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svcWithMailScope, sm);
       vi.stubGlobal('fetch', mockFetch({ id: 'draft-broad' }, 200));
       const res = await app.inject({
         method: 'POST',
@@ -328,7 +331,8 @@ describe('Gmail Routes', () => {
         ]),
         getValidToken: vi.fn().mockResolvedValue('access-token-abc'),
       } as unknown as OAuthTokenService;
-      const app = await buildApp(svcReadOnly);
+      const sm = mockSoulManager('auto'); // use auto mode so the scope check runs
+      const app = await buildApp(svcReadOnly, sm);
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/gmail/drafts',
@@ -350,7 +354,8 @@ describe('Gmail Routes', () => {
 
     it('sends an email in auto mode', async () => {
       const svc = mockOAuthTokenService();
-      const app = await buildApp(svc);
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
       vi.stubGlobal('fetch', mockFetch({ id: 'sent-1' }, 200));
       const res = await app.inject({
         method: 'POST',

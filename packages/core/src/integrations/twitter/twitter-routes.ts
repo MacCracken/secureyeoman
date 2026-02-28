@@ -46,7 +46,7 @@ async function resolveTwitterAccess(
   if (twitterIntegrations.length === 0 || !twitterIntegrations[0]) return null;
 
   let selected = twitterIntegrations[0];
-  let mode = 'auto';
+  let mode = 'suggest';
 
   if (soulManager) {
     try {
@@ -61,7 +61,7 @@ async function resolveTwitterAccess(
         }
       }
     } catch {
-      // soulManager optional — default to 'auto'
+      // soulManager optional — default to 'suggest'
     }
   }
 

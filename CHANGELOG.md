@@ -1,3 +1,27 @@
+## [2026.2.28f] — 2026-02-28
+
+### Added
+
+- **`list_dynamic_tools` and `delete_dynamic_tool` creation tools** — When `allowDynamicTools`
+  is enabled, the personality can now call `list_dynamic_tools` to inspect all registered
+  dynamic tools and `delete_dynamic_tool` to remove a broken or outdated tool by name.
+  Previously there was no way for the AI to clean up tools it had created — resulting in
+  broken tools (e.g. with undeclared `entry` variables) persisting indefinitely.
+  Both tools are added to `DYNAMIC_TOOL_TOOLS` in `creation-tools.ts` and handled by
+  `creation-tool-executor.ts`.
+
+### Changed
+
+- **Integration access default mode changed from `auto` to `suggest`** — `IntegrationAccessSchema.mode`
+  now defaults to `'suggest'` instead of `'auto'`. This applies everywhere: schema validation,
+  `resolveGmailAccess()`, `resolveTwitterAccess()`, the soul prompt's fallback for connected OAuth
+  accounts without an explicit access entry, and the Integration Access checkbox in the Personality
+  Editor (new entries and the display fallback both start at `'suggest'`). With `'suggest'` as the
+  default, personalities must be explicitly granted `'draft'` or `'auto'` before they can compose
+  or send messages, preventing accidental autonomous outbound actions.
+
+---
+
 ## [2026.2.28e] — 2026-02-28
 
 ### Fixed

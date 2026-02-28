@@ -193,7 +193,7 @@ export type ResourcePolicy = z.infer<typeof ResourcePolicySchema>;
  */
 export const IntegrationAccessSchema = z.object({
   id: z.string().min(1),
-  mode: z.enum(['auto', 'draft', 'suggest']).default('auto'),
+  mode: z.enum(['auto', 'draft', 'suggest']).default('suggest'),
 });
 export type IntegrationAccess = z.infer<typeof IntegrationAccessSchema>;
 export type IntegrationAccessMode = IntegrationAccess['mode'];

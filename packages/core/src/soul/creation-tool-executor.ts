@@ -528,6 +528,31 @@ export async function executeCreationTool(
         return { output: { tool }, isError: false };
       }
 
+      case 'list_dynamic_tools': {
+        const dtmList = secureYeoman.getDynamicToolManager?.();
+        if (!dtmList) {
+          return { output: { error: 'Dynamic tool manager not enabled.' }, isError: true };
+        }
+        const tools = dtmList.listTools();
+        return { output: { tools, count: tools.length }, isError: false };
+      }
+
+      case 'delete_dynamic_tool': {
+        const dtmDel = secureYeoman.getDynamicToolManager?.();
+        if (!dtmDel) {
+          return { output: { error: 'Dynamic tool manager not enabled.' }, isError: true };
+        }
+        const toolName = str(args.name);
+        if (!toolName) {
+          return { output: { error: 'name is required' }, isError: true };
+        }
+        const deleted = await dtmDel.deleteByName(toolName);
+        if (!deleted) {
+          return { output: { error: `Dynamic tool "${toolName}" not found.` }, isError: true };
+        }
+        return { output: { deleted: true, name: toolName }, isError: false };
+      }
+
       // ── Unknown / registered dynamic tool ─────────────────────────────
       default: {
         // Before reporting "unknown tool", check whether the AI is calling

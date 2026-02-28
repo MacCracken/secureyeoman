@@ -134,12 +134,12 @@ describe('Twitter Routes', () => {
   // ── GET /api/v1/twitter/profile ───────────────────────────────────────────
 
   describe('GET /api/v1/twitter/profile', () => {
-    it('returns profile in auto mode', async () => {
+    it('returns profile in suggest mode (default when no personality override)', async () => {
       const app = await buildApp(mockIntegrationManager());
       const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/profile' });
       expect(res.statusCode).toBe(200);
       expect(res.json().username).toBe('testuser');
-      expect(res.json().mode).toBe('auto');
+      expect(res.json().mode).toBe('suggest');
     });
 
     it('returns 400 when only bearer token configured (no user-context)', async () => {
@@ -203,7 +203,7 @@ describe('Twitter Routes', () => {
 
   describe('POST /api/v1/twitter/tweets', () => {
     it('posts a tweet in auto mode', async () => {
-      const app = await buildApp(mockIntegrationManager());
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/twitter/tweets',
@@ -248,7 +248,8 @@ describe('Twitter Routes', () => {
             accessToken: undefined,
             accessTokenSecret: undefined,
           },
-        })
+        }),
+        mockSoulManager('auto') // auto mode so credential check is reached
       );
       const res = await app.inject({
         method: 'POST',
@@ -263,7 +264,7 @@ describe('Twitter Routes', () => {
 
   describe('POST /api/v1/twitter/tweets/:tweetId/like', () => {
     it('likes a tweet in auto mode', async () => {
-      const app = await buildApp(mockIntegrationManager());
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/twitter/tweets/tw-1/like',
@@ -286,7 +287,7 @@ describe('Twitter Routes', () => {
 
   describe('POST /api/v1/twitter/tweets/:tweetId/retweet', () => {
     it('retweets in auto mode', async () => {
-      const app = await buildApp(mockIntegrationManager());
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/twitter/tweets/tw-1/retweet',
@@ -309,7 +310,7 @@ describe('Twitter Routes', () => {
 
   describe('DELETE /api/v1/twitter/tweets/:tweetId/retweet', () => {
     it('un-retweets in auto mode', async () => {
-      const app = await buildApp(mockIntegrationManager());
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
       const res = await app.inject({
         method: 'DELETE',
         url: '/api/v1/twitter/tweets/tw-1/retweet',

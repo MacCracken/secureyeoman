@@ -99,7 +99,7 @@ async function resolveGmailAccess(
   if (!accessToken) return null;
 
   // Determine the integration access mode from the active personality
-  let mode = 'auto';
+  let mode = 'suggest';
   if (soulManager) {
     try {
       const personality = await soulManager.getActivePersonality();
