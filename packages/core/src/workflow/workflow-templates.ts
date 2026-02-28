@@ -149,6 +149,261 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreate[] = [
     autonomyLevel: 'L2' as const,
   },
 
+  // ── 4. Distill and Evaluate (Phase 73) ───────────────────────
+  {
+    name: 'distill-and-eval',
+    description:
+      'ML Pipeline: curate conversations → await distillation job completion → evaluate metrics → conditionally deploy if threshold met.',
+    steps: [
+      {
+        id: 'curate',
+        type: 'data_curation',
+        name: 'Curate Dataset',
+        description: 'Snapshot conversation data for distillation training',
+        config: {
+          outputDir: '{{input.outputDir}}',
+          personalityIds: '{{input.personalityIds}}',
+          minTurns: 2,
+          maxConversations: 2000,
+        },
+        dependsOn: [],
+        onError: 'fail',
+      },
+      {
+        id: 'train',
+        type: 'training_job',
+        name: 'Distillation Job',
+        description: 'Await completion of a pre-started distillation job',
+        config: {
+          jobType: 'distillation',
+          jobId: '{{input.distillationJobId}}',
+          timeoutMs: 7200000, // 2h
+          pollIntervalMs: 30000,
+        },
+        dependsOn: ['curate'],
+        onError: 'fail',
+      },
+      {
+        id: 'eval',
+        type: 'evaluation',
+        name: 'Evaluate Model',
+        description: 'Run evaluation suite against the distilled model endpoint',
+        config: {
+          datasetPath: '{{steps.curate.output.path}}',
+          modelEndpoint: '{{input.modelEndpoint}}',
+          maxSamples: 100,
+        },
+        dependsOn: ['train'],
+        onError: 'continue',
+      },
+      {
+        id: 'notify',
+        type: 'webhook',
+        name: 'Notify Results',
+        description: 'Post evaluation results to notification webhook',
+        config: {
+          url: '{{input.webhookUrl}}',
+          method: 'POST',
+          bodyTemplate:
+            '{"pipeline":"distill-and-eval","jobId":"{{input.distillationJobId}}","metrics":{{steps.eval.output.metrics}},"deployed":{{steps.deploy.output.deployed}}}',
+        },
+        dependsOn: ['eval'],
+        onError: 'continue',
+      },
+    ],
+    edges: [
+      { source: 'curate', target: 'train' },
+      { source: 'train', target: 'eval' },
+      { source: 'eval', target: 'notify' },
+    ],
+    triggers: [{ type: 'manual', config: {} }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L2' as const,
+  },
+
+  // ── 5. Finetune and Deploy (Phase 73) ────────────────────────
+  {
+    name: 'finetune-and-deploy',
+    description:
+      'ML Pipeline: curate dataset → run LoRA finetune → evaluate on held-out set → human approval → deploy to Ollama if eval passes.',
+    steps: [
+      {
+        id: 'curate',
+        type: 'data_curation',
+        name: 'Curate Dataset',
+        description: 'Snapshot conversation data for fine-tuning',
+        config: {
+          outputDir: '{{input.outputDir}}',
+          personalityIds: '{{input.personalityIds}}',
+          minTurns: 2,
+          maxConversations: 5000,
+        },
+        dependsOn: [],
+        onError: 'fail',
+      },
+      {
+        id: 'finetune',
+        type: 'training_job',
+        name: 'LoRA Finetune',
+        description: 'Start and await LoRA fine-tuning job',
+        config: {
+          jobType: 'finetune',
+          jobId: '{{input.finetuneJobId}}',
+          timeoutMs: 14400000, // 4h
+          pollIntervalMs: 60000,
+        },
+        dependsOn: ['curate'],
+        onError: 'fail',
+      },
+      {
+        id: 'eval',
+        type: 'evaluation',
+        name: 'Evaluate Fine-Tuned Model',
+        description: 'Measure model quality against held-out samples',
+        config: {
+          datasetPath: '{{input.evalDatasetPath}}',
+          modelEndpoint: '{{input.modelEndpoint}}',
+          maxSamples: 200,
+        },
+        dependsOn: ['finetune'],
+        onError: 'continue',
+      },
+      {
+        id: 'approve',
+        type: 'human_approval',
+        name: 'Human Approval Gate',
+        description: 'Pause for human review of eval results before deploying',
+        config: {
+          timeoutMs: 86400000, // 24h
+          reportTemplate:
+            '{"jobId":"{{input.finetuneJobId}}","metrics":{{steps.eval.output.metrics}},"adapterPath":"{{steps.finetune.output.adapterPath}}"}',
+        },
+        dependsOn: ['eval'],
+        onError: 'fail',
+      },
+      {
+        id: 'deploy',
+        type: 'conditional_deploy',
+        name: 'Deploy if Eval Passes',
+        description: 'Register adapter with Ollama when char_similarity ≥ threshold',
+        config: {
+          metricPath: 'steps.eval.output.metrics.char_similarity',
+          threshold: 0.6,
+          jobId: '{{input.finetuneJobId}}',
+          ollamaUrl: '{{input.ollamaUrl}}',
+          personalityId: '{{input.personalityId}}',
+          modelVersion: '{{input.adapterName}}',
+        },
+        dependsOn: ['approve'],
+        onError: 'continue',
+      },
+    ],
+    edges: [
+      { source: 'curate', target: 'finetune' },
+      { source: 'finetune', target: 'eval' },
+      { source: 'eval', target: 'approve' },
+      { source: 'approve', target: 'deploy' },
+    ],
+    triggers: [{ type: 'manual', config: {} }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L3' as const,
+  },
+
+  // ── 6. DPO Loop (Phase 73) ────────────────────────────────────
+  {
+    name: 'dpo-loop',
+    description:
+      'ML Pipeline: curate preference data → distillation with DPO format → evaluate win rate → promote model if win-rate > 55%.',
+    steps: [
+      {
+        id: 'curate',
+        type: 'data_curation',
+        name: 'Curate Preference Data',
+        description: 'Snapshot high-quality conversations for DPO training',
+        config: {
+          outputDir: '{{input.outputDir}}',
+          personalityIds: '{{input.personalityIds}}',
+          minTurns: 3,
+          maxConversations: 3000,
+        },
+        dependsOn: [],
+        onError: 'fail',
+      },
+      {
+        id: 'train',
+        type: 'training_job',
+        name: 'DPO Training',
+        description: 'Await completion of DPO distillation job',
+        config: {
+          jobType: 'distillation',
+          jobId: '{{input.dpoJobId}}',
+          timeoutMs: 10800000, // 3h
+          pollIntervalMs: 30000,
+        },
+        dependsOn: ['curate'],
+        onError: 'fail',
+      },
+      {
+        id: 'eval',
+        type: 'evaluation',
+        name: 'Win-Rate Evaluation',
+        description: 'Compare DPO model to baseline via char_similarity proxy',
+        config: {
+          datasetPath: '{{steps.curate.output.path}}',
+          modelEndpoint: '{{input.modelEndpoint}}',
+          maxSamples: 150,
+        },
+        dependsOn: ['train'],
+        onError: 'continue',
+      },
+      {
+        id: 'promote',
+        type: 'conditional_deploy',
+        name: 'Promote if Win-Rate > 55%',
+        description: 'Deploy DPO model when win-rate metric exceeds 55%',
+        config: {
+          metricPath: 'steps.eval.output.metrics.char_similarity',
+          threshold: 0.55,
+          jobId: '{{input.dpoJobId}}',
+          ollamaUrl: '{{input.ollamaUrl}}',
+          personalityId: '{{input.personalityId}}',
+          modelVersion: '{{input.adapterName}}',
+        },
+        dependsOn: ['eval'],
+        onError: 'continue',
+      },
+      {
+        id: 'notify',
+        type: 'webhook',
+        name: 'Notify DPO Outcome',
+        description: 'Report DPO loop result',
+        config: {
+          url: '{{input.webhookUrl}}',
+          method: 'POST',
+          bodyTemplate:
+            '{"pipeline":"dpo-loop","promoted":{{steps.promote.output.deployed}},"winRate":{{steps.eval.output.metrics.char_similarity}},"threshold":0.55}',
+        },
+        dependsOn: ['promote'],
+        onError: 'continue',
+      },
+    ],
+    edges: [
+      { source: 'curate', target: 'train' },
+      { source: 'train', target: 'eval' },
+      { source: 'eval', target: 'promote' },
+      { source: 'promote', target: 'notify' },
+    ],
+    triggers: [{ type: 'manual', config: {} }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L2' as const,
+  },
+
   // ── 3. Parallel Intelligence Gather ──────────────────────────
   {
     name: 'parallel-intelligence-gather',

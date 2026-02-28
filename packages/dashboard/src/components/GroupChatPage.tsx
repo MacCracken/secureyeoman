@@ -77,7 +77,7 @@ export function GroupChatPage() {
         ? fetchGroupChatMessages(selected.integrationId, selected.chatId, { limit: 50 })
         : Promise.resolve({ messages: [], total: 0 }),
     enabled: selected !== null,
-    refetchInterval: 5_000,
+    refetchInterval: 15_000,
   });
 
   const messages = (messagesData?.messages ?? []).slice().reverse(); // show oldest first

@@ -154,6 +154,10 @@ import os from 'os';
 import { OllamaProvider } from './ai/providers/ollama.js';
 import { DistillationManager } from './training/distillation-manager.js';
 import { FinetuneManager } from './training/finetune-manager.js';
+import { DataCurationManager } from './training/data-curation.js';
+import { EvaluationManager } from './training/evaluation-manager.js';
+import { PipelineApprovalManager } from './training/approval-manager.js';
+import { PipelineLineageStorage } from './training/pipeline-lineage.js';
 
 export interface SecureYeomanOptions {
   /** Configuration options */
@@ -268,6 +272,10 @@ export class SecureYeoman {
   private tenantManager: TenantManager | null = null;
   private distillationManager: DistillationManager | null = null;
   private finetuneManager: FinetuneManager | null = null;
+  private dataCurationManager: DataCurationManager | null = null;
+  private evaluationManager: EvaluationManager | null = null;
+  private pipelineApprovalManager: PipelineApprovalManager | null = null;
+  private pipelineLineageStorage: PipelineLineageStorage | null = null;
   private modelDefaultSet = false;
   private initialized = false;
   private startedAt: number | null = null;
@@ -1332,6 +1340,32 @@ export class SecureYeoman {
         this.logger.debug('FinetuneManager initialized');
       }
 
+      // Step 6j: Initialize ML Pipeline managers (Phase 73)
+      {
+        const pool = getPool();
+        const convStorage = this.chatConversationStorage;
+        if (convStorage) {
+          this.dataCurationManager = new DataCurationManager(
+            convStorage,
+            this.logger.child({ component: 'DataCurationManager' })
+          );
+          this.logger.debug('DataCurationManager initialized');
+        }
+        this.evaluationManager = new EvaluationManager(
+          this.logger.child({ component: 'EvaluationManager' })
+        );
+        this.logger.debug('EvaluationManager initialized');
+        this.pipelineApprovalManager = new PipelineApprovalManager(
+          pool,
+          this.logger.child({ component: 'PipelineApprovalManager' })
+        );
+        this.pipelineLineageStorage = new PipelineLineageStorage(
+          pool,
+          this.logger.child({ component: 'PipelineLineageStorage' })
+        );
+        this.logger.debug('ML Pipeline managers initialized');
+      }
+
       // Step 7: Record initialization in audit log
       await this.auditChain.record({
         event: 'system_initialized',
@@ -2165,6 +2199,38 @@ export class SecureYeoman {
   }
 
   /**
+   * Get the data curation manager instance (Phase 73).
+   */
+  getDataCurationManager(): DataCurationManager | null {
+    this.ensureInitialized();
+    return this.dataCurationManager;
+  }
+
+  /**
+   * Get the evaluation manager instance (Phase 73).
+   */
+  getEvaluationManager(): EvaluationManager | null {
+    this.ensureInitialized();
+    return this.evaluationManager;
+  }
+
+  /**
+   * Get the pipeline approval manager instance (Phase 73).
+   */
+  getPipelineApprovalManager(): PipelineApprovalManager | null {
+    this.ensureInitialized();
+    return this.pipelineApprovalManager;
+  }
+
+  /**
+   * Get the pipeline lineage storage instance (Phase 73).
+   */
+  getPipelineLineageStorage(): PipelineLineageStorage | null {
+    this.ensureInitialized();
+    return this.pipelineLineageStorage;
+  }
+
+  /**
    * Switch the AI model at runtime by recreating the AIClient.
    * The switch is not persisted across restarts.
    */
@@ -2409,6 +2475,12 @@ export class SecureYeoman {
           subAgentManager: subMgr2,
           swarmManager: this.swarmManager,
           logger: this.logger!.child({ component: 'WorkflowManager' }),
+          dataCurationManager: this.dataCurationManager,
+          distillationManager: this.distillationManager,
+          finetuneManager: this.finetuneManager,
+          evaluationManager: this.evaluationManager,
+          approvalManager: this.pipelineApprovalManager,
+          lineageStorage: this.pipelineLineageStorage,
         });
         await this.workflowManager.initialize();
         this.logger!.debug('Workflow manager initialized');

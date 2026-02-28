@@ -240,9 +240,7 @@ export interface UseChatStreamOptions {
 
 export interface UseChatStreamReturn {
   messages: ChatMessage[];
-  input: string;
-  setInput: React.Dispatch<React.SetStateAction<string>>;
-  handleSend: () => void;
+  sendMessage: (text: string) => void;
   isPending: boolean;
   clearMessages: () => void;
   conversationId: string | null;
@@ -254,7 +252,6 @@ export interface UseChatStreamReturn {
 
 export function useChatStream(options?: UseChatStreamOptions): UseChatStreamReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
   const [isPending, setIsPending] = useState(false);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(
     options?.conversationId ?? null
@@ -323,8 +320,8 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
     setActiveToolCalls([]);
   }, []);
 
-  const handleSend = useCallback(async () => {
-    const trimmed = input.trim();
+  const sendMessage = useCallback(async (text: string) => {
+    const trimmed = text.trim();
     if (!trimmed || isPending) return;
 
     // Cancel any in-flight request
@@ -338,7 +335,6 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInput('');
     setIsPending(true);
     setStreamingThinking('');
     setStreamingContent('');
@@ -520,13 +516,11 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
       setStreamingContent('');
       setActiveToolCalls([]);
     }
-  }, [input, isPending, messages, activeConversationId, options, queryClient]);
+  }, [isPending, messages, activeConversationId, options, queryClient]);
 
   return {
     messages,
-    input,
-    setInput,
-    handleSend,
+    sendMessage,
     isPending,
     clearMessages,
     conversationId: activeConversationId,

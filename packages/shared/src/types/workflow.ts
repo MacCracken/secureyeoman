@@ -20,6 +20,12 @@ export const WorkflowStepTypeSchema = z.enum([
   'webhook',
   'subworkflow',
   'swarm',
+  // ML Pipeline step types (Phase 73)
+  'data_curation',
+  'training_job',
+  'evaluation',
+  'conditional_deploy',
+  'human_approval',
 ]);
 export type WorkflowStepType = z.infer<typeof WorkflowStepTypeSchema>;
 

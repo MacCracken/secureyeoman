@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useEffect, useCallback, useState, memo } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import {
   Send,
@@ -41,12 +41,419 @@ import { useChatStream } from '../hooks/useChat';
 import { ThinkingBlock } from './ThinkingBlock';
 import { useVoice } from '../hooks/useVoice';
 import { usePushToTalk } from '../hooks/usePushToTalk';
-import type { Personality, BrainContext, Conversation, CreationEvent } from '../types';
+import type { Personality, Conversation, CreationEvent } from '../types';
+import type { ChatMessage } from '../types';
 import { sanitizeText } from '../utils/sanitize';
 import { ChatMarkdown } from './ChatMarkdown';
 import { GroupChatPage } from './GroupChatPage';
 import { PersonalityAvatar } from './PersonalityEditor';
 import { Link } from 'react-router-dom';
+import { useVirtualizer } from '@tanstack/react-virtual';
+
+// ── MessageBubble ─────────────────────────────────────────────────────────────
+
+interface MessageBubbleProps {
+  msg: ChatMessage;
+  index: number;
+  personality: Personality | undefined;
+  isExpanded: boolean;
+  isRemembered: boolean;
+  feedbackValue: 'positive' | 'negative' | undefined;
+  isBeingEdited: boolean;
+  isPending: boolean;
+  onToggleBrain: (i: number) => void;
+  onRemember: (i: number) => void;
+  onFeedback: (i: number, type: 'positive' | 'negative') => void;
+  onEditStart: (i: number) => void;
+}
+
+const MessageBubble = memo(function MessageBubble({
+  msg,
+  index,
+  personality,
+  isExpanded,
+  isRemembered,
+  feedbackValue,
+  isBeingEdited,
+  isPending,
+  onToggleBrain,
+  onRemember,
+  onFeedback,
+  onEditStart,
+}: MessageBubbleProps) {
+  const hasBrainContext =
+    msg.role === 'assistant' &&
+    msg.brainContext &&
+    (msg.brainContext.memoriesUsed > 0 || msg.brainContext.knowledgeUsed > 0);
+
+  return (
+    <div className={`flex group ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={`max-w-[90%] sm:max-w-[75%] md:max-w-[70%] rounded-lg px-4 py-3 break-words ${
+          msg.role === 'user'
+            ? isBeingEdited
+              ? 'bg-primary/70 text-primary-foreground ring-2 ring-primary'
+              : 'bg-primary text-primary-foreground'
+            : 'bg-muted'
+        }`}
+      >
+        <div className="flex items-center gap-2 mb-1">
+          {msg.role === 'user' ? (
+            <User className="w-3 h-3" />
+          ) : personality ? (
+            <PersonalityAvatar personality={personality} size={12} />
+          ) : (
+            <Bot className="w-3 h-3" />
+          )}
+          <span className="text-xs opacity-70">
+            {msg.role === 'user' ? 'You' : (personality?.name ?? 'Assistant')}
+          </span>
+          {msg.model && <span className="text-xs opacity-50">{msg.model}</span>}
+          {msg.timestamp != null && (
+            <span className="text-xs opacity-40 ml-auto">
+              {new Date(msg.timestamp).toLocaleDateString([], {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              })}{' '}
+              {new Date(msg.timestamp).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+              })}
+            </span>
+          )}
+
+          {/* Edit button on user messages */}
+          {msg.role === 'user' && !isPending && (
+            <button
+              onClick={() => onEditStart(index)}
+              className="ml-auto opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
+              title="Edit and resend from here"
+              data-testid={`edit-msg-${index}`}
+            >
+              <Pencil className="w-3 h-3" />
+            </button>
+          )}
+
+          {/* Brain context indicator */}
+          {hasBrainContext && (
+            <button
+              onClick={() => onToggleBrain(index)}
+              className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full hover:bg-primary/20 transition-colors"
+              data-testid={`brain-indicator-${index}`}
+              title="Brain context was used"
+            >
+              <Brain className="w-3 h-3" />
+              <span>
+                {msg.brainContext!.memoriesUsed + msg.brainContext!.knowledgeUsed}
+              </span>
+            </button>
+          )}
+        </div>
+
+        {/* Brain context snippets popover */}
+        {isExpanded && msg.brainContext && (
+          <div
+            className="mb-2 p-2 rounded bg-background/80 border text-xs space-y-1"
+            data-testid={`brain-context-${index}`}
+          >
+            <div className="font-medium flex items-center gap-1">
+              <Brain className="w-3 h-3" /> Brain Context
+            </div>
+            <div className="text-muted-foreground">
+              {msg.brainContext.memoriesUsed} memories,{' '}
+              {msg.brainContext.knowledgeUsed} knowledge
+            </div>
+            {msg.brainContext.contextSnippets.length > 0 && (
+              <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
+                {msg.brainContext.contextSnippets.map((s, j) => (
+                  <li key={j}>{sanitizeText(s)}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {/* Phase 1 — Thinking */}
+        {msg.role === 'assistant' && msg.thinkingContent && (
+          <ThinkingBlock thinking={msg.thinkingContent} />
+        )}
+
+        {/* Phase 2 — Tool use (badges + creation outcomes), shown before the response */}
+        {msg.role === 'assistant' &&
+          ((msg.toolCalls?.length ?? 0) > 0 ||
+            (msg.creationEvents?.length ?? 0) > 0) && (
+            <div
+              className={`space-y-1 mb-2 ${msg.thinkingContent ? 'border-t border-muted-foreground/15 pt-2 mt-1' : ''}`}
+            >
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70 mb-1">
+                <Wrench className="w-3 h-3 shrink-0" />
+                <span>Tools used</span>
+              </div>
+              {/* Tool call badges */}
+              {msg.toolCalls && msg.toolCalls.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-1">
+                  {msg.toolCalls.map((tc, j) => (
+                    <span
+                      key={j}
+                      className="inline-flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full"
+                    >
+                      <Sparkles className="w-2.5 h-2.5" />
+                      {tc.isMcp && tc.serverName
+                        ? `${tc.serverName}: ${tc.toolName}`
+                        : tc.label}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {/* Creation outcomes */}
+              {msg.creationEvents?.map((ev: CreationEvent, j: number) => (
+                <div
+                  key={j}
+                  className="flex items-center gap-1.5 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-md border border-primary/20"
+                  data-testid={`creation-event-${index}-${j}`}
+                >
+                  <Sparkles className="w-3 h-3 shrink-0" />
+                  <span>
+                    {ev.label} {ev.action ?? 'Created'}:{' '}
+                    <strong className="font-medium">{sanitizeText(ev.name)}</strong>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+        {/* Phase 3 — Response */}
+        {msg.role === 'assistant' ? (
+          <div
+            className={
+              msg.thinkingContent ||
+              (msg.toolCalls?.length ?? 0) > 0 ||
+              (msg.creationEvents?.length ?? 0) > 0
+                ? 'border-t border-muted-foreground/15 pt-2 mt-1'
+                : ''
+            }
+          >
+            <ChatMarkdown content={sanitizeText(msg.content)} size="sm" />
+          </div>
+        ) : (
+          <p className="text-sm whitespace-pre-wrap">{sanitizeText(msg.content)}</p>
+        )}
+
+        <div className="flex items-center gap-2 mt-1">
+          {msg.tokensUsed !== undefined && (
+            <span className="text-xs opacity-50">{msg.tokensUsed} tokens</span>
+          )}
+
+          {/* Remember button on assistant messages */}
+          {msg.role === 'assistant' && (
+            <button
+              onClick={() => onRemember(index)}
+              disabled={isRemembered}
+              className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded hover:bg-primary/10 transition-colors ${
+                isRemembered
+                  ? 'text-primary opacity-70'
+                  : 'opacity-40 hover:opacity-70'
+              }`}
+              data-testid={`remember-btn-${index}`}
+              title={isRemembered ? 'Remembered' : 'Remember this response'}
+            >
+              <Bookmark
+                className={`w-3 h-3 ${isRemembered ? 'fill-current' : ''}`}
+              />
+              {isRemembered ? 'Remembered' : 'Remember'}
+            </button>
+          )}
+
+          {/* Feedback buttons on assistant messages */}
+          {msg.role === 'assistant' && (
+            <>
+              <button
+                onClick={() => onFeedback(index, 'positive')}
+                disabled={feedbackValue !== undefined}
+                className={`inline-flex items-center p-0.5 rounded hover:bg-primary/10 transition-colors ${
+                  feedbackValue === 'positive'
+                    ? 'text-green-400 opacity-90'
+                    : 'opacity-30 hover:opacity-60'
+                }`}
+                data-testid={`feedback-up-${index}`}
+                title="Good response"
+              >
+                <ThumbsUp
+                  className={`w-3 h-3 ${feedbackValue === 'positive' ? 'fill-current' : ''}`}
+                />
+              </button>
+              <button
+                onClick={() => onFeedback(index, 'negative')}
+                disabled={feedbackValue !== undefined}
+                className={`inline-flex items-center p-0.5 rounded hover:bg-primary/10 transition-colors ${
+                  feedbackValue === 'negative'
+                    ? 'text-red-400 opacity-90'
+                    : 'opacity-30 hover:opacity-60'
+                }`}
+                data-testid={`feedback-down-${index}`}
+                title="Poor response"
+              >
+                <ThumbsDown
+                  className={`w-3 h-3 ${feedbackValue === 'negative' ? 'fill-current' : ''}`}
+                />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
+
+// ── ChatInputArea ─────────────────────────────────────────────────────────────
+
+interface ChatInputAreaProps {
+  onSend: (text: string) => void;
+  isPending: boolean;
+  editValue: string;
+  onCancelEdit: () => void;
+  isEditing: boolean;
+  voice: ReturnType<typeof useVoice>;
+  ptt: ReturnType<typeof usePushToTalk>;
+  hasVision: boolean;
+  hasAuditory: boolean;
+  personalityName: string | undefined;
+  onTyping: () => void;
+}
+
+const ChatInputArea = memo(function ChatInputArea({
+  onSend,
+  isPending,
+  editValue,
+  onCancelEdit,
+  isEditing,
+  voice,
+  ptt,
+  hasVision,
+  hasAuditory,
+  personalityName,
+  onTyping,
+}: ChatInputAreaProps) {
+  const [localInput, setLocalInput] = useState('');
+
+  // Seed localInput from editValue when editing starts or the message changes
+  useEffect(() => {
+    setLocalInput(editValue);
+  }, [editValue]);
+
+  // Append voice transcript
+  useEffect(() => {
+    if (voice.transcript) {
+      setLocalInput((prev) => prev + voice.transcript);
+      voice.clearTranscript();
+    }
+  }, [voice.transcript]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Append PTT transcript (detect new transcript via value change)
+  const prevPttTranscript = useRef('');
+  useEffect(() => {
+    if (ptt.transcript && ptt.transcript !== prevPttTranscript.current) {
+      setLocalInput((prev) => prev + ptt.transcript);
+      prevPttTranscript.current = ptt.transcript;
+    }
+  }, [ptt.transcript]);
+
+  const handleSend = () => {
+    const trimmed = localInput.trim();
+    if (!trimmed || isPending) return;
+    onSend(trimmed);
+    setLocalInput('');
+  };
+
+  const handleCancel = () => {
+    setLocalInput('');
+    onCancelEdit();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  return (
+    <div className="border-t pt-4">
+      {/* Edit mode indicator */}
+      {isEditing && (
+        <div className="flex items-center justify-between bg-primary/10 text-primary text-xs px-3 py-1.5 rounded-t-lg border border-b-0 border-primary/20 mb-0">
+          <div className="flex items-center gap-1.5">
+            <Pencil className="w-3 h-3" />
+            <span>Editing message — history from this point will be replaced</span>
+          </div>
+          <button
+            onClick={handleCancel}
+            className="hover:opacity-80 transition-opacity"
+            title="Cancel edit"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+      <div className="flex gap-2 sm:gap-3 items-end">
+        {hasVision && (
+          <button
+            className="btn-ghost p-3 rounded-lg text-muted-foreground hover:text-foreground"
+            title="Upload image (vision enabled)"
+          >
+            <ImagePlus className="w-4 h-4" />
+          </button>
+        )}
+        <textarea
+          value={localInput}
+          onChange={(e) => {
+            setLocalInput(e.target.value);
+            onTyping();
+          }}
+          onKeyDown={handleKeyDown}
+          placeholder={`Message ${personalityName ?? 'the assistant'}...`}
+          disabled={isPending}
+          rows={3}
+          className="flex-1 resize-none rounded-lg border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 min-h-[80px] max-h-[200px]"
+        />
+        {hasAuditory && (
+          <VoiceToggle
+            voiceEnabled={voice.voiceEnabled}
+            isListening={voice.isListening}
+            isSpeaking={voice.isSpeaking}
+            supported={voice.supported}
+            onToggle={voice.toggleVoice}
+          />
+        )}
+        <button
+          onClick={handleSend}
+          disabled={!localInput.trim() || isPending}
+          className="btn btn-ghost px-3 py-3 rounded-lg disabled:opacity-50 h-[52px]"
+          title={isEditing ? 'Update and resend' : 'Send message'}
+        >
+          {isPending ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : isEditing ? (
+            <Check className="w-4 h-4" />
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
+        </button>
+      </div>
+      <VoiceOverlay
+        isActive={ptt.isActive}
+        audioLevel={ptt.audioLevel}
+        duration={ptt.duration}
+        transcript={ptt.transcript}
+        error={ptt.error}
+      />
+    </div>
+  );
+});
+
+// ── ChatPage ──────────────────────────────────────────────────────────────────
 
 export function ChatPage() {
   const [showModelWidget, setShowModelWidget] = useState(false);
@@ -72,12 +479,29 @@ export function ChatPage() {
   const [editTitle, setEditTitle] = useState('');
   const [memoryEnabled, setMemoryEnabled] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   // Track whether the initial batch of messages has been scrolled to instantly.
-  // On first load we jump to the bottom without animation; subsequent new
-  // messages during the session use smooth scrolling.
   const initialScrollDone = useRef(false);
   const [activeSection, setActiveSection] = useState<'personality' | 'group'>('personality');
+
+  // ── Typing detection refs (Fix 3) ────────────────────────────────────────
+  const isTypingRef = useRef(false);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleTyping = useCallback(() => {
+    isTypingRef.current = true;
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+    }, 3000);
+  }, []);
+
+  // Cleanup typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
+  }, []);
 
   const queryClient = useQueryClient();
 
@@ -103,14 +527,12 @@ export function ChatPage() {
     queryKey: ['conversations', effectivePersonalityId],
     queryFn: () =>
       fetchConversations({ limit: 50, personalityId: effectivePersonalityId ?? undefined }),
-    refetchInterval: 30000,
+    refetchInterval: () => (isTypingRef.current ? false : 30_000),
   });
 
   const conversations = conversationsData?.conversations ?? [];
 
   // Validate the restored conversation ID once conversations are loaded.
-  // If the stored ID is not found (different auth session, deleted conversation, etc.)
-  // clear it so we start with an empty chat instead of a broken state.
   useEffect(() => {
     if (!conversationsLoading && conversationsData && selectedConversationId) {
       const found = conversations.some((c) => c.id === selectedConversationId);
@@ -133,14 +555,11 @@ export function ChatPage() {
   const [feedbackGiven, setFeedbackGiven] = useState<Map<number, 'positive' | 'negative'>>(
     new Map()
   );
-  // Message editing state — tracks which user message is being edited
   const [editingMsgIdx, setEditingMsgIdx] = useState<number | null>(null);
 
   const {
     messages,
-    input,
-    setInput,
-    handleSend,
+    sendMessage,
     isPending,
     clearMessages,
     conversationId,
@@ -153,8 +572,19 @@ export function ChatPage() {
     memoryEnabled,
   });
 
-  // Track whether any tool calls occurred during the current stream so we can
-  // draw a separator before the response even after the badges have cleared.
+  // Derive editValue from editingMsgIdx for ChatInputArea
+  const editValue = editingMsgIdx !== null ? (messages[editingMsgIdx]?.content ?? '') : '';
+
+  // Refs for stable callbacks
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+  const conversationIdRef = useRef(conversationId);
+  conversationIdRef.current = conversationId;
+  const feedbackGivenRef = useRef(feedbackGiven);
+  feedbackGivenRef.current = feedbackGiven;
+  const rememberMutationRef = useRef<typeof rememberMutation | null>(null);
+
+  // Track whether any tool calls occurred during the current stream
   const [hadActiveTools, setHadActiveTools] = useState(false);
   useEffect(() => {
     if (activeToolCalls.length > 0) setHadActiveTools(true);
@@ -194,24 +624,45 @@ export function ChatPage() {
     mutationFn: ({ content, context }: { content: string; context?: Record<string, string> }) =>
       rememberChatMessage(content, context),
   });
+  // Keep ref updated for use in stable callbacks
+  rememberMutationRef.current = rememberMutation;
 
-  const handleRemember = useCallback(
-    (msgIndex: number, content: string) => {
-      rememberMutation.mutate({ content });
-      setRememberedIndices((prev) => new Set(prev).add(msgIndex));
+  // ── Stable callbacks for MessageBubble (memo-safe) ────────────────────────
+
+  const handleToggleBrain = useCallback((i: number) => {
+    setExpandedBrainIdx((prev) => (prev === i ? null : i));
+  }, []);
+
+  const handleRemember = useCallback((msgIndex: number) => {
+    const content = messagesRef.current[msgIndex]?.content ?? '';
+    rememberMutationRef.current?.mutate({ content });
+    setRememberedIndices((prev) => new Set(prev).add(msgIndex));
+  }, []);
+
+  const handleFeedback = useCallback((msgIndex: number, feedback: 'positive' | 'negative') => {
+    if (feedbackGivenRef.current.has(msgIndex)) return;
+    const msgId = `msg_${msgIndex}`;
+    submitFeedback(conversationIdRef.current ?? 'default', msgId, feedback).catch(() => {});
+    setFeedbackGiven((prev) => new Map(prev).set(msgIndex, feedback));
+  }, []);
+
+  const handleEditStart = useCallback((i: number) => {
+    setEditingMsgIdx(i);
+  }, []);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingMsgIdx(null);
+  }, []);
+
+  const handleSendWrapper = useCallback(
+    (text: string) => {
+      setEditingMsgIdx(null);
+      sendMessage(text);
     },
-    [rememberMutation]
+    [sendMessage]
   );
 
-  const handleFeedback = useCallback(
-    (msgIndex: number, feedback: 'positive' | 'negative') => {
-      if (feedbackGiven.has(msgIndex)) return;
-      const msgId = `msg_${msgIndex}`;
-      submitFeedback(conversationId ?? 'default', msgId, feedback).catch(() => {});
-      setFeedbackGiven((prev) => new Map(prev).set(msgIndex, feedback));
-    },
-    [conversationId, feedbackGiven]
-  );
+  // ── Conversation management callbacks ────────────────────────────────────
 
   const handleNewChat = useCallback(() => {
     initialScrollDone.current = false;
@@ -263,10 +714,8 @@ export function ChatPage() {
 
   const ptt = usePushToTalk(
     { hotkey: 'ctrl+shift+v', maxDurationMs: 60000, silenceTimeoutMs: 2000 },
-    (transcript) => {
-      if (transcript) {
-        setInput(input + transcript);
-      }
+    () => {
+      // Transcript is handled inside ChatInputArea via ptt.transcript prop
     }
   );
 
@@ -286,14 +735,6 @@ export function ChatPage() {
     }
   }, [effectivePersonalityId, queryClient]);
 
-  // Feed voice transcript into input
-  useEffect(() => {
-    if (voice.transcript) {
-      setInput((prev: string) => prev + voice.transcript);
-      voice.clearTranscript();
-    }
-  }, [voice.transcript, setInput, voice.clearTranscript]);
-
   // Speak assistant messages when voice is enabled
   const lastMsgCount = useRef(0);
   useEffect(() => {
@@ -306,9 +747,7 @@ export function ChatPage() {
     lastMsgCount.current = messages.length;
   }, [messages.length, voice.voiceEnabled, voice.speak, messages]);
 
-  // Auto-scroll on new messages.
-  // First load: jump instantly so the page starts at the bottom without
-  // animating through the entire history. Subsequent new messages use smooth.
+  // Auto-scroll on new messages / streaming
   useEffect(() => {
     if (!messagesEndRef.current || typeof messagesEndRef.current.scrollIntoView !== 'function') return;
     if (!initialScrollDone.current) {
@@ -319,26 +758,15 @@ export function ChatPage() {
     }
   }, [messages.length, isPending]);
 
-  const handleCancelEdit = useCallback(() => {
-    setEditingMsgIdx(null);
-    setInput('');
-  }, [setInput]);
+  // ── Virtual scrolling (Fix 6) ─────────────────────────────────────────────
 
-  /** Unified send: clears edit state and sends via streaming hook. */
-  const doSend = useCallback(() => {
-    setEditingMsgIdx(null);
-    handleSend();
-  }, [handleSend]);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        doSend();
-      }
-    },
-    [doSend]
-  );
+  const rowVirtualizer = useVirtualizer({
+    count: messages.length,
+    getScrollElement: () => containerRef.current,
+    estimateSize: () => 120,
+    overscan: 5,
+    measureElement: (el) => el.getBoundingClientRect().height,
+  });
 
   return (
     <div className="flex flex-col h-[calc(100vh-100px)] sm:h-[calc(100vh-140px)]">
@@ -513,7 +941,7 @@ export function ChatPage() {
             </>
           )}
 
-          {/* Sidebar toggle button - positioned to the left of the sidebar */}
+          {/* Sidebar toggle button */}
           <button
             onClick={() => {
               setSidebarOpen((v) => !v);
@@ -580,7 +1008,6 @@ export function ChatPage() {
                         onClick={() => {
                           setSelectedPersonalityId(p.id);
                           setShowPersonalityPicker(false);
-                          // Clear conversation state so the sidebar reloads for this personality
                           setSelectedConversationId(null);
                           clearMessages();
                           setRememberedIndices(new Set());
@@ -664,8 +1091,11 @@ export function ChatPage() {
               </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-4 pb-4">
+            {/* Messages — virtualised list */}
+            <div
+              ref={containerRef}
+              className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-4"
+            >
               {messages.length === 0 && (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
                   <div className="text-center">
@@ -697,253 +1127,50 @@ export function ChatPage() {
                 </div>
               )}
 
-              {messages.map((msg, i) => {
-                const hasBrainContext =
-                  msg.role === 'assistant' &&
-                  msg.brainContext &&
-                  (msg.brainContext.memoriesUsed > 0 || msg.brainContext.knowledgeUsed > 0);
-                const isBeingEdited = editingMsgIdx === i;
-
-                return (
-                  <div
-                    key={i}
-                    className={`flex group ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
+              {/* Virtualised message rows */}
+              <div
+                style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}
+              >
+                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const msg = messages[virtualRow.index];
+                  const i = virtualRow.index;
+                  return (
                     <div
-                      className={`max-w-[90%] sm:max-w-[75%] md:max-w-[70%] rounded-lg px-4 py-3 break-words ${
-                        msg.role === 'user'
-                          ? isBeingEdited
-                            ? 'bg-primary/70 text-primary-foreground ring-2 ring-primary'
-                            : 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      }`}
+                      key={virtualRow.key}
+                      data-index={virtualRow.index}
+                      ref={rowVirtualizer.measureElement}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        transform: `translateY(${virtualRow.start}px)`,
+                      }}
                     >
-                      <div className="flex items-center gap-2 mb-1">
-                        {msg.role === 'user' ? (
-                          <User className="w-3 h-3" />
-                        ) : personality ? (
-                          <PersonalityAvatar personality={personality} size={12} />
-                        ) : (
-                          <Bot className="w-3 h-3" />
-                        )}
-                        <span className="text-xs opacity-70">
-                          {msg.role === 'user' ? 'You' : (personality?.name ?? 'Assistant')}
-                        </span>
-                        {msg.model && <span className="text-xs opacity-50">{msg.model}</span>}
-                        {msg.timestamp != null && (
-                          <span className="text-xs opacity-40 ml-auto">
-                            {new Date(msg.timestamp).toLocaleDateString([], {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                            })}{' '}
-                            {new Date(msg.timestamp).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              second: '2-digit',
-                            })}
-                          </span>
-                        )}
-
-                        {/* Edit button on user messages */}
-                        {msg.role === 'user' && !isPending && (
-                          <button
-                            onClick={() => {
-                              setEditingMsgIdx(i);
-                              setInput(msg.content);
-                            }}
-                            className="ml-auto opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
-                            title="Edit and resend from here"
-                            data-testid={`edit-msg-${i}`}
-                          >
-                            <Pencil className="w-3 h-3" />
-                          </button>
-                        )}
-
-                        {/* Brain context indicator */}
-                        {hasBrainContext && (
-                          <button
-                            onClick={() => {
-                              setExpandedBrainIdx(expandedBrainIdx === i ? null : i);
-                            }}
-                            className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full hover:bg-primary/20 transition-colors"
-                            data-testid={`brain-indicator-${i}`}
-                            title="Brain context was used"
-                          >
-                            <Brain className="w-3 h-3" />
-                            <span>
-                              {msg.brainContext!.memoriesUsed + msg.brainContext!.knowledgeUsed}
-                            </span>
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Brain context snippets popover */}
-                      {expandedBrainIdx === i && msg.brainContext && (
-                        <div
-                          className="mb-2 p-2 rounded bg-background/80 border text-xs space-y-1"
-                          data-testid={`brain-context-${i}`}
-                        >
-                          <div className="font-medium flex items-center gap-1">
-                            <Brain className="w-3 h-3" /> Brain Context
-                          </div>
-                          <div className="text-muted-foreground">
-                            {msg.brainContext.memoriesUsed} memories,{' '}
-                            {msg.brainContext.knowledgeUsed} knowledge
-                          </div>
-                          {msg.brainContext.contextSnippets.length > 0 && (
-                            <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
-                              {msg.brainContext.contextSnippets.map((s, j) => (
-                                <li key={j}>{sanitizeText(s)}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Phase 1 — Thinking */}
-                      {msg.role === 'assistant' && msg.thinkingContent && (
-                        <ThinkingBlock thinking={msg.thinkingContent} />
-                      )}
-
-                      {/* Phase 2 — Tool use (badges + creation outcomes), shown before the response */}
-                      {msg.role === 'assistant' &&
-                        ((msg.toolCalls?.length ?? 0) > 0 ||
-                          (msg.creationEvents?.length ?? 0) > 0) && (
-                          <div
-                            className={`space-y-1 mb-2 ${msg.thinkingContent ? 'border-t border-muted-foreground/15 pt-2 mt-1' : ''}`}
-                          >
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70 mb-1">
-                              <Wrench className="w-3 h-3 shrink-0" />
-                              <span>Tools used</span>
-                            </div>
-                            {/* Tool call badges */}
-                            {msg.toolCalls && msg.toolCalls.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mb-1">
-                                {msg.toolCalls.map((tc, j) => (
-                                  <span
-                                    key={j}
-                                    className="inline-flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full"
-                                  >
-                                    <Sparkles className="w-2.5 h-2.5" />
-                                    {tc.isMcp && tc.serverName
-                                      ? `${tc.serverName}: ${tc.toolName}`
-                                      : tc.label}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                            {/* Creation outcomes */}
-                            {msg.creationEvents?.map((ev: CreationEvent, j: number) => (
-                              <div
-                                key={j}
-                                className="flex items-center gap-1.5 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-md border border-primary/20"
-                                data-testid={`creation-event-${i}-${j}`}
-                              >
-                                <Sparkles className="w-3 h-3 shrink-0" />
-                                <span>
-                                  {ev.label} {ev.action ?? 'Created'}:{' '}
-                                  <strong className="font-medium">{sanitizeText(ev.name)}</strong>
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                      {/* Phase 3 — Response */}
-                      {msg.role === 'assistant' ? (
-                        <div
-                          className={
-                            msg.thinkingContent ||
-                            (msg.toolCalls?.length ?? 0) > 0 ||
-                            (msg.creationEvents?.length ?? 0) > 0
-                              ? 'border-t border-muted-foreground/15 pt-2 mt-1'
-                              : ''
-                          }
-                        >
-                          <ChatMarkdown content={sanitizeText(msg.content)} size="sm" />
-                        </div>
-                      ) : (
-                        <p className="text-sm whitespace-pre-wrap">{sanitizeText(msg.content)}</p>
-                      )}
-
-                      <div className="flex items-center gap-2 mt-1">
-                        {msg.tokensUsed !== undefined && (
-                          <span className="text-xs opacity-50">{msg.tokensUsed} tokens</span>
-                        )}
-
-                        {/* Remember button on assistant messages */}
-                        {msg.role === 'assistant' && (
-                          <button
-                            onClick={() => {
-                              handleRemember(i, msg.content);
-                            }}
-                            disabled={rememberedIndices.has(i)}
-                            className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded hover:bg-primary/10 transition-colors ${
-                              rememberedIndices.has(i)
-                                ? 'text-primary opacity-70'
-                                : 'opacity-40 hover:opacity-70'
-                            }`}
-                            data-testid={`remember-btn-${i}`}
-                            title={
-                              rememberedIndices.has(i) ? 'Remembered' : 'Remember this response'
-                            }
-                          >
-                            <Bookmark
-                              className={`w-3 h-3 ${rememberedIndices.has(i) ? 'fill-current' : ''}`}
-                            />
-                            {rememberedIndices.has(i) ? 'Remembered' : 'Remember'}
-                          </button>
-                        )}
-
-                        {/* Feedback buttons on assistant messages */}
-                        {msg.role === 'assistant' && (
-                          <>
-                            <button
-                              onClick={() => {
-                                handleFeedback(i, 'positive');
-                              }}
-                              disabled={feedbackGiven.has(i)}
-                              className={`inline-flex items-center p-0.5 rounded hover:bg-primary/10 transition-colors ${
-                                feedbackGiven.get(i) === 'positive'
-                                  ? 'text-green-400 opacity-90'
-                                  : 'opacity-30 hover:opacity-60'
-                              }`}
-                              data-testid={`feedback-up-${i}`}
-                              title="Good response"
-                            >
-                              <ThumbsUp
-                                className={`w-3 h-3 ${feedbackGiven.get(i) === 'positive' ? 'fill-current' : ''}`}
-                              />
-                            </button>
-                            <button
-                              onClick={() => {
-                                handleFeedback(i, 'negative');
-                              }}
-                              disabled={feedbackGiven.has(i)}
-                              className={`inline-flex items-center p-0.5 rounded hover:bg-primary/10 transition-colors ${
-                                feedbackGiven.get(i) === 'negative'
-                                  ? 'text-red-400 opacity-90'
-                                  : 'opacity-30 hover:opacity-60'
-                              }`}
-                              data-testid={`feedback-down-${i}`}
-                              title="Poor response"
-                            >
-                              <ThumbsDown
-                                className={`w-3 h-3 ${feedbackGiven.get(i) === 'negative' ? 'fill-current' : ''}`}
-                              />
-                            </button>
-                          </>
-                        )}
+                      <div className="pb-4">
+                        <MessageBubble
+                          msg={msg}
+                          index={i}
+                          personality={personality ?? undefined}
+                          isExpanded={expandedBrainIdx === i}
+                          isRemembered={rememberedIndices.has(i)}
+                          feedbackValue={feedbackGiven.get(i)}
+                          isBeingEdited={editingMsgIdx === i}
+                          isPending={isPending}
+                          onToggleBrain={handleToggleBrain}
+                          onRemember={handleRemember}
+                          onFeedback={handleFeedback}
+                          onEditStart={handleEditStart}
+                        />
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
 
               {/* Live streaming response */}
               {isPending && (
-                <div className="flex justify-start">
+                <div className="flex justify-start mb-4">
                   <div className="bg-muted rounded-lg px-4 py-3 max-w-[90%] sm:max-w-[75%] break-words">
                     <div className="flex items-center gap-2 mb-1">
                       <Bot className="w-3 h-3" />
@@ -1020,77 +1247,20 @@ export function ChatPage() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input area */}
-            <div className="border-t pt-4">
-              {/* Edit mode indicator */}
-              {editingMsgIdx !== null && (
-                <div className="flex items-center justify-between bg-primary/10 text-primary text-xs px-3 py-1.5 rounded-t-lg border border-b-0 border-primary/20 mb-0">
-                  <div className="flex items-center gap-1.5">
-                    <Pencil className="w-3 h-3" />
-                    <span>Editing message — history from this point will be replaced</span>
-                  </div>
-                  <button
-                    onClick={handleCancelEdit}
-                    className="hover:opacity-80 transition-opacity"
-                    title="Cancel edit"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-              <div className="flex gap-2 sm:gap-3 items-end">
-                {hasVision && (
-                  <button
-                    className="btn-ghost p-3 rounded-lg text-muted-foreground hover:text-foreground"
-                    title="Upload image (vision enabled)"
-                  >
-                    <ImagePlus className="w-4 h-4" />
-                  </button>
-                )}
-                <textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={(e) => {
-                    setInput(e.target.value);
-                  }}
-                  onKeyDown={handleKeyDown}
-                  placeholder={`Message ${personality?.name ?? 'the assistant'}...`}
-                  disabled={isPending}
-                  rows={3}
-                  className="flex-1 resize-none rounded-lg border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 min-h-[80px] max-h-[200px]"
-                />
-                {hasAuditory && (
-                  <VoiceToggle
-                    voiceEnabled={voice.voiceEnabled}
-                    isListening={voice.isListening}
-                    isSpeaking={voice.isSpeaking}
-                    supported={voice.supported}
-                    onToggle={voice.toggleVoice}
-                  />
-                )}
-                <button
-                  onClick={doSend}
-                  disabled={!input.trim() || isPending}
-                  className="btn btn-ghost px-3 py-3 rounded-lg disabled:opacity-50 h-[52px]"
-                  title={editingMsgIdx !== null ? 'Update and resend' : 'Send message'}
-                >
-                  {isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : editingMsgIdx !== null ? (
-                    <Check className="w-4 h-4" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-              <VoiceOverlay
-                isActive={ptt.isActive}
-                audioLevel={ptt.audioLevel}
-                duration={ptt.duration}
-                transcript={ptt.transcript}
-                error={ptt.error}
-              />
-            </div>
+            {/* Input area — decoupled local state */}
+            <ChatInputArea
+              onSend={handleSendWrapper}
+              isPending={isPending}
+              editValue={editValue}
+              onCancelEdit={handleCancelEdit}
+              isEditing={editingMsgIdx !== null}
+              voice={voice}
+              ptt={ptt}
+              hasVision={hasVision}
+              hasAuditory={hasAuditory}
+              personalityName={personality?.name}
+              onTyping={handleTyping}
+            />
           </div>
         </div>
       ) : (

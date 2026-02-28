@@ -1,3 +1,65 @@
+## [2026.2.28o] — 2026-02-28
+
+### Changed
+
+#### Chat Performance Fixes (Phase 74)
+
+Six targeted changes that eliminate typing lag in long conversations.
+
+- **`MessageBubble` memoization** (`ChatPage.tsx`) — extracted the entire per-message render body into a `React.memo` component. Props use primitives (`isExpanded: boolean`, `isRemembered: boolean`, `feedbackValue: …`, `isBeingEdited: boolean`) so memo's shallow-equal check works correctly. Stable `useCallback` handlers backed by refs (`messagesRef`, `conversationIdRef`, `feedbackGivenRef`) ensure memo comparison never breaks. Keystrokes now trigger zero re-renders of the message list.
+
+- **`ChatMarkdown` memo wrap** (`ChatMarkdown.tsx`) — changed export to `React.memo`; the content-unchanged → no-re-parse guarantee is now explicit. Added `ChatMarkdown.test.tsx` (4 tests: plain text, markdown, code block, memo type check).
+
+- **Typing-aware `refetchInterval`** (`ChatPage.tsx`) — conversations query uses `refetchInterval: () => (isTypingRef.current ? false : 30_000)`. While the user is typing, background polling is suspended; it resumes 3 s after the last keystroke. A cleanup effect clears the debounce timer on unmount.
+
+- **GroupChatPage message polling** (`GroupChatPage.tsx`) — reduced `refetchInterval` from 5 s to 15 s, aligning message polling with channel polling and removing a frequent re-render source.
+
+- **`ChatInputArea` extraction** (`ChatPage.tsx`, `useChat.ts`) — input state moved out of `ChatPage` (and out of `useChatStream`) into a standalone `React.memo` component. `useChatStream` now exposes `sendMessage(text: string)` instead of `handleSend()` / `input` / `setInput`. Voice transcript and PTT transcript appending are handled by `useEffect`s inside `ChatInputArea`. Keystrokes now re-render only the small input component, not the parent page. `EditorPage.tsx` updated to local `chatInput` state.
+
+- **Virtual scrolling** (`ChatPage.tsx`, `packages/dashboard/package.json`) — installed `@tanstack/react-virtual`; the messages container uses `useVirtualizer` (`estimateSize: 120 px`, `overscan: 5`, `measureElement` for dynamic heights). Only the visible window of messages is DOM-rendered, so even 1 000-message conversations have constant render cost.
+
+---
+
+## [2026.2.28n] — 2026-02-28
+
+### Added
+
+#### ML Pipeline Orchestration (Phase 73)
+
+Inspired by SageMaker Pipelines, the existing workflow DAG engine now powers end-to-end ML pipelines without new infrastructure. Five new step types, three workflow templates, human-in-the-loop approval gates, and full pipeline lineage tracking.
+
+- **5 new workflow step types**:
+  - `data_curation` — Snapshot conversation data with filters (personalityIds, date range, minTurns, maxConversations). Writes a ShareGPT JSONL file and returns `{ datasetId, path, sampleCount, conversationCount, snapshotAt }`. Lineage recorded automatically.
+  - `training_job` — Poll a distillation or finetune job to completion (by `jobId`). Finetune jobs are auto-started if still pending. Config: `{ jobType: 'distillation'|'finetune', jobId, timeoutMs, pollIntervalMs }`.
+  - `evaluation` — Run an eval suite via a model endpoint or inline samples. Computes `exact_match`, `char_similarity`, and `sample_count`. Config: `{ datasetPath?, samples?, modelEndpoint?, maxSamples }`.
+  - `conditional_deploy` — Compare a named metric against a threshold. If met, registers the fine-tuned adapter with Ollama and records deployment lineage. Config: `{ metricPath, threshold, jobId, ollamaUrl, personalityId, modelVersion }`.
+  - `human_approval` — Creates a dashboard-visible approval request, sends the eval report, then polls (up to configurable timeout) for user approval or rejection. Config: `{ timeoutMs, reportTemplate }`.
+
+- **3 pre-built ML pipeline templates** (importable from Workflows tab):
+  - `distill-and-eval` — curate → await distillation → evaluate → webhook notify
+  - `finetune-and-deploy` — curate → LoRA finetune → evaluate → human approval → conditional deploy
+  - `dpo-loop` — curate preference data → DPO distillation → evaluate win-rate → promote if > 55%
+
+- **Human approval API** (`training.approval_requests`, migration 063):
+  - `GET /api/v1/training/approvals` — list requests (filter with `?status=pending` or `?runId=`)
+  - `GET /api/v1/training/approvals/:id` — get specific request
+  - `POST /api/v1/training/approvals/:id/approve` — approve with optional reason
+  - `POST /api/v1/training/approvals/:id/reject` — reject with optional reason
+
+- **Pipeline lineage API** (`training.pipeline_lineage`, migration 063):
+  - `GET /api/v1/training/lineage` — list recent pipeline runs (most recent first)
+  - `GET /api/v1/training/lineage/:runId` — full chain for a workflow run (dataset → job → eval → deployment)
+
+- **New managers**: `DataCurationManager`, `EvaluationManager`, `ApprovalManager`, `PipelineLineageStorage` — all initialized at startup (steps 6j) and passed into `WorkflowEngine` as optional deps.
+
+- **Migration 063** (`063_ml_pipeline.sql`): `training.pipeline_lineage` + `training.approval_requests` tables with appropriate indexes.
+
+- **Tests**: 10 data-curation + 13 evaluation + 13 approval + 11 pipeline-lineage + 20 engine (5 new step types) + 14 training-routes (approvals + lineage) = 81 new tests.
+
+- **ADR 157**, **guide** `docs/guides/ml-pipeline-orchestration.md`.
+
+---
+
 ## [2026.2.28m] — 2026-02-28
 
 ### Added

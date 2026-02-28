@@ -116,6 +116,12 @@ function makeEngine(
     subAgentManager?: unknown;
     swarmManager?: unknown;
     logger?: SecureLogger;
+    dataCurationManager?: unknown;
+    distillationManager?: unknown;
+    finetuneManager?: unknown;
+    evaluationManager?: unknown;
+    approvalManager?: unknown;
+    lineageStorage?: unknown;
   } = {}
 ): WorkflowEngine {
   return new WorkflowEngine({
@@ -123,6 +129,12 @@ function makeEngine(
     subAgentManager: (opts.subAgentManager ?? null) as never,
     swarmManager: (opts.swarmManager ?? null) as never,
     logger: opts.logger ?? makeLogger(),
+    dataCurationManager: (opts.dataCurationManager ?? null) as never,
+    distillationManager: (opts.distillationManager ?? null) as never,
+    finetuneManager: (opts.finetuneManager ?? null) as never,
+    evaluationManager: (opts.evaluationManager ?? null) as never,
+    approvalManager: (opts.approvalManager ?? null) as never,
+    lineageStorage: (opts.lineageStorage ?? null) as never,
   });
 }
 
@@ -800,6 +812,323 @@ describe('WorkflowEngine.execute — retry policy', () => {
     expect(storage.updateRun).toHaveBeenCalledWith(
       'run-1',
       expect.objectContaining({ status: 'completed' })
+    );
+  });
+});
+
+// ── ML Pipeline step types (Phase 73) ────────────────────────────────────────
+
+describe('WorkflowEngine.execute — step dispatch: data_curation', () => {
+  it('calls dataCurationManager.curateDataset and records output', async () => {
+    const dataset = {
+      datasetId: 'ds-abc',
+      path: '/tmp/dataset_ds-abc.jsonl',
+      sampleCount: 50,
+      conversationCount: 10,
+      filters: {},
+      snapshotAt: Date.now(),
+    };
+    const dataCurationManager = { curateDataset: vi.fn().mockResolvedValue(dataset) };
+    const lineageStorage = { recordDataset: vi.fn().mockResolvedValue(undefined) };
+
+    const storage = makeStorage();
+    const engine = makeEngine({ storage, dataCurationManager, lineageStorage });
+    const run = makeRun({ input: { outputDir: '/tmp' } });
+    const step = makeStep({
+      id: 'curate',
+      type: 'data_curation',
+      config: { outputDir: '{{input.outputDir}}', minTurns: 2 },
+    });
+
+    await engine.execute(run, makeDefinition([step]));
+
+    expect(dataCurationManager.curateDataset).toHaveBeenCalledWith(
+      expect.objectContaining({ outputDir: '/tmp', minTurns: 2 })
+    );
+    expect(lineageStorage.recordDataset).toHaveBeenCalledWith(
+      'run-1',
+      'wf-1',
+      expect.objectContaining({ datasetId: 'ds-abc' })
+    );
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+
+  it('fails when dataCurationManager not available', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({ id: 'curate', type: 'data_curation', config: {} });
+
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'failed', error: expect.stringContaining('DataCurationManager') })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — step dispatch: training_job (finetune)', () => {
+  it('starts finetune job and polls until complete', async () => {
+    const job = { id: 'job-1', status: 'complete', adapterPath: '/tmp/adapter' };
+    const finetuneManager = {
+      getJob: vi.fn()
+        .mockResolvedValueOnce({ id: 'job-1', status: 'pending', adapterPath: null })
+        .mockResolvedValueOnce(job),
+      startJob: vi.fn().mockResolvedValue(undefined),
+    };
+    const lineageStorage = { recordTrainingJob: vi.fn().mockResolvedValue(undefined) };
+
+    const storage = makeStorage();
+    const engine = makeEngine({ storage, finetuneManager, lineageStorage });
+    const run = makeRun({ input: { jobId: 'job-1' } });
+    const step = makeStep({
+      id: 'train',
+      type: 'training_job',
+      config: { jobType: 'finetune', jobId: '{{input.jobId}}', pollIntervalMs: 0, timeoutMs: 5000 },
+    });
+
+    await engine.execute(run, makeDefinition([step]));
+
+    expect(finetuneManager.startJob).toHaveBeenCalledWith('job-1');
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+
+  it('fails when finetuneManager not available', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'train',
+      type: 'training_job',
+      config: { jobType: 'finetune', jobId: 'j1' },
+    });
+
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'failed', error: expect.stringContaining('FinetuneManager') })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — step dispatch: training_job (distillation)', () => {
+  it('polls distillation job until complete', async () => {
+    const distillationManager = {
+      getJob: vi.fn()
+        .mockResolvedValueOnce({ id: 'job-2', status: 'running', outputPath: null })
+        .mockResolvedValueOnce({ id: 'job-2', status: 'complete', outputPath: '/tmp/out.jsonl' })
+        .mockResolvedValueOnce({ id: 'job-2', status: 'complete', outputPath: '/tmp/out.jsonl' }),
+    };
+    const lineageStorage = { recordTrainingJob: vi.fn().mockResolvedValue(undefined) };
+
+    const storage = makeStorage();
+    const engine = makeEngine({ storage, distillationManager, lineageStorage });
+    const step = makeStep({
+      id: 'train',
+      type: 'training_job',
+      config: { jobType: 'distillation', jobId: 'job-2', pollIntervalMs: 0, timeoutMs: 5000 },
+    });
+
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — step dispatch: evaluation', () => {
+  it('runs evaluation and records lineage', async () => {
+    const evalResult = {
+      evalId: 'eval-1',
+      metrics: { exact_match: 0.8, char_similarity: 0.75, sample_count: 10 },
+      completedAt: Date.now(),
+    };
+    const evaluationManager = { runEvaluation: vi.fn().mockResolvedValue(evalResult) };
+    const lineageStorage = { recordEvaluation: vi.fn().mockResolvedValue(undefined) };
+
+    const storage = makeStorage();
+    const engine = makeEngine({ storage, evaluationManager, lineageStorage });
+    const step = makeStep({
+      id: 'eval',
+      type: 'evaluation',
+      config: {
+        datasetPath: '/tmp/test.jsonl',
+        modelEndpoint: 'http://localhost:11434/generate',
+        maxSamples: 50,
+      },
+    });
+
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    expect(evaluationManager.runEvaluation).toHaveBeenCalledWith(
+      expect.objectContaining({ datasetPath: '/tmp/test.jsonl', maxSamples: 50 })
+    );
+    expect(lineageStorage.recordEvaluation).toHaveBeenCalledWith(
+      'run-1',
+      'wf-1',
+      expect.objectContaining({ evalId: 'eval-1' })
+    );
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+
+  it('fails when neither samples nor datasetPath provided', async () => {
+    const evaluationManager = {
+      runEvaluation: vi.fn().mockRejectedValue(new Error('either samples or datasetPath must be provided')),
+    };
+    const storage = makeStorage();
+    const engine = makeEngine({ storage, evaluationManager });
+    const step = makeStep({ id: 'eval', type: 'evaluation', config: {} });
+
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'failed' })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — step dispatch: conditional_deploy', () => {
+  it('deploys when metric meets threshold', async () => {
+    const finetuneManager = {
+      registerWithOllama: vi.fn().mockResolvedValue(undefined),
+    };
+    const lineageStorage = { recordDeployment: vi.fn().mockResolvedValue(undefined) };
+
+    const storage = makeStorage();
+    const engine = makeEngine({ storage, finetuneManager, lineageStorage });
+
+    // Inject eval result into context via a preceding transform step
+    const evalStep = makeStep({
+      id: 'eval',
+      type: 'transform',
+      config: { outputTemplate: '{"metrics":{"char_similarity":0.8,"sample_count":10}}' },
+    });
+    const deployStep = makeStep({
+      id: 'deploy',
+      type: 'conditional_deploy',
+      config: {
+        metricPath: 'steps.eval.output.metrics.char_similarity',
+        threshold: 0.7,
+        jobId: 'job-99',
+        ollamaUrl: 'http://ollama:11434',
+        personalityId: 'p1',
+        modelVersion: 'v1',
+      },
+      dependsOn: ['eval'],
+    });
+
+    await engine.execute(makeRun(), makeDefinition([evalStep, deployStep]));
+
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+
+  it('does not deploy when metric below threshold', async () => {
+    const finetuneManager = { registerWithOllama: vi.fn().mockResolvedValue(undefined) };
+    const storage = makeStorage();
+    const engine = makeEngine({ storage, finetuneManager });
+
+    const evalStep = makeStep({
+      id: 'eval',
+      type: 'transform',
+      config: { outputTemplate: '{"metrics":{"char_similarity":0.4,"sample_count":10}}' },
+    });
+    const deployStep = makeStep({
+      id: 'deploy',
+      type: 'conditional_deploy',
+      config: {
+        metricPath: 'steps.eval.output.metrics.char_similarity',
+        threshold: 0.7,
+        jobId: 'job-99',
+      },
+      dependsOn: ['eval'],
+      onError: 'continue',
+    });
+
+    await engine.execute(makeRun(), makeDefinition([evalStep, deployStep]));
+
+    expect(finetuneManager.registerWithOllama).not.toHaveBeenCalled();
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — step dispatch: human_approval', () => {
+  it('creates approval request and resolves on approval', async () => {
+    const approvalManager = {
+      createRequest: vi.fn().mockResolvedValue({ id: 'req-1', timeoutMs: 5000 }),
+      waitForDecision: vi.fn().mockResolvedValue('approved'),
+    };
+
+    const storage = makeStorage();
+    const engine = makeEngine({ storage, approvalManager });
+    const step = makeStep({
+      id: 'approve',
+      type: 'human_approval',
+      config: { timeoutMs: 5000 },
+    });
+
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    expect(approvalManager.createRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ workflowRunId: 'run-1', stepId: 'approve' })
+    );
+    expect(approvalManager.waitForDecision).toHaveBeenCalledWith('req-1');
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+
+  it('fails workflow when approval is rejected', async () => {
+    const approvalManager = {
+      createRequest: vi.fn().mockResolvedValue({ id: 'req-2', timeoutMs: 5000 }),
+      waitForDecision: vi.fn().mockRejectedValue(new Error('Approval request rejected: too low')),
+    };
+
+    const storage = makeStorage();
+    const engine = makeEngine({ storage, approvalManager });
+    const step = makeStep({
+      id: 'approve',
+      type: 'human_approval',
+      config: { timeoutMs: 5000 },
+      onError: 'fail',
+    });
+
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'failed', error: expect.stringContaining('rejected') })
+    );
+  });
+
+  it('fails when approvalManager not available', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({ id: 'approve', type: 'human_approval', config: {} });
+
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'failed', error: expect.stringContaining('ApprovalManager') })
     );
   });
 });

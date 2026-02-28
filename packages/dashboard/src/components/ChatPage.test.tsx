@@ -6,12 +6,29 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ChatPage } from './ChatPage';
 import { createModelInfoResponse } from '../test/mocks';
 
+// ── Mock virtualizer (jsdom has no real layout engine) ───────────
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: ({ count }: { count: number }) => ({
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, i) => ({
+        index: i,
+        key: i,
+        start: i * 120,
+        size: 120,
+      })),
+    getTotalSize: () => count * 120,
+    measureElement: () => {},
+    scrollToIndex: vi.fn(),
+  }),
+}));
+
 // ── Mock API client ──────────────────────────────────────────────
 vi.mock('../api/client', () => ({
   fetchPersonalities: vi.fn(),
   fetchModelInfo: vi.fn(),
   switchModel: vi.fn(),
   rememberChatMessage: vi.fn(),
+  submitFeedback: vi.fn().mockResolvedValue({}),
   fetchConversations: vi.fn(),
   fetchConversation: vi.fn(),
   createConversation: vi.fn(),
@@ -400,7 +417,7 @@ describe('ChatPage', () => {
     expect(body.personalityId).toBe('p-2');
   });
 
-  // ── Brain integration tests ─────────────────────────────────
+  // ── Brain integration tests ─────────────────────────────────────
 
   it('shows Brain context indicator when brainContext is present', async () => {
     mockFetch.mockImplementation((url: string) => {
@@ -501,7 +518,82 @@ describe('ChatPage', () => {
     expect(screen.getByText('Remembered')).toBeInTheDocument();
   });
 
-  // ── Conversation management tests ──────────────────────────
+  // ── MessageBubble tests ─────────────────────────────────────────
+
+  it('MessageBubble renders user message content', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    const textarea = screen.getByPlaceholderText(/Message/);
+    await user.type(textarea, 'User typed this{enter}');
+
+    await waitFor(() => {
+      expect(screen.getByText('User typed this')).toBeInTheDocument();
+    });
+  });
+
+  it('MessageBubble renders assistant response content', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    const textarea = screen.getByPlaceholderText(/Message/);
+    await user.type(textarea, 'Hi{enter}');
+
+    await waitFor(() => {
+      expect(screen.getByText('Hello! I am FRIDAY, your AI assistant.')).toBeInTheDocument();
+    });
+  });
+
+  it('MessageBubble shows brain context popover when brain indicator clicked', async () => {
+    mockFetch.mockImplementation((url: string) => {
+      if (url === '/api/v1/chat/stream') {
+        return Promise.resolve(
+          createStreamResponse([
+            {
+              ...DEFAULT_DONE_EVENT,
+              brainContext: {
+                memoriesUsed: 1,
+                knowledgeUsed: 1,
+                contextSnippets: ['memory snippet'],
+              },
+            },
+          ])
+        );
+      }
+      return Promise.resolve(new Response('{}', { status: 200 }));
+    });
+
+    const user = userEvent.setup();
+    renderComponent();
+
+    await user.type(screen.getByPlaceholderText(/Message/), 'Hello{enter}');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('brain-indicator-1')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId('brain-indicator-1'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('brain-context-1')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('memory snippet')).toBeInTheDocument();
+  });
+
+  it('MessageBubble feedback buttons appear on assistant messages', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    await user.type(screen.getByPlaceholderText(/Message/), 'Hello{enter}');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('feedback-up-1')).toBeInTheDocument();
+      expect(screen.getByTestId('feedback-down-1')).toBeInTheDocument();
+    });
+  });
+
+  // ── Conversation management tests ──────────────────────────────
 
   it('New Chat button clears messages', async () => {
     const user = userEvent.setup();
@@ -542,7 +634,7 @@ describe('ChatPage', () => {
     expect(screen.queryByText(/session-only/)).not.toBeInTheDocument();
   });
 
-  // ── Model display (regression: query key was ['modelInfo'] instead of ['model-info']) ──
+  // ── Model display tests ────────────────────────────────────────
 
   it('model button shows current model name from fetchModelInfo', async () => {
     mockFetchModelInfo.mockResolvedValue(createModelInfoResponse());
@@ -554,10 +646,8 @@ describe('ChatPage', () => {
   });
 
   it('model button falls back to "Model" label when no model info is loaded', async () => {
-    // fetchModelInfo has no mock return value → modelInfoData stays undefined
     renderComponent();
 
-    // Should not throw and should render the fallback
     await waitFor(() => {
       expect(screen.getByText('Model')).toBeInTheDocument();
     });
@@ -582,8 +672,6 @@ describe('ChatPage', () => {
       expect(screen.getByText('claude-sonnet-4-20250514')).toBeInTheDocument();
     });
 
-    // Simulate what ModelWidget does after a successful switch: update the ['model-info'] cache.
-    // If ChatPage were still using ['modelInfo'] this update would be invisible to it.
     qc.setQueryData(
       ['model-info'],
       createModelInfoResponse({
@@ -595,11 +683,10 @@ describe('ChatPage', () => {
       expect(screen.getByText('gpt-4o')).toBeInTheDocument();
     });
 
-    // Old model name should no longer appear in the button
     expect(screen.queryByText('claude-sonnet-4-20250514')).not.toBeInTheDocument();
   });
 
-  // ── Memory toggle ──
+  // ── Memory toggle ──────────────────────────────────────────────
 
   it('memory toggle shows Memory On by default', () => {
     renderComponent();

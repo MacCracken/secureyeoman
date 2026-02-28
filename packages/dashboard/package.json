@@ -18,6 +18,7 @@
     "@react-sigma/core": "^3.4.0",
     "@secureyeoman/shared": "*",
     "@tanstack/react-query": "^5.56.2",
+    "@tanstack/react-virtual": "^3.13.19",
     "clsx": "^2.1.1",
     "dagre": "^0.8.5",
     "discord.js": "13.17.1",
@@ -45,9 +46,6 @@
   },
   "devDependencies": {
     "@storybook/react": "^10.2.10",
-    "axe-core": "^4.10.3",
-    "eslint-plugin-jsx-a11y": "^6.10.2",
-    "vitest-axe": "^0.1.0",
     "@storybook/react-vite": "^10.2.10",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
@@ -59,6 +57,8 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.20",
+    "axe-core": "^4.10.3",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
     "graphology-types": "^0.24.8",
     "jsdom": "^28.0.0",
     "postcss": "^8.4.45",
@@ -67,6 +67,7 @@
     "typescript": "^5.4.5",
     "vite": "^6.2.0",
     "vite-plugin-monaco-editor": "^1.1.0",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "vitest-axe": "^0.1.0"
   }
 }

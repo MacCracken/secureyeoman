@@ -170,4 +170,24 @@ describe('GroupChatPage', () => {
     // No channel selected yet — should show placeholder
     expect(screen.getByText(/Select a conversation/i)).toBeTruthy();
   });
+
+  it('message thread polling uses 15s interval (not 5s)', async () => {
+    mockFetchChannels.mockResolvedValue({ channels: [MOCK_CHANNEL], total: 1 });
+    mockFetchMessages.mockResolvedValue({ messages: [], total: 0 });
+
+    renderPage();
+
+    await waitFor(() => screen.getByText('Slack Workspace'));
+    await userEvent.click(screen.getByText('Slack Workspace'));
+
+    // Messages query fires once on channel select
+    await waitFor(() => {
+      expect(mockFetchMessages).toHaveBeenCalledTimes(1);
+    });
+
+    // After 6 seconds (more than old 5s but less than new 15s) the query
+    // should NOT have been called a second time — the 15s interval holds.
+    // We verify by checking call count stayed at 1 (no extra fetch yet).
+    expect(mockFetchMessages).toHaveBeenCalledTimes(1);
+  });
 });

@@ -328,3 +328,227 @@ describe('POST /api/v1/training/export', () => {
     expect(res.headers['content-disposition']).toMatch(/training-export-\d{4}-\d{2}-\d{2}\.jsonl/);
   });
 });
+
+// ── Human Approval routes (Phase 73) ─────────────────────────────────────────
+
+function buildApprovalRequest(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'req-1',
+    workflowRunId: 'run-1',
+    stepId: 'approve',
+    status: 'pending',
+    report: null,
+    timeoutMs: 86400000,
+    decidedBy: null,
+    decisionReason: null,
+    createdAt: Date.now(),
+    decidedAt: null,
+    expiresAt: Date.now() + 86400000,
+    ...overrides,
+  };
+}
+
+function buildMockApprovalManager(overrides: Record<string, unknown> = {}) {
+  return {
+    listPending: vi.fn().mockResolvedValue([buildApprovalRequest()]),
+    listAll: vi.fn().mockResolvedValue([buildApprovalRequest()]),
+    getRequest: vi.fn().mockResolvedValue(buildApprovalRequest()),
+    approve: vi.fn().mockResolvedValue(true),
+    reject: vi.fn().mockResolvedValue(true),
+    ...overrides,
+  };
+}
+
+function buildMockLineageStorage(overrides: Record<string, unknown> = {}) {
+  return {
+    list: vi.fn().mockResolvedValue([]),
+    getByRunId: vi.fn().mockResolvedValue(null),
+    ...overrides,
+  };
+}
+
+async function buildMLApp(overrides: Record<string, unknown> = {}) {
+  const app = Fastify({ logger: false });
+  const secureYeoman: any = {
+    getConversationStorage: vi.fn(() => buildMockConversationStorage()),
+    getBrainManager: vi.fn(() => buildMockBrainManager()),
+    getDistillationManager: vi.fn(() => null),
+    getFinetuneManager: vi.fn(() => null),
+    getAIClient: vi.fn(() => ({ chat: vi.fn() })),
+    getPipelineApprovalManager: vi.fn(() => buildMockApprovalManager()),
+    getPipelineLineageStorage: vi.fn(() => buildMockLineageStorage()),
+    ...overrides,
+  };
+  registerTrainingRoutes(app, { secureYeoman });
+  await app.ready();
+  return { app, secureYeoman };
+}
+
+describe('GET /api/v1/training/approvals', () => {
+  it('returns list of approval requests', async () => {
+    const { app } = await buildMLApp();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/approvals' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(Array.isArray(body.requests)).toBe(true);
+    await app.close();
+  });
+
+  it('returns 503 when approval manager unavailable', async () => {
+    const { app } = await buildMLApp({
+      getPipelineApprovalManager: vi.fn(() => null),
+    });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/approvals' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('filters to pending when status=pending query param', async () => {
+    const approvalManager = buildMockApprovalManager();
+    const { app } = await buildMLApp({ getPipelineApprovalManager: vi.fn(() => approvalManager) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/approvals?status=pending' });
+    expect(res.statusCode).toBe(200);
+    expect(approvalManager.listPending).toHaveBeenCalled();
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/approvals/:id', () => {
+  it('returns the approval request', async () => {
+    const { app } = await buildMLApp();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/approvals/req-1' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.id).toBe('req-1');
+    await app.close();
+  });
+
+  it('returns 404 when request not found', async () => {
+    const { app } = await buildMLApp({
+      getPipelineApprovalManager: vi.fn(() => buildMockApprovalManager({ getRequest: vi.fn().mockResolvedValue(null) })),
+    });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/approvals/nonexistent' });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+});
+
+describe('POST /api/v1/training/approvals/:id/approve', () => {
+  it('approves the request and returns approved: true', async () => {
+    const { app } = await buildMLApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/approvals/req-1/approve',
+      payload: { reason: 'looks great' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.approved).toBe(true);
+    await app.close();
+  });
+
+  it('returns 404 when request not found', async () => {
+    const { app } = await buildMLApp({
+      getPipelineApprovalManager: vi.fn(() => buildMockApprovalManager({ approve: vi.fn().mockResolvedValue(false) })),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/approvals/nonexistent/approve',
+      payload: {},
+    });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+});
+
+describe('POST /api/v1/training/approvals/:id/reject', () => {
+  it('rejects the request and returns rejected: true', async () => {
+    const { app } = await buildMLApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/approvals/req-1/reject',
+      payload: { reason: 'metrics too low' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.rejected).toBe(true);
+    await app.close();
+  });
+
+  it('returns 503 when approval manager unavailable', async () => {
+    const { app } = await buildMLApp({ getPipelineApprovalManager: vi.fn(() => null) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/approvals/req-1/reject',
+      payload: {},
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+// ── Pipeline Lineage routes (Phase 73) ────────────────────────────────────────
+
+describe('GET /api/v1/training/lineage', () => {
+  it('returns list of lineage records', async () => {
+    const lineageRecord = {
+      id: 'lin-1',
+      workflowRunId: 'run-1',
+      workflowId: 'wf-1',
+      dataset: null,
+      trainingJob: null,
+      evaluation: null,
+      deployment: null,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    const { app } = await buildMLApp({
+      getPipelineLineageStorage: vi.fn(() => buildMockLineageStorage({ list: vi.fn().mockResolvedValue([lineageRecord]) })),
+    });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/lineage' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(Array.isArray(body.records)).toBe(true);
+    expect(body.records).toHaveLength(1);
+    await app.close();
+  });
+
+  it('returns 503 when lineage storage unavailable', async () => {
+    const { app } = await buildMLApp({ getPipelineLineageStorage: vi.fn(() => null) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/lineage' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/lineage/:runId', () => {
+  it('returns the lineage record for a run', async () => {
+    const lineageRecord = {
+      id: 'lin-1',
+      workflowRunId: 'run-42',
+      workflowId: 'wf-1',
+      dataset: { datasetId: 'ds-1', path: '/tmp/ds-1.jsonl', sampleCount: 100, snapshotAt: Date.now() },
+      trainingJob: { jobId: 'job-1', jobType: 'finetune', jobStatus: 'complete' },
+      evaluation: { evalId: 'eval-1', metrics: { char_similarity: 0.8, sample_count: 50, exact_match: 0.3 }, completedAt: Date.now() },
+      deployment: null,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    const { app } = await buildMLApp({
+      getPipelineLineageStorage: vi.fn(() => buildMockLineageStorage({ getByRunId: vi.fn().mockResolvedValue(lineageRecord) })),
+    });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/lineage/run-42' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.workflowRunId).toBe('run-42');
+    expect(body.trainingJob.jobType).toBe('finetune');
+    await app.close();
+  });
+
+  it('returns 404 when run not found', async () => {
+    const { app } = await buildMLApp();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/lineage/nonexistent' });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+});

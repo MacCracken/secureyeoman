@@ -539,9 +539,7 @@ function StandardEditorPage() {
 
   const {
     messages,
-    input,
-    setInput,
-    handleSend,
+    sendMessage,
     isPending,
     streamingThinking,
     streamingContent,
@@ -550,6 +548,15 @@ function StandardEditorPage() {
     personalityId: effectivePersonalityId,
     editorContent: watchEnabled && terminalOutput ? terminalOutput : undefined,
   });
+
+  // Local chat input state (decoupled from useChatStream)
+  const [chatInput, setChatInput] = useState('');
+  const handleSend = useCallback(() => {
+    const trimmed = chatInput.trim();
+    if (!trimmed || isPending) return;
+    sendMessage(trimmed);
+    setChatInput('');
+  }, [chatInput, isPending, sendMessage]);
 
   const [hadActiveTools, setHadActiveTools] = useState(false);
   useEffect(() => {
@@ -565,7 +572,7 @@ function StandardEditorPage() {
     { hotkey: 'ctrl+shift+v', maxDurationMs: 60000, silenceTimeoutMs: 2000 },
     (transcript) => {
       if (transcript) {
-        setInput(input + transcript);
+        setChatInput((prev) => prev + transcript);
       }
     }
   );
@@ -610,13 +617,13 @@ function StandardEditorPage() {
     },
   });
 
-  // Feed voice transcript into input
+  // Feed voice transcript into chat input
   useEffect(() => {
     if (voice.transcript) {
-      setInput((prev: string) => prev + voice.transcript);
+      setChatInput((prev) => prev + voice.transcript);
       voice.clearTranscript();
     }
-  }, [voice.transcript, setInput, voice.clearTranscript]);
+  }, [voice.transcript, voice.clearTranscript]);
 
   // Speak assistant messages when voice is enabled
   const lastMsgCount = useRef(0);
@@ -680,8 +687,8 @@ function StandardEditorPage() {
     }
 
     if (!text.trim()) return;
-    setInput(`\`\`\`${language}\n${text}\n\`\`\``);
-  }, [language, setInput]);
+    setChatInput(`\`\`\`${language}\n${text}\n\`\`\``);
+  }, [language]);
 
   const RUN_COMMANDS: Record<string, string> = {
     python: 'python3',
@@ -1428,9 +1435,9 @@ function StandardEditorPage() {
             <div className="border-t px-3 py-2">
               <div className="flex gap-2 items-end">
                 <textarea
-                  value={input}
+                  value={chatInput}
                   onChange={(e) => {
-                    setInput(e.target.value);
+                    setChatInput(e.target.value);
                   }}
                   onKeyDown={handleKeyDown}
                   placeholder={`Message ${currentPersonality?.name ?? 'assistant'}...`}
@@ -1473,7 +1480,7 @@ function StandardEditorPage() {
                 )}
                 <button
                   onClick={handleSend}
-                  disabled={!input.trim() || isPending}
+                  disabled={!chatInput.trim() || isPending}
                   className="btn btn-ghost px-3 py-2 rounded disabled:opacity-50 h-[52px]"
                 >
                   {isPending ? (

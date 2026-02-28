@@ -11,7 +11,6 @@
 | XX | Find & Repair (Ongoing) | Ongoing |
 | 68 | Mission Control Customization | Next — high UX value |
 | 70 | Advanced Editor — Full IDE Mode | Next — power user priority |
-| 72 | MCP Tool Context Optimization | ✅ Complete — 2026-02-28 |
 | Future | LLM Lifecycle Platform, Agent World, Voice, Native Clients, Infrastructure | Future / Demand-Gated |
 
 ---
@@ -30,7 +29,6 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 - [ ] **Base knowledge generic entries need per-personality review** — `hierarchy`, `purpose`, and `interaction` are currently seeded globally. These may need per-personality variants (e.g., T.Ron's purpose may differ from FRIDAY's). Low urgency — global entries are contextually correct for now.
 - [ ] **Consumer UX: Settings page split** — Extract `<AuditChainTab>`, `<SoulSystemTab>`, `<RateLimitingTab>` from the `SettingsPage.tsx` monolith.
 - [ ] **Manual test: OAuth token refresh end-to-end** — (1) Connect a Gmail account; (2) Wait for access token to expire (or use Connections → OAuth → "Refresh Token" button); (3) Confirm personality can still call `gmail_profile` without error; (4) Revoke the Google refresh token in Google Account → Security → Third-party apps, then trigger a Gmail tool call — confirm error message tells user to reconnect (not a silent 500). *(401-retry + forceRefreshById now implemented, 2026-02-27c)*
-- [ ] long chats slow down the users ability to type.
 - [ ] ** Manual Test: AgentWorld** - sub-agents display when created, writing, meeting added and need review.
 - [ ] **Manual Test: Skills** - continued review
 
@@ -636,10 +634,6 @@ Grounding is the difference between "I retrieved something relevant" and "here i
 
 *Demand-Gated — implement once operational scale or compliance requirements justify the investment.*
 
-- [x] **SSH Key Persistence via SecretsManager** ✅ *Implemented 2026-02-28 (Phase 70b)*
-
-  `github_setup_ssh` and `github_rotate_ssh_key` now encrypt the ed25519 private key with AES-256-GCM (HKDF-SHA256 from `SECUREYEOMAN_TOKEN_SECRET`) via `packages/mcp/src/utils/ssh-crypto.ts` before persisting under `GITHUB_SSH_*` names in the SecretsManager. Core stores opaque ciphertext only. `McpServiceServer.restoreSshKeys()` decrypts and restores on startup. Keys appear in Security → Secrets panel (masked). See CHANGELOG `[2026.2.28h]` and ADR 153 addendum.
-
 - [ ] **HSM Integration** — Hardware Security Module integration for key management.
 - [ ] **Optimistic Locking** — `version` field on personalities and skills; API returns `409 Conflict` on stale saves; dashboard shows "Someone else edited this — reload?" banner.
 - [ ] **ELK Integration** — Eclipse Layout Kernel for advanced constraint-based graph layouts. ~2 MB WASM bundle — justified only when graph complexity outgrows Dagre.
@@ -664,4 +658,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-28 — Multi-cloud AI roadmap added. AWS (SageMaker, Bedrock, Comprehend, Kendra, Q Business, Textract, Polly, Transcribe): LLM Lifecycle Platform, Knowledge Base & RAG, Content Guardrails, Conversation Analytics, ML Pipeline Orchestration, Voice Pipeline. Azure (Prompt Shields, Responsible AI Dashboard, Groundedness Detection): Prompt Security, Responsible AI. Google Cloud (Vertex AI Evaluation, Grounding, Explainability): LLM-as-Judge Evaluation, Inline Citations & Grounding. Phase 72 complete. Phase 70b complete.*
+*Last updated: 2026-02-28 — Multi-cloud AI roadmap added. AWS (SageMaker, Bedrock, Comprehend, Kendra, Q Business, Textract, Polly, Transcribe): LLM Lifecycle Platform, Knowledge Base & RAG, Content Guardrails, Conversation Analytics, ML Pipeline Orchestration, Voice Pipeline. Azure (Prompt Shields, Responsible AI Dashboard, Groundedness Detection): Prompt Security, Responsible AI. Google Cloud (Vertex AI Evaluation, Grounding, Explainability): LLM-as-Judge Evaluation, Inline Citations & Grounding.*

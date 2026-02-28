@@ -2,8 +2,11 @@
  * WorkflowEngine — DAG-based workflow executor.
  *
  * Executes workflow definitions step-by-step using topological sort.
- * Supports 9 step types, Mustache-style template resolution, retry policies,
+ * Supports 14 step types, Mustache-style template resolution, retry policies,
  * and four error-handling modes (fail, continue, skip, fallback).
+ *
+ * Phase 73 adds 5 ML pipeline step types:
+ *   data_curation, training_job, evaluation, conditional_deploy, human_approval
  */
 
 import type { SecureLogger } from '../logging/logger.js';
@@ -12,6 +15,12 @@ import type { SwarmManager } from '../agents/swarm-manager.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import { WorkflowStorage } from './workflow-storage.js';
 import { OutputSchemaValidator } from '../security/output-schema-validator.js';
+import type { DataCurationManager } from '../training/data-curation.js';
+import type { EvaluationManager } from '../training/evaluation-manager.js';
+import type { PipelineApprovalManager } from '../training/approval-manager.js';
+import type { PipelineLineageStorage } from '../training/pipeline-lineage.js';
+import type { DistillationManager } from '../training/distillation-manager.js';
+import type { FinetuneManager } from '../training/finetune-manager.js';
 import type { WorkflowDefinition, WorkflowRun, WorkflowStep } from '@secureyeoman/shared';
 
 const _outputSchemaValidator = new OutputSchemaValidator();
@@ -34,6 +43,13 @@ export interface WorkflowEngineDeps {
   swarmManager?: SwarmManager | null;
   auditChain?: AuditChain | null;
   logger: SecureLogger;
+  // ML Pipeline deps (Phase 73)
+  dataCurationManager?: DataCurationManager | null;
+  distillationManager?: DistillationManager | null;
+  finetuneManager?: FinetuneManager | null;
+  evaluationManager?: EvaluationManager | null;
+  approvalManager?: PipelineApprovalManager | null;
+  lineageStorage?: PipelineLineageStorage | null;
 }
 
 export class WorkflowEngine {
@@ -42,6 +58,13 @@ export class WorkflowEngine {
   private readonly swarmManager: SwarmManager | null;
   private readonly auditChain: AuditChain | null;
   private readonly logger: SecureLogger;
+  // ML Pipeline managers (Phase 73)
+  private readonly dataCurationManager: DataCurationManager | null;
+  private readonly distillationManager: DistillationManager | null;
+  private readonly finetuneManager: FinetuneManager | null;
+  private readonly evaluationManager: EvaluationManager | null;
+  private readonly approvalManager: PipelineApprovalManager | null;
+  private readonly lineageStorage: PipelineLineageStorage | null;
 
   constructor(deps: WorkflowEngineDeps) {
     this.storage = deps.storage;
@@ -49,6 +72,12 @@ export class WorkflowEngine {
     this.swarmManager = deps.swarmManager ?? null;
     this.auditChain = deps.auditChain ?? null;
     this.logger = deps.logger;
+    this.dataCurationManager = deps.dataCurationManager ?? null;
+    this.distillationManager = deps.distillationManager ?? null;
+    this.finetuneManager = deps.finetuneManager ?? null;
+    this.evaluationManager = deps.evaluationManager ?? null;
+    this.approvalManager = deps.approvalManager ?? null;
+    this.lineageStorage = deps.lineageStorage ?? null;
   }
 
   // ── Public API ────────────────────────────────────────────────
@@ -170,7 +199,7 @@ export class WorkflowEngine {
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
-        output = await this.dispatchStep(step, ctx);
+        output = await this.dispatchStep(step, ctx, runId, definition.id);
 
         // ── Output schema validation (Phase 54) ───────────────────────────────
         const stepOutputSchema = (step.config as Record<string, unknown> | undefined)?.outputSchema;
@@ -277,7 +306,12 @@ export class WorkflowEngine {
 
   // ── Step Dispatchers ──────────────────────────────────────────
 
-  private async dispatchStep(step: WorkflowStep, ctx: WorkflowEngineContext): Promise<unknown> {
+  private async dispatchStep(
+    step: WorkflowStep,
+    ctx: WorkflowEngineContext,
+    runId: string,
+    workflowId: string
+  ): Promise<unknown> {
     const cfg = step.config;
 
     switch (step.type) {
@@ -393,9 +427,280 @@ export class WorkflowEngine {
         return swarmResult.result ?? null;
       }
 
+      // ── ML Pipeline step types (Phase 73) ────────────────────────
+
+      case 'data_curation': {
+        if (!this.dataCurationManager) {
+          throw new Error('DataCurationManager not available for data_curation step');
+        }
+        const outputDir = this.resolveTemplate(
+          String(cfg.outputDir ?? '/tmp/secureyeoman-datasets'),
+          ctx
+        );
+        const personalityIdsRaw = cfg.personalityIds;
+        const personalityIds = Array.isArray(personalityIdsRaw)
+          ? (personalityIdsRaw as string[])
+          : personalityIdsRaw
+            ? [this.resolveTemplate(String(personalityIdsRaw), ctx)]
+            : undefined;
+        const descriptor = await this.dataCurationManager.curateDataset({
+          outputDir,
+          personalityIds,
+          minTurns: cfg.minTurns != null ? Number(cfg.minTurns) : undefined,
+          maxConversations: cfg.maxConversations != null ? Number(cfg.maxConversations) : undefined,
+          fromTs: cfg.fromTs != null ? Number(cfg.fromTs) : undefined,
+          toTs: cfg.toTs != null ? Number(cfg.toTs) : undefined,
+        });
+        // Record lineage
+        if (this.lineageStorage) {
+          await this.lineageStorage.recordDataset(runId, workflowId, {
+            datasetId: descriptor.datasetId,
+            path: descriptor.path,
+            sampleCount: descriptor.sampleCount,
+            filters: descriptor.filters as Record<string, unknown>,
+            snapshotAt: descriptor.snapshotAt,
+          });
+        }
+        return descriptor;
+      }
+
+      case 'training_job': {
+        const jobType = String(cfg.jobType ?? 'finetune') as 'distillation' | 'finetune';
+        const jobId = this.resolveTemplate(String(cfg.jobId ?? ''), ctx);
+        const timeoutMs = Number(cfg.timeoutMs ?? 3_600_000); // 1h default
+        const pollIntervalMs = Number(cfg.pollIntervalMs ?? 30_000); // 30s default
+
+        if (jobType === 'finetune') {
+          if (!this.finetuneManager) {
+            throw new Error('FinetuneManager not available for training_job step');
+          }
+          const job = await this.finetuneManager.getJob(jobId);
+          if (!job) throw new Error(`Finetune job not found: ${jobId}`);
+          if (job.status === 'pending') {
+            await this.finetuneManager.startJob(jobId);
+          }
+          const finalJob = await this.pollUntilDone(
+            () => this.finetuneManager!.getJob(jobId).then((j) => j?.status ?? 'failed'),
+            ['complete', 'failed', 'cancelled'],
+            timeoutMs,
+            pollIntervalMs
+          );
+          const finalStatus = await this.finetuneManager.getJob(jobId);
+          if (finalJob === 'failed' || finalJob === 'cancelled') {
+            throw new Error(
+              `Finetune job ${jobId} ended with status: ${finalJob} — ${finalStatus?.errorMessage ?? ''}`
+            );
+          }
+          if (this.lineageStorage) {
+            await this.lineageStorage.recordTrainingJob(runId, workflowId, {
+              jobId,
+              jobType: 'finetune',
+              jobStatus: finalJob,
+            });
+          }
+          return {
+            jobId,
+            jobType: 'finetune',
+            status: finalJob,
+            adapterPath: finalStatus?.adapterPath ?? null,
+            experimentId: jobId,
+          };
+        } else {
+          // distillation
+          if (!this.distillationManager) {
+            throw new Error('DistillationManager not available for training_job step');
+          }
+          const job = await this.distillationManager.getJob(jobId);
+          if (!job) throw new Error(`Distillation job not found: ${jobId}`);
+          // Distillation job must be started externally (requires teacher client)
+          // This step just polls for completion.
+          const finalStatus = await this.pollUntilDone(
+            () => this.distillationManager!.getJob(jobId).then((j) => j?.status ?? 'failed'),
+            ['complete', 'failed', 'cancelled'],
+            timeoutMs,
+            pollIntervalMs
+          );
+          if (finalStatus === 'failed' || finalStatus === 'cancelled') {
+            const j = await this.distillationManager.getJob(jobId);
+            throw new Error(
+              `Distillation job ${jobId} ended with status: ${finalStatus} — ${j?.errorMessage ?? ''}`
+            );
+          }
+          const finalJob = await this.distillationManager.getJob(jobId);
+          if (this.lineageStorage) {
+            await this.lineageStorage.recordTrainingJob(runId, workflowId, {
+              jobId,
+              jobType: 'distillation',
+              jobStatus: finalStatus,
+            });
+          }
+          return {
+            jobId,
+            jobType: 'distillation',
+            status: finalStatus,
+            outputPath: finalJob?.outputPath ?? null,
+            experimentId: jobId,
+          };
+        }
+      }
+
+      case 'evaluation': {
+        if (!this.evaluationManager) {
+          throw new Error('EvaluationManager not available for evaluation step');
+        }
+        const datasetPath = cfg.datasetPath
+          ? this.resolveTemplate(String(cfg.datasetPath), ctx)
+          : undefined;
+        const maxSamples = cfg.maxSamples != null ? Number(cfg.maxSamples) : undefined;
+        // Inline samples if provided
+        const samplesRaw = cfg.samples;
+        const samples = Array.isArray(samplesRaw)
+          ? (samplesRaw as Array<{ prompt: string; gold: string }>)
+          : undefined;
+        if (!datasetPath && (!samples || samples.length === 0)) {
+          throw new Error(
+            'evaluation step requires either cfg.datasetPath or cfg.samples'
+          );
+        }
+        // Model function: use webhook-style call to a local model endpoint if provided
+        const modelEndpoint = cfg.modelEndpoint
+          ? this.resolveTemplate(String(cfg.modelEndpoint), ctx)
+          : null;
+        const modelFn = async (prompt: string): Promise<string> => {
+          if (!modelEndpoint) return '(no model endpoint configured)';
+          const response = await fetch(modelEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt }),
+          });
+          const json = (await response.json()) as { response?: string; text?: string };
+          return json.response ?? json.text ?? '';
+        };
+        const result = await this.evaluationManager.runEvaluation({
+          samples,
+          datasetPath,
+          maxSamples,
+          modelFn,
+        });
+        if (this.lineageStorage) {
+          await this.lineageStorage.recordEvaluation(runId, workflowId, {
+            evalId: result.evalId,
+            metrics: result.metrics,
+            completedAt: result.completedAt,
+          });
+        }
+        return result;
+      }
+
+      case 'conditional_deploy': {
+        // Read the metric value from context (e.g. {{steps.eval.output.metrics.char_similarity}})
+        const metricPath = String(cfg.metricPath ?? '');
+        const metricValueStr = this.resolveTemplate(`{{${metricPath}}}`, ctx);
+        const metricValue = parseFloat(metricValueStr);
+        const threshold = Number(cfg.threshold ?? 0.5);
+        const modelVersion = cfg.modelVersion
+          ? this.resolveTemplate(String(cfg.modelVersion), ctx)
+          : '';
+        const personalityId = cfg.personalityId
+          ? this.resolveTemplate(String(cfg.personalityId), ctx)
+          : '';
+        const jobId = cfg.jobId ? this.resolveTemplate(String(cfg.jobId), ctx) : '';
+        const ollamaUrl = cfg.ollamaUrl
+          ? this.resolveTemplate(String(cfg.ollamaUrl), ctx)
+          : 'http://ollama:11434';
+
+        const passes = !isNaN(metricValue) && metricValue >= threshold;
+        this.logger.info('conditional_deploy: evaluating threshold', {
+          metricPath,
+          metricValue,
+          threshold,
+          passes,
+        });
+
+        if (passes) {
+          // Attempt to register fine-tuned adapter with Ollama if finetuneManager available
+          if (this.finetuneManager && jobId) {
+            try {
+              await this.finetuneManager.registerWithOllama(jobId, ollamaUrl);
+              this.logger.info('conditional_deploy: registered adapter with Ollama', { jobId });
+            } catch (err) {
+              this.logger.warn('conditional_deploy: Ollama registration failed (non-fatal)', {
+                error: err instanceof Error ? err.message : String(err),
+              });
+            }
+          }
+          if (this.lineageStorage && (modelVersion || jobId)) {
+            await this.lineageStorage.recordDeployment(runId, workflowId, {
+              modelVersion: modelVersion || jobId,
+              personalityId,
+              deployedAt: Date.now(),
+            });
+          }
+          return { deployed: true, metricValue, threshold, modelVersion, personalityId };
+        } else {
+          const reason = `Metric ${metricValue.toFixed(4)} < threshold ${threshold}`;
+          this.logger.info('conditional_deploy: threshold not met, skipping deploy', { reason });
+          return { deployed: false, metricValue, threshold, reason };
+        }
+      }
+
+      case 'human_approval': {
+        if (!this.approvalManager) {
+          throw new Error('ApprovalManager not available for human_approval step');
+        }
+        const timeoutMs = Number(cfg.timeoutMs ?? 86_400_000); // 24h default
+        // Build report from context
+        const reportTemplate = cfg.reportTemplate
+          ? this.resolveTemplate(String(cfg.reportTemplate), ctx)
+          : null;
+        let report: Record<string, unknown> | undefined;
+        if (reportTemplate) {
+          try {
+            report = JSON.parse(reportTemplate) as Record<string, unknown>;
+          } catch {
+            report = { summary: reportTemplate };
+          }
+        }
+        const request = await this.approvalManager.createRequest({
+          workflowRunId: runId,
+          stepId: step.id,
+          report,
+          timeoutMs,
+        });
+        this.logger.info('human_approval: approval request created, waiting for decision', {
+          requestId: request.id,
+          runId,
+          timeoutMs,
+        });
+        // Block until approved/rejected/timed-out
+        await this.approvalManager.waitForDecision(request.id);
+        return { approved: true, requestId: request.id };
+      }
+
       default:
         throw new Error(`Unknown step type: ${step.type}`);
     }
+  }
+
+  // ── Polling helper ────────────────────────────────────────────
+
+  /**
+   * Poll a status function until it returns one of the terminal statuses,
+   * or until the deadline is reached.
+   */
+  private async pollUntilDone(
+    getStatus: () => Promise<string>,
+    terminalStatuses: string[],
+    timeoutMs: number,
+    pollIntervalMs: number
+  ): Promise<string> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const status = await getStatus();
+      if (terminalStatuses.includes(status)) return status;
+      await new Promise((r) => setTimeout(r, pollIntervalMs));
+    }
+    throw new Error(`Job did not complete within ${timeoutMs}ms timeout`);
   }
 
   // ── Template Resolution ───────────────────────────────────────

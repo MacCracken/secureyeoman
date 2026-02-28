@@ -484,4 +484,114 @@ export function registerTrainingRoutes(
       return reply.status(204).send();
     }
   );
+
+  // ── Human Approval endpoints (Phase 73) ───────────────────────────────────
+
+  /**
+   * GET /api/v1/training/approvals
+   * List approval requests. Pass ?status=pending to filter.
+   */
+  app.get(
+    '/api/v1/training/approvals',
+    async (
+      request: FastifyRequest<{ Querystring: { runId?: string; status?: string } }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getPipelineApprovalManager();
+      if (!manager) return sendError(reply, 503, 'Approval manager not available');
+
+      const { runId, status } = request.query as { runId?: string; status?: string };
+      let requests =
+        status === 'pending'
+          ? await manager.listPending()
+          : await manager.listAll(runId);
+      return { requests };
+    }
+  );
+
+  /**
+   * GET /api/v1/training/approvals/:id
+   * Get a specific approval request.
+   */
+  app.get(
+    '/api/v1/training/approvals/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getPipelineApprovalManager();
+      if (!manager) return sendError(reply, 503, 'Approval manager not available');
+
+      const req = await manager.getRequest(request.params.id);
+      if (!req) return sendError(reply, 404, 'Approval request not found');
+      return req;
+    }
+  );
+
+  /**
+   * POST /api/v1/training/approvals/:id/approve
+   * Approve a pending human approval request.
+   */
+  app.post(
+    '/api/v1/training/approvals/:id/approve',
+    async (
+      request: FastifyRequest<{ Params: { id: string }; Body: { reason?: string } }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getPipelineApprovalManager();
+      if (!manager) return sendError(reply, 503, 'Approval manager not available');
+
+      const body = (request.body ?? {}) as { reason?: string };
+      const ok = await manager.approve(request.params.id, undefined, body.reason);
+      if (!ok) return sendError(reply, 404, 'Approval request not found or already decided');
+      return { approved: true };
+    }
+  );
+
+  /**
+   * POST /api/v1/training/approvals/:id/reject
+   * Reject a pending human approval request.
+   */
+  app.post(
+    '/api/v1/training/approvals/:id/reject',
+    async (
+      request: FastifyRequest<{ Params: { id: string }; Body: { reason?: string } }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getPipelineApprovalManager();
+      if (!manager) return sendError(reply, 503, 'Approval manager not available');
+
+      const body = (request.body ?? {}) as { reason?: string };
+      const ok = await manager.reject(request.params.id, undefined, body.reason);
+      if (!ok) return sendError(reply, 404, 'Approval request not found or already decided');
+      return { rejected: true };
+    }
+  );
+
+  // ── Pipeline Lineage endpoints (Phase 73) ─────────────────────────────────
+
+  /**
+   * GET /api/v1/training/lineage
+   * List recent pipeline lineage records (most recent first).
+   */
+  app.get('/api/v1/training/lineage', async (_request, reply: FastifyReply) => {
+    const lineage = secureYeoman.getPipelineLineageStorage();
+    if (!lineage) return sendError(reply, 503, 'Pipeline lineage storage not available');
+
+    const records = await lineage.list(50);
+    return { records };
+  });
+
+  /**
+   * GET /api/v1/training/lineage/:runId
+   * Get lineage record for a specific workflow run.
+   */
+  app.get(
+    '/api/v1/training/lineage/:runId',
+    async (request: FastifyRequest<{ Params: { runId: string } }>, reply: FastifyReply) => {
+      const lineage = secureYeoman.getPipelineLineageStorage();
+      if (!lineage) return sendError(reply, 503, 'Pipeline lineage storage not available');
+
+      const record = await lineage.getByRunId(request.params.runId);
+      if (!record) return sendError(reply, 404, 'Lineage record not found');
+      return record;
+    }
+  );
 }

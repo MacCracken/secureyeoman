@@ -114,4 +114,5 @@ export const MIGRATION_MANIFEST: { id: string; sql: string }[] = [
   { id: '060_distillation_jobs', sql: readSql('060_distillation_jobs.sql') },
   { id: '061_finetune_jobs', sql: readSql('061_finetune_jobs.sql') },
   { id: '062_audit_memory_indexes', sql: readSql('062_audit_memory_indexes.sql') },
+  { id: '063_ml_pipeline', sql: readSql('063_ml_pipeline.sql') },
 ];

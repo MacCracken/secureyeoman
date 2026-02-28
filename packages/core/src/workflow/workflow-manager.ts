@@ -12,6 +12,12 @@ import type { AuditChain } from '../logging/audit-chain.js';
 import { WorkflowStorage } from './workflow-storage.js';
 import { WorkflowEngine } from './workflow-engine.js';
 import { BUILTIN_WORKFLOW_TEMPLATES } from './workflow-templates.js';
+import type { DataCurationManager } from '../training/data-curation.js';
+import type { EvaluationManager } from '../training/evaluation-manager.js';
+import type { PipelineApprovalManager } from '../training/approval-manager.js';
+import type { PipelineLineageStorage } from '../training/pipeline-lineage.js';
+import type { DistillationManager } from '../training/distillation-manager.js';
+import type { FinetuneManager } from '../training/finetune-manager.js';
 import type {
   WorkflowDefinition,
   WorkflowDefinitionCreate,
@@ -26,6 +32,13 @@ export interface WorkflowManagerDeps {
   swarmManager?: SwarmManager | null;
   auditChain?: AuditChain | null;
   logger: SecureLogger;
+  // ML Pipeline deps (Phase 73)
+  dataCurationManager?: DataCurationManager | null;
+  distillationManager?: DistillationManager | null;
+  finetuneManager?: FinetuneManager | null;
+  evaluationManager?: EvaluationManager | null;
+  approvalManager?: PipelineApprovalManager | null;
+  lineageStorage?: PipelineLineageStorage | null;
 }
 
 export class WorkflowManager {
@@ -42,6 +55,12 @@ export class WorkflowManager {
       swarmManager: deps.swarmManager,
       auditChain: deps.auditChain,
       logger: deps.logger.child({ component: 'WorkflowEngine' }),
+      dataCurationManager: deps.dataCurationManager,
+      distillationManager: deps.distillationManager,
+      finetuneManager: deps.finetuneManager,
+      evaluationManager: deps.evaluationManager,
+      approvalManager: deps.approvalManager,
+      lineageStorage: deps.lineageStorage,
     });
   }
 
