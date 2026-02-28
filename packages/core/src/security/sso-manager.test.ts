@@ -11,6 +11,17 @@ vi.mock('openid-client', () => ({
   authorizationCodeGrant: vi.fn(),
 }));
 
+// Mock saml-adapter so tests work without node-saml installed
+vi.mock('./saml-adapter.js', () => ({
+  SamlAdapter: vi.fn().mockImplementation(function () {
+    return {
+      getAuthorizeUrl: vi.fn().mockResolvedValue('https://saml-idp.example.com/sso?SAMLRequest=abc'),
+      validateCallback: vi.fn(),
+      getSpMetadataXml: vi.fn(),
+    };
+  }),
+}));
+
 import { SsoManager } from './sso-manager.js';
 import type { SsoManagerDeps } from './sso-manager.js';
 import type { SsoStorage, IdentityProvider } from './sso-storage.js';
@@ -147,14 +158,13 @@ describe('SsoManager', () => {
       );
     });
 
-    it('throws when provider is not OIDC', async () => {
+    it('returns a SAML authorization URL when provider type is saml', async () => {
       const deps = makeDeps({
         getIdentityProvider: vi.fn().mockResolvedValue({ ...PROVIDER, type: 'saml' }),
       });
       const manager = new SsoManager(deps);
-      await expect(manager.getAuthorizationUrl('idp-1', 'https://app/callback')).rejects.toThrow(
-        'OIDC'
-      );
+      const url = await manager.getAuthorizationUrl('idp-1', 'https://app/callback');
+      expect(url).toContain('saml-idp.example.com');
     });
 
     it('saves state and code_verifier to storage', async () => {

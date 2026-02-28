@@ -44,32 +44,48 @@ export class TwitterIntegration implements Integration {
     this.deps = deps;
     this.logger = deps.logger;
 
-    const { bearerToken, apiKey, apiKeySecret, accessToken, accessTokenSecret } = config.config as {
-      bearerToken?: string;
-      apiKey?: string;
-      apiKeySecret?: string;
-      accessToken?: string;
-      accessTokenSecret?: string;
-    };
+    const { bearerToken, apiKey, apiKeySecret, accessToken, accessTokenSecret, oauth2AccessToken } =
+      config.config as {
+        bearerToken?: string;
+        apiKey?: string;
+        apiKeySecret?: string;
+        accessToken?: string;
+        accessTokenSecret?: string;
+        oauth2AccessToken?: string;
+      };
 
-    if (!bearerToken) {
-      throw new Error('Twitter integration requires a bearerToken in config');
+    const hasOAuth1 = Boolean(apiKey && apiKeySecret && accessToken && accessTokenSecret);
+
+    if (!bearerToken && !hasOAuth1 && !oauth2AccessToken) {
+      throw new Error('Twitter integration requires bearerToken, OAuth 1.0a credentials, or oauth2AccessToken in config');
     }
 
-    // App-only client — used for reading mentions (no user context needed)
-    this.readonlyClient = new TwitterApi(bearerToken);
-
-    // If full OAuth 1.0a credentials are provided, create a user-context client
-    // that can post tweets and send DMs on behalf of the authenticated account.
-    if (apiKey && apiKeySecret && accessToken && accessTokenSecret) {
-      this.client = new TwitterApi({
-        appKey: apiKey,
-        appSecret: apiKeySecret,
-        accessToken,
-        accessSecret: accessTokenSecret,
+    // App-only / readonly client
+    if (bearerToken) {
+      this.readonlyClient = new TwitterApi(bearerToken);
+    } else if (hasOAuth1) {
+      this.readonlyClient = new TwitterApi({
+        appKey: apiKey!,
+        appSecret: apiKeySecret!,
+        accessToken: accessToken!,
+        accessSecret: accessTokenSecret!,
       });
     } else {
-      // Fall back to bearer-only — sendMessage() will throw if called without OAuth creds
+      this.readonlyClient = new TwitterApi(oauth2AccessToken!);
+    }
+
+    // User-context client: OAuth 2.0 takes priority over OAuth 1.0a
+    if (oauth2AccessToken) {
+      this.client = new TwitterApi(oauth2AccessToken);
+    } else if (hasOAuth1) {
+      this.client = new TwitterApi({
+        appKey: apiKey!,
+        appSecret: apiKeySecret!,
+        accessToken: accessToken!,
+        accessSecret: accessTokenSecret!,
+      });
+    } else {
+      // Fall back to bearer-only — sendMessage() will throw if called without user-context creds
       this.client = this.readonlyClient;
     }
 

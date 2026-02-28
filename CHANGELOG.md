@@ -1,3 +1,24 @@
+## [2026.2.28i] — 2026-02-28
+
+### Added
+
+- **Twitter OAuth 2.0 support** — The Twitter integration now accepts an `oauth2AccessToken` (and
+  optional `oauth2RefreshToken`) as an alternative to OAuth 1.0a. Credential resolution priority:
+  OAuth 2.0 → OAuth 1.0a → bearer-only. OAuth 2.0 tokens work with all Twitter API v2 endpoints
+  (profile, timeline, search, post, like, retweet) but **cannot upload media** — a clear 400 error
+  is returned when attempted. New fields in Settings → Connections → Twitter.
+- **`twitter_upload_media` MCP tool** — Upload an image or video to Twitter using the v1.1 media
+  endpoint; returns a `mediaId` string. Accepts either `url` (backend fetches the media) or `data`
+  (base64-encoded bytes). Requires OAuth 1.0a credentials and `auto` mode.
+- **`mediaIds` parameter on `twitter_post_tweet`** — Pass up to 4 media IDs (from
+  `twitter_upload_media`) to attach images or video to a posted tweet.
+- **`hasV1Auth` credential flag** — Internal flag on `TwitterCreds` that gates v1.1 endpoints.
+
+### Changed
+
+- Twitter adapter (`adapter.ts`) now initializes correctly with OAuth 2.0-only configs (previously
+  threw "requires a bearerToken" even when OAuth 2.0 token was present).
+
 ## [2026.2.28h] — 2026-02-28
 
 ### Added

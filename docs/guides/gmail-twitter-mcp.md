@@ -9,7 +9,7 @@ and retweet — all without browser automation, and all subject to the access mo
 | Service | Requirement |
 |---------|------------|
 | Gmail | A Google Cloud project with Gmail API enabled and OAuth credentials configured (see setup below) |
-| Twitter/X | A Twitter Developer App with OAuth 1.0a credentials |
+| Twitter/X | A Twitter Developer App with OAuth 1.0a credentials, **or** an OAuth 2.0 user-context access token |
 
 ---
 
@@ -164,8 +164,8 @@ what each tool is allowed to do:
 
 | Mode | Allowed | Blocked |
 |------|---------|---------|
-| `auto` | search, profile, read timeline, post, like, retweet, unretweet | — |
-| `draft` | search, profile, read, post (returns preview only) | like, retweet, unretweet |
+| `auto` | search, profile, read timeline, post, like, retweet, unretweet, media upload | — |
+| `draft` | search, profile, read, post (returns preview only) | like, retweet, unretweet, media upload |
 | `suggest` | search, profile, read timeline | all write operations |
 
 > **Twitter draft mode** — Because Twitter has no native draft API, in `draft` mode the
@@ -190,26 +190,70 @@ what each tool is allowed to do:
 
 | Tool | Description |
 |------|-------------|
-| `twitter_profile` | Get authenticated account profile (requires OAuth 1.0a) |
+| `twitter_profile` | Get authenticated account profile (requires user-context auth) |
 | `twitter_search` | Search recent tweets (supports search operators) |
 | `twitter_get_tweet` | Get a single tweet by ID |
 | `twitter_get_user` | Look up a Twitter user by username |
 | `twitter_get_mentions` | Get mentions of the authenticated account |
 | `twitter_get_timeline` | Get the authenticated account's home timeline |
-| `twitter_post_tweet` | Post a tweet (or preview in draft mode) |
+| `twitter_post_tweet` | Post a tweet (or preview in draft mode); accepts optional `mediaIds` |
 | `twitter_like_tweet` | Like a tweet (`auto` mode only) |
 | `twitter_retweet` | Retweet a tweet (`auto` mode only) |
 | `twitter_unretweet` | Undo a retweet (`auto` mode only) |
+| `twitter_upload_media` | Upload an image or video, returns `mediaId` (OAuth 1.0a + `auto` mode only) |
 
 ## Twitter Authentication
 
-Twitter tools require credentials in the integration config:
+Twitter tools require credentials in the integration config. Two authentication methods are supported:
 
-- **Read-only operations** (search, single tweet, user lookup): require only `bearerToken`.
-- **User-context operations** (profile, timeline, mentions, write): require OAuth 1.0a keys:
-  `apiKey`, `apiKeySecret`, `accessToken`, `accessTokenSecret`.
+### OAuth 1.0a (full access including media upload)
 
-Add these when creating or editing the Twitter integration in Settings → Connections.
+Configure all four fields: `apiKey`, `apiKeySecret`, `accessToken`, `accessTokenSecret`.
+Optionally add a `bearerToken` for the read-only client.
+
+- Supports all operations including `twitter_upload_media`
+- Required for media upload — Twitter's v1.1 media endpoint does not accept OAuth 2.0 tokens
+
+### OAuth 2.0 User-Context Token (alternative for v2 endpoints)
+
+Configure `oauth2AccessToken` (and optionally `oauth2RefreshToken` for storage).
+
+- Supports all Twitter API v2 operations: profile, timeline, search, post, like, retweet
+- **Does not support media upload** — `twitter_upload_media` will return a 400 error with a clear message
+- Useful when you have a user-context token from the developer portal or a PKCE flow
+
+### Read-only (bearer token only)
+
+Configure only `bearerToken`.
+
+- Supports search, single tweet lookup, user lookup
+- No user-context operations (profile, timeline, posting)
+
+### Credential Priority
+
+When multiple credentials are configured, the system resolves in this order:
+
+1. OAuth 2.0 access token (if `oauth2AccessToken` present)
+2. OAuth 1.0a (if all four OAuth 1.0a fields present)
+3. Bearer-only (read-only)
+
+Add credentials when creating or editing the Twitter integration in **Settings → Connections**.
+
+### Media Upload Workflow
+
+```
+1. twitter_upload_media  →  { mediaId: "1234567890" }
+2. twitter_post_tweet    →  { text: "Check this out!", mediaIds: ["1234567890"] }
+```
+
+The `twitter_upload_media` tool accepts either:
+- `url` — a publicly accessible URL the backend will fetch
+- `data` — base64-encoded file bytes
+
+Supported MIME types: `image/jpeg`, `image/png`, `image/gif`, `image/webp`, `video/mp4`
+
+> **Important**: Media upload requires OAuth 1.0a credentials and `auto` mode. Attempting to upload
+> with only an OAuth 2.0 token returns HTTP 400 with a clear explanation.
 
 ## Soul Prompt Awareness
 
@@ -241,6 +285,7 @@ availability at runtime.
 ## Reference
 
 - ADR 147: `docs/adr/147-gmail-twitter-mcp-tools.md`
+- ADR 154: `docs/adr/154-twitter-oauth2-media-upload.md`
 - MCP Feature Toggles: `packages/core/src/mcp/storage.ts`
 - Gmail routes: `packages/core/src/integrations/gmail/gmail-routes.ts`
 - Twitter routes: `packages/core/src/integrations/twitter/twitter-routes.ts`

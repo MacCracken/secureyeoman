@@ -442,6 +442,7 @@ export function getToolManifest(): ToolManifestEntry[] {
     { name: 'twitter_like_tweet', description: 'Like a tweet (auto mode only)' },
     { name: 'twitter_retweet', description: 'Retweet a tweet (auto mode only)' },
     { name: 'twitter_unretweet', description: 'Undo a retweet (auto mode only)' },
+    { name: 'twitter_upload_media', description: 'Upload an image or video to Twitter to attach to a tweet — requires OAuth 1.0a credentials and auto mode' },
 
     // GitHub API tools (Phase 70)
     { name: 'github_profile', description: 'Get the connected GitHub account profile — login, name, email, public repos count, access mode, and two_factor_authentication status (boolean). Use to surface 2FA security recommendations.' },

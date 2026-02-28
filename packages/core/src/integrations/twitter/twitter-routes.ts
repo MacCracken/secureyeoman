@@ -8,8 +8,9 @@
  *   suggest → read-only (search, timeline, profile)
  *
  * Auth matrix:
- *   bearerToken only → read-only endpoints (search, single tweet)
- *   OAuth 1.0a      → all endpoints including write and home timeline
+ *   bearerToken only        → read-only endpoints (search, single tweet)
+ *   OAuth 2.0 access token  → user-context read + write (v2 endpoints); NO media upload
+ *   OAuth 1.0a              → all endpoints including write, home timeline, and media upload (v1.1)
  */
 
 import { TwitterApi } from 'twitter-api-v2';
@@ -27,6 +28,8 @@ interface TwitterCreds {
   readonlyClient: TwitterApi;
   /** Full user-context client — null when only bearerToken is configured. */
   userClient: TwitterApi | null;
+  /** True only when OAuth 1.0a creds are present — required for v1.1 media upload. */
+  hasV1Auth: boolean;
   mode: string;
   integrationId: string;
   /** Stored username from the integration config (may be undefined). */
@@ -71,35 +74,49 @@ async function resolveTwitterAccess(
     apiKeySecret?: string;
     accessToken?: string;
     accessTokenSecret?: string;
+    oauth2AccessToken?: string;
+    oauth2RefreshToken?: string;
     username?: string;
   };
 
-  if (!cfg.bearerToken && !(cfg.apiKey && cfg.apiKeySecret && cfg.accessToken && cfg.accessTokenSecret)) {
+  const hasOAuth1 = Boolean(cfg.apiKey && cfg.apiKeySecret && cfg.accessToken && cfg.accessTokenSecret);
+
+  if (!cfg.bearerToken && !hasOAuth1 && !cfg.oauth2AccessToken) {
     return null;
   }
 
+  // Readonly client — prefer bearerToken, fall back to OAuth 1.0a, then OAuth 2.0
   const readonlyClient = cfg.bearerToken
     ? new TwitterApi(cfg.bearerToken)
-    : new TwitterApi({
+    : hasOAuth1
+    ? new TwitterApi({
         appKey: cfg.apiKey!,
         appSecret: cfg.apiKeySecret!,
         accessToken: cfg.accessToken!,
         accessSecret: cfg.accessTokenSecret!,
-      });
+      })
+    : new TwitterApi(cfg.oauth2AccessToken!);
 
-  const userClient =
-    cfg.apiKey && cfg.apiKeySecret && cfg.accessToken && cfg.accessTokenSecret
-      ? new TwitterApi({
-          appKey: cfg.apiKey,
-          appSecret: cfg.apiKeySecret,
-          accessToken: cfg.accessToken,
-          accessSecret: cfg.accessTokenSecret,
-        })
-      : null;
+  // User-context client resolution priority:
+  //   1. OAuth 2.0 access token (v2 endpoints only, no media upload)
+  //   2. OAuth 1.0a (v1 + v2 endpoints, supports media upload)
+  //   3. null (bearer-only)
+  let userClient: TwitterApi | null = null;
+  if (cfg.oauth2AccessToken) {
+    userClient = new TwitterApi(cfg.oauth2AccessToken);
+  } else if (hasOAuth1) {
+    userClient = new TwitterApi({
+      appKey: cfg.apiKey!,
+      appSecret: cfg.apiKeySecret!,
+      accessToken: cfg.accessToken!,
+      accessSecret: cfg.accessTokenSecret!,
+    });
+  }
 
   return {
     readonlyClient,
     userClient,
+    hasV1Auth: hasOAuth1,
     mode,
     integrationId: selected.id,
     configuredUsername: cfg.username,
@@ -245,7 +262,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
   );
 
   // POST /api/v1/twitter/tweets  (mode: auto → post; draft → preview; suggest → 403)
-  app.post<{ Body: { text: string; replyToTweetId?: string; quoteTweetId?: string } }>(
+  app.post<{ Body: { text: string; replyToTweetId?: string; quoteTweetId?: string; mediaIds?: string[] } }>(
     '/api/v1/twitter/tweets',
     async (req, reply) => {
       const creds = await resolveTwitterAccess(integrationManager, soulManager);
@@ -254,29 +271,75 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         return sendError(reply, 403, `Twitter mode is '${creds.mode}' — posting tweets is not permitted. The personality may only read.`);
       }
 
-      const { text, replyToTweetId, quoteTweetId } = req.body;
+      const { text, replyToTweetId, quoteTweetId, mediaIds } = req.body;
 
       // Draft mode — return a preview without actually posting
       if (creds.mode === 'draft') {
         return reply.code(200).send({
           draftMode: true,
-          preview: { text, replyToTweetId, quoteTweetId },
+          preview: { text, replyToTweetId, quoteTweetId, mediaIds },
           message: 'Draft mode active — tweet NOT posted. Show this preview to the user and ask for confirmation before posting.',
         });
       }
 
       if (!creds.userClient) {
-        return sendError(reply, 400, 'Posting tweets requires OAuth 1.0a credentials.');
+        return sendError(reply, 400, 'Posting tweets requires OAuth 1.0a or OAuth 2.0 credentials.');
       }
 
       try {
         const payload: Record<string, unknown> = { text };
         if (replyToTweetId) payload.reply = { in_reply_to_tweet_id: replyToTweetId };
         if (quoteTweetId) payload.quote_tweet_id = quoteTweetId;
+        if (mediaIds && mediaIds.length > 0) payload.media = { media_ids: mediaIds };
         const result = await creds.userClient.v2.tweet(payload as Parameters<typeof creds.userClient.v2.tweet>[0]);
         return reply.code(201).send(result.data);
       } catch (err) {
         return sendError(reply, 500, `Twitter API error: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+  );
+
+  // POST /api/v1/twitter/media/upload  (requires OAuth 1.0a + auto mode)
+  app.post<{ Body: { url?: string; data?: string; mimeType: string } }>(
+    '/api/v1/twitter/media/upload',
+    async (req, reply) => {
+      const creds = await resolveTwitterAccess(integrationManager, soulManager);
+      if (!creds) return sendError(reply, 404, 'No Twitter integration configured.');
+      if (creds.mode !== 'auto') {
+        return sendError(reply, 400, `Media upload requires 'auto' mode; current mode is '${creds.mode}'.`);
+      }
+      if (!creds.hasV1Auth) {
+        return sendError(reply, 400, 'Media upload requires OAuth 1.0a credentials (Twitter v1.1 API). OAuth 2.0-only setups cannot upload media.');
+      }
+
+      const { url, data, mimeType } = req.body;
+      if (!url && !data) {
+        return sendError(reply, 400, 'Either "url" or "data" (base64) is required.');
+      }
+      if (url && data) {
+        return sendError(reply, 400, 'Provide either "url" or "data", not both.');
+      }
+
+      let buffer: Buffer;
+      try {
+        if (url) {
+          const fetchRes = await fetch(url);
+          if (!fetchRes.ok) {
+            return sendError(reply, 400, `Failed to fetch media from URL: HTTP ${fetchRes.status}`);
+          }
+          buffer = Buffer.from(await fetchRes.arrayBuffer());
+        } else {
+          buffer = Buffer.from(data!, 'base64');
+        }
+      } catch (err) {
+        return sendError(reply, 400, `Failed to retrieve media: ${err instanceof Error ? err.message : String(err)}`);
+      }
+
+      try {
+        const mediaId = await creds.userClient!.v1.uploadMedia(buffer, { mimeType });
+        return reply.send({ mediaId });
+      } catch (err) {
+        return sendError(reply, 500, `Twitter media upload error: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
   );

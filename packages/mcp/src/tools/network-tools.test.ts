@@ -13,6 +13,22 @@ import type { ToolMiddleware } from './index.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+type ToolEntry = {
+  handler: (args: unknown) => Promise<{ content: Array<{ text: string }>; isError?: boolean }>;
+};
+type ToolRecord = Record<string, ToolEntry>;
+
+function getRegistered(server: McpServer): ToolRecord {
+  return (server as unknown as { _registeredTools: ToolRecord })._registeredTools;
+}
+
+function getTool(server: McpServer, name: string): ToolEntry {
+  const rt = getRegistered(server);
+  const tool = rt[name];
+  if (!tool) throw new Error(`Tool "${name}" not registered`);
+  return tool;
+}
+
 function noopMiddleware(): ToolMiddleware {
   return {
     rateLimiter: { check: () => ({ allowed: true }), reset: vi.fn(), wrap: vi.fn() },
@@ -279,11 +295,11 @@ describe('registerNetworkTools — disabled mode', () => {
     await registerNetworkTools(server, config, noopMiddleware());
 
     // Tools are registered (so the manifest is complete) even when disabled
-    const tool = (server as unknown as { _registeredTools: Map<string, unknown> })._registeredTools;
-    expect(tool.has('subnet_calculator')).toBe(true);
-    expect(tool.has('nvd_cve_search')).toBe(true);
-    expect(tool.has('network_device_connect')).toBe(true);
-    expect(tool.has('pcap_upload')).toBe(true);
+    const tool = getRegistered(server);
+    expect('subnet_calculator' in tool).toBe(true);
+    expect('nvd_cve_search' in tool).toBe(true);
+    expect('network_device_connect' in tool).toBe(true);
+    expect('pcap_upload' in tool).toBe(true);
   });
 });
 
@@ -315,8 +331,7 @@ describe('registerNetworkTools — enabled mode', () => {
     const config = makeConfig({ exposeNetworkTools: true, allowedNetworkTargets: ['*'] });
     await registerNetworkTools(server, config, noopMiddleware());
 
-    const registered = (server as unknown as { _registeredTools: Map<string, unknown> })
-      ._registeredTools;
+    const registered = getRegistered(server);
     const expectedTools = [
       'network_device_connect',
       'network_show_command',
@@ -358,7 +373,7 @@ describe('registerNetworkTools — enabled mode', () => {
       'pcap_http_requests',
     ];
     for (const name of expectedTools) {
-      expect(registered.has(name), `Expected tool ${name} to be registered`).toBe(true);
+      expect(name in registered, `Expected tool ${name} to be registered`).toBe(true);
     }
   });
 });
@@ -391,15 +406,8 @@ describe('subnet_calculator tool handler', () => {
     const config = makeConfig();
     await registerNetworkTools(server, config, middleware);
 
-    const tool = (
-      server as unknown as {
-        _registeredTools: Map<
-          string,
-          { handler: (args: unknown) => Promise<{ content: Array<{ text: string }> }> }
-        >;
-      }
-    )._registeredTools.get('subnet_calculator');
-    const result = await tool!.handler({ cidr: '192.168.1.0/24' });
+    const tool = getTool(server, 'subnet_calculator');
+    const result = await tool.handler({ cidr: '192.168.1.0/24' });
     const parsed = JSON.parse(result.content[0]!.text);
     expect(parsed.network).toBe('192.168.1.0');
     expect(parsed.broadcast).toBe('192.168.1.255');
@@ -410,19 +418,8 @@ describe('subnet_calculator tool handler', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     await registerNetworkTools(server, makeConfig(), noopMiddleware());
 
-    const tool = (
-      server as unknown as {
-        _registeredTools: Map<
-          string,
-          {
-            handler: (
-              args: unknown
-            ) => Promise<{ content: Array<{ text: string }>; isError?: boolean }>;
-          }
-        >;
-      }
-    )._registeredTools.get('subnet_calculator');
-    const result = await tool!.handler({ cidr: 'invalid' });
+    const tool = getTool(server, 'subnet_calculator');
+    const result = await tool.handler({ cidr: 'invalid' });
     expect(result.isError).toBe(true);
   });
 });
@@ -451,15 +448,8 @@ describe('wildcard_mask_calc tool handler', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     await registerNetworkTools(server, makeConfig(), noopMiddleware());
 
-    const tool = (
-      server as unknown as {
-        _registeredTools: Map<
-          string,
-          { handler: (args: unknown) => Promise<{ content: Array<{ text: string }> }> }
-        >;
-      }
-    )._registeredTools.get('wildcard_mask_calc');
-    const result = await tool!.handler({ input: '24' });
+    const tool = getTool(server, 'wildcard_mask_calc');
+    const result = await tool.handler({ input: '24' });
     const parsed = JSON.parse(result.content[0]!.text);
     expect(parsed.wildcardMask).toBe('0.0.0.255');
   });
@@ -500,20 +490,9 @@ describe('network scope enforcement', () => {
     const config = makeConfig({ allowedNetworkTargets: ['10.0.0.0/8'] });
     await registerNetworkTools(server, config, noopMiddleware());
 
-    const tool = (
-      server as unknown as {
-        _registeredTools: Map<
-          string,
-          {
-            handler: (
-              args: unknown
-            ) => Promise<{ content: Array<{ text: string }>; isError?: boolean }>;
-          }
-        >;
-      }
-    )._registeredTools.get('network_device_connect');
+    const tool = getTool(server, 'network_device_connect');
     // 192.168.1.1 is not in 10.0.0.0/8
-    const result = await tool!.handler({ host: '192.168.1.1', port: 22, username: 'admin' });
+    const result = await tool.handler({ host: '192.168.1.1', port: 22, username: 'admin' });
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toContain('outside the declared network scope');
   });
@@ -523,21 +502,10 @@ describe('network scope enforcement', () => {
     const config = makeConfig({ allowedNetworkTargets: ['*'] });
     await registerNetworkTools(server, config, noopMiddleware());
 
-    const tool = (
-      server as unknown as {
-        _registeredTools: Map<
-          string,
-          {
-            handler: (
-              args: unknown
-            ) => Promise<{ content: Array<{ text: string }>; isError?: boolean }>;
-          }
-        >;
-      }
-    )._registeredTools.get('network_device_connect');
+    const tool = getTool(server, 'network_device_connect');
     // With wildcard scope and a mocked SSH client that never fires 'ready',
     // this will timeout — but the scope check passes (no ScopeViolationError)
-    const result = await tool!.handler({ host: '8.8.8.8', port: 22, username: 'admin' });
+    const result = await tool.handler({ host: '8.8.8.8', port: 22, username: 'admin' });
     // Either a timeout error or SSH error — but NOT a scope violation
     if (result.isError) {
       expect(result.content[0]!.text).not.toContain('outside the declared network scope');
@@ -549,19 +517,8 @@ describe('network scope enforcement', () => {
     const config = makeConfig({ allowedNetworkTargets: [] });
     await registerNetworkTools(server, config, noopMiddleware());
 
-    const tool = (
-      server as unknown as {
-        _registeredTools: Map<
-          string,
-          {
-            handler: (
-              args: unknown
-            ) => Promise<{ content: Array<{ text: string }>; isError?: boolean }>;
-          }
-        >;
-      }
-    )._registeredTools.get('network_device_connect');
-    const result = await tool!.handler({ host: '10.0.0.1', port: 22, username: 'admin' });
+    const tool = getTool(server, 'network_device_connect');
+    const result = await tool.handler({ host: '10.0.0.1', port: 22, username: 'admin' });
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toContain('none configured');
   });
@@ -594,19 +551,8 @@ describe('netbox_devices_list — missing config', () => {
     const config = makeConfig({ netboxUrl: undefined, netboxToken: undefined });
     await registerNetworkTools(server, config, noopMiddleware());
 
-    const tool = (
-      server as unknown as {
-        _registeredTools: Map<
-          string,
-          {
-            handler: (
-              args: unknown
-            ) => Promise<{ content: Array<{ text: string }>; isError?: boolean }>;
-          }
-        >;
-      }
-    )._registeredTools.get('netbox_devices_list');
-    const result = await tool!.handler({ limit: 10 });
+    const tool = getTool(server, 'netbox_devices_list');
+    const result = await tool.handler({ limit: 10 });
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toContain('NetBox is not configured');
   });
@@ -638,19 +584,8 @@ describe('pcap tools — tshark unavailable', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     await registerNetworkTools(server, makeConfig(), noopMiddleware());
 
-    const tool = (
-      server as unknown as {
-        _registeredTools: Map<
-          string,
-          {
-            handler: (
-              args: unknown
-            ) => Promise<{ content: Array<{ text: string }>; isError?: boolean }>;
-          }
-        >;
-      }
-    )._registeredTools.get('pcap_upload');
-    const result = await tool!.handler({ data: Buffer.from('dummy').toString('base64') });
+    const tool = getTool(server, 'pcap_upload');
+    const result = await tool.handler({ data: Buffer.from('dummy').toString('base64') });
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toContain('tshark');
   });

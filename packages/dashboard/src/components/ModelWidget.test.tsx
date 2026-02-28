@@ -10,6 +10,9 @@ import { createModelInfoResponse } from '../test/mocks';
 vi.mock('../api/client', () => ({
   fetchModelInfo: vi.fn(),
   switchModel: vi.fn(),
+  patchModelConfig: vi.fn(),
+  fetchOllamaPull: vi.fn().mockReturnValue((async function* () {})()),
+  deleteOllamaModel: vi.fn(),
 }));
 
 import * as api from '../api/client';

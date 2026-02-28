@@ -43,6 +43,8 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 - [ ] **Consumer UX: Settings page split** — Extract `<AuditChainTab>`, `<SoulSystemTab>`, `<RateLimitingTab>` from the `SettingsPage.tsx` monolith.
 - [ ] **Manual test: OAuth token refresh end-to-end** — (1) Connect a Gmail account; (2) Wait for access token to expire (or use Connections → OAuth → "Refresh Token" button); (3) Confirm personality can still call `gmail_profile` without error; (4) Revoke the Google refresh token in Google Account → Security → Third-party apps, then trigger a Gmail tool call — confirm error message tells user to reconnect (not a silent 500). *(401-retry + forceRefreshById now implemented, 2026-02-27c)*
 - [ ] long chats slow down the users ability to type.
+- [ ] **AgentWorld** - Improvement - display when sub-agents are created.
+
 ---
 
 ## Phase 68: Mission Control Customization

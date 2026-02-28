@@ -148,11 +148,17 @@ export function registerTwitterTools(
     'twitter_post_tweet',
     {
       description:
-        'Post a new tweet. In "auto" mode: posts immediately and returns the tweet ID. In "draft" mode: returns a preview for user review — do NOT post until the user confirms. In "suggest" mode: not permitted. Twitter limit: ~17 tweets/day on free tier. Requires OAuth 1.0a credentials.',
+        'Post a new tweet. In "auto" mode: posts immediately and returns the tweet ID. In "draft" mode: returns a preview for user review — do NOT post until the user confirms. In "suggest" mode: not permitted. Twitter limit: ~17 tweets/day on free tier. Requires OAuth 1.0a or OAuth 2.0 credentials.',
       inputSchema: {
         text: z.string().max(280).describe('Tweet text (max 280 characters)'),
         replyToTweetId: z.string().optional().describe('Tweet ID to reply to (makes this a reply)'),
         quoteTweetId: z.string().optional().describe('Tweet ID to quote-tweet'),
+        mediaIds: z
+          .string()
+          .array()
+          .max(4)
+          .optional()
+          .describe('Up to 4 media IDs from twitter_upload_media to attach to the tweet'),
       },
     },
     wrapToolHandler('twitter_post_tweet', middleware, async (args) => {
@@ -160,6 +166,37 @@ export function registerTwitterTools(
         text: args.text,
         replyToTweetId: args.replyToTweetId,
         quoteTweetId: args.quoteTweetId,
+        mediaIds: args.mediaIds,
+      });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    })
+  );
+
+  // ── twitter_upload_media ─────────────────────────────────────
+  server.registerTool(
+    'twitter_upload_media',
+    {
+      description:
+        'Upload an image or video to Twitter for attaching to a tweet. Returns a mediaId. Use twitter_post_tweet with mediaIds to attach. Requires OAuth 1.0a credentials and auto mode.',
+      inputSchema: {
+        mimeType: z
+          .string()
+          .describe('MIME type of the media (e.g. "image/jpeg", "image/png", "image/gif", "video/mp4")'),
+        url: z
+          .string()
+          .optional()
+          .describe('URL to fetch and upload (mutually exclusive with data)'),
+        data: z
+          .string()
+          .optional()
+          .describe('Base64-encoded file bytes (mutually exclusive with url)'),
+      },
+    },
+    wrapToolHandler('twitter_upload_media', middleware, async (args) => {
+      const result = await client.post('/api/v1/twitter/media/upload', {
+        mimeType: args.mimeType,
+        url: args.url,
+        data: args.data,
       });
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     })

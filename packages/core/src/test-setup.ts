@@ -82,6 +82,15 @@ export async function truncateAllTables(): Promise<void> {
   for (const row of publicRes.rows) {
     await pool.query(`TRUNCATE public."${row.tablename}" CASCADE`);
   }
+
+  // Re-seed the default tenant so FK constraints (tenant_id → auth.tenants) resolve.
+  // Migration 058 adds tenant_id FK columns to user-data tables with DEFAULT 'default'.
+  // After truncating auth.tenants, inserting any row with DEFAULT 'default' would fail.
+  await pool.query(`
+    INSERT INTO auth.tenants (id, name, slug, plan, metadata, created_at, updated_at)
+    VALUES ('default', 'Default', 'default', 'enterprise', '{}', 0, 0)
+    ON CONFLICT DO NOTHING
+  `);
 }
 
 /**

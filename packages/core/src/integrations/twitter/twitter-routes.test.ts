@@ -50,9 +50,14 @@ const mockV2 = {
   unretweet: vi.fn().mockResolvedValue({ data: { retweeted: false } }),
 };
 
+const mockV1 = {
+  uploadMedia: vi.fn().mockResolvedValue('media-id-123'),
+};
+
 vi.mock('twitter-api-v2', () => ({
-  TwitterApi: function MockTwitterApi() {
+  TwitterApi: function MockTwitterApi(this: { v2: typeof mockV2; v1: typeof mockV1 }) {
     this.v2 = mockV2;
+    this.v1 = mockV1;
   },
 }));
 
@@ -326,6 +331,117 @@ describe('Twitter Routes', () => {
         url: '/api/v1/twitter/tweets/tw-1/retweet',
       });
       expect(res.statusCode).toBe(403);
+    });
+  });
+
+  // ── POST /api/v1/twitter/media/upload ────────────────────────────────────
+
+  describe('POST /api/v1/twitter/media/upload', () => {
+    it('returns 404 when no integration configured', async () => {
+      const app = await buildApp(mockIntegrationManager({ noIntegrations: true }), mockSoulManager('auto'));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/twitter/media/upload',
+        payload: { mimeType: 'image/jpeg', data: Buffer.from('fake').toString('base64') },
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('returns 400 when mode is not auto', async () => {
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('suggest'));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/twitter/media/upload',
+        payload: { mimeType: 'image/jpeg', data: Buffer.from('fake').toString('base64') },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().message).toMatch(/auto/i);
+    });
+
+    it('returns 400 when only OAuth 2.0 token (no OAuth 1.0a)', async () => {
+      const app = await buildApp(
+        mockIntegrationManager({
+          configOverride: {
+            bearerToken: undefined,
+            apiKey: undefined,
+            apiKeySecret: undefined,
+            accessToken: undefined,
+            accessTokenSecret: undefined,
+            oauth2AccessToken: 'oauth2-token-xyz',
+          } as typeof TWITTER_INTEGRATION['config'] & { oauth2AccessToken?: string },
+        }),
+        mockSoulManager('auto')
+      );
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/twitter/media/upload',
+        payload: { mimeType: 'image/jpeg', data: Buffer.from('fake').toString('base64') },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().message).toMatch(/oauth 1\.0a/i);
+    });
+
+    it('returns 400 when neither url nor data provided', async () => {
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/twitter/media/upload',
+        payload: { mimeType: 'image/jpeg' },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().message).toMatch(/url.*data|data.*url/i);
+    });
+
+    it('uploads via base64 data and returns mediaId', async () => {
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/twitter/media/upload',
+        payload: {
+          mimeType: 'image/jpeg',
+          data: Buffer.from('fake-image-bytes').toString('base64'),
+        },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().mediaId).toBe('media-id-123');
+      expect(mockV1.uploadMedia).toHaveBeenCalled();
+    });
+  });
+
+  // ── OAuth 2.0 credential resolution ──────────────────────────────────────
+
+  describe('OAuth 2.0 credential resolution', () => {
+    const oauth2Config = {
+      bearerToken: undefined,
+      apiKey: undefined,
+      apiKeySecret: undefined,
+      accessToken: undefined,
+      accessTokenSecret: undefined,
+      oauth2AccessToken: 'oauth2-token-xyz',
+    } as typeof TWITTER_INTEGRATION['config'] & { oauth2AccessToken?: string };
+
+    it('creates userClient when oauth2AccessToken present (profile works)', async () => {
+      const app = await buildApp(
+        mockIntegrationManager({ configOverride: oauth2Config }),
+        mockSoulManager('auto')
+      );
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/profile' });
+      // profile requires userClient — OAuth 2.0 provides one
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('hasV1Auth false when oauth2AccessToken only — media upload returns 400', async () => {
+      const app = await buildApp(
+        mockIntegrationManager({ configOverride: oauth2Config }),
+        mockSoulManager('auto')
+      );
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/twitter/media/upload',
+        payload: { mimeType: 'image/jpeg', data: Buffer.from('x').toString('base64') },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().message).toMatch(/oauth 1\.0a/i);
     });
   });
 });

@@ -24,7 +24,7 @@ vi.mock('pg', () => ({
 }));
 
 vi.mock('../logging/logger.js', () => ({
-  getLogger: vi.fn().mockReturnValue({ error: vi.fn() }),
+  getLogger: vi.fn().mockReturnValue({ error: vi.fn(), warn: vi.fn() }),
 }));
 
 // ─── Tests ────────────────────────────────────────────────────
@@ -106,8 +106,15 @@ describe('pg-pool', () => {
       expect(MockPool).toHaveBeenCalledWith(expect.objectContaining({ ssl: false }));
     });
 
-    it('passes ssl object when ssl option is true', () => {
+    it('passes ssl object with rejectUnauthorized: true when ssl option is true (secure default)', () => {
       initPool({ ...baseConfig, ssl: true });
+      expect(MockPool).toHaveBeenCalledWith(
+        expect.objectContaining({ ssl: { rejectUnauthorized: true } })
+      );
+    });
+
+    it('passes ssl object with rejectUnauthorized: false when sslRejectUnauthorized is false', () => {
+      initPool({ ...baseConfig, ssl: true, sslRejectUnauthorized: false });
       expect(MockPool).toHaveBeenCalledWith(
         expect.objectContaining({ ssl: { rejectUnauthorized: false } })
       );

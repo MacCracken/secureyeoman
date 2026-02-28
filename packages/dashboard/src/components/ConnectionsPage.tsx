@@ -1020,6 +1020,20 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
         placeholder: 'Access Token Secret',
         helpText: 'OAuth 1.0a Access Token Secret',
       },
+      {
+        key: 'oauth2AccessToken',
+        label: 'OAuth 2.0 Access Token (alternative to OAuth 1.0a)',
+        type: 'password' as const,
+        placeholder: 'OAuth 2.0 access token',
+        helpText: 'User-context OAuth 2.0 token — alternative to OAuth 1.0a for posting. Note: media upload requires OAuth 1.0a.',
+      },
+      {
+        key: 'oauth2RefreshToken',
+        label: 'OAuth 2.0 Refresh Token (optional)',
+        type: 'password' as const,
+        placeholder: 'OAuth 2.0 refresh token',
+        helpText: 'Refresh token for OAuth 2.0 — stored for reference; manual refresh not yet supported.',
+      },
     ],
     setupSteps: [
       'Go to developer.twitter.com and create a project + app',
@@ -1027,6 +1041,7 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
       'Copy the Bearer Token from the Keys and Tokens tab',
       'Generate Access Token & Secret under Authentication Tokens',
       'Paste all tokens above — Bearer Token alone enables read-only monitoring',
+      'Alternatively, use an OAuth 2.0 user-context token (from your app portal or PKCE flow) for posting without OAuth 1.0a — note that media upload (images/video) requires OAuth 1.0a',
     ],
   },
 };

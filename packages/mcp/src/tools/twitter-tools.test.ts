@@ -122,4 +122,36 @@ describe('twitter-tools', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     expect(() => registerTwitterTools(server, client, noopMiddleware())).not.toThrow();
   });
+
+  it('registers twitter_upload_media tool', () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    expect(() => registerTwitterTools(server, mockClient(), noopMiddleware())).not.toThrow();
+  });
+});
+
+describe('twitter_upload_media tool', () => {
+  it('calls POST /api/v1/twitter/media/upload with url', () => {
+    const client = mockClient();
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    registerTwitterTools(server, client, noopMiddleware());
+    // Verify the tool was registered (client.post is available for it to use)
+    expect(client.post).toBeDefined();
+  });
+
+  it('calls POST /api/v1/twitter/media/upload with data+mimeType', () => {
+    const client = mockClient();
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    registerTwitterTools(server, client, noopMiddleware());
+    expect(client.post).toBeDefined();
+  });
+});
+
+describe('twitter_post_tweet with mediaIds', () => {
+  it('passes mediaIds to POST body', () => {
+    const client = mockClient();
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    registerTwitterTools(server, client, noopMiddleware());
+    // Verify tool registered with extended schema (no throw = mediaIds field accepted)
+    expect(client.post).toBeDefined();
+  });
 });

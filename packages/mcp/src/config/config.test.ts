@@ -21,7 +21,7 @@ describe('config', () => {
       MCP_ENABLED: 'false',
       MCP_PORT: '4000',
       MCP_HOST: '0.0.0.0',
-      MCP_TRANSPORT: 'sse',
+      MCP_TRANSPORT: 'streamable-http',
       MCP_AUTO_REGISTER: 'false',
       MCP_CORE_URL: 'http://localhost:9999',
       SECUREYEOMAN_TOKEN_SECRET: 'a-test-token-secret-that-is-at-least-32-chars',
@@ -34,7 +34,7 @@ describe('config', () => {
     expect(config.enabled).toBe(false);
     expect(config.port).toBe(4000);
     expect(config.host).toBe('0.0.0.0');
-    expect(config.transport).toBe('sse');
+    expect(config.transport).toBe('streamable-http');
     expect(config.autoRegister).toBe(false);
     expect(config.coreUrl).toBe('http://localhost:9999');
     expect(config.tokenSecret).toBe('a-test-token-secret-that-is-at-least-32-chars');
