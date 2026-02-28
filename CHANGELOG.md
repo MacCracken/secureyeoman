@@ -1,3 +1,41 @@
+## [2026.2.28c] — 2026-02-28
+
+### Fixed
+
+- **Avatar crop preview blocked by CSP** — The `<meta http-equiv="Content-Security-Policy">`
+  in `index.html` had `default-src 'self'` with no explicit `img-src` directive.
+  Browsers fall back to `default-src` for images, which blocks `blob:` URLs
+  created by `URL.createObjectURL()`. Added `img-src 'self' data: blob:` and
+  `media-src 'self' blob:` to the meta CSP. Also simplified `connect-src` to
+  use `ws: wss:` scheme-only directives to cover WebSocket connections to any
+  configured hostname (e.g. `dev.secureyeoman.ai`). The CSP in `server.ts`
+  already had `img-src 'self' data: blob:` but the meta tag (which governs the
+  Vite dev server page at port 3000) did not.
+
+---
+
+## [2026.2.28b] — 2026-02-28
+
+### Fixed
+
+- **Avatar crop preview blank** — `onImgLoad` was reading `imgRef.current.naturalWidth`
+  during React render, which is zero on the first render after `onLoad` triggers
+  a state update (the DOM is committed but the render captures stale ref data).
+  Natural dimensions are now captured in a `naturalSize` state variable directly
+  inside the `onLoad` event handler (`e.currentTarget.naturalWidth/Height`) and
+  used in the render phase — no ref reads at render time. Crop preview now
+  displays and positions the image correctly on first open.
+
+- **Migration 062 startup crash** (`column "created_at" does not exist`) —
+  `audit.entries` uses `timestamp` (bigint epoch) rather than `created_at`, and
+  has no `personality_id` column. The two broken index definitions were replaced:
+  `idx_audit_entries_timestamp ON audit.entries ("timestamp" DESC)` and
+  `idx_audit_entries_event_timestamp ON audit.entries (event, "timestamp" DESC)`.
+  The `brain.memories` index (`personality_id, created_at DESC`) was correct and
+  unchanged.
+
+---
+
 ## [2026.2.28a] — 2026-02-28
 
 ### Added
@@ -23,7 +61,7 @@
 
 - **Migration 062 — query indexes** — Three new `CREATE INDEX IF NOT EXISTS`
   statements for the audit log and brain memory hot paths:
-  `idx_audit_entries_created_at`, `idx_audit_entries_personality_event`,
+  `idx_audit_entries_timestamp`, `idx_audit_entries_event_timestamp`,
   `idx_brain_memories_personality_created`.
 
 ### Fixed

@@ -108,6 +108,9 @@ function AvatarLightbox({ src, alt, onClose }: { src: string; alt: string; onClo
   const dragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const offsetAtDragStart = useRef({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const scaleRef = useRef(scale);
+  scaleRef.current = scale;
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -117,13 +120,21 @@ function AvatarLightbox({ src, alt, onClose }: { src: string; alt: string; onClo
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  // Non-passive so preventDefault actually stops browser scroll/back-swipe during zoom.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      e.preventDefault();
+      const next = Math.min(5, Math.max(0.5, scaleRef.current * (1 - e.deltaY * 0.005)));
+      setScale(next);
+    };
+    el.addEventListener('wheel', handler, { passive: false });
+    return () => el.removeEventListener('wheel', handler);
+  }, []);
+
   function clampScale(s: number) {
     return Math.min(5, Math.max(0.5, s));
-  }
-
-  function onWheel(e: React.WheelEvent) {
-    e.preventDefault();
-    setScale((s) => clampScale(s - e.deltaY * 0.001));
   }
 
   function onMouseDown(e: React.MouseEvent) {
@@ -153,9 +164,9 @@ function AvatarLightbox({ src, alt, onClose }: { src: string; alt: string; onClo
 
   return (
     <div
+      ref={containerRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
       onClick={onClose}
-      onWheel={onWheel}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
     >
@@ -254,6 +265,13 @@ function AvatarCropModal({
   const touchRef = useRef({ startX: 0, startY: 0, offX: 0, offY: 0 });
   const imgRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const cropViewportRef = useRef<HTMLDivElement>(null);
+  // Always-current mirrors of scale/offset for use inside the native wheel handler
+  // (the handler closes over a stale snapshot; refs give it live values)
+  const scaleRef = useRef(scale);
+  const offsetRef = useRef(offset);
+  scaleRef.current = scale;
+  offsetRef.current = offset;
 
   useEffect(() => {
     const url = URL.createObjectURL(file);
@@ -288,25 +306,32 @@ function AvatarCropModal({
   const onImgLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
     if (!w || !h) return;
-    // Initial scale: shorter dimension exactly fills the crop circle diameter.
-    const s = (CROP_RADIUS * 2) / Math.min(w, h);
+    // Initial scale: shorter dimension fills the container so the image edge is never
+    // visible inside the viewport during zoom (CROP_CONTAINER > CROP_RADIUS*2).
+    const s = CROP_CONTAINER / Math.min(w, h);
     setNaturalSize({ w, h });
     setMinScale(s);
     setScale(s);
     setOffset({ x: 0, y: 0 });
   }, []);
 
-  const handleWheel = useCallback(
-    (e: React.WheelEvent) => {
+  // Non-passive wheel listener — React 18 onWheel is passive so preventDefault is a no-op there.
+  // Reads live values via refs; sets scale and offset independently (no nested setState).
+  useEffect(() => {
+    const el = cropViewportRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
       e.preventDefault();
-      setScale((prev) => {
-        const next = Math.max(minScale, Math.min(minScale * 8, prev * (1 - e.deltaY * 0.001)));
-        setOffset((o) => clamp(o.x, o.y, next));
-        return next;
-      });
-    },
-    [minScale, clamp]
-  );
+      const prev = scaleRef.current;
+      const next = Math.max(minScale, Math.min(minScale * 8, prev * (1 - e.deltaY * 0.001)));
+      const ratio = next / prev;
+      setScale(next);
+      // Scale offset proportionally so the crop circle shows the same image content after zoom.
+      setOffset(clamp(offsetRef.current.x * ratio, offsetRef.current.y * ratio, next));
+    };
+    el.addEventListener('wheel', handler, { passive: false });
+    return () => el.removeEventListener('wheel', handler);
+  }, [minScale, clamp]);
 
   const onMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -373,9 +398,9 @@ function AvatarCropModal({
 
         {/* Crop viewport */}
         <div
+          ref={cropViewportRef}
           className="relative select-none overflow-hidden bg-muted rounded-sm"
           style={{ width: CROP_CONTAINER, height: CROP_CONTAINER, cursor: dragging ? 'grabbing' : 'grab' }}
-          onWheel={handleWheel}
           onMouseDown={onMouseDown}
           onMouseMove={onMouseMove}
           onMouseUp={() => setDragging(false)}
@@ -393,6 +418,8 @@ function AvatarCropModal({
               position: 'absolute',
               width: imgW || 'auto',
               height: imgH || 'auto',
+              maxWidth: 'none',
+              maxHeight: 'none',
               left: imgW ? C + offset.x - imgW / 2 : 0,
               top: imgH ? C + offset.y - imgH / 2 : 0,
               pointerEvents: 'none',
@@ -430,8 +457,9 @@ function AvatarCropModal({
             value={scale}
             onChange={(e) => {
               const s = parseFloat(e.target.value);
+              const ratio = s / scale;
               setScale(s);
-              setOffset((o) => clamp(o.x, o.y, s));
+              setOffset((o) => clamp(o.x * ratio, o.y * ratio, s));
             }}
             className="flex-1 accent-primary"
           />

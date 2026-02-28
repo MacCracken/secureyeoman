@@ -9,13 +9,9 @@
 | Phase | Name | Status |
 |-------|------|--------|
 | XX | Find & Repair (Ongoing) | Ongoing |
-| 64 | AI Training Pipeline | Complete (2026-02-27) |
-| 69 | Agent World Evolution | Complete (2026-02-27) |
-| 68 | Mission Control Customization | Next — high UX value for existing users |
-| 70 | Advanced Editor — Full IDE Mode | Next — high value for power users |
-| 65 | Voice & Community | Demand-Gated |
-| 66 | Native Clients | Demand-Gated |
-| 67 | Infrastructure & Platform | Demand-Gated |
+| 68 | Mission Control Customization | Next — high UX value |
+| 70 | Advanced Editor — Full IDE Mode | Next — power user priority |
+| Future | Training Extensions, Agent World, Voice, Native Clients, Infrastructure | Future / Demand-Gated |
 
 ---
 
@@ -28,25 +24,16 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 ### Prompting Disciplines
 
 - [ ] Prompt Craft
-- [ ] Context Engineering 
+- [ ] Context Engineering
 - [ ] Intent Engineering
 - [ ] Specification Engineering
     1. self contained problem statements
     2. learn about acceptance criteria
     3. constraint architecture
-    4. decomposition (modualarity) 
-
-### Code Health (from 2026-02-27 audit)
-
-- [x] **Brain seeding: skip if already seeded** — `isBaseKnowledgeSeeded()` single COUNT query added to `BrainStorage`; `seedBaseKnowledge()` short-circuits on first startup after all seeds are present. Steady-state: 4 queries → 1. *(2026-02-28)*
-- [x] **Missing DB indexes** — Migration `062_audit_memory_indexes.sql` added: `idx_audit_entries_created_at`, `idx_audit_entries_personality_event`, `idx_brain_memories_personality_created`. *(2026-02-28)*
-- [x] **SSEServerTransport → StreamableHTTPServerTransport migration** — `sse.ts` deleted; `McpTransportSchema` narrowed to `['stdio', 'streamable-http']`; dependency-watch entry resolved. *(2026-02-28)*
-
+    4. decomposition (modularity)
 
 ### Open Items
 
-- [x] **Google OAuth `redirect_uri_mismatch` + missing consent screen** — `OAUTH_REDIRECT_BASE_URL` env var added; `google` provider now includes `access_type=offline` + `prompt=consent`; post-callback redirect uses `frontendOrigin` from `Origin`/`Referer` header. *(2026-02-28)*
-- [x] **Personality avatar crop modal** — Full circular crop UI (drag + zoom) exported at 512×512 PNG; conversation sidebar shows personality avatar per item. *(2026-02-28)*
 - [ ] **AgentWorld**: only saw thinking appear not writing; needs more testing
 - [ ] **Manual test: Per-Personality Memory Scoping** — End-to-end verification of ADR 134. Steps: (1) Chat with T.Ron → save a memory, confirm it appears in T.Ron recall but NOT in FRIDAY recall; (2) Check heartbeat stats show different Memories counts for T.Ron and FRIDAY; (3) Enable Omnipresent Mind on FRIDAY → confirm FRIDAY can now recall T.Ron's memories; (4) Disable Omnipresent Mind → scoping restored; (5) Verify `/api/v1/brain/stats?personalityId=<id>` returns per-personality counts. *(No automated DB integration test yet)*
 - [ ] **Manual test: One Skill Schema + Community Marketplace** — End-to-end verification of ADR 135. Steps: (1) Dashboard → Marketplace → confirm All / Marketplace / Community filter tabs render; (2) Sync community skills via `POST /api/v1/marketplace/community/sync` with a local repo path; (3) Switch to Community tab → confirm community skills appear with "Community" badge; (4) Install a community skill that has `mcpToolsAllowed` set → confirm the brain skill record carries the same `mcpToolsAllowed` value; (5) Dashboard → Skills → Installed tab → confirm the installed community skill shows "Community" in the Source column; (6) Uninstall the skill → confirm `installed` resets to false and card returns to "Install" state.
@@ -58,56 +45,9 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ---
 
-## Phase 64: AI Training Pipeline — Future Items
-
-*Core pipeline complete (2026-02-27). Gap fix: distillation `runJob()` endpoint + dashboard Run button shipped 2026-02-27. See [CHANGELOG.md](../../CHANGELOG.md).*
-
-- [x] **Distillation run endpoint** — `POST /api/v1/training/distillation/jobs/:id/run` fires `runJob()` in the background (202 Accepted). Accepts both `pending` and `failed` jobs (retry). Dashboard shows Play / Retry button per job. (2026-02-27)
-- [ ] **Continual / online learning** — Incremental adapter updates from new interactions without a full retrain. Replay buffer management, LR scheduling, drift detection. Research-grade; revisit once fine-tuning pipeline has real-world usage.
-- [ ] **Training from scratch** — Pre-train on a curated local corpus. Scoped to small models (≤3B params) as lightweight specialists. Depends on fine-tuning pipeline being battle-tested.
-
----
-
-## Phase 65: Voice & Community
-
-**Status**: Demand-Gated — implement when voice profile and marketplace demand justifies the investment.
-
-### Voice Profiles
-
-- [ ] **Voice profile system** — Named voice identities (`voice_profile_create`, `voice_profile_list`, `voice_profile_speak` MCP tools) backed by Voicebox profiles. Each personality can have a persistent voice identity.
-- [ ] **Two-tier voice prompt caching** — Cache Voicebox voice prompts in memory (session) and on disk (MD5 keyed on audio bytes + reference text), avoiding reprocessing reference audio on every TTS call.
-
-### Marketplace Evolution
-
-*Implement once the community skill repo has meaningful scale.*
-
-- [ ] **Scheduled Auto-Sync** — Optional cron-style background sync from the configured community repo (configurable interval, off by default).
-- [ ] **Hosted Discovery API** — A lightweight read-only API for browsing available community skills without cloning.
-- [ ] **Cryptographic Skill Signing** — Authors sign skills with a keypair; SecureYeoman verifies signatures before installing. Reject unsigned skills in strict mode.
-- [ ] **Skill Ratings & Downloads** — Community feedback mechanism (stars, download counts) surfaced in the marketplace UI.
-
----
-
-## Phase 66: Native Clients
-
-**Status**: Demand-Gated — implement once REST/WebSocket API is stable and adoption justifies native packaging.
-
-### Mobile
-
-- [ ] **Mobile app** — Native iOS/Android companion app. Primary view: chat interface + at-a-glance overview stats. Connects to existing REST + WebSocket API.
-- [ ] **Cross-device sync** — Conversation history, personality state, and notification preferences synced across devices.
-
-### Desktop
-
-- [ ] **Desktop app** — Native desktop client (Electron or Tauri) wrapping the existing dashboard SPA. Adds system tray, native notifications, global keyboard shortcut, and auto-launch on login.
-- [ ] **Offline indicator** — Detect when the connected SecureYeoman instance is unreachable.
-- [ ] **Auto-update** — In-app update flow via the platform's native update mechanism.
-
----
-
 ## Phase 68: Mission Control Customization
 
-**Status**: Demand-Gated — implement once the base Mission Control UX has real-world usage and layout preferences emerge.
+**Status**: Next — high UX value for existing users.
 
 Give users a configurable dashboard: choose which cards are visible, how large they are, and in what order. Persist layout per-user. No new server dependencies required; `localStorage` handles the common case.
 
@@ -213,18 +153,6 @@ Default layout is derived from the card registry if no saved layout exists. Unkn
 
 ---
 
-### Agent World Widget
-
-The ASCII animated agent world (`secureyeoman world` CLI command — ADR 152) ported to a React component for optional embedding in Mission Control.
-
-- [x] **`AgentWorldWidget` component** — React port of the `deriveState()` state machine and animation frames. Renders in a `font-mono` flex-wrap grid with `setInterval` driving frame ticks at 4 fps. Shares the same polling hooks as the CLI command (`/soul/personalities`, `/tasks`). *(2026-02-27)*
-- [x] **Dashboard integration** — Mission Control card + Advanced Editor collapsible panel, both using `AgentWorldWidget`. *(2026-02-27)*
-- [ ] **Card registration** — `agent-world` card in the registry; hidden by default, opt-in via the card catalogue (deferred to full Phase 68 implementation).
-- [ ] **Configurable FPS** — A small fps slider in the card's settings popover (1–16 fps), persisted in the card's layout config.
-- [ ] **Expand to fullscreen** — Double-click the card header to expand it to full Mission Control width for better visibility with many agents.
-
----
-
 ### Implementation Sequence
 
 - [ ] **Card registry + layout model** — `MissionCardId` union, `CardDef` registry, `MissionLayout` type, default layout derivation, `localStorage` read/write helpers.
@@ -233,202 +161,15 @@ The ASCII animated agent world (`secureyeoman world` CLI command — ADR 152) po
 - [ ] **Card catalogue panel** — Slide-in panel listing all cards with visibility toggles; "Reset to defaults"; "Done" button.
 - [ ] **Drag-to-reorder** — Integrate `@dnd-kit/sortable`; apply only in edit mode; persist order to layout state.
 - [ ] **Size presets** — S/M/L buttons on hovered card in edit mode; update `colSpan` + `rowSpan` in layout state.
-- [ ] **Agent World widget** — Port `deriveState` + FRAMES to shared util; build `AgentWorldWidget`; register `agent-world` card.
+- [ ] **Agent World widget** — Register `agent-world` card; hidden by default, opt-in via card catalogue.
 - [ ] **Server-side persistence** — `user_prefs` table (or JSONB column on `auth.users`); `GET/PUT /api/v1/prefs/mission-layout`; write-through `localStorage` cache.
 - [ ] **Free resize (stretch goal)** — CSS resize handles or `react-resizable` snapping to grid increments; replaces size preset buttons.
 
 ---
 
-## Phase 67: Infrastructure & Platform
-
-**Status**: Demand-Gated — implement once operational scale or compliance requirements justify the investment.
-
-### Encryption
-
-- [ ] **HSM Integration** — Hardware Security Module integration for key management.
-
-### Collaboration
-
-- [ ] **Optimistic Locking** — `version` field on personalities and skills; API returns `409 Conflict` on stale saves; dashboard shows "Someone else edited this — reload?" banner.
-
-### Graph Rendering
-
-*Revisit once delegation trees and peer networks grow beyond a few dozen nodes and Dagre's static layout proves limiting.*
-
-- [ ] **ELK Integration** — Eclipse Layout Kernel for advanced constraint-based layouts. ~2 MB WASM bundle — justified only when graph complexity outgrows Dagre.
-
----
-
-## Phase 69: Agent World Evolution
-
-**Status**: Complete (2026-02-27) — core CLI world map + dashboard widget + zone routing + BFS pathfinding + world mood shipped in v2026.2.27f/g. Remaining items below are future enhancements.
-
-The initial command renders each personality as an isolated card in a grid. This phase evolves the world into a shared, navigable environment where personalities move through a digital floor plan, react to each other's activity, and form a living picture of the agent team at work.
-
----
-
-### World Map
-
-Replace the static card grid with a 2D ASCII floor plan. The map persists across render frames; agents occupy grid coordinates that change as they move.
-
-**Default floor plan — `normal` size (80 cols × 22 rows):**
-
-```
-╔══════════════════════════════════════════════════════════════════════════════╗
-║  ┌──────────────────────────────────────────┐  ┌──────────────────────────┐ ║
-║  │              WORKSPACE                   │  │      MEETING ROOM        │ ║
-║  │  [≡] [≡] [≡]      [≡] [≡]              │  │    ┌──────────────┐      │ ║
-║  │                                          │  │    │  whiteboard  │      │ ║
-║  │                                          │  │    └──────────────┘      │ ║
-║  └──────────────────────────────────────────┘  └──────────────────────────┘ ║
-║  ┌────────────────────────┐  ┌───────────────────────────────────────────┐  ║
-║  │      SERVER ROOM       │  │                BREAK ROOM                 │  ║
-║  │  ▓▓ ▓▓ ▓▓  ▓▓ ▓▓ ▓▓  │  │   ☕                        ♣  ♣         │  ║
-║  │  ▓▓ ▓▓ ▓▓  ▓▓ ▓▓ ▓▓  │  │                                           │  ║
-║  └────────────────────────┘  └───────────────────────────────────────────┘  ║
-╚══════════════════════════════════════════════════════════════════════════════╝
-```
-
-**Zones:**
-
-| Zone | Default occupants | Enter trigger |
-|---|---|---|
-| Workspace | All active agents | Agent has a running task |
-| Meeting Room | 2+ agents | Shared workflow step or A2A call in progress |
-| Server Room | System/monitoring agent | `system_health` task type |
-| Break Room | Idle agents | No task for > 60 s |
-
-**Implementation types:**
-
-```typescript
-interface WorldCell {
-  x: number; y: number;
-  type: 'floor' | 'wall' | 'desk' | 'server' | 'coffee' | 'plant' | 'whiteboard';
-  zoneId?: ZoneId;
-}
-
-type ZoneId = 'workspace' | 'meeting' | 'server-room' | 'break-room';
-
-interface AgentPosition {
-  personalityId: string;
-  x: number; y: number;
-  path: Array<{ x: number; y: number }>; // current BFS path
-  pathStep: number;
-}
-```
-
----
-
-### Movement & Pathfinding
-
-- BFS pathfinding between zone waypoints along navigable floor tiles
-- Agent position advances one cell per animation frame along the computed path
-- `idle` agents wander randomly within their current zone (short random walks ending at a valid floor cell)
-- State change triggers destination recalculation:
-  - `thinking` / `typing` → nearest free desk in Workspace
-  - `talking` → Meeting Room waypoint (or toward the other agent in the A2A call)
-  - `offline` → slumps against nearest wall
-  - `idle` (60 s with no task) → wanders toward Break Room
-
-**Movement speed**: 1 cell per animation frame (4 fps default = leisurely pace). `--speed slow|normal|fast` scales the step interval.
-
----
-
-### Agent-to-Agent Interactions
-
-When two personalities share an active workflow step or an A2A call is in flight:
-
-1. Both agents pathfind toward a shared Meeting Room waypoint
-2. Once adjacent (Manhattan distance ≤ 2), a **speech bubble** appears between them
-3. Bubble content cycles through brief snippets: the shared task name, `"consulting…"`, `"reviewing…"`, `"handing off…"`
-4. When the shared task completes both agents return to their home desks
-
-Data source: already-polled `GET /api/v1/tasks?status=running&limit=20` — cross-reference tasks with matching `workflowId` or both having `a2a` in their type field.
-
-**Speech bubble rendering:**
-
-```
-   ┌──────────────┐
-   │  analyzing.. │
-   └──────┬───────┘
-          │
-        ╔═══╗
-        ║^_^║
-        ╚═══╝
-        /||\
-```
-
----
-
-### Environmental Objects
-
-Persistent world objects that agents interact with:
-
-| Object | ASCII | Behaviour |
-|---|---|---|
-| Desk | `[≡]` | Home position for each agent; border glows when agent is actively typing |
-| Server rack | `▓▓` | Blinks faster during a `system_health` task; turns red on a security event |
-| Whiteboard | `│ … │` | Displays the name of the active joint task in Meeting Room |
-| Coffee machine | `☕` | Idle agents occasionally "visit" it during break-room wandering |
-| Plants | `♣` / `🪴` | Purely decorative; fronds sway one character each frame |
-
----
-
-### World Mood
-
-Global visual tone derived from real-time system health — no extra API calls:
-
-| Condition | Mood | Effect |
-|---|---|---|
-| All agents idle, no recent errors | `calm` | Dim palette, 2 fps |
-| Tasks running, system healthy | `productive` | Normal colors, 4 fps |
-| > 5 tasks running simultaneously | `busy` | Brighter palette, 6 fps |
-| Security event in last 5 min | `alert` | Red border tint, `!` badge on server rack |
-| Task completed + audit event within 30 s | `celebration` | `★` particles drift upward for 3 s |
-
----
-
-### Configurable World Size
-
-`--size compact|normal|large` flag (default `normal`):
-
-| Size | Dimensions | Zones |
-|---|---|---|
-| `compact` | 60 × 14 | Workspace only — retains original card-grid feel, upgraded with movement |
-| `normal` | 80 × 22 | Workspace + Meeting Room + Break Room |
-| `large` | 120 × 30 | All zones + Server Room + additional desk rows |
-
----
-
-### Dashboard Widget Extensions
-
-- [ ] **Map / Grid toggle** — `⊞ Map` / `≡ Grid` button in `AgentWorldWidget` header switches between the new world-map view and the existing card-grid view
-- [ ] **Agent click-through** — clicking an agent sprite opens that personality's detail panel (or navigates to the personality editor in a new tab)
-- [ ] **Zoom control** — `+` / `−` buttons scale the map via CSS `font-size` on the `font-mono` container
-- [ ] **Fullscreen expand** — double-click widget header to expand to full Mission Control width *(already in Phase 68 backlog — link here)*
-
----
-
-### Implementation Sequence
-
-- [ ] **World map model** — `WorldCell` grid, `ZoneId` enum, zone waypoints, static floor plan definitions per `--size`
-- [ ] **Agent position model** — `AgentPosition` per personality; initial placement at nearest free desk on spawn
-- [ ] **BFS pathfinder** — pure function `findPath(grid, from, to): Cell[]`; exported and independently unit-tested
-- [ ] **Movement loop** — renderer advances `pathStep` each frame; draws agent sprite at current cell
-- [ ] **Zone routing** — state → destination zone mapping; recalculate path on state change
-- [ ] **Environmental objects** — desk glow, server blink/alert, whiteboard task label, coffee visits, plant sway
-- [ ] **A2A / shared-workflow detection** — cross-reference running tasks for same `workflowId`; trigger Meeting Room convergence
-- [ ] **Speech bubbles** — positioned above agent cell; content from task name; auto-expire when task ends
-- [ ] **World mood** — compute mood from poll data; apply color, fps, and particle overrides
-- [ ] **`--size` flag** — load corresponding floor plan; adjust layout math
-- [ ] **Dashboard map view** — React port of world map renderer; `⊞`/`≡` toggle in `AgentWorldWidget` header
-- [ ] **Agent click-through** — `onClick` on agent sprite → personality detail navigation
-
----
-
 ## Phase 70: Advanced Editor — Full IDE Mode
 
-**Status**: Demand-Gated — implement once the current three-panel Advanced Editor has proven-out usage patterns and the investment in a full IDE experience is justified.
+**Status**: Next — high value for power users.
 
 The current Advanced Editor (`/editor` → Advanced mode) provides a Monaco pane, a file manager, a task panel, and an embedded terminal. This phase upgrades it into a self-contained browser IDE on par with VS Code's web mode — multiple open files, integrated source control, a command palette, inline AI completion, collaborative editing, and a responsive layout that degrades gracefully on narrow viewports.
 
@@ -478,7 +219,7 @@ A dedicated **Source Control** sidebar panel, replacing the current absence of V
 - All editor actions registered as commands: `Open File`, `Close Tab`, `Split Right`, `Toggle Terminal`, `Run Tests`, `Format Document`, `Git: Stage All`, `Git: Commit`, …
 - Recent commands shown at the top; keyboard shortcut displayed alongside each entry
 - File search (`Ctrl+P`) and symbol search (`Ctrl+T` / `@` prefix) as nested modes within the same overlay
-- Extensible — plugins (Phase 70 plugin system) register commands via the palette API
+- Extensible — plugins register commands via the palette API
 
 ---
 
@@ -584,6 +325,72 @@ Per-workspace state survives page refresh:
 
 ---
 
+## Future Features
+
+Items below are planned but demand-gated or lower priority. Grouped by theme for reference; implementation order will be determined by adoption signals and user demand.
+
+---
+
+### Agent World Extensions
+
+*Core world map + dashboard widget shipped (Phase 69). Remaining enhancements:*
+
+- [ ] **Map / Grid toggle** — `⊞ Map` / `≡ Grid` button in `AgentWorldWidget` header switches between world-map and card-grid views
+- [ ] **Agent click-through** — clicking an agent sprite opens that personality's detail panel
+- [ ] **Zoom control** — `+` / `−` buttons scale the map via CSS `font-size` on the `font-mono` container
+- [ ] **Fullscreen expand** — double-click widget header to expand to full Mission Control width
+- [ ] **Configurable FPS** — fps slider in card settings popover (1–16 fps), persisted in layout config
+- [ ] **World map model** — `WorldCell` grid, `ZoneId` enum, zone waypoints, static floor plan definitions per `--size`
+- [ ] **Agent position model** — `AgentPosition` per personality; BFS pathfinding; zone routing on state change
+- [ ] **A2A / shared-workflow detection** — cross-reference running tasks for same `workflowId`; trigger Meeting Room convergence + speech bubbles
+- [ ] **World mood** — compute mood from poll data; apply color, fps, and particle overrides
+- [ ] **`--size` flag for large floor plan** — additional desk rows and all four zones
+
+---
+
+### Training Pipeline Extensions
+
+*Core pipeline complete (Phase 64). Research-grade future work:*
+
+- [ ] **Continual / online learning** — Incremental adapter updates from new interactions without a full retrain. Replay buffer management, LR scheduling, drift detection. Revisit once fine-tuning pipeline has real-world usage.
+- [ ] **Training from scratch** — Pre-train on a curated local corpus. Scoped to small models (≤3B params) as lightweight specialists. Depends on fine-tuning pipeline being battle-tested.
+
+---
+
+### Voice & Community
+
+*Demand-Gated — implement when voice profile and marketplace demand justifies the investment.*
+
+- [ ] **Voice profile system** — Named voice identities (`voice_profile_create`, `voice_profile_list`, `voice_profile_speak` MCP tools) backed by Voicebox profiles. Each personality can have a persistent voice identity.
+- [ ] **Two-tier voice prompt caching** — Cache Voicebox voice prompts in memory (session) and on disk (MD5 keyed on audio bytes + reference text), avoiding reprocessing reference audio on every TTS call.
+- [ ] **Scheduled Auto-Sync** — Optional cron-style background sync from the configured community repo (configurable interval, off by default).
+- [ ] **Hosted Discovery API** — A lightweight read-only API for browsing available community skills without cloning.
+- [ ] **Cryptographic Skill Signing** — Authors sign skills with a keypair; SecureYeoman verifies signatures before installing. Reject unsigned skills in strict mode.
+- [ ] **Skill Ratings & Downloads** — Community feedback mechanism (stars, download counts) surfaced in the marketplace UI.
+
+---
+
+### Native Clients
+
+*Demand-Gated — implement once REST/WebSocket API is stable and adoption justifies native packaging.*
+
+- [ ] **Mobile app** — Native iOS/Android companion app. Primary view: chat interface + at-a-glance overview stats. Connects to existing REST + WebSocket API.
+- [ ] **Cross-device sync** — Conversation history, personality state, and notification preferences synced across devices.
+- [ ] **Desktop app** — Native desktop client (Electron or Tauri) wrapping the existing dashboard SPA. Adds system tray, native notifications, global keyboard shortcut, and auto-launch on login.
+- [ ] **Auto-update** — In-app update flow via the platform's native update mechanism.
+
+---
+
+### Infrastructure & Platform
+
+*Demand-Gated — implement once operational scale or compliance requirements justify the investment.*
+
+- [ ] **HSM Integration** — Hardware Security Module integration for key management.
+- [ ] **Optimistic Locking** — `version` field on personalities and skills; API returns `409 Conflict` on stale saves; dashboard shows "Someone else edited this — reload?" banner.
+- [ ] **ELK Integration** — Eclipse Layout Kernel for advanced constraint-based graph layouts. ~2 MB WASM bundle — justified only when graph complexity outgrows Dagre.
+
+---
+
 ## Dependency Watch
 
 See [dependency-watch.md](dependency-watch.md) for tracked third-party dependencies with known issues requiring upstream resolution.
@@ -602,4 +409,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-27 — Phase 64 gap fix: distillation run endpoint + dashboard Run/Retry button. Phase 64 (AI Training Pipeline) and Phase 69 (Agent World Evolution) now fully complete. Code health audit: 3 of 6 items resolved (buildSafeEnv extraction, console→logger, undici vuln). Timeline: Phase 68 and 70 next.*
+*Last updated: 2026-02-28 — Removed all completed items. Timeline simplified: Phase 68 (Mission Control Customization) and Phase 70 (Advanced Editor) are next priorities. Demand-gated and future work consolidated into a single Future Features section.*
