@@ -12,7 +12,7 @@
 | 68 | Mission Control Customization | Next — high UX value |
 | 70 | Advanced Editor — Full IDE Mode | Next — power user priority |
 | 72 | MCP Tool Context Optimization | ✅ Complete — 2026-02-28 |
-| Future | Training Extensions, Agent World, Voice, Native Clients, Infrastructure | Future / Demand-Gated |
+| Future | LLM Lifecycle Platform, Agent World, Voice, Native Clients, Infrastructure | Future / Demand-Gated |
 
 ---
 
@@ -331,6 +331,85 @@ Per-workspace state survives page refresh:
 ## Future Features
 
 Items below are planned but demand-gated or lower priority. Grouped by theme for reference; implementation order will be determined by adoption signals and user demand.
+
+---
+
+### LLM Lifecycle Platform
+
+*Inspired by SageMaker AI's end-to-end ML toolchain. Phase 64 delivered the foundation (distillation, fine-tuning, Ollama lifecycle, local-first routing). This section extends it into a full model development and operations platform — data in, better model out, deployed to a personality, monitored in production.*
+
+The platform covers four pillars: **collect → train → evaluate → deploy**, with feedback looping back to collect.
+
+---
+
+#### Pillar 1 — Data Collection & Curation
+
+The highest-leverage investment. Model quality is bounded by data quality.
+
+- [ ] **Conversation quality scorer** — Automatic quality signal on completed conversations: response length distribution, tool-call success rate, user re-prompt rate (proxy for dissatisfaction). Score stored per conversation; surfaced in the Training tab as a sortable column. Feeds the curation filter.
+- [ ] **Preference annotation UI** — In-chat thumbs-up / thumbs-down on individual AI turns. Multi-turn annotation: mark a full conversation as a positive or negative example. Annotations stored in `training.preference_pairs` table with `(chosen, rejected)` turn pairs for DPO.
+- [ ] **Data curation pipeline** — Filter, deduplicate, and shard conversation exports before training. Configurable rules: min/max token length, quality score threshold, dedup by semantic similarity (embedding cosine > 0.95), exclude conversations with tool errors. Preview filtered dataset size before committing to a job.
+- [ ] **Synthetic data generation** — Use the teacher model to generate diverse training scenarios from a seed prompt or skill description. Configurable temperature sweep for variety, auto-labeled by teacher confidence. Populates the distillation job dataset without requiring real user interactions.
+- [ ] **Data labeling mode** — Structured labeling interface for existing conversation exports: tag intent, annotate entity spans, rate response quality on a 5-point scale. Exports to HuggingFace `datasets`-compatible JSONL for external tooling interoperability.
+
+---
+
+#### Pillar 2 — Training
+
+Extends the existing distillation + Unsloth fine-tuning pipeline with new training objectives and scale.
+
+- [ ] **DPO (Direct Preference Optimization)** — Training objective that uses `(chosen, rejected)` pairs from the annotation UI directly. No reward model needed. New `training_method: 'dpo'` option on finetune jobs. `scripts/train_dpo.py` using TRL's `DPOTrainer`. Persona-specific DPO from a personality's annotated conversations produces a model with that personality's preferred response style baked in.
+- [ ] **RLHF scaffolding** — Reward model training stage: fine-tune a small classifier on preference pairs to predict human preference score. Use the reward model to guide PPO or GRPO training. More complex than DPO but allows continuous reward signal from the live conversation scorer.
+- [ ] **Hyperparameter search** — Grid or random search over key fine-tuning params: learning rate, LoRA rank, batch size, warmup steps, epochs. Each combination spawns a child job. Best checkpoint (lowest eval loss) promoted automatically. Results table in the Training tab with sortable columns.
+- [ ] **Multi-GPU / distributed training** — `accelerate` + `deepspeed` integration in `scripts/train.py` for models that don't fit on a single GPU. Job spec gains `num_gpus` field; Docker Compose file gains `NVIDIA_VISIBLE_DEVICES` env injection. Applies to models 7B–70B on multi-GPU hosts.
+- [ ] **Checkpoint management** — Save intermediate checkpoints at configurable step intervals. Resume interrupted jobs from the latest checkpoint. Checkpoint browser in the Training tab with per-step eval loss, disk size, and a "Set as active" action.
+
+---
+
+#### Pillar 3 — Experiment Tracking & Evaluation
+
+SageMaker's core value proposition is making model development reproducible and comparable. SecureYeoman needs the same.
+
+- [ ] **Experiment registry** — Every training run (distillation or fine-tune) logged as an experiment with: dataset snapshot hash, hyperparameters, environment (base model, GPU type), training loss curve, eval metrics. Stored in `training.experiments` table. Dashboard: Experiments sub-tab in TrainingTab with filter/sort and diff view between any two runs.
+- [ ] **Automated evaluation suite** — Post-training eval on a held-out set. Metrics: perplexity, BLEU/ROUGE (for distillation), accuracy on a small skill-specific test set. For DPO/RLHF: preference win-rate against base model using the reward model or GPT-4 judge. Results attached to the experiment record and shown as a scorecard.
+- [ ] **Side-by-side model comparison** — Given two model checkpoints (e.g., base vs fine-tuned), run the same prompt set through both and display responses side-by-side in the dashboard. Human rater can pick the better response; ratings feed back into the preference dataset.
+- [ ] **Loss curve visualisation** — Real-time training/eval loss chart (recharts line graph) streaming from the Unsloth trainer via SSE. Visible in the finetune job detail panel while the job is running.
+- [ ] **Benchmark harness** — Run a personality against a configurable set of benchmark tasks (custom JSON format: prompt + expected output + scorer function). Benchmark results stored per model version; surfaced in the experiment comparison view.
+
+---
+
+#### Pillar 4 — Deployment Pipeline
+
+After training, getting the model into service should be one action.
+
+- [ ] **One-click deploy to personality** — "Deploy to Personality" button on a completed finetune job. Calls `ollama cp` to register the GGUF under a versioned name (`personality-friday-v3`), then updates the personality's `defaultModel` field via `PATCH /api/v1/soul/personalities/:id`. Rollback: previous model name preserved, one click to revert.
+- [ ] **Model version registry** — `training.model_versions` table: `(personality_id, model_name, experiment_id, deployed_at, is_active)`. A personality can have multiple versions; only one is active. Dashboard: Deployed Models tab with version history, deploy/rollback actions, and a diff link to the source experiment.
+- [ ] **A/B testing (model shadow routing)** — For a chosen personality, route X% of conversations to model version A and Y% to model version B. Aggregate quality scores, response times, and user preference signals per variant. After a configurable conversation count, dashboard shows statistical significance and recommends promoting the winner.
+- [ ] **Inference profile** — Per-personality inference settings: context window size, generation temperature, top-p, repetition penalty, system prompt injection. Stored alongside the model version. Allows "frozen" inference profiles for reproducible evaluation.
+- [ ] **Model import from HuggingFace Hub** — Pull any public GGUF from HuggingFace Hub directly via the dashboard. `POST /api/v1/model/hub/pull` streams progress SSE. Installed model becomes available in the personality model selector. Extends `ollama pull` to the broader HuggingFace ecosystem.
+
+---
+
+#### Pillar 5 — Inference Optimization
+
+SageMaker's inference story spans real-time, async, serverless, and batch. For a local-first system the equivalent is:
+
+- [ ] **Quantization advisor** — Given a model name and available VRAM, recommend the best quantization level (Q4_K_M, Q5_K_M, Q8_0, F16). Shows estimated VRAM, inference speed (tok/s), and quality degradation relative to F16. Integrated into the model pull UI and the fine-tune deploy dialog.
+- [ ] **Async / batch inference** — `POST /api/v1/ai/batch` accepts an array of prompts and returns a job ID. Worker processes prompts in a queue (configurable concurrency). Results retrievable via `GET /api/v1/ai/batch/:id`. Useful for running evaluation suites or bulk annotation without blocking the chat interface.
+- [ ] **KV-cache warming** — Pre-warm Ollama's KV cache with a personality's system prompt on startup (or on first activation). Measured as reduced time-to-first-token for chat sessions. Exposed as `warmupOnActivation: boolean` in personality settings.
+- [ ] **Speculative decoding** — When a small draft model is available alongside a large target model, use the draft to propose token sequences that the target verifies in parallel. Configuration: `draftModel` field on the personality's inference profile. Can double effective throughput for long-form responses.
+- [ ] **Response caching** — Semantic cache for repeated or near-duplicate prompts (embedding cosine > configurable threshold). Cache backed by the existing vector store. Cache hit returns stored response instantly; miss falls through to inference. Cache stats in the AI health endpoint and ModelWidget.
+
+---
+
+#### Pillar 6 — Continual Learning Loop
+
+Closing the loop: production conversations → data curation → training → evaluation → deployment → better conversations.
+
+- [ ] **Automatic dataset refresh** — Scheduled job (configurable cadence) that runs the curation pipeline on conversations accumulated since the last training run and appends clean samples to the active distillation dataset. Triggered by a cron expression in the job config.
+- [ ] **Drift detection** — Monitor quality score distribution of recent conversations vs. the training-period baseline. Alert (notification + dashboard banner) when mean quality drops more than a configurable threshold — signal that the deployed model has drifted or that user intent has shifted. Feeds back to trigger a new training run.
+- [ ] **Online adapter updates** — Lightweight LoRA adapter updates from individual conversations using gradient accumulation, without a full retrain. Replay buffer prevents catastrophic forgetting. Runs as a background process with a token-budget cap per hour. Revisit once the fine-tuning pipeline has meaningful real-world usage.
+- [ ] **Training from scratch** — Pre-train on a curated local corpus. Scoped to small models (≤3B params) as domain-specific lightweight specialists. Depends on the fine-tuning and experiment tracking pipelines being battle-tested.
 
 ---
 

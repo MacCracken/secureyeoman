@@ -78,6 +78,7 @@ interface ActiveDelegation {
   depth: number;
   tokenBudget: number;
   tokensUsed: number;
+  initiatedByPersonalityId?: string;
 }
 
 export class SubAgentManager {
@@ -197,6 +198,7 @@ export class SubAgentManager {
       depth,
       tokenBudget,
       tokensUsed: 0,
+      initiatedByPersonalityId: params.initiatedByPersonalityId,
     });
 
     try {
@@ -221,6 +223,7 @@ export class SubAgentManager {
         tokenBudget: active.tokenBudget,
         startedAt: active.startedAt,
         elapsedMs: Date.now() - active.startedAt,
+        initiatedByPersonalityId: active.initiatedByPersonalityId,
       });
     }
     return infos;

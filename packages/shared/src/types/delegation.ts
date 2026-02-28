@@ -98,6 +98,8 @@ export const DelegationParamsSchema = z.object({
   timeout: z.number().int().positive().max(600000).optional(),
   /** Explicit model override injected by the cost-aware swarm scheduler or model router. */
   modelOverride: z.string().max(200).optional(),
+  /** Personality ID of the personality that initiated this delegation (set by chat handler). */
+  initiatedByPersonalityId: z.string().optional(),
 });
 
 export type DelegationParams = z.infer<typeof DelegationParamsSchema>;
@@ -150,6 +152,8 @@ export const SubAgentInfoSchema = z.object({
   tokenBudget: z.number(),
   startedAt: z.number(),
   elapsedMs: z.number(),
+  /** Personality ID of the personality that initiated this delegation, if known. */
+  initiatedByPersonalityId: z.string().optional(),
 });
 
 export type SubAgentInfo = z.infer<typeof SubAgentInfoSchema>;

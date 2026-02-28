@@ -137,7 +137,7 @@ describe('worldCommand', () => {
       const out = ctx.outLines.join('');
       expect(out).toContain('idle');
       expect(out).toContain('thinking');
-      expect(out).toContain('typing');
+      expect(out).toContain('writing');
       expect(out).toContain('talking');
       expect(out).toContain('offline');
     });
@@ -223,17 +223,17 @@ describe('deriveState', () => {
     expect(taskLabel).toBe('');
   });
 
-  it('returns thinking when task is very recent (< 8 s old)', () => {
+  it('returns thinking when task is very recent (< 2 s old)', () => {
     const p = makePersonality();
-    const task = makeTask({ startedAt: NOW - 4_000 });
+    const task = makeTask({ startedAt: NOW - 500 });
     const { state, taskLabel } = deriveState(p, [task], EMPTY_TALKING, NOW);
     expect(state).toBe('thinking');
     expect(taskLabel).toBeTruthy();
   });
 
-  it('returns typing when task is older than 8 s', () => {
+  it('returns typing when task is older than 2 s', () => {
     const p = makePersonality();
-    const task = makeTask({ startedAt: NOW - 20_000 });
+    const task = makeTask({ startedAt: NOW - 5_000 });
     const { state, taskLabel } = deriveState(p, [task], EMPTY_TALKING, NOW);
     expect(state).toBe('typing');
     expect(taskLabel).toBeTruthy();
@@ -309,9 +309,9 @@ describe('deriveState', () => {
 
   it('uses createdAt as fallback when startedAt is absent', () => {
     const p = makePersonality();
-    const task = { id: 't-1', personalityId: 'p-001', status: 'running', createdAt: NOW - 3_000 };
+    const task = { id: 't-1', personalityId: 'p-001', status: 'running', createdAt: NOW - 500 };
     const { state } = deriveState(p, [task], EMPTY_TALKING, NOW);
-    expect(state).toBe('thinking'); // < 8s
+    expect(state).toBe('thinking'); // < 2 s
   });
 });
 

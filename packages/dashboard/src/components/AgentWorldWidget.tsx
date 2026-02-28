@@ -5,8 +5,9 @@
  * with a 4-frame state machine driven by live server data:
  *
  *   idle     (o.o) — resting, slow blink
- *   thinking (>.<) — task just started (< 8 s)
+ *   thinking (>.<) — task just started (< 2 s)
  *   typing   (^_^) — task actively running, keyboard flicker
+ *   meeting  (o_o) — personality has active sub-agent delegations
  *   offline  (x_x) — personality inactive, floating Zs
  *
  * Two view modes (toggle persisted to localStorage):
@@ -21,12 +22,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchPersonalities, fetchTasks } from '../api/client';
+import { fetchPersonalities, fetchTasks, fetchActiveDelegations } from '../api/client';
+import type { ActiveDelegationInfo } from '../api/client';
 import type { Personality, Task } from '../types';
 
 // ── State machine ──────────────────────────────────────────────────────────────
 
-type AgentState = 'idle' | 'thinking' | 'typing' | 'offline';
+type AgentState = 'idle' | 'thinking' | 'typing' | 'meeting' | 'offline';
 
 interface AnimFrame {
   face: string; // 3-char content rendered between ║…║
@@ -52,6 +54,12 @@ const FRAMES: Record<AgentState, AnimFrame[]> = {
     { face: '^v^', extra: '≡≡≡≡' },
     { face: '^_^', extra: '════' },
   ],
+  meeting: [
+    { face: 'o_o', extra: '«·»' },
+    { face: 'o.o', extra: '«··' },
+    { face: 'o_o', extra: '·»·' },
+    { face: 'o.o', extra: '··»' },
+  ],
   offline: [
     { face: 'x_x', extra: 'zz' },
     { face: 'x_x', extra: 'Zz' },
@@ -63,7 +71,8 @@ const FRAMES: Record<AgentState, AnimFrame[]> = {
 const STATE_LABEL: Record<AgentState, string> = {
   idle: 'idle',
   thinking: 'thinking',
-  typing: 'working',
+  typing: 'writing',
+  meeting: 'meeting',
   offline: 'offline',
 };
 
@@ -71,6 +80,7 @@ const STATE_FACE_CLS: Record<AgentState, string> = {
   idle: 'text-muted-foreground',
   thinking: 'text-yellow-400',
   typing: 'text-cyan-400',
+  meeting: 'text-amber-400',
   offline: 'text-muted-foreground/40',
 };
 
@@ -78,6 +88,7 @@ const STATE_LABEL_CLS: Record<AgentState, string> = {
   idle: 'text-muted-foreground/70',
   thinking: 'text-yellow-400/90',
   typing: 'text-cyan-400/90',
+  meeting: 'text-amber-400/90',
   offline: 'text-muted-foreground/40',
 };
 
@@ -85,6 +96,7 @@ const STATE_BORDER_CLS: Record<AgentState, string> = {
   idle: 'border-border',
   thinking: 'border-yellow-400/50',
   typing: 'border-cyan-400/50',
+  meeting: 'border-amber-400/50',
   offline: 'border-border/40',
 };
 
@@ -98,9 +110,15 @@ function trunc(s: string, max: number): string {
 export function deriveAgentState(
   p: Personality,
   tasks: Task[],
-  now: number
+  now: number,
+  delegations: ActiveDelegationInfo[] = []
 ): { state: AgentState; taskLabel: string } {
   if (!p.isActive) return { state: 'offline', taskLabel: 'inactive' };
+
+  // Personality is in meeting if it has active delegations it spawned
+  if (delegations.some((d) => d.initiatedByPersonalityId === p.id)) {
+    return { state: 'meeting', taskLabel: '' };
+  }
 
   const running = tasks.find(
     (t) => t.securityContext?.personalityId === p.id && t.status === 'running'
@@ -109,7 +127,7 @@ export function deriveAgentState(
   if (running) {
     const age = now - (running.startedAt ?? running.createdAt);
     return {
-      state: age < 8_000 ? 'thinking' : 'typing',
+      state: age < 2_000 ? 'thinking' : 'typing',
       taskLabel: running.name,
     };
   }
@@ -224,6 +242,62 @@ function AgentCard({ personality, state, taskLabel, frame, onClick }: AgentCardP
   );
 }
 
+// ── Sub-agent (spawned delegation) rendering ──────────────────────────────────
+
+const FRAMES_SPAWNED: AnimFrame[] = [
+  { face: '>_>', extra: '→→→' },
+  { face: '>_>', extra: '.→.' },
+  { face: '>_>', extra: '→.→' },
+  { face: '>_>', extra: '→→.' },
+];
+
+interface SubAgentCardProps {
+  delegation: ActiveDelegationInfo;
+  frame: number;
+}
+
+function SubAgentCard({ delegation, frame }: SubAgentCardProps) {
+  const f = FRAMES_SPAWNED[frame % 4]!;
+  const name = trunc(delegation.profileName, 10);
+  return (
+    <div
+      className="font-mono text-[11px] leading-snug p-2 rounded border select-none w-[88px] flex-shrink-0 border-purple-400/50 bg-card/50"
+      title={`[sub-agent] ${delegation.profileName}: ${delegation.task}`}
+    >
+      <div className="font-bold text-center text-foreground truncate mb-0.5">{name}</div>
+      <div className="text-muted-foreground/50 text-center">╔═══╗</div>
+      <div className="text-center">
+        <span className="text-muted-foreground/50">║</span>
+        <span className="text-purple-400">{f.face}</span>
+        <span className="text-muted-foreground/50">║</span>
+      </div>
+      <div className="text-muted-foreground/50 text-center">╚═══╝</div>
+      <div className="text-muted-foreground/50 text-center">/||{'\\' /* backslash */}</div>
+      <div className="text-muted-foreground/40 text-center h-[1.3em]">
+        {f.extra ? `[${f.extra}]` : ''}
+      </div>
+      <div className="text-center font-semibold text-purple-400/90">delegating</div>
+      <div className="text-muted-foreground/50 text-center truncate h-[1.3em] text-[10px]">
+        {trunc(delegation.task, 12)}
+      </div>
+    </div>
+  );
+}
+
+function SubAgentPill({ delegation, frame }: SubAgentCardProps) {
+  const f = FRAMES_SPAWNED[frame % 4]!;
+  const name = trunc(delegation.profileName, 8);
+  return (
+    <div
+      className="flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-mono border-purple-400/50 bg-card/50"
+      title={`[sub-agent] ${delegation.profileName}: ${delegation.task}`}
+    >
+      <span className="text-purple-400">{f.face}</span>
+      <span className="text-foreground truncate">{name}</span>
+    </div>
+  );
+}
+
 // ── Agent pill (map view) ──────────────────────────────────────────────────────
 
 interface AgentPillProps {
@@ -265,6 +339,8 @@ interface ZoneBoxProps {
   now: number;
   /** 'pill' = compact name+face row (map view); 'card' = full agent card (large view) */
   mode?: 'pill' | 'card';
+  /** Active sub-agent delegations — shown in workspace zone only */
+  delegations?: ActiveDelegationInfo[];
 }
 
 function ZoneBox({
@@ -278,8 +354,10 @@ function ZoneBox({
   onAgentClick,
   now,
   mode = 'pill',
+  delegations = [],
 }: ZoneBoxProps) {
   const hasMeeting = zoneId === 'meeting' && agents.length > 0;
+  const showDelegations = zoneId === 'workspace' && delegations.length > 0;
 
   return (
     <div className="border border-border rounded p-2 min-h-[60px] flex flex-col gap-1">
@@ -302,12 +380,12 @@ function ZoneBox({
       )}
 
       {/* Agents */}
-      {agents.length === 0 ? (
+      {agents.length === 0 && !showDelegations ? (
         <span className="text-[10px] text-muted-foreground/30 italic">empty</span>
       ) : (
         <div className="flex flex-wrap gap-1">
           {agents.map((p) => {
-            const { state, taskLabel } = deriveAgentState(p, tasks, now);
+            const { state, taskLabel } = deriveAgentState(p, tasks, now, delegations);
             const inMeeting = meetingPairs.has(p.id);
             return mode === 'card' ? (
               <AgentCard
@@ -329,6 +407,14 @@ function ZoneBox({
               />
             );
           })}
+          {/* Sub-agent delegations — workspace zone only */}
+          {showDelegations && delegations.map((d) =>
+            mode === 'card' ? (
+              <SubAgentCard key={d.delegationId} delegation={d} frame={framesMap.get(d.delegationId) ?? 0} />
+            ) : (
+              <SubAgentPill key={d.delegationId} delegation={d} frame={framesMap.get(d.delegationId) ?? 0} />
+            )
+          )}
         </div>
       )}
     </div>
@@ -361,15 +447,17 @@ interface MapViewProps {
   tasks: Task[];
   framesMap: Map<string, number>;
   onAgentClick?: (personalityId: string) => void;
+  delegations?: ActiveDelegationInfo[];
 }
 
-function AgentWorldMapView({ personalities, tasks, framesMap, onAgentClick }: MapViewProps) {
+function AgentWorldMapView({ personalities, tasks, framesMap, onAgentClick, delegations = [] }: MapViewProps) {
   const { zones, meetingPairs, activeJointTask, now } = distributeZones(personalities, tasks);
 
   return (
     <div className="grid grid-cols-2 gap-2 font-mono text-[11px]" role="list" aria-label="Agent world map">
       <ZoneBox label="Workspace" zoneId="workspace" agents={zones.workspace} tasks={tasks}
-        meetingPairs={meetingPairs} framesMap={framesMap} onAgentClick={onAgentClick} now={now} />
+        meetingPairs={meetingPairs} framesMap={framesMap} onAgentClick={onAgentClick} now={now}
+        delegations={delegations} />
       <ZoneBox label="Meeting Room" zoneId="meeting" agents={zones.meeting} tasks={tasks}
         meetingPairs={meetingPairs} framesMap={framesMap} whiteboardText={activeJointTask?.name}
         onAgentClick={onAgentClick} now={now} />
@@ -383,13 +471,14 @@ function AgentWorldMapView({ personalities, tasks, framesMap, onAgentClick }: Ma
 
 // ── AgentWorldLargeView (full card layout per zone) ────────────────────────────
 
-function AgentWorldLargeView({ personalities, tasks, framesMap, onAgentClick }: MapViewProps) {
+function AgentWorldLargeView({ personalities, tasks, framesMap, onAgentClick, delegations = [] }: MapViewProps) {
   const { zones, meetingPairs, activeJointTask, now } = distributeZones(personalities, tasks);
 
   return (
     <div className="grid grid-cols-2 gap-3 font-mono text-[11px]" role="list" aria-label="Agent world large view">
       <ZoneBox label="Workspace" zoneId="workspace" agents={zones.workspace} tasks={tasks}
-        meetingPairs={meetingPairs} framesMap={framesMap} onAgentClick={onAgentClick} now={now} mode="card" />
+        meetingPairs={meetingPairs} framesMap={framesMap} onAgentClick={onAgentClick} now={now} mode="card"
+        delegations={delegations} />
       <ZoneBox label="Meeting Room" zoneId="meeting" agents={zones.meeting} tasks={tasks}
         meetingPairs={meetingPairs} framesMap={framesMap} whiteboardText={activeJointTask?.name}
         onAgentClick={onAgentClick} now={now} mode="card" />
@@ -432,6 +521,12 @@ export function AgentWorldWidget({ className = '', maxAgents = 16, onAgentClick,
     refetchInterval: 3_000,
   });
 
+  const { data: delegationsData } = useQuery({
+    queryKey: ['world-delegations-active'],
+    queryFn: fetchActiveDelegations,
+    refetchInterval: 3_000,
+  });
+
   // Animation loop — 4 fps
   useEffect(() => {
     const timer = setInterval(() => {
@@ -447,16 +542,22 @@ export function AgentWorldWidget({ className = '', maxAgents = 16, onAgentClick,
 
   const personalities = (personalitiesData?.personalities ?? []).slice(0, maxAgents);
   const tasks: Task[] = tasksData?.tasks ?? [];
+  const delegations: ActiveDelegationInfo[] = delegationsData?.delegations ?? [];
   const now = Date.now();
 
-  // Ensure each personality has a staggered initial frame
+  // Ensure each personality and delegation has a staggered initial frame
   for (const p of personalities) {
     if (!framesRef.current.has(p.id)) {
       framesRef.current.set(p.id, Math.floor(Math.random() * 4));
     }
   }
+  for (const d of delegations) {
+    if (!framesRef.current.has(d.delegationId)) {
+      framesRef.current.set(d.delegationId, Math.floor(Math.random() * 4));
+    }
+  }
 
-  if (personalities.length === 0) {
+  if (personalities.length === 0 && delegations.length === 0) {
     return (
       <p className={`text-sm text-muted-foreground font-mono ${className}`}>
         No agents found.
@@ -472,6 +573,7 @@ export function AgentWorldWidget({ className = '', maxAgents = 16, onAgentClick,
           tasks={tasks}
           framesMap={framesRef.current}
           onAgentClick={onAgentClick}
+          delegations={delegations}
         />
       ) : viewMode === 'map' ? (
         <AgentWorldMapView
@@ -479,11 +581,12 @@ export function AgentWorldWidget({ className = '', maxAgents = 16, onAgentClick,
           tasks={tasks}
           framesMap={framesRef.current}
           onAgentClick={onAgentClick}
+          delegations={delegations}
         />
       ) : (
         <div className="flex flex-wrap gap-2" role="list" aria-label="Agent world">
           {personalities.map((p) => {
-            const { state, taskLabel } = deriveAgentState(p, tasks, now);
+            const { state, taskLabel } = deriveAgentState(p, tasks, now, delegations);
             return (
               <div key={p.id} role="listitem">
                 <AgentCard
@@ -496,6 +599,11 @@ export function AgentWorldWidget({ className = '', maxAgents = 16, onAgentClick,
               </div>
             );
           })}
+          {delegations.map((d) => (
+            <div key={d.delegationId} role="listitem">
+              <SubAgentCard delegation={d} frame={framesRef.current.get(d.delegationId) ?? 0} />
+            </div>
+          ))}
         </div>
       )}
     </div>

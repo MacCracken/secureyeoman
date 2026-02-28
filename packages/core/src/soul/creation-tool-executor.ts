@@ -302,6 +302,7 @@ export async function executeCreationTool(
           task: args.task,
           context: args.context,
           maxTokenBudget: args.maxTokenBudget,
+          initiatedByPersonalityId: context?.personalityId ?? undefined,
         });
         return { output: { delegation }, isError: false };
       }

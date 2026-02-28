@@ -18,6 +18,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 vi.mock('../api/client', () => ({
   fetchPersonalities: vi.fn(),
   fetchTasks: vi.fn(),
+  fetchActiveDelegations: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -25,6 +26,7 @@ import { AgentWorldWidget, deriveAgentState, computeZoneForAgent } from './Agent
 
 const mockFetchPersonalities = vi.mocked(api.fetchPersonalities);
 const mockFetchTasks = vi.mocked(api.fetchTasks);
+const mockFetchActiveDelegations = vi.mocked(api.fetchActiveDelegations);
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -103,17 +105,17 @@ describe('deriveAgentState', () => {
     expect(taskLabel).toBe('');
   });
 
-  it('returns thinking when task started less than 8 s ago', () => {
+  it('returns thinking when task started less than 2 s ago', () => {
     const p = makePersonality({ id: 'p-001' });
-    const task = makeTask({ startedAt: NOW - 3_000 });
+    const task = makeTask({ startedAt: NOW - 500 });
     const { state, taskLabel } = deriveAgentState(p, [task], NOW);
     expect(state).toBe('thinking');
     expect(taskLabel).toBe('analyze codebase');
   });
 
-  it('returns typing when task started more than 8 s ago', () => {
+  it('returns typing when task started more than 2 s ago', () => {
     const p = makePersonality({ id: 'p-001' });
-    const task = makeTask({ startedAt: NOW - 20_000 });
+    const task = makeTask({ startedAt: NOW - 5_000 });
     const { state } = deriveAgentState(p, [task], NOW);
     expect(state).toBe('typing');
   });
@@ -148,9 +150,9 @@ describe('deriveAgentState', () => {
 
   it('uses createdAt as age fallback when startedAt is absent', () => {
     const p = makePersonality({ id: 'p-001' });
-    const task = { ...makeTask(), startedAt: undefined, createdAt: NOW - 3_000 } as any;
+    const task = { ...makeTask(), startedAt: undefined, createdAt: NOW - 500 } as any;
     const { state } = deriveAgentState(p, [task], NOW);
-    expect(state).toBe('thinking'); // < 8 s
+    expect(state).toBe('thinking'); // < 2 s
   });
 
   it('offline takes priority over a running task', () => {
@@ -165,6 +167,56 @@ describe('deriveAgentState', () => {
     const task = { ...makeTask(), securityContext: undefined } as any;
     const { state } = deriveAgentState(p, [task], NOW);
     expect(state).toBe('idle');
+  });
+
+  it('returns meeting when personality has an active delegation it initiated', () => {
+    const p = makePersonality({ id: 'p-001' });
+    const delegation = {
+      delegationId: 'd-001', profileId: 'prof-1', profileName: 'researcher',
+      task: 'analyze codebase', status: 'running', depth: 1,
+      tokensUsed: 0, tokenBudget: 50000, startedAt: NOW - 2000, elapsedMs: 2000,
+      initiatedByPersonalityId: 'p-001',
+    } as any;
+    const { state, taskLabel } = deriveAgentState(p, [], NOW, [delegation]);
+    expect(state).toBe('meeting');
+    expect(taskLabel).toBe('');
+  });
+
+  it('meeting takes priority over a running task', () => {
+    const p = makePersonality({ id: 'p-001' });
+    const task = makeTask({ startedAt: NOW - 5_000 });
+    const delegation = {
+      delegationId: 'd-001', profileId: 'prof-1', profileName: 'researcher',
+      task: 'analyze codebase', status: 'running', depth: 1,
+      tokensUsed: 0, tokenBudget: 50000, startedAt: NOW - 2000, elapsedMs: 2000,
+      initiatedByPersonalityId: 'p-001',
+    } as any;
+    const { state } = deriveAgentState(p, [task], NOW, [delegation]);
+    expect(state).toBe('meeting');
+  });
+
+  it('delegation for other personality does not affect meeting state', () => {
+    const p = makePersonality({ id: 'p-001' });
+    const delegation = {
+      delegationId: 'd-001', profileId: 'prof-1', profileName: 'researcher',
+      task: 'analyze codebase', status: 'running', depth: 1,
+      tokensUsed: 0, tokenBudget: 50000, startedAt: NOW - 2000, elapsedMs: 2000,
+      initiatedByPersonalityId: 'p-999',
+    } as any;
+    const { state } = deriveAgentState(p, [], NOW, [delegation]);
+    expect(state).toBe('idle');
+  });
+
+  it('offline takes priority over meeting', () => {
+    const p = makePersonality({ id: 'p-001', isActive: false });
+    const delegation = {
+      delegationId: 'd-001', profileId: 'prof-1', profileName: 'researcher',
+      task: 'analyze codebase', status: 'running', depth: 1,
+      tokensUsed: 0, tokenBudget: 50000, startedAt: NOW - 2000, elapsedMs: 2000,
+      initiatedByPersonalityId: 'p-001',
+    } as any;
+    const { state } = deriveAgentState(p, [], NOW, [delegation]);
+    expect(state).toBe('offline');
   });
 });
 
@@ -220,6 +272,7 @@ describe('AgentWorldWidget', () => {
     localStorage.clear();
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
   });
 
   it('shows empty message when no personalities', async () => {
@@ -269,27 +322,27 @@ describe('AgentWorldWidget', () => {
     expect(screen.getByText('idle')).toBeInTheDocument();
   });
 
-  it('shows working label when personality has a running task', async () => {
+  it('shows writing label when personality has a running task (> 2 s)', async () => {
     mockFetchPersonalities.mockResolvedValue({
       personalities: [makePersonality({ id: 'p-1', name: 'Alice', isActive: true })],
     });
     mockFetchTasks.mockResolvedValue({
-      tasks: [makeTask({ personalityId: 'p-1', startedAt: Date.now() - 20_000 })],
+      tasks: [makeTask({ personalityId: 'p-1', startedAt: Date.now() - 5_000 })],
       total: 1,
     });
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('Alice')).toBeInTheDocument();
-      expect(screen.getByText('working')).toBeInTheDocument();
+      expect(screen.getByText('writing')).toBeInTheDocument();
     });
   });
 
-  it('shows thinking label for a very recently started task', async () => {
+  it('shows thinking label for a very recently started task (< 2 s)', async () => {
     mockFetchPersonalities.mockResolvedValue({
       personalities: [makePersonality({ id: 'p-1', name: 'Alice', isActive: true })],
     });
     mockFetchTasks.mockResolvedValue({
-      tasks: [makeTask({ personalityId: 'p-1', startedAt: Date.now() - 2_000 })],
+      tasks: [makeTask({ personalityId: 'p-1', startedAt: Date.now() - 500 })],
       total: 1,
     });
     renderWidget();
@@ -342,6 +395,7 @@ describe('view mode prop', () => {
       personalities: [makePersonality({ id: 'p-1', name: 'Alice', isActive: true })],
     });
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
   });
 
   it('defaults to grid view (no zone boxes visible)', async () => {
@@ -385,6 +439,7 @@ describe('large view', () => {
     vi.resetAllMocks();
     localStorage.clear();
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
   });
 
   it('renders zone boxes in large mode', async () => {
@@ -440,6 +495,7 @@ describe('map view zones', () => {
     vi.resetAllMocks();
     localStorage.clear();
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
   });
 
   it('workspace zone renders when agents are present', async () => {
@@ -505,6 +561,7 @@ describe('agent click-through', () => {
       personalities: [makePersonality({ id: 'p-1', name: 'Alice', isActive: true })],
     });
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
   });
 
   it('calls onAgentClick with personalityId in grid mode', async () => {
@@ -542,16 +599,17 @@ describe('synthetic chat task activity', () => {
     mockFetchPersonalities.mockResolvedValue({
       personalities: [makePersonality({ id: 'p-1', name: 'Friday', isActive: true })],
     });
+    mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
   });
 
-  it('shows thinking state when a __chat_ synthetic task is present', async () => {
+  it('shows thinking state when a __chat_ synthetic task is present (< 2 s)', async () => {
     const now = Date.now();
     mockFetchTasks.mockResolvedValue({
       tasks: [
         makeTask({
           id: '__chat_p-1',
           personalityId: 'p-1',
-          startedAt: now, // just started → < 8 s → thinking
+          startedAt: now, // just started → < 2 s → thinking
         }),
       ],
       total: 1,
@@ -563,13 +621,13 @@ describe('synthetic chat task activity', () => {
     });
   });
 
-  it('shows working state when synthetic task has been running > 8 s', async () => {
+  it('shows writing state when synthetic task has been running > 2 s', async () => {
     mockFetchTasks.mockResolvedValue({
       tasks: [
         makeTask({
           id: '__chat_p-1',
           personalityId: 'p-1',
-          startedAt: Date.now() - 20_000, // 20 s ago → typing/working
+          startedAt: Date.now() - 5_000, // 5 s ago → typing/writing
         }),
       ],
       total: 1,
@@ -577,9 +635,117 @@ describe('synthetic chat task activity', () => {
     renderWidget();
     await waitFor(() => {
       expect(screen.getByText('Friday')).toBeInTheDocument();
-      expect(screen.getByText('working')).toBeInTheDocument();
+      expect(screen.getByText('writing')).toBeInTheDocument();
+    });
+  });
+});
+
+// ── Sub-agent delegation cards ─────────────────────────────────────────────────
+
+describe('sub-agent delegation cards', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    localStorage.clear();
+    mockFetchPersonalities.mockResolvedValue({
+      personalities: [makePersonality({ id: 'p-1', name: 'Alice', isActive: true })],
+    });
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+  });
+
+  function makeDelegation(overrides: Partial<{
+    delegationId: string;
+    profileName: string;
+    task: string;
+    initiatedByPersonalityId: string;
+  }> = {}) {
+    return {
+      delegationId: 'd-001',
+      profileId: 'prof-1',
+      profileName: 'researcher',
+      task: 'analyze codebase',
+      status: 'running',
+      depth: 1,
+      tokensUsed: 5000,
+      tokenBudget: 50000,
+      startedAt: Date.now() - 3_000,
+      elapsedMs: 3000,
+      ...overrides,
+    } as any;
+  }
+
+  it('renders sub-agent card in grid mode when delegation is active', async () => {
+    mockFetchActiveDelegations.mockResolvedValue({
+      delegations: [makeDelegation({ profileName: 'researcher' })],
+    });
+    renderWidget();
+    await waitFor(() => {
+      expect(screen.getByText('researcher')).toBeInTheDocument();
+      expect(screen.getByText('delegating')).toBeInTheDocument();
     });
   });
 
+  it('shows no agents message only when both personalities and delegations are empty', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [] });
+    mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
+    renderWidget();
+    await waitFor(() => {
+      expect(screen.getByText(/no agents found/i)).toBeInTheDocument();
+    });
+  });
 
+  it('shows delegation even when personalities list is empty', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [] });
+    mockFetchActiveDelegations.mockResolvedValue({
+      delegations: [makeDelegation({ profileName: 'analyst' })],
+    });
+    renderWidget();
+    await waitFor(() => {
+      expect(screen.getByText('analyst')).toBeInTheDocument();
+    });
+  });
+
+  it('renders sub-agent pill in map workspace zone', async () => {
+    mockFetchActiveDelegations.mockResolvedValue({
+      delegations: [makeDelegation({ profileName: 'researcher' })],
+    });
+    renderWidget({ viewMode: 'map' });
+    await waitFor(() => {
+      expect(screen.getByText('Workspace')).toBeInTheDocument();
+      expect(screen.getByTitle(/\[sub-agent\] researcher/i)).toBeInTheDocument();
+    });
+  });
+
+  it('renders sub-agent card in large workspace zone', async () => {
+    mockFetchActiveDelegations.mockResolvedValue({
+      delegations: [makeDelegation({ profileName: 'planner' })],
+    });
+    renderWidget({ viewMode: 'large' });
+    await waitFor(() => {
+      expect(screen.getByText('Workspace')).toBeInTheDocument();
+      expect(screen.getByTitle(/\[sub-agent\] planner/i)).toBeInTheDocument();
+    });
+  });
+
+  it('shows meeting label on initiating personality when it has an active delegation', async () => {
+    mockFetchActiveDelegations.mockResolvedValue({
+      delegations: [makeDelegation({ initiatedByPersonalityId: 'p-1' })],
+    });
+    renderWidget();
+    await waitFor(() => {
+      expect(screen.getByText('Alice')).toBeInTheDocument();
+      expect(screen.getByText('meeting')).toBeInTheDocument();
+    });
+  });
+
+  it('does not show meeting label when delegation is initiated by a different personality', async () => {
+    mockFetchActiveDelegations.mockResolvedValue({
+      delegations: [makeDelegation({ initiatedByPersonalityId: 'p-999' })],
+    });
+    renderWidget();
+    await waitFor(() => {
+      expect(screen.getByText('Alice')).toBeInTheDocument();
+      expect(screen.getByText('idle')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('meeting')).not.toBeInTheDocument();
+  });
 });

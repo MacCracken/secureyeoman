@@ -2141,6 +2141,7 @@ export interface ActiveDelegationInfo {
   tokenBudget: number;
   startedAt: number;
   elapsedMs: number;
+  initiatedByPersonalityId?: string;
 }
 
 export async function fetchAgentProfiles(): Promise<{ profiles: AgentProfileInfo[] }> {

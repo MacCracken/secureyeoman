@@ -147,7 +147,7 @@ const FRAMES: Record<AgentState, AnimFrame[]> = {
 const STATE_LABEL: Record<AgentState, string> = {
   idle: 'idle',
   thinking: 'thinking',
-  typing: 'working',
+  typing: 'writing',
   talking: 'talking',
   offline: 'offline',
 };
@@ -926,8 +926,8 @@ export function deriveState(
   if (running) {
     const taskName = running.title ?? running.name ?? 'task';
     const age = now - (running.startedAt ?? running.createdAt ?? now);
-    // New tasks appear as "thinking" for the first 8 seconds, then "typing"
-    const state: AgentState = age < 8_000 ? 'thinking' : 'typing';
+    // New tasks appear as "thinking" for the first 2 seconds, then "typing" (writing)
+    const state: AgentState = age < 2_000 ? 'thinking' : 'typing';
     return { state, taskLabel: taskName };
   }
 
@@ -969,7 +969,7 @@ and converge in the meeting room when running shared tasks.
 Character states:
   idle      (o.o)  Resting quietly
   thinking  (>.<)  Processing — recent task start
-  typing    (^_^)  Actively running a task [keyboard]
+  writing   (^_^)  Actively running a task [keyboard]
   talking   (°‿°)  Recently responded in chat
   offline   (x_x)  Personality inactive
 
