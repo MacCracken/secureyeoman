@@ -27,16 +27,15 @@
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P1 — ongoing | 🔄 Continuous |
-| 77 | Prompt Security | P1 — security-critical | ✅ Complete — 2026-02-28 |
 | 78 | Advanced Editor — Full IDE Mode | P2 — power user priority | Ready |
 | 79 | Multi-Instance Federation | P2 — platform surface | Planned |
 | 80 | API Gateway Mode | P2 — platform surface | Planned |
 | 81 | Conversation Branching & Replay | P3 — developer experience | Planned |
 | 82 | Knowledge Base & RAG Platform | P3 — knowledge platform | Planned |
-| 83 | Content Guardrails | P3 — enterprise compliance | Planned |
+| 86 | Inline Citations & Grounding | P4 — trust layer | Planned *(requires Phase 82)* |
+| 83 | Content Guardrails | P3 — enterprise compliance | Planned *(grounding check requires Phase 82)* |
 | 84 | LLM-as-Judge Evaluation | P3 — ML quality signal | Planned |
 | 85 | Conversation Analytics | P3 — operational insight | Planned |
-| 86 | Inline Citations & Grounding | P4 — trust layer | Planned |
 | 87 | LLM Lifecycle Platform — Core | P4 — model ops | Planned |
 | 88 | Marketplace Shareables | P4 — community growth | Planned |
 | Future | Observability & Telemetry, Workflow & Personality Versioning, LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Native Clients, Infrastructure | Future / Demand-Gated | — |
@@ -198,20 +197,6 @@ Per-workspace state survives page refresh:
 - [ ] **Responsive layout** — single-column narrow viewport; swipe-to-reveal explorer; touch support
 - [ ] **Training integration** — "Export to Training Data" context menu action; annotation mode
 - [ ] **Plugin / extension system** *(stretch goal)* — editor plugins register commands, panels, and language support via a stable internal API
-
----
-
-## Phase 77: Prompt Security
-
-**Priority**: P1 — Security-critical.
-
-**Status**: ✅ Complete (2026-02-28). See ADR 158 and `docs/guides/prompt-security.md`.
-
-- [x] **Prompt injection detection** — Regex-pattern classifier on each user turn. Modes: `block` / `sanitise` / `audit_only`. Wired into `InputValidator` (already live in the security stack).
-- [ ] **Indirect prompt injection detection** — Demand-gated. Requires Knowledge Base (Phase 82) to provide the tool-output corpus to scan. Will be added as part of Phase 82.
-- [x] **Jailbreak scoring** — Weighted severity score (high=0.6, medium=0.35, low=0.15) per turn, capped at 1.0. Stored on `chat.messages.injection_score` (migration 064). Threshold configurable; action = `block` / `warn` / `audit_only`.
-- [x] **System prompt confidentiality** — Trigram n-gram overlap between AI response and system prompt. Matching sequences redacted with `[REDACTED]`. Per-personality toggle `strictSystemPromptConfidentiality`. Threshold configurable (default 0.3).
-- [x] **Rate-aware abuse detection** — `AbuseDetector` class tracks blocked-retry count, topic-pivot rate (Jaccard overlap), and tool-call anomaly (> 5 unique tools/turn) per session. Cool-down + `suspicious_pattern` audit event on trigger. In-memory with TTL eviction. Server-side persistence demand-gated.
 
 ---
 
