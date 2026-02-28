@@ -31,6 +31,7 @@ interface MessageRow {
   creation_events_json: unknown | null;
   thinking_content: string | null;
   tool_calls_json: unknown | null;
+  injection_score: number | null;
   created_at: number;
 }
 
@@ -71,6 +72,8 @@ export interface ConversationMessage {
   creationEvents: { tool: string; label: string; name: string; id?: string }[] | null;
   thinkingContent: string | null;
   toolCalls: ToolCallRecord[] | null;
+  /** Injection risk score [0, 1] from InputValidator. Null for assistant messages. */
+  injectionScore: number | null;
   createdAt: number;
 }
 
@@ -120,6 +123,7 @@ function rowToMessage(row: MessageRow): ConversationMessage {
     toolCalls: row.tool_calls_json
       ? safeJsonParse<ToolCallRecord[] | null>(row.tool_calls_json, null)
       : null,
+    injectionScore: row.injection_score ?? null,
     createdAt: row.created_at,
   };
 }
@@ -234,14 +238,15 @@ export class ConversationStorage extends PgBaseStorage {
     creationEvents?: { tool: string; label: string; name: string; id?: string }[] | null;
     thinkingContent?: string | null;
     toolCalls?: ToolCallRecord[] | null;
+    injectionScore?: number | null;
   }): Promise<ConversationMessage> {
     const now = Date.now();
     const id = uuidv7();
 
     await this.withTransaction(async (client) => {
       await client.query(
-        `INSERT INTO chat.messages (id, conversation_id, role, content, model, provider, tokens_used, attachments_json, brain_context_json, creation_events_json, thinking_content, tool_calls_json, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+        `INSERT INTO chat.messages (id, conversation_id, role, content, model, provider, tokens_used, attachments_json, brain_context_json, creation_events_json, thinking_content, tool_calls_json, injection_score, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
         [
           id,
           data.conversationId,
@@ -257,6 +262,7 @@ export class ConversationStorage extends PgBaseStorage {
             : null,
           data.thinkingContent ?? null,
           data.toolCalls && data.toolCalls.length > 0 ? JSON.stringify(data.toolCalls) : null,
+          data.injectionScore ?? null,
           now,
         ]
       );

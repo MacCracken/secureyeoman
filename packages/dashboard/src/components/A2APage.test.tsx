@@ -130,6 +130,12 @@ describe('A2APage', () => {
       allowIntentEditor: false,
       allowCodeEditor: true,
       allowAdvancedEditor: false, allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     });
     mockFetchA2APeers.mockResolvedValue(MOCK_PEERS);
     mockFetchA2ACapabilities.mockResolvedValue(MOCK_CAPABILITIES);
@@ -175,6 +181,12 @@ describe('A2APage', () => {
       allowIntentEditor: false,
       allowCodeEditor: true,
       allowAdvancedEditor: false, allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     });
     renderComponent();
     expect(await screen.findByText('A2A Protocol Not Enabled')).toBeInTheDocument();
@@ -215,6 +227,12 @@ describe('A2APage', () => {
       allowIntentEditor: false,
       allowCodeEditor: true,
       allowAdvancedEditor: false, allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     });
     renderComponent();
     expect(await screen.findByText('Peers')).toBeInTheDocument();

@@ -53,6 +53,7 @@ import {
   Save,
   ToggleLeft,
   ToggleRight,
+  Box,
 } from 'lucide-react';
 import {
   fetchMcpServers,
@@ -2458,6 +2459,7 @@ function McpTab({
                 if (t.name.startsWith('gmail_') && !featureConfig?.exposeGmail) return false;
                 if (t.name.startsWith('twitter_') && !featureConfig?.exposeTwitter) return false;
                 if (t.name.startsWith('github_') && !featureConfig?.exposeGithub) return false;
+                if (t.name.startsWith('docker_') && !featureConfig?.exposeDockerTools) return false;
                 return true;
               }).length
           }
@@ -3051,6 +3053,37 @@ function LocalServerCard({
                   checked={featureConfig.exposeGithub ?? false}
                   onChange={(e) => {
                     onFeatureToggle({ exposeGithub: e.target.checked });
+                  }}
+                  disabled={isFeatureToggling}
+                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Infrastructure Tools — Docker */}
+          <div className="mt-3 pt-2 border-t border-border/50">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5 flex items-center gap-1">
+              <Box className="w-3 h-3" />
+              Infrastructure Tools
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <label
+                className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                title="Docker tools — ps, logs, start/stop, exec, pull, compose up/down (docker_*). Requires MCP_EXPOSE_DOCKER=true and host socket mount or DinD sidecar."
+              >
+                <Box className="w-4 h-4 text-muted-foreground shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs font-medium">Docker</span>
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    docker_ps, logs, exec, compose up/down
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={featureConfig.exposeDockerTools ?? false}
+                  onChange={(e) => {
+                    onFeatureToggle({ exposeDockerTools: e.target.checked });
                   }}
                   disabled={isFeatureToggling}
                   className="w-3.5 h-3.5 rounded accent-primary shrink-0"

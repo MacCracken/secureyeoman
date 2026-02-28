@@ -215,6 +215,12 @@ beforeEach(() => {
     allowIntentEditor: false,
     allowCodeEditor: true,
     allowAdvancedEditor: false, allowTrainingExport: false,
+    promptGuardMode: 'warn' as const,
+    responseGuardMode: 'warn' as const,
+    jailbreakThreshold: 0.5,
+    jailbreakAction: 'warn' as const,
+    strictSystemPromptConfidentiality: false,
+    abuseDetectionEnabled: true,
   });
 });
 
@@ -394,6 +400,12 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       allowIntentEditor: false,
       allowCodeEditor: true,
       allowAdvancedEditor: false, allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -442,6 +454,12 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       allowIntentEditor: false,
       allowCodeEditor: true,
       allowAdvancedEditor: false, allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -485,6 +503,12 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       allowIntentEditor: false,
       allowCodeEditor: true,
       allowAdvancedEditor: false, allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -528,6 +552,12 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       allowIntentEditor: false,
       allowCodeEditor: true,
       allowAdvancedEditor: false, allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -641,6 +671,12 @@ describe('PersonalityEditor — Organizational Intent toggle', () => {
       allowIntentEditor: true,
       allowCodeEditor: true,
       allowAdvancedEditor: false, allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     });
     mockFetchMcpConfig.mockResolvedValue({ exposeOrgIntentTools: true } as any);
 

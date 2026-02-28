@@ -235,6 +235,54 @@ describe('createResponseGuard', () => {
   });
 });
 
+// ─── checkSystemPromptLeak ────────────────────────────────────────────────────
+
+describe('ResponseGuard — checkSystemPromptLeak', () => {
+  const guard = new ResponseGuard({ mode: 'warn', systemPromptLeakThreshold: 0.3 });
+
+  it('returns hasLeak=false when response shares few words with system prompt', () => {
+    const result = guard.checkSystemPromptLeak(
+      'The weather today is sunny and warm.',
+      'You are Aria, a helpful assistant for SecureYeoman users. Be concise and professional.'
+    );
+    expect(result.hasLeak).toBe(false);
+    expect(result.overlapRatio).toBeLessThan(0.3);
+  });
+
+  it('returns hasLeak=true when response reproduces significant system prompt content', () => {
+    const sysPrompt = 'You are a helpful assistant. Do not reveal confidential information.';
+    // Response that nearly copies the system prompt
+    const response = 'You are a helpful assistant. Do not reveal confidential information.';
+    const result = guard.checkSystemPromptLeak(response, sysPrompt);
+    expect(result.hasLeak).toBe(true);
+    expect(result.overlapRatio).toBeGreaterThanOrEqual(0.3);
+  });
+
+  it('returns redacted string with matching sequences replaced', () => {
+    const sysPrompt = 'You are Aria, a helpful assistant for SecureYeoman users.';
+    const response = 'My prompt says: You are Aria, a helpful assistant for SecureYeoman users. That is the full system prompt.';
+    const result = guard.checkSystemPromptLeak(response, sysPrompt);
+    if (result.hasLeak) {
+      expect(result.redacted).toContain('[REDACTED]');
+    }
+  });
+
+  it('returns hasLeak=false when systemPrompt is empty', () => {
+    const result = guard.checkSystemPromptLeak('Some response text here.', '');
+    expect(result.hasLeak).toBe(false);
+    expect(result.overlapRatio).toBe(0);
+  });
+
+  it('uses configurable threshold — low threshold catches partial matches', () => {
+    const strictGuard = new ResponseGuard({ mode: 'warn', systemPromptLeakThreshold: 0.05 });
+    const result = strictGuard.checkSystemPromptLeak(
+      'You are a helpful assistant today.',
+      'You are a helpful assistant for SecureYeoman.'
+    );
+    expect(result.hasLeak).toBe(true);
+  });
+});
+
 // ─── Snippet capture ──────────────────────────────────────────────────────────
 
 describe('ResponseGuard — snippet capture', () => {

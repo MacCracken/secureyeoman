@@ -96,6 +96,7 @@ describe('ConnectionsPage', () => {
       exposeTwitter: false,
       exposeGithub: false,
       alwaysSendFullSchemas: false,
+      exposeDockerTools: false,
     });
     mockFetchIntegrations.mockResolvedValue({ integrations: [], total: 0, running: 0 });
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: [] });

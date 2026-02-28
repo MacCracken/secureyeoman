@@ -205,6 +205,19 @@ const InputValidationConfigSchema = z
     maxInputLength: z.number().int().positive().max(10000000).default(100000), // 100KB
     maxFileSize: z.number().int().positive().max(104857600).default(10485760), // 10MB
     enableInjectionDetection: z.boolean().default(true),
+    /**
+     * Minimum weighted injection score (0–1) to trigger jailbreakAction.
+     * Score is computed from matched pattern severities:
+     * high=0.6, medium=0.35, low=0.15 — capped at 1.0.
+     */
+    jailbreakThreshold: z.number().min(0).max(1).default(0.5),
+    /**
+     * Action when injectionScore ≥ jailbreakThreshold:
+     * block      — reject request (400 / SSE error event)
+     * warn       — log to audit trail and allow request to proceed
+     * audit_only — record score on message, no warning emitted
+     */
+    jailbreakAction: z.enum(['block', 'warn', 'audit_only']).default('warn'),
   })
   .default({});
 
@@ -228,6 +241,12 @@ export type PromptGuardConfig = z.infer<typeof PromptGuardConfigSchema>;
 const ResponseGuardConfigSchema = z
   .object({
     mode: z.enum(['block', 'warn', 'disabled']).default('warn'),
+    /**
+     * Trigram overlap ratio threshold [0, 1] that triggers a system prompt leak finding.
+     * 0.3 = flag when ≥30% of the system prompt's trigrams appear in the response.
+     * Only active when security.strictSystemPromptConfidentiality or per-personality override is true.
+     */
+    systemPromptLeakThreshold: z.number().min(0).max(1).default(0.3),
   })
   .default({});
 export type ResponseGuardConfig = z.infer<typeof ResponseGuardConfigSchema>;
@@ -314,6 +333,37 @@ export const SecurityConfigSchema = z.object({
   allowCommunityGitFetch: z.boolean().default(false),
   /** Default git URL for community skills repo when git fetch is enabled. */
   communityGitUrl: z.string().optional(),
+  /**
+   * When true, the response guard checks for n-gram overlap between AI responses
+   * and system prompt contents. Leaks are redacted and audit-logged regardless of
+   * responseGuard.mode. Per-personality override available via body.strictSystemPromptConfidentiality.
+   */
+  strictSystemPromptConfidentiality: z.boolean().default(false),
+  /** Rate-aware abuse detection — tracks adversarial retry, topic pivoting, and tool anomaly patterns. */
+  abuseDetection: z
+    .object({
+      enabled: z.boolean().default(true),
+      /**
+       * Minimum topic-overlap ratio between consecutive user messages to flag as topic-pivot.
+       * High values (close to 1) mean almost identical topics are required. Low values flag more pivots.
+       * Default 0.15 (≤15% overlap → topic changed).
+       */
+      topicPivotThreshold: z.number().min(0).max(1).default(0.15),
+      /**
+       * Number of consecutive blocked-message retries within a session before triggering cool-down.
+       */
+      blockedRetryLimit: z.number().int().positive().default(3),
+      /**
+       * Cool-down duration in milliseconds after abuse pattern detected. Default 5 minutes.
+       */
+      coolDownMs: z.number().int().positive().default(300_000),
+      /**
+       * Session TTL for abuse tracking records in milliseconds. Records older than this are evicted.
+       * Default 30 minutes.
+       */
+      sessionTtlMs: z.number().int().positive().default(1_800_000),
+    })
+    .default({}),
   secretBackend: z.enum(['auto', 'keyring', 'env', 'file', 'vault']).default('auto'),
   vault: z
     .object({

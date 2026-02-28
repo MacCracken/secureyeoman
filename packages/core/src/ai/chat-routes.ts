@@ -22,6 +22,7 @@ import { sendError } from '../utils/errors.js';
 import { ToolOutputScanner } from '../security/tool-output-scanner.js';
 import { PromptGuard } from '../security/prompt-guard.js';
 import { createResponseGuard } from '../security/response-guard.js';
+import { AbuseDetector } from '../security/abuse-detector.js';
 import { LLMJudge } from '../security/llm-judge.js';
 import { ContextCompactor } from './context-compactor.js';
 import { getLogger } from '../logging/logger.js';
@@ -487,6 +488,17 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
   // Response-side safety scanner (Phase 54).
   const responseGuard = createResponseGuard(secureYeoman.getConfig().security.responseGuard);
 
+  // Rate-aware abuse detector — tracks blocked retries, topic pivots, tool anomalies (Phase 77).
+  const abuseDetector = new AbuseDetector(
+    secureYeoman.getConfig().security.abuseDetection,
+    (params) => void secureYeoman.getAuditChain().record({
+      event: params.event,
+      level: params.level,
+      message: params.message,
+      metadata: params.metadata,
+    })
+  );
+
   // LLM-as-Judge for high-autonomy tool calls (Phase 54).
   let llmJudge: LLMJudge | null = null;
   try {
@@ -522,6 +534,10 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       // Input validation — check message and history for injection patterns
       const validator = secureYeoman.getValidator();
       const msgValidation = validator.validate(message, { source: 'chat' });
+      // Abuse detection session key
+      const _abUserId = request.authUser?.userId ?? request.ip ?? 'anonymous';
+      const _abSessionId = `${_abUserId}:${conversationId ?? 'noconv'}`;
+
       if (msgValidation.blocked) {
         void secureYeoman.getAuditChain().record({
           event: 'injection_attempt',
@@ -530,8 +546,23 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           userId: (request as FastifyRequest & { user?: { id?: string } }).user?.id,
           metadata: { endpoint: '/api/v1/chat', reason: msgValidation.blockReason },
         });
+        abuseDetector.recordBlock(_abSessionId);
         return sendError(reply, 400, 'Message blocked: invalid content');
       }
+
+      // Abuse detection: cool-down check + topic pivot recording (Phase 77)
+      {
+        const abCheck = abuseDetector.check(_abSessionId);
+        if (abCheck.inCoolDown) {
+          return sendError(
+            reply,
+            429,
+            `Temporarily rate limited due to suspicious activity. Retry after ${abCheck.coolDownUntil}`
+          );
+        }
+        abuseDetector.recordMessage(_abSessionId, message);
+      }
+
       if (history && Array.isArray(history)) {
         for (const entry of history) {
           if (typeof entry.content === 'string') {
@@ -1119,6 +1150,22 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             contextSnippets: brainContext?.contextSnippets,
             memoriesUsed: brainContext?.memoriesUsed,
           });
+
+          // System prompt confidentiality check (Phase 77)
+          const _strictConf =
+            personality?.body?.strictSystemPromptConfidentiality ??
+            secureYeoman.getConfig().security.strictSystemPromptConfidentiality;
+          if (_strictConf && systemPrompt) {
+            const _leakResult = responseGuard.checkSystemPromptLeak(response.content, systemPrompt);
+            if (_leakResult.hasLeak) {
+              void secureYeoman.getAuditChain().record({
+                event: 'system_prompt_leak_detected',
+                level: 'warn',
+                message: 'System prompt content leak detected in response',
+                metadata: { overlapRatio: _leakResult.overlapRatio.toFixed(3) },
+              });
+            }
+          }
         }
 
         // ── OPA output compliance (Phase 54) ──────────────────────────────────
@@ -1151,6 +1198,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 conversationId,
                 role: 'user',
                 content: message.trim(),
+                injectionScore: msgValidation.injectionScore > 0 ? msgValidation.injectionScore : null,
               });
               await convStorage.addMessage({
                 conversationId,
@@ -1282,6 +1330,11 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       // Input validation — check message and history for injection patterns
       const validator = secureYeoman.getValidator();
       const msgValidation = validator.validate(message, { source: 'chat_stream' });
+
+      // Abuse detection session key
+      const _abUserIdS = request.authUser?.userId ?? request.ip ?? 'anonymous';
+      const _abSessionIdS = `${_abUserIdS}:${conversationId ?? 'noconv'}`;
+
       if (msgValidation.blocked) {
         void secureYeoman.getAuditChain().record({
           event: 'injection_attempt',
@@ -1290,9 +1343,23 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           userId: (request as FastifyRequest & { user?: { id?: string } }).user?.id,
           metadata: { endpoint: '/api/v1/chat/stream', reason: msgValidation.blockReason },
         });
+        abuseDetector.recordBlock(_abSessionIdS);
         reply.code(400).send({ error: 'Message blocked: invalid content' });
         return;
       }
+
+      // Abuse detection: cool-down check + topic pivot recording (Phase 77)
+      {
+        const abCheckS = abuseDetector.check(_abSessionIdS);
+        if (abCheckS.inCoolDown) {
+          reply.code(429).send({
+            error: `Temporarily rate limited due to suspicious activity. Retry after ${abCheckS.coolDownUntil}`,
+          });
+          return;
+        }
+        abuseDetector.recordMessage(_abSessionIdS, message);
+      }
+
       if (history && Array.isArray(history)) {
         for (const entry of history) {
           if (typeof entry.content === 'string') {
@@ -1904,6 +1971,22 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             contextSnippets: brainContext?.contextSnippets,
             memoriesUsed: brainContext?.memoriesUsed,
           });
+
+          // System prompt confidentiality check (Phase 77)
+          const _strictConfS =
+            personality?.body?.strictSystemPromptConfidentiality ??
+            secureYeoman.getConfig().security.strictSystemPromptConfidentiality;
+          if (_strictConfS && systemPrompt) {
+            const _leakResultS = responseGuard.checkSystemPromptLeak(safeContent, systemPrompt);
+            if (_leakResultS.hasLeak) {
+              void secureYeoman.getAuditChain().record({
+                event: 'system_prompt_leak_detected',
+                level: 'warn',
+                message: 'System prompt content leak detected in streamed response',
+                metadata: { overlapRatio: _leakResultS.overlapRatio.toFixed(3) },
+              });
+            }
+          }
         }
 
         // ── OPA output compliance (Phase 54) ──────────────────────────────────
@@ -1933,6 +2016,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 conversationId,
                 role: 'user',
                 content: message.trim(),
+                injectionScore: msgValidation.injectionScore > 0 ? msgValidation.injectionScore : null,
               });
               await convStorage.addMessage({
                 conversationId,

@@ -1,3 +1,71 @@
+## [2026.2.28s] — 2026-02-28
+
+### Added
+
+#### Prompt Security — Jailbreak Scoring, System Prompt Confidentiality, Abuse Detection (Phase 77)
+
+Three new input/output security controls layered on top of the existing `InputValidator` / `ResponseGuard` stack:
+
+**Jailbreak Scoring** (`InputValidator`)
+- Every user turn now receives a weighted injection risk score (0–1). Severity weights: `high=0.60`, `medium=0.35`, `low=0.15`; scores cap at 1.0.
+- Score stored on `chat.messages.injection_score` (new migration 064: `ALTER TABLE chat.messages ADD COLUMN IF NOT EXISTS injection_score REAL`).
+- Two new `InputValidationConfigSchema` fields: `jailbreakThreshold` (0–1, default `0.5`) and `jailbreakAction` (`block` / `warn` / `audit_only`, default `warn`). Configurable in Security → Policy → Prompt Security.
+
+**System Prompt Confidentiality** (`ResponseGuard`)
+- New `ResponseGuard.checkSystemPromptLeak(responseText, systemPrompt)` method computes trigram (3-word window) overlap ratio between the AI response and the active system prompt.
+- When `overlapRatio >= systemPromptLeakThreshold` (default `0.3`), the response is flagged and matching sequences replaced with `[REDACTED]` before delivery.
+- Per-personality toggle `strictSystemPromptConfidentiality: boolean` in `BodyConfigSchema` (body JSONB, no migration). Exposed in PersonalityEditor → Behaviour.
+
+**Rate-Aware Abuse Detection** (`AbuseDetector`)
+- New class `packages/core/src/security/abuse-detector.ts` tracks three adversarial signals per session (in-memory, TTL eviction):
+  - `blocked_retry` — N consecutive blocked submissions
+  - `topic_pivot` — Jaccard word overlap < threshold on N consecutive turns
+  - `tool_anomaly` — > 5 unique tool names in a single turn
+- When triggered: session enters cool-down (`coolDownMs`, default 60 s); chat handler returns HTTP 429; `suspicious_pattern` audit event written.
+- Configuration: `SecurityConfigSchema.abuseDetection` sub-object (`enabled`, `topicPivotThreshold`, `blockedRetryLimit`, `coolDownMs`, `sessionTtlMs`). Toggled via Security → Policy → Prompt Security.
+
+**Dashboard & API**
+- Security → Policy page gains "Prompt Security" card with controls for all six new fields.
+- `PATCH /api/v1/security/policy` and `GET /api/v1/security/policy` updated with the six fields.
+- `SecurityPolicy` interface in `client.ts` extended accordingly.
+
+**Docs**: ADR 158, `docs/guides/prompt-security.md`.
+
+---
+
+## [2026.2.28r] — 2026-02-28
+
+### Added
+
+#### Docker Management MCP Tools (Phase 74)
+
+YEOMAN MCP now exposes 14 Docker management tools for container and Compose operations, gated by `MCP_EXPOSE_DOCKER=true`. Supports two deployment modes: host socket binding (`MCP_DOCKER_MODE=socket`, mounts `/var/run/docker.sock`) or Docker-in-Docker (`MCP_DOCKER_MODE=dind` + `MCP_DOCKER_HOST=tcp://docker:2376`).
+
+**New tools** (`docker_*`):
+- `docker_ps` — list containers (all or running-only)
+- `docker_logs` — fetch container logs with `--tail` and timestamp options
+- `docker_inspect` — full metadata for a container or image as JSON
+- `docker_stats` — one-shot CPU/memory/network snapshot (no-stream)
+- `docker_images` — list local images with optional filter
+- `docker_start` / `docker_stop` / `docker_restart` — lifecycle control with configurable stop timeout
+- `docker_exec` — run a command inside a running container (array-form args, no shell injection)
+- `docker_pull` — pull an image from a registry
+- `docker_compose_ps` — list Compose project services
+- `docker_compose_logs` — fetch Compose service logs
+- `docker_compose_up` — start Compose services detached (with optional `--build` and pull policy)
+- `docker_compose_down` — stop and remove Compose containers/networks (optional `--volumes`)
+
+**Configuration** (`.env` / `docker-compose.yml`):
+- `MCP_EXPOSE_DOCKER=true|false` (default `false`) — master gate
+- `MCP_DOCKER_MODE=socket|dind` (default `socket`)
+- `MCP_DOCKER_HOST=<url>` — DOCKER_HOST override for DinD mode (e.g. `tcp://docker:2376`)
+
+**Dashboard** — new **Infrastructure Tools** section in Connections → YEOMAN MCP and in PersonalityEditor → MCP Features panel. Docker toggle is greyed out when the global switch is off. Filtering applied to tool count display (`docker_*` hidden when disabled).
+
+**Types updated**: `McpServiceConfigSchema` (`packages/shared/src/types/mcp.ts`), `McpFeatureConfig` (`core/mcp/storage.ts`), `McpFeaturesSchema` (`shared/types/soul.ts`), `McpConfigResponse` / `McpFeatureConfig` (`dashboard/src/types.ts`, `client.ts`).
+
+---
+
 ## [2026.2.28q] — 2026-02-28
 
 ### Changed

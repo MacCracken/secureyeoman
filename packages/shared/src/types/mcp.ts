@@ -149,6 +149,12 @@ export const McpServiceConfigSchema = z.object({
   /** When true (default), honour Content-Signal: ai-input=no and refuse to feed blocked content to the agent. Set MCP_RESPECT_CONTENT_SIGNAL=false to override. */
   respectContentSignal: z.boolean().default(true),
   allowBruteForce: z.boolean().default(false),
+  /** Enable Docker management tools (ps, logs, exec, images, compose). Off by default. Set MCP_EXPOSE_DOCKER=true. */
+  exposeDockerTools: z.boolean().default(false),
+  /** How the MCP container reaches Docker: 'socket' = host /var/run/docker.sock, 'dind' = Docker-in-Docker sidecar. */
+  dockerMode: z.enum(['socket', 'dind']).default('socket'),
+  /** DOCKER_HOST override for DinD mode (e.g. tcp://docker:2376). Ignored in socket mode. */
+  dockerHost: z.string().optional(),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

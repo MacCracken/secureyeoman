@@ -187,6 +187,12 @@ describe('EditorPage', () => {
       allowIntentEditor: false,
       allowCodeEditor: true,
       allowAdvancedEditor: false, allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     });
     mockFetchExecutionSessions.mockResolvedValue(MOCK_SESSIONS);
     mockFetchExecutionHistory.mockResolvedValue({
@@ -225,6 +231,12 @@ describe('EditorPage', () => {
       allowIntentEditor: false,
       allowCodeEditor: true,
       allowAdvancedEditor: true, allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     });
     renderComponent();
     expect(await screen.findByTestId('advanced-editor-page')).toBeInTheDocument();
@@ -301,6 +313,12 @@ describe('EditorPage', () => {
       allowIntentEditor: false,
       allowCodeEditor: true,
       allowAdvancedEditor: false, allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     });
     renderComponent();
     await screen.findByText('Terminal');

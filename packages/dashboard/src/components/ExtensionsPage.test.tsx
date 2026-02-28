@@ -110,6 +110,12 @@ describe('ExtensionsPage', () => {
       allowIntentEditor: false,
       allowCodeEditor: true,
       allowAdvancedEditor: false, allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     });
     mockFetchExtensions.mockResolvedValue(MOCK_EXTENSIONS);
     mockFetchExtensionHooks.mockResolvedValue(MOCK_HOOKS);
@@ -152,6 +158,12 @@ describe('ExtensionsPage', () => {
       allowIntentEditor: false,
       allowCodeEditor: true,
       allowAdvancedEditor: false, allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     });
     renderComponent();
     expect(await screen.findByText('Extensions Not Enabled')).toBeInTheDocument();
@@ -186,6 +198,12 @@ describe('ExtensionsPage', () => {
       allowIntentEditor: false,
       allowCodeEditor: true,
       allowAdvancedEditor: false, allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     });
     renderComponent();
     expect(await screen.findByText('Discover')).toBeInTheDocument();
@@ -221,6 +239,12 @@ describe('ExtensionsPage', () => {
       allowIntentEditor: false,
       allowCodeEditor: true,
       allowAdvancedEditor: false, allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     });
     renderComponent();
     expect(await screen.findByText('Discover')).toBeInTheDocument();

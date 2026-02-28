@@ -422,6 +422,12 @@ export function SecuritySettings() {
   const dtcAllowed = securityPolicy?.allowDynamicTools ?? false;
   const sandboxDtcAllowed = securityPolicy?.sandboxDynamicTools ?? true;
   const anomalyDetectionAllowed = securityPolicy?.allowAnomalyDetection ?? false;
+  const promptGuardMode = securityPolicy?.promptGuardMode ?? 'warn';
+  const responseGuardMode = securityPolicy?.responseGuardMode ?? 'warn';
+  const jailbreakThreshold = securityPolicy?.jailbreakThreshold ?? 0.5;
+  const jailbreakAction = securityPolicy?.jailbreakAction ?? 'warn';
+  const strictSystemPromptConf = securityPolicy?.strictSystemPromptConfidentiality ?? false;
+  const abuseDetectionEnabled = securityPolicy?.abuseDetectionEnabled ?? true;
   const gvisorAllowed = securityPolicy?.sandboxGvisor ?? false;
   const wasmAllowed = securityPolicy?.sandboxWasm ?? false;
   const credentialProxyAllowed = securityPolicy?.sandboxCredentialProxy ?? false;
@@ -603,6 +609,130 @@ export function SecuritySettings() {
               policyMutation.mutate({ allowAnomalyDetection: !anomalyDetectionAllowed });
             }}
             description="Use machine learning to detect unusual patterns in agent behavior, API calls, and security events. Disabled by default."
+          />
+        </div>
+      </div>
+
+      {/* Prompt Security */}
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <Shield className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Prompt Security</h3>
+        </div>
+        <div className="p-4 space-y-5">
+          {/* Prompt Guard mode */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Prompt Guard Mode</label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Scans assembled prompts before the LLM call for indirect injection attempts.
+            </p>
+            <select
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={promptGuardMode}
+              onChange={(e) =>
+                policyMutation.mutate({
+                  promptGuardMode: e.target.value as 'block' | 'warn' | 'disabled',
+                })
+              }
+              disabled={policyMutation.isPending}
+            >
+              <option value="block">Block — reject request on high-severity finding</option>
+              <option value="warn">Warn — log and allow (default)</option>
+              <option value="disabled">Disabled — skip scanning</option>
+            </select>
+          </div>
+
+          {/* Response Guard mode */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Response Guard Mode</label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Scans LLM responses for output-side injection, role confusion, and exfiltration patterns.
+            </p>
+            <select
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={responseGuardMode}
+              onChange={(e) =>
+                policyMutation.mutate({
+                  responseGuardMode: e.target.value as 'block' | 'warn' | 'disabled',
+                })
+              }
+              disabled={policyMutation.isPending}
+            >
+              <option value="block">Block — reject response on high-severity finding</option>
+              <option value="warn">Warn — log and allow (default)</option>
+              <option value="disabled">Disabled — skip scanning</option>
+            </select>
+          </div>
+
+          {/* Jailbreak threshold */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium flex items-center justify-between">
+              <span>Jailbreak Score Threshold</span>
+              <span className="font-mono text-xs text-muted-foreground">{jailbreakThreshold.toFixed(2)}</span>
+            </label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Weighted injection risk score [0–1] that triggers the jailbreak action. Lower = more sensitive.
+            </p>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={jailbreakThreshold}
+              onChange={(e) =>
+                policyMutation.mutate({ jailbreakThreshold: parseFloat(e.target.value) })
+              }
+              disabled={policyMutation.isPending}
+              className="w-full accent-primary"
+            />
+          </div>
+
+          {/* Jailbreak action */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Jailbreak Threshold Action</label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Action taken when a message's injection score meets the threshold above.
+            </p>
+            <select
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={jailbreakAction}
+              onChange={(e) =>
+                policyMutation.mutate({
+                  jailbreakAction: e.target.value as 'block' | 'warn' | 'audit_only',
+                })
+              }
+              disabled={policyMutation.isPending}
+            >
+              <option value="block">Block — reject request (400)</option>
+              <option value="warn">Warn — audit log + allow (default)</option>
+              <option value="audit_only">Audit Only — record score, no warning</option>
+            </select>
+          </div>
+
+          {/* System prompt confidentiality */}
+          <PolicyToggle
+            label="System Prompt Confidentiality"
+            icon={<Lock className="w-4 h-4 text-muted-foreground" />}
+            enabled={strictSystemPromptConf}
+            isPending={policyMutation.isPending}
+            onToggle={() =>
+              policyMutation.mutate({
+                strictSystemPromptConfidentiality: !strictSystemPromptConf,
+              })
+            }
+            description="Scan AI responses for n-gram overlap with system prompt contents. Detected leaks are redacted and audit-logged. Can be overridden per personality."
+          />
+
+          {/* Abuse detection */}
+          <PolicyToggle
+            label="Rate-Aware Abuse Detection"
+            icon={<Shield className="w-4 h-4 text-muted-foreground" />}
+            enabled={abuseDetectionEnabled}
+            isPending={policyMutation.isPending}
+            onToggle={() =>
+              policyMutation.mutate({ abuseDetectionEnabled: !abuseDetectionEnabled })
+            }
+            description="Track blocked-message retries, topic pivoting, and tool-call anomalies per session. Triggered sessions enter a cool-down period and emit suspicious_pattern audit events."
           />
         </div>
       </div>

@@ -32,6 +32,7 @@ import {
   MessageSquare,
   ZoomIn,
   ZoomOut,
+  Box,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -1115,6 +1116,8 @@ function BrainSection({
   orgIntentMcpEnabled,
   omnipresentMind,
   onOmnipresentMindChange,
+  strictSystemPromptConfidentiality,
+  onStrictSystemPromptConfidentialityChange,
   injectDateTime,
   onInjectDateTimeChange,
   defaultModel,
@@ -1148,6 +1151,8 @@ function BrainSection({
   orgIntentMcpEnabled: boolean;
   omnipresentMind: boolean;
   onOmnipresentMindChange: (v: boolean) => void;
+  strictSystemPromptConfidentiality: boolean;
+  onStrictSystemPromptConfidentialityChange: (v: boolean | undefined) => void;
   injectDateTime: boolean;
   onInjectDateTimeChange: (v: boolean) => void;
   defaultModel: { provider: string; model: string } | null;
@@ -1328,6 +1333,31 @@ function BrainSection({
                 onOmnipresentMindChange(e.target.checked);
               }}
               aria-label="Omnipresent Mind"
+              className="sr-only peer"
+            />
+            <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+          </label>
+        </div>
+
+        {/* System Prompt Confidentiality override */}
+        <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <p className="text-sm font-medium">System Prompt Confidentiality</p>
+              <p className="text-xs text-muted-foreground">
+                Override global setting: scan responses for system prompt content leaks. Falls back to the global Security setting when unchecked.
+              </p>
+            </div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer shrink-0">
+            <input
+              type="checkbox"
+              checked={strictSystemPromptConfidentiality}
+              onChange={(e) => {
+                onStrictSystemPromptConfidentialityChange(e.target.checked ? true : undefined);
+              }}
+              aria-label="System Prompt Confidentiality"
               className="sr-only peer"
             />
             <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
@@ -2251,6 +2281,7 @@ interface BodySectionProps {
     exposeGmail: boolean;
     exposeTwitter: boolean;
     exposeGithub: boolean;
+    exposeDocker: boolean;
   };
   onMcpFeaturesChange: (features: {
     exposeGit: boolean;
@@ -2271,6 +2302,7 @@ interface BodySectionProps {
     exposeGmail: boolean;
     exposeTwitter: boolean;
     exposeGithub: boolean;
+    exposeDocker: boolean;
   }) => void;
   creationConfig: {
     skills: boolean;
@@ -3617,6 +3649,43 @@ function BodySection({
                                 />
                               </label>
                             </div>
+                            {/* ── Infrastructure Tools ─────────────────── */}
+                            <div className="mt-2 pt-2 border-t border-border/50 space-y-1">
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1 flex items-center gap-1">
+                                <Box className="w-3 h-3" />
+                                Infrastructure Tools
+                              </p>
+                              {/* Docker */}
+                              <label
+                                className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
+                                  globalMcpConfig?.exposeDockerTools
+                                    ? 'cursor-pointer hover:bg-muted/50'
+                                    : 'opacity-50 cursor-not-allowed'
+                                }`}
+                              >
+                                <Box className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                <span className="text-xs flex-1">
+                                  Docker
+                                  {!globalMcpConfig?.exposeDockerTools && (
+                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                      — enable Docker in Connections &gt; MCP first
+                                    </span>
+                                  )}
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={mcpFeatures.exposeDocker}
+                                  onChange={(e) => {
+                                    onMcpFeaturesChange({
+                                      ...mcpFeatures,
+                                      exposeDocker: e.target.checked,
+                                    });
+                                  }}
+                                  disabled={!globalMcpConfig?.exposeDockerTools}
+                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                />
+                              </label>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -4004,6 +4073,7 @@ export function PersonalityEditor() {
     exposeGmail: boolean;
     exposeTwitter: boolean;
     exposeGithub: boolean;
+    exposeDocker: boolean;
   }>({
     exposeGit: false,
     exposeFilesystem: false,
@@ -4023,6 +4093,7 @@ export function PersonalityEditor() {
     exposeGmail: false,
     exposeTwitter: false,
     exposeGithub: false,
+    exposeDocker: false,
   });
   const [proactiveConfig, setProactiveConfig] = useState<{
     enabled: boolean;
@@ -4076,6 +4147,7 @@ export function PersonalityEditor() {
   const [thinkingConfig, setThinkingConfig] = useState({ enabled: false, budgetTokens: 10000 });
   const [maxPromptTokens, setMaxPromptTokens] = useState<number | null>(null);
   const [omnipresentMind, setOmnipresentMind] = useState(false);
+  const [strictSystemPromptConfidentiality, setStrictSystemPromptConfidentiality] = useState<boolean | undefined>(undefined);
 
   const [resourcePolicy, setResourcePolicy] = useState<{
     deletionMode: 'auto' | 'request' | 'manual';
@@ -4302,6 +4374,7 @@ export function PersonalityEditor() {
       exposeGmail: body.mcpFeatures?.exposeGmail ?? false,
       exposeTwitter: body.mcpFeatures?.exposeTwitter ?? false,
       exposeGithub: body.mcpFeatures?.exposeGithub ?? false,
+      exposeDocker: body.mcpFeatures?.exposeDocker ?? false,
     });
     setProactiveConfig({
       enabled: body.proactiveConfig?.enabled ?? false,
@@ -4338,6 +4411,7 @@ export function PersonalityEditor() {
     });
     setMaxPromptTokens(body.maxPromptTokens ?? null);
     setOmnipresentMind(body.omnipresentMind ?? false);
+    setStrictSystemPromptConfidentiality(body.strictSystemPromptConfidentiality);
     setSetActiveOnSave(false);
     setEditing(p.id);
   };
@@ -4417,6 +4491,7 @@ export function PersonalityEditor() {
       exposeGmail: false,
       exposeTwitter: false,
       exposeGithub: false,
+      exposeDocker: false,
     });
     setProactiveConfig({
       enabled: false,
@@ -4446,6 +4521,7 @@ export function PersonalityEditor() {
     setThinkingConfig({ enabled: false, budgetTokens: 10000 });
     setMaxPromptTokens(null);
     setOmnipresentMind(false);
+    setStrictSystemPromptConfidentiality(undefined);
     setResourcePolicy({
       deletionMode: 'auto',
       automationLevel: 'supervised_auto',
@@ -4476,6 +4552,9 @@ export function PersonalityEditor() {
         thinkingConfig,
         ...(maxPromptTokens !== null ? { maxPromptTokens } : {}),
         omnipresentMind,
+        ...(strictSystemPromptConfidentiality !== undefined
+          ? { strictSystemPromptConfidentiality }
+          : {}),
         resourcePolicy,
       },
     };
@@ -4779,6 +4858,8 @@ export function PersonalityEditor() {
             orgIntentMcpEnabled={securityPolicy?.allowIntentEditor ?? false}
             omnipresentMind={omnipresentMind}
             onOmnipresentMindChange={setOmnipresentMind}
+            strictSystemPromptConfidentiality={strictSystemPromptConfidentiality ?? false}
+            onStrictSystemPromptConfidentialityChange={setStrictSystemPromptConfidentiality}
             injectDateTime={form.injectDateTime ?? false}
             onInjectDateTimeChange={(v) => {
               setForm((f) => ({ ...f, injectDateTime: v }));

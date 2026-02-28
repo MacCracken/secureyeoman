@@ -18,6 +18,8 @@ export interface ValidationResult {
   warnings: ValidationWarning[];
   blocked: boolean;
   blockReason?: string;
+  /** Weighted injection risk score in [0, 1]. 0 = clean; ≥ threshold triggers jailbreakAction. */
+  injectionScore: number;
 }
 
 export interface ValidationWarning {
@@ -201,6 +203,7 @@ export class InputValidator {
         ],
         blocked: true,
         blockReason: 'Input size exceeds limit',
+        injectionScore: 0,
       };
     }
 
@@ -208,9 +211,11 @@ export class InputValidator {
     sanitized = this.normalizeEncoding(sanitized, warnings);
 
     // Stage 3: Injection detection
+    let injectionScore = 0;
     if (this.config.enableInjectionDetection) {
       const injectionResult = this.detectInjection(sanitized, context);
       warnings.push(...injectionResult.warnings);
+      injectionScore = injectionResult.injectionScore;
 
       if (injectionResult.blocked) {
         blocked = true;
@@ -220,6 +225,32 @@ export class InputValidator {
       // Sanitize detected patterns (if not blocking)
       if (!blocked) {
         sanitized = injectionResult.sanitized;
+      }
+
+      // Apply jailbreak threshold action when score meets/exceeds threshold
+      if (!blocked && injectionScore >= this.config.jailbreakThreshold) {
+        const action = this.config.jailbreakAction;
+        if (action === 'block') {
+          blocked = true;
+          blockReason = `Injection score ${injectionScore.toFixed(2)} meets threshold ${this.config.jailbreakThreshold}`;
+          this.getLogger().warn('Request blocked by jailbreak score threshold', {
+            ...context,
+            injectionScore,
+            threshold: this.config.jailbreakThreshold,
+          });
+        } else if (action === 'warn') {
+          warnings.push({
+            code: 'JAILBREAK_SCORE_THRESHOLD',
+            message: `Injection score ${injectionScore.toFixed(2)} meets threshold (jailbreakAction=warn)`,
+            severity: 'high',
+          });
+          this.getLogger().warn('Jailbreak score threshold exceeded (warn mode)', {
+            ...context,
+            injectionScore,
+            threshold: this.config.jailbreakThreshold,
+          });
+        }
+        // audit_only: score is recorded on result, no further action here
       }
     }
 
@@ -239,6 +270,7 @@ export class InputValidator {
       warnings,
       blocked,
       blockReason,
+      injectionScore,
     };
 
     // Log validation result for audit
@@ -281,7 +313,9 @@ export class InputValidator {
   }
 
   /**
-   * Detect injection attempts
+   * Detect injection attempts and compute a weighted risk score.
+   * Score = sum of matched pattern weights, capped at 1.0:
+   *   high=0.6, medium=0.35, low=0.15
    */
   private detectInjection(
     input: string,
@@ -291,16 +325,21 @@ export class InputValidator {
     warnings: ValidationWarning[];
     blocked: boolean;
     blockReason?: string;
+    injectionScore: number;
   } {
     const warnings: ValidationWarning[] = [];
     let sanitized = input;
     let blocked = false;
     let blockReason: string | undefined;
+    let scoreAccum = 0;
+    const SEVERITY_WEIGHT: Record<string, number> = { high: 0.6, medium: 0.35, low: 0.15 };
 
     for (const { name, pattern, severity, block } of INJECTION_PATTERNS) {
       const matches = input.match(pattern);
 
       if (matches) {
+        scoreAccum += SEVERITY_WEIGHT[severity] ?? 0.15;
+
         warnings.push({
           code: `INJECTION_${name.toUpperCase()}`,
           message: `Potential ${name.replace(/_/g, ' ')} detected`,
@@ -332,7 +371,8 @@ export class InputValidator {
       }
     }
 
-    return { sanitized, warnings, blocked, blockReason };
+    const injectionScore = Math.min(1, scoreAccum);
+    return { sanitized, warnings, blocked, blockReason, injectionScore };
   }
 
   /**
@@ -357,6 +397,7 @@ export class InputValidator {
         ],
         blocked: true,
         blockReason: 'File size exceeds limit',
+        injectionScore: 0,
       };
     }
 
@@ -374,6 +415,7 @@ export class InputValidator {
         ],
         blocked: true,
         blockReason: 'Invalid filename',
+        injectionScore: 0,
       };
     }
 
@@ -391,6 +433,7 @@ export class InputValidator {
         ],
         blocked: true,
         blockReason: 'Invalid filename',
+        injectionScore: 0,
       };
     }
 
@@ -406,6 +449,7 @@ export class InputValidator {
       sanitized: '', // Don't return binary as string
       warnings: [],
       blocked: false,
+      injectionScore: 0,
     };
   }
 
@@ -432,7 +476,7 @@ export class InputValidator {
       }
     }
 
-    return { valid: true, sanitized: '', warnings: [], blocked: false };
+    return { valid: true, sanitized: '', warnings: [], blocked: false, injectionScore: 0 };
   }
 
   /**

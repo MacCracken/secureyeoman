@@ -70,6 +70,12 @@ describe('ExperimentsPage', () => {
       allowIntentEditor: false,
       allowCodeEditor: true,
       allowAdvancedEditor: false, allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     });
 
     renderComponent();
@@ -107,6 +113,12 @@ describe('ExperimentsPage', () => {
       allowIntentEditor: false,
       allowCodeEditor: true,
       allowAdvancedEditor: false, allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     });
 
     renderComponent();
@@ -143,6 +155,12 @@ describe('ExperimentsPage', () => {
       allowIntentEditor: false,
       allowCodeEditor: true,
       allowAdvancedEditor: false, allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     });
 
     renderComponent();
@@ -177,6 +195,12 @@ describe('ExperimentsPage', () => {
       allowIntentEditor: false,
       allowCodeEditor: true,
       allowAdvancedEditor: false, allowTrainingExport: false,
+      promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     });
 
     renderComponent();

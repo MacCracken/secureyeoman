@@ -75,6 +75,9 @@ export function loadConfig(
     quickBooksRefreshToken: env.QUICKBOOKS_REFRESH_TOKEN,
     respectContentSignal: parseBool(env.MCP_RESPECT_CONTENT_SIGNAL, true),
     allowBruteForce: parseBool(env.MCP_ALLOW_BRUTE_FORCE, false),
+    exposeDockerTools: parseBool(env.MCP_EXPOSE_DOCKER, false),
+    dockerMode: (env.MCP_DOCKER_MODE ?? 'socket') as 'socket' | 'dind',
+    dockerHost: env.MCP_DOCKER_HOST,
   };
 
   return McpServiceConfigSchema.parse(raw);

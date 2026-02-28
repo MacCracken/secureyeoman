@@ -1714,6 +1714,7 @@ export interface McpConfigResponse {
   exposeTwitter: boolean;
   exposeGithub: boolean;
   alwaysSendFullSchemas: boolean;
+  exposeDockerTools: boolean;
 }
 
 export async function fetchMcpConfig(): Promise<McpConfigResponse> {
@@ -1744,6 +1745,7 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
       exposeTwitter: false,
       exposeGithub: false,
       alwaysSendFullSchemas: false,
+      exposeDockerTools: false,
     };
   }
 }
@@ -2301,6 +2303,12 @@ export interface SecurityPolicy {
   allowCodeEditor: boolean;
   allowAdvancedEditor: boolean;
   allowTrainingExport: boolean;
+  promptGuardMode: 'block' | 'warn' | 'disabled';
+  responseGuardMode: 'block' | 'warn' | 'disabled';
+  jailbreakThreshold: number;
+  jailbreakAction: 'block' | 'warn' | 'audit_only';
+  strictSystemPromptConfidentiality: boolean;
+  abuseDetectionEnabled: boolean;
 }
 
 export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
@@ -2333,7 +2341,14 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false, allowTrainingExport: false,
+      allowAdvancedEditor: false,
+      allowTrainingExport: false,
+      promptGuardMode: 'warn',
+      responseGuardMode: 'warn',
+      jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn',
+      strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
     };
   }
 }

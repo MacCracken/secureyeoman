@@ -39,6 +39,7 @@ const NETBOX_TOOL_PREFIXES = ['netbox_'];
 const TWINGATE_TOOL_PREFIXES = ['twingate_'];
 const GMAIL_TOOL_PREFIXES = ['gmail_'];
 const TWITTER_TOOL_PREFIXES = ['twitter_'];
+const DOCKER_TOOL_PREFIXES = ['docker_'];
 
 export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions): void {
   const {
@@ -212,6 +213,8 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
         return false;
       if (!config.exposeTwitter && TWITTER_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
         return false;
+      if (!config.exposeDockerTools && DOCKER_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
       return true;
     });
 
@@ -279,6 +282,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
           exposeTwitter?: boolean;
           exposeGithub?: boolean;
           alwaysSendFullSchemas?: boolean;
+          exposeDockerTools?: boolean;
         };
       }>
     ) => {

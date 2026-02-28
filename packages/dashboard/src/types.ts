@@ -200,6 +200,7 @@ export interface Personality {
       exposeGmail?: boolean;
       exposeTwitter?: boolean;
       exposeGithub?: boolean;
+      exposeDocker?: boolean;
     };
     proactiveConfig?: {
       enabled?: boolean;
@@ -235,6 +236,7 @@ export interface Personality {
     };
     maxPromptTokens?: number;
     omnipresentMind?: boolean;
+    strictSystemPromptConfidentiality?: boolean;
     resourcePolicy?: {
       deletionMode?: 'auto' | 'request' | 'manual';
       automationLevel?: 'full_manual' | 'semi_auto' | 'supervised_auto';
@@ -297,6 +299,7 @@ export interface PersonalityCreate {
       exposeGmail?: boolean;
       exposeTwitter?: boolean;
       exposeGithub?: boolean;
+      exposeDocker?: boolean;
     };
     proactiveConfig?: {
       enabled?: boolean;
@@ -332,6 +335,7 @@ export interface PersonalityCreate {
     };
     maxPromptTokens?: number;
     omnipresentMind?: boolean;
+    strictSystemPromptConfidentiality?: boolean;
     resourcePolicy?: {
       deletionMode?: 'auto' | 'request' | 'manual';
       automationLevel?: 'full_manual' | 'semi_auto' | 'supervised_auto';
@@ -796,6 +800,7 @@ export interface McpFeatureConfig {
   exposeGmail: boolean;
   exposeTwitter: boolean;
   exposeGithub: boolean;
+  exposeDockerTools: boolean;
 }
 
 export interface McpServerHealth {

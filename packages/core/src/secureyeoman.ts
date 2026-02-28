@@ -2529,6 +2529,12 @@ export class SecureYeoman {
     allowCodeEditor?: boolean;
     allowAdvancedEditor?: boolean;
     allowTrainingExport?: boolean;
+    promptGuardMode?: 'block' | 'warn' | 'disabled';
+    responseGuardMode?: 'block' | 'warn' | 'disabled';
+    jailbreakThreshold?: number;
+    jailbreakAction?: 'block' | 'warn' | 'audit_only';
+    strictSystemPromptConfidentiality?: boolean;
+    abuseDetectionEnabled?: boolean;
   }): void {
     this.ensureInitialized();
 
@@ -2632,12 +2638,30 @@ export class SecureYeoman {
     if (updates.allowTrainingExport !== undefined) {
       this.config!.security.allowTrainingExport = updates.allowTrainingExport;
     }
+    if (updates.promptGuardMode !== undefined) {
+      this.config!.security.promptGuard.mode = updates.promptGuardMode;
+    }
+    if (updates.responseGuardMode !== undefined) {
+      this.config!.security.responseGuard.mode = updates.responseGuardMode;
+    }
+    if (updates.jailbreakThreshold !== undefined) {
+      this.config!.security.inputValidation.jailbreakThreshold = updates.jailbreakThreshold;
+    }
+    if (updates.jailbreakAction !== undefined) {
+      this.config!.security.inputValidation.jailbreakAction = updates.jailbreakAction;
+    }
+    if (updates.strictSystemPromptConfidentiality !== undefined) {
+      this.config!.security.strictSystemPromptConfidentiality = updates.strictSystemPromptConfidentiality;
+    }
+    if (updates.abuseDetectionEnabled !== undefined) {
+      this.config!.security.abuseDetection.enabled = updates.abuseDetectionEnabled;
+    }
 
     this.logger?.info('Security policy updated', updates);
 
-    // Persist boolean toggles to database (string fields like communityGitUrl are excluded)
-    const { communityGitUrl: _url, ...booleanUpdates } = updates;
-    void this.persistSecurityPolicyToDb(booleanUpdates);
+    // Persist toggles to database (string fields like communityGitUrl are excluded)
+    const { communityGitUrl: _url, ...persistableUpdates } = updates;
+    void this.persistSecurityPolicyToDb(persistableUpdates as Record<string, unknown>);
 
     void this.auditChain?.record({
       event: 'security_policy_changed',
@@ -2647,9 +2671,9 @@ export class SecureYeoman {
     });
   }
 
-  /** Persist security policy toggles to the database. */
+  /** Persist security policy settings to the database. */
   private async persistSecurityPolicyToDb(
-    updates: Record<string, boolean | undefined>
+    updates: Record<string, unknown>
   ): Promise<void> {
     try {
       const pool = getPool();
@@ -2702,10 +2726,22 @@ export class SecureYeoman {
         'allowCodeEditor',
         'allowAdvancedEditor',
         'allowTrainingExport',
+        'strictSystemPromptConfidentiality',
       ] as const;
+      // Special handling for nested config fields
+      const nestedPolicyHandlers: Record<string, (val: unknown) => void> = {
+        promptGuardMode: (v) => { this.config!.security.promptGuard.mode = v as 'block' | 'warn' | 'disabled'; },
+        responseGuardMode: (v) => { this.config!.security.responseGuard.mode = v as 'block' | 'warn' | 'disabled'; },
+        jailbreakThreshold: (v) => { this.config!.security.inputValidation.jailbreakThreshold = v as number; },
+        jailbreakAction: (v) => { this.config!.security.inputValidation.jailbreakAction = v as 'block' | 'warn' | 'audit_only'; },
+        abuseDetectionEnabled: (v) => { this.config!.security.abuseDetection.enabled = v as boolean; },
+      };
       for (const row of result.rows) {
-        if (policyKeys.includes(row.key as (typeof policyKeys)[number])) {
-          (this.config!.security as Record<string, unknown>)[row.key] = JSON.parse(row.value);
+        const val = JSON.parse(row.value);
+        if (Object.prototype.hasOwnProperty.call(nestedPolicyHandlers, row.key)) {
+          nestedPolicyHandlers[row.key]!(val);
+        } else if (policyKeys.includes(row.key as (typeof policyKeys)[number])) {
+          (this.config!.security as Record<string, unknown>)[row.key] = val;
         }
       }
       if (result.rows.length > 0) {

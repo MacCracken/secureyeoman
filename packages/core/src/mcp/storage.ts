@@ -47,6 +47,8 @@ export interface McpFeatureConfig {
   exposeGithub: boolean;
   // Phase 72 — token efficiency
   alwaysSendFullSchemas: boolean;
+  // Docker management tools (Phase 74)
+  exposeDockerTools: boolean;
 }
 
 const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
@@ -73,6 +75,7 @@ const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
   exposeTwitter: false,
   exposeGithub: false,
   alwaysSendFullSchemas: false,
+  exposeDockerTools: false,
 };
 
 export class McpStorage extends PgBaseStorage {

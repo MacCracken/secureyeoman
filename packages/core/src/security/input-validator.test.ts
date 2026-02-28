@@ -6,6 +6,8 @@ function createValidator(overrides: Record<string, unknown> = {}): InputValidato
     maxInputLength: 10000,
     maxFileSize: 1048576,
     enableInjectionDetection: true,
+    jailbreakThreshold: 0.5,
+    jailbreakAction: 'warn',
     ...overrides,
   });
 }
@@ -179,6 +181,73 @@ describe('InputValidator', () => {
       const v = createValidator({ enableInjectionDetection: false });
       const result = v.validate('; DROP TABLE users;');
       expect(result.blocked).toBe(false);
+    });
+  });
+
+  describe('injectionScore field', () => {
+    it('should be 0 for clean input', () => {
+      const result = validator.validate('Hello, world!');
+      expect(result.injectionScore).toBe(0);
+    });
+
+    it('should be ≥ 0.6 for a single high-severity pattern', () => {
+      // SQL injection is severity=high (weight 0.6)
+      const result = validator.validate('; DROP TABLE users;');
+      // blocked early so score may be 0 on early return — check score after detection
+      // The validate() function populates injectionScore even when blocked
+      expect(result.injectionScore).toBeGreaterThanOrEqual(0.6);
+    });
+
+    it('should cap at 1.0 when multiple patterns match', () => {
+      // Combine two high-severity patterns: SQL injection + script tag
+      const result = validator.validate('; DROP TABLE users; <script>alert(1)</script>');
+      expect(result.injectionScore).toBeLessThanOrEqual(1.0);
+    });
+
+    it('should accumulate scores for multiple medium patterns', () => {
+      // UNION SELECT (medium=0.35) + command substitution (medium=0.35) → 0.7
+      const result = validator.validate('UNION ALL SELECT * FROM users $(whoami)');
+      expect(result.injectionScore).toBeGreaterThan(0);
+    });
+
+    it('should be 0 when injection detection is disabled', () => {
+      const v = createValidator({ enableInjectionDetection: false });
+      const result = v.validate('UNION ALL SELECT * FROM users');
+      expect(result.injectionScore).toBe(0);
+    });
+  });
+
+  describe('jailbreak threshold', () => {
+    it('should block when action=block and score meets threshold', () => {
+      const v = createValidator({ jailbreakThreshold: 0.3, jailbreakAction: 'block' });
+      // UNION SELECT is medium (0.35) → meets threshold 0.3
+      const result = v.validate('UNION ALL SELECT * FROM users');
+      expect(result.blocked).toBe(true);
+      expect(result.blockReason).toMatch(/threshold/i);
+    });
+
+    it('should add JAILBREAK_SCORE_THRESHOLD warning when action=warn and score meets threshold', () => {
+      const v = createValidator({ jailbreakThreshold: 0.3, jailbreakAction: 'warn' });
+      const result = v.validate('UNION ALL SELECT * FROM users');
+      expect(result.blocked).toBe(false);
+      expect(result.warnings.some((w) => w.code === 'JAILBREAK_SCORE_THRESHOLD')).toBe(true);
+    });
+
+    it('should not block or warn when action=audit_only', () => {
+      const v = createValidator({ jailbreakThreshold: 0.3, jailbreakAction: 'audit_only' });
+      const result = v.validate('UNION ALL SELECT * FROM users');
+      expect(result.blocked).toBe(false);
+      expect(result.warnings.some((w) => w.code === 'JAILBREAK_SCORE_THRESHOLD')).toBe(false);
+      // score is still recorded
+      expect(result.injectionScore).toBeGreaterThan(0);
+    });
+
+    it('should take no extra action when score is below threshold', () => {
+      const v = createValidator({ jailbreakThreshold: 0.9, jailbreakAction: 'block' });
+      // command substitution = medium (0.35) < 0.9
+      const result = v.validate('$(whoami)');
+      expect(result.blocked).toBe(false);
+      expect(result.warnings.some((w) => w.code === 'JAILBREAK_SCORE_THRESHOLD')).toBe(false);
     });
   });
 

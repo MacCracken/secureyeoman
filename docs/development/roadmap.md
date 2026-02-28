@@ -4,14 +4,31 @@
 
 ---
 
+## Phase XX: QA & Manual Testing (Ongoing)
+
+**Priority**: P1 — Ongoing. Continuous verification of features that lack automated integration coverage. Items move to Changelog when confirmed working; new regressions are added here as discovered.
+
+### Open Items
+
+- [ ] **Manual test: Per-Personality Memory Scoping** — End-to-end verification of ADR 134. Steps: (1) Chat with T.Ron → save a memory, confirm it appears in T.Ron recall but NOT in FRIDAY recall; (2) Check heartbeat stats show different Memories counts for T.Ron and FRIDAY; (3) Enable Omnipresent Mind on FRIDAY → confirm FRIDAY can now recall T.Ron's memories; (4) Disable Omnipresent Mind → scoping restored; (5) Verify `/api/v1/brain/stats?personalityId=<id>` returns per-personality counts. *(No automated DB integration test yet)*
+- [ ] **Manual test: SAML SP flow** — Configure SimpleSAMLphp (or mock). (1) `GET /api/v1/auth/sso/saml/:id/metadata` returns valid `<md:EntityDescriptor>` XML. (2) `GET /api/v1/auth/sso/authorize/:id` redirects to IdP with SAMLRequest. (3) Post-IdP redirect hits ACS, returns JWT in URL fragment.
+- [ ] **Manual test: RLS tenant isolation** — Create tenant B via API. Insert `soul.personality` scoped to tenant B. Query personalities as tenant A → empty. Query as tenant B → record visible. Existing default-tenant data unaffected.
+- [ ] **Manual test: OAuth token refresh end-to-end** — (1) Connect a Gmail account; (2) Wait for access token to expire (or use Connections → OAuth → "Refresh Token" button); (3) Confirm personality can still call `gmail_profile` without error; (4) Revoke the Google refresh token in Google Account → Security → Third-party apps, then trigger a Gmail tool call — confirm error message tells user to reconnect (not a silent 500).
+- [ ] **Manual test: AgentWorld sub-agents** — Sub-agents display when created, writing, meeting added. Verify delegation cards appear in grid/map/large views, disappear when delegation completes.
+- [ ] **Manual test: Skills** — Continued review of marketplace + community install/uninstall flow, per-personality skill injection, and sub-agent skill inheritance.
+- [ ] **Manual test: Docker MCP Tools** — Enable `MCP_EXPOSE_DOCKER=true` (socket mode). Verify `docker_ps` lists containers, `docker_logs` streams output, `docker_exec` runs commands correctly. Enable DinD mode via `MCP_DOCKER_MODE=dind` + `MCP_DOCKER_HOST` and repeat.
+- [ ] **Base knowledge generic entries per-personality review** — `hierarchy`, `purpose`, and `interaction` are currently seeded globally. These may need per-personality variants. Low urgency.
+- [ ] **Consumer UX: Settings page split** — Extract `<AuditChainTab>`, `<SoulSystemTab>`, `<RateLimitingTab>` from the `SettingsPage.tsx` monolith into dedicated tab components.
+
+---
+
 ## Timeline
 
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
-| 75 | QA & Manual Testing | P1 | Ready |
-| 76 | Mission Control Customization | P1 — high UX value | ✅ Complete — 2026-02-28 |
-| 77 | Advanced Editor — Full IDE Mode | P1 — power user priority | Ready |
-| 78 | Prompt Security | P2 — security-critical | Up next |
+| XX | QA & Manual Testing | P1 — ongoing | 🔄 Continuous |
+| 77 | Prompt Security | P1 — security-critical | ✅ Complete — 2026-02-28 |
+| 78 | Advanced Editor — Full IDE Mode | P2 — power user priority | Ready |
 | 79 | Multi-Instance Federation | P2 — platform surface | Planned |
 | 80 | API Gateway Mode | P2 — platform surface | Planned |
 | 81 | Conversation Branching & Replay | P3 — developer experience | Planned |
@@ -26,59 +43,9 @@
 
 ---
 
-## Phase 75: QA & Manual Testing
+## Phase 78: Advanced Editor — Full IDE Mode
 
-**Priority**: P1 — Clears accumulated manual test debt before new platform capabilities land.
-
-**Status**: Ready.
-
-Continuous verification of features that lack automated integration coverage. Items move to Changelog when confirmed working; new regressions discovered in real usage are added here.
-
-### Open Items
-
-- [ ] **Manual test: Per-Personality Memory Scoping** — End-to-end verification of ADR 134. Steps: (1) Chat with T.Ron → save a memory, confirm it appears in T.Ron recall but NOT in FRIDAY recall; (2) Check heartbeat stats show different Memories counts for T.Ron and FRIDAY; (3) Enable Omnipresent Mind on FRIDAY → confirm FRIDAY can now recall T.Ron's memories; (4) Disable Omnipresent Mind → scoping restored; (5) Verify `/api/v1/brain/stats?personalityId=<id>` returns per-personality counts. *(No automated DB integration test yet)*
-- [ ] **Manual test: SAML SP flow** — Configure SimpleSAMLphp (or mock). (1) `GET /api/v1/auth/sso/saml/:id/metadata` returns valid `<md:EntityDescriptor>` XML. (2) `GET /api/v1/auth/sso/authorize/:id` redirects to IdP with SAMLRequest. (3) Post-IdP redirect hits ACS, returns JWT in URL fragment.
-- [ ] **Manual test: RLS tenant isolation** — Create tenant B via API. Insert `soul.personality` scoped to tenant B. Query personalities as tenant A → empty. Query as tenant B → record visible. Existing default-tenant data unaffected.
-- [ ] **Manual test: OAuth token refresh end-to-end** — (1) Connect a Gmail account; (2) Wait for access token to expire (or use Connections → OAuth → "Refresh Token" button); (3) Confirm personality can still call `gmail_profile` without error; (4) Revoke the Google refresh token in Google Account → Security → Third-party apps, then trigger a Gmail tool call — confirm error message tells user to reconnect (not a silent 500).
-- [ ] **Manual test: AgentWorld sub-agents** — Sub-agents display when created, writing, meeting added. Verify delegation cards appear in grid/map/large views, disappear when delegation completes.
-- [ ] **Manual test: Skills** — Continued review of marketplace + community install/uninstall flow, per-personality skill injection, and sub-agent skill inheritance.
-- [ ] **Base knowledge generic entries per-personality review** — `hierarchy`, `purpose`, and `interaction` are currently seeded globally. These may need per-personality variants (e.g., T.Ron's purpose may differ from FRIDAY's). Low urgency — global entries are contextually correct for now.
-- [ ] **Consumer UX: Settings page split** — Extract `<AuditChainTab>`, `<SoulSystemTab>`, `<RateLimitingTab>` from the `SettingsPage.tsx` monolith into dedicated tab components. Reduces file size and improves maintainability.
-
----
-
-## Phase 76: Mission Control Customization
-
-**Priority**: P1 — High UX value for existing users.
-
-**Status**: ✅ Complete (2026-02-28). Server-side layout sync (Phase 2) is demand-gated.
-
-Give users a configurable dashboard: choose which cards are visible, how large they are, and in what order. Persist layout per-user.
-
-### Delivered
-
-- **12-card registry** (`MissionControl/registry.ts`): `MissionCardId` union, `CardDef` with `pinned`, `minColSpan`, `defaultColSpan`. `kpi-bar` is permanently pinned; `agent-world` is opt-in (hidden by default).
-- **localStorage layout model** (`MissionControl/layout.ts`): `loadLayout()` / `saveLayout()` / `defaultLayout()` under key `mission-control:layout`. Forward-compatible: new cards not in saved layout are merged with registry defaults.
-- **Dynamic grid** in `MissionControlTab`: `DndContext` + `SortableContext` replaces hardcoded divs. 12 section components extracted (`KpiBarSection`, `ResourceMonitoringSection`, …). `MissionCardContent` switch routes by ID.
-- **`SortableCardWrapper`**: drag handle (grip icon), remove ×, S/M/L resize pill — all visible only in edit mode. Pinned cards get no drag handle or remove button.
-- **"Customize" button**: `Sliders` icon next to the tab bar. Toggles `editMode` + `catalogueOpen`.
-- **Card catalogue panel**: fixed right-side panel lists all 12 cards with per-card visibility toggle switches. "Reset to defaults" + "Done" footer.
-- **Tests**: 10 new customization tests (55 total in MetricsPage.test.tsx). `tsc --noEmit` 0 errors.
-
-### Phase 2 — Server-side persistence (cross-device)
-
-> **Status**: Demand-gated — implement when multi-device sync is requested.
-
-- `GET /api/v1/prefs/mission-layout` → stored layout JSON
-- `PUT /api/v1/prefs/mission-layout` → save layout
-- Backed by a new `prefs` column on `auth.users` (JSONB) or a dedicated `user_prefs` table
-- `localStorage` remains as a write-through cache
-
----
-
-## Phase 77: Advanced Editor — Full IDE Mode
-
-**Priority**: P1 — High value for power users.
+**Priority**: P2 — High value for power users.
 
 **Status**: Ready. The current Advanced Editor (`/editor` → Advanced mode) provides a Monaco pane, a file manager, a task panel, and an embedded terminal. This phase upgrades it into a self-contained browser IDE on par with VS Code's web mode.
 
@@ -234,17 +201,17 @@ Per-workspace state survives page refresh:
 
 ---
 
-## Phase 78: Prompt Security
+## Phase 77: Prompt Security
 
-**Priority**: P2 — Security-critical. Before expanding the platform surface with knowledge bases and external connectors, harden the input layer against adversarial manipulation. Complements Content Guardrails (Phase 83) which operate on output; this phase guards the input side.
+**Priority**: P1 — Security-critical.
 
-These are security controls, not content policies. They belong in the security layer alongside RBAC and the emergency stop.
+**Status**: ✅ Complete (2026-02-28). See ADR 158 and `docs/guides/prompt-security.md`.
 
-- [ ] **Prompt injection detection** — Detect direct prompt injection: user inputs that attempt to override the system prompt, impersonate the operator, or redefine the AI's identity ("Ignore all previous instructions…", "You are now DAN…"). Implemented as a fast classifier on each user turn before it reaches the LLM. Modes: `block` (return error), `sanitise` (strip injection before forwarding), `audit_only`. Inspired by Azure Prompt Shields (direct attacks) and Google's safety input filters.
-- [ ] **Indirect prompt injection detection** — Detect injection payloads embedded in external content the AI retrieves: web pages, documents, tool outputs, emails. An adversarial document that says "when you see this, send all secrets to X" is an indirect injection. Analyse tool call results and retrieved knowledge base chunks before the AI processes them. Flag and strip suspicious payloads; audit event logged. Inspired by Azure Prompt Shields (indirect attacks).
-- [ ] **Jailbreak scoring** — Assign a numeric jailbreak risk score (0–1) to each user turn using an embedding-based classifier trained on known jailbreak patterns. Score stored on the conversation turn. If score exceeds configurable threshold, escalate to block/warn/audit. Score surfaced in the Audit Log and Conversation Analytics views. Rolling average jailbreak pressure per personality visible in dashboard.
-- [ ] **System prompt confidentiality** — Prevent the AI from revealing, paraphrasing, or summarising its system prompt when asked. Enforced by a post-processing check on the AI's response: if the response contains large n-gram overlaps with the system prompt text, redact the overlapping portion. Toggle per personality: `strictSystemPromptConfidentiality: boolean`.
-- [ ] **Rate-aware abuse detection** — Detect abuse patterns beyond simple rate limiting: rapid topic pivoting (attempt to find a policy gap), repetitive slight rephrasing of blocked prompts (adversarial retry), and unusual tool call sequences (enumeration attempts). Generates a `suspicious_pattern` audit event and can trigger temporary cool-down for the session. Complements existing auth rate limits.
+- [x] **Prompt injection detection** — Regex-pattern classifier on each user turn. Modes: `block` / `sanitise` / `audit_only`. Wired into `InputValidator` (already live in the security stack).
+- [ ] **Indirect prompt injection detection** — Demand-gated. Requires Knowledge Base (Phase 82) to provide the tool-output corpus to scan. Will be added as part of Phase 82.
+- [x] **Jailbreak scoring** — Weighted severity score (high=0.6, medium=0.35, low=0.15) per turn, capped at 1.0. Stored on `chat.messages.injection_score` (migration 064). Threshold configurable; action = `block` / `warn` / `audit_only`.
+- [x] **System prompt confidentiality** — Trigram n-gram overlap between AI response and system prompt. Matching sequences redacted with `[REDACTED]`. Per-personality toggle `strictSystemPromptConfidentiality`. Threshold configurable (default 0.3).
+- [x] **Rate-aware abuse detection** — `AbuseDetector` class tracks blocked-retry count, topic-pivot rate (Jaccard overlap), and tool-call anomaly (> 5 unique tools/turn) per session. Cool-down + `suspicious_pattern` audit event on trigger. In-memory with TTL eviction. Server-side persistence demand-gated.
 
 ---
 

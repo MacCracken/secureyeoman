@@ -89,6 +89,8 @@ export const McpFeaturesSchema = z
     exposeTwitter: z.boolean().default(false),
     /** GitHub API tools (github_*). Requires global exposeGithub. */
     exposeGithub: z.boolean().default(false),
+    /** Docker management tools (docker_*). Requires global exposeDockerTools. */
+    exposeDocker: z.boolean().default(false),
   })
   .default({});
 
@@ -228,6 +230,12 @@ export const BodyConfigSchema = z
      * Legacy entries (personality_id IS NULL) are always visible to all personalities.
      */
     omnipresentMind: z.boolean().default(false),
+    /**
+     * Per-personality override for system prompt confidentiality.
+     * When true, AI responses are scanned for n-gram overlap with this personality's system prompt.
+     * Falls back to the global security.strictSystemPromptConfidentiality setting when undefined.
+     */
+    strictSystemPromptConfidentiality: z.boolean().optional(),
   })
   .default({});
 

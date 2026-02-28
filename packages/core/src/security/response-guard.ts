@@ -35,6 +35,15 @@ export interface BrainConsistencyWarning {
   detail: string;
 }
 
+export interface SystemPromptLeakResult {
+  /** True when trigram overlap meets or exceeds the configured threshold. */
+  hasLeak: boolean;
+  /** Fraction of system prompt trigrams found in the response (0–1). */
+  overlapRatio: number;
+  /** Response text with matching trigram sequences replaced by [REDACTED]. */
+  redacted: string;
+}
+
 export interface BrainConsistencyContext {
   /** Snippets from brain context used in this response's prompt (e.g. "I am Aria"). */
   contextSnippets?: string[];
@@ -100,10 +109,12 @@ const RESPONSE_PATTERNS: {
 
 export class ResponseGuard {
   private readonly mode: ResponseGuardConfig['mode'];
+  private readonly systemPromptLeakThreshold: number;
   private logger: SecureLogger | null = null;
 
   constructor(config: ResponseGuardConfig) {
     this.mode = config.mode;
+    this.systemPromptLeakThreshold = config.systemPromptLeakThreshold ?? 0.3;
   }
 
   private getLogger(): SecureLogger {
@@ -232,6 +243,112 @@ export class ResponseGuard {
 
     return warnings;
   }
+
+  /**
+   * Check whether an LLM response leaks contents of the system prompt.
+   *
+   * Uses trigram (3-word n-gram) overlap: if the fraction of system prompt
+   * trigrams that appear in the response meets or exceeds
+   * `systemPromptLeakThreshold`, a leak is reported and the response text is
+   * returned with matching sequences replaced by [REDACTED].
+   *
+   * @param responseText - The full LLM response string.
+   * @param systemPrompt - The assembled system prompt for this request.
+   */
+  checkSystemPromptLeak(responseText: string, systemPrompt: string): SystemPromptLeakResult {
+    if (!systemPrompt || !responseText) {
+      return { hasLeak: false, overlapRatio: 0, redacted: responseText };
+    }
+
+    const systemTrigrams = extractTrigrams(systemPrompt);
+    if (systemTrigrams.size === 0) {
+      return { hasLeak: false, overlapRatio: 0, redacted: responseText };
+    }
+
+    const responseTrigrams = extractTrigrams(responseText);
+    let overlap = 0;
+    for (const trig of responseTrigrams) {
+      if (systemTrigrams.has(trig)) overlap++;
+    }
+
+    const overlapRatio = overlap / systemTrigrams.size;
+    const hasLeak = overlapRatio >= this.systemPromptLeakThreshold;
+
+    let redacted = responseText;
+    if (hasLeak) {
+      redacted = redactMatchingTrigrams(responseText, systemTrigrams);
+      this.getLogger().warn('System prompt leak detected in response', {
+        overlapRatio: overlapRatio.toFixed(3),
+        threshold: this.systemPromptLeakThreshold,
+      });
+    }
+
+    return { hasLeak, overlapRatio, redacted };
+  }
+}
+
+// ─── Trigram helpers ──────────────────────────────────────────────────────────
+
+/** Tokenise text into lowercase words (strips punctuation), return Set of 3-word trigrams. */
+function extractTrigrams(text: string): Set<string> {
+  const words = text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean);
+  const trigrams = new Set<string>();
+  for (let i = 0; i + 2 < words.length; i++) {
+    trigrams.add(`${words[i]} ${words[i + 1]} ${words[i + 2]}`);
+  }
+  return trigrams;
+}
+
+/**
+ * Replace word sequences in `text` that form trigrams present in `matchSet`
+ * with the literal string `[REDACTED]`.
+ */
+function redactMatchingTrigrams(text: string, matchSet: Set<string>): string {
+  const words: string[] = text.split(/(\s+)/); // preserve spacing tokens
+  // Build non-space word array with index mapping back to split array
+  const wordItems: { word: string; splitIdx: number }[] = [];
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i] ?? '';
+    if (w.trim()) wordItems.push({ word: w, splitIdx: i });
+  }
+
+  const redactedSet = new Set<number>(); // splitIdx values to replace
+  for (let i = 0; i + 2 < wordItems.length; i++) {
+    const a = wordItems[i];
+    const b = wordItems[i + 1];
+    const c = wordItems[i + 2];
+    if (!a || !b || !c) continue;
+    const trig = `${a.word} ${b.word} ${c.word}`
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (matchSet.has(trig)) {
+      redactedSet.add(a.splitIdx);
+      redactedSet.add(b.splitIdx);
+      redactedSet.add(c.splitIdx);
+    }
+  }
+
+  const result: string[] = [];
+  let skipNext = false;
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i] ?? '';
+    if (redactedSet.has(i)) {
+      if (!skipNext) {
+        result.push('[REDACTED]');
+        skipNext = true;
+      }
+    } else {
+      skipNext = false;
+      result.push(w);
+    }
+  }
+  return result.join('');
 }
 
 /**

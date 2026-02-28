@@ -475,5 +475,21 @@ export function getToolManifest(): ToolManifestEntry[] {
       description:
         'Remove a locally downloaded Ollama model to free disk space — only available when provider is ollama',
     },
+
+    // Docker management tools (Phase 74)
+    { name: 'docker_ps', description: 'List Docker containers (running by default; use all=true to include stopped)' },
+    { name: 'docker_logs', description: 'Fetch recent logs from a Docker container with optional timestamps' },
+    { name: 'docker_inspect', description: 'Return detailed metadata for a container or image as JSON' },
+    { name: 'docker_stats', description: 'One-shot snapshot of CPU, memory, and network I/O for running containers' },
+    { name: 'docker_images', description: 'List locally available Docker images with optional filter' },
+    { name: 'docker_start', description: 'Start one or more stopped Docker containers' },
+    { name: 'docker_stop', description: 'Stop one or more running Docker containers' },
+    { name: 'docker_restart', description: 'Restart one or more Docker containers' },
+    { name: 'docker_exec', description: 'Execute a command inside a running Docker container and return its output' },
+    { name: 'docker_pull', description: 'Pull a Docker image from a registry' },
+    { name: 'docker_compose_ps', description: 'List services in a Docker Compose project' },
+    { name: 'docker_compose_logs', description: 'Fetch logs from a Docker Compose project or specific service' },
+    { name: 'docker_compose_up', description: 'Start Docker Compose services in detached mode (with optional build)' },
+    { name: 'docker_compose_down', description: 'Stop and remove containers and networks for a Docker Compose project' },
   ];
 }

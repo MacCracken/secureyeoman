@@ -1612,6 +1612,12 @@ export class GatewayServer {
         allowCodeEditor: config.security.allowCodeEditor,
         allowAdvancedEditor: config.security.allowAdvancedEditor,
         allowTrainingExport: config.security.allowTrainingExport,
+        promptGuardMode: config.security.promptGuard.mode,
+        responseGuardMode: config.security.responseGuard.mode,
+        jailbreakThreshold: config.security.inputValidation.jailbreakThreshold,
+        jailbreakAction: config.security.inputValidation.jailbreakAction,
+        strictSystemPromptConfidentiality: config.security.strictSystemPromptConfidentiality,
+        abuseDetectionEnabled: config.security.abuseDetection.enabled,
       };
     });
 
@@ -1649,6 +1655,12 @@ export class GatewayServer {
             allowCodeEditor?: boolean;
             allowAdvancedEditor?: boolean;
             allowTrainingExport?: boolean;
+            promptGuardMode?: 'block' | 'warn' | 'disabled';
+            responseGuardMode?: 'block' | 'warn' | 'disabled';
+            jailbreakThreshold?: number;
+            jailbreakAction?: 'block' | 'warn' | 'audit_only';
+            strictSystemPromptConfidentiality?: boolean;
+            abuseDetectionEnabled?: boolean;
           };
         }>,
         reply: FastifyReply
@@ -1683,6 +1695,12 @@ export class GatewayServer {
             allowCodeEditor,
             allowAdvancedEditor,
             allowTrainingExport,
+            promptGuardMode,
+            responseGuardMode,
+            jailbreakThreshold,
+            jailbreakAction,
+            strictSystemPromptConfidentiality,
+            abuseDetectionEnabled,
           } = request.body;
           if (
             allowSubAgents === undefined &&
@@ -1712,7 +1730,13 @@ export class GatewayServer {
             allowIntentEditor === undefined &&
             allowCodeEditor === undefined &&
             allowAdvancedEditor === undefined &&
-            allowTrainingExport === undefined
+            allowTrainingExport === undefined &&
+            promptGuardMode === undefined &&
+            responseGuardMode === undefined &&
+            jailbreakThreshold === undefined &&
+            jailbreakAction === undefined &&
+            strictSystemPromptConfidentiality === undefined &&
+            abuseDetectionEnabled === undefined
           ) {
             return sendError(reply, 400, 'No valid fields provided');
           }
@@ -1745,6 +1769,12 @@ export class GatewayServer {
             allowCodeEditor,
             allowAdvancedEditor,
             allowTrainingExport,
+            promptGuardMode,
+            responseGuardMode,
+            jailbreakThreshold,
+            jailbreakAction,
+            strictSystemPromptConfidentiality,
+            abuseDetectionEnabled,
           });
 
           // Audit the policy change
@@ -1791,6 +1821,13 @@ export class GatewayServer {
             allowIntentEditor: config.security.allowIntentEditor,
             allowCodeEditor: config.security.allowCodeEditor,
             allowAdvancedEditor: config.security.allowAdvancedEditor,
+            allowTrainingExport: config.security.allowTrainingExport,
+            promptGuardMode: config.security.promptGuard.mode,
+            responseGuardMode: config.security.responseGuard.mode,
+            jailbreakThreshold: config.security.inputValidation.jailbreakThreshold,
+            jailbreakAction: config.security.inputValidation.jailbreakAction,
+            strictSystemPromptConfidentiality: config.security.strictSystemPromptConfidentiality,
+            abuseDetectionEnabled: config.security.abuseDetection.enabled,
           };
         } catch (err) {
           this.getLogger().error('Failed to update security policy', {
