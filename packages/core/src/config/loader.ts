@@ -13,6 +13,7 @@ import { resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { z } from 'zod';
+import { isLoggerInitialized, getLogger } from '../logging/logger.js';
 import {
   ConfigSchema,
   PartialConfigSchema,
@@ -465,7 +466,16 @@ export function validateSecrets(config: Config): void {
   if (config.model.fallbacks) {
     for (const fb of config.model.fallbacks) {
       if (fb.provider !== 'ollama' && !getSecret(fb.apiKeyEnv)) {
-        console.warn(`Fallback ${fb.provider}/${fb.model} API key not set: ${fb.apiKeyEnv}`);
+        if (isLoggerInitialized()) {
+          getLogger().warn(
+            `Fallback ${fb.provider}/${fb.model} API key not set: ${fb.apiKeyEnv}`
+          );
+        } else {
+          // Logger not yet available at early config-load time; fall back to stderr.
+          process.stderr.write(
+            `[warn] Fallback ${fb.provider}/${fb.model} API key not set: ${fb.apiKeyEnv}\n`
+          );
+        }
       }
     }
   }

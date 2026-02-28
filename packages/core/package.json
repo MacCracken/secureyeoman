@@ -53,6 +53,7 @@
     "pino-pretty": "^11.2.2",
     "screenshot-desktop": "^1.12.7",
     "twitter-api-v2": "^1.18.0",
+    "undici": "6.23.0",
     "uuid": "^10.0.0",
     "yaml": "^2.5.0",
     "yjs": "^13.6.29",

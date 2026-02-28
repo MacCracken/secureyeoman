@@ -9,7 +9,6 @@ Check these whenever running `npm update` or when the relevant packages release 
 | Dependency | Severity | Advisory | Issue | Blocked By | Check When |
 |---|---|---|---|---|---|
 | `minimatch` (via `eslint` / `typescript-eslint`) | HIGH | GHSA-3ppc-4f35-3m26, GHSA-7r86-cg39-jmmj, GHSA-23c5-xmqv-rm74 | Multiple ReDoS advisories. All `eslint@9.x` and `@typescript-eslint/*` sub-packages depend on `minimatch <10.2.1`. Dev-only — zero production exposure. Fix requires ESLint v10 which requires `typescript-eslint` to publish an ESLint-v10-compatible release. Tried upgrading to ESLint v10 on 2026-02-21; failed — `typescript-eslint@8.x` uses removed `FlatESLint` from `eslint/use-at-your-own-risk`. Reverted to `eslint@^9.39.2`. | `typescript-eslint` publishing ESLint-v10 peer compat | Any `eslint`, `typescript-eslint`, or `minimatch` release |
-| `undici` (via `discord.js` / `@discordjs/rest`) | MODERATE | GHSA-g9mf-h72j-4rw9 | Unbounded decompression chain via `Content-Encoding` — resource exhaustion. `discord.js@14.25.1` bundles `undici@6.21.3`; fix requires `>=6.23.0`. `npm audit fix --force` is not the right path — it would downgrade discord.js. | `discord.js` releasing a patch that bumps its bundled `undici` to `>=6.23.0` | Any `discord.js` patch release |
 | MCP SDK — `SSEServerTransport` | N/A (deprecation) | — | `SSEServerTransport` deprecated in favour of `StreamableHTTPServerTransport`. Retained in `packages/mcp/src/transport/sse.ts` for legacy client compatibility; deprecation warnings suppressed. | Migration requires client-side transport compatibility verification. | MCP SDK releases |
 
 ---
@@ -23,7 +22,8 @@ Check these whenever running `npm update` or when the relevant packages release 
 | `hono` | GHSA-xh87-mx6m-69f3 | 2026-02-27 | Fixed by `npm audit fix`. Authentication bypass via IP spoofing in AWS Lambda ALB conninfo. |
 | `rollup` | GHSA-mw96-cpmx-2vgc | 2026-02-27 | Fixed by `npm audit fix`. Arbitrary file write via path traversal in bundler output. Dev-only (build toolchain). |
 | `discord.js` v13→v14 upgrade | N/A | 2026-02-21 | `packages/core` upgraded from `^13.17.1` to `^14.25.1`. Adapter was already using v14 APIs — only the dep pin was wrong. Also removed stray root-level `discord.js` dependency. Reduced audit vulns from 17 → 14. |
-| `undici` (via `discord.js@13`) | GHSA-g9mf-h72j-4rw9 | 2026-02-21 | Partially resolved — the v13 chain is gone. Remaining exposure is v14's bundled `undici@6.21.3` (see active table). |
+| `undici` (via `discord.js@13`) | GHSA-g9mf-h72j-4rw9 | 2026-02-21 | Partially resolved — the v13 chain is gone. Remaining exposure was v14's bundled `undici@6.21.3` (see below). |
+| `undici` (via `discord.js@14` / `@discordjs/rest`) | GHSA-g9mf-h72j-4rw9 | 2026-02-27 | Resolved without downgrading discord.js. `npm audit fix --force` would have reverted to `discord.js@13`. Fix applied by: (1) pinning `undici@6.23.0` as a direct dep in `packages/core`; (2) patching `package-lock.json` to replace the two nested `6.21.3` installs (`packages/core/node_modules/undici` and `node_modules/@discordjs/rest/node_modules/undici`) with `6.23.0` + correct integrity; (3) adding `"overrides": { "undici": "6.23.0" }` to root `package.json` to prevent regression on `npm install`. All 71 Discord adapter tests pass after upgrade. `npm audit` now reports 0 vulnerabilities. |
 | `@types/express` missing | N/A | 2026-02-21 | Added `@types/express@^5.0.0` to `packages/core` devDependencies. Used as type-only import in `capture-permissions.ts`. |
 | `@testing-library/dom` missing | N/A | 2026-02-21 | Added as explicit devDependency in `packages/dashboard`. Was a peer dep of `@testing-library/react` that npm was not hoisting. |
 | `graphology-types` missing | N/A | 2026-02-21 | Added as explicit devDependency in `packages/dashboard`. Required by `graphology` for `AbstractGraph` type with full graph mutation API. |
@@ -39,4 +39,4 @@ Check these whenever running `npm update` or when the relevant packages release 
 
 ---
 
-*Last updated: 2026-02-27 — hono GHSA-xh87-mx6m-69f3 and rollup GHSA-mw96-cpmx-2vgc resolved via `npm audit fix`; minimatch advisories updated with new GHSA IDs; undici (v14 chain) remains active*
+*Last updated: 2026-02-27 — undici (v14 chain) resolved via lockfile patch + root override + direct dep pin; `npm audit` now shows 0 vulnerabilities. Active tracked items: minimatch ReDoS (dev-only), SSEServerTransport deprecation.*

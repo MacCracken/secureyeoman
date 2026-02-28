@@ -396,6 +396,9 @@ export class GatewayServer {
       const scheme = this.config.tls.enabled ? 'https' : 'http';
       const defaultBaseUrl = `${scheme}://${this.config.host === '0.0.0.0' ? 'localhost' : this.config.host}:${this.config.port}`;
       const baseUrl = (process.env.SECUREYEOMAN_EXTERNAL_URL ?? '').replace(/\/$/, '') || defaultBaseUrl;
+      // publicUrl = the origin registered in OAuth app consoles; may differ from baseUrl in dev
+      // (e.g. Vite proxy at port 3000 vs core API at port 18789). Set via OAUTH_REDIRECT_BASE_URL.
+      const oauthPublicUrl = (process.env.OAUTH_REDIRECT_BASE_URL ?? '').replace(/\/$/, '') || undefined;
 
       // Unified OAuth token service — persists Google tokens across restarts
       const oauthTokenStorage = new OAuthTokenStorage();
@@ -416,6 +419,7 @@ export class GatewayServer {
         authService: this.authService,
         oauthService,
         baseUrl,
+        publicUrl: oauthPublicUrl,
         oauthTokenService,
       });
 

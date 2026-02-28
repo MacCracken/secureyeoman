@@ -26,6 +26,8 @@ export interface OAuthState {
   codeVerifier?: string;
   redirectUri: string;
   createdAt: number;
+  /** Frontend origin to redirect to after callback (e.g. http://localhost:3000) */
+  frontendOrigin?: string;
 }
 
 export interface OAuthServiceConfig {
@@ -247,12 +249,13 @@ export class OAuthService {
     return Object.keys(this.config).filter((key) => this.isProviderConfigured(key));
   }
 
-  generateState(provider: string, redirectUri: string): string {
+  generateState(provider: string, redirectUri: string, frontendOrigin?: string): string {
     const state = generateSecureToken(32);
     OAUTH_STATES.set(state, {
       provider,
       redirectUri,
       createdAt: Date.now(),
+      frontendOrigin,
     });
     setTimeout(() => OAUTH_STATES.delete(state), STATE_EXPIRY_MS);
     return state;
@@ -383,19 +386,38 @@ export interface OAuthRoutesOptions {
   authService: AuthService;
   oauthService: OAuthService;
   baseUrl: string;
+  /**
+   * Public-facing base URL to use when constructing OAuth redirect URIs sent to providers.
+   * Must match exactly what is registered in the OAuth app console (e.g. Google Console).
+   * Defaults to `baseUrl` when not set.
+   *
+   * In dev, the Vite dev server (port 3000) proxies /api/* to the core API (port 18789), so
+   * set this to the Vite URL (e.g. https://dev.secureyeoman.ai:3000) so that the redirect URI
+   * matches the entry registered in the OAuth console. Controlled via OAUTH_REDIRECT_BASE_URL.
+   */
+  publicUrl?: string;
   /** Optional — when provided, tokens for Google services are persisted and can be managed via API. */
   oauthTokenService?: OAuthTokenService;
 }
 
 export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptions): void {
   const { oauthService, baseUrl, oauthTokenService } = opts;
+  // publicUrl is the origin registered in the OAuth console (may differ from baseUrl in dev
+  // when using a reverse proxy / Vite dev server on a different port).
+  const publicUrl = (opts.publicUrl ?? '').replace(/\/$/, '') || baseUrl;
 
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-  const getRedirectUri = (provider: string) => `${baseUrl}/api/v1/auth/oauth/${provider}/callback`;
+  const getRedirectUri = (provider: string) => `${publicUrl}/api/v1/auth/oauth/${provider}/callback`;
 
   app.get(
     '/api/v1/auth/oauth/:provider',
-    async (request: FastifyRequest<{ Params: { provider: string } }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{
+        Params: { provider: string };
+        Querystring: { return_to?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
       const { provider: providerId } = request.params;
 
       if (!oauthService.isProviderConfigured(providerId)) {
@@ -411,8 +433,20 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
         return sendError(reply, 400, 'Unknown OAuth provider');
       }
 
+      // Capture where to send the user after OAuth completes.
+      // Prefer the explicit return_to param; fall back to the Referer header origin.
+      let frontendOrigin = request.query.return_to ?? '';
+      if (!frontendOrigin) {
+        const referer = request.headers.referer ?? request.headers.origin ?? '';
+        try {
+          frontendOrigin = referer ? new URL(referer).origin : '';
+        } catch {
+          frontendOrigin = '';
+        }
+      }
+
       const redirectUri = getRedirectUri(providerId);
-      const state = oauthService.generateState(providerId, redirectUri);
+      const state = oauthService.generateState(providerId, redirectUri, frontendOrigin || undefined);
 
       const params = new URLSearchParams({
         client_id: provider.clientId,
@@ -422,8 +456,9 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
         state,
       });
 
-      // Google services need offline access for refresh tokens
+      // All Google services need offline access for refresh tokens + explicit consent screen
       if (
+        providerId === 'google' ||
         providerId === 'gmail' ||
         providerId === 'googlecalendar' ||
         providerId === 'googledrive'
@@ -462,6 +497,10 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
         return reply.redirect('/connections/oauth?error=invalid_state');
       }
 
+      // Use the stored frontend origin so the redirect lands back on the
+      // correct port (e.g. http://localhost:3000 in dev, not the API port).
+      const fe = oauthState.frontendOrigin ?? '';
+
       try {
         const redirectUri = getRedirectUri(providerId);
         const tokens = await oauthService.exchangeCode(providerId, code, redirectUri);
@@ -494,7 +533,7 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
           }
 
           return await reply.redirect(
-            `/connections/email?connected=true&provider=gmail&email=${encodeURIComponent(userInfo.email || '')}&token=${connectionToken}`
+            `${fe}/connections/email?connected=true&provider=gmail&email=${encodeURIComponent(userInfo.email || '')}&token=${connectionToken}`
           );
         }
 
@@ -516,7 +555,7 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
 
           const redirectPage = providerId === 'googlecalendar' ? 'calendar' : 'drive';
           return await reply.redirect(
-            `/connections/${redirectPage}?connected=true&provider=${providerId}&email=${encodeURIComponent(userInfo.email)}&token=${connectionToken}`
+            `${fe}/connections/${redirectPage}?connected=true&provider=${providerId}&email=${encodeURIComponent(userInfo.email)}&token=${connectionToken}`
           );
         }
 
@@ -542,14 +581,14 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
         }
 
         return await reply.redirect(
-          `/connections/oauth?connected=true&provider=${providerId}&email=${encodeURIComponent(userInfo.email || '')}&name=${encodeURIComponent(userInfo.name || '')}&token=${connectionToken}`
+          `${fe}/connections/oauth?connected=true&provider=${providerId}&email=${encodeURIComponent(userInfo.email || '')}&name=${encodeURIComponent(userInfo.name || '')}&token=${connectionToken}`
         );
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
         if (providerId === 'gmail') {
-          return reply.redirect(`/connections/email?error=${encodeURIComponent(message)}`);
+          return reply.redirect(`${fe}/connections/email?error=${encodeURIComponent(message)}`);
         }
-        return reply.redirect(`/connections/oauth?error=${encodeURIComponent(message)}`);
+        return reply.redirect(`${fe}/connections/oauth?error=${encodeURIComponent(message)}`);
       }
     }
   );

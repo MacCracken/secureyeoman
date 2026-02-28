@@ -9,6 +9,7 @@ import { statSync } from 'node:fs';
 import { resolve as resolvePath } from 'node:path';
 import { getLogger, type SecureLogger } from '../logging/logger.js';
 import { sendError } from '../utils/errors.js';
+import { buildSafeEnv } from '../utils/process-env.js';
 
 const execAsync = promisify(exec);
 
@@ -44,40 +45,6 @@ const SHELL_INJECTION_PATTERN = /[;&|`]|(\$\()|(\${)/;
 
 // Sensitive absolute paths that must not be the cwd
 const SENSITIVE_PATH_PREFIXES = ['/etc', '/root', '/boot', '/proc', '/sys', '/dev'];
-
-/**
- * Safe environment variable whitelist for spawned child processes.
- * Only non-secret vars needed for shell operation are forwarded.
- * Secrets (API keys, DB passwords, tokens) must never be passed to child
- * processes — they can be exfiltrated via process environment dumps, crash
- * reports, or logging.
- */
-const SAFE_ENV_KEYS = new Set([
-  'PATH',
-  'HOME',
-  'USER',
-  'LOGNAME',
-  'LANG',
-  'LC_ALL',
-  'LC_CTYPE',
-  'TERM',
-  'SHELL',
-  'TMPDIR',
-  'TZ',
-  'XDG_RUNTIME_DIR',
-]);
-
-function buildSafeEnv(): NodeJS.ProcessEnv {
-  const safe: NodeJS.ProcessEnv = {};
-  for (const key of SAFE_ENV_KEYS) {
-    if (process.env[key] !== undefined) {
-      safe[key] = process.env[key];
-    }
-  }
-  // Always use a hardcoded safe PATH, even if the env one was overridden
-  safe.PATH = '/usr/local/bin:/usr/bin:/bin';
-  return safe;
-}
 
 // Check if command is potentially dangerous
 function isBlockedCommand(command: string): boolean {

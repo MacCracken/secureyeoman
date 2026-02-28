@@ -5,6 +5,7 @@
 import type { CatalogSkill, AuthorInfo } from '@secureyeoman/shared';
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
+import { getLogger } from '../logging/logger.js';
 import {
   summarizeTextSkill,
   veteranFinancialManagerSkill,
@@ -358,7 +359,11 @@ export class MarketplaceStorage extends PgBaseStorage {
         }
       } catch (err) {
         // Log and continue — one failing skill must not block the rest
-        console.error(`[MarketplaceStorage] Failed to seed builtin skill "${skill.name}":`, err);
+        getLogger()
+          .child({ component: 'MarketplaceStorage' })
+          .error(`Failed to seed builtin skill "${skill.name}"`, {
+            error: err instanceof Error ? err.message : String(err),
+          });
       }
     }
   }

@@ -10,12 +10,12 @@
 |-------|------|--------|
 | XX | Find & Repair (Ongoing) | Ongoing |
 | 64 | AI Training Pipeline | Complete (2026-02-27) |
+| 69 | Agent World Evolution | Complete (2026-02-27) |
+| 68 | Mission Control Customization | Next — high UX value for existing users |
+| 70 | Advanced Editor — Full IDE Mode | Next — high value for power users |
 | 65 | Voice & Community | Demand-Gated |
 | 66 | Native Clients | Demand-Gated |
 | 67 | Infrastructure & Platform | Demand-Gated |
-| 68 | Mission Control Customization | Demand-Gated |
-| 69 | Agent World Evolution | Demand-Gated |
-| 70 | Advanced Editor — Full IDE Mode | Demand-Gated |
 
 ---
 
@@ -35,6 +35,15 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
     2. learn about acceptance criteria
     3. constraint architecture
     4. decomposition (modualarity) 
+
+### Code Health (from 2026-02-27 audit)
+
+- [x] **Extract `buildSafeEnv()` to shared utils** — Extracted to `src/utils/process-env.ts`; both `terminal-routes.ts` and `backup-manager.ts` now import from there. Backup manager also gains the hardcoded-PATH security property that terminal routes had. *(2026-02-27)*
+- [x] **Replace `console.warn`/`console.error` with logger calls** — `marketplace/storage.ts` now uses `getLogger()`. `config/loader.ts` uses `getLogger()` when available and `process.stderr.write` before logger init (avoids `console` entirely). *(2026-02-27)*
+- [ ] **Brain seeding: skip if already seeded** — `secureyeoman.ts:694` calls `brainManager.seedBaseKnowledge()` on every startup by iterating all personalities (up to 200). At scale this adds measurable startup latency. Guard with: check if the personality's base-knowledge entries already exist before issuing the seed queries; only seed personalities that are missing their self-identity entries. *(medium — startup performance)*
+- [ ] **Missing DB indexes** — Add a new migration (`062_audit_memory_indexes.sql`) with: `CREATE INDEX IF NOT EXISTS idx_audit_entries_created_at ON audit.entries (created_at DESC)`, `CREATE INDEX IF NOT EXISTS idx_audit_entries_personality_event ON audit.entries (personality_id, event, created_at DESC)`, and `CREATE INDEX IF NOT EXISTS idx_brain_memories_personality_created ON brain.memories (personality_id, created_at DESC)`. These support the audit log dashboard queries and brain recall hot paths. *(medium — query performance)*
+- [ ] **SSEServerTransport → StreamableHTTPServerTransport migration** — `packages/mcp/src/transport/sse.ts` retains the deprecated `SSEServerTransport` for legacy client compatibility (see `docs/development/dependency-watch.md`). Verify current MCP SDK client support and migrate when all known clients (Claude Code, Cursor, etc.) are confirmed to support `StreamableHTTP`. *(medium — dependency hygiene)*
+- [x] **`discord.js` undici bump** — Resolved 2026-02-27: lockfile patched, `undici@6.23.0` pinned as direct dep in `packages/core`, root `overrides.undici=6.23.0` added to prevent regression. `npm audit` = 0 vulnerabilities. 71 Discord tests pass.
 
 ### Open Items
 
@@ -250,7 +259,7 @@ The ASCII animated agent world (`secureyeoman world` CLI command — ADR 152) po
 
 ## Phase 69: Agent World Evolution
 
-**Status**: Demand-Gated — implement once the base `secureyeoman world` command has real-world usage and user engagement justifies expanded simulation depth.
+**Status**: Complete (2026-02-27) — core CLI world map + dashboard widget + zone routing + BFS pathfinding + world mood shipped in v2026.2.27f/g. Remaining items below are future enhancements.
 
 The initial command renders each personality as an isolated card in a grid. This phase evolves the world into a shared, navigable environment where personalities move through a digital floor plan, react to each other's activity, and form a living picture of the agent team at work.
 
@@ -591,4 +600,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-27 — v2026.2.27f released. Phase 64 (AI Training Pipeline) complete. ASCII Agent World CLI command added (ADR 152). Mission Control Customization roadmapped as Phase 68. Agent World Evolution roadmapped as Phase 69. Advanced Editor Full IDE Mode roadmapped as Phase 70. Phases 65–70 remain demand-gated.*
+*Last updated: 2026-02-27 — v2026.2.27i released. Phase 64 (AI Training Pipeline) and Phase 69 (Agent World Evolution) complete. Code health audit surfaced 6 items; 2 fixed immediately (`buildSafeEnv()` extraction, console→logger). Timeline reprioritised: Phase 68 (Mission Control Customization) and Phase 70 (Advanced Editor IDE) elevated to "next" based on user value; Phases 65–67 remain demand-gated.*

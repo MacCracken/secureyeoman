@@ -9,6 +9,7 @@ import { spawn } from 'node:child_process';
 import type { BackupStorage, BackupRecord } from './backup-storage.js';
 import { uuidv7 } from '../utils/crypto.js';
 import type { SecureLogger } from '../logging/logger.js';
+import { buildSafeEnv } from '../utils/process-env.js';
 
 export interface DbConfig {
   host: string;
@@ -23,31 +24,6 @@ export interface BackupManagerDeps {
   dataDir: string;
   dbConfig: DbConfig;
   logger: SecureLogger;
-}
-
-const SAFE_ENV_KEYS = new Set([
-  'PATH',
-  'HOME',
-  'USER',
-  'LOGNAME',
-  'LANG',
-  'LC_ALL',
-  'LC_CTYPE',
-  'TERM',
-  'SHELL',
-  'TMPDIR',
-  'TZ',
-  'XDG_RUNTIME_DIR',
-]);
-
-function buildSafeEnv(): NodeJS.ProcessEnv {
-  const safe: NodeJS.ProcessEnv = {};
-  for (const key of SAFE_ENV_KEYS) {
-    if (process.env[key] !== undefined) {
-      safe[key] = process.env[key];
-    }
-  }
-  return safe;
 }
 
 function spawnAsync(
