@@ -154,12 +154,12 @@ export class DistillationManager {
   ): Promise<void> {
     const job = await this.getJob(jobId);
     if (!job) throw new Error(`Distillation job not found: ${jobId}`);
-    if (job.status !== 'pending') {
-      throw new Error(`Job ${jobId} is not pending (status=${job.status})`);
+    if (job.status !== 'pending' && job.status !== 'failed') {
+      throw new Error(`Job ${jobId} cannot be run (status=${job.status})`);
     }
 
     await this.pool.query(
-      `UPDATE training.distillation_jobs SET status='running' WHERE id=$1`,
+      `UPDATE training.distillation_jobs SET status='running', error_message=NULL WHERE id=$1`,
       [jobId]
     );
     this.runningJobs.add(jobId);

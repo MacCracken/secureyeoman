@@ -418,6 +418,34 @@ export class BrainStorage extends PgBaseStorage {
     return rows.map(rowToKnowledge);
   }
 
+  /**
+   * Single-query check: returns true when all base-knowledge seeds already exist so that
+   * seedBaseKnowledge() can short-circuit without issuing 4+ queries on every startup.
+   * Checks the 3 global entries (hierarchy, purpose, interaction) and one self-identity
+   * entry per personality.
+   */
+  async isBaseKnowledgeSeeded(personalityIds: string[]): Promise<boolean> {
+    const globalTopics = ['hierarchy', 'purpose', 'interaction'] as const;
+
+    // Count global entries (personality_id IS NULL) for the 3 required topics
+    const globalRow = await this.queryOne<{ cnt: string }>(
+      `SELECT COUNT(*) AS cnt FROM brain.knowledge
+       WHERE topic = ANY($1) AND personality_id IS NULL AND source = 'base-knowledge'`,
+      [globalTopics as unknown as string[]]
+    );
+    if (parseInt(globalRow?.cnt ?? '0', 10) < globalTopics.length) return false;
+
+    if (personalityIds.length === 0) return true;
+
+    // Count scoped self-identity entries for all provided personalities
+    const scopedRow = await this.queryOne<{ cnt: string }>(
+      `SELECT COUNT(*) AS cnt FROM brain.knowledge
+       WHERE topic = 'self-identity' AND personality_id = ANY($1) AND source = 'base-knowledge'`,
+      [personalityIds]
+    );
+    return parseInt(scopedRow?.cnt ?? '0', 10) >= personalityIds.length;
+  }
+
   async updateKnowledge(
     id: string,
     data: { content?: string; confidence?: number; supersedes?: string }

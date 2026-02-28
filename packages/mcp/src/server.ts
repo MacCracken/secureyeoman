@@ -11,7 +11,6 @@ import { CoreApiClient } from './core-client.js';
 import { ProxyAuth } from './auth/proxy-auth.js';
 import { AutoRegistration } from './registration/auto-register.js';
 import { registerStreamableHttpTransport } from './transport/streamable-http.js';
-import { registerSseTransport } from './transport/sse.js';
 import { registerAllTools } from './tools/index.js';
 import { globalToolRegistry } from './tools/tool-utils.js';
 import { getBrowserPool } from './tools/browser-tools.js';
@@ -77,16 +76,8 @@ export class McpServiceServer {
     registerAllPrompts(this.mcpServer, this.coreClient);
 
     // 4. Register transports
-    if (this.config.transport === 'streamable-http' || this.config.transport === 'sse') {
+    if (this.config.transport === 'streamable-http') {
       registerStreamableHttpTransport({
-        app: this.app,
-        mcpServer: this.mcpServer,
-        auth: this.auth,
-      });
-    }
-
-    if (this.config.transport === 'sse') {
-      registerSseTransport({
         app: this.app,
         mcpServer: this.mcpServer,
         auth: this.auth,

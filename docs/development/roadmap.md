@@ -38,15 +38,16 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ### Code Health (from 2026-02-27 audit)
 
-- [x] **Extract `buildSafeEnv()` to shared utils** — Extracted to `src/utils/process-env.ts`; both `terminal-routes.ts` and `backup-manager.ts` now import from there. Backup manager also gains the hardcoded-PATH security property that terminal routes had. *(2026-02-27)*
-- [x] **Replace `console.warn`/`console.error` with logger calls** — `marketplace/storage.ts` now uses `getLogger()`. `config/loader.ts` uses `getLogger()` when available and `process.stderr.write` before logger init (avoids `console` entirely). *(2026-02-27)*
-- [ ] **Brain seeding: skip if already seeded** — `secureyeoman.ts:694` calls `brainManager.seedBaseKnowledge()` on every startup by iterating all personalities (up to 200). At scale this adds measurable startup latency. Guard with: check if the personality's base-knowledge entries already exist before issuing the seed queries; only seed personalities that are missing their self-identity entries. *(medium — startup performance)*
-- [ ] **Missing DB indexes** — Add a new migration (`062_audit_memory_indexes.sql`) with: `CREATE INDEX IF NOT EXISTS idx_audit_entries_created_at ON audit.entries (created_at DESC)`, `CREATE INDEX IF NOT EXISTS idx_audit_entries_personality_event ON audit.entries (personality_id, event, created_at DESC)`, and `CREATE INDEX IF NOT EXISTS idx_brain_memories_personality_created ON brain.memories (personality_id, created_at DESC)`. These support the audit log dashboard queries and brain recall hot paths. *(medium — query performance)*
-- [ ] **SSEServerTransport → StreamableHTTPServerTransport migration** — `packages/mcp/src/transport/sse.ts` retains the deprecated `SSEServerTransport` for legacy client compatibility (see `docs/development/dependency-watch.md`). Verify current MCP SDK client support and migrate when all known clients (Claude Code, Cursor, etc.) are confirmed to support `StreamableHTTP`. *(medium — dependency hygiene)*
-- [x] **`discord.js` undici bump** — Resolved 2026-02-27: lockfile patched, `undici@6.23.0` pinned as direct dep in `packages/core`, root `overrides.undici=6.23.0` added to prevent regression. `npm audit` = 0 vulnerabilities. 71 Discord tests pass.
+- [x] **Brain seeding: skip if already seeded** — `isBaseKnowledgeSeeded()` single COUNT query added to `BrainStorage`; `seedBaseKnowledge()` short-circuits on first startup after all seeds are present. Steady-state: 4 queries → 1. *(2026-02-28)*
+- [x] **Missing DB indexes** — Migration `062_audit_memory_indexes.sql` added: `idx_audit_entries_created_at`, `idx_audit_entries_personality_event`, `idx_brain_memories_personality_created`. *(2026-02-28)*
+- [x] **SSEServerTransport → StreamableHTTPServerTransport migration** — `sse.ts` deleted; `McpTransportSchema` narrowed to `['stdio', 'streamable-http']`; dependency-watch entry resolved. *(2026-02-28)*
+
 
 ### Open Items
 
+- [x] **Google OAuth `redirect_uri_mismatch` + missing consent screen** — `OAUTH_REDIRECT_BASE_URL` env var added; `google` provider now includes `access_type=offline` + `prompt=consent`; post-callback redirect uses `frontendOrigin` from `Origin`/`Referer` header. *(2026-02-28)*
+- [x] **Personality avatar crop modal** — Full circular crop UI (drag + zoom) exported at 512×512 PNG; conversation sidebar shows personality avatar per item. *(2026-02-28)*
+- [ ] **AgentWorld**: only saw thinking appear not writing; needs more testing
 - [ ] **Manual test: Per-Personality Memory Scoping** — End-to-end verification of ADR 134. Steps: (1) Chat with T.Ron → save a memory, confirm it appears in T.Ron recall but NOT in FRIDAY recall; (2) Check heartbeat stats show different Memories counts for T.Ron and FRIDAY; (3) Enable Omnipresent Mind on FRIDAY → confirm FRIDAY can now recall T.Ron's memories; (4) Disable Omnipresent Mind → scoping restored; (5) Verify `/api/v1/brain/stats?personalityId=<id>` returns per-personality counts. *(No automated DB integration test yet)*
 - [ ] **Manual test: One Skill Schema + Community Marketplace** — End-to-end verification of ADR 135. Steps: (1) Dashboard → Marketplace → confirm All / Marketplace / Community filter tabs render; (2) Sync community skills via `POST /api/v1/marketplace/community/sync` with a local repo path; (3) Switch to Community tab → confirm community skills appear with "Community" badge; (4) Install a community skill that has `mcpToolsAllowed` set → confirm the brain skill record carries the same `mcpToolsAllowed` value; (5) Dashboard → Skills → Installed tab → confirm the installed community skill shows "Community" in the Source column; (6) Uninstall the skill → confirm `installed` resets to false and card returns to "Install" state.
 - [ ] **Manual test: SAML SP flow** — Configure SimpleSAMLphp (or mock). (1) `GET /api/v1/auth/sso/saml/:id/metadata` returns valid `<md:EntityDescriptor>` XML. (2) `GET /api/v1/auth/sso/authorize/:id` redirects to IdP with SAMLRequest. (3) Post-IdP redirect hits ACS, returns JWT in URL fragment.
@@ -59,8 +60,9 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ## Phase 64: AI Training Pipeline — Future Items
 
-*Core pipeline complete (2026-02-27). See [CHANGELOG.md](../../CHANGELOG.md).*
+*Core pipeline complete (2026-02-27). Gap fix: distillation `runJob()` endpoint + dashboard Run button shipped 2026-02-27. See [CHANGELOG.md](../../CHANGELOG.md).*
 
+- [x] **Distillation run endpoint** — `POST /api/v1/training/distillation/jobs/:id/run` fires `runJob()` in the background (202 Accepted). Accepts both `pending` and `failed` jobs (retry). Dashboard shows Play / Retry button per job. (2026-02-27)
 - [ ] **Continual / online learning** — Incremental adapter updates from new interactions without a full retrain. Replay buffer management, LR scheduling, drift detection. Research-grade; revisit once fine-tuning pipeline has real-world usage.
 - [ ] **Training from scratch** — Pre-train on a curated local corpus. Scoped to small models (≤3B params) as lightweight specialists. Depends on fine-tuning pipeline being battle-tested.
 
@@ -600,4 +602,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-27 — v2026.2.27i released. Phase 64 (AI Training Pipeline) and Phase 69 (Agent World Evolution) complete. Code health audit surfaced 6 items; 2 fixed immediately (`buildSafeEnv()` extraction, console→logger). Timeline reprioritised: Phase 68 (Mission Control Customization) and Phase 70 (Advanced Editor IDE) elevated to "next" based on user value; Phases 65–67 remain demand-gated.*
+*Last updated: 2026-02-27 — Phase 64 gap fix: distillation run endpoint + dashboard Run/Retry button. Phase 64 (AI Training Pipeline) and Phase 69 (Agent World Evolution) now fully complete. Code health audit: 3 of 6 items resolved (buildSafeEnv extraction, console→logger, undici vuln). Timeline: Phase 68 and 70 next.*

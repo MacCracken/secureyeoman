@@ -9,7 +9,6 @@ Check these whenever running `npm update` or when the relevant packages release 
 | Dependency | Severity | Advisory | Issue | Blocked By | Check When |
 |---|---|---|---|---|---|
 | `minimatch` (via `eslint` / `typescript-eslint`) | HIGH | GHSA-3ppc-4f35-3m26, GHSA-7r86-cg39-jmmj, GHSA-23c5-xmqv-rm74 | Multiple ReDoS advisories. All `eslint@9.x` and `@typescript-eslint/*` sub-packages depend on `minimatch <10.2.1`. Dev-only — zero production exposure. Fix requires ESLint v10 which requires `typescript-eslint` to publish an ESLint-v10-compatible release. Tried upgrading to ESLint v10 on 2026-02-21; failed — `typescript-eslint@8.x` uses removed `FlatESLint` from `eslint/use-at-your-own-risk`. Reverted to `eslint@^9.39.2`. | `typescript-eslint` publishing ESLint-v10 peer compat | Any `eslint`, `typescript-eslint`, or `minimatch` release |
-| MCP SDK — `SSEServerTransport` | N/A (deprecation) | — | `SSEServerTransport` deprecated in favour of `StreamableHTTPServerTransport`. Retained in `packages/mcp/src/transport/sse.ts` for legacy client compatibility; deprecation warnings suppressed. | Migration requires client-side transport compatibility verification. | MCP SDK releases |
 
 ---
 
@@ -28,6 +27,7 @@ Check these whenever running `npm update` or when the relevant packages release 
 | `@testing-library/dom` missing | N/A | 2026-02-21 | Added as explicit devDependency in `packages/dashboard`. Was a peer dep of `@testing-library/react` that npm was not hoisting. |
 | `graphology-types` missing | N/A | 2026-02-21 | Added as explicit devDependency in `packages/dashboard`. Required by `graphology` for `AbstractGraph` type with full graph mutation API. |
 | `@storybook/react` not found by TypeScript | N/A | 2026-02-21 | Added as explicit devDependency in `packages/dashboard`. Was only available as a nested dep inside `@storybook/react-vite/node_modules/`; TypeScript could not resolve it from there. |
+| MCP SDK — `SSEServerTransport` | N/A | 2026-02-28 | Migrated to `StreamableHTTPServerTransport`. `sse.ts` removed; `McpTransportSchema` now `['stdio', 'streamable-http']`; `MCP_TRANSPORT=streamable-http` in `.env.dev`. |
 
 ---
 
@@ -39,4 +39,4 @@ Check these whenever running `npm update` or when the relevant packages release 
 
 ---
 
-*Last updated: 2026-02-27 — undici (v14 chain) resolved via lockfile patch + root override + direct dep pin; `npm audit` now shows 0 vulnerabilities. Active tracked items: minimatch ReDoS (dev-only), SSEServerTransport deprecation.*
+*Last updated: 2026-02-28 — SSEServerTransport migration complete; `sse.ts` removed, transport schema narrowed to `['stdio', 'streamable-http']`. Active tracked items: minimatch ReDoS (dev-only).*

@@ -32,6 +32,7 @@ import {
   fetchDistillationJobs,
   createDistillationJob,
   deleteDistillationJob,
+  runDistillationJob,
   fetchFinetuneJobs,
   createFinetuneJob,
   deleteFinetuneJob,
@@ -305,6 +306,11 @@ function DistillationTab() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['distillation-jobs'] }),
   });
 
+  const runMut = useMutation({
+    mutationFn: runDistillationJob,
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['distillation-jobs'] }),
+  });
+
   const handleCreate = () => {
     createMut.mutate({
       name: form.name,
@@ -439,7 +445,13 @@ function DistillationTab() {
       ) : (
         <div className="space-y-3">
           {jobs.map((job) => (
-            <DistillationJobCard key={job.id} job={job} onDelete={() => deleteMut.mutate(job.id)} />
+            <DistillationJobCard
+              key={job.id}
+              job={job}
+              onDelete={() => deleteMut.mutate(job.id)}
+              onRun={() => runMut.mutate(job.id)}
+              isRunning={runMut.isPending && runMut.variables === job.id}
+            />
           ))}
         </div>
       )}
@@ -447,9 +459,20 @@ function DistillationTab() {
   );
 }
 
-function DistillationJobCard({ job, onDelete }: { job: DistillationJob; onDelete: () => void }) {
+function DistillationJobCard({
+  job,
+  onDelete,
+  onRun,
+  isRunning: isRunPending,
+}: {
+  job: DistillationJob;
+  onDelete: () => void;
+  onRun: () => void;
+  isRunning: boolean;
+}) {
   const progress =
     job.maxSamples > 0 ? Math.round((job.samplesGenerated / job.maxSamples) * 100) : 0;
+  const canRun = job.status === 'pending' || job.status === 'failed';
 
   return (
     <div className="card p-4 space-y-2">
@@ -462,6 +485,20 @@ function DistillationJobCard({ job, onDelete }: { job: DistillationJob; onDelete
         </div>
         <div className="flex items-center gap-2">
           <StatusChip status={job.status} />
+          {canRun && (
+            <button
+              onClick={onRun}
+              disabled={isRunPending}
+              className="p-1 hover:bg-primary/10 hover:text-primary rounded"
+              title={job.status === 'failed' ? 'Retry job' : 'Run job'}
+            >
+              {isRunPending ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Play className="w-3 h-3" />
+              )}
+            </button>
+          )}
           <button
             onClick={onDelete}
             className="p-1 hover:bg-destructive/10 hover:text-destructive rounded"

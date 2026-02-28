@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 // ─── MCP Transport ─────────────────────────────────────────
 
-export const McpTransportSchema = z.enum(['stdio', 'sse', 'streamable-http']);
+export const McpTransportSchema = z.enum(['stdio', 'streamable-http']);
 export type McpTransport = z.infer<typeof McpTransportSchema>;
 
 // ─── MCP Tool Definition ────────────────────────────────────

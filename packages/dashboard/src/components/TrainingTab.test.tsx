@@ -11,6 +11,14 @@ vi.mock('../api/client', async (importOriginal) => {
     ...actual,
     fetchTrainingStats: vi.fn(),
     exportTrainingDataset: vi.fn(),
+    fetchDistillationJobs: vi.fn(),
+    createDistillationJob: vi.fn(),
+    deleteDistillationJob: vi.fn(),
+    runDistillationJob: vi.fn(),
+    fetchFinetuneJobs: vi.fn(),
+    createFinetuneJob: vi.fn(),
+    deleteFinetuneJob: vi.fn(),
+    registerFinetuneAdapter: vi.fn(),
   };
 });
 
@@ -18,6 +26,8 @@ import * as api from '../api/client';
 
 const mockFetchTrainingStats = vi.mocked(api.fetchTrainingStats);
 const mockExportTrainingDataset = vi.mocked(api.exportTrainingDataset);
+const mockFetchDistillationJobs = vi.mocked(api.fetchDistillationJobs);
+const mockRunDistillationJob = vi.mocked(api.runDistillationJob);
 
 function createQueryClient() {
   return new QueryClient({
@@ -43,6 +53,8 @@ describe('TrainingTab', () => {
       url: 'blob:mock-url',
       filename: 'training-export-2026-02-27.jsonl',
     });
+    mockFetchDistillationJobs.mockResolvedValue([]);
+    vi.mocked(api.fetchFinetuneJobs).mockResolvedValue([]);
   });
 
   it('renders the Training Dataset Export heading', async () => {
@@ -171,5 +183,77 @@ describe('TrainingTab', () => {
       );
     });
     clickSpy.mockRestore();
+  });
+});
+
+describe('TrainingTab — Distillation tab', () => {
+  const MOCK_PENDING_JOB = {
+    id: 'job-1',
+    name: 'Test distillation',
+    teacherProvider: 'anthropic',
+    teacherModel: 'claude-opus-4-6',
+    exportFormat: 'sharegpt' as const,
+    maxSamples: 100,
+    personalityIds: [],
+    outputPath: '/tmp/out.jsonl',
+    status: 'pending' as const,
+    samplesGenerated: 0,
+    errorMessage: null,
+    createdAt: Date.now(),
+    completedAt: null,
+  };
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+    mockFetchTrainingStats.mockResolvedValue({ conversations: 5, memories: 0, knowledge: 0 });
+    mockExportTrainingDataset.mockResolvedValue({ url: 'blob:x', filename: 'x.jsonl' });
+    vi.mocked(api.fetchFinetuneJobs).mockResolvedValue([]);
+  });
+
+  function setup() {
+    const user = userEvent.setup();
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <TrainingTab />
+      </QueryClientProvider>
+    );
+    return user;
+  }
+
+  async function switchToDistillationTab(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(await screen.findByRole('tab', { name: /distillation/i }));
+  }
+
+  it('shows Run button for pending jobs', async () => {
+    mockFetchDistillationJobs.mockResolvedValue([MOCK_PENDING_JOB]);
+    const user = setup();
+    await switchToDistillationTab(user);
+    expect(await screen.findByTitle('Run job')).toBeInTheDocument();
+  });
+
+  it('calls runDistillationJob when Run button is clicked', async () => {
+    mockFetchDistillationJobs.mockResolvedValue([MOCK_PENDING_JOB]);
+    mockRunDistillationJob.mockResolvedValue({ id: 'job-1', status: 'running' });
+    const user = setup();
+    await switchToDistillationTab(user);
+    await user.click(await screen.findByTitle('Run job'));
+    // TanStack Query v5 passes a context object as the second argument to mutationFn
+    expect(mockRunDistillationJob).toHaveBeenCalledWith('job-1', expect.any(Object));
+  });
+
+  it('shows Retry button for failed jobs', async () => {
+    mockFetchDistillationJobs.mockResolvedValue([{ ...MOCK_PENDING_JOB, status: 'failed' }]);
+    const user = setup();
+    await switchToDistillationTab(user);
+    expect(await screen.findByTitle('Retry job')).toBeInTheDocument();
+  });
+
+  it('does not show Run button for running or complete jobs', async () => {
+    mockFetchDistillationJobs.mockResolvedValue([{ ...MOCK_PENDING_JOB, status: 'running' }]);
+    const user = setup();
+    await switchToDistillationTab(user);
+    await screen.findByText('Test distillation');
+    expect(screen.queryByTitle('Run job')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Retry job')).not.toBeInTheDocument();
   });
 });

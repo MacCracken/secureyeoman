@@ -224,6 +224,238 @@ function AvatarLightbox({ src, alt, onClose }: { src: string; alt: string; onClo
   );
 }
 
+// ── Avatar crop constants ────────────────────────────────────────────────────
+const CROP_CONTAINER = 300; // CSS px — square viewport for the crop UI
+const CROP_RADIUS = 130; // CSS px — radius of the circle crop guide
+const EXPORT_SIZE = 512; // px — output resolution (matches major platforms)
+
+/**
+ * Full-screen crop modal. Shown after a raster image is selected; lets the user
+ * drag + zoom to position their photo inside a circular guide before uploading.
+ * Exports a 512×512 PNG blob via the canvas API — no dependencies needed.
+ */
+function AvatarCropModal({
+  file,
+  onConfirm,
+  onCancel,
+}: {
+  file: File;
+  onConfirm: (blob: Blob) => void;
+  onCancel: () => void;
+}) {
+  const [imgSrc, setImgSrc] = useState('');
+  // naturalWidth/Height captured from the onLoad event — avoids reading imgRef.current at render time
+  const [naturalSize, setNaturalSize] = useState({ w: 0, h: 0 });
+  const [scale, setScale] = useState(1);
+  const [minScale, setMinScale] = useState(0.1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragRef = useRef({ startX: 0, startY: 0, offX: 0, offY: 0 });
+  const touchRef = useRef({ startX: 0, startY: 0, offX: 0, offY: 0 });
+  const imgRef = useRef<HTMLImageElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const url = URL.createObjectURL(file);
+    setImgSrc(url);
+    setNaturalSize({ w: 0, h: 0 }); // reset until new image loads
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onCancel();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onCancel]);
+
+  // Constrain offset so the crop circle is always fully covered by the image.
+  const clamp = useCallback(
+    (ox: number, oy: number, s: number) => {
+      const img = imgRef.current;
+      if (!img) return { x: ox, y: oy };
+      const maxX = Math.max(0, (img.naturalWidth * s) / 2 - CROP_RADIUS);
+      const maxY = Math.max(0, (img.naturalHeight * s) / 2 - CROP_RADIUS);
+      return {
+        x: Math.max(-maxX, Math.min(maxX, ox)),
+        y: Math.max(-maxY, Math.min(maxY, oy)),
+      };
+    },
+    []
+  );
+
+  const onImgLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+    if (!w || !h) return;
+    // Initial scale: shorter dimension exactly fills the crop circle diameter.
+    const s = (CROP_RADIUS * 2) / Math.min(w, h);
+    setNaturalSize({ w, h });
+    setMinScale(s);
+    setScale(s);
+    setOffset({ x: 0, y: 0 });
+  }, []);
+
+  const handleWheel = useCallback(
+    (e: React.WheelEvent) => {
+      e.preventDefault();
+      setScale((prev) => {
+        const next = Math.max(minScale, Math.min(minScale * 8, prev * (1 - e.deltaY * 0.001)));
+        setOffset((o) => clamp(o.x, o.y, next));
+        return next;
+      });
+    },
+    [minScale, clamp]
+  );
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setDragging(true);
+    dragRef.current = { startX: e.clientX, startY: e.clientY, offX: offset.x, offY: offset.y };
+  };
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!dragging) return;
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    setOffset(clamp(dragRef.current.offX + dx, dragRef.current.offY + dy, scale));
+  };
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchRef.current = { startX: t.clientX, startY: t.clientY, offX: offset.x, offY: offset.y };
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
+    const t = e.touches[0];
+    setOffset(
+      clamp(
+        touchRef.current.offX + t.clientX - touchRef.current.startX,
+        touchRef.current.offY + t.clientY - touchRef.current.startY,
+        scale
+      )
+    );
+  };
+
+  const handleCrop = () => {
+    const img = imgRef.current;
+    const canvas = canvasRef.current;
+    if (!img || !canvas) return;
+    // Crop circle center mapped to natural image coordinates.
+    const cx = img.naturalWidth / 2 - offset.x / scale;
+    const cy = img.naturalHeight / 2 - offset.y / scale;
+    const r = CROP_RADIUS / scale;
+    canvas.width = EXPORT_SIZE;
+    canvas.height = EXPORT_SIZE;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.beginPath();
+    ctx.arc(EXPORT_SIZE / 2, EXPORT_SIZE / 2, EXPORT_SIZE / 2, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(img, cx - r, cy - r, r * 2, r * 2, 0, 0, EXPORT_SIZE, EXPORT_SIZE);
+    canvas.toBlob((blob) => {
+      if (blob) onConfirm(blob);
+    }, 'image/png');
+  };
+
+  const imgW = naturalSize.w ? naturalSize.w * scale : 0;
+  const imgH = naturalSize.h ? naturalSize.h * scale : 0;
+  const C = CROP_CONTAINER / 2;
+  const zoomPct = minScale > 0 ? Math.round((scale / minScale) * 100) : 100;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="bg-card border border-border rounded-xl shadow-2xl p-5 flex flex-col items-center gap-4 w-[360px] max-w-[95vw]">
+        {/* Header */}
+        <div className="flex items-center justify-between w-full">
+          <span className="text-sm font-semibold">Crop Photo</span>
+          <span className="text-[10px] text-muted-foreground">Drag to position · scroll to zoom</span>
+        </div>
+
+        {/* Crop viewport */}
+        <div
+          className="relative select-none overflow-hidden bg-muted rounded-sm"
+          style={{ width: CROP_CONTAINER, height: CROP_CONTAINER, cursor: dragging ? 'grabbing' : 'grab' }}
+          onWheel={handleWheel}
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={() => setDragging(false)}
+          onMouseLeave={() => setDragging(false)}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+        >
+          <img
+            ref={imgRef}
+            src={imgSrc || undefined}
+            alt="crop preview"
+            draggable={false}
+            onLoad={onImgLoad}
+            style={{
+              position: 'absolute',
+              width: imgW || 'auto',
+              height: imgH || 'auto',
+              left: imgW ? C + offset.x - imgW / 2 : 0,
+              top: imgH ? C + offset.y - imgH / 2 : 0,
+              pointerEvents: 'none',
+            }}
+          />
+          {/* Dim everything outside the crop circle */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: `radial-gradient(circle ${CROP_RADIUS}px at 50% 50%, transparent ${CROP_RADIUS}px, rgba(0,0,0,0.55) ${CROP_RADIUS}px)`,
+            }}
+          />
+          {/* Dashed circle guide */}
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              left: C - CROP_RADIUS,
+              top: C - CROP_RADIUS,
+              width: CROP_RADIUS * 2,
+              height: CROP_RADIUS * 2,
+              borderRadius: '50%',
+              border: '2px dashed rgba(255,255,255,0.5)',
+            }}
+          />
+        </div>
+
+        {/* Zoom slider */}
+        <div className="flex items-center gap-3 w-full">
+          <span className="text-xs text-muted-foreground">Zoom</span>
+          <input
+            type="range"
+            min={minScale}
+            max={minScale * 8}
+            step={0.0001}
+            value={scale}
+            onChange={(e) => {
+              const s = parseFloat(e.target.value);
+              setScale(s);
+              setOffset((o) => clamp(o.x, o.y, s));
+            }}
+            className="flex-1 accent-primary"
+          />
+          <span className="text-xs text-muted-foreground tabular-nums w-10 text-right">
+            {zoomPct}%
+          </span>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 w-full">
+          <button type="button" className="btn btn-sm btn-ghost flex-1" onClick={onCancel}>
+            Cancel
+          </button>
+          <button type="button" className="btn btn-sm btn-primary flex-1" onClick={handleCrop}>
+            Apply & Upload
+          </button>
+        </div>
+
+        <canvas ref={canvasRef} className="hidden" />
+      </div>
+    </div>
+  );
+}
+
 /** Renders a personality avatar as a circle image, or falls back to the Bot icon. */
 export function PersonalityAvatar({
   personality,
@@ -271,21 +503,35 @@ function AvatarUpload({
 }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  const MAX_SIZE = 2 * 1024 * 1024;
-  const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+  // Raster types go through the crop modal so users can position + resize.
+  // SVG is vector — upload directly (canvas can't rasterise cross-origin SVGs reliably).
+  const RASTER_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  const ACCEPTED_TYPES = [...RASTER_TYPES, 'image/svg+xml'];
+  // Pre-crop size limit is generous; the exported 512×512 PNG will always be under 2 MB.
+  const MAX_PRE_CROP = 10 * 1024 * 1024;
 
-  async function handleFile(file: File) {
+  function handleFileSelect(file: File) {
     setError(null);
     if (!ACCEPTED_TYPES.includes(file.type)) {
       setError('Unsupported type. Use JPEG, PNG, GIF, WebP or SVG.');
       return;
     }
-    if (file.size > MAX_SIZE) {
-      setError('File too large (max 2 MB).');
+    if (file.size > MAX_PRE_CROP) {
+      setError('File too large (max 10 MB).');
       return;
     }
+    if (RASTER_TYPES.includes(file.type)) {
+      setCropFile(file); // open crop modal
+    } else {
+      void handleDirectUpload(file); // SVG: upload as-is
+    }
+  }
+
+  async function handleDirectUpload(file: File) {
+    setError(null);
     setUploading(true);
     try {
       const result = await uploadPersonalityAvatar(personality.id, file);
@@ -295,6 +541,11 @@ function AvatarUpload({
     } finally {
       setUploading(false);
     }
+  }
+
+  async function handleCropConfirm(blob: Blob) {
+    setCropFile(null);
+    await handleDirectUpload(new File([blob], 'avatar.png', { type: 'image/png' }));
   }
 
   async function handleRemove() {
@@ -311,59 +562,69 @@ function AvatarUpload({
   }
 
   return (
-    <div className="flex items-center gap-4 mb-4">
-      <div
-        className={`w-24 h-24 rounded-full overflow-hidden border-2 border-border flex items-center justify-center bg-muted flex-shrink-0${personality.avatarUrl ? ' cursor-zoom-in' : ''}`}
-        onClick={personality.avatarUrl ? () => setLightboxOpen(true) : undefined}
-        title={personality.avatarUrl ? 'Click to zoom' : undefined}
-      >
-        {personality.avatarUrl ? (
-          <img
-            src={`${API_BASE}${personality.avatarUrl}?v=${personality.updatedAt}`}
-            alt={personality.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <Bot className="w-10 h-10 text-muted-foreground" />
-        )}
-      </div>
-      {lightboxOpen && personality.avatarUrl && (
-        <AvatarLightbox
-          src={`${API_BASE}${personality.avatarUrl}?v=${personality.updatedAt}`}
-          alt={personality.name}
-          onClose={() => setLightboxOpen(false)}
+    <>
+      {cropFile && (
+        <AvatarCropModal
+          file={cropFile}
+          onConfirm={(blob) => void handleCropConfirm(blob)}
+          onCancel={() => setCropFile(null)}
         />
       )}
-      <div className="flex flex-col gap-2">
-        <label
-          className={`btn btn-sm btn-outline cursor-pointer${uploading ? ' opacity-50 pointer-events-none' : ''}`}
+      <div className="flex items-center gap-4 mb-4">
+        <div
+          className={`w-24 h-24 rounded-full overflow-hidden border-2 border-border flex items-center justify-center bg-muted flex-shrink-0${personality.avatarUrl ? ' cursor-zoom-in' : ''}`}
+          onClick={personality.avatarUrl ? () => setLightboxOpen(true) : undefined}
+          title={personality.avatarUrl ? 'Click to zoom' : undefined}
         >
-          {uploading ? 'Uploading…' : 'Upload Photo'}
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            disabled={uploading}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void handleFile(file);
-              e.target.value = '';
-            }}
+          {personality.avatarUrl ? (
+            <img
+              src={`${API_BASE}${personality.avatarUrl}?v=${personality.updatedAt}`}
+              alt={personality.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <Bot className="w-10 h-10 text-muted-foreground" />
+          )}
+        </div>
+        {lightboxOpen && personality.avatarUrl && (
+          <AvatarLightbox
+            src={`${API_BASE}${personality.avatarUrl}?v=${personality.updatedAt}`}
+            alt={personality.name}
+            onClose={() => setLightboxOpen(false)}
           />
-        </label>
-        {personality.avatarUrl && (
-          <button
-            type="button"
-            className="btn btn-sm btn-ghost text-muted-foreground"
-            disabled={uploading}
-            onClick={() => void handleRemove()}
-          >
-            Remove
-          </button>
         )}
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        <div className="flex flex-col gap-2">
+          <label
+            className={`btn btn-sm btn-outline cursor-pointer${uploading ? ' opacity-50 pointer-events-none' : ''}`}
+          >
+            {uploading ? 'Uploading…' : 'Upload Photo'}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={uploading}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFileSelect(file);
+                e.target.value = '';
+              }}
+            />
+          </label>
+          {personality.avatarUrl && (
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost text-muted-foreground"
+              disabled={uploading}
+              onClick={() => void handleRemove()}
+            >
+              Remove
+            </button>
+          )}
+          {error && <p className="text-xs text-destructive">{error}</p>}
+          <p className="text-[10px] text-muted-foreground">JPEG · PNG · WebP · GIF · SVG · max 10 MB</p>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

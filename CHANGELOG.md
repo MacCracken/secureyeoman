@@ -1,3 +1,65 @@
+## [2026.2.28a] — 2026-02-28
+
+### Added
+
+- **Avatar crop modal** — Selecting a photo for a personality now opens a
+  full-screen circular crop tool (drag to reposition, scroll/slider to zoom)
+  before uploading. Exports a 512×512 PNG via canvas — matching the resolution
+  used by Twitter/X, GitHub, and Slack. SVG uploads still bypass the crop step.
+  Pre-crop size limit raised from 2 MB to 10 MB; the exported PNG always fits
+  within the server's 2 MB limit.
+
+- **Personality avatar in conversation list** — Each conversation row in the
+  Chat sidebar now shows the active personality's avatar (16 px circle) in place
+  of the generic `MessageSquare` icon when a personality is selected.
+
+- **`OAUTH_REDIRECT_BASE_URL` env var** — Controls the base URL embedded in
+  OAuth `redirect_uri` parameters sent to providers (Google, GitHub, etc.).
+  Required when the API server and the registered redirect URI use different
+  origins — e.g. in dev where Vite (port 3000) proxies `/api/*` to core
+  (port 18789) but Google Console has `https://…:3000/…/callback` registered.
+  Falls back to `SECUREYEOMAN_EXTERNAL_URL` / the core server URL if unset.
+  Set to `https://dev.secureyeoman.ai:3000` in `.env.dev`.
+
+- **Migration 062 — query indexes** — Three new `CREATE INDEX IF NOT EXISTS`
+  statements for the audit log and brain memory hot paths:
+  `idx_audit_entries_created_at`, `idx_audit_entries_personality_event`,
+  `idx_brain_memories_personality_created`.
+
+### Fixed
+
+- **Google OAuth `redirect_uri_mismatch`** — The redirect URI sent to Google
+  was built from `SECUREYEOMAN_EXTERNAL_URL` (port 18789) but Google Console
+  had port 3000 registered. Fixed via the new `OAUTH_REDIRECT_BASE_URL` option.
+
+- **Google consent screen not appearing** — The generic `google` provider was
+  missing `access_type=offline` + `prompt=consent` params. These are now set for
+  all Google-family providers (`google`, `gmail`, `googlecalendar`,
+  `googledrive`) so the consent screen always appears when connecting an account.
+
+- **Post-OAuth redirect to port 18789** — After a successful OAuth callback,
+  `reply.redirect` used a relative path which resolved to the API server port.
+  The initiation handler now captures `frontendOrigin` from the `Origin`/
+  `Referer` header (or an explicit `return_to` query param) and prefixes all
+  callback redirects with it.
+
+### Performance
+
+- **Brain seeding early-exit** — `seedBaseKnowledge()` now issues a single
+  COUNT query on startup. When all three global knowledge entries and every
+  personality's self-identity entry already exist the function returns
+  immediately — reducing steady-state startup cost from 4+ queries to 1.
+
+### Removed
+
+- **SSE transport** (`SSEServerTransport`) — Deleted `packages/mcp/src/transport/sse.ts`
+  and removed the `'sse'` value from `McpTransportSchema`. All MCP clients in
+  use (Claude Code, Cursor) support `StreamableHTTP`; the `.env.dev` default
+  has been `MCP_TRANSPORT=streamable-http` since it was introduced. Dependency
+  Watch entry moved to Resolved.
+
+---
+
 ## [2026.2.27i] — 2026-02-27
 
 ### Added

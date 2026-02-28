@@ -425,7 +425,13 @@ export function ChatPage() {
                       }`}
                       data-testid={`conversation-item-${conv.id}`}
                     >
-                      <MessageSquare className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+                      {personality ? (
+                        <div className="w-4 h-4 flex-shrink-0 rounded-full overflow-hidden flex items-center justify-center bg-muted text-muted-foreground">
+                          <PersonalityAvatar personality={personality} size={16} />
+                        </div>
+                      ) : (
+                        <MessageSquare className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+                      )}
                       <div className="flex-1 min-w-0">
                         {editingConversationId === conv.id ? (
                           <div

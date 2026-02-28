@@ -54,6 +54,7 @@ function makeStorage(overrides: any = {}) {
     deleteMemory: vi.fn().mockResolvedValue(undefined),
     touchMemories: vi.fn().mockResolvedValue(undefined),
     getMemoryCount: vi.fn().mockResolvedValue(0),
+    isBaseKnowledgeSeeded: vi.fn().mockResolvedValue(false),
     createKnowledge: vi.fn().mockResolvedValue(KNOWLEDGE),
     getKnowledge: vi.fn().mockResolvedValue(KNOWLEDGE),
     queryKnowledge: vi.fn().mockResolvedValue([]),

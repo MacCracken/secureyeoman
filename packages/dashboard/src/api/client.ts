@@ -907,6 +907,13 @@ export async function deleteDistillationJob(id: string): Promise<void> {
   });
 }
 
+export async function runDistillationJob(id: string): Promise<{ id: string; status: string }> {
+  return request<{ id: string; status: string }>(
+    `/training/distillation/jobs/${encodeURIComponent(id)}/run`,
+    { method: 'POST' }
+  );
+}
+
 // ─── Finetune Jobs ─────────────────────────────────────────────────
 
 export interface FinetuneJob {

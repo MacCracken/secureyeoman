@@ -676,6 +676,15 @@ export class BrainManager {
   async seedBaseKnowledge(personalities: { id: string; name: string }[] = []): Promise<void> {
     if (!this.config.enabled) return;
 
+    // Fast-path: single COUNT query — skip all seeding work when already fully seeded.
+    // Reduces startup cost from 4+ queries to 1 in the common steady-state case.
+    const personalityIds = personalities.map((p) => p.id);
+    const alreadySeeded = await this.storage.isBaseKnowledgeSeeded(personalityIds);
+    if (alreadySeeded) {
+      this.deps.logger.debug('Base knowledge already seeded — skipping');
+      return;
+    }
+
     // 1. Generic global entries (personality-agnostic)
     const globalEntries: { topic: string; content: string }[] = [
       {

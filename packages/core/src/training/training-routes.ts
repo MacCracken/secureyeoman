@@ -14,8 +14,9 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SecureYeoman } from '../secureyeoman.js';
 import { sendError } from '../utils/errors.js';
-import type { DistillationJobConfig } from './distillation-manager.js';
+import type { DistillationJobConfig, TeacherClient } from './distillation-manager.js';
 import type { FinetuneJobConfig } from './finetune-manager.js';
+import type { AIMessage } from '@secureyeoman/shared';
 
 export interface TrainingRoutesOptions {
   secureYeoman: SecureYeoman;
@@ -297,6 +298,54 @@ export function registerTrainingRoutes(
       const deleted = await manager.deleteJob(request.params.id);
       if (!deleted) return sendError(reply, 404, 'Job not found');
       return reply.status(204).send();
+    }
+  );
+
+  /**
+   * POST /api/v1/training/distillation/jobs/:id/run
+   * Start (or retry) a pending or failed distillation job in the background.
+   * Returns 202 immediately; caller polls GET .../jobs/:id for status.
+   */
+  app.post(
+    '/api/v1/training/distillation/jobs/:id/run',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const { secureYeoman } = opts;
+      const manager = secureYeoman.getDistillationManager();
+      if (!manager) return sendError(reply, 503, 'Distillation manager not available');
+
+      const conversationStorage = secureYeoman.getConversationStorage();
+      if (!conversationStorage) return sendError(reply, 503, 'Conversation storage not available');
+
+      let aiClient: ReturnType<typeof secureYeoman.getAIClient>;
+      try {
+        aiClient = secureYeoman.getAIClient();
+      } catch {
+        return sendError(reply, 503, 'AI client not available');
+      }
+
+      const job = await manager.getJob(request.params.id);
+      if (!job) return sendError(reply, 404, 'Job not found');
+      if (manager.isRunning(job.id)) return sendError(reply, 409, 'Job is already running');
+      if (job.status !== 'pending' && job.status !== 'failed') {
+        return sendError(reply, 409, `Job cannot be run in status '${job.status}'`);
+      }
+
+      const { teacherModel } = job;
+      const teacherClient: TeacherClient = {
+        async chat(req) {
+          const response = await aiClient.chat({
+            messages: req.messages as AIMessage[],
+            model: teacherModel,
+            stream: false,
+          });
+          return { content: response.content };
+        },
+      };
+
+      // Fire and forget — client polls GET .../jobs/:id for status updates
+      void manager.runJob(job.id, conversationStorage, teacherClient);
+
+      return reply.status(202).send({ id: job.id, status: 'running' });
     }
   );
 

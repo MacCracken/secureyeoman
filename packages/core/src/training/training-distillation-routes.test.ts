@@ -53,6 +53,8 @@ function makeDistillationManager(overrides: Record<string, unknown> = {}) {
     getJob: vi.fn(async (id: string) => (id === 'job-1' ? MOCK_JOB : null)),
     cancelJob: vi.fn(async () => true),
     deleteJob: vi.fn(async (id: string) => id === 'job-1'),
+    isRunning: vi.fn(() => false),
+    runJob: vi.fn(async () => undefined),
     ...overrides,
   } as any;
 }
@@ -74,12 +76,21 @@ function makeFinetuneManager(overrides: Record<string, unknown> = {}) {
 function buildMockSY(opts: {
   distillationManager?: any;
   finetuneManager?: any;
+  conversationStorage?: any;
+  aiClient?: any;
 } = {}) {
+  const defaultAiClient = {
+    chat: vi.fn(async () => ({ content: 'teacher response', id: 'r1', usage: {}, stopReason: 'end_turn', model: 'claude-opus-4-6', provider: 'anthropic' })),
+  };
   return {
-    getConversationStorage: vi.fn(() => null),
+    getConversationStorage: vi.fn(() => opts.conversationStorage ?? null),
     getBrainManager: vi.fn(() => null),
     getDistillationManager: vi.fn(() => opts.distillationManager ?? null),
     getFinetuneManager: vi.fn(() => opts.finetuneManager ?? null),
+    getAIClient: vi.fn(() => {
+      if (opts.aiClient === null) throw new Error('AI client not available');
+      return opts.aiClient ?? defaultAiClient;
+    }),
   } as any;
 }
 
@@ -230,6 +241,98 @@ describe('DELETE /api/v1/training/distillation/jobs/:id', () => {
       url: '/api/v1/training/distillation/jobs/unknown',
     });
     expect(res.statusCode).toBe(404);
+  });
+});
+
+describe('POST /api/v1/training/distillation/jobs/:id/run', () => {
+  let app: Awaited<ReturnType<typeof buildApp>>;
+  let dm: ReturnType<typeof makeDistillationManager>;
+
+  beforeEach(async () => {
+    dm = makeDistillationManager();
+    app = await buildApp(
+      buildMockSY({ distillationManager: dm, conversationStorage: { listConversations: vi.fn(async () => ({ conversations: [] })) } })
+    );
+  });
+
+  afterEach(async () => { await app.close(); });
+
+  it('returns 202 and fires job in background', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/distillation/jobs/job-1/run',
+    });
+    expect(res.statusCode).toBe(202);
+    expect(res.json()).toMatchObject({ id: 'job-1', status: 'running' });
+    // runJob is called asynchronously — just verify it was invoked
+    await new Promise((r) => setTimeout(r, 10));
+    expect(dm.runJob).toHaveBeenCalledWith('job-1', expect.any(Object), expect.any(Object));
+  });
+
+  it('returns 404 for unknown job', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/distillation/jobs/unknown/run',
+    });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('returns 409 when job is already running', async () => {
+    dm.isRunning.mockReturnValue(true);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/distillation/jobs/job-1/run',
+    });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().message).toMatch(/already running/);
+  });
+
+  it('returns 409 when job status is not runnable', async () => {
+    dm.getJob.mockResolvedValue({ ...MOCK_JOB, status: 'complete' });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/distillation/jobs/job-1/run',
+    });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().message).toMatch(/complete/);
+  });
+
+  it('returns 503 when distillation manager not available', async () => {
+    const app2 = await buildApp(buildMockSY());
+    const res = await app2.inject({
+      method: 'POST',
+      url: '/api/v1/training/distillation/jobs/job-1/run',
+    });
+    expect(res.statusCode).toBe(503);
+    await app2.close();
+  });
+
+  it('returns 503 when conversation storage not available', async () => {
+    const app2 = await buildApp(buildMockSY({ distillationManager: dm }));
+    const res = await app2.inject({
+      method: 'POST',
+      url: '/api/v1/training/distillation/jobs/job-1/run',
+    });
+    expect(res.statusCode).toBe(503);
+    expect(res.json().message).toMatch(/Conversation storage/);
+    await app2.close();
+  });
+
+  it('returns 503 when AI client not available', async () => {
+    const app2 = await buildApp(
+      buildMockSY({
+        distillationManager: dm,
+        conversationStorage: {},
+        aiClient: null,
+      })
+    );
+    const res = await app2.inject({
+      method: 'POST',
+      url: '/api/v1/training/distillation/jobs/job-1/run',
+    });
+    expect(res.statusCode).toBe(503);
+    expect(res.json().message).toMatch(/AI client/);
+    await app2.close();
   });
 });
 

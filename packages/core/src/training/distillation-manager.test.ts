@@ -227,14 +227,29 @@ describe('DistillationManager', () => {
       ).rejects.toThrow('not found');
     });
 
-    it('throws when job is not pending', async () => {
+    it('throws when job is not pending or failed', async () => {
       pool.query = vi.fn(async () => ({
         rows: [makeJobRow({ status: 'running' })],
         rowCount: 1,
       }));
       await expect(
         manager.runJob('job-1', makeConvStorage(), makeTeacher())
-      ).rejects.toThrow('not pending');
+      ).rejects.toThrow('cannot be run');
+    });
+
+    it('accepts failed jobs for retry', async () => {
+      let queryCount = 0;
+      pool.query = vi.fn(async () => {
+        queryCount++;
+        // First call: getJob (returns failed job), second: UPDATE to running, third: complete
+        if (queryCount === 1) return { rows: [makeJobRow({ status: 'failed' })], rowCount: 1 };
+        return { rows: [], rowCount: 1 };
+      });
+      // Minimal conv storage — returns empty list so job completes immediately
+      const convStorage = { listConversations: vi.fn(async () => ({ conversations: [] })), getMessages: vi.fn(async () => []) } as any;
+      await manager.runJob('job-1', convStorage, makeTeacher());
+      // Should not throw — job was accepted and completed
+      expect(queryCount).toBeGreaterThan(1);
     });
 
     it('marks job as complete after processing', async () => {
