@@ -1,457 +1,168 @@
-## [2026.2.28i] — 2026-02-28
+## [2026.2.27] — 2026-02-28
 
 ### Added
 
-- **Twitter OAuth 2.0 support** — The Twitter integration now accepts an `oauth2AccessToken` (and
-  optional `oauth2RefreshToken`) as an alternative to OAuth 1.0a. Credential resolution priority:
-  OAuth 2.0 → OAuth 1.0a → bearer-only. OAuth 2.0 tokens work with all Twitter API v2 endpoints
-  (profile, timeline, search, post, like, retweet) but **cannot upload media** — a clear 400 error
-  is returned when attempted. New fields in Settings → Connections → Twitter.
-- **`twitter_upload_media` MCP tool** — Upload an image or video to Twitter using the v1.1 media
-  endpoint; returns a `mediaId` string. Accepts either `url` (backend fetches the media) or `data`
-  (base64-encoded bytes). Requires OAuth 1.0a credentials and `auto` mode.
-- **`mediaIds` parameter on `twitter_post_tweet`** — Pass up to 4 media IDs (from
-  `twitter_upload_media`) to attach images or video to a posted tweet.
-- **`hasV1Auth` credential flag** — Internal flag on `TwitterCreds` that gates v1.1 endpoints.
+#### GitHub Integration (Phase 70 & 70b)
 
-### Changed
-
-- Twitter adapter (`adapter.ts`) now initializes correctly with OAuth 2.0-only configs (previously
-  threw "requires a bearerToken" even when OAuth 2.0 token was present).
-
-## [2026.2.28h] — 2026-02-28
-
-### Added
-
-- **GitHub SSH key management tools (Phase 70b)** — 7 additional GitHub MCP tools:
+- **GitHub API MCP Tools** — 10 new MCP tools backed by the stored GitHub OAuth token:
+  `github_profile`, `github_list_repos`, `github_get_repo`, `github_list_prs`, `github_get_pr`,
+  `github_list_issues`, `github_get_issue`, `github_create_issue`, `github_create_pr`, `github_comment`.
+  Enforces per-personality `integrationAccess` mode (`suggest` = read-only, `draft` = issues + PR preview,
+  `auto` = full write access). Gated by global `exposeGithub` MCP toggle + per-personality toggle.
+- **GitHub SSH key management tools** — 7 additional GitHub MCP tools:
   `github_list_ssh_keys`, `github_add_ssh_key`, `github_delete_ssh_key`,
   `github_setup_ssh` (generate ed25519 key in-container; register with GitHub; write to `~/.ssh/`),
   `github_rotate_ssh_key` (rotate key: generate new → register → revoke old),
   `github_create_repo`, `github_fork_repo`.
 - **SSH key E2E encryption** — private SSH keys are encrypted with AES-256-GCM before being stored
-  in the SecretsManager (`packages/mcp/src/utils/ssh-crypto.ts`). Encryption key is derived via
-  HKDF-SHA256 from the shared `SECUREYEOMAN_TOKEN_SECRET` — only the MCP service can decrypt.
-  Keys are stored under names like `GITHUB_SSH_*` and appear in the Security → Secrets panel
-  (values masked, like all other secrets).
+  in SecretsManager (`packages/mcp/src/utils/ssh-crypto.ts`). Encryption key is derived via
+  HKDF-SHA256 from `SECUREYEOMAN_TOKEN_SECRET` — only the MCP service can decrypt. Keys are
+  stored under `GITHUB_SSH_*` names and appear in Security → Secrets panel (masked).
 - **SSH key auto-restore on container restart** — `McpServiceServer.restoreSshKeys()` runs at
   startup, fetches encrypted blobs from the new `GET /api/v1/internal/ssh-keys` route, decrypts
-  them locally, and writes them back to `~/.ssh/`. The `~/.ssh/config` block is also restored.
-- **Internal SSH keys route** — `GET /api/v1/internal/ssh-keys` in core returns `GITHUB_SSH_*`
-  ciphertext entries to the authenticated MCP service (core never sees the plaintext private key).
-- **`admin:public_key` OAuth scope** — added to the GitHub provider so SSH key management works.
-  Users who connected GitHub before this release must reconnect to grant the new scope.
-
-## [2026.2.28g] — 2026-02-28
-
-### Added
-
-- **GitHub API MCP Tools (Phase 70)** — 10 new MCP tools backed by the stored GitHub OAuth token:
-  `github_profile`, `github_list_repos`, `github_get_repo`, `github_list_prs`, `github_get_pr`,
-  `github_list_issues`, `github_get_issue`, `github_create_issue`, `github_create_pr`, `github_comment`.
-  Enforces per-personality `integrationAccess` mode (`suggest` = read-only, `draft` = issues + PR preview,
-  `auto` = full write access). Gated by global `exposeGithub` MCP toggle + per-personality toggle.
-- **GitHub OAuth scope expansion** — scopes now include `repo` and `public_repo` (in addition to
-  `read:user`/`user:email`) so issue creation, PR creation, and commenting work without reconnecting
-  for newly connected accounts. Users who connected before this release will need to reconnect.
+  them locally, and restores `~/.ssh/` files and config block.
+- **GitHub OAuth scope expansion** — scopes now include `repo`, `public_repo`, and `admin:public_key`.
+  Users who connected GitHub before this release must reconnect to grant write access.
 - **GitHub token refresh infrastructure** — `OAuthTokenService` gains `githubCredentials` dep and
   `GITHUB_TOKEN_URL` constant; `refreshAndStore()` branches on provider for the correct token URL.
-- **Soul prompt corrected** — `platformTools.github` now lists the 10 OAuth-backed API tool names
-  instead of the old server-local CLI tool names; `writeOnlyTools.github` and `draftBlockedTools.github`
-  added so the prompt accurately reports available tools per access mode.
 
-## [2026.2.28f] — 2026-02-28
-
-### Added
-
-- **`list_dynamic_tools` and `delete_dynamic_tool` creation tools** — When `allowDynamicTools`
-  is enabled, the personality can now call `list_dynamic_tools` to inspect all registered
-  dynamic tools and `delete_dynamic_tool` to remove a broken or outdated tool by name.
-  Previously there was no way for the AI to clean up tools it had created — resulting in
-  broken tools (e.g. with undeclared `entry` variables) persisting indefinitely.
-  Both tools are added to `DYNAMIC_TOOL_TOOLS` in `creation-tools.ts` and handled by
-  `creation-tool-executor.ts`.
-
-### Changed
-
-- **Integration access default mode changed from `auto` to `suggest`** — `IntegrationAccessSchema.mode`
-  now defaults to `'suggest'` instead of `'auto'`. This applies everywhere: schema validation,
-  `resolveGmailAccess()`, `resolveTwitterAccess()`, the soul prompt's fallback for connected OAuth
-  accounts without an explicit access entry, and the Integration Access checkbox in the Personality
-  Editor (new entries and the display fallback both start at `'suggest'`). With `'suggest'` as the
-  default, personalities must be explicitly granted `'draft'` or `'auto'` before they can compose
-  or send messages, preventing accidental autonomous outbound actions.
-
----
-
-## [2026.2.28e] — 2026-02-28
-
-### Fixed
-
-- **Personality list avatar buffer** — The personality list card wrapped `<PersonalityAvatar
-  size={20}>` inside a `w-8/w-10` circle container. The fixed 20px size left a
-  visible muted-background gap around the avatar. Replaced with an inline `<img
-  className="block w-full h-full object-cover">` that fills the circle, and a
-  proportionally-sized `<Bot>` icon fallback (`w-4/w-5`).
-
----
-
-## [2026.2.28d] — 2026-02-28
-
-### Fixed
-
-- **Avatar crop zoom shifts image left** — Tailwind preflight sets `img { max-width: 100% }`
-  globally. The crop viewport is 300px wide, so once zoom exceeded `minScale` and
-  `imgW > 300px`, the browser silently capped the rendered width at 300px while
-  `left` was still computed against the unconstrained `imgW`. The position/size
-  disagreed on every zoom step, pulling the image hard to the left.
-  Fixed by adding `maxWidth: 'none'` and `maxHeight: 'none'` to the crop image's
-  inline style to override the preflight constraint.
-
-- **Avatar lightbox zoom blocked by passive listener** — `AvatarLightbox` used React's
-  synthetic `onWheel` which is a passive listener in React 18, making
-  `e.preventDefault()` a no-op. Replaced with a native `{ passive: false }` wheel
-  listener via `containerRef` + `useEffect`. Also switched from additive
-  (`s - deltaY * 0.001`) to multiplicative (`s * (1 - deltaY * 0.005)`) scale
-  factor for proportional feel. `scaleRef` keeps the handler closure up-to-date
-  without requiring the effect to re-run on every scale change.
-
-- **Avatar crop zoom proportionality** — `minScale` was set to `(CROP_RADIUS * 2) /
-  Math.min(w, h)` (260px) rather than `CROP_CONTAINER / Math.min(w, h)` (300px),
-  leaving a 20px gap between the image edge and the container boundary at minimum
-  zoom. As scale increased the image edge swept visibly across the dimmed corner
-  area. Updated to fill the container at `minScale` so the image edge is always
-  at or beyond the viewport boundary.
-
----
-
-## [2026.2.28c] — 2026-02-28
-
-### Fixed
-
-- **Avatar crop preview blocked by CSP** — The `<meta http-equiv="Content-Security-Policy">`
-  in `index.html` had `default-src 'self'` with no explicit `img-src` directive.
-  Browsers fall back to `default-src` for images, which blocks `blob:` URLs
-  created by `URL.createObjectURL()`. Added `img-src 'self' data: blob:` and
-  `media-src 'self' blob:` to the meta CSP. Also simplified `connect-src` to
-  use `ws: wss:` scheme-only directives to cover WebSocket connections to any
-  configured hostname (e.g. `dev.secureyeoman.ai`). The CSP in `server.ts`
-  already had `img-src 'self' data: blob:` but the meta tag (which governs the
-  Vite dev server page at port 3000) did not.
-
----
-
-## [2026.2.28b] — 2026-02-28
-
-### Fixed
-
-- **Avatar crop preview blank** — `onImgLoad` was reading `imgRef.current.naturalWidth`
-  during React render, which is zero on the first render after `onLoad` triggers
-  a state update (the DOM is committed but the render captures stale ref data).
-  Natural dimensions are now captured in a `naturalSize` state variable directly
-  inside the `onLoad` event handler (`e.currentTarget.naturalWidth/Height`) and
-  used in the render phase — no ref reads at render time. Crop preview now
-  displays and positions the image correctly on first open.
-
-- **Migration 062 startup crash** (`column "created_at" does not exist`) —
-  `audit.entries` uses `timestamp` (bigint epoch) rather than `created_at`, and
-  has no `personality_id` column. The two broken index definitions were replaced:
-  `idx_audit_entries_timestamp ON audit.entries ("timestamp" DESC)` and
-  `idx_audit_entries_event_timestamp ON audit.entries (event, "timestamp" DESC)`.
-  The `brain.memories` index (`personality_id, created_at DESC`) was correct and
-  unchanged.
-
----
-
-## [2026.2.28a] — 2026-02-28
-
-### Added
-
-- **Avatar crop modal** — Selecting a photo for a personality now opens a
-  full-screen circular crop tool (drag to reposition, scroll/slider to zoom)
-  before uploading. Exports a 512×512 PNG via canvas — matching the resolution
-  used by Twitter/X, GitHub, and Slack. SVG uploads still bypass the crop step.
-  Pre-crop size limit raised from 2 MB to 10 MB; the exported PNG always fits
-  within the server's 2 MB limit.
-
-- **Personality avatar in conversation list** — Each conversation row in the
-  Chat sidebar now shows the active personality's avatar (16 px circle) in place
-  of the generic `MessageSquare` icon when a personality is selected.
-
-- **`OAUTH_REDIRECT_BASE_URL` env var** — Controls the base URL embedded in
-  OAuth `redirect_uri` parameters sent to providers (Google, GitHub, etc.).
-  Required when the API server and the registered redirect URI use different
-  origins — e.g. in dev where Vite (port 3000) proxies `/api/*` to core
-  (port 18789) but Google Console has `https://…:3000/…/callback` registered.
-  Falls back to `SECUREYEOMAN_EXTERNAL_URL` / the core server URL if unset.
-  Set to `https://dev.secureyeoman.ai:3000` in `.env.dev`.
-
-- **Migration 062 — query indexes** — Three new `CREATE INDEX IF NOT EXISTS`
-  statements for the audit log and brain memory hot paths:
-  `idx_audit_entries_timestamp`, `idx_audit_entries_event_timestamp`,
-  `idx_brain_memories_personality_created`.
-
-### Fixed
-
-- **Google OAuth `redirect_uri_mismatch`** — The redirect URI sent to Google
-  was built from `SECUREYEOMAN_EXTERNAL_URL` (port 18789) but Google Console
-  had port 3000 registered. Fixed via the new `OAUTH_REDIRECT_BASE_URL` option.
-
-- **Google consent screen not appearing** — The generic `google` provider was
-  missing `access_type=offline` + `prompt=consent` params. These are now set for
-  all Google-family providers (`google`, `gmail`, `googlecalendar`,
-  `googledrive`) so the consent screen always appears when connecting an account.
-
-- **Post-OAuth redirect to port 18789** — After a successful OAuth callback,
-  `reply.redirect` used a relative path which resolved to the API server port.
-  The initiation handler now captures `frontendOrigin` from the `Origin`/
-  `Referer` header (or an explicit `return_to` query param) and prefixes all
-  callback redirects with it.
-
-### Performance
-
-- **Brain seeding early-exit** — `seedBaseKnowledge()` now issues a single
-  COUNT query on startup. When all three global knowledge entries and every
-  personality's self-identity entry already exist the function returns
-  immediately — reducing steady-state startup cost from 4+ queries to 1.
-
-### Removed
-
-- **SSE transport** (`SSEServerTransport`) — Deleted `packages/mcp/src/transport/sse.ts`
-  and removed the `'sse'` value from `McpTransportSchema`. All MCP clients in
-  use (Claude Code, Cursor) support `StreamableHTTP`; the `.env.dev` default
-  has been `MCP_TRANSPORT=streamable-http` since it was introduced. Dependency
-  Watch entry moved to Resolved.
-
----
-
-## [2026.2.27i] — 2026-02-27
-
-### Added
-
-- **MCP connection setup in dashboard** — The YEOMAN MCP card in Connections →
-  MCP now has a "Connect your MCP client" section. Shows the server URL with a
-  copy button and a "Generate connection token" button that creates an
-  `operator`-role API key (`sck_…`) in one click. After generation the token is
-  shown inline (highlighted in amber, shown once) alongside the full JSON config
-  snippet ready to paste into any MCP client. Keys are managed in Settings →
-  API Keys. (+2 tests in `ConnectionsPage.test.tsx`)
-
----
-
-## [2026.2.27h] — 2026-02-27
-
-### Fixed
-
-- **MCP auth now accepts API keys** — `/api/v1/auth/verify` previously only
-  validated JWT session tokens, so MCP clients had to use short-lived tokens
-  that expired hourly. The endpoint now falls back to API key (`sck_…`)
-  validation when JWT validation fails. Create a permanent key in Settings →
-  API Keys and use it as the MCP Bearer token — no re-auth needed after
-  container restarts. (+2 tests in `auth-routes.test.ts`)
-
-- **Gmail scope improvements** — `checkWriteScopes()` now also accepts the
-  broad `https://mail.google.com/` scope, covering tokens granted via Google's
-  "Full Gmail access" flow. The profile endpoint (`GET /api/v1/gmail/profile`)
-  now returns the `scopes` field so the AI can call `gmail_profile` to diagnose
-  exactly which permissions are stored. (+3 tests in `gmail-routes.test.ts`)
-
-- **"Tool names must be unique" (Anthropic 400)** — Removed the short-lived
-  `gmail_create_draft` alias tool. With 186 tools registered, Claude Code was
-  combining a stale pre-rebuild tool list with the new one, producing duplicates
-  that Anthropic rejects. Restored to 185 unique tools. Root cause: fully
-  restart the Claude Code process after rebuilding containers to force a clean
-  MCP reconnect.
-
-- **`gmail_compose_draft` scope check** — `GMAIL_WRITE_SCOPES` extended with
-  `https://mail.google.com/` so broad-access tokens pass the pre-flight check
-  without hitting a 403.
-
----
-
-## [2026.2.27g] — 2026-02-27
-
-### Added
-
-- **Agent World Evolution** — Phase 69 evolves the ASCII agent world into a
-  living 2D office where personalities move between named zones.
-
-  **CLI (`secureyeoman world`):**
-  - New `--size normal` (default) and `--size large` flags activate world-map
-    mode with BFS-navigated floor plans. Personalities move one step per
-    animation frame from their home desk to their target zone.
-  - New `--speed slow|normal|fast` flag overrides mood-driven animation speed.
-  - **Zone routing**: offline → Workspace, meeting pairs → Meeting Room,
-    system_health tasks → Server Room, idle >60 s → Break Room.
-  - **Meeting detection**: agents sharing a `correlationId` on running tasks, or
-    with `type` containing `'a2a'`, converge in the Meeting Room and show yellow
-    speech bubbles with the active task name.
-  - **World mood**: `calm` / `productive` / `busy` / `alert` / `celebration` —
-    drives fps, server rack color (alert→red), celebration stars.
-  - New exports: `buildFloorPlan()`, `findPath()`, `computeMood()` (all pure
-    functions, unit-tested without a TTY).
-  - Compact size (`--size compact`) retains the original card-grid layout.
-
-  **Dashboard (`AgentWorldWidget`):**
-  - **Grid/Map toggle** in the widget header; selection persisted to
-    `localStorage['world:viewMode']`.
-  - **Map view**: 2×2 CSS grid with zone boxes (Workspace, Meeting Room, Break
-    Room, Server Room). Agents appear as `face + name` pills that can be clicked.
-  - **`onAgentClick` prop** — both `MetricsPage` and `AdvancedEditorPage` wire
-    this to navigate to `/soul/personalities?focus=<id>`.
-  - Exported `computeZoneForAgent()` pure function for zone tests.
-  - New guide: `docs/guides/agent-world.md`.
-
-  Tests: +35 CLI (world.test.ts) + 14 dashboard (AgentWorldWidget.test.tsx)
-  + 1 MetricsPage = 50 new tests. ADR 152 updated.
-
-## [2026.2.27f] — 2026-02-27
-
-### Added
-
-- **Agent World dashboard integration** — The ASCII agent world is also available
-  directly in the dashboard via a shared `AgentWorldWidget` React component:
-  - **Mission Control card** — new "Agent World" card in the Mission Control tab
-    (between the Infrastructure Row and System Topology), showing up to 12 agents.
-  - **Advanced Editor panel** — collapsible "World" panel below the Inline Chat in
-    the Advanced Editor workspace, toggled via a Globe icon button in the toolbar.
-    State persisted in `localStorage` (`editor:showWorld`).
-  - Tests: 20 new tests in `AgentWorldWidget.test.tsx`; +6 in MetricsPage; +6 in
-    AdvancedEditorPage. ADR 152.
-
-- **ASCII Agent World** — New `secureyeoman world` CLI command (alias: `w`) renders
-  a full-screen animated ASCII "office" in the terminal. Each personality appears as
-  a character at their own workstation with a 4-frame state machine: `idle` (slow
-  blink), `thinking` (rotating dots), `typing` (flashing keyboard), `talking`
-  (recent audit event), `offline` (inactive personality). Character frames are
-  staggered so agents animate out of phase. Data is pulled from the running server
-  via polling (`/soul/personalities` every 10 s, `/tasks` every 3 s,
-  `/audit/entries` every 5 s). Activity log at the bottom streams new events as
-  they arrive. Key bindings: `r` refresh, `↑↓` scroll log, `q`/`Ctrl+C` quit.
-  No new dependencies — pure Node.js ANSI. ADR 152.
-
-## [2026.2.27e] — 2026-02-27
-
-### Added
-
-- **Local-first routing** — New `localFirst` toggle in the Model Selection widget. When enabled, the
-  AI client attempts all configured local providers (Ollama, LM Studio, LocalAI) before the primary
-  cloud provider. Falls back to cloud if the local server is unreachable. Persisted across restarts.
-  REST: `PATCH /api/v1/model/config { localFirst }`. ADR 148.
-
-- **Ollama model lifecycle** — Pull and delete Ollama models from the dashboard or CLI:
-  - Dashboard Model Selection widget: disk size per model, trash button per model, pull-with-progress
-    form at the bottom of the Ollama section.
-  - CLI: `secureyeoman model pull <model>` and `secureyeoman model rm <model>`.
-  - MCP tools: `ollama_pull` and `ollama_rm` for AI-driven model management.
-  - REST: `POST /api/v1/model/ollama/pull` (SSE stream), `DELETE /api/v1/model/ollama/:name`.
-  - ADR 149.
-
-- **Quantization guide** — `docs/guides/model-quantization.md`: hardware tier recommendations,
-  VRAM estimates per model family, and Ollama pull commands for common quants (Q4_K_M, Q5_K_S,
-  Q8_0, Q2_K).
-
-- **Model distillation pipeline** — `DistillationManager` backed by `training.distillation_jobs`
-  (migration 060). Teacher LLM (any configured provider) re-answers user turns from conversation
-  history and writes ShareGPT or instruction JSONL. Dashboard: new **Distillation** sub-tab in
-  Developer → Training with job creation form, progress bar, and status chips.
-  REST: `POST/GET/GET/:id/DELETE/:id /api/v1/training/distillation/jobs`. ADR 150.
-
-- **LoRA/QLoRA fine-tuning via Docker** — `FinetuneManager` backed by `training.finetune_jobs`
-  (migration 061). Manages Docker-based fine-tuning jobs using the `unsloth-trainer` sidecar image.
-  Supports LoRA rank/alpha, batch size, epochs, and VRAM budget configuration. After training,
-  adapters can be registered with Ollama via one-click "Register" button.
-  Dashboard: new **Fine-tune** sub-tab in Developer → Training.
-  REST: full CRUD + SSE log streaming + Ollama registration endpoint.
-  New files: `Dockerfile.unsloth-trainer`, `scripts/train.py`. ADR 151.
-
-### New Tests
-
-- 5 model-routes localFirst tests, 6 Ollama lifecycle route tests
-- 3 pull() + 3 deleteModel() tests in ollama.test.ts
-- 16 distillation manager tests (`distillation-manager.test.ts`)
-- 22 finetune manager tests (`finetune-manager.test.ts`)
-- 27 distillation + finetune route tests (`training-distillation-routes.test.ts`)
-- Total new tests: **82** (running total: ~8793)
-
----
-
-## [2026.2.27d] — 2026-02-27
-
-### Added
-
-- **Marketplace "Global (All Personalities)" install** — The personality selector in the Marketplace and Community tabs now includes a "Global (All Personalities)" option (value = `''`). Selecting it installs the skill without a `personalityId`, creating a global brain skill available to every personality. The active personality is pre-selected on load; switching to Global is now sticky (not overridden on the next render).
-- **Community tab: always visible** — Removed the `hasInitialized` gate from `CommunityTab`. Community skills are now fetched and displayed immediately without requiring an active personality to be detected first.
-- **Personality selector ordering** — The active personality now sorts to the top of the Install-to dropdown; remaining personalities are alphabetical.
-
-### Fixed
-
-- **Marketplace showing only 3 of 6 builtin skills** — `MarketplaceStorage.updateSkill()` was missing the `source` column in its SQL `UPDATE`, so `seedBuiltinSkills()` could not correct the source of existing rows. Five of the six builtin skill files define `instructions` as `string[]`, which caused PostgreSQL type errors when inserting into the `TEXT` column; `addSkill()` and `updateSkill()` now normalize `string[]` → `'\n'.join()`. `seedBuiltinSkills()` now wraps each skill in an independent `try/catch` so one failure cannot abort the rest.
-- **Marketplace pagination hiding builtins** — `MarketplaceTab` fetched all skills with the default `limit=20`, which mixed community and builtin results and could leave builtin skills on page 2. The tab now requests `origin='marketplace'` + `limit=200` so only builtin and published skills are returned.
-- **"Global" selection immediately overridden** — Both `MarketplaceTab` and `CommunityTab` used `!selectedPersonalityId` as the guard in their personality-init `useEffect`. Because `'' ` (the "Global" value) is falsy, selecting Global instantly triggered the effect and reset the selector back to the active personality. Fixed with a `useRef` one-shot initialization flag.
-- **Chat conversation not restored on refresh** — Navigating away and returning to the Chat page no longer starts a new empty chat. The last active `conversationId` is persisted in `localStorage` (`soul:chatConversationId`) and restored on mount. On load the stored ID is validated against the current conversation list; if not found (different auth session, deleted conversation) it is cleared automatically. Only "New Chat" starts a fresh session.
-- **Gmail OAuth scope missing** — Added `https://www.googleapis.com/auth/gmail.compose` to the Gmail provider scopes in `oauth-routes.ts`. The `resolveGmailAccess` helper now prefers `provider='gmail'` tokens over generic `provider='google'` tokens (which only carry `openid email profile`). A new `gmailErrorMessage()` helper detects `SCOPE_INSUFFICIENT` / `insufficient_scopes` / `insufficientPermissions` in 403 responses and returns an actionable "reconnect your account" message instead of the raw API error.
-
----
-
-## [2026.2.27c] — 2026-02-27
-
-### Added
-
-- **Force-refresh OAuth token endpoint** — `POST /api/v1/auth/oauth/tokens/:id/refresh` bypasses the 5-minute near-expiry buffer and immediately exchanges the stored refresh token for a new access token. Returns 404 if the token is not found or refresh fails (e.g. refresh token revoked — user must reconnect).
-- **"Refresh Token" button in Connections → OAuth** — Each connected account card now shows a "Refresh Token" button next to "Disconnect". Useful when a personality reports an expired token: click to force-refresh without reconnecting the account.
-
-### Fixed
-
-- **Gmail API 401 → auto-retry after token refresh** — All Gmail routes (`profile`, `messages`, `threads`, `drafts`, `send`, `labels`) now use a `fetchGmail` helper that detects a 401 response from the Gmail API, calls `forceRefreshById` to get a new access token, and retries the request once. If the second attempt also fails (e.g. refresh token revoked), the 401 is returned to the caller as before.
-- **`'google'` provider tokens could not be refreshed** — `OAuthTokenService.getCredentials()` checked for `'gmail' | 'googlecalendar' | 'googledrive'` but not `'google'`. Tokens stored with `provider = 'google'` (general Google OAuth flow) would hit the "no client credentials configured" warn and return the stale token, causing silent 401 failures from Google APIs.
-
----
-
-## [2026.2.27b] — 2026-02-27
-
-### Added
+#### Twitter Integration
+
+- **Twitter OAuth 2.0 support** — The Twitter integration now accepts `oauth2AccessToken` (and
+  optional `oauth2RefreshToken`) as an alternative to OAuth 1.0a. Credential resolution priority:
+  OAuth 2.0 → OAuth 1.0a → bearer-only. New fields in Settings → Connections → Twitter.
+- **`twitter_upload_media` MCP tool** — Upload an image or video to Twitter using the v1.1 media
+  endpoint; returns a `mediaId`. Accepts `url` or `data` (base64). Requires OAuth 1.0a + `auto` mode.
+- **`mediaIds` parameter on `twitter_post_tweet`** — Attach up to 4 media IDs to a posted tweet.
 
 #### Gmail & Twitter MCP Tools (Phase 63)
 
-- **Gmail MCP Tools** — 7 native `gmail_*` tools added to the YEOMAN MCP server: `gmail_profile`, `gmail_list_messages`, `gmail_read_message`, `gmail_read_thread`, `gmail_list_labels`, `gmail_compose_draft`, `gmail_send_email`. All proxy through `/api/v1/gmail/*` routes backed by the Gmail REST API. Access token auto-refreshed via `OAuthTokenService`. *(ADR 147, Guide: gmail-twitter-mcp.md)*
-- **Twitter/X MCP Tools** — 10 native `twitter_*` tools: `twitter_profile`, `twitter_search`, `twitter_get_tweet`, `twitter_get_user`, `twitter_get_mentions`, `twitter_get_timeline`, `twitter_post_tweet`, `twitter_like_tweet`, `twitter_retweet`, `twitter_unretweet`. Proxy through `/api/v1/twitter/*` using `twitter-api-v2`. Bearer-token for read-only; OAuth 1.0a for write and user-context. *(ADR 147, Guide: gmail-twitter-mcp.md)*
-- **Twitter draft mode** — In `draft` integration access mode, `POST /api/v1/twitter/tweets` returns `{ draftMode: true, preview: {...}, message: "Tweet NOT posted. Show to user for confirmation." }` without calling the Twitter API (no native draft endpoint exists).
-- **Two-level feature gating** — Gmail and Twitter tools gated at: (1) global `McpFeatureConfig.exposeGmail/exposeTwitter` toggled in Connections → MCP → YEOMAN MCP; (2) per-personality `McpFeatures.exposeGmail/exposeTwitter` toggled in Edit Personality → Body → MCP. Both must be `true` for tools to appear. Personality-level toggles are greyed out when the global toggle is off.
-- **Tool count live update** — The "X tools" badge in the YEOMAN MCP card filters gmail_* and twitter_* client-side from `featureConfig`, so the count updates immediately on toggle without a round-trip.
-- **Soul prompt tool awareness** — `composeSoulPrompt()` now appends the available `gmail_*`/`twitter_*` tool names (filtered by integration access mode) inline with each connected integration line, so the personality knows exactly what it can do.
+- **Gmail MCP Tools** — 7 native `gmail_*` tools: `gmail_profile`, `gmail_list_messages`,
+  `gmail_read_message`, `gmail_read_thread`, `gmail_list_labels`, `gmail_compose_draft`,
+  `gmail_send_email`. All proxy through `/api/v1/gmail/*` with auto-refresh. *(ADR 147)*
+- **Twitter/X MCP Tools** — 10 native `twitter_*` tools: `twitter_profile`, `twitter_search`,
+  `twitter_get_tweet`, `twitter_get_user`, `twitter_get_mentions`, `twitter_get_timeline`,
+  `twitter_post_tweet`, `twitter_like_tweet`, `twitter_retweet`, `twitter_unretweet`. *(ADR 147)*
+- **Two-level feature gating** — Gmail and Twitter tools gated at global `McpFeatureConfig` + per-personality toggle.
 
-### Fixed
+#### Avatar & UI
 
-- **Security policy not saved across restarts** — `loadSecurityPolicyFromDb()` in `secureyeoman.ts` maintained an explicit `policyKeys` allowlist used to filter which DB rows are applied to `config.security` at startup. `allowCodeEditor`, `allowAdvancedEditor`, and `allowTrainingExport` were missing from this list, so toggling them in the dashboard was saved to the DB but silently ignored on the next restart. All three keys now included.
-- **Training Download button style** — Changed from `btn-primary` to `btn-ghost` in `TrainingTab.tsx` to match the visual style of other secondary-action buttons in the Developer page.
-- **Gmail/Twitter tools missing from YEOMAN MCP manifest** — `packages/mcp/src/tools/manifest.ts` did not include the 17 new `gmail_*` / `twitter_*` tools. Because `AutoRegistration` uses this manifest to register tools with `mcpClient.discoveredTools` at boot, the tools were never present in `getAllTools()`. This meant the filter in `GET /api/v1/mcp/tools` had nothing to filter, and the tool count badge in Connections → MCP → YEOMAN MCP never changed when toggling Gmail or Twitter. All 17 tools added to the manifest; 2 new manifest tests added to `auto-register.test.ts`.
-- **Gmail/Twitter default to off on fresh install** — Migration `059_mcp_gmail_twitter_defaults.sql` inserts `exposeGmail = false` and `exposeTwitter = false` into `mcp.config` with `ON CONFLICT DO NOTHING`. Fresh installs and upgrades that have never had these rows will start with both features disabled; existing deployments where a user explicitly enabled them are unaffected.
+- **Avatar crop modal** — Selecting a personality photo opens a full-screen circular crop tool
+  (drag to reposition, scroll/slider to zoom) before uploading. Exports 512×512 PNG. SVG uploads
+  bypass the crop step. Pre-crop size limit raised from 2 MB to 10 MB.
+- **Personality avatar in conversation list** — Each conversation row in the Chat sidebar shows
+  the active personality's avatar (16 px circle) instead of the generic icon.
 
----
+#### Dynamic Tools
 
-## [2026.2.27] — 2026-02-27
+- **`list_dynamic_tools` and `delete_dynamic_tool`** — When `allowDynamicTools` is enabled, the
+  personality can inspect all registered dynamic tools and remove broken/outdated ones by name.
 
-### Added
+#### MCP & OAuth
 
-#### Local-First AI (Phase 62)
+- **MCP connection setup in dashboard** — The YEOMAN MCP card in Connections → MCP shows the
+  server URL with a copy button and a "Generate connection token" button that creates an
+  `operator`-role API key in one click with the full JSON config snippet.
+- **Force-refresh OAuth token endpoint** — `POST /api/v1/auth/oauth/tokens/:id/refresh` bypasses
+  the 5-minute buffer and immediately exchanges the stored refresh token.
+- **"Refresh Token" button in Connections → OAuth** — Force-refresh without disconnecting.
+- **`OAUTH_REDIRECT_BASE_URL` env var** — Controls the base URL in OAuth `redirect_uri` parameters.
+  Required when API server and registered redirect URI use different origins.
+- **Migration 062 — query indexes** — `idx_audit_entries_timestamp`, `idx_audit_entries_event_timestamp`,
+  `idx_brain_memories_personality_created` for audit log and brain memory hot paths.
 
-- **Ollama Embedding Provider** — `OllamaEmbeddingProvider` calls `POST {baseUrl}/api/embed` for local, privacy-preserving dense embeddings. No API key needed. Supported models: `nomic-embed-text` (768d, default), `mxbai-embed-large` (1024d), `all-minilm` (384d). Configure via Settings → Brain → Vector Memory → Provider = Ollama. *(Guide: ollama-embeddings.md)*
-- **Training Dataset Export** — `POST /api/v1/training/export` streams conversations as ShareGPT JSONL (chat fine-tuning), Alpaca Instruction JSONL (SFT pairs), or Raw Text (pre-training/SimCSE). `GET /api/v1/training/stats` returns row counts. Supports `from`/`to` timestamp filters, `personalityIds` filter, and `limit` cap (max 100k). CLI: `secureyeoman training export [--format] [--out] [--from] [--to] [--personality-id] [--limit]`. *(ADR 146, Guide: training-dataset-export.md)*
-- **Offline Detection Banner** — `GET /api/v1/ai/health` pings configured AI providers (Ollama `GET /api/tags`, LM Studio `GET /v1/models`, cloud key presence check). Dashboard shows a persistent `WifiOff` warning banner when a local provider is unreachable.
-- **Training Data Export security policy** — `allowTrainingExport` (default `false`) added to `SecurityConfigSchema`. When disabled, the Training tab is hidden in the Developers page. Toggle in Settings → Security.
-- **Training tab in Developers page** — Stats cards (conversations, memories, knowledge), format radio selection with descriptions, limit input, download button, and a "Local Training Pipeline" guide covering: export → sentence-transformers / Unsloth → Ollama → connect back.
-- **CLI `training` command** — `secureyeoman training export` streams the response body to stdout or `--out <file>`; `secureyeoman training stats` prints a formatted table.
+#### Agent World Evolution (Phase 69)
+
+- **CLI world-map mode** — `--size normal|large` flags activate a 2D floor plan with BFS movement.
+  Zone routing: offline → Workspace, meeting pairs → Meeting Room, system_health → Server Room,
+  idle >60 s → Break Room. World mood: calm/productive/busy/alert/celebration.
+- **Dashboard Map view** — `AgentWorldWidget` gains Grid/Map toggle (persisted to localStorage).
+  Map = 2×2 CSS zone grid. `onAgentClick` navigates to `/soul/personalities?focus=<id>`.
+- New exports: `buildFloorPlan()`, `findPath()`, `computeMood()`, `computeZoneForAgent()`.
+
+#### Local-First AI & Training (Phase 62 & 64)
+
+- **Local-first routing** — `localFirst` toggle; AI client attempts all local providers (Ollama,
+  LM Studio, LocalAI) before cloud. Persisted across restarts.
+- **Ollama model lifecycle** — Pull/delete Ollama models from dashboard, CLI (`secureyeoman model pull/rm`),
+  and MCP tools (`ollama_pull`, `ollama_rm`). SSE progress stream for pulls.
+- **Model distillation pipeline** — `DistillationManager` backed by `training.distillation_jobs`
+  (migration 060). Dashboard: Distillation sub-tab in Developer → Training.
+- **LoRA/QLoRA fine-tuning via Docker** — `FinetuneManager` with Docker `unsloth-trainer` sidecar.
+  Dashboard: Fine-tune sub-tab. Adapter registration with Ollama.
+- **Training Dataset Export** — `POST /api/v1/training/export` streams ShareGPT/Alpaca/Raw JSONL.
+  CLI: `secureyeoman training export`. Gated by `allowTrainingExport` security policy.
+- **Ollama Embedding Provider** — Local dense embeddings without an API key.
+  Models: `nomic-embed-text` (768d), `mxbai-embed-large` (1024d), `all-minilm` (384d).
+- **Offline Detection Banner** — `GET /api/v1/ai/health` pings local providers; dashboard shows
+  a `WifiOff` banner when a local provider is unreachable.
 
 #### OAuth Connected Accounts
 
-- **OAuth token persistence** — Google and GitHub OAuth callbacks now call `oauthTokenService.storeToken()`, persisting connections across page refreshes.
-- **Multiple accounts per provider** — Multiple Google (or GitHub) accounts can be connected simultaneously; uniqueness is per `(provider, email)`. The Connect panel always shows all available providers.
-- **Richer connected account cards** — Each token shows provider icon, email, "Connected" badge, connected-since date, and a Disconnect button. Provider icons use monochrome `currentColor` to match the active theme.
+- **OAuth token persistence** — Connections persist across page refreshes.
+- **Multiple accounts per provider** — Multiple Google/GitHub accounts supported simultaneously.
 
 ### Changed
 
-- **Google OAuth icon** — Replaced multi-colour SVG with a monochrome `fill="currentColor"` icon matching the GitHub icon and respecting the active theme.
-- **OAuth tab text** — "Available OAuth Providers" → "Connect an Account" (no accounts) / "Add Another Account" (some connected). Removed "All providers connected" sentinel.
+- **Integration access default mode** — `IntegrationAccessSchema.mode` now defaults to `'suggest'`
+  instead of `'auto'`. Personalities must be explicitly granted `'draft'` or `'auto'` before they
+  can compose or send messages — preventing accidental autonomous outbound actions.
+- **Soul prompt corrected** — `platformTools.github` lists the 10 OAuth-backed API tool names;
+  `writeOnlyTools.github` and `draftBlockedTools.github` accurately report available tools per mode.
+- **MCP auth now accepts API keys** — `/api/v1/auth/verify` falls back to API key (`sck_…`)
+  validation when JWT validation fails. Create a permanent key for MCP clients — no re-auth needed.
+- **Gmail scope improvements** — `checkWriteScopes()` accepts `https://mail.google.com/` scope.
+  `gmail_profile` returns the `scopes` field for diagnostics.
+- **Twitter adapter** — Now initializes correctly with OAuth 2.0-only configs.
+- **Google OAuth icon** — Replaced multi-colour SVG with monochrome `fill="currentColor"`.
+- **`'google'` provider token refresh** — `OAuthTokenService.getCredentials()` now handles
+  tokens stored with `provider = 'google'` (previously they silently expired).
+
+### Fixed
+
+- **Avatar crop zoom shifts image left** — Added `maxWidth: 'none'` and `maxHeight: 'none'` to
+  the crop image's inline style to override Tailwind preflight's `max-width: 100%` constraint.
+- **Avatar lightbox zoom blocked by passive listener** — Replaced React synthetic `onWheel` with
+  a native `{ passive: false }` wheel listener via `containerRef` + `useEffect`.
+- **Avatar crop preview blank** — Natural dimensions now captured in `onLoad` event handler
+  directly into state, not via ref reads at render time.
+- **Avatar crop preview blocked by CSP** — Added `img-src 'self' data: blob:` and
+  `media-src 'self' blob:` to the `index.html` meta CSP tag.
+- **Avatar crop zoom proportionality** — `minScale` now uses `CROP_CONTAINER / Math.min(w, h)`
+  (300px) so the image fills the container at minimum zoom.
+- **Personality list avatar buffer** — Replaced `<PersonalityAvatar size={20}>` with an inline
+  `<img className="block w-full h-full object-cover">` that fills the circle container.
+- **Migration 062 startup crash** — `audit.entries` index definitions corrected to use
+  `"timestamp" DESC` instead of the non-existent `created_at` column.
+- **Google OAuth `redirect_uri_mismatch`** — Fixed via the new `OAUTH_REDIRECT_BASE_URL` option.
+- **Google consent screen not appearing** — Added `access_type=offline` + `prompt=consent` for
+  all Google-family providers.
+- **Post-OAuth redirect to port 18789** — `frontendOrigin` captured from `Origin`/`Referer`
+  header; all callback redirects prefixed with it.
+- **Gmail API 401 → auto-retry after token refresh** — All Gmail routes retry once after
+  `forceRefreshById` on a 401 from the Gmail API.
+- **Marketplace showing only 3 of 6 builtin skills** — `updateSkill()` now includes `source`
+  column; `addSkill()`/`updateSkill()` normalize `string[]` instructions → joined string.
+- **Marketplace pagination hiding builtins** — `MarketplaceTab` now requests `origin='marketplace'`
+  + `limit=200`.
+- **"Global" install selection overridden** — One-shot `useRef` init prevents re-override.
+- **Chat conversation not restored on refresh** — `conversationId` persisted to localStorage.
+- **Security policy not saved across restarts** — `allowCodeEditor`, `allowAdvancedEditor`, and
+  `allowTrainingExport` now included in `policyKeys` for `loadSecurityPolicyFromDb()`.
+- **"Tool names must be unique" (Anthropic 400)** — Removed the short-lived `gmail_create_draft`
+  alias tool; restored to 185 unique tools.
+- **Gmail/Twitter tools missing from YEOMAN MCP manifest** — All 17 new tools added to
+  `packages/mcp/src/tools/manifest.ts` so they appear in `getAllTools()` and the tool count badge.
+
+### Performance
+
+- **Brain seeding early-exit** — `seedBaseKnowledge()` issues a single COUNT query on startup;
+  skips all inserts when entries already exist.
+
+### Removed
+
+- **SSE transport** — Deleted `packages/mcp/src/transport/sse.ts`; removed `'sse'` from
+  `McpTransportSchema`. All MCP clients in use support StreamableHTTP.
 
 ---
 
