@@ -24,6 +24,14 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ### Prompting Disciplines
 
+remove skills from community; include into marketplace.
+
+IDEA: would we benifet from workflows, or sub-agent templates as marketplace and / or community available sharables
+
+update personality to apply/install skills to a sub-agent - not just use templated swarms.
+
+Swarm of Concept given to Prompt Craft and cascaeds to create all items for a project.  Or take an exsisting project and what its future needs are and apply it through the cycle.
+
 - [ ] Prompt Craft
 - [ ] Context Engineering
 - [ ] Intent Engineering
