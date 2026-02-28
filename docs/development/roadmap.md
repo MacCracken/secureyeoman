@@ -27,6 +27,7 @@
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P1 — ongoing | 🔄 Continuous |
+| — | Dashboard Performance Optimization | P1 — cross-cutting | ✅ Complete |
 | 78 | Advanced Editor — Full IDE Mode | P2 — power user priority | Ready |
 | 79 | Multi-Instance Federation | P2 — platform surface | Planned |
 | 80 | API Gateway Mode | P2 — platform surface | Planned |
@@ -255,18 +256,34 @@ Inspired by Amazon Bedrock Knowledge Bases + Kendra + Q Business.
 
 ---
 
+## Phase 86: Inline Citations & Grounding
+
+> **Requires Phase 82 (Knowledge Base & RAG Platform)** — all items depend on the retrieval layer delivered there.
+
+**Priority**: P4 — Trust layer. Groundedness enforcement is the anchor item; web grounding is a stretch goal.
+
+Inspired by Google Cloud Vertex AI Grounding and Azure Groundedness Detection.
+
+- [ ] **Source-attributed responses** — When the AI uses retrieved knowledge base documents in a response, inject inline citations (`[1]`, `[2]`) and render a **Sources** section at the bottom of the response. Citation text includes: document title, page/chunk number, and a short excerpt. Stored as structured metadata on the conversation turn. Enabled per personality via `enableCitations: boolean`.
+- [ ] **Groundedness enforcement** — Post-processing pass: before returning a response, check each factual claim against the retrieved chunks using an embedding similarity threshold. Claims with no supporting chunk above threshold are flagged as `[unverified]` inline. Configurable mode: `annotate_only`, `block_unverified`, or `strip_unverified`.
+- [ ] **Web grounding** — Ground AI responses in live web search results, not just the local knowledge base. When web grounding is enabled and the query requires current information, perform a search (via existing web-search MCP tool), retrieve top results, and include them as retrieved context with citations.
+- [ ] **Grounding confidence score** — Per-response aggregate grounding score: what fraction of claims are supported by retrieved sources above threshold? Stored on the conversation turn. Low-grounding responses flagged in the Audit Log. Rolling average per personality surfaced in the Analytics tab as a "Response Trustworthiness" metric.
+- [ ] **Citation feedback** — Users can click a citation to see the full source chunk in a side drawer. They can mark citations as "not relevant" — negative feedback stored as a weak signal for the knowledge base quality scoring system.
+
+---
+
 ## Phase 83: Content Guardrails
 
 **Priority**: P3 — Enterprise compliance. Required for regulated industries (healthcare, finance, legal). PII redaction and topic restrictions are the must-have items; toxicity and grounding checks are the depth tier.
 
-Complements Phase 78 (Prompt Security) which guards the input side. This phase operates on AI outputs before they reach the user.
+Complements Phase 77 (Prompt Security) which guards the input side. This phase operates on AI outputs before they reach the user.
 
 - [ ] **PII detection & redaction** — Detect and optionally redact personally identifiable information in AI outputs before they reach the user: names, email addresses, phone numbers, SSNs, credit card numbers, IP addresses. Configurable per personality: `detect_only` (flag + audit) or `redact` (replace with `[REDACTED]`). Uses NER model (spaCy or Comprehend-compatible) or regex patterns for low-latency enforcement.
 - [ ] **Topic restrictions** — Block AI from discussing configurable topic categories, regardless of system prompt. Example: `blocked_topics: ['competitor products', 'legal advice', 'medical diagnosis']`. Implemented as an embedding-based classifier: compare the input/output embedding against a set of seed topic embeddings; block if similarity exceeds threshold. Configurable per personality in the security settings.
 - [ ] **Toxicity filter** — Block or warn on outputs containing hate speech, harassment, or explicit content. Uses an external classifier endpoint (configurable: local Ollama model, OpenAI Moderation API, or custom). Modes: `block` (refuses to send output), `warn_user`, `audit_only`.
 - [ ] **Custom block lists** — Per-personality keyword/phrase deny lists with regex support. Applied as a fast pre-filter before the semantic checks. Useful for brand protection, legal compliance, or content policy enforcement.
 - [ ] **Guardrail audit trail** — Every guardrail trigger (PII redaction, topic block, toxicity flag) logged to the audit chain with: rule that fired, original content hash (not plaintext), action taken, and conversation ID. Queryable in the Audit Log tab with a "Guardrail Events" filter.
-- [ ] **Grounding check** — Detect hallucinated citations or factual claims that contradict the personality's knowledge base. If the AI asserts a fact with a citation, verify the citation exists in the knowledge base. Flag unverifiable claims with a `[unverified]` annotation in the response. Optional mode: block responses with unverifiable claims outright.
+- [ ] **Grounding check** *(requires Phase 82)* — Detect hallucinated citations or factual claims that contradict the personality's knowledge base. If the AI asserts a fact with a citation, verify the citation exists in the knowledge base. Flag unverifiable claims with a `[unverified]` annotation in the response. Optional mode: block responses with unverifiable claims outright.
 
 ---
 
@@ -296,20 +313,6 @@ Inspired by Amazon Comprehend.
 - [ ] **Key phrase extraction** — Surface the most frequent topics discussed per personality over a rolling window. Dashboard: "Topic Cloud" widget in the Analytics tab. Useful for identifying gaps between what users ask about vs. what the personality's knowledge base covers.
 - [ ] **Entity extraction** — Extract named entities (people, organisations, locations, products, dates) from conversation history using an NER model. Stored as tags on conversations. Enables searching conversations by entity (`GET /api/v1/conversations?entity=AcmeCorp`) and building a graph of frequently discussed topics per personality.
 - [ ] **Anomaly detection on usage patterns** — Flag unusual usage spikes (10× normal message rate), off-hours activity from known users, or patterns consistent with credential stuffing. Generates audit events and optionally triggers notifications via the existing NotificationManager.
-
----
-
-## Phase 86: Inline Citations & Grounding
-
-**Priority**: P4 — Trust layer. Depends on Phase 82 (Knowledge Base) for the retrieval layer. Groundedness enforcement is the anchor item; web grounding is a stretch goal.
-
-Inspired by Google Cloud Vertex AI Grounding and Azure Groundedness Detection.
-
-- [ ] **Source-attributed responses** — When the AI uses retrieved knowledge base documents in a response, inject inline citations (`[1]`, `[2]`) and render a **Sources** section at the bottom of the response. Citation text includes: document title, page/chunk number, and a short excerpt. Stored as structured metadata on the conversation turn. Enabled per personality via `enableCitations: boolean`.
-- [ ] **Groundedness enforcement** — Post-processing pass: before returning a response, check each factual claim against the retrieved chunks using an embedding similarity threshold. Claims with no supporting chunk above threshold are flagged as `[unverified]` inline. Configurable mode: `annotate_only`, `block_unverified`, or `strip_unverified`.
-- [ ] **Web grounding** — Ground AI responses in live web search results, not just the local knowledge base. When web grounding is enabled and the query requires current information, perform a search (via existing web-search MCP tool), retrieve top results, and include them as retrieved context with citations.
-- [ ] **Grounding confidence score** — Per-response aggregate grounding score: what fraction of claims are supported by retrieved sources above threshold? Stored on the conversation turn. Low-grounding responses flagged in the Audit Log. Rolling average per personality surfaced in the Analytics tab as a "Response Trustworthiness" metric.
-- [ ] **Citation feedback** — Users can click a citation to see the full source chunk in a side drawer. They can mark citations as "not relevant" — negative feedback stored as a weak signal for the knowledge base quality scoring system.
 
 ---
 
@@ -512,4 +515,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-28 — Phase 76 (Mission Control Customization) complete. Multi-Instance Federation (79), API Gateway Mode (80), and Conversation Branching & Replay (81) promoted from demand-gated to active phases; Knowledge Base through Marketplace Shareables renumbered 82–88; skill versioning migrated from semantic (1.0.0) to date-based (YYYY.M.D, patch suffix -N) across marketplace and community repos; Workflow & Personality Versioning updated to use YYYY.M.D release format; Observability & Telemetry expanded with correlation IDs, real-time push, alerting, and A2A trace propagation.*
+*Last updated: 2026-02-28 — Phase 77 (Prompt Security) complete and removed from open items. Phase 86 (Inline Citations & Grounding) moved to follow Phase 82 (Knowledge Base) in both the timeline and body — it is fully gate-locked on Phase 82. Phase 83 grounding-check item annotated as also requiring Phase 82. Phase 83's input-side reference corrected to Phase 77.*

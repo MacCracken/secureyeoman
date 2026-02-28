@@ -103,9 +103,12 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks: {
-            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-            'query-vendor': ['@tanstack/react-query'],
-            'chart-vendor': ['reactflow', 'recharts'],
+            'react-vendor':  ['react', 'react-dom', 'react-router-dom'],
+            'query-vendor':  ['@tanstack/react-query'],
+            'charts-vendor': ['recharts'],
+            'flow-vendor':   ['reactflow'],
+            'dnd-vendor':    ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
+            'mermaid':       ['mermaid'],
           },
         },
       },

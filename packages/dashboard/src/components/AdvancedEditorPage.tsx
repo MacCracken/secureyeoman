@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
@@ -378,8 +379,19 @@ function InlineChat({
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+
+  // Virtual scroll for inline chat messages
+  const rowVirtualizer = useVirtualizer({
+    count: messages.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: () => 80,
+    overscan: 3,
+    measureElement: (el) => el.getBoundingClientRect().height,
+  });
+  const virtualItems = useMemo(() => rowVirtualizer.getVirtualItems(), [rowVirtualizer]);
 
   // Synthetic task ID used to signal chat-in-progress to AgentWorldWidget
   const chatTaskId = personalityId ? `__chat_${personalityId}` : null;
@@ -455,7 +467,11 @@ function InlineChat({
         );
       }
       setSending(false);
-      setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+      // Scroll to bottom of the virtual list
+      setTimeout(() => {
+        const el = scrollContainerRef.current;
+        if (el) el.scrollTop = el.scrollHeight;
+      }, 50);
     }
   }, [input, sending, messages, personalityId, memoryEnabled, terminalContext, queryClient, chatTaskId]);
 
@@ -484,39 +500,52 @@ function InlineChat({
         )}
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-2">
+      {/* Messages — virtualized */}
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-2">
         {messages.length === 0 && (
           <p className="text-xs text-muted-foreground px-1 py-2">
             Chat with {personalityName ?? 'the assistant'}. Terminal output is shared as context.
           </p>
         )}
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className={`flex gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            {m.role === 'assistant' && (
-              <Bot className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
+        {messages.length > 0 && (
+          <div style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
+            {virtualItems.map((virtualRow) => {
+              const m = messages[virtualRow.index]!;
+              return (
+                <div
+                  key={m.id}
+                  data-index={virtualRow.index}
+                  ref={rowVirtualizer.measureElement}
+                  style={{ position: 'absolute', top: 0, left: 0, right: 0, transform: `translateY(${virtualRow.start}px)` }}
+                  className={`flex gap-2 pb-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  {m.role === 'assistant' && (
+                    <Bot className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
+                  )}
+                  <div
+                    className={`max-w-[85%] rounded px-2 py-1.5 text-xs whitespace-pre-wrap break-words ${
+                      m.role === 'user' ? 'bg-primary/15 text-foreground' : 'bg-muted/50 text-foreground'
+                    }`}
+                  >
+                    {m.content}
+                  </div>
+                  {m.role === 'user' && (
+                    <User className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                  )}
+                </div>
+              );
+            })}
+            {sending && (
+              <div
+                style={{ position: 'absolute', top: rowVirtualizer.getTotalSize(), left: 0, right: 0 }}
+                className="flex gap-2 justify-start pb-2"
+              >
+                <Bot className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
+                <div className="bg-muted/50 rounded px-2 py-1.5 text-xs text-muted-foreground">
+                  <Loader2 className="w-3 h-3 animate-spin inline" />
+                </div>
+              </div>
             )}
-            <div
-              className={`max-w-[85%] rounded px-2 py-1.5 text-xs whitespace-pre-wrap break-words ${
-                m.role === 'user' ? 'bg-primary/15 text-foreground' : 'bg-muted/50 text-foreground'
-              }`}
-            >
-              {m.content}
-            </div>
-            {m.role === 'user' && (
-              <User className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
-            )}
-          </div>
-        ))}
-        {sending && (
-          <div className="flex gap-2 justify-start">
-            <Bot className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
-            <div className="bg-muted/50 rounded px-2 py-1.5 text-xs text-muted-foreground">
-              <Loader2 className="w-3 h-3 animate-spin inline" />
-            </div>
           </div>
         )}
         <div ref={endRef} />

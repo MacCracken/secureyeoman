@@ -70,6 +70,18 @@ vi.mock('../api/client', () => ({
   fetchSecurityEvents: vi.fn(),
   fetchAuditEntries: vi.fn(),
   fetchWorkflows: vi.fn(),
+  getAccessToken: vi.fn(() => null),
+}));
+
+vi.mock('../hooks/useWebSocket', () => ({
+  useWebSocket: () => ({
+    connected: false,
+    reconnecting: false,
+    lastMessage: null,
+    send: vi.fn(),
+    subscribe: vi.fn(),
+    unsubscribe: vi.fn(),
+  }),
 }));
 
 import * as api from '../api/client';

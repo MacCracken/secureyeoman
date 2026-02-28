@@ -1,3 +1,29 @@
+## [2026.2.28t] — 2026-02-28
+
+### Changed
+
+#### Dashboard Performance Optimization (Cross-Cutting)
+
+A three-tier optimization pass across MetricsPage, SecurityPage, AgentWorldWidget, ChatMarkdown, and AdvancedEditorPage. No user-visible behaviour changes; all 796 dashboard tests continue to pass.
+
+**Bundle size**
+- `ChatMarkdown.tsx` — Mermaid (~11 MB) is now dynamically imported inside the diagram render effect rather than at module level. The library is only downloaded when a `mermaid` fenced code block is actually rendered.
+- `vite.config.ts` — new `manualChunks`: `charts-vendor` (recharts), `flow-vendor` (reactflow), `dnd-vendor` (@dnd-kit), `mermaid`. A metrics-only page visit no longer downloads the ReactFlow workflow graph library.
+
+**Query scoping**
+- `MetricsPage.tsx` — five queries that previously fired from the `MissionControlTab` root regardless of which card was visible are now owned by their respective section components: `tasksData` → `ActiveTasksSection`, `eventsData` → `SecurityEventsSection`, `auditData` → `AuditStreamSection`, `workflowsData` → `WorkflowRunsSection`, `costBreakdown` → `CostBreakdownSection`. The MetricsPage root now runs only 2 queries at startup (`heartbeatStatus`, `mcpData`).
+- `SecurityPage.tsx` — reduced from 3,276 lines to ~405 lines by extracting all 7 tab bodies into separate files under `src/components/security/`. Each tab is lazy-loaded via `React.lazy()` + `Suspense` so its queries only run when the tab is open.
+- `AgentWorldWidget.tsx` — subscribes to `tasks` and `soul` WebSocket channels via `useWebSocket('/ws/metrics')`. Once live data arrives, HTTP polling (`refetchInterval`) is disabled. Falls back to polling on WebSocket reconnection.
+
+**Render performance**
+- `MetricsPage.tsx` — all 12 section components and `MissionCardContent` wrapped with `React.memo`; section `sectionProps` object memoized with `useMemo`; callbacks stabilized with `useCallback`. Sections outside the active card layout no longer re-render on unrelated state changes.
+- `AgentWorldWidget.tsx` — `IntersectionObserver` pauses the 250 ms animation tick and disables all queries when the widget is scrolled off-screen or hidden in the Mission Control catalogue.
+- `AdvancedEditorPage.tsx` — inline chat message list virtualized with `useVirtualizer` from `@tanstack/react-virtual`. Only visible messages are rendered as conversation length grows.
+
+**Docs**: ADR 159.
+
+---
+
 ## [2026.2.28s] — 2026-02-28
 
 ### Added

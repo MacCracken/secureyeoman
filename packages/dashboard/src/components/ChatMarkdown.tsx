@@ -6,7 +6,6 @@ import rehypeKatex from 'rehype-katex';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import oneDark from 'react-syntax-highlighter/dist/esm/styles/prism/one-dark';
 import oneLight from 'react-syntax-highlighter/dist/esm/styles/prism/one-light';
-import mermaid from 'mermaid';
 import DOMPurify from 'dompurify';
 import { useTheme } from '../hooks/useTheme';
 import 'katex/dist/katex.min.css';
@@ -121,20 +120,24 @@ const MermaidDiagram = memo(function MermaidDiagram({ code, theme }: MermaidDiag
     container.innerHTML =
       '<div style="text-align:center;padding:1rem;opacity:0.5;font-size:0.75rem">Rendering diagram…</div>';
 
-    // Re-initialize only when theme actually changes
     const mTheme = theme === 'dark' ? 'dark' : 'default';
-    if (mermaidCurrentTheme.value !== mTheme) {
-      mermaid.initialize({ startOnLoad: false, theme: mTheme });
-      mermaidCurrentTheme.value = mTheme;
-    }
-
     const id = `mermaid-${Math.random().toString(36).slice(2)}`;
 
-    mermaid
-      .render(id, code)
-      .then(({ svg: rendered }) => {
+    // Dynamic import — mermaid (~11 MB) is only loaded when a diagram is rendered
+    import('mermaid')
+      .then((mod) => {
         if (cancelled) return;
-        container.innerHTML = DOMPurify.sanitize(rendered, {
+        const mermaid = mod.default;
+        // Re-initialize only when theme actually changes
+        if (mermaidCurrentTheme.value !== mTheme) {
+          mermaid.initialize({ startOnLoad: false, theme: mTheme });
+          mermaidCurrentTheme.value = mTheme;
+        }
+        return mermaid.render(id, code);
+      })
+      .then((result) => {
+        if (cancelled || !result) return;
+        container.innerHTML = DOMPurify.sanitize(result.svg, {
           USE_PROFILES: { svg: true, svgFilters: true },
         });
       })

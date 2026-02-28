@@ -19,6 +19,19 @@ vi.mock('../api/client', () => ({
   switchModel: vi.fn(),
   sendChatMessage: vi.fn(),
   addMemory: vi.fn(),
+  fetchActiveDelegations: vi.fn(),
+  getAccessToken: vi.fn(() => null),
+}));
+
+vi.mock('../hooks/useWebSocket', () => ({
+  useWebSocket: () => ({
+    connected: false,
+    reconnecting: false,
+    lastMessage: null,
+    send: vi.fn(),
+    subscribe: vi.fn(),
+    unsubscribe: vi.fn(),
+  }),
 }));
 
 vi.mock('./ModelWidget', () => ({

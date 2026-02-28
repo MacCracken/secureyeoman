@@ -23,6 +23,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPersonalities, fetchTasks, fetchActiveDelegations } from '../api/client';
+import { useWebSocket } from '../hooks/useWebSocket';
 import type { ActiveDelegationInfo } from '../api/client';
 import type { Personality, Task } from '../types';
 
@@ -509,29 +510,75 @@ export function AgentWorldWidget({ className = '', maxAgents = 16, onAgentClick,
   // Per-personality frame counters — staggered so agents animate out of phase
   const framesRef = useRef(new Map<string, number>());
   const [tick, setTick] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Data
+  // IntersectionObserver — pause animation and polling when off-screen
+  const [isVisible, setIsVisible] = useState(true);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { setIsVisible(entry.isIntersecting); },
+      { threshold: 0.1 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  // WebSocket for real-time tasks + soul (personalities) updates
+  const { lastMessage, subscribe } = useWebSocket('/ws/metrics');
+  const [wsTasksData, setWsTasksData] = useState<{ tasks: Task[]; total: number } | null>(null);
+  const [wsPersonalitiesData, setWsPersonalitiesData] = useState<{ personalities: Personality[] } | null>(null);
+  const wsHasDataRef = useRef(false);
+
+  useEffect(() => {
+    subscribe(['tasks', 'soul']);
+  }, [subscribe]);
+
+  useEffect(() => {
+    if (!lastMessage) return;
+    if (lastMessage.channel === 'tasks') {
+      setWsTasksData(lastMessage.data as { tasks: Task[]; total: number });
+      wsHasDataRef.current = true;
+    }
+    if (lastMessage.channel === 'soul') {
+      setWsPersonalitiesData(lastMessage.data as { personalities: Personality[] });
+      wsHasDataRef.current = true;
+    }
+  }, [lastMessage]);
+
+  // Queries — serve as initial data load and reconnect hydration.
+  // refetchInterval is disabled once WebSocket data has arrived.
   const { data: personalitiesData } = useQuery({
     queryKey: ['world-personalities'],
     queryFn: fetchPersonalities,
-    refetchInterval: 10_000,
+    refetchInterval: isVisible && !wsHasDataRef.current ? 10_000 : false,
     staleTime: 5_000,
+    enabled: isVisible,
   });
 
   const { data: tasksData } = useQuery({
     queryKey: ['world-tasks-running'],
     queryFn: () => fetchTasks({ status: 'running', limit: 20 }),
-    refetchInterval: 3_000,
+    refetchInterval: isVisible && !wsHasDataRef.current ? 3_000 : false,
+    enabled: isVisible,
   });
 
   const { data: delegationsData } = useQuery({
     queryKey: ['world-delegations-active'],
     queryFn: fetchActiveDelegations,
-    refetchInterval: 3_000,
+    // Delegations not broadcast via WS yet — keep polling but only when visible
+    refetchInterval: isVisible ? 3_000 : false,
+    enabled: isVisible,
   });
 
-  // Animation loop — 4 fps
+  // Merge WS data with query cache (WS wins when available)
+  const resolvedPersonalitiesData = wsPersonalitiesData ?? personalitiesData;
+  const resolvedTasksData = wsTasksData ?? tasksData;
+
+  // Animation loop — 4 fps; paused when off-screen
   useEffect(() => {
+    if (!isVisible) return;
     const timer = setInterval(() => {
       for (const [id, frame] of framesRef.current) {
         framesRef.current.set(id, (frame + 1) % 4);
@@ -539,12 +586,12 @@ export function AgentWorldWidget({ className = '', maxAgents = 16, onAgentClick,
       setTick((t) => t + 1);
     }, 250);
     return () => clearInterval(timer);
-  }, []);
+  }, [isVisible]);
 
   void tick; // used only to trigger re-render
 
-  const personalities = (personalitiesData?.personalities ?? []).slice(0, maxAgents);
-  const tasks: Task[] = tasksData?.tasks ?? [];
+  const personalities = (resolvedPersonalitiesData?.personalities ?? []).slice(0, maxAgents);
+  const tasks: Task[] = resolvedTasksData?.tasks ?? [];
   const delegations: ActiveDelegationInfo[] = delegationsData?.delegations ?? [];
   const now = Date.now();
 
@@ -562,14 +609,14 @@ export function AgentWorldWidget({ className = '', maxAgents = 16, onAgentClick,
 
   if (personalities.length === 0 && delegations.length === 0) {
     return (
-      <p className={`text-sm text-muted-foreground font-mono ${className}`}>
+      <p ref={containerRef as React.RefObject<HTMLParagraphElement>} className={`text-sm text-muted-foreground font-mono ${className}`}>
         No agents found.
       </p>
     );
   }
 
   return (
-    <div className={className}>
+    <div ref={containerRef} className={className}>
       {viewMode === 'large' ? (
         <AgentWorldLargeView
           personalities={personalities}

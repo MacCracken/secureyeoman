@@ -7,7 +7,7 @@
  *   - Full Metrics: deep-dive charts covering tasks, resources, and security
  */
 
-import { useState, useEffect, useRef, lazy, Suspense, useCallback } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense, useCallback, useMemo, memo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -225,6 +225,8 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
   const activePersonalities = personalities.filter((p: Personality) => p.isActive);
   const defaultPersonality = personalities.find((p: Personality) => p.isDefault);
 
+  const handleViewCosts = useCallback(() => { setActiveTab('costs'); }, []);
+
   const TAB_LABELS: Record<Tab, string> = {
     control: 'Mission Control',
     costs: 'Costs',
@@ -296,9 +298,7 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
           activePersonalities={activePersonalities}
           defaultPersonality={defaultPersonality}
           navigate={navigate}
-          onViewCosts={() => {
-            setActiveTab('costs');
-          }}
+          onViewCosts={handleViewCosts}
           editMode={editMode}
           setEditMode={setEditMode}
           catalogueOpen={catalogueOpen}
@@ -311,9 +311,7 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
           metrics={metrics}
           history={history}
           navigate={navigate}
-          onViewCosts={() => {
-            setActiveTab('costs');
-          }}
+          onViewCosts={handleViewCosts}
         />
       )}
     </div>
@@ -350,11 +348,8 @@ interface SectionCommonProps {
   defaultPersonality: Personality | undefined;
   navigate: ReturnType<typeof useNavigate>;
   onViewCosts: () => void;
-  activeTasks: Task[];
-  securityEvents: SecurityEvent[];
-  auditEntries: AuditEntry[];
-  workflows: WorkflowDefinition[];
-  costByProvider: Record<string, { tokensUsed: number; costUsd: number; calls: number; errors: number }>;
+  // activeTasks, securityEvents, auditEntries, workflows, costByProvider removed —
+  // those sections now self-fetch to avoid unnecessary polling when hidden
   heartbeatRunning: boolean;
   worldViewMode: 'grid' | 'map' | 'large';
   setAndPersistWorldView: (m: 'grid' | 'map' | 'large') => void;
@@ -363,7 +358,7 @@ interface SectionCommonProps {
   setIsFullscreen: (v: boolean) => void;
 }
 
-function KpiBarSection({ metrics, activePersonalities, activeDelegations, defaultPersonality, heartbeatStatus, heartbeatRunning, navigate, onViewCosts }: SectionCommonProps) {
+const KpiBarSection = memo(function KpiBarSection({ metrics, activePersonalities, activeDelegations, defaultPersonality, heartbeatStatus, heartbeatRunning, navigate, onViewCosts }: SectionCommonProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
       <StatCard
@@ -425,9 +420,9 @@ function KpiBarSection({ metrics, activePersonalities, activeDelegations, defaul
       />
     </div>
   );
-}
+});
 
-function ResourceMonitoringSection({ metrics, history, onViewCosts }: SectionCommonProps) {
+const ResourceMonitoringSection = memo(function ResourceMonitoringSection({ metrics, history, onViewCosts }: SectionCommonProps) {
   return (
     <div className="card">
       <div className="card-header">
@@ -511,9 +506,16 @@ function ResourceMonitoringSection({ metrics, history, onViewCosts }: SectionCom
       </div>
     </div>
   );
-}
+});
 
-function ActiveTasksSection({ activeTasks, metrics, navigate }: SectionCommonProps) {
+const ActiveTasksSection = memo(function ActiveTasksSection({ metrics, navigate }: SectionCommonProps) {
+  const { data: tasksData } = useQuery({
+    queryKey: ['tasks-running'],
+    queryFn: () => fetchTasks({ status: 'running', limit: 5 }),
+    refetchInterval: 5_000,
+  });
+  const activeTasks: Task[] = tasksData?.tasks ?? [];
+
   return (
     <div className="card">
       <div className="card-header">
@@ -551,9 +553,16 @@ function ActiveTasksSection({ activeTasks, metrics, navigate }: SectionCommonPro
       </div>
     </div>
   );
-}
+});
 
-function WorkflowRunsSection({ workflows, navigate }: SectionCommonProps) {
+const WorkflowRunsSection = memo(function WorkflowRunsSection({ navigate }: SectionCommonProps) {
+  const { data: workflowsData } = useQuery({
+    queryKey: ['workflows-mc'],
+    queryFn: () => fetchWorkflows({ limit: 6 }),
+    refetchInterval: 30_000,
+  });
+  const workflows: WorkflowDefinition[] = workflowsData?.definitions ?? [];
+
   return (
     <div className="card">
       <div className="card-header">
@@ -593,9 +602,9 @@ function WorkflowRunsSection({ workflows, navigate }: SectionCommonProps) {
       </div>
     </div>
   );
-}
+});
 
-function AgentHealthSection({ activePersonalities, heartbeatRunning, navigate }: SectionCommonProps) {
+const AgentHealthSection = memo(function AgentHealthSection({ activePersonalities, heartbeatRunning, navigate }: SectionCommonProps) {
   return (
     <div className="card">
       <div className="card-header">
@@ -652,9 +661,9 @@ function AgentHealthSection({ activePersonalities, heartbeatRunning, navigate }:
       </div>
     </div>
   );
-}
+});
 
-function SystemHealthSection({ health, enabledMcp, mcpServers, navigate }: SectionCommonProps) {
+const SystemHealthSection = memo(function SystemHealthSection({ health, enabledMcp, mcpServers, navigate }: SectionCommonProps) {
   return (
     <div className="card">
       <div className="card-header">
@@ -695,9 +704,9 @@ function SystemHealthSection({ health, enabledMcp, mcpServers, navigate }: Secti
       </div>
     </div>
   );
-}
+});
 
-function IntegrationGridSection({ mcpServers, enabledMcp, navigate }: SectionCommonProps) {
+const IntegrationGridSection = memo(function IntegrationGridSection({ mcpServers, enabledMcp, navigate }: SectionCommonProps) {
   return (
     <div className="card">
       <div className="card-header">
@@ -744,9 +753,16 @@ function IntegrationGridSection({ mcpServers, enabledMcp, navigate }: SectionCom
       </div>
     </div>
   );
-}
+});
 
-function SecurityEventsSection({ securityEvents, navigate }: SectionCommonProps) {
+const SecurityEventsSection = memo(function SecurityEventsSection({ navigate }: SectionCommonProps) {
+  const { data: eventsData } = useQuery({
+    queryKey: ['security-events-feed'],
+    queryFn: () => fetchSecurityEvents({ limit: 6 }),
+    refetchInterval: 10_000,
+  });
+  const securityEvents: SecurityEvent[] = eventsData?.events ?? [];
+
   return (
     <div className="card">
       <div className="card-header">
@@ -786,9 +802,16 @@ function SecurityEventsSection({ securityEvents, navigate }: SectionCommonProps)
       </div>
     </div>
   );
-}
+});
 
-function AuditStreamSection({ auditEntries, navigate }: SectionCommonProps) {
+const AuditStreamSection = memo(function AuditStreamSection({ navigate }: SectionCommonProps) {
+  const { data: auditData } = useQuery({
+    queryKey: ['audit-feed'],
+    queryFn: () => fetchAuditEntries({ limit: 6 }),
+    refetchInterval: 15_000,
+  });
+  const auditEntries: AuditEntry[] = auditData?.entries ?? [];
+
   return (
     <div className="card">
       <div className="card-header">
@@ -837,9 +860,9 @@ function AuditStreamSection({ auditEntries, navigate }: SectionCommonProps) {
       </div>
     </div>
   );
-}
+});
 
-function AgentWorldSection({ worldViewMode, setAndPersistWorldView, worldZoom, adjustZoom, setIsFullscreen, navigate }: SectionCommonProps) {
+const AgentWorldSection = memo(function AgentWorldSection({ worldViewMode, setAndPersistWorldView, worldZoom, adjustZoom, setIsFullscreen, navigate }: SectionCommonProps) {
   return (
     <div className="card">
       <div
@@ -911,9 +934,9 @@ function AgentWorldSection({ worldViewMode, setAndPersistWorldView, worldZoom, a
       </div>
     </div>
   );
-}
+});
 
-function SystemTopologySection({ metrics, health, mcpServers, navigate }: SectionCommonProps) {
+const SystemTopologySection = memo(function SystemTopologySection({ metrics, health, mcpServers, navigate }: SectionCommonProps) {
   return (
     <div className="card">
       <div className="card-header">
@@ -948,9 +971,15 @@ function SystemTopologySection({ metrics, health, mcpServers, navigate }: Sectio
       </div>
     </div>
   );
-}
+});
 
-function CostBreakdownSection({ metrics, costByProvider, onViewCosts }: SectionCommonProps) {
+const CostBreakdownSection = memo(function CostBreakdownSection({ metrics, onViewCosts }: SectionCommonProps) {
+  const { data: costBreakdown } = useQuery<CostBreakdownResponse>({
+    queryKey: ['costs-breakdown-mc'],
+    queryFn: fetchCostBreakdown,
+    refetchInterval: 60_000,
+  });
+  const costByProvider = costBreakdown?.byProvider ?? {};
   return (
     <div className="card">
       <div className="card-header">
@@ -1011,7 +1040,7 @@ function CostBreakdownSection({ metrics, costByProvider, onViewCosts }: SectionC
       </div>
     </div>
   );
-}
+});
 
 // ── SortableCardWrapper ───────────────────────────────────────────────
 
@@ -1074,7 +1103,7 @@ function SortableCardWrapper({ cardLayout, def, editMode, onRemove, onResize, ch
 
 // ── MissionCardContent ────────────────────────────────────────────────
 
-function MissionCardContent({ id, sectionProps }: { id: MissionCardId; sectionProps: SectionCommonProps }) {
+const MissionCardContent = memo(function MissionCardContent({ id, sectionProps }: { id: MissionCardId; sectionProps: SectionCommonProps }) {
   switch (id) {
     case 'kpi-bar':             return <KpiBarSection {...sectionProps} />;
     case 'resource-monitoring': return <ResourceMonitoringSection {...sectionProps} />;
@@ -1089,7 +1118,7 @@ function MissionCardContent({ id, sectionProps }: { id: MissionCardId; sectionPr
     case 'system-topology':     return <SystemTopologySection {...sectionProps} />;
     case 'cost-breakdown':      return <CostBreakdownSection {...sectionProps} />;
   }
-}
+});
 
 // ── MissionControlTab ────────────────────────────────────────────────
 
@@ -1138,22 +1167,22 @@ function MissionControlTab({
   const [worldViewMode, setWorldViewMode] = useState<'grid' | 'map' | 'large'>(
     () => (localStorage.getItem('world:viewMode') ?? 'large') as 'grid' | 'map' | 'large'
   );
-  const setAndPersistWorldView = (m: 'grid' | 'map' | 'large') => {
+  const setAndPersistWorldView = useCallback((m: 'grid' | 'map' | 'large') => {
     setWorldViewMode(m);
     localStorage.setItem('world:viewMode', m);
-  };
+  }, []);
 
   // Agent World zoom (0.5–2.0, step 0.25, persisted)
   const [worldZoom, setWorldZoom] = useState<number>(
     () => parseFloat(localStorage.getItem('world:zoom') ?? '1')
   );
-  const adjustZoom = (delta: number) => {
+  const adjustZoom = useCallback((delta: number) => {
     setWorldZoom(prev => {
       const next = Math.max(0.5, Math.min(2.0, Math.round((prev + delta) * 4) / 4));
       localStorage.setItem('world:zoom', String(next));
       return next;
     });
-  };
+  }, []);
 
   // Agent World fullscreen (transient — not persisted)
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -1164,44 +1193,10 @@ function MissionControlTab({
     return () => window.removeEventListener('keydown', handler);
   }, [isFullscreen]);
 
-  // Live data feeds
-  const { data: tasksData } = useQuery({
-    queryKey: ['tasks-running'],
-    queryFn: () => fetchTasks({ status: 'running', limit: 5 }),
-    refetchInterval: 5_000,
-  });
-
-  const { data: eventsData } = useQuery({
-    queryKey: ['security-events-feed'],
-    queryFn: () => fetchSecurityEvents({ limit: 6 }),
-    refetchInterval: 10_000,
-  });
-
-  const { data: auditData } = useQuery({
-    queryKey: ['audit-feed'],
-    queryFn: () => fetchAuditEntries({ limit: 6 }),
-    refetchInterval: 15_000,
-  });
-
-  const { data: workflowsData } = useQuery({
-    queryKey: ['workflows-mc'],
-    queryFn: () => fetchWorkflows({ limit: 6 }),
-    refetchInterval: 30_000,
-  });
-
-  const { data: costBreakdown } = useQuery<CostBreakdownResponse>({
-    queryKey: ['costs-breakdown-mc'],
-    queryFn: fetchCostBreakdown,
-    refetchInterval: 60_000,
-  });
-
-  const activeTasks: Task[] = tasksData?.tasks ?? [];
-  const securityEvents: SecurityEvent[] = eventsData?.events ?? [];
-  const auditEntries: AuditEntry[] = auditData?.entries ?? [];
-  const workflows: WorkflowDefinition[] = workflowsData?.definitions ?? [];
-  const costByProvider = costBreakdown?.byProvider ?? {};
-
   // ── Layout state ──────────────────────────────────────────────────
+  // Note: tasksData, eventsData, auditData, workflowsData, costBreakdown queries
+  // have been moved into their respective section components so they only poll
+  // when those sections are rendered (visible in the card layout).
   const [cardLayouts, setCardLayouts] = useState<CardLayout[]>(() => loadLayout().cards);
 
   const updateLayouts = useCallback((updated: CardLayout[]) => {
@@ -1215,16 +1210,18 @@ function MissionControlTab({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  function handleDragEnd({ active, over }: DragEndEvent) {
+  const handleDragEnd = useCallback(({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) return;
     const sorted = [...cardLayouts].sort((a, b) => a.order - b.order);
     const from = sorted.findIndex(c => c.id === active.id);
     const to = sorted.findIndex(c => c.id === over.id);
     updateLayouts(arrayMove(sorted, from, to).map((c, i) => ({ ...c, order: i })));
-  }
+  }, [cardLayouts, updateLayouts]);
 
-  // Bundle all section data into a single props object
-  const sectionProps: SectionCommonProps = {
+  // Bundle all section data into a single memoized props object.
+  // useMemo ensures the object reference is stable when unrelated state (editMode,
+  // catalogueOpen, isFullscreen) changes — so React.memo'd sections skip re-renders.
+  const sectionProps: SectionCommonProps = useMemo(() => ({
     metrics,
     health,
     history,
@@ -1238,18 +1235,18 @@ function MissionControlTab({
     defaultPersonality,
     navigate,
     onViewCosts,
-    activeTasks,
-    securityEvents,
-    auditEntries,
-    workflows,
-    costByProvider,
     heartbeatRunning,
     worldViewMode,
     setAndPersistWorldView,
     worldZoom,
     adjustZoom,
     setIsFullscreen,
-  };
+  }), [
+    metrics, health, history, heartbeatStatus, mcpServers, enabledMcp, enabledHb,
+    totalHbTasks, activeDelegations, activePersonalities, defaultPersonality,
+    navigate, onViewCosts, heartbeatRunning, worldViewMode, setAndPersistWorldView,
+    worldZoom, adjustZoom, setIsFullscreen,
+  ]);
 
   const sorted = [...cardLayouts].sort((a, b) => a.order - b.order);
 
