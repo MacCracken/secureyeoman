@@ -30,6 +30,7 @@ SecureYeoman can read and write to GitHub — listing repositories, managing iss
 | `github_rotate_ssh_key` | Rotate the container SSH key (generate new, revoke old) |
 | `github_create_repo` | Create a new repository |
 | `github_fork_repo` | Fork an existing repository |
+| `github_sync_fork` | Sync a fork branch with upstream (auto mode; draft returns preview) |
 
 ## Access Modes
 
@@ -78,6 +79,45 @@ Result: SSH key rotated. New key id: 67890. Old key 12345 revoked from GitHub.
 ### Required OAuth scope
 
 SSH key management requires the `admin:public_key` scope. If you connected GitHub before Phase 70b, you must reconnect your account to grant this scope.
+
+## Fork Syncing
+
+Use `github_sync_fork` to merge upstream changes into a branch of your fork. This calls the GitHub Merges API (`POST /repos/{owner}/{repo}/merges`).
+
+### Basic sync (default upstream branch)
+
+```
+User: Sync my fork of octocat/hello-world with upstream
+AI: [calls github_sync_fork with owner="myuser", repo="hello-world", base="main"]
+```
+
+- If changes were merged: returns **201** with the merge commit (`sha`, `commit.message`, `author`, etc.)
+- If already up-to-date: returns `{ "status": "up_to_date" }` — no merge commit is created (GitHub 204)
+
+### Sync from a specific upstream branch
+
+```
+AI: [calls github_sync_fork with owner="myuser", repo="hello-world", base="main", head="upstream:develop"]
+```
+
+The `head` parameter accepts `upstream:<branch>` notation or just a branch name from the parent repository.
+
+### Draft mode
+
+In **draft** mode the sync is not performed — a preview object is returned instead:
+
+```json
+{
+  "preview": true,
+  "message": "GitHub mode is \"draft\" — the fork sync has NOT been performed.",
+  "owner": "myuser",
+  "repo": "hello-world",
+  "base": "main",
+  "head": "upstream:main"
+}
+```
+
+In **suggest** mode the tool is blocked entirely (403).
 
 ## OAuth Scopes
 

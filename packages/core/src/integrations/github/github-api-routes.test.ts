@@ -12,6 +12,7 @@
  *   POST /api/v1/github/repos/:owner/:repo/issues
  *   POST /api/v1/github/repos/:owner/:repo/pulls
  *   POST /api/v1/github/repos/:owner/:repo/issues/:number/comments
+ *   POST /api/v1/github/repos/:owner/:repo/sync-fork
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -333,6 +334,76 @@ describe('GitHub API Routes', () => {
       const res = await app.inject({ method: 'GET', url: '/api/v1/github/profile' });
       expect(fetchMock).toHaveBeenCalledTimes(1);
       expect(res.statusCode).toBe(401);
+    });
+  });
+
+  // ── POST /api/v1/github/repos/:owner/:repo/sync-fork ──────────────────────
+
+  describe('POST /api/v1/github/repos/:owner/:repo/sync-fork', () => {
+    const syncBody = { base: 'main' };
+    const syncUrl = '/api/v1/github/repos/myuser/my-fork/sync-fork';
+
+    it('returns 201 with merge commit in auto mode when a merge is performed', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      vi.stubGlobal('fetch', mockFetch({ sha: 'abc123', commit: { message: 'Merge upstream' } }, 201));
+      const res = await app.inject({ method: 'POST', url: syncUrl, payload: syncBody });
+      expect(res.statusCode).toBe(201);
+      expect(res.json().sha).toBe('abc123');
+    });
+
+    it('returns 204 in auto mode when the branch is already up-to-date', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 204, json: () => Promise.resolve(null), text: () => Promise.resolve('') }));
+      const res = await app.inject({ method: 'POST', url: syncUrl, payload: syncBody });
+      expect(res.statusCode).toBe(204);
+    });
+
+    it('returns preview JSON in draft mode without syncing', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('draft');
+      const app = await buildApp(svc, sm);
+      const res = await app.inject({ method: 'POST', url: syncUrl, payload: { base: 'main', head: 'upstream:main' } });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.preview).toBe(true);
+      expect(body.base).toBe('main');
+      expect(body.head).toBe('upstream:main');
+    });
+
+    it('returns 403 in suggest mode', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('suggest');
+      const app = await buildApp(svc, sm);
+      const res = await app.inject({ method: 'POST', url: syncUrl, payload: syncBody });
+      expect(res.statusCode).toBe(403);
+      expect(res.json().message).toMatch(/suggest/i);
+    });
+
+    it('returns 404 when no token', async () => {
+      const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
+      const res = await app.inject({ method: 'POST', url: syncUrl, payload: syncBody });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('passes optional head and commit_message to GitHub API', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      const fetchMock = mockFetch({ sha: 'def456' }, 201);
+      vi.stubGlobal('fetch', fetchMock);
+      await app.inject({
+        method: 'POST',
+        url: syncUrl,
+        payload: { base: 'main', head: 'upstream:main', commit_message: 'sync with upstream' },
+      });
+      const callBody = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+      expect(callBody.base).toBe('main');
+      expect(callBody.head).toBe('upstream:main');
+      expect(callBody.commit_message).toBe('sync with upstream');
     });
   });
 

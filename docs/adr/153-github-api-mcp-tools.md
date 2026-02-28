@@ -81,6 +81,34 @@ Private SSH keys survive container restarts via the SecretsManager:
 
 `admin:public_key` scope added to the GitHub OAuth provider to enable SSH key management.
 
+## Phase 70c — Fork Sync Tool
+
+### Addendum (2026-02-28)
+
+A `github_sync_fork` tool was added to allow the AI to keep a fork branch in sync with its upstream repository.
+
+**Endpoint used**: `POST /repos/{owner}/{repo}/merges` with `X-GitHub-Api-Version: 2022-11-28`.
+
+**Parameters**:
+- `base` (required): the branch in the fork to receive upstream changes (e.g. `main`)
+- `head` (optional): the upstream branch to merge in (e.g. `upstream:main`)
+- `commit_message` (optional): custom merge commit message
+
+**Response handling**:
+- **201 Created**: merge was performed — return commit object
+- **204 No Content**: branch is already up-to-date — return `{ status: "up_to_date" }` sentinel
+
+**Mode enforcement**:
+
+| Mode | Behaviour |
+|---|---|
+| `suggest` | 403 — blocked |
+| `draft` | Preview JSON returned, no API call |
+| `auto` | Merge performed against GitHub API |
+
+**Files changed**: `github-api-routes.ts` (route), `github-api-tools.ts` (MCP tool), `manifest.ts` (visibility).
+**Tests**: 6 route tests + 1 MCP tool registration test.
+
 ## Alternatives Considered
 
 - **Keep CLI tools in `platformTools.github`**: Rejected — CLI tools require the `gh` binary and are server-local; they have no relationship to the user's connected GitHub account.

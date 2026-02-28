@@ -462,6 +462,7 @@ export function getToolManifest(): ToolManifestEntry[] {
     { name: 'github_rotate_ssh_key', description: 'Rotate the container SSH key: generate new key, register with GitHub, revoke old key, update ~/.ssh/' },
     { name: 'github_create_repo', description: 'Create a new GitHub repository (draft → preview, suggest → blocked)' },
     { name: 'github_fork_repo', description: 'Fork a GitHub repository into the authenticated user or org (draft → preview, suggest → blocked)' },
+    { name: 'github_sync_fork', description: 'Sync a fork branch with its upstream repository via the GitHub Merges API (draft → preview, suggest → blocked, 204 = already up-to-date)' },
 
     // Ollama model lifecycle tools (Phase 64)
     {

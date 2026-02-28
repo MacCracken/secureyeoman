@@ -607,6 +607,43 @@ export function registerGithubApiTools(
     })
   );
 
+  // ── github_sync_fork ─────────────────────────────────────────
+  server.registerTool(
+    'github_sync_fork',
+    {
+      description:
+        'Sync a fork branch with its upstream repository by merging upstream changes into the specified branch. ' +
+        'Uses the GitHub Merges API (POST /repos/{owner}/{repo}/merges). ' +
+        'Returns 201 with the merge commit when a merge is performed, or indicates the branch is already up-to-date (204). ' +
+        'In "draft" mode returns a preview without syncing. Blocked in "suggest" mode. ' +
+        'Requires "auto" mode for write access.',
+      inputSchema: {
+        owner: z.string().describe('Owner of your fork (usually your GitHub username)'),
+        repo: z.string().describe('Name of your fork repository'),
+        base: z.string().describe('Branch in your fork to receive upstream changes (e.g. "main" or "master")'),
+        head: z.string().optional().describe('Upstream branch to merge in — use "upstream:main" notation or just the branch name (defaults to the upstream default branch)'),
+        commit_message: z.string().optional().describe('Custom commit message for the merge commit (optional)'),
+      },
+    },
+    wrapToolHandler('github_sync_fork', middleware, async (args) => {
+      const result = await client.post(`/api/v1/github/repos/${args.owner}/${args.repo}/sync-fork`, {
+        base: args.base,
+        head: args.head,
+        commit_message: args.commit_message,
+      });
+      // 204 No Content means already up-to-date; core returns null/empty in that case
+      if (result === null || result === undefined) {
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({ status: 'up_to_date', message: 'The fork branch is already up-to-date with the upstream — no merge was necessary.' }, null, 2),
+          }],
+        };
+      }
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    })
+  );
+
   // ── github_fork_repo ─────────────────────────────────────────
   server.registerTool(
     'github_fork_repo',

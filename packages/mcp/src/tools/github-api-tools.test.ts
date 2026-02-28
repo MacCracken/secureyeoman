@@ -1,7 +1,7 @@
 /**
  * GitHub API MCP Tools — unit tests
  *
- * Verifies that all 10 github_* tools register without errors and proxy
+ * Verifies that all 20 github_* tools register without errors and proxy
  * through to the core API client correctly.
  */
 
@@ -31,7 +31,7 @@ function noopMiddleware(): ToolMiddleware {
 }
 
 describe('github-api-tools', () => {
-  it('registers all 10 github_* tools without throwing', () => {
+  it('registers all 20 github_* tools without throwing', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     expect(() => registerGithubApiTools(server, mockClient(), noopMiddleware())).not.toThrow();
   });
@@ -100,6 +100,11 @@ describe('github-api-tools', () => {
     expect(client.post).toBeDefined();
   });
 
+  it('registers github_sync_fork', () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    expect(() => registerGithubApiTools(server, mockClient(), noopMiddleware())).not.toThrow();
+  });
+
   it('handles core API errors gracefully on registration', () => {
     const client = mockClient();
     (client.get as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
@@ -115,7 +120,7 @@ import { encryptSshKey, decryptSshKey } from '../utils/ssh-crypto.js';
 const TOKEN_SECRET = 'a'.repeat(32); // 32-char secret for HKDF
 
 describe('github_setup_ssh — registration with tokenSecret', () => {
-  it('registers all 19 tools when tokenSecret is provided', () => {
+  it('registers all 20 tools when tokenSecret is provided', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     expect(() =>
       registerGithubApiTools(server, mockClient(), noopMiddleware(), TOKEN_SECRET)

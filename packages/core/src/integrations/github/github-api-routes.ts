@@ -564,6 +564,61 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
     }
   );
 
+  // POST /api/v1/github/repos/:owner/:repo/sync-fork  (mode: auto only; draft → preview JSON; suggest → 403)
+  // Calls GitHub POST /repos/{owner}/{repo}/merges to merge upstream changes into a fork branch.
+  // GitHub returns 201 when a merge commit is created, 204 when already up-to-date.
+  app.post<{
+    Params: { owner: string; repo: string };
+    Body: { base: string; head?: string; commit_message?: string };
+  }>(
+    '/api/v1/github/repos/:owner/:repo/sync-fork',
+    async (req, reply) => {
+      const creds = await resolveGithubAccess(oauthTokenService, soulManager);
+      if (!creds) {
+        return sendError(reply, 404, 'No GitHub account connected.');
+      }
+      if (creds.mode === 'suggest') {
+        return sendError(reply, 403, `GitHub mode is '${creds.mode}' — syncing a fork is not permitted. The personality may only read repository data.`);
+      }
+      if (creds.mode === 'draft') {
+        return reply.send({
+          preview: true,
+          message: 'GitHub mode is "draft" — the fork sync has NOT been performed. Review the details below and sync manually if approved.',
+          owner: req.params.owner,
+          repo: req.params.repo,
+          base: req.body.base,
+          head: req.body.head ?? null,
+          commit_message: req.body.commit_message ?? null,
+        });
+      }
+      const scopeErr = checkWriteScopes(creds.scopes);
+      if (scopeErr) return sendError(reply, 403, scopeErr);
+
+      const mergeBody: Record<string, unknown> = { base: req.body.base };
+      if (req.body.head) mergeBody.head = req.body.head;
+      if (req.body.commit_message) mergeBody.commit_message = req.body.commit_message;
+
+      const resp = await fetchGithub(
+        `${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}/merges`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(mergeBody) },
+        creds.tokenId,
+        creds.accessToken,
+        oauthTokenService
+      );
+
+      // 204 = already up-to-date, no merge commit created
+      if (resp.status === 204) {
+        return reply.code(204).send();
+      }
+      if (!resp.ok) {
+        const errBody = await resp.text();
+        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, githubErrorMessage(resp.status, errBody));
+      }
+      const data = await resp.json();
+      return reply.code(201).send(data);
+    }
+  );
+
   // POST /api/v1/github/repos/:owner/:repo/issues/:number/comments  (mode: auto only)
   app.post<{
     Params: { owner: string; repo: string; number: string };

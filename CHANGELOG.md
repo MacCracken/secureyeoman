@@ -1,3 +1,17 @@
+## [2026.2.28j] — 2026-02-28
+
+### Added
+
+#### GitHub Fork Sync Tool (Phase 70c)
+
+- **`github_sync_fork` MCP tool** — sync a fork branch with its upstream repository using the GitHub Merges API (`POST /repos/{owner}/{repo}/merges`). Parameters: `owner`, `repo`, `base` (required), `head` (optional, e.g. `upstream:main`), `commit_message` (optional). Returns the merge commit on 201, or `{ status: "up_to_date" }` when already in sync (GitHub 204). Draft mode returns a preview JSON; suggest mode is blocked.
+- **Core proxy route** — `POST /api/v1/github/repos/:owner/:repo/sync-fork` in `github-api-routes.ts` with full mode enforcement and scope checking.
+- **Manifest entry** — `github_sync_fork` added to `manifest.ts` so the AI discovers the tool on startup.
+- **6 route tests + 1 MCP tool test** added; total route tests for github-api-routes: 27.
+- **ADR 153** updated with Phase 70c addendum. **Guide** `docs/guides/github-api-tools.md` updated with Fork Syncing section.
+
+---
+
 ## [2026.2.27] — 2026-02-28
 
 ### Added
