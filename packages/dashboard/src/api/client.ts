@@ -1713,6 +1713,7 @@ export interface McpConfigResponse {
   exposeGmail: boolean;
   exposeTwitter: boolean;
   exposeGithub: boolean;
+  alwaysSendFullSchemas: boolean;
 }
 
 export async function fetchMcpConfig(): Promise<McpConfigResponse> {
@@ -1742,6 +1743,7 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
       exposeGmail: false,
       exposeTwitter: false,
       exposeGithub: false,
+      alwaysSendFullSchemas: false,
     };
   }
 }

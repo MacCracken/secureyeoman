@@ -119,12 +119,142 @@ const NETWORK_AUDIT_PREFIXES = [
 ];
 const NETWORK_UTIL_PREFIXES = ['subnet_', 'wildcard_', 'pcap_'];
 
+// ── CLI github_* tool prefixes (gated by exposeGit, NOT exposeGithub) ──────────
+// These are the legacy gh-binary tools registered by git-tools.ts.
+// The Phase-70 REST API tools (github_profile, github_list_repos, …) start with
+// different prefixes and are gated separately by exposeGithub.
+const GITHUB_CLI_PREFIXES = ['github_pr_', 'github_issue_', 'github_repo_'];
+
+/**
+ * Return true if a YEOMAN MCP tool name is a CLI git/github tool that requires
+ * the `exposeGit` flag, rather than the Phase-70 REST API tools (exposeGithub).
+ */
+function isGitCliTool(name: string): boolean {
+  return name.startsWith('git_') || GITHUB_CLI_PREFIXES.some((p) => name.startsWith(p));
+}
+
+/**
+ * Keywords that imply the user is likely to need tools from a given group.
+ * Used by selectMcpToolSchemas() to decide which full JSON schemas to include.
+ * Matching is case-insensitive substring search against the current message.
+ *
+ * Phase 72 — MCP Tool Context Optimization.
+ */
+const TOOL_GROUP_KEYWORDS: Record<string, string[]> = {
+  git: ['git', 'commit', 'branch', 'merge', 'diff', 'checkout', 'stash', 'pull request', 'rebase', 'blame', 'log'],
+  github_api: ['github', 'repo', 'repository', 'fork', 'ssh key', 'issue', 'pr', 'pull request', 'push', 'clone'],
+  fs: ['file', 'directory', 'folder', 'path', 'read file', 'write file', 'delete file', 'list files', 'mkdir'],
+  web_scrape: ['scrape', 'crawl', 'fetch url', 'fetch page', 'extract', 'parse html', 'web page'],
+  web_search: ['search', 'google', 'look up', 'find online', 'search the web', 'web search'],
+  browser: ['browser', 'chrome', 'screenshot', 'click', 'navigate', 'selenium', 'playwright'],
+  gmail: ['email', 'gmail', 'inbox', 'compose', 'send email', 'message', 'mail', 'attachment'],
+  twitter: ['twitter', 'tweet', 'post', 'mention', 'timeline', 'retweet', 'like', 'social media'],
+  github_connected: ['github', 'repo', 'repository', 'fork', 'ssh', 'issue', 'pull request', 'push', 'clone', 'star'],
+  network: ['network', 'device', 'topology', 'ping', 'traceroute', 'vlan', 'bgp', 'ospf', 'arp', 'interface', 'firewall', 'acl'],
+  twingate: ['twingate', 'vpn', 'zero trust', 'network access', 'remote access'],
+  security: ['scan', 'nmap', 'sqlmap', 'nuclei', 'gobuster', 'hydra', 'vulnerability', 'pentest', 'bruteforce', 'security audit'],
+  ollama: ['ollama', 'model', 'pull model', 'delete model', 'local model', 'llm'],
+};
+
+/**
+ * Group name → check function. Returns true if this group's tools should be included
+ * based on message keywords or recent conversation history tool calls.
+ *
+ * "Core" tools (brain, task, sys, soul, audit, intent, skill, mem) always pass —
+ * they are short and almost always needed.
+ */
+function isGroupRelevant(
+  groupName: string,
+  message: string,
+  historyToolNames: Set<string>
+): boolean {
+  const keywords = TOOL_GROUP_KEYWORDS[groupName];
+  if (!keywords) return true; // unknown group → always include
+
+  const lc = message.toLowerCase();
+  if (keywords.some((kw) => lc.includes(kw))) return true;
+  // If the AI already called a tool from this group in history, keep the schemas hot
+  return historyToolNames.has(groupName);
+}
+
+/**
+ * Derive the tool-group name for a YEOMAN MCP tool based on its prefix.
+ * Returns null for "core" tools that always get full schemas.
+ */
+function toolGroupName(name: string): string | null {
+  if (isGitCliTool(name)) return 'git';
+  if (name.startsWith('github_') && !isGitCliTool(name)) return 'github_api';
+  if (name.startsWith('fs_')) return 'fs';
+  if (name.startsWith('web_scrape') || name === 'web_extract_structured' || name === 'web_fetch_markdown') return 'web_scrape';
+  if (name.startsWith('web_search')) return 'web_search';
+  if (name.startsWith('browser_')) return 'browser';
+  if (name.startsWith('gmail_')) return 'gmail';
+  if (name.startsWith('twitter_')) return 'twitter';
+  if (NETWORK_DEVICE_PREFIXES.some((p) => name.startsWith(p)) ||
+      NETWORK_DISCOVERY_PREFIXES.some((p) => name.startsWith(p)) ||
+      NETWORK_AUDIT_PREFIXES.some((p) => name.startsWith(p)) ||
+      name.startsWith('netbox_') || name.startsWith('nvd_') ||
+      NETWORK_UTIL_PREFIXES.some((p) => name.startsWith(p))) return 'network';
+  if (name.startsWith('twingate_')) return 'twingate';
+  if (name.startsWith('sec_') || name.startsWith('nmap_') || name.startsWith('sqlmap_') ||
+      name.startsWith('nuclei_') || name.startsWith('gobuster_') || name.startsWith('hydra_')) return 'security';
+  if (name.startsWith('ollama_')) return 'ollama';
+  // Brain, task, sys, soul, audit, intent, skill, mem → core, always send
+  return null;
+}
+
+/**
+ * Build a compact MCP tool catalog block for the system prompt.
+ * Lists enabled tool names + one-line descriptions grouped by feature area.
+ * This tells the AI what tools exist without sending full JSON schemas.
+ *
+ * Phase 72 — catalog mode.
+ */
+export function buildMcpToolCatalog(tools: Tool[]): string {
+  if (tools.length === 0) return '';
+
+  const groups: Record<string, string[]> = {};
+  for (const tool of tools) {
+    const group = toolGroupName(tool.name) ?? 'core';
+    if (!groups[group]) groups[group] = [];
+    const desc = tool.description ? `: ${tool.description.split('.')[0]}` : '';
+    groups[group].push(`\`${tool.name}\`${desc}`);
+  }
+
+  const GROUP_LABELS: Record<string, string> = {
+    core: 'Core (Brain, Tasks, System, Soul)',
+    git: 'Git / GitHub CLI',
+    github_api: 'GitHub API (OAuth)',
+    fs: 'Filesystem',
+    web_scrape: 'Web Scraping',
+    web_search: 'Web Search',
+    browser: 'Browser Automation',
+    gmail: 'Gmail',
+    twitter: 'Twitter',
+    network: 'Network Tools',
+    twingate: 'Twingate',
+    security: 'Security Toolkit',
+    ollama: 'Ollama Model Management',
+  };
+
+  const lines: string[] = ['## Available MCP Tools', 'Full tool schemas are loaded on-demand based on conversation context. All listed tools are available to call.'];
+  for (const [group, entries] of Object.entries(groups)) {
+    const label = GROUP_LABELS[group] ?? group;
+    lines.push(`\n**${label}** (${entries.length}): ${entries.join(', ')}`);
+  }
+  return lines.join('\n');
+}
+
 /**
  * Filter all available MCP tools down to those the current personality is
  * permitted to access. Applied identically to both the streaming and
  * non-streaming chat handlers so gating logic stays consistent.
+ *
+ * Phase 72: `github_*` CLI tools (github_pr_*, github_issue_*, github_repo_*)
+ * are gated by exposeGit. Phase-70 REST API tools (github_profile, github_list_repos, …)
+ * are gated by exposeGithub — previously they were incorrectly bundled with exposeGit.
  */
-function filterMcpTools(
+export function filterMcpTools(
   allMcpTools: McpToolDef[],
   selectedServers: string[],
   globalConfig: McpFeatureConfig,
@@ -138,11 +268,17 @@ function filterMcpTools(
     if (tool.serverName === 'YEOMAN MCP') {
       const n = tool.name;
 
+      // Git CLI tools (git_* and legacy github_pr_*, github_issue_*, github_repo_*)
+      if (isGitCliTool(n) && !(globalConfig.exposeGit && perPersonality.exposeGit)) continue;
+
+      // Phase-70 GitHub REST API tools (github_profile, github_list_repos, …)
       if (
-        (n.startsWith('git_') || n.startsWith('github_')) &&
-        !(globalConfig.exposeGit && perPersonality.exposeGit)
+        n.startsWith('github_') &&
+        !isGitCliTool(n) &&
+        !(globalConfig.exposeGithub && perPersonality.exposeGithub)
       )
         continue;
+
       if (
         n.startsWith('fs_') &&
         !(globalConfig.exposeFilesystem && perPersonality.exposeFilesystem)
@@ -201,6 +337,62 @@ function filterMcpTools(
   }
 
   return tools;
+}
+
+/**
+ * Phase 72 — Two-pass MCP tool schema selector.
+ *
+ * Pass 1: Feature-flag filter (existing filterMcpTools logic).
+ *         Returns all tools the personality is allowed to access.
+ *
+ * Pass 2: Relevance filter.
+ *         If alwaysSendFullSchemas is true → return all of Pass 1.
+ *         Otherwise → return only tools whose group is relevant to the
+ *         current message or has been used in the recent conversation history.
+ *         "Core" tools (brain, task, sys, etc.) always pass.
+ *
+ * Also returns the full Pass-1 list for catalog generation.
+ */
+export function selectMcpToolSchemas(
+  allMcpTools: McpToolDef[],
+  selectedServers: string[],
+  globalConfig: McpFeatureConfig,
+  perPersonality: Partial<McpFeatures>,
+  currentMessage: string,
+  history: Array<{ role: string; content: string }>
+): { schemasToSend: Tool[]; allAllowed: Tool[] } {
+  // Pass 1: feature-flag filter
+  const allAllowed = filterMcpTools(allMcpTools, selectedServers, globalConfig, perPersonality);
+
+  if (globalConfig.alwaysSendFullSchemas) {
+    return { schemasToSend: allAllowed, allAllowed };
+  }
+
+  // Build set of tool groups used in recent history (last 20 messages)
+  const recentHistory = history.slice(-20);
+  const historyToolNames = new Set<string>();
+  for (const msg of recentHistory) {
+    if (msg.role !== 'assistant') continue;
+    // Tool calls appear in assistant messages as JSON tool_use blocks or plain text references.
+    // A simple heuristic: scan for known group keywords in the content.
+    const lc = msg.content.toLowerCase();
+    for (const [group, keywords] of Object.entries(TOOL_GROUP_KEYWORDS)) {
+      if (keywords.some((kw) => lc.includes(kw))) historyToolNames.add(group);
+    }
+  }
+
+  // Pass 2: relevance filter
+  const schemasToSend = allAllowed.filter((tool) => {
+    // External server tools (custom MCP servers) always get full schemas
+    const isYeomanTool = allMcpTools.find((t) => t.name === tool.name)?.serverName === 'YEOMAN MCP';
+    if (!isYeomanTool) return true;
+
+    const group = toolGroupName(tool.name);
+    if (group === null) return true; // core tool — always send
+    return isGroupRelevant(group, currentMessage, historyToolNames);
+  });
+
+  return { schemasToSend, allAllowed };
 }
 
 interface ChatRequestBody {
@@ -494,14 +686,36 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
 
       if (personality?.body?.enabled && mcpClient && mcpStorage) {
         const globalConfig = await mcpStorage.getConfig();
-        tools.push(
-          ...filterMcpTools(
-            mcpClient.getAllTools(),
-            personality.body.selectedServers ?? [],
-            globalConfig,
-            personality.body.mcpFeatures ?? {}
-          )
+        const { schemasToSend, allAllowed } = selectMcpToolSchemas(
+          mcpClient.getAllTools(),
+          personality.body.selectedServers ?? [],
+          globalConfig,
+          personality.body.mcpFeatures ?? {},
+          message,
+          history ?? []
         );
+        tools.push(...schemasToSend);
+
+        // Phase 72: inject compact catalog into system prompt so the AI knows
+        // what tools exist even when their schemas are not sent this turn.
+        const catalog = buildMcpToolCatalog(allAllowed);
+        const firstMsg = messages[0];
+        if (catalog && firstMsg && firstMsg.role === 'system') {
+          messages[0] = { role: 'system', content: (firstMsg.content ?? '') + '\n\n' + catalog };
+        }
+
+        // Telemetry: log schema reduction metrics
+        void secureYeoman.getAuditChain().record({
+          event: 'mcp_tools_selected',
+          level: 'debug',
+          message: 'MCP tool schemas selected for chat request',
+          metadata: {
+            tools_available_count: allAllowed.length,
+            tools_sent_count: schemasToSend.length,
+            full_schemas: globalConfig.alwaysSendFullSchemas,
+            personalityId: personality?.id,
+          },
+        });
       }
 
       // Proactive context compaction — summarise older turns before the API
@@ -1238,14 +1452,35 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
 
         if (personality?.body?.enabled && mcpClientStream && mcpStorageStream) {
           const globalConfigS = await mcpStorageStream.getConfig();
-          tools.push(
-            ...filterMcpTools(
-              mcpClientStream.getAllTools(),
-              personality.body.selectedServers ?? [],
-              globalConfigS,
-              personality.body.mcpFeatures ?? {}
-            )
+          const { schemasToSend: streamSchemas, allAllowed: streamAllAllowed } = selectMcpToolSchemas(
+            mcpClientStream.getAllTools(),
+            personality.body.selectedServers ?? [],
+            globalConfigS,
+            personality.body.mcpFeatures ?? {},
+            message,
+            history ?? []
           );
+          tools.push(...streamSchemas);
+
+          // Phase 72: catalog injection for streaming handler
+          const streamCatalog = buildMcpToolCatalog(streamAllAllowed);
+          const streamFirstMsg = messages[0];
+          if (streamCatalog && streamFirstMsg && streamFirstMsg.role === 'system') {
+            messages[0] = { role: 'system', content: (streamFirstMsg.content ?? '') + '\n\n' + streamCatalog };
+          }
+
+          // Telemetry
+          void secureYeoman.getAuditChain().record({
+            event: 'mcp_tools_selected',
+            level: 'debug',
+            message: 'MCP tool schemas selected for stream request',
+            metadata: {
+              tools_available_count: streamAllAllowed.length,
+              tools_sent_count: streamSchemas.length,
+              full_schemas: globalConfigS.alwaysSendFullSchemas,
+              personalityId: personality?.id,
+            },
+          });
         }
 
         // Compaction

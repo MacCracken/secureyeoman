@@ -1,3 +1,28 @@
+## [2026.2.28k] — 2026-02-28
+
+### Added
+
+#### MCP Tool Context Optimization (Phase 72)
+
+- **Smart Schema Delivery** — Two-pass MCP tool schema selector (`selectMcpToolSchemas()` in `chat-routes.ts`). Pass 1 applies the existing feature-flag filter. Pass 2 applies a keyword-relevance filter: only schemas for groups triggered by the current message or recent history are sent to the AI in `AIRequest.tools`. Core tools (brain, task, sys, soul, audit, etc.) always pass. Custom MCP server tools always pass. Estimated 60–90% token reduction on cold requests.
+- **MCP tool catalog** — A compact `## Available MCP Tools` block (tool names + 1-line descriptions, grouped by feature area) is appended to the system prompt after the soul prompt. The AI always knows what tools are available even when their schemas are withheld.
+- **`alwaysSendFullSchemas` config flag** — New `McpFeatureConfig` field (default `false`). When `true`, bypasses the relevance filter and sends all enabled schemas every turn. Exposed as a **Smart Schema Delivery** toggle in Settings → Security → Scope.
+- **Telemetry** — Both chat handlers emit a `mcp_tools_selected` audit event (level `debug`) with `tools_available_count`, `tools_sent_count`, and `full_schemas` for measuring real-world savings.
+- **`github_sync_fork` added to soul manager** — `platformTools.github` and `writeOnlyTools.github` in `soul/manager.ts` now include `github_sync_fork` (was missing since Phase 70c).
+- **30 new unit tests** in `packages/core/src/ai/mcp-tool-selection.test.ts` covering `filterMcpTools`, `selectMcpToolSchemas`, and `buildMcpToolCatalog`. **4 new dashboard tests** for the `ScopeManifestTab` toggle.
+
+### Fixed
+
+- **`exposeGithub` flag was never applied** — `filterMcpTools()` gated all `github_*` tools under `exposeGit`, making the 20 Phase-70 GitHub REST API tools (`github_profile`, `github_list_repos`, `github_sync_fork`, …) inaccessible unless `exposeGit` was also enabled. Fixed by introducing `isGitCliTool()` / `GITHUB_CLI_PREFIXES` to route CLI tools to `exposeGit` and REST API tools to `exposeGithub`.
+- **`exposeGithub` missing from PATCH route body type** — `mcp-routes.ts` PATCH handler did not include `exposeGithub` or `alwaysSendFullSchemas` in its body type; both added.
+
+### Docs
+
+- **ADR 155** — `docs/adr/155-mcp-tool-context-optimization.md`
+- **Guide** — `docs/guides/mcp-tool-context-optimization.md`
+
+---
+
 ## [2026.2.28j] — 2026-02-28
 
 ### Added

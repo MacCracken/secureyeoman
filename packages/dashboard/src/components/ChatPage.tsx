@@ -73,6 +73,10 @@ export function ChatPage() {
   const [memoryEnabled, setMemoryEnabled] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Track whether the initial batch of messages has been scrolled to instantly.
+  // On first load we jump to the bottom without animation; subsequent new
+  // messages during the session use smooth scrolling.
+  const initialScrollDone = useRef(false);
   const [activeSection, setActiveSection] = useState<'personality' | 'group'>('personality');
 
   const queryClient = useQueryClient();
@@ -210,6 +214,7 @@ export function ChatPage() {
   );
 
   const handleNewChat = useCallback(() => {
+    initialScrollDone.current = false;
     setSelectedConversationId(null);
     clearMessages();
     setRememberedIndices(new Set());
@@ -218,6 +223,7 @@ export function ChatPage() {
   }, [clearMessages]);
 
   const handleSelectConversation = useCallback((conv: Conversation) => {
+    initialScrollDone.current = false;
     setSelectedConversationId(conv.id);
     setRememberedIndices(new Set());
     setExpandedBrainIdx(null);
@@ -300,9 +306,15 @@ export function ChatPage() {
     lastMsgCount.current = messages.length;
   }, [messages.length, voice.voiceEnabled, voice.speak, messages]);
 
-  // Auto-scroll on new messages
+  // Auto-scroll on new messages.
+  // First load: jump instantly so the page starts at the bottom without
+  // animating through the entire history. Subsequent new messages use smooth.
   useEffect(() => {
-    if (messagesEndRef.current && typeof messagesEndRef.current.scrollIntoView === 'function') {
+    if (!messagesEndRef.current || typeof messagesEndRef.current.scrollIntoView !== 'function') return;
+    if (!initialScrollDone.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'instant' });
+      if (messages.length > 0) initialScrollDone.current = true;
+    } else {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages.length, isPending]);

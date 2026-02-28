@@ -277,6 +277,8 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
           respectContentSignal?: boolean;
           exposeGmail?: boolean;
           exposeTwitter?: boolean;
+          exposeGithub?: boolean;
+          alwaysSendFullSchemas?: boolean;
         };
       }>
     ) => {

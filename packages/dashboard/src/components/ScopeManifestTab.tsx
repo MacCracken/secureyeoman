@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, X, Plus, Crosshair, Loader2, Shield, ShieldOff } from 'lucide-react';
+import { AlertTriangle, X, Plus, Crosshair, Loader2, Shield, ShieldOff, Zap, ZapOff } from 'lucide-react';
 import { fetchMcpConfig, patchMcpConfig } from '../api/client';
 
 // ─── Validation ──────────────────────────────────────────────────────────────
@@ -38,9 +38,14 @@ export function ScopeManifestTab() {
   const exposeSecurityTools = config?.exposeSecurityTools ?? false;
   const allowedTargets = config?.allowedTargets ?? [];
   const isWildcard = allowedTargets.length === 1 && allowedTargets[0] === '*';
+  const alwaysSendFullSchemas = config?.alwaysSendFullSchemas ?? false;
 
   const handleToggleEnable = () => {
     patchMut.mutate({ exposeSecurityTools: !exposeSecurityTools });
+  };
+
+  const handleToggleFullSchemas = () => {
+    patchMut.mutate({ alwaysSendFullSchemas: !alwaysSendFullSchemas });
   };
 
   const handleRemoveTarget = (target: string) => {
@@ -87,8 +92,45 @@ export function ScopeManifestTab() {
           Scope Manifest
         </h3>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Manage allowed targets for security tools. Only targets in this list can be scanned.
+          Manage allowed targets for security tools and MCP tool schema delivery.
         </p>
+      </div>
+
+      {/* Token Efficiency — alwaysSendFullSchemas */}
+      <div className="border rounded-lg p-4 space-y-1">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {alwaysSendFullSchemas ? (
+              <ZapOff className="w-4 h-4 text-warning" />
+            ) : (
+              <Zap className="w-4 h-4 text-success" />
+            )}
+            <div>
+              <p className="text-sm font-medium">
+                {alwaysSendFullSchemas ? 'Full Schemas Every Request' : 'Smart Schema Delivery'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {alwaysSendFullSchemas
+                  ? 'All enabled MCP tool schemas are sent on every request (~4–10K tokens/request). Disable to use keyword-based schema selection instead.'
+                  : 'Only relevant MCP tool schemas are sent based on conversation context — saves 60–90% of tool tokens per request.'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleToggleFullSchemas}
+            disabled={patchMut.isPending}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              alwaysSendFullSchemas ? 'bg-warning' : 'bg-primary'
+            }`}
+            aria-label="Toggle full schema delivery"
+          >
+            <span
+              className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                alwaysSendFullSchemas ? 'translate-x-4' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
+        </div>
       </div>
 
       {/* Enable toggle */}

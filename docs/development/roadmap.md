@@ -11,7 +11,7 @@
 | XX | Find & Repair (Ongoing) | Ongoing |
 | 68 | Mission Control Customization | Next — high UX value |
 | 70 | Advanced Editor — Full IDE Mode | Next — power user priority |
-| 72 | MCP Tool Context Optimization | Future — token efficiency |
+| 72 | MCP Tool Context Optimization | ✅ Complete — 2026-02-28 |
 | Future | Training Extensions, Agent World, Voice, Native Clients, Infrastructure | Future / Demand-Gated |
 
 ---
@@ -325,62 +325,6 @@ Per-workspace state survives page refresh:
 - [ ] **Responsive layout** — single-column narrow viewport; swipe-to-reveal explorer; touch support
 - [ ] **Training integration** — "Export to Training Data" context menu action; annotation mode
 - [ ] **Plugin / extension system** *(stretch goal)* — editor plugins register commands, panels, and language support via a stable internal API
-
----
-
-## Phase 72: MCP Tool Context Optimization
-
-**Status**: Future — token efficiency, no new features.
-
-MCP tools are currently sent as full JSON schemas on every chat request (`AIRequest.tools`). With 158 tools in the manifest and 2-level feature gating, an average request with several feature groups enabled sends ~80 tool schemas (~4,000–10,000 tokens) even when the conversation has nothing to do with those tools. Skills already use a compact catalog + contextual expansion pattern; this phase brings the same discipline to MCP tools.
-
----
-
-### Problem Statement
-
-| Layer | Current behavior | Cost |
-|---|---|---|
-| **MCP tools** | Full JSON schema for every enabled tool, every request | ~4–10K tokens/request |
-| **Skills** | Compact catalog (1–2 lines/skill) + selective full expansion | ~200–800 tokens |
-| **Soul prompt** | Hard token cap with truncation | Bounded |
-
-There is no summarization, lazy loading, or message-relevance filtering for MCP tools — only coarse feature-flag gating (per-group, not per-relevance).
-
----
-
-### Approach: Catalog Mode + Selective Schema Inclusion
-
-Mirror the skills pattern exactly:
-
-1. **Catalog in soul prompt** — A compact text block listing enabled tool names + one-line descriptions, injected into the system prompt alongside the skills catalog. This tells the AI what tools exist without sending JSON schemas. ~5–15 tokens/tool vs ~50–150 tokens/schema.
-
-2. **Selective schema inclusion in `AIRequest.tools`** — Instead of all enabled tools, include full schemas only for tools that are:
-   - **Explicitly invoked** in prior turns (if the AI already called `github_list_repos`, keep GitHub schemas for the remainder of the thread), OR
-   - **Message-relevant** via keyword heuristics (message mentions "github" / "email" / "tweet" → include that group's schemas), OR
-   - **Sticky for the session** (configurable per group, default off — some power users always want all GitHub tools available)
-
-3. **Fallback** — If the AI requests a tool not in `AIRequest.tools` (shouldn't happen with catalog present, but as a safety net), the response can include a `tool_not_available` error with a hint to rephrase.
-
----
-
-### Key Design Decisions
-
-- **Catalog placement**: Injected by `composeSoulPrompt()` in `soul/manager.ts`, parallel to the skills catalog block. Grouped by platform: `### Available MCP Tools\n**GitHub**: github_profile, github_list_repos, …\n**Gmail**: …`
-- **Schema selection logic**: New `selectMcpToolSchemas(allEnabled, conversationHistory, currentMessage)` function in `chat-routes.ts` — replaces the current `filterMcpTools()` passthrough with a two-pass: (1) feature-flag filter (existing), (2) relevance filter (new).
-- **Relevance keywords**: Derived from tool name prefixes (`gmail_` → `['email', 'gmail', 'message', 'inbox']`) — no ML required.
-- **Conversation history scan**: Check last N assistant turns for tool calls; include schemas for any tool group already used.
-- **Opt-out**: `McpFeatureConfig.alwaysSendFullSchemas: boolean` (default `false`) — lets power users or integrations that need deterministic behavior skip the optimization.
-
----
-
-### Implementation Sequence
-
-- [ ] **Catalog injection** — `composeSoulPrompt()` appends a grouped tool name list when any MCP tool group is enabled; gated behind same feature flags as the tools themselves.
-- [ ] **`selectMcpToolSchemas()`** — replace `filterMcpTools()` passthrough; add relevance filter step; scan conversation history for prior tool use.
-- [ ] **Relevance keyword map** — `TOOL_GROUP_KEYWORDS` constant mapping tool prefix → message keywords; used by selector.
-- [ ] **`alwaysSendFullSchemas` config flag** — in `McpFeatureConfig` + `McpConfigResponse`; Dashboard toggle in Security → Scope tab.
-- [ ] **Tests** — unit tests for selector logic; integration test confirming token reduction on a cold (no prior tool use) request.
-- [ ] **Telemetry** — log `tools_sent_count` + `tools_available_count` per request to audit log for measuring real-world savings.
 
 ---
 

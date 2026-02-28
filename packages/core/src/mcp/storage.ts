@@ -45,6 +45,8 @@ export interface McpFeatureConfig {
   exposeGmail: boolean;
   exposeTwitter: boolean;
   exposeGithub: boolean;
+  // Phase 72 — token efficiency
+  alwaysSendFullSchemas: boolean;
 }
 
 const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
@@ -70,6 +72,7 @@ const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
   exposeGmail: false,
   exposeTwitter: false,
   exposeGithub: false,
+  alwaysSendFullSchemas: false,
 };
 
 export class McpStorage extends PgBaseStorage {

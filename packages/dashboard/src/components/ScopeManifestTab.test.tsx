@@ -183,4 +183,48 @@ describe('ScopeManifestTab', () => {
     renderComponent();
     expect(await screen.findByText(/Wildcard mode/)).toBeInTheDocument();
   });
+
+  // ── Phase 72: Smart Schema Delivery toggle ────────────────────────────────
+
+  it('shows Smart Schema Delivery label when alwaysSendFullSchemas is false (default)', async () => {
+    renderComponent();
+    expect(await screen.findByText('Smart Schema Delivery')).toBeInTheDocument();
+  });
+
+  it('shows Full Schemas Every Request label when alwaysSendFullSchemas is true', async () => {
+    mockFetchMcpConfig.mockResolvedValue({
+      ...defaultConfig(),
+      alwaysSendFullSchemas: true,
+    } as any);
+    renderComponent();
+    expect(await screen.findByText('Full Schemas Every Request')).toBeInTheDocument();
+  });
+
+  it('toggle calls patchMcpConfig with alwaysSendFullSchemas: true when currently false', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Smart Schema Delivery');
+    await user.click(screen.getByRole('button', { name: 'Toggle full schema delivery' }));
+    await waitFor(() => {
+      expect(mockPatchMcpConfig).toHaveBeenCalled();
+      const args = mockPatchMcpConfig.mock.calls[0][0] as { alwaysSendFullSchemas: boolean };
+      expect(args.alwaysSendFullSchemas).toBe(true);
+    });
+  });
+
+  it('toggle calls patchMcpConfig with alwaysSendFullSchemas: false when currently true', async () => {
+    mockFetchMcpConfig.mockResolvedValue({
+      ...defaultConfig(),
+      alwaysSendFullSchemas: true,
+    } as any);
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Full Schemas Every Request');
+    await user.click(screen.getByRole('button', { name: 'Toggle full schema delivery' }));
+    await waitFor(() => {
+      expect(mockPatchMcpConfig).toHaveBeenCalled();
+      const args = mockPatchMcpConfig.mock.calls[0][0] as { alwaysSendFullSchemas: boolean };
+      expect(args.alwaysSendFullSchemas).toBe(false);
+    });
+  });
 });
