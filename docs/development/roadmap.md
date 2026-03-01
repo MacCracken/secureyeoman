@@ -29,7 +29,6 @@
 | XX | QA & Manual Testing | P1 — ongoing | 🔄 Continuous |
 | 78 | Advanced Editor — Full IDE Mode | P2 — power user priority | Ready |
 | 81 | Conversation Branching & Replay | P3 — developer experience | Planned |
-| 82 | Knowledge Base & RAG Platform | P3 — knowledge platform | ✅ Complete |
 | 83 | Content Guardrails | P3 — enterprise compliance | Planned |
 | 84 | LLM-as-Judge Evaluation | P3 — ML quality signal | Planned |
 | 85 | Conversation Analytics | P3 — operational insight | Planned |
@@ -209,33 +208,9 @@ Per-workspace state survives page refresh:
 
 ---
 
-## Phase 82: Knowledge Base & RAG Platform
-
-**Priority**: P3 — Knowledge platform. Transforms SecureYeoman from a conversation system into a knowledge system. Document ingestion unlocks enterprise use cases that the current memory-only brain cannot serve, and enables the grounding and guardrails phases that follow.
-
-Inspired by Amazon Bedrock Knowledge Bases + Kendra + Q Business.
-
-- [ ] **Document ingestion** — Upload PDF, DOCX, HTML, Markdown, or plain text files via the dashboard. Files are automatically chunked (configurable strategy: fixed-size, sentence-boundary, or semantic), embedded with the active embedding model, and stored in the personality's vector namespace. Supports drag-and-drop + multi-file batch upload. `POST /api/v1/brain/documents/upload` (multipart). Ingestion status tracked as a background task.
-- [ ] **Multimodal document extraction** — For PDFs and images, extract text using a Tesseract or Docling sidecar before embedding. Handles scanned documents, invoices, diagrams with captions. Inspired by Amazon Textract. Runs as a pre-processing step before the embedding pipeline.
-- [ ] **Knowledge base MCP tools** — `kb_search(query, personalityId?, topK?)`, `kb_add_document(url_or_text)`, `kb_list_documents()`, `kb_delete_document(id)`. AI can query its own knowledge base mid-conversation and self-populate it with discovered URLs or pasted content.
-- [ ] **Hybrid search** — Combine vector similarity (semantic) with BM25 keyword search. Reciprocal Rank Fusion to merge ranked lists. Configurable alpha weight between semantic and keyword scores. Improves recall for exact-term queries (part numbers, proper nouns) where pure embedding search underperforms.
-- [ ] **Enterprise knowledge connectors** — Sync content from external sources into the personality's knowledge base on a configurable schedule. MVP connectors:
-  - `github_wiki` — Clone and index a GitHub repo's wiki or markdown docs
-  - `notion` — Sync Notion pages/databases via Notion API
-  - `confluence` — Sync Confluence spaces via Confluence REST API
-  - `google_drive` — Sync Google Drive folder via OAuth (reuse existing Google integration)
-  - `web_crawl` — Crawl a URL with configurable depth; index pages as documents
-  - Connector config stored in personality settings; sync history in dashboard Knowledge tab
-- [ ] **Document access control** — Per-document `visibility: 'private' | 'shared'`. Private documents visible only to the owning personality's queries. Shared documents available to all personalities. Enforced at query time via namespace prefix filtering.
-- [ ] **Knowledge base analytics** — Track which documents are retrieved most often, which queries return low-relevance results (below configurable similarity threshold), and coverage gaps (queries with no results). Surface as a "Knowledge Health" panel in the dashboard.
-
----
-
 ## Phase 86: Inline Citations & Grounding
 
-> **Requires Phase 82 (Knowledge Base & RAG Platform)** — all items depend on the retrieval layer delivered there.
-
-**Priority**: P4 — Trust layer. Groundedness enforcement is the anchor item; web grounding is a stretch goal.
+**Priority**: P4 — Trust layer. Groundedness enforcement is the anchor item; web grounding is a stretch goal. Requires the Phase 82 knowledge base retrieval layer (complete — see [knowledge-base.md](../guides/knowledge-base.md)).
 
 Inspired by Google Cloud Vertex AI Grounding and Azure Groundedness Detection.
 
@@ -258,7 +233,7 @@ Complements Phase 77 (Prompt Security) which guards the input side. This phase o
 - [ ] **Toxicity filter** — Block or warn on outputs containing hate speech, harassment, or explicit content. Uses an external classifier endpoint (configurable: local Ollama model, OpenAI Moderation API, or custom). Modes: `block` (refuses to send output), `warn_user`, `audit_only`.
 - [ ] **Custom block lists** — Per-personality keyword/phrase deny lists with regex support. Applied as a fast pre-filter before the semantic checks. Useful for brand protection, legal compliance, or content policy enforcement.
 - [ ] **Guardrail audit trail** — Every guardrail trigger (PII redaction, topic block, toxicity flag) logged to the audit chain with: rule that fired, original content hash (not plaintext), action taken, and conversation ID. Queryable in the Audit Log tab with a "Guardrail Events" filter.
-- [ ] **Grounding check** *(requires Phase 82)* — Detect hallucinated citations or factual claims that contradict the personality's knowledge base. If the AI asserts a fact with a citation, verify the citation exists in the knowledge base. Flag unverifiable claims with a `[unverified]` annotation in the response. Optional mode: block responses with unverifiable claims outright.
+- [ ] **Grounding check** — Detect hallucinated citations or factual claims that contradict the personality's knowledge base. If the AI asserts a fact with a citation, verify the citation exists in the knowledge base. Flag unverifiable claims with a `[unverified]` annotation in the response. Optional mode: block responses with unverifiable claims outright.
 
 ---
 
@@ -490,4 +465,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-28 — Phase 79 (Multi-Instance Federation) and Phase 80 (API Gateway Mode) complete. See [Changelog](../../CHANGELOG.md) for details.*
+*Last updated: 2026-02-28 — Phase 82 (Knowledge Base & RAG Platform) complete. Phases 79 (Federation), 80 (API Gateway), 77 (Prompt Security), and earlier phases also complete — see [Changelog](../../CHANGELOG.md) for full history.*

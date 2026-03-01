@@ -23,6 +23,7 @@
     "release-notes": "npx tsx scripts/generate-release-notes.ts",
     "version:set": "bash scripts/set-version.sh",
     "build:binary": "bash scripts/build-binary.sh",
+    "build:binary:dev": "bash scripts/build-binary.sh --dev",
     "db:create-test": "docker compose exec postgres createdb -U secureyeoman secureyeoman_test || true"
   },
   "engines": {
