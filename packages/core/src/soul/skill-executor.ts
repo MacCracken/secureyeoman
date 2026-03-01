@@ -56,12 +56,8 @@ export class SkillExecutor {
     }
 
     try {
-      if (action.type === 'code' && action.code) {
-        return this.executeCodeAction(action, startTime);
-      } else if (action.type === 'http' && action.http) {
+      if (action.type === 'http' && action.http) {
         return this.executeHttpAction(action, startTime);
-      } else if (action.type === 'shell' && action.shell) {
-        return this.executeShellAction(action, startTime);
       }
 
       return {
@@ -76,19 +72,6 @@ export class SkillExecutor {
         durationMs: Date.now() - startTime,
       };
     }
-  }
-
-  private executeCodeAction(action: SkillAction, startTime: number): ActionResult {
-    const code = action.code;
-    if (!code) {
-      return { success: false, error: 'Missing code', durationMs: 0 };
-    }
-
-    return {
-      success: true,
-      output: { message: 'Code execution placeholder', language: code.language },
-      durationMs: Date.now() - startTime,
-    };
   }
 
   private async executeHttpAction(action: SkillAction, startTime: number): Promise<ActionResult> {
@@ -159,24 +142,4 @@ export class SkillExecutor {
     }
   }
 
-  private executeShellAction(action: SkillAction, startTime: number): ActionResult {
-    const shellConfig = action.shell;
-    if (!shellConfig) {
-      return { success: false, error: 'Missing shell config', durationMs: 0 };
-    }
-
-    if (!this.config.sandboxed) {
-      return {
-        success: false,
-        error: 'Shell execution not allowed in non-sandboxed mode',
-        durationMs: Date.now() - startTime,
-      };
-    }
-
-    return {
-      success: false,
-      error: 'Shell execution requires explicit sandbox configuration',
-      durationMs: Date.now() - startTime,
-    };
-  }
 }

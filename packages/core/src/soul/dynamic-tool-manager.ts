@@ -78,6 +78,8 @@ export interface DynamicToolManagerDeps {
   logger: SecureLogger;
   auditChain?: AuditChain;
   sandboxManager?: SandboxManager;
+  /** Override the hard execution timeout (ms). Defaults to 10 000 ms. */
+  executionTimeoutMs?: number;
 }
 
 type CompiledFn = (args: Record<string, unknown>) => Promise<unknown>;
@@ -91,6 +93,7 @@ interface RegistryEntry {
 
 export class DynamicToolManager {
   private readonly registry = new Map<string, RegistryEntry>();
+  private readonly executionTimeoutMs: number;
 
   /**
    * @param storage       Persistent storage for dynamic tools.
@@ -99,12 +102,15 @@ export class DynamicToolManager {
    *                      updates (sandboxDynamicTools toggled via the UI)
    *                      take effect immediately without restart.
    * @param deps          Logger, audit chain, and optional sandbox manager.
+   *                      Pass `executionTimeoutMs` to override the default 10 s cap.
    */
   constructor(
     private readonly storage: DynamicToolStorage,
     private readonly policyRef: SecurityPolicy,
     private readonly deps: DynamicToolManagerDeps
-  ) {}
+  ) {
+    this.executionTimeoutMs = deps.executionTimeoutMs ?? EXECUTION_TIMEOUT_MS;
+  }
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
 
@@ -245,7 +251,7 @@ export class DynamicToolManager {
             maxFileSizeMb: 1,
           },
           network: { allowed: false },
-          timeoutMs: EXECUTION_TIMEOUT_MS,
+          timeoutMs: this.executionTimeoutMs,
         });
         if (!sandboxResult.success) {
           return {
@@ -433,8 +439,8 @@ export class DynamicToolManager {
   private async runWithTimeout(fn: CompiledFn, args: Record<string, unknown>): Promise<unknown> {
     const timeout = new Promise<never>((_, reject) =>
       setTimeout(() => {
-        reject(new Error(`Dynamic tool execution timed out after ${EXECUTION_TIMEOUT_MS}ms`));
-      }, EXECUTION_TIMEOUT_MS)
+        reject(new Error(`Dynamic tool execution timed out after ${this.executionTimeoutMs}ms`));
+      }, this.executionTimeoutMs)
     );
     return Promise.race([fn(args), timeout]);
   }

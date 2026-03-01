@@ -10,31 +10,13 @@
  */
 
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
-import type { SecurityConfig } from '@secureyeoman/shared';
-
-export interface ValidationResult {
-  valid: boolean;
-  sanitized: string;
-  warnings: ValidationWarning[];
-  blocked: boolean;
-  blockReason?: string;
-  /** Weighted injection risk score in [0, 1]. 0 = clean; ≥ threshold triggers jailbreakAction. */
-  injectionScore: number;
-}
-
-export interface ValidationWarning {
-  code: string;
-  message: string;
-  severity: 'low' | 'medium' | 'high';
-  position?: number;
-  pattern?: string;
-}
-
-export interface ValidationContext {
-  userId?: string;
-  source?: string;
-  correlationId?: string;
-}
+import type {
+  SecurityConfig,
+  ValidationResult,
+  ValidationWarning,
+  ValidationContext,
+} from '@secureyeoman/shared';
+export type { ValidationResult, ValidationWarning, ValidationContext } from '@secureyeoman/shared';
 
 // Injection patterns to detect
 const INJECTION_PATTERNS: {

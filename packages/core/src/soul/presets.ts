@@ -7,6 +7,7 @@
  * further customised after creation.
  */
 
+import { McpFeaturesSchema } from '@secureyeoman/shared';
 import type { PersonalityCreate } from './types.js';
 
 export interface PersonalityPreset {
@@ -42,27 +43,8 @@ const BASE_BODY: PersonalityCreate['body'] = {
   selectedServers: [],
   selectedIntegrations: [],
   integrationAccess: [],
-  mcpFeatures: {
-    exposeGit: false,
-    exposeFilesystem: false,
-    exposeWeb: false,
-    exposeWebScraping: false,
-    exposeWebSearch: false,
-    exposeBrowser: false,
-    exposeDesktopControl: false,
-    exposeNetworkDevices: false,
-    exposeNetworkDiscovery: false,
-    exposeNetworkAudit: false,
-    exposeNetBox: false,
-    exposeNvd: false,
-    exposeNetworkUtils: false,
-    exposeTwingate: false,
-    exposeGmail: false,
-    exposeTwitter: false,
-    exposeGithub: false,
-    exposeDocker: false,
-    exposeCicd: false,
-  },
+  // Derived from McpFeaturesSchema — new feature flags are automatically included.
+  mcpFeatures: McpFeaturesSchema.parse({}),
   proactiveConfig: {
     enabled: false,
     builtins: {

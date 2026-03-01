@@ -1,4 +1,48 @@
+## [2026.3.1b] — 2026-03-01
+
+### Codebase Refactor Audit — Benchmarks, Shared Helpers & Type Extraction (ADR 169)
+
+- **Performance benchmarks**: `vitest bench` infrastructure added. `input-validator.bench.ts` covers clean/attack/size-limit paths. `workflow-engine.bench.ts` covers topology sort, template resolution, and condition compilation. Run via `npm run bench` in `packages/core`.
+- **Shared OAuth fetch helper** (`packages/core/src/integrations/oauth-fetch.ts`): `fetchWithOAuthRetry()` + `createApiErrorFormatter()` replace ≈80 lines of duplicated 401-retry and error-formatting code in `github-api-routes.ts` and `gmail-routes.ts`.
+- **WorkflowEngine condition compile cache**: `evaluateCondition()` now caches compiled `new Function()` results in an instance-level `Map`. Repeated identical expressions (common in polling/recurring workflows) compile only once.
+- **MCP `registerApiProxyTool()` factory** (`packages/mcp/src/tools/tool-utils.ts`): Eliminates `server.registerTool` + `wrapToolHandler` + `JSON.stringify` boilerplate. 13 GitHub tools and 7 Gmail tools converted to factory registration.
+- **`DocumentManager` constructor normalised**: `brainManager` and `storage` moved into `DocumentManagerDeps`; constructor changed to `(deps: DocumentManagerDeps)`, consistent with all other managers.
+- **WorkflowTemplates step builders**: 5 builder helpers (`agentStep`, `transformStep`, `resourceStep`, `webhookStep`, `swarmStep`) replace verbose inline step objects. Templates 1–2 refactored.
+- **`ValidationResult`/`ValidationWarning`/`ValidationContext` moved to shared**: Now exported from `@secureyeoman/shared` — MCP and other consumers can import without a core dependency.
+- **`presets.ts` dynamic `mcpFeatures`**: `BASE_BODY.mcpFeatures` now derived from `McpFeaturesSchema.parse({})`. New feature flags are automatically included without manual updates.
+- **Generic `withRetry<T>()` utility** added to `packages/core/src/ai/retry-manager.ts`: Jittered exponential backoff for any async operation. Accepts optional `shouldRetry` predicate; defaults to network-error heuristic (ECONNRESET, 502/503, timeout).
+- **Phase XX roadmap entry added**: Validate workflow condition strings at save time; injection detection early-exit after first blocking match.
+- **ADR 169**: `docs/adr/169-codebase-refactor-audit.md`.
+
+---
+
 ## [2026.2.28] — 2026-02-28
+
+### Soul Module Code Quality Improvements (ADR 168)
+
+- **`skill-executor.ts` — removed dead stubs**: `executeCodeAction` previously returned a fake success response (`{ message: 'Code execution placeholder' }`). `executeShellAction` always errored through two confusing code paths. Both private methods removed. `executeAction` now dispatches to `executeHttpAction` only; `code` and `shell` action types fall through to the standard `'Action has no valid configuration'` error. HTTP actions remain fully functional.
+- **`collab.ts` — instance-level colorIndex**: Module-level `let colorIndex = 0` caused all `CollabManager` instances (tests, hot-reload) to share a single presence-color counter, producing color collisions. Moved to `private colorIndex = 0` instance field; `nextColor()` converted from module-level function to private method. Each manager now has an independent, zero-initialised counter.
+- **`creation-tool-executor.ts` — handler map replaces switch**: 24-case `switch(toolCall.name)` block spanning ~450 lines replaced with a typed `TOOL_HANDLERS: Record<string, ToolHandler>` map. Public function now does a single map lookup after gating, then falls through to the dynamic-tool registry. Behaviour identical; new tools added as a one-line entry. No observable API change.
+- **`dynamic-tool-manager.ts` — configurable execution timeout**: `EXECUTION_TIMEOUT_MS = 10_000` was hardcoded throughout. `DynamicToolManagerDeps` gains `executionTimeoutMs?: number`; constructor stores `deps.executionTimeoutMs ?? EXECUTION_TIMEOUT_MS` as `this.executionTimeoutMs`. Operators can now tune the timeout per deployment without touching source. Default (10 s) unchanged.
+- **Tests**: +7 new tests (2 collab multi-instance + 2 dynamic-tool timeout + 3 handler map) across all four files. All 680 soul domain tests pass.
+- **ADR 168**: `docs/adr/168-soul-module-improvements.md`
+
+---
+
+### Phase 89-D — Vitest Parallel Split + Coverage Audit
+
+- **Vitest parallel split**: `packages/core` test suite split into two configs:
+  - `vitest.unit.config.ts` — 343 unit test files, `fileParallelism: true`, `pool: 'forks'` (pure mocked tests, no DB dependency). Runs in parallel across all CPU cores.
+  - `vitest.db.config.ts` — 66 DB integration test files, `fileParallelism: false`, `singleFork: true`. All share the `secureyeoman_test` PostgreSQL DB; serial execution prevents `truncateAllTables()` race conditions.
+- **Root workspace updated**: now runs 4 concurrent projects — `core:unit` (parallel), `core:db` (serial), `dashboard`, `mcp`. All packages run simultaneously.
+- **`packages/mcp` added to workspace**: previously excluded from the root `vitest.config.ts`, now included as a 4th concurrent project.
+- **`packages/core/vitest.config.ts` retained**: unchanged serial config for accurate coverage runs (`npx vitest run --coverage`).
+- **Coverage audit (2026-03-01)**: measured via `vitest.unit.config.ts --coverage`. Overall unit-test coverage: **80.85 % stmt · 68.76 % branches · 82.62 % fn · 81.56 % lines** (up from 49.3 %/37.7 % Phase 90 baseline, driven by Phase 89-A/B/C additions).
+- **Key file coverages**: `gateway/server.ts` 62 %/52 % (main gap), `ai/client.ts` 80 %/74 %, `workflow/` 87 %/68 %, `federation/` 78 %/52 %, `brain/vector/` 97 %/78 %, `training/` 82 %/67 %.
+- **Test count**: 10,400 total (8,892 core · 862 dashboard · 646 mcp).
+- **Bug fix**: `src/ai/chat-routes.test.ts` — `brainContext` assertion updated to include `knowledgeMode: 'rag'` field added in Phase 82.
+
+---
 
 ### Phase 91 — Native Clients Scaffold (Tauri v2 Desktop + Capacitor v6 Mobile)
 

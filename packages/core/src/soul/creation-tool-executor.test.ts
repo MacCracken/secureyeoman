@@ -1498,4 +1498,52 @@ describe('executeCreationTool — gating edge cases', () => {
     expect(result.isError).toBe(false);
     expect(sy.getSoulManager().getPersonality).not.toHaveBeenCalled();
   });
+
+  // ── Handler map coverage ──────────────────────────────────────────────────
+
+  it('handler map: all 24 named tools are reachable (spot-check)', async () => {
+    // Verify that a sample of tool names are dispatched through the handler map
+    // rather than falling through to the "unknown tool" path.  Each call below
+    // would return isError:true because managers are missing, but the error
+    // must NOT be the "Unknown tool" sentinel.
+    const namedTools = [
+      'create_swarm',
+      'delegate_task',
+      'list_sub_agents',
+      'get_delegation_result',
+      'a2a_connect',
+      'a2a_send',
+      'create_workflow',
+      'update_workflow',
+      'delete_workflow',
+      'trigger_workflow',
+    ];
+    const sy = makeSecureYeoman();
+
+    for (const name of namedTools) {
+      const result = await executeCreationTool(makeToolCall(name, { id: 'x' }), sy as any);
+      // Each of these managers is stubbed as undefined, so the handler returns an
+      // availability error — but it must not be "Unknown tool".
+      if (result.isError) {
+        expect((result.output as { error: string }).error).not.toMatch(/Unknown tool/);
+      }
+    }
+  });
+
+  it('handler map: truly unknown tool names fall through to DTM / unknown-tool error', async () => {
+    const sy = makeSecureYeoman(makeDtm({ has: false }));
+    const result = await executeCreationTool(
+      makeToolCall('totally_unknown_xyz', {}),
+      sy as any
+    );
+    expect(result.isError).toBe(true);
+    expect((result.output as { error: string }).error).toMatch(/Unknown tool/);
+  });
+
+  it('handler map: list_dynamic_tools returns count', async () => {
+    const sy = makeSecureYeoman(makeDtm({ listResult: [{ id: 'dt-1', name: 'foo' }] }));
+    const result = await executeCreationTool(makeToolCall('list_dynamic_tools', {}), sy as any);
+    expect(result.isError).toBe(false);
+    expect((result.output as { count: number }).count).toBe(1);
+  });
 });

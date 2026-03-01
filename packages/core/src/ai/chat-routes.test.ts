@@ -326,6 +326,7 @@ describe('Chat Routes', () => {
       memoriesUsed: 0,
       knowledgeUsed: 0,
       contextSnippets: [],
+      knowledgeMode: 'rag',
     });
   });
 

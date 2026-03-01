@@ -363,4 +363,46 @@ describe('CollabManager', () => {
     // storage.loadCollabDoc should only be called once (second join reuses the entry)
     expect(storage.loadCollabDoc).toHaveBeenCalledTimes(1);
   });
+
+  // ── Presence color isolation (instance-level colorIndex) ──────────────────
+
+  it('two CollabManager instances have independent color sequences', async () => {
+    // If colorIndex were a module-level global the two managers would share state,
+    // meaning the first client on manager2 would get the SECOND color (index=1).
+    // With an instance-level field, each manager starts fresh at index=0.
+    const storage2 = makeMockStorage();
+    const manager2 = new CollabManager(storage2);
+
+    const docA = 'personality:aaaaaaaa-0000-0000-0000-000000000020';
+    const docB = 'personality:aaaaaaaa-0000-0000-0000-000000000021';
+
+    const ws1 = new FakeWebSocket();
+    const ws2 = new FakeWebSocket();
+
+    await manager.join(docA, 'c1', ws1 as never, 'u1', 'Alice');
+    await manager2.join(docB, 'c1', ws2 as never, 'u1', 'Alice');
+
+    const presence1 = manager.getPresence(docA);
+    const presence2 = manager2.getPresence(docB);
+
+    // Both managers should assign the same first color (index 0)
+    expect(presence1.get('c1')?.color).toBe(presence2.get('c1')?.color);
+  });
+
+  it('color cycles back to index 0 after all 8 colors are used', async () => {
+    const docId = 'personality:aaaaaaaa-0000-0000-0000-000000000022';
+    const sockets: FakeWebSocket[] = [];
+
+    // Join 9 clients — the 9th should get the same color as the 1st
+    for (let i = 0; i < 9; i++) {
+      const ws = new FakeWebSocket();
+      sockets.push(ws);
+      await manager.join(docId, `c${i}`, ws as never, `u${i}`, `User${i}`);
+    }
+
+    const presence = manager.getPresence(docId);
+    const color0 = presence.get('c0')?.color;
+    const color8 = presence.get('c8')?.color;
+    expect(color8).toBe(color0);
+  });
 });

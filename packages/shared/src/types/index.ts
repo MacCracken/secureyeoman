@@ -50,6 +50,9 @@ export {
   type User,
   type UserCreate,
   type UserUpdate,
+  type ValidationWarning,
+  type ValidationResult,
+  type ValidationContext,
 } from './security.js';
 
 // Metrics types

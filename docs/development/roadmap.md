@@ -19,6 +19,8 @@
 - [ ] **Manual test: Docker MCP Tools** — Enable `MCP_EXPOSE_DOCKER=true` (socket mode). Verify `docker_ps` lists containers, `docker_logs` streams output, `docker_exec` runs commands correctly. Enable DinD mode via `MCP_DOCKER_MODE=dind` + `MCP_DOCKER_HOST` and repeat.
 - [ ] **Base knowledge generic entries per-personality review** — `hierarchy`, `purpose`, and `interaction` are currently seeded globally. These may need per-personality variants. Low urgency.
 - [ ] **Consumer UX: Settings page split** — Extract `<AuditChainTab>`, `<SoulSystemTab>`, `<RateLimitingTab>` from the `SettingsPage.tsx` monolith into dedicated tab components.
+- [ ] **Validate workflow condition strings at save time** — `evaluateCondition()` in `WorkflowEngine` silently returns `false` for malformed JS expressions (e.g. `steps.nonexistent.output`). Move the `new Function(expr)` compile step to `createWorkflow`/`updateWorkflow` validation so operators get an immediate 400 error with the syntax problem, not a silent skip at runtime.
+- [ ] **Injection detection early-exit after first blocking match** — `InputValidator.detectInjection()` loops through all `INJECTION_PATTERNS` even after setting `blocked = true`. Once a pattern with `block: true` is matched, the loop should break; subsequent patterns only accumulate score, wasting CPU. Benchmark shows this matters at 8 KB inputs with multiple attack vectors.
 
 ---
 
@@ -27,17 +29,116 @@
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P1 — ongoing | 🔄 Continuous |
-| 78 | Advanced Editor — Full IDE Mode | P2 — power user priority | Ready |
-| 81 | Conversation Branching & Replay | P3 — developer experience | Planned |
+| 91 | Native Clients (Tauri Desktop + Capacitor Mobile) | P2 — distribution | 🔄 In Progress |
+| 92 | Adaptive Learning Pipeline | P2 — ML quality & training UX | Planned |
+| 78 | Advanced Editor — Full IDE Mode | P2 — power user priority | Planned |
 | 83 | Content Guardrails | P3 — enterprise compliance | Planned |
 | 85 | LLM-as-Judge Evaluation | P3 — ML quality signal | Planned |
 | 86 | Conversation Analytics | P3 — operational insight | Planned |
+| 81 | Conversation Branching & Replay | P3 — developer experience | Planned |
 | 87 | Inline Citations & Grounding | P4 — trust layer | Planned |
 | 88 | LLM Lifecycle Platform — Core | P4 — model ops | Planned |
 | 89 | Marketplace Shareables | P4 — community growth | Planned |
 | 90 | CI/CD Integration | P2 — developer lifecycle | ✅ Complete |
-| 91 | Native Clients (Tauri Desktop + Capacitor Mobile) | P3 — distribution | 🔄 In Progress |
 | Future | Workflow & Personality Versioning, LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Infrastructure | Future / Demand-Gated | — |
+
+---
+
+## Phase 92: Adaptive Learning Pipeline
+
+**Priority**: P2 — High value for ML operations and training quality.
+
+**Status**: Planned. Inspired by techniques from reinforcement learning systems (prioritized replay, curriculum learning, distributional evaluation, pre-failure attribution) applied to LLM fine-tuning and distillation. Extends the existing `TrainingTab`, `DistillationManager`, `EvaluationManager`, and `FinetuneManager` with smarter data collection, live observability, and a computer-use learning loop.
+
+**Motivation**: The current training pipeline samples conversations uniformly, evaluates output with character Jaccard similarity, and shows only a progress bar during runs. This phase replaces all three with production-grade equivalents: priority-weighted sampling that learns from failure, factored tool-call evaluation, and a live streaming dashboard showing loss curves, throughput, and reward signals — plus a new computer-use learning loop for the Tauri desktop client.
+
+---
+
+### 1. Live Training Dashboard
+
+The `TrainingTab` currently shows job status chips and a static progress bar. This section upgrades it to a real-time observability panel:
+
+- **Loss curve chart** — fine-tuning Docker sidecar already emits log lines with loss values; parse them via SSE and stream into a `recharts` `LineChart` with a rolling 200-step window
+- **Distillation throughput gauge** — samples/minute computed from `samples_generated` deltas; displayed as a live KPI card alongside the existing Conversations/Memories/Knowledge stats
+- **Teacher–student agreement rate** — for each distilled sample, compute character similarity between the teacher response and the existing assistant message in the conversation; track rolling average to surface "how much the student diverges from the teacher" over time
+- **Reward signal panel** — aggregate implicit feedback signals (task success/failure events from `training.pipeline_lineage`, user correction patterns from `chat.messages`, workflow step outcomes) into a rolling reward trend line, mirroring the reward chart in tempest_ai's dashboard
+- **Per-personality training coverage heatmap** — grid showing which personalities have the most/least distillation coverage; helps identify under-represented agents
+
+Backend: `GET /api/v1/training/stream` — SSE endpoint emitting `{ type: 'loss'|'throughput'|'agreement'|'reward', value, ts }` events. Fine-tuning log-tail and distillation progress updates routed through the same stream.
+
+---
+
+### 2. Prioritized Distillation Sampling
+
+`DistillationManager.runJob()` currently iterates conversations with a flat `LIMIT/OFFSET`. This replaces that with a priority-weighted sampler:
+
+- **Failure signal column** — `training.conversation_quality` table: `conversation_id`, `quality_score REAL` (0–1), `signal_source TEXT` (task_outcome / user_correction / injection_score / manual)
+- **Priority weighting** — distillation job queries conversations ordered by `quality_score ASC` (lowest quality = highest training value); parameterised `priorityMode: 'failure-first' | 'uniform' | 'success-first'` on `DistillationJobConfig`
+- **Pre-failure N-turn boost** — analogous to tempest_ai's 120-frame pre-death priority boost: when a workflow pipeline run ends with `status = 'failed'`, the N turns preceding the failure event in that conversation are tagged with a 2× quality multiplier via `pipeline-lineage.ts`
+- **Auto-scoring** — `ConversationQualityScorer` background job runs on a 5-minute interval; scores new conversations by checking: task outcome in lineage table, presence of user correction phrases ("that's wrong", "try again", "no,"), and injection score on messages
+
+Dashboard: `DistillationJobCard` gains a `Priority Mode` selector and a live "high-priority samples in batch" ratio badge.
+
+---
+
+### 3. Curriculum Ordering
+
+Distillation jobs can optionally sort conversations from simple to complex before sampling:
+
+- **Complexity heuristics**: message count, total token estimate, number of tool calls, presence of multi-step workflow context
+- **Curriculum stages**: Stage 1 = short single-turn exchanges (≤ 4 messages, 0 tool calls); Stage 2 = multi-turn without tools; Stage 3 = tool-using conversations; Stage 4 = failed-and-recovered or multi-agent delegations
+- **`curriculumMode: boolean`** on `DistillationJobConfig`; when enabled, the sampler processes Stage 1 first, advances to next stage once `stageQuota` samples collected
+- **Expert decay analogy** — teacher LLM call weight decays across stages: Stage 1 calls the teacher for every sample; Stage 4 calls the teacher only for samples where the existing assistant response scored below `0.4` similarity threshold (saves cost, focuses teacher on genuinely hard cases)
+
+---
+
+### 4. Factored Tool-Call Evaluation
+
+`EvaluationManager` currently uses `exact_match` and `char_similarity` (character Jaccard). These are blind to the structure of tool calls. This replaces them with factored metrics:
+
+- **`tool_name_accuracy`** — fraction of responses where the correct MCP tool was selected (parsed from JSON response)
+- **`tool_arg_match`** — per-argument precision: how many required arguments were present with correct values vs. hallucinated or missing
+- **`outcome_correctness`** — downstream effect: did the tool call produce the expected result when replayed against a sandbox? (opt-in, requires `sandboxFn` in `EvalConfig`)
+- **`semantic_similarity`** — optional: embed both response and gold with the configured Ollama embedding model, compute cosine similarity; more meaningful than char Jaccard for natural language answers
+- `EvalResult.metrics` extended with all four new keys; existing `exact_match` and `char_similarity` retained for backward compatibility
+
+Dashboard: `EvalResultCard` (new component in `TrainingTab`) shows a radar chart of the four dimensions per eval run.
+
+---
+
+### 5. Counterfactual Synthetic Data Generation
+
+When a conversation ends in failure, the teacher LLM can synthesise an ideal completion for the final N turns — generating high-value training data from every failure rather than discarding it:
+
+- **`counterfactualMode: boolean`** on `DistillationJobConfig`; when enabled, failed-conversation turns are re-submitted to the teacher with a system prompt asking for the ideal corrected response
+- **Failure detection**: turn is flagged as a counterfactual candidate when (a) it immediately precedes a task failure event in `pipeline_lineage`, or (b) the next user message matches a correction pattern
+- **Output tagging**: counterfactual samples written to JSONL with `"synthetic": true` metadata field; downstream fine-tuning frameworks (Unsloth, LLaMA Factory) can weight these separately
+- **Cost cap**: `maxCounterfactualSamples` on the job config; counterfactual generation only runs after the normal quota is exhausted
+
+---
+
+### 6. Computer-Use Learning Loop (Desktop / Remote Control)
+
+Extends the Tauri desktop client (Phase 91) with a state→action→reward loop for learning skills in new desktop environments:
+
+- **UI state extraction** — Tauri plugin reads the accessibility tree of the active window (AT-SPI on Linux, UIA on Windows, AXUIElement on macOS); encodes as a fixed-size feature vector: element type, label, position, focus state, role — mirroring tempest_ai's 195-float state encoding from memory addresses
+- **Action space** — factored, analogous to tempest_ai's (fire/zap × spinner): `(action_type: click|type|scroll|hotkey) × (target: element_id|coordinate) × (value: string|null)` — 3 independent dimensions rather than a flat enumeration
+- **Reward signal** — outcome-based: task marked complete = +1, user corrects or undoes = −0.5, user rage-clicks / retries = −1; stored in `training.computer_use_episodes` table with full state/action/reward/done tuples
+- **Episode replay buffer** — `ComputerUseReplayBuffer`: circular buffer of N episodes; pre-failure boost applies the same 2× priority multiplier to the 5 actions preceding each user correction
+- **Cross-environment skill transfer** — structural encoding (element role + label tokens, not pixel coordinates) means skills generalise across app themes and layouts; an "OK button click" learned in one dialog transfers to structurally similar dialogs in other applications
+- **Data pipeline** — completed episodes exported via the existing `POST /api/v1/training/export` endpoint with `format: 'computer_use'` (new format type); produces sequences of `(state_vector, action, reward)` tuples for offline RL or behavioural cloning
+
+Dashboard: new **Computer Use** sub-tab in `TrainingTab`; shows episode count, average task success rate, per-skill performance breakdown, and a replay viewer that renders the action sequence for any recorded episode.
+
+---
+
+### Implementation Notes
+
+- `training.conversation_quality` migration: `070_conversation_quality.sql`
+- `training.computer_use_episodes` migration: `071_computer_use_episodes.sql`
+- SSE training stream: reuses the alert broadcast pattern from Phase 83 (`AlertManager`)
+- Recharts already in the vendor chunk from Phase 83 observability dashboard — no new dependency
+- Computer-use state extraction behind `SECUREYEOMAN_COMPUTER_USE=true` env flag; off by default until Phase 91 Tauri integration is stable
 
 ---
 
@@ -330,7 +431,7 @@ Advanced items (DPO, RLHF, continual learning, multi-GPU) are demand-gated in th
 
 ## Phase 90: Test Coverage — Path to 88 % / 77 %
 
-**Priority**: P2 — Engineering quality. Baseline snapshot taken 2026-02-28: **49.3 % statements · 37.7 % branches · 47.5 % functions · 50.9 % lines** across 396 test files / 8,611 passing core tests. Configured thresholds in `vitest.config.ts`: 87 % stmt / 75 % branch / 87 % fn / 87 % line (target: ≥ 88 % stmt / ≥ 77 % branch). *No new test files are written in this phase — existing suites are deepened.*
+**Priority**: P2 — Engineering quality. Original baseline 2026-02-28: 49.3 % stmt · 37.7 % branches · 47.5 % fn · 50.9 % lines across 396 files / 8,611 core tests. **Updated baseline 2026-03-01**: **80.85 % stmt · 68.76 % branches · 82.62 % fn · 81.56 % lines** across 409 files / 8,892 core tests (10,400 total across all packages). Growth driven by Phase 89-A/B/C zero-coverage sweeps (+250 tests). Configured thresholds in `vitest.config.ts`: 87 % stmt / 75 % branch / 87 % fn / 87 % line (target: ≥ 88 % stmt / ≥ 77 % branch).
 
 > Note: `vitest.config.ts` already excludes `src/**/index.ts`, `src/**/types.ts`, `src/secureyeoman.ts`, and `src/cli.ts` from coverage instrumentation. The gap is in logic files only.
 
@@ -345,24 +446,24 @@ Most source files already have a companion `*.test.ts`. The gap is depth, not br
 
 ### Target Lift per Module
 
-| Module | Est. stmt % now | Goal | Strategy |
-|--------|----------------|------|----------|
-| `gateway/server.ts` | ~30 % | 70 % | Add route tests for every `4xx` / `5xx` branch (malformed body, missing auth, unknown param, DB error stub). Largest single file — reaching 70 % here contributes ~3–4 % to overall statement coverage. |
-| `ai/client.ts` + providers | ~45 % | 75 % | Error injection (provider timeout, rate-limit 429, malformed response), fallback-chain exhaustion, local-first routing toggle. |
-| `integrations/` adapters × 31 | ~35 % | 70 % | Table-driven tests per adapter: `send()` error, `validate()` bad config, `connect()` / `disconnect()` lifecycle. |
-| `brain/vector/` stores | ~40 % | 72 % | FAISS index-not-found, Qdrant timeout, ChromaDB collection-exists, distance-metric branch. |
-| `sandbox/` (linux/darwin) | ~25 % | 50 % | `vi.stubEnv('platform', 'darwin')` per test; mock `child_process.execFile`; landlock / seccomp error paths. |
-| `body/` desktop control | ~30 % | 55 % | Platform stubs; clipboard read/write errors; camera / screen permissions-denied branch. |
-| `security/keyring/` providers | ~40 % | 70 % | Mock `libsecret` / `security` CLI; error when service unavailable; fallback provider selection. |
-| `cli/commands/` (26 cmds) | ~50 % | 78 % | `--json` flag output assertions; `--help`; non-zero exit on bad args; pipe-broken stdout. |
-| `workflow/workflow-engine.ts` | ~55 % | 82 % | Cycle detection, `triggerMode: 'any'` with mixed pass/fail deps, `outputSchemaMode: 'strict'` rejections, timeout / cancel. |
-| `training/` pipeline | ~48 % | 78 % | Distillation job `status: 'failed'` retry, LoRA sidecar timeout, evaluation threshold-miss, lineage FK cascade. |
-| `federation/` | ~20 % | 55 % | `federation-crypto` encrypt/decrypt round-trips, peer-sync conflict, `federation-storage` CRUD. |
-| `telemetry/otel-fastify-plugin.ts` | ~15 % | 60 % | Mock `@opentelemetry/api` tracer; span attribute assertions; `traceId` header injection. |
-| `logging/` chain + export | ~55 % | 80 % | HMAC chain break detection, syslog format, JSONL / CSV export edge cases, log-rotation size trigger. |
-| `soul/manager.ts` | ~45 % | 75 % | Prompt composition branches (all platform flags off, SAML role injection, per-personality hours). |
+> *Numbers updated 2026-03-01 after Phase 89-A/B/C test additions. Measured via `vitest run --config vitest.unit.config.ts --coverage` (unit tests, no DB). Overall unit coverage: **80.85 % stmt · 68.76 % branch · 82.62 % fn · 81.56 % lines**.*
 
-### Branch-Coverage Hot Spots (37.7 % → 77 %)
+| Module | Actual stmt % | Branch % | Goal stmt | Remaining gap |
+|--------|--------------|----------|-----------|---------------|
+| `gateway/server.ts` | **62 %** | 52 % | 75 % | `4xx`/`5xx` route branches, malformed body, DB error stubs (3,000-line file — biggest single lever). |
+| `ai/client.ts` + providers | **80 %** | 74 % | 88 % | Rate-limit 429, malformed response, fallback-chain exhaustion. |
+| `integrations/` adapters × 31 | ~40 % | ~35 % | 70 % | Table-driven per adapter: `send()` error, `validate()` bad config, `connect()`/`disconnect()` lifecycle. |
+| `brain/vector/` stores | **97 %** | 78 % | 97 % ✅ | Near-target; FAISS/Qdrant/Chroma already well-covered. |
+| `sandbox/` (linux/darwin) | **77 %** | 72 % | 85 % | Landlock unavailable fallback, seccomp profile load failure, resource-limit apply error. |
+| `body/` desktop control | **76–96 %** | 58–96 % | 85 % | Actuator error paths (clipboard deny, camera permission-denied). |
+| `security/keyring/` providers | ~55 % | ~40 % | 70 % | Mock `libsecret`/`security` CLI; service unavailable fallback. |
+| `cli/commands/` | **65 %** | 55 % | 80 % | `--json` mode, `--help`, non-zero exit on bad args. |
+| `workflow/` | **87 %** | 68 % | 90 % | Branch hot-spots: `triggerMode: 'any'` all-deps-fail, `outputSchemaMode: 'strict'` rejection, human-approval timeout. |
+| `training/` pipeline | **82 %** | 67 % | 85 % | Distillation `status: 'failed'` retry, LoRA sidecar timeout, evaluation threshold-miss. |
+| `federation/` | **78 %** | 52 % | 80 % | Branch coverage on peer-sync conflict, CRUD edge cases already tested (Phase 89-A). |
+| `soul/manager.ts` | ~78 % | ~67 % | 85 % | Prompt composition branches (all platform flags off, SAML role injection, per-personality hours). |
+
+### Branch-Coverage Hot Spots (68.76 % → 77 %)
 
 Branch coverage is the hardest gap. Key ternaries / conditionals to reach:
 
@@ -378,7 +479,7 @@ Branch coverage is the hardest gap. Key ternaries / conditionals to reach:
 ### Non-Code Levers (config / infrastructure wins)
 
 - **Raise vitest thresholds** — bump `vitest.config.ts` thresholds from `{ stmt: 87, branch: 75 }` to `{ stmt: 88, branch: 77 }` to match the target.
-- **`fileParallelism`** — coverage runs currently sequential (`fileParallelism: false` required for integration tests); split config so unit tests run with `fileParallelism: true` and integration tests keep sequential. Reduces CI time without changing logic.
+- ~~**`fileParallelism`**~~ ✅ **DONE** — `vitest.unit.config.ts` (343 files, `fileParallelism: true`) + `vitest.db.config.ts` (66 files, `singleFork: true`). Root workspace runs all 4 packages concurrently. `vitest.config.ts` retained for accurate coverage runs.
 - **Shared test helpers** — extract repeated `mockPool()` / `mockQuery()` boilerplate into `src/test-utils.ts` so branches are reachable inside existing per-file test files without duplication.
 - **`vi.stubEnv` patterns** — several platform guards (`process.platform`, `process.env.CI`) branch on environment values that can be overridden with `vi.stubEnv()` inside existing tests to cover the else-branch.
 
@@ -398,18 +499,9 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
-### Observability & Telemetry ✅ COMPLETE (Phase 83)
+### Observability & Telemetry (Phase 83)
 
 *As SecureYeoman moves into production deployments, operators need distributed tracing, metrics export, and correlation tooling beyond what the built-in audit log provides.*
-
-- [x] **OpenTelemetry tracing** — `initTracing()` bootstraps SDK when `OTEL_EXPORTER_OTLP_ENDPOINT` is set. `getTracer()` / `getCurrentTraceId()` are safe no-ops otherwise. HTTP spans via `otelFastifyPlugin`. `X-Trace-Id` response header.
-- [x] **Prometheus metrics endpoint** — `GET /metrics` (unauthenticated, standard Prometheus convention). Existing `/prom/metrics` retained as alias. Grafana dashboard templates in `docs/ops/grafana/`.
-- [x] **Correlation IDs on all log lines** — Auth middleware enriches `request.log` with `userId` + `role`. ECS log format (`LOG_FORMAT=ecs`) adds `trace.id` + `transaction.id` to every log line.
-- [x] **Real-time metrics push to dashboard** — 5-second WebSocket broadcast (was already live); now also triggers `AlertManager.evaluate()` on each tick.
-- [x] **Alerting integration** — `AlertManager` + `AlertStorage` with CRUD API at `/api/v1/alerts/rules/*`, cooldown, and 4 channel types (Slack, PagerDuty, OpsGenie, webhook). Dashboard tab under Developers.
-- [x] **Distributed trace correlation across A2A calls** — `RemoteDelegationTransport` injects W3C `traceparent` header; receive route extracts it for log correlation.
-- [x] **Structured log export** — `LOG_FORMAT=ecs` produces Elastic Common Schema logs compatible with Loki, Datadog, and Elasticsearch.
-- [x] **Grafana dashboard bundle** — `docs/ops/grafana/`: `secureyeoman-overview.json` + `secureyeoman-alerts.json` + `README.md`.
 
 **Remaining / Future improvements (demand-gated)**:
 - [ ] **Histogram metrics** — Replace avg-latency gauge with proper p50/p95/p99 histograms per route using OpenMetrics format.

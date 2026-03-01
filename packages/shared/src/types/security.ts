@@ -199,3 +199,30 @@ export type UserCreate = z.infer<typeof UserCreateSchema>;
 
 export const UserUpdateSchema = UserCreateSchema.partial().omit({ id: true });
 export type UserUpdate = z.infer<typeof UserUpdateSchema>;
+
+// ── Input Validation Result Types ─────────────────────────────────────────────
+// Shared so the MCP layer can reference them without a circular dep on core.
+
+export interface ValidationWarning {
+  code: string;
+  message: string;
+  severity: 'low' | 'medium' | 'high';
+  position?: number;
+  pattern?: string;
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  sanitized: string;
+  warnings: ValidationWarning[];
+  blocked: boolean;
+  blockReason?: string;
+  /** Weighted injection risk score in [0, 1]. 0 = clean; ≥ threshold triggers jailbreakAction. */
+  injectionScore: number;
+}
+
+export interface ValidationContext {
+  userId?: string;
+  source?: string;
+  correlationId?: string;
+}

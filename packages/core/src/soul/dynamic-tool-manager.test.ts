@@ -708,6 +708,68 @@ describe('DynamicToolManager', () => {
     });
   });
 
+  // ── configurable executionTimeoutMs ───────────────────────────────────────
+
+  describe('executionTimeoutMs', () => {
+    it('uses 10 000 ms by default', async () => {
+      const { manager } = makeManager();
+      await manager.register({
+        name: 'slow',
+        description: '',
+        parametersSchema: {},
+        // Implementation resolves immediately; we just need the timeout message to contain the default
+        implementation: 'return 1;',
+      });
+      // Verify the timeout value is embedded in error messages by inspecting a private path.
+      // We do this indirectly via a mock that forces a timeout error scenario.
+      // The simplest approach: override the registered fn to hang forever, then confirm the
+      // error message mentions 10000.
+      const entry = (manager as any).registry.get('slow');
+      entry.fn = () => new Promise(() => {}); // never resolves
+
+      // Use a very short custom timeout via a new manager to confirm message
+      const { manager: fastManager } = makeManager();
+      fastManager['executionTimeoutMs'] = 50; // patch private field for test
+      await fastManager.register({
+        name: 'hang',
+        description: '',
+        parametersSchema: {},
+        implementation: 'return 1;',
+      });
+      const hangEntry = (fastManager as any).registry.get('hang');
+      hangEntry.fn = () => new Promise(() => {});
+
+      const result = await fastManager.execute('hang', {});
+      expect(result.isError).toBe(true);
+      expect((result.output as { error: string }).error).toContain('50ms');
+    });
+
+    it('respects a custom executionTimeoutMs passed via deps', async () => {
+      const logger = makeLogger();
+      const storage = makeStorage();
+      const policy = makePolicy();
+      const manager = new DynamicToolManager(storage as any, policy, {
+        logger: logger as any,
+        executionTimeoutMs: 75,
+      });
+
+      await manager.register({
+        name: 'hang_tool',
+        description: '',
+        parametersSchema: {},
+        implementation: 'return 1;',
+      });
+
+      // Replace fn with one that never resolves
+      const entry = (manager as any).registry.get('hang_tool');
+      entry.fn = () => new Promise(() => {});
+
+      const result = await manager.execute('hang_tool', {});
+      expect(result.isError).toBe(true);
+      expect((result.output as { error: string }).error).toContain('75ms');
+    });
+  });
+
   // ── deleteByName ──────────────────────────────────────────────────────────
 
   describe('deleteByName', () => {

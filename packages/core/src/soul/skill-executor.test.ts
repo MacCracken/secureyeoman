@@ -32,14 +32,14 @@ describe('SkillExecutor', () => {
       expect(result.durationMs).toBeGreaterThanOrEqual(0);
     });
 
-    it('executes code action and returns placeholder output', async () => {
+    it('returns error for code action type (not implemented)', async () => {
       const executor = new SkillExecutor();
       const skill = makeSkill([
         { id: 'a1', type: 'code', code: { language: 'javascript', source: 'return 42;' } } as never,
       ]);
       const result = await executor.executeAction(skill, 'a1', CTX);
-      expect(result.success).toBe(true);
-      expect((result.output as Record<string, unknown>).language).toBe('javascript');
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Action has no valid configuration');
     });
 
     it('returns error for code action with missing code config', async () => {
@@ -164,24 +164,22 @@ describe('SkillExecutor', () => {
       expect(result.error).toBe('Network error');
     });
 
-    it('returns error for shell action in sandboxed mode', async () => {
+    it('returns error for shell action type (not implemented)', async () => {
       const executor = new SkillExecutor({ timeoutMs: 5000, memoryLimitMb: 128, sandboxed: true });
       const skill = makeSkill([
         { id: 'a1', type: 'shell', shell: { command: 'ls', args: [] } } as never,
       ]);
       const result = await executor.executeAction(skill, 'a1', CTX);
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Shell execution requires');
+      expect(result.error).toBe('Action has no valid configuration');
     });
 
-    it('returns error for shell action in non-sandboxed mode', async () => {
-      const executor = new SkillExecutor({ timeoutMs: 5000, memoryLimitMb: 128, sandboxed: false });
-      const skill = makeSkill([
-        { id: 'a1', type: 'shell', shell: { command: 'ls', args: [] } } as never,
-      ]);
+    it('shell action without shell config also returns error', async () => {
+      const executor = new SkillExecutor({ timeoutMs: 5000, memoryLimitMb: 128 });
+      const skill = makeSkill([{ id: 'a1', type: 'shell' } as never]);
       const result = await executor.executeAction(skill, 'a1', CTX);
       expect(result.success).toBe(false);
-      expect(result.error).toContain('not allowed in non-sandboxed mode');
+      expect(result.error).toBe('Action has no valid configuration');
     });
 
     it('catches synchronous throws and returns failure', async () => {

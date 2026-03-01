@@ -6,8 +6,10 @@
  * agentic loop in chat-routes.ts whenever the AI returns stopReason
  * 'tool_use' for a known creation tool name.
  *
- * Unknown tool names (e.g. MCP or skill-defined tools that have their own
- * execution paths) are returned as errors so the AI can gracefully continue.
+ * Each supported tool is registered in TOOL_HANDLERS — a flat lookup map
+ * that replaces the original switch statement.  Unknown tool names (e.g.
+ * MCP or skill-defined tools) are checked against the DynamicToolManager
+ * registry before returning an error.
  */
 
 import type { ToolCall } from '@secureyeoman/shared';
@@ -36,6 +38,12 @@ export interface ExecutionContext {
 
 type Args = Record<string, unknown>;
 
+type ToolHandler = (
+  args: Args,
+  secureYeoman: SecureYeoman,
+  context?: ExecutionContext
+) => Promise<ToolExecutionResult>;
+
 function str(v: unknown): string {
   return typeof v === 'string' ? v : JSON.stringify(v);
 }
@@ -53,6 +61,441 @@ function normalizeSkillName(raw: string): string {
     .trim()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+// ── Handler map ───────────────────────────────────────────────────────────────
+
+const TOOL_HANDLERS: Record<string, ToolHandler> = {
+  // ── Skills ────────────────────────────────────────────────────────────────
+  create_skill: async (args, sy, ctx) => {
+    const soulManager = sy.getSoulManager();
+    const skill = await soulManager.createSkill({
+      name: normalizeSkillName(str(args.name)),
+      description: typeof args.description === 'string' ? args.description : '',
+      instructions: typeof args.instructions === 'string' ? args.instructions : '',
+      triggerPatterns: Array.isArray(args.triggerPatterns) ? (args.triggerPatterns as string[]) : [],
+      tools: [],
+      useWhen: '',
+      doNotUseWhen: '',
+      successCriteria: '',
+      mcpToolsAllowed: [],
+      routing: 'fuzzy' as const,
+      linkedWorkflowId: null,
+      actions: [],
+      triggers: [],
+      dependencies: [],
+      provides: [],
+      requireApproval: false,
+      allowedPermissions: [],
+      enabled: true,
+      source: 'ai_learned',
+      status: 'active',
+      autonomyLevel: 'L1',
+      personalityId: ctx?.personalityId ?? null,
+    });
+    return { output: { skill }, isError: false };
+  },
+
+  update_skill: async (args, sy) => {
+    const soulManager = sy.getSoulManager();
+    const { id, ...rest } = args;
+    const skill = await soulManager.updateSkill(str(id), rest as any);
+    return { output: { skill }, isError: false };
+  },
+
+  delete_skill: async (args, sy) => {
+    const soulManager = sy.getSoulManager();
+    const skillToDelete = await soulManager.getSkill(str(args.id));
+    await soulManager.deleteSkill(str(args.id));
+    return {
+      output: { deleted: true, id: args.id, name: skillToDelete?.name ?? str(args.id) },
+      isError: false,
+    };
+  },
+
+  // ── Tasks ─────────────────────────────────────────────────────────────────
+  create_task: async (args, sy, ctx) => {
+    const taskExecutor = sy.getTaskExecutor?.();
+    const { uuidv7, sha256 } = await import('../utils/crypto.js');
+    const { TaskStatus } = await import('@secureyeoman/shared');
+    const now = Date.now();
+    const task = {
+      id: uuidv7(),
+      type: (args.type ?? 'execute') as any,
+      name: str(args.name),
+      description: typeof args.description === 'string' ? args.description : undefined,
+      status: TaskStatus.PENDING,
+      createdAt: now,
+      inputHash: sha256(JSON.stringify(args.input ?? {})),
+      securityContext: { userId: 'ai', role: 'operator', permissionsUsed: [] },
+      timeoutMs: typeof args.timeoutMs === 'number' ? args.timeoutMs : 300000,
+    };
+    if (taskExecutor) {
+      try {
+        const executorTask = await taskExecutor.submit(
+          {
+            type: task.type,
+            name: task.name,
+            description: task.description,
+            input: args.input,
+            timeoutMs: task.timeoutMs,
+          },
+          {
+            userId: 'ai',
+            role: 'operator',
+            personalityId: ctx?.personalityId ?? undefined,
+            personalityName: ctx?.personalityName ?? undefined,
+          }
+        );
+        return { output: { task: executorTask }, isError: false };
+      } catch {
+        // Fall through to return pending stub below
+      }
+    }
+    return { output: { task }, isError: false };
+  },
+
+  update_task: async (args, sy) => {
+    const taskStorage = sy.getTaskStorage?.();
+    if (!taskStorage) {
+      return { output: { error: 'Task storage not available' }, isError: true };
+    }
+    const { id, ...updates } = args;
+    taskStorage.updateTask(str(id), updates as any);
+    return { output: { updated: true, id }, isError: false };
+  },
+
+  // ── Personalities ─────────────────────────────────────────────────────────
+  create_personality: async (args, sy) => {
+    const soulManager = sy.getSoulManager();
+    const personality = await soulManager.createPersonality({
+      name: str(args.name),
+      description: typeof args.description === 'string' ? args.description : '',
+      systemPrompt: typeof args.systemPrompt === 'string' ? args.systemPrompt : '',
+      traits: (args.traits as Record<string, string>) ?? {},
+      sex: (['male', 'female', 'non-binary', 'unspecified'].includes(args.sex as string)
+        ? args.sex
+        : 'unspecified') as any,
+      voice: '',
+      preferredLanguage: '',
+      defaultModel: null,
+      modelFallbacks: [],
+      includeArchetypes: false,
+      injectDateTime: false,
+      empathyResonance: false,
+      avatarUrl: null,
+      body: {} as any,
+    });
+    return { output: { personality }, isError: false };
+  },
+
+  update_personality: async (args, sy) => {
+    const soulManager = sy.getSoulManager();
+    const { id, ...rest } = args;
+    const personality = await soulManager.updatePersonality(str(id), rest as any);
+    return { output: { personality }, isError: false };
+  },
+
+  delete_personality: async (args, sy, ctx) => {
+    const targetId = str(args.id);
+    if (targetId === ctx?.personalityId) {
+      return {
+        output: {
+          error:
+            'A personality cannot delete itself. Ask another personality or an admin to perform this deletion.',
+        },
+        isError: true,
+      };
+    }
+    const soulManager = sy.getSoulManager();
+    const target = await soulManager.getPersonality(targetId);
+    const mode = target?.body?.resourcePolicy?.deletionMode ?? 'auto';
+    if (mode === 'manual') {
+      return {
+        output: {
+          error:
+            'Deletion is blocked (mode: manual). A human admin must change the deletion mode in Body → Resources before this personality can be deleted.',
+        },
+        isError: true,
+      };
+    }
+    if (mode === 'request') {
+      return {
+        output: {
+          error:
+            'Deletion requires human confirmation (mode: suggest). AI-initiated deletion is not allowed for this personality. A human must confirm deletion via the dashboard.',
+        },
+        isError: true,
+      };
+    }
+    await soulManager.deletePersonality(targetId);
+    return {
+      output: { deleted: true, id: targetId, name: target?.name ?? targetId },
+      isError: false,
+    };
+  },
+
+  // ── Sub-Agents ────────────────────────────────────────────────────────────
+  delegate_task: async (args, sy, ctx) => {
+    const agentManager = sy.getSubAgentManager?.();
+    if (!agentManager) {
+      return { output: { error: 'Sub-agent manager not available' }, isError: true };
+    }
+    const delegation = await (agentManager as any).delegate?.({
+      profile: args.profile,
+      task: args.task,
+      context: args.context,
+      maxTokenBudget: args.maxTokenBudget,
+      initiatedByPersonalityId: ctx?.personalityId ?? undefined,
+    });
+    return { output: { delegation }, isError: false };
+  },
+
+  list_sub_agents: async (_args, sy) => {
+    const agentManager = sy.getSubAgentManager?.();
+    if (!agentManager) {
+      return { output: { agents: [] }, isError: false };
+    }
+    const agents = await (agentManager as any).list?.();
+    return { output: { agents: agents ?? [] }, isError: false };
+  },
+
+  get_delegation_result: async (args, sy) => {
+    const agentManager = sy.getSubAgentManager?.();
+    if (!agentManager) {
+      return { output: { error: 'Sub-agent manager not available' }, isError: true };
+    }
+    const result = await (agentManager as any).getResult?.(str(args.delegationId));
+    return { output: { result }, isError: false };
+  },
+
+  // ── Swarms ────────────────────────────────────────────────────────────────
+  create_swarm: async (args, sy) => {
+    const swarmManager = sy.getSwarmManager?.();
+    if (!swarmManager) {
+      return { output: { error: 'Swarm manager not available' }, isError: true };
+    }
+    const swarm = await (swarmManager as any).createSwarm?.({
+      template: args.template,
+      task: args.task,
+      context: args.context,
+      tokenBudget: args.tokenBudget,
+    });
+    return { output: { swarm }, isError: false };
+  },
+
+  // ── Custom Roles ──────────────────────────────────────────────────────────
+  create_custom_role: async (args) => {
+    const { getRBAC } = await import('../security/rbac.js');
+    const rbac = getRBAC();
+    const rawPerms = Array.isArray(args.permissions)
+      ? (args.permissions as { resource: string; action?: string; actions?: string[] }[])
+      : [];
+    await rbac.defineRole({
+      id: str(args.name).toLowerCase().replace(/\s+/g, '_'),
+      name: str(args.name),
+      description: typeof args.description === 'string' ? args.description : '',
+      permissions: rawPerms.map((p) => ({
+        resource: p.resource,
+        actions: p.actions ?? (p.action ? [p.action] : []),
+      })),
+      inheritFrom: Array.isArray(args.inheritFrom) ? (args.inheritFrom as string[]) : [],
+    });
+    return {
+      output: { created: true, roleId: str(args.name).toLowerCase().replace(/\s+/g, '_') },
+      isError: false,
+    };
+  },
+
+  delete_custom_role: async (args) => {
+    const { getRBAC } = await import('../security/rbac.js');
+    const rbac = getRBAC();
+    const removed = await rbac.removeRole(str(args.roleId));
+    if (!removed) {
+      return {
+        output: { error: `Role '${args.roleId}' not found or cannot be deleted.` },
+        isError: true,
+      };
+    }
+    return {
+      output: { deleted: true, roleId: args.roleId, name: str(args.roleId) },
+      isError: false,
+    };
+  },
+
+  // ── Role Assignments ──────────────────────────────────────────────────────
+  assign_role: async (args) => {
+    const { getRBAC } = await import('../security/rbac.js');
+    const rbac = getRBAC();
+    await rbac.assignUserRole(str(args.userId), str(args.roleId), 'ai');
+    return {
+      output: { assigned: true, userId: args.userId, roleId: args.roleId },
+      isError: false,
+    };
+  },
+
+  revoke_role: async (args) => {
+    const { getRBAC } = await import('../security/rbac.js');
+    const rbac = getRBAC();
+    await rbac.revokeUserRole(str(args.userId));
+    return { output: { revoked: true, userId: args.userId }, isError: false };
+  },
+
+  // ── Experiments ───────────────────────────────────────────────────────────
+  create_experiment: async (args, sy) => {
+    const experimentManager = sy.getExperimentManager?.();
+    if (!experimentManager) {
+      return { output: { error: 'Experiment manager not available' }, isError: true };
+    }
+    const experiment = await experimentManager.create({
+      name: str(args.name),
+      description: typeof args.description === 'string' ? args.description : '',
+      variants: Array.isArray(args.variants) ? args.variants : [],
+    } as any);
+    return { output: { experiment }, isError: false };
+  },
+
+  delete_experiment: async (args, sy) => {
+    const experimentManager = sy.getExperimentManager?.();
+    if (!experimentManager) {
+      return { output: { error: 'Experiment manager not available' }, isError: true };
+    }
+    const expToDelete = await experimentManager.get(str(args.id));
+    await experimentManager.delete(str(args.id));
+    return {
+      output: {
+        deleted: true,
+        id: args.id,
+        name: (expToDelete as Record<string, unknown>)?.name
+          ? String((expToDelete as Record<string, unknown>).name)
+          : str(args.id),
+      },
+      isError: false,
+    };
+  },
+
+  // ── A2A ───────────────────────────────────────────────────────────────────
+  a2a_connect: async (args, sy) => {
+    const a2aManager = sy.getA2AManager?.();
+    if (!a2aManager) {
+      return { output: { error: 'A2A manager not available' }, isError: true };
+    }
+    const result = await (a2aManager as any).connect?.(str(args.agentUrl), args.agentName);
+    return { output: { connected: true, result }, isError: false };
+  },
+
+  a2a_send: async (args, sy) => {
+    const a2aManager = sy.getA2AManager?.();
+    if (!a2aManager) {
+      return { output: { error: 'A2A manager not available' }, isError: true };
+    }
+    const result = await (a2aManager as any).sendMessage?.(str(args.agentUrl), str(args.message));
+    return { output: { sent: true, result }, isError: false };
+  },
+
+  // ── Workflows ─────────────────────────────────────────────────────────────
+  create_workflow: async (args, sy, ctx) => {
+    const workflowManager = sy.getWorkflowManager?.();
+    if (!workflowManager) {
+      return { output: { error: 'Workflow manager not available' }, isError: true };
+    }
+    const workflow = await workflowManager.createDefinition({
+      name: str(args.name),
+      description: typeof args.description === 'string' ? args.description : '',
+      steps: Array.isArray(args.steps) ? args.steps : [],
+      edges: Array.isArray(args.edges) ? args.edges : [],
+      triggers: Array.isArray(args.triggers) ? args.triggers : [],
+      isEnabled: typeof args.isEnabled === 'boolean' ? args.isEnabled : true,
+      createdBy: ctx?.personalityId ?? 'ai',
+    } as any);
+    return { output: { workflow }, isError: false };
+  },
+
+  update_workflow: async (args, sy) => {
+    const workflowManager = sy.getWorkflowManager?.();
+    if (!workflowManager) {
+      return { output: { error: 'Workflow manager not available' }, isError: true };
+    }
+    const { id, ...rest } = args;
+    const workflow = await workflowManager.updateDefinition(str(id), rest as any);
+    return { output: { workflow }, isError: false };
+  },
+
+  delete_workflow: async (args, sy) => {
+    const workflowManager = sy.getWorkflowManager?.();
+    if (!workflowManager) {
+      return { output: { error: 'Workflow manager not available' }, isError: true };
+    }
+    const wfToDelete = await workflowManager.getDefinition(str(args.id));
+    await workflowManager.deleteDefinition(str(args.id));
+    return {
+      output: { deleted: true, id: args.id, name: wfToDelete?.name ?? str(args.id) },
+      isError: false,
+    };
+  },
+
+  trigger_workflow: async (args, sy) => {
+    const workflowManager = sy.getWorkflowManager?.();
+    if (!workflowManager) {
+      return { output: { error: 'Workflow manager not available' }, isError: true };
+    }
+    const run = await workflowManager.triggerRun(str(args.id), {
+      triggeredBy: 'manual',
+      input: (args.input as Record<string, unknown>) ?? {},
+    });
+    return { output: { run }, isError: false };
+  },
+
+  // ── Dynamic Tools ─────────────────────────────────────────────────────────
+  register_dynamic_tool: async (args, sy, ctx) => {
+    const dtm = sy.getDynamicToolManager?.();
+    if (!dtm) {
+      return {
+        output: {
+          error:
+            'Dynamic tool creation is not enabled. ' +
+            'Turn on the "Dynamic Tool Creation" toggle in Settings → Security, then restart.',
+        },
+        isError: true,
+      };
+    }
+    const tool = await dtm.register({
+      name: str(args.name),
+      description: typeof args.description === 'string' ? args.description : '',
+      parametersSchema: (args.parameters as Record<string, unknown>) ?? {},
+      implementation: str(args.implementation),
+      personalityId: ctx?.personalityId ?? null,
+      createdBy: ctx?.personalityName ?? 'ai',
+    });
+    return { output: { tool }, isError: false };
+  },
+
+  list_dynamic_tools: async (_args, sy) => {
+    const dtm = sy.getDynamicToolManager?.();
+    if (!dtm) {
+      return { output: { error: 'Dynamic tool manager not enabled.' }, isError: true };
+    }
+    const tools = dtm.listTools();
+    return { output: { tools, count: tools.length }, isError: false };
+  },
+
+  delete_dynamic_tool: async (args, sy) => {
+    const dtm = sy.getDynamicToolManager?.();
+    if (!dtm) {
+      return { output: { error: 'Dynamic tool manager not enabled.' }, isError: true };
+    }
+    const toolName = str(args.name);
+    if (!toolName) {
+      return { output: { error: 'name is required' }, isError: true };
+    }
+    const deleted = await dtm.deleteByName(toolName);
+    if (!deleted) {
+      return { output: { error: `Dynamic tool "${toolName}" not found.` }, isError: true };
+    }
+    return { output: { deleted: true, name: toolName }, isError: false };
+  },
+};
+
+// ── Public executor ───────────────────────────────────────────────────────────
 
 export async function executeCreationTool(
   toolCall: ToolCall,
@@ -99,7 +542,6 @@ export async function executeCreationTool(
             isError: false,
           };
         } catch {
-          // Approval store unavailable — fall through and block the action
           return {
             output: {
               error: `Action '${toolCall.name}' requires human approval (automation level: ${level}) but the approval queue is unavailable. Please try again later.`,
@@ -108,468 +550,30 @@ export async function executeCreationTool(
           };
         }
       }
-    } catch (policyErr) {
+    } catch {
       // If we cannot check the policy, fail safe: allow (don't break non-policy errors)
-      // but only for policy fetch errors, not approval errors
     }
   }
 
   try {
-    switch (toolCall.name) {
-      // ── Skills ─────────────────────────────────────────────────────────
-      case 'create_skill': {
-        const soulManager = secureYeoman.getSoulManager();
-        const skill = await soulManager.createSkill({
-          name: normalizeSkillName(str(args.name)),
-          description: typeof args.description === 'string' ? args.description : '',
-          instructions: typeof args.instructions === 'string' ? args.instructions : '',
-          triggerPatterns: Array.isArray(args.triggerPatterns)
-            ? (args.triggerPatterns as string[])
-            : [],
-          tools: [],
-          useWhen: '',
-          doNotUseWhen: '',
-          successCriteria: '',
-          mcpToolsAllowed: [],
-          routing: 'fuzzy' as const,
-          linkedWorkflowId: null,
-          actions: [],
-          triggers: [],
-          dependencies: [],
-          provides: [],
-          requireApproval: false,
-          allowedPermissions: [],
-          enabled: true,
-          source: 'ai_learned',
-          status: 'active',
-          autonomyLevel: 'L1',
-          // Scope to the calling personality so the UI shows the personality name
-          // rather than "Global". personalityName is derived by storage from personalityId.
-          personalityId: context?.personalityId ?? null,
-        });
-        return { output: { skill }, isError: false };
-      }
-
-      case 'update_skill': {
-        const soulManager = secureYeoman.getSoulManager();
-        const { id, ...rest } = args;
-        const skill = await soulManager.updateSkill(str(id), rest as any);
-        return { output: { skill }, isError: false };
-      }
-
-      case 'delete_skill': {
-        const soulManager = secureYeoman.getSoulManager();
-        const skillToDelete = await soulManager.getSkill(str(args.id));
-        await soulManager.deleteSkill(str(args.id));
-        return {
-          output: { deleted: true, id: args.id, name: skillToDelete?.name ?? str(args.id) },
-          isError: false,
-        };
-      }
-
-      // ── Tasks ──────────────────────────────────────────────────────────
-      case 'create_task': {
-        const taskExecutor = secureYeoman.getTaskExecutor?.();
-        const { uuidv7, sha256 } = await import('../utils/crypto.js');
-        const { TaskStatus } = await import('@secureyeoman/shared');
-        const now = Date.now();
-        const task = {
-          id: uuidv7(),
-          type: (args.type ?? 'execute') as any,
-          name: str(args.name),
-          description: typeof args.description === 'string' ? args.description : undefined,
-          status: TaskStatus.PENDING,
-          createdAt: now,
-          inputHash: sha256(JSON.stringify(args.input ?? {})),
-          securityContext: { userId: 'ai', role: 'operator', permissionsUsed: [] },
-          timeoutMs: typeof args.timeoutMs === 'number' ? args.timeoutMs : 300000,
-        };
-        if (taskExecutor) {
-          try {
-            const executorTask = await taskExecutor.submit(
-              {
-                type: task.type,
-                name: task.name,
-                description: task.description,
-                input: args.input,
-                timeoutMs: task.timeoutMs,
-              },
-              {
-                userId: 'ai',
-                role: 'operator',
-                personalityId: context?.personalityId ?? undefined,
-                personalityName: context?.personalityName ?? undefined,
-              }
-            );
-            return { output: { task: executorTask }, isError: false };
-          } catch {
-            // Fall through to return as pending below
-          }
-        }
-        return { output: { task }, isError: false };
-      }
-
-      case 'update_task': {
-        const taskStorage = secureYeoman.getTaskStorage?.();
-        if (!taskStorage) {
-          return { output: { error: 'Task storage not available' }, isError: true };
-        }
-        const { id, ...updates } = args;
-        taskStorage.updateTask(str(id), updates as any);
-        return { output: { updated: true, id }, isError: false };
-      }
-
-      // ── Personalities ──────────────────────────────────────────────────
-      case 'create_personality': {
-        const soulManager = secureYeoman.getSoulManager();
-        const personality = await soulManager.createPersonality({
-          name: str(args.name),
-          description: typeof args.description === 'string' ? args.description : '',
-          systemPrompt: typeof args.systemPrompt === 'string' ? args.systemPrompt : '',
-          traits: (args.traits as Record<string, string>) ?? {},
-          sex: (['male', 'female', 'non-binary', 'unspecified'].includes(args.sex as string)
-            ? args.sex
-            : 'unspecified') as any,
-          voice: '',
-          preferredLanguage: '',
-          defaultModel: null,
-          modelFallbacks: [],
-          includeArchetypes: false,
-          injectDateTime: false,
-          empathyResonance: false,
-          avatarUrl: null,
-          body: {} as any,
-        });
-        return { output: { personality }, isError: false };
-      }
-
-      case 'update_personality': {
-        const soulManager = secureYeoman.getSoulManager();
-        const { id, ...rest } = args;
-        const personality = await soulManager.updatePersonality(str(id), rest as any);
-        return { output: { personality }, isError: false };
-      }
-
-      case 'delete_personality': {
-        const targetId = str(args.id);
-        // A personality must not be able to delete itself.
-        if (targetId === context?.personalityId) {
-          return {
-            output: {
-              error:
-                'A personality cannot delete itself. Ask another personality or an admin to perform this deletion.',
-            },
-            isError: true,
-          };
-        }
-        const soulManager = secureYeoman.getSoulManager();
-        // Check deletion mode before attempting deletion.
-        const target = await soulManager.getPersonality(targetId);
-        const mode = target?.body?.resourcePolicy?.deletionMode ?? 'auto';
-        if (mode === 'manual') {
-          return {
-            output: {
-              error:
-                'Deletion is blocked (mode: manual). A human admin must change the deletion mode in Body → Resources before this personality can be deleted.',
-            },
-            isError: true,
-          };
-        }
-        if (mode === 'request') {
-          return {
-            output: {
-              error:
-                'Deletion requires human confirmation (mode: suggest). AI-initiated deletion is not allowed for this personality. A human must confirm deletion via the dashboard.',
-            },
-            isError: true,
-          };
-        }
-        await soulManager.deletePersonality(targetId);
-        return {
-          output: { deleted: true, id: targetId, name: target?.name ?? targetId },
-          isError: false,
-        };
-      }
-
-      // ── Sub-Agents ─────────────────────────────────────────────────────
-      case 'delegate_task': {
-        const agentManager = secureYeoman.getSubAgentManager?.();
-        if (!agentManager) {
-          return { output: { error: 'Sub-agent manager not available' }, isError: true };
-        }
-        const delegation = await (agentManager as any).delegate?.({
-          profile: args.profile,
-          task: args.task,
-          context: args.context,
-          maxTokenBudget: args.maxTokenBudget,
-          initiatedByPersonalityId: context?.personalityId ?? undefined,
-        });
-        return { output: { delegation }, isError: false };
-      }
-
-      case 'list_sub_agents': {
-        const agentManager = secureYeoman.getSubAgentManager?.();
-        if (!agentManager) {
-          return { output: { agents: [] }, isError: false };
-        }
-        const agents = await (agentManager as any).list?.();
-        return { output: { agents: agents ?? [] }, isError: false };
-      }
-
-      case 'get_delegation_result': {
-        const agentManager = secureYeoman.getSubAgentManager?.();
-        if (!agentManager) {
-          return { output: { error: 'Sub-agent manager not available' }, isError: true };
-        }
-        const result = await (agentManager as any).getResult?.(str(args.delegationId));
-        return { output: { result }, isError: false };
-      }
-
-      // ── Swarms ─────────────────────────────────────────────────────────
-      case 'create_swarm': {
-        const swarmManager = secureYeoman.getSwarmManager?.();
-        if (!swarmManager) {
-          return { output: { error: 'Swarm manager not available' }, isError: true };
-        }
-        const swarm = await (swarmManager as any).createSwarm?.({
-          template: args.template,
-          task: args.task,
-          context: args.context,
-          tokenBudget: args.tokenBudget,
-        });
-        return { output: { swarm }, isError: false };
-      }
-
-      // ── Custom Roles ───────────────────────────────────────────────────
-      case 'create_custom_role': {
-        const { getRBAC } = await import('../security/rbac.js');
-        const rbac = getRBAC();
-        const rawPerms = Array.isArray(args.permissions)
-          ? (args.permissions as { resource: string; action?: string; actions?: string[] }[])
-          : [];
-        await rbac.defineRole({
-          id: str(args.name).toLowerCase().replace(/\s+/g, '_'),
-          name: str(args.name),
-          description: typeof args.description === 'string' ? args.description : '',
-          permissions: rawPerms.map((p) => ({
-            resource: p.resource,
-            actions: p.actions ?? (p.action ? [p.action] : []),
-          })),
-          inheritFrom: Array.isArray(args.inheritFrom) ? (args.inheritFrom as string[]) : [],
-        });
-        return {
-          output: { created: true, roleId: str(args.name).toLowerCase().replace(/\s+/g, '_') },
-          isError: false,
-        };
-      }
-
-      case 'delete_custom_role': {
-        const { getRBAC } = await import('../security/rbac.js');
-        const rbac = getRBAC();
-        const removed = await rbac.removeRole(str(args.roleId));
-        if (!removed) {
-          return {
-            output: { error: `Role '${args.roleId}' not found or cannot be deleted.` },
-            isError: true,
-          };
-        }
-        return {
-          output: { deleted: true, roleId: args.roleId, name: str(args.roleId) },
-          isError: false,
-        };
-      }
-
-      // ── Role Assignments ───────────────────────────────────────────────
-      case 'assign_role': {
-        const { getRBAC } = await import('../security/rbac.js');
-        const rbac = getRBAC();
-        await rbac.assignUserRole(str(args.userId), str(args.roleId), 'ai');
-        return {
-          output: { assigned: true, userId: args.userId, roleId: args.roleId },
-          isError: false,
-        };
-      }
-
-      case 'revoke_role': {
-        const { getRBAC } = await import('../security/rbac.js');
-        const rbac = getRBAC();
-        await rbac.revokeUserRole(str(args.userId));
-        return { output: { revoked: true, userId: args.userId }, isError: false };
-      }
-
-      // ── Experiments ────────────────────────────────────────────────────
-      case 'create_experiment': {
-        const experimentManager = secureYeoman.getExperimentManager?.();
-        if (!experimentManager) {
-          return { output: { error: 'Experiment manager not available' }, isError: true };
-        }
-        const experiment = await experimentManager.create({
-          name: str(args.name),
-          description: typeof args.description === 'string' ? args.description : '',
-          variants: Array.isArray(args.variants) ? args.variants : [],
-        } as any);
-        return { output: { experiment }, isError: false };
-      }
-
-      case 'delete_experiment': {
-        const experimentManager = secureYeoman.getExperimentManager?.();
-        if (!experimentManager) {
-          return { output: { error: 'Experiment manager not available' }, isError: true };
-        }
-        const expToDelete = await experimentManager.get(str(args.id));
-        await experimentManager.delete(str(args.id));
-        return {
-          output: {
-            deleted: true,
-            id: args.id,
-            name: (expToDelete as Record<string, unknown>)?.name
-              ? String((expToDelete as Record<string, unknown>).name)
-              : str(args.id),
-          },
-          isError: false,
-        };
-      }
-
-      // ── A2A ────────────────────────────────────────────────────────────
-      case 'a2a_connect': {
-        const a2aManager = secureYeoman.getA2AManager?.();
-        if (!a2aManager) {
-          return { output: { error: 'A2A manager not available' }, isError: true };
-        }
-        const result = await (a2aManager as any).connect?.(str(args.agentUrl), args.agentName);
-        return { output: { connected: true, result }, isError: false };
-      }
-
-      case 'a2a_send': {
-        const a2aManager = secureYeoman.getA2AManager?.();
-        if (!a2aManager) {
-          return { output: { error: 'A2A manager not available' }, isError: true };
-        }
-        const result = await (a2aManager as any).sendMessage?.(
-          str(args.agentUrl),
-          str(args.message)
-        );
-        return { output: { sent: true, result }, isError: false };
-      }
-
-      // ── Workflows ──────────────────────────────────────────────────────
-      case 'create_workflow': {
-        const workflowManager = secureYeoman.getWorkflowManager?.();
-        if (!workflowManager) {
-          return { output: { error: 'Workflow manager not available' }, isError: true };
-        }
-        const workflow = await workflowManager.createDefinition({
-          name: str(args.name),
-          description: typeof args.description === 'string' ? args.description : '',
-          steps: Array.isArray(args.steps) ? args.steps : [],
-          edges: Array.isArray(args.edges) ? args.edges : [],
-          triggers: Array.isArray(args.triggers) ? args.triggers : [],
-          isEnabled: typeof args.isEnabled === 'boolean' ? args.isEnabled : true,
-          createdBy: context?.personalityId ?? 'ai',
-        } as any);
-        return { output: { workflow }, isError: false };
-      }
-
-      case 'update_workflow': {
-        const workflowManager = secureYeoman.getWorkflowManager?.();
-        if (!workflowManager) {
-          return { output: { error: 'Workflow manager not available' }, isError: true };
-        }
-        const { id, ...rest } = args;
-        const workflow = await workflowManager.updateDefinition(str(id), rest as any);
-        return { output: { workflow }, isError: false };
-      }
-
-      case 'delete_workflow': {
-        const workflowManager = secureYeoman.getWorkflowManager?.();
-        if (!workflowManager) {
-          return { output: { error: 'Workflow manager not available' }, isError: true };
-        }
-        const wfToDelete = await workflowManager.getDefinition(str(args.id));
-        await workflowManager.deleteDefinition(str(args.id));
-        return {
-          output: { deleted: true, id: args.id, name: wfToDelete?.name ?? str(args.id) },
-          isError: false,
-        };
-      }
-
-      case 'trigger_workflow': {
-        const workflowManager = secureYeoman.getWorkflowManager?.();
-        if (!workflowManager) {
-          return { output: { error: 'Workflow manager not available' }, isError: true };
-        }
-        const run = await workflowManager.triggerRun(str(args.id), {
-          triggeredBy: 'manual',
-          input: (args.input as Record<string, unknown>) ?? {},
-        });
-        return { output: { run }, isError: false };
-      }
-
-      // ── Dynamic Tools ──────────────────────────────────────────────────
-      case 'register_dynamic_tool': {
-        const dtm = secureYeoman.getDynamicToolManager?.();
-        if (!dtm) {
-          return {
-            output: {
-              error:
-                'Dynamic tool creation is not enabled. ' +
-                'Turn on the "Dynamic Tool Creation" toggle in Settings → Security, then restart.',
-            },
-            isError: true,
-          };
-        }
-        const tool = await dtm.register({
-          name: str(args.name),
-          description: typeof args.description === 'string' ? args.description : '',
-          parametersSchema: (args.parameters as Record<string, unknown>) ?? {},
-          implementation: str(args.implementation),
-          personalityId: context?.personalityId ?? null,
-          createdBy: context?.personalityName ?? 'ai',
-        });
-        return { output: { tool }, isError: false };
-      }
-
-      case 'list_dynamic_tools': {
-        const dtmList = secureYeoman.getDynamicToolManager?.();
-        if (!dtmList) {
-          return { output: { error: 'Dynamic tool manager not enabled.' }, isError: true };
-        }
-        const tools = dtmList.listTools();
-        return { output: { tools, count: tools.length }, isError: false };
-      }
-
-      case 'delete_dynamic_tool': {
-        const dtmDel = secureYeoman.getDynamicToolManager?.();
-        if (!dtmDel) {
-          return { output: { error: 'Dynamic tool manager not enabled.' }, isError: true };
-        }
-        const toolName = str(args.name);
-        if (!toolName) {
-          return { output: { error: 'name is required' }, isError: true };
-        }
-        const deleted = await dtmDel.deleteByName(toolName);
-        if (!deleted) {
-          return { output: { error: `Dynamic tool "${toolName}" not found.` }, isError: true };
-        }
-        return { output: { deleted: true, name: toolName }, isError: false };
-      }
-
-      // ── Unknown / registered dynamic tool ─────────────────────────────
-      default: {
-        // Before reporting "unknown tool", check whether the AI is calling
-        // a previously registered dynamic tool from the runtime registry.
-        const dtm = secureYeoman.getDynamicToolManager?.();
-        if (dtm?.has(toolCall.name)) {
-          return await dtm.execute(toolCall.name, args);
-        }
-        return {
-          output: {
-            error: `Unknown tool: ${toolCall.name}. This tool may require a different execution context.`,
-          },
-          isError: true,
-        };
-      }
+    const handler = TOOL_HANDLERS[toolCall.name];
+    if (handler) {
+      return await handler(args, secureYeoman, context);
     }
+
+    // Before reporting "unknown tool", check whether the AI is calling a
+    // previously registered dynamic tool from the runtime registry.
+    const dtm = secureYeoman.getDynamicToolManager?.();
+    if (dtm?.has(toolCall.name)) {
+      return await dtm.execute(toolCall.name, args);
+    }
+
+    return {
+      output: {
+        error: `Unknown tool: ${toolCall.name}. This tool may require a different execution context.`,
+      },
+      isError: true,
+    };
   } catch (err) {
     return {
       output: { error: err instanceof Error ? err.message : String(err) },

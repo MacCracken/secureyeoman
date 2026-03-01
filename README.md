@@ -1,10 +1,10 @@
 # SECUREYEOMAN
 
-[![Version](https://img.shields.io/badge/Version-2026.2.28y-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.2.28y)
+[![Version](https://img.shields.io/badge/Version-2026.2.28-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.2.28)
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: 10081](https://img.shields.io/badge/Tests-10081-brightgreen.svg)]()
+[![Tests: 10400](https://img.shields.io/badge/Tests-10400-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%20LTS-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
@@ -182,7 +182,7 @@ TOKEN=$(curl -s -X POST http://localhost:18789/api/v1/auth/login \
   -d '{"password":"your-admin-password"}' | jq -r '.accessToken')
 
 curl http://localhost:18789/health
-# → {"status":"ok","version":"2026.2.26","uptime":12345,"networkMode":"local",...}
+# → {"status":"ok","version":"2026.2.28","uptime":12345,"networkMode":"local",...}
 
 curl http://localhost:18789/api/v1/audit?limit=50 -H "Authorization: Bearer $TOKEN"
 ```
@@ -243,7 +243,7 @@ Always connect AI providers using official API keys from their developer console
 | **Security Testing** | [Security Testing Guide](docs/guides/security-testing.md) |
 | **Troubleshooting** | [Troubleshooting Guide](docs/troubleshooting.md) |
 | **Architecture Overview** | [Architecture](docs/development/architecture.md) |
-| **Architecture Decisions** | [ADRs](docs/adr/) (166 records) |
+| **Architecture Decisions** | [ADRs](docs/adr/) (168 records) |
 | **Roadmap** | [Development Roadmap](docs/development/roadmap.md) |
 | **Changelog** | [CHANGELOG.md](CHANGELOG.md) |
 | **Contributing** | [Contributing Guide](CONTRIBUTING.md) |

@@ -43,11 +43,6 @@ const PRESENCE_COLORS = [
   '#14b8a6', // teal
 ];
 
-let colorIndex = 0;
-function nextColor(): string {
-  return PRESENCE_COLORS[colorIndex++ % PRESENCE_COLORS.length]!;
-}
-
 interface CollabClient {
   ws: WebSocket;
   userId: string;
@@ -64,9 +59,14 @@ interface DocEntry {
 export class CollabManager {
   private docs = new Map<string, DocEntry>();
   private storage: SoulStorage;
+  private colorIndex = 0;
 
   constructor(storage: SoulStorage) {
     this.storage = storage;
+  }
+
+  private nextColor(): string {
+    return PRESENCE_COLORS[this.colorIndex++ % PRESENCE_COLORS.length]!;
   }
 
   /**
@@ -87,7 +87,7 @@ export class CollabManager {
       ws: socket,
       userId,
       displayName,
-      color: nextColor(),
+      color: this.nextColor(),
     };
     entry.clients.set(clientId, client);
 

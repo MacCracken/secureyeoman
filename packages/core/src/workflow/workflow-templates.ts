@@ -22,11 +22,11 @@ function agentStep(
     type: 'agent',
     config: { profile, taskTemplate, ...(contextTemplate ? { contextTemplate } : {}) },
     ...base,
-  } as WorkflowStep;
+  } as unknown as WorkflowStep;
 }
 
 function transformStep(base: StepBase, outputTemplate: string): WorkflowStep {
-  return { type: 'transform', config: { outputTemplate }, ...base } as WorkflowStep;
+  return { type: 'transform', config: { outputTemplate }, ...base } as unknown as WorkflowStep;
 }
 
 function resourceStep(
@@ -34,7 +34,7 @@ function resourceStep(
   resourceType: string,
   dataTemplate: string
 ): WorkflowStep {
-  return { type: 'resource', config: { resourceType, dataTemplate }, ...base } as WorkflowStep;
+  return { type: 'resource', config: { resourceType, dataTemplate }, ...base } as unknown as WorkflowStep;
 }
 
 function webhookStep(
@@ -43,7 +43,7 @@ function webhookStep(
   bodyTemplate: string,
   method = 'POST'
 ): WorkflowStep {
-  return { type: 'webhook', config: { url, method, bodyTemplate }, ...base } as WorkflowStep;
+  return { type: 'webhook', config: { url, method, bodyTemplate }, ...base } as unknown as WorkflowStep;
 }
 
 function swarmStep(
@@ -56,7 +56,7 @@ function swarmStep(
     type: 'swarm',
     config: { templateId, taskTemplate, ...(contextTemplate ? { contextTemplate } : {}) },
     ...base,
-  } as WorkflowStep;
+  } as unknown as WorkflowStep;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

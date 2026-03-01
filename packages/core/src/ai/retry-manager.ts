@@ -106,3 +106,53 @@ export class RetryManager {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
+
+/**
+ * Generic retry helper — wraps any async operation with jittered exponential backoff.
+ *
+ * Accepts an optional `shouldRetry` predicate; defaults to the network-error heuristic
+ * used by RetryManager (ECONNRESET, 502/503, timeout) without the AI-specific checks.
+ *
+ * @example
+ *   const data = await withRetry(() => fetch(url).then(r => r.json()), { maxRetries: 2 });
+ */
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  policy?: Partial<RetryConfig> & { shouldRetry?: (error: Error) => boolean }
+): Promise<T> {
+  const cfg: RetryConfig = {
+    maxRetries: policy?.maxRetries ?? DEFAULT_RETRY_CONFIG.maxRetries,
+    baseDelayMs: policy?.baseDelayMs ?? DEFAULT_RETRY_CONFIG.baseDelayMs,
+    maxDelayMs: policy?.maxDelayMs ?? DEFAULT_RETRY_CONFIG.maxDelayMs,
+  };
+
+  const isRetryable =
+    policy?.shouldRetry ??
+    ((error: Error): boolean => {
+      const msg = error.message.toLowerCase();
+      return (
+        msg.includes('econnreset') ||
+        msg.includes('econnrefused') ||
+        msg.includes('etimedout') ||
+        msg.includes('socket hang up') ||
+        msg.includes('fetch failed') ||
+        msg.includes('502') ||
+        msg.includes('503') ||
+        msg.includes('timeout')
+      );
+    });
+
+  let lastError: Error | undefined;
+  for (let attempt = 0; attempt <= cfg.maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (attempt >= cfg.maxRetries || !isRetryable(lastError)) throw lastError;
+      const exp = cfg.baseDelayMs * Math.pow(2, attempt);
+      const clamped = Math.min(exp, cfg.maxDelayMs);
+      await new Promise((r) => setTimeout(r, Math.floor(clamped / 2 + (Math.random() * clamped) / 2)));
+    }
+  }
+  throw lastError!;
+}
