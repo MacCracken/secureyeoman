@@ -120,6 +120,23 @@ export function setOnAuthFailure(callback: () => void): void {
   _onAuthFailure = callback;
 }
 
+/**
+ * Verify the current session token with the server.
+ * Returns true if the token is valid, false otherwise.
+ * On failure, clears stale tokens from localStorage.
+ */
+export async function verifySession(): Promise<boolean> {
+  const token = getAccessToken();
+  if (!token) return false;
+  try {
+    await request('/metrics');
+    return true;
+  } catch {
+    // request() already handles 401 → refresh → clearAuthTokens → onAuthFailure
+    return false;
+  }
+}
+
 // ── Token refresh ─────────────────────────────────────────────────────
 
 async function attemptTokenRefresh(): Promise<boolean> {
@@ -2482,7 +2499,7 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
-      allowCodeEditor: true,
+      allowCodeEditor: false,
       allowAdvancedEditor: false,
       allowTrainingExport: false,
       promptGuardMode: 'warn',

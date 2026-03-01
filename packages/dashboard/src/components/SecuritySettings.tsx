@@ -416,8 +416,9 @@ export function SecuritySettings() {
   const twingateAllowed = securityPolicy?.allowTwingate ?? false;
   const experimentsAllowed = securityPolicy?.allowExperiments ?? false;
   const storybookAllowed = securityPolicy?.allowStorybook ?? false;
+  const orgIntentAllowed = securityPolicy?.allowOrgIntent ?? false;
   const intentEditorAllowed = securityPolicy?.allowIntentEditor ?? false;
-  const codeEditorAllowed = securityPolicy?.allowCodeEditor ?? true;
+  const codeEditorAllowed = securityPolicy?.allowCodeEditor ?? false;
   const advancedEditorAllowed = securityPolicy?.allowAdvancedEditor ?? false;
   const dtcAllowed = securityPolicy?.allowDynamicTools ?? false;
   const sandboxDtcAllowed = securityPolicy?.sandboxDynamicTools ?? true;
@@ -761,6 +762,46 @@ export function SecuritySettings() {
                 : 'Proactive assistance is disabled at the security level. No personality can initiate proactive actions regardless of its configuration.'
             }
           />
+        </div>
+      </div>
+
+      {/* Organizational Intent */}
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <Target className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Organizational Intent</h3>
+        </div>
+        <div className="p-4 space-y-4">
+          <PolicyToggle
+            label="Organizational Intent"
+            icon={<Target className="w-4 h-4 text-muted-foreground" />}
+            enabled={orgIntentAllowed}
+            isPending={policyMutation.isPending}
+            onToggle={() => {
+              policyMutation.mutate({ allowOrgIntent: !orgIntentAllowed });
+            }}
+            description={
+              orgIntentAllowed
+                ? 'Organizational intent is enabled. The Intent sidebar entry is visible and agents can access intent signals.'
+                : 'Organizational intent is disabled. Enable to allow machine-readable goals, signals, boundaries, and context for agent guidance.'
+            }
+          />
+          <div className={`border-t border-border pt-4 ${!orgIntentAllowed ? 'opacity-40 pointer-events-none' : ''}`}>
+            <PolicyToggle
+              label="Intent Document Editor"
+              icon={<Target className="w-4 h-4 text-muted-foreground" />}
+              enabled={intentEditorAllowed}
+              isPending={policyMutation.isPending}
+              onToggle={() => {
+                policyMutation.mutate({ allowIntentEditor: !intentEditorAllowed });
+              }}
+              description={
+                intentEditorAllowed
+                  ? 'Full field-level intent editor is enabled. Edit organizational intent documents directly from the Settings → Intent tab. Developer mode — not ready for production use.'
+                  : 'Intent editor is disabled. Enable to access the structured editor for goals, signals, boundaries, policies, and delegation framework. Requires Organizational Intent to be enabled above.'
+              }
+            />
+          </div>
         </div>
       </div>
 
@@ -1130,22 +1171,6 @@ export function SecuritySettings() {
                 storybookAllowed
                   ? 'Storybook component development environment is enabled. Access the component gallery from the Developers section.'
                   : 'Storybook is disabled. Enable this setting to access the component development environment in the Developers section.'
-              }
-            />
-          </div>
-          <div className="border-t border-border pt-4">
-            <PolicyToggle
-              label="Intent Document Editor"
-              icon={<Target className="w-4 h-4 text-muted-foreground" />}
-              enabled={intentEditorAllowed}
-              isPending={policyMutation.isPending}
-              onToggle={() => {
-                policyMutation.mutate({ allowIntentEditor: !intentEditorAllowed });
-              }}
-              description={
-                intentEditorAllowed
-                  ? 'Full field-level intent editor is enabled. Edit organizational intent documents directly from the Settings → Intent tab. Developer mode — not ready for production use.'
-                  : 'Intent editor is disabled. Enable to access the structured editor for goals, signals, boundaries, policies, and delegation framework. Requires Organizational Intent to be enabled above.'
               }
             />
           </div>

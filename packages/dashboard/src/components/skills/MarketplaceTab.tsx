@@ -19,8 +19,12 @@ import {
   type ContentType,
 } from './shared';
 
-export function MarketplaceTab() {
+export function MarketplaceTab({ workflowsEnabled = false, subAgentsEnabled = false }: { workflowsEnabled?: boolean; subAgentsEnabled?: boolean } = {}) {
   const queryClient = useQueryClient();
+  const hiddenTypes: ContentType[] = [
+    ...(!workflowsEnabled ? ['workflows' as const] : []),
+    ...(!subAgentsEnabled ? ['swarms' as const] : []),
+  ];
   const [contentType, setContentType] = useState<ContentType>('skills');
   const [query, setQuery] = useState('');
   const [selectedPersonalityId, setSelectedPersonalityId] = useState<string>('');
@@ -150,7 +154,7 @@ export function MarketplaceTab() {
       )}
       <div className="space-y-6">
         {/* Type selector */}
-        <ContentTypeSelector value={contentType} onChange={(v) => { setContentType(v); }} />
+        <ContentTypeSelector value={contentType} onChange={(v) => { setContentType(v); }} hiddenTypes={hiddenTypes} />
 
         {/* Workflows / Swarms passthrough */}
         {contentType === 'workflows' && (

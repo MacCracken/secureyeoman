@@ -100,12 +100,27 @@ export function PersonalTab() {
     queryFn: fetchPersonalities,
   });
 
-  const personalities = personalitiesData?.personalities ?? [];
-  const activePersonality = personalities.find((p) => p.isActive);
+  const rawPersonalities = personalitiesData?.personalities ?? [];
+  // Default personality first, then alphabetical
+  const personalities = [...rawPersonalities].sort((a, b) => {
+    if (a.isDefault && !b.isDefault) return -1;
+    if (!a.isDefault && b.isDefault) return 1;
+    return a.name.localeCompare(b.name);
+  });
+  const [selectedPersonalityId, setSelectedPersonalityId] = useState<string>('');
+  // Auto-select default personality when data first loads
+  const personalityInitialized = useRef(false);
+  useEffect(() => {
+    if (personalityInitialized.current || !personalities.length) return;
+    const def = personalities.find((p) => p.isDefault);
+    if (def) setSelectedPersonalityId(def.id);
+    else setSelectedPersonalityId(personalities[0].id);
+    personalityInitialized.current = true;
+  }, [personalities]);
 
-  const defaultPersonality = personalities.find((p) => p.isDefault) ?? null;
-  const skills = defaultPersonality
-    ? (data?.skills ?? []).filter((s) => s.personalityId === defaultPersonality.id)
+  const selectedPersonality = personalities.find((p) => p.id === selectedPersonalityId) ?? null;
+  const skills = selectedPersonalityId
+    ? (data?.skills ?? []).filter((s) => s.personalityId === selectedPersonalityId)
     : [];
   const pendingCount = skills.filter((s) => s.status === 'pending_approval').length;
 
@@ -189,7 +204,7 @@ export function PersonalTab() {
       triggerPatterns: [],
       enabled: true,
       source: 'user',
-      personalityId: activePersonality?.id ?? null,
+      personalityId: selectedPersonalityId || null,
     });
   };
 
@@ -201,7 +216,7 @@ export function PersonalTab() {
       triggerPatterns: s.triggerPatterns || [],
       enabled: s.enabled,
       source: 'user',
-      personalityId: s.personalityId ?? activePersonality?.id ?? null,
+      personalityId: s.personalityId ?? (selectedPersonalityId || null),
     });
     setTriggerInput('');
     setEditing(s.id);
@@ -335,19 +350,7 @@ export function PersonalTab() {
         onChange={handleImportInputChange}
       />
 
-      {/* Scope notice */}
-      <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-        <Bot className="w-4 h-4 shrink-0 mt-0.5 text-primary" />
-        <span>
-          These skills are personal to{' '}
-          <span className="font-medium text-foreground">
-            {defaultPersonality?.name ?? 'the default agent'}
-          </span>
-          . To see all installed skills across every agent, visit the{' '}
-          <span className="font-medium text-foreground">Installed</span> tab.
-        </span>
-      </div>
-
+      {/* Row 1: Actions + filters */}
       <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={() => {
@@ -359,7 +362,7 @@ export function PersonalTab() {
               triggerPatterns: [],
               enabled: true,
               source: 'user',
-              personalityId: activePersonality?.id ?? null,
+              personalityId: selectedPersonalityId || null,
             });
           }}
           className="btn btn-ghost"
@@ -373,11 +376,28 @@ export function PersonalTab() {
         >
           <Upload className="w-4 h-4 mr-1" /> Import
         </button>
+        <div className="relative">
+          <Bot className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
+          <select
+            value={selectedPersonalityId}
+            onChange={(e) => setSelectedPersonalityId(e.target.value)}
+            className="bg-card border border-border rounded-lg pl-10 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
+          >
+            {personalities.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}{p.isDefault ? ' (Default)' : ''}{p.isActive ? ' (Active)' : ''}
+              </option>
+            ))}
+          </select>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+            <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
         <select
           value={filterStatus}
-          onChange={(e) => {
-            setFilterStatus(e.target.value);
-          }}
+          onChange={(e) => setFilterStatus(e.target.value)}
           className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
         >
           <option value="">All Status</option>
@@ -387,9 +407,7 @@ export function PersonalTab() {
         </select>
         <select
           value={filterSource}
-          onChange={(e) => {
-            setFilterSource(e.target.value);
-          }}
+          onChange={(e) => setFilterSource(e.target.value)}
           className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
         >
           <option value="">All Sources</option>
@@ -402,6 +420,17 @@ export function PersonalTab() {
         {pendingCount > 0 && (
           <span className="badge badge-warning">{pendingCount} pending approval</span>
         )}
+      </div>
+
+      {/* Row 3: Info text */}
+      <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+        <Bot className="w-4 h-4 shrink-0 mt-0.5 text-primary" />
+        <span>
+          Skills for{' '}
+          <span className="font-medium text-foreground">{selectedPersonality?.name ?? '—'}</span>.
+          To see all installed skills across every agent, visit the{' '}
+          <span className="font-medium text-foreground">Installed</span> tab.
+        </span>
       </div>
 
       {importError && (

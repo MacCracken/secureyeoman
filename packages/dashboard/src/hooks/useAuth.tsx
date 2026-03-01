@@ -7,6 +7,7 @@ import {
   clearAuthTokens,
   getAccessToken,
   setOnAuthFailure,
+  verifySession,
 } from '../api/client';
 
 interface AuthContextValue {
@@ -34,10 +35,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [handleAuthFailure]);
 
   useEffect(() => {
-    // Check for existing token on mount
+    // Verify existing token with the server on mount.
+    // If the DB was wiped or the signing secret changed, this clears stale tokens.
     const existing = getAccessToken();
-    setToken(existing);
-    setIsLoading(false);
+    if (!existing) {
+      setIsLoading(false);
+      return;
+    }
+    verifySession().then((valid) => {
+      setToken(valid ? getAccessToken() : null);
+      setIsLoading(false);
+    });
   }, []);
 
   const login = useCallback(async (password: string, rememberMe?: boolean) => {

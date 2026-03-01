@@ -311,8 +311,8 @@ export const SecurityConfigSchema = z.object({
   allowOrgIntent: z.boolean().default(false),
   /** Allow full field-level intent document editor in dashboard (developer/testing mode). */
   allowIntentEditor: z.boolean().default(false),
-  /** Allow the code editor in the dashboard sidebar. Enabled by default. */
-  allowCodeEditor: z.boolean().default(true),
+  /** Allow the code editor in the dashboard sidebar. Disabled by default. */
+  allowCodeEditor: z.boolean().default(false),
   /** Replace the standard editor with the advanced three-panel workspace. */
   allowAdvancedEditor: z.boolean().default(false),
   /** Allow training dataset export (conversations → JSONL/text for LLM fine-tuning). Off by default. */

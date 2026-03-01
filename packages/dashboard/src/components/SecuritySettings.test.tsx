@@ -126,7 +126,7 @@ describe('SecuritySettings', () => {
       allowTwingate: false,
       allowOrgIntent: false,
       allowIntentEditor: false,
-      allowCodeEditor: true,
+      allowCodeEditor: false,
       allowAdvancedEditor: false,
       allowTrainingExport: false,
       promptGuardMode: 'warn' as const,
@@ -810,12 +810,12 @@ describe('SecuritySettings', () => {
     }
   });
 
-  it('renders Code Editor toggle enabled by default', async () => {
+  it('renders Code Editor toggle disabled by default', async () => {
     renderComponent();
     expect(await screen.findByText('Code Editor')).toBeInTheDocument();
     const toggle = screen.getByLabelText('Toggle Code Editor');
     expect(toggle).toBeInTheDocument();
-    expect(toggle.getAttribute('aria-checked')).toBe('true');
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
   });
 
   it('calls updateSecurityPolicy with allowCodeEditor when toggled', async () => {
@@ -824,7 +824,7 @@ describe('SecuritySettings', () => {
     fireEvent.click(toggle);
     await waitFor(() => {
       expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
-      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowCodeEditor: false });
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowCodeEditor: true });
     });
   });
 
@@ -845,12 +845,28 @@ describe('SecuritySettings', () => {
     });
   });
 
-  it('greyed-out wrapper is absent when Code Editor is enabled', async () => {
+  it('Advanced Editor Mode wrapper is not greyed out when Code Editor is enabled', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: false, allowA2A: false, allowSwarms: false, allowExtensions: false,
+      allowExecution: true, allowProactive: false, allowExperiments: false, allowStorybook: false,
+      allowMultimodal: false, allowDesktopControl: false, allowCamera: false,
+      allowDynamicTools: false, sandboxDynamicTools: true, allowAnomalyDetection: false,
+      sandboxGvisor: false, sandboxWasm: false, sandboxCredentialProxy: false,
+      allowNetworkTools: false, allowNetBoxWrite: false, allowWorkflows: false,
+      allowCommunityGitFetch: false, allowTwingate: false, allowOrgIntent: true,
+      allowIntentEditor: false, allowCodeEditor: true, allowAdvancedEditor: false,
+      allowTrainingExport: false, promptGuardMode: 'warn' as const,
+      responseGuardMode: 'warn' as const, jailbreakThreshold: 0.5,
+      jailbreakAction: 'warn' as const, strictSystemPromptConfidentiality: false,
+      abuseDetectionEnabled: true,
+    });
     renderComponent();
-    await screen.findByText('Advanced Editor Mode');
-    // When codeEditorAllowed=true the opacity-40 wrapper should not be present
-    const wrapper = document.querySelector('.opacity-40.pointer-events-none');
-    expect(wrapper).not.toBeInTheDocument();
+    const advancedToggle = await screen.findByLabelText('Toggle Advanced Editor Mode');
+    await waitFor(() => {
+      // The Advanced Editor Mode toggle's wrapper should not have opacity-40 when Code Editor is enabled
+      const wrapper = advancedToggle.closest('.opacity-40');
+      expect(wrapper).toBeNull();
+    });
   });
 
   it('shows "Requires Code Editor" hint when Code Editor is off', async () => {

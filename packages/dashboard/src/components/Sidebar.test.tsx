@@ -80,7 +80,7 @@ const BASE_POLICY = {
   allowTwingate: false,
   allowOrgIntent: false,
   allowIntentEditor: false,
-  allowCodeEditor: true,
+  allowCodeEditor: false,
   allowAdvancedEditor: false,
   allowTrainingExport: false,
 };
@@ -156,21 +156,39 @@ describe('Sidebar nav order', () => {
     expect(await screen.findByRole('link', { name: /developers/i })).toBeInTheDocument();
   });
 
-  it('shows an Automation nav link pointing to /automation', async () => {
+  it('shows an Automation nav link when allowWorkflows is true', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      ...BASE_POLICY,
+      allowWorkflows: true,
+    } as any);
     renderSidebar();
     const link = await screen.findByRole('link', { name: /^automation$/i });
     expect(link).toHaveAttribute('href', '/automation');
   });
 
-  it('Automation link appears before Skills in nav order', async () => {
+  it('hides Automation nav link when allowWorkflows is false', async () => {
     renderSidebar();
-    const automationLink = await screen.findByRole('link', { name: /^automation$/i });
-    const skillsLink = await screen.findByRole('link', { name: /skills/i });
-    const links = Array.from(document.querySelectorAll('a')) as HTMLElement[];
-    expect(links.indexOf(automationLink)).toBeLessThan(links.indexOf(skillsLink));
+    await screen.findByRole('link', { name: /mission control/i });
+    expect(screen.queryByRole('link', { name: /^automation$/i })).not.toBeInTheDocument();
   });
 
-  it('shows Editor link when allowCodeEditor is true (default)', async () => {
+  it('Automation link appears before Catalog in nav order', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      ...BASE_POLICY,
+      allowWorkflows: true,
+    } as any);
+    renderSidebar();
+    const automationLink = await screen.findByRole('link', { name: /^automation$/i });
+    const catalogLink = await screen.findByRole('link', { name: /catalog/i });
+    const links = Array.from(document.querySelectorAll('a')) as HTMLElement[];
+    expect(links.indexOf(automationLink)).toBeLessThan(links.indexOf(catalogLink));
+  });
+
+  it('shows Editor link when allowCodeEditor is true', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      ...BASE_POLICY,
+      allowCodeEditor: true,
+    } as any);
     renderSidebar();
     const editorLink = await screen.findByRole('link', { name: /^editor$/i });
     expect(editorLink).toBeInTheDocument();

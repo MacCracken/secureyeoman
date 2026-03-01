@@ -4161,10 +4161,10 @@ function HeartSection() {
 
 // ── Main PersonalityEditor ──────────────────────────────────────
 
-export function PersonalityEditor() {
+export function PersonalityEditor({ initialEditingId, onBack }: { initialEditingId?: string; onBack?: () => void } = {}) {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [editing, setEditing] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(initialEditingId === 'new' ? 'new' : null);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Personality | null>(null);
   const [deleteLockedMsg, setDeleteLockedMsg] = useState<string | null>(null);
@@ -4384,6 +4384,7 @@ export function PersonalityEditor() {
       }
       setEditing(null);
       setSetActiveOnSave(false);
+      if (onBack) onBack();
     },
   });
 
@@ -4397,6 +4398,7 @@ export function PersonalityEditor() {
       }
       setEditing(null);
       setSetActiveOnSave(false);
+      if (onBack) onBack();
     },
   });
 
@@ -4463,6 +4465,8 @@ export function PersonalityEditor() {
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, setSearchParams]);
+
+  const initialEditApplied = useRef(false);
 
   const startEdit = (p: Personality) => {
     const body = p.body ?? {
@@ -4593,6 +4597,21 @@ export function PersonalityEditor() {
     setSetActiveOnSave(false);
     setEditing(p.id);
   };
+
+  // Auto-open edit form when initialEditingId is provided (dedicated edit route)
+  useEffect(() => {
+    if (!initialEditingId || initialEditApplied.current) return;
+    if (initialEditingId === 'new') {
+      initialEditApplied.current = true;
+      return; // already handled by initial useState
+    }
+    if (!personalities.length) return; // wait for data to load
+    const target = personalities.find((p) => p.id === initialEditingId);
+    if (target) {
+      startEdit(target);
+      initialEditApplied.current = true;
+    }
+  }, [initialEditingId, personalities]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const startCreate = () => {
     const body = {
@@ -4785,8 +4804,8 @@ export function PersonalityEditor() {
         }}
       />
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* Header — hidden in dedicated edit route */}
+      {!initialEditingId && <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Personalities</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
@@ -4800,7 +4819,7 @@ export function PersonalityEditor() {
           <Plus className="w-4 h-4" /> <span className="sm:hidden">New</span>
           <span className="hidden sm:inline">New Personality</span>
         </button>
-      </div>
+      </div>}
 
       {activateError && (
         <div className="card p-3 border-destructive bg-destructive/10 text-destructive text-sm flex items-center justify-between">
@@ -5095,6 +5114,7 @@ export function PersonalityEditor() {
               onClick={() => {
                 setEditing(null);
                 setSetActiveOnSave(false);
+                if (onBack) onBack();
               }}
               className="btn btn-ghost"
             >
@@ -5111,8 +5131,8 @@ export function PersonalityEditor() {
         </div>
       )}
 
-      {/* Personality List */}
-      <div className="space-y-3">
+      {/* Personality List — hidden when in dedicated edit route */}
+      {!initialEditingId && <div className="space-y-3">
         {personalities.map((p) => (
           <div key={p.id}>
             <div
@@ -5146,6 +5166,14 @@ export function PersonalityEditor() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <h3 className="font-medium text-sm sm:text-base truncate">{p.name}</h3>
+                        {p.isArchetype && (
+                          <span
+                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground"
+                            title="System preset — cannot be deleted"
+                          >
+                            Preset
+                          </span>
+                        )}
                         {p.isActive && (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400">
                             Active
@@ -5163,14 +5191,6 @@ export function PersonalityEditor() {
                           >
                             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
                             Online
-                          </span>
-                        )}
-                        {p.isArchetype && (
-                          <span
-                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground"
-                            title="System preset — cannot be deleted"
-                          >
-                            Preset
                           </span>
                         )}
                       </div>
@@ -5374,7 +5394,7 @@ export function PersonalityEditor() {
             </div>
           </div>
         )}
-      </div>
+      </div>}
     </div>
   );
 }
@@ -5537,6 +5557,14 @@ export function PersonalityView() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <h3 className="font-medium text-sm sm:text-base truncate">{p.name}</h3>
+                        {p.isArchetype && (
+                          <span
+                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground"
+                            title="System preset — cannot be deleted"
+                          >
+                            Preset
+                          </span>
+                        )}
                         {p.isActive && (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400">
                             Active
@@ -5554,14 +5582,6 @@ export function PersonalityView() {
                           >
                             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
                             Online
-                          </span>
-                        )}
-                        {p.isArchetype && (
-                          <span
-                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground"
-                            title="System preset — cannot be deleted"
-                          >
-                            Preset
                           </span>
                         )}
                       </div>
@@ -5767,12 +5787,5 @@ function _PersonalityEditorWithId({ id, onBack }: { id: string; onBack: () => vo
  * Uses a thin wrapper that forwards the back-nav when done.
  */
 function PersonalityEditorForced({ editingId, onBack }: { editingId: string; onBack: () => void }) {
-  // We piggyback on PersonalityEditor's existing useSearchParams ?create=true
-  // handling by rendering the editor inside a MemoryRouter-like search override.
-  // Simplest approach: just render PersonalityEditor and hook into its save/cancel
-  // via a custom wrapper around the cancel/save buttons using a React context.
-  // For now, render the full PersonalityEditor and the user navigates manually.
-  // TODO: wire onBack into the form's save/cancel flow.
-  void editingId; void onBack;
-  return <PersonalityEditor />;
+  return <PersonalityEditor initialEditingId={editingId} onBack={onBack} />;
 }

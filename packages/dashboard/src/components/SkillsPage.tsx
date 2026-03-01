@@ -19,6 +19,8 @@ export function SkillsPage() {
     staleTime: 30000,
   });
   const communityEnabled = securityPolicy?.allowCommunityGitFetch ?? false;
+  const workflowsEnabled = securityPolicy?.allowWorkflows ?? false;
+  const subAgentsEnabled = securityPolicy?.allowSubAgents ?? false;
 
   const getInitialTab = (): TabType => {
     const path = location.pathname;
@@ -114,8 +116,8 @@ export function SkillsPage() {
       </div>
 
       {activeTab === 'my-skills' && <PersonalTab />}
-      {activeTab === 'marketplace' && <MarketplaceTab />}
-      {activeTab === 'community' && communityEnabled && <CommunityTab />}
+      {activeTab === 'marketplace' && <MarketplaceTab workflowsEnabled={workflowsEnabled} subAgentsEnabled={subAgentsEnabled} />}
+      {activeTab === 'community' && communityEnabled && <CommunityTab workflowsEnabled={workflowsEnabled} subAgentsEnabled={subAgentsEnabled} />}
       {activeTab === 'installed' && <InstalledTab onNavigateTab={setActiveTab} />}
     </div>
   );

@@ -216,8 +216,8 @@ export class SoulStorage extends PgBaseStorage {
     const id = uuidv7();
 
     await this.query(
-      `INSERT INTO soul.personalities (id, name, description, system_prompt, traits, sex, voice, preferred_language, default_model, model_fallbacks, include_archetypes, inject_date_time, empathy_resonance, is_active, is_default, is_archetype, body, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9::jsonb, $10::jsonb, $11, $12, $13, $14, $15, $16, $17::jsonb, $18, $19)`,
+      `INSERT INTO soul.personalities (id, name, description, system_prompt, traits, sex, voice, preferred_language, default_model, model_fallbacks, include_archetypes, inject_date_time, empathy_resonance, is_active, is_default, is_archetype, avatar_url, body, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9::jsonb, $10::jsonb, $11, $12, $13, $14, $15, $16, $17, $18::jsonb, $19, $20)`,
       [
         id,
         data.name,
@@ -235,6 +235,7 @@ export class SoulStorage extends PgBaseStorage {
         false,
         false,
         opts?.isArchetype ?? false,
+        data.avatarUrl ?? null,
         JSON.stringify(
           data.body ?? {
             enabled: false,

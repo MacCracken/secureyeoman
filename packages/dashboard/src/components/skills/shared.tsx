@@ -37,13 +37,19 @@ export const CONTENT_TYPES: { value: ContentType; label: string }[] = [
 export function ContentTypeSelector({
   value,
   onChange,
+  hiddenTypes,
 }: {
   value: ContentType;
   onChange: (v: ContentType) => void;
+  hiddenTypes?: ContentType[];
 }) {
+  const visible = hiddenTypes?.length
+    ? CONTENT_TYPES.filter((t) => !hiddenTypes.includes(t.value))
+    : CONTENT_TYPES;
+  if (visible.length <= 1) return null;
   return (
     <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
-      {CONTENT_TYPES.map((t) => (
+      {visible.map((t) => (
         <button
           key={t.value}
           onClick={() => onChange(t.value)}
