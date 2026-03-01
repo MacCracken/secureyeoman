@@ -5,7 +5,7 @@ import {
   LayoutDashboard,
   ShieldAlert,
   Brain,
-  Zap,
+  Library,
   Cable,
   Code,
   Users,
@@ -62,7 +62,7 @@ const BASE_TOP_ITEMS: NavItem[] = [
   { to: '/automation', label: 'Automation', icon: <Layers className="w-5 h-5" /> },
   { to: '/chat', label: 'Chat', icon: <MessagesSquare className="w-5 h-5" /> },
   { to: '/personality', label: 'Personality', icon: <Brain className="w-5 h-5" /> },
-  { to: '/skills', label: 'Skills', icon: <Zap className="w-5 h-5" /> },
+  { to: '/skills', label: 'Catalog', icon: <Library className="w-5 h-5" /> },
 ];
 
 const MID_ITEMS: NavItem[] = [

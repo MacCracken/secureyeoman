@@ -49,9 +49,9 @@ export function SkillsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Skills</h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Catalog</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Manage your skills, browse the marketplace, and sync community skills
+            Browse and install skills, workflows, and swarm templates
           </p>
         </div>
       </div>
