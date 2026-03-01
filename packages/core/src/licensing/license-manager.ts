@@ -78,7 +78,7 @@ export class LicenseManager {
       throw new Error('Invalid license key format (expected 3 dot-separated segments)');
     }
 
-    const [headerB64, payloadB64, sigB64] = parts;
+    const [headerB64, payloadB64, sigB64] = parts as [string, string, string];
     const message = Buffer.from(`${headerB64}.${payloadB64}`);
     const signature = Buffer.from(sigB64, 'base64url');
 

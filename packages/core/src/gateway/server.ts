@@ -1086,6 +1086,7 @@ export class GatewayServer {
     // Training dataset export routes
     try {
       registerTrainingRoutes(this.app, { secureYeoman: this.secureYeoman });
+      registerLicenseRoutes(this.app, { secureYeoman: this.secureYeoman });
       this.getLogger().info('Training routes registered');
     } catch (err) {
       this.getLogger().debug('Training routes skipped', {

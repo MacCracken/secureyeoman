@@ -11,6 +11,26 @@ We welcome contributions! This guide will help you get started.
 - [Documentation](#documentation)
 - [Community](#community)
 
+## Contributor License Agreement (CLA)
+
+By submitting a pull request you agree to the following CLA:
+
+> I grant the SecureYeoman Project Contributors a perpetual, worldwide,
+> non-exclusive, royalty-free, irrevocable copyright license to reproduce,
+> prepare derivative works of, publicly display, publicly perform,
+> sublicense, and distribute my contributions and such derivative works —
+> including under proprietary commercial licenses.
+>
+> I represent that I am legally entitled to grant this license, and that
+> my contribution is my original creation or that I have sufficient rights
+> to submit it under these terms.
+
+This allows the project to operate its dual-license model (AGPL-3.0 + commercial) without restricting what open-source contributors can do with their own copies.
+
+For questions about the CLA or commercial licensing, open an issue or contact the maintainers.
+
+---
+
 ## Development Setup
 
 ### Prerequisites

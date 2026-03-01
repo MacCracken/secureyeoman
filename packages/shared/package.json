@@ -15,6 +15,7 @@
       "import": "./dist/types/index.js"
     }
   },
+  "license": "AGPL-3.0-only",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",

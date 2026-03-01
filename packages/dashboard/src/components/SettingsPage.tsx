@@ -23,6 +23,7 @@ import {
   Trash2,
   RefreshCw,
   Plus,
+  BadgeCheck,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -40,6 +41,9 @@ import {
   createBackup,
   downloadBackup,
   deleteBackup,
+  fetchLicenseStatus,
+  setLicenseKey,
+  type LicenseStatus,
 } from '../api/client';
 import type { Personality, SoulConfig, BackupRecord } from '../types';
 import { NotificationSettings } from './NotificationSettings';
@@ -474,6 +478,130 @@ const LEARNING_MODE_LABELS: Record<string, string> = {
   autonomous: 'Autonomous',
 };
 
+// ── License Card ───────────────────────────────────────────────────
+
+const FEATURE_LABELS: Record<string, string> = {
+  adaptive_learning: 'Adaptive Learning Pipeline',
+  sso_saml: 'SSO / SAML',
+  multi_tenancy: 'Multi-Tenancy',
+  cicd_integration: 'CI/CD Integration',
+  advanced_observability: 'Advanced Observability',
+};
+
+function LicenseCard() {
+  const queryClient = useQueryClient();
+  const [keyInput, setKeyInput] = useState('');
+  const [showInput, setShowInput] = useState(false);
+
+  const { data: license, isLoading } = useQuery<LicenseStatus>({
+    queryKey: ['license-status'],
+    queryFn: fetchLicenseStatus,
+  });
+
+  const setKeyMutation = useMutation({
+    mutationFn: (key: string) => setLicenseKey(key),
+    onSuccess: () => {
+      setKeyInput('');
+      setShowInput(false);
+      void queryClient.invalidateQueries({ queryKey: ['license-status'] });
+    },
+  });
+
+  const isEnterprise = license?.tier === 'enterprise';
+
+  return (
+    <div className="card">
+      <div className="p-4 border-b flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <BadgeCheck className={`w-5 h-5 ${isEnterprise ? 'text-primary' : 'text-muted-foreground'}`} />
+          <h3 className="font-medium">License</h3>
+          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${isEnterprise ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+            {isLoading ? '…' : (isEnterprise ? 'Enterprise' : 'Community')}
+          </span>
+        </div>
+        <button
+          onClick={() => setShowInput((v) => !v)}
+          className="text-xs text-muted-foreground hover:text-foreground underline"
+        >
+          {showInput ? 'Cancel' : 'Set license key'}
+        </button>
+      </div>
+
+      <div className="p-4 space-y-3">
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : (
+          <>
+            {isEnterprise && license && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                <div>
+                  <p className="text-muted-foreground text-xs">Organization</p>
+                  <p className="font-medium">{license.organization ?? '—'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Seats</p>
+                  <p className="font-medium">{license.seats ?? '—'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Expires</p>
+                  <p className="font-medium">
+                    {license.expiresAt ? new Date(license.expiresAt).toLocaleDateString() : 'Never'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {isEnterprise && license && license.features.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {license.features.map((f) => (
+                  <span key={f} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-success/10 text-success font-medium">
+                    <Check className="w-3 h-3" />
+                    {FEATURE_LABELS[f] ?? f}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {!isEnterprise && (
+              <p className="text-sm text-muted-foreground">
+                Running on the community tier. Enterprise features (Adaptive Learning, SSO/SAML, Multi-Tenancy, CI/CD, Advanced Observability) require a license key.
+              </p>
+            )}
+
+            {license?.error && (
+              <p className="text-xs text-destructive">Key error: {license.error}</p>
+            )}
+          </>
+        )}
+
+        {showInput && (
+          <div className="flex gap-2 pt-1">
+            <input
+              type="password"
+              placeholder="Paste license key…"
+              value={keyInput}
+              onChange={(e) => setKeyInput(e.target.value)}
+              className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <button
+              onClick={() => setKeyMutation.mutate(keyInput)}
+              disabled={!keyInput.trim() || setKeyMutation.isPending}
+              className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {setKeyMutation.isPending ? 'Saving…' : 'Apply'}
+            </button>
+          </div>
+        )}
+        {setKeyMutation.isError && (
+          <p className="text-xs text-destructive">
+            {setKeyMutation.error instanceof Error ? setKeyMutation.error.message : 'Failed to set key'}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function GeneralTab() {
   const queryClient = useQueryClient();
 
@@ -553,6 +681,9 @@ function GeneralTab() {
 
   return (
     <div className="space-y-6">
+      {/* ── License ───────────────────────────────────────────── */}
+      <LicenseCard />
+
       {/* ── Audit Chain ───────────────────────────────────────── */}
       <div className="card">
         <div className="p-4 border-b flex items-center gap-2">

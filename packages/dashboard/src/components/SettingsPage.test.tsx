@@ -49,6 +49,8 @@ vi.mock('../api/client', () => ({
   createBackup: vi.fn(),
   downloadBackup: vi.fn(),
   deleteBackup: vi.fn(),
+  fetchLicenseStatus: vi.fn(),
+  setLicenseKey: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -63,6 +65,7 @@ const mockFetchAssignments = vi.mocked(api.fetchAssignments);
 const mockFetchSecurityPolicy = vi.mocked(api.fetchSecurityPolicy);
 const mockFetchUsers = vi.mocked(api.fetchUsers);
 const mockFetchBackups = vi.mocked(api.fetchBackups);
+const mockFetchLicenseStatus = vi.mocked(api.fetchLicenseStatus);
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -103,6 +106,16 @@ describe('SettingsPage', () => {
     mockFetchAssignments.mockResolvedValue({ assignments: [] });
     mockFetchUsers.mockResolvedValue({ users: [] });
     mockFetchBackups.mockResolvedValue({ backups: [], total: 0 });
+    mockFetchLicenseStatus.mockResolvedValue({
+      tier: 'community',
+      valid: false,
+      organization: null,
+      seats: null,
+      features: [],
+      licenseId: null,
+      expiresAt: null,
+      error: null,
+    });
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,

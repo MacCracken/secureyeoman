@@ -18,6 +18,7 @@
       "import": "./dist/cli.js"
     }
   },
+  "license": "AGPL-3.0-only",
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/cli.ts",

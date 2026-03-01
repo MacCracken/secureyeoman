@@ -261,6 +261,14 @@ router.registerLazy({
   loader: () => import('./cli/commands/crew.js').then((m) => m.crewCommand),
 });
 
+router.registerLazy({
+  name: 'license',
+  aliases: ['lic'],
+  description: 'View and manage the SecureYeoman license key',
+  usage: 'secureyeoman license <status|set> [options]',
+  loader: () => import('./cli/commands/license.js').then((m) => m.licenseCommand),
+});
+
 // ── Help command (eager — uses router directly) ────────────────────────────
 
 router.register({

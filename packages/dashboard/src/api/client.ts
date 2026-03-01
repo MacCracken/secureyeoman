@@ -4688,3 +4688,27 @@ export async function createWorktree(name?: string): Promise<WorktreeInfo> {
 export async function deleteWorktree(id: string): Promise<void> {
   return request(`/terminal/worktrees/${id}`, { method: 'DELETE' });
 }
+
+// ── License ───────────────────────────────────────────────────────────────────
+
+export interface LicenseStatus {
+  tier: 'community' | 'enterprise';
+  valid: boolean;
+  organization: string | null;
+  seats: number | null;
+  features: string[];
+  licenseId: string | null;
+  expiresAt: string | null;
+  error: string | null;
+}
+
+export async function fetchLicenseStatus(): Promise<LicenseStatus> {
+  return request('/license/status');
+}
+
+export async function setLicenseKey(key: string): Promise<LicenseStatus> {
+  return request('/license/key', {
+    method: 'POST',
+    body: JSON.stringify({ key }),
+  });
+}

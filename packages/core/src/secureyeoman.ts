@@ -333,9 +333,9 @@ export class SecureYeoman {
       // Step 2.05b: Initialize LicenseManager
       this.licenseManager = new LicenseManager(process.env.SECUREYEOMAN_LICENSE_KEY);
       const licTier = this.licenseManager.getTier();
-      this.logger.info({ tier: licTier, org: this.licenseManager.getClaims()?.organization ?? null }, `License: ${licTier}`);
+      this.logger.info(`License: ${licTier}`, { tier: licTier, org: this.licenseManager.getClaims()?.organization ?? null });
       if (this.licenseManager.getParseError()) {
-        this.logger.warn({ err: this.licenseManager.getParseError() }, 'License key invalid, running as community tier');
+        this.logger.warn('License key invalid, running as community tier', { err: this.licenseManager.getParseError() });
       }
 
       // Step 2.5: Initialize keyring (pre-loads secrets from system keyring)
@@ -2386,7 +2386,7 @@ export class SecureYeoman {
    */
   reloadLicenseKey(key: string): void {
     this.licenseManager = new LicenseManager(key);
-    this.logger?.info({ tier: this.licenseManager.getTier() }, 'License key reloaded');
+    this.logger?.info('License key reloaded', { tier: this.licenseManager.getTier() });
   }
 
   /**

@@ -1,3 +1,21 @@
+## [2026.3.1f] — 2026-03-01
+
+### Dual Licensing — AGPL-3.0 + Commercial (ADR 171)
+
+- **License change**: Project relicensed from MIT to **AGPL-3.0** (open-source) + **proprietary commercial license** (`LICENSE.commercial`). Closes the SaaS loophole — anyone offering SecureYeoman as a hosted service must publish modifications or purchase a commercial license.
+- **`LicenseManager`** (`packages/core/src/licensing/license-manager.ts`): Offline Ed25519 license key validation. No network call. Key format: `<header>.<payload>.<signature>` (base64url). Exposes `getTier()`, `hasFeature()`, `getClaims()`, `isValid()`, `getParseError()`, `toStatusObject()`.
+- **Enterprise features** (instrumented, not yet hard-gated — see roadmap): `adaptive_learning`, `sso_saml`, `multi_tenancy`, `cicd_integration`, `advanced_observability`.
+- **`scripts/generate-license-key.ts`**: Maintainer tool. `--init` generates Ed25519 keypair. Key issuance via `--org`, `--tier`, `--seats`, `--features`, `--expires` flags.
+- **License routes**: `GET /api/v1/license/status`, `POST /api/v1/license/key` (hot-swap without restart). Auth: `license:read` / `license:write`.
+- **`SecureYeoman`**: `licenseManager` field + `getLicenseManager()` + `reloadLicenseKey()`. Reads `SECUREYEOMAN_LICENSE_KEY` env var at startup.
+- **CLI**: `secureyeoman license status` and `secureyeoman license set <key>` (alias: `lic`).
+- **Dashboard**: License card in **Settings → General**. Shows tier, org, seats, expiry, feature chips. Password input for live key update.
+- **All `package.json`**: `"license": "AGPL-3.0-only"`. **README**: badges + Licensing section. **CONTRIBUTING.md**: CLA section.
+- **Tests**: `license-manager.test.ts` (20 tests — community tier, enterprise key, all features, expiry, bad signature, malformed).
+- **ADR 171** (`docs/adr/171-dual-licensing.md`). **Guide** `docs/guides/licensing.md`.
+
+---
+
 ## [2026.3.1e] — 2026-03-01
 
 ### Phase 89 — Marketplace Shareables (ADR 172)

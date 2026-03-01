@@ -2,7 +2,8 @@
 
 [![Version](https://img.shields.io/badge/Version-2026.2.28-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.2.28)
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSE.commercial)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
 [![Tests: 10400](https://img.shields.io/badge/Tests-10400-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
@@ -291,9 +292,28 @@ Security is our top priority. For security issues:
 
 ---
 
-## License
+## Licensing
 
-This project is licensed under the [MIT License](LICENSE).
+SecureYeoman uses a dual-license model:
+
+- **AGPL-3.0** — for open-source use, self-hosting, and contributors. Anyone offering the software as a hosted service to third parties must publish their modifications.
+- **Commercial license** — for enterprises that cannot accept AGPL terms, or for SaaS providers who need to keep modifications private. See [`LICENSE.commercial`](LICENSE.commercial).
+
+### Enterprise Features
+
+The following features require a commercial license key:
+
+| Feature | Tier |
+|---------|------|
+| Adaptive Learning Pipeline | Enterprise |
+| SSO / SAML | Enterprise |
+| Multi-Tenancy | Enterprise |
+| CI/CD Integration | Enterprise |
+| Advanced Observability | Enterprise |
+
+Set your license key via the `SECUREYEOMAN_LICENSE_KEY` environment variable, `secureyeoman license set <key>`, or **Settings → General → License** in the dashboard.
+
+See [`docs/guides/licensing.md`](docs/guides/licensing.md) for full details.
 
 ---
 

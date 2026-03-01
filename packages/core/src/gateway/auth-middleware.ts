@@ -695,6 +695,13 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/training/computer-use/episodes/:id': {
     DELETE: { resource: 'training', action: 'write' },
   },
+  // License routes
+  '/api/v1/license/status': {
+    GET: { resource: 'license', action: 'read' },
+  },
+  '/api/v1/license/key': {
+    POST: { resource: 'license', action: 'write' },
+  },
 };
 
 const PUBLIC_ROUTES = new Set([
