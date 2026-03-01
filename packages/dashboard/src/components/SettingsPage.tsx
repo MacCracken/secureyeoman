@@ -379,7 +379,7 @@ function BackupTab() {
               createMutation.mutate();
             }}
             disabled={createMutation.isPending}
-            className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-md border px-4 py-1.5 text-sm font-medium hover:bg-muted/50 disabled:opacity-50"
           >
             <Plus className="w-4 h-4" />
             {createMutation.isPending ? 'Creating…' : 'Create Backup'}
@@ -998,6 +998,11 @@ function SoulRow({ personality: p, globalMaxPromptTokens }: SoulRowProps) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-sm font-medium truncate">{p.name}</span>
+          {p.isArchetype && (
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
+              Preset
+            </span>
+          )}
           {p.isActive && (
             <span className="text-xs px-1.5 py-0.5 rounded-full bg-success/10 text-success font-medium">
               Active
@@ -1013,11 +1018,6 @@ function SoulRow({ personality: p, globalMaxPromptTokens }: SoulRowProps) {
             <span className="text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium flex items-center gap-1">
               <Star className="w-2.5 h-2.5" />
               Default
-            </span>
-          )}
-          {p.isArchetype && (
-            <span className="text-xs px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
-              Preset
             </span>
           )}
           {offHours && (

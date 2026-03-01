@@ -1095,6 +1095,37 @@ export class SecureYeoman {
         await this.bootDelegationChain();
       }
 
+      // Step 6.11b: Always seed workflow/swarm templates and wire marketplace
+      // managers so the marketplace shows templates even before delegation is
+      // explicitly enabled.  bootDelegationChain() already creates these
+      // storage objects — this block only runs when it was skipped.
+      try {
+        if (!this.workflowStorage) {
+          this.workflowStorage = new WorkflowStorage();
+        }
+        const { BUILTIN_WORKFLOW_TEMPLATES } = await import('./workflow/workflow-templates.js');
+        await this.workflowStorage.seedBuiltinWorkflows(BUILTIN_WORKFLOW_TEMPLATES);
+
+        if (!this.swarmStorage) {
+          this.swarmStorage = new SwarmStorage();
+        }
+        await this.swarmStorage.seedBuiltinTemplates();
+
+        // Wire managers into marketplace for community sync (if they exist)
+        if (this.marketplaceManager && (this.workflowManager || this.swarmManager)) {
+          this.marketplaceManager.setDelegationManagers({
+            workflowManager: this.workflowManager ?? undefined,
+            swarmManager: this.swarmManager ?? undefined,
+          });
+        }
+
+        this.logger.debug('Workflow/swarm templates seeded');
+      } catch (seedErr) {
+        this.logger.warn('Template seeding failed (non-fatal)', {
+          error: seedErr instanceof Error ? seedErr.message : 'Unknown error',
+        });
+      }
+
       // Step 6.12: Initialize extension hooks (if enabled)
       if (this.config.extensions?.enabled) {
         try {
@@ -2604,6 +2635,12 @@ export class SecureYeoman {
    * Called at startup when delegation is needed, and lazily when the
    * security policy is toggled on via updateSecurityPolicy().
    */
+  async ensureDelegationReady(): Promise<void> {
+    if (!this.subAgentManager) {
+      await this.bootDelegationChain();
+    }
+  }
+
   private async bootDelegationChain(): Promise<void> {
     try {
       if (!this.subAgentStorage) {

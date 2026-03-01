@@ -704,6 +704,7 @@ export class GatewayServer {
         registerMarketplaceRoutes(this.app, {
           marketplaceManager,
           getConfig: () => this.secureYeoman.getConfig(),
+          ensureDelegationReady: () => this.secureYeoman.ensureDelegationReady(),
         });
       }
     } catch {

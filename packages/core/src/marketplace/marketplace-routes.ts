@@ -10,6 +10,8 @@ import { toErrorMessage, sendError } from '../utils/errors.js';
 export interface MarketplaceRoutesOptions {
   marketplaceManager: MarketplaceManager;
   getConfig?: () => Config;
+  /** Called before community sync to lazy-boot delegation managers (workflow/swarm). */
+  ensureDelegationReady?: () => Promise<void>;
 }
 
 export function registerMarketplaceRoutes(
@@ -124,6 +126,9 @@ export function registerMarketplaceRoutes(
         return sendError(reply, 403, 'Community git fetch is disabled by security policy');
       }
       try {
+        if (opts.ensureDelegationReady) {
+          await opts.ensureDelegationReady();
+        }
         const result = await marketplaceManager.syncFromCommunity(undefined, repoUrl);
         return result;
       } catch (err) {

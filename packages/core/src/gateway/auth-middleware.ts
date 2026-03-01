@@ -444,7 +444,10 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/agents/delegations/:id': { GET: { resource: 'agents', action: 'read' } },
   '/api/v1/agents/delegations/:id/cancel': { POST: { resource: 'agents', action: 'write' } },
   '/api/v1/agents/delegations/:id/messages': { GET: { resource: 'agents', action: 'read' } },
-  '/api/v1/agents/config': { GET: { resource: 'agents', action: 'read' } },
+  '/api/v1/agents/config': {
+    GET: { resource: 'agents', action: 'read' },
+    PATCH: { resource: 'agents', action: 'write' },
+  },
   '/api/v1/agents/swarms/templates': {
     GET: { resource: 'agents', action: 'read' },
     POST: { resource: 'agents', action: 'write' },

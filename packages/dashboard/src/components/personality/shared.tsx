@@ -445,7 +445,9 @@ export function PersonalityAvatar({
   if (!personality.avatarUrl) {
     return <Bot style={{ width: size, height: size }} />;
   }
-  const src = `${API_BASE}${personality.avatarUrl}?v=${personality.updatedAt}`;
+  const src = personality.avatarUrl.startsWith('/avatars/')
+    ? personality.avatarUrl
+    : `${API_BASE}${personality.avatarUrl}?v=${personality.updatedAt}`;
   return (
     <>
       <img

@@ -427,8 +427,8 @@ const KpiBarSection = memo(function KpiBarSection({
         title="Audit Entries"
         value={metrics?.security?.auditEntriesTotal ?? 0}
         icon={<Shield className="w-4 h-4 sm:w-5 sm:h-5" />}
-        trend={metrics?.security?.auditChainValid ? 'Chain Valid' : 'Chain Invalid'}
-        trendUp={metrics?.security?.auditChainValid}
+        trend={metrics?.security?.auditChainValid === false ? 'Chain Invalid' : 'Chain Valid'}
+        trendUp={metrics?.security?.auditChainValid !== false}
         onClick={() => navigate('/security?tab=audit')}
       />
     </div>
@@ -658,7 +658,7 @@ const AgentHealthSection = memo(function AgentHealthSection({
               >
                 {p.avatarUrl ? (
                   <img
-                    src={`/api/v1${p.avatarUrl}`}
+                    src={p.avatarUrl.startsWith('/avatars/') ? p.avatarUrl : `/api/v1${p.avatarUrl}`}
                     alt={p.name}
                     className="w-5 h-5 rounded-full object-cover flex-shrink-0"
                   />

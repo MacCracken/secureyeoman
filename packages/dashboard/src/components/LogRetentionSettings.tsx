@@ -134,7 +134,7 @@ export function LogRetentionSettings() {
               retentionMutation.mutate();
             }}
             disabled={retentionMutation.isPending}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-md hover:bg-muted/50 disabled:opacity-50"
           >
             {retentionMutation.isPending ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

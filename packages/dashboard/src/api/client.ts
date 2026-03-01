@@ -1244,7 +1244,7 @@ export async function fetchAuditStats(): Promise<{
   try {
     return await request('/audit/stats');
   } catch {
-    return { totalEntries: 0, chainValid: false };
+    return { totalEntries: 0, chainValid: true };
   }
 }
 

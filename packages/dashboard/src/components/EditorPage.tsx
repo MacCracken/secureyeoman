@@ -27,7 +27,6 @@ import {
   Wrench,
   Star,
   Eye,
-  LayoutDashboard,
   Brain,
   Cpu,
   Globe,
@@ -687,6 +686,11 @@ function StandardEditorPage() {
     staleTime: 30000,
   });
 
+  // ── Chat visibility ──
+  const [showChat, setShowChat] = useState(
+    () => localStorage.getItem('editor:showChat') !== 'false'
+  );
+
   // ── Agent World ──
   const [showWorld, setShowWorld] = useState(
     () => localStorage.getItem('editor:showWorld') === 'true'
@@ -1029,7 +1033,7 @@ function StandardEditorPage() {
         {/* Top row — Code Editor & Chat side by side */}
         <div className="flex-1 flex flex-col lg:flex-row gap-3 min-h-0 lg:min-h-0">
           {/* Left panel — Code Editor */}
-          <div className="flex flex-col flex-1 lg:flex-[60] min-h-[250px] lg:min-h-0 border rounded-lg overflow-hidden bg-card">
+          <div className={`flex flex-col flex-1 ${showChat ? 'lg:flex-[60]' : ''} min-h-[250px] lg:min-h-0 border rounded-lg overflow-hidden bg-card`}>
             {/* Editor toolbar with tabs */}
             <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30 flex-wrap">
               <button
@@ -1185,15 +1189,6 @@ function StandardEditorPage() {
                 <span className="hidden sm:inline">Send to Chat</span>
                 <span className="sm:hidden">Send</span>
               </button>
-              <Link
-                to="/editor/advanced"
-                className="flex items-center gap-1.5 px-2 py-1 rounded text-xs border hover:bg-muted"
-                title="Open Canvas workspace"
-              >
-                <LayoutDashboard className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Canvas Mode</span>
-              </Link>
-
               {/* Memory toggle */}
               <button
                 onClick={() => {
@@ -1237,6 +1232,24 @@ function StandardEditorPage() {
                   </div>
                 )}
               </div>
+
+              {/* Chat toggle */}
+              <button
+                onClick={() => {
+                  const n = !showChat;
+                  localStorage.setItem('editor:showChat', String(n));
+                  setShowChat(n);
+                }}
+                className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border transition-colors ${
+                  showChat
+                    ? 'bg-primary/15 border-primary/50 text-primary'
+                    : 'border-border text-muted-foreground hover:text-foreground'
+                }`}
+                title={showChat ? 'Hide chat panel' : 'Show chat panel'}
+              >
+                <Bot className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline">Chat</span>
+              </button>
 
               {/* Agent World toggle */}
               <button
@@ -1417,6 +1430,7 @@ function StandardEditorPage() {
           </div>
 
           {/* Right panel — Chat Sidebar */}
+          {showChat && (
           <div className="flex flex-col flex-1 lg:flex-[40] min-h-[200px] lg:min-h-0 border rounded-lg overflow-hidden bg-card">
             {/* Sidebar header */}
             <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
@@ -1447,6 +1461,16 @@ function StandardEditorPage() {
                 </select>
                 <ChevronDown className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground" />
               </div>
+              <button
+                onClick={() => {
+                  localStorage.setItem('editor:showChat', 'false');
+                  setShowChat(false);
+                }}
+                className="text-muted-foreground hover:text-foreground flex-shrink-0"
+                title="Close chat"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
 
             {/* Chat messages */}
@@ -1725,90 +1749,94 @@ function StandardEditorPage() {
               error={ptt.error}
             />
           </div>
+          )}
         </div>
 
-        {/* Agent World panel (collapsible) */}
-        {showWorld && (
-          <div className="flex-none border border-border rounded-lg bg-card overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-1.5 bg-muted/30 border-b border-border">
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                <Globe className="w-3.5 h-3.5" /> Agent World
-              </div>
-              <div className="flex items-center gap-0.5">
-                {(['grid', 'map', 'large'] as const).map((m) => (
+        {/* Bottom row — Terminal (+ Agent World side-by-side when visible) */}
+        <div className={`flex ${showWorld ? 'flex-col lg:flex-row' : 'flex-col'} gap-3 h-[200px] sm:h-[220px] lg:h-[240px] flex-shrink-0`}>
+          {/* Terminal / Sessions / History */}
+          <div className={`flex flex-col border rounded-lg overflow-hidden bg-card ${showWorld ? 'flex-1 lg:flex-[60]' : 'flex-1'} min-h-0`}>
+            {/* Tab bar */}
+            <div className="flex items-center border-b bg-muted/30 min-w-0">
+              <div className="flex flex-shrink-0">
+                {BOTTOM_TABS.map((tab) => (
                   <button
-                    key={m}
+                    key={tab.id}
                     onClick={() => {
-                      setWorldViewMode(m);
-                      localStorage.setItem('world:viewMode', m);
+                      setActiveBottomTab(tab.id);
                     }}
-                    className={`px-1.5 py-0.5 text-[11px] rounded transition-colors ${worldViewMode === m ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                    className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${
+                      activeBottomTab === tab.id
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
                   >
-                    {m.charAt(0).toUpperCase() + m.slice(1)}
+                    {tab.label}
                   </button>
                 ))}
-                <button
-                  onClick={() => {
-                    localStorage.setItem('editor:showWorld', 'false');
-                    setShowWorld(false);
-                  }}
-                  className="ml-1 text-muted-foreground hover:text-foreground"
-                  title="Close agent world"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
               </div>
             </div>
-            <div className="p-2 overflow-x-auto">
-              <AgentWorldWidget
-                maxAgents={8}
-                viewMode={worldViewMode}
-                onAgentClick={(id) => navigate(`/soul/personalities?focus=${id}`)}
-              />
-            </div>
-          </div>
-        )}
 
-        {/* Bottom panel — Tabbed (Terminal / Sessions / History) */}
-        <div className="flex flex-col h-[200px] sm:h-[220px] lg:h-[240px] border rounded-lg overflow-hidden bg-card flex-shrink-0">
-          {/* Tab bar */}
-          <div className="flex items-center border-b bg-muted/30 min-w-0">
-            <div className="flex flex-shrink-0">
-              {BOTTOM_TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    setActiveBottomTab(tab.id);
-                  }}
-                  className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${
-                    activeBottomTab === tab.id
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+            {/* Tab content */}
+            {activeBottomTab === 'terminal' && (
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <MultiTerminal outputRef={terminalOutputRef} onCommandComplete={saveMemory} />
+              </div>
+            )}
+
+            {activeBottomTab === 'sessions' && (
+              <ExecutionGated>
+                <SessionsPanel />
+              </ExecutionGated>
+            )}
+
+            {activeBottomTab === 'history' && (
+              <ExecutionGated>
+                <HistoryPanel />
+              </ExecutionGated>
+            )}
           </div>
 
-          {/* Tab content */}
-          {activeBottomTab === 'terminal' && (
-            <div className="flex-1 min-h-0 overflow-hidden">
-              <MultiTerminal outputRef={terminalOutputRef} onCommandComplete={saveMemory} />
+          {/* Agent World panel (right of terminal, same width as chat) */}
+          {showWorld && (
+            <div className="flex flex-col flex-1 lg:flex-[40] border border-border rounded-lg bg-card overflow-hidden min-h-0">
+              <div className="flex items-center justify-between px-3 py-1.5 bg-muted/30 border-b border-border">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                  <Globe className="w-3.5 h-3.5" /> Agent World
+                </div>
+                <div className="flex items-center gap-0.5">
+                  {(['grid', 'map', 'large'] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => {
+                        setWorldViewMode(m);
+                        localStorage.setItem('world:viewMode', m);
+                      }}
+                      className={`px-1.5 py-0.5 text-[11px] rounded transition-colors ${worldViewMode === m ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      {m.charAt(0).toUpperCase() + m.slice(1)}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => {
+                      localStorage.setItem('editor:showWorld', 'false');
+                      setShowWorld(false);
+                    }}
+                    className="ml-1 text-muted-foreground hover:text-foreground"
+                    title="Close agent world"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 min-h-0 p-2 overflow-auto">
+                <AgentWorldWidget
+                  maxAgents={8}
+                  viewMode={worldViewMode}
+                  onAgentClick={(id) => navigate(`/soul/personalities?focus=${id}`)}
+                />
+              </div>
             </div>
-          )}
-
-          {activeBottomTab === 'sessions' && (
-            <ExecutionGated>
-              <SessionsPanel />
-            </ExecutionGated>
-          )}
-
-          {activeBottomTab === 'history' && (
-            <ExecutionGated>
-              <HistoryPanel />
-            </ExecutionGated>
           )}
         </div>
       </div>
