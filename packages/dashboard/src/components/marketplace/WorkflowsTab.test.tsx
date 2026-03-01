@@ -41,10 +41,10 @@ function createQC() {
   return new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
 }
 
-function renderTab() {
+function renderTab(source?: string) {
   return render(
     <QueryClientProvider client={createQC()}>
-      <WorkflowsTab />
+      <WorkflowsTab source={source} />
     </QueryClientProvider>
   );
 }
@@ -81,9 +81,9 @@ describe('WorkflowsTab', () => {
     });
   });
 
-  it('shows empty state when no workflows', async () => {
+  it('shows empty state when no workflows (community)', async () => {
     mockFetchCommunityWorkflows.mockResolvedValue({ definitions: [], total: 0 });
-    renderTab();
+    renderTab('community');
     await waitFor(() => {
       expect(screen.getByText('No community workflows available')).toBeDefined();
     });

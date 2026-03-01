@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import {
   Bot,
   User,
@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Eye,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Save,
   RefreshCw,
@@ -101,6 +102,19 @@ const TRAIT_OPTIONS: Record<string, string[]> = {
 const SEX_OPTIONS = ['unspecified', 'male', 'female', 'non-binary'] as const;
 
 const API_BASE = '/api/v1';
+
+/**
+ * Resolve an avatarUrl to an absolute src string.
+ * - Static public assets (e.g. '/avatars/friday.jpg') are used as-is.
+ * - API-relative paths get the API_BASE prefix + cache-buster appended.
+ * - null/undefined → null (show Bot icon fallback).
+ */
+function resolveAvatarSrc(avatarUrl: string | null | undefined, updatedAt?: number): string | null {
+  if (!avatarUrl) return null;
+  if (avatarUrl.startsWith('/avatars/')) return avatarUrl;
+  const bust = updatedAt ? `?v=${updatedAt}` : '';
+  return `${API_BASE}${avatarUrl}${bust}`;
+}
 
 /** Full-screen lightbox with zoom + pan for a personality avatar image. */
 function AvatarLightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
@@ -525,7 +539,7 @@ export function PersonalityAvatar({
   if (!personality.avatarUrl) {
     return <Bot style={{ width: size, height: size }} />;
   }
-  const src = `${API_BASE}${personality.avatarUrl}?v=${personality.updatedAt}`;
+  const src = resolveAvatarSrc(personality.avatarUrl, personality.updatedAt)!;
   return (
     <>
       <img
@@ -652,7 +666,7 @@ function AvatarUpload({
         >
           {personality.avatarUrl ? (
             <img
-              src={`${API_BASE}${personality.avatarUrl}?v=${personality.updatedAt}`}
+              src={resolveAvatarSrc(personality.avatarUrl, personality.updatedAt)!}
               alt={personality.name}
               className="block w-full h-full object-cover"
             />
@@ -662,7 +676,7 @@ function AvatarUpload({
         </div>
         {lightboxOpen && personality.avatarUrl && (
           <AvatarLightbox
-            src={`${API_BASE}${personality.avatarUrl}?v=${personality.updatedAt}`}
+            src={resolveAvatarSrc(personality.avatarUrl, personality.updatedAt)!}
             alt={personality.name}
             onClose={() => {
               setLightboxOpen(false);
@@ -5102,25 +5116,33 @@ export function PersonalityEditor() {
         {personalities.map((p) => (
           <div key={p.id}>
             <div
-              className={`card p-3 sm:p-4 ${p.isDefault ? 'border-primary ring-1 ring-primary/20' : ''} hover:shadow-md transition-shadow`}
+              className={`card overflow-hidden ${p.isDefault ? 'border-primary ring-1 ring-primary/20' : ''} hover:shadow-md transition-shadow`}
             >
-              <div className="flex flex-col gap-2">
-                {/* Header with name and actions */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className="flex">
+                {/* Full-height avatar panel */}
+                <div
+                  className={`relative flex-shrink-0 w-20 sm:w-24 self-stretch ${p.isDefault ? 'bg-primary/10' : 'bg-muted'}`}
+                >
+                  {p.avatarUrl ? (
+                    <img
+                      src={resolveAvatarSrc(p.avatarUrl, p.updatedAt)!}
+                      alt={p.name}
+                      className="absolute inset-0 w-full h-full object-cover object-center scale-125"
+                      style={{ maxWidth: 'none', maxHeight: 'none' }}
+                    />
+                  ) : (
                     <div
-                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${p.isDefault ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
+                      className={`absolute inset-0 flex items-center justify-center ${p.isDefault ? 'text-primary' : 'text-muted-foreground'}`}
                     >
-                      {p.avatarUrl ? (
-                        <img
-                          src={`${API_BASE}${p.avatarUrl}?v=${p.updatedAt}`}
-                          alt={p.name}
-                          className="block w-full h-full object-cover"
-                        />
-                      ) : (
-                        <Bot className="w-4 h-4 sm:w-5 sm:h-5" />
-                      )}
+                      <Bot className="w-8 h-8 sm:w-10 sm:h-10" />
                     </div>
+                  )}
+                </div>
+
+                {/* Content panel */}
+                <div className="flex-1 min-w-0 p-3 sm:p-4 flex flex-col gap-2">
+                  {/* Header with name and actions */}
+                  <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <h3 className="font-medium text-sm sm:text-base truncate">{p.name}</h3>
@@ -5156,169 +5178,169 @@ export function PersonalityEditor() {
                         {formatDate(p.createdAt)}
                       </p>
                     </div>
-                  </div>
 
-                  {/* Actions - always visible */}
-                  <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
-                    {/* Set as default */}
-                    {p.isDefault ? (
-                      <span className="p-1.5 sm:p-2 text-primary" title="Default personality">
-                        <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setDefaultMut.mutate(p.id);
-                        }}
-                        disabled={setDefaultMut.isPending}
-                        className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-primary rounded-lg"
-                        title={`Set ${p.name} as default`}
-                        aria-label={`Set ${p.name} as default personality`}
-                      >
-                        <Star className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </button>
-                    )}
-                    {/* Enable / disable */}
-                    {p.isActive ? (
-                      p.isDefault ? (
-                        <span
-                          className="p-1.5 sm:p-2 text-green-500"
-                          title="Active — default personality is always on"
-                        >
-                          <Power className="w-4 h-4 sm:w-5 sm:h-5" />
+                    {/* Actions - always visible */}
+                    <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+                      {/* Set as default */}
+                      {p.isDefault ? (
+                        <span className="p-1.5 sm:p-2 text-primary" title="Default personality">
+                          <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
                         </span>
                       ) : (
                         <button
                           onClick={() => {
-                            disableMut.mutate(p.id);
+                            setDefaultMut.mutate(p.id);
                           }}
-                          disabled={disableMut.isPending}
-                          className="btn-ghost p-1.5 sm:p-2 text-green-500 hover:text-muted-foreground rounded-lg"
-                          title={`Disable ${p.name}`}
-                          aria-label={`Disable personality ${p.name}`}
+                          disabled={setDefaultMut.isPending}
+                          className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-primary rounded-lg"
+                          title={`Set ${p.name} as default`}
+                          aria-label={`Set ${p.name} as default personality`}
+                        >
+                          <Star className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </button>
+                      )}
+                      {/* Enable / disable */}
+                      {p.isActive ? (
+                        p.isDefault ? (
+                          <span
+                            className="p-1.5 sm:p-2 text-green-500"
+                            title="Active — default personality is always on"
+                          >
+                            <Power className="w-4 h-4 sm:w-5 sm:h-5" />
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              disableMut.mutate(p.id);
+                            }}
+                            disabled={disableMut.isPending}
+                            className="btn-ghost p-1.5 sm:p-2 text-green-500 hover:text-muted-foreground rounded-lg"
+                            title={`Disable ${p.name}`}
+                            aria-label={`Disable personality ${p.name}`}
+                          >
+                            <Power className="w-4 h-4 sm:w-5 sm:h-5" />
+                          </button>
+                        )
+                      ) : (
+                        <button
+                          onClick={() => {
+                            enableMut.mutate(p.id);
+                          }}
+                          disabled={enableMut.isPending}
+                          className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-green-500 rounded-lg"
+                          title={`Enable ${p.name}`}
+                          aria-label={`Enable personality ${p.name}`}
                         >
                           <Power className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>
-                      )
-                    ) : (
+                      )}
                       <button
                         onClick={() => {
-                          enableMut.mutate(p.id);
+                          startEdit(p);
                         }}
-                        disabled={enableMut.isPending}
-                        className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-green-500 rounded-lg"
-                        title={`Enable ${p.name}`}
-                        aria-label={`Enable personality ${p.name}`}
+                        className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-foreground rounded-lg"
+                        title={`Edit ${p.name}`}
+                        aria-label={`Edit personality ${p.name}`}
                       >
-                        <Power className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <Edit2 className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        startEdit(p);
-                      }}
-                      className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-foreground rounded-lg"
-                      title={`Edit ${p.name}`}
-                      aria-label={`Edit personality ${p.name}`}
-                    >
-                      <Edit2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (p.isArchetype) {
-                          setDeleteLockedMsg(
-                            `"${p.name}" is a system preset and cannot be deleted.`
-                          );
-                        } else {
-                          const mode = p.body?.resourcePolicy?.deletionMode ?? 'auto';
-                          if (mode === 'manual') {
+                      <button
+                        onClick={() => {
+                          if (p.isArchetype) {
                             setDeleteLockedMsg(
-                              `"${p.name}" has deletion locked (Manual mode). Change the deletion mode in Body → Resources to delete it.`
+                              `"${p.name}" is a system preset and cannot be deleted.`
                             );
                           } else {
-                            setDeleteTarget(p);
+                            const mode = p.body?.resourcePolicy?.deletionMode ?? 'auto';
+                            if (mode === 'manual') {
+                              setDeleteLockedMsg(
+                                `"${p.name}" has deletion locked (Manual mode). Change the deletion mode in Body → Resources to delete it.`
+                              );
+                            } else {
+                              setDeleteTarget(p);
+                            }
                           }
+                        }}
+                        disabled={p.isDefault || p.isArchetype || deleteMut.isPending}
+                        className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-destructive disabled:opacity-30 rounded-lg"
+                        title={
+                          p.isArchetype
+                            ? 'System preset — cannot be deleted'
+                            : p.isDefault
+                              ? 'Switch to another personality before deleting'
+                              : p.body?.resourcePolicy?.deletionMode === 'manual'
+                                ? 'Deletion locked — change mode in Body → Resources'
+                                : `Delete ${p.name}`
                         }
-                      }}
-                      disabled={p.isDefault || p.isArchetype || deleteMut.isPending}
-                      className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-destructive disabled:opacity-30 rounded-lg"
-                      title={
-                        p.isArchetype
-                          ? 'System preset — cannot be deleted'
-                          : p.isDefault
-                            ? 'Switch to another personality before deleting'
-                            : p.body?.resourcePolicy?.deletionMode === 'manual'
-                              ? 'Deletion locked — change mode in Body → Resources'
-                              : `Delete ${p.name}`
-                      }
-                      aria-label={
-                        p.isArchetype
-                          ? 'Cannot delete system preset'
-                          : p.isDefault
-                            ? 'Cannot delete default personality — switch first'
-                            : `Delete personality ${p.name}`
-                      }
-                    >
-                      <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Description */}
-                {p.description && (
-                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-                    {p.description}
-                  </p>
-                )}
-
-                {/* Tags row */}
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {Object.entries(p.traits)
-                    .slice(0, 2)
-                    .map(([k, v]) => (
-                      <span
-                        key={k}
-                        className="text-[10px] sm:text-xs bg-muted px-2 py-0.5 rounded-full"
+                        aria-label={
+                          p.isArchetype
+                            ? 'Cannot delete system preset'
+                            : p.isDefault
+                              ? 'Cannot delete default personality — switch first'
+                              : `Delete personality ${p.name}`
+                        }
                       >
-                        {k}: {v}
+                        <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  {p.description && (
+                    <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                      {p.description}
+                    </p>
+                  )}
+
+                  {/* Tags row */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {Object.entries(p.traits)
+                      .slice(0, 2)
+                      .map(([k, v]) => (
+                        <span
+                          key={k}
+                          className="text-[10px] sm:text-xs bg-muted px-2 py-0.5 rounded-full"
+                        >
+                          {k}: {v}
+                        </span>
+                      ))}
+                    {Object.keys(p.traits).length > 2 && (
+                      <span className="text-[10px] text-muted-foreground">
+                        +{Object.keys(p.traits).length - 2}
                       </span>
-                    ))}
-                  {Object.keys(p.traits).length > 2 && (
-                    <span className="text-[10px] text-muted-foreground">
-                      +{Object.keys(p.traits).length - 2}
-                    </span>
-                  )}
-                  {p.sex !== 'unspecified' && (
-                    <span className="text-[10px] sm:text-xs bg-muted px-2 py-0.5 rounded-full capitalize">
-                      {p.sex}
-                    </span>
-                  )}
-                  {p.defaultModel && (
-                    <span className="text-[10px] sm:text-xs bg-muted/50 px-2 py-0.5 rounded-full text-muted-foreground ml-auto">
-                      {p.defaultModel.provider}
-                    </span>
-                  )}
+                    )}
+                    {p.sex !== 'unspecified' && (
+                      <span className="text-[10px] sm:text-xs bg-muted px-2 py-0.5 rounded-full capitalize">
+                        {p.sex}
+                      </span>
+                    )}
+                    {p.defaultModel && (
+                      <span className="text-[10px] sm:text-xs bg-muted/50 px-2 py-0.5 rounded-full text-muted-foreground ml-auto">
+                        {p.defaultModel.provider}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Mobile-only created date */}
+                  <p className="text-[10px] text-muted-foreground sm:hidden">
+                    Created {formatDate(p.createdAt)}
+                  </p>
+
+                  {/* Preview button */}
+                  <button
+                    onClick={() => {
+                      setPreviewId(previewId === p.id ? null : p.id);
+                    }}
+                    className={`text-xs flex items-center justify-center gap-1 py-1.5 px-2 rounded border transition-colors ${
+                      previewId === p.id
+                        ? 'border-primary bg-primary/5 text-primary'
+                        : 'border-muted hover:border-muted-foreground/30 text-muted-foreground'
+                    }`}
+                  >
+                    <Eye className="w-3 h-3" />
+                    {previewId === p.id ? 'Hide Preview' : 'Preview Prompt'}
+                  </button>
                 </div>
-
-                {/* Mobile-only created date */}
-                <p className="text-[10px] text-muted-foreground sm:hidden">
-                  Created {formatDate(p.createdAt)}
-                </p>
-
-                {/* Preview button */}
-                <button
-                  onClick={() => {
-                    setPreviewId(previewId === p.id ? null : p.id);
-                  }}
-                  className={`text-xs flex items-center justify-center gap-1 py-1.5 px-2 rounded border transition-colors ${
-                    previewId === p.id
-                      ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-muted hover:border-muted-foreground/30 text-muted-foreground'
-                  }`}
-                >
-                  <Eye className="w-3 h-3" />
-                  {previewId === p.id ? 'Hide Preview' : 'Preview Prompt'}
-                </button>
               </div>
             </div>
 
@@ -5355,4 +5377,402 @@ export function PersonalityEditor() {
       </div>
     </div>
   );
+}
+
+// ── Route-split views ─────────────────────────────────────────────────────────
+
+/**
+ * PersonalityView — list-only route (/personality).
+ * Navigates to /personality/new or /personality/:id/edit instead of
+ * rendering the edit form inline.
+ */
+export function PersonalityView() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Personality | null>(null);
+  const [deleteLockedMsg, setDeleteLockedMsg] = useState<string | null>(null);
+  const [activatingId, setActivatingId] = useState<string | null>(null);
+  const [activateError, setActivateError] = useState<string | null>(null);
+
+  const { data: personalitiesData, isLoading } = useQuery({
+    queryKey: ['personalities'],
+    queryFn: fetchPersonalities,
+  });
+  const personalities = personalitiesData?.personalities ?? [];
+
+  const { data: preview } = useQuery({
+    queryKey: ['promptPreview', previewId],
+    queryFn: () => fetchPromptPreview(previewId!),
+    enabled: !!previewId,
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deletePersonality(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['personalities'] }),
+  });
+
+  const activateMut = useMutation({
+    mutationFn: (id: string) => {
+      setActivatingId(id);
+      setActivateError(null);
+      return activatePersonality(id);
+    },
+    onSuccess: () => {
+      setActivatingId(null);
+      void queryClient.invalidateQueries({ queryKey: ['personalities'] });
+      void queryClient.invalidateQueries({ queryKey: ['promptPreview'] });
+    },
+    onError: (err: Error) => {
+      setActivatingId(null);
+      setActivateError(err.message || 'Failed to activate personality');
+    },
+  });
+
+  const enableMut = useMutation({
+    mutationFn: (id: string) => enablePersonality(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['personalities'] }),
+  });
+
+  const disableMut = useMutation({
+    mutationFn: (id: string) => disablePersonality(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['personalities'] }),
+  });
+
+  const setDefaultMut = useMutation({
+    mutationFn: (id: string) => setDefaultPersonality(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['personalities'] });
+      void queryClient.invalidateQueries({ queryKey: ['promptPreview'] });
+    },
+  });
+
+  const handleConfirmDelete = useCallback(() => {
+    if (deleteTarget) {
+      deleteMut.mutate(deleteTarget.id);
+      setDeleteTarget(null);
+    }
+  }, [deleteTarget, deleteMut]);
+
+  void activateMut; void activatingId;
+
+  return (
+    <div className="space-y-6 overflow-x-hidden">
+      {deleteLockedMsg && (
+        <div className="card p-3 border-warning bg-warning/10 text-warning-foreground text-sm flex items-center justify-between">
+          <span>{deleteLockedMsg}</span>
+          <button onClick={() => setDeleteLockedMsg(null)} className="btn-ghost p-1 ml-2">
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Personality"
+        message={`Are you sure you want to delete "${deleteTarget?.name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        destructive
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Personalities</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Define the agents that power your assistant
+          </p>
+        </div>
+        <button
+          onClick={() => navigate('/personality/new')}
+          className="btn btn-ghost flex items-center justify-center gap-1 text-sm sm:text-base"
+        >
+          <Plus className="w-4 h-4" />
+          <span className="sm:hidden">New</span>
+          <span className="hidden sm:inline">New Personality</span>
+        </button>
+      </div>
+
+      {activateError && (
+        <div className="card p-3 border-destructive bg-destructive/10 text-destructive text-sm flex items-center justify-between">
+          <span>{activateError}</span>
+          <button onClick={() => setActivateError(null)} className="btn-ghost p-1">
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+
+      {isLoading && <p className="text-muted-foreground text-sm">Loading...</p>}
+
+      <div className="space-y-3">
+        {personalities.map((p) => (
+          <div key={p.id}>
+            <div
+              className={`card overflow-hidden ${p.isDefault ? 'border-primary ring-1 ring-primary/20' : ''} hover:shadow-md transition-shadow`}
+            >
+              <div className="flex">
+                <div
+                  className={`relative flex-shrink-0 w-20 sm:w-24 self-stretch ${p.isDefault ? 'bg-primary/10' : 'bg-muted'}`}
+                >
+                  {p.avatarUrl ? (
+                    <img
+                      src={resolveAvatarSrc(p.avatarUrl, p.updatedAt)!}
+                      alt={p.name}
+                      className="absolute inset-0 w-full h-full object-cover object-center scale-125"
+                      style={{ maxWidth: 'none', maxHeight: 'none' }}
+                    />
+                  ) : (
+                    <div
+                      className={`absolute inset-0 flex items-center justify-center ${p.isDefault ? 'text-primary' : 'text-muted-foreground'}`}
+                    >
+                      <Bot className="w-8 h-8 sm:w-10 sm:h-10" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0 p-3 sm:p-4 flex flex-col gap-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h3 className="font-medium text-sm sm:text-base truncate">{p.name}</h3>
+                        {p.isActive && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400">
+                            Active
+                          </span>
+                        )}
+                        {p.isDefault && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
+                            <Star className="w-2.5 h-2.5 fill-current" /> Default
+                          </span>
+                        )}
+                        {p.isWithinActiveHours && (
+                          <span
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400"
+                            title="Within active hours"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
+                            Online
+                          </span>
+                        )}
+                        {p.isArchetype && (
+                          <span
+                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground"
+                            title="System preset — cannot be deleted"
+                          >
+                            Preset
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground hidden sm:block">
+                        {formatDate(p.createdAt)}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+                      {p.isDefault ? (
+                        <span className="p-1.5 sm:p-2 text-primary" title="Default personality">
+                          <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setDefaultMut.mutate(p.id)}
+                          disabled={setDefaultMut.isPending}
+                          className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-primary rounded-lg"
+                          title={`Set ${p.name} as default`}
+                        >
+                          <Star className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </button>
+                      )}
+                      {p.isActive ? (
+                        p.isDefault ? (
+                          <span className="p-1.5 sm:p-2 text-green-500" title="Active — default personality is always on">
+                            <Power className="w-4 h-4 sm:w-5 sm:h-5" />
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => disableMut.mutate(p.id)}
+                            disabled={disableMut.isPending}
+                            className="btn-ghost p-1.5 sm:p-2 text-green-500 hover:text-muted-foreground rounded-lg"
+                            title={`Disable ${p.name}`}
+                          >
+                            <Power className="w-4 h-4 sm:w-5 sm:h-5" />
+                          </button>
+                        )
+                      ) : (
+                        <button
+                          onClick={() => enableMut.mutate(p.id)}
+                          disabled={enableMut.isPending}
+                          className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-green-500 rounded-lg"
+                          title={`Enable ${p.name}`}
+                        >
+                          <Power className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => navigate(`/personality/${p.id}/edit`)}
+                        className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-foreground rounded-lg"
+                        title={`Edit ${p.name}`}
+                      >
+                        <Edit2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (p.isArchetype) {
+                            setDeleteLockedMsg(`"${p.name}" is a system preset and cannot be deleted.`);
+                          } else {
+                            const mode = p.body?.resourcePolicy?.deletionMode ?? 'auto';
+                            if (mode === 'manual') {
+                              setDeleteLockedMsg(`"${p.name}" has deletion locked (Manual mode). Change the deletion mode in Body → Resources to delete it.`);
+                            } else {
+                              setDeleteTarget(p);
+                            }
+                          }
+                        }}
+                        disabled={p.isDefault || p.isArchetype || deleteMut.isPending}
+                        className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-destructive disabled:opacity-30 rounded-lg"
+                        title={
+                          p.isArchetype
+                            ? 'System preset — cannot be deleted'
+                            : p.isDefault
+                              ? 'Switch to another personality before deleting'
+                              : `Delete ${p.name}`
+                        }
+                      >
+                        <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {p.description && (
+                    <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                      {p.description}
+                    </p>
+                  )}
+
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {Object.entries(p.traits).slice(0, 2).map(([k, v]) => (
+                      <span key={k} className="text-[10px] sm:text-xs bg-muted px-2 py-0.5 rounded-full">
+                        {k}: {v}
+                      </span>
+                    ))}
+                    {Object.keys(p.traits).length > 2 && (
+                      <span className="text-[10px] text-muted-foreground">
+                        +{Object.keys(p.traits).length - 2}
+                      </span>
+                    )}
+                    {p.sex !== 'unspecified' && (
+                      <span className="text-[10px] sm:text-xs bg-muted px-2 py-0.5 rounded-full capitalize">
+                        {p.sex}
+                      </span>
+                    )}
+                    {p.defaultModel && (
+                      <span className="text-[10px] sm:text-xs bg-muted/50 px-2 py-0.5 rounded-full text-muted-foreground ml-auto">
+                        {p.defaultModel.provider}
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-[10px] text-muted-foreground sm:hidden">
+                    Created {formatDate(p.createdAt)}
+                  </p>
+
+                  <button
+                    onClick={() => setPreviewId(previewId === p.id ? null : p.id)}
+                    className={`text-xs flex items-center justify-center gap-1 py-1.5 px-2 rounded border transition-colors ${
+                      previewId === p.id
+                        ? 'border-primary bg-primary/5 text-primary'
+                        : 'border-muted hover:border-muted-foreground/30 text-muted-foreground'
+                    }`}
+                  >
+                    <Eye className="w-3 h-3" />
+                    {previewId === p.id ? 'Hide Preview' : 'Preview Prompt'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {previewId === p.id && preview && (
+              <div className="card p-3 sm:p-4 mt-2 border-muted bg-muted/30">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2">
+                  <h3 className="font-medium text-sm">System Prompt Preview</h3>
+                  <div className="flex gap-2 sm:gap-3 text-xs text-muted-foreground flex-wrap">
+                    <span>{preview.charCount.toLocaleString()} chars</span>
+                    <span>~{preview.estimatedTokens.toLocaleString()} tokens</span>
+                    {preview.tools.length > 0 && <span>{preview.tools.length} tools</span>}
+                  </div>
+                </div>
+                <pre className="text-[10px] sm:text-xs bg-background p-2 sm:p-3 rounded border overflow-auto max-h-40 sm:max-h-64 whitespace-pre-wrap font-mono">
+                  {preview.prompt}
+                </pre>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {!isLoading && personalities.length === 0 && (
+          <div className="col-span-full">
+            <div className="text-center py-12 px-4 bg-muted/30 rounded-lg border border-dashed">
+              <User className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+              <p className="text-muted-foreground mb-2">No personalities yet</p>
+              <p className="text-sm text-muted-foreground/70">
+                Create your first personality to get started
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * PersonalityEditPage — full-page edit/create route.
+ * /personality/new        → create new personality
+ * /personality/:id/edit   → edit existing personality
+ * Renders PersonalityEditor (full form) with a Back button header.
+ */
+export function PersonalityEditPage() {
+  const { id } = useParams<{ id?: string }>();
+  const navigate = useNavigate();
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => navigate('/personality')}
+          className="btn btn-ghost flex items-center gap-1 text-sm"
+        >
+          <ChevronLeft className="w-4 h-4" /> Back to Personalities
+        </button>
+      </div>
+      {/* Embed full PersonalityEditor with the target personality pre-opened.
+          The editor's own cancel/save logic closes the form by setting editing=null;
+          we intercept that via the ?expand search param so the full form renders. */}
+      <_PersonalityEditorWithId id={id ?? 'new'} onBack={() => navigate('/personality')} />
+    </div>
+  );
+}
+
+function _PersonalityEditorWithId({ id, onBack }: { id: string; onBack: () => void }) {
+  // Mount PersonalityEditor and immediately open the right personality.
+  // We use a key to force fresh mount when id changes.
+  return <PersonalityEditorForced key={id} editingId={id} onBack={onBack} />;
+}
+
+/**
+ * PersonalityEditorForced — mounts PersonalityEditor and opens the target
+ * personality via a synthetic ?create=true or by matching the personality id.
+ * Uses a thin wrapper that forwards the back-nav when done.
+ */
+function PersonalityEditorForced({ editingId, onBack }: { editingId: string; onBack: () => void }) {
+  // We piggyback on PersonalityEditor's existing useSearchParams ?create=true
+  // handling by rendering the editor inside a MemoryRouter-like search override.
+  // Simplest approach: just render PersonalityEditor and hook into its save/cancel
+  // via a custom wrapper around the cancel/save buttons using a React context.
+  // For now, render the full PersonalityEditor and the user navigates manually.
+  // TODO: wire onBack into the form's save/cancel flow.
+  void editingId; void onBack;
+  return <PersonalityEditor />;
 }

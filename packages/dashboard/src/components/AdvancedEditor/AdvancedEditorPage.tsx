@@ -22,7 +22,7 @@ function generateNodeId() {
   return `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 }
 
-function CanvasEditorInner() {
+function AdvancedEditorInner() {
   const { getViewport, setViewport } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState<CanvasWidgetData>([]);
   const [catalogOpen, setCatalogOpen] = useState(false);
@@ -199,10 +199,10 @@ function CanvasEditorInner() {
   );
 }
 
-export function CanvasEditorPage() {
+export function AdvancedEditorPage() {
   return (
     <ReactFlowProvider>
-      <CanvasEditorInner />
+      <AdvancedEditorInner />
     </ReactFlowProvider>
   );
 }

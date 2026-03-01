@@ -19,6 +19,12 @@ const MetricsPage = lazy(() => import('./MetricsPage').then((m) => ({ default: m
 const PersonalityEditor = lazy(() =>
   import('./PersonalityEditor').then((m) => ({ default: m.PersonalityEditor }))
 );
+const PersonalityView = lazy(() =>
+  import('./PersonalityEditor').then((m) => ({ default: m.PersonalityView }))
+);
+const PersonalityEditPage = lazy(() =>
+  import('./PersonalityEditor').then((m) => ({ default: m.PersonalityEditPage }))
+);
 const EditorPage = lazy(() => import('./EditorPage').then((m) => ({ default: m.EditorPage })));
 const ChatPage = lazy(() => import('./ChatPage').then((m) => ({ default: m.ChatPage })));
 const SettingsPage = lazy(() =>
@@ -48,8 +54,8 @@ const WorkflowRunDetail = lazy(() =>
   import('../pages/WorkflowRunDetail').then((m) => ({ default: m.WorkflowRunDetail }))
 );
 const IntentPage = lazy(() => import('./IntentEditor').then((m) => ({ default: m.IntentEditor })));
-const CanvasEditorPage = lazy(() =>
-  import('./CanvasEditor/CanvasEditorPage').then((m) => ({ default: m.CanvasEditorPage }))
+const AdvancedEditorPage = lazy(() =>
+  import('./AdvancedEditor/AdvancedEditorPage').then((m) => ({ default: m.AdvancedEditorPage }))
 );
 
 export function DashboardLayout() {
@@ -196,7 +202,7 @@ export function DashboardLayout() {
                     element={<MetricsPage metrics={metrics} health={health} />}
                   />
                   <Route path="/chat" element={<ChatPage />} />
-                  <Route path="/editor/canvas" element={<CanvasEditorPage />} />
+                  <Route path="/editor/advanced" element={<AdvancedEditorPage />} />
                   <Route path="/editor" element={<EditorPage />} />
                   <Route path="/code" element={<Navigate to="/editor" replace />} />
                   <Route path="/security" element={<SecurityPage />} />
@@ -209,7 +215,9 @@ export function DashboardLayout() {
                   <Route path="/workflows/:id/builder" element={<WorkflowBuilder />} />
                   <Route path="/workflows/runs/:runId" element={<WorkflowRunDetail />} />
                   <Route path="/reports" element={<SecurityPage />} />
-                  <Route path="/personality" element={<PersonalityEditor />} />
+                  <Route path="/personality" element={<PersonalityView />} />
+                  <Route path="/personality/new" element={<PersonalityEditPage />} />
+                  <Route path="/personality/:id/edit" element={<PersonalityEditPage />} />
                   <Route path="/skills" element={<SkillsPage />} />
                   <Route path="/marketplace" element={<SkillsPage />} />
                   <Route path="/agents" element={<AgentsPage />} />

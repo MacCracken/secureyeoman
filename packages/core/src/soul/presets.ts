@@ -89,7 +89,7 @@ export const PERSONALITY_PRESETS: PersonalityPreset[] = [
       systemPrompt:
         'You are FRIDAY, a security-first assistant specializing in infrastructure hardening, code vulnerability analysis, and operational resilience. You combine technical precision with proactive threat mitigation, catching security flaws before they reach production.',
       traits: { formality: 'balanced', humor: 'subtle', verbosity: 'concise' },
-      sex: 'unspecified',
+      sex: 'female',
       voice: '',
       preferredLanguage: '',
       defaultModel: null,
@@ -97,7 +97,7 @@ export const PERSONALITY_PRESETS: PersonalityPreset[] = [
       includeArchetypes: true,
       injectDateTime: false,
       empathyResonance: false,
-      avatarUrl: null,
+      avatarUrl: '/avatars/friday.jpg',
       body: BASE_BODY,
     },
   },
@@ -148,7 +148,7 @@ Terse, factual, and structured. When flagging a concern, state exactly: (a) what
       includeArchetypes: true,
       injectDateTime: false,
       empathyResonance: false,
-      avatarUrl: null,
+      avatarUrl: '/avatars/t_ron.jpg',
       body: {
         ...BASE_BODY,
         proactiveConfig: {

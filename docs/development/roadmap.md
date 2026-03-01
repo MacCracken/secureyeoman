@@ -17,11 +17,14 @@
 - [ ] **Manual test: AgentWorld sub-agents** — Sub-agents display when created, writing, meeting added. Verify delegation cards appear in grid/map/large views, disappear when delegation completes.
 - [ ] **Manual test: Skills** — Continued review of marketplace + community install/uninstall flow, per-personality skill injection, and sub-agent skill inheritance.
 - [ ] **Manual test: Docker MCP Tools** — Enable `MCP_EXPOSE_DOCKER=true` (socket mode). Verify `docker_ps` lists containers, `docker_logs` streams output, `docker_exec` runs commands correctly. Enable DinD mode via `MCP_DOCKER_MODE=dind` + `MCP_DOCKER_HOST` and repeat.
+- [ ] **Manual test: Workflow export/import round-trip** — Export a workflow with required integrations. Import on a fresh instance; verify compatibility warnings surface correctly for missing integrations. Install a community workflow from Marketplace → Workflows tab; verify it appears in workflow definitions.
+- [ ] **Manual test: Canvas Workspace** — Navigate to `/editor/advanced` (or click "Canvas Mode →" in the editor toolbar). Create ≥3 widgets, resize, move, minimize one. Reload page → verify layout is restored from localStorage. Pin a terminal output → frozen-output widget appears adjacent. Worktree selector lists git worktrees.
+- [ ] **Manual test: Unified editor features** — At `/editor` (standard editor): (1) Click Brain icon → toggle memory on; run a terminal command → verify it appears in the personality's memory via `/api/v1/brain/memories`; (2) Click CPU icon → ModelWidget popup shows current model; switch model → toolbar label updates; (3) Click Globe icon → Agent World panel expands below the main row; switch between Grid/Map/Large views; close via × and verify `localStorage('editor:showWorld')` is `'false'`; (4) Open 3 terminal tabs in MultiTerminal → verify each has independent output; (5) Set `allowAdvancedEditor: true` in security policy → `/editor` should redirect to Canvas workspace.
+- [ ] **Manual test: Adaptive Learning Pipeline** — Verify conversation quality scorer runs on schedule (check `training.conversation_quality` table grows). Trigger a distillation job with `priorityMode: 'failure-first'` → confirm lower-scored conversations appear first in the export.
 - [ ] **Base knowledge generic entries per-personality review** — `hierarchy`, `purpose`, and `interaction` are currently seeded globally. These may need per-personality variants. Low urgency.
 - [ ] **Consumer UX: Settings page split** — Extract `<AuditChainTab>`, `<SoulSystemTab>`, `<RateLimitingTab>` from the `SettingsPage.tsx` monolith into dedicated tab components.
 - [ ] **Validate workflow condition strings at save time** — `evaluateCondition()` in `WorkflowEngine` silently returns `false` for malformed JS expressions (e.g. `steps.nonexistent.output`). Move the `new Function(expr)` compile step to `createWorkflow`/`updateWorkflow` validation so operators get an immediate 400 error with the syntax problem, not a silent skip at runtime.
 - [ ] **Injection detection early-exit after first blocking match** — `InputValidator.detectInjection()` loops through all `INJECTION_PATTERNS` even after setting `blocked = true`. Once a pattern with `block: true` is matched, the loop should break; subsequent patterns only accumulate score, wasting CPU. Benchmark shows this matters at 8 KB inputs with multiple attack vectors.
-- [ ] **License-gated feature reveal** — Enterprise features (Adaptive Learning Pipeline, SSO/SAML, Multi-tenancy, CI/CD Integration, Advanced Observability) should be conditionally surfaced in the UI and API based on `LicenseManager.hasFeature()`. Community-tier installs should see these features grayed out with an upgrade prompt rather than hidden entirely, so users understand what is available. Requires: (1) `LicenseManager` singleton accessible in gateway route handlers via `secureyeoman.getLicenseManager()`; (2) a `GET /api/v1/license/status` endpoint returning tier + features + expiry; (3) dashboard reads license status on load and passes it down as context; (4) guarded route handlers return `402 Payment Required` with `{ error: 'enterprise_license_required', feature: '<name>' }` when a community-tier user hits an enterprise endpoint. See ADR 171 and `docs/guides/licensing.md`.
 
 ---
 
@@ -30,127 +33,195 @@
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P1 — ongoing | 🔄 Continuous |
-| 91 | Native Clients (Tauri Desktop + Capacitor Mobile) | P2 — distribution | 🔄 In Progress |
-| 92 | Adaptive Learning Pipeline | P2 — ML quality & training UX | ✅ Complete |
-| 78a | Basic Editor Improvements (Auto-Claude Style) | P2 — power user priority | Planned |
-| 78b | Canvas Workspace — Infinite Desktop | P2 — power user priority | ✅ Complete |
-| 83 | Content Guardrails | P3 — enterprise compliance | Planned |
-| 85 | LLM-as-Judge Evaluation | P3 — ML quality signal | Planned |
-| 86 | Conversation Analytics | P3 — operational insight | Planned |
-| 81 | Conversation Branching & Replay | P3 — developer experience | Planned |
-| 87 | Inline Citations & Grounding | P4 — trust layer | Planned |
-| 88 | LLM Lifecycle Platform — Core | P4 — model ops | Planned |
-| 89 | Marketplace Shareables | P4 — community growth | ✅ Complete |
+| 78b | Canvas Workspace — Infinite Desktop | P2 — power user | ✅ Complete |
+| 83 | Observability & Telemetry + CrewAI Enhancements | P2 — ops + ML | ✅ Complete |
+| 84 | Notebook Mode: Long Context Windowing | P2 — knowledge UX | ✅ Complete |
+| 82 | Knowledge Base & RAG Platform | P2 — knowledge | ✅ Complete |
 | 90 | CI/CD Integration | P2 — developer lifecycle | ✅ Complete |
-| Future | Workflow & Personality Versioning, LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Infrastructure | Future / Demand-Gated | — |
+| 91 | Native Clients Scaffold (Tauri Desktop + Capacitor Mobile) | P2 — distribution | ✅ Complete |
+| 92 | Adaptive Learning Pipeline | P2 — ML quality & training | ✅ Complete |
+| 89 | Marketplace Shareables | P3 — community growth | ✅ Complete |
+| 93 | License-Gated Feature Reveal | P2 — commercial | Planned |
+| 94 | Test Coverage: Path to 88%/77% | P2 — engineering quality | 🔄 In Progress (80.85%/68.76%) |
+| 95 | Content Guardrails | P2 — enterprise compliance | Planned |
+| 96 | Conversation Analytics | P3 — operational intelligence | Planned |
+| 97 | LLM-as-Judge Evaluation | P3 — ML quality signal | Planned |
+| 98 | LLM Lifecycle Platform — Completion | P3 — model ops | Planned |
+| 99 | Conversation Branching & Replay | P3 — developer experience | Planned |
+| 100 | Editor Improvements (Auto-Claude Style) | P3 — power user UX | 🔄 In Progress (unification ✅, IDE features planned) |
+| 101 | Inline Citations & Grounding | P4 — trust layer | Planned |
+| Future | Workflow Versioning, LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Infrastructure | Future / Demand-Gated | — |
 
 ---
 
-## Phase 92: Adaptive Learning Pipeline
+## Phase 93: License-Gated Feature Reveal
 
-**Priority**: P2 — High value for ML operations and training quality.
+**Priority**: P2 — Commercial. Enterprise features are built and instrumented but not yet gated. This phase makes the tier boundary real: community installs see upgrade prompts; enterprise installs unlock the full feature set. Directly tied to revenue (ADR 171).
 
-**Status**: ✅ Complete — 2026-03-01. See CHANGELOG [2026.3.1c] and ADR 170.
+Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi_tenancy`, `cicd_integration`, `advanced_observability`.
 
-Inspired by techniques from reinforcement learning systems (prioritized replay, curriculum learning, distributional evaluation, pre-failure attribution) applied to LLM fine-tuning and distillation. Extends the existing `TrainingTab`, `DistillationManager`, `EvaluationManager`, and `FinetuneManager` with smarter data collection, live observability, and a computer-use learning loop.
-
-**Motivation**: The current training pipeline samples conversations uniformly, evaluates output with character Jaccard similarity, and shows only a progress bar during runs. This phase replaces all three with production-grade equivalents: priority-weighted sampling that learns from failure, factored tool-call evaluation, and a live streaming dashboard showing loss curves, throughput, and reward signals — plus a new computer-use learning loop for the Tauri desktop client.
-
----
-
-### 1. Live Training Dashboard
-
-The `TrainingTab` currently shows job status chips and a static progress bar. This section upgrades it to a real-time observability panel:
-
-- **Loss curve chart** — fine-tuning Docker sidecar already emits log lines with loss values; parse them via SSE and stream into a `recharts` `LineChart` with a rolling 200-step window
-- **Distillation throughput gauge** — samples/minute computed from `samples_generated` deltas; displayed as a live KPI card alongside the existing Conversations/Memories/Knowledge stats
-- **Teacher–student agreement rate** — for each distilled sample, compute character similarity between the teacher response and the existing assistant message in the conversation; track rolling average to surface "how much the student diverges from the teacher" over time
-- **Reward signal panel** — aggregate implicit feedback signals (task success/failure events from `training.pipeline_lineage`, user correction patterns from `chat.messages`, workflow step outcomes) into a rolling reward trend line, mirroring the reward chart in tempest_ai's dashboard
-- **Per-personality training coverage heatmap** — grid showing which personalities have the most/least distillation coverage; helps identify under-represented agents
-
-Backend: `GET /api/v1/training/stream` — SSE endpoint emitting `{ type: 'loss'|'throughput'|'agreement'|'reward', value, ts }` events. Fine-tuning log-tail and distillation progress updates routed through the same stream.
+- [ ] **Gateway route guards** — Add `requiresLicense(feature: EnterpriseFeature)` hook to the routes that serve enterprise functionality (training advanced modes, SAML endpoints, RLS multi-tenant API, CI/CD webhook, alert rules). Returns `402 Payment Required` with `{ error: 'enterprise_license_required', feature: '<name>' }` for community-tier callers. `LicenseManager` singleton accessed via `secureYeoman.getLicenseManager()` inside route plugins.
+- [ ] **License context in dashboard** — On app load, call `GET /api/v1/license/status` and store the result in a top-level React context (`LicenseContext`). All downstream components read from this context — no prop drilling.
+- [ ] **Feature lock UX** — Components for guarded features (Training advanced modes, SSO config, Multi-tenancy settings, CI/CD platforms, Alert Rules) wrap in a `<FeatureLock feature="adaptive_learning">` guard component. Community-tier users see the feature greyed out with a lock icon and an "Upgrade to Enterprise" prompt linking to `docs/guides/licensing.md` rather than a blank 403.
+- [ ] **Settings → License card enhancements** — The existing `LicenseCard` in Settings → General should show: current tier chip, list of available features as green chips and locked features as grey chips, expiry countdown banner if expiring within 30 days.
+- [ ] **CLI guard** — `secureyeoman` CLI commands that wrap enterprise API endpoints (e.g., `secureyeoman training`, `secureyeoman crew`) should surface the `402` error as a human-readable message: *"This command requires an Enterprise license. Run `secureyeoman license status` to check your current tier."*
 
 ---
 
-### 2. Prioritized Distillation Sampling
+## Phase 94: Test Coverage — Path to 88% / 77%
 
-`DistillationManager.runJob()` currently iterates conversations with a flat `LIMIT/OFFSET`. This replaces that with a priority-weighted sampler:
+**Priority**: P2 — Engineering quality. **Current baseline 2026-03-01**: **80.85% stmt · 68.76% branches · 82.62% fn · 81.56% lines** across 409 files / 8,892 core tests (10,400 total across all packages). Growth driven by Phase 89-A/B/C zero-coverage sweeps (+250 tests). Configured thresholds in `vitest.config.ts`: 87% stmt / 75% branch / 87% fn / 87% line (target: ≥ 88% stmt / ≥ 77% branch).
 
-- **Failure signal column** — `training.conversation_quality` table: `conversation_id`, `quality_score REAL` (0–1), `signal_source TEXT` (task_outcome / user_correction / injection_score / manual)
-- **Priority weighting** — distillation job queries conversations ordered by `quality_score ASC` (lowest quality = highest training value); parameterised `priorityMode: 'failure-first' | 'uniform' | 'success-first'` on `DistillationJobConfig`
-- **Pre-failure N-turn boost** — analogous to tempest_ai's 120-frame pre-death priority boost: when a workflow pipeline run ends with `status = 'failed'`, the N turns preceding the failure event in that conversation are tagged with a 2× quality multiplier via `pipeline-lineage.ts`
-- **Auto-scoring** — `ConversationQualityScorer` background job runs on a 5-minute interval; scores new conversations by checking: task outcome in lineage table, presence of user correction phrases ("that's wrong", "try again", "no,"), and injection score on messages
+> Note: `vitest.config.ts` already excludes `src/**/index.ts`, `src/**/types.ts`, `src/secureyeoman.ts`, and `src/cli.ts` from coverage instrumentation. The gap is in logic files only.
 
-Dashboard: `DistillationJobCard` gains a `Priority Mode` selector and a live "high-priority samples in batch" ratio badge.
+### Why Coverage Is Low
 
----
+Most source files already have a companion `*.test.ts`. The gap is depth, not breadth:
+- Route handlers in `gateway/server.ts` (≈ 3,000 lines) are exercised only for happy-path flows; every `4xx`/`5xx` branch represents uncovered lines.
+- Integration adapters (31 platforms) mock external clients; error branches, retry logic, and auth-failure paths are rarely asserted.
+- Platform-specific code (`body/`, `sandbox/`, `security/keyring/`) guards on OS detection; tests running on a single host skip the other branches.
+- AI provider implementations (`ai/providers/`) share base-class paths but each has unique error/retry branches that tests do not exercise.
+- CLI commands (`cli/commands/`) test top-level dispatch but rarely exercise `--json` output mode, interactive prompts, or `--help` edge cases.
 
-### 3. Curriculum Ordering
+### Target Lift per Module
 
-Distillation jobs can optionally sort conversations from simple to complex before sampling:
+| Module | Actual stmt % | Branch % | Goal stmt | Remaining gap |
+|--------|--------------|----------|-----------|---------------|
+| `gateway/server.ts` | **62%** | 52% | 75% | `4xx`/`5xx` route branches, malformed body, DB error stubs (3,000-line file — biggest single lever). |
+| `ai/client.ts` + providers | **80%** | 74% | 88% | Rate-limit 429, malformed response, fallback-chain exhaustion. |
+| `integrations/` adapters × 31 | ~40% | ~35% | 70% | Table-driven per adapter: `send()` error, `validate()` bad config, `connect()`/`disconnect()` lifecycle. |
+| `brain/vector/` stores | **97%** | 78% | 97% ✅ | Near-target; FAISS/Qdrant/Chroma already well-covered. |
+| `sandbox/` (linux/darwin) | **77%** | 72% | 85% | Landlock unavailable fallback, seccomp profile load failure, resource-limit apply error. |
+| `body/` desktop control | **76–96%** | 58–96% | 85% | Actuator error paths (clipboard deny, camera permission-denied). |
+| `security/keyring/` providers | ~55% | ~40% | 70% | Mock `libsecret`/`security` CLI; service unavailable fallback. |
+| `cli/commands/` | **65%** | 55% | 80% | `--json` mode, `--help`, non-zero exit on bad args. |
+| `workflow/` | **87%** | 68% | 90% | Branch hot-spots: `triggerMode: 'any'` all-deps-fail, `outputSchemaMode: 'strict'` rejection, human-approval timeout. |
+| `training/` pipeline | **82%** | 67% | 85% | Distillation `status: 'failed'` retry, LoRA sidecar timeout, evaluation threshold-miss. |
+| `federation/` | **78%** | 52% | 80% | Branch coverage on peer-sync conflict, CRUD edge cases already tested (Phase 89-A). |
+| `soul/manager.ts` | ~78% | ~67% | 85% | Prompt composition branches (all platform flags off, SAML role injection, per-personality hours). |
 
-- **Complexity heuristics**: message count, total token estimate, number of tool calls, presence of multi-step workflow context
-- **Curriculum stages**: Stage 1 = short single-turn exchanges (≤ 4 messages, 0 tool calls); Stage 2 = multi-turn without tools; Stage 3 = tool-using conversations; Stage 4 = failed-and-recovered or multi-agent delegations
-- **`curriculumMode: boolean`** on `DistillationJobConfig`; when enabled, the sampler processes Stage 1 first, advances to next stage once `stageQuota` samples collected
-- **Expert decay analogy** — teacher LLM call weight decays across stages: Stage 1 calls the teacher for every sample; Stage 4 calls the teacher only for samples where the existing assistant response scored below `0.4` similarity threshold (saves cost, focuses teacher on genuinely hard cases)
+### Branch-Coverage Hot Spots (68.76% → 77%)
 
----
+Branch coverage is the hardest gap. Key ternaries / conditionals to reach:
 
-### 4. Factored Tool-Call Evaluation
+- **`ai/client.ts`** — fallback-chain index incrementing, local-first guard, provider-specific error `instanceof` checks.
+- **`gateway/auth-middleware.ts`** — every `if (!token)`, `if (role < required)`, API-key vs JWT path, tenant header validation.
+- **`integrations/manager.ts`** — `switch (platform)` has 31 arms; most untested in CI.
+- **`security/rate-limiter.ts`** — Redis unavailable fallback to in-memory, sliding-window reset, per-IP vs per-user precedence.
+- **`workflow/workflow-engine.ts`** — `triggerMode: 'any'` with all-deps-fail, `outputSchemaMode: 'strict'` rejection path, human-approval timeout.
+- **`brain/chunker.ts`** — overlapping-window edge cases when chunk size > content length.
+- **`soul/skill-executor.ts`** — trust-tier enforcement (`blocked`, `sandboxed`, `trusted`), `doNotUseWhen` predicate evaluation.
+- **`sandbox/linux-sandbox.ts`** — Landlock unavailable fallback, seccomp profile load failure, resource limit apply error.
 
-`EvaluationManager` currently uses `exact_match` and `char_similarity` (character Jaccard). These are blind to the structure of tool calls. This replaces them with factored metrics:
+### Non-Code Levers (config / infrastructure wins)
 
-- **`tool_name_accuracy`** — fraction of responses where the correct MCP tool was selected (parsed from JSON response)
-- **`tool_arg_match`** — per-argument precision: how many required arguments were present with correct values vs. hallucinated or missing
-- **`outcome_correctness`** — downstream effect: did the tool call produce the expected result when replayed against a sandbox? (opt-in, requires `sandboxFn` in `EvalConfig`)
-- **`semantic_similarity`** — optional: embed both response and gold with the configured Ollama embedding model, compute cosine similarity; more meaningful than char Jaccard for natural language answers
-- `EvalResult.metrics` extended with all four new keys; existing `exact_match` and `char_similarity` retained for backward compatibility
+- **Raise vitest thresholds** — bump `vitest.config.ts` thresholds from `{ stmt: 87, branch: 75 }` to `{ stmt: 88, branch: 77 }` to match the target.
+- **Shared test helpers** — extract repeated `mockPool()` / `mockQuery()` boilerplate into `src/test-utils.ts` so branches are reachable inside existing per-file test files without duplication.
+- **`vi.stubEnv` patterns** — several platform guards (`process.platform`, `process.env.CI`) branch on environment values that can be overridden with `vi.stubEnv()` inside existing tests to cover the else-branch.
 
-Dashboard: `EvalResultCard` (new component in `TrainingTab`) shows a radar chart of the four dimensions per eval run.
+### Acceptance Criteria
 
----
-
-### 5. Counterfactual Synthetic Data Generation
-
-When a conversation ends in failure, the teacher LLM can synthesise an ideal completion for the final N turns — generating high-value training data from every failure rather than discarding it:
-
-- **`counterfactualMode: boolean`** on `DistillationJobConfig`; when enabled, failed-conversation turns are re-submitted to the teacher with a system prompt asking for the ideal corrected response
-- **Failure detection**: turn is flagged as a counterfactual candidate when (a) it immediately precedes a task failure event in `pipeline_lineage`, or (b) the next user message matches a correction pattern
-- **Output tagging**: counterfactual samples written to JSONL with `"synthetic": true` metadata field; downstream fine-tuning frameworks (Unsloth, LLaMA Factory) can weight these separately
-- **Cost cap**: `maxCounterfactualSamples` on the job config; counterfactual generation only runs after the normal quota is exhausted
-
----
-
-### 6. Computer-Use Learning Loop (Desktop / Remote Control)
-
-Extends the Tauri desktop client (Phase 91) with a state→action→reward loop for learning skills in new desktop environments:
-
-- **UI state extraction** — Tauri plugin reads the accessibility tree of the active window (AT-SPI on Linux, UIA on Windows, AXUIElement on macOS); encodes as a fixed-size feature vector: element type, label, position, focus state, role — mirroring tempest_ai's 195-float state encoding from memory addresses
-- **Action space** — factored, analogous to tempest_ai's (fire/zap × spinner): `(action_type: click|type|scroll|hotkey) × (target: element_id|coordinate) × (value: string|null)` — 3 independent dimensions rather than a flat enumeration
-- **Reward signal** — outcome-based: task marked complete = +1, user corrects or undoes = −0.5, user rage-clicks / retries = −1; stored in `training.computer_use_episodes` table with full state/action/reward/done tuples
-- **Episode replay buffer** — `ComputerUseReplayBuffer`: circular buffer of N episodes; pre-failure boost applies the same 2× priority multiplier to the 5 actions preceding each user correction
-- **Cross-environment skill transfer** — structural encoding (element role + label tokens, not pixel coordinates) means skills generalise across app themes and layouts; an "OK button click" learned in one dialog transfers to structurally similar dialogs in other applications
-- **Data pipeline** — completed episodes exported via the existing `POST /api/v1/training/export` endpoint with `format: 'computer_use'` (new format type); produces sequences of `(state_vector, action, reward)` tuples for offline RL or behavioural cloning
-
-Dashboard: new **Computer Use** sub-tab in `TrainingTab`; shows episode count, average task success rate, per-skill performance breakdown, and a replay viewer that renders the action sequence for any recorded episode.
+- [ ] `vitest run --coverage` reports ≥ 88% statements across core package.
+- [ ] `vitest run --coverage` reports ≥ 77% branches across core package.
+- [ ] No existing test degraded (test count stable or growing).
+- [ ] `vitest.config.ts` thresholds bumped to `{ stmt: 88, branch: 77, fn: 88, lines: 88 }` and enforced in CI.
+- [ ] `docs/development/coverage-plan.md` created with per-file before/after table when work begins.
 
 ---
 
-### Implementation Notes
+## Phase 95: Content Guardrails
 
-- `training.conversation_quality` migration: `070_conversation_quality.sql`
-- `training.computer_use_episodes` migration: `071_computer_use_episodes.sql`
-- SSE training stream: reuses the alert broadcast pattern from Phase 83 (`AlertManager`)
-- Recharts already in the vendor chunk from Phase 83 observability dashboard — no new dependency
-- Computer-use state extraction behind `SECUREYEOMAN_COMPUTER_USE=true` env flag; off by default until Phase 91 Tauri integration is stable
+**Priority**: P2 — Enterprise compliance. Required for regulated industries (healthcare, finance, legal) and a key differentiator in enterprise sales. PII redaction and topic restrictions are the must-have items; toxicity and grounding checks are the depth tier.
+
+Complements Phase 77 (Prompt Security) which guards the input side. This phase operates on AI outputs before they reach the user.
+
+- [ ] **PII detection & redaction** — Detect and optionally redact personally identifiable information in AI outputs before they reach the user: names, email addresses, phone numbers, SSNs, credit card numbers, IP addresses. Configurable per personality: `detect_only` (flag + audit) or `redact` (replace with `[REDACTED]`). Uses NER model (spaCy or Comprehend-compatible) or regex patterns for low-latency enforcement.
+- [ ] **Topic restrictions** — Block AI from discussing configurable topic categories, regardless of system prompt. Example: `blocked_topics: ['competitor products', 'legal advice', 'medical diagnosis']`. Implemented as an embedding-based classifier: compare the input/output embedding against a set of seed topic embeddings; block if similarity exceeds threshold. Configurable per personality in the security settings.
+- [ ] **Toxicity filter** — Block or warn on outputs containing hate speech, harassment, or explicit content. Uses an external classifier endpoint (configurable: local Ollama model, OpenAI Moderation API, or custom). Modes: `block` (refuses to send output), `warn_user`, `audit_only`.
+- [ ] **Custom block lists** — Per-personality keyword/phrase deny lists with regex support. Applied as a fast pre-filter before the semantic checks. Useful for brand protection, legal compliance, or content policy enforcement.
+- [ ] **Guardrail audit trail** — Every guardrail trigger (PII redaction, topic block, toxicity flag) logged to the audit chain with: rule that fired, original content hash (not plaintext), action taken, and conversation ID. Queryable in the Audit Log tab with a "Guardrail Events" filter.
+- [ ] **Grounding check** — Detect hallucinated citations or factual claims that contradict the personality's knowledge base. If the AI asserts a fact with a citation, verify the citation exists in the knowledge base. Flag unverifiable claims with a `[unverified]` annotation in the response. Optional mode: block responses with unverifiable claims outright.
 
 ---
 
-## Phase 78a: Basic Editor Improvements (Auto-Claude Style)
+## Phase 96: Conversation Analytics
 
-**Priority**: P2 — High value for power users.
+**Priority**: P3 — Operational intelligence. Surfaces the hidden signal in the conversation store. Sentiment and engagement metrics are fast wins that feed directly into the training curation pipeline. Entity extraction and anomaly detection are deeper investments.
 
-**Status**: Planned. Phase 78b (Canvas Workspace) is complete — 2026-03-01. This sub-phase targets quality-of-life improvements to the basic `/editor` page (Monaco + terminal + sessions) inspired by Auto-Claude patterns: keeping the human in the loop with confirmations, surfacing AI-generated context inline, and making each edit session faster via smart defaults.
+Inspired by Amazon Comprehend.
+
+- [ ] **Sentiment tracking** — Per-turn sentiment score (positive / neutral / negative) computed asynchronously after each AI response. Stored in `conversations.turn_sentiments`. Dashboard: sentiment trend chart per personality over time; alert when rolling average drops below threshold. Feeds directly into the quality scorer for training data curation.
+- [ ] **Engagement metrics** — Per-personality metrics: average conversation length, follow-up question rate (proxy for clarity), conversation abandonment rate, and tool-call success rate. Surfaced in a new Analytics tab in the dashboard alongside the existing cost metrics.
+- [ ] **Conversation summarisation pipeline** — Batch job that computes a 2–3 sentence summary for each conversation above a configurable length. Summaries stored on the conversation record and surfaced in the conversation list (replacing the current raw first-turn preview). Also feeds the knowledge base: long conversations can be summarised and added as documents automatically.
+- [ ] **Key phrase extraction** — Surface the most frequent topics discussed per personality over a rolling window. Dashboard: "Topic Cloud" widget in the Analytics tab. Useful for identifying gaps between what users ask about vs. what the personality's knowledge base covers.
+- [ ] **Entity extraction** — Extract named entities (people, organisations, locations, products, dates) from conversation history using an NER model. Stored as tags on conversations. Enables searching conversations by entity (`GET /api/v1/conversations?entity=AcmeCorp`) and building a graph of frequently discussed topics per personality.
+- [ ] **Anomaly detection on usage patterns** — Flag unusual usage spikes (10× normal message rate), off-hours activity from known users, or patterns consistent with credential stuffing. Generates audit events and optionally triggers notifications via the existing NotificationManager.
+
+---
+
+## Phase 97: LLM-as-Judge Evaluation
+
+**Priority**: P3 — Closes the ML quality loop. Phase 73 delivered the pipeline mechanics (data_curation → training_job → evaluation → conditional_deploy → human_approval). Phase 92 added factored tool-call metrics and conversation quality scoring. This phase adds the qualitative signal layer that makes evaluation trustworthy beyond loss metrics.
+
+Inspired by Google Cloud Vertex AI Evaluation Service and Azure AI Evaluation SDK.
+
+- [ ] **Pointwise LLM scoring** — For each response in an evaluation set, prompt the judge model to rate it on: **groundedness**, **coherence**, **relevance**, **fluency**, **harmlessness**. Each dimension scored 1–5 with a brief rationale. Scores stored per experiment in `training.eval_scores`. Dashboard: radar chart per dimension for each experiment.
+- [ ] **Pairwise comparison** — Given two model versions (e.g., base vs. DPO-tuned), prompt the judge to select the better response for each test prompt. Win rate computed across the full eval set. Pairwise results visible in the A/B testing view alongside the production shadow-routing data.
+- [ ] **Auto-eval on finetune completion** — Configurable: when a finetune job completes, automatically run LLM-as-Judge pointwise eval on the held-out set and attach scores to the experiment record. If mean groundedness or coherence drops below threshold, pipeline blocks the deployment step and sends a notification. Zero-touch quality gate.
+- [ ] **Evaluation dataset versioning** — Pin the held-out evaluation set at job creation time (snapshot of prompt/expected-response pairs). Eval scores are always against the same snapshot, so experiments are directly comparable even as the training corpus grows. Stored in `training.eval_datasets` with a content hash.
+- [ ] **Custom judge prompts** — Per-personality judge prompt templates: define what "good" means for a specific personality. Judge model and judge prompt configurable independently of the personality's inference model.
+
+---
+
+## Phase 98: LLM Lifecycle Platform — Completion
+
+**Priority**: P3 — Model operations. Phase 64 + 73 built the pipeline mechanics (distillation, fine-tuning, Ollama lifecycle, curation, evaluation, deploy). Phase 92 added conversation quality scoring, loss curve streaming, and counterfactual synthetic data. This phase completes the remaining operational gaps: preference annotation, experiment tracking, and the deployment story.
+
+Advanced items (DPO, RLHF, continual learning, multi-GPU) are demand-gated in the Future Features section.
+
+### Data Collection & Curation
+
+- [ ] **Preference annotation UI** — In-chat thumbs-up / thumbs-down on individual AI turns. Multi-turn annotation: mark a full conversation as a positive or negative example. Annotations stored in `training.preference_pairs` for DPO.
+- [ ] **Data curation pipeline** — Filter, deduplicate, and shard conversation exports before training. Configurable rules: min/max token length, quality score threshold, dedup by semantic similarity (embedding cosine > 0.95), exclude conversations with tool errors. Preview filtered dataset size before committing to a job.
+
+### Experiment Tracking & Evaluation
+
+- [ ] **Experiment registry** — Every training run logged as an experiment with: dataset snapshot hash, hyperparameters, environment, training loss curve, eval metrics. Stored in `training.experiments`. Dashboard: Experiments sub-tab in TrainingTab with filter/sort and diff view between any two runs.
+- [ ] **Side-by-side model comparison** — Given two model checkpoints, run the same prompt set through both and display responses side-by-side in the dashboard. Human rater can pick the better response; ratings feed back into the preference dataset.
+
+### Deployment Pipeline
+
+- [ ] **One-click deploy to personality** — "Deploy to Personality" button on a completed finetune job. Calls `ollama cp` to register the GGUF under a versioned name (`personality-friday-v3`), then updates the personality's `defaultModel` field. Rollback: previous model name preserved.
+- [ ] **Model version registry** — `training.model_versions` table: `(personality_id, model_name, experiment_id, deployed_at, is_active)`. Dashboard: Deployed Models tab with version history, deploy/rollback actions, and diff link to source experiment.
+- [ ] **A/B testing (model shadow routing)** — Route X% of conversations to model version A and Y% to model version B. Aggregate quality comparison across both variants via the existing `ConversationQualityScorer`; promote winner automatically or manually.
+
+---
+
+## Phase 99: Conversation Branching & Replay
+
+**Priority**: P3 — Developer experience. Git-like branching of conversations enables prompt engineering workflows, model comparison, and debugging without losing conversation history.
+
+- [ ] **Branch from message** — Right-click any message in a conversation → "Branch from here". Creates a new conversation forked at that point. Fork relationship stored in `conversations.parent_conversation_id` + `conversations.fork_message_index`. Dashboard: branch indicator icon in the conversation list.
+- [ ] **Replay with different model** — From a completed conversation, select "Replay" → choose a different model or personality configuration. The replay re-runs all user turns through the new config. Side-by-side diff view comparing original vs. replay responses.
+- [ ] **Branch tree view** — Visualise the tree of conversation forks for a root conversation. Nodes show fork point, model config, and outcome (user rating or quality score). Useful for systematic prompt engineering iterations.
+- [ ] **Replay batch** — Select a set of conversations and replay them all with a new model config. Results aggregated as a quality comparison report. Essentially a manual A/B test on historical traffic.
+
+---
+
+## Phase 100: Editor Improvements (Auto-Claude Style)
+
+**Priority**: P3 — High value for power users.
+
+Phase 78b (Canvas Workspace) is complete — 2026-03-01. The Canvas route moved from `/editor/canvas` to `/editor/advanced` and the `allowAdvancedEditor` security policy now gates access to it (ADR 173 — 2026-03-01).
+
+**Completed in ADR 173 (2026-03-01):**
+
+- ✅ **`MultiTerminal`** — tabbed terminal panel (up to 4 tabs) now in the standard `/editor` page
+- ✅ **Memory toggle** — Brain icon in editor toolbar; auto-saves completed commands to episodic memory
+- ✅ **Model selector** — CPU icon in editor toolbar; `ModelWidget` popup; auto-switches on personality change
+- ✅ **Agent World panel** — Globe icon; collapsible panel below editor/chat row; grid/map/large views
+
+**Remaining open items** target Auto-Claude–style patterns: keeping the human in the loop with confirmations, surfacing AI-generated context inline, and making each edit session faster via smart defaults.
 
 ---
 
@@ -215,15 +286,15 @@ A dedicated **Source Control** sidebar panel:
 
 ### Problems & Output Panels
 
-A bottom panel with tabbed views replacing the current single `MultiTerminal`:
+A bottom panel with tabbed views extending the existing multi-tab terminal:
 
-| Tab | Contents |
-|---|---|
-| **Terminal** | Multiple named terminal tabs; resize via drag handle |
-| **Problems** | Linter / TypeScript errors and warnings; click to jump to source location |
-| **Output** | Stdout/stderr from background tasks and workflow runs |
-| **Test Results** | Pass/fail tree from the last test run; re-run button; click to navigate to failing test |
-| **Task Log** | Real-time streaming log from the selected active task |
+| Tab | Contents | Status |
+|---|---|---|
+| **Terminal** | Multiple named terminal tabs; up to 4 tabs with independent history | ✅ Done (ADR 173) |
+| **Problems** | Linter / TypeScript errors and warnings; click to jump to source location | Planned |
+| **Output** | Stdout/stderr from background tasks and workflow runs | Planned |
+| **Test Results** | Pass/fail tree from the last test run; re-run button; click to navigate to failing test | Planned |
+| **Task Log** | Real-time streaming log from the selected active task | Planned |
 
 ---
 
@@ -315,18 +386,7 @@ Per-workspace state survives page refresh:
 
 ---
 
-## Phase 81: Conversation Branching & Replay
-
-**Priority**: P3 — Developer experience. Git-like branching of conversations enables prompt engineering workflows, model comparison, and debugging without losing conversation history.
-
-- [ ] **Branch from message** — Right-click any message in a conversation → "Branch from here". Creates a new conversation forked at that point. Fork relationship stored in `conversations.parent_conversation_id` + `conversations.fork_message_index`. Dashboard: branch indicator icon in the conversation list.
-- [ ] **Replay with different model** — From a completed conversation, select "Replay" → choose a different model or personality configuration. The replay re-runs all user turns through the new config. Side-by-side diff view comparing original vs. replay responses.
-- [ ] **Branch tree view** — Visualise the tree of conversation forks for a root conversation. Nodes show fork point, model config, and outcome (user rating or quality score). Useful for systematic prompt engineering iterations.
-- [ ] **Replay batch** — Select a set of conversations and replay them all with a new model config. Results aggregated as a quality comparison report. Essentially a manual A/B test on historical traffic.
-
----
-
-## Phase 87: Inline Citations & Grounding
+## Phase 101: Inline Citations & Grounding
 
 **Priority**: P4 — Trust layer. Groundedness enforcement is the anchor item; web grounding is a stretch goal. Requires the Phase 82 knowledge base retrieval layer (complete — see [knowledge-base.md](../guides/knowledge-base.md)).
 
@@ -340,159 +400,13 @@ Inspired by Google Cloud Vertex AI Grounding and Azure Groundedness Detection.
 
 ---
 
-## Phase 83: Content Guardrails
-
-**Priority**: P3 — Enterprise compliance. Required for regulated industries (healthcare, finance, legal). PII redaction and topic restrictions are the must-have items; toxicity and grounding checks are the depth tier.
-
-Complements Phase 77 (Prompt Security) which guards the input side. This phase operates on AI outputs before they reach the user.
-
-- [ ] **PII detection & redaction** — Detect and optionally redact personally identifiable information in AI outputs before they reach the user: names, email addresses, phone numbers, SSNs, credit card numbers, IP addresses. Configurable per personality: `detect_only` (flag + audit) or `redact` (replace with `[REDACTED]`). Uses NER model (spaCy or Comprehend-compatible) or regex patterns for low-latency enforcement.
-- [ ] **Topic restrictions** — Block AI from discussing configurable topic categories, regardless of system prompt. Example: `blocked_topics: ['competitor products', 'legal advice', 'medical diagnosis']`. Implemented as an embedding-based classifier: compare the input/output embedding against a set of seed topic embeddings; block if similarity exceeds threshold. Configurable per personality in the security settings.
-- [ ] **Toxicity filter** — Block or warn on outputs containing hate speech, harassment, or explicit content. Uses an external classifier endpoint (configurable: local Ollama model, OpenAI Moderation API, or custom). Modes: `block` (refuses to send output), `warn_user`, `audit_only`.
-- [ ] **Custom block lists** — Per-personality keyword/phrase deny lists with regex support. Applied as a fast pre-filter before the semantic checks. Useful for brand protection, legal compliance, or content policy enforcement.
-- [ ] **Guardrail audit trail** — Every guardrail trigger (PII redaction, topic block, toxicity flag) logged to the audit chain with: rule that fired, original content hash (not plaintext), action taken, and conversation ID. Queryable in the Audit Log tab with a "Guardrail Events" filter.
-- [ ] **Grounding check** — Detect hallucinated citations or factual claims that contradict the personality's knowledge base. If the AI asserts a fact with a citation, verify the citation exists in the knowledge base. Flag unverifiable claims with a `[unverified]` annotation in the response. Optional mode: block responses with unverifiable claims outright.
-
----
-
-## Phase 85: LLM-as-Judge Evaluation
-
-**Priority**: P3 — Closes the ML quality loop. Phase 73 delivered the pipeline mechanics (data_curation → training_job → evaluation → conditional_deploy → human_approval). This phase adds the qualitative signal layer that makes evaluation trustworthy beyond loss metrics.
-
-Inspired by Google Cloud Vertex AI Evaluation Service and Azure AI Evaluation SDK.
-
-- [ ] **Pointwise LLM scoring** — For each response in an evaluation set, prompt the judge model to rate it on: **groundedness**, **coherence**, **relevance**, **fluency**, **harmlessness**. Each dimension scored 1–5 with a brief rationale. Scores stored per experiment in `training.eval_scores`. Dashboard: radar chart per dimension for each experiment.
-- [ ] **Pairwise comparison** — Given two model versions (e.g., base vs. DPO-tuned), prompt the judge to select the better response for each test prompt. Win rate computed across the full eval set. Pairwise results visible in the A/B testing view alongside the production shadow-routing data.
-- [ ] **Auto-eval on finetune completion** — Configurable: when a finetune job completes, automatically run LLM-as-Judge pointwise eval on the held-out set and attach scores to the experiment record. If mean groundedness or coherence drops below threshold, pipeline blocks the deployment step and sends a notification. Zero-touch quality gate.
-- [ ] **Evaluation dataset versioning** — Pin the held-out evaluation set at job creation time (snapshot of prompt/expected-response pairs). Eval scores are always against the same snapshot, so experiments are directly comparable even as the training corpus grows. Stored in `training.eval_datasets` with a content hash.
-- [ ] **Custom judge prompts** — Per-personality judge prompt templates: define what "good" means for a specific personality. Judge model and judge prompt configurable independently of the personality's inference model.
-
----
-
-## Phase 86: Conversation Analytics
-
-**Priority**: P3 — Operational intelligence. Surfaces the hidden signal in the conversation store. Sentiment and engagement metrics are fast wins that feed directly into the training curation pipeline. Entity extraction and anomaly detection are deeper investments.
-
-Inspired by Amazon Comprehend.
-
-- [ ] **Sentiment tracking** — Per-turn sentiment score (positive / neutral / negative) computed asynchronously after each AI response. Stored in `conversations.turn_sentiments`. Dashboard: sentiment trend chart per personality over time; alert when rolling average drops below threshold. Feeds directly into the quality scorer for training data curation.
-- [ ] **Engagement metrics** — Per-personality metrics: average conversation length, follow-up question rate (proxy for clarity), conversation abandonment rate, and tool-call success rate. Surfaced in a new Analytics tab in the dashboard alongside the existing cost metrics.
-- [ ] **Conversation summarisation pipeline** — Batch job that computes a 2–3 sentence summary for each conversation above a configurable length. Summaries stored on the conversation record and surfaced in the conversation list (replacing the current raw first-turn preview). Also feeds the knowledge base: long conversations can be summarised and added as documents automatically.
-- [ ] **Key phrase extraction** — Surface the most frequent topics discussed per personality over a rolling window. Dashboard: "Topic Cloud" widget in the Analytics tab. Useful for identifying gaps between what users ask about vs. what the personality's knowledge base covers.
-- [ ] **Entity extraction** — Extract named entities (people, organisations, locations, products, dates) from conversation history using an NER model. Stored as tags on conversations. Enables searching conversations by entity (`GET /api/v1/conversations?entity=AcmeCorp`) and building a graph of frequently discussed topics per personality.
-- [ ] **Anomaly detection on usage patterns** — Flag unusual usage spikes (10× normal message rate), off-hours activity from known users, or patterns consistent with credential stuffing. Generates audit events and optionally triggers notifications via the existing NotificationManager.
-
----
-
-## Phase 88: LLM Lifecycle Platform — Core
-
-**Priority**: P4 — Model operations. Phase 64 + 73 built the pipeline mechanics (distillation, fine-tuning, Ollama lifecycle, curation, evaluation, deploy). This phase adds the operational layer that makes model development reproducible and the deployment story complete.
-
-Advanced items (DPO, RLHF, continual learning, multi-GPU) are demand-gated in the Future Features section.
-
-### Data Collection & Curation
-
-- [ ] **Conversation quality scorer** — Automatic quality signal on completed conversations: response length distribution, tool-call success rate, user re-prompt rate (proxy for dissatisfaction). Score stored per conversation; surfaced in the Training tab as a sortable column.
-- [ ] **Preference annotation UI** — In-chat thumbs-up / thumbs-down on individual AI turns. Multi-turn annotation: mark a full conversation as a positive or negative example. Annotations stored in `training.preference_pairs` for DPO.
-- [ ] **Data curation pipeline** — Filter, deduplicate, and shard conversation exports before training. Configurable rules: min/max token length, quality score threshold, dedup by semantic similarity (embedding cosine > 0.95), exclude conversations with tool errors. Preview filtered dataset size before committing to a job.
-- [ ] **Synthetic data generation** — Use the teacher model to generate diverse training scenarios from a seed prompt or skill description. Configurable temperature sweep for variety, auto-labeled by teacher confidence.
-
-### Experiment Tracking & Evaluation
-
-- [ ] **Experiment registry** — Every training run logged as an experiment with: dataset snapshot hash, hyperparameters, environment, training loss curve, eval metrics. Stored in `training.experiments`. Dashboard: Experiments sub-tab in TrainingTab with filter/sort and diff view between any two runs.
-- [ ] **Loss curve visualisation** — Real-time training/eval loss chart (recharts line graph) streaming from the Unsloth trainer via SSE. Visible in the finetune job detail panel while the job is running.
-- [ ] **Side-by-side model comparison** — Given two model checkpoints, run the same prompt set through both and display responses side-by-side in the dashboard. Human rater can pick the better response; ratings feed back into the preference dataset.
-
-### Deployment Pipeline
-
-- [ ] **One-click deploy to personality** — "Deploy to Personality" button on a completed finetune job. Calls `ollama cp` to register the GGUF under a versioned name (`personality-friday-v3`), then updates the personality's `defaultModel` field. Rollback: previous model name preserved.
-- [ ] **Model version registry** — `training.model_versions` table: `(personality_id, model_name, experiment_id, deployed_at, is_active)`. Dashboard: Deployed Models tab with version history, deploy/rollback actions, and diff link to source experiment.
-- [ ] **A/B testing (model shadow routing)** — Route X% of conversations to model version A and Y% to model version B. Aggregate quality scores, response times, and user preference signals per variant. Dashboard shows statistical significance and recommends promoting the winner.
-- [ ] **Inference profile** — Per-personality inference settings: context window size, generation temperature, top-p, repetition penalty, system prompt injection. Stored alongside the model version.
-- [ ] **Model import from HuggingFace Hub** — Pull any public GGUF from HuggingFace Hub directly via the dashboard. `POST /api/v1/model/hub/pull` streams progress SSE.
-- [ ] **Quantization advisor** — Given a model name and available VRAM, recommend the best quantization level (Q4_K_M, Q5_K_M, Q8_0, F16). Shows estimated VRAM, inference speed, and quality degradation relative to F16.
-
----
-
-## Phase 89: Marketplace Shareables
-
-**Priority**: P4 — Community growth.
-
-**Status**: ✅ Complete — 2026-03-01. See CHANGELOG [2026.3.1e] and ADR 172.
-
----
-
-## Phase 90: Test Coverage — Path to 88 % / 77 %
-
-**Priority**: P2 — Engineering quality. Original baseline 2026-02-28: 49.3 % stmt · 37.7 % branches · 47.5 % fn · 50.9 % lines across 396 files / 8,611 core tests. **Updated baseline 2026-03-01**: **80.85 % stmt · 68.76 % branches · 82.62 % fn · 81.56 % lines** across 409 files / 8,892 core tests (10,400 total across all packages). Growth driven by Phase 89-A/B/C zero-coverage sweeps (+250 tests). Configured thresholds in `vitest.config.ts`: 87 % stmt / 75 % branch / 87 % fn / 87 % line (target: ≥ 88 % stmt / ≥ 77 % branch).
-
-> Note: `vitest.config.ts` already excludes `src/**/index.ts`, `src/**/types.ts`, `src/secureyeoman.ts`, and `src/cli.ts` from coverage instrumentation. The gap is in logic files only.
-
-### Why Coverage Is Low
-
-Most source files already have a companion `*.test.ts`. The gap is depth, not breadth:
-- Route handlers in `gateway/server.ts` (≈ 3,000 lines) are exercised only for happy-path happy flows; every `4xx`/`5xx` branch represents uncovered lines.
-- Integration adapters (31 platforms) mock external clients; error branches, retry logic, and auth-failure paths are rarely asserted.
-- Platform-specific code (`body/`, `sandbox/`, `security/keyring/`) guards on OS detection; tests running on a single host skip the other branches.
-- AI provider implementations (`ai/providers/`) share base-class paths but each has unique error/retry branches that tests do not exercise.
-- CLI commands (`cli/commands/`) test top-level dispatch but rarely exercise `--json` output mode, interactive prompts, or `--help` edge cases.
-
-### Target Lift per Module
-
-> *Numbers updated 2026-03-01 after Phase 89-A/B/C test additions. Measured via `vitest run --config vitest.unit.config.ts --coverage` (unit tests, no DB). Overall unit coverage: **80.85 % stmt · 68.76 % branch · 82.62 % fn · 81.56 % lines**.*
-
-| Module | Actual stmt % | Branch % | Goal stmt | Remaining gap |
-|--------|--------------|----------|-----------|---------------|
-| `gateway/server.ts` | **62 %** | 52 % | 75 % | `4xx`/`5xx` route branches, malformed body, DB error stubs (3,000-line file — biggest single lever). |
-| `ai/client.ts` + providers | **80 %** | 74 % | 88 % | Rate-limit 429, malformed response, fallback-chain exhaustion. |
-| `integrations/` adapters × 31 | ~40 % | ~35 % | 70 % | Table-driven per adapter: `send()` error, `validate()` bad config, `connect()`/`disconnect()` lifecycle. |
-| `brain/vector/` stores | **97 %** | 78 % | 97 % ✅ | Near-target; FAISS/Qdrant/Chroma already well-covered. |
-| `sandbox/` (linux/darwin) | **77 %** | 72 % | 85 % | Landlock unavailable fallback, seccomp profile load failure, resource-limit apply error. |
-| `body/` desktop control | **76–96 %** | 58–96 % | 85 % | Actuator error paths (clipboard deny, camera permission-denied). |
-| `security/keyring/` providers | ~55 % | ~40 % | 70 % | Mock `libsecret`/`security` CLI; service unavailable fallback. |
-| `cli/commands/` | **65 %** | 55 % | 80 % | `--json` mode, `--help`, non-zero exit on bad args. |
-| `workflow/` | **87 %** | 68 % | 90 % | Branch hot-spots: `triggerMode: 'any'` all-deps-fail, `outputSchemaMode: 'strict'` rejection, human-approval timeout. |
-| `training/` pipeline | **82 %** | 67 % | 85 % | Distillation `status: 'failed'` retry, LoRA sidecar timeout, evaluation threshold-miss. |
-| `federation/` | **78 %** | 52 % | 80 % | Branch coverage on peer-sync conflict, CRUD edge cases already tested (Phase 89-A). |
-| `soul/manager.ts` | ~78 % | ~67 % | 85 % | Prompt composition branches (all platform flags off, SAML role injection, per-personality hours). |
-
-### Branch-Coverage Hot Spots (68.76 % → 77 %)
-
-Branch coverage is the hardest gap. Key ternaries / conditionals to reach:
-
-- **`ai/client.ts`** — fallback-chain index incrementing, local-first guard, provider-specific error `instanceof` checks.
-- **`gateway/auth-middleware.ts`** — every `if (!token)`, `if (role < required)`, API-key vs JWT path, tenant header validation.
-- **`integrations/manager.ts`** — `switch (platform)` has 31 arms; most untested in CI.
-- **`security/rate-limiter.ts`** — Redis unavailable fallback to in-memory, sliding-window reset, per-IP vs per-user precedence.
-- **`workflow/workflow-engine.ts`** — `triggerMode: 'any'` with all-deps-fail, `outputSchemaMode: 'strict'` rejection path, human-approval timeout.
-- **`brain/chunker.ts`** — overlapping-window edge cases when chunk size > content length.
-- **`soul/skill-executor.ts`** — trust-tier enforcement (`blocked`, `sandboxed`, `trusted`), `doNotUseWhen` predicate evaluation.
-- **`sandbox/linux-sandbox.ts`** — Landlock unavailable fallback, seccomp profile load failure, resource limit apply error.
-
-### Non-Code Levers (config / infrastructure wins)
-
-- **Raise vitest thresholds** — bump `vitest.config.ts` thresholds from `{ stmt: 87, branch: 75 }` to `{ stmt: 88, branch: 77 }` to match the target.
-- ~~**`fileParallelism`**~~ ✅ **DONE** — `vitest.unit.config.ts` (343 files, `fileParallelism: true`) + `vitest.db.config.ts` (66 files, `singleFork: true`). Root workspace runs all 4 packages concurrently. `vitest.config.ts` retained for accurate coverage runs.
-- **Shared test helpers** — extract repeated `mockPool()` / `mockQuery()` boilerplate into `src/test-utils.ts` so branches are reachable inside existing per-file test files without duplication.
-- **`vi.stubEnv` patterns** — several platform guards (`process.platform`, `process.env.CI`) branch on environment values that can be overridden with `vi.stubEnv()` inside existing tests to cover the else-branch.
-
-### Acceptance Criteria
-
-- [ ] `vitest run --coverage` reports ≥ 88 % statements across core package.
-- [ ] `vitest run --coverage` reports ≥ 77 % branches across core package.
-- [ ] No existing test degraded (test count stable or growing).
-- [ ] `vitest.config.ts` thresholds bumped to `{ stmt: 88, branch: 77, fn: 88, lines: 88 }` and enforced in CI.
-- [ ] `docs/development/coverage-plan.md` created with per-file before/after table when work begins.
-
----
-
 ## Future Features — Demand-Gated
 
 Items below are planned but demand-gated or lower priority. Grouped by theme. Implementation order will be determined by adoption signals and user demand.
 
 ---
 
-### Observability & Telemetry (Phase 83)
+### Observability & Telemetry (Phase 83 remnants)
 
 *As SecureYeoman moves into production deployments, operators need distributed tracing, metrics export, and correlation tooling beyond what the built-in audit log provides.*
 
@@ -519,7 +433,7 @@ Versions use the project's date-based format: `YYYY.M.D` (e.g., `2026.2.28`). Sa
 
 ### LLM Lifecycle Platform — Advanced
 
-*Extends Phase 88 with advanced training objectives, scale, and continual learning. Demand-gated pending real-world usage of the Phase 64 + 73 + 88 pipeline.*
+*Extends Phase 98 with advanced training objectives, scale, and continual learning. Demand-gated pending real-world usage of the Phase 64 + 73 + 98 pipeline.*
 
 #### Advanced Training
 
@@ -601,12 +515,12 @@ Versions use the project's date-based format: `YYYY.M.D` (e.g., `2026.2.28`). Sa
 
 ### Native Clients
 
-*Demand-Gated — implement once REST/WebSocket API is stable and adoption justifies native packaging.*
+*Phase 91 delivered the Tauri v2 desktop scaffold and Capacitor v6 mobile scaffold (both complete 2026-03-01). These items extend the scaffolds into polished native experiences.*
 
-- [ ] **Mobile app** — Native iOS/Android companion app. Primary view: chat interface + at-a-glance overview stats. Connects to existing REST + WebSocket API.
-- [ ] **Cross-device sync** — Conversation history, personality state, and notification preferences synced across devices.
-- [ ] **Desktop app** — Native desktop client (Electron or Tauri) wrapping the existing dashboard SPA. Adds system tray, native notifications, global keyboard shortcut, and auto-launch on login.
-- [ ] **Auto-update** — In-app update flow via the platform's native update mechanism.
+- [ ] **Mobile app — full feature parity** — Native iOS/Android companion app. Primary view: chat interface + at-a-glance overview stats. The Capacitor scaffold is in place; this item covers icon production, App Store review compliance, and push notifications.
+- [ ] **Cross-device sync** — Conversation history, personality state, and notification preferences synced across devices via the existing REST API. Offline-first with conflict resolution on reconnect.
+- [ ] **Auto-update** — In-app update flow: Tauri updater for desktop (delta bundles via `tauri-plugin-updater`), App Store / Play Store release channels for mobile.
+- [ ] **Desktop system tray enhancements** — Quick-access menu: active personality selector, last conversation shortcut, toggle notifications. Global keyboard shortcut to focus the window.
 
 ---
 
@@ -639,4 +553,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-28 — Phase 83 (Observability & Telemetry: OTel, alert rules, `/metrics`, ECS logs, Grafana dashboards) complete. Phase 83 (CrewAI-Inspired Enhancements: triggerMode, Teams, strict schema, crew CLI), Phase 82 (Knowledge Base & RAG Platform), Phases 79–80 (Federation/API Gateway), Phase 77 (Prompt Security), and earlier phases also complete — see [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-01 — Phases 89 (Marketplace Shareables), 90 (CI/CD Integration), 91 (Native Clients Scaffold), 92 (Adaptive Learning Pipeline), Dual Licensing (ADR 171), Canvas Workspace (78b) all complete. Roadmap reorganised: phases 93–101 replace legacy numbering (78a/81/83/85/86/87/88/90); completed phases removed from body. See [Changelog](../../CHANGELOG.md) for full history.*

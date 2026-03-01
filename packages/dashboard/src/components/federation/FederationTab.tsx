@@ -243,7 +243,7 @@ function AddPeerForm({
         <div>
           <label className="block text-xs text-muted-foreground mb-1">Peer URL</label>
           <input
-            className="input input-sm w-full"
+            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
             placeholder="https://peer.example.com"
             value={url}
             onChange={(e) => {
@@ -254,7 +254,7 @@ function AddPeerForm({
         <div>
           <label className="block text-xs text-muted-foreground mb-1">Display Name</label>
           <input
-            className="input input-sm w-full"
+            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
             placeholder="My Partner Node"
             value={name}
             onChange={(e) => {
@@ -265,7 +265,7 @@ function AddPeerForm({
         <div className="sm:col-span-2">
           <label className="block text-xs text-muted-foreground mb-1">Shared Secret</label>
           <input
-            className="input input-sm w-full font-mono"
+            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
             type="password"
             placeholder="Pre-shared key agreed with the peer operator"
             value={secret}
@@ -281,7 +281,7 @@ function AddPeerForm({
             onSubmit({ url: url.trim(), name: name.trim(), sharedSecret: secret });
           }}
           disabled={!valid || isAdding}
-          className="btn btn-sm btn-primary flex items-center gap-1.5"
+          className="btn btn-sm btn-ghost flex items-center gap-1.5"
         >
           {isAdding ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -525,7 +525,7 @@ function BundlesPanel() {
           <div>
             <label className="block text-xs text-muted-foreground mb-1">Personality</label>
             <select
-              className="input input-sm w-full"
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
               value={exportPersonalityId}
               onChange={(e) => {
                 setExportPersonalityId(e.target.value);
@@ -546,7 +546,7 @@ function BundlesPanel() {
               </span>
             </label>
             <input
-              className="input input-sm w-full"
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
               type="password"
               placeholder="Strong passphrase"
               value={exportPassphrase}
@@ -560,7 +560,7 @@ function BundlesPanel() {
         <button
           onClick={handleExport}
           disabled={isExporting || !exportPersonalityId || !exportPassphrase}
-          className="btn btn-sm btn-primary flex items-center gap-1.5"
+          className="btn btn-sm btn-ghost flex items-center gap-1.5"
         >
           {isExporting ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -598,7 +598,7 @@ function BundlesPanel() {
               </span>
             </label>
             <input
-              className="input input-sm w-full"
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
               type="password"
               placeholder="Passphrase used to encrypt the bundle"
               value={importPassphrase}
@@ -612,7 +612,7 @@ function BundlesPanel() {
               Name Override (optional)
             </label>
             <input
-              className="input input-sm w-full"
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
               placeholder="Rename on import"
               value={importNameOverride}
               onChange={(e) => {
@@ -736,7 +736,7 @@ export function FederationTab() {
                 onClick={() => {
                   setShowAddForm(true);
                 }}
-                className="btn btn-sm btn-primary flex items-center gap-1.5"
+                className="btn btn-sm btn-ghost flex items-center gap-1.5"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add Peer

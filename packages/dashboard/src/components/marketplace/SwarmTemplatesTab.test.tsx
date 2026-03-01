@@ -41,10 +41,10 @@ function createQC() {
   return new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
 }
 
-function renderTab() {
+function renderTab(source?: string) {
   return render(
     <QueryClientProvider client={createQC()}>
-      <SwarmTemplatesTab />
+      <SwarmTemplatesTab source={source} />
     </QueryClientProvider>
   );
 }
@@ -90,9 +90,9 @@ describe('SwarmTemplatesTab', () => {
     });
   });
 
-  it('shows empty state when no templates', async () => {
+  it('shows empty state when no templates (community)', async () => {
     mockFetchCommunitySwarmTemplates.mockResolvedValue({ templates: [], total: 0 });
-    renderTab();
+    renderTab('community');
     await waitFor(() => {
       expect(screen.getByText('No community swarm templates available')).toBeDefined();
     });

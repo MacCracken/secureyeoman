@@ -82,9 +82,20 @@ vi.mock('../api/client', () => ({
   rejectExecution: vi.fn(),
   fetchExecutionConfig: vi.fn(),
   fetchSecurityPolicy: vi.fn(),
+  addMemory: vi.fn().mockResolvedValue({}),
+  fetchModelInfo: vi.fn().mockResolvedValue({ current: { model: 'claude-3-5-sonnet', provider: 'anthropic' } }),
+  switchModel: vi.fn().mockResolvedValue({}),
 }));
 
-vi.mock('./AdvancedEditorPage', () => ({
+vi.mock('./ModelWidget', () => ({
+  ModelWidget: () => <div data-testid="model-widget">Model Widget</div>,
+}));
+
+vi.mock('./AgentWorldWidget', () => ({
+  AgentWorldWidget: () => <div data-testid="agent-world-widget">Agent World</div>,
+}));
+
+vi.mock('./AdvancedEditor/AdvancedEditorPage', () => ({
   AdvancedEditorPage: () => <div data-testid="advanced-editor-page">Advanced Editor</div>,
 }));
 
@@ -96,6 +107,7 @@ const mockFetchSecurityPolicy = vi.mocked(api.fetchSecurityPolicy);
 const mockFetchExecutionSessions = vi.mocked(api.fetchExecutionSessions);
 const mockFetchExecutionHistory = vi.mocked(api.fetchExecutionHistory);
 const mockTerminateExecutionSession = vi.mocked(api.terminateExecutionSession);
+const mockFetchModelInfo = vi.mocked(api.fetchModelInfo);
 
 function createQueryClient() {
   return new QueryClient({
@@ -160,6 +172,7 @@ describe('EditorPage', () => {
     vi.resetAllMocks();
     (api.fetchPersonalities as ReturnType<typeof vi.fn>).mockResolvedValue({ personalities: [] });
     mockFetchExecutionConfig.mockResolvedValue({ config: { enabled: true } });
+    mockFetchModelInfo.mockResolvedValue({ current: { model: 'claude-3-5-sonnet', provider: 'anthropic' } } as never);
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,

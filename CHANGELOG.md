@@ -1,3 +1,20 @@
+## [2026.3.1g] — 2026-03-01
+
+### Editor Unification & Canvas Re-gate (ADR 173)
+
+- **Unified editor**: Features from `AdvancedEditorPage` (the terminal-only workspace gated by `allowAdvancedEditor`) are merged into the standard `/editor` page so every user gets the full feature set.
+- **`MultiTerminal`** — tabbed terminal panel with up to 4 named tabs replaces the single-terminal panel. Each tab maintains independent command history, output buffer, and running state.
+- **Memory toggle** (Brain icon in toolbar) — when enabled, each completed terminal command is auto-saved to the personality's episodic memory via `addMemory()`. Toggle persists to `localStorage`. Activates/deactivates per session without a reload.
+- **Model selector** (CPU icon in toolbar) — shows the current model. Opening the popup renders `ModelWidget` inline. Selecting a personality with a `defaultModel` auto-switches the model via `switchModel()`.
+- **Agent World panel** (Globe icon in toolbar) — collapsible panel below the main editor/chat row. Grid / Map / Large view switcher. View mode and open/closed state persist to `localStorage`.
+- **Canvas re-gate**: `allowAdvancedEditor` security policy flag now redirects to the Canvas workspace (formerly `CanvasEditorPage`) instead of the old terminal-only workspace. Canvas is the appropriate "advanced" mode to gate for resource-constrained or security-sensitive deployments.
+- **Directory rename**: `components/CanvasEditor/` → `components/AdvancedEditor/`. Exported component `CanvasEditorPage` → `AdvancedEditorPage`. Route `/editor/canvas` → `/editor/advanced`. "Canvas Mode →" toolbar link updated accordingly.
+- **Old files deleted**: `AdvancedEditorPage.tsx` (terminal workspace, now merged) and its test file removed; `CanvasEditorPage.tsx` renamed in place.
+- **`EditorPage.tsx` test file** updated: mocks for `ModelWidget`, `AgentWorldWidget`, `addMemory`, `fetchModelInfo`, `switchModel` added. Mock path for `AdvancedEditorPage` updated to `./AdvancedEditor/AdvancedEditorPage`. All 10 EditorPage tests pass; 8 canvas-layout tests unaffected.
+- **ADR 173** (`docs/adr/173-editor-unification.md`). **Canvas guide** updated: route references changed from `/editor/canvas` to `/editor/advanced`.
+
+---
+
 ## [2026.3.1f] — 2026-03-01
 
 ### Dual Licensing — AGPL-3.0 + Commercial (ADR 171)

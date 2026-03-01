@@ -1,0 +1,506 @@
+import React, { lazy, Suspense, useEffect } from 'react';
+import {
+  Loader2,
+  Eye,
+  Download,
+  Trash2,
+  Globe,
+  Shield,
+  GitBranch,
+  X,
+  User,
+} from 'lucide-react';
+import {
+  installMarketplaceSkill,
+  uninstallMarketplaceSkill,
+  fetchPersonalities,
+} from '../../api/client';
+import type { Skill, CatalogSkill, Personality } from '../../types';
+import { sanitizeText } from '../../utils/sanitize';
+
+export const LazyWorkflowsTab = lazy(() =>
+  import('../marketplace/WorkflowsTab').then((m) => ({ default: m.WorkflowsTab }))
+);
+export const LazySwarmTemplatesTab = lazy(() =>
+  import('../marketplace/SwarmTemplatesTab').then((m) => ({ default: m.SwarmTemplatesTab }))
+);
+
+export type TabType = 'my-skills' | 'marketplace' | 'community' | 'installed';
+export type ContentType = 'skills' | 'workflows' | 'swarms';
+
+export const CONTENT_TYPES: { value: ContentType; label: string }[] = [
+  { value: 'skills', label: 'Skills' },
+  { value: 'workflows', label: 'Workflows' },
+  { value: 'swarms', label: 'Swarm Templates' },
+];
+
+export function ContentTypeSelector({
+  value,
+  onChange,
+}: {
+  value: ContentType;
+  onChange: (v: ContentType) => void;
+}) {
+  return (
+    <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
+      {CONTENT_TYPES.map((t) => (
+        <button
+          key={t.value}
+          onClick={() => onChange(t.value)}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            value === t.value
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function ContentSuspense({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      {children}
+    </Suspense>
+  );
+}
+
+/** Download a skill as a portable .skill.json file for re-use or import. */
+export function exportSkill(skill: Skill) {
+  // Strip server-managed runtime fields; keep everything a SkillCreate accepts
+  const {
+    id: _id,
+    createdAt: _c,
+    updatedAt: _u,
+    usageCount: _uc,
+    lastUsedAt: _la,
+    personalityName: _pn,
+    ...exportable
+  } = skill as Skill & {
+    id: string;
+    createdAt: number;
+    updatedAt: number;
+    usageCount: number;
+    lastUsedAt: number | null;
+    personalityName?: string | null;
+  };
+
+  const payload = JSON.stringify({ $schema: 'sy-skill/1', ...exportable }, null, 2);
+  const blob = new Blob([payload], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${skill.name
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')}.skill.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export function SkillCard({
+  skill,
+  onInstall,
+  onUninstall,
+  onPreview,
+  installing,
+  uninstalling,
+  badge,
+}: {
+  skill: CatalogSkill;
+  onInstall: () => void;
+  onUninstall: () => void;
+  onPreview: () => void;
+  installing: boolean;
+  uninstalling: boolean;
+  badge?: React.ReactNode;
+}) {
+  return (
+    <div className="card p-4 flex flex-col h-full hover:shadow-md transition-shadow">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <h3 className="font-medium text-sm line-clamp-1 flex-1">{skill.name}</h3>
+        <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground shrink-0">
+          v{skill.version}
+        </span>
+      </div>
+
+      {/* Badges row */}
+      <div className="flex items-center gap-1.5 mb-2">
+        <span className="text-[10px] text-muted-foreground">{skill.category}</span>
+        {badge}
+      </div>
+
+      {/* Description */}
+      <p className="text-xs text-muted-foreground mb-4 line-clamp-3 flex-1">
+        {sanitizeText(skill.description)}
+      </p>
+
+      {/* Footer */}
+      <div className="pt-3 border-t border-border mt-auto">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-medium text-foreground">{skill.author}</span>
+          <span className="text-[10px] text-muted-foreground">
+            {skill.downloadCount.toLocaleString()} installs
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={onPreview}
+            className="btn btn-ghost flex items-center gap-1 text-xs px-2 py-2 text-muted-foreground hover:text-foreground shrink-0"
+            title="Preview skill"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            Preview
+          </button>
+
+          <div className="flex-1">
+            {skill.installed ? (
+              <button
+                onClick={onUninstall}
+                disabled={uninstalling}
+                className="btn btn-ghost text-destructive flex items-center gap-2 w-full justify-center text-xs py-2"
+              >
+                {uninstalling ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
+                Uninstall
+              </button>
+            ) : skill.installedGlobally ? (
+              <div className="flex items-center gap-2 w-full justify-center text-xs py-2 text-muted-foreground">
+                <Globe className="w-3.5 h-3.5 shrink-0" />
+                <span>Installed globally</span>
+              </div>
+            ) : (
+              <button
+                onClick={onInstall}
+                disabled={installing}
+                className="btn btn-ghost flex items-center gap-2 w-full justify-center text-xs py-2"
+              >
+                {installing ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                Install
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function SkillPreviewModal({
+  skill,
+  onClose,
+  onInstall,
+  onUninstall,
+  installing,
+  uninstalling,
+}: {
+  skill: CatalogSkill;
+  onClose: () => void;
+  onInstall: () => void;
+  onUninstall: () => void;
+  installing: boolean;
+  uninstalling: boolean;
+}) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handler);
+    return () => {
+      document.removeEventListener('keydown', handler);
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-card border border-border rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-xl">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 p-5 border-b border-border">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base font-semibold">{skill.name}</h2>
+              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+                v{skill.version}
+              </span>
+              {skill.source === 'builtin' && (
+                <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                  <Shield className="w-2.5 h-2.5" />
+                  YEOMAN
+                </span>
+              )}
+              {skill.source === 'community' && (
+                <span className="inline-flex items-center gap-1 text-[10px] bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">
+                  <GitBranch className="w-2.5 h-2.5" />
+                  Community
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground flex-wrap">
+              <span>{skill.author}</span>
+              {skill.authorInfo?.github && (
+                <a
+                  href={`https://github.com/${skill.authorInfo.github}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground transition-colors underline underline-offset-2"
+                >
+                  GitHub
+                </a>
+              )}
+              {skill.authorInfo?.website && (
+                <a
+                  href={skill.authorInfo.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground transition-colors underline underline-offset-2"
+                >
+                  Website
+                </a>
+              )}
+              {skill.authorInfo?.license && <span>{skill.authorInfo.license}</span>}
+              <span className="capitalize">{skill.category}</span>
+              <span>{skill.downloadCount.toLocaleString()} installs</span>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="btn btn-ghost p-1.5 shrink-0"
+            aria-label="Close preview"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          {/* Tags */}
+          {skill.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {skill.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Description */}
+          {skill.description && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                Description
+              </h3>
+              <p className="text-sm text-foreground leading-relaxed">
+                {sanitizeText(skill.description)}
+              </p>
+            </div>
+          )}
+
+          {/* Instructions */}
+          {skill.instructions && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                Instructions
+              </h3>
+              <pre className="text-xs bg-muted rounded-lg p-3 whitespace-pre-wrap break-words font-mono leading-relaxed max-h-64 overflow-y-auto">
+                {skill.instructions}
+              </pre>
+            </div>
+          )}
+
+          {/* Trigger Patterns */}
+          {skill.triggerPatterns.length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                Trigger Patterns
+              </h3>
+              <div className="space-y-1">
+                {skill.triggerPatterns.map((pattern, i) => (
+                  <code
+                    key={i}
+                    className="block text-xs bg-muted rounded px-2 py-1 font-mono text-foreground"
+                  >
+                    {pattern}
+                  </code>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* MCP Tools */}
+          {skill.tools.length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                MCP Tools ({skill.tools.length})
+              </h3>
+              <div className="flex flex-wrap gap-1.5">
+                {skill.tools.map((tool) => (
+                  <span
+                    key={tool.name}
+                    className="text-[10px] bg-muted px-2 py-0.5 rounded font-mono text-foreground"
+                  >
+                    {tool.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* MCP Tool Allowlist */}
+          {(skill.mcpToolsAllowed || []).length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5 text-warning" />
+                MCP Restricted To ({(skill.mcpToolsAllowed || []).length})
+              </h3>
+              <p className="text-xs text-muted-foreground mb-1.5">
+                Only these tools are available while this skill is active.
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {(skill.mcpToolsAllowed || []).map((t, i) => (
+                  <span
+                    key={i}
+                    className="text-[10px] bg-warning/10 text-warning px-2 py-0.5 rounded font-mono"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-5 border-t border-border flex items-center justify-between gap-3">
+          <div className="text-xs text-muted-foreground">
+            Updated {new Date(skill.updatedAt).toLocaleDateString()}
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={onClose} className="btn btn-ghost text-sm px-4">
+              Close
+            </button>
+            {skill.installed ? (
+              <button
+                onClick={onUninstall}
+                disabled={uninstalling}
+                className="btn btn-ghost text-destructive flex items-center gap-2 text-sm px-4"
+              >
+                {uninstalling ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                Uninstall
+              </button>
+            ) : skill.installedGlobally ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground px-4">
+                <Globe className="w-4 h-4 shrink-0" />
+                Installed globally
+              </div>
+            ) : (
+              <button
+                onClick={onInstall}
+                disabled={installing}
+                className="btn btn-ghost flex items-center gap-2 text-sm px-4"
+              >
+                {installing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                Install
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function PersonalitySelector({
+  personalities,
+  value,
+  onChange,
+  required,
+}: {
+  personalities: Personality[];
+  value: string;
+  onChange: (id: string) => void;
+  required?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-sm text-muted-foreground whitespace-nowrap">Install to:</span>
+      <div className="relative">
+        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <select
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
+          className="bg-card border border-border rounded-lg pl-10 pr-8 py-2.5 text-sm min-w-[200px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
+        >
+          {!required && <option value="">Global (All Personalities)</option>}
+          {required && <option value="">— Select a personality —</option>}
+          {[...personalities]
+            .sort((a, b) => {
+              if (a.isActive && !b.isActive) return -1;
+              if (!a.isActive && b.isActive) return 1;
+              return a.name.localeCompare(b.name);
+            })
+            .map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} {p.isActive ? '(Active)' : ''}
+              </option>
+            ))}
+        </select>
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+          <svg
+            className="w-4 h-4 text-muted-foreground"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export const COMMUNITY_PAGE_SIZE = 20;
+
+// Re-export API functions and types used by multiple tabs so they can import
+// from a single shared location if needed. Tabs may also import directly.
+export type { Skill, CatalogSkill, Personality };
+export { installMarketplaceSkill, uninstallMarketplaceSkill, fetchPersonalities };

@@ -1,12 +1,12 @@
 # Canvas Workspace Guide
 
-The **Canvas Workspace** (`/editor/canvas`) is an infinite desktop where you compose your own development control room from draggable, resizable widget windows. Arrange terminals next to code editors, overlay training charts on an agent world view, and pin output snapshots from the commands that matter — all in a layout that persists between sessions.
+The **Canvas Workspace** (`/editor/advanced`) is an infinite desktop where you compose your own development control room from draggable, resizable widget windows. Arrange terminals next to code editors, overlay training charts on an agent world view, and pin output snapshots from the commands that matter — all in a layout that persists between sessions.
 
 ---
 
 ## Getting Started
 
-Navigate to **Editor → Canvas Mode →** in the sidebar, or click the "Canvas Mode →" button in the basic editor toolbar.
+Navigate to **Editor → Canvas Mode →** in the sidebar, or click the "Canvas Mode →" button in the basic editor toolbar. The canvas opens at `/editor/advanced`.
 
 The canvas opens with an empty workspace. Use **+ Add Widget** in the top toolbar to open the widget catalog.
 

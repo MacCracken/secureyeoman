@@ -34,11 +34,11 @@ function CompatibilityBadge({ gaps }: { gaps: CompatibilityCheckResult['gaps'] }
   );
 }
 
-export function SwarmTemplatesTab() {
+export function SwarmTemplatesTab({ source }: { source?: string } = {}) {
   const [toast, setToast] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['community-swarm-templates'],
+    queryKey: ['community-swarm-templates', source],
     queryFn: () => fetchCommunitySwarmTemplates(),
   });
 
@@ -73,7 +73,12 @@ export function SwarmTemplatesTab() {
     },
   });
 
-  const templates = (data?.templates ?? []) as SwarmTemplate[];
+  const allTemplates = (data?.templates ?? []) as SwarmTemplate[];
+  const templates = allTemplates.filter((t) => {
+    if (source === 'community') return !t.isBuiltin;
+    if (source === 'builtin') return t.isBuiltin;
+    return true;
+  });
 
   return (
     <div className="space-y-4">
@@ -90,9 +95,15 @@ export function SwarmTemplatesTab() {
       ) : !templates.length ? (
         <div className="card p-12 text-center">
           <Users className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-          <p className="text-muted-foreground">No community swarm templates available</p>
+          <p className="text-muted-foreground">
+            {source === 'community'
+              ? 'No community swarm templates available'
+              : 'No swarm templates available'}
+          </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Sync the community repo to discover swarm templates
+            {source === 'community'
+              ? 'Sync the community repo to discover swarm templates'
+              : 'No swarm template definitions found'}
           </p>
         </div>
       ) : (

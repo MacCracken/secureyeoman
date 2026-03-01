@@ -40,12 +40,12 @@ function CompatibilityBadges({ gaps }: { gaps: CompatibilityCheckResult['gaps'] 
   );
 }
 
-export function WorkflowsTab() {
+export function WorkflowsTab({ source }: { source?: string } = {}) {
   const [toast, setToast] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['community-workflows'],
-    queryFn: () => fetchCommunityWorkflows(),
+    queryKey: ['community-workflows', source],
+    queryFn: () => fetchCommunityWorkflows(source),
   });
 
   const importMut = useMutation({
@@ -79,7 +79,12 @@ export function WorkflowsTab() {
     },
   });
 
-  const workflows = data?.definitions ?? [];
+  const allWorkflows = data?.definitions ?? [];
+  const workflows = allWorkflows.filter((wf: WorkflowDefinition) => {
+    if (source === 'builtin') return wf.createdBy === 'system';
+    if (source === 'community') return wf.createdBy === 'community';
+    return true;
+  });
 
   return (
     <div className="space-y-4">
@@ -96,9 +101,13 @@ export function WorkflowsTab() {
       ) : !workflows.length ? (
         <div className="card p-12 text-center">
           <GitBranch className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-          <p className="text-muted-foreground">No community workflows available</p>
+          <p className="text-muted-foreground">
+            {source === 'community' ? 'No community workflows available' : 'No workflows available'}
+          </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Sync the community repo to discover workflows
+            {source === 'community'
+              ? 'Sync the community repo to discover workflows'
+              : 'No workflow definitions found'}
           </p>
         </div>
       ) : (

@@ -6,11 +6,9 @@ import {
   Loader2,
   Bot,
   User,
-  Code2,
   ChevronDown,
   ArrowDownToLine,
   Terminal,
-  FolderOpen,
   Play,
   Trash2,
   ChevronRight,
@@ -30,6 +28,9 @@ import {
   Star,
   Eye,
   LayoutDashboard,
+  Brain,
+  Cpu,
+  Globe,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -41,6 +42,9 @@ import {
   rejectExecution,
   fetchExecutionConfig,
   fetchSecurityPolicy,
+  addMemory,
+  fetchModelInfo,
+  switchModel,
 } from '../api/client';
 import { useChatStream } from '../hooks/useChat';
 import { ThinkingBlock } from './ThinkingBlock';
@@ -51,18 +55,216 @@ import { VoiceOverlay } from './VoiceOverlay';
 import type { Personality, ChatMessage, CreationEvent } from '../types';
 import { sanitizeText } from '../utils/sanitize';
 import { ChatMarkdown } from './ChatMarkdown';
-import { Link } from 'react-router-dom';
-import { AdvancedEditorPage } from './AdvancedEditorPage';
+import { Link, useNavigate } from 'react-router-dom';
+import { ModelWidget } from './ModelWidget';
+import { AgentWorldWidget } from './AgentWorldWidget';
+import { AdvancedEditorPage } from './AdvancedEditor/AdvancedEditorPage';
 
 type MonacoEditor = Parameters<OnMount>[0];
 
-interface TerminalOutput {
+// ── Multi-Terminal types / helpers ───────────────────────────────
+
+interface TerminalTab {
   id: string;
-  command: string;
-  output: string;
-  error: string;
-  exitCode: number;
-  timestamp: number;
+  label: string;
+  output: string[];
+  input: string;
+  running: boolean;
+}
+
+function genTerminalId(): string {
+  return Math.random().toString(36).substring(2, 9);
+}
+
+function makeTerminalTab(n: number): TerminalTab {
+  return { id: genTerminalId(), label: `Terminal ${n}`, output: [], input: '', running: false };
+}
+
+const MAX_TERMINAL_TABS = 4;
+
+interface MultiTerminalProps {
+  outputRef: React.MutableRefObject<string>;
+  onCommandComplete?: (command: string, output: string) => void;
+}
+
+function MultiTerminal({ outputRef, onCommandComplete }: MultiTerminalProps) {
+  const [tabs, setTabs] = useState<TerminalTab[]>(() => [makeTerminalTab(1)]);
+  const [activeId, setActiveId] = useState(() => tabs[0].id);
+  const endRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const addTab = () => {
+    if (tabs.length >= MAX_TERMINAL_TABS) return;
+    const t = makeTerminalTab(tabs.length + 1);
+    setTabs((prev) => [...prev, t]);
+    setActiveId(t.id);
+  };
+
+  const closeTab = (id: string) => {
+    setTabs((prev) => {
+      const next = prev.filter((t) => t.id !== id);
+      if (next.length === 0) {
+        const t = makeTerminalTab(1);
+        setActiveId(t.id);
+        return [t];
+      }
+      if (activeId === id) setActiveId(next[next.length - 1].id);
+      return next;
+    });
+  };
+
+  const activeTab = tabs.find((t) => t.id === activeId) ?? tabs[0];
+
+  // Keep outputRef in sync with active tab's output
+  useEffect(() => {
+    outputRef.current = activeTab.output.join('\n');
+  }, [activeTab.output, outputRef]);
+
+  const runMutation = useMutation({
+    mutationFn: ({ command, cwd }: { command: string; cwd: string }) =>
+      executeTerminalCommand(command, cwd),
+    onMutate: ({ command }) => {
+      setTabs((prev) =>
+        prev.map((t) =>
+          t.id === activeId ? { ...t, output: [...t.output, `$ ${command}`], running: true } : t
+        )
+      );
+    },
+    onSuccess: (data, { command }) => {
+      const output = data.output || data.error || '(no output)';
+      setTabs((prev) =>
+        prev.map((t) =>
+          t.id === activeId ? { ...t, output: [...t.output, output], input: '', running: false } : t
+        )
+      );
+      onCommandComplete?.(command, output);
+      setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    },
+    onError: (err) => {
+      setTabs((prev) =>
+        prev.map((t) =>
+          t.id === activeId
+            ? {
+                ...t,
+                output: [...t.output, `Error: ${err instanceof Error ? err.message : String(err)}`],
+                running: false,
+              }
+            : t
+        )
+      );
+    },
+  });
+
+  const submit = useCallback(() => {
+    const cmd = activeTab.input.trim();
+    if (!cmd || activeTab.running) return;
+    runMutation.mutate({ command: cmd, cwd: '/tmp' });
+  }, [activeTab, runMutation]);
+
+  const setInput = (val: string) => {
+    setTabs((prev) => prev.map((t) => (t.id === activeId ? { ...t, input: val } : t)));
+  };
+
+  return (
+    <div
+      className="flex flex-col h-full overflow-hidden bg-background"
+      onClick={() => inputRef.current?.focus()}
+    >
+      {/* Tab bar */}
+      <div className="flex items-center border-b border-border bg-muted/30 px-2 gap-1 overflow-x-auto flex-shrink-0">
+        {tabs.map((t) => (
+          <div
+            key={t.id}
+            className={`flex items-center gap-1 px-2 py-1.5 rounded-t text-xs cursor-pointer select-none flex-shrink-0 ${
+              t.id === activeId
+                ? 'bg-background text-foreground border border-b-background border-border'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveId(t.id);
+            }}
+          >
+            <Terminal className="w-3 h-3" />
+            {t.label}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                closeTab(t.id);
+              }}
+              className="ml-0.5 rounded hover:bg-muted p-0.5"
+            >
+              <X className="w-2.5 h-2.5" />
+            </button>
+          </div>
+        ))}
+        {tabs.length < MAX_TERMINAL_TABS && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              addTab();
+            }}
+            className="px-1.5 py-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted/50 transition-colors flex-shrink-0"
+            title="New terminal"
+          >
+            <Plus className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+
+      {/* Output */}
+      <div className="flex-1 overflow-y-auto font-mono text-xs p-3 space-y-0.5 bg-black/30">
+        {activeTab.output.length === 0 && <span className="text-muted-foreground">Ready.</span>}
+        {activeTab.output.map((line, i) => (
+          <div
+            key={i}
+            className={`whitespace-pre-wrap break-all ${
+              line.startsWith('$')
+                ? 'text-muted-foreground'
+                : line.startsWith('Error:')
+                  ? 'text-red-400/90'
+                  : 'text-green-400/90'
+            }`}
+          >
+            {line}
+          </div>
+        ))}
+        <div ref={endRef} />
+      </div>
+
+      {/* Input */}
+      <div className="flex items-center gap-2 border-t border-border px-3 py-2 bg-muted/20 flex-shrink-0">
+        <span className="font-mono text-xs text-primary/70 flex-shrink-0">$</span>
+        <input
+          ref={inputRef}
+          className="flex-1 bg-transparent font-mono text-xs outline-none text-foreground placeholder:text-muted-foreground/40 caret-primary"
+          placeholder="command..."
+          value={activeTab.input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              submit();
+            }
+          }}
+          disabled={activeTab.running}
+          autoComplete="off"
+          spellCheck={false}
+        />
+        <button
+          onClick={submit}
+          disabled={activeTab.running || !activeTab.input.trim()}
+          className="p-1 rounded text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors flex-shrink-0"
+        >
+          {activeTab.running ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Play className="w-3.5 h-3.5" />
+          )}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 type BottomTab = 'terminal' | 'sessions' | 'history';
@@ -439,6 +641,8 @@ export function EditorPage() {
 
 function StandardEditorPage() {
   const { isDark } = useTheme();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [tabs, setTabs] = useState<EditorTab[]>(() => [createEditorTab('untitled.ts', '/tmp')]);
   const [activeTabId, setActiveTabId] = useState<string>(tabs[0].id);
   const [filesPanelOpen, setFilesPanelOpen] = useState(false);
@@ -453,8 +657,6 @@ function StandardEditorPage() {
     else localStorage.removeItem('soul:editorPersonalityId');
     setSelectedPersonalityIdRaw(id);
   };
-  const [terminalInput, setTerminalInput] = useState('');
-  const [terminalHistory, setTerminalHistory] = useState<TerminalOutput[]>([]);
   const [activeBottomTab, setActiveBottomTab] = useState<BottomTab>('terminal');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [splitView, setSplitView] = useState(false);
@@ -467,8 +669,31 @@ function StandardEditorPage() {
   });
   const editorRef = useRef<MonacoEditor | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const terminalEndRef = useRef<HTMLDivElement>(null);
-  const terminalInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Terminal output ref (feeds watch mode in chat) ──
+  const terminalOutputRef = useRef<string>('');
+
+  // ── Memory ──
+  const [memoryEnabled, setMemoryEnabled] = useState(
+    () => localStorage.getItem('editor:memoryEnabled') !== 'false'
+  );
+
+  // ── Model ──
+  const [modelOpen, setModelOpen] = useState(false);
+  const modelBtnRef = useRef<HTMLButtonElement>(null);
+  const { data: modelInfo } = useQuery({
+    queryKey: ['model-info'],
+    queryFn: fetchModelInfo,
+    staleTime: 30000,
+  });
+
+  // ── Agent World ──
+  const [showWorld, setShowWorld] = useState(
+    () => localStorage.getItem('editor:showWorld') === 'true'
+  );
+  const [worldViewMode, setWorldViewMode] = useState<'grid' | 'map' | 'large'>(
+    () => (localStorage.getItem('world:viewMode') ?? 'grid') as 'grid' | 'map' | 'large'
+  );
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
   const filename = activeTab?.name ?? 'untitled.ts';
@@ -534,14 +759,40 @@ function StandardEditorPage() {
   const hasVision = currentPersonality?.body?.capabilities?.includes('vision') ?? false;
   const [watchEnabled, setWatchEnabled] = useState(false);
 
-  const terminalOutput = terminalHistory
-    .map((t) => `$ ${t.command}\n${t.output || t.error}`)
-    .join('\n');
+  // saveMemory — called by MultiTerminal after each command completes
+  const saveMemory = useCallback(
+    (command: string, output: string) => {
+      if (!memoryEnabled) return;
+      void addMemory({
+        type: 'episodic',
+        content: `Command: ${command}\nOutput: ${output}`,
+        source: 'workspace',
+        context: effectivePersonalityId ? { personalityId: effectivePersonalityId } : {},
+        importance: 0.5,
+      }).then(() => {
+        void queryClient.invalidateQueries({ queryKey: ['workspace-memories'] });
+      });
+    },
+    [memoryEnabled, effectivePersonalityId, queryClient]
+  );
+
+  // Auto-switch model when personality changes
+  useEffect(() => {
+    if (currentPersonality?.defaultModel) {
+      void switchModel({
+        provider: currentPersonality.defaultModel.provider,
+        model: currentPersonality.defaultModel.model,
+      }).then(() => {
+        void queryClient.invalidateQueries({ queryKey: ['model-info'] });
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectivePersonalityId, queryClient]);
 
   const { messages, sendMessage, isPending, streamingThinking, streamingContent, activeToolCalls } =
     useChatStream({
       personalityId: effectivePersonalityId,
-      editorContent: watchEnabled && terminalOutput ? terminalOutput : undefined,
+      editorContent: watchEnabled ? terminalOutputRef.current || undefined : undefined,
     });
 
   // Local chat input state (decoupled from useChatStream)
@@ -576,39 +827,12 @@ function StandardEditorPage() {
     loader.config({ paths: { vs: '/vs' } });
   }, []);
 
-  const terminalMutation = useMutation({
+  // Minimal mutation used by the Run Code button (output rendered in MultiTerminal by user)
+  const runCodeMutation = useMutation({
     mutationFn: ({ command, cwd }: { command: string; cwd: string }) =>
       executeTerminalCommand(command, cwd),
-    onSuccess: (result, variables) => {
-      setTerminalHistory((prev) => [
-        ...prev,
-        {
-          id: Math.random().toString(36).substring(7),
-          command: variables.command,
-          output: result.output,
-          error: result.error,
-          exitCode: result.exitCode,
-          timestamp: Date.now(),
-        },
-      ]);
-      if (result.cwd) {
-        setCwd(result.cwd);
-      }
-      setTerminalInput('');
-    },
-    onError: (error: Error, variables) => {
-      setTerminalHistory((prev) => [
-        ...prev,
-        {
-          id: Math.random().toString(36).substring(7),
-          command: variables.command,
-          output: '',
-          error: error.message,
-          exitCode: 1,
-          timestamp: Date.now(),
-        },
-      ]);
-      setTerminalInput('');
+    onSuccess: (result) => {
+      if (result.cwd) setCwd(result.cwd);
     },
   });
 
@@ -636,18 +860,6 @@ function StandardEditorPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length, isPending]);
-
-  // Auto-scroll terminal
-  useEffect(() => {
-    terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [terminalHistory.length, terminalMutation.isPending]);
-
-  // Refocus terminal input after command completes
-  useEffect(() => {
-    if (!terminalMutation.isPending && terminalInputRef.current && activeBottomTab === 'terminal') {
-      terminalInputRef.current.focus();
-    }
-  }, [terminalMutation.isPending, terminalHistory.length, activeBottomTab]);
 
   // Update tab language when filename changes
   useEffect(() => {
@@ -720,46 +932,13 @@ function StandardEditorPage() {
 
     const filePath = `${cwd}/${filename}`;
 
-    if (!runner) {
-      setTerminalHistory((prev) => [
-        ...prev,
-        {
-          id: Math.random().toString(36).substring(7),
-          command: filename,
-          output: '',
-          error: `No runner configured for ${language || ext}. Try saving to a file and running manually.`,
-          exitCode: 1,
-          timestamp: Date.now(),
-        },
-      ]);
-      return;
-    }
+    if (!runner) return;
 
     const writeCommand = `cat << 'FRIDAY_EOF' > "${filePath}"\n${code}\nFRIDAY_EOF`;
     const runCommand = runner.includes(' ') ? `${runner} ${filePath}` : `${runner} "${filePath}"`;
 
-    terminalMutation.mutate(
-      { command: `${writeCommand} && ${runCommand}`, cwd },
-      {
-        onSuccess: (result) => {
-          setTerminalHistory((prev) => [
-            ...prev,
-            {
-              id: Math.random().toString(36).substring(7),
-              command: filename,
-              output: result.output,
-              error: result.error,
-              exitCode: result.exitCode,
-              timestamp: Date.now(),
-            },
-          ]);
-          if (result.cwd) {
-            setCwd(result.cwd);
-          }
-        },
-      }
-    );
-  }, [filename, language, cwd, terminalMutation]);
+    runCodeMutation.mutate({ command: `${writeCommand} && ${runCommand}`, cwd });
+  }, [filename, language, cwd, runCodeMutation]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -828,25 +1007,6 @@ function StandardEditorPage() {
     },
     [handleSend]
   );
-
-  const handleTerminalSubmit = useCallback(() => {
-    if (!terminalInput.trim() || terminalMutation.isPending) return;
-    terminalMutation.mutate({ command: terminalInput.trim(), cwd: cwd });
-  }, [terminalInput, cwd, terminalMutation]);
-
-  const handleTerminalKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        handleTerminalSubmit();
-      }
-    },
-    [handleTerminalSubmit]
-  );
-
-  const clearTerminal = useCallback(() => {
-    setTerminalHistory([]);
-  }, []);
 
   const BOTTOM_TABS: { id: BottomTab; label: string }[] = [
     { id: 'terminal', label: 'Terminal' },
@@ -1010,7 +1170,7 @@ function StandardEditorPage() {
               </button>
               <button
                 onClick={handleRunCode}
-                disabled={terminalMutation.isPending || !editorContent.trim()}
+                disabled={runCodeMutation.isPending || !editorContent.trim()}
                 className="btn-ghost text-xs px-2 sm:px-3 py-1.5 rounded border hover:border-primary flex items-center gap-1"
                 title="Run code in terminal (Ctrl+Enter)"
               >
@@ -1026,13 +1186,75 @@ function StandardEditorPage() {
                 <span className="sm:hidden">Send</span>
               </button>
               <Link
-                to="/editor/canvas"
+                to="/editor/advanced"
                 className="flex items-center gap-1.5 px-2 py-1 rounded text-xs border hover:bg-muted"
                 title="Open Canvas workspace"
               >
                 <LayoutDashboard className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Canvas Mode</span>
               </Link>
+
+              {/* Memory toggle */}
+              <button
+                onClick={() => {
+                  const n = !memoryEnabled;
+                  localStorage.setItem('editor:memoryEnabled', String(n));
+                  setMemoryEnabled(n);
+                }}
+                className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border transition-colors ${
+                  memoryEnabled
+                    ? 'bg-primary/15 border-primary/50 text-primary'
+                    : 'border-border text-muted-foreground hover:text-foreground'
+                }`}
+                title={memoryEnabled ? 'Memory on — commands saved across sessions' : 'Memory off'}
+              >
+                <Brain className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline">Mem</span>
+              </button>
+
+              {/* Model selector */}
+              <div className="relative">
+                <button
+                  ref={modelBtnRef}
+                  onClick={() => setModelOpen((v) => !v)}
+                  className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
+                  title="Switch model"
+                >
+                  <Cpu className="w-3.5 h-3.5" />
+                  <span className="hidden xl:inline max-w-[70px] truncate">
+                    {modelInfo?.current.model ?? 'Model'}
+                  </span>
+                </button>
+                {modelOpen && (
+                  <div className="absolute right-0 top-full mt-1 z-50">
+                    <ModelWidget
+                      onClose={() => setModelOpen(false)}
+                      onModelSwitch={() => {
+                        setModelOpen(false);
+                        void queryClient.invalidateQueries({ queryKey: ['model-info'] });
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Agent World toggle */}
+              <button
+                onClick={() => {
+                  const n = !showWorld;
+                  localStorage.setItem('editor:showWorld', String(n));
+                  setShowWorld(n);
+                }}
+                className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border transition-colors ${
+                  showWorld
+                    ? 'bg-primary/15 border-primary/50 text-primary'
+                    : 'border-border text-muted-foreground hover:text-foreground'
+                }`}
+                title={showWorld ? 'Hide agent world' : 'Show agent world'}
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline">World</span>
+              </button>
             </div>
 
             {/* Collapsible Files Panel */}
@@ -1505,8 +1727,50 @@ function StandardEditorPage() {
           </div>
         </div>
 
-        {/* Bottom panel — Tabbed (Terminal / Sessions / History / Experiments) */}
-        <div className="flex flex-col h-[150px] sm:h-[180px] lg:h-[200px] border rounded-lg overflow-hidden bg-card flex-shrink-0">
+        {/* Agent World panel (collapsible) */}
+        {showWorld && (
+          <div className="flex-none border border-border rounded-lg bg-card overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-1.5 bg-muted/30 border-b border-border">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                <Globe className="w-3.5 h-3.5" /> Agent World
+              </div>
+              <div className="flex items-center gap-0.5">
+                {(['grid', 'map', 'large'] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => {
+                      setWorldViewMode(m);
+                      localStorage.setItem('world:viewMode', m);
+                    }}
+                    className={`px-1.5 py-0.5 text-[11px] rounded transition-colors ${worldViewMode === m ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                  >
+                    {m.charAt(0).toUpperCase() + m.slice(1)}
+                  </button>
+                ))}
+                <button
+                  onClick={() => {
+                    localStorage.setItem('editor:showWorld', 'false');
+                    setShowWorld(false);
+                  }}
+                  className="ml-1 text-muted-foreground hover:text-foreground"
+                  title="Close agent world"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+            <div className="p-2 overflow-x-auto">
+              <AgentWorldWidget
+                maxAgents={8}
+                viewMode={worldViewMode}
+                onAgentClick={(id) => navigate(`/soul/personalities?focus=${id}`)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Bottom panel — Tabbed (Terminal / Sessions / History) */}
+        <div className="flex flex-col h-[200px] sm:h-[220px] lg:h-[240px] border rounded-lg overflow-hidden bg-card flex-shrink-0">
           {/* Tab bar */}
           <div className="flex items-center border-b bg-muted/30 min-w-0">
             <div className="flex flex-shrink-0">
@@ -1526,89 +1790,12 @@ function StandardEditorPage() {
                 </button>
               ))}
             </div>
-            {activeBottomTab === 'terminal' && (
-              <div className="flex items-center gap-2 ml-auto px-2 min-w-0 overflow-hidden">
-                <FolderOpen className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                <span className="text-xs font-mono text-muted-foreground truncate max-w-[160px]">
-                  {cwd}
-                </span>
-                <button
-                  onClick={clearTerminal}
-                  className="btn-ghost text-xs p-1 rounded hover:text-destructive flex-shrink-0"
-                  title="Clear terminal"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Tab content */}
           {activeBottomTab === 'terminal' && (
-            <div
-              className={`flex-1 overflow-y-auto px-3 py-2 font-mono text-xs space-y-1 ${
-                isDark ? 'bg-black text-white' : 'bg-gray-100 text-gray-900'
-              }`}
-            >
-              {terminalHistory.length === 0 && !terminalInput && (
-                <div className="text-muted-foreground opacity-50">
-                  # Terminal ready. Type commands below.
-                </div>
-              )}
-              {terminalHistory.map((entry) => (
-                <div key={entry.id} className="space-y-1">
-                  <div className="flex items-start gap-1">
-                    <span className={isDark ? 'text-green-400' : 'text-green-600'}>➜</span>
-                    <span className={isDark ? 'text-blue-400' : 'text-blue-600'}>{cwd}</span>
-                    <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>$</span>
-                    <span className={isDark ? 'text-white' : 'text-gray-900'}>{entry.command}</span>
-                  </div>
-                  {entry.output && (
-                    <div
-                      className={`whitespace-pre-wrap pl-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
-                    >
-                      {entry.output}
-                    </div>
-                  )}
-                  {entry.error && (
-                    <div
-                      className={`whitespace-pre-wrap pl-4 ${isDark ? 'text-red-400' : 'text-red-600'}`}
-                    >
-                      {entry.error}
-                    </div>
-                  )}
-                  {entry.exitCode !== 0 && (
-                    <div className={`text-[10px] pl-4 ${isDark ? 'text-red-500' : 'text-red-600'}`}>
-                      Exit code: {entry.exitCode}
-                    </div>
-                  )}
-                </div>
-              ))}
-              {terminalMutation.isPending && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  <span>Running...</span>
-                </div>
-              )}
-              {/* Current input line */}
-              <div className="flex items-center gap-1">
-                <span className={isDark ? 'text-green-400' : 'text-green-600'}>➜</span>
-                <span className={isDark ? 'text-blue-400' : 'text-blue-600'}>{cwd}</span>
-                <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>$</span>
-                <input
-                  ref={terminalInputRef}
-                  type="text"
-                  value={terminalInput}
-                  onChange={(e) => {
-                    setTerminalInput(e.target.value);
-                  }}
-                  onKeyDown={handleTerminalKeyDown}
-                  placeholder="Type command..."
-                  disabled={terminalMutation.isPending}
-                  className={`flex-1 bg-transparent border-none px-0 py-0 text-xs font-mono focus:outline-none ${isDark ? 'text-white placeholder:text-gray-500' : 'text-gray-900 placeholder:text-gray-400'} disabled:opacity-50`}
-                />
-              </div>
-              <div ref={terminalEndRef} />
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <MultiTerminal outputRef={terminalOutputRef} onCommandComplete={saveMemory} />
             </div>
           )}
 
