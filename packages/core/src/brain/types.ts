@@ -119,3 +119,50 @@ export interface BrainStats {
     total: number;
   };
 }
+
+// ── Knowledge Base Documents ───────────────────────────────────
+
+export type DocumentFormat = 'pdf' | 'html' | 'md' | 'txt' | 'url';
+export type DocumentVisibility = 'private' | 'shared';
+export type DocumentStatus = 'pending' | 'processing' | 'ready' | 'error';
+
+export interface KbDocument {
+  id: string;
+  personalityId: string | null;
+  title: string;
+  filename: string | null;
+  format: DocumentFormat | null;
+  sourceUrl: string | null;
+  visibility: DocumentVisibility;
+  status: DocumentStatus;
+  chunkCount: number;
+  errorMessage: string | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface DocumentCreate {
+  personalityId: string | null;
+  title: string;
+  filename?: string;
+  format?: DocumentFormat;
+  sourceUrl?: string;
+  visibility: DocumentVisibility;
+  status: DocumentStatus;
+}
+
+export interface KnowledgeHealthStats {
+  totalDocuments: number;
+  totalChunks: number;
+  byFormat: Record<string, number>;
+  recentQueryCount: number;
+  avgTopScore: number | null;
+  lowCoverageQueries: number;
+}
+
+export interface QueryLogCreate {
+  personalityId: string | null;
+  queryText: string;
+  resultsCount: number;
+  topScore?: number;
+}

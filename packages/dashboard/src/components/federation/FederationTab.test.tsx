@@ -128,29 +128,26 @@ describe('FederationTab', () => {
       peer: { ...mockPeers[0], id: 'new-peer', name: 'New Peer' },
     } as any);
 
-    const user = userEvent.setup();
     renderTab();
     await waitFor(() => screen.getByRole('button', { name: /add peer/i }));
 
-    // Click the header "Add Peer" button to show the form
-    // There is only one "Add Peer" button initially (no form yet)
-    await user.click(screen.getByRole('button', { name: /add peer/i }));
+    // Open the add form
+    fireEvent.click(screen.getByRole('button', { name: /add peer/i }));
 
-    await user.type(screen.getByPlaceholderText('https://peer.example.com'), 'https://new.example.com');
-    await user.type(screen.getByPlaceholderText('My Partner Node'), 'New Peer');
-    await user.type(
+    // Fill the form using fireEvent.change (header button is hidden now)
+    fireEvent.change(screen.getByPlaceholderText('https://peer.example.com'), {
+      target: { value: 'https://new.example.com' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('My Partner Node'), {
+      target: { value: 'New Peer' },
+    });
+    fireEvent.change(
       screen.getByPlaceholderText('Pre-shared key agreed with the peer operator'),
-      'my-shared-secret'
+      { target: { value: 'my-shared-secret' } }
     );
 
-    // There are now multiple "Add Peer" buttons: find the one inside the form
-    // The form submit button text is "Add Peer" and it is inside the form panel
-    // Use getByText on "Add Peer" within the form container
-    const addPeerBtns = screen.getAllByRole('button', { name: /add peer/i });
-    // The form's "Add Peer" button is the last one (header btn is hidden when form is open)
-    // Actually header btn is hidden when showAddForm=true, so only one btn remains
-    const formAddBtn = addPeerBtns[addPeerBtns.length - 1];
-    await user.click(formAddBtn);
+    // Submit — there is now only the form's "Add Peer" button (header btn is hidden)
+    fireEvent.click(screen.getByRole('button', { name: /add peer/i }));
 
     await waitFor(() => {
       expect(mockAddFederationPeer).toHaveBeenCalledWith(
@@ -158,7 +155,8 @@ describe('FederationTab', () => {
           url: 'https://new.example.com',
           name: 'New Peer',
           sharedSecret: 'my-shared-secret',
-        })
+        }),
+        expect.any(Object)
       );
     });
   });
@@ -180,22 +178,15 @@ describe('FederationTab', () => {
 
   it('should call removeFederationPeer when trash button is clicked', async () => {
     mockRemoveFederationPeer.mockResolvedValue(undefined);
-    // Refetch after removal returns empty peers
-    mockFetchFederationPeers.mockResolvedValue({ peers: [] });
 
-    const user = userEvent.setup();
     renderTab();
     await waitFor(() => screen.getByText('Remote Instance'));
 
-    const removeBtn = screen.getByTitle('Remove peer');
-    await user.click(removeBtn);
+    fireEvent.click(screen.getByTitle('Remove peer'));
 
-    await waitFor(
-      () => {
-        expect(mockRemoveFederationPeer).toHaveBeenCalledWith('peer-1');
-      },
-      { timeout: 3000 }
-    );
+    await waitFor(() => {
+      expect(mockRemoveFederationPeer).toHaveBeenCalledWith('peer-1', expect.any(Object));
+    });
   });
 
   it('should switch to Personality Bundles sub-tab when clicked', async () => {

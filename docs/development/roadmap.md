@@ -27,16 +27,13 @@
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P1 — ongoing | 🔄 Continuous |
-| — | Dashboard Performance Optimization | P1 — cross-cutting | ✅ Complete |
 | 78 | Advanced Editor — Full IDE Mode | P2 — power user priority | Ready |
-| 79 | Multi-Instance Federation | P2 — platform surface | Planned |
-| 80 | API Gateway Mode | P2 — platform surface | Planned |
 | 81 | Conversation Branching & Replay | P3 — developer experience | Planned |
 | 82 | Knowledge Base & RAG Platform | P3 — knowledge platform | Planned |
-| 86 | Inline Citations & Grounding | P4 — trust layer | Planned *(requires Phase 82)* |
 | 83 | Content Guardrails | P3 — enterprise compliance | Planned *(grounding check requires Phase 82)* |
 | 84 | LLM-as-Judge Evaluation | P3 — ML quality signal | Planned |
 | 85 | Conversation Analytics | P3 — operational insight | Planned |
+| 86 | Inline Citations & Grounding | P4 — trust layer | Planned *(requires Phase 82)* |
 | 87 | LLM Lifecycle Platform — Core | P4 — model ops | Planned |
 | 88 | Marketplace Shareables | P4 — community growth | Planned |
 | Future | Observability & Telemetry, Workflow & Personality Versioning, LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Native Clients, Infrastructure | Future / Demand-Gated | — |
@@ -198,28 +195,6 @@ Per-workspace state survives page refresh:
 - [ ] **Responsive layout** — single-column narrow viewport; swipe-to-reveal explorer; touch support
 - [ ] **Training integration** — "Export to Training Data" context menu action; annotation mode
 - [ ] **Plugin / extension system** *(stretch goal)* — editor plugins register commands, panels, and language support via a stable internal API
-
----
-
-## Phase 79: Multi-Instance Federation
-
-**Priority**: P2 — Platform surface expansion. The A2A protocol already enables cross-instance agent delegation. Extend to allow SecureYeoman instances to share knowledge bases, personalities, and skills — useful for enterprise deployments with multiple teams.
-
-- [ ] **Instance registry** — Peer SecureYeoman instances register with each other via `POST /api/v1/federation/peers` (URL + shared secret). Peers listed in a new Federation tab in ConnectionsPage. Health checks via `GET /api/v1/health/ready` poll.
-- [ ] **Knowledge base federation** — Query a peer instance's knowledge base from a local personality. `kb_search` MCP tool gains `instanceId?` param; routes to peer's `/api/v1/brain/search` via the authenticated federation channel.
-- [ ] **Personality export/import** — Export a full personality bundle (config + skills + knowledge base + voice profile) as an encrypted archive. Import on another instance with credentials re-mapping. Enables team-to-team personality transfer without manual re-configuration.
-- [ ] **Federated marketplace** — Browse and install skills from a peer instance's marketplace. Pull-model: local admin approves which peer's marketplace to federate. No central server required.
-
----
-
-## Phase 80: API Gateway Mode
-
-**Priority**: P2 — Platform surface expansion. Use SecureYeoman as an authenticated AI proxy and middleware layer — external applications POST a prompt + personality ID and receive a response, without needing direct LLM API access or system prompt management.
-
-- [ ] **Gateway endpoint** — `POST /api/v1/gateway` accepts `{ personalityId, messages[], stream? }` with an API key. Returns the personality's response (streaming or buffered). The personality's full system prompt, tool set, memory, and guardrails apply transparently. External apps never see the underlying model or credentials.
-- [ ] **Per-key personality binding** — Each API key can be pre-bound to a specific personality ID; the `personalityId` field becomes optional. Useful for embedding a specific agent in a product without exposing configuration.
-- [ ] **Rate limiting per key** — Gateway API keys have configurable rate limits (requests/min, tokens/day) enforced at the gateway layer. Quota exhausted → `429` with `Retry-After`. Usage tracked per key in `auth.api_key_usage`.
-- [ ] **Gateway analytics** — Dashboard panel showing per-key usage, latency percentiles, error rates, and top personalities accessed. Export as CSV for billing/chargeback in multi-team deployments.
 
 ---
 
@@ -515,4 +490,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-28 — Phase 77 (Prompt Security) complete and removed from open items. Phase 86 (Inline Citations & Grounding) moved to follow Phase 82 (Knowledge Base) in both the timeline and body — it is fully gate-locked on Phase 82. Phase 83 grounding-check item annotated as also requiring Phase 82. Phase 83's input-side reference corrected to Phase 77.*
+*Last updated: 2026-02-28 — Phase 79 (Multi-Instance Federation) and Phase 80 (API Gateway Mode) complete. See [Changelog](../../CHANGELOG.md) for details.*

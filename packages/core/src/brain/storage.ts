@@ -15,6 +15,10 @@ import type {
   KnowledgeQuery,
   SkillFilter,
   BrainStats,
+  KbDocument,
+  DocumentCreate,
+  KnowledgeHealthStats,
+  QueryLogCreate,
 } from './types.js';
 import type { Skill, SkillCreate, SkillUpdate } from '@secureyeoman/shared';
 import { uuidv7 } from '../utils/crypto.js';
@@ -75,7 +79,48 @@ interface SkillRow {
   output_schema?: Record<string, unknown> | null;
 }
 
+interface DocumentRow {
+  id: string;
+  personality_id: string | null;
+  title: string;
+  filename: string | null;
+  format: string | null;
+  source_url: string | null;
+  visibility: string;
+  status: string;
+  chunk_count: number;
+  error_message: string | null;
+  created_at: number;
+  updated_at: number;
+}
+
+interface QueryLogRow {
+  id: string;
+  personality_id: string | null;
+  query_text: string;
+  results_count: number;
+  top_score: number | null;
+  queried_at: number;
+}
+
 // ── Helpers ──────────────────────────────────────────────────
+
+function rowToDocument(row: DocumentRow): KbDocument {
+  return {
+    id: row.id,
+    personalityId: row.personality_id,
+    title: row.title,
+    filename: row.filename,
+    format: row.format as KbDocument['format'],
+    sourceUrl: row.source_url,
+    visibility: row.visibility as KbDocument['visibility'],
+    status: row.status as KbDocument['status'],
+    chunkCount: row.chunk_count,
+    errorMessage: row.error_message,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
 
 function rowToMemory(row: MemoryRow): Memory {
   return {
@@ -1020,6 +1065,171 @@ export class BrainStorage extends PgBaseStorage {
       skills: {
         total: await this.getSkillCount(),
       },
+    };
+  }
+
+  // ── Documents ─────────────────────────────────────────────────
+
+  async createDocument(data: DocumentCreate): Promise<KbDocument> {
+    const now = Date.now();
+    const id = uuidv7();
+
+    await this.query(
+      `INSERT INTO brain.documents (id, personality_id, title, filename, format, source_url, visibility, status, chunk_count, error_message, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, NULL, $9, $10)`,
+      [
+        id,
+        data.personalityId,
+        data.title,
+        data.filename ?? null,
+        data.format ?? null,
+        data.sourceUrl ?? null,
+        data.visibility,
+        data.status,
+        now,
+        now,
+      ]
+    );
+
+    const result = await this.getDocument(id);
+    if (!result) throw new Error(`Failed to retrieve document after insert: ${id}`);
+    return result;
+  }
+
+  async getDocument(id: string): Promise<KbDocument | null> {
+    const row = await this.queryOne<DocumentRow>('SELECT * FROM brain.documents WHERE id = $1', [
+      id,
+    ]);
+    return row ? rowToDocument(row) : null;
+  }
+
+  async updateDocument(id: string, data: Partial<KbDocument>): Promise<KbDocument> {
+    const existing = await this.getDocument(id);
+    if (!existing) throw new Error(`Document not found: ${id}`);
+
+    const now = Date.now();
+    await this.execute(
+      `UPDATE brain.documents SET
+         title = $1,
+         status = $2,
+         chunk_count = $3,
+         error_message = $4,
+         updated_at = $5
+       WHERE id = $6`,
+      [
+        data.title ?? existing.title,
+        data.status ?? existing.status,
+        data.chunkCount ?? existing.chunkCount,
+        data.errorMessage !== undefined ? data.errorMessage : existing.errorMessage,
+        now,
+        id,
+      ]
+    );
+
+    const result = await this.getDocument(id);
+    if (!result) throw new Error(`Failed to retrieve document after update: ${id}`);
+    return result;
+  }
+
+  async deleteDocument(id: string): Promise<boolean> {
+    const count = await this.execute('DELETE FROM brain.documents WHERE id = $1', [id]);
+    return count > 0;
+  }
+
+  async listDocuments(opts?: { personalityId?: string; visibility?: string }): Promise<KbDocument[]> {
+    let sql = 'SELECT * FROM brain.documents WHERE 1=1';
+    const params: unknown[] = [];
+    let idx = 1;
+
+    if (opts?.personalityId) {
+      sql += ` AND (personality_id = $${idx++} OR personality_id IS NULL)`;
+      params.push(opts.personalityId);
+    }
+    if (opts?.visibility) {
+      sql += ` AND visibility = $${idx++}`;
+      params.push(opts.visibility);
+    }
+
+    sql += ' ORDER BY created_at DESC';
+
+    const rows = await this.queryMany<DocumentRow>(sql, params);
+    return rows.map(rowToDocument);
+  }
+
+  async deleteKnowledgeBySourcePrefix(prefix: string): Promise<number> {
+    const count = await this.execute(
+      'DELETE FROM brain.knowledge WHERE source LIKE $1',
+      [prefix + '%']
+    );
+    return count;
+  }
+
+  // ── Knowledge Query Log ────────────────────────────────────────
+
+  async logKnowledgeQuery(data: QueryLogCreate): Promise<void> {
+    const now = Date.now();
+    const id = uuidv7();
+
+    await this.query(
+      `INSERT INTO brain.knowledge_query_log (id, personality_id, query_text, results_count, top_score, queried_at)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [id, data.personalityId, data.queryText, data.resultsCount, data.topScore ?? null, now]
+    );
+  }
+
+  async getKnowledgeHealthStats(personalityId?: string): Promise<KnowledgeHealthStats> {
+    const since24h = Date.now() - 86_400_000;
+
+    // Total documents + chunk sum + by-format breakdown
+    let docSql = 'SELECT COUNT(*) as total, COALESCE(SUM(chunk_count), 0) as total_chunks FROM brain.documents WHERE 1=1';
+    const docParams: unknown[] = [];
+    if (personalityId) {
+      docSql += ' AND (personality_id = $1 OR personality_id IS NULL)';
+      docParams.push(personalityId);
+    }
+    const docRow = await this.queryOne<{ total: string; total_chunks: string }>(docSql, docParams);
+
+    let formatSql = 'SELECT format, COUNT(*) as cnt FROM brain.documents WHERE 1=1';
+    const formatParams: unknown[] = [];
+    if (personalityId) {
+      formatSql += ' AND (personality_id = $1 OR personality_id IS NULL)';
+      formatParams.push(personalityId);
+    }
+    formatSql += ' GROUP BY format';
+    const formatRows = await this.queryMany<{ format: string | null; cnt: string }>(
+      formatSql,
+      formatParams
+    );
+
+    const byFormat: Record<string, number> = {};
+    for (const r of formatRows) {
+      byFormat[r.format ?? 'unknown'] = Number(r.cnt);
+    }
+
+    // Query log stats (last 24h)
+    let qlSql = `SELECT COUNT(*) as cnt, AVG(top_score) as avg_score FROM brain.knowledge_query_log WHERE queried_at >= $1`;
+    const qlParams: unknown[] = [since24h];
+    if (personalityId) {
+      qlSql += ` AND (personality_id = $2 OR personality_id IS NULL)`;
+      qlParams.push(personalityId);
+    }
+    const qlRow = await this.queryOne<{ cnt: string; avg_score: number | null }>(qlSql, qlParams);
+
+    let lowSql = `SELECT COUNT(*) as cnt FROM brain.knowledge_query_log WHERE queried_at >= $1 AND results_count = 0`;
+    const lowParams: unknown[] = [since24h];
+    if (personalityId) {
+      lowSql += ` AND (personality_id = $2 OR personality_id IS NULL)`;
+      lowParams.push(personalityId);
+    }
+    const lowRow = await this.queryOne<{ cnt: string }>(lowSql, lowParams);
+
+    return {
+      totalDocuments: Number(docRow?.total ?? 0),
+      totalChunks: Number(docRow?.total_chunks ?? 0),
+      byFormat,
+      recentQueryCount: Number(qlRow?.cnt ?? 0),
+      avgTopScore: qlRow?.avg_score ?? null,
+      lowCoverageQueries: Number(lowRow?.cnt ?? 0),
     };
   }
 }

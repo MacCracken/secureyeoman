@@ -1,3 +1,25 @@
+## [2026.2.28u] — Phase 79 + 80: Multi-Instance Federation & API Gateway Mode
+
+### Phase 79 — Multi-Instance Federation
+- **New**: `federation.peers` + `federation.sync_log` tables (migration 065)
+- **New**: `FederationStorage` + `FederationManager` with SSRF-guarded peer registration, AES-256-GCM shared-secret encryption, 60s health cycle
+- **New**: 11 authenticated management routes (`/api/v1/federation/peers/*`, `/api/v1/federation/personalities/*`)
+- **New**: 3 peer-incoming routes with custom Bearer auth (`/api/v1/federation/knowledge/search`, `/api/v1/federation/marketplace/*`)
+- **New**: Personality bundle export/import (`.syi` files, passphrase-encrypted, `integrationAccess` sanitized on import)
+- **New**: `knowledge_search` MCP tool gains optional `instanceId` param for federated search
+- **New**: Federation tab in ConnectionsPage (peer list, add form, marketplace browser, bundle export/import)
+
+### Phase 80 — API Gateway Mode
+- **New**: `auth.api_keys` extended with `personality_id`, `rate_limit_rpm`, `rate_limit_tpd`, `is_gateway_key` (migration 066)
+- **New**: `auth.api_key_usage` table for per-request tracking
+- **New**: `POST /api/v1/gateway` — authenticated chat proxy with RPM/TPD enforcement + personality binding
+- **New**: `GET /api/v1/auth/api-keys/:id/usage` — raw usage rows with time-range filter
+- **New**: `GET /api/v1/auth/api-keys/usage/summary` — 24h aggregate stats (p50/p95 latency) with CSV export
+- **New**: Gateway Analytics tab in DeveloperPage with KPI summary, per-key table, and CSV download
+- **New**: ADR 160 (Federation), ADR 161 (API Gateway), guides `federation.md` + `api-gateway-mode.md`
+
+---
+
 ## [2026.2.28u] — 2026-02-28
 
 ### Added
