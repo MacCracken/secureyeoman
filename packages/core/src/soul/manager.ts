@@ -243,6 +243,7 @@ export class SoulManager {
             exposeTwitter: false,
             exposeGithub: false,
             exposeDocker: false,
+            exposeCicd: false,
           },
           proactiveConfig: {
             enabled: false,

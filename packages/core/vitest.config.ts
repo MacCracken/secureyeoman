@@ -11,6 +11,15 @@ const sqlRaw: Plugin = {
   },
 };
 
+/**
+ * Standalone serial config — runs ALL core tests in a single pass.
+ * Used for:
+ *   - Coverage reports: `npx vitest run --coverage` (accurate cross-DB+unit coverage)
+ *   - CI safety: guaranteed serial ordering avoids DB race conditions
+ *
+ * For faster parallel runs use the root workspace: `npx vitest run` from repo root.
+ * That splits tests into core:unit (parallel) and core:db (serial) projects.
+ */
 export default defineConfig({
   plugins: [sqlRaw],
   test: {

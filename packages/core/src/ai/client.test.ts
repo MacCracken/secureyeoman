@@ -585,4 +585,108 @@ describe('AIClient', () => {
       expect(stats!.entries).toBe(0);
     });
   });
+
+  // ─── local-first branch coverage ─────────────────────────────────────
+
+  describe('local-first pre-attempts', () => {
+    function makeLocalFirstConfig(fallbacks: FallbackModelConfig[]): ModelConfig {
+      return {
+        ...makeModelConfig('anthropic', fallbacks),
+        localFirst: true,
+      } as ModelConfig;
+    }
+
+    it('getLocalFirstPreAttemptIndices returns [] when localFirst is false', () => {
+      const client = new AIClient({ model: makeModelConfig('anthropic') });
+      const indices = (client as any).getLocalFirstPreAttemptIndices();
+      expect(indices).toEqual([]);
+    });
+
+    it('getLocalFirstPreAttemptIndices returns [] when primary is already a local provider', () => {
+      const client = new AIClient({ model: { ...makeModelConfig('ollama'), localFirst: true } as ModelConfig });
+      const indices = (client as any).getLocalFirstPreAttemptIndices();
+      expect(indices).toEqual([]);
+    });
+
+    it('getLocalFirstPreAttemptIndices returns [] when no local fallbacks exist', () => {
+      const fallbacks: FallbackModelConfig[] = [
+        { provider: 'openai', model: 'gpt-4o', apiKeyEnv: 'OPENAI_API_KEY' },
+      ];
+      const client = new AIClient({ model: makeLocalFirstConfig(fallbacks) });
+      const indices = (client as any).getLocalFirstPreAttemptIndices();
+      expect(indices).toEqual([]);
+    });
+
+    it('getLocalFirstPreAttemptIndices returns index of ollama fallback', () => {
+      const fallbacks: FallbackModelConfig[] = [
+        { provider: 'openai', model: 'gpt-4o', apiKeyEnv: 'OPENAI_API_KEY' },
+        { provider: 'ollama', model: 'llama3', apiKeyEnv: 'OLLAMA_KEY' },
+      ];
+      const client = new AIClient({ model: makeLocalFirstConfig(fallbacks) });
+      const indices = (client as any).getLocalFirstPreAttemptIndices();
+      expect(indices).toEqual([1]);
+    });
+
+    it('uses local fallback first when localFirst=true and local succeeds', async () => {
+      const fallbacks: FallbackModelConfig[] = [
+        { provider: 'ollama', model: 'llama3', apiKeyEnv: 'OLLAMA_KEY' },
+      ];
+      const client = new AIClient({ model: makeLocalFirstConfig(fallbacks) });
+
+      const localResponse: AIResponse = {
+        ...mockResponse,
+        provider: 'ollama',
+        model: 'llama3',
+      };
+      const mockLocalProvider = {
+        name: 'ollama',
+        chat: vi.fn().mockResolvedValue(localResponse),
+        chatStream: vi.fn(),
+      };
+      (client as any).fallbackProviders.set(0, mockLocalProvider);
+
+      const result = await client.chat(mockRequest);
+
+      expect(result.provider).toBe('ollama');
+      // Primary provider should NOT have been called
+      expect((client as any).provider.chat).not.toHaveBeenCalled();
+    });
+
+    it('falls through to primary when local pre-attempt throws ProviderUnavailableError', async () => {
+      const fallbacks: FallbackModelConfig[] = [
+        { provider: 'ollama', model: 'llama3', apiKeyEnv: 'OLLAMA_KEY' },
+      ];
+      const client = new AIClient({ model: makeLocalFirstConfig(fallbacks) });
+
+      const mockLocalProvider = {
+        name: 'ollama',
+        chat: vi.fn().mockRejectedValue(new ProviderUnavailableError('ollama')),
+        chatStream: vi.fn(),
+      };
+      (client as any).fallbackProviders.set(0, mockLocalProvider);
+      (client as any).provider.chat = vi.fn().mockResolvedValue(mockResponse);
+
+      const result = await client.chat(mockRequest);
+
+      // Primary (anthropic) should have been called after local failed
+      expect((client as any).provider.chat).toHaveBeenCalled();
+      expect(result).toMatchObject(mockResponse);
+    });
+
+    it('rethrows non-ProviderUnavailableError from local pre-attempt', async () => {
+      const fallbacks: FallbackModelConfig[] = [
+        { provider: 'ollama', model: 'llama3', apiKeyEnv: 'OLLAMA_KEY' },
+      ];
+      const client = new AIClient({ model: makeLocalFirstConfig(fallbacks) });
+
+      const mockLocalProvider = {
+        name: 'ollama',
+        chat: vi.fn().mockRejectedValue(new RateLimitError('ollama')),
+        chatStream: vi.fn(),
+      };
+      (client as any).fallbackProviders.set(0, mockLocalProvider);
+
+      await expect(client.chat(mockRequest)).rejects.toThrow(RateLimitError);
+    });
+  });
 });

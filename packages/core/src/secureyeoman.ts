@@ -680,7 +680,9 @@ export class SecureYeoman {
       this.logger.debug('Brain manager initialized');
 
       // Step 5.7.1: Initialize document manager (knowledge base pipeline)
-      this.documentManager = new DocumentManager(this.brainManager, this.brainStorage, {
+      this.documentManager = new DocumentManager({
+        brainManager: this.brainManager,
+        storage: this.brainStorage,
         logger: this.logger.child({ component: 'DocumentManager' }),
       });
       this.logger.debug('Document manager initialized');

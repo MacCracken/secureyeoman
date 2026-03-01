@@ -4,9 +4,9 @@
  * Tests the DAG execution engine using mocked storage — no database required.
  * Covers: topological sort, cycle detection, step dispatch (all 9 types),
  * condition gates, error-handling modes (fail/continue/skip/fallback),
- * retry policy, and template / condition helpers.
+ * retry policy, template / condition helpers, and CI/CD step types (Phase 90).
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { WorkflowEngine, WorkflowCycleError } from './workflow-engine.js';
 import type { WorkflowStorage } from './workflow-storage.js';
 import type {
@@ -122,6 +122,7 @@ function makeEngine(
     evaluationManager?: unknown;
     approvalManager?: unknown;
     lineageStorage?: unknown;
+    cicdConfig?: unknown;
   } = {}
 ): WorkflowEngine {
   return new WorkflowEngine({
@@ -135,6 +136,7 @@ function makeEngine(
     evaluationManager: (opts.evaluationManager ?? null) as never,
     approvalManager: (opts.approvalManager ?? null) as never,
     lineageStorage: (opts.lineageStorage ?? null) as never,
+    cicdConfig: (opts.cicdConfig ?? null) as never,
   });
 }
 
@@ -1398,6 +1400,182 @@ describe('WorkflowEngine.execute — outputSchemaMode', () => {
       'Step output schema violation',
       expect.any(Object)
     );
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+});
+
+// ─── CI/CD Step Types (Phase 90) ─────────────────────────────────────────────
+
+describe('WorkflowEngine.execute — step dispatch: ci_trigger (github-actions)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('dispatches GitHub Actions workflow and returns queued status', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, status: 204, text: async () => '' })
+    );
+    const cicdConfig = { githubToken: 'gh-tok' };
+    const engine = makeEngine({ cicdConfig });
+    const storage = engine['storage'] as ReturnType<typeof makeStorage>;
+    const step = makeStep({
+      id: 'trigger',
+      type: 'ci_trigger',
+      config: {
+        provider: 'github-actions',
+        owner: 'myorg',
+        repo: 'myrepo',
+        ref: 'main',
+        workflowId: 'ci.yml',
+      },
+    });
+    await engine.execute(makeRun(), makeDefinition([step]));
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+    const fetchMock = vi.mocked(global.fetch as ReturnType<typeof vi.fn>);
+    const calledUrl = (fetchMock.mock.calls[0] as string[])[0] as string;
+    expect(calledUrl).toContain('/repos/myorg/myrepo/actions/workflows/ci.yml/dispatches');
+  });
+
+  it('fails when GitHub Actions dispatch returns 422', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 422, text: async () => 'Error' })
+    );
+    const engine = makeEngine({ cicdConfig: { githubToken: 'tok' } });
+    const step = makeStep({
+      id: 'trigger',
+      type: 'ci_trigger',
+      config: { provider: 'github-actions', owner: 'o', repo: 'r', ref: 'main', workflowId: 'ci.yml' },
+    });
+    const storage = engine['storage'] as ReturnType<typeof makeStorage>;
+    await engine.execute(makeRun(), makeDefinition([step]));
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'failed' })
+    );
+  });
+
+  it('fails for unsupported ci_trigger provider', async () => {
+    const engine = makeEngine();
+    const step = makeStep({
+      id: 'trigger',
+      type: 'ci_trigger',
+      config: { provider: 'circleci', owner: 'o', repo: 'r', ref: 'main' },
+    });
+    const storage = engine['storage'] as ReturnType<typeof makeStorage>;
+    await engine.execute(makeRun(), makeDefinition([step]));
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'failed' })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — step dispatch: ci_wait (github-actions)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('polls GitHub run and returns conclusion when completed', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn()
+        .mockResolvedValueOnce({
+          ok: true, status: 200,
+          headers: { get: () => 'application/json' },
+          json: async () => ({ status: 'in_progress', conclusion: null }),
+        })
+        .mockResolvedValueOnce({
+          ok: true, status: 200,
+          headers: { get: () => 'application/json' },
+          json: async () => ({ status: 'completed', conclusion: 'success', html_url: 'https://github.com' }),
+        })
+    );
+    const engine = makeEngine({ cicdConfig: { githubToken: 'gh-tok' } });
+    const step = makeStep({
+      id: 'wait',
+      type: 'ci_wait',
+      config: { provider: 'github-actions', owner: 'org', repo: 'repo', runId: '42', pollIntervalMs: 1, timeoutMs: 5000 },
+    });
+    const storage = engine['storage'] as ReturnType<typeof makeStorage>;
+    await engine.execute(makeRun(), makeDefinition([step]));
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+
+  it('fails when ci_wait times out', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true, status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ status: 'in_progress', conclusion: null }),
+      })
+    );
+    const engine = makeEngine({ cicdConfig: { githubToken: 'tok' } });
+    const step = makeStep({
+      id: 'wait',
+      type: 'ci_wait',
+      config: { provider: 'github-actions', owner: 'o', repo: 'r', runId: '1', pollIntervalMs: 1, timeoutMs: 5 },
+    });
+    const storage = engine['storage'] as ReturnType<typeof makeStorage>;
+    await engine.execute(makeRun(), makeDefinition([step]));
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'failed' })
+    );
+  });
+
+  it('fails for unsupported ci_wait provider', async () => {
+    const engine = makeEngine();
+    const step = makeStep({
+      id: 'wait',
+      type: 'ci_wait',
+      config: { provider: 'travis', runId: '1' },
+    });
+    const storage = engine['storage'] as ReturnType<typeof makeStorage>;
+    await engine.execute(makeRun(), makeDefinition([step]));
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'failed' })
+    );
+  });
+
+  it('ci_trigger then ci_wait pipeline completes', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, status: 204, text: async () => '' })
+      .mockResolvedValueOnce({
+        ok: true, status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ status: 'completed', conclusion: 'success', html_url: 'https://github.com' }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+    const engine = makeEngine({ cicdConfig: { githubToken: 'gh-tok' } });
+    const triggerStep = makeStep({
+      id: 'trigger',
+      type: 'ci_trigger',
+      config: { provider: 'github-actions', owner: 'o', repo: 'r', ref: 'main', workflowId: 'ci.yml' },
+      dependsOn: [],
+    });
+    const waitStep = makeStep({
+      id: 'wait',
+      type: 'ci_wait',
+      config: { provider: 'github-actions', owner: 'o', repo: 'r', runId: '999', pollIntervalMs: 1, timeoutMs: 5000 },
+      dependsOn: ['trigger'],
+    });
+    const storage = engine['storage'] as ReturnType<typeof makeStorage>;
+    await engine.execute(makeRun(), makeDefinition([triggerStep, waitStep], {
+      edges: [{ source: 'trigger', target: 'wait' }],
+    }));
     expect(storage.updateRun).toHaveBeenCalledWith(
       'run-1',
       expect.objectContaining({ status: 'completed' })

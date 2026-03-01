@@ -654,6 +654,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               exposeTwitter: false,
               exposeGithub: false,
               exposeDocker: false,
+              exposeCicd: false,
             },
             proactiveConfig: {
               enabled: false,

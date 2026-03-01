@@ -1,387 +1,227 @@
-## [2026.2.28x] — Phase 83: Observability & Telemetry
+## [2026.2.28] — 2026-02-28
 
-### Added
+### Phase 91 — Native Clients Scaffold (Tauri v2 Desktop + Capacitor v6 Mobile)
+
+- **Desktop shell** (`packages/desktop/`) — Tauri v2 wrapper loading `packages/dashboard/dist`.
+  Rust entry point in `src-tauri/src/main.rs`; `tauri-plugin-shell` enabled; system tray configured.
+  Scripts: `npm run dev:desktop` (hot-reload against Vite dev server), `npm run build:desktop`
+  (produces platform bundles in `src-tauri/target/release/bundle/`).
+- **Mobile shell** (`packages/mobile/`) — Capacitor v6 wrapper pointing `webDir` at
+  `packages/dashboard/dist`. Scripts: `add:ios`, `add:android`, `sync`, `open:ios`,
+  `open:android`. Live-reload dev mode via `server.url` in `capacitor.config.ts`.
+- **Root scripts added**: `dev:desktop`, `build:desktop`.
+- **No API or UI changes** — both shells reuse the compiled dashboard SPA without modification.
+- **ADR 167** (`docs/adr/167-native-clients.md`): Tauri chosen over Electron (~5 MB vs ~200 MB
+  binary; Rust process isolation; explicit IPC allow-lists align with security-first principles).
+  Capacitor chosen over React Native (zero UI duplication; all 100+ endpoints work immediately;
+  live-reload via `server.url`).
+- **Guide** `docs/guides/native-clients.md` — full setup, live-reload workflow, icon generation,
+  native plugin addition, and troubleshooting.
+- **Tests**: `packages/mobile/capacitor.config.test.ts` (4 Vitest assertions on config values);
+  `packages/desktop/src-tauri/src/main.rs` compile-check test (`cargo check`).
+
+---
+
+### Phase 89-A/B/C — Test Coverage: Branch Sweeps & Zero-Coverage Files
+
+> **Testing process note**: Full suite (10K+ tests, ~5 min) reserved for CI only.
+> Dev workflow: `npx vitest run <file>.test.ts` — single file, <1s.
+> Domain batches: `npx vitest run src/gateway/` for pre-commit.
+
+**Phase 89-A — Zero-coverage sweep (~224 new tests, 10 new files):**
+- `sandbox/linux-sandbox.test.ts` (19) — capability detection (Landlock/kernel/namespaces), `validatePath`, `run()` path traversal
+- `sandbox/linux-capture-sandbox.test.ts` (33) — lifecycle, path validation, resource limits, syscall lists
+- `sandbox/darwin-capture-sandbox.test.ts` (39) — lifecycle + `generateSeatbeltProfile` (network, IOFramebuffer, allowedHosts)
+- `ai/embeddings/ollama.test.ts` (15) — dimensions (7 models), embed, HTTP/shape errors
+- `telemetry/otel-fastify-plugin.test.ts` (16) — span lifecycle, X-Trace-Id, all-zeros no-op skip
+- `risk-assessment/risk-assessment-report.test.ts` (~50) — JSON/HTML/Markdown/CSV, XSS escaping, score-band recommendations
+- `cli/commands/training.test.ts` (17) — stats + export streaming, format/date/limit, error handling
+- `federation/federation-crypto.test.ts` (17) — AES-256-GCM round-trip, tamper detection, HKDF-SHA256
+- `federation/federation-storage.test.ts` (15) — CRUD + logSync with mock pg pool
+- `agents/team-storage.test.ts` (~33) — CRUD, seed-builtins, run management
+
+**Phase 89-B/C — Branch sweeps (~26 new tests appended to existing files):**
+- `ai/client.test.ts` (+7) — `localFirst`: disabled/local-primary/no-local-fallbacks/index-detection, pre-attempt success, ProviderUnavailable fall-through, non-ProviderUnavailable rethrow
+- `security/input-validator.test.ts` (+8) — `validateObject` (nested, arrays, primitives, null), `createValidator` factory
+- `gateway/auth-middleware.test.ts` (+6) — avatar GET bypass, SPA route bypass, mTLS no-CN, `getPeerCertificate` throws, Bearer/API-key non-AuthError → 401
+
+---
+
+### Phase 90 — CI/CD Integration
+
+- **21 new MCP tools** across 4 platforms: GitHub Actions (`gha_list_workflows`, `gha_dispatch_workflow`, `gha_list_runs`, `gha_get_run`, `gha_cancel_run`, `gha_get_run_logs`), Jenkins (`jenkins_list_jobs`, `jenkins_trigger_build`, `jenkins_get_build`, `jenkins_get_build_log`, `jenkins_queue_item`), GitLab CI (`gitlab_list_pipelines`, `gitlab_trigger_pipeline`, `gitlab_get_pipeline`, `gitlab_get_job_log`, `gitlab_cancel_pipeline`), Northflank (`northflank_list_services`, `northflank_trigger_build`, `northflank_get_build`, `northflank_list_deployments`, `northflank_trigger_deployment`).
+- **2 new workflow step types** (`ci_trigger`, `ci_wait`) — agents can dispatch CI/CD jobs from DAG workflows and block until terminal state; `ci_wait` supports configurable poll interval and timeout.
+- **4 built-in workflow templates**: `pr-ci-triage` (trigger→wait→analyse failure→post PR comment), `build-failure-triage` (event-triggered: diagnose log→open GitHub issue), `daily-pr-digest` (scheduled: summarise open PRs + CI status→Slack), `dev-env-provision` (compose-up→seed data→notify).
+- **Inbound webhook normaliser** (`POST /api/v1/webhooks/ci/:provider`) — receives events from GitHub, Jenkins, GitLab, and Northflank; verifies HMAC-SHA256 signatures (GitHub/Northflank) or static tokens (Jenkins/GitLab); normalises to `CiEvent` struct; dispatches matching event-triggered workflow definitions.
+- **Per-platform feature flags** in `McpServiceConfigSchema`: `exposeGithubActions`, `exposeJenkins`, `exposeGitlabCi`, `exposeNorthflank`. Credentials (`jenkinsUrl`, `jenkinsUsername`, `jenkinsApiToken`, `gitlabUrl`, `gitlabToken`, `northflankApiKey`) stored alongside other platform config.
+- **Per-personality gate**: `exposeCicd: boolean` in `McpFeaturesSchema` mirrors the `exposeDocker` / `exposeGithub` pattern.
+- **Dashboard — CI/CD Platforms section** in ConnectionsPage below Infrastructure Tools; 4 platform toggles with credential fields for Jenkins/GitLab/Northflank.
+- **Auth**: GitHub Actions reuses existing OAuth token; Jenkins uses HTTP Basic (username:apiToken); GitLab uses `PRIVATE-TOKEN` header; Northflank uses Bearer API key.
+- **Known limitation**: GitHub Actions `workflow_dispatch` returns 204 with no run ID. `ci_trigger` returns `'dispatched'` as sentinel; use `gha_list_runs` to find the resulting run.
+- **ADR 166**, **Guide** `docs/guides/cicd-integration.md`
+- **~85 new tests**: `github-actions-tools.test.ts` (12), `jenkins-tools.test.ts` (9), `gitlab-ci-tools.test.ts` (9), `northflank-tools.test.ts` (8), `cicd-webhook-routes.test.ts` (12), `workflow-engine.test.ts` (+10 CI/CD cases)
+
+### Phase 84 — Notebook Mode: Long Context Windowing
+
+- **Three knowledge modes per personality** (`BodyConfigSchema`): `'rag'` (default — existing top-K retrieval), `'notebook'` (full corpus into context window), `'hybrid'` (notebook if corpus fits budget, RAG fallback)
+- **`BrainStorage.getAllDocumentChunks(personalityId?)`** — SQL JOIN between `brain.knowledge` and `brain.documents`; groups rows by document, sorts chunks by parsed index, returns concatenated `NotebookCorpusDocument[]`
+- **`DocumentManager.getNotebookCorpus(personalityId?, tokenBudget?)`** — returns `NotebookCorpus` with `{ documents, totalTokens, fitsInBudget, budget }`
+- **`DocumentManager.generateSourceGuide(personalityId)`** — upserts `__source_guide__` knowledge entry listing all ready documents; called fire-and-forget from HTTP route handlers after every successful ingest; always available in RAG queries
+- **Token budget helper** (`chat-routes.ts`) — reserves 65% of model's context window for corpus: Gemini 2.0 Flash = 650K, Claude = 130K, GPT-4o = 83.2K tokens
+- **`[NOTEBOOK — SOURCE LIBRARY]` system prompt block** — appended to system prompt in notebook/hybrid mode; instructs AI to prioritise source documents and cite directly
+- **Oversized chunk guard** (`chunkAndLearn`) — sub-splits any chunk > 3,200 chars before calling `brainManager.learn()`, preventing silent failure for text with no sentence/paragraph boundaries
+- **Dashboard — Knowledge Mode selector** (`PersonalityEditor.tsx`) — 3-button radio (RAG / Notebook / Hybrid) in Brain tab; optional custom token budget field
+- **Dashboard — Notebook budget estimator** (`KnowledgeHealthPanel.tsx`) — "Notebook Mode Corpus Estimate" card showing fit status for Gemini, Claude, GPT-4o at current corpus size
+- **New types** (`packages/shared/src/types/soul.ts`): `knowledgeMode`, `notebookTokenBudget` on `BodyConfigSchema`; `NotebookCorpusDocument`, `NotebookCorpus` on brain types
+- **16 new tests** (`packages/core/src/brain/notebook-context.test.ts`): `BrainStorage.getAllDocumentChunks` (5), `DocumentManager.getNotebookCorpus` (4), `DocumentManager.generateSourceGuide` (4), token budget helpers (3)
+- **ADR 165** (`docs/adr/165-notebook-mode-long-context-windowing.md`), **Guide** `docs/guides/notebook-mode.md`
+
+### Phase 83 — Observability & Telemetry
 
 - **OpenTelemetry tracing bootstrap** (`packages/core/src/telemetry/otel.ts`) — `initTracing()`, `getTracer()`, `getCurrentTraceId()`. SDK dynamically imported only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set; safe no-op otherwise. `@opentelemetry/api` added as a regular dependency.
 - **Fastify OTEL plugin** (`packages/core/src/telemetry/otel-fastify-plugin.ts`) — wraps every HTTP request in an active span; adds `X-Trace-Id` response header; records exceptions on error.
 - **Standard `/metrics` Prometheus endpoint** — unauthenticated, returns Prometheus text-exposition 0.0.4 format. Legacy `/prom/metrics` retained.
-- **Alert rules engine** (`telemetry.alert_rules`, migration 069):
-  - `AlertStorage` — full CRUD for alert rules in PostgreSQL
-  - `AlertManager` — evaluates `MetricsSnapshot` against enabled rules every 5s (wired into metrics broadcast); respects cooldown; dispatches to Slack, PagerDuty, OpsGenie, webhook channels (fire-and-forget)
-  - Alert Rules REST API — 6 endpoints at `/api/v1/alerts/rules/*` incl. test-fire
-  - `AlertRulesTab` — dashboard tab under Developers with rule list, create/edit form, enabled toggle, test-fire button
-- **W3C traceparent propagation** — `RemoteDelegationTransport` injects `traceparent` header on A2A calls; `POST /api/v1/a2a/receive` extracts header and logs it for correlation
-- **Correlation ID log enrichment** — auth middleware enriches `request.log` with `userId` and `role` after successful authentication
-- **ECS log format** — `LOG_FORMAT=ecs` env var configures Pino to emit Elastic Common Schema fields (`@timestamp`, `log.level`, `trace.id`, `transaction.id`, `service.name`) for Loki/Elasticsearch ingestion
-- **`traceId` field in `MetricsSnapshot`** — populated from active OTel span when SDK is initialized
-- **Grafana dashboard bundle** (`docs/ops/grafana/`) — `secureyeoman-overview.json` (token spend, personality activity, workflow rates, audit event rate, latency, rate-limit) + `secureyeoman-alerts.json` (auth failures, rate-limit hits, audit chain validity, queue depth) + `README.md` (import instructions, scrape config)
-- **ADR 164** (`docs/adr/164-observability-telemetry.md`)
-- **Guide** `docs/guides/observability.md` — OTEL setup, Prometheus scrape config, alert rule config, ECS log format, Grafana import, Loki/trace-ID search
-- **~77 new tests**: `otel.test.ts` (8), `alert-storage.test.ts` (14), `alert-manager.test.ts` (22), `alert-routes.test.ts` (16), prometheus.test.ts (+3), `AlertRulesTab.test.tsx` (14)
+- **Alert rules engine** (`telemetry.alert_rules`, migration 069): `AlertStorage` (full CRUD), `AlertManager` (evaluates `MetricsSnapshot` every 5s, dispatches to Slack/PagerDuty/OpsGenie/webhook channels), Alert Rules REST API (6 endpoints at `/api/v1/alerts/rules/*` incl. test-fire), `AlertRulesTab` (dashboard tab under Developers).
+- **W3C traceparent propagation** — `RemoteDelegationTransport` injects `traceparent` header on A2A calls; `POST /api/v1/a2a/receive` extracts and logs it.
+- **Correlation ID log enrichment** — auth middleware enriches `request.log` with `userId` and `role` after successful authentication.
+- **ECS log format** — `LOG_FORMAT=ecs` env var configures Pino to emit Elastic Common Schema fields (`@timestamp`, `log.level`, `trace.id`, `transaction.id`, `service.name`).
+- **`traceId` field in `MetricsSnapshot`** — populated from active OTel span when SDK is initialized.
+- **Grafana dashboard bundle** (`docs/ops/grafana/`) — `secureyeoman-overview.json` + `secureyeoman-alerts.json` + import README.
+- **ADR 164**, **Guide** `docs/guides/observability.md`
+- **~77 new tests**: `otel.test.ts` (8), `alert-storage.test.ts` (14), `alert-manager.test.ts` (22), `alert-routes.test.ts` (16), `prometheus.test.ts` (+3), `AlertRulesTab.test.tsx` (14)
 
----
+### Phase 83 — CrewAI Enhancements: Workflows & Teams
 
-## [2026.2.28w] — Phase 83: CrewAI-Inspired Workflow & Team Enhancements
-
-### Added
-
-- **Workflow `triggerMode: 'any' | 'all'`** — steps can now fire after any one dependency completes (OR-trigger). Default remains `'all'` (backward-compatible). If all deps fail/skip, the `any`-step is also skipped. Schema: `WorkflowTriggerModeSchema` exported from `@secureyeoman/shared`.
-- **Strict output schema enforcement** — `outputSchemaMode: 'strict'` in step `config` causes the step to fail (not just warn) on schema mismatch. Works with existing `onError` policies.
+- **Workflow `triggerMode: 'any' | 'all'`** — steps can now fire after any one dependency completes (OR-trigger). Default remains `'all'` (backward-compatible). Schema: `WorkflowTriggerModeSchema` exported from `@secureyeoman/shared`.
+- **Strict output schema enforcement** — `outputSchemaMode: 'strict'` in step `config` causes the step to fail (not just warn) on schema mismatch.
 - **Team primitive** (`agents.teams` + `agents.team_runs`, migration 068) — dynamic auto-manager: coordinator LLM assigns task to team members at runtime; no pre-wired topology needed.
 - **`TeamStorage`** (`packages/core/src/agents/team-storage.ts`) — full CRUD + run lifecycle + builtin team seeding.
 - **`TeamManager`** (`packages/core/src/agents/team-manager.ts`) — coordinator prompt → structured JSON → parallel delegation → optional synthesis call.
 - **Team REST API** (`/api/v1/agents/teams/*`) — 7 endpoints: list, create, get, update, delete, run (202), get-run.
 - **3 builtin teams**: `Full-Stack Development Crew`, `Research Team`, `Security Audit Team`.
-- **`secureyeoman crew` CLI** (`packages/core/src/cli/commands/crew.ts`) — `list`, `show`, `import`, `export`, `run` (with spinner + polling), `runs` subcommands. Aliases: `team`. YAML import/export.
-- **ADR 163** (`docs/adr/163-crewai-enhancements.md`).
-- **Guide** `docs/guides/teams.md` — teams, CLI usage, YAML format, REST API, coordinator mechanics.
-- **`docs/guides/workflows.md`** updated — `triggerMode: any` section, `outputSchemaMode: strict` section.
+- **`secureyeoman crew` CLI** (`packages/core/src/cli/commands/crew.ts`) — `list`, `show`, `import`, `export`, `run`, `runs` subcommands. YAML import/export.
+- **ADR 163**, **Guide** `docs/guides/teams.md`; `docs/guides/workflows.md` updated with `triggerMode: any` and `outputSchemaMode: strict` sections.
 - **~47 new tests**: workflow engine (13 new), team-manager (18), team-routes (14), crew CLI (12).
 
----
+### Phase 82 — Knowledge Base & RAG Platform
 
-## [2026.2.28v] — Phase 82: Knowledge Base & RAG Platform
-
-### Added
-
-- **`brain.documents` table** (migration 067) — tracks every ingested document with id, format, status (`pending → processing → ready | error`), chunk count, visibility scope, and source URL
-- **`brain.knowledge_query_log` table** (migration 067) — logs every RAG query with result count and top score for health analytics
-- **`DocumentManager`** (`packages/core/src/brain/document-manager.ts`) — full ingest pipeline: extract text → chunk → learn per chunk → update status; supports `txt`, `md`, `html`, `pdf` (dynamic import of `pdf-parse`), and `url` formats
-- **Web crawl connector** — `ingestUrl()` fetches page HTML, strips tags, ingests as `html` document
-- **GitHub Wiki connector** — `ingestGithubWiki()` lists `.md` files via GitHub contents API, fetches each, ingests as `md` documents
-- **Document REST API** (`/api/v1/brain/documents/*`) — upload (multipart, 20 MB limit), ingest-url, ingest-text, github-wiki connector, list, get, delete, knowledge-health
-- **`BrainStorage` additions** — `createDocument`, `getDocument`, `updateDocument`, `deleteDocument`, `listDocuments`, `deleteKnowledgeBySourcePrefix`, `logKnowledgeQuery`, `getKnowledgeHealthStats`
-- **4 MCP tools**: `kb_search`, `kb_add_document`, `kb_list_documents`, `kb_delete_document`
-- **Dashboard — Knowledge Base tab** (`packages/dashboard/src/components/knowledge/`): Documents sub-tab (list + file upload), Connectors sub-tab (URL crawl + GitHub wiki + paste text), Health sub-tab (KPIs + format breakdown + low-coverage warning)
-- **Documents tab** added to `VectorMemoryExplorerPage` alongside existing brain tabs
-- **ADR 162**, guide `docs/guides/knowledge-base.md`
+- **`brain.documents` table** (migration 067) — tracks every ingested document with id, format, status (`pending → processing → ready | error`), chunk count, visibility scope, and source URL.
+- **`brain.knowledge_query_log` table** (migration 067) — logs every RAG query with result count and top score for health analytics.
+- **`DocumentManager`** (`packages/core/src/brain/document-manager.ts`) — full ingest pipeline: extract text → chunk → learn per chunk → update status; supports `txt`, `md`, `html`, `pdf` (dynamic import of `pdf-parse`), and `url` formats.
+- **Web crawl connector** — `ingestUrl()` fetches page HTML, strips tags, ingests as `html` document.
+- **GitHub Wiki connector** — `ingestGithubWiki()` lists `.md` files via GitHub contents API, fetches each, ingests as `md` documents.
+- **Document REST API** (`/api/v1/brain/documents/*`) — upload (multipart, 20 MB limit), ingest-url, ingest-text, github-wiki connector, list, get, delete, knowledge-health.
+- **`BrainStorage` additions** — `createDocument`, `getDocument`, `updateDocument`, `deleteDocument`, `listDocuments`, `deleteKnowledgeBySourcePrefix`, `logKnowledgeQuery`, `getKnowledgeHealthStats`.
+- **4 MCP tools**: `kb_search`, `kb_add_document`, `kb_list_documents`, `kb_delete_document`.
+- **Dashboard — Knowledge Base tab** (`packages/dashboard/src/components/knowledge/`): Documents sub-tab (list + file upload), Connectors sub-tab (URL crawl + GitHub wiki + paste text), Health sub-tab (KPIs + format breakdown + low-coverage warning).
+- **Documents tab** added to `VectorMemoryExplorerPage` alongside existing brain tabs.
+- **ADR 162**, **Guide** `docs/guides/knowledge-base.md`
 - **~62 new tests** across `document-manager.test.ts`, `document-routes.test.ts`, `knowledge-base-tools.test.ts`, `KnowledgeBaseTab.test.tsx`
-
-### Deferred (demand-gated)
-
-- Tesseract OCR sidecar (image text extraction)
-- Notion / Confluence / Google Drive connectors
-- DOCX support
-- Recursive web crawl (depth > 1)
-- Background ingestion queue (large-file async processing)
-
----
-
-## [2026.2.28u] — Phase 79 + 80: Multi-Instance Federation & API Gateway Mode
-
-### Phase 79 — Multi-Instance Federation
-- **New**: `federation.peers` + `federation.sync_log` tables (migration 065)
-- **New**: `FederationStorage` + `FederationManager` with SSRF-guarded peer registration, AES-256-GCM shared-secret encryption, 60s health cycle
-- **New**: 11 authenticated management routes (`/api/v1/federation/peers/*`, `/api/v1/federation/personalities/*`)
-- **New**: 3 peer-incoming routes with custom Bearer auth (`/api/v1/federation/knowledge/search`, `/api/v1/federation/marketplace/*`)
-- **New**: Personality bundle export/import (`.syi` files, passphrase-encrypted, `integrationAccess` sanitized on import)
-- **New**: `knowledge_search` MCP tool gains optional `instanceId` param for federated search
-- **New**: Federation tab in ConnectionsPage (peer list, add form, marketplace browser, bundle export/import)
-
-### Phase 80 — API Gateway Mode
-- **New**: `auth.api_keys` extended with `personality_id`, `rate_limit_rpm`, `rate_limit_tpd`, `is_gateway_key` (migration 066)
-- **New**: `auth.api_key_usage` table for per-request tracking
-- **New**: `POST /api/v1/gateway` — authenticated chat proxy with RPM/TPD enforcement + personality binding
-- **New**: `GET /api/v1/auth/api-keys/:id/usage` — raw usage rows with time-range filter
-- **New**: `GET /api/v1/auth/api-keys/usage/summary` — 24h aggregate stats (p50/p95 latency) with CSV export
-- **New**: Gateway Analytics tab in DeveloperPage with KPI summary, per-key table, and CSV download
-- **New**: ADR 160 (Federation), ADR 161 (API Gateway), guides `federation.md` + `api-gateway-mode.md`
-
----
-
-## [2026.2.28u] — 2026-02-28
-
-### Added
-
-#### Swarm Template Editing
-
-User-created swarm templates can now be edited in place instead of requiring delete-and-recreate.
-
-**Backend**
-- `SwarmStorage.updateTemplate()` — dynamic SET clause builder matching only `is_builtin = false` rows; RETURNING updated row.
-- `SwarmManager.updateTemplate()` — builtin guard (throws `Cannot edit built-in templates` → 403); delegates to storage.
-- `PATCH /api/v1/agents/swarms/templates/:id` — returns `{ template }` on success, 404 if missing, 403 if builtin, 400 on other errors.
-
-**Frontend**
-- `updateSwarmTemplate()` in `client.ts` — sends PATCH to new endpoint.
-- `TemplateForm` (renamed from `CreateTemplateForm`) — accepts `mode: 'create' | 'edit'` and optional `initialValues` prop; pre-populates all fields when editing; button label changes to "Save Changes" in edit mode.
-- `TemplateCard` — pencil icon button (edit) shown beside trash for non-builtin templates; clicking it opens the edit form above the grid (mutually exclusive with create form).
-
-**Tests**: 5 new route tests (20 total), 4 new UI tests (23 total).
-
----
-
-## [2026.2.28t] — 2026-02-28
-
-### Changed
-
-#### Dashboard Performance Optimization (Cross-Cutting)
-
-A three-tier optimization pass across MetricsPage, SecurityPage, AgentWorldWidget, ChatMarkdown, and AdvancedEditorPage. No user-visible behaviour changes; all 796 dashboard tests continue to pass.
-
-**Bundle size**
-- `ChatMarkdown.tsx` — Mermaid (~11 MB) is now dynamically imported inside the diagram render effect rather than at module level. The library is only downloaded when a `mermaid` fenced code block is actually rendered.
-- `vite.config.ts` — new `manualChunks`: `charts-vendor` (recharts), `flow-vendor` (reactflow), `dnd-vendor` (@dnd-kit), `mermaid`. A metrics-only page visit no longer downloads the ReactFlow workflow graph library.
-
-**Query scoping**
-- `MetricsPage.tsx` — five queries that previously fired from the `MissionControlTab` root regardless of which card was visible are now owned by their respective section components: `tasksData` → `ActiveTasksSection`, `eventsData` → `SecurityEventsSection`, `auditData` → `AuditStreamSection`, `workflowsData` → `WorkflowRunsSection`, `costBreakdown` → `CostBreakdownSection`. The MetricsPage root now runs only 2 queries at startup (`heartbeatStatus`, `mcpData`).
-- `SecurityPage.tsx` — reduced from 3,276 lines to ~405 lines by extracting all 7 tab bodies into separate files under `src/components/security/`. Each tab is lazy-loaded via `React.lazy()` + `Suspense` so its queries only run when the tab is open.
-- `AgentWorldWidget.tsx` — subscribes to `tasks` and `soul` WebSocket channels via `useWebSocket('/ws/metrics')`. Once live data arrives, HTTP polling (`refetchInterval`) is disabled. Falls back to polling on WebSocket reconnection.
-
-**Render performance**
-- `MetricsPage.tsx` — all 12 section components and `MissionCardContent` wrapped with `React.memo`; section `sectionProps` object memoized with `useMemo`; callbacks stabilized with `useCallback`. Sections outside the active card layout no longer re-render on unrelated state changes.
-- `AgentWorldWidget.tsx` — `IntersectionObserver` pauses the 250 ms animation tick and disables all queries when the widget is scrolled off-screen or hidden in the Mission Control catalogue.
-- `AdvancedEditorPage.tsx` — inline chat message list virtualized with `useVirtualizer` from `@tanstack/react-virtual`. Only visible messages are rendered as conversation length grows.
-
-**Docs**: ADR 159.
-
----
-
-## [2026.2.28s] — 2026-02-28
-
-### Added
-
-#### Prompt Security — Jailbreak Scoring, System Prompt Confidentiality, Abuse Detection (Phase 77)
-
-Three new input/output security controls layered on top of the existing `InputValidator` / `ResponseGuard` stack:
-
-**Jailbreak Scoring** (`InputValidator`)
-- Every user turn now receives a weighted injection risk score (0–1). Severity weights: `high=0.60`, `medium=0.35`, `low=0.15`; scores cap at 1.0.
-- Score stored on `chat.messages.injection_score` (new migration 064: `ALTER TABLE chat.messages ADD COLUMN IF NOT EXISTS injection_score REAL`).
-- Two new `InputValidationConfigSchema` fields: `jailbreakThreshold` (0–1, default `0.5`) and `jailbreakAction` (`block` / `warn` / `audit_only`, default `warn`). Configurable in Security → Policy → Prompt Security.
-
-**System Prompt Confidentiality** (`ResponseGuard`)
-- New `ResponseGuard.checkSystemPromptLeak(responseText, systemPrompt)` method computes trigram (3-word window) overlap ratio between the AI response and the active system prompt.
-- When `overlapRatio >= systemPromptLeakThreshold` (default `0.3`), the response is flagged and matching sequences replaced with `[REDACTED]` before delivery.
-- Per-personality toggle `strictSystemPromptConfidentiality: boolean` in `BodyConfigSchema` (body JSONB, no migration). Exposed in PersonalityEditor → Behaviour.
-
-**Rate-Aware Abuse Detection** (`AbuseDetector`)
-- New class `packages/core/src/security/abuse-detector.ts` tracks three adversarial signals per session (in-memory, TTL eviction):
-  - `blocked_retry` — N consecutive blocked submissions
-  - `topic_pivot` — Jaccard word overlap < threshold on N consecutive turns
-  - `tool_anomaly` — > 5 unique tool names in a single turn
-- When triggered: session enters cool-down (`coolDownMs`, default 60 s); chat handler returns HTTP 429; `suspicious_pattern` audit event written.
-- Configuration: `SecurityConfigSchema.abuseDetection` sub-object (`enabled`, `topicPivotThreshold`, `blockedRetryLimit`, `coolDownMs`, `sessionTtlMs`). Toggled via Security → Policy → Prompt Security.
-
-**Dashboard & API**
-- Security → Policy page gains "Prompt Security" card with controls for all six new fields.
-- `PATCH /api/v1/security/policy` and `GET /api/v1/security/policy` updated with the six fields.
-- `SecurityPolicy` interface in `client.ts` extended accordingly.
-
-**Docs**: ADR 158, `docs/guides/prompt-security.md`.
-
----
-
-## [2026.2.28r] — 2026-02-28
-
-### Added
-
-#### Docker Management MCP Tools (Phase 74)
-
-YEOMAN MCP now exposes 14 Docker management tools for container and Compose operations, gated by `MCP_EXPOSE_DOCKER=true`. Supports two deployment modes: host socket binding (`MCP_DOCKER_MODE=socket`, mounts `/var/run/docker.sock`) or Docker-in-Docker (`MCP_DOCKER_MODE=dind` + `MCP_DOCKER_HOST=tcp://docker:2376`).
-
-**New tools** (`docker_*`):
-- `docker_ps` — list containers (all or running-only)
-- `docker_logs` — fetch container logs with `--tail` and timestamp options
-- `docker_inspect` — full metadata for a container or image as JSON
-- `docker_stats` — one-shot CPU/memory/network snapshot (no-stream)
-- `docker_images` — list local images with optional filter
-- `docker_start` / `docker_stop` / `docker_restart` — lifecycle control with configurable stop timeout
-- `docker_exec` — run a command inside a running container (array-form args, no shell injection)
-- `docker_pull` — pull an image from a registry
-- `docker_compose_ps` — list Compose project services
-- `docker_compose_logs` — fetch Compose service logs
-- `docker_compose_up` — start Compose services detached (with optional `--build` and pull policy)
-- `docker_compose_down` — stop and remove Compose containers/networks (optional `--volumes`)
-
-**Configuration** (`.env` / `docker-compose.yml`):
-- `MCP_EXPOSE_DOCKER=true|false` (default `false`) — master gate
-- `MCP_DOCKER_MODE=socket|dind` (default `socket`)
-- `MCP_DOCKER_HOST=<url>` — DOCKER_HOST override for DinD mode (e.g. `tcp://docker:2376`)
-
-**Dashboard** — new **Infrastructure Tools** section in Connections → YEOMAN MCP and in PersonalityEditor → MCP Features panel. Docker toggle is greyed out when the global switch is off. Filtering applied to tool count display (`docker_*` hidden when disabled).
-
-**Types updated**: `McpServiceConfigSchema` (`packages/shared/src/types/mcp.ts`), `McpFeatureConfig` (`core/mcp/storage.ts`), `McpFeaturesSchema` (`shared/types/soul.ts`), `McpConfigResponse` / `McpFeatureConfig` (`dashboard/src/types.ts`, `client.ts`).
-
----
-
-## [2026.2.28q] — 2026-02-28
-
-### Changed
-
-#### Skill Version Format — Semantic → Date-Based
-
-All skill files and the skill schema now use the project's date-based release format (`YYYY.M.D`) instead of semantic versioning (`major.minor.patch`). Same-day patches use a numeric suffix (`2026.2.28-1`). This aligns skill versioning with the Changelog and roadmap release format used across the project.
-
-- **Community skill schema** (`secureyeoman-community-skills/schema/skill.schema.json`): `version.pattern` updated from `^\d+\.\d+\.\d+$` to `^\d{4}\.\d{1,2}\.\d{1,2}(-\d+)?$`; default changed from `"1.0.0"` to `"2026.2.28"`; description updated to document the format.
-- **21 community skill JSON files**: `"version": "1.0.0"` → `"version": "2026.2.28"`.
-- **10 marketplace skill TypeScript files** (`packages/core/src/marketplace/skills/`): `version: '1.0.0'` → `version: '2026.2.28'`.
-- **`CatalogSkillSchema`** (`packages/shared/src/types/marketplace.ts`): `version` field default updated from `'1.0.0'` to `'2026.2.28'`.
-
-**Migration for contributors**: new skills and updates to existing skills should use the current date as the version (`YYYY.M.D`). Use the `-N` suffix for same-day updates (e.g., `2026.3.1-1`).
-
----
-
-## [2026.2.28p] — 2026-02-28
-
-### Added
-
-#### Mission Control Customization (Phase 76)
-
-The Mission Control dashboard is now fully configurable — users can show/hide cards, reorder them by dragging, and resize them via S/M/L presets. Layout is persisted to `localStorage` immediately; server-side sync is demand-gated for Phase 2.
-
-- **Card registry** (`packages/dashboard/src/components/MissionControl/registry.ts`): 12 `CardDef` entries with `id`, `label`, `description`, `defaultVisible`, optional `pinned`, `minColSpan`, and `defaultColSpan`. `kpi-bar` is permanently pinned; `agent-world` is opt-in (hidden by default).
-- **Layout model** (`packages/dashboard/src/components/MissionControl/layout.ts`): `loadLayout()` / `saveLayout()` / `defaultLayout()` under localStorage key `mission-control:layout`. Forward-compatible merging: new cards not in saved layout appear at their registry defaults.
-- **Dynamic grid**: 12 section components extracted from `MissionControlTab` (`KpiBarSection`, `ResourceMonitoringSection`, `ActiveTasksSection`, `WorkflowRunsSection`, `AgentHealthSection`, `SystemHealthSection`, `IntegrationGridSection`, `SecurityEventsSection`, `AuditStreamSection`, `AgentWorldSection`, `SystemTopologySection`, `CostBreakdownSection`). `MissionCardContent` switch dispatches by card ID. `DndContext` + `SortableContext` from `@dnd-kit` replaces hardcoded grid.
-- **`SortableCardWrapper`**: drag-handle (GripVertical), remove × button, and S/M/L size-preset pill — all visible only in edit mode. Pinned cards skip drag and remove UI.
-- **"Customize" button**: `Sliders` icon next to the Mission Control tab bar. Clicking toggles edit mode and opens the catalogue panel simultaneously.
-- **Card catalogue panel**: fixed right-side drawer listing all 12 cards with toggle switches for per-card visibility. "Reset to defaults" restores the registry defaults. "Done" closes the panel and exits edit mode.
-- **Tests**: 10 new tests in `MetricsPage.test.tsx` (55 total). `@dnd-kit` mocked in test env. `tsc --noEmit` 0 errors.
-
----
-
-## [2026.2.28o] — 2026-02-28
-
-### Changed
-
-#### Chat Performance Fixes (Phase 74)
-
-Six targeted changes that eliminate typing lag in long conversations.
-
-- **`MessageBubble` memoization** (`ChatPage.tsx`) — extracted the entire per-message render body into a `React.memo` component. Props use primitives (`isExpanded: boolean`, `isRemembered: boolean`, `feedbackValue: …`, `isBeingEdited: boolean`) so memo's shallow-equal check works correctly. Stable `useCallback` handlers backed by refs (`messagesRef`, `conversationIdRef`, `feedbackGivenRef`) ensure memo comparison never breaks. Keystrokes now trigger zero re-renders of the message list.
-
-- **`ChatMarkdown` memo wrap** (`ChatMarkdown.tsx`) — changed export to `React.memo`; the content-unchanged → no-re-parse guarantee is now explicit. Added `ChatMarkdown.test.tsx` (4 tests: plain text, markdown, code block, memo type check).
-
-- **Typing-aware `refetchInterval`** (`ChatPage.tsx`) — conversations query uses `refetchInterval: () => (isTypingRef.current ? false : 30_000)`. While the user is typing, background polling is suspended; it resumes 3 s after the last keystroke. A cleanup effect clears the debounce timer on unmount.
-
-- **GroupChatPage message polling** (`GroupChatPage.tsx`) — reduced `refetchInterval` from 5 s to 15 s, aligning message polling with channel polling and removing a frequent re-render source.
-
-- **`ChatInputArea` extraction** (`ChatPage.tsx`, `useChat.ts`) — input state moved out of `ChatPage` (and out of `useChatStream`) into a standalone `React.memo` component. `useChatStream` now exposes `sendMessage(text: string)` instead of `handleSend()` / `input` / `setInput`. Voice transcript and PTT transcript appending are handled by `useEffect`s inside `ChatInputArea`. Keystrokes now re-render only the small input component, not the parent page. `EditorPage.tsx` updated to local `chatInput` state.
-
-- **Virtual scrolling** (`ChatPage.tsx`, `packages/dashboard/package.json`) — installed `@tanstack/react-virtual`; the messages container uses `useVirtualizer` (`estimateSize: 120 px`, `overscan: 5`, `measureElement` for dynamic heights). Only the visible window of messages is DOM-rendered, so even 1 000-message conversations have constant render cost.
-
----
-
-## [2026.2.28n] — 2026-02-28
-
-### Added
-
-#### ML Pipeline Orchestration (Phase 73)
-
-Inspired by SageMaker Pipelines, the existing workflow DAG engine now powers end-to-end ML pipelines without new infrastructure. Five new step types, three workflow templates, human-in-the-loop approval gates, and full pipeline lineage tracking.
-
-- **5 new workflow step types**:
-  - `data_curation` — Snapshot conversation data with filters (personalityIds, date range, minTurns, maxConversations). Writes a ShareGPT JSONL file and returns `{ datasetId, path, sampleCount, conversationCount, snapshotAt }`. Lineage recorded automatically.
-  - `training_job` — Poll a distillation or finetune job to completion (by `jobId`). Finetune jobs are auto-started if still pending. Config: `{ jobType: 'distillation'|'finetune', jobId, timeoutMs, pollIntervalMs }`.
-  - `evaluation` — Run an eval suite via a model endpoint or inline samples. Computes `exact_match`, `char_similarity`, and `sample_count`. Config: `{ datasetPath?, samples?, modelEndpoint?, maxSamples }`.
-  - `conditional_deploy` — Compare a named metric against a threshold. If met, registers the fine-tuned adapter with Ollama and records deployment lineage. Config: `{ metricPath, threshold, jobId, ollamaUrl, personalityId, modelVersion }`.
-  - `human_approval` — Creates a dashboard-visible approval request, sends the eval report, then polls (up to configurable timeout) for user approval or rejection. Config: `{ timeoutMs, reportTemplate }`.
-
-- **3 pre-built ML pipeline templates** (importable from Workflows tab):
-  - `distill-and-eval` — curate → await distillation → evaluate → webhook notify
-  - `finetune-and-deploy` — curate → LoRA finetune → evaluate → human approval → conditional deploy
-  - `dpo-loop` — curate preference data → DPO distillation → evaluate win-rate → promote if > 55%
-
-- **Human approval API** (`training.approval_requests`, migration 063):
-  - `GET /api/v1/training/approvals` — list requests (filter with `?status=pending` or `?runId=`)
-  - `GET /api/v1/training/approvals/:id` — get specific request
-  - `POST /api/v1/training/approvals/:id/approve` — approve with optional reason
-  - `POST /api/v1/training/approvals/:id/reject` — reject with optional reason
-
-- **Pipeline lineage API** (`training.pipeline_lineage`, migration 063):
-  - `GET /api/v1/training/lineage` — list recent pipeline runs (most recent first)
-  - `GET /api/v1/training/lineage/:runId` — full chain for a workflow run (dataset → job → eval → deployment)
-
-- **New managers**: `DataCurationManager`, `EvaluationManager`, `ApprovalManager`, `PipelineLineageStorage` — all initialized at startup (steps 6j) and passed into `WorkflowEngine` as optional deps.
-
-- **Migration 063** (`063_ml_pipeline.sql`): `training.pipeline_lineage` + `training.approval_requests` tables with appropriate indexes.
-
-- **Tests**: 10 data-curation + 13 evaluation + 13 approval + 11 pipeline-lineage + 20 engine (5 new step types) + 14 training-routes (approvals + lineage) = 81 new tests.
-
-- **ADR 157**, **guide** `docs/guides/ml-pipeline-orchestration.md`.
-
----
-
-## [2026.2.28m] — 2026-02-28
-
-### Added
-
-#### Prompt Engineering Quartet Swarm Template (Phase 72b)
-
-- **`prompt-engineering-quartet` swarm template** — a builtin sequential swarm that runs four specialist agents in a fixed pipeline:
-  1. **intent-engineer** — resolves ambiguity and confirms what is actually wanted before any prompt is written
-  2. **context-engineer** — designs the context window architecture (what to retrieve, compress, and include) with a token budget breakdown
-  3. **prompt-crafter** — diagnoses weaknesses, selects the optimal technique (zero-shot / few-shot / CoT / role / chaining), and rewrites the prompt
-  4. **spec-engineer** — formalizes the result as a verifiable contract (self-contained problem statement, acceptance criteria, tiered constraints, decomposition map)
-  Each agent receives the prior agent's output as context — the chain accumulates understanding as it progresses. Top-level `result` is the spec-engineer's final spec.
-
-- **4 new builtin agent profiles** distilled from the marketplace skills:
-  - `builtin-intent-engineer` (`intent-engineer`) — 40k token budget; memory + knowledge (read); distilled from Intent Engineering skill
-  - `builtin-context-engineer` (`context-engineer`) — 50k tokens; memory + knowledge (read/write); distilled from Context Engineering skill
-  - `builtin-prompt-crafter` (`prompt-crafter`) — 50k tokens; memory + knowledge (read); distilled from Prompt Craft skill
-  - `builtin-spec-engineer` (`spec-engineer`) — 60k tokens; memory + knowledge (read/write); distilled from Specification Engineering skill
-  All four are reasoning-only profiles (no filesystem, git, or web tools) — they operate on provided context plus knowledge base lookups.
-
+- **Deferred** (demand-gated): Tesseract OCR sidecar, Notion/Confluence/Google Drive connectors, DOCX support, recursive web crawl, background ingestion queue.
+
+### Phase 80+79 — API Gateway Mode & Multi-Instance Federation
+
+**Phase 80 — API Gateway Mode**
+- **`auth.api_keys` extended** with `personality_id`, `rate_limit_rpm`, `rate_limit_tpd`, `is_gateway_key` (migration 066).
+- **`auth.api_key_usage` table** for per-request tracking.
+- **`POST /api/v1/gateway`** — authenticated chat proxy with RPM/TPD enforcement + personality binding.
+- **`GET /api/v1/auth/api-keys/:id/usage`** — raw usage rows with time-range filter.
+- **`GET /api/v1/auth/api-keys/usage/summary`** — 24h aggregate stats (p50/p95 latency) with CSV export.
+- **Gateway Analytics tab** in DeveloperPage with KPI summary, per-key table, and CSV download.
+
+**Phase 79 — Multi-Instance Federation**
+- **`federation.peers` + `federation.sync_log` tables** (migration 065).
+- **`FederationStorage` + `FederationManager`** with SSRF-guarded peer registration, AES-256-GCM shared-secret encryption, 60s health cycle.
+- **11 authenticated management routes** (`/api/v1/federation/peers/*`, `/api/v1/federation/personalities/*`).
+- **3 peer-incoming routes** with custom Bearer auth for federated knowledge search and marketplace.
+- **Personality bundle export/import** (`.syi` files, passphrase-encrypted, `integrationAccess` sanitized on import).
+- **`knowledge_search` MCP tool** gains optional `instanceId` param for federated search.
+- **Federation tab** in ConnectionsPage (peer list, add form, marketplace browser, bundle export/import).
+- **ADR 160** (Federation), **ADR 161** (API Gateway), **Guides** `federation.md` + `api-gateway-mode.md`.
+
+### Phase 77 — Prompt Security
+
+- **Jailbreak scoring** (`InputValidator`) — every user turn receives a weighted injection risk score (0–1). Severity weights: `high=0.60`, `medium=0.35`, `low=0.15`; scores cap at 1.0. Stored on `chat.messages.injection_score` (migration 064). `jailbreakThreshold` + `jailbreakAction` (`block`/`warn`/`audit_only`) configurable in Security → Policy → Prompt Security.
+- **System prompt confidentiality** (`ResponseGuard`) — `checkSystemPromptLeak()` computes trigram overlap ratio between AI response and active system prompt. When `overlapRatio >= systemPromptLeakThreshold` (default 0.3), matching sequences replaced with `[REDACTED]`. Per-personality toggle `strictSystemPromptConfidentiality` in `BodyConfigSchema`.
+- **Abuse detection** (`AbuseDetector`) — tracks `blocked_retry`, `topic_pivot` (Jaccard overlap), `tool_anomaly` (>5 unique tools/turn) per session. Cool-down + `suspicious_pattern` audit event + HTTP 429 response.
+- **ADR 158**, **Guide** `docs/guides/prompt-security.md`
+
+### Phase 76 — Mission Control Customization
+
+- **Card registry** (`MissionControl/registry.ts`): 12 `CardDef` entries; `kpi-bar` pinned; `agent-world` opt-in.
+- **Layout model** (`MissionControl/layout.ts`): `loadLayout()` / `saveLayout()` / `defaultLayout()` under `mission-control:layout` localStorage key. Forward-compatible merging with registry defaults.
+- **Dynamic grid**: 12 section components extracted from `MissionControlTab`; `MissionCardContent` switch; `DndContext` + `SortableContext` from `@dnd-kit`.
+- **`SortableCardWrapper`**: drag-handle, remove ×, and S/M/L size-preset pill (edit mode only). Pinned cards skip drag and remove UI.
+- **"Customize" button** + **card catalogue panel**: fixed right-side drawer with toggle switches, "Reset to defaults", "Done".
+- **10 new tests** in `MetricsPage.test.tsx` (55 total).
+
+### Phase 74 — Docker MCP Tools
+
+- **14 Docker tools** (`docker_*`) — `docker_ps`, `docker_logs`, `docker_inspect`, `docker_stats`, `docker_images`, `docker_start`, `docker_stop`, `docker_restart`, `docker_exec`, `docker_pull`, `docker_compose_ps`, `docker_compose_logs`, `docker_compose_up`, `docker_compose_down`.
+- **Config**: `MCP_EXPOSE_DOCKER=true|false` (default `false`), `MCP_DOCKER_MODE=socket|dind`, `MCP_DOCKER_HOST`.
+- **Dashboard** — Infrastructure Tools section in Connections → YEOMAN MCP and PersonalityEditor → MCP Features.
+- **Guide** `docs/guides/docker-mcp-tools.md`
+
+### Phase 73 — ML Pipeline Orchestration
+
+- **5 new workflow step types**: `data_curation`, `training_job`, `evaluation`, `conditional_deploy`, `human_approval`.
+- **3 pre-built ML pipeline templates**: `distill-and-eval`, `finetune-and-deploy` (with human approval gate), `dpo-loop`.
+- **Human approval API** (`training.approval_requests`, migration 063): list, get, approve, reject endpoints.
+- **Pipeline lineage API** (`training.pipeline_lineage`, migration 063): full chain per workflow run.
+- **New managers**: `DataCurationManager`, `EvaluationManager`, `PipelineApprovalManager`, `PipelineLineageStorage`.
+- **81 new tests** across data-curation, evaluation, approval, lineage, engine, training-routes.
+- **ADR 157**, **Guide** `docs/guides/ml-pipeline-orchestration.md`
+
+### Phase 72 — MCP Tool Context Optimization
+
+- **Smart Schema Delivery** — two-pass selector: feature-flag filter → keyword-relevance filter. Estimated 60–90% token reduction on cold requests. `alwaysSendFullSchemas` config flag bypasses filter.
+- **MCP tool catalog** — compact `## Available MCP Tools` block (names + 1-line descriptions, grouped by feature area) appended to system prompt.
+- **Telemetry** — `mcp_tools_selected` audit event with `tools_available_count`, `tools_sent_count`, `full_schemas`.
+- **Fixed**: `exposeGithub` flag was not being applied to GitHub REST API tools (vs. `exposeGit` for CLI tools); `GITHUB_CLI_PREFIXES` / `isGitCliTool()` added to route correctly.
+- **30 new unit tests** (`mcp-tool-selection.test.ts`), **4 new dashboard tests** (`ScopeManifestTab`).
+- **ADR 155**, **Guide** `docs/guides/mcp-tool-context-optimization.md`
+
+### Phase 72b — Prompt Engineering Quartet Swarm
+
+- **`prompt-engineering-quartet` builtin swarm template** — 4-stage sequential pipeline: intent-engineer → context-engineer → prompt-crafter → spec-engineer. Each stage receives prior output as context.
+- **4 new builtin agent profiles** (`builtin-intent-engineer`, `builtin-context-engineer`, `builtin-prompt-crafter`, `builtin-spec-engineer`) — reasoning-only profiles; no filesystem/git/web tools.
 - **Builtin profile count**: 4 → 8. **Builtin template count**: 4 → 5.
-- **Tests**: profiles.test.ts updated (4→8 count, 5 new tests for quartet profiles + tool-scope guard); swarm-templates.test.ts updated (4 new tests for quartet template structure, role order, profile references, and role descriptions).
-- **ADR 156** — `docs/adr/156-prompt-engineering-quartet-swarm.md`
-- **Guide** — `docs/guides/prompt-engineering-quartet-swarm.md`
+- **ADR 156**, **Guide** `docs/guides/prompt-engineering-quartet-swarm.md`
 
----
+### Marketplace Builtin Skills — Prompt Engineering Quartet
 
-## [2026.2.28l] — 2026-02-28
+- **4 new builtin marketplace skills**: Prompt Craft, Context Engineering, Intent Engineering, Specification Engineering. Seeded as `source: 'builtin'` on startup. Builtin skill count: 6 → 10.
+- Corresponding JSON files removed from community skills repo.
+- **8 new tests** in `marketplace.test.ts` and `storage.test.ts`.
 
-### Added
+### Phase 70c — GitHub Fork Sync Tool
 
-#### Marketplace Builtin Skills — Prompt Engineering Quartet
+- **`github_sync_fork` MCP tool** — sync a fork branch with upstream via GitHub Merges API. Parameters: `owner`, `repo`, `base` (required), `head`, `commit_message`. Returns merge commit or `{ status: "up_to_date" }`.
+- **Core proxy route** — `POST /api/v1/github/repos/:owner/:repo/sync-fork` with mode enforcement.
+- **6 route tests + 1 MCP tool test**. **ADR 153** updated with Phase 70c addendum.
 
-- **4 new builtin marketplace skills** promoted from the community repo into the core `marketplace/skills/` directory:
-  - **Prompt Craft** — diagnoses weaknesses in existing prompts and rewrites them using the right technique (zero-shot, few-shot, CoT, role prompting, chaining). Delivers: diagnosis, rewritten prompt, and bulleted change rationale.
-  - **Context Engineering** — designs and optimizes what enters an AI's context window using the Write / Select / Compress / Isolate framework. Delivers: context audit, redesigned architecture, and token budget breakdown.
-  - **Intent Engineering** — resolves ambiguous or underspecified requests before any prompt is written. Four-step process: parse → surface ambiguities → restate → decompose implicit sub-goals.
-  - **Specification Engineering** — translates confirmed intent into a rigorous, verifiable task contract with self-contained problem statement, acceptance criteria, tiered constraint architecture (Never / Ask First / Default), and decomposition map.
-- All four are seeded as `source: 'builtin'` on startup via `seedBuiltinSkills()`. Builtin skill count: 6 → 10.
-- Removed the corresponding JSON files from the community skills repo (`skills/productivity/`).
-- **8 new tests**: 4 integration tests in `marketplace.test.ts` (one per skill, asserting category, author, `authorInfo.github`, source, and tag membership); unit mock + count assertion updated in `storage.test.ts`.
+### Dashboard Performance Optimization
 
----
+- **Mermaid dynamic import** (`ChatMarkdown.tsx`) — loaded only when a mermaid block is rendered. Vite `manualChunks`: `charts-vendor`, `flow-vendor`, `dnd-vendor`, `mermaid`.
+- **Self-fetching sections** — 5 MetricsPage queries moved into their section components; root now runs only 2 queries at startup.
+- **SecurityPage split** — 3,276 lines → ~405 lines; 7 lazy-loaded tab files under `src/components/security/`.
+- **`React.memo`** on all 12 section components + `MissionCardContent`; `useMemo`/`useCallback` throughout.
+- **`AgentWorldWidget`** — `IntersectionObserver` pauses animation + queries when off-screen; WebSocket subscription disables HTTP polling once live data arrives.
+- **AdvancedEditorPage** — `useVirtualizer` for inline chat message list.
+- **Chat performance** — `MessageBubble` memoized; `ChatMarkdown` memo-wrapped; typing-aware `refetchInterval`; `ChatInputArea` extracted as standalone memo component; `useVirtualizer` on messages list.
+- **ADR 159**
 
-## [2026.2.28k] — 2026-02-28
+### Swarm Template Editing
 
-### Added
+- `SwarmStorage.updateTemplate()` + `SwarmManager.updateTemplate()` (builtin guard → 403).
+- `PATCH /api/v1/agents/swarms/templates/:id` — returns `{ template }`, 404 if missing, 403 if builtin.
+- Dashboard: pencil icon on non-builtin template cards; pre-populated edit form.
+- **5 new route tests**, **4 new UI tests**.
 
-#### MCP Tool Context Optimization (Phase 72)
+### Skill Version Format — Semantic → Date-Based
 
-- **Smart Schema Delivery** — Two-pass MCP tool schema selector (`selectMcpToolSchemas()` in `chat-routes.ts`). Pass 1 applies the existing feature-flag filter. Pass 2 applies a keyword-relevance filter: only schemas for groups triggered by the current message or recent history are sent to the AI in `AIRequest.tools`. Core tools (brain, task, sys, soul, audit, etc.) always pass. Custom MCP server tools always pass. Estimated 60–90% token reduction on cold requests.
-- **MCP tool catalog** — A compact `## Available MCP Tools` block (tool names + 1-line descriptions, grouped by feature area) is appended to the system prompt after the soul prompt. The AI always knows what tools are available even when their schemas are withheld.
-- **`alwaysSendFullSchemas` config flag** — New `McpFeatureConfig` field (default `false`). When `true`, bypasses the relevance filter and sends all enabled schemas every turn. Exposed as a **Smart Schema Delivery** toggle in Settings → Security → Scope.
-- **Telemetry** — Both chat handlers emit a `mcp_tools_selected` audit event (level `debug`) with `tools_available_count`, `tools_sent_count`, and `full_schemas` for measuring real-world savings.
-- **`github_sync_fork` added to soul manager** — `platformTools.github` and `writeOnlyTools.github` in `soul/manager.ts` now include `github_sync_fork` (was missing since Phase 70c).
-- **30 new unit tests** in `packages/core/src/ai/mcp-tool-selection.test.ts` covering `filterMcpTools`, `selectMcpToolSchemas`, and `buildMcpToolCatalog`. **4 new dashboard tests** for the `ScopeManifestTab` toggle.
-
-### Fixed
-
-- **`exposeGithub` flag was never applied** — `filterMcpTools()` gated all `github_*` tools under `exposeGit`, making the 20 Phase-70 GitHub REST API tools (`github_profile`, `github_list_repos`, `github_sync_fork`, …) inaccessible unless `exposeGit` was also enabled. Fixed by introducing `isGitCliTool()` / `GITHUB_CLI_PREFIXES` to route CLI tools to `exposeGit` and REST API tools to `exposeGithub`.
-- **`exposeGithub` missing from PATCH route body type** — `mcp-routes.ts` PATCH handler did not include `exposeGithub` or `alwaysSendFullSchemas` in its body type; both added.
-
-### Docs
-
-- **ADR 155** — `docs/adr/155-mcp-tool-context-optimization.md`
-- **Guide** — `docs/guides/mcp-tool-context-optimization.md`
-
----
-
-## [2026.2.28j] — 2026-02-28
-
-### Added
-
-#### GitHub Fork Sync Tool (Phase 70c)
-
-- **`github_sync_fork` MCP tool** — sync a fork branch with its upstream repository using the GitHub Merges API (`POST /repos/{owner}/{repo}/merges`). Parameters: `owner`, `repo`, `base` (required), `head` (optional, e.g. `upstream:main`), `commit_message` (optional). Returns the merge commit on 201, or `{ status: "up_to_date" }` when already in sync (GitHub 204). Draft mode returns a preview JSON; suggest mode is blocked.
-- **Core proxy route** — `POST /api/v1/github/repos/:owner/:repo/sync-fork` in `github-api-routes.ts` with full mode enforcement and scope checking.
-- **Manifest entry** — `github_sync_fork` added to `manifest.ts` so the AI discovers the tool on startup.
-- **6 route tests + 1 MCP tool test** added; total route tests for github-api-routes: 27.
-- **ADR 153** updated with Phase 70c addendum. **Guide** `docs/guides/github-api-tools.md` updated with Fork Syncing section.
+- All skill files and `CatalogSkillSchema` now use date-based versioning (`YYYY.M.D`, same-day patches: `YYYY.M.D-N`) instead of `major.minor.patch`.
+- 21 community skill JSON files + 10 marketplace skill TypeScript files updated.
 
 ---
 

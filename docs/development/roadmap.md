@@ -30,13 +30,14 @@
 | 78 | Advanced Editor — Full IDE Mode | P2 — power user priority | Ready |
 | 81 | Conversation Branching & Replay | P3 — developer experience | Planned |
 | 83 | Content Guardrails | P3 — enterprise compliance | Planned |
-| 84 | LLM-as-Judge Evaluation | P3 — ML quality signal | Planned |
-| 85 | Conversation Analytics | P3 — operational insight | Planned |
-| 86 | Inline Citations & Grounding | P4 — trust layer | Planned |
-| 87 | LLM Lifecycle Platform — Core | P4 — model ops | Planned |
-| 88 | Marketplace Shareables | P4 — community growth | Planned |
-| 89 | Test Coverage — Path to 88 % / 77 % | P2 — engineering quality | Planned |
-| Future | Observability & Telemetry, Workflow & Personality Versioning, LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Native Clients, Infrastructure | Future / Demand-Gated | — |
+| 85 | LLM-as-Judge Evaluation | P3 — ML quality signal | Planned |
+| 86 | Conversation Analytics | P3 — operational insight | Planned |
+| 87 | Inline Citations & Grounding | P4 — trust layer | Planned |
+| 88 | LLM Lifecycle Platform — Core | P4 — model ops | Planned |
+| 89 | Marketplace Shareables | P4 — community growth | Planned |
+| 90 | CI/CD Integration | P2 — developer lifecycle | ✅ Complete |
+| 91 | Native Clients (Tauri Desktop + Capacitor Mobile) | P3 — distribution | 🔄 In Progress |
+| Future | Workflow & Personality Versioning, LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Infrastructure | Future / Demand-Gated | — |
 
 ---
 
@@ -209,7 +210,7 @@ Per-workspace state survives page refresh:
 
 ---
 
-## Phase 86: Inline Citations & Grounding
+## Phase 87: Inline Citations & Grounding
 
 **Priority**: P4 — Trust layer. Groundedness enforcement is the anchor item; web grounding is a stretch goal. Requires the Phase 82 knowledge base retrieval layer (complete — see [knowledge-base.md](../guides/knowledge-base.md)).
 
@@ -223,7 +224,7 @@ Inspired by Google Cloud Vertex AI Grounding and Azure Groundedness Detection.
 
 ---
 
-## Phase 84: Content Guardrails
+## Phase 83: Content Guardrails
 
 **Priority**: P3 — Enterprise compliance. Required for regulated industries (healthcare, finance, legal). PII redaction and topic restrictions are the must-have items; toxicity and grounding checks are the depth tier.
 
@@ -238,7 +239,7 @@ Complements Phase 77 (Prompt Security) which guards the input side. This phase o
 
 ---
 
-## Phase 84: LLM-as-Judge Evaluation
+## Phase 85: LLM-as-Judge Evaluation
 
 **Priority**: P3 — Closes the ML quality loop. Phase 73 delivered the pipeline mechanics (data_curation → training_job → evaluation → conditional_deploy → human_approval). This phase adds the qualitative signal layer that makes evaluation trustworthy beyond loss metrics.
 
@@ -252,7 +253,7 @@ Inspired by Google Cloud Vertex AI Evaluation Service and Azure AI Evaluation SD
 
 ---
 
-## Phase 85: Conversation Analytics
+## Phase 86: Conversation Analytics
 
 **Priority**: P3 — Operational intelligence. Surfaces the hidden signal in the conversation store. Sentiment and engagement metrics are fast wins that feed directly into the training curation pipeline. Entity extraction and anomaly detection are deeper investments.
 
@@ -267,7 +268,7 @@ Inspired by Amazon Comprehend.
 
 ---
 
-## Phase 87: LLM Lifecycle Platform — Core
+## Phase 88: LLM Lifecycle Platform — Core
 
 **Priority**: P4 — Model operations. Phase 64 + 73 built the pipeline mechanics (distillation, fine-tuning, Ollama lifecycle, curation, evaluation, deploy). This phase adds the operational layer that makes model development reproducible and the deployment story complete.
 
@@ -297,7 +298,7 @@ Advanced items (DPO, RLHF, continual learning, multi-GPU) are demand-gated in th
 
 ---
 
-## Phase 88: Marketplace Shareables
+## Phase 89: Marketplace Shareables
 
 **Priority**: P4 — Community growth. Pursue once the marketplace has meaningful usage (>100 active skill installs across instances) and users ask for workflow/template portability.
 
@@ -327,7 +328,7 @@ Advanced items (DPO, RLHF, continual learning, multi-GPU) are demand-gated in th
 
 ---
 
-## Phase 89: Test Coverage — Path to 88 % / 77 %
+## Phase 90: Test Coverage — Path to 88 % / 77 %
 
 **Priority**: P2 — Engineering quality. Baseline snapshot taken 2026-02-28: **49.3 % statements · 37.7 % branches · 47.5 % functions · 50.9 % lines** across 396 test files / 8,611 passing core tests. Configured thresholds in `vitest.config.ts`: 87 % stmt / 75 % branch / 87 % fn / 87 % line (target: ≥ 88 % stmt / ≥ 77 % branch). *No new test files are written in this phase — existing suites are deepened.*
 
@@ -433,7 +434,7 @@ Versions use the project's date-based format: `YYYY.M.D` (e.g., `2026.2.28`). Sa
 
 ### LLM Lifecycle Platform — Advanced
 
-*Extends Phase 87 with advanced training objectives, scale, and continual learning. Demand-gated pending real-world usage of the Phase 64 + 73 + 87 pipeline.*
+*Extends Phase 88 with advanced training objectives, scale, and continual learning. Demand-gated pending real-world usage of the Phase 64 + 73 + 88 pipeline.*
 
 #### Advanced Training
 

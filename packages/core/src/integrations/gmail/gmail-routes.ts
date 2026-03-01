@@ -12,6 +12,7 @@ import type { FastifyInstance } from 'fastify';
 import type { OAuthTokenService } from '../../gateway/oauth-token-service.js';
 import type { SoulManager } from '../../soul/manager.js';
 import { sendError } from '../../utils/errors.js';
+import { fetchWithOAuthRetry, createApiErrorFormatter } from '../oauth-fetch.js';
 
 const GMAIL_API = 'https://gmail.googleapis.com/gmail/v1/users/me';
 
@@ -30,58 +31,30 @@ export interface GmailRoutesOptions {
 
 // ─── Helpers ──────────────────────────────────────────────────
 
-/**
- * Return a human-readable Gmail API error message.
- * Detects OAuth scope errors and returns an actionable reconnect prompt.
- */
-function gmailErrorMessage(status: number, body: string): string {
-  if (
-    status === 403 &&
-    (body.includes('SCOPE_INSUFFICIENT') ||
-      body.includes('insufficient_scopes') ||
-      body.includes('insufficientPermissions'))
-  ) {
-    return 'Gmail access denied: your account is missing required permissions. Please reconnect your Gmail account via Settings → Connections → OAuth and re-authorize with Gmail scopes.';
-  }
-  if (status === 401) {
-    return 'Gmail authentication failed: your access token is invalid or expired. Please reconnect your Gmail account via Settings → Connections → OAuth.';
-  }
-  return `Gmail API error: ${body}`;
-}
+const gmailErrorMessage = createApiErrorFormatter('Gmail', {
+  403: (body) =>
+    body.includes('SCOPE_INSUFFICIENT') ||
+    body.includes('insufficient_scopes') ||
+    body.includes('insufficientPermissions')
+      ? 'Gmail access denied: your account is missing required permissions. Please reconnect your Gmail account via Settings → Connections → OAuth and re-authorize with Gmail scopes.'
+      : `Gmail API error (403): ${body}`,
+});
 
-/**
- * Fetch a Gmail API URL with automatic 401 recovery.
- * On a 401 response the token is force-refreshed and the request is retried
- * once with the new access token.
- */
-async function fetchGmail(
+function fetchGmail(
   url: string,
   opts: RequestInit,
   tokenId: string,
   accessToken: string,
   oauthTokenService: OAuthTokenService
 ): Promise<Response> {
-  const authHeader = { Authorization: `Bearer ${accessToken}` };
-  let resp = await fetch(url, {
-    ...opts,
-    headers: { ...(opts.headers as Record<string, string> | undefined), ...authHeader },
-  });
-
-  if (resp.status === 401) {
-    const newToken = await oauthTokenService.forceRefreshById(tokenId);
-    // Only retry if we actually got a new token (not the same stale one returned on failed refresh)
-    if (newToken && newToken !== accessToken) {
-      resp = await fetch(url, {
-        ...opts,
-        headers: {
-          ...(opts.headers as Record<string, string> | undefined),
-          Authorization: `Bearer ${newToken}`,
-        },
-      });
-    }
-  }
-
-  return resp;
+  return fetchWithOAuthRetry(
+    url,
+    opts,
+    { Authorization: `Bearer ${accessToken}` },
+    tokenId,
+    accessToken,
+    oauthTokenService
+  );
 }
 
 /**

@@ -4,7 +4,62 @@
  * Three starter workflows seeded at startup.
  */
 
-import type { WorkflowDefinitionCreateInput } from '@secureyeoman/shared';
+import type { WorkflowDefinitionCreateInput, WorkflowStep } from '@secureyeoman/shared';
+
+// ── Step builder helpers ───────────────────────────────────────────────────────
+// Reduce repetitive step-object literals in template definitions.
+
+type StepBase = Pick<WorkflowStep, 'id' | 'name' | 'dependsOn' | 'onError'> &
+  Partial<Pick<WorkflowStep, 'description' | 'condition'>>;
+
+function agentStep(
+  base: StepBase,
+  profile: string,
+  taskTemplate: string,
+  contextTemplate?: string
+): WorkflowStep {
+  return {
+    type: 'agent',
+    config: { profile, taskTemplate, ...(contextTemplate ? { contextTemplate } : {}) },
+    ...base,
+  } as WorkflowStep;
+}
+
+function transformStep(base: StepBase, outputTemplate: string): WorkflowStep {
+  return { type: 'transform', config: { outputTemplate }, ...base } as WorkflowStep;
+}
+
+function resourceStep(
+  base: StepBase,
+  resourceType: string,
+  dataTemplate: string
+): WorkflowStep {
+  return { type: 'resource', config: { resourceType, dataTemplate }, ...base } as WorkflowStep;
+}
+
+function webhookStep(
+  base: StepBase,
+  url: string,
+  bodyTemplate: string,
+  method = 'POST'
+): WorkflowStep {
+  return { type: 'webhook', config: { url, method, bodyTemplate }, ...base } as WorkflowStep;
+}
+
+function swarmStep(
+  base: StepBase,
+  templateId: string,
+  taskTemplate: string,
+  contextTemplate?: string
+): WorkflowStep {
+  return {
+    type: 'swarm',
+    config: { templateId, taskTemplate, ...(contextTemplate ? { contextTemplate } : {}) },
+    ...base,
+  } as WorkflowStep;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
   // ── 1. Research Report Pipeline ──────────────────────────────
@@ -13,55 +68,25 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
     description:
       'Sequential pipeline: researcher gathers info, analyst synthesises, transform formats the report, then saves to memory.',
     steps: [
-      {
-        id: 'researcher',
-        type: 'agent',
-        name: 'Researcher',
-        description: 'Gather relevant information on the topic',
-        config: {
-          profile: 'researcher',
-          taskTemplate: 'Research the following topic thoroughly: {{input.topic}}',
-        },
-        dependsOn: [],
-        onError: 'fail',
-      },
-      {
-        id: 'analyst',
-        type: 'agent',
-        name: 'Analyst',
-        description: 'Analyse and synthesise the research findings',
-        config: {
-          profile: 'analyst',
-          taskTemplate:
-            'Analyse and synthesise the following research findings into a structured report:\n\n{{steps.researcher.output}}',
-        },
-        dependsOn: ['researcher'],
-        onError: 'fail',
-      },
-      {
-        id: 'format',
-        type: 'transform',
-        name: 'Format Report',
-        description: 'Format the analysed output as a markdown report',
-        config: {
-          outputTemplate:
-            '# Research Report\n\n**Topic**: {{input.topic}}\n\n{{steps.analyst.output}}',
-        },
-        dependsOn: ['analyst'],
-        onError: 'continue',
-      },
-      {
-        id: 'save',
-        type: 'resource',
-        name: 'Save to Memory',
-        description: 'Persist the report as a memory entry',
-        config: {
-          resourceType: 'memory',
-          dataTemplate: '{{steps.format.output}}',
-        },
-        dependsOn: ['format'],
-        onError: 'continue',
-      },
+      agentStep(
+        { id: 'researcher', name: 'Researcher', description: 'Gather relevant information on the topic', dependsOn: [], onError: 'fail' },
+        'researcher',
+        'Research the following topic thoroughly: {{input.topic}}'
+      ),
+      agentStep(
+        { id: 'analyst', name: 'Analyst', description: 'Analyse and synthesise the research findings', dependsOn: ['researcher'], onError: 'fail' },
+        'analyst',
+        'Analyse and synthesise the following research findings into a structured report:\n\n{{steps.researcher.output}}'
+      ),
+      transformStep(
+        { id: 'format', name: 'Format Report', description: 'Format the analysed output as a markdown report', dependsOn: ['analyst'], onError: 'continue' },
+        '# Research Report\n\n**Topic**: {{input.topic}}\n\n{{steps.analyst.output}}'
+      ),
+      resourceStep(
+        { id: 'save', name: 'Save to Memory', description: 'Persist the report as a memory entry', dependsOn: ['format'], onError: 'continue' },
+        'memory',
+        '{{steps.format.output}}'
+      ),
     ],
     edges: [
       { source: 'researcher', target: 'analyst' },
@@ -81,22 +106,15 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
     description:
       'Runs the code-review swarm, checks the result, and notifies a webhook with pass/fail.',
     steps: [
-      {
-        id: 'review',
-        type: 'swarm',
-        name: 'Code Review Swarm',
-        description: 'Execute the built-in code-review swarm',
-        config: {
-          templateId: 'code-review',
-          taskTemplate: '{{input.code}}',
-          contextTemplate: 'PR: {{input.prTitle}}',
-        },
-        dependsOn: [],
-        onError: 'fail',
-      },
+      swarmStep(
+        { id: 'review', name: 'Code Review Swarm', description: 'Execute the built-in code-review swarm', dependsOn: [], onError: 'fail' },
+        'code-review',
+        '{{input.code}}',
+        'PR: {{input.prTitle}}'
+      ),
       {
         id: 'check',
-        type: 'condition',
+        type: 'condition' as const,
         name: 'Check Result',
         description: 'Branch based on whether review passed',
         config: {
@@ -106,36 +124,18 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
           falseBranchStepId: 'notify-fail',
         },
         dependsOn: ['review'],
-        onError: 'continue',
+        onError: 'continue' as const,
       },
-      {
-        id: 'notify-pass',
-        type: 'webhook',
-        name: 'Notify Pass',
-        description: 'Send pass notification to webhook',
-        config: {
-          url: '{{input.webhookUrl}}',
-          method: 'POST',
-          bodyTemplate:
-            '{"status":"passed","pr":"{{input.prTitle}}","review":"{{steps.review.output}}"}',
-        },
-        dependsOn: ['check'],
-        onError: 'continue',
-      },
-      {
-        id: 'notify-fail',
-        type: 'webhook',
-        name: 'Notify Fail',
-        description: 'Send fail notification to webhook',
-        config: {
-          url: '{{input.webhookUrl}}',
-          method: 'POST',
-          bodyTemplate:
-            '{"status":"failed","pr":"{{input.prTitle}}","review":"{{steps.review.output}}"}',
-        },
-        dependsOn: ['check'],
-        onError: 'continue',
-      },
+      webhookStep(
+        { id: 'notify-pass', name: 'Notify Pass', description: 'Send pass notification to webhook', dependsOn: ['check'], onError: 'continue' },
+        '{{input.webhookUrl}}',
+        '{"status":"passed","pr":"{{input.prTitle}}","review":"{{steps.review.output}}"}'
+      ),
+      webhookStep(
+        { id: 'notify-fail', name: 'Notify Fail', description: 'Send fail notification to webhook', dependsOn: ['check'], onError: 'continue' },
+        '{{input.webhookUrl}}',
+        '{"status":"failed","pr":"{{input.prTitle}}","review":"{{steps.review.output}}"}'
+      ),
     ],
     edges: [
       { source: 'review', target: 'check' },
@@ -477,6 +477,279 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
       { source: 'research-b', target: 'synthesise' },
       { source: 'research-c', target: 'synthesise' },
       { source: 'synthesise', target: 'save-knowledge' },
+    ],
+    triggers: [{ type: 'manual', config: {} }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L2' as const,
+  },
+
+  // ── CI/CD Templates (Phase 90) ────────────────────────────────
+
+  // ── pr-ci-triage ──────────────────────────────────────────────
+  {
+    name: 'pr-ci-triage',
+    description:
+      'CI/CD: Trigger a GitHub Actions workflow, wait for completion, then have an agent analyse any failure and post the diagnosis as a PR comment via webhook.',
+    steps: [
+      {
+        id: 'trigger',
+        type: 'ci_trigger',
+        name: 'Trigger CI',
+        description: 'Dispatch the GitHub Actions workflow on the PR branch',
+        config: {
+          provider: 'github-actions',
+          owner: '{{input.owner}}',
+          repo: '{{input.repo}}',
+          ref: '{{input.ref}}',
+          workflowId: '{{input.workflowId}}',
+        },
+        dependsOn: [],
+        onError: 'fail',
+      },
+      {
+        id: 'wait',
+        type: 'ci_wait',
+        name: 'Wait for CI',
+        description: 'Poll until the workflow run reaches a terminal state',
+        config: {
+          provider: 'github-actions',
+          owner: '{{input.owner}}',
+          repo: '{{input.repo}}',
+          runId: '{{steps.trigger.output.runId}}',
+          pollIntervalMs: 15000,
+          timeoutMs: 1800000,
+        },
+        dependsOn: ['trigger'],
+        onError: 'continue',
+      },
+      {
+        id: 'check',
+        type: 'condition',
+        name: 'Check Conclusion',
+        description: 'Branch on CI conclusion',
+        config: {
+          expression: 'steps.wait.output && steps.wait.output.conclusion === "success"',
+          trueBranchStepId: 'notify-pass',
+          falseBranchStepId: 'analyse-failure',
+        },
+        dependsOn: ['wait'],
+        onError: 'continue',
+      },
+      {
+        id: 'analyse-failure',
+        type: 'agent',
+        name: 'Analyse Failure',
+        description: 'Read the log URL and produce a concise diagnosis with suggested fixes',
+        config: {
+          profile: 'default',
+          taskTemplate:
+            'The GitHub Actions workflow run {{steps.wait.output.runId}} for {{input.owner}}/{{input.repo}} on ref {{input.ref}} failed.\n\nLogs URL: {{steps.wait.output.logs_url}}\n\nPlease analyse the likely failure cause and suggest a fix.',
+        },
+        dependsOn: ['check'],
+        onError: 'continue',
+      },
+      {
+        id: 'notify-pass',
+        type: 'webhook',
+        name: 'Notify Pass',
+        description: 'Post a success comment via webhook',
+        config: {
+          url: '{{input.webhookUrl}}',
+          method: 'POST',
+          bodyTemplate:
+            '{"status":"passed","repo":"{{input.repo}}","ref":"{{input.ref}}","conclusion":"{{steps.wait.output.conclusion}}"}',
+        },
+        dependsOn: ['check'],
+        onError: 'continue',
+      },
+      {
+        id: 'notify-failure',
+        type: 'webhook',
+        name: 'Notify Failure',
+        description: 'Post failure diagnosis to webhook',
+        config: {
+          url: '{{input.webhookUrl}}',
+          method: 'POST',
+          bodyTemplate:
+            '{"status":"failed","repo":"{{input.repo}}","ref":"{{input.ref}}","diagnosis":"{{steps.analyse-failure.output}}","logs_url":"{{steps.wait.output.logs_url}}"}',
+        },
+        dependsOn: ['analyse-failure'],
+        onError: 'continue',
+      },
+    ],
+    edges: [
+      { source: 'trigger', target: 'wait' },
+      { source: 'wait', target: 'check' },
+      { source: 'check', target: 'notify-pass', label: 'pass' },
+      { source: 'check', target: 'analyse-failure', label: 'fail' },
+      { source: 'analyse-failure', target: 'notify-failure' },
+    ],
+    triggers: [{ type: 'manual', config: {} }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L2' as const,
+  },
+
+  // ── build-failure-triage ──────────────────────────────────────
+  {
+    name: 'build-failure-triage',
+    description:
+      'CI/CD: Triggered by an inbound webhook event. An agent reads the log URL, diagnoses the failure, and opens a GitHub issue with a fix suggestion.',
+    steps: [
+      {
+        id: 'diagnose',
+        type: 'agent',
+        name: 'Diagnose Build Failure',
+        description: 'Read the log URL from the webhook payload and produce a diagnosis',
+        config: {
+          profile: 'default',
+          taskTemplate:
+            'Build failure reported for repo {{input.repo}} on branch {{input.branch}}.\n\nLog URL: {{input.logUrl}}\n\nFetch the logs if possible and produce a concise root-cause diagnosis with at least one actionable fix suggestion.',
+        },
+        dependsOn: [],
+        onError: 'fail',
+      },
+      {
+        id: 'open-issue',
+        type: 'webhook',
+        name: 'Open GitHub Issue',
+        description: 'Post the diagnosis to the GitHub Issues API',
+        config: {
+          url: '{{input.webhookUrl}}',
+          method: 'POST',
+          bodyTemplate:
+            '{"title":"Build failure on {{input.branch}}","body":"## Diagnosis\\n\\n{{steps.diagnose.output}}\\n\\n**Log URL:** {{input.logUrl}}","labels":["ci-failure","auto-triage"]}',
+        },
+        dependsOn: ['diagnose'],
+        onError: 'continue',
+      },
+    ],
+    edges: [{ source: 'diagnose', target: 'open-issue' }],
+    triggers: [{ type: 'event', config: { event: 'build.failed' } }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L2' as const,
+  },
+
+  // ── daily-pr-digest ───────────────────────────────────────────
+  {
+    name: 'daily-pr-digest',
+    description:
+      'CI/CD: Scheduled daily digest — list open PRs via MCP tool, have an agent summarise CI status, then POST the digest to a webhook.',
+    steps: [
+      {
+        id: 'list-prs',
+        type: 'tool',
+        name: 'List Open PRs',
+        description: 'Use the github_list_issues MCP tool to fetch open pull requests',
+        config: {
+          toolName: 'github_list_issues',
+          toolArgs: {
+            owner: '{{input.owner}}',
+            repo: '{{input.repo}}',
+            state: 'open',
+            labels: '',
+          },
+        },
+        dependsOn: [],
+        onError: 'continue',
+      },
+      {
+        id: 'summarise',
+        type: 'agent',
+        name: 'Summarise PRs',
+        description: 'Summarise open PRs with CI status highlights',
+        config: {
+          profile: 'default',
+          taskTemplate:
+            'You are a daily PR digest assistant for {{input.owner}}/{{input.repo}}.\n\nHere are the open pull requests:\n\n{{steps.list-prs.output}}\n\nProduce a concise daily digest in markdown: PR title, author, CI status (if visible), and any action needed. Sort by urgency.',
+        },
+        dependsOn: ['list-prs'],
+        onError: 'fail',
+      },
+      {
+        id: 'post-digest',
+        type: 'webhook',
+        name: 'Post Digest',
+        description: 'Send the digest to the configured webhook',
+        config: {
+          url: '{{input.webhookUrl}}',
+          method: 'POST',
+          bodyTemplate: '{"digest":"{{steps.summarise.output}}","repo":"{{input.owner}}/{{input.repo}}"}',
+        },
+        dependsOn: ['summarise'],
+        onError: 'continue',
+      },
+    ],
+    edges: [
+      { source: 'list-prs', target: 'summarise' },
+      { source: 'summarise', target: 'post-digest' },
+    ],
+    triggers: [{ type: 'schedule', config: { cron: '0 9 * * 1-5' } }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L2' as const,
+  },
+
+  // ── dev-env-provision ─────────────────────────────────────────
+  {
+    name: 'dev-env-provision',
+    description:
+      'CI/CD: Spin up a Docker Compose dev environment, have an agent seed test data, then notify via webhook with the environment URL.',
+    steps: [
+      {
+        id: 'compose-up',
+        type: 'tool',
+        name: 'Start Compose Stack',
+        description: 'Bring up the Docker Compose project in detached mode',
+        config: {
+          toolName: 'docker_compose_up',
+          toolArgs: {
+            workdir: '{{input.composeDir}}',
+            services: [],
+            build: false,
+            pull: 'missing',
+          },
+        },
+        dependsOn: [],
+        onError: 'fail',
+      },
+      {
+        id: 'seed',
+        type: 'agent',
+        name: 'Seed Test Data',
+        description: 'Agent seeds the environment with test data via API or SQL',
+        config: {
+          profile: 'default',
+          taskTemplate:
+            'The Docker Compose stack for project "{{input.projectName}}" is now running.\n\nCompose output:\n{{steps.compose-up.output}}\n\nPlease seed it with representative test data. Use any available tools (http_request, docker_exec) to do so. Confirm when complete.',
+        },
+        dependsOn: ['compose-up'],
+        onError: 'continue',
+      },
+      {
+        id: 'notify',
+        type: 'webhook',
+        name: 'Notify Environment Ready',
+        description: 'POST environment URL and status to webhook',
+        config: {
+          url: '{{input.webhookUrl}}',
+          method: 'POST',
+          bodyTemplate:
+            '{"project":"{{input.projectName}}","status":"ready","envUrl":"{{input.envUrl}}","seed":"{{steps.seed.output}}"}',
+        },
+        dependsOn: ['seed'],
+        onError: 'continue',
+      },
+    ],
+    edges: [
+      { source: 'compose-up', target: 'seed' },
+      { source: 'seed', target: 'notify' },
     ],
     triggers: [{ type: 'manual', config: {} }],
     isEnabled: true,

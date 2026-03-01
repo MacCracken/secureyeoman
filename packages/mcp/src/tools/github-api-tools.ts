@@ -15,7 +15,7 @@ import { homedir } from 'node:os';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
-import { wrapToolHandler } from './tool-utils.js';
+import { wrapToolHandler, registerApiProxyTool } from './tool-utils.js';
 import { encryptSshKey } from '../utils/ssh-crypto.js';
 
 // ── SSH key generation (pure Node 20 crypto, no external binary) ──────────────
@@ -105,304 +105,232 @@ export function registerGithubApiTools(
   tokenSecret?: string
 ): void {
   // ── github_profile ───────────────────────────────────────────
-  server.registerTool(
-    'github_profile',
-    {
-      description:
-        'Get the connected GitHub account profile — login, name, email, public repos count, access mode (auto/draft/suggest), and two_factor_authentication status (true/false). Use this to surface security recommendations like 2FA not being enabled.',
-      inputSchema: {},
-    },
-    wrapToolHandler('github_profile', middleware, async () => {
-      const result = await client.get('/api/v1/github/profile');
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    })
-  );
+  registerApiProxyTool(server, client, middleware, {
+    name: 'github_profile',
+    description:
+      'Get the connected GitHub account profile — login, name, email, public repos count, access mode (auto/draft/suggest), and two_factor_authentication status (true/false). Use this to surface security recommendations like 2FA not being enabled.',
+    inputSchema: {},
+    buildPath: () => '/api/v1/github/profile',
+  });
 
   // ── github_list_repos ────────────────────────────────────────
-  server.registerTool(
-    'github_list_repos',
-    {
-      description:
-        'List repositories for the authenticated GitHub user. Returns name, description, language, star count, and visibility.',
-      inputSchema: {
-        type: z
-          .enum(['all', 'owner', 'member'])
-          .optional()
-          .describe('Filter by repository type (default: all)'),
-        sort: z
-          .enum(['created', 'updated', 'pushed', 'full_name'])
-          .optional()
-          .describe('Sort field (default: full_name)'),
-        per_page: z
-          .number()
-          .int()
-          .min(1)
-          .max(100)
-          .optional()
-          .describe('Results per page (1–100, default 30)'),
-        page: z.number().int().min(1).optional().describe('Page number for pagination'),
-      },
+  registerApiProxyTool(server, client, middleware, {
+    name: 'github_list_repos',
+    description:
+      'List repositories for the authenticated GitHub user. Returns name, description, language, star count, and visibility.',
+    inputSchema: {
+      type: z
+        .enum(['all', 'owner', 'member'])
+        .optional()
+        .describe('Filter by repository type (default: all)'),
+      sort: z
+        .enum(['created', 'updated', 'pushed', 'full_name'])
+        .optional()
+        .describe('Sort field (default: full_name)'),
+      per_page: z
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .optional()
+        .describe('Results per page (1–100, default 30)'),
+      page: z.number().int().min(1).optional().describe('Page number for pagination'),
     },
-    wrapToolHandler('github_list_repos', middleware, async (args) => {
-      const query: Record<string, string> = {};
-      if (args.type) query.type = args.type;
-      if (args.sort) query.sort = args.sort;
-      if (args.per_page) query.per_page = String(args.per_page);
-      if (args.page) query.page = String(args.page);
-      const result = await client.get('/api/v1/github/repos', query);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    })
-  );
+    buildPath: () => '/api/v1/github/repos',
+    buildQuery: (args) => {
+      const q: Record<string, string> = {};
+      if (args.type) q.type = args.type as string;
+      if (args.sort) q.sort = args.sort as string;
+      if (args.per_page) q.per_page = String(args.per_page);
+      if (args.page) q.page = String(args.page);
+      return q;
+    },
+  });
 
   // ── github_get_repo ──────────────────────────────────────────
-  server.registerTool(
-    'github_get_repo',
-    {
-      description:
-        'Get details for a specific GitHub repository — description, language, stars, forks, default branch, open issues count.',
-      inputSchema: {
-        owner: z.string().describe('Repository owner (username or organization)'),
-        repo: z.string().describe('Repository name'),
-      },
+  registerApiProxyTool(server, client, middleware, {
+    name: 'github_get_repo',
+    description:
+      'Get details for a specific GitHub repository — description, language, stars, forks, default branch, open issues count.',
+    inputSchema: {
+      owner: z.string().describe('Repository owner (username or organization)'),
+      repo: z.string().describe('Repository name'),
     },
-    wrapToolHandler('github_get_repo', middleware, async (args) => {
-      const result = await client.get(`/api/v1/github/repos/${args.owner}/${args.repo}`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    })
-  );
+    buildPath: (args) => `/api/v1/github/repos/${args.owner}/${args.repo}`,
+  });
 
   // ── github_list_prs ──────────────────────────────────────────
-  server.registerTool(
-    'github_list_prs',
-    {
-      description:
-        'List pull requests for a GitHub repository. Returns title, number, author, status, head branch, and labels.',
-      inputSchema: {
-        owner: z.string().describe('Repository owner'),
-        repo: z.string().describe('Repository name'),
-        state: z
-          .enum(['open', 'closed', 'all'])
-          .optional()
-          .describe('PR state filter (default: open)'),
-        per_page: z
-          .number()
-          .int()
-          .min(1)
-          .max(100)
-          .optional()
-          .describe('Results per page (1–100, default 30)'),
-        page: z.number().int().min(1).optional().describe('Page number'),
-      },
+  registerApiProxyTool(server, client, middleware, {
+    name: 'github_list_prs',
+    description:
+      'List pull requests for a GitHub repository. Returns title, number, author, status, head branch, and labels.',
+    inputSchema: {
+      owner: z.string().describe('Repository owner'),
+      repo: z.string().describe('Repository name'),
+      state: z
+        .enum(['open', 'closed', 'all'])
+        .optional()
+        .describe('PR state filter (default: open)'),
+      per_page: z
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .optional()
+        .describe('Results per page (1–100, default 30)'),
+      page: z.number().int().min(1).optional().describe('Page number'),
     },
-    wrapToolHandler('github_list_prs', middleware, async (args) => {
-      const query: Record<string, string> = {};
-      if (args.state) query.state = args.state;
-      if (args.per_page) query.per_page = String(args.per_page);
-      if (args.page) query.page = String(args.page);
-      const result = await client.get(
-        `/api/v1/github/repos/${args.owner}/${args.repo}/pulls`,
-        query
-      );
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    })
-  );
+    buildPath: (args) => `/api/v1/github/repos/${args.owner}/${args.repo}/pulls`,
+    buildQuery: (args) => {
+      const q: Record<string, string> = {};
+      if (args.state) q.state = args.state as string;
+      if (args.per_page) q.per_page = String(args.per_page);
+      if (args.page) q.page = String(args.page);
+      return q;
+    },
+  });
 
   // ── github_get_pr ────────────────────────────────────────────
-  server.registerTool(
-    'github_get_pr',
-    {
-      description:
-        'Get a specific pull request — title, body, status (open/closed/merged), changed files count, reviewers, labels, and diff URL.',
-      inputSchema: {
-        owner: z.string().describe('Repository owner'),
-        repo: z.string().describe('Repository name'),
-        number: z.number().int().min(1).describe('Pull request number'),
-      },
+  registerApiProxyTool(server, client, middleware, {
+    name: 'github_get_pr',
+    description:
+      'Get a specific pull request — title, body, status (open/closed/merged), changed files count, reviewers, labels, and diff URL.',
+    inputSchema: {
+      owner: z.string().describe('Repository owner'),
+      repo: z.string().describe('Repository name'),
+      number: z.number().int().min(1).describe('Pull request number'),
     },
-    wrapToolHandler('github_get_pr', middleware, async (args) => {
-      const result = await client.get(
-        `/api/v1/github/repos/${args.owner}/${args.repo}/pulls/${args.number}`
-      );
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    })
-  );
+    buildPath: (args) => `/api/v1/github/repos/${args.owner}/${args.repo}/pulls/${args.number}`,
+  });
 
   // ── github_list_issues ───────────────────────────────────────
-  server.registerTool(
-    'github_list_issues',
-    {
-      description:
-        'List issues for a GitHub repository. Returns title, number, labels, assignees, and status. Note: PRs also appear as issues — filter by missing pull_request field to get issues only.',
-      inputSchema: {
-        owner: z.string().describe('Repository owner'),
-        repo: z.string().describe('Repository name'),
-        state: z
-          .enum(['open', 'closed', 'all'])
-          .optional()
-          .describe('Issue state filter (default: open)'),
-        labels: z.string().optional().describe('Comma-separated label names to filter by'),
-        per_page: z
-          .number()
-          .int()
-          .min(1)
-          .max(100)
-          .optional()
-          .describe('Results per page (1–100, default 30)'),
-        page: z.number().int().min(1).optional().describe('Page number'),
-      },
+  registerApiProxyTool(server, client, middleware, {
+    name: 'github_list_issues',
+    description:
+      'List issues for a GitHub repository. Returns title, number, labels, assignees, and status. Note: PRs also appear as issues — filter by missing pull_request field to get issues only.',
+    inputSchema: {
+      owner: z.string().describe('Repository owner'),
+      repo: z.string().describe('Repository name'),
+      state: z
+        .enum(['open', 'closed', 'all'])
+        .optional()
+        .describe('Issue state filter (default: open)'),
+      labels: z.string().optional().describe('Comma-separated label names to filter by'),
+      per_page: z
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .optional()
+        .describe('Results per page (1–100, default 30)'),
+      page: z.number().int().min(1).optional().describe('Page number'),
     },
-    wrapToolHandler('github_list_issues', middleware, async (args) => {
-      const query: Record<string, string> = {};
-      if (args.state) query.state = args.state;
-      if (args.labels) query.labels = args.labels;
-      if (args.per_page) query.per_page = String(args.per_page);
-      if (args.page) query.page = String(args.page);
-      const result = await client.get(
-        `/api/v1/github/repos/${args.owner}/${args.repo}/issues`,
-        query
-      );
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    })
-  );
+    buildPath: (args) => `/api/v1/github/repos/${args.owner}/${args.repo}/issues`,
+    buildQuery: (args) => {
+      const q: Record<string, string> = {};
+      if (args.state) q.state = args.state as string;
+      if (args.labels) q.labels = args.labels as string;
+      if (args.per_page) q.per_page = String(args.per_page);
+      if (args.page) q.page = String(args.page);
+      return q;
+    },
+  });
 
   // ── github_get_issue ─────────────────────────────────────────
-  server.registerTool(
-    'github_get_issue',
-    {
-      description:
-        'Get a specific GitHub issue — title, body, labels, assignees, milestone, and comment count.',
-      inputSchema: {
-        owner: z.string().describe('Repository owner'),
-        repo: z.string().describe('Repository name'),
-        number: z.number().int().min(1).describe('Issue number'),
-      },
+  registerApiProxyTool(server, client, middleware, {
+    name: 'github_get_issue',
+    description:
+      'Get a specific GitHub issue — title, body, labels, assignees, milestone, and comment count.',
+    inputSchema: {
+      owner: z.string().describe('Repository owner'),
+      repo: z.string().describe('Repository name'),
+      number: z.number().int().min(1).describe('Issue number'),
     },
-    wrapToolHandler('github_get_issue', middleware, async (args) => {
-      const result = await client.get(
-        `/api/v1/github/repos/${args.owner}/${args.repo}/issues/${args.number}`
-      );
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    })
-  );
+    buildPath: (args) => `/api/v1/github/repos/${args.owner}/${args.repo}/issues/${args.number}`,
+  });
 
   // ── github_create_issue ──────────────────────────────────────
-  server.registerTool(
-    'github_create_issue',
-    {
-      description:
-        'Create a GitHub issue. Available in "auto" and "draft" integration modes. Returns the issue number and URL. In "suggest" mode this tool will be blocked.',
-      inputSchema: {
-        owner: z.string().describe('Repository owner'),
-        repo: z.string().describe('Repository name'),
-        title: z.string().describe('Issue title'),
-        body: z.string().optional().describe('Issue description in Markdown'),
-        labels: z.array(z.string()).optional().describe('Label names to apply'),
-        assignees: z.array(z.string()).optional().describe('GitHub usernames to assign'),
-      },
+  registerApiProxyTool(server, client, middleware, {
+    name: 'github_create_issue',
+    description:
+      'Create a GitHub issue. Available in "auto" and "draft" integration modes. Returns the issue number and URL. In "suggest" mode this tool will be blocked.',
+    inputSchema: {
+      owner: z.string().describe('Repository owner'),
+      repo: z.string().describe('Repository name'),
+      title: z.string().describe('Issue title'),
+      body: z.string().optional().describe('Issue description in Markdown'),
+      labels: z.array(z.string()).optional().describe('Label names to apply'),
+      assignees: z.array(z.string()).optional().describe('GitHub usernames to assign'),
     },
-    wrapToolHandler('github_create_issue', middleware, async (args) => {
-      const result = await client.post(`/api/v1/github/repos/${args.owner}/${args.repo}/issues`, {
-        title: args.title,
-        body: args.body,
-        labels: args.labels,
-        assignees: args.assignees,
-      });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    })
-  );
+    method: 'post',
+    buildPath: (args) => `/api/v1/github/repos/${args.owner}/${args.repo}/issues`,
+    buildBody: (args) => ({ title: args.title, body: args.body, labels: args.labels, assignees: args.assignees }),
+  });
 
   // ── github_create_pr ─────────────────────────────────────────
-  server.registerTool(
-    'github_create_pr',
-    {
-      description:
-        'Create a GitHub pull request. Only available in "auto" mode. In "draft" mode returns a preview JSON for human review without creating the PR. In "suggest" mode this tool is blocked.',
-      inputSchema: {
-        owner: z.string().describe('Repository owner'),
-        repo: z.string().describe('Repository name'),
-        title: z.string().describe('Pull request title'),
-        head: z.string().describe('Head branch name (the branch containing changes)'),
-        base: z.string().describe('Base branch name (the branch to merge into, e.g. "main")'),
-        body: z.string().optional().describe('Pull request description in Markdown'),
-        draft: z.boolean().optional().describe('Create as a draft PR on GitHub'),
-      },
+  registerApiProxyTool(server, client, middleware, {
+    name: 'github_create_pr',
+    description:
+      'Create a GitHub pull request. Only available in "auto" mode. In "draft" mode returns a preview JSON for human review without creating the PR. In "suggest" mode this tool is blocked.',
+    inputSchema: {
+      owner: z.string().describe('Repository owner'),
+      repo: z.string().describe('Repository name'),
+      title: z.string().describe('Pull request title'),
+      head: z.string().describe('Head branch name (the branch containing changes)'),
+      base: z.string().describe('Base branch name (the branch to merge into, e.g. "main")'),
+      body: z.string().optional().describe('Pull request description in Markdown'),
+      draft: z.boolean().optional().describe('Create as a draft PR on GitHub'),
     },
-    wrapToolHandler('github_create_pr', middleware, async (args) => {
-      const result = await client.post(`/api/v1/github/repos/${args.owner}/${args.repo}/pulls`, {
-        title: args.title,
-        head: args.head,
-        base: args.base,
-        body: args.body,
-        draft: args.draft,
-      });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    })
-  );
+    method: 'post',
+    buildPath: (args) => `/api/v1/github/repos/${args.owner}/${args.repo}/pulls`,
+    buildBody: (args) => ({ title: args.title, head: args.head, base: args.base, body: args.body, draft: args.draft }),
+  });
 
   // ── github_comment ───────────────────────────────────────────
-  server.registerTool(
-    'github_comment',
-    {
-      description:
-        'Post a comment on a GitHub issue or pull request. Only available in "auto" integration mode. In "draft" or "suggest" mode this tool is blocked — ask the user to post the comment manually.',
-      inputSchema: {
-        owner: z.string().describe('Repository owner'),
-        repo: z.string().describe('Repository name'),
-        number: z.number().int().min(1).describe('Issue or PR number to comment on'),
-        body: z.string().describe('Comment text in Markdown'),
-      },
+  registerApiProxyTool(server, client, middleware, {
+    name: 'github_comment',
+    description:
+      'Post a comment on a GitHub issue or pull request. Only available in "auto" integration mode. In "draft" or "suggest" mode this tool is blocked — ask the user to post the comment manually.',
+    inputSchema: {
+      owner: z.string().describe('Repository owner'),
+      repo: z.string().describe('Repository name'),
+      number: z.number().int().min(1).describe('Issue or PR number to comment on'),
+      body: z.string().describe('Comment text in Markdown'),
     },
-    wrapToolHandler('github_comment', middleware, async (args) => {
-      const result = await client.post(
-        `/api/v1/github/repos/${args.owner}/${args.repo}/issues/${args.number}/comments`,
-        {
-          body: args.body,
-        }
-      );
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    })
-  );
+    method: 'post',
+    buildPath: (args) => `/api/v1/github/repos/${args.owner}/${args.repo}/issues/${args.number}/comments`,
+    buildBody: (args) => ({ body: args.body }),
+  });
 
   // ── github_list_ssh_keys ─────────────────────────────────────
-  server.registerTool(
-    'github_list_ssh_keys',
-    {
-      description:
-        'List all SSH public keys registered on the connected GitHub account. Returns key id, title, key fingerprint, and created_at. Use this to audit SSH access or find the key_id needed to delete a key.',
-      inputSchema: {},
-    },
-    wrapToolHandler('github_list_ssh_keys', middleware, async () => {
-      const result = await client.get('/api/v1/github/ssh-keys');
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    })
-  );
+  registerApiProxyTool(server, client, middleware, {
+    name: 'github_list_ssh_keys',
+    description:
+      'List all SSH public keys registered on the connected GitHub account. Returns key id, title, key fingerprint, and created_at. Use this to audit SSH access or find the key_id needed to delete a key.',
+    inputSchema: {},
+    buildPath: () => '/api/v1/github/ssh-keys',
+  });
 
   // ── github_add_ssh_key ────────────────────────────────────────
-  server.registerTool(
-    'github_add_ssh_key',
-    {
-      description:
-        'Add an SSH public key to the connected GitHub account, enabling SSH push/pull for repositories. ' +
-        'The key must be an existing public key (e.g. contents of ~/.ssh/id_ed25519.pub or id_rsa.pub) — this tool does NOT generate keys. ' +
-        'In "draft" mode returns a preview without adding. Blocked in "suggest" mode. ' +
-        'Requires the account to be reconnected with the admin:public_key scope.',
-      inputSchema: {
-        title: z
-          .string()
-          .describe('A label for the key (e.g. "Work laptop" or "MacBook Pro 2024")'),
-        key: z
-          .string()
-          .describe('The full SSH public key string (starts with "ssh-ed25519", "ssh-rsa", etc.)'),
-      },
+  registerApiProxyTool(server, client, middleware, {
+    name: 'github_add_ssh_key',
+    description:
+      'Add an SSH public key to the connected GitHub account, enabling SSH push/pull for repositories. ' +
+      'The key must be an existing public key (e.g. contents of ~/.ssh/id_ed25519.pub or id_rsa.pub) — this tool does NOT generate keys. ' +
+      'In "draft" mode returns a preview without adding. Blocked in "suggest" mode. ' +
+      'Requires the account to be reconnected with the admin:public_key scope.',
+    inputSchema: {
+      title: z
+        .string()
+        .describe('A label for the key (e.g. "Work laptop" or "MacBook Pro 2024")'),
+      key: z
+        .string()
+        .describe('The full SSH public key string (starts with "ssh-ed25519", "ssh-rsa", etc.)'),
     },
-    wrapToolHandler('github_add_ssh_key', middleware, async (args) => {
-      const result = await client.post('/api/v1/github/ssh-keys', {
-        title: args.title,
-        key: args.key,
-      });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    })
-  );
+    method: 'post',
+    buildPath: () => '/api/v1/github/ssh-keys',
+    buildBody: (args) => ({ title: args.title, key: args.key }),
+  });
 
   // ── github_delete_ssh_key ─────────────────────────────────────
   server.registerTool(
@@ -794,35 +722,32 @@ export function registerGithubApiTools(
   );
 
   // ── github_fork_repo ─────────────────────────────────────────
-  server.registerTool(
-    'github_fork_repo',
-    {
-      description:
-        'Fork a GitHub repository into the authenticated user account (or a specified organisation). GitHub forks are async — the response is 202 Accepted with the fork details. In "draft" mode returns a preview without forking. Blocked in "suggest" mode.',
-      inputSchema: {
-        owner: z.string().describe('Owner of the source repository'),
-        repo: z.string().describe('Name of the source repository'),
-        organization: z
-          .string()
-          .optional()
-          .describe('Fork into this organisation instead of the authenticated user'),
-        name: z
-          .string()
-          .optional()
-          .describe('Custom name for the fork (defaults to source repo name)'),
-        default_branch_only: z
-          .boolean()
-          .optional()
-          .describe('Only copy the default branch (default: false — all branches)'),
-      },
+  registerApiProxyTool(server, client, middleware, {
+    name: 'github_fork_repo',
+    description:
+      'Fork a GitHub repository into the authenticated user account (or a specified organisation). GitHub forks are async — the response is 202 Accepted with the fork details. In "draft" mode returns a preview without forking. Blocked in "suggest" mode.',
+    inputSchema: {
+      owner: z.string().describe('Owner of the source repository'),
+      repo: z.string().describe('Name of the source repository'),
+      organization: z
+        .string()
+        .optional()
+        .describe('Fork into this organisation instead of the authenticated user'),
+      name: z
+        .string()
+        .optional()
+        .describe('Custom name for the fork (defaults to source repo name)'),
+      default_branch_only: z
+        .boolean()
+        .optional()
+        .describe('Only copy the default branch (default: false — all branches)'),
     },
-    wrapToolHandler('github_fork_repo', middleware, async (args) => {
-      const result = await client.post(`/api/v1/github/repos/${args.owner}/${args.repo}/forks`, {
-        organization: args.organization,
-        name: args.name,
-        default_branch_only: args.default_branch_only,
-      });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    })
-  );
+    method: 'post',
+    buildPath: (args) => `/api/v1/github/repos/${args.owner}/${args.repo}/forks`,
+    buildBody: (args) => ({
+      organization: args.organization,
+      name: args.name,
+      default_branch_only: args.default_branch_only,
+    }),
+  });
 }

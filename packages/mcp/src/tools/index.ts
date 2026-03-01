@@ -36,6 +36,10 @@ import { registerGithubApiTools } from './github-api-tools.js';
 import { registerOllamaTools } from './ollama-tools.js';
 import { registerDockerTools } from './docker-tools.js';
 import { registerKnowledgeBaseTools } from './knowledge-base-tools.js';
+import { registerGithubActionsTools } from './github-actions-tools.js';
+import { registerJenkinsTools } from './jenkins-tools.js';
+import { registerGitlabCiTools } from './gitlab-ci-tools.js';
+import { registerNorthflankTools } from './northflank-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -82,4 +86,9 @@ export async function registerAllTools(
   registerOllamaTools(server, client, middleware);
   registerDockerTools(server, config, middleware);
   registerKnowledgeBaseTools(server, client, middleware);
+  // CI/CD tools (Phase 90)
+  registerGithubActionsTools(server, config, middleware);
+  registerJenkinsTools(server, config, middleware);
+  registerGitlabCiTools(server, config, middleware);
+  registerNorthflankTools(server, config, middleware);
 }

@@ -91,6 +91,7 @@ import { httpStatusName, sendError } from '../utils/errors.js';
 import { VERSION } from '../version.js';
 import { otelFastifyPlugin } from '../telemetry/otel-fastify-plugin.js';
 import { registerAlertRoutes } from '../telemetry/alert-routes.js';
+import { registerCicdWebhookRoutes } from '../integrations/cicd/cicd-webhook-routes.js';
 
 /**
  * Check if an IP address belongs to a private/loopback range.
@@ -764,6 +765,16 @@ export class GatewayServer {
       if (workflowManager) {
         registerWorkflowRoutes(this.app, { workflowManager });
         this.getLogger().info('Workflow routes registered');
+
+        // CI/CD inbound webhook normalizer (Phase 90) — public endpoint with HMAC gate
+        try {
+          registerCicdWebhookRoutes(this.app, { workflowManager });
+          this.getLogger().info('CI/CD webhook routes registered');
+        } catch (err) {
+          this.getLogger().debug('CI/CD webhook routes skipped', {
+            reason: err instanceof Error ? err.message : String(err),
+          });
+        }
       }
     } catch (err) {
       this.getLogger().debug('Workflow routes skipped', {

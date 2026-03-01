@@ -1,0 +1,7 @@
+node_modules/
+ios/Pods/
+ios/App/App.xcworkspace/
+android/build/
+android/.gradle/
+android/local.properties
+.DS_Store

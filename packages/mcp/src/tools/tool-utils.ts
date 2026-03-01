@@ -2,6 +2,9 @@
  * Tool utilities — shared helpers for wrapping tool handlers with middleware.
  */
 
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { ZodTypeAny } from 'zod';
+import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
 
 /**
@@ -84,4 +87,69 @@ export function wrapToolHandler<T extends Record<string, unknown>>(
   );
 
   return wrapped;
+}
+
+// ── API Proxy Tool Factory ────────────────────────────────────────────────────
+
+/**
+ * Definition for a simple API-proxy tool: GET/POST/PUT/DELETE → JSON response.
+ *
+ * Covers the most common pattern across tool files:
+ *   server.registerTool(name, { description, inputSchema },
+ *     wrapToolHandler(name, middleware, async (args) => {
+ *       const result = await client.get(path, query);
+ *       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+ *     })
+ *   );
+ */
+export interface ApiProxyToolDef<T extends Record<string, unknown> = Record<string, unknown>> {
+  name: string;
+  description: string;
+  inputSchema: Record<string, ZodTypeAny>;
+  method?: 'get' | 'post' | 'put' | 'delete';
+  /** Build the request path (may embed args for path params). */
+  buildPath: (args: T) => string;
+  /** Build query string params for GET requests. */
+  buildQuery?: (args: T) => Record<string, string>;
+  /** Build the request body for POST/PUT requests. */
+  buildBody?: (args: T) => unknown;
+}
+
+/**
+ * Register a single API-proxy MCP tool.
+ *
+ * Handles the registerTool + wrapToolHandler boilerplate so callers only
+ * need to describe what the tool does and how to map args to an API call.
+ */
+export function registerApiProxyTool<T extends Record<string, unknown>>(
+  server: McpServer,
+  client: CoreApiClient,
+  middleware: ToolMiddleware,
+  def: ApiProxyToolDef<T>
+): void {
+  const { name, description, inputSchema, method = 'get', buildPath, buildQuery, buildBody } = def;
+
+  server.registerTool(
+    name,
+    { description, inputSchema },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    wrapToolHandler(name, middleware, async (args: any) => {
+      const typedArgs = args as T;
+      const path = buildPath(typedArgs);
+      let result: unknown;
+
+      if (method === 'get') {
+        const query = buildQuery ? buildQuery(typedArgs) : undefined;
+        result = await client.get(path, query);
+      } else if (method === 'post') {
+        result = await client.post(path, buildBody ? buildBody(typedArgs) : typedArgs);
+      } else if (method === 'put') {
+        result = await client.put(path, buildBody ? buildBody(typedArgs) : typedArgs);
+      } else {
+        result = await client.delete(path);
+      }
+
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    })
+  );
 }

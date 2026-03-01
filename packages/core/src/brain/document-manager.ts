@@ -22,6 +22,8 @@ import { chunk } from './chunker.js';
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface DocumentManagerDeps {
+  brainManager: BrainManager;
+  storage: BrainStorage;
   logger: SecureLogger;
 }
 
@@ -32,9 +34,9 @@ export class DocumentManager {
   private readonly storage: BrainStorage;
   private readonly logger: SecureLogger;
 
-  constructor(brainManager: BrainManager, storage: BrainStorage, deps: DocumentManagerDeps) {
-    this.brainManager = brainManager;
-    this.storage = storage;
+  constructor(deps: DocumentManagerDeps) {
+    this.brainManager = deps.brainManager;
+    this.storage = deps.storage;
     this.logger = deps.logger;
   }
 
@@ -353,22 +355,39 @@ export class DocumentManager {
     text: string,
     personalityId: string | null
   ): Promise<void> {
+    // brain.knowledge has a default maxContentLength of 4096 chars.
+    // Use 3200 chars (≈800 tokens) as the hard cap so every piece fits safely.
+    const MAX_CHARS = 3200;
+
     const chunks = chunk(text);
     const effectiveChunks = chunks.length > 0 ? chunks : [{ index: 0, text, estimatedTokens: 0 }];
 
+    let storeIdx = 0;
     for (const c of effectiveChunks) {
-      const topic = `${title} [chunk ${c.index + 1}]`;
-      const source = `document:${docId}:chunk${c.index}`;
+      // Sub-split any chunk whose text exceeds MAX_CHARS (can happen when the
+      // entire text has no sentence or paragraph boundaries).
+      const pieces =
+        c.text.length > MAX_CHARS
+          ? Array.from({ length: Math.ceil(c.text.length / MAX_CHARS) }, (_, i) =>
+              c.text.slice(i * MAX_CHARS, (i + 1) * MAX_CHARS)
+            )
+          : [c.text];
 
-      try {
-        await this.brainManager.learn(topic, c.text, source, 0.9, personalityId ?? undefined);
-      } catch (err) {
-        // Log and continue — don't fail the whole ingest if one chunk fails
-        this.logger.warn('Failed to learn chunk', {
-          docId,
-          chunk: c.index,
-          error: String(err),
-        });
+      for (const piece of pieces) {
+        const topic = `${title} [chunk ${storeIdx + 1}]`;
+        const source = `document:${docId}:chunk${storeIdx}`;
+        storeIdx++;
+
+        try {
+          await this.brainManager.learn(topic, piece, source, 0.9, personalityId ?? undefined);
+        } catch (err) {
+          // Log and continue — don't fail the whole ingest if one chunk fails
+          this.logger.warn('Failed to learn chunk', {
+            docId,
+            chunk: storeIdx - 1,
+            error: String(err),
+          });
+        }
       }
     }
   }

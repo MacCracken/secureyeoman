@@ -1,0 +1,4 @@
+target/
+WixTools*/
+.DS_Store
+node_modules/

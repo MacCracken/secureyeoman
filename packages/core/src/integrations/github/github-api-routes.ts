@@ -12,6 +12,7 @@ import type { FastifyInstance } from 'fastify';
 import type { OAuthTokenService } from '../../gateway/oauth-token-service.js';
 import type { SoulManager } from '../../soul/manager.js';
 import { sendError } from '../../utils/errors.js';
+import { fetchWithOAuthRetry, createApiErrorFormatter } from '../oauth-fetch.js';
 
 const GITHUB_API = 'https://api.github.com';
 
@@ -25,57 +26,33 @@ export interface GithubApiRoutesOptions {
 
 // ─── Helpers ──────────────────────────────────────────────────
 
-/**
- * Return a human-readable GitHub API error message.
- */
-function githubErrorMessage(status: number, body: string): string {
-  if (status === 401) {
-    return 'GitHub authentication failed: your access token is invalid or expired. Please reconnect your GitHub account via Settings → Connections → OAuth.';
-  }
-  if (status === 403) {
-    return 'GitHub access denied: your connected account lacks required permissions. Disconnect and reconnect your GitHub account to re-authorize with repo/public_repo scopes.';
-  }
-  if (status === 404) {
-    return `GitHub resource not found. Verify the repository owner/name and that the token has access to it. Details: ${body}`;
-  }
-  return `GitHub API error: ${body}`;
-}
+const githubErrorMessage = createApiErrorFormatter('GitHub', {
+  403: 'GitHub access denied: your connected account lacks required permissions. Disconnect and reconnect your GitHub account to re-authorize with repo/public_repo scopes.',
+  404: (body) =>
+    `GitHub resource not found. Verify the repository owner/name and that the token has access to it. Details: ${body}`,
+});
 
-/**
- * Fetch a GitHub API URL with automatic 401 recovery.
- */
-async function fetchGithub(
+const GITHUB_AUTH_HEADERS = {
+  Accept: 'application/vnd.github+json',
+  'X-GitHub-Api-Version': '2022-11-28',
+};
+
+function fetchGithub(
   url: string,
   opts: RequestInit,
   tokenId: string,
   accessToken: string,
   oauthTokenService: OAuthTokenService
 ): Promise<Response> {
-  const authHeaders = {
-    Authorization: `Bearer ${accessToken}`,
-    Accept: 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
-  };
-  let resp = await fetch(url, {
-    ...opts,
-    headers: { ...(opts.headers as Record<string, string> | undefined), ...authHeaders },
-  });
-
-  if (resp.status === 401) {
-    const newToken = await oauthTokenService.forceRefreshById(tokenId);
-    if (newToken && newToken !== accessToken) {
-      resp = await fetch(url, {
-        ...opts,
-        headers: {
-          ...(opts.headers as Record<string, string> | undefined),
-          ...authHeaders,
-          Authorization: `Bearer ${newToken}`,
-        },
-      });
-    }
-  }
-
-  return resp;
+  return fetchWithOAuthRetry(
+    url,
+    opts,
+    { Authorization: `Bearer ${accessToken}`, ...GITHUB_AUTH_HEADERS },
+    tokenId,
+    accessToken,
+    oauthTokenService,
+    (newToken) => ({ Authorization: `Bearer ${newToken}`, ...GITHUB_AUTH_HEADERS })
+  );
 }
 
 /**

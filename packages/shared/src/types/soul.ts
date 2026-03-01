@@ -91,6 +91,8 @@ export const McpFeaturesSchema = z
     exposeGithub: z.boolean().default(false),
     /** Docker management tools (docker_*). Requires global exposeDockerTools. */
     exposeDocker: z.boolean().default(false),
+    /** CI/CD tools (gha_*, jenkins_*, gitlab_*, northflank_*). Requires global expose* per platform. */
+    exposeCicd: z.boolean().default(false),
   })
   .default({});
 

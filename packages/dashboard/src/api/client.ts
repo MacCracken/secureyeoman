@@ -1723,6 +1723,17 @@ export interface McpConfigResponse {
   exposeGithub: boolean;
   alwaysSendFullSchemas: boolean;
   exposeDockerTools: boolean;
+  // CI/CD (Phase 90)
+  exposeGithubActions: boolean;
+  exposeJenkins: boolean;
+  jenkinsUrl?: string;
+  jenkinsUsername?: string;
+  jenkinsApiToken?: string;
+  exposeGitlabCi: boolean;
+  gitlabUrl?: string;
+  gitlabToken?: string;
+  exposeNorthflank: boolean;
+  northflankApiKey?: string;
 }
 
 export async function fetchMcpConfig(): Promise<McpConfigResponse> {
@@ -1754,8 +1765,32 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
       exposeGithub: false,
       alwaysSendFullSchemas: false,
       exposeDockerTools: false,
+      exposeGithubActions: false,
+      exposeJenkins: false,
+      exposeGitlabCi: false,
+      gitlabUrl: 'https://gitlab.com',
+      exposeNorthflank: false,
     };
   }
+}
+
+export async function fetchCicdConfig(): Promise<import('../types').CicdPlatformConfig> {
+  const config = await fetchMcpConfig();
+  return {
+    exposeGithubActions: config.exposeGithubActions ?? false,
+    exposeJenkins: config.exposeJenkins ?? false,
+    jenkinsUrl: config.jenkinsUrl,
+    jenkinsUsername: config.jenkinsUsername,
+    exposeGitlabCi: config.exposeGitlabCi ?? false,
+    gitlabUrl: config.gitlabUrl ?? 'https://gitlab.com',
+    exposeNorthflank: config.exposeNorthflank ?? false,
+  };
+}
+
+export async function updateCicdConfig(
+  cfg: Partial<import('../types').CicdPlatformConfig>
+): Promise<McpConfigResponse> {
+  return updateMcpConfig(cfg as Partial<McpConfigResponse>);
 }
 
 export async function patchMcpConfig(data: Partial<McpConfigResponse>): Promise<McpConfigResponse> {

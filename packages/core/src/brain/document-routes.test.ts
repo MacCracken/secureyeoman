@@ -53,6 +53,7 @@ function makeMockDocManager(overrides?: Partial<DocumentManager>): DocumentManag
     deleteDocument: vi.fn().mockResolvedValue(undefined),
     getKnowledgeHealthStats: vi.fn().mockResolvedValue(HEALTH_STATS),
     logQuery: vi.fn().mockResolvedValue(undefined),
+    generateSourceGuide: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   } as unknown as DocumentManager;
 }

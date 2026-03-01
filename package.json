@@ -13,6 +13,7 @@
     "dev:dashboard": "npm run dev --workspace=@secureyeoman/dashboard",
     "dev:mcp": "npm run dev --workspace=@secureyeoman/mcp",
     "test": "npm run test --workspaces --if-present",
+    "bench": "npm run bench --workspace=@secureyeoman/core",
     "lint": "eslint packages/",
     "lint:fix": "eslint packages/ --fix",
     "format": "prettier --write \"packages/**/*.{ts,tsx,json}\"",
@@ -24,6 +25,8 @@
     "version:set": "bash scripts/set-version.sh",
     "build:binary": "bash scripts/build-binary.sh",
     "build:binary:dev": "bash scripts/build-binary.sh --dev",
+    "dev:desktop": "npm run dev --workspace=@secureyeoman/desktop",
+    "build:desktop": "npm run build --workspace=@secureyeoman/desktop",
     "db:create-test": "docker compose exec postgres createdb -U secureyeoman secureyeoman_test || true"
   },
   "engines": {

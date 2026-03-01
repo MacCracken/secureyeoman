@@ -17,7 +17,7 @@ describe('debug2', () => {
     await truncateAllTables();
     storage = new BrainStorage();
     bm = new BrainManager(storage, { enabled:true,maxMemories:10000,maxKnowledge:5000,memoryRetentionDays:90,importanceDecayRate:0.01,contextWindowMemories:10 }, { auditChain: null as any, logger: noopLogger() });
-    dm = new DocumentManager(bm, storage, { logger: noopLogger() });
+    dm = new DocumentManager({ brainManager: bm, storage, logger: noopLogger() });
   });
 
   it('diagnoses large text corpus', async () => {

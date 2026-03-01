@@ -678,4 +678,126 @@ describe('Auth Middleware', () => {
       expect(mockRequest.authUser.userId).toBe('cert-viewer');
     });
   });
+
+  // ─── bypass and error branch coverage ──────────────────────────────
+
+  describe('auth bypass branches', () => {
+    function makeReply() {
+      let _code = 200;
+      let _sent = false;
+      return {
+        wasSent: () => _sent,
+        sentCode: () => _code,
+        code: (c: number) => {
+          _code = c;
+          return { send: (_body: unknown) => { _sent = true; } };
+        },
+      };
+    }
+
+    it('allows GET /api/v1/soul/personalities/:id/avatar without auth', async () => {
+      const hook = createAuthHook({ authService, logger: noopLogger() });
+      const req: any = {
+        method: 'GET',
+        routeOptions: { url: '/api/v1/soul/personalities/:id/avatar' },
+        url: '/api/v1/soul/personalities/abc123/avatar',
+        headers: {},
+        raw: { socket: {} },
+      };
+      const reply = makeReply();
+      await hook(req, reply as any);
+      expect(reply.wasSent()).toBe(false); // no 401 — avatar bypass fired
+    });
+
+    it('skips auth check for non-API/non-WS paths (SPA routes)', async () => {
+      const hook = createAuthHook({ authService, logger: noopLogger() });
+      const req: any = {
+        method: 'GET',
+        routeOptions: { url: '/dashboard' },
+        url: '/dashboard',
+        headers: {},
+        raw: { socket: {} },
+      };
+      const reply = makeReply();
+      await hook(req, reply as any);
+      expect(reply.wasSent()).toBe(false); // no auth needed for SPA route
+    });
+
+    it('falls through when mTLS cert is authorized but has no subject.CN', async () => {
+      const fakeAuth = {
+        verifyToken: async () => { throw new Error('no token'); },
+        verifyApiKey: async () => { throw new Error('no key'); },
+      } as unknown as typeof authService;
+
+      const hook = createAuthHook({ authService: fakeAuth, logger: noopLogger() });
+      const req: any = {
+        method: 'GET',
+        routeOptions: { url: '/api/v1/metrics' },
+        url: '/api/v1/metrics',
+        headers: {},
+        raw: { socket: { authorized: true, getPeerCertificate: () => ({ subject: {} }) } },
+      };
+      const reply = makeReply();
+      await hook(req, reply as any);
+      // Falls through to JWT/API-key auth, then gets 401 "Missing authentication credentials"
+      expect(reply.wasSent()).toBe(true);
+      expect(reply.sentCode()).toBe(401);
+    });
+
+    it('falls through when mTLS getPeerCertificate() throws', async () => {
+      const hook = createAuthHook({ authService, logger: noopLogger() });
+      const req: any = {
+        method: 'GET',
+        routeOptions: { url: '/api/v1/metrics' },
+        url: '/api/v1/metrics',
+        headers: {},
+        raw: { socket: { authorized: true, getPeerCertificate: () => { throw new Error('cert error'); } } },
+      };
+      const reply = makeReply();
+      await hook(req, reply as any);
+      // Exception caught — falls through to Bearer/API-key, then 401
+      expect(reply.wasSent()).toBe(true);
+      expect(reply.sentCode()).toBe(401);
+    });
+
+    it('returns 401 when Bearer token throws generic (non-AuthError)', async () => {
+      const fakeAuth = {
+        verifyToken: async () => { throw new Error('unexpected internal error'); },
+        verifyApiKey: async () => { throw new Error('no key'); },
+      } as unknown as typeof authService;
+
+      const hook = createAuthHook({ authService: fakeAuth, logger: noopLogger() });
+      const req: any = {
+        method: 'GET',
+        routeOptions: { url: '/api/v1/metrics' },
+        url: '/api/v1/metrics',
+        headers: { authorization: 'Bearer some-token' },
+        raw: { socket: {} },
+      };
+      const reply = makeReply();
+      await hook(req, reply as any);
+      expect(reply.wasSent()).toBe(true);
+      expect(reply.sentCode()).toBe(401);
+    });
+
+    it('returns 401 when API key throws generic (non-AuthError)', async () => {
+      const fakeAuth = {
+        verifyToken: async () => { throw new Error('no token'); },
+        verifyApiKey: async () => { throw new Error('unexpected key error'); },
+      } as unknown as typeof authService;
+
+      const hook = createAuthHook({ authService: fakeAuth, logger: noopLogger() });
+      const req: any = {
+        method: 'GET',
+        routeOptions: { url: '/api/v1/metrics' },
+        url: '/api/v1/metrics',
+        headers: { 'x-api-key': 'bad-key-value' },
+        raw: { socket: {} },
+      };
+      const reply = makeReply();
+      await hook(req, reply as any);
+      expect(reply.wasSent()).toBe(true);
+      expect(reply.sentCode()).toBe(401);
+    });
+  });
 });

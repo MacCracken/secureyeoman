@@ -2,11 +2,15 @@
  * WorkflowEngine — DAG-based workflow executor.
  *
  * Executes workflow definitions step-by-step using topological sort.
- * Supports 14 step types, Mustache-style template resolution, retry policies,
+ * Supports 16 step types, Mustache-style template resolution, retry policies,
  * and four error-handling modes (fail, continue, skip, fallback).
  *
  * Phase 73 adds 5 ML pipeline step types:
  *   data_curation, training_job, evaluation, conditional_deploy, human_approval
+ *
+ * Phase 90 adds 2 CI/CD step types:
+ *   ci_trigger — dispatch a CI job, returns { runId, url, status: 'queued' }
+ *   ci_wait   — poll until completion, returns { status, conclusion, logs_url, durationMs }
  */
 
 import type { SecureLogger } from '../logging/logger.js';
@@ -37,6 +41,24 @@ export interface WorkflowEngineContext {
   input: Record<string, unknown>;
 }
 
+/** Credential bundle for CI/CD step types (ci_trigger, ci_wait). Phase 90. */
+export interface CicdEngineConfig {
+  /** GitHub token for GitHub Actions steps. */
+  githubToken?: string;
+  /** Jenkins server base URL. */
+  jenkinsUrl?: string;
+  /** Jenkins Basic Auth username. */
+  jenkinsUsername?: string;
+  /** Jenkins Basic Auth API token. */
+  jenkinsApiToken?: string;
+  /** GitLab server URL (default: https://gitlab.com). */
+  gitlabUrl?: string;
+  /** GitLab Personal Access Token. */
+  gitlabToken?: string;
+  /** Northflank API key. */
+  northflankApiKey?: string;
+}
+
 export interface WorkflowEngineDeps {
   storage: WorkflowStorage;
   subAgentManager?: SubAgentManager | null;
@@ -50,6 +72,8 @@ export interface WorkflowEngineDeps {
   evaluationManager?: EvaluationManager | null;
   approvalManager?: PipelineApprovalManager | null;
   lineageStorage?: PipelineLineageStorage | null;
+  // CI/CD deps (Phase 90)
+  cicdConfig?: CicdEngineConfig | null;
 }
 
 export class WorkflowEngine {
@@ -58,6 +82,8 @@ export class WorkflowEngine {
   private readonly swarmManager: SwarmManager | null;
   private readonly auditChain: AuditChain | null;
   private readonly logger: SecureLogger;
+  /** Compiled condition functions, keyed by expression string. */
+  private readonly _conditionCache = new Map<string, (...args: unknown[]) => unknown>();
   // ML Pipeline managers (Phase 73)
   private readonly dataCurationManager: DataCurationManager | null;
   private readonly distillationManager: DistillationManager | null;
@@ -65,6 +91,8 @@ export class WorkflowEngine {
   private readonly evaluationManager: EvaluationManager | null;
   private readonly approvalManager: PipelineApprovalManager | null;
   private readonly lineageStorage: PipelineLineageStorage | null;
+  // CI/CD config (Phase 90)
+  private readonly cicdConfig: CicdEngineConfig | null;
 
   constructor(deps: WorkflowEngineDeps) {
     this.storage = deps.storage;
@@ -78,6 +106,7 @@ export class WorkflowEngine {
     this.evaluationManager = deps.evaluationManager ?? null;
     this.approvalManager = deps.approvalManager ?? null;
     this.lineageStorage = deps.lineageStorage ?? null;
+    this.cicdConfig = deps.cicdConfig ?? null;
   }
 
   // ── Public API ────────────────────────────────────────────────
@@ -700,6 +729,144 @@ export class WorkflowEngine {
         return { approved: true, requestId: request.id };
       }
 
+      case 'ci_trigger': {
+        // Fire a CI/CD job and return immediately with the queued run info.
+        const provider = String(cfg.provider ?? 'github-actions');
+        const owner = this.resolveTemplate(String(cfg.owner ?? ''), ctx);
+        const repo = this.resolveTemplate(String(cfg.repo ?? ''), ctx);
+        const ref = this.resolveTemplate(String(cfg.ref ?? 'main'), ctx);
+        const workflowId = this.resolveTemplate(String(cfg.workflowId ?? ''), ctx);
+        const inputsRaw = cfg.inputs
+          ? this.resolveTemplate(JSON.stringify(cfg.inputs), ctx)
+          : '{}';
+        const inputs = JSON.parse(inputsRaw) as Record<string, string>;
+
+        this.logger.info('ci_trigger: dispatching CI job', { provider, owner, repo, ref, workflowId });
+
+        if (provider === 'github-actions') {
+          const token =
+            this.cicdConfig?.githubToken ??
+            process.env.GITHUB_TOKEN ??
+            process.env.GH_TOKEN;
+          const headers: Record<string, string> = {
+            Accept: 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+            'Content-Type': 'application/json',
+          };
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+          const res = await fetch(
+            `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowId}/dispatches`,
+            { method: 'POST', headers, body: JSON.stringify({ ref, inputs }) }
+          );
+          if (!res.ok && res.status !== 204) {
+            const errBody = await res.text();
+            throw new Error(`GitHub Actions dispatch failed (${res.status}): ${errBody}`);
+          }
+          // GHA dispatch returns 204 — no run ID is synchronously available.
+          // Return a sentinel so ci_wait can poll by listing runs.
+          return { runId: 'dispatched', url: `https://github.com/${owner}/${repo}/actions`, status: 'queued', provider, owner, repo, ref, workflowId };
+        }
+
+        if (provider === 'gitlab') {
+          const gitlabUrl = (this.cicdConfig?.gitlabUrl ?? 'https://gitlab.com').replace(/\/$/, '');
+          const gitlabToken = this.cicdConfig?.gitlabToken;
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          if (gitlabToken) headers['PRIVATE-TOKEN'] = gitlabToken;
+          const projectId = this.resolveTemplate(String(cfg.projectId ?? ''), ctx);
+          const variables = inputs as Record<string, string>;
+          const variableList = Object.entries(variables).map(([key, value]) => ({ key, value }));
+          const res = await fetch(
+            `${gitlabUrl}/api/v4/projects/${projectId}/pipeline`,
+            { method: 'POST', headers, body: JSON.stringify({ ref, variables: variableList }) }
+          );
+          if (!res.ok) {
+            const errBody = await res.text();
+            throw new Error(`GitLab pipeline trigger failed (${res.status}): ${errBody}`);
+          }
+          const data = await res.json() as { id: number; web_url: string };
+          return { runId: String(data.id), url: data.web_url, status: 'queued', provider, projectId, ref };
+        }
+
+        throw new Error(`ci_trigger: unsupported provider "${provider}". Supported: github-actions, gitlab`);
+      }
+
+      case 'ci_wait': {
+        // Poll a CI run until it reaches a terminal state.
+        const provider = String(cfg.provider ?? 'github-actions');
+        const runId = this.resolveTemplate(String(cfg.runId ?? ''), ctx);
+        const pollMs = Number(cfg.pollIntervalMs ?? 10_000);
+        const timeoutMs = Number(cfg.timeoutMs ?? 1_800_000); // 30 min default
+
+        this.logger.info('ci_wait: polling CI run', { provider, runId, pollMs, timeoutMs });
+
+        const deadline = Date.now() + timeoutMs;
+        const startedAt = Date.now();
+
+        if (provider === 'github-actions') {
+          const owner = this.resolveTemplate(String(cfg.owner ?? ''), ctx);
+          const repo = this.resolveTemplate(String(cfg.repo ?? ''), ctx);
+          const token =
+            this.cicdConfig?.githubToken ??
+            process.env.GITHUB_TOKEN ??
+            process.env.GH_TOKEN;
+          const headers: Record<string, string> = {
+            Accept: 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+          };
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+          const terminalStatuses = new Set(['completed']);
+          while (Date.now() < deadline) {
+            const res = await fetch(
+              `https://api.github.com/repos/${owner}/${repo}/actions/runs/${runId}`,
+              { headers }
+            );
+            if (res.ok) {
+              const data = await res.json() as { status: string; conclusion: string; logs_url?: string; html_url: string };
+              if (terminalStatuses.has(data.status)) {
+                return {
+                  status: data.status,
+                  conclusion: data.conclusion,
+                  logs_url: data.logs_url ?? data.html_url,
+                  durationMs: Date.now() - startedAt,
+                };
+              }
+            }
+            await new Promise((r) => setTimeout(r, pollMs));
+          }
+          throw new Error(`ci_wait: GitHub Actions run ${runId} did not complete within ${timeoutMs}ms`);
+        }
+
+        if (provider === 'gitlab') {
+          const gitlabUrl = (this.cicdConfig?.gitlabUrl ?? 'https://gitlab.com').replace(/\/$/, '');
+          const gitlabToken = this.cicdConfig?.gitlabToken;
+          const projectId = this.resolveTemplate(String(cfg.projectId ?? ''), ctx);
+          const headers: Record<string, string> = {};
+          if (gitlabToken) headers['PRIVATE-TOKEN'] = gitlabToken;
+          const terminalStatuses = new Set(['success', 'failed', 'canceled', 'skipped']);
+          while (Date.now() < deadline) {
+            const res = await fetch(
+              `${gitlabUrl}/api/v4/projects/${projectId}/pipelines/${runId}`,
+              { headers }
+            );
+            if (res.ok) {
+              const data = await res.json() as { status: string; web_url: string };
+              if (terminalStatuses.has(data.status)) {
+                return {
+                  status: data.status,
+                  conclusion: data.status,
+                  logs_url: data.web_url,
+                  durationMs: Date.now() - startedAt,
+                };
+              }
+            }
+            await new Promise((r) => setTimeout(r, pollMs));
+          }
+          throw new Error(`ci_wait: GitLab pipeline ${runId} did not complete within ${timeoutMs}ms`);
+        }
+
+        throw new Error(`ci_wait: unsupported provider "${provider}". Supported: github-actions, gitlab`);
+      }
+
       default:
         throw new Error(`Unknown step type: ${step.type}`);
     }
@@ -746,8 +913,14 @@ export class WorkflowEngine {
 
   evaluateCondition(expr: string, ctx: WorkflowEngineContext): boolean {
     try {
-      // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
-      const fn = new Function('steps', 'input', `"use strict"; return !!(${expr});`);
+      let fn = this._conditionCache.get(expr);
+      if (!fn) {
+        // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
+        fn = new Function('steps', 'input', `"use strict"; return !!(${expr});`) as (
+          ...args: unknown[]
+        ) => unknown;
+        this._conditionCache.set(expr, fn);
+      }
       return fn(ctx.steps, ctx.input) === true;
     } catch {
       return false;

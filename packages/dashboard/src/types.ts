@@ -803,6 +803,21 @@ export interface McpFeatureConfig {
   exposeTwitter: boolean;
   exposeGithub: boolean;
   exposeDockerTools: boolean;
+  // CI/CD (Phase 90)
+  exposeGithubActions: boolean;
+  exposeJenkins: boolean;
+  exposeGitlabCi: boolean;
+  exposeNorthflank: boolean;
+}
+
+export interface CicdPlatformConfig {
+  exposeGithubActions: boolean;
+  exposeJenkins: boolean;
+  jenkinsUrl?: string;
+  jenkinsUsername?: string;
+  exposeGitlabCi: boolean;
+  gitlabUrl: string;
+  exposeNorthflank: boolean;
 }
 
 export interface McpServerHealth {

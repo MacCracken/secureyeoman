@@ -6,8 +6,14 @@ export default defineConfig({
   test: {
     globals: true,
     projects: [
-      'packages/core/vitest.config.ts',
+      // core:unit — ~370 pure unit tests, run in parallel across all CPU cores
+      'packages/core/vitest.unit.config.ts',
+      // core:db — ~38 DB integration tests, serial (shared PostgreSQL test DB)
+      'packages/core/vitest.db.config.ts',
+      // dashboard — jsdom tests, parallel (each project runs concurrently)
       'packages/dashboard/vitest.config.ts',
+      // mcp — node tests, parallel
+      'packages/mcp/vitest.config.ts',
     ],
   },
 });

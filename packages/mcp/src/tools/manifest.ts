@@ -620,5 +620,97 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'kb_delete_document',
       description: 'Delete a document from the knowledge base and remove all its indexed chunks.',
     },
+
+    // CI/CD — GitHub Actions (Phase 90)
+    {
+      name: 'gha_list_workflows',
+      description: 'List all GitHub Actions workflows in a repository.',
+    },
+    {
+      name: 'gha_dispatch_workflow',
+      description: 'Trigger a workflow_dispatch event for a GitHub Actions workflow on a specified ref with optional inputs.',
+    },
+    {
+      name: 'gha_list_runs',
+      description: 'List workflow runs for a GitHub repository, optionally filtered by branch and status.',
+    },
+    {
+      name: 'gha_get_run',
+      description: 'Get details and current status of a specific GitHub Actions workflow run.',
+    },
+    {
+      name: 'gha_cancel_run',
+      description: 'Cancel a running or queued GitHub Actions workflow run.',
+    },
+    {
+      name: 'gha_get_run_logs',
+      description: 'Get the download URL for logs of a completed GitHub Actions workflow run.',
+    },
+
+    // CI/CD — Jenkins (Phase 90)
+    {
+      name: 'jenkins_list_jobs',
+      description: 'List all jobs on the Jenkins server with their name, URL, and build color/status.',
+    },
+    {
+      name: 'jenkins_trigger_build',
+      description: 'Trigger a Jenkins job build, optionally with parameters.',
+    },
+    {
+      name: 'jenkins_get_build',
+      description: 'Get details of a specific Jenkins job build (status, result, duration, timestamp).',
+    },
+    {
+      name: 'jenkins_get_build_log',
+      description: 'Get the console text log for a specific Jenkins job build.',
+    },
+    {
+      name: 'jenkins_queue_item',
+      description: 'Get the status of a Jenkins queue item to find the build number after triggering.',
+    },
+
+    // CI/CD — GitLab CI (Phase 90)
+    {
+      name: 'gitlab_list_pipelines',
+      description: 'List recent CI/CD pipelines for a GitLab project, optionally filtered by ref and status.',
+    },
+    {
+      name: 'gitlab_trigger_pipeline',
+      description: 'Trigger a new GitLab CI/CD pipeline on a specified ref with optional variables.',
+    },
+    {
+      name: 'gitlab_get_pipeline',
+      description: 'Get details and status of a specific GitLab CI/CD pipeline.',
+    },
+    {
+      name: 'gitlab_get_job_log',
+      description: 'Get the log (trace) output for a specific GitLab CI job.',
+    },
+    {
+      name: 'gitlab_cancel_pipeline',
+      description: 'Cancel a running GitLab CI/CD pipeline.',
+    },
+
+    // CI/CD — Northflank (Phase 90)
+    {
+      name: 'northflank_list_services',
+      description: 'List all services in a Northflank project.',
+    },
+    {
+      name: 'northflank_trigger_build',
+      description: 'Trigger a build for a Northflank combined/build service.',
+    },
+    {
+      name: 'northflank_get_build',
+      description: 'Get details and status of a specific Northflank build.',
+    },
+    {
+      name: 'northflank_list_deployments',
+      description: 'List all deployments in a Northflank project.',
+    },
+    {
+      name: 'northflank_trigger_deployment',
+      description: 'Trigger a redeployment for a Northflank deployment service.',
+    },
   ];
 }

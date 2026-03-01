@@ -64,7 +64,7 @@ describe('DocumentManager', () => {
     await truncateAllTables();
     storage = new BrainStorage();
     brainManager = new BrainManager(storage, defaultConfig(), createDeps());
-    docManager = new DocumentManager(brainManager, storage, { logger: noopLogger() });
+    docManager = new DocumentManager({ brainManager, storage, logger: noopLogger() });
   });
 
   // ── ingestText ───────────────────────────────────────────────────

@@ -155,6 +155,27 @@ export const McpServiceConfigSchema = z.object({
   dockerMode: z.enum(['socket', 'dind']).default('socket'),
   /** DOCKER_HOST override for DinD mode (e.g. tcp://docker:2376). Ignored in socket mode. */
   dockerHost: z.string().optional(),
+  // CI/CD tools (Phase 90)
+  /** Enable GitHub Actions tools (gha_*). Reuses existing GitHub OAuth token. */
+  exposeGithubActions: z.boolean().default(false),
+  /** Enable Jenkins tools (jenkins_*). Requires jenkinsUrl, jenkinsUsername, jenkinsApiToken. */
+  exposeJenkins: z.boolean().default(false),
+  /** Jenkins server base URL (e.g. https://ci.example.com). */
+  jenkinsUrl: z.string().url().optional(),
+  /** Jenkins username for Basic Auth. */
+  jenkinsUsername: z.string().optional(),
+  /** Jenkins API token for Basic Auth. */
+  jenkinsApiToken: z.string().optional(),
+  /** Enable GitLab CI tools (gitlab_*). Requires gitlabToken. */
+  exposeGitlabCi: z.boolean().default(false),
+  /** GitLab server URL (default: https://gitlab.com). */
+  gitlabUrl: z.string().url().default('https://gitlab.com'),
+  /** GitLab Personal Access Token with api scope. */
+  gitlabToken: z.string().optional(),
+  /** Enable Northflank tools (northflank_*). Requires northflankApiKey. */
+  exposeNorthflank: z.boolean().default(false),
+  /** Northflank API key for Bearer auth. */
+  northflankApiKey: z.string().optional(),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

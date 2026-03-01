@@ -20,6 +20,7 @@
     "start": "node dist/index.js",
     "test": "vitest",
     "test:coverage": "vitest --coverage",
+    "bench": "vitest bench",
     "clean": "rm -rf dist"
   },
   "dependencies": {
