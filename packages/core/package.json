@@ -33,6 +33,7 @@
     "@octokit/rest": "^22.0.1",
     "@octokit/webhooks": "^14.2.0",
     "@open-policy-agent/opa": "^2.0.0",
+    "@opentelemetry/api": "^1.9.0",
     "@secureyeoman/shared": "*",
     "@slack/bolt": "^4.6.0",
     "@vitest/coverage-v8": "^4.0.18",
@@ -67,6 +68,10 @@
     "faiss-node": "^0.5.1"
   },
   "devDependencies": {
+    "@opentelemetry/exporter-trace-otlp-grpc": "^0.212.0",
+    "@opentelemetry/resources": "^2.5.1",
+    "@opentelemetry/sdk-trace-base": "^2.5.1",
+    "@opentelemetry/sdk-trace-node": "^2.5.1",
     "@types/better-sqlite3": "^7.6.8",
     "@types/express": "^5.0.0",
     "@types/node": "^20.14.12",

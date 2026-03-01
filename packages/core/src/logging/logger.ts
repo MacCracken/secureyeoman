@@ -11,6 +11,8 @@
 import pino, { type Logger as PinoLogger, type LoggerOptions } from 'pino';
 import { sanitizeForLogging } from '../utils/crypto.js';
 import type { LoggingConfig } from '@secureyeoman/shared';
+import { getCurrentTraceId } from '../telemetry/otel.js';
+import { getCorrelationId } from '../utils/correlation-context.js';
 
 export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
@@ -37,6 +39,9 @@ export interface SecureLogger {
  * Create pino logger options from config
  */
 function createPinoOptions(config: LoggingConfig): LoggerOptions {
+  const logFormat = process.env['LOG_FORMAT'];
+  const isEcs = logFormat === 'ecs';
+
   const options: LoggerOptions = {
     level: config.level,
 
@@ -52,14 +57,29 @@ function createPinoOptions(config: LoggingConfig): LoggerOptions {
     timestamp: pino.stdTimeFunctions.isoTime,
 
     // Format error objects properly
-    formatters: {
-      level: (label) => ({ level: label }),
-      bindings: (bindings) => ({
-        pid: bindings.pid,
-        hostname: bindings.hostname,
-        name: 'secureyeoman',
-      }),
-    },
+    formatters: isEcs
+      ? {
+          level: (label) => ({ 'log.level': label }),
+          bindings: (bindings) => ({
+            'service.name': 'secureyeoman',
+            'process.pid': bindings.pid,
+            'host.hostname': bindings.hostname,
+          }),
+          log: (obj) => ({
+            ...obj,
+            '@timestamp': new Date().toISOString(),
+            'trace.id': getCurrentTraceId() ?? undefined,
+            'transaction.id': getCorrelationId() ?? undefined,
+          }),
+        }
+      : {
+          level: (label) => ({ level: label }),
+          bindings: (bindings) => ({
+            pid: bindings.pid,
+            hostname: bindings.hostname,
+            name: 'secureyeoman',
+          }),
+        },
 
     // Redact sensitive fields
     redact: {

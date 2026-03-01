@@ -53,6 +53,7 @@ import type {
   ApiKeyUsageRow,
   KbDocument,
   KnowledgeHealthStats,
+  AlertRule,
 } from '../types.js';
 
 const API_BASE = '/api/v1';
@@ -4426,4 +4427,39 @@ export async function fetchKnowledgeHealth(
 ): Promise<KnowledgeHealthStats> {
   const qs = personalityId ? `?personalityId=${encodeURIComponent(personalityId)}` : '';
   return request(`/brain/knowledge-health${qs}`);
+}
+
+// ─── Alert Rules (Phase 83) ────────────────────────────────────────────────
+
+export async function listAlertRules(): Promise<{ rules: AlertRule[] }> {
+  return request('/alerts/rules');
+}
+
+export async function createAlertRule(
+  data: Omit<AlertRule, 'id' | 'lastFiredAt' | 'createdAt' | 'updatedAt'>
+): Promise<{ rule: AlertRule }> {
+  return request('/alerts/rules', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function patchAlertRule(
+  id: string,
+  patch: Partial<AlertRule>
+): Promise<{ rule: AlertRule }> {
+  return request(`/alerts/rules/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function deleteAlertRule(id: string): Promise<void> {
+  await request(`/alerts/rules/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+export async function testAlertRule(
+  id: string
+): Promise<{ fired: boolean; value: number | null }> {
+  return request(`/alerts/rules/${encodeURIComponent(id)}/test`, { method: 'POST' });
 }

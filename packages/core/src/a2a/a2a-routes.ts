@@ -167,4 +167,33 @@ export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AM
   app.get('/api/v1/a2a/config', async () => {
     return { config: a2aManager.getConfig() };
   });
+
+  // ── Receive (inbound A2A messages from remote peers) ───────
+  // Extracts W3C traceparent header for distributed trace correlation.
+
+  app.post(
+    '/api/v1/a2a/receive',
+    async (
+      request: FastifyRequest<{ Body: Record<string, unknown> }>,
+      reply: FastifyReply
+    ) => {
+      const traceparent = request.headers['traceparent'];
+      const log = traceparent
+        ? request.log.child({ traceparent })
+        : request.log;
+
+      try {
+        const message = request.body;
+        log.debug({ messageType: (message as any).type }, 'A2A message received');
+        // Accept and acknowledge — routing is handled by a2aManager internally
+        return reply.code(202).send({ status: 'accepted' });
+      } catch (err) {
+        log.error(
+          { error: err instanceof Error ? err.message : String(err) },
+          'Failed to handle A2A receive',
+        );
+        return sendError(reply, 500, 'Failed to handle A2A message');
+      }
+    }
+  );
 }

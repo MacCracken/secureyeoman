@@ -1132,3 +1132,262 @@ describe('WorkflowEngine.execute — step dispatch: human_approval', () => {
     );
   });
 });
+
+// ── Feature 1: triggerMode ─────────────────────────────────────────────────────
+
+describe('WorkflowEngine.execute — triggerMode: any', () => {
+  it('any-step runs when at least one dep completed', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+
+    const depA = makeStep({ id: 'a', type: 'transform', config: { outputTemplate: 'aOut' } });
+    const depB = makeStep({
+      id: 'b',
+      type: 'agent',
+      config: {},
+      onError: 'continue', // will fail (no subAgentManager)
+    });
+    const anyStep = makeStep({
+      id: 'c',
+      type: 'transform',
+      config: { outputTemplate: 'cOut' },
+      dependsOn: ['a', 'b'],
+      triggerMode: 'any',
+    });
+
+    await engine.execute(makeRun(), makeDefinition([depA, depB, anyStep]));
+
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+
+  it('any-step is skipped when all deps failed', async () => {
+    const storage = makeStorage();
+    // No subAgentManager → agent steps fail
+    const engine = makeEngine({ storage, subAgentManager: null });
+
+    const depA = makeStep({ id: 'a', type: 'agent', config: {}, onError: 'continue' });
+    const depB = makeStep({ id: 'b', type: 'agent', config: {}, onError: 'continue' });
+    const anyStep = makeStep({
+      id: 'c',
+      type: 'transform',
+      config: { outputTemplate: 'cOut' },
+      dependsOn: ['a', 'b'],
+      triggerMode: 'any',
+    });
+
+    await engine.execute(makeRun(), makeDefinition([depA, depB, anyStep]));
+
+    // any-step should have been recorded as skipped
+    expect(storage.updateStepRun).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ status: 'skipped' })
+    );
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+
+  it('any-step with single dep behaves the same as all', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+
+    const dep = makeStep({ id: 'dep', type: 'transform', config: { outputTemplate: 'x' } });
+    const anyStep = makeStep({
+      id: 'consumer',
+      type: 'transform',
+      config: { outputTemplate: 'y' },
+      dependsOn: ['dep'],
+      triggerMode: 'any',
+    });
+
+    await engine.execute(makeRun(), makeDefinition([dep, anyStep]));
+
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+
+  it('triggerMode: all (default) — backward compatible: waits for all deps', async () => {
+    const executionOrder: string[] = [];
+    const storage = makeStorage();
+    (storage.createStepRun as ReturnType<typeof vi.fn>).mockImplementation(
+      async (_runId: string, stepId: string) => {
+        executionOrder.push(stepId);
+        return makeStepRun(stepId);
+      }
+    );
+    const engine = makeEngine({ storage });
+
+    const depA = makeStep({ id: 'a', type: 'transform', config: { outputTemplate: 'a' } });
+    const depB = makeStep({ id: 'b', type: 'transform', config: { outputTemplate: 'b' } });
+    const allStep = makeStep({
+      id: 'c',
+      type: 'transform',
+      config: { outputTemplate: 'c' },
+      dependsOn: ['a', 'b'],
+      // triggerMode defaults to 'all'
+    });
+
+    await engine.execute(makeRun(), makeDefinition([depA, depB, allStep]));
+
+    expect(executionOrder.indexOf('c')).toBeGreaterThan(executionOrder.indexOf('a'));
+    expect(executionOrder.indexOf('c')).toBeGreaterThan(executionOrder.indexOf('b'));
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+
+  it('cycle detection still works with any-step in the graph', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+
+    // a → b (any) → a creates a cycle
+    const stepA = makeStep({ id: 'a', dependsOn: ['b'], triggerMode: 'any' });
+    const stepB = makeStep({ id: 'b', dependsOn: ['a'], triggerMode: 'any' });
+
+    await engine.execute(makeRun(), makeDefinition([stepA, stepB]));
+
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'failed', error: expect.stringContaining('cycle') })
+    );
+  });
+
+  it('any-step placed in tier right after its earliest dep', async () => {
+    const executionOrder: string[] = [];
+    const storage = makeStorage();
+    (storage.createStepRun as ReturnType<typeof vi.fn>).mockImplementation(
+      async (_runId: string, stepId: string) => {
+        executionOrder.push(stepId);
+        return makeStepRun(stepId);
+      }
+    );
+    const engine = makeEngine({ storage });
+
+    // a has no deps, b depends on a (chain), c is 'any' dep on [a, b]
+    // With triggerMode:any, c should appear after a but not necessarily after b
+    const stepA = makeStep({ id: 'a', type: 'transform', config: { outputTemplate: 'a' } });
+    const stepB = makeStep({
+      id: 'b',
+      type: 'transform',
+      config: { outputTemplate: 'b' },
+      dependsOn: ['a'],
+    });
+    const stepC = makeStep({
+      id: 'c',
+      type: 'transform',
+      config: { outputTemplate: 'c' },
+      dependsOn: ['a', 'b'],
+      triggerMode: 'any',
+    });
+
+    await engine.execute(makeRun(), makeDefinition([stepA, stepB, stepC]));
+
+    // c must execute after a (its earliest dep)
+    expect(executionOrder.indexOf('c')).toBeGreaterThan(executionOrder.indexOf('a'));
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+});
+
+// ── Feature 3: strict output schema enforcement ────────────────────────────────
+
+describe('WorkflowEngine.execute — outputSchemaMode', () => {
+  const makeSchemaStep = (outputSchemaMode?: string) =>
+    makeStep({
+      id: 'typed',
+      type: 'transform',
+      config: {
+        outputTemplate: 'not-valid-json', // plain string — won't match {type:object}
+        outputSchema: { type: 'object', properties: { result: { type: 'string' } } },
+        ...(outputSchemaMode ? { outputSchemaMode } : {}),
+      },
+    });
+
+  it('outputSchemaMode: audit (default) — step completes despite schema violation', async () => {
+    const storage = makeStorage();
+    const logger = makeLogger();
+    const engine = makeEngine({ storage, logger });
+
+    await engine.execute(makeRun(), makeDefinition([makeSchemaStep()]));
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      'Step output schema violation',
+      expect.any(Object)
+    );
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+
+  it('outputSchemaMode: strict — step fails on schema mismatch', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+
+    await engine.execute(makeRun(), makeDefinition([makeSchemaStep('strict')]));
+
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'failed',
+        error: expect.stringContaining('schema validation'),
+      })
+    );
+  });
+
+  it('outputSchemaMode: strict with onError: continue — workflow completes after strict-fail', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+
+    const step = makeStep({
+      id: 'typed',
+      type: 'transform',
+      config: {
+        outputTemplate: 'not-an-object',
+        outputSchema: { type: 'object' },
+        outputSchemaMode: 'strict',
+      },
+      onError: 'continue',
+    });
+
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+    expect(storage.updateStepRun).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ status: 'failed' })
+    );
+  });
+
+  it('no outputSchema — no validation attempted (existing behavior)', async () => {
+    const storage = makeStorage();
+    const logger = makeLogger();
+    const engine = makeEngine({ storage, logger });
+
+    const step = makeStep({
+      id: 'plain',
+      type: 'transform',
+      config: { outputTemplate: 'just text' },
+    });
+
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    expect(logger.warn).not.toHaveBeenCalledWith('Step output schema violation', expect.any(Object));
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+});

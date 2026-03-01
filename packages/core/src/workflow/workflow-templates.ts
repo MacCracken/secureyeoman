@@ -4,9 +4,9 @@
  * Three starter workflows seeded at startup.
  */
 
-import type { WorkflowDefinitionCreate } from '@secureyeoman/shared';
+import type { WorkflowDefinitionCreateInput } from '@secureyeoman/shared';
 
-export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreate[] = [
+export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
   // ── 1. Research Report Pipeline ──────────────────────────────
   {
     name: 'research-report-pipeline',

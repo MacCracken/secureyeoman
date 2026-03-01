@@ -104,6 +104,8 @@ export const MetricsSnapshotSchema = z.object({
   tasks: TaskMetricsSchema,
   resources: ResourceMetricsSchema,
   security: SecurityMetricsSchema,
+  /** Active span trace ID, populated when OTel SDK is initialized. */
+  traceId: z.string().optional(),
 });
 
 export type MetricsSnapshot = z.infer<typeof MetricsSnapshotSchema>;

@@ -283,6 +283,63 @@ Each step can declare an `outputSchema` in its `config`. If the step's output do
 
 ---
 
+## OR-Trigger Dependencies with `triggerMode: 'any'`
+
+By default, a step waits for **all** of its `dependsOn` steps to complete (AND-trigger). Set `triggerMode: 'any'` to run the step after **any one** dependency completes:
+
+```json
+{
+  "id": "process",
+  "type": "agent",
+  "dependsOn": ["fetch-primary", "fetch-fallback"],
+  "triggerMode": "any",
+  "config": {
+    "profile": "analyst",
+    "taskTemplate": "Analyze: {{steps.fetch-primary.output}}{{steps.fetch-fallback.output}}"
+  }
+}
+```
+
+**Behavior**:
+- The step is placed in the execution tier immediately after its **earliest** completing dependency.
+- If **all** upstream deps fail or are skipped, the `any`-step is also skipped (not run with empty inputs).
+- `triggerMode: 'all'` is the default — no change to existing workflows.
+
+---
+
+## Strict Schema Enforcement with `outputSchemaMode: 'strict'`
+
+Steps that declare `outputSchema` in their `config` can opt into strict enforcement:
+
+```json
+{
+  "id": "classify",
+  "type": "agent",
+  "config": {
+    "profile": "classifier",
+    "taskTemplate": "Classify the input into a category",
+    "outputSchema": {
+      "type": "object",
+      "required": ["category", "confidence"],
+      "properties": {
+        "category": { "type": "string" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "outputSchemaMode": "strict"
+  }
+}
+```
+
+| Mode | Behavior on schema violation |
+|------|------------------------------|
+| `audit` (default) | Log warning + emit audit event; step continues |
+| `strict` | Step **fails**; `onError` policy applies as normal |
+
+`strict` + `onError: 'continue'` is a useful combination: the workflow continues but the schema violation is recorded as a step failure.
+
+---
+
 ## Security Considerations
 
 - Workflow definitions are stored as JSON — step `config` fields can contain secrets (webhook URLs, API keys). Use `{{input.secretVar}}` pattern to pass secrets at run time rather than baking them into the definition.

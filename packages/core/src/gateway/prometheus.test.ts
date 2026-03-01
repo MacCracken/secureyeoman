@@ -147,4 +147,37 @@ describe('Prometheus Metrics', () => {
     const output = formatPrometheusMetrics({ timestamp: ts });
     expect(output).toBeTruthy();
   });
+
+  // Phase 83 — /metrics endpoint content checks
+  it('includes friday_rate_limit_hits_total metric', () => {
+    const metrics: Partial<MetricsSnapshot> = {
+      security: {
+        authAttemptsTotal: 0,
+        authSuccessTotal: 0,
+        authFailuresTotal: 0,
+        activeSessions: 0,
+        permissionChecksTotal: 0,
+        permissionDenialsTotal: 0,
+        blockedRequestsTotal: 0,
+        rateLimitHitsTotal: 99,
+        injectionAttemptsTotal: 0,
+        eventsBySeverity: {},
+        eventsByType: {},
+        auditEntriesTotal: 0,
+        auditChainValid: true,
+      },
+    };
+    const output = formatPrometheusMetrics(metrics);
+    expect(output).toContain('friday_rate_limit_hits_total 99');
+  });
+
+  it('output starts with # HELP lines (text/plain 0.0.4 format)', () => {
+    const output = formatPrometheusMetrics({ tasks: { total: 1, byStatus: {}, byType: {}, successRate: 1, failureRate: 0, avgDurationMs: 0, minDurationMs: 0, maxDurationMs: 0, p50DurationMs: 0, p95DurationMs: 0, p99DurationMs: 0, queueDepth: 0, inProgress: 0 } });
+    expect(output).toMatch(/^# HELP/);
+  });
+
+  it('output contains process_rss_bytes', () => {
+    const output = formatPrometheusMetrics({});
+    expect(output).toContain('process_rss_bytes');
+  });
 });

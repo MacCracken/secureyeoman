@@ -86,7 +86,7 @@
       <!-- Release badge — centered across full page width, above columns -->
       <div class="hero-badge">
         <span class="badge-dot"></span>
-        <span>v2026.2.27 Now Available</span>
+        <span>v2026.2.28 Now Available</span>
         <a
           href="https://github.com/MacCracken/secureyeoman/releases"
           target="_blank"
@@ -153,7 +153,7 @@
           </div>
           <div class="hero-stats">
             <div class="stat">
-              <span class="stat-value">9,533+</span>
+              <span class="stat-value">9,916+</span>
               <span class="stat-label">Tests</span>
             </div>
             <div class="stat-divider"></div>
@@ -163,7 +163,7 @@
             </div>
             <div class="stat-divider"></div>
             <div class="stat">
-              <span class="stat-value">170+</span>
+              <span class="stat-value">180+</span>
               <span class="stat-label">MCP Tools</span>
             </div>
             <div class="stat-divider"></div>
@@ -312,17 +312,17 @@
             <div class="feature-icon-wrapper">
               <i class="fas fa-plug"></i>
             </div>
-            <h3 class="feature-title">170+ MCP Tools & Integrations</h3>
+            <h3 class="feature-title">180+ MCP Tools & Integrations</h3>
             <p class="feature-desc">
               31 platform integrations: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams,
               GitHub, GitLab, Gmail, Google Calendar, Jira, Notion, AWS, Azure DevOps, and more.
-              170+ built-in MCP tools, 9 resources, and 4 prompts — with SSRF protection,
+              180+ built-in MCP tools, 9 resources, and 4 prompts — with SSRF protection,
               encrypted credentials, and Markdown-for-Agents content negotiation
               (<code>Accept: text/markdown</code>, <code>Content-Signal</code> enforcement).
             </p>
             <ul class="feature-list">
               <li>31 platform integrations</li>
-              <li>170+ tools · 9 resources · 4 prompts</li>
+              <li>180+ tools · 9 resources · 4 prompts</li>
               <li>SSRF protection + encrypted creds</li>
               <li>Markdown-for-Agents content negotiation</li>
             </ul>
@@ -336,15 +336,16 @@
             <h3 class="feature-title">Multi-Agent & Workflows</h3>
             <p class="feature-desc">
               A2A protocol with E2E encryption and mDNS peer discovery. Sub-agent delegation
-              with budget and depth controls. Agent swarms (sequential, parallel, dynamic). DAG
-              workflow engine with 9 step types, Mustache data-flow templates, and a ReactFlow
-              visual builder — no other framework in this category ships this.
+              with budget and depth controls. Agent Swarms (sequential, parallel, dynamic).
+              Teams — a coordinator LLM dynamically assigns tasks to members at runtime.
+              DAG workflow engine with 14 step types, OR-trigger dependencies, and a
+              ReactFlow visual builder with human approval gates.
             </p>
             <ul class="feature-list">
               <li>A2A protocol (E2E encrypted)</li>
-              <li>Agent swarms + sub-agents</li>
-              <li>DAG workflows — 9 step types</li>
-              <li>ReactFlow visual builder</li>
+              <li>Swarms + Teams (dynamic auto-manager)</li>
+              <li>DAG workflows — 14 step types</li>
+              <li>ReactFlow visual builder + L3 approval gates</li>
             </ul>
           </div>
 
@@ -353,16 +354,16 @@
             <div class="feature-icon-wrapper">
               <i class="fas fa-brain"></i>
             </div>
-            <h3 class="feature-title">Cognitive Memory</h3>
+            <h3 class="feature-title">Cognitive Memory & Knowledge</h3>
             <p class="feature-desc">
               Vector semantic search (FAISS/Qdrant/ChromaDB) fused with tsvector full-text
-              search via Reciprocal Rank Fusion — exact-term recall meets semantic search.
-              800-token overlapping document chunks. Proactive context compaction at 80%
-              window fill. Self-repairing task loop with diagnostic recovery prompts.
+              search via Reciprocal Rank Fusion. Knowledge Base ingestion — PDF, HTML,
+              Markdown, plain text, URL crawl, GitHub Wiki — chunked, indexed, and
+              searchable via 4 MCP tools. Proactive context compaction at 80% window fill.
             </p>
             <ul class="feature-list">
               <li>Hybrid FTS + vector (RRF)</li>
-              <li>Content-chunked document indexing</li>
+              <li>Knowledge Base & RAG (PDF · HTML · Markdown · URL)</li>
               <li>Proactive context compaction</li>
               <li>Self-repairing task loop</li>
             </ul>
@@ -539,6 +540,17 @@
           </div>
         </div>
 
+        <!-- Emerging competitor callout: TrustClaw + Manus AI -->
+        <div class="compare-alert-box compare-alert-info" style="margin-top:1.25rem;">
+          <div class="compare-alert-icon" style="color:#3b82f6;">
+            <i class="fas fa-info-circle"></i>
+          </div>
+          <div class="compare-alert-body">
+            <strong>2026 Challengers — Same Claim, Different Problem</strong>
+            <p><strong>TrustClaw</strong> (OpenClaw security fork) markets "Remote Sandboxing" and "Encrypted Credentials" — but both live in TrustClaw's own cloud. Your secrets still leave your perimeter. <strong>Manus AI</strong> wins on zero-setup (3-minute SaaS onboarding) but Manus holds all conversation data and credentials. Neither option survives a GDPR, HIPAA, or air-gap compliance review. SecureYeoman's Outbound Credential Proxy keeps every key inside your infrastructure — not a third party's.</p>
+          </div>
+        </div>
+
         <!-- Comparison grid table -->
         <div class="compare-table">
           <div class="compare-header-row">
@@ -588,7 +600,7 @@
 
           <div class="compare-row compare-row-alt">
             <div class="compare-feature-col"><i class="fas fa-tools"></i> MCP Tools</div>
-            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 170+</span></div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 180+</span></div>
             <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> Limited</span></div>
             <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> External</span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
@@ -667,7 +679,7 @@
             <div class="diff-card">
               <div class="diff-icon"><i class="fas fa-project-diagram"></i></div>
               <h4>DAG Workflow Builder</h4>
-              <p>9 step types including sub-workflows and swarms. Mustache data-flow templates. ReactFlow visual builder. No other framework in this category ships this.</p>
+              <p>14 step types — agent, swarm, condition, transform, webhook, subworkflow, ML pipeline, and human approval gates. OR-trigger dependencies. Mustache data-flow. ReactFlow visual builder. No other framework ships this.</p>
             </div>
             <div class="diff-card">
               <div class="diff-icon"><i class="fas fa-search"></i></div>
@@ -693,6 +705,16 @@
               <div class="diff-icon"><i class="fas fa-chart-bar"></i></div>
               <h4>Risk Assessment Engine</h4>
               <p>Five-domain composite risk scoring (security 30%, autonomy 25%, governance 20%, infrastructure 15%, external 10%) → 0–100 score → low/medium/high/critical. Exportable as JSON, HTML, Markdown, or CSV for board reporting.</p>
+            </div>
+            <div class="diff-card">
+              <div class="diff-icon"><i class="fas fa-vault"></i></div>
+              <h4>True Key Sovereignty vs TrustClaw</h4>
+              <p>TrustClaw's "Encrypted Credentials" vault is hosted on TrustClaw's own servers — your secrets still leave your perimeter. SecureYeoman's Outbound Credential Proxy injects credentials at the network layer; the model never sees raw key material, and neither does any third party.</p>
+            </div>
+            <div class="diff-card">
+              <div class="diff-icon"><i class="fas fa-ban"></i></div>
+              <h4>Air-Gap vs Manus AI</h4>
+              <p>Manus AI offers 3-minute SaaS onboarding — but Manus holds all your conversation data and credentials. One GDPR request, one HIPAA audit, or one air-gap requirement and the answer is no. SecureYeoman installs in a single command and runs entirely on your infrastructure, forever.</p>
             </div>
           </div>
         </div>
@@ -788,7 +810,7 @@
               <span class="exec-role exec-role-cto">CTO</span>
             </div>
             <h3>Operational Efficiency</h3>
-            <p>37 network security tools, 31 platform integrations, 170+ MCP tools — one platform, one deployment, one vendor relationship. Replace fragmented point solutions: network scanner, vulnerability feed, workflow engine, secrets manager, AI gateway, and agent orchestration. Delivered as a single ~80 MB binary or a Helm chart. Your team ships faster; your vendor list shrinks.</p>
+            <p>37 network security tools, 31 platform integrations, 180+ MCP tools — one platform, one deployment, one vendor relationship. Replace fragmented point solutions: network scanner, vulnerability feed, workflow engine, secrets manager, AI gateway, and agent orchestration. Delivered as a single ~80 MB binary or a Helm chart. Your team ships faster; your vendor list shrinks.</p>
             <div class="exec-proof">
               <span class="proof-item"><i class="fas fa-check-circle"></i> Single binary or Kubernetes Helm</span>
               <span class="proof-item"><i class="fas fa-check-circle"></i> Replaces 6+ point tools</span>
@@ -814,12 +836,29 @@
 
         </div>
 
+        <!-- White paper download -->
+        <div class="exec-whitepaper">
+          <div class="exec-whitepaper-icon"><i class="fas fa-file-alt"></i></div>
+          <div class="exec-whitepaper-body">
+            <h4>Architectural Sovereignty &amp; Agentic Governance</h4>
+            <p>A technical white paper covering SecureYeoman's three security pillars, compliance readiness (GDPR, HIPAA, SOC 2, EU AI Act), and multi-agent governance model. Written for CISOs, Legal, and CTO review.</p>
+          </div>
+          <a href="whitepaper.html" target="_blank" class="btn btn-secondary">
+            <i class="fas fa-download"></i>
+            Read White Paper
+          </a>
+        </div>
+
         <div class="exec-cta">
           <p class="exec-cta-text">Ready to brief your security committee?</p>
           <div class="exec-cta-buttons">
             <a href="https://github.com/MacCracken/secureyeoman" target="_blank" class="btn btn-primary btn-lg">
               <i class="fas fa-shield-alt"></i>
               Evaluate SecureYeoman
+            </a>
+            <a href="whitepaper.html" target="_blank" class="btn btn-ghost btn-lg">
+              <i class="fas fa-file-alt"></i>
+              White Paper
             </a>
             <a href="mailto:security@secureyeoman.ai" class="btn btn-secondary btn-lg">
               <i class="fas fa-envelope"></i>
@@ -1187,7 +1226,7 @@ SECUREYEOMAN_ADMIN_PASSWORD="..."</code></pre>
               </div>
               <div class="stat-row">
                 <span class="stat-name">Tests</span>
-                <span class="stat-value">9,533+</span>
+                <span class="stat-value">9,916+</span>
               </div>
               <div class="stat-row">
                 <span class="stat-name">TS Files</span>

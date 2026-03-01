@@ -2387,3 +2387,58 @@ button:focus-visible {
     font-size: 1.75rem;
   }
 }
+
+/* ── Info-variant alert (blue) ─────────────────────────────────────────────── */
+.compare-alert-info {
+  background: rgba(59, 130, 246, 0.05);
+  border-color: rgba(59, 130, 246, 0.2);
+  grid-template-columns: auto 1fr;
+  margin-bottom: var(--space-8);
+}
+.compare-alert-info .compare-alert-icon {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+/* ── White Paper download card ──────────────────────────────────────────────── */
+.exec-whitepaper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5) var(--space-7);
+  margin-bottom: var(--space-10);
+  flex-wrap: wrap;
+}
+.exec-whitepaper-icon {
+  width: 44px; height: 44px;
+  border-radius: var(--radius-lg);
+  background: rgba(59, 130, 246, 0.1);
+  display: flex; align-items: center; justify-content: center;
+  color: #3b82f6;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.exec-whitepaper-body {
+  flex: 1;
+  min-width: 200px;
+}
+.exec-whitepaper-body h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-1);
+}
+.exec-whitepaper-body p {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  line-height: 1.5;
+  margin: 0;
+}
+@media (max-width: 640px) {
+  .exec-whitepaper { flex-direction: column; align-items: flex-start; }
+  .compare-alert-info { grid-template-columns: 1fr; }
+  .compare-alert-info .compare-alert-icon { display: none; }
+}

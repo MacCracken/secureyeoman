@@ -222,7 +222,7 @@ Inspired by Google Cloud Vertex AI Grounding and Azure Groundedness Detection.
 
 ---
 
-## Phase 83: Content Guardrails
+## Phase 84: Content Guardrails
 
 **Priority**: P3 — Enterprise compliance. Required for regulated industries (healthcare, finance, legal). PII redaction and topic restrictions are the must-have items; toxicity and grounding checks are the depth tier.
 
@@ -332,18 +332,24 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
-### Observability & Telemetry
+### Observability & Telemetry ✅ COMPLETE (Phase 83)
 
 *As SecureYeoman moves into production deployments, operators need distributed tracing, metrics export, and correlation tooling beyond what the built-in audit log provides.*
 
-- [ ] **OpenTelemetry tracing** — Instrument all HTTP requests, AI completions, MCP tool calls, and workflow steps with OTEL spans. Export via OTLP to any compatible collector (Jaeger, Tempo, Honeycomb, Datadog). Configurable via `OTEL_EXPORTER_OTLP_ENDPOINT` env var. Trace IDs propagated in response headers for external correlation.
-- [ ] **Prometheus metrics endpoint** — `GET /metrics` exposing: request counts + latency histograms by route, AI token usage counters by personality + model, active workflow run gauges, error rates, memory/CPU from existing health checks. Scrape-ready for Prometheus; Grafana dashboard templates provided.
-- [ ] **Correlation IDs on all log lines** — Attach `conversation_id`, `personality_id`, `trace_id`, and `user_id` to every structured log line. Enables log-to-trace correlation in Grafana Loki, Datadog, and Elastic. Currently some fields on some lines; goal: all fields on all lines consistently.
-- [ ] **Real-time metrics push to dashboard** — Extend the existing WebSocket broadcast to push lightweight metric snapshots (token spend, error rate, active sessions) to the Mission Control dashboard every 10s without page refresh. Removes the need to poll `/health/deep` for operational awareness.
-- [ ] **Alerting integration** — When a metric threshold is breached (error rate spike, token budget exceeded, quality score drift, audit chain gap), fire an outbound alert via Slack webhook, PagerDuty Events API, OpsGenie, or generic HTTP POST. Alert rules configured in the dashboard with threshold + channel. Builds on the existing NotificationManager.
-- [ ] **Distributed trace correlation across A2A calls** — When an agent delegates to a peer instance via A2A, propagate the OTEL `traceparent` header so the full delegation chain appears as a single trace in the collector. Requires trace context injection in the A2A client and extraction in the A2A server handler.
-- [ ] **Structured log export** — Emit structured JSON logs (in addition to existing human-readable logs) with trace IDs, conversation IDs, and personality IDs attached. Compatible with Elastic Common Schema (ECS) and Datadog Log Integration. Configurable output: stdout (default), file, or syslog socket.
-- [ ] **Grafana dashboard bundle** — Pre-built Grafana dashboard JSON (importable via dashboard ID) covering: token spend over time, personality activity heatmap, workflow success/failure rates, audit event stream, AI provider latency comparison. Bundled in `docs/ops/grafana/`.
+- [x] **OpenTelemetry tracing** — `initTracing()` bootstraps SDK when `OTEL_EXPORTER_OTLP_ENDPOINT` is set. `getTracer()` / `getCurrentTraceId()` are safe no-ops otherwise. HTTP spans via `otelFastifyPlugin`. `X-Trace-Id` response header.
+- [x] **Prometheus metrics endpoint** — `GET /metrics` (unauthenticated, standard Prometheus convention). Existing `/prom/metrics` retained as alias. Grafana dashboard templates in `docs/ops/grafana/`.
+- [x] **Correlation IDs on all log lines** — Auth middleware enriches `request.log` with `userId` + `role`. ECS log format (`LOG_FORMAT=ecs`) adds `trace.id` + `transaction.id` to every log line.
+- [x] **Real-time metrics push to dashboard** — 5-second WebSocket broadcast (was already live); now also triggers `AlertManager.evaluate()` on each tick.
+- [x] **Alerting integration** — `AlertManager` + `AlertStorage` with CRUD API at `/api/v1/alerts/rules/*`, cooldown, and 4 channel types (Slack, PagerDuty, OpsGenie, webhook). Dashboard tab under Developers.
+- [x] **Distributed trace correlation across A2A calls** — `RemoteDelegationTransport` injects W3C `traceparent` header; receive route extracts it for log correlation.
+- [x] **Structured log export** — `LOG_FORMAT=ecs` produces Elastic Common Schema logs compatible with Loki, Datadog, and Elasticsearch.
+- [x] **Grafana dashboard bundle** — `docs/ops/grafana/`: `secureyeoman-overview.json` + `secureyeoman-alerts.json` + `README.md`.
+
+**Remaining / Future improvements (demand-gated)**:
+- [ ] **Histogram metrics** — Replace avg-latency gauge with proper p50/p95/p99 histograms per route using OpenMetrics format.
+- [ ] **AI completion spans** — Instrument every `aiClient.chat()` call with a child span including model, input/output token counts.
+- [ ] **MCP tool call spans** — Wrap each MCP tool invocation in a span for end-to-end tracing through agent → tool → external API.
+- [ ] **Personality activity heatmap** — Per-personality request rate in Grafana.
 
 ---
 
@@ -397,6 +403,23 @@ Versions use the project's date-based format: `YYYY.M.D` (e.g., `2026.2.28`). Sa
 - [ ] **Model explainability (SHAP)** — For classification-style tasks run SHAP value attribution on fine-tuned model outputs. Show which input tokens contributed most to each prediction. Rendered as a token-level heat map in the experiment detail view.
 - [ ] **Data provenance audit** — Every training dataset records which conversations were included, which were filtered out (and why), and which were synthetic. Full lineage queryable: "was this user's conversation used in training?" Important for GDPR right-to-erasure compliance.
 - [ ] **Model card generation** — Auto-generate a structured model card for each deployed personality model: intended use, training data summary, known limitations, evaluation results, fairness scores, and deployment date. Aligned with Hugging Face Model Card format and EU AI Act transparency requirements.
+
+---
+
+### LLM Provider Improvements
+
+*Demand-gated. Enhances the multi-provider AI client with reliability, routing intelligence, and new provider coverage.*
+
+- [ ] **Gemini Flash 2.0 provider** — Add `gemini-2.0-flash` and `gemini-2.0-flash-lite` to the Gemini provider with native function calling, 1M context window support, and grounding via Google Search.
+- [ ] **Anthropic extended thinking** — Surface `thinking: { type: 'enabled', budget_tokens }` on Claude 3.7+ models. Per-personality `thinkingBudgetTokens` field. Dashboard: thinking indicator + expandable reasoning block in chat.
+- [ ] **OpenAI o3 / o3-mini** — Add `o3` and `o3-mini` to the OpenAI provider. Support `reasoning_effort: 'low' | 'medium' | 'high'` param. Per-personality reasoning effort override.
+- [ ] **Mistral AI provider** — `MistralProvider` wrapping the official `@mistralai/mistralai` SDK. Models: `mistral-large-latest`, `mistral-small-latest`, `codestral-latest`. Function calling, JSON mode.
+- [ ] **Groq provider** — `GroqProvider` using `@groq-sdk`. Ultra-low latency inference for Llama 3, Mixtral, and Gemma. Auto-selected by `localFirst` routing when Groq is configured.
+- [ ] **Provider health scoring** — Track each provider's rolling error rate + p95 latency. Prefer providers with high health scores in fallback chains. Dashboard: provider health table in ModelWidget with green/amber/red indicators.
+- [ ] **Smart context management** — When a conversation exceeds 80% of a model's context limit, automatically summarise the oldest turns (using the same model or a faster summary model). Transparent to the user; logged in the conversation metadata. Configurable in personality settings: `contextOverflowStrategy: 'summarise' | 'truncate' | 'error'`.
+- [ ] **Cost budget alerts** — Per-personality and per-user daily/monthly cost caps. Alert (notification + optional block) when the cap is approached (80%) or hit (100%). Configurable in the personality editor and security policy.
+- [ ] **Streaming tool call support for all providers** — Standardise streaming tool call chunks across Anthropic, OpenAI, Gemini, and Mistral so the UI can show partial tool arguments as they stream.
+- [ ] **Local model auto-discovery** — On startup, query Ollama (`/api/tags`) and LM Studio (`/v1/models`) to auto-populate the model list without manual configuration. Refresh every 60s. Surface new models as suggestions in ModelWidget.
 
 ---
 
@@ -465,4 +488,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-28 — Phase 82 (Knowledge Base & RAG Platform) complete. Phases 79 (Federation), 80 (API Gateway), 77 (Prompt Security), and earlier phases also complete — see [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-02-28 — Phase 83 (Observability & Telemetry: OTel, alert rules, `/metrics`, ECS logs, Grafana dashboards) complete. Phase 83 (CrewAI-Inspired Enhancements: triggerMode, Teams, strict schema, crew CLI), Phase 82 (Knowledge Base & RAG Platform), Phases 79–80 (Federation/API Gateway), Phase 77 (Prompt Security), and earlier phases also complete — see [Changelog](../../CHANGELOG.md) for full history.*

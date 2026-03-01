@@ -646,10 +646,27 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/auth/api-keys/usage/summary': {
     GET: { resource: 'auth', action: 'read' },
   },
+  // Alert rules routes (Phase 83)
+  '/api/v1/alerts/rules': {
+    GET: { resource: 'notifications', action: 'read' },
+    POST: { resource: 'notifications', action: 'write' },
+  },
+  '/api/v1/alerts/rules/:id': {
+    GET: { resource: 'notifications', action: 'read' },
+    PATCH: { resource: 'notifications', action: 'write' },
+    DELETE: { resource: 'notifications', action: 'write' },
+  },
+  '/api/v1/alerts/rules/:id/test': {
+    POST: { resource: 'notifications', action: 'write' },
+  },
 };
 
 const PUBLIC_ROUTES = new Set([
   '/health',
+  '/health/live',
+  '/health/ready',
+  '/health/deep',
+  '/metrics',
   '/prom/metrics',
   '/api/v1/auth/login',
   '/ws/metrics',
@@ -727,6 +744,7 @@ export function createAuthHook(opts: AuthHookOptions) {
       const token = authHeader.slice(7);
       try {
         request.authUser = await opts.authService.validateToken(token);
+        request.log = request.log.child({ userId: request.authUser.userId, role: request.authUser.role });
         return;
       } catch (err) {
         if (err instanceof AuthError) {
@@ -741,6 +759,7 @@ export function createAuthHook(opts: AuthHookOptions) {
     if (apiKey) {
       try {
         request.authUser = await opts.authService.validateApiKey(apiKey);
+        request.log = request.log.child({ userId: request.authUser.userId, role: request.authUser.role });
         return;
       } catch (err) {
         if (err instanceof AuthError) {

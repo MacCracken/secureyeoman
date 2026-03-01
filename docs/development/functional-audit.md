@@ -1,6 +1,6 @@
 # Functionality Audit: SecureYeoman vs Competitors
 
-> Comparative analysis as of **2026-02-28** — SecureYeoman against OpenClaw, Agent Zero, PicoClaw, and Ironclaw.
+> Comparative analysis as of **2026-02-28** — SecureYeoman against OpenClaw, Agent Zero, PicoClaw, Ironclaw, TrustClaw, Manus AI, ZeroClaw, and NanoBot.
 
 ---
 
@@ -309,18 +309,133 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 
 ---
 
+## 2026 Emerging Competitor Analysis
+
+Four new entrants in early 2026 tighten specific competitive dimensions. None yet offer the full enterprise stack, but each targets a genuine pain-point.
+
+### TrustClaw — Security-Focused OpenClaw Fork
+
+**Threat level: HIGH — most direct architectural competitor.**
+
+TrustClaw is a hardened fork of OpenClaw that strips the consumer-facing feature set in exchange for security primitives: Remote Sandboxing (agent code executes inside a cloud-isolated VM, not the user's machine) and Encrypted Credentials (a dedicated credential vault managed by TrustClaw's SaaS layer).
+
+| | TrustClaw | SecureYeoman |
+|---|---|---|
+| **Architecture** | Cloud-backed "remote sandbox" (agent runs on TrustClaw servers) | Fully local / air-gapped — agent runs on your infrastructure |
+| **Credential storage** | TrustClaw-managed cloud vault | SecretsManager: env / OS keyring / encrypted file / Vault / OpenBao — keys never leave your perimeter |
+| **Data residency** | Encrypted in transit, TrustClaw holds keys | 100% local; no third party |
+| **RBAC / SSO** | Basic role assignment, no OIDC/SAML | Full 4-level RBAC + Okta / Azure AD / Auth0 + SAML 2.0 |
+| **Audit trail** | Structured JSON log (not cryptographic) | HMAC-SHA256 cryptographic chain + JSONL/CSV/syslog export |
+| **Air-gap** | ❌ Requires TrustClaw cloud | ✅ Full self-hosted |
+| **Multi-tenancy** | Single-tenant per account | PostgreSQL RLS multi-tenancy |
+| **Open source** | Fork of OpenClaw (MIT) | MIT |
+
+**SecureYeoman positioning vs TrustClaw**: The core argument is **sovereignty**. TrustClaw trades one cloud dependency (the AI provider) for two (AI provider + TrustClaw's own sandbox and vault). Every secret still passes through a third party. SecureYeoman's credential proxy keeps key material inside the customer's perimeter at every hop. For regulated industries (HIPAA, GDPR, financial services), TrustClaw's "remote sandbox" fails the data residency test that SecureYeoman passes.
+
+---
+
+### Manus AI — Cloud SaaS Agent Platform
+
+**Threat level: MEDIUM — targets the "zero-friction onboarding" segment.**
+
+Manus AI is a fully managed cloud agent service: no installation, browser-based, connected to user accounts via OAuth. It wins on time-to-first-result (measured in minutes, not hours) and appeals to individual contributors and small teams who lack DevOps support.
+
+| | Manus AI | SecureYeoman |
+|---|---|---|
+| **Deployment** | SaaS (Manus-hosted cloud) | Self-hosted: binary / Docker / Kubernetes |
+| **Setup time** | ~3 min (OAuth sign-in) | ~15 min (binary) to ~30 min (Kubernetes) |
+| **Data residency** | Manus holds all conversation data and credentials | 100% local / sovereign |
+| **RBAC** | Workspace-level sharing | 4-level RBAC + SSO/OIDC/SAML |
+| **Air-gap** | ❌ Cloud-only | ✅ |
+| **Enterprise auth** | Google/GitHub OAuth | Okta / Azure AD / Auth0 / SAML 2.0 |
+| **Audit** | Activity log (non-cryptographic) | HMAC-SHA256 audit chain + export |
+| **Price** | Subscription / consumption billing | Infrastructure cost only (open source) |
+| **Compliance** | SOC 2 certification (claimed) | Technical controls for GDPR, SOC 2, HIPAA, EU AI Act |
+
+**SecureYeoman positioning vs Manus AI**: Manus holds the data. Full stop. For any organization subject to GDPR, CCPA, HIPAA, or sector-specific data residency rules, "zero-setup" becomes zero-viable. SecureYeoman's sovereign architecture is the counter-argument: the same assistant capability, every byte under your control, with a Kubernetes Helm chart that enterprise platform teams can deploy and operate using existing tooling.
+
+---
+
+### ZeroClaw — Rust Performance / Edge Agent
+
+**Threat level: MEDIUM-LOW — competes on binary size and startup, not feature depth.**
+
+ZeroClaw is a Rust implementation targeting the performance and edge market: tiny binary, sub-second cold start, minimal memory footprint. It targets IoT gateways, CI runners, and developer workstations where the overhead of a Node.js or Python runtime is a blocker.
+
+| | ZeroClaw | SecureYeoman |
+|---|---|---|
+| **Language** | Rust | TypeScript (Bun runtime) |
+| **Binary size** | ~12 MB (estimated) | ~80 MB |
+| **Startup time** | < 500 ms (estimated) | ~30 s |
+| **RAM** | ~50 MB (estimated) | ~1 GB |
+| **RBAC / SSO** | ❌ | ✅ Full enterprise auth stack |
+| **Dashboard** | ❌ CLI only | ✅ React SPA |
+| **MCP tools** | Minimal set | 180+ tools |
+| **Database** | File-based | PostgreSQL + SQLite |
+| **Air-gap** | ✅ | ✅ |
+| **Multi-agent** | ❌ | ✅ Swarms, Teams, DAG, A2A |
+
+**SecureYeoman positioning vs ZeroClaw**: ZeroClaw is PicoClaw's Rust cousin — a valid choice for resource-constrained single-agent deployments. The SecureYeoman Lite binary (SQLite backend, ~80 MB) partially bridges the gap for edge scenarios. For any use case requiring RBAC, audit, SSO, multi-agent orchestration, or a management dashboard, ZeroClaw has no answer. The competitive conversation reduces to: "Do you need one fast agent, or a governed fleet?"
+
+---
+
+### NanoBot — Minimal Research-Oriented Agent
+
+**Threat level: LOW — targets academic / individual researcher segment.**
+
+NanoBot is a deliberately small (~3,000 line) Python codebase designed to be fully readable and auditable by a single developer in an afternoon. It is popular in academic and research communities where the ability to understand and modify every line of the agent loop matters more than production features.
+
+| | NanoBot | SecureYeoman |
+|---|---|---|
+| **Language** | Python | TypeScript |
+| **Codebase size** | ~3,000 lines (intentional) | ~430,000+ lines |
+| **Setup** | `pip install nanobot` | `curl install` / Docker / Helm |
+| **RBAC / SSO** | ❌ | ✅ |
+| **Audit trail** | Print-based logging | HMAC-SHA256 cryptographic chain |
+| **Enterprise auth** | ❌ | Okta / Azure AD / Auth0 / SAML 2.0 |
+| **MCP** | Basic client | 180+ server tools |
+| **Skill marketplace** | ❌ | Community marketplace with Trust Tiers |
+| **Multi-agent** | ❌ | Swarms, Teams, DAG, A2A, Federation |
+| **Target user** | Researchers, educators | Enterprise security / ops teams |
+
+**SecureYeoman positioning vs NanoBot**: NanoBot is not a direct competitive threat — it serves a different buyer entirely. The overlap risk is in the early-stage adoption funnel: a developer prototyping with NanoBot may never graduate to SecureYeoman if they perceive it as "too complex." The response is the `secureyeoman init` single-command onboarding wizard and the binary quick-start (`curl -fsSL https://secureyeoman.ai/install | bash`). The feature gap (SSO, RBAC, audit, multi-agent orchestration) becomes self-evident at enterprise pilot stage.
+
+---
+
+### Expanded Competitive Summary
+
+| | SecureYeoman | TrustClaw | Manus AI | ZeroClaw | NanoBot |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **Self-hosted / air-gap** | ✅ | ❌ cloud sandbox | ❌ SaaS | ✅ | ✅ |
+| **Data sovereignty** | ✅ Full | ⚠️ Keys at TrustClaw | ❌ Manus holds data | ✅ | ✅ |
+| **RBAC + SSO/SAML** | ✅ | ❌ | Basic | ❌ | ❌ |
+| **Cryptographic audit** | ✅ HMAC-SHA256 | ❌ JSON log | ❌ | ❌ | ❌ |
+| **Multi-tenancy** | ✅ RLS | ❌ | Per-account | ❌ | ❌ |
+| **Vault / SecretsManager** | ✅ env/keyring/Vault/OpenBao | Cloud vault | OAuth tokens | ❌ | ❌ |
+| **Multi-agent (swarms/teams)** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **180+ MCP tools** | ✅ | Limited | Limited | Minimal | Basic |
+| **Kubernetes / Helm** | ✅ | ❌ | N/A | ❌ | ❌ |
+| **Open source** | ✅ MIT | ✅ MIT fork | ❌ Proprietary | ✅ | ✅ |
+| **Binary size** | ~80 MB | Unknown | N/A | ~12 MB | N/A |
+| **Primary threat** | — | Data residency framing | Zero-setup appeal | Edge/IoT hardware | Research mindshare |
+
+---
+
 ## Competitive Positioning
 
 | Segment | Position | Rationale |
 |---------|----------|-----------|
 | **Enterprise self-hosted AI** | **Leader** | Only option with RBAC, SSO/OIDC/SAML, multi-tenancy, HMAC audit, Vault, K8s Helm, Twingate, network security toolkit, OPA/CEL governance, backup & DR, and correlation ID observability |
 | **Developer automation** | Challenger | OpenClaw leads on community volume (despite supply chain incidents); SecureYeoman leads on security posture, enterprise auth, and observability |
-| **Privacy-first / high-security** | Differentiated | Ironclaw wins on Rust memory safety + TEE + confidential GPU; SecureYeoman wins on feature breadth, enterprise auth, multi-agent orchestration, and full dashboard |
-| **Embedded / IoT AI** | Challenger | PicoClaw leads on hardware constraints; SecureYeoman Lite binary available for edge deployments |
-| **Managed SaaS** | Not positioned | Self-hosted only by design; Ironclaw offers TEE-backed cloud hosting |
+| **Privacy-first / high-security** | **Co-leader** | Ironclaw wins on Rust memory safety + TEE + confidential GPU; SecureYeoman wins on feature breadth, enterprise auth, multi-agent orchestration, and full dashboard. TrustClaw claims security but outsources key management to its own cloud |
+| **Embedded / IoT AI** | Challenger | PicoClaw and ZeroClaw lead on hardware constraints; SecureYeoman Lite binary available for edge deployments |
+| **Managed SaaS** | Not positioned | Self-hosted only by design; Ironclaw and Manus AI offer cloud-hosted options |
+| **Research / education** | Not positioned | NanoBot serves this segment; SecureYeoman is overkill for single-researcher use |
 
-**Key differentiator**: SecureYeoman is the only enterprise-grade, self-hosted AI agent platform that combines full RBAC/SSO/SAML, multi-tenancy, cryptographic audit chain, Vault/OpenBao secrets management, zero-trust network access (Twingate), a network security toolkit (37 MCP tools + Kali), ResponseGuard + OPA/CEL governance, vector memory with hybrid FTS+RRF and per-personality scoping, DAG workflow orchestration with a visual builder, backup & DR, audit log export, correlation ID observability, and Kubernetes production readiness — all in a single ~80 MB binary deployable fully air-gapped, with 9,533 tests at ≥ 87% coverage.
+**Key differentiator**: SecureYeoman is the only enterprise-grade, self-hosted AI agent platform that combines full RBAC/SSO/SAML, multi-tenancy, cryptographic audit chain, Vault/OpenBao secrets management, zero-trust network access (Twingate), a network security toolkit (37 MCP tools + Kali), ResponseGuard + OPA/CEL governance, vector memory with hybrid FTS+RRF and per-personality scoping, DAG workflow orchestration with a visual builder, backup & DR, audit log export, correlation ID observability, and Kubernetes production readiness — all in a single ~80 MB binary deployable fully air-gapped, with 9,916 tests at ≥ 87% coverage.
+
+**The sovereignty argument**: Every new competitor (TrustClaw, Manus AI) that claims "security" while routing data through its own cloud reinforces SecureYeoman's core position. The answer to "but Manus AI is easier to set up" is `curl -fsSL https://secureyeoman.ai/install | bash && secureyeoman init`. The answer to "but TrustClaw is more secure" is the cryptographic audit chain, OPA governance, and the fact that SecureYeoman's Outbound Credential Proxy means neither TrustClaw nor any other third party ever sees your key material.
 
 ---
 
-*Updated: 2026-02-28 — SecureYeoman: 9,533 tests (≥ 87% coverage), 378 test files, 153 ADRs; v2026.2.27 adds GitHub API MCP tools (17 tools + SSH key management with E2E encryption), Twitter OAuth 2.0, avatar crop modal, MCP API key auth, agent world evolution, local-first AI routing, model distillation + LoRA fine-tuning pipeline, Gmail/Twitter MCP tools, multi-theme system (18 themes), mission control dashboard, per-personality memory scoping, per-user notification prefs. OpenClaw: ~227K stars (1.36M npm/week), latest v2026.2.26; creator Peter Steinberger joined OpenAI (Feb 14, 2026); 30,000+ exposed instances; ClawHavoc 824–1,184+ malicious skills; foundation transition ongoing. Agent Zero: v0.9.8.2 with Skills framework (SKILL.md cross-platform compatible with Claude Code/Cursor/Codex CLI), WebSocket state sync, UI redesign. PicoClaw: v0.1.2 (Feb 17), ~21K stars, 10–20 MB; symlink escape patched; MCP on roadmap (Issue #290). Ironclaw: v0.12.0 (Feb 26), ~3.6K stars; Signal channel added; no air-gap capability (NEAR AI Cloud required for TEE).*
+*Updated: 2026-02-28 — SecureYeoman: 9,916 tests (≥ 87% coverage), 166 ADRs; v2026.2.28 adds Teams (dynamic auto-manager, Phase 83), Workflow OR-trigger (`triggerMode: 'any'`), strict schema enforcement, `crew` CLI, Knowledge Base & RAG (Phase 82), Dashboard performance optimizations. OpenClaw: ~227K stars (1.36M npm/week), latest v2026.2.26; creator Peter Steinberger joined OpenAI (Feb 14, 2026); 30,000+ exposed instances; ClawHavoc 824–1,184+ malicious skills; foundation transition ongoing. Agent Zero: v0.9.8.2 with Skills framework (SKILL.md), WebSocket state sync, UI redesign. PicoClaw: v0.1.2 (Feb 17), ~21K stars, 10–20 MB; symlink escape patched; MCP on roadmap. Ironclaw: v0.12.0 (Feb 26), ~3.6K stars; Signal channel added; no air-gap (NEAR AI Cloud required for TEE). TrustClaw: OpenClaw fork with remote sandboxing; cloud-held credential vault. Manus AI: SaaS-only, zero-setup, cloud data residency. ZeroClaw: Rust edge agent, ~12 MB, no enterprise features. NanoBot: minimal Python research agent, ~3,000 LOC.*

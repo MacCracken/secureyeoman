@@ -8,6 +8,11 @@
 import { z } from 'zod';
 import { AutonomyLevelSchema } from './soul.js';
 
+// ─── Trigger Mode ────────────────────────────────────────────────────
+
+export const WorkflowTriggerModeSchema = z.enum(['any', 'all']);
+export type WorkflowTriggerMode = z.infer<typeof WorkflowTriggerModeSchema>;
+
 // ─── Step Types ─────────────────────────────────────────────────────
 
 export const WorkflowStepTypeSchema = z.enum([
@@ -38,6 +43,7 @@ export const WorkflowStepSchema = z.object({
   description: z.string().max(1000).optional(),
   config: z.record(z.unknown()),
   dependsOn: z.array(z.string()).default([]),
+  triggerMode: WorkflowTriggerModeSchema.default('all'),
   retryPolicy: z
     .object({
       maxAttempts: z.number().int().min(1).max(10),
@@ -93,6 +99,8 @@ export const WorkflowDefinitionCreateSchema = WorkflowDefinitionSchema.omit({
   updatedAt: true,
 });
 export type WorkflowDefinitionCreate = z.infer<typeof WorkflowDefinitionCreateSchema>;
+/** Input type for creating workflows — fields with `.default()` (e.g. `triggerMode`) are optional. */
+export type WorkflowDefinitionCreateInput = z.input<typeof WorkflowDefinitionCreateSchema>;
 
 export const WorkflowDefinitionUpdateSchema = WorkflowDefinitionCreateSchema.partial();
 export type WorkflowDefinitionUpdate = z.infer<typeof WorkflowDefinitionUpdateSchema>;

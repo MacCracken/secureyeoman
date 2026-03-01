@@ -253,6 +253,14 @@ router.registerLazy({
   loader: () => import('./cli/commands/world.js').then((m) => m.worldCommand),
 });
 
+router.registerLazy({
+  name: 'crew',
+  aliases: ['team'],
+  description: 'Manage and run agent teams (dynamic coordinator)',
+  usage: 'secureyeoman crew <list|show|import|export|run|runs> [options]',
+  loader: () => import('./cli/commands/crew.js').then((m) => m.crewCommand),
+});
+
 // ── Help command (eager — uses router directly) ────────────────────────────
 
 router.register({

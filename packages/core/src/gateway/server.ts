@@ -57,6 +57,7 @@ import { registerTerminalRoutes } from './terminal-routes.js';
 import { registerConversationRoutes } from '../chat/conversation-routes.js';
 import { registerAgentRoutes } from '../agents/agent-routes.js';
 import { registerSwarmRoutes } from '../agents/swarm-routes.js';
+import { registerTeamRoutes } from '../agents/team-routes.js';
 import { registerWorkflowRoutes } from '../workflow/workflow-routes.js';
 import { registerExtensionRoutes } from '../extensions/extension-routes.js';
 import { registerExecutionRoutes } from '../execution/execution-routes.js';
@@ -88,6 +89,8 @@ import { SoulStorage } from '../soul/storage.js';
 import { formatPrometheusMetrics } from './prometheus.js';
 import { httpStatusName, sendError } from '../utils/errors.js';
 import { VERSION } from '../version.js';
+import { otelFastifyPlugin } from '../telemetry/otel-fastify-plugin.js';
+import { registerAlertRoutes } from '../telemetry/alert-routes.js';
 
 /**
  * Check if an IP address belongs to a private/loopback range.
@@ -212,6 +215,9 @@ export class GatewayServer {
   }
 
   private async setupMiddleware(): Promise<void> {
+    // Register OpenTelemetry tracing plugin (spans + X-Trace-Id header)
+    await this.app.register(otelFastifyPlugin);
+
     // Register compression plugin (gzip/brotli for JSON + text responses)
     await this.app.register(fastifyCompress);
 
@@ -730,6 +736,19 @@ export class GatewayServer {
       });
     }
 
+    // Team routes
+    try {
+      const teamManager = this.secureYeoman.getTeamManager();
+      if (teamManager) {
+        registerTeamRoutes(this.app, { teamManager });
+        this.getLogger().info('Team routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Team routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
     // Workflow routes
     try {
       const workflowManager = this.secureYeoman.getWorkflowManager();
@@ -1077,7 +1096,27 @@ export class GatewayServer {
       });
     }
 
-    // Prometheus metrics endpoint (unauthenticated)
+    // Alert rules routes (Phase 83)
+    {
+      const alertManager = this.secureYeoman.getAlertManager();
+      if (alertManager) {
+        registerAlertRoutes(this.app, { alertManager });
+        this.getLogger().debug('Alert routes registered');
+      }
+    }
+
+    // Standard Prometheus scrape endpoint /metrics (unauthenticated, public)
+    this.app.get('/metrics', async (_request, reply) => {
+      try {
+        const metrics = await this.secureYeoman.getMetrics();
+        const text = formatPrometheusMetrics(metrics);
+        return reply.header('Content-Type', 'text/plain; version=0.0.4; charset=utf-8').send(text);
+      } catch {
+        return reply.code(500).send('# Error collecting metrics\n');
+      }
+    });
+
+    // Prometheus metrics endpoint (legacy path — also unauthenticated)
     this.app.get('/prom/metrics', async (_request, reply) => {
       try {
         const metrics = await this.secureYeoman.getMetrics();
@@ -2635,6 +2674,12 @@ export class GatewayServer {
           this.lastMetricsJson = json;
 
           this.broadcast('metrics', metrics);
+
+          // Evaluate alert rules against current snapshot (fire-and-forget)
+          const alertManager = this.secureYeoman.getAlertManager();
+          if (alertManager) {
+            void alertManager.evaluate(metrics as Record<string, unknown>);
+          }
         } catch (error) {
           this.getLogger().error('Failed to broadcast metrics', {
             error: error instanceof Error ? error.message : 'Unknown',

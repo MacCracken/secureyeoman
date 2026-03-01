@@ -1,3 +1,45 @@
+## [2026.2.28x] — Phase 83: Observability & Telemetry
+
+### Added
+
+- **OpenTelemetry tracing bootstrap** (`packages/core/src/telemetry/otel.ts`) — `initTracing()`, `getTracer()`, `getCurrentTraceId()`. SDK dynamically imported only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set; safe no-op otherwise. `@opentelemetry/api` added as a regular dependency.
+- **Fastify OTEL plugin** (`packages/core/src/telemetry/otel-fastify-plugin.ts`) — wraps every HTTP request in an active span; adds `X-Trace-Id` response header; records exceptions on error.
+- **Standard `/metrics` Prometheus endpoint** — unauthenticated, returns Prometheus text-exposition 0.0.4 format. Legacy `/prom/metrics` retained.
+- **Alert rules engine** (`telemetry.alert_rules`, migration 069):
+  - `AlertStorage` — full CRUD for alert rules in PostgreSQL
+  - `AlertManager` — evaluates `MetricsSnapshot` against enabled rules every 5s (wired into metrics broadcast); respects cooldown; dispatches to Slack, PagerDuty, OpsGenie, webhook channels (fire-and-forget)
+  - Alert Rules REST API — 6 endpoints at `/api/v1/alerts/rules/*` incl. test-fire
+  - `AlertRulesTab` — dashboard tab under Developers with rule list, create/edit form, enabled toggle, test-fire button
+- **W3C traceparent propagation** — `RemoteDelegationTransport` injects `traceparent` header on A2A calls; `POST /api/v1/a2a/receive` extracts header and logs it for correlation
+- **Correlation ID log enrichment** — auth middleware enriches `request.log` with `userId` and `role` after successful authentication
+- **ECS log format** — `LOG_FORMAT=ecs` env var configures Pino to emit Elastic Common Schema fields (`@timestamp`, `log.level`, `trace.id`, `transaction.id`, `service.name`) for Loki/Elasticsearch ingestion
+- **`traceId` field in `MetricsSnapshot`** — populated from active OTel span when SDK is initialized
+- **Grafana dashboard bundle** (`docs/ops/grafana/`) — `secureyeoman-overview.json` (token spend, personality activity, workflow rates, audit event rate, latency, rate-limit) + `secureyeoman-alerts.json` (auth failures, rate-limit hits, audit chain validity, queue depth) + `README.md` (import instructions, scrape config)
+- **ADR 164** (`docs/adr/164-observability-telemetry.md`)
+- **Guide** `docs/guides/observability.md` — OTEL setup, Prometheus scrape config, alert rule config, ECS log format, Grafana import, Loki/trace-ID search
+- **~77 new tests**: `otel.test.ts` (8), `alert-storage.test.ts` (14), `alert-manager.test.ts` (22), `alert-routes.test.ts` (16), prometheus.test.ts (+3), `AlertRulesTab.test.tsx` (14)
+
+---
+
+## [2026.2.28w] — Phase 83: CrewAI-Inspired Workflow & Team Enhancements
+
+### Added
+
+- **Workflow `triggerMode: 'any' | 'all'`** — steps can now fire after any one dependency completes (OR-trigger). Default remains `'all'` (backward-compatible). If all deps fail/skip, the `any`-step is also skipped. Schema: `WorkflowTriggerModeSchema` exported from `@secureyeoman/shared`.
+- **Strict output schema enforcement** — `outputSchemaMode: 'strict'` in step `config` causes the step to fail (not just warn) on schema mismatch. Works with existing `onError` policies.
+- **Team primitive** (`agents.teams` + `agents.team_runs`, migration 068) — dynamic auto-manager: coordinator LLM assigns task to team members at runtime; no pre-wired topology needed.
+- **`TeamStorage`** (`packages/core/src/agents/team-storage.ts`) — full CRUD + run lifecycle + builtin team seeding.
+- **`TeamManager`** (`packages/core/src/agents/team-manager.ts`) — coordinator prompt → structured JSON → parallel delegation → optional synthesis call.
+- **Team REST API** (`/api/v1/agents/teams/*`) — 7 endpoints: list, create, get, update, delete, run (202), get-run.
+- **3 builtin teams**: `Full-Stack Development Crew`, `Research Team`, `Security Audit Team`.
+- **`secureyeoman crew` CLI** (`packages/core/src/cli/commands/crew.ts`) — `list`, `show`, `import`, `export`, `run` (with spinner + polling), `runs` subcommands. Aliases: `team`. YAML import/export.
+- **ADR 163** (`docs/adr/163-crewai-enhancements.md`).
+- **Guide** `docs/guides/teams.md` — teams, CLI usage, YAML format, REST API, coordinator mechanics.
+- **`docs/guides/workflows.md`** updated — `triggerMode: any` section, `outputSchemaMode: strict` section.
+- **~47 new tests**: workflow engine (13 new), team-manager (18), team-routes (14), crew CLI (12).
+
+---
+
 ## [2026.2.28v] — Phase 82: Knowledge Base & RAG Platform
 
 ### Added

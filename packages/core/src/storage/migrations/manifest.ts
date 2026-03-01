@@ -119,4 +119,6 @@ export const MIGRATION_MANIFEST: { id: string; sql: string }[] = [
   { id: '065_federation', sql: readSql('065_federation.sql') },
   { id: '066_gateway_api_keys', sql: readSql('066_gateway_api_keys.sql') },
   { id: '067_knowledge_base', sql: readSql('067_knowledge_base.sql') },
+  { id: '068_teams', sql: readSql('068_teams.sql') },
+  { id: '069_telemetry', sql: readSql('069_telemetry.sql') },
 ];

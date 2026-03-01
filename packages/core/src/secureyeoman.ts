@@ -120,6 +120,8 @@ import { SubAgentStorage } from './agents/storage.js';
 import { SubAgentManager } from './agents/manager.js';
 import { SwarmStorage } from './agents/swarm-storage.js';
 import { SwarmManager } from './agents/swarm-manager.js';
+import { TeamStorage } from './agents/team-storage.js';
+import { TeamManager } from './agents/team-manager.js';
 import { WorkflowStorage } from './workflow/workflow-storage.js';
 import { WorkflowManager } from './workflow/workflow-manager.js';
 import { ExtensionStorage } from './extensions/storage.js';
@@ -161,6 +163,9 @@ import { PipelineApprovalManager } from './training/approval-manager.js';
 import { PipelineLineageStorage } from './training/pipeline-lineage.js';
 import { FederationStorage } from './federation/federation-storage.js';
 import { FederationManager } from './federation/federation-manager.js';
+import { AlertStorage } from './telemetry/alert-storage.js';
+import { AlertManager } from './telemetry/alert-manager.js';
+import { initTracing } from './telemetry/otel.js';
 
 export interface SecureYeomanOptions {
   /** Configuration options */
@@ -243,6 +248,8 @@ export class SecureYeoman {
   private subAgentManager: SubAgentManager | null = null;
   private swarmStorage: SwarmStorage | null = null;
   private swarmManager: SwarmManager | null = null;
+  private teamStorage: TeamStorage | null = null;
+  private teamManager: TeamManager | null = null;
   private workflowStorage: WorkflowStorage | null = null;
   private workflowManager: WorkflowManager | null = null;
   private extensionStorage: ExtensionStorage | null = null;
@@ -282,6 +289,8 @@ export class SecureYeoman {
   private pipelineLineageStorage: PipelineLineageStorage | null = null;
   private federationStorage: FederationStorage | null = null;
   private federationManager: FederationManager | null = null;
+  private alertStorage: AlertStorage | null = null;
+  private alertManager: AlertManager | null = null;
   private modelDefaultSet = false;
   private initialized = false;
   private startedAt: number | null = null;
@@ -304,6 +313,9 @@ export class SecureYeoman {
     try {
       // Step 1: Load and validate configuration
       this.config = loadConfig(this.options.config);
+
+      // Step 1.5: Initialize OpenTelemetry tracing (before any I/O)
+      await initTracing({});
 
       // Step 2: Initialize logger first (needed for other components)
       this.logger = initializeLogger(this.config.logging);
@@ -1394,6 +1406,17 @@ export class SecureYeoman {
         this.logger.debug('FederationManager initialized');
       }
 
+      // Step 6l: Initialize AlertManager (Phase 83)
+      {
+        this.alertStorage = new AlertStorage();
+        this.alertManager = new AlertManager(
+          this.alertStorage,
+          this.notificationManager!,
+          this.logger.child({ component: 'AlertManager' })
+        );
+        this.logger.debug('AlertManager initialized');
+      }
+
       // Step 7: Record initialization in audit log
       await this.auditChain.record({
         event: 'system_initialized',
@@ -1508,8 +1531,11 @@ export class SecureYeoman {
       authFailuresTotal: 0,
     };
 
+    const { getCurrentTraceId } = await import('./telemetry/otel.js');
+
     return {
       timestamp: Date.now(),
+      traceId: getCurrentTraceId() ?? undefined,
       tasks: {
         total: taskStats?.total ?? 0,
         tasksToday: taskStats?.tasksToday ?? 0,
@@ -2056,6 +2082,14 @@ export class SecureYeoman {
   }
 
   /**
+   * Get the team manager instance (may be null if not initialized)
+   */
+  getTeamManager(): TeamManager | null {
+    this.ensureInitialized();
+    return this.teamManager;
+  }
+
+  /**
    * Get the workflow manager instance (may be null if not initialized)
    */
   getWorkflowManager(): WorkflowManager | null {
@@ -2226,6 +2260,20 @@ export class SecureYeoman {
    */
   getFederationManager(): FederationManager | null {
     return this.federationManager;
+  }
+
+  /**
+   * Get the alert manager instance (Phase 83).
+   */
+  getAlertManager(): AlertManager | null {
+    return this.alertManager;
+  }
+
+  /**
+   * Get the alert storage instance (Phase 83).
+   */
+  getAlertStorage(): AlertStorage | null {
+    return this.alertStorage;
   }
 
   /**
@@ -2516,6 +2564,37 @@ export class SecureYeoman {
       } catch (swarmError) {
         this.logger!.warn('Swarm manager initialization failed (non-fatal)', {
           error: swarmError instanceof Error ? swarmError.message : 'Unknown error',
+        });
+      }
+
+      // Team manager (requires subAgentManager)
+      try {
+        if (!this.teamStorage) {
+          this.teamStorage = new TeamStorage();
+        }
+        const subMgr = this.subAgentManager;
+        this.teamManager = new TeamManager({
+          storage: this.teamStorage,
+          subAgentManager: subMgr,
+          aiClientConfig: {
+            model: this.config!.model,
+            retryConfig: {
+              maxRetries: this.config!.model.maxRetries,
+              baseDelayMs: this.config!.model.retryDelayMs,
+            },
+          },
+          aiClientDeps: {
+            auditChain: this.auditChain ?? undefined,
+            logger: this.logger!.child({ component: 'TeamManagerAI' }),
+          },
+          auditChain: this.auditChain,
+          logger: this.logger!.child({ component: 'TeamManager' }),
+        });
+        await this.teamManager.initialize();
+        this.logger!.debug('Team manager initialized');
+      } catch (teamError) {
+        this.logger!.warn('Team manager initialization failed (non-fatal)', {
+          error: teamError instanceof Error ? teamError.message : 'Unknown error',
         });
       }
 
@@ -3094,6 +3173,11 @@ export class SecureYeoman {
       this.swarmStorage.close();
       this.swarmStorage = null;
       this.swarmManager = null;
+    }
+    if (this.teamStorage) {
+      this.teamStorage.close();
+      this.teamStorage = null;
+      this.teamManager = null;
     }
     if (this.workflowStorage) {
       this.workflowStorage.close();

@@ -7,6 +7,7 @@ import { uuidv7 } from '../utils/crypto.js';
 import type {
   WorkflowDefinition,
   WorkflowDefinitionCreate,
+  WorkflowDefinitionCreateInput,
   WorkflowDefinitionUpdate,
   WorkflowRun,
   WorkflowRunStatus,
@@ -128,7 +129,7 @@ function stepRunFromRow(row: WorkflowStepRunRow): WorkflowStepRun {
 export class WorkflowStorage extends PgBaseStorage {
   // ── Definition operations ─────────────────────────────────────
 
-  async seedBuiltinWorkflows(templates: WorkflowDefinitionCreate[]): Promise<void> {
+  async seedBuiltinWorkflows(templates: WorkflowDefinitionCreateInput[]): Promise<void> {
     const now = Date.now();
     for (const tmpl of templates) {
       await this.query(

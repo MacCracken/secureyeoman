@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Puzzle, FlaskConical, BookOpen, Brain, Lock, BarChart2 } from 'lucide-react';
+import { Puzzle, FlaskConical, BookOpen, Brain, Lock, BarChart2, Bell } from 'lucide-react';
 import { ExtensionsPage } from './ExtensionsPage';
 import { ExperimentsPage } from './ExperimentsPage';
 import { StorybookPage } from './StorybookPage';
@@ -8,7 +8,11 @@ import { TrainingTab } from './TrainingTab';
 import { GatewayAnalyticsTab } from './gateway/GatewayAnalyticsTab';
 import { fetchSecurityPolicy } from '../api/client';
 
-type DevTab = 'extensions' | 'experiments' | 'storybook' | 'training' | 'gateway';
+const AlertRulesTab = lazy(() =>
+  import('./telemetry/AlertRulesTab').then((m) => ({ default: m.AlertRulesTab }))
+);
+
+type DevTab = 'extensions' | 'experiments' | 'storybook' | 'training' | 'gateway' | 'alerts';
 
 export function DeveloperPage() {
   const [activeTab, setActiveTab] = useState<DevTab>('extensions');
@@ -27,6 +31,7 @@ export function DeveloperPage() {
     { id: 'storybook', label: 'Storybook', icon: <BookOpen className="w-4 h-4" /> },
     { id: 'training', label: 'Training', icon: <Brain className="w-4 h-4" />, hidden: !trainingEnabled },
     { id: 'gateway', label: 'Gateway Analytics', icon: <BarChart2 className="w-4 h-4" /> },
+    { id: 'alerts', label: 'Alert Rules', icon: <Bell className="w-4 h-4" /> },
   ];
 
   const visibleTabs = tabs.filter((t) => !t.hidden);
@@ -72,6 +77,10 @@ export function DeveloperPage() {
         )
       ) : activeTab === 'gateway' ? (
         <GatewayAnalyticsTab />
+      ) : activeTab === 'alerts' ? (
+        <Suspense fallback={<div className="py-8 text-center text-sm text-muted-foreground">Loading…</div>}>
+          <AlertRulesTab />
+        </Suspense>
       ) : (
         <StorybookPage />
       )}

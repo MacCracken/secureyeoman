@@ -1059,3 +1059,27 @@ export interface KnowledgeHealthStats {
   lowCoverageQueries: number;
 }
 
+// ─── Observability / Alert Rules (Phase 83) ──────────────────────────────────
+
+export interface AlertChannel {
+  type: 'slack' | 'pagerduty' | 'opsgenie' | 'webhook';
+  url?: string;
+  routingKey?: string;
+}
+
+export interface AlertRule {
+  id: string;
+  name: string;
+  description?: string;
+  metricPath: string;
+  operator: 'gt' | 'lt' | 'gte' | 'lte' | 'eq';
+  threshold: number;
+  channels: AlertChannel[];
+  enabled: boolean;
+  cooldownSeconds: number;
+  lastFiredAt?: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+

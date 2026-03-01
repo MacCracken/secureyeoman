@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>White Paper — Architectural Sovereignty &amp; Agentic Governance | SecureYeoman</title>
+    <meta
+      name="description"
+      content="SecureYeoman white paper: Mitigating the risks of autonomous AI in enterprise environments through execution sovereignty, OPA policy gating, and cryptographic accountability."
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="icon" type="image/svg+xml" href="images/favicon.svg" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <style>
+      /* ── White Paper Page Styles ─────────────────────────────────────────── */
+      .wp-hero {
+        background: var(--bg-primary);
+        border-bottom: 1px solid var(--border-color);
+        padding: var(--space-16) 0 var(--space-12);
+      }
+      .wp-hero-inner {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 0 var(--space-6);
+      }
+      .wp-meta {
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+        flex-wrap: wrap;
+        margin-bottom: var(--space-6);
+      }
+      .wp-meta-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--primary);
+        background: rgba(14, 165, 233, 0.1);
+        border: 1px solid rgba(14, 165, 233, 0.2);
+        border-radius: 999px;
+        padding: 4px 12px;
+      }
+      .wp-date {
+        font-size: 0.8rem;
+        color: var(--text-tertiary);
+      }
+      .wp-hero h1 {
+        font-size: clamp(1.75rem, 4vw, 2.5rem);
+        font-weight: 800;
+        line-height: 1.2;
+        color: var(--text-primary);
+        margin-bottom: var(--space-3);
+      }
+      .wp-hero .wp-subtitle {
+        font-size: 1.05rem;
+        color: var(--text-secondary);
+        line-height: 1.7;
+        margin-bottom: var(--space-8);
+      }
+      .wp-actions {
+        display: flex;
+        gap: var(--space-3);
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .wp-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.85rem;
+        color: var(--text-tertiary);
+        text-decoration: none;
+        transition: color 0.15s;
+      }
+      .wp-back:hover { color: var(--primary); }
+
+      /* ── Body ────────────────────────────────────────────────────────────── */
+      .wp-body {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: var(--space-12) var(--space-6) var(--space-20);
+      }
+
+      /* ── Executive Summary box ────────────────────────────────────────────  */
+      .wp-exec-summary {
+        background: rgba(14, 165, 233, 0.05);
+        border-left: 4px solid var(--primary);
+        border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+        padding: var(--space-6) var(--space-7);
+        margin-bottom: var(--space-10);
+      }
+      .wp-exec-summary p {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        line-height: 1.75;
+        margin: 0;
+      }
+
+      /* ── Section headings ─────────────────────────────────────────────────  */
+      .wp-section {
+        margin-bottom: var(--space-12);
+      }
+      .wp-section-num {
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--primary);
+        margin-bottom: var(--space-2);
+      }
+      .wp-section h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: var(--space-5);
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: var(--space-3);
+      }
+      .wp-section h3 {
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: var(--space-7) 0 var(--space-3);
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+      }
+      .wp-section h3 .pillar-num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px; height: 24px;
+        background: var(--primary);
+        color: white;
+        border-radius: 50%;
+        font-size: 0.7rem;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .wp-section p {
+        color: var(--text-secondary);
+        font-size: 0.9375rem;
+        line-height: 1.75;
+        margin-bottom: var(--space-4);
+      }
+      .wp-section ul {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 var(--space-5);
+      }
+      .wp-section ul li {
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-2);
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin-bottom: var(--space-2);
+      }
+      .wp-section ul li::before {
+        content: "→";
+        color: var(--primary);
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+
+      /* ── Comparison table ─────────────────────────────────────────────────  */
+      .wp-table-wrap {
+        overflow-x: auto;
+        margin-bottom: var(--space-8);
+        border-radius: var(--radius-xl);
+        border: 1px solid var(--border-color);
+      }
+      .wp-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+      }
+      .wp-table th {
+        background: var(--bg-secondary);
+        color: var(--text-secondary);
+        font-weight: 600;
+        padding: var(--space-3) var(--space-4);
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+        white-space: nowrap;
+      }
+      .wp-table th:first-child { width: 28%; }
+      .wp-table td {
+        padding: var(--space-3) var(--space-4);
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        vertical-align: top;
+        line-height: 1.5;
+      }
+      .wp-table tr:last-child td { border-bottom: none; }
+      .wp-table tr:nth-child(even) td { background: var(--bg-secondary); }
+      .wp-table .td-sy {
+        color: var(--text-primary);
+        font-weight: 500;
+      }
+      .wp-table .check { color: var(--success); font-weight: 600; }
+      .wp-table .cross { color: var(--error); }
+      .wp-table .warn { color: #f59e0b; }
+
+      /* ── Compliance grid ──────────────────────────────────────────────────  */
+      .wp-compliance-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--space-4);
+        margin-bottom: var(--space-8);
+      }
+      .wp-compliance-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: var(--space-4) var(--space-5);
+      }
+      .wp-compliance-card .framework {
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--primary);
+        margin-bottom: var(--space-2);
+      }
+      .wp-compliance-card h4 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: var(--space-2);
+      }
+      .wp-compliance-card p {
+        font-size: 0.8rem;
+        color: var(--text-tertiary);
+        line-height: 1.5;
+        margin: 0;
+      }
+
+      /* ── Conclusion ───────────────────────────────────────────────────────  */
+      .wp-conclusion {
+        background: linear-gradient(135deg, rgba(14,165,233,0.06) 0%, rgba(139,92,246,0.06) 100%);
+        border: 1px solid rgba(14, 165, 233, 0.15);
+        border-radius: var(--radius-xl);
+        padding: var(--space-8) var(--space-8);
+        text-align: center;
+      }
+      .wp-conclusion h2 {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: var(--space-4);
+      }
+      .wp-conclusion p {
+        font-size: 0.9375rem;
+        color: var(--text-secondary);
+        line-height: 1.75;
+        max-width: 600px;
+        margin: 0 auto var(--space-6);
+      }
+      .wp-conclusion-ctas {
+        display: flex;
+        justify-content: center;
+        gap: var(--space-4);
+        flex-wrap: wrap;
+      }
+
+      /* ── Footer strip ─────────────────────────────────────────────────────  */
+      .wp-footer-strip {
+        border-top: 1px solid var(--border-color);
+        padding: var(--space-6) var(--space-6);
+        max-width: 760px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: var(--space-3);
+        font-size: 0.8rem;
+        color: var(--text-tertiary);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Slim Navigation -->
+    <nav class="navbar" style="position:relative;">
+      <div class="container" style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-4) var(--space-6);">
+        <a href="index.html" class="navbar-logo" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
+          <div class="logo-mark" style="width:32px;height:32px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:1rem;">SY</div>
+          <span style="font-weight:700;font-size:1rem;color:var(--text-primary);">SecureYeoman</span>
+        </a>
+        <a href="index.html#enterprise" class="btn btn-secondary" style="font-size:0.85rem;">
+          <i class="fas fa-arrow-left"></i> Back to Site
+        </a>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <div class="wp-hero">
+      <div class="wp-hero-inner">
+        <div class="wp-meta">
+          <span class="wp-meta-tag"><i class="fas fa-file-alt"></i> White Paper</span>
+          <span class="wp-date">February 2026 · SecureYeoman v2026.2.28</span>
+        </div>
+        <h1>Architectural Sovereignty<br />&amp; Agentic Governance</h1>
+        <p class="wp-subtitle">
+          Mitigating the Risks of Autonomous AI in Enterprise Environments.
+          How SecureYeoman's three-pillar security model enables governed autonomy —
+          full agent capability without cloud dependency or compliance exposure.
+        </p>
+        <div class="wp-actions">
+          <a href="index.html#enterprise" class="wp-back">
+            <i class="fas fa-arrow-left"></i> Back to site
+          </a>
+          <a href="https://github.com/MacCracken/secureyeoman" target="_blank" class="btn btn-primary">
+            <i class="fab fa-github"></i> View on GitHub
+          </a>
+          <a href="mailto:security@secureyeoman.ai" class="btn btn-secondary">
+            <i class="fas fa-envelope"></i> Contact Us
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <main class="wp-body">
+
+      <!-- Executive Summary -->
+      <div class="wp-exec-summary">
+        <p>
+          As autonomous agents move from experimental scripts to enterprise tools, they introduce three
+          critical attack vectors: <strong>Data Exfiltration</strong>, <strong>Unauthorized System Mutation</strong>,
+          and <strong>Credential Exposure</strong>. While "viral" agents prioritize autonomy at the expense of
+          security, SecureYeoman is engineered as a <strong>Governed AI Framework</strong> — delivering the full
+          utility of an autonomous agent within a Zero-Trust architectural boundary. Every tool call is gated,
+          every action is logged, and every secret stays inside your perimeter.
+        </p>
+      </div>
+
+      <!-- Section 1: Three Pillars -->
+      <div class="wp-section">
+        <div class="wp-section-num">Section 1</div>
+        <h2>The Three Pillars of SecureYeoman</h2>
+
+        <h3><span class="pillar-num">I</span> Execution Sovereignty — Sandboxing</h3>
+        <p>
+          Unlike agents that run on the host OS with inherited user permissions, SecureYeoman uses
+          multi-layer isolation that scales with risk level:
+        </p>
+        <ul>
+          <li><strong>Kernel-level restriction</strong> — Landlock and seccomp confine the agent to specific file paths and system calls (macOS: sandbox-exec profile applied automatically).</li>
+          <li><strong>WASM / gVisor support</strong> — For high-risk tasks, code executes inside wasmtime or gVisor, preventing container escapes. Toggled via Security Policy flags.</li>
+          <li><strong>Skill Trust Tiers</strong> — Community-imported skills receive a 26-prefix allow-list; write-capable and network-egress tools require operator promotion to a higher tier.</li>
+          <li><strong>ToolOutputScanner</strong> — 18-pattern credential redaction replaces API keys, JWTs, and PEM material with <code>[REDACTED:&lt;type&gt;]</code> before any LLM response surfaces.</li>
+        </ul>
+
+        <h3><span class="pillar-num">II</span> Hardened Policy Gating — The OPA Layer</h3>
+        <p>
+          Intent is decoupled from execution. Even a compromised LLM cannot bypass the policy layer:
+        </p>
+        <ul>
+          <li><strong>Organizational Intent</strong> — Machine-readable governance: Hard Boundaries (e.g., "never access /etc/shadow"), Soft Policies evaluated by OPA sidecar or built-in CEL evaluator.</li>
+          <li><strong>Authorized Tool Gating</strong> — Every tool call is validated before execution. LLM-as-Judge secondary review fires above a configurable autonomy threshold.</li>
+          <li><strong>ResponseGuard</strong> — Six-pattern output scanner (instruction injection, cross-turn influence, self-escalation, role confusion, base64/hex exfiltration) runs on every response.</li>
+          <li><strong>Prompt Security</strong> — Jailbreak scoring, system-prompt trigram leak detection, and AbuseDetector (topic pivots, tool anomaly, blocked-retry cool-down) guard the ingress channel.</li>
+        </ul>
+
+        <h3><span class="pillar-num">III</span> Cryptographic Accountability — Audit Trails</h3>
+        <p>
+          Standard logs are insufficient for AI forensics. SecureYeoman implements tamper-evident
+          records for every operation:
+        </p>
+        <ul>
+          <li><strong>HMAC-SHA256 Audit Chain</strong> — Each event is hashed with the previous record's hash, producing a verifiable chain. <code>repair()</code> and <code>createSnapshot()</code> self-heal gaps.</li>
+          <li><strong>Correlation IDs</strong> — UUIDv7 per request via AsyncLocalStorage, present in every audit entry and the <code>X-Correlation-ID</code> response header.</li>
+          <li><strong>mTLS everywhere</strong> — All internal service communication secured via Mutual TLS. TLS lifecycle manager auto-generates dev certs and monitors expiry.</li>
+          <li><strong>SecretsManager</strong> — Pluggable backends (env / OS keyring / encrypted file / HashiCorp Vault / OpenBao). Outbound Credential Proxy injects Authorization headers so the model never sees raw keys.</li>
+        </ul>
+      </div>
+
+      <!-- Section 2: Enterprise Comparison -->
+      <div class="wp-section">
+        <div class="wp-section-num">Section 2</div>
+        <h2>Why Enterprise Teams Choose SecureYeoman</h2>
+
+        <div class="wp-table-wrap">
+          <table class="wp-table">
+            <thead>
+              <tr>
+                <th>Risk Category</th>
+                <th>Consumer / Open-Source Agents</th>
+                <th>SecureYeoman</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Credential Management</strong></td>
+                <td class="cross">Plaintext .env or hardcoded keys</td>
+                <td class="td-sy">Outbound Credential Proxy + SecretsManager — model never sees raw keys</td>
+              </tr>
+              <tr>
+                <td><strong>Data Residency</strong></td>
+                <td class="cross">Cloud-based processing (SaaS)</td>
+                <td class="td-sy">100% local / sovereign — Ollama, LM Studio, LocalAI, DeepSeek</td>
+              </tr>
+              <tr>
+                <td><strong>Identity &amp; Access</strong></td>
+                <td class="cross">Single-user / no auth</td>
+                <td class="td-sy">SSO/OIDC (Okta, Azure AD, Auth0) + SAML 2.0 + 4-level RBAC</td>
+              </tr>
+              <tr>
+                <td><strong>Action Validation</strong></td>
+                <td class="warn">"Ask for permission" prompts</td>
+                <td class="td-sy">OPA policy gating + CEL evaluator + Skill Trust Tiers</td>
+              </tr>
+              <tr>
+                <td><strong>Audit &amp; Forensics</strong></td>
+                <td class="warn">Text log files</td>
+                <td class="td-sy">HMAC-SHA256 cryptographic chain + JSONL / CSV / syslog export</td>
+              </tr>
+              <tr>
+                <td><strong>Multi-Tenancy</strong></td>
+                <td class="cross">Single-tenant by design</td>
+                <td class="td-sy">PostgreSQL RLS-enforced isolation; tenant CRUD API</td>
+              </tr>
+              <tr>
+                <td><strong>Supply Chain Risk</strong></td>
+                <td class="cross">Unvetted plugin ecosystems (10+ CVEs, 1,184+ malicious skills in leading competitor)</td>
+                <td class="td-sy">Skill Trust Tiers + ToolOutputScanner + install pipeline with code review gate</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>
+          <strong>The TrustClaw problem:</strong> TrustClaw (a security-focused OpenClaw fork) markets
+          "Remote Sandboxing" and "Encrypted Credentials" — but both run on TrustClaw's cloud servers.
+          Your secrets still leave your perimeter. SecureYeoman's Outbound Credential Proxy keeps every key
+          inside your infrastructure at every hop.
+        </p>
+        <p>
+          <strong>The Manus AI problem:</strong> Manus AI offers 3-minute SaaS onboarding — but Manus
+          holds all conversation data and credentials. One GDPR audit, one HIPAA requirement, or one
+          air-gap mandate eliminates it as an option. SecureYeoman installs in a single command and
+          runs entirely on your infrastructure, permanently.
+        </p>
+      </div>
+
+      <!-- Section 3: Compliance -->
+      <div class="wp-section">
+        <div class="wp-section-num">Section 3</div>
+        <h2>Compliance Readiness</h2>
+        <p>SecureYeoman provides the technical controls necessary to satisfy modern regulatory frameworks:</p>
+
+        <div class="wp-compliance-grid">
+          <div class="wp-compliance-card">
+            <div class="framework">GDPR / CCPA</div>
+            <h4>No Third-Party Transfer</h4>
+            <p>Local-first processing — no data leaves your deployment boundary.</p>
+          </div>
+          <div class="wp-compliance-card">
+            <div class="framework">SOC 2 / ISO 27001</div>
+            <h4>Access Control + Audit</h4>
+            <p>RBAC, HMAC audit chain, SSO/SAML, automated backup &amp; DR.</p>
+          </div>
+          <div class="wp-compliance-card">
+            <div class="framework">HIPAA</div>
+            <h4>Air-Gap Deployment</h4>
+            <p>Full self-hosted mode with Ollama local-model routing — no cloud dependency.</p>
+          </div>
+          <div class="wp-compliance-card">
+            <div class="framework">NIST AI RMF</div>
+            <h4>Governance &amp; Accountability</h4>
+            <p>Organizational Intent policy file, OPA sidecar, LLM-as-Judge review.</p>
+          </div>
+          <div class="wp-compliance-card">
+            <div class="framework">EU AI Act</div>
+            <h4>Human Oversight</h4>
+            <p>L3 autonomy level with human_approval workflow gates; Autonomy Level per workflow.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Multi-Agent Governance -->
+      <div class="wp-section">
+        <div class="wp-section-num">Section 4</div>
+        <h2>Multi-Agent Governance</h2>
+        <p>
+          As deployments grow from a single agent to autonomous fleets, governance surface area expands.
+          SecureYeoman addresses this with layered controls at every orchestration level:
+        </p>
+        <ul>
+          <li><strong>Swarms</strong> — Sequential, parallel, and dynamic topologies; each run audited as a named delegation chain.</li>
+          <li><strong>Teams</strong> — A coordinator LLM reads member descriptions and dynamically assigns tasks per run. Coordinator reasoning stored on the run record for post-hoc review.</li>
+          <li><strong>DAG Workflows</strong> — 14 step types, OR-trigger dependencies (<code>triggerMode: 'any'</code>), strict schema enforcement, and human approval gates. Autonomy levels (<code>L2</code> human-on-the-loop / <code>L3</code> human-in-the-loop) declared per workflow.</li>
+          <li><strong>A2A Protocol</strong> — Agent-to-agent delegation with E2E encryption and mDNS peer discovery. Gated via <code>allowA2A</code> security policy toggle.</li>
+          <li><strong>Sub-Agent Controls</strong> — Maximum delegation depth and token budget enforced at the engine level, not by prompt.</li>
+        </ul>
+      </div>
+
+      <!-- Section 5: Observability -->
+      <div class="wp-section">
+        <div class="wp-section-num">Section 5</div>
+        <h2>Observability &amp; Operations</h2>
+        <ul>
+          <li><strong>Mission Control Dashboard</strong> — 12 customizable drag-and-drop cards: KPI bar, active tasks, security events, audit stream, cost breakdown, agent world map.</li>
+          <li><strong>OpenTelemetry</strong> — Distributed tracing with OTLP export; <code>X-Trace-Id</code> response header; ECS-format structured logs.</li>
+          <li><strong>Alert Engine</strong> — Dot-notation metric rules with cooldown, 4 channel types (Slack, PagerDuty, OpsGenie, webhook). Evaluated every 5 seconds.</li>
+          <li><strong>API Gateway Mode</strong> — Expose personalities as API endpoints with per-key RPM/TPD rate limits and p50/p95 latency analytics.</li>
+          <li><strong>Prometheus / Grafana</strong> — Metrics endpoint ready; Kubernetes Helm chart includes HPA, PDBs, and NetworkPolicies.</li>
+          <li><strong>Backup &amp; DR</strong> — <code>pg_dump</code>/<code>pg_restore</code> via 6 REST endpoints; download + restore with confirm guard.</li>
+        </ul>
+      </div>
+
+      <!-- Conclusion -->
+      <div class="wp-conclusion">
+        <h2>Governed Autonomy — The Third Path</h2>
+        <p>
+          The choice is no longer between AI Productivity and Corporate Security. SecureYeoman offers
+          a third path: full agent capability, inside your perimeter, under your governance.
+          The AI is treated as a high-privilege user — continuously monitored, technically bounded,
+          and cryptographically accountable to you alone.
+        </p>
+        <div class="wp-conclusion-ctas">
+          <a href="https://github.com/MacCracken/secureyeoman" target="_blank" class="btn btn-primary btn-lg">
+            <i class="fab fa-github"></i>
+            Evaluate SecureYeoman
+          </a>
+          <a href="index.html#getting-started" class="btn btn-secondary btn-lg">
+            <i class="fas fa-rocket"></i>
+            Get Started
+          </a>
+          <a href="mailto:security@secureyeoman.ai" class="btn btn-ghost btn-lg">
+            <i class="fas fa-envelope"></i>
+            Contact Security Team
+          </a>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Footer strip -->
+    <div class="wp-footer-strip">
+      <span>SecureYeoman v2026.2.28 &nbsp;·&nbsp; 9,916 tests · ≥ 87% coverage · 166 ADRs &nbsp;·&nbsp; MIT License</span>
+      <a href="index.html" style="color:var(--text-tertiary);text-decoration:none;">← Back to secureyeoman.ai</a>
+    </div>
+
+  </body>
+</html>

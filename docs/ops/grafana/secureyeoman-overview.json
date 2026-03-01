@@ -1,0 +1,129 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" }
+  ],
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Token Spend by Provider (Today)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "friday_tokens_used_today",
+          "legendFormat": "Tokens used today"
+        },
+        {
+          "expr": "friday_cost_usd_today",
+          "legendFormat": "Cost USD today"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Personality Activity (Chat Requests)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "friday_tasks_total",
+          "legendFormat": "Total tasks"
+        },
+        {
+          "expr": "friday_tasks_in_progress",
+          "legendFormat": "In progress"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Workflow Success / Failure Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "friday_tasks_success_rate",
+          "legendFormat": "Success rate"
+        },
+        {
+          "expr": "1 - friday_tasks_success_rate",
+          "legendFormat": "Failure rate"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Audit Event Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "rate(friday_audit_entries_total[5m])",
+          "legendFormat": "Audit events/s"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "AI Provider Latency (p50 / p95)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "friday_api_latency_avg_ms",
+          "legendFormat": "Avg latency ms"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Rate Limit Rejections",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "friday_rate_limit_hits_total",
+          "legendFormat": "Rate limit hits"
+        },
+        {
+          "expr": "friday_blocked_requests_total",
+          "legendFormat": "Blocked requests"
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "tags": ["secureyeoman", "observability"],
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "SecureYeoman — Overview",
+  "uid": "secureyeoman-overview",
+  "version": 1
+}

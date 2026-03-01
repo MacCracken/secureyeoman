@@ -567,7 +567,26 @@ export {
   type CreateExternalFinding,
 } from './risk-assessment.js';
 
+// Team types (Phase 83)
 export {
+  TeamMemberSchema,
+  TeamDefinitionSchema,
+  TeamCreateSchema,
+  TeamUpdateSchema,
+  TeamRunParamsSchema,
+  TeamRunStatusSchema,
+  TeamRunSchema,
+  type TeamMember,
+  type TeamDefinition,
+  type TeamCreate,
+  type TeamUpdate,
+  type TeamRunParams,
+  type TeamRunStatus,
+  type TeamRun,
+} from './team.js';
+
+export {
+  WorkflowTriggerModeSchema,
   WorkflowStepTypeSchema,
   WorkflowStepSchema,
   WorkflowEdgeSchema,
@@ -579,12 +598,14 @@ export {
   WorkflowStepRunStatusSchema,
   WorkflowRunSchema,
   WorkflowStepRunSchema,
+  type WorkflowTriggerMode,
   type WorkflowStepType,
   type WorkflowStep,
   type WorkflowEdge,
   type WorkflowTrigger,
   type WorkflowDefinition,
   type WorkflowDefinitionCreate,
+  type WorkflowDefinitionCreateInput,
   type WorkflowDefinitionUpdate,
   type WorkflowRunStatus,
   type WorkflowStepRunStatus,

@@ -121,14 +121,17 @@ export class WorkflowEngine {
   // ── Topological Sort (Kahn's algorithm) ──────────────────────
 
   private topologicalSort(steps: WorkflowStep[]): string[][] {
-    const stepMap = new Map(steps.map((s) => [s.id, s]));
     const inDegree = new Map<string, number>();
     const adjacency = new Map<string, string[]>();
 
     for (const step of steps) {
-      inDegree.set(step.id, inDegree.get(step.id) ?? 0);
+      // For 'any' steps, require only 1 dep to complete (not all of them).
+      const required =
+        step.triggerMode === 'any'
+          ? Math.min(1, step.dependsOn.length)
+          : step.dependsOn.length;
+      inDegree.set(step.id, required);
       for (const dep of step.dependsOn) {
-        inDegree.set(step.id, (inDegree.get(step.id) ?? 0) + 1);
         if (!adjacency.has(dep)) adjacency.set(dep, []);
         adjacency.get(dep)!.push(step.id);
       }
@@ -142,7 +145,9 @@ export class WorkflowEngine {
       const nextFrontier: string[] = [];
       for (const id of frontier) {
         for (const successor of adjacency.get(id) ?? []) {
-          const newDegree = (inDegree.get(successor) ?? 0) - 1;
+          const current = inDegree.get(successor) ?? 0;
+          if (current <= 0) continue; // already enqueued (e.g. 'any' step with multiple deps)
+          const newDegree = current - 1;
           inDegree.set(successor, newDegree);
           if (newDegree === 0) nextFrontier.push(successor);
         }
@@ -169,6 +174,20 @@ export class WorkflowEngine {
   ): Promise<void> {
     const step = definition.steps.find((s) => s.id === stepId);
     if (!step) return;
+
+    // For 'any' trigger mode: skip if no dep completed (all failed/skipped)
+    if (step.triggerMode === 'any' && step.dependsOn.length > 0) {
+      const anyDepCompleted = step.dependsOn.some(
+        (depId) => ctx.steps[depId]?.status === 'completed'
+      );
+      if (!anyDepCompleted) {
+        ctx.steps[stepId] = { output: null, status: 'skipped' };
+        await this.storage
+          .createStepRun(runId, step.id, step.name, step.type)
+          .then((sr) => this.storage.updateStepRun(sr.id, { status: 'skipped' }));
+        return;
+      }
+    }
 
     // Evaluate optional condition — skip if falsy
     if (step.condition) {
@@ -201,8 +220,10 @@ export class WorkflowEngine {
       try {
         output = await this.dispatchStep(step, ctx, runId, definition.id);
 
-        // ── Output schema validation (Phase 54) ───────────────────────────────
-        const stepOutputSchema = (step.config as Record<string, unknown> | undefined)?.outputSchema;
+        // ── Output schema validation (Phase 54 + Phase 83 strict mode) ──────
+        const stepCfg = step.config as Record<string, unknown> | undefined;
+        const stepOutputSchema = stepCfg?.outputSchema;
+        const outputSchemaMode = (stepCfg?.outputSchemaMode as string | undefined) ?? 'audit';
         if (stepOutputSchema != null && output != null) {
           const schemaValidation = _outputSchemaValidator.validate(
             output,
@@ -224,6 +245,12 @@ export class WorkflowEngine {
                 errors: schemaValidation.errors.map((e) => `${e.path}: ${e.message}`),
               },
             });
+            if (outputSchemaMode === 'strict') {
+              throw new Error(
+                `Step "${step.id}" output failed schema validation (${schemaValidation.errors.length} error(s)): ` +
+                  schemaValidation.errors.map((e) => `${e.path}: ${e.message}`).join('; ')
+              );
+            }
           }
         }
 
