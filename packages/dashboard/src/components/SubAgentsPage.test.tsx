@@ -17,6 +17,11 @@ vi.mock('../api/client', () => ({
   fetchDelegationMessages: vi.fn(),
   fetchAgentConfig: vi.fn(),
   fetchSecurityPolicy: vi.fn(),
+  // Phase 89 — profile skills
+  fetchProfileSkills: vi.fn().mockResolvedValue({ skills: [] }),
+  addProfileSkill: vi.fn().mockResolvedValue(undefined),
+  removeProfileSkill: vi.fn().mockResolvedValue(undefined),
+  fetchMarketplaceSkills: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
 }));
 
 import * as api from '../api/client';

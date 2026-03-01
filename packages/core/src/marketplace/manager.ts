@@ -8,12 +8,16 @@ import type { CatalogSkill } from '@secureyeoman/shared';
 import { SkillCreateSchema } from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
 import type { BrainManager } from '../brain/manager.js';
+import type { WorkflowManager } from '../workflow/workflow-manager.js';
+import type { SwarmManager } from '../agents/swarm-manager.js';
 import { MarketplaceStorage } from './storage.js';
 import { gitCloneOrPull } from './git-fetch.js';
 
 export interface MarketplaceManagerDeps {
   logger: SecureLogger;
   brainManager?: BrainManager;
+  workflowManager?: WorkflowManager;
+  swarmManager?: SwarmManager;
   communityRepoPath?: string;
   allowCommunityGitFetch?: boolean;
   communityGitUrl?: string;
@@ -25,12 +29,18 @@ export interface CommunitySyncResult {
   skipped: number;
   removed: number;
   errors: string[];
+  workflowsAdded: number;
+  workflowsUpdated: number;
+  swarmsAdded: number;
+  swarmsUpdated: number;
 }
 
 export class MarketplaceManager {
   private storage: MarketplaceStorage;
   private logger: SecureLogger;
   private brainManager?: BrainManager;
+  private workflowManager?: WorkflowManager;
+  private swarmManager?: SwarmManager;
   private communityRepoPath?: string;
   private allowCommunityGitFetch: boolean;
   private communityGitUrl?: string;
@@ -40,6 +50,8 @@ export class MarketplaceManager {
     this.storage = storage;
     this.logger = deps.logger;
     this.brainManager = deps.brainManager;
+    this.workflowManager = deps.workflowManager;
+    this.swarmManager = deps.swarmManager;
     this.communityRepoPath = deps.communityRepoPath;
     this.allowCommunityGitFetch = deps.allowCommunityGitFetch ?? false;
     this.communityGitUrl = deps.communityGitUrl;
@@ -247,6 +259,10 @@ export class MarketplaceManager {
       skipped: 0,
       removed: 0,
       errors: [],
+      workflowsAdded: 0,
+      workflowsUpdated: 0,
+      swarmsAdded: 0,
+      swarmsUpdated: 0,
     };
 
     // Git fetch — only when policy allows and a git URL is available
@@ -364,6 +380,139 @@ export class MarketplaceManager {
       }
     }
 
+    // ── Sync community workflows ────────────────────────────────────────────
+    if (this.workflowManager) {
+      const workflowsDir = path.join(repoPath, 'workflows');
+      if (fs.existsSync(workflowsDir)) {
+        const workflowFiles = this.findJsonFiles(workflowsDir);
+        const syncedWorkflowNames = new Set<string>();
+
+        for (const filePath of workflowFiles) {
+          try {
+            const raw = fs.readFileSync(filePath, 'utf-8');
+            const data = JSON.parse(raw) as Record<string, unknown>;
+
+            if (!data.name || typeof data.name !== 'string') {
+              result.errors.push(`Skipped workflow ${filePath}: missing required field "name"`);
+              result.skipped++;
+              continue;
+            }
+            if (!Array.isArray(data.steps)) {
+              result.errors.push(`Skipped workflow ${filePath}: missing required field "steps"`);
+              result.skipped++;
+              continue;
+            }
+
+            const workflowName = data.name;
+            // Look up existing community workflow by name
+            const { definitions: allDefs } = await this.workflowManager.listDefinitions({ limit: 1000 });
+            const existing = allDefs.find(
+              (d) => d.name === workflowName && (d as any).createdBy === 'community'
+            );
+
+            if (existing) {
+              await this.workflowManager.updateDefinition(existing.id, {
+                description: typeof data.description === 'string' ? data.description : undefined,
+                steps: data.steps as any,
+                edges: Array.isArray(data.edges) ? (data.edges as any) : [],
+                triggers: Array.isArray(data.triggers) ? (data.triggers as any) : [],
+              });
+              result.workflowsUpdated++;
+            } else {
+              await this.workflowManager.createDefinition({
+                name: workflowName,
+                description: typeof data.description === 'string' ? data.description : '',
+                steps: data.steps as any,
+                edges: Array.isArray(data.edges) ? (data.edges as any) : [],
+                triggers: Array.isArray(data.triggers) ? (data.triggers as any) : [],
+                isEnabled: true,
+                version: 1,
+                createdBy: 'community',
+                autonomyLevel: (typeof data.autonomyLevel === 'string' ? data.autonomyLevel : 'L2') as any,
+              } as any);
+              result.workflowsAdded++;
+            }
+            syncedWorkflowNames.add(workflowName);
+          } catch (err) {
+            result.errors.push(
+              `Error processing workflow ${filePath}: ${err instanceof Error ? err.message : String(err)}`
+            );
+          }
+        }
+
+        // Prune stale community workflows
+        const { definitions: allDefs } = await this.workflowManager.listDefinitions({ limit: 1000 });
+        for (const stale of allDefs) {
+          if ((stale as any).createdBy === 'community' && !syncedWorkflowNames.has(stale.name)) {
+            await this.workflowManager.deleteDefinition(stale.id);
+          }
+        }
+      }
+    }
+
+    // ── Sync community swarm templates ──────────────────────────────────────
+    if (this.swarmManager) {
+      const swarmsDir = path.join(repoPath, 'swarms');
+      if (fs.existsSync(swarmsDir)) {
+        const swarmFiles = this.findJsonFiles(swarmsDir);
+        const syncedSwarmNames = new Set<string>();
+
+        for (const filePath of swarmFiles) {
+          try {
+            const raw = fs.readFileSync(filePath, 'utf-8');
+            const data = JSON.parse(raw) as Record<string, unknown>;
+
+            if (!data.name || typeof data.name !== 'string') {
+              result.errors.push(`Skipped swarm ${filePath}: missing required field "name"`);
+              result.skipped++;
+              continue;
+            }
+            if (!Array.isArray(data.roles) || (data.roles as unknown[]).length === 0) {
+              result.errors.push(`Skipped swarm ${filePath}: missing required field "roles"`);
+              result.skipped++;
+              continue;
+            }
+
+            const swarmName = data.name;
+            const roles = (data.roles as Array<Record<string, unknown>>).map((r) => ({
+              role: String(r.role ?? ''),
+              profileName: String(r.profileName ?? ''),
+              description: typeof r.description === 'string' ? r.description : '',
+            }));
+
+            // Try to find existing community template by name
+            const { templates } = await this.swarmManager.listTemplates({ limit: 1000 });
+            const existing = templates.find(
+              (t) => t.name === swarmName && !(t.isBuiltin)
+            );
+
+            if (existing) {
+              await this.swarmManager.updateTemplate(existing.id, {
+                description: typeof data.description === 'string' ? data.description : undefined,
+                strategy: (typeof data.strategy === 'string' ? data.strategy : 'sequential') as any,
+                roles,
+              });
+              result.swarmsUpdated++;
+            } else {
+              await this.swarmManager.createTemplate({
+                name: swarmName,
+                description: typeof data.description === 'string' ? data.description : '',
+                strategy: (typeof data.strategy === 'string' ? data.strategy : 'sequential') as any,
+                roles,
+                coordinatorProfile: (data.coordinatorProfile as string | null) ?? null,
+              });
+              result.swarmsAdded++;
+            }
+            syncedSwarmNames.add(swarmName);
+          } catch (err) {
+            result.errors.push(
+              `Error processing swarm ${filePath}: ${err instanceof Error ? err.message : String(err)}`
+            );
+          }
+        }
+      }
+    }
+
     this.lastSyncedAt = Date.now();
     this.logger.info('Community skill sync complete', {
       path: repoPath,
@@ -371,6 +520,10 @@ export class MarketplaceManager {
       updated: result.updated,
       skipped: result.skipped,
       errors: result.errors.length,
+      workflowsAdded: result.workflowsAdded,
+      workflowsUpdated: result.workflowsUpdated,
+      swarmsAdded: result.swarmsAdded,
+      swarmsUpdated: result.swarmsUpdated,
     });
 
     return result;

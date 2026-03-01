@@ -635,9 +635,14 @@ export class WorkflowEngine {
           modelFn,
         });
         if (this.lineageStorage) {
+          // Filter out undefined optional metrics before storing (Record<string, number> contract)
+          const definedMetrics: Record<string, number> = {};
+          for (const [k, v] of Object.entries(result.metrics)) {
+            if (typeof v === 'number') definedMetrics[k] = v;
+          }
           await this.lineageStorage.recordEvaluation(runId, workflowId, {
             evalId: result.evalId,
-            metrics: result.metrics,
+            metrics: definedMetrics,
             completedAt: result.completedAt,
           });
         }

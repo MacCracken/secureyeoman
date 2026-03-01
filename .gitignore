@@ -57,6 +57,9 @@ pino-*.log
 # Certs
 certs/
 
+# License signing key (maintainer only — never commit)
+.license-private.pem
+
 # Local config (machine-specific TLS paths etc.)
 secureyeoman.yaml
 

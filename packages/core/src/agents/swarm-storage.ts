@@ -13,6 +13,7 @@ import type {
   SwarmMember,
   SwarmStrategy,
   SwarmStatus,
+  CatalogSkill,
 } from '@secureyeoman/shared';
 
 // ─── Row types ──────────────────────────────────────────────────────
@@ -441,5 +442,62 @@ export class SwarmStorage extends PgBaseStorage {
       [swarmRunId]
     );
     return rows.map(memberFromRow);
+  }
+
+  // ── Profile skills ────────────────────────────────────────────
+
+  async getProfileSkills(profileId: string): Promise<CatalogSkill[]> {
+    const rows = await this.queryMany<Record<string, unknown>>(
+      `SELECT ms.* FROM agents.profile_skills ps
+         JOIN marketplace.skills ms ON ms.id = ps.skill_id
+        WHERE ps.profile_id = $1
+        ORDER BY ps.installed_at ASC`,
+      [profileId]
+    );
+    // Map raw rows to CatalogSkill — mirror MarketplaceStorage.rowToSkill pattern
+    return rows.map((r) => ({
+      id: r.id as string,
+      name: r.name as string,
+      description: (r.description as string) ?? '',
+      version: (r.version as string) ?? '1.0.0',
+      author: (r.author as string) ?? '',
+      authorInfo: r.author_info as CatalogSkill['authorInfo'],
+      category: (r.category as string) ?? 'general',
+      tags: (r.tags as string[]) ?? [],
+      downloadCount: (r.download_count as number) ?? 0,
+      rating: (r.rating as number) ?? 0,
+      installed: (r.installed as boolean) ?? false,
+      installedGlobally: (r.installed_globally as boolean) ?? false,
+      source: ((r.source as string) ?? 'published') as CatalogSkill['source'],
+      origin: ((r.origin as string) ?? 'marketplace') as CatalogSkill['origin'],
+      publishedAt: (r.published_at as number) ?? 0,
+      instructions: (r.instructions as string) ?? '',
+      triggerPatterns: (r.trigger_patterns as string[]) ?? [],
+      useWhen: (r.use_when as string) ?? '',
+      doNotUseWhen: (r.do_not_use_when as string) ?? '',
+      successCriteria: (r.success_criteria as string) ?? '',
+      mcpToolsAllowed: (r.mcp_tools_allowed as string[]) ?? [],
+      routing: ((r.routing as string) ?? 'fuzzy') as 'fuzzy' | 'explicit',
+      autonomyLevel: ((r.autonomy_level as string) ?? 'L1') as CatalogSkill['autonomyLevel'],
+      tools: (r.tools as CatalogSkill['tools']) ?? [],
+      createdAt: r.created_at as number,
+      updatedAt: r.updated_at as number,
+    }));
+  }
+
+  async addProfileSkill(profileId: string, skillId: string): Promise<void> {
+    await this.query(
+      `INSERT INTO agents.profile_skills (profile_id, skill_id)
+       VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [profileId, skillId]
+    );
+  }
+
+  async removeProfileSkill(profileId: string, skillId: string): Promise<void> {
+    await this.execute(
+      `DELETE FROM agents.profile_skills WHERE profile_id = $1 AND skill_id = $2`,
+      [profileId, skillId]
+    );
   }
 }

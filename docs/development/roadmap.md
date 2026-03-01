@@ -21,6 +21,7 @@
 - [ ] **Consumer UX: Settings page split** — Extract `<AuditChainTab>`, `<SoulSystemTab>`, `<RateLimitingTab>` from the `SettingsPage.tsx` monolith into dedicated tab components.
 - [ ] **Validate workflow condition strings at save time** — `evaluateCondition()` in `WorkflowEngine` silently returns `false` for malformed JS expressions (e.g. `steps.nonexistent.output`). Move the `new Function(expr)` compile step to `createWorkflow`/`updateWorkflow` validation so operators get an immediate 400 error with the syntax problem, not a silent skip at runtime.
 - [ ] **Injection detection early-exit after first blocking match** — `InputValidator.detectInjection()` loops through all `INJECTION_PATTERNS` even after setting `blocked = true`. Once a pattern with `block: true` is matched, the loop should break; subsequent patterns only accumulate score, wasting CPU. Benchmark shows this matters at 8 KB inputs with multiple attack vectors.
+- [ ] **License-gated feature reveal** — Enterprise features (Adaptive Learning Pipeline, SSO/SAML, Multi-tenancy, CI/CD Integration, Advanced Observability) should be conditionally surfaced in the UI and API based on `LicenseManager.hasFeature()`. Community-tier installs should see these features grayed out with an upgrade prompt rather than hidden entirely, so users understand what is available. Requires: (1) `LicenseManager` singleton accessible in gateway route handlers via `secureyeoman.getLicenseManager()`; (2) a `GET /api/v1/license/status` endpoint returning tier + features + expiry; (3) dashboard reads license status on load and passes it down as context; (4) guarded route handlers return `402 Payment Required` with `{ error: 'enterprise_license_required', feature: '<name>' }` when a community-tier user hits an enterprise endpoint. See ADR 171 and `docs/guides/licensing.md`.
 
 ---
 
@@ -30,15 +31,16 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P1 — ongoing | 🔄 Continuous |
 | 91 | Native Clients (Tauri Desktop + Capacitor Mobile) | P2 — distribution | 🔄 In Progress |
-| 92 | Adaptive Learning Pipeline | P2 — ML quality & training UX | Planned |
-| 78 | Advanced Editor — Full IDE Mode | P2 — power user priority | Planned |
+| 92 | Adaptive Learning Pipeline | P2 — ML quality & training UX | ✅ Complete |
+| 78a | Basic Editor Improvements (Auto-Claude Style) | P2 — power user priority | Planned |
+| 78b | Canvas Workspace — Infinite Desktop | P2 — power user priority | ✅ Complete |
 | 83 | Content Guardrails | P3 — enterprise compliance | Planned |
 | 85 | LLM-as-Judge Evaluation | P3 — ML quality signal | Planned |
 | 86 | Conversation Analytics | P3 — operational insight | Planned |
 | 81 | Conversation Branching & Replay | P3 — developer experience | Planned |
 | 87 | Inline Citations & Grounding | P4 — trust layer | Planned |
 | 88 | LLM Lifecycle Platform — Core | P4 — model ops | Planned |
-| 89 | Marketplace Shareables | P4 — community growth | Planned |
+| 89 | Marketplace Shareables | P4 — community growth | ✅ Complete |
 | 90 | CI/CD Integration | P2 — developer lifecycle | ✅ Complete |
 | Future | Workflow & Personality Versioning, LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Infrastructure | Future / Demand-Gated | — |
 
@@ -48,7 +50,9 @@
 
 **Priority**: P2 — High value for ML operations and training quality.
 
-**Status**: Planned. Inspired by techniques from reinforcement learning systems (prioritized replay, curriculum learning, distributional evaluation, pre-failure attribution) applied to LLM fine-tuning and distillation. Extends the existing `TrainingTab`, `DistillationManager`, `EvaluationManager`, and `FinetuneManager` with smarter data collection, live observability, and a computer-use learning loop.
+**Status**: ✅ Complete — 2026-03-01. See CHANGELOG [2026.3.1c] and ADR 170.
+
+Inspired by techniques from reinforcement learning systems (prioritized replay, curriculum learning, distributional evaluation, pre-failure attribution) applied to LLM fine-tuning and distillation. Extends the existing `TrainingTab`, `DistillationManager`, `EvaluationManager`, and `FinetuneManager` with smarter data collection, live observability, and a computer-use learning loop.
 
 **Motivation**: The current training pipeline samples conversations uniformly, evaluates output with character Jaccard similarity, and shows only a progress bar during runs. This phase replaces all three with production-grade equivalents: priority-weighted sampling that learns from failure, factored tool-call evaluation, and a live streaming dashboard showing loss curves, throughput, and reward signals — plus a new computer-use learning loop for the Tauri desktop client.
 
@@ -142,11 +146,22 @@ Dashboard: new **Computer Use** sub-tab in `TrainingTab`; shows episode count, a
 
 ---
 
-## Phase 78: Advanced Editor — Full IDE Mode
+## Phase 78a: Basic Editor Improvements (Auto-Claude Style)
 
 **Priority**: P2 — High value for power users.
 
-**Status**: Ready. The current Advanced Editor (`/editor` → Advanced mode) provides a Monaco pane, a file manager, a task panel, and an embedded terminal. This phase upgrades it into a self-contained browser IDE on par with VS Code's web mode.
+**Status**: Planned. Phase 78b (Canvas Workspace) is complete — 2026-03-01. This sub-phase targets quality-of-life improvements to the basic `/editor` page (Monaco + terminal + sessions) inspired by Auto-Claude patterns: keeping the human in the loop with confirmations, surfacing AI-generated context inline, and making each edit session faster via smart defaults.
+
+---
+
+### Auto-Claude Style Improvements
+
+- **Pre-edit plan display** — before AI applies a multi-file change, show a structured plan card inline in the chat: files to be modified, lines touched, estimated risk. User can approve, reject, or expand individual steps. Mirrors the `EnterPlanMode` / `ExitPlanMode` pattern in Claude Code.
+- **Step-by-step approval** — opt-in "step-by-step" mode: AI requests confirmation before each individual tool call (file write, terminal exec, git commit). A compact "approve / skip / stop" inline widget appears in the task panel without requiring a full page interaction.
+- **AI-generated commit messages** — after a session's AI edits, "Generate Commit Message" button calls the personality LLM with a diff summary. Editable before committing.
+- **Context badges** — Monaco line decorations show which lines were AI-suggested in the current session (gold gutter icon). Hover reveals the AI's reasoning. Badge fades on manual edit.
+- **Selective memory push** — "Remember this snippet" action in the editor context menu: sends selected code + its file path to the personality's knowledge base (`POST /api/v1/brain/knowledge`).
+- **Smart CWD** — terminal auto-follows the active editor file's directory unless the user has explicitly `cd`'d elsewhere. Reduces context-switching fatigue.
 
 ---
 
@@ -401,31 +416,9 @@ Advanced items (DPO, RLHF, continual learning, multi-GPU) are demand-gated in th
 
 ## Phase 89: Marketplace Shareables
 
-**Priority**: P4 — Community growth. Pursue once the marketplace has meaningful usage (>100 active skill installs across instances) and users ask for workflow/template portability.
+**Priority**: P4 — Community growth.
 
-### Workflows & Swarm Templates as Shareables
-
-*Currently the marketplace hosts skills and the community tab hosts community skills. This section explores extending that surface to workflows and swarm templates.*
-
-**Proposed approach (if pursued):**
-- Workflows: export as JSON with a `requires: { integrations[], tools[] }` manifest. Marketplace lists compatibility badges. Install = import + validate requirements + prompt user to resolve gaps.
-- Swarm templates: export as JSON with `requires: { profileRoles[] }`. Install = register as a named template + prompt user to map existing personalities to required roles.
-- Community tab hosts user-contributed versions; marketplace hosts curated/builtin versions — same two-tier pattern as skills.
-
-- [ ] **Investigation spike** — Survey 5–10 active users: do they share workflows across instances today (manually)? Would installable swarm templates change how they build agents?
-- [ ] **Compatibility manifest spec** — Define `requires` schema for workflows and swarm templates; validate on install.
-- [ ] **Workflow export/import routes** — `GET /api/v1/workflows/:id/export` (JSON blob) + `POST /api/v1/workflows/import` (validate + create).
-- [ ] **Swarm template export/import routes** — Same pattern; map roles to local personalities on import.
-- [ ] **Marketplace/community UI** — Add "Workflows" and "Swarm Templates" tabs to marketplace and community pages; install flow with compatibility check.
-
-### Skills on Sub-Agent Profiles
-
-*Today, skills are installed on a personality. Sub-agent profiles have no Skills tab.*
-
-- [ ] **Audit current data model** — Confirm whether builtin agent profiles (`builtin-intent-engineer`, etc.) are stored as `soul.personality` rows or separate. If not, plan migration path.
-- [ ] **Skills tab on sub-agent profiles** — Show the Skills tab in PersonalityEditor when viewing a sub-agent profile. Conditionally hide persona-specific tabs (voice, avatar) if not relevant.
-- [ ] **Swarm runner skill injection** — Confirm `buildAgentPrompt()` loads installed skills for sub-agent personality IDs; add test coverage.
-- [ ] **UX: install skill → select target agent** — In the marketplace install flow, allow selecting a sub-agent profile as the install target.
+**Status**: ✅ Complete — 2026-03-01. See CHANGELOG [2026.3.1e] and ADR 172.
 
 ---
 

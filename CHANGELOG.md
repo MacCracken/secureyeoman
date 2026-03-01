@@ -1,3 +1,69 @@
+## [2026.3.1e] — 2026-03-01
+
+### Phase 89 — Marketplace Shareables (ADR 172)
+
+- **Workflow export/import**: `GET /api/v1/workflows/:id/export` returns `{ exportedAt, requires: { integrations?, tools? }, workflow }`. `requires` is inferred automatically — integration keywords (`gmail`, `github`, `slack`, etc.) from step config strings; MCP tool names from `step.config.toolName`. `POST /api/v1/workflows/import` creates a definition with `source='imported'` and returns `{ definition, compatibility }`. Imports are non-blocking; compatibility gaps are surfaced as warnings.
+- **Swarm template export/import**: `GET /api/v1/agents/swarms/templates/:id/export` returns `{ exportedAt, requires: { profileRoles }, template }`. `profileRoles` inferred from `roles[].profileName`. `POST /api/v1/agents/swarms/templates/import` creates template and returns `{ template, compatibility }`.
+- **Profile skills CRUD**: New routes `GET/POST /api/v1/agents/profiles/:id/skills` and `DELETE /api/v1/agents/profiles/:id/skills/:skillId`. Skills are stored in new `agents.profile_skills` junction table (`072_shareables.sql`). During swarm execution, `SwarmManager.buildContextWithProfileSkills()` injects installed skills into each role's context before delegation.
+- **Community sync extension**: `MarketplaceManager.syncFromCommunity()` now walks `workflows/` and `swarms/` directories in the community repo (in addition to `skills/`). `CommunitySyncResult` gains `workflowsAdded`, `workflowsUpdated`, `swarmsAdded`, `swarmsUpdated` counters. Optional `workflowManager` and `swarmManager` deps added to `MarketplaceManagerDeps`.
+- **Migration `072_shareables.sql`**: Adds `source TEXT NOT NULL DEFAULT 'user'` and `requires_json JSONB` columns to `workflow.definitions` and `agents.swarm_templates`. Updates existing builtins. Creates `agents.profile_skills` (profile_id FK + skill_id FK, timestamped junction) with index on `profile_id`.
+- **Shared types** (`packages/shared/src/types/shareables.ts`): `WorkflowShareableRequires`, `SwarmTemplateRequires`, `CompatibilityCheckResult`, `WorkflowExport`, `SwarmTemplateExport` exported from `@secureyeoman/shared`.
+- **Dashboard type tabs**: Marketplace page gains a type selector row — **Skills / Workflows / Swarm Templates** — above the existing community/all/installed origin tabs. Workflow and swarm template views are lazy-loaded via `React.lazy`.
+- **`WorkflowsTab`**: Lists community workflows via `GET /api/v1/workflows?source=community`. Cards show name, description, autonomyLevel badge, step count. Export button downloads JSON; Install button calls export then import with compatibility warning display.
+- **`SwarmTemplatesTab`**: Lists community swarm templates. Cards show name, description, strategy badge, and role pills. Same Export + Install pattern.
+- **Profile skills section in SubAgentsPage**: Each agent profile card in **Sub-Agents → Profiles** gains a collapsible **Skills** section. Lists installed skills, supports adding from the marketplace catalog, and removes individual skills.
+- **Community repo content**: 3 workflow JSONs (`daily-morning-brief.json`, `content-review-gate.json`, `research-report-pipeline.json`) and 2 swarm template JSONs (`security-audit-team.json`, `full-stack-dev-crew.json`) added to the `secureyeoman-community-skills` repository. JSON Schema Draft-07 schemas added (`schema/workflow.schema.json`, `schema/swarm-template.schema.json`).
+- **Tests**: 62 new tests across 6 new test files (`workflow-routes-export.test.ts`, `swarm-routes-export.test.ts`, `profile-skills-routes.test.ts`, `marketplace-shareables.test.ts`, `WorkflowsTab.test.tsx`, `SwarmTemplatesTab.test.tsx`). `SubAgentsPage.test.tsx` updated with new API mock entries.
+- **ADR 172** (`docs/adr/172-marketplace-shareables.md`). **Guide** `docs/guides/shareables.md`.
+
+---
+
+## [2026.3.1d] — 2026-03-01
+
+### Phase 78b — Canvas Workspace: Infinite Desktop (ADR 171)
+
+- **`/editor/canvas` route** — `CanvasEditorPage` replaces the old Phase 78 "full IDE" concept with an infinite canvas desktop. `/editor` (basic Monaco + terminal) is unchanged; EditorPage gains a "Canvas Mode →" link.
+- **ReactFlow canvas** — All widgets are `canvasWidget` custom ReactFlow nodes. `CanvasWidget.tsx` provides window chrome: drag handle (title bar), inline title editing (double-click), minimize (collapses to 36px title bar), fullscreen overlay (`role="dialog" aria-modal`), close (×), and resize via `NodeResizer`.
+- **11 widget types**: `terminal`, `editor`, `frozen-output`, `agent-world`, `chat`, `task-kanban`, `training-live`, `mission-card`, `git-panel`, `pipeline`, `cicd-monitor`.
+- **TerminalWidget** — Tech-stack hint strip from `GET /api/v1/terminal/tech-stack` (detected stacks + allowed commands). Command history (Up/Down arrows). "📌 Pin Output" creates a `frozen-output` node adjacent to the terminal. Worktree selector dropdown.
+- **TrainingLiveNode** — Extracts `LiveTab` SSE logic from `TrainingTab.tsx`; standalone rolling loss/reward charts + throughput/agreement KPIs + Score Now button.
+- **PipelineWidget** — Recent run picker + live step-status list; polls every 2s while running.
+- **CicdMonitorWidget** — Calls existing Phase-90 MCP tools (`gha_list_runs`, `jenkins_list_builds`) for live CI event display.
+- **ChatWidget** — Inline AI chat via `useChatStream`; embedded in any canvas position.
+- **FrozenOutputWidget** — Read-only pinned terminal output with command, exit code, and timestamp.
+- **WidgetCatalog** — Slide-in drawer grouping 11 widget types by category (Development Tools / AI & Agents / Monitoring / Pipelines). New nodes spawn at viewport center + random offset to avoid stacking.
+- **Layout persistence** — `canvas-layout.ts` serializes `Node<CanvasWidgetData>[]` + viewport to `localStorage('canvas:workspace')`; auto-saved (debounced 1s) on node change, manual Save button also available.
+- **`GET /api/v1/terminal/tech-stack`** — Scans `cwd` for 8 indicator files (package.json, Cargo.toml, pyproject.toml/requirements.txt, go.mod, pom.xml/build.gradle, Gemfile, docker-compose.yml, .git). Returns `{ stacks, allowedCommands }` — union of per-stack commands + 17 always-available common utilities.
+- **Command allowlist enforcement** in `POST /api/v1/terminal/execute` — New optional body fields `allowedCommands?: string[]` and `override?: boolean`. If `allowedCommands` present and base command not in list: 403 `{ blocked: true, command, error }`. If `override: true`: audit warn event `terminal_override` + executes.
+- **Git worktree CRUD** (`packages/core/src/gateway/worktree-routes.ts`): `POST /api/v1/terminal/worktrees` (creates `.worktrees/<name>`), `GET /api/v1/terminal/worktrees` (parses git porcelain), `DELETE /api/v1/terminal/worktrees/:id` (force remove + branch delete). Names/IDs validated: alphanumeric, dash, underscore only.
+- **Auth middleware** — 3 new route entries: `tech-stack` (execution:read), `worktrees` GET (execution:read) / POST (execution:execute), `worktrees/:id` DELETE (execution:execute).
+- **Dashboard API client** — `fetchTechStack()`, `listWorktrees()`, `createWorktree()`, `deleteWorktree()`. `executeTerminalCommand()` extended with optional `allowedCommands` and `override` params.
+- **Tests** — `worktree-routes.test.ts` (14 tests): POST creates / generates name / creates dir / validates name / handles git error; GET filters to .worktrees dir / handles git failure; DELETE returns 204 / validates id / handles failure.
+- **ADR 171** (`docs/adr/171-canvas-workspace.md`). **Guide** `docs/guides/canvas-workspace.md`.
+
+---
+
+## [2026.3.1c] — 2026-03-01
+
+### Phase 92 — Adaptive Learning Pipeline (ADR 170)
+
+- **Priority-weighted distillation sampling**: Three `priorityMode` values added to `DistillationJobConfig`: `failure-first` (low quality_score first via JOIN on `training.conversation_quality`), `success-first` (reverse order), `uniform` (unchanged default). Quality join uses `COALESCE(cq.quality_score, 0.5) ASC/DESC`.
+- **Curriculum ordering** (`curriculumMode: true`): Conversations binned into 4 complexity stages by message count. Stage 1 (≤4 msgs) processed at 25% quota first, then stages 2–4. Enables simple→complex training progression.
+- **Counterfactual synthetic data** (`counterfactualMode: true`): After normal quota, conversations from failed pipeline runs are re-submitted to the teacher LLM with a recovery system prompt. Synthetic samples tagged `"synthetic": true` in JSONL metadata. Capped by `maxCounterfactualSamples` (default 50).
+- **Factored tool-call evaluation metrics**: `EvaluationManager.runEvaluation()` now computes `tool_name_accuracy` (correct tool selected), `tool_arg_match` (avg per-argument precision), `outcome_correctness` (optional sandbox), `semantic_similarity` (optional Ollama embeddings + cosine similarity). New exported helpers: `parseToolCall()`, `computeToolNameAccuracy()`, `computeToolArgMatch()`, `cosineSimilarity()`, `computeSemanticSimilarity()`.
+- **`TrainingStreamBroadcaster`** (`training-stream.ts`): Singleton `EventEmitter`. `DistillationManager` emits `throughput` + `agreement` events every 10 samples. Training routes emit `reward` on computer-use episode record.
+- **`ConversationQualityScorer`**: Background service scoring new conversations every 5 minutes. Formula: `0.5 - 0.30*(outcome=failed) - 0.15*n_correction_phrases - 0.10*max(0, inj-0.5)`. `applyPrefailureBoost()` called from pipeline-lineage on failure. Exposed via `secureYeoman.getConversationQualityScorer()`.
+- **`ComputerUseManager`**: CRUD for RL episodes (`training.computer_use_episodes`). `recordEpisode()`, `listEpisodes()`, `getSessionStats()`, `getSkillBreakdown()`, `deleteEpisode()`, `exportEpisodes()` (paginated JSONL generator). Exposed via `secureYeoman.getComputerUseManager()`.
+- **Migrations**: `070_conversation_quality.sql` (quality scores + `idx_conv_quality_score`), `071_computer_use_episodes.sql` (episode storage + 3 indexes).
+- **New training routes** (`GET /api/v1/training/stream` SSE, `/quality`, `/quality/score`, `/computer-use/episodes` GET/POST, `/computer-use/stats`, `/computer-use/episodes/:id` DELETE). `POST /api/v1/training/export` gains `format: 'computer_use'` support.
+- **Auth middleware**: 6 new route entries under `training:read` / `training:write`.
+- **Dashboard TrainingTab**: Two new sub-tabs — **Live** (SSE EventSource, rolling LineChart for loss + reward, throughput/agreement KPIs, quality heatmap) and **Computer Use** (stat cards, skill breakdown table, session replay viewer). Distillation create form gains Priority Mode select, Curriculum/Counterfactual checkboxes. New `EvalResultRadarCard` (recharts RadarChart with 4 factored-metric axes).
+- **Dashboard API client**: `fetchTrainingStream()`, `fetchQualityScores()`, `triggerQualityScoring()`, `recordComputerUseEpisode()`, `fetchComputerUseEpisodes()`, `fetchComputerUseStats()`, `deleteComputerUseEpisode()`. `CreateDistillationJobRequest` extended with new fields.
+- **Tests**: 222 total training tests. New files: `conversation-quality-scorer.test.ts` (16), `computer-use-manager.test.ts` (17), `training-phase92-routes.test.ts` (20). Extended: `distillation-manager.test.ts` (+12 → 25 total), `evaluation-manager.test.ts` (+24 → 37 total).
+- **ADR 170** (`docs/adr/170-adaptive-learning-pipeline.md`). **Guide** `docs/guides/adaptive-learning-pipeline.md`.
+
+---
+
 ## [2026.3.1b] — 2026-03-01
 
 ### Codebase Refactor Audit — Benchmarks, Shared Helpers & Type Extraction (ADR 169)

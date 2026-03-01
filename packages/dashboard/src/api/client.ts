@@ -54,7 +54,13 @@ import type {
   KbDocument,
   KnowledgeHealthStats,
   AlertRule,
+  CatalogSkill,
+  WorkflowExport,
+  SwarmTemplateExport,
+  CompatibilityCheckResult,
 } from '../types.js';
+
+export type { CompatibilityCheckResult } from '../types.js';
 
 const API_BASE = '/api/v1';
 
@@ -891,6 +897,10 @@ export interface CreateDistillationJobRequest {
   maxSamples?: number;
   personalityIds?: string[];
   outputPath: string;
+  priorityMode?: 'failure-first' | 'uniform' | 'success-first';
+  curriculumMode?: boolean;
+  counterfactualMode?: boolean;
+  maxCounterfactualSamples?: number;
 }
 
 export async function fetchDistillationJobs(): Promise<DistillationJob[]> {
@@ -978,6 +988,89 @@ export async function registerFinetuneAdapter(
   return request<{ success: boolean; adapterName: string }>(
     `/training/finetune/jobs/${encodeURIComponent(id)}/register`,
     { method: 'POST' }
+  );
+}
+
+// ─── Phase 92: Training Stream + Quality + Computer Use ───────────
+
+/** Open an SSE connection to the live training stream. */
+export function fetchTrainingStream(): EventSource {
+  const token = getAccessToken();
+  const url = `${API_BASE}/training/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+  return new EventSource(url);
+}
+
+export interface QualityScore {
+  conversationId: string;
+  qualityScore: number;
+  signalSource: string;
+  scoredAt: string;
+}
+
+export async function fetchQualityScores(limit = 100): Promise<{ conversations: QualityScore[] }> {
+  return request<{ conversations: QualityScore[] }>(`/training/quality?limit=${limit}`);
+}
+
+export async function triggerQualityScoring(): Promise<{ scored: number }> {
+  return request<{ scored: number }>('/training/quality/score', { method: 'POST' });
+}
+
+export interface ComputerUseEpisode {
+  id: string;
+  sessionId: string;
+  skillName: string;
+  stateEncoding: Record<string, unknown>;
+  actionType: string;
+  actionTarget: string;
+  actionValue: string;
+  reward: number;
+  done: boolean;
+  createdAt: string;
+}
+
+export interface SkillStat {
+  skillName: string;
+  episodeCount: number;
+  successRate: number;
+  avgReward: number;
+}
+
+export async function recordComputerUseEpisode(
+  ep: Omit<ComputerUseEpisode, 'id' | 'createdAt'>
+): Promise<ComputerUseEpisode> {
+  return request<ComputerUseEpisode>('/training/computer-use/episodes', {
+    method: 'POST',
+    body: JSON.stringify(ep),
+  });
+}
+
+export async function fetchComputerUseEpisodes(opts?: {
+  skillName?: string;
+  sessionId?: string;
+  limit?: number;
+}): Promise<ComputerUseEpisode[]> {
+  const params = new URLSearchParams();
+  if (opts?.skillName) params.set('skillName', opts.skillName);
+  if (opts?.sessionId) params.set('sessionId', opts.sessionId);
+  if (opts?.limit) params.set('limit', String(opts.limit));
+  const qs = params.toString();
+  const data = await request<{ episodes: ComputerUseEpisode[] }>(
+    `/training/computer-use/episodes${qs ? `?${qs}` : ''}`
+  );
+  return data.episodes;
+}
+
+export async function fetchComputerUseStats(): Promise<{
+  skillBreakdown: SkillStat[];
+  totals: { totalEpisodes: number; avgReward: number };
+}> {
+  return request(`/training/computer-use/stats`);
+}
+
+export async function deleteComputerUseEpisode(id: string): Promise<void> {
+  await request<undefined>(
+    `/training/computer-use/episodes/${encodeURIComponent(id)}`,
+    { method: 'DELETE' }
   );
 }
 
@@ -1972,11 +2065,13 @@ export interface TerminalCommandResult {
 
 export async function executeTerminalCommand(
   command: string,
-  cwd: string
+  cwd: string,
+  allowedCommands?: string[],
+  override?: boolean
 ): Promise<TerminalCommandResult> {
   return request('/terminal/execute', {
     method: 'POST',
-    body: JSON.stringify({ command, cwd }),
+    body: JSON.stringify({ command, cwd, allowedCommands, override }),
   });
 }
 
@@ -4495,4 +4590,101 @@ export async function deleteAlertRule(id: string): Promise<void> {
 
 export async function testAlertRule(id: string): Promise<{ fired: boolean; value: number | null }> {
   return request(`/alerts/rules/${encodeURIComponent(id)}/test`, { method: 'POST' });
+}
+
+// ─── Shareables — Workflow export/import (Phase 89) ───────────────────────────
+
+export async function exportWorkflow(id: string): Promise<WorkflowExport> {
+  return request(`/workflows/${encodeURIComponent(id)}/export`);
+}
+
+export async function importWorkflow(
+  payload: WorkflowExport
+): Promise<{ definition: WorkflowDefinition; compatibility: CompatibilityCheckResult }> {
+  return request('/workflows/import', {
+    method: 'POST',
+    body: JSON.stringify({ workflow: payload }),
+  });
+}
+
+export async function fetchCommunityWorkflows(
+  source?: string
+): Promise<{ definitions: WorkflowDefinition[]; total: number }> {
+  const qs = source ? `?source=${encodeURIComponent(source)}` : '';
+  return request(`/workflows${qs}`);
+}
+
+// ─── Shareables — Swarm template export/import (Phase 89) ───────────────────
+
+export async function exportSwarmTemplate(id: string): Promise<SwarmTemplateExport> {
+  return request(`/agents/swarms/templates/${encodeURIComponent(id)}/export`);
+}
+
+export async function importSwarmTemplate(
+  payload: SwarmTemplateExport
+): Promise<{ template: unknown; compatibility: CompatibilityCheckResult }> {
+  return request('/agents/swarms/templates/import', {
+    method: 'POST',
+    body: JSON.stringify({ template: payload }),
+  });
+}
+
+export async function fetchCommunitySwarmTemplates(): Promise<{
+  templates: unknown[];
+  total: number;
+}> {
+  return request('/agents/swarms/templates');
+}
+
+// ─── Profile Skills (Phase 89) ───────────────────────────────────────────────
+
+export async function fetchProfileSkills(profileId: string): Promise<{ skills: CatalogSkill[] }> {
+  return request(`/agents/profiles/${encodeURIComponent(profileId)}/skills`);
+}
+
+export async function addProfileSkill(profileId: string, skillId: string): Promise<void> {
+  await request(`/agents/profiles/${encodeURIComponent(profileId)}/skills`, {
+    method: 'POST',
+    body: JSON.stringify({ skillId }),
+  });
+}
+
+export async function removeProfileSkill(profileId: string, skillId: string): Promise<void> {
+  await request(`/agents/profiles/${encodeURIComponent(profileId)}/skills/${encodeURIComponent(skillId)}`, {
+    method: 'DELETE',
+  });
+}
+
+// ─── Canvas Workspace API ────────────────────────────────────────
+
+export interface TechStackResponse {
+  stacks: string[];
+  allowedCommands: string[];
+}
+
+export async function fetchTechStack(cwd?: string): Promise<TechStackResponse> {
+  const qs = cwd ? `?cwd=${encodeURIComponent(cwd)}` : '';
+  return request(`/terminal/tech-stack${qs}`);
+}
+
+export interface WorktreeInfo {
+  id: string;
+  path: string;
+  branch: string;
+  createdAt: string;
+}
+
+export async function listWorktrees(): Promise<{ worktrees: WorktreeInfo[] }> {
+  return request('/terminal/worktrees');
+}
+
+export async function createWorktree(name?: string): Promise<WorktreeInfo> {
+  return request('/terminal/worktrees', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  });
+}
+
+export async function deleteWorktree(id: string): Promise<void> {
+  return request(`/terminal/worktrees/${id}`, { method: 'DELETE' });
 }

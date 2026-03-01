@@ -15,11 +15,14 @@ import { dirname } from 'node:path';
 import type { Pool } from 'pg';
 import type { ConversationStorage } from '../chat/conversation-storage.js';
 import type { SecureLogger } from '../logging/logger.js';
+import { trainingStream } from './training-stream.js';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export type DistillationStatus = 'pending' | 'running' | 'complete' | 'failed' | 'cancelled';
 export type ExportFormat = 'sharegpt' | 'instruction';
+
+export type PriorityMode = 'failure-first' | 'uniform' | 'success-first';
 
 export interface DistillationJobConfig {
   name: string;
@@ -29,6 +32,10 @@ export interface DistillationJobConfig {
   maxSamples?: number;
   personalityIds?: string[];
   outputPath: string;
+  priorityMode?: PriorityMode;
+  curriculumMode?: boolean;
+  counterfactualMode?: boolean;
+  maxCounterfactualSamples?: number;
 }
 
 export interface DistillationJob {
@@ -45,6 +52,11 @@ export interface DistillationJob {
   errorMessage: string | null;
   createdAt: number;
   completedAt: number | null;
+  priorityMode: PriorityMode;
+  curriculumMode: boolean;
+  counterfactualMode: boolean;
+  maxCounterfactualSamples: number;
+  counterfactualCount: number;
 }
 
 export interface TeacherClient {
@@ -68,7 +80,26 @@ function rowToJob(row: Record<string, unknown>): DistillationJob {
     errorMessage: (row.error_message as string | null) ?? null,
     createdAt: row.created_at instanceof Date ? row.created_at.getTime() : Date.now(),
     completedAt: row.completed_at instanceof Date ? row.completed_at.getTime() : null,
+    priorityMode: (row.priority_mode as PriorityMode) ?? 'uniform',
+    curriculumMode: (row.curriculum_mode as boolean) ?? false,
+    counterfactualMode: (row.counterfactual_mode as boolean) ?? false,
+    maxCounterfactualSamples: (row.max_counterfactual_samples as number) ?? 50,
+    counterfactualCount: (row.counterfactual_count as number) ?? 0,
   };
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function charJaccard(a: string, b: string): number {
+  if (a.length === 0 && b.length === 0) return 1;
+  const setA = new Set(a.toLowerCase());
+  const setB = new Set(b.toLowerCase());
+  let intersection = 0;
+  for (const ch of setA) {
+    if (setB.has(ch)) intersection++;
+  }
+  const union = new Set([...setA, ...setB]).size;
+  return union === 0 ? 1 : intersection / union;
 }
 
 // ── Manager ───────────────────────────────────────────────────────────────────
@@ -93,13 +124,18 @@ export class DistillationManager {
       maxSamples = 500,
       personalityIds = [],
       outputPath,
+      priorityMode = 'uniform',
+      curriculumMode = false,
+      counterfactualMode = false,
+      maxCounterfactualSamples = 50,
     } = cfg;
 
     const { rows } = await this.pool.query<Record<string, unknown>>(
       `INSERT INTO training.distillation_jobs
          (id, name, teacher_provider, teacher_model, export_format,
-          max_samples, personality_ids, output_path)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+          max_samples, personality_ids, output_path,
+          priority_mode, curriculum_mode, counterfactual_mode, max_counterfactual_samples)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        RETURNING *`,
       [
         id,
@@ -110,6 +146,10 @@ export class DistillationManager {
         maxSamples,
         personalityIds,
         outputPath,
+        priorityMode,
+        curriculumMode,
+        counterfactualMode,
+        maxCounterfactualSamples,
       ]
     );
     return rowToJob(rows[0]!);
@@ -154,6 +194,12 @@ export class DistillationManager {
   /**
    * Run a distillation job in the background.
    * Reads conversations, calls the teacher LLM for each user-turn, writes JSONL.
+   *
+   * Phase 92 additions:
+   *  - Priority-weighted sampling: failure-first / success-first join on conversation_quality
+   *  - Curriculum ordering: stage 1→4 quota-based processing
+   *  - Counterfactual generation: re-submit failed conversations with recovery prompt
+   *  - TrainingStream events: throughput + agreement emitted every 10 samples
    */
   async runJob(
     jobId: string,
@@ -180,101 +226,94 @@ export class DistillationManager {
     }
 
     let samplesWritten = 0;
+    let totalSimilarity = 0;
+    let counterfactualCount = 0;
+    const batchStart = Date.now();
 
     try {
-      const pids = job.personalityIds.length ? job.personalityIds : [undefined];
+      // ── Collect ordered conversation IDs based on priorityMode + curriculumMode ──
+      const orderedConvIds = await this._collectOrderedConvIds(job);
 
-      outer: for (const pid of pids) {
-        let offset = 0;
-        const BATCH = 50;
+      outer: for (const convId of orderedConvIds) {
+        if (samplesWritten >= job.maxSamples) break outer;
 
-        while (samplesWritten < job.maxSamples) {
-          // Check for cancellation
-          const current = await this.getJob(jobId);
-          if (current?.status === 'cancelled') break outer;
+        // Check for cancellation
+        const current = await this.getJob(jobId);
+        if (current?.status === 'cancelled') break outer;
 
-          const { conversations } = await conversationStorage.listConversations({
-            limit: BATCH,
-            offset,
-            ...(pid !== undefined ? { personalityId: pid } : {}),
-          });
+        const messages = await conversationStorage.getMessages(convId, { limit: 1000 });
+        if (messages.length < 2) continue;
 
-          if (conversations.length === 0) break;
+        // Find user→assistant pairs
+        for (let i = 0; i < messages.length - 1; i++) {
+          if (samplesWritten >= job.maxSamples) break;
+          const msg = messages[i]!;
+          if (msg.role !== 'user') continue;
 
-          for (const conv of conversations) {
-            if (samplesWritten >= job.maxSamples) break outer;
+          const userContent = msg.content;
+          if (!userContent.trim()) continue;
 
-            const current2 = await this.getJob(jobId);
-            if (current2?.status === 'cancelled') break outer;
+          // Get the gold assistant response for agreement metric
+          const nextMsg = messages[i + 1];
+          const goldResponse = nextMsg?.role === 'assistant' ? nextMsg.content : '';
 
-            const messages = await conversationStorage.getMessages(conv.id, { limit: 1000 });
-            if (messages.length < 2) continue;
-
-            // Find user→assistant pairs
-            for (let i = 0; i < messages.length - 1; i++) {
-              if (samplesWritten >= job.maxSamples) break;
-              const msg = messages[i]!;
-              if (msg.role !== 'user') continue;
-
-              const userContent = msg.content;
-              if (!userContent.trim()) continue;
-
-              // Call teacher LLM
-              let teacherResponse: string;
-              try {
-                const resp = await teacherClient.chat({
-                  messages: [{ role: 'user', content: userContent }],
-                });
-                teacherResponse = resp.content;
-              } catch (err) {
-                this.logger.warn('Teacher LLM call failed', {
-                  jobId,
-                  error: err instanceof Error ? err.message : 'unknown',
-                });
-                continue;
-              }
-
-              // Write to JSONL
-              let line: string;
-              if (job.exportFormat === 'sharegpt') {
-                line =
-                  JSON.stringify({
-                    conversations: [
-                      { from: 'human', value: userContent },
-                      { from: 'gpt', value: teacherResponse },
-                    ],
-                  }) + '\n';
-              } else {
-                line = JSON.stringify({ instruction: userContent, output: teacherResponse }) + '\n';
-              }
-
-              appendFileSync(job.outputPath, line, 'utf-8');
-              samplesWritten++;
-
-              // Persist progress every 10 samples
-              if (samplesWritten % 10 === 0) {
-                await this.pool.query(
-                  `UPDATE training.distillation_jobs SET samples_generated=$1 WHERE id=$2`,
-                  [samplesWritten, jobId]
-                );
-              }
-            }
-
-            offset++;
+          // Call teacher LLM
+          let teacherResponse: string;
+          try {
+            const resp = await teacherClient.chat({
+              messages: [{ role: 'user', content: userContent }],
+            });
+            teacherResponse = resp.content;
+          } catch (err) {
+            this.logger.warn('Teacher LLM call failed', {
+              jobId,
+              error: err instanceof Error ? err.message : 'unknown',
+            });
+            continue;
           }
 
-          offset += BATCH - conversations.length;
-          if (conversations.length < BATCH) break;
+          // Accumulate agreement (char Jaccard) for stream events
+          if (goldResponse) {
+            totalSimilarity += charJaccard(teacherResponse, goldResponse);
+          }
+
+          // Write to JSONL
+          const line = this._formatLine(job.exportFormat, userContent, teacherResponse);
+          appendFileSync(job.outputPath, line, 'utf-8');
+          samplesWritten++;
+
+          // Emit stream events every 10 samples
+          if (samplesWritten % 10 === 0) {
+            await this.pool.query(
+              `UPDATE training.distillation_jobs SET samples_generated=$1 WHERE id=$2`,
+              [samplesWritten, jobId]
+            );
+            const elapsedMin = (Date.now() - batchStart) / 60_000;
+            const throughput = elapsedMin > 0 ? samplesWritten / elapsedMin : 0;
+            trainingStream.broadcast({ type: 'throughput', value: throughput, ts: Date.now() });
+            const avgAgreement = samplesWritten > 0 ? totalSimilarity / samplesWritten : 0;
+            trainingStream.broadcast({ type: 'agreement', value: avgAgreement, ts: Date.now() });
+          }
         }
+      }
+
+      // ── Counterfactual generation ───────────────────────────────────────────
+      if (job.counterfactualMode && counterfactualCount < job.maxCounterfactualSamples) {
+        counterfactualCount = await this._generateCounterfactuals(
+          job,
+          teacherClient,
+          job.maxCounterfactualSamples,
+          conversationStorage
+        );
       }
 
       await this.pool.query(
         `UPDATE training.distillation_jobs
-         SET status='complete', samples_generated=$1, completed_at=NOW()
-         WHERE id=$2`,
-        [samplesWritten, jobId]
+         SET status='complete', samples_generated=$1, counterfactual_count=$2, completed_at=NOW()
+         WHERE id=$3`,
+        [samplesWritten, counterfactualCount, jobId]
       );
-      this.logger.info('Distillation job complete', { jobId, samplesWritten });
+      this.logger.info('Distillation job complete', { jobId, samplesWritten, counterfactualCount });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       await this.pool.query(
@@ -287,6 +326,166 @@ export class DistillationManager {
     } finally {
       this.runningJobs.delete(jobId);
     }
+  }
+
+  // ── Private helpers ────────────────────────────────────────────────────────
+
+  private _formatLine(format: ExportFormat, userContent: string, response: string, meta?: Record<string, unknown>): string {
+    if (format === 'sharegpt') {
+      return (
+        JSON.stringify({
+          conversations: [
+            { from: 'human', value: userContent },
+            { from: 'gpt', value: response },
+          ],
+          ...(meta ?? {}),
+        }) + '\n'
+      );
+    }
+    return JSON.stringify({ instruction: userContent, output: response, ...(meta ?? {}) }) + '\n';
+  }
+
+  /**
+   * Collect conversation IDs ordered by priorityMode and optionally curriculum stage.
+   */
+  private async _collectOrderedConvIds(job: DistillationJob): Promise<string[]> {
+    const pidFilter =
+      job.personalityIds.length > 0
+        ? `AND c.personality_id = ANY(ARRAY[${job.personalityIds.map((_, i) => `$${i + 1}`).join(',')}])`
+        : '';
+    const params: unknown[] = [...job.personalityIds];
+
+    let orderClause = '';
+    let joinClause = '';
+
+    if (job.priorityMode === 'failure-first') {
+      joinClause = `LEFT JOIN training.conversation_quality cq ON cq.conversation_id = c.id`;
+      orderClause = `ORDER BY COALESCE(cq.quality_score, 0.5) ASC`;
+    } else if (job.priorityMode === 'success-first') {
+      joinClause = `LEFT JOIN training.conversation_quality cq ON cq.conversation_id = c.id`;
+      orderClause = `ORDER BY COALESCE(cq.quality_score, 0.5) DESC`;
+    } else {
+      orderClause = `ORDER BY c.created_at ASC`;
+    }
+
+    const limitIdx = params.length + 1;
+    params.push(job.maxSamples * 5); // fetch 5x; we'll sample down during processing
+
+    const { rows } = await this.pool.query<{ id: string; message_count: number | null }>(
+      `SELECT c.id,
+              (SELECT COUNT(*) FROM chat.messages m WHERE m.conversation_id = c.id) AS message_count
+       FROM   chat.conversations c
+       ${joinClause}
+       WHERE  1=1 ${pidFilter}
+       ${orderClause}
+       LIMIT  $${limitIdx}`,
+      params
+    );
+
+    if (!job.curriculumMode) {
+      return rows.map((r) => r.id);
+    }
+
+    // ── Curriculum ordering: stage 1 (25%), then 2, 3, 4 ─────────────────────
+    return this._curriculumSort(rows, job.maxSamples);
+  }
+
+  /**
+   * Sort conversations into curriculum stages and interleave quota.
+   * Stage 1: ≤4 messages, no tool calls  → 25% of maxSamples first
+   * Stage 2: multi-turn, no tools
+   * Stage 3: tool-using
+   * Stage 4: failed/recovered or multi-agent
+   */
+  private _curriculumSort(
+    rows: { id: string; message_count: number | null }[],
+    maxSamples: number
+  ): string[] {
+    const stage1: string[] = [];
+    const stage2: string[] = [];
+    const stage3: string[] = [];
+    const stage4: string[] = [];
+
+    for (const r of rows) {
+      const mc = r.message_count ?? 0;
+      if (mc <= 4) {
+        stage1.push(r.id);
+      } else if (mc <= 10) {
+        stage2.push(r.id);
+      } else if (mc <= 20) {
+        stage3.push(r.id);
+      } else {
+        stage4.push(r.id);
+      }
+    }
+
+    const s1Quota = Math.floor(maxSamples * 0.25);
+    const result: string[] = [
+      ...stage1.slice(0, s1Quota),
+      ...stage2,
+      ...stage3,
+      ...stage4,
+      ...stage1.slice(s1Quota),
+    ];
+    return result;
+  }
+
+  /**
+   * For conversations linked to failed pipeline runs, re-submit to the teacher
+   * with a recovery prompt and write synthetic samples.
+   */
+  private async _generateCounterfactuals(
+    job: DistillationJob,
+    teacherClient: TeacherClient,
+    maxCount: number,
+    conversationStorage: ConversationStorage
+  ): Promise<number> {
+    // Find failed conversation IDs from pipeline lineage
+    const { rows } = await this.pool.query<{ conversation_ids: string[] }>(
+      `SELECT conversation_ids
+       FROM   training.pipeline_lineage
+       WHERE  outcome = 'failed'
+       LIMIT  50`
+    );
+
+    const failedConvIds = rows.flatMap((r) => r.conversation_ids ?? []);
+    if (!failedConvIds.length) return 0;
+
+    let generated = 0;
+    const SYSTEM_PROMPT =
+      'You are helping generate ideal training data. Given this conversation that ended poorly, provide the ideal assistant response for the final user turn.';
+
+    for (const convId of failedConvIds) {
+      if (generated >= maxCount) break;
+
+      try {
+        const messages = await conversationStorage.getMessages(convId, { limit: 1000 });
+        if (messages.length < 2) continue;
+
+        // Find the last user message
+        const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+        if (!lastUser?.content?.trim()) continue;
+
+        const resp = await teacherClient.chat({
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: lastUser.content },
+          ],
+        });
+
+        const line = this._formatLine(job.exportFormat, lastUser.content, resp.content, {
+          synthetic: true,
+          source_conversation: convId,
+        });
+        appendFileSync(job.outputPath, line, 'utf-8');
+        generated++;
+      } catch {
+        // skip individual failures
+      }
+    }
+
+    this.logger.info('Distillation: counterfactuals generated', { jobId: job.id, generated });
+    return generated;
   }
 
   isRunning(jobId: string): boolean {

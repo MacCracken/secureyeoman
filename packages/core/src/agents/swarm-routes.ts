@@ -5,6 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SwarmManager } from './swarm-manager.js';
 import { sendError } from '../utils/errors.js';
+import type { SwarmTemplateExport } from '@secureyeoman/shared';
 
 export function registerSwarmRoutes(
   app: FastifyInstance,
@@ -20,6 +21,71 @@ export function registerSwarmRoutes(
       const limit = request.query.limit ? Number(request.query.limit) : undefined;
       const offset = request.query.offset ? Number(request.query.offset) : undefined;
       return swarmManager.listTemplates({ limit, offset });
+    }
+  );
+
+  // ── Export a swarm template ───────────────────────────────────
+
+  app.get(
+    '/api/v1/agents/swarms/templates/:id/export',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const template = await swarmManager.getTemplate(request.params.id);
+      if (!template) return sendError(reply, 404, 'Template not found');
+
+      const profileRoles = template.roles.map((r) => r.profileName);
+
+      const exportPayload: SwarmTemplateExport = {
+        exportedAt: Date.now(),
+        requires: { profileRoles },
+        template,
+      };
+
+      return reply.code(200).send(exportPayload);
+    }
+  );
+
+  // ── Import a swarm template ───────────────────────────────────
+
+  app.post(
+    '/api/v1/agents/swarms/templates/import',
+    async (
+      request: FastifyRequest<{ Body: { template: SwarmTemplateExport } }>,
+      reply: FastifyReply
+    ) => {
+      const { template: payload } = request.body ?? {};
+      if (!payload?.template?.name) {
+        return sendError(reply, 400, 'Invalid export: missing template.name');
+      }
+      if (!Array.isArray(payload.template.roles) || payload.template.roles.length === 0) {
+        return sendError(reply, 400, 'Invalid export: template.roles must be a non-empty array');
+      }
+
+      const requires = payload.requires ?? {};
+      const compatibility = {
+        compatible: true,
+        gaps: {} as Record<string, string[]>,
+      };
+      if (requires.profileRoles?.length) {
+        compatibility.gaps.profileRoles = requires.profileRoles;
+        compatibility.compatible = false;
+      }
+
+      try {
+        const template = await swarmManager.createTemplate({
+          name: payload.template.name,
+          description: payload.template.description ?? '',
+          strategy: payload.template.strategy ?? 'sequential',
+          roles: payload.template.roles.map((r) => ({
+            role: r.role,
+            profileName: r.profileName,
+            description: r.description ?? '',
+          })),
+          coordinatorProfile: payload.template.coordinatorProfile ?? null,
+        });
+        return reply.code(201).send({ template, compatibility });
+      } catch (err) {
+        return sendError(reply, 400, err instanceof Error ? err.message : 'Import failed');
+      }
     }
   );
 

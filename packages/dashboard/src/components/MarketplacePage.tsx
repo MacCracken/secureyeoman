@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Store, Download, Trash2, Loader2, Search } from 'lucide-react';
 import {
@@ -8,7 +8,21 @@ import {
 } from '../api/client';
 import type { CatalogSkill } from '../types';
 
+const WorkflowsTab = lazy(() =>
+  import('./marketplace/WorkflowsTab').then((m) => ({ default: m.WorkflowsTab }))
+);
+const SwarmTemplatesTab = lazy(() =>
+  import('./marketplace/SwarmTemplatesTab').then((m) => ({ default: m.SwarmTemplatesTab }))
+);
+
+type TypeFilter = 'skills' | 'workflows' | 'swarms';
 type OriginFilter = 'all' | 'marketplace' | 'community';
+
+const TYPE_TABS: { value: TypeFilter; label: string }[] = [
+  { value: 'skills', label: 'Skills' },
+  { value: 'workflows', label: 'Workflows' },
+  { value: 'swarms', label: 'Swarm Templates' },
+];
 
 const ORIGIN_TABS: { value: OriginFilter; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -20,6 +34,7 @@ const PAGE_SIZE = 20;
 
 export function MarketplacePage() {
   const queryClient = useQueryClient();
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('skills');
   const [query, setQuery] = useState('');
   const [originFilter, setOriginFilter] = useState<OriginFilter>('all');
   const [page, setPage] = useState(0);
@@ -27,7 +42,7 @@ export function MarketplacePage() {
   // Reset to first page when filter or search changes
   useEffect(() => {
     setPage(0);
-  }, [query, originFilter]);
+  }, [query, originFilter, typeFilter]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['marketplace', query, originFilter, page],
@@ -62,10 +77,43 @@ export function MarketplacePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Skill Marketplace</h1>
-        <p className="text-muted-foreground text-sm mt-1">Browse and install skills</p>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Marketplace</h1>
+        <p className="text-muted-foreground text-sm mt-1">Browse and install skills, workflows, and swarm templates</p>
       </div>
 
+      {/* Type selector */}
+      <div className="flex gap-1 border-b border-border">
+        {TYPE_TABS.map((tab) => (
+          <button
+            key={tab.value}
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              typeFilter === tab.value
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+            onClick={() => {
+              setTypeFilter(tab.value);
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Render non-skills tabs */}
+      {typeFilter === 'workflows' && (
+        <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>}>
+          <WorkflowsTab />
+        </Suspense>
+      )}
+      {typeFilter === 'swarms' && (
+        <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>}>
+          <SwarmTemplatesTab />
+        </Suspense>
+      )}
+
+      {/* Skills tab content */}
+      {typeFilter === 'skills' && <>
       {/* Origin filter tabs */}
       <div className="flex gap-1 border-b border-border">
         {ORIGIN_TABS.map((tab) => (
@@ -195,6 +243,7 @@ export function MarketplacePage() {
           )}
         </>
       )}
+      </>}
     </div>
   );
 }

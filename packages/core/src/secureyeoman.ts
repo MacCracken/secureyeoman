@@ -161,11 +161,14 @@ import { DataCurationManager } from './training/data-curation.js';
 import { EvaluationManager } from './training/evaluation-manager.js';
 import { PipelineApprovalManager } from './training/approval-manager.js';
 import { PipelineLineageStorage } from './training/pipeline-lineage.js';
+import { ConversationQualityScorer } from './training/conversation-quality-scorer.js';
+import { ComputerUseManager } from './training/computer-use-manager.js';
 import { FederationStorage } from './federation/federation-storage.js';
 import { FederationManager } from './federation/federation-manager.js';
 import { AlertStorage } from './telemetry/alert-storage.js';
 import { AlertManager } from './telemetry/alert-manager.js';
 import { initTracing } from './telemetry/otel.js';
+import { LicenseManager } from './licensing/license-manager.js';
 
 export interface SecureYeomanOptions {
   /** Configuration options */
@@ -287,10 +290,13 @@ export class SecureYeoman {
   private evaluationManager: EvaluationManager | null = null;
   private pipelineApprovalManager: PipelineApprovalManager | null = null;
   private pipelineLineageStorage: PipelineLineageStorage | null = null;
+  private conversationQualityScorer: ConversationQualityScorer | null = null;
+  private computerUseManager: ComputerUseManager | null = null;
   private federationStorage: FederationStorage | null = null;
   private federationManager: FederationManager | null = null;
   private alertStorage: AlertStorage | null = null;
   private alertManager: AlertManager | null = null;
+  private licenseManager: LicenseManager = new LicenseManager();
   private modelDefaultSet = false;
   private initialized = false;
   private startedAt: number | null = null;
@@ -323,6 +329,14 @@ export class SecureYeoman {
         environment: this.config.core.environment,
         version: this.config.version,
       });
+
+      // Step 2.05b: Initialize LicenseManager
+      this.licenseManager = new LicenseManager(process.env.SECUREYEOMAN_LICENSE_KEY);
+      const licTier = this.licenseManager.getTier();
+      this.logger.info({ tier: licTier, org: this.licenseManager.getClaims()?.organization ?? null }, `License: ${licTier}`);
+      if (this.licenseManager.getParseError()) {
+        this.logger.warn({ err: this.licenseManager.getParseError() }, 'License key invalid, running as community tier');
+      }
 
       // Step 2.5: Initialize keyring (pre-loads secrets from system keyring)
       const knownSecretKeys = [
@@ -1389,6 +1403,15 @@ export class SecureYeoman {
           pool,
           this.logger.child({ component: 'PipelineLineageStorage' })
         );
+        this.conversationQualityScorer = new ConversationQualityScorer(
+          pool,
+          this.logger.child({ component: 'ConversationQualityScorer' })
+        );
+        this.computerUseManager = new ComputerUseManager(
+          pool,
+          this.logger.child({ component: 'ComputerUseManager' })
+        );
+        this.conversationQualityScorer.start();
         this.logger.debug('ML Pipeline managers initialized');
       }
 
@@ -2084,6 +2107,22 @@ export class SecureYeoman {
   }
 
   /**
+   * Get the swarm storage instance (may be null if not initialized)
+   */
+  getSwarmStorage(): SwarmStorage | null {
+    this.ensureInitialized();
+    return this.swarmStorage;
+  }
+
+  /**
+   * Get the sub-agent storage instance (may be null if not initialized)
+   */
+  getSubAgentStorage(): SubAgentStorage | null {
+    this.ensureInitialized();
+    return this.subAgentStorage;
+  }
+
+  /**
    * Get the team manager instance (may be null if not initialized)
    */
   getTeamManager(): TeamManager | null {
@@ -2333,6 +2372,48 @@ export class SecureYeoman {
   getPipelineLineageStorage(): PipelineLineageStorage | null {
     this.ensureInitialized();
     return this.pipelineLineageStorage;
+  }
+
+  /**
+   * Get the LicenseManager instance.
+   */
+  getLicenseManager(): LicenseManager {
+    return this.licenseManager;
+  }
+
+  /**
+   * Replace the active license key at runtime (called by POST /api/v1/license/key).
+   */
+  reloadLicenseKey(key: string): void {
+    this.licenseManager = new LicenseManager(key);
+    this.logger?.info({ tier: this.licenseManager.getTier() }, 'License key reloaded');
+  }
+
+  /**
+   * Get the conversation quality scorer instance (Phase 92).
+   */
+  getConversationQualityScorer(): ConversationQualityScorer | null {
+    this.ensureInitialized();
+    return this.conversationQualityScorer;
+  }
+
+  /**
+   * Get the computer-use manager instance (Phase 92).
+   */
+  getComputerUseManager(): ComputerUseManager | null {
+    this.ensureInitialized();
+    return this.computerUseManager;
+  }
+
+  /**
+   * Get the Postgres pool (Phase 92 — used by training quality routes).
+   */
+  getPool(): import('pg').Pool | null {
+    try {
+      return getPool();
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -3077,6 +3158,12 @@ export class SecureYeoman {
     if (this.externalBrainSync) {
       this.externalBrainSync.stop();
       this.externalBrainSync = null;
+    }
+
+    // Stop conversation quality scorer (Phase 92)
+    if (this.conversationQualityScorer) {
+      this.conversationQualityScorer.stop();
+      this.conversationQualityScorer = null;
     }
 
     // Stop heartbeat

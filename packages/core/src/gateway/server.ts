@@ -54,9 +54,11 @@ import { registerSsoRoutes } from './sso-routes.js';
 import { registerExperimentRoutes } from '../experiment/experiment-routes.js';
 import { registerMarketplaceRoutes } from '../marketplace/marketplace-routes.js';
 import { registerTerminalRoutes } from './terminal-routes.js';
+import { registerWorktreeRoutes } from './worktree-routes.js';
 import { registerConversationRoutes } from '../chat/conversation-routes.js';
 import { registerAgentRoutes } from '../agents/agent-routes.js';
 import { registerSwarmRoutes } from '../agents/swarm-routes.js';
+import { registerProfileSkillsRoutes } from '../agents/profile-skills-routes.js';
 import { registerTeamRoutes } from '../agents/team-routes.js';
 import { registerWorkflowRoutes } from '../workflow/workflow-routes.js';
 import { registerExtensionRoutes } from '../extensions/extension-routes.js';
@@ -79,6 +81,7 @@ import { SQLiteAuditStorage } from '../logging/sqlite-storage.js';
 import { registerBackupRoutes } from '../backup/backup-routes.js';
 import { registerTenantRoutes } from '../tenants/tenant-routes.js';
 import { registerTrainingRoutes } from '../training/training-routes.js';
+import { registerLicenseRoutes } from '../licensing/license-routes.js';
 import { registerFederationRoutes } from '../federation/federation-routes.js';
 import { registerGatewayRoutes } from './gateway-routes.js';
 import { registerGmailRoutes } from '../integrations/gmail/gmail-routes.js';
@@ -709,6 +712,7 @@ export class GatewayServer {
 
     // Terminal routes (always available)
     registerTerminalRoutes(this.app);
+    registerWorktreeRoutes(this.app);
 
     // Conversation routes
     try {
@@ -742,6 +746,20 @@ export class GatewayServer {
       }
     } catch (err) {
       this.getLogger().debug('Swarm routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Profile skills routes (Phase 89)
+    try {
+      const swarmStorage = this.secureYeoman.getSwarmStorage();
+      const subAgentStorage = this.secureYeoman.getSubAgentStorage();
+      if (swarmStorage && subAgentStorage) {
+        registerProfileSkillsRoutes(this.app, { swarmStorage, subAgentStorage });
+        this.getLogger().info('Profile skills routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Profile skills routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }

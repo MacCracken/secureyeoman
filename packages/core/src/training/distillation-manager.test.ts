@@ -1,5 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DistillationManager } from './distillation-manager.js';
+
+// Mock training-stream to avoid side effects
+vi.mock('./training-stream.js', () => ({
+  trainingStream: { broadcast: vi.fn() },
+}));
 
 // ── Pool mock ────────────────────────────────────────────────────────────────
 
@@ -57,6 +62,11 @@ function makeJobRow(overrides: Partial<Record<string, unknown>> = {}): Record<st
     error_message: null,
     created_at: new Date(),
     completed_at: null,
+    priority_mode: 'uniform',
+    curriculum_mode: false,
+    counterfactual_mode: false,
+    max_counterfactual_samples: 50,
+    counterfactual_count: 0,
     ...overrides,
   };
 }
@@ -287,6 +297,212 @@ describe('DistillationManager', () => {
 
       // Just verify it doesn't throw and completes
       await expect(manager.runJob('job-1', convStorage, teacher)).resolves.not.toThrow();
+    });
+  });
+});
+
+// ── Phase 92: Priority / Curriculum / Counterfactual ─────────────────────────
+
+describe('DistillationManager — Phase 92 extensions', () => {
+  let pool: ReturnType<typeof makePool>;
+  let logger: ReturnType<typeof makeLogger>;
+  let manager: DistillationManager;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    pool = makePool();
+    logger = makeLogger();
+    manager = new DistillationManager(pool, logger);
+  });
+
+  describe('createJob() — new fields persisted', () => {
+    it('persists priorityMode in INSERT query', async () => {
+      const row = makeJobRow({ priority_mode: 'failure-first' });
+      pool.query = vi.fn(async (_sql: string, params: unknown[]) => {
+        // priorityMode should be in the params
+        expect(params).toContain('failure-first');
+        return { rows: [row], rowCount: 1 };
+      });
+
+      const job = await manager.createJob({
+        name: 'j',
+        teacherProvider: 'anthropic',
+        teacherModel: 'claude-opus-4-6',
+        outputPath: '/tmp/x.jsonl',
+        priorityMode: 'failure-first',
+      });
+
+      expect(job.priorityMode).toBe('failure-first');
+    });
+
+    it('persists curriculumMode = true', async () => {
+      const row = makeJobRow({ curriculum_mode: true });
+      pool.query = vi.fn(async (_sql: string, params: unknown[]) => {
+        expect(params).toContain(true);
+        return { rows: [row], rowCount: 1 };
+      });
+
+      const job = await manager.createJob({
+        name: 'j',
+        teacherProvider: 'a',
+        teacherModel: 'm',
+        outputPath: '/tmp/x.jsonl',
+        curriculumMode: true,
+      });
+      expect(job.curriculumMode).toBe(true);
+    });
+
+    it('persists counterfactualMode and maxCounterfactualSamples', async () => {
+      const row = makeJobRow({ counterfactual_mode: true, max_counterfactual_samples: 25 });
+      pool.query = vi.fn(async () => ({ rows: [row], rowCount: 1 }));
+
+      const job = await manager.createJob({
+        name: 'j',
+        teacherProvider: 'a',
+        teacherModel: 'm',
+        outputPath: '/tmp/x.jsonl',
+        counterfactualMode: true,
+        maxCounterfactualSamples: 25,
+      });
+      expect(job.counterfactualMode).toBe(true);
+      expect(job.maxCounterfactualSamples).toBe(25);
+    });
+
+    it('defaults new fields to uniform/false/false/50/0', async () => {
+      const row = makeJobRow();
+      pool.query = vi.fn(async () => ({ rows: [row], rowCount: 1 }));
+
+      const job = await manager.createJob({
+        name: 'j',
+        teacherProvider: 'a',
+        teacherModel: 'm',
+        outputPath: '/tmp/x.jsonl',
+      });
+      expect(job.priorityMode).toBe('uniform');
+      expect(job.curriculumMode).toBe(false);
+      expect(job.counterfactualMode).toBe(false);
+      expect(job.maxCounterfactualSamples).toBe(50);
+      expect(job.counterfactualCount).toBe(0);
+    });
+  });
+
+  describe('rowToJob() — new fields mapped', () => {
+    it('maps all new row fields to camelCase', async () => {
+      const row = makeJobRow({
+        priority_mode: 'success-first',
+        curriculum_mode: true,
+        counterfactual_mode: true,
+        max_counterfactual_samples: 100,
+        counterfactual_count: 12,
+      });
+      pool.query = vi.fn(async () => ({ rows: [row], rowCount: 1 }));
+
+      const job = await manager.getJob('job-1');
+      expect(job!.priorityMode).toBe('success-first');
+      expect(job!.curriculumMode).toBe(true);
+      expect(job!.counterfactualMode).toBe(true);
+      expect(job!.maxCounterfactualSamples).toBe(100);
+      expect(job!.counterfactualCount).toBe(12);
+    });
+
+    it('defaults missing new fields gracefully', async () => {
+      // Row without the new columns (simulating older DB row)
+      const row: Record<string, unknown> = {
+        id: 'j',
+        name: 'N',
+        teacher_provider: 'a',
+        teacher_model: 'm',
+        export_format: 'sharegpt',
+        max_samples: 500,
+        personality_ids: [],
+        output_path: '/tmp/x.jsonl',
+        status: 'pending',
+        samples_generated: 0,
+        error_message: null,
+        created_at: new Date(),
+        completed_at: null,
+      };
+      pool.query = vi.fn(async () => ({ rows: [row], rowCount: 1 }));
+
+      const job = await manager.getJob('j');
+      expect(job!.priorityMode).toBe('uniform');
+      expect(job!.curriculumMode).toBe(false);
+      expect(job!.counterfactualMode).toBe(false);
+      expect(job!.maxCounterfactualSamples).toBe(50);
+      expect(job!.counterfactualCount).toBe(0);
+    });
+  });
+
+  describe('runJob() — priority-weighted query', () => {
+    it('includes quality join in SQL when priorityMode=failure-first', async () => {
+      const sqlCalls: string[] = [];
+      let queryCount = 0;
+      pool.query = vi.fn(async (sql: string) => {
+        sqlCalls.push(sql);
+        queryCount++;
+        // 1st: getJob → pending job with failure-first
+        if (queryCount === 1) {
+          return {
+            rows: [makeJobRow({ priority_mode: 'failure-first', status: 'pending' })],
+            rowCount: 1,
+          };
+        }
+        // 2nd: UPDATE to running
+        if (queryCount === 2) return { rows: [], rowCount: 1 };
+        // 3rd: ORDER BY quality SELECT
+        if (queryCount === 3) return { rows: [], rowCount: 0 };
+        // final UPDATE to complete
+        return { rows: [], rowCount: 1 };
+      });
+
+      const convStorage = makeConvStorage();
+      await manager.runJob('job-1', convStorage, makeTeacher());
+
+      const qualityQuery = sqlCalls.find(
+        (s) => s.includes('conversation_quality') && s.includes('quality_score')
+      );
+      expect(qualityQuery).toBeDefined();
+      expect(qualityQuery).toContain('ASC');
+    });
+
+    it('uses DESC order when priorityMode=success-first', async () => {
+      const sqlCalls: string[] = [];
+      let qc = 0;
+      pool.query = vi.fn(async (sql: string) => {
+        sqlCalls.push(sql);
+        qc++;
+        if (qc === 1) return { rows: [makeJobRow({ priority_mode: 'success-first' })], rowCount: 1 };
+        if (qc === 2) return { rows: [], rowCount: 1 };
+        if (qc === 3) return { rows: [], rowCount: 0 };
+        return { rows: [], rowCount: 1 };
+      });
+
+      await manager.runJob('job-1', makeConvStorage(), makeTeacher());
+
+      const qualityQuery = sqlCalls.find(
+        (s) => s.includes('conversation_quality') && s.includes('DESC')
+      );
+      expect(qualityQuery).toBeDefined();
+    });
+
+    it('uses plain ORDER BY created_at when priorityMode=uniform', async () => {
+      const sqlCalls: string[] = [];
+      let qc = 0;
+      pool.query = vi.fn(async (sql: string) => {
+        sqlCalls.push(sql);
+        qc++;
+        if (qc === 1) return { rows: [makeJobRow({ priority_mode: 'uniform' })], rowCount: 1 };
+        if (qc === 2) return { rows: [], rowCount: 1 };
+        if (qc === 3) return { rows: [], rowCount: 0 };
+        return { rows: [], rowCount: 1 };
+      });
+
+      await manager.runJob('job-1', makeConvStorage(), makeTeacher());
+
+      const uniformQuery = sqlCalls.find(
+        (s) => s.includes('created_at ASC') && !s.includes('conversation_quality')
+      );
+      expect(uniformQuery).toBeDefined();
     });
   });
 });

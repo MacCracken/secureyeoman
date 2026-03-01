@@ -48,6 +48,9 @@ const WorkflowRunDetail = lazy(() =>
   import('../pages/WorkflowRunDetail').then((m) => ({ default: m.WorkflowRunDetail }))
 );
 const IntentPage = lazy(() => import('./IntentEditor').then((m) => ({ default: m.IntentEditor })));
+const CanvasEditorPage = lazy(() =>
+  import('./CanvasEditor/CanvasEditorPage').then((m) => ({ default: m.CanvasEditorPage }))
+);
 
 export function DashboardLayout() {
   const { logout } = useAuth();
@@ -193,6 +196,7 @@ export function DashboardLayout() {
                     element={<MetricsPage metrics={metrics} health={health} />}
                   />
                   <Route path="/chat" element={<ChatPage />} />
+                  <Route path="/editor/canvas" element={<CanvasEditorPage />} />
                   <Route path="/editor" element={<EditorPage />} />
                   <Route path="/code" element={<Navigate to="/editor" replace />} />
                   <Route path="/security" element={<SecurityPage />} />

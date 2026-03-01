@@ -19,6 +19,7 @@ import {
   Layers,
   List,
   Share2,
+  BookOpen,
 } from 'lucide-react';
 import { WebGLGraph } from './WebGLGraph';
 import type { WebGLGraphNode, WebGLGraphEdge } from './WebGLGraph';
@@ -35,11 +36,16 @@ import {
   fetchDelegationMessages,
   fetchAgentConfig,
   fetchSecurityPolicy,
+  fetchProfileSkills,
+  addProfileSkill,
+  removeProfileSkill,
+  fetchMarketplaceSkills,
   type AgentProfileInfo,
   type DelegationInfo,
   type ActiveDelegationInfo,
   type DelegationResultInfo,
 } from '../api/client';
+import type { CatalogSkill } from '../types';
 
 type TabId = 'active' | 'history' | 'profiles' | 'swarms';
 
@@ -920,9 +926,119 @@ function ProfilesTab({
                 <span className="opacity-50">All tools</span>
               )}
             </div>
+            <ProfileSkillsSection profileId={p.id} />
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ── Profile Skills Section ────────────────────────────────────────────────────
+
+function ProfileSkillsSection({ profileId }: { profileId: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: skillsData, isLoading } = useQuery({
+    queryKey: ['profileSkills', profileId],
+    queryFn: () => fetchProfileSkills(profileId),
+    enabled: expanded,
+  });
+
+  const { data: mpData } = useQuery({
+    queryKey: ['marketplace', '', 'all', 0],
+    queryFn: () => fetchMarketplaceSkills(undefined, undefined, undefined, undefined, 50, 0),
+    enabled: expanded && showAdd,
+  });
+
+  const addMut = useMutation({
+    mutationFn: (skillId: string) => addProfileSkill(profileId, skillId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['profileSkills', profileId] });
+      setShowAdd(false);
+    },
+  });
+
+  const removeMut = useMutation({
+    mutationFn: (skillId: string) => removeProfileSkill(profileId, skillId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['profileSkills', profileId] });
+    },
+  });
+
+  const installedSkills = skillsData?.skills ?? [];
+  const availableSkills = (mpData?.skills ?? []).filter(
+    (s: CatalogSkill) => !installedSkills.some((i) => i.id === s.id)
+  );
+
+  return (
+    <div className="mt-2 border-t border-border pt-2">
+      <button
+        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
+        onClick={() => setExpanded((e) => !e)}
+      >
+        <BookOpen className="w-3 h-3" />
+        Skills ({installedSkills.length})
+        {expanded ? <ChevronDown className="w-3 h-3 ml-auto" /> : <ChevronRight className="w-3 h-3 ml-auto" />}
+      </button>
+
+      {expanded && (
+        <div className="mt-2 space-y-1">
+          {isLoading ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+          ) : installedSkills.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No skills installed</p>
+          ) : (
+            installedSkills.map((skill: CatalogSkill) => (
+              <div key={skill.id} className="flex items-center justify-between gap-2">
+                <span className="text-xs">{skill.name}</span>
+                <button
+                  className="p-0.5 text-muted-foreground hover:text-destructive"
+                  onClick={() => removeMut.mutate(skill.id)}
+                  disabled={removeMut.isPending}
+                  title="Remove skill"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))
+          )}
+
+          {showAdd ? (
+            <div className="space-y-1">
+              {availableSkills.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No more skills available</p>
+              ) : (
+                availableSkills.slice(0, 10).map((s: CatalogSkill) => (
+                  <button
+                    key={s.id}
+                    className="block text-xs text-left w-full hover:bg-muted px-1.5 py-0.5 rounded"
+                    onClick={() => addMut.mutate(s.id)}
+                    disabled={addMut.isPending}
+                  >
+                    {s.name}
+                  </button>
+                ))
+              )}
+              <button
+                className="text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => setShowAdd(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mt-1"
+              onClick={() => setShowAdd(true)}
+            >
+              <Plus className="w-3 h-3" /> Add skill
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

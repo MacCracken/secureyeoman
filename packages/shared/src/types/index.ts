@@ -588,6 +588,15 @@ export {
   type TeamRun,
 } from './team.js';
 
+// Shareables types (Phase 89)
+export type {
+  WorkflowShareableRequires,
+  SwarmTemplateRequires,
+  CompatibilityCheckResult,
+  WorkflowExport,
+  SwarmTemplateExport,
+} from './shareables.js';
+
 export {
   WorkflowTriggerModeSchema,
   WorkflowStepTypeSchema,

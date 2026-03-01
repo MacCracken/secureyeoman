@@ -420,6 +420,14 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   // Terminal (high-risk — operator+ only)
   '/api/v1/terminal/execute': { POST: { resource: 'execution', action: 'execute' } },
   '/api/v1/terminal/health': { GET: { resource: 'execution', action: 'read' } },
+  '/api/v1/terminal/tech-stack': { GET: { resource: 'execution', action: 'read' } },
+  '/api/v1/terminal/worktrees': {
+    GET: { resource: 'execution', action: 'read' },
+    POST: { resource: 'execution', action: 'execute' },
+  },
+  '/api/v1/terminal/worktrees/:id': {
+    DELETE: { resource: 'execution', action: 'execute' },
+  },
   // Agents
   '/api/v1/agents/profiles': {
     GET: { resource: 'agents', action: 'read' },
@@ -666,6 +674,26 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   },
   '/api/v1/alerts/rules/:id/test': {
     POST: { resource: 'notifications', action: 'write' },
+  },
+  // Phase 92: Adaptive Learning Pipeline
+  '/api/v1/training/stream': {
+    GET: { resource: 'training', action: 'read' },
+  },
+  '/api/v1/training/quality': {
+    GET: { resource: 'training', action: 'read' },
+  },
+  '/api/v1/training/quality/score': {
+    POST: { resource: 'training', action: 'write' },
+  },
+  '/api/v1/training/computer-use/episodes': {
+    GET: { resource: 'training', action: 'read' },
+    POST: { resource: 'training', action: 'write' },
+  },
+  '/api/v1/training/computer-use/stats': {
+    GET: { resource: 'training', action: 'read' },
+  },
+  '/api/v1/training/computer-use/episodes/:id': {
+    DELETE: { resource: 'training', action: 'write' },
   },
 };
 

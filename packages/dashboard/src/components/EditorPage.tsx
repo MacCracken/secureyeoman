@@ -29,6 +29,7 @@ import {
   Wrench,
   Star,
   Eye,
+  LayoutDashboard,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -1024,6 +1025,14 @@ function StandardEditorPage() {
                 <span className="hidden sm:inline">Send to Chat</span>
                 <span className="sm:hidden">Send</span>
               </button>
+              <Link
+                to="/editor/canvas"
+                className="flex items-center gap-1.5 px-2 py-1 rounded text-xs border hover:bg-muted"
+                title="Open Canvas workspace"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Canvas Mode</span>
+              </Link>
             </div>
 
             {/* Collapsible Files Panel */}

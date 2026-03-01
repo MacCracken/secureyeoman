@@ -99,6 +99,34 @@ export class SwarmManager {
     return null;
   }
 
+  /**
+   * Append a skills catalog to the context string for a given profile.
+   * Skills are loaded from agents.profile_skills and injected as a concise
+   * "Available skills" section, matching the SoulManager pattern (Phase 89).
+   */
+  private async buildContextWithProfileSkills(
+    profileName: string,
+    context: string
+  ): Promise<string> {
+    try {
+      // Look up profile by name to get its id
+      const profile = await this.subAgentManager.getProfileByName(profileName);
+      if (!profile) return context;
+
+      const skills = await this.storage.getProfileSkills(profile.id);
+      if (skills.length === 0) return context;
+
+      const skillCatalog = skills
+        .map((s) => `- **${s.name}**: ${s.description || s.instructions.slice(0, 120)}`)
+        .join('\n');
+      const skillSection = `\n\n[Available skills for this agent]\n${skillCatalog}`;
+      return context ? `${context}${skillSection}` : skillSection;
+    } catch {
+      // Non-fatal — proceed without skill injection
+      return context;
+    }
+  }
+
   async initialize(): Promise<void> {
     await this.storage.seedBuiltinTemplates();
     this.logger.debug('SwarmManager initialized with built-in templates');
@@ -255,10 +283,17 @@ export class SwarmManager {
             complexity: roleTaskProfile.complexity,
           });
         }
+
+        // Inject profile skills into context (Phase 89)
+        const enrichedContext = await this.buildContextWithProfileSkills(
+          roleConfig.profileName,
+          context
+        );
+
         const delegation = await this.subAgentManager.delegate({
           profile: roleConfig.profileName,
           task: params.task,
-          context: context || undefined,
+          context: enrichedContext || undefined,
           maxTokenBudget: perBudget,
           modelOverride: modelOverride ?? undefined,
         });

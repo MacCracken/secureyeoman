@@ -5,8 +5,8 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
-import { statSync } from 'node:fs';
-import { resolve as resolvePath } from 'node:path';
+import { statSync, existsSync } from 'node:fs';
+import { resolve as resolvePath, join } from 'node:path';
 import { getLogger, type SecureLogger } from '../logging/logger.js';
 import { sendError } from '../utils/errors.js';
 import { buildSafeEnv } from '../utils/process-env.js';
@@ -16,6 +16,13 @@ const execAsync = promisify(exec);
 interface ExecuteCommandBody {
   command: string;
   cwd?: string;
+  allowedCommands?: string[];
+  override?: boolean;
+}
+
+interface TechStackResponse {
+  stacks: string[];
+  allowedCommands: string[];
 }
 
 interface ExecuteCommandResponse {
@@ -59,16 +66,86 @@ function isBlockedCommand(command: string): boolean {
   return false;
 }
 
+// Tech-stack detection: marker file → { stack name, allowed commands }
+const TECH_STACK_DETECTORS: Array<{
+  files: string[];
+  stack: string;
+  commands: string[];
+}> = [
+  {
+    files: ['package.json'],
+    stack: 'node',
+    commands: ['npm', 'npx', 'node', 'yarn', 'pnpm', 'bun', 'tsc', 'vitest', 'jest', 'eslint'],
+  },
+  {
+    files: ['Cargo.toml'],
+    stack: 'rust',
+    commands: ['cargo', 'rustc', 'rustfmt'],
+  },
+  {
+    files: ['pyproject.toml', 'requirements.txt'],
+    stack: 'python',
+    commands: ['python', 'python3', 'pip', 'pip3', 'pytest', 'poetry', 'uv', 'black', 'ruff'],
+  },
+  {
+    files: ['go.mod'],
+    stack: 'go',
+    commands: ['go', 'gofmt'],
+  },
+  {
+    files: ['pom.xml', 'build.gradle'],
+    stack: 'java',
+    commands: ['java', 'javac', 'mvn', 'gradle'],
+  },
+  {
+    files: ['Gemfile'],
+    stack: 'ruby',
+    commands: ['ruby', 'gem', 'bundle', 'rake'],
+  },
+  {
+    files: ['docker-compose.yml', 'docker-compose.yaml'],
+    stack: 'docker',
+    commands: ['docker', 'docker-compose', 'docker compose'],
+  },
+  {
+    files: ['.git'],
+    stack: 'git',
+    commands: ['git'],
+  },
+];
+
+const COMMON_COMMANDS = [
+  'ls', 'cat', 'head', 'tail', 'grep', 'find', 'mkdir', 'touch', 'cp', 'mv',
+  'echo', 'pwd', 'env', 'which', 'curl', 'wget', 'jq',
+];
+
 export function registerTerminalRoutes(app: FastifyInstance): void {
   const logger: SecureLogger = getLogger().child({ component: 'TerminalRoutes' });
 
   app.post(
     '/api/v1/terminal/execute',
     async (request: FastifyRequest<{ Body: ExecuteCommandBody }>, reply: FastifyReply) => {
-      const { command, cwd } = request.body;
+      const { command, cwd, allowedCommands, override } = request.body;
 
       if (!command || typeof command !== 'string') {
         return sendError(reply, 400, 'Command is required');
+      }
+
+      // Allowlist enforcement: if a workspace-scoped allowedCommands list was provided,
+      // check the base command against it before any other security checks.
+      if (allowedCommands && Array.isArray(allowedCommands)) {
+        const baseCmd = command.trim().split(/\s+/)[0] ?? '';
+        if (!allowedCommands.includes(baseCmd)) {
+          if (override !== true) {
+            return reply.code(403).send({
+              error: 'Command blocked: not in allowed set for this workspace',
+              command: baseCmd,
+              blocked: true,
+            });
+          }
+          // override === true: log audit event and continue
+          logger.warn('Terminal allowlist override', { command: baseCmd, ip: request.ip });
+        }
       }
 
       // Security: Check for blocked commands
@@ -226,6 +303,36 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
         // Return 200 with error details - this is expected for commands that fail
         return response;
       }
+    }
+  );
+
+  // Tech-stack detection endpoint
+  app.get(
+    '/api/v1/terminal/tech-stack',
+    async (request: FastifyRequest<{ Querystring: { cwd?: string } }>, _reply: FastifyReply) => {
+      const dir = request.query.cwd ?? process.cwd();
+      const stacks: string[] = [];
+      const allowedCommandsSet = new Set<string>(COMMON_COMMANDS);
+
+      for (const detector of TECH_STACK_DETECTORS) {
+        const matched = detector.files.some((file) => existsSync(join(dir, file)));
+        if (matched) {
+          stacks.push(detector.stack);
+          for (const cmd of detector.commands) {
+            allowedCommandsSet.add(cmd);
+          }
+        }
+      }
+
+      // Always include 'common' stack
+      stacks.push('common');
+
+      const response: TechStackResponse = {
+        stacks,
+        allowedCommands: Array.from(allowedCommandsSet),
+      };
+
+      return response;
     }
   );
 

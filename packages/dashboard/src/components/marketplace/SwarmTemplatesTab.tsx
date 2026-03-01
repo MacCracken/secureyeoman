@@ -1,0 +1,154 @@
+/**
+ * SwarmTemplatesTab — Community swarm template browsing, export, and import in the Marketplace.
+ */
+
+import { useState } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { Download, Upload, Users, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
+import {
+  fetchCommunitySwarmTemplates,
+  exportSwarmTemplate,
+  importSwarmTemplate,
+} from '../../api/client';
+import type { SwarmTemplate, CompatibilityCheckResult } from '../../api/client';
+
+const STRATEGY_COLORS: Record<string, string> = {
+  sequential: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  parallel:   'bg-green-500/10 text-green-600 border-green-500/20',
+  dynamic:    'bg-purple-500/10 text-purple-600 border-purple-500/20',
+};
+
+function CompatibilityBadge({ gaps }: { gaps: CompatibilityCheckResult['gaps'] }) {
+  const roles = gaps.profileRoles ?? [];
+  if (roles.length === 0) {
+    return (
+      <span className="flex items-center gap-1 text-xs text-green-600">
+        <CheckCircle className="w-3 h-3" /> All roles available
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-1 text-xs text-yellow-600">
+      <AlertTriangle className="w-3 h-3" /> Needs: {roles.join(', ')}
+    </span>
+  );
+}
+
+export function SwarmTemplatesTab() {
+  const [toast, setToast] = useState<string | null>(null);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['community-swarm-templates'],
+    queryFn: () => fetchCommunitySwarmTemplates(),
+  });
+
+  const exportMut = useMutation({
+    mutationFn: (id: string) => exportSwarmTemplate(id),
+    onSuccess: (payload) => {
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(payload.template as SwarmTemplate).name.replace(/\s+/g, '-').toLowerCase()}.swarm.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+  });
+
+  const importMut = useMutation({
+    mutationFn: async (tmpl: SwarmTemplate) => {
+      const exported = await exportSwarmTemplate(tmpl.id);
+      return importSwarmTemplate(exported);
+    },
+    onSuccess: ({ compatibility }) => {
+      const msg = compatibility.compatible
+        ? 'Swarm template imported successfully'
+        : `Imported — missing profiles: ${(compatibility.gaps.profileRoles ?? []).join(', ')}`;
+      setToast(msg);
+      setTimeout(() => setToast(null), 4000);
+    },
+    onError: (err) => {
+      setToast(err instanceof Error ? err.message : 'Import failed');
+      setTimeout(() => setToast(null), 4000);
+    },
+  });
+
+  const templates = (data?.templates ?? []) as SwarmTemplate[];
+
+  return (
+    <div className="space-y-4">
+      {toast && (
+        <div className="bg-green-500/10 text-green-600 border border-green-500/20 rounded-lg px-4 py-2 text-sm">
+          {toast}
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : !templates.length ? (
+        <div className="card p-12 text-center">
+          <Users className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+          <p className="text-muted-foreground">No community swarm templates available</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Sync the community repo to discover swarm templates
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {templates.map((tmpl: SwarmTemplate) => (
+            <div key={tmpl.id} className="card p-4 flex flex-col">
+              <div className="flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="font-medium text-sm truncate">{tmpl.name}</h3>
+                  <span
+                    className={`text-xs px-1.5 py-0.5 rounded border ${STRATEGY_COLORS[tmpl.strategy] ?? ''}`}
+                  >
+                    {tmpl.strategy}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                  {tmpl.description || 'No description'}
+                </p>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {tmpl.roles.map((r) => (
+                    <span
+                      key={r.role}
+                      className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded"
+                    >
+                      {r.role}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-3 pt-3 border-t border-border flex gap-2">
+                <button
+                  className="btn btn-ghost btn-sm flex-1 flex items-center gap-1 justify-center"
+                  onClick={() => exportMut.mutate(tmpl.id)}
+                  disabled={exportMut.isPending}
+                  title="Export as JSON"
+                >
+                  <Upload className="w-3.5 h-3.5" /> Export
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm flex-1 flex items-center gap-1 justify-center"
+                  onClick={() => importMut.mutate(tmpl)}
+                  disabled={importMut.isPending}
+                  title="Install swarm template"
+                >
+                  {importMut.isPending ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Download className="w-3.5 h-3.5" />
+                  )}
+                  Install
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

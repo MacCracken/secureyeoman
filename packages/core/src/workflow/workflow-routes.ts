@@ -2,12 +2,21 @@
  * Workflow Routes — REST API for the workflow engine.
  *
  * NOTE: /api/v1/workflows/runs/:runId is registered BEFORE /api/v1/workflows/:id
- * to avoid route parameter collision in Fastify.
+ * to avoid route parameter collision in Fastify. Similarly, /export and /import
+ * are registered before /:id for the same reason.
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { WorkflowManager } from './workflow-manager.js';
 import { sendError } from '../utils/errors.js';
+import type { WorkflowExport } from '@secureyeoman/shared';
+
+/** Known integration keywords to detect from step config strings. */
+const INTEGRATION_KEYWORDS = [
+  'github', 'gmail', 'slack', 'discord', 'telegram', 'notion',
+  'jira', 'stripe', 'twitter', 'youtube', 'spotify', 'linear',
+  'airtable', 'figma', 'gitlab', 'azure', 'aws',
+] as const;
 
 export function registerWorkflowRoutes(
   app: FastifyInstance,
@@ -86,6 +95,94 @@ export function registerWorkflowRoutes(
       }
     }
   );
+
+  // ── Export a workflow definition ──────────────────────────────
+
+  app.get(
+    '/api/v1/workflows/:id/export',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const definition = await workflowManager.getDefinition(request.params.id);
+      if (!definition) return sendError(reply, 404, 'Workflow not found');
+
+      // Infer required tools from step config toolName fields
+      const tools: string[] = [];
+      const integrations: string[] = [];
+
+      for (const step of definition.steps ?? []) {
+        const cfg = (step as any).config ?? {};
+        if (typeof cfg.toolName === 'string' && !tools.includes(cfg.toolName)) {
+          tools.push(cfg.toolName);
+        }
+        // Scan all string values in the step for integration keywords
+        const cfgStr = JSON.stringify(cfg).toLowerCase();
+        for (const kw of INTEGRATION_KEYWORDS) {
+          if (cfgStr.includes(kw) && !integrations.includes(kw)) {
+            integrations.push(kw);
+          }
+        }
+      }
+
+      const exportPayload: WorkflowExport = {
+        exportedAt: Date.now(),
+        requires: {
+          ...(tools.length > 0 && { tools }),
+          ...(integrations.length > 0 && { integrations }),
+        },
+        workflow: definition,
+      };
+
+      return reply.code(200).send(exportPayload);
+    }
+  );
+
+  // ── Import a workflow definition ──────────────────────────────
+
+  app.post(
+    '/api/v1/workflows/import',
+    async (
+      request: FastifyRequest<{ Body: { workflow: WorkflowExport; overwrite?: boolean } }>,
+      reply: FastifyReply
+    ) => {
+      const { workflow: payload } = request.body ?? {};
+      if (!payload?.workflow?.name) {
+        return sendError(reply, 400, 'Invalid export: missing workflow.name');
+      }
+      if (!Array.isArray(payload.workflow.steps)) {
+        return sendError(reply, 400, 'Invalid export: workflow.steps must be an array');
+      }
+
+      const requires = payload.requires ?? {};
+      const compatibility = { compatible: true, gaps: {} as Record<string, string[]> };
+      // Warn about missing integrations (informational — we don't block import)
+      if (requires.integrations?.length) {
+        compatibility.gaps.integrations = requires.integrations;
+      }
+      if (requires.tools?.length) {
+        compatibility.gaps.tools = requires.tools;
+      }
+      compatibility.compatible =
+        Object.keys(compatibility.gaps).length === 0;
+
+      try {
+        const definition = await workflowManager.createDefinition({
+          name: payload.workflow.name,
+          description: payload.workflow.description ?? '',
+          steps: (payload.workflow.steps ?? []) as any,
+          edges: (payload.workflow.edges ?? []) as any,
+          triggers: (payload.workflow.triggers ?? []) as any,
+          isEnabled: true,
+          version: 1,
+          createdBy: 'imported',
+          autonomyLevel: payload.workflow.autonomyLevel ?? 'L2',
+        } as any);
+        return reply.code(201).send({ definition, compatibility });
+      } catch (err) {
+        return sendError(reply, 400, err instanceof Error ? err.message : 'Import failed');
+      }
+    }
+  );
+
+  // ── Get a single workflow ─────────────────────────────────────
 
   app.get(
     '/api/v1/workflows/:id',

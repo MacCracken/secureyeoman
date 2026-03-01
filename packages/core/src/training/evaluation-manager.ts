@@ -35,6 +35,12 @@ export interface EvalConfig {
   maxSamples?: number;
   /** Callable that takes a prompt and returns the model's response. */
   modelFn: (prompt: string) => Promise<string>;
+  /** When true, compute semantic similarity via Ollama embeddings. */
+  semanticSimilarity?: boolean;
+  /** Ollama embeddings endpoint, e.g. http://localhost:11434 */
+  ollamaEmbedUrl?: string;
+  /** Optional sandbox to execute tool calls and check outcome correctness. */
+  sandboxFn?: (toolName: string, args: Record<string, unknown>) => Promise<unknown>;
 }
 
 export interface EvalResult {
@@ -43,7 +49,10 @@ export interface EvalResult {
     exact_match: number;
     char_similarity: number;
     sample_count: number;
-    [key: string]: number;
+    tool_name_accuracy: number;
+    tool_arg_match: number;
+    outcome_correctness?: number;
+    semantic_similarity?: number;
   };
   completedAt: number;
 }
@@ -89,6 +98,140 @@ async function loadSamplesFromDataset(
   return samples;
 }
 
+// ── Tool-call evaluation helpers ──────────────────────────────────────────────
+
+/**
+ * Parse a JSON tool-call block from response text.
+ * Supports ```json {...} ``` fenced blocks and bare JSON objects.
+ */
+export function parseToolCall(
+  response: string
+): { name: string; args: Record<string, unknown> } | null {
+  // Try fenced code block first
+  const fenceMatch = response.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+  const raw = fenceMatch ? fenceMatch[1]! : response.trim();
+
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (typeof parsed.name === 'string') {
+      return {
+        name: parsed.name,
+        args: (parsed.args ?? parsed.arguments ?? parsed.parameters ?? {}) as Record<
+          string,
+          unknown
+        >,
+      };
+    }
+    // Also support {tool: ..., input: ...}
+    if (typeof parsed.tool === 'string') {
+      return {
+        name: parsed.tool,
+        args: (parsed.input ?? parsed.arguments ?? {}) as Record<string, unknown>,
+      };
+    }
+  } catch {
+    // not JSON
+  }
+  return null;
+}
+
+/** Fraction of responses where the selected tool name matches the gold. */
+export function computeToolNameAccuracy(responses: string[], goldResponses: string[]): number {
+  if (responses.length === 0) return 0;
+  let correct = 0;
+  for (let i = 0; i < responses.length; i++) {
+    const pred = parseToolCall(responses[i]!);
+    const gold = parseToolCall(goldResponses[i]!);
+    if (pred && gold && pred.name === gold.name) correct++;
+  }
+  return correct / responses.length;
+}
+
+/** Average per-argument precision across all response pairs. */
+export function computeToolArgMatch(responses: string[], goldResponses: string[]): number {
+  if (responses.length === 0) return 0;
+  let totalPrecision = 0;
+  let counted = 0;
+  for (let i = 0; i < responses.length; i++) {
+    const pred = parseToolCall(responses[i]!);
+    const gold = parseToolCall(goldResponses[i]!);
+    if (!pred || !gold) continue;
+    const goldKeys = Object.keys(gold.args);
+    if (goldKeys.length === 0) {
+      totalPrecision += 1; // no args = trivially correct
+      counted++;
+      continue;
+    }
+    let matched = 0;
+    for (const key of goldKeys) {
+      if (key in pred.args && String(pred.args[key]) === String(gold.args[key])) {
+        matched++;
+      }
+    }
+    totalPrecision += matched / goldKeys.length;
+    counted++;
+  }
+  return counted > 0 ? totalPrecision / counted : 0;
+}
+
+/** Cosine similarity between two embedding vectors. */
+export function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length !== b.length || a.length === 0) return 0;
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i]! * b[i]!;
+    normA += a[i]! * a[i]!;
+    normB += b[i]! * b[i]!;
+  }
+  const denom = Math.sqrt(normA) * Math.sqrt(normB);
+  return denom === 0 ? 0 : dot / denom;
+}
+
+/**
+ * Fetch Ollama embeddings and return cosine similarity averaged over all pairs.
+ * Silently returns 0 if Ollama is unreachable.
+ */
+export async function computeSemanticSimilarity(
+  responses: string[],
+  goldResponses: string[],
+  ollamaUrl: string
+): Promise<number> {
+  if (responses.length === 0) return 0;
+  const embedUrl = `${ollamaUrl.replace(/\/$/, '')}/api/embeddings`;
+  let totalSim = 0;
+  let counted = 0;
+
+  for (let i = 0; i < responses.length; i++) {
+    try {
+      const [respEmbed, goldEmbed] = await Promise.all([
+        fetchEmbedding(embedUrl, responses[i]!),
+        fetchEmbedding(embedUrl, goldResponses[i]!),
+      ]);
+      if (respEmbed && goldEmbed) {
+        totalSim += cosineSimilarity(respEmbed, goldEmbed);
+        counted++;
+      }
+    } catch {
+      // skip on network error
+    }
+  }
+
+  return counted > 0 ? totalSim / counted : 0;
+}
+
+async function fetchEmbedding(url: string, text: string): Promise<number[] | null> {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'nomic-embed-text', prompt: text }),
+  });
+  if (!res.ok) return null;
+  const data = (await res.json()) as { embedding?: number[] };
+  return data.embedding ?? null;
+}
+
 // ── Manager ───────────────────────────────────────────────────────────────────
 
 export class EvaluationManager {
@@ -111,6 +254,10 @@ export class EvaluationManager {
 
     let exactMatches = 0;
     let totalSimilarity = 0;
+    const allResponses: string[] = [];
+    const allGolds: string[] = [];
+    let outcomeCorrect = 0;
+    let outcomeCounted = 0;
 
     for (const sample of samples) {
       let response = '';
@@ -129,16 +276,62 @@ export class EvaluationManager {
 
       if (normalizedResponse === normalizedGold) exactMatches++;
       totalSimilarity += charJaccard(normalizedResponse, normalizedGold);
+      allResponses.push(response);
+      allGolds.push(sample.gold);
+
+      // Outcome correctness via sandbox
+      if (config.sandboxFn) {
+        const toolCall = parseToolCall(response);
+        const goldCall = parseToolCall(sample.gold);
+        if (toolCall && goldCall) {
+          try {
+            const [actual, expected] = await Promise.all([
+              config.sandboxFn(toolCall.name, toolCall.args),
+              config.sandboxFn(goldCall.name, goldCall.args),
+            ]);
+            if (JSON.stringify(actual) === JSON.stringify(expected)) outcomeCorrect++;
+            outcomeCounted++;
+          } catch {
+            // sandbox error; skip
+          }
+        }
+      }
     }
 
-    const sampleCount = samples.length;
+    const sampleCount = allResponses.length;
+
+    // Factored tool-call metrics
+    const toolNameAccuracy = computeToolNameAccuracy(allResponses, allGolds);
+    const toolArgMatch = computeToolArgMatch(allResponses, allGolds);
+
+    // Semantic similarity (optional)
+    let semanticSim: number | undefined;
+    if (config.semanticSimilarity && config.ollamaEmbedUrl) {
+      semanticSim = await computeSemanticSimilarity(
+        allResponses,
+        allGolds,
+        config.ollamaEmbedUrl
+      );
+    }
+
+    const metrics: EvalResult['metrics'] = {
+      exact_match: sampleCount > 0 ? exactMatches / sampleCount : 0,
+      char_similarity: sampleCount > 0 ? totalSimilarity / sampleCount : 0,
+      sample_count: sampleCount,
+      tool_name_accuracy: toolNameAccuracy,
+      tool_arg_match: toolArgMatch,
+    };
+
+    if (outcomeCounted > 0) {
+      metrics.outcome_correctness = outcomeCorrect / outcomeCounted;
+    }
+    if (semanticSim !== undefined) {
+      metrics.semantic_similarity = semanticSim;
+    }
+
     const result: EvalResult = {
       evalId,
-      metrics: {
-        exact_match: sampleCount > 0 ? exactMatches / sampleCount : 0,
-        char_similarity: sampleCount > 0 ? totalSimilarity / sampleCount : 0,
-        sample_count: sampleCount,
-      },
+      metrics,
       completedAt: Date.now(),
     };
 

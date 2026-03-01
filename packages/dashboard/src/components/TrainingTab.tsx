@@ -7,7 +7,7 @@
  *   Fine-tune  — LoRA/QLoRA fine-tuning via Docker sidecar
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Download,
@@ -25,7 +25,24 @@ import {
   Clock,
   Cpu,
   Layers,
+  Activity,
+  Monitor,
+  Zap,
 } from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+} from 'recharts';
 import {
   fetchTrainingStats,
   exportTrainingDataset,
@@ -37,11 +54,20 @@ import {
   createFinetuneJob,
   deleteFinetuneJob,
   registerFinetuneAdapter,
+  fetchTrainingStream,
+  fetchQualityScores,
+  triggerQualityScoring,
+  fetchComputerUseEpisodes,
+  fetchComputerUseStats,
+  deleteComputerUseEpisode,
   type DistillationJob,
   type FinetuneJob,
+  type QualityScore,
+  type ComputerUseEpisode,
+  type SkillStat,
 } from '../api/client';
 
-type TabType = 'export' | 'distillation' | 'finetune';
+type TabType = 'export' | 'distillation' | 'finetune' | 'live' | 'computer-use';
 type ExportFormat = 'sharegpt' | 'instruction' | 'raw';
 
 const FORMAT_INFO: Record<
@@ -323,6 +349,10 @@ function DistillationTab() {
     exportFormat: 'sharegpt' as 'sharegpt' | 'instruction',
     maxSamples: '500',
     outputPath: '/tmp/distillation-output.jsonl',
+    priorityMode: 'uniform' as 'failure-first' | 'uniform' | 'success-first',
+    curriculumMode: false,
+    counterfactualMode: false,
+    maxCounterfactualSamples: '50',
   });
 
   const {
@@ -365,6 +395,10 @@ function DistillationTab() {
       exportFormat: form.exportFormat,
       maxSamples: Number(form.maxSamples) || 500,
       outputPath: form.outputPath,
+      priorityMode: form.priorityMode,
+      curriculumMode: form.curriculumMode,
+      counterfactualMode: form.counterfactualMode,
+      maxCounterfactualSamples: Number(form.maxCounterfactualSamples) || 50,
     });
   };
 
@@ -472,6 +506,60 @@ function DistillationTab() {
                 placeholder="/data/distillation.jsonl"
               />
             </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Priority Mode</label>
+              <select
+                value={form.priorityMode}
+                onChange={(e) => {
+                  setForm((f) => ({
+                    ...f,
+                    priorityMode: e.target.value as 'failure-first' | 'uniform' | 'success-first',
+                  }));
+                }}
+                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+              >
+                <option value="uniform">Uniform</option>
+                <option value="failure-first">Failure-first</option>
+                <option value="success-first">Success-first</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-2 pt-4">
+              <label className="flex items-center gap-2 text-xs cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.curriculumMode}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, curriculumMode: e.target.checked }));
+                  }}
+                />
+                Curriculum mode
+              </label>
+              <label className="flex items-center gap-2 text-xs cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.counterfactualMode}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, counterfactualMode: e.target.checked }));
+                  }}
+                />
+                Counterfactual mode
+              </label>
+            </div>
+            {form.counterfactualMode && (
+              <div>
+                <label className="text-xs text-muted-foreground">Max Counterfactual Samples</label>
+                <input
+                  type="number"
+                  value={form.maxCounterfactualSamples}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, maxCounterfactualSamples: e.target.value }));
+                  }}
+                  min={1}
+                  max={500}
+                  className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+                />
+              </div>
+            )}
           </div>
           {createMut.isError && (
             <p className="text-xs text-destructive">
@@ -946,6 +1034,8 @@ export function TrainingTab() {
     { id: 'export', label: 'Export', icon: <Download className="w-4 h-4" /> },
     { id: 'distillation', label: 'Distillation', icon: <Brain className="w-4 h-4" /> },
     { id: 'finetune', label: 'Fine-tune', icon: <Layers className="w-4 h-4" /> },
+    { id: 'live', label: 'Live', icon: <Activity className="w-4 h-4" /> },
+    { id: 'computer-use', label: 'Computer Use', icon: <Monitor className="w-4 h-4" /> },
   ];
 
   return (
@@ -979,6 +1069,393 @@ export function TrainingTab() {
       {activeTab === 'export' && <ExportTab />}
       {activeTab === 'distillation' && <DistillationTab />}
       {activeTab === 'finetune' && <FinetuneTab />}
+      {activeTab === 'live' && <LiveTab />}
+      {activeTab === 'computer-use' && <ComputerUseTab />}
+    </div>
+  );
+}
+
+// ── Live Tab (Phase 92) ───────────────────────────────────────────────────────
+
+interface StreamPoint {
+  ts: number;
+  value: number;
+}
+
+function LiveTab() {
+  const [lossSeries, setLossSeries] = useState<StreamPoint[]>([]);
+  const [throughput, setThroughput] = useState<number>(0);
+  const [agreement, setAgreement] = useState<number>(0);
+  const [rewardSeries, setRewardSeries] = useState<StreamPoint[]>([]);
+  const esRef = useRef<EventSource | null>(null);
+
+  const {
+    data: qualityData,
+    isLoading: qualityLoading,
+    refetch: refetchQuality,
+  } = useQuery({
+    queryKey: ['training-quality'],
+    queryFn: () => fetchQualityScores(50),
+    staleTime: 30_000,
+  });
+
+  const scoreMut = useMutation({
+    mutationFn: triggerQualityScoring,
+    onSuccess: () => void refetchQuality(),
+  });
+
+  useEffect(() => {
+    const es = fetchTrainingStream();
+    esRef.current = es;
+
+    es.addEventListener('message', (evt: MessageEvent<string>) => {
+      try {
+        const data = JSON.parse(evt.data) as {
+          type: string;
+          value: number;
+          ts: number;
+        };
+        const point: StreamPoint = { ts: data.ts, value: data.value };
+        if (data.type === 'loss') {
+          setLossSeries((prev) => [...prev.slice(-199), point]);
+        } else if (data.type === 'throughput') {
+          setThroughput(data.value);
+        } else if (data.type === 'agreement') {
+          setAgreement(data.value);
+        } else if (data.type === 'reward') {
+          setRewardSeries((prev) => [...prev.slice(-199), point]);
+        }
+      } catch {
+        // skip malformed
+      }
+    });
+
+    return () => {
+      es.close();
+    };
+  }, []);
+
+  const qualityConvs = qualityData?.conversations ?? [];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold">Live Training Stream</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Real-time telemetry from active distillation and fine-tuning jobs.
+        </p>
+      </div>
+
+      {/* KPI row */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="rounded-lg border p-4">
+          <div className="text-xs text-muted-foreground flex items-center gap-1">
+            <Zap className="w-3 h-3" /> Throughput
+          </div>
+          <div className="text-2xl font-semibold mt-1">{throughput.toFixed(1)}</div>
+          <div className="text-xs text-muted-foreground">samples / min</div>
+        </div>
+        <div className="rounded-lg border p-4">
+          <div className="text-xs text-muted-foreground flex items-center gap-1">
+            <Activity className="w-3 h-3" /> Agreement Rate
+          </div>
+          <div className="text-2xl font-semibold mt-1">{(agreement * 100).toFixed(1)}%</div>
+          <div className="text-xs text-muted-foreground">avg char-Jaccard</div>
+        </div>
+      </div>
+
+      {/* Loss chart */}
+      {lossSeries.length > 0 && (
+        <div>
+          <h3 className="text-sm font-medium mb-2">Loss</h3>
+          <ResponsiveContainer width="100%" height={160}>
+            <LineChart data={lossSeries}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="ts" hide />
+              <YAxis domain={['auto', 'auto']} width={40} />
+              <Tooltip formatter={(v: number) => v.toFixed(4)} />
+              <Line
+                type="monotone"
+                dataKey="value"
+                dot={false}
+                strokeWidth={2}
+                stroke="var(--color-primary, #6366f1)"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Reward trend */}
+      {rewardSeries.length > 0 && (
+        <div>
+          <h3 className="text-sm font-medium mb-2">Reward Trend</h3>
+          <ResponsiveContainer width="100%" height={140}>
+            <LineChart data={rewardSeries}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="ts" hide />
+              <YAxis domain={['auto', 'auto']} width={40} />
+              <Tooltip formatter={(v: number) => v.toFixed(3)} />
+              <Line
+                type="monotone"
+                dataKey="value"
+                dot={false}
+                strokeWidth={2}
+                stroke="var(--color-success, #22c55e)"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Quality heatmap */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-medium">Conversation Quality Coverage</h3>
+          <button
+            onClick={() => scoreMut.mutate()}
+            disabled={scoreMut.isPending}
+            className="btn btn-ghost text-xs flex items-center gap-1"
+          >
+            {scoreMut.isPending ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <Activity className="w-3 h-3" />
+            )}
+            Score now
+          </button>
+        </div>
+        {qualityLoading ? (
+          <div className="text-sm text-muted-foreground">Loading quality scores…</div>
+        ) : qualityConvs.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No quality scores yet. Click "Score now".</p>
+        ) : (
+          <div className="flex flex-wrap gap-1">
+            {qualityConvs.map((q: QualityScore) => {
+              const pct = q.qualityScore;
+              // Red = 0.0 (needs training), green = 1.0 (well covered)
+              const hue = Math.round(pct * 120); // 0=red, 120=green
+              return (
+                <div
+                  key={q.conversationId}
+                  title={`${q.conversationId.slice(0, 8)} — score: ${pct.toFixed(2)} (${q.signalSource})`}
+                  style={{ backgroundColor: `hsl(${hue}, 60%, 45%)` }}
+                  className="w-4 h-4 rounded-sm cursor-default"
+                />
+              );
+            })}
+          </div>
+        )}
+        {scoreMut.data && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Scored {scoreMut.data.scored} conversation(s)
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Computer Use Tab (Phase 92) ───────────────────────────────────────────────
+
+function ComputerUseTab() {
+  const queryClient = useQueryClient();
+  const [selectedSession, setSelectedSession] = useState<string>('');
+
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ['cu-stats'],
+    queryFn: fetchComputerUseStats,
+    staleTime: 30_000,
+  });
+
+  const { data: episodes = [], isLoading: epsLoading } = useQuery({
+    queryKey: ['cu-episodes', selectedSession],
+    queryFn: () =>
+      fetchComputerUseEpisodes(selectedSession ? { sessionId: selectedSession, limit: 50 } : { limit: 50 }),
+    staleTime: 30_000,
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: deleteComputerUseEpisode,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['cu-episodes'] });
+      void queryClient.invalidateQueries({ queryKey: ['cu-stats'] });
+    },
+  });
+
+  const skillBreakdown: SkillStat[] = stats?.skillBreakdown ?? [];
+  const totals = stats?.totals ?? { totalEpisodes: 0, avgReward: 0 };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold">Computer Use Episodes</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          State→action→reward tuples recorded by the Tauri desktop client.
+        </p>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="rounded-lg border p-4">
+          <div className="text-xs text-muted-foreground">Total Episodes</div>
+          <div className="text-2xl font-semibold mt-1">
+            {statsLoading ? '…' : totals.totalEpisodes}
+          </div>
+        </div>
+        <div className="rounded-lg border p-4">
+          <div className="text-xs text-muted-foreground">Avg Reward</div>
+          <div className="text-2xl font-semibold mt-1">
+            {statsLoading ? '…' : totals.avgReward.toFixed(3)}
+          </div>
+        </div>
+        <div className="rounded-lg border p-4">
+          <div className="text-xs text-muted-foreground">Skills</div>
+          <div className="text-2xl font-semibold mt-1">
+            {statsLoading ? '…' : skillBreakdown.length}
+          </div>
+        </div>
+      </div>
+
+      {/* Skill breakdown table */}
+      {skillBreakdown.length > 0 && (
+        <div>
+          <h3 className="text-sm font-medium mb-2">Skill Breakdown</h3>
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="text-left px-3 py-2 font-medium">Skill</th>
+                  <th className="text-right px-3 py-2 font-medium">Episodes</th>
+                  <th className="text-right px-3 py-2 font-medium">Success %</th>
+                  <th className="text-right px-3 py-2 font-medium">Avg Reward</th>
+                </tr>
+              </thead>
+              <tbody>
+                {skillBreakdown.map((s) => (
+                  <tr
+                    key={s.skillName}
+                    className="border-t cursor-pointer hover:bg-muted/30"
+                    onClick={() => setSelectedSession('')}
+                  >
+                    <td className="px-3 py-2 font-mono text-xs">{s.skillName}</td>
+                    <td className="px-3 py-2 text-right">{s.episodeCount}</td>
+                    <td className="px-3 py-2 text-right">{(s.successRate * 100).toFixed(1)}%</td>
+                    <td className="px-3 py-2 text-right">{s.avgReward.toFixed(3)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Session replay */}
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <h3 className="text-sm font-medium">Session Replay</h3>
+          <input
+            type="text"
+            value={selectedSession}
+            onChange={(e) => setSelectedSession(e.target.value)}
+            placeholder="Session ID…"
+            className="px-2 py-1 text-xs border rounded bg-background flex-1 max-w-xs"
+          />
+        </div>
+
+        {epsLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin" /> Loading…
+          </div>
+        ) : episodes.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No episodes found.</p>
+        ) : (
+          <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+            {episodes.map((ep: ComputerUseEpisode) => (
+              <div key={ep.id} className="rounded-lg border p-3 flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-mono bg-muted px-1 rounded">{ep.actionType}</span>
+                    <span className="text-xs text-muted-foreground truncate">{ep.actionTarget}</span>
+                  </div>
+                  {ep.actionValue && (
+                    <div className="text-xs text-muted-foreground mt-0.5 truncate">{ep.actionValue}</div>
+                  )}
+                  <div className="flex items-center gap-2 mt-1">
+                    <span
+                      className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
+                        ep.reward > 0
+                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                          : ep.reward < 0
+                          ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                          : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      r={ep.reward.toFixed(2)}
+                    </span>
+                    {ep.done && (
+                      <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                        done
+                      </span>
+                    )}
+                    <span className="text-xs text-muted-foreground">{ep.skillName}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => deleteMut.mutate(ep.id)}
+                  disabled={deleteMut.isPending}
+                  className="text-muted-foreground hover:text-destructive p-1"
+                  title="Delete episode"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Eval Radar Card (Phase 92) ────────────────────────────────────────────────
+
+export function EvalResultRadarCard({
+  metrics,
+}: {
+  metrics: {
+    tool_name_accuracy?: number;
+    tool_arg_match?: number;
+    semantic_similarity?: number;
+    char_similarity?: number;
+  };
+}) {
+  const data = [
+    { subject: 'Tool Name', value: (metrics.tool_name_accuracy ?? 0) * 100 },
+    { subject: 'Tool Args', value: (metrics.tool_arg_match ?? 0) * 100 },
+    { subject: 'Semantic Sim', value: (metrics.semantic_similarity ?? 0) * 100 },
+    { subject: 'Char Sim', value: (metrics.char_similarity ?? 0) * 100 },
+  ];
+
+  return (
+    <div className="rounded-lg border p-4">
+      <h3 className="text-sm font-medium mb-3">Evaluation Metrics</h3>
+      <ResponsiveContainer width="100%" height={220}>
+        <RadarChart data={data}>
+          <PolarGrid />
+          <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11 }} />
+          <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9 }} />
+          <Radar
+            name="Score"
+            dataKey="value"
+            fill="var(--color-primary, #6366f1)"
+            fillOpacity={0.3}
+            stroke="var(--color-primary, #6366f1)"
+            strokeWidth={2}
+          />
+          <Tooltip formatter={(v: number) => `${v.toFixed(1)}%`} />
+        </RadarChart>
+      </ResponsiveContainer>
     </div>
   );
 }

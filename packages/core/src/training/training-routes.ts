@@ -17,6 +17,8 @@ import { sendError } from '../utils/errors.js';
 import type { DistillationJobConfig, TeacherClient } from './distillation-manager.js';
 import type { FinetuneJobConfig } from './finetune-manager.js';
 import type { AIMessage } from '@secureyeoman/shared';
+import { trainingStream } from './training-stream.js';
+import type { ListEpisodesOptions } from './computer-use-manager.js';
 
 export interface TrainingRoutesOptions {
   secureYeoman: SecureYeoman;
@@ -25,7 +27,7 @@ export interface TrainingRoutesOptions {
 type ExportFormat = 'sharegpt' | 'instruction' | 'raw';
 
 interface ExportBody {
-  format?: ExportFormat;
+  format?: ExportFormat | 'computer_use';
   from?: number;
   to?: number;
   personalityIds?: string[];
@@ -101,13 +103,36 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
   app.post(
     '/api/v1/training/export',
     async (request: FastifyRequest<{ Body: ExportBody }>, reply: FastifyReply) => {
+      const body = request.body ?? {};
+
+      // Computer-use export — delegate to ComputerUseManager
+      if (body.format === 'computer_use') {
+        const cuManager = secureYeoman.getComputerUseManager();
+        if (!cuManager) return sendError(reply, 503, 'Computer-use manager not available');
+
+        const filename = `computer-use-export-${new Date().toISOString().slice(0, 10)}.jsonl`;
+        reply.raw.setHeader('Content-Type', 'application/x-ndjson');
+        reply.raw.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        reply.raw.writeHead(200);
+
+        try {
+          for await (const line of cuManager.exportEpisodes('computer_use')) {
+            reply.raw.write(line);
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Export error';
+          reply.raw.write(`{"error":${JSON.stringify(msg)}}\n`);
+        }
+        reply.raw.end();
+        return reply;
+      }
+
       const conversationStorage = secureYeoman.getConversationStorage();
       if (!conversationStorage) {
         return sendError(reply, 503, 'Conversation storage not available');
       }
 
-      const body = request.body ?? {};
-      const format: ExportFormat = body.format ?? 'sharegpt';
+      const format: ExportFormat = (body.format as ExportFormat) ?? 'sharegpt';
       const from = body.from;
       const to = body.to;
       const personalityIds = body.personalityIds;
@@ -582,6 +607,192 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       const record = await lineage.getByRunId(request.params.runId);
       if (!record) return sendError(reply, 404, 'Lineage record not found');
       return record;
+    }
+  );
+
+  // ── Phase 92: SSE training stream ─────────────────────────────────────────
+
+  /**
+   * GET /api/v1/training/stream
+   * SSE endpoint streaming live training telemetry events.
+   */
+  app.get('/api/v1/training/stream', async (request: FastifyRequest, reply: FastifyReply) => {
+    reply.raw.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    });
+
+    function onEvent(event: unknown) {
+      reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);
+    }
+
+    trainingStream.on('event', onEvent);
+
+    request.socket.on('close', () => {
+      trainingStream.off('event', onEvent);
+    });
+
+    // Keep connection open — the client will close it
+    await new Promise<void>((resolve) => {
+      request.socket.on('close', resolve);
+      request.socket.on('error', resolve);
+    });
+
+    return reply;
+  });
+
+  // ── Phase 92: Conversation quality endpoints ───────────────────────────────
+
+  /**
+   * GET /api/v1/training/quality
+   * Return quality scores for conversations.
+   */
+  app.get(
+    '/api/v1/training/quality',
+    async (
+      request: FastifyRequest<{ Querystring: { limit?: string } }>,
+      reply: FastifyReply
+    ) => {
+      const scorer = secureYeoman.getConversationQualityScorer();
+      if (!scorer) return sendError(reply, 503, 'Quality scorer not available');
+
+      const pool = secureYeoman.getPool?.();
+      if (!pool) return sendError(reply, 503, 'Database pool not available');
+
+      const limit = Math.min(parseInt(request.query.limit ?? '100', 10) || 100, 1000);
+      const { rows } = await pool.query<Record<string, unknown>>(
+        `SELECT conversation_id, quality_score, signal_source, scored_at
+         FROM   training.conversation_quality
+         ORDER  BY quality_score ASC
+         LIMIT  $1`,
+        [limit]
+      );
+
+      return {
+        conversations: rows.map((r) => ({
+          conversationId: r.conversation_id,
+          qualityScore: r.quality_score,
+          signalSource: r.signal_source,
+          scoredAt: r.scored_at instanceof Date ? r.scored_at.toISOString() : String(r.scored_at),
+        })),
+      };
+    }
+  );
+
+  /**
+   * POST /api/v1/training/quality/score
+   * Manually trigger a scoring run for unscored conversations.
+   */
+  app.post('/api/v1/training/quality/score', async (_request: FastifyRequest, reply: FastifyReply) => {
+    const scorer = secureYeoman.getConversationQualityScorer();
+    if (!scorer) return sendError(reply, 503, 'Quality scorer not available');
+
+    const pool = secureYeoman.getPool?.();
+    if (!pool) return sendError(reply, 503, 'Database pool not available');
+
+    const scored = await scorer.scoreNewConversations(pool);
+    return { scored };
+  });
+
+  // ── Phase 92: Computer-use episode endpoints ───────────────────────────────
+
+  /**
+   * POST /api/v1/training/computer-use/episodes
+   * Record a new computer-use episode.
+   */
+  app.post(
+    '/api/v1/training/computer-use/episodes',
+    async (request: FastifyRequest<{ Body: Record<string, unknown> }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getComputerUseManager();
+      if (!manager) return sendError(reply, 503, 'Computer-use manager not available');
+
+      const body = request.body ?? {};
+      if (!body.sessionId || typeof body.sessionId !== 'string')
+        return sendError(reply, 400, 'sessionId is required');
+      if (!body.skillName || typeof body.skillName !== 'string')
+        return sendError(reply, 400, 'skillName is required');
+      if (!body.actionType || typeof body.actionType !== 'string')
+        return sendError(reply, 400, 'actionType is required');
+
+      const ep = await manager.recordEpisode({
+        sessionId: body.sessionId,
+        skillName: body.skillName,
+        stateEncoding: (body.stateEncoding as Record<string, unknown>) ?? {},
+        actionType: body.actionType,
+        actionTarget: (body.actionTarget as string) ?? '',
+        actionValue: (body.actionValue as string) ?? '',
+        reward: typeof body.reward === 'number' ? body.reward : 0,
+        done: body.done === true,
+      });
+
+      // Broadcast reward event to training stream
+      trainingStream.broadcast({ type: 'reward', value: ep.reward, ts: Date.now() });
+
+      return reply.status(201).send(ep);
+    }
+  );
+
+  /**
+   * GET /api/v1/training/computer-use/episodes
+   * List computer-use episodes with optional filters.
+   */
+  app.get(
+    '/api/v1/training/computer-use/episodes',
+    async (
+      request: FastifyRequest<{
+        Querystring: { skillName?: string; sessionId?: string; limit?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getComputerUseManager();
+      if (!manager) return sendError(reply, 503, 'Computer-use manager not available');
+
+      const opts: ListEpisodesOptions = {
+        skillName: request.query.skillName,
+        sessionId: request.query.sessionId,
+        limit: request.query.limit ? parseInt(request.query.limit, 10) : 100,
+      };
+
+      const episodes = await manager.listEpisodes(opts);
+      return { episodes };
+    }
+  );
+
+  /**
+   * GET /api/v1/training/computer-use/stats
+   * Skill breakdown and session totals.
+   */
+  app.get(
+    '/api/v1/training/computer-use/stats',
+    async (_request: FastifyRequest, reply: FastifyReply) => {
+      const manager = secureYeoman.getComputerUseManager();
+      if (!manager) return sendError(reply, 503, 'Computer-use manager not available');
+
+      const skillBreakdown = await manager.getSkillBreakdown();
+      const totalEpisodes = skillBreakdown.reduce((s, r) => s + r.episodeCount, 0);
+      const avgReward =
+        totalEpisodes > 0
+          ? skillBreakdown.reduce((s, r) => s + r.avgReward * r.episodeCount, 0) / totalEpisodes
+          : 0;
+
+      return { skillBreakdown, totals: { totalEpisodes, avgReward } };
+    }
+  );
+
+  /**
+   * DELETE /api/v1/training/computer-use/episodes/:id
+   * Delete a computer-use episode.
+   */
+  app.delete(
+    '/api/v1/training/computer-use/episodes/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getComputerUseManager();
+      if (!manager) return sendError(reply, 503, 'Computer-use manager not available');
+
+      const deleted = await manager.deleteEpisode(request.params.id);
+      if (!deleted) return sendError(reply, 404, 'Episode not found');
+      return reply.status(204).send();
     }
   );
 }
