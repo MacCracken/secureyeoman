@@ -1,10 +1,10 @@
 /**
- * SwarmTemplatesTab — Community swarm template browsing, export, and import in the Marketplace.
+ * SwarmTemplatesTab — Swarm template browsing, export, and import (Marketplace + Community).
  */
 
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Download, Upload, Users, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Download, Upload, Users, Loader2, CheckCircle, AlertTriangle, Search } from 'lucide-react';
 import {
   fetchCommunitySwarmTemplates,
   exportSwarmTemplate,
@@ -36,6 +36,7 @@ function CompatibilityBadge({ gaps }: { gaps: CompatibilityCheckResult['gaps'] }
 
 export function SwarmTemplatesTab({ source }: { source?: string } = {}) {
   const [toast, setToast] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['community-swarm-templates', source],
@@ -73,11 +74,20 @@ export function SwarmTemplatesTab({ source }: { source?: string } = {}) {
     },
   });
 
-  const allTemplates = (data?.templates ?? []) as SwarmTemplate[];
-  const templates = allTemplates.filter((t) => {
+  const sourceFiltered = ((data?.templates ?? []) as SwarmTemplate[]).filter((t) => {
     if (source === 'community') return !t.isBuiltin;
     if (source === 'builtin') return t.isBuiltin;
     return true;
+  });
+
+  const templates = sourceFiltered.filter((t) => {
+    if (!query) return true;
+    const q = query.toLowerCase();
+    return (
+      t.name.toLowerCase().includes(q) ||
+      t.description.toLowerCase().includes(q) ||
+      t.roles.some((r) => r.role.toLowerCase().includes(q))
+    );
   });
 
   return (
@@ -88,11 +98,22 @@ export function SwarmTemplatesTab({ source }: { source?: string } = {}) {
         </div>
       )}
 
+      {/* Search */}
+      <div className="relative max-w-lg">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+          placeholder={`Search ${source === 'community' ? 'community ' : ''}swarm templates…`}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
       {isLoading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
-      ) : !templates.length ? (
+      ) : !sourceFiltered.length ? (
         <div className="card p-12 text-center">
           <Users className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
           <p className="text-muted-foreground">
@@ -105,6 +126,10 @@ export function SwarmTemplatesTab({ source }: { source?: string } = {}) {
               ? 'Sync the community repo to discover swarm templates'
               : 'No swarm template definitions found'}
           </p>
+        </div>
+      ) : !templates.length ? (
+        <div className="card p-8 text-center">
+          <p className="text-sm text-muted-foreground">No templates match &ldquo;{query}&rdquo;</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

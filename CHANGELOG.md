@@ -1,4 +1,4 @@
-## [2026.3.1g] — 2026-03-01
+## [2026.3.1] — 2026-03-01
 
 ### Editor Unification & Canvas Re-gate (ADR 173)
 
@@ -15,8 +15,6 @@
 
 ---
 
-## [2026.3.1f] — 2026-03-01
-
 ### Dual Licensing — AGPL-3.0 + Commercial (ADR 171)
 
 - **License change**: Project relicensed from MIT to **AGPL-3.0** (open-source) + **proprietary commercial license** (`LICENSE.commercial`). Closes the SaaS loophole — anyone offering SecureYeoman as a hosted service must publish modifications or purchase a commercial license.
@@ -32,8 +30,6 @@
 - **ADR 171** (`docs/adr/171-dual-licensing.md`). **Guide** `docs/guides/licensing.md`.
 
 ---
-
-## [2026.3.1e] — 2026-03-01
 
 ### Phase 89 — Marketplace Shareables (ADR 172)
 
@@ -52,8 +48,6 @@
 - **ADR 172** (`docs/adr/172-marketplace-shareables.md`). **Guide** `docs/guides/shareables.md`.
 
 ---
-
-## [2026.3.1d] — 2026-03-01
 
 ### Phase 78b — Canvas Workspace: Infinite Desktop (ADR 171)
 
@@ -78,8 +72,6 @@
 
 ---
 
-## [2026.3.1c] — 2026-03-01
-
 ### Phase 92 — Adaptive Learning Pipeline (ADR 170)
 
 - **Priority-weighted distillation sampling**: Three `priorityMode` values added to `DistillationJobConfig`: `failure-first` (low quality_score first via JOIN on `training.conversation_quality`), `success-first` (reverse order), `uniform` (unchanged default). Quality join uses `COALESCE(cq.quality_score, 0.5) ASC/DESC`.
@@ -98,8 +90,6 @@
 - **ADR 170** (`docs/adr/170-adaptive-learning-pipeline.md`). **Guide** `docs/guides/adaptive-learning-pipeline.md`.
 
 ---
-
-## [2026.3.1b] — 2026-03-01
 
 ### Codebase Refactor Audit — Benchmarks, Shared Helpers & Type Extraction (ADR 169)
 

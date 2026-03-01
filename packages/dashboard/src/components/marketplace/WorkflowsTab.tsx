@@ -1,10 +1,10 @@
 /**
- * WorkflowsTab — Community workflow browsing, export, and import in the Marketplace.
+ * WorkflowsTab — Workflow browsing, export, and import (Marketplace + Community).
  */
 
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Download, Upload, GitBranch, Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Download, Upload, GitBranch, Loader2, AlertTriangle, CheckCircle, Search } from 'lucide-react';
 import {
   fetchCommunityWorkflows,
   exportWorkflow,
@@ -42,6 +42,7 @@ function CompatibilityBadges({ gaps }: { gaps: CompatibilityCheckResult['gaps'] 
 
 export function WorkflowsTab({ source }: { source?: string } = {}) {
   const [toast, setToast] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['community-workflows', source],
@@ -79,11 +80,19 @@ export function WorkflowsTab({ source }: { source?: string } = {}) {
     },
   });
 
-  const allWorkflows = data?.definitions ?? [];
-  const workflows = allWorkflows.filter((wf: WorkflowDefinition) => {
+  const sourceFiltered = (data?.definitions ?? []).filter((wf: WorkflowDefinition) => {
     if (source === 'builtin') return wf.createdBy === 'system';
     if (source === 'community') return wf.createdBy === 'community';
     return true;
+  });
+
+  const workflows = sourceFiltered.filter((wf: WorkflowDefinition) => {
+    if (!query) return true;
+    const q = query.toLowerCase();
+    return (
+      wf.name.toLowerCase().includes(q) ||
+      ((wf as any).description ?? '').toLowerCase().includes(q)
+    );
   });
 
   return (
@@ -94,11 +103,22 @@ export function WorkflowsTab({ source }: { source?: string } = {}) {
         </div>
       )}
 
+      {/* Search */}
+      <div className="relative max-w-lg">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+          placeholder={`Search ${source === 'community' ? 'community ' : ''}workflows…`}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
       {isLoading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
-      ) : !workflows.length ? (
+      ) : !sourceFiltered.length ? (
         <div className="card p-12 text-center">
           <GitBranch className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
           <p className="text-muted-foreground">
@@ -109,6 +129,10 @@ export function WorkflowsTab({ source }: { source?: string } = {}) {
               ? 'Sync the community repo to discover workflows'
               : 'No workflow definitions found'}
           </p>
+        </div>
+      ) : !workflows.length ? (
+        <div className="card p-8 text-center">
+          <p className="text-sm text-muted-foreground">No workflows match &ldquo;{query}&rdquo;</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -130,7 +154,7 @@ export function WorkflowsTab({ source }: { source?: string } = {}) {
                 </p>
                 <div className="mt-2 text-xs text-muted-foreground">
                   {Array.isArray(wf.steps) && <span>{wf.steps.length} steps</span>}
-                  {(wf as any).createdBy === 'community' && (
+                  {wf.createdBy === 'community' && (
                     <span className="ml-2 badge badge-info text-xs">Community</span>
                   )}
                 </div>

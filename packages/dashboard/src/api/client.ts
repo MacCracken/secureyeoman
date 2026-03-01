@@ -2004,6 +2004,10 @@ export async function syncCommunitySkills(): Promise<{
   skipped: number;
   removed: number;
   errors: string[];
+  workflowsAdded?: number;
+  workflowsUpdated?: number;
+  swarmsAdded?: number;
+  swarmsUpdated?: number;
 }> {
   return request('/marketplace/community/sync', { method: 'POST' });
 }
