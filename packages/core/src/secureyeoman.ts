@@ -2701,6 +2701,12 @@ export class SecureYeoman {
         });
         await this.workflowManager.initialize();
         this.logger!.debug('Workflow manager initialized');
+
+        // Wire workflow + swarm managers into marketplace so community sync works
+        this.marketplaceManager?.setDelegationManagers({
+          workflowManager: this.workflowManager,
+          swarmManager: this.swarmManager ?? undefined,
+        });
       } catch (workflowError) {
         this.logger!.warn('Workflow manager initialization failed (non-fatal)', {
           error: workflowError instanceof Error ? workflowError.message : 'Unknown error',

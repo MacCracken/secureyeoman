@@ -166,8 +166,8 @@ export function MarketplaceTab() {
           <div className="relative flex-1 max-w-2xl">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
-              className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-              placeholder="Search skills by name, description, or author..."
+              className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              placeholder="Search skills…"
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
@@ -199,7 +199,7 @@ export function MarketplaceTab() {
               <section>
                 <div className="flex items-center gap-2 mb-4">
                   <Shield className="w-4 h-4 text-primary" />
-                  <h3 className="text-sm font-semibold text-foreground">YEOMAN Built-ins</h3>
+                  <h3 className="text-sm font-semibold text-foreground">YEOMAN Skills</h3>
                   <span className="text-xs text-muted-foreground">({builtinSkills.length})</span>
                 </div>
                 {renderGrid(builtinSkills, () => (

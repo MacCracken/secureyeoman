@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Download, Upload, Users, Loader2, CheckCircle, AlertTriangle, Search } from 'lucide-react';
+import { Download, Upload, Users, Shield, GitBranch, Loader2, CheckCircle, AlertTriangle, Search } from 'lucide-react';
 import {
   fetchCommunitySwarmTemplates,
   exportSwarmTemplate,
@@ -34,9 +34,11 @@ function CompatibilityBadge({ gaps }: { gaps: CompatibilityCheckResult['gaps'] }
   );
 }
 
-export function SwarmTemplatesTab({ source }: { source?: string } = {}) {
+export function SwarmTemplatesTab({ source, query: externalQuery }: { source?: string; query?: string } = {}) {
   const [toast, setToast] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
+  const [internalQuery, setInternalQuery] = useState('');
+  const isControlled = externalQuery !== undefined;
+  const query = isControlled ? externalQuery : internalQuery;
 
   const { data, isLoading } = useQuery({
     queryKey: ['community-swarm-templates', source],
@@ -98,16 +100,18 @@ export function SwarmTemplatesTab({ source }: { source?: string } = {}) {
         </div>
       )}
 
-      {/* Search */}
-      <div className="relative max-w-lg">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input
-          className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-          placeholder={`Search ${source === 'community' ? 'community ' : ''}swarm templates…`}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-      </div>
+      {/* Search — hidden when controlled externally by community tab */}
+      {!isControlled && (
+        <div className="relative max-w-2xl">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            placeholder={source === 'community' ? 'Search community swarm templates…' : 'Search swarm templates…'}
+            value={internalQuery}
+            onChange={(e) => setInternalQuery(e.target.value)}
+          />
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-12">
@@ -132,7 +136,19 @@ export function SwarmTemplatesTab({ source }: { source?: string } = {}) {
           <p className="text-sm text-muted-foreground">No templates match &ldquo;{query}&rdquo;</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            {source === 'community' ? (
+              <GitBranch className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <Shield className="w-4 h-4 text-primary" />
+            )}
+            <h3 className="text-sm font-semibold text-foreground">
+              {source === 'community' ? 'Community Swarm Templates' : 'YEOMAN Swarm Templates'}
+            </h3>
+            <span className="text-xs text-muted-foreground">({templates.length})</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {templates.map((tmpl: SwarmTemplate) => (
             <div key={tmpl.id} className="card p-4 flex flex-col">
               <div className="flex-1">
@@ -183,6 +199,7 @@ export function SwarmTemplatesTab({ source }: { source?: string } = {}) {
               </div>
             </div>
           ))}
+          </div>
         </div>
       )}
     </div>

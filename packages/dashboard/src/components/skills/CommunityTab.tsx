@@ -45,6 +45,8 @@ export function CommunityTab() {
   const [uninstallingId, setUninstallingId] = useState<string | null>(null);
   const [previewSkill, setPreviewSkill] = useState<CatalogSkill | null>(null);
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
+  const [workflowQuery, setWorkflowQuery] = useState('');
+  const [swarmQuery, setSwarmQuery] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['marketplace-community', query, selectedPersonalityId, page],
@@ -87,7 +89,6 @@ export function CommunityTab() {
     void queryClient.invalidateQueries({ queryKey: ['marketplace-community'] });
     void queryClient.invalidateQueries({ queryKey: ['community-status'] });
     void queryClient.invalidateQueries({ queryKey: ['skills'] });
-    // Refresh workflow + swarm caches so tabs reflect newly synced items
     void queryClient.invalidateQueries({ queryKey: ['community-workflows'] });
     void queryClient.invalidateQueries({ queryKey: ['community-swarm-templates'] });
   };
@@ -159,90 +160,6 @@ export function CommunityTab() {
       )}
 
       <div className="space-y-6">
-        {/* ── Sync bar — always visible for all content types ──────────── */}
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            {/* Repo info */}
-            {statusData && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0 flex-1">
-                <GitBranch className="w-3.5 h-3.5 shrink-0" />
-                <span className="font-mono truncate">
-                  {statusData.communityRepoPath ?? 'No path configured'}
-                </span>
-                {lastSynced && (
-                  <span className="shrink-0 hidden sm:inline">· Last synced {lastSynced}</span>
-                )}
-              </div>
-            )}
-            <button
-              onClick={() => {
-                setSyncResult(null);
-                syncMut.mutate();
-              }}
-              disabled={syncMut.isPending}
-              className="btn btn-secondary flex items-center gap-2 whitespace-nowrap ml-auto"
-              title={
-                statusData?.communityRepoPath
-                  ? `Sync from ${statusData.communityRepoPath}`
-                  : 'Sync from community repo'
-              }
-            >
-              <RefreshCw className={`w-4 h-4 ${syncMut.isPending ? 'animate-spin' : ''}`} />
-              {syncMut.isPending ? 'Syncing…' : 'Sync'}
-            </button>
-          </div>
-
-          {/* Sync result banner */}
-          {syncResult && (
-            <div
-              className={`p-3 rounded-lg border text-xs space-y-1 ${
-                syncResult.errors.length > 0
-                  ? 'bg-warning/10 border-warning/20'
-                  : 'bg-success/10 border-success/20'
-              }`}
-            >
-              <div className="flex items-center gap-2 font-medium">
-                {syncResult.errors.length > 0 ? (
-                  <AlertCircle className="w-4 h-4 text-warning" />
-                ) : (
-                  <CheckCircle className="w-4 h-4 text-success" />
-                )}
-                Sync complete
-              </div>
-              <div className="text-muted-foreground space-y-0.5">
-                <p>
-                  Skills: {syncResult.added} added, {syncResult.updated} updated,{' '}
-                  {syncResult.skipped} skipped
-                  {syncResult.removed > 0 && `, ${syncResult.removed} removed`}
-                </p>
-                {(syncResult.workflowsAdded !== undefined ||
-                  syncResult.workflowsUpdated !== undefined) && (
-                  <p>
-                    Workflows:{' '}
-                    {syncResult.workflowsAdded ?? 0} added,{' '}
-                    {syncResult.workflowsUpdated ?? 0} updated
-                  </p>
-                )}
-                {(syncResult.swarmsAdded !== undefined ||
-                  syncResult.swarmsUpdated !== undefined) && (
-                  <p>
-                    Swarm templates:{' '}
-                    {syncResult.swarmsAdded ?? 0} added,{' '}
-                    {syncResult.swarmsUpdated ?? 0} updated
-                  </p>
-                )}
-                {syncResult.errors.length > 0 && (
-                  <ul className="mt-1 space-y-0.5">
-                    {syncResult.errors.map((e, i) => (
-                      <li key={i} className="truncate">· {e}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* Type selector */}
         <ContentTypeSelector
           value={contentType}
@@ -252,48 +169,220 @@ export function CommunityTab() {
           }}
         />
 
-        {/* Workflows — community-only, with own internal search */}
+        {/* Workflows — community-only */}
         {contentType === 'workflows' && (
-          <ContentSuspense>
-            <LazyWorkflowsTab source="community" />
-          </ContentSuspense>
+          <>
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="relative flex-1 max-w-2xl">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  placeholder="Search community workflows…"
+                  value={workflowQuery}
+                  onChange={(e) => setWorkflowQuery(e.target.value)}
+                />
+              </div>
+              <button
+                onClick={() => { setSyncResult(null); syncMut.mutate(); }}
+                disabled={syncMut.isPending}
+                className="btn btn-secondary flex items-center gap-2 whitespace-nowrap"
+                title={statusData?.communityRepoPath ? `Sync from ${statusData.communityRepoPath}` : 'Sync from community repo'}
+              >
+                <RefreshCw className={`w-4 h-4 ${syncMut.isPending ? 'animate-spin' : ''}`} />
+                {syncMut.isPending ? 'Syncing…' : 'Sync'}
+              </button>
+            </div>
+            {statusData && (
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <GitBranch className="w-3.5 h-3.5 shrink-0" />
+                <span className="font-mono truncate">{statusData.communityRepoPath ?? 'No path configured'}</span>
+                {lastSynced && <span className="shrink-0">· Last synced {lastSynced}</span>}
+              </div>
+            )}
+            {syncResult && (
+              <div className={`p-3 rounded-lg border text-xs space-y-1 ${syncResult.errors.length > 0 ? 'bg-warning/10 border-warning/20' : 'bg-success/10 border-success/20'}`}>
+                <div className="flex items-center gap-2 font-medium">
+                  {syncResult.errors.length > 0 ? <AlertCircle className="w-4 h-4 text-warning" /> : <CheckCircle className="w-4 h-4 text-success" />}
+                  Sync complete
+                </div>
+                <div className="text-muted-foreground space-y-0.5">
+                  {(syncResult.workflowsAdded !== undefined || syncResult.workflowsUpdated !== undefined) && (
+                    <p>Workflows: {syncResult.workflowsAdded ?? 0} added, {syncResult.workflowsUpdated ?? 0} updated</p>
+                  )}
+                  {syncResult.errors.length > 0 && (
+                    <ul className="mt-1 space-y-0.5">
+                      {syncResult.errors.map((e, i) => <li key={i} className="truncate">· {e}</li>)}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            )}
+            <ContentSuspense>
+              <LazyWorkflowsTab source="community" query={workflowQuery} />
+            </ContentSuspense>
+          </>
         )}
 
-        {/* Swarm templates — community-only, with own internal search */}
+        {/* Swarm templates — community-only */}
         {contentType === 'swarms' && (
-          <ContentSuspense>
-            <LazySwarmTemplatesTab source="community" />
-          </ContentSuspense>
+          <>
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="relative flex-1 max-w-2xl">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  placeholder="Search community swarm templates…"
+                  value={swarmQuery}
+                  onChange={(e) => setSwarmQuery(e.target.value)}
+                />
+              </div>
+              <button
+                onClick={() => { setSyncResult(null); syncMut.mutate(); }}
+                disabled={syncMut.isPending}
+                className="btn btn-secondary flex items-center gap-2 whitespace-nowrap"
+                title={statusData?.communityRepoPath ? `Sync from ${statusData.communityRepoPath}` : 'Sync from community repo'}
+              >
+                <RefreshCw className={`w-4 h-4 ${syncMut.isPending ? 'animate-spin' : ''}`} />
+                {syncMut.isPending ? 'Syncing…' : 'Sync'}
+              </button>
+            </div>
+            {statusData && (
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <GitBranch className="w-3.5 h-3.5 shrink-0" />
+                <span className="font-mono truncate">{statusData.communityRepoPath ?? 'No path configured'}</span>
+                {lastSynced && <span className="shrink-0">· Last synced {lastSynced}</span>}
+              </div>
+            )}
+            {syncResult && (
+              <div className={`p-3 rounded-lg border text-xs space-y-1 ${syncResult.errors.length > 0 ? 'bg-warning/10 border-warning/20' : 'bg-success/10 border-success/20'}`}>
+                <div className="flex items-center gap-2 font-medium">
+                  {syncResult.errors.length > 0 ? <AlertCircle className="w-4 h-4 text-warning" /> : <CheckCircle className="w-4 h-4 text-success" />}
+                  Sync complete
+                </div>
+                <div className="text-muted-foreground space-y-0.5">
+                  {(syncResult.swarmsAdded !== undefined || syncResult.swarmsUpdated !== undefined) && (
+                    <p>Swarm templates: {syncResult.swarmsAdded ?? 0} added, {syncResult.swarmsUpdated ?? 0} updated</p>
+                  )}
+                  {syncResult.errors.length > 0 && (
+                    <ul className="mt-1 space-y-0.5">
+                      {syncResult.errors.map((e, i) => <li key={i} className="truncate">· {e}</li>)}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            )}
+            <ContentSuspense>
+              <LazySwarmTemplatesTab source="community" query={swarmQuery} />
+            </ContentSuspense>
+          </>
         )}
 
         {/* Skills content */}
         {contentType === 'skills' && (
           <>
-            {/* Search + personality selector */}
+            {/* Search + personality selector + sync button */}
             <div className="flex flex-col lg:flex-row gap-4">
               <div className="relative flex-1 max-w-2xl">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
-                  className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  placeholder="Search community skills..."
+                  className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  placeholder="Search community skills…"
                   value={query}
                   onChange={(e) => {
                     setQuery(e.target.value);
                   }}
                 />
               </div>
+
               <PersonalitySelector
                 personalities={personalities}
                 value={selectedPersonalityId}
                 onChange={setSelectedPersonalityId}
               />
+
+              <button
+                onClick={() => {
+                  setSyncResult(null);
+                  syncMut.mutate();
+                }}
+                disabled={syncMut.isPending}
+                className="btn btn-secondary flex items-center gap-2 whitespace-nowrap"
+                title={
+                  statusData?.communityRepoPath
+                    ? `Sync from ${statusData.communityRepoPath}`
+                    : 'Sync from community repo'
+                }
+              >
+                <RefreshCw className={`w-4 h-4 ${syncMut.isPending ? 'animate-spin' : ''}`} />
+                {syncMut.isPending ? 'Syncing…' : 'Sync'}
+              </button>
             </div>
+
+            {/* Repo path + last synced */}
+            {statusData && (
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <GitBranch className="w-3.5 h-3.5 shrink-0" />
+                <span className="font-mono truncate">
+                  {statusData.communityRepoPath ?? 'No path configured'}
+                </span>
+                {lastSynced && <span className="shrink-0">· Last synced {lastSynced}</span>}
+              </div>
+            )}
 
             {/* Per-personality notice */}
             {!canInstall && (
               <div className="flex items-center gap-2 p-3 rounded-lg bg-warning/10 border border-warning/20 text-xs text-warning-foreground">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 Select a personality above — community skills must be installed per-personality.
+              </div>
+            )}
+
+            {/* Sync result */}
+            {syncResult && (
+              <div
+                className={`p-3 rounded-lg border text-xs space-y-1 ${
+                  syncResult.errors.length > 0
+                    ? 'bg-warning/10 border-warning/20'
+                    : 'bg-success/10 border-success/20'
+                }`}
+              >
+                <div className="flex items-center gap-2 font-medium">
+                  {syncResult.errors.length > 0 ? (
+                    <AlertCircle className="w-4 h-4 text-warning" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4 text-success" />
+                  )}
+                  Sync complete
+                </div>
+                <div className="text-muted-foreground space-y-0.5">
+                  <p>
+                    Skills: {syncResult.added} added, {syncResult.updated} updated,{' '}
+                    {syncResult.skipped} skipped
+                    {syncResult.removed > 0 && `, ${syncResult.removed} removed`}
+                    {syncResult.errors.length > 0 && `, ${syncResult.errors.length} error(s)`}
+                  </p>
+                  {(syncResult.workflowsAdded !== undefined ||
+                    syncResult.workflowsUpdated !== undefined) && (
+                    <p>
+                      Workflows: {syncResult.workflowsAdded ?? 0} added,{' '}
+                      {syncResult.workflowsUpdated ?? 0} updated
+                    </p>
+                  )}
+                  {(syncResult.swarmsAdded !== undefined ||
+                    syncResult.swarmsUpdated !== undefined) && (
+                    <p>
+                      Swarm templates: {syncResult.swarmsAdded ?? 0} added,{' '}
+                      {syncResult.swarmsUpdated ?? 0} updated
+                    </p>
+                  )}
+                  {syncResult.errors.length > 0 && (
+                    <ul className="mt-1 space-y-0.5">
+                      {syncResult.errors.map((e, i) => (
+                        <li key={i} className="truncate">· {e}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
             )}
 

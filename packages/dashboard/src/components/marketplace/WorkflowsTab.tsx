@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Download, Upload, GitBranch, Loader2, AlertTriangle, CheckCircle, Search } from 'lucide-react';
+import { Download, Upload, GitBranch, Shield, Loader2, AlertTriangle, CheckCircle, Search } from 'lucide-react';
 import {
   fetchCommunityWorkflows,
   exportWorkflow,
@@ -40,9 +40,12 @@ function CompatibilityBadges({ gaps }: { gaps: CompatibilityCheckResult['gaps'] 
   );
 }
 
-export function WorkflowsTab({ source }: { source?: string } = {}) {
+export function WorkflowsTab({ source, query: externalQuery }: { source?: string; query?: string } = {}) {
   const [toast, setToast] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
+  const [internalQuery, setInternalQuery] = useState('');
+  // When query is controlled externally (community tab), skip the internal search bar
+  const isControlled = externalQuery !== undefined;
+  const query = isControlled ? externalQuery : internalQuery;
 
   const { data, isLoading } = useQuery({
     queryKey: ['community-workflows', source],
@@ -103,16 +106,18 @@ export function WorkflowsTab({ source }: { source?: string } = {}) {
         </div>
       )}
 
-      {/* Search */}
-      <div className="relative max-w-lg">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input
-          className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-          placeholder={`Search ${source === 'community' ? 'community ' : ''}workflows…`}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-      </div>
+      {/* Search — hidden when controlled externally by community tab */}
+      {!isControlled && (
+        <div className="relative max-w-2xl">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            placeholder={source === 'community' ? 'Search community workflows…' : 'Search workflows…'}
+            value={internalQuery}
+            onChange={(e) => setInternalQuery(e.target.value)}
+          />
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-12">
@@ -135,7 +140,19 @@ export function WorkflowsTab({ source }: { source?: string } = {}) {
           <p className="text-sm text-muted-foreground">No workflows match &ldquo;{query}&rdquo;</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            {source === 'community' ? (
+              <GitBranch className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <Shield className="w-4 h-4 text-primary" />
+            )}
+            <h3 className="text-sm font-semibold text-foreground">
+              {source === 'community' ? 'Community Workflows' : 'YEOMAN Workflows'}
+            </h3>
+            <span className="text-xs text-muted-foreground">({workflows.length})</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {workflows.map((wf: WorkflowDefinition) => (
             <div key={wf.id} className="card p-4 flex flex-col">
               <div className="flex-1">
@@ -154,9 +171,6 @@ export function WorkflowsTab({ source }: { source?: string } = {}) {
                 </p>
                 <div className="mt-2 text-xs text-muted-foreground">
                   {Array.isArray(wf.steps) && <span>{wf.steps.length} steps</span>}
-                  {wf.createdBy === 'community' && (
-                    <span className="ml-2 badge badge-info text-xs">Community</span>
-                  )}
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t border-border flex gap-2">
@@ -184,6 +198,7 @@ export function WorkflowsTab({ source }: { source?: string } = {}) {
               </div>
             </div>
           ))}
+          </div>
         </div>
       )}
     </div>

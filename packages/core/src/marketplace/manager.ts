@@ -57,6 +57,11 @@ export class MarketplaceManager {
     this.communityGitUrl = deps.communityGitUrl;
   }
 
+  setDelegationManagers(managers: { workflowManager?: WorkflowManager; swarmManager?: SwarmManager }): void {
+    if (managers.workflowManager) this.workflowManager = managers.workflowManager;
+    if (managers.swarmManager) this.swarmManager = managers.swarmManager;
+  }
+
   updatePolicy(p: { allowCommunityGitFetch?: boolean; communityGitUrl?: string }): void {
     if (p.allowCommunityGitFetch !== undefined) {
       this.allowCommunityGitFetch = p.allowCommunityGitFetch;
