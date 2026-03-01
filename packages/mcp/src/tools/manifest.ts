@@ -491,5 +491,11 @@ export function getToolManifest(): ToolManifestEntry[] {
     { name: 'docker_compose_logs', description: 'Fetch logs from a Docker Compose project or specific service' },
     { name: 'docker_compose_up', description: 'Start Docker Compose services in detached mode (with optional build)' },
     { name: 'docker_compose_down', description: 'Stop and remove containers and networks for a Docker Compose project' },
+
+    // Knowledge Base tools (Phase 82)
+    { name: 'kb_search', description: 'Semantic search across the knowledge base (documents + entries). Returns chunks ranked by relevance.' },
+    { name: 'kb_add_document', description: 'Ingest a URL or raw text into the knowledge base. URL is fetched and indexed; raw text is stored directly.' },
+    { name: 'kb_list_documents', description: 'List all documents ingested into the knowledge base with status and chunk counts.' },
+    { name: 'kb_delete_document', description: 'Delete a document from the knowledge base and remove all its indexed chunks.' },
   ];
 }

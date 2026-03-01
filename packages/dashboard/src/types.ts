@@ -1032,3 +1032,30 @@ export interface ApiKeyUsageRow {
   statusCode: number;
   errorMessage: string | null;
 }
+
+// ─── Knowledge Base Types (Phase 82) ─────────────────────────────────────────
+
+export interface KbDocument {
+  id: string;
+  personalityId: string | null;
+  title: string;
+  filename?: string;
+  format: 'pdf' | 'html' | 'md' | 'txt' | 'url';
+  sourceUrl?: string;
+  visibility: 'private' | 'shared';
+  status: 'pending' | 'processing' | 'ready' | 'error';
+  chunkCount: number;
+  errorMessage?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface KnowledgeHealthStats {
+  totalDocuments: number;
+  totalChunks: number;
+  byFormat: Record<string, number>;
+  recentQueryCount: number;
+  avgTopScore: number | null;
+  lowCoverageQueries: number;
+}
+

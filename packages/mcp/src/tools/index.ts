@@ -35,6 +35,7 @@ import { registerTwitterTools } from './twitter-tools.js';
 import { registerGithubApiTools } from './github-api-tools.js';
 import { registerOllamaTools } from './ollama-tools.js';
 import { registerDockerTools } from './docker-tools.js';
+import { registerKnowledgeBaseTools } from './knowledge-base-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -80,4 +81,5 @@ export async function registerAllTools(
   registerGithubApiTools(server, client, middleware, config.tokenSecret);
   registerOllamaTools(server, client, middleware);
   registerDockerTools(server, config, middleware);
+  registerKnowledgeBaseTools(server, client, middleware);
 }

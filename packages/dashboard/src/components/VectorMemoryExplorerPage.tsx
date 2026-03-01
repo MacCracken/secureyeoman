@@ -12,7 +12,9 @@ import {
   Sparkles,
   BookOpen,
   User,
+  FolderOpen,
 } from 'lucide-react';
+import { KnowledgeBaseTab } from './knowledge/KnowledgeBaseTab';
 import {
   fetchMemories,
   fetchKnowledge,
@@ -49,7 +51,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
   const [searchResults, setSearchResults] = useState<VectorResult[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'search' | 'memories' | 'knowledge' | 'add'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'memories' | 'knowledge' | 'add' | 'documents'>('search');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   /** Selected personality filter: ALL_PERSONALITIES or a personality id */
@@ -167,6 +169,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
       icon: <BookOpen className="w-4 h-4" />,
     },
     { id: 'add' as const, label: 'Add Entry', icon: <Plus className="w-4 h-4" /> },
+    { id: 'documents' as const, label: 'Documents', icon: <FolderOpen className="w-4 h-4" /> },
   ];
 
   return (
@@ -661,6 +664,9 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
           </div>
         </div>
       )}
+
+      {/* Documents tab */}
+      {activeTab === 'documents' && <KnowledgeBaseTab />}
     </div>
   );
 }

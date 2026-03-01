@@ -51,6 +51,8 @@ import type {
   FederationPeer,
   ApiKeyUsageSummary,
   ApiKeyUsageRow,
+  KbDocument,
+  KnowledgeHealthStats,
 } from '../types.js';
 
 const API_BASE = '/api/v1';
@@ -4344,4 +4346,84 @@ export async function fetchApiKeyUsage(
 
 export async function fetchApiKeyUsageSummary(): Promise<{ summary: ApiKeyUsageSummary[] }> {
   return request('/auth/api-keys/usage/summary');
+}
+
+// ─── Knowledge Base API (Phase 82) ───────────────────────────────────────────
+
+export async function uploadDocument(
+  file: File,
+  opts?: { personalityId?: string; visibility?: string; title?: string }
+): Promise<{ document: KbDocument }> {
+  const formData = new FormData();
+  formData.append('file', file, file.name);
+  if (opts?.personalityId) formData.append('personalityId', opts.personalityId);
+  if (opts?.visibility) formData.append('visibility', opts.visibility);
+  if (opts?.title) formData.append('title', opts.title);
+
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE}/brain/documents/upload`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({})) as { message?: string };
+    throw new APIError(body.message ?? `Upload failed: ${res.status}`, res.status);
+  }
+  return res.json();
+}
+
+export async function ingestUrl(
+  url: string,
+  opts?: { personalityId?: string; visibility?: string }
+): Promise<{ document: KbDocument }> {
+  return request('/brain/documents/ingest-url', {
+    method: 'POST',
+    body: JSON.stringify({ url, ...opts }),
+  });
+}
+
+export async function ingestText(
+  text: string,
+  title: string,
+  opts?: { personalityId?: string; visibility?: string }
+): Promise<{ document: KbDocument }> {
+  return request('/brain/documents/ingest-text', {
+    method: 'POST',
+    body: JSON.stringify({ text, title, ...opts }),
+  });
+}
+
+export async function ingestGithubWiki(
+  owner: string,
+  repo: string,
+  personalityId?: string
+): Promise<{ documents: KbDocument[] }> {
+  return request('/brain/documents/connectors/github-wiki', {
+    method: 'POST',
+    body: JSON.stringify({ owner, repo, personalityId }),
+  });
+}
+
+export async function listDocuments(opts?: {
+  personalityId?: string;
+  visibility?: string;
+}): Promise<{ documents: KbDocument[]; total: number }> {
+  const params = new URLSearchParams();
+  if (opts?.personalityId) params.set('personalityId', opts.personalityId);
+  if (opts?.visibility) params.set('visibility', opts.visibility);
+  const qs = params.toString() ? `?${params.toString()}` : '';
+  return request(`/brain/documents${qs}`);
+}
+
+export async function deleteDocument(id: string): Promise<void> {
+  await request(`/brain/documents/${id}`, { method: 'DELETE' });
+}
+
+export async function fetchKnowledgeHealth(
+  personalityId?: string
+): Promise<KnowledgeHealthStats> {
+  const qs = personalityId ? `?personalityId=${encodeURIComponent(personalityId)}` : '';
+  return request(`/brain/knowledge-health${qs}`);
 }

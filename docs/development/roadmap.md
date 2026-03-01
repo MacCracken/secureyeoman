@@ -29,11 +29,11 @@
 | XX | QA & Manual Testing | P1 — ongoing | 🔄 Continuous |
 | 78 | Advanced Editor — Full IDE Mode | P2 — power user priority | Ready |
 | 81 | Conversation Branching & Replay | P3 — developer experience | Planned |
-| 82 | Knowledge Base & RAG Platform | P3 — knowledge platform | Planned |
-| 83 | Content Guardrails | P3 — enterprise compliance | Planned *(grounding check requires Phase 82)* |
+| 82 | Knowledge Base & RAG Platform | P3 — knowledge platform | ✅ Complete |
+| 83 | Content Guardrails | P3 — enterprise compliance | Planned |
 | 84 | LLM-as-Judge Evaluation | P3 — ML quality signal | Planned |
 | 85 | Conversation Analytics | P3 — operational insight | Planned |
-| 86 | Inline Citations & Grounding | P4 — trust layer | Planned *(requires Phase 82)* |
+| 86 | Inline Citations & Grounding | P4 — trust layer | Planned |
 | 87 | LLM Lifecycle Platform — Core | P4 — model ops | Planned |
 | 88 | Marketplace Shareables | P4 — community growth | Planned |
 | Future | Observability & Telemetry, Workflow & Personality Versioning, LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Native Clients, Infrastructure | Future / Demand-Gated | — |

@@ -48,6 +48,7 @@
     "nodemailer": "^8.0.1",
     "openai": "^6.19.0",
     "openid-client": "^6.0.0",
+    "pdf-parse": "^1.1.1",
     "pg": "^8.13.1",
     "pino": "^9.3.2",
     "pino-pretty": "^11.2.2",

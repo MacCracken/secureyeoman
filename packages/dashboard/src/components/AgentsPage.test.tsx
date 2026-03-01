@@ -46,6 +46,15 @@ vi.mock('../api/client', () => ({
   deleteMemory: vi.fn(),
   deleteKnowledge: vi.fn(),
   reindexBrain: vi.fn(),
+  // KnowledgeBaseTab dependencies (Phase 82)
+  listDocuments: vi.fn().mockResolvedValue({ documents: [], total: 0 }),
+  deleteDocument: vi.fn(),
+  uploadDocument: vi.fn(),
+  ingestUrl: vi.fn(),
+  ingestText: vi.fn(),
+  ingestGithubWiki: vi.fn(),
+  fetchKnowledgeHealth: vi.fn().mockResolvedValue({ totalDocuments: 0, totalChunks: 0, byFormat: {}, recentQueryCount: 0, avgTopScore: null, lowCoverageQueries: 0 }),
+  getAccessToken: vi.fn().mockReturnValue(null),
 }));
 
 import * as api from '../api/client';

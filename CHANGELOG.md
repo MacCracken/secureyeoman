@@ -1,3 +1,30 @@
+## [2026.2.28v] — Phase 82: Knowledge Base & RAG Platform
+
+### Added
+
+- **`brain.documents` table** (migration 067) — tracks every ingested document with id, format, status (`pending → processing → ready | error`), chunk count, visibility scope, and source URL
+- **`brain.knowledge_query_log` table** (migration 067) — logs every RAG query with result count and top score for health analytics
+- **`DocumentManager`** (`packages/core/src/brain/document-manager.ts`) — full ingest pipeline: extract text → chunk → learn per chunk → update status; supports `txt`, `md`, `html`, `pdf` (dynamic import of `pdf-parse`), and `url` formats
+- **Web crawl connector** — `ingestUrl()` fetches page HTML, strips tags, ingests as `html` document
+- **GitHub Wiki connector** — `ingestGithubWiki()` lists `.md` files via GitHub contents API, fetches each, ingests as `md` documents
+- **Document REST API** (`/api/v1/brain/documents/*`) — upload (multipart, 20 MB limit), ingest-url, ingest-text, github-wiki connector, list, get, delete, knowledge-health
+- **`BrainStorage` additions** — `createDocument`, `getDocument`, `updateDocument`, `deleteDocument`, `listDocuments`, `deleteKnowledgeBySourcePrefix`, `logKnowledgeQuery`, `getKnowledgeHealthStats`
+- **4 MCP tools**: `kb_search`, `kb_add_document`, `kb_list_documents`, `kb_delete_document`
+- **Dashboard — Knowledge Base tab** (`packages/dashboard/src/components/knowledge/`): Documents sub-tab (list + file upload), Connectors sub-tab (URL crawl + GitHub wiki + paste text), Health sub-tab (KPIs + format breakdown + low-coverage warning)
+- **Documents tab** added to `VectorMemoryExplorerPage` alongside existing brain tabs
+- **ADR 162**, guide `docs/guides/knowledge-base.md`
+- **~62 new tests** across `document-manager.test.ts`, `document-routes.test.ts`, `knowledge-base-tools.test.ts`, `KnowledgeBaseTab.test.tsx`
+
+### Deferred (demand-gated)
+
+- Tesseract OCR sidecar (image text extraction)
+- Notion / Confluence / Google Drive connectors
+- DOCX support
+- Recursive web crawl (depth > 1)
+- Background ingestion queue (large-file async processing)
+
+---
+
 ## [2026.2.28u] — Phase 79 + 80: Multi-Instance Federation & API Gateway Mode
 
 ### Phase 79 — Multi-Instance Federation

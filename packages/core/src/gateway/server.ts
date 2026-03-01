@@ -32,6 +32,7 @@ import { OAuthTokenStorage } from './oauth-token-storage.js';
 import { OAuthTokenService } from './oauth-token-service.js';
 import { registerSoulRoutes } from '../soul/soul-routes.js';
 import { registerBrainRoutes } from '../brain/brain-routes.js';
+import { registerDocumentRoutes } from '../brain/document-routes.js';
 import { registerSpiritRoutes } from '../spirit/spirit-routes.js';
 import { registerCommsRoutes } from '../comms/comms-routes.js';
 import { registerIntegrationRoutes } from '../integrations/integration-routes.js';
@@ -532,6 +533,13 @@ export class GatewayServer {
         externalSync,
         soulManager,
       });
+
+      try {
+        const documentManager = this.secureYeoman.getDocumentManager();
+        registerDocumentRoutes(this.app, { documentManager, brainManager });
+      } catch {
+        // Document manager may not be available — skip routes
+      }
     } catch {
       // Brain manager may not be available — skip routes
     }

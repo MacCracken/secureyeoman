@@ -54,6 +54,7 @@ import { SoulManager } from './soul/manager.js';
 import { ApprovalManager } from './soul/approval-manager.js';
 import { BrainStorage } from './brain/storage.js';
 import { BrainManager } from './brain/manager.js';
+import { DocumentManager } from './brain/document-manager.js';
 import { SpiritStorage } from './spirit/storage.js';
 import { SpiritManager } from './spirit/manager.js';
 import { AgentComms } from './comms/agent-comms.js';
@@ -205,6 +206,7 @@ export class SecureYeoman {
   private rbacStorage: RBACStorage | null = null;
   private brainStorage: BrainStorage | null = null;
   private brainManager: BrainManager | null = null;
+  private documentManager: DocumentManager | null = null;
   private heartbeatManager: HeartbeatManager | null = null;
   private heartbeatLogStorage: HeartbeatLogStorage | null = null;
   private heartManager: HeartManager | null = null;
@@ -664,6 +666,12 @@ export class SecureYeoman {
             : undefined,
       });
       this.logger.debug('Brain manager initialized');
+
+      // Step 5.7.1: Initialize document manager (knowledge base pipeline)
+      this.documentManager = new DocumentManager(this.brainManager, this.brainStorage, {
+        logger: this.logger.child({ component: 'DocumentManager' }),
+      });
+      this.logger.debug('Document manager initialized');
 
       // Step 5.7a: Initialize spirit system (between Brain and Soul)
       this.spiritStorage = new SpiritStorage();
@@ -1810,6 +1818,17 @@ export class SecureYeoman {
       throw new Error('Brain manager is not available');
     }
     return this.brainManager;
+  }
+
+  /**
+   * Get the document manager instance
+   */
+  getDocumentManager(): DocumentManager {
+    this.ensureInitialized();
+    if (!this.documentManager) {
+      throw new Error('Document manager is not available');
+    }
+    return this.documentManager;
   }
 
   /**
@@ -3027,6 +3046,7 @@ export class SecureYeoman {
       this.brainStorage.close();
       this.brainStorage = null;
       this.brainManager = null;
+      this.documentManager = null;
     }
 
     // Close v1.2 module storage
