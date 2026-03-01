@@ -97,6 +97,10 @@ describe('ConnectionsPage', () => {
       exposeGithub: false,
       alwaysSendFullSchemas: false,
       exposeDockerTools: false,
+      exposeGithubActions: false,
+      exposeJenkins: false,
+      exposeGitlabCi: false,
+      exposeNorthflank: false,
     });
     mockFetchIntegrations.mockResolvedValue({ integrations: [], total: 0, running: 0 });
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: [] });
