@@ -28,7 +28,8 @@ export function createEmbeddingProvider(
     if (config.api.provider === 'ollama') {
       return new OllamaEmbeddingProvider(
         {
-          model: config.api.model !== 'text-embedding-3-small' ? config.api.model : 'nomic-embed-text',
+          model:
+            config.api.model !== 'text-embedding-3-small' ? config.api.model : 'nomic-embed-text',
           baseUrl: config.api.baseUrl,
         },
         logger

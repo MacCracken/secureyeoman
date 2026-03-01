@@ -537,17 +537,11 @@ function StandardEditorPage() {
     .map((t) => `$ ${t.command}\n${t.output || t.error}`)
     .join('\n');
 
-  const {
-    messages,
-    sendMessage,
-    isPending,
-    streamingThinking,
-    streamingContent,
-    activeToolCalls,
-  } = useChatStream({
-    personalityId: effectivePersonalityId,
-    editorContent: watchEnabled && terminalOutput ? terminalOutput : undefined,
-  });
+  const { messages, sendMessage, isPending, streamingThinking, streamingContent, activeToolCalls } =
+    useChatStream({
+      personalityId: effectivePersonalityId,
+      editorContent: watchEnabled && terminalOutput ? terminalOutput : undefined,
+    });
 
   // Local chat input state (decoupled from useChatStream)
   const [chatInput, setChatInput] = useState('');

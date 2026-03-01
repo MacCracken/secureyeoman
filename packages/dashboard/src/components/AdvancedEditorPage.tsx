@@ -473,7 +473,16 @@ function InlineChat({
         if (el) el.scrollTop = el.scrollHeight;
       }, 50);
     }
-  }, [input, sending, messages, personalityId, memoryEnabled, terminalContext, queryClient, chatTaskId]);
+  }, [
+    input,
+    sending,
+    messages,
+    personalityId,
+    memoryEnabled,
+    terminalContext,
+    queryClient,
+    chatTaskId,
+  ]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background border-t border-border">
@@ -510,13 +519,19 @@ function InlineChat({
         {messages.length > 0 && (
           <div style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
             {virtualItems.map((virtualRow) => {
-              const m = messages[virtualRow.index]!;
+              const m = messages[virtualRow.index];
               return (
                 <div
                   key={m.id}
                   data-index={virtualRow.index}
                   ref={rowVirtualizer.measureElement}
-                  style={{ position: 'absolute', top: 0, left: 0, right: 0, transform: `translateY(${virtualRow.start}px)` }}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
                   className={`flex gap-2 pb-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {m.role === 'assistant' && (
@@ -524,7 +539,9 @@ function InlineChat({
                   )}
                   <div
                     className={`max-w-[85%] rounded px-2 py-1.5 text-xs whitespace-pre-wrap break-words ${
-                      m.role === 'user' ? 'bg-primary/15 text-foreground' : 'bg-muted/50 text-foreground'
+                      m.role === 'user'
+                        ? 'bg-primary/15 text-foreground'
+                        : 'bg-muted/50 text-foreground'
                     }`}
                   >
                     {m.content}
@@ -537,7 +554,12 @@ function InlineChat({
             })}
             {sending && (
               <div
-                style={{ position: 'absolute', top: rowVirtualizer.getTotalSize(), left: 0, right: 0 }}
+                style={{
+                  position: 'absolute',
+                  top: rowVirtualizer.getTotalSize(),
+                  left: 0,
+                  right: 0,
+                }}
                 className="flex gap-2 justify-start pb-2"
               >
                 <Bot className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
@@ -836,7 +858,9 @@ export function AdvancedEditorPage() {
                 <div className="flex items-center gap-1">
                   <div className="flex gap-0.5">
                     <button
-                      onClick={() => setAndPersistWorldView('grid')}
+                      onClick={() => {
+                        setAndPersistWorldView('grid');
+                      }}
                       className={`px-1.5 py-0.5 text-[11px] rounded transition-colors ${worldViewMode === 'grid' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                       title="Card grid view"
                       aria-pressed={worldViewMode === 'grid'}
@@ -844,7 +868,9 @@ export function AdvancedEditorPage() {
                       ≡ Grid
                     </button>
                     <button
-                      onClick={() => setAndPersistWorldView('map')}
+                      onClick={() => {
+                        setAndPersistWorldView('map');
+                      }}
                       className={`px-1.5 py-0.5 text-[11px] rounded transition-colors ${worldViewMode === 'map' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                       title="World map view"
                       aria-pressed={worldViewMode === 'map'}
@@ -852,7 +878,9 @@ export function AdvancedEditorPage() {
                       ⊞ Map
                     </button>
                     <button
-                      onClick={() => setAndPersistWorldView('large')}
+                      onClick={() => {
+                        setAndPersistWorldView('large');
+                      }}
                       className={`px-1.5 py-0.5 text-[11px] rounded transition-colors ${worldViewMode === 'large' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                       title="Large zone view"
                       aria-pressed={worldViewMode === 'large'}

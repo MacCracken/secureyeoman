@@ -338,10 +338,10 @@ function HeartbeatCard({
   const personalities: { id: string; name: string }[] =
     task.personalities && task.personalities.length > 0
       ? task.personalities
-      // eslint-disable-next-line @typescript-eslint/no-deprecated
-      : task.personalityName
-        // eslint-disable-next-line @typescript-eslint/no-deprecated
-        ? [{ id: task.personalityId ?? '', name: task.personalityName }]
+      : // eslint-disable-next-line @typescript-eslint/no-deprecated
+        task.personalityName
+        ? // eslint-disable-next-line @typescript-eslint/no-deprecated
+          [{ id: task.personalityId ?? '', name: task.personalityName }]
         : [];
 
   const personalityMap = new Map([

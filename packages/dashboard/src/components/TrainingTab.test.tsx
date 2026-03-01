@@ -78,7 +78,9 @@ describe('TrainingTab', () => {
   it('shows error state when stats fail', async () => {
     mockFetchTrainingStats.mockRejectedValue(new Error('Network error'));
     renderComponent();
-    expect(await screen.findByText('Could not load stats', {}, { timeout: 3000 })).toBeInTheDocument();
+    expect(
+      await screen.findByText('Could not load stats', {}, { timeout: 3000 })
+    ).toBeInTheDocument();
   });
 
   it('renders all three format radio options', async () => {

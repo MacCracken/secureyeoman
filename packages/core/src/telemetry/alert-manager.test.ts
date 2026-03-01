@@ -30,16 +30,20 @@ function makeRule(overrides: Partial<AlertRule> = {}): AlertRule {
 
 function makeStorage(rules: AlertRule[] = []) {
   return {
-    createRule: vi.fn().mockImplementation(async (d) => ({ id: 'new-id', ...d, createdAt: NOW, updatedAt: NOW })),
+    createRule: vi
+      .fn()
+      .mockImplementation(async (d) => ({ id: 'new-id', ...d, createdAt: NOW, updatedAt: NOW })),
     getRule: vi.fn().mockImplementation(async (id) => rules.find((r) => r.id === id) ?? null),
     updateRule: vi.fn().mockImplementation(async (id, patch) => {
       const r = rules.find((x) => x.id === id);
       return r ? { ...r, ...patch } : null;
     }),
     deleteRule: vi.fn().mockResolvedValue(true),
-    listRules: vi.fn().mockImplementation(async (onlyEnabled?: boolean) =>
-      onlyEnabled ? rules.filter((r) => r.enabled) : rules
-    ),
+    listRules: vi
+      .fn()
+      .mockImplementation(async (onlyEnabled?: boolean) =>
+        onlyEnabled ? rules.filter((r) => r.enabled) : rules
+      ),
     markFired: vi.fn().mockResolvedValue(undefined),
   };
 }
@@ -149,7 +153,9 @@ describe('AlertManager.evaluate', () => {
 
   it('respects cooldown window', async () => {
     const recentFire = Date.now() - 60_000; // 60s ago, cooldown=300s
-    storage.listRules.mockResolvedValue([makeRule({ lastFiredAt: recentFire, cooldownSeconds: 300 })]);
+    storage.listRules.mockResolvedValue([
+      makeRule({ lastFiredAt: recentFire, cooldownSeconds: 300 }),
+    ]);
     await manager.evaluate({ security: { rateLimitHitsTotal: 100 } });
     expect(notif.notify).not.toHaveBeenCalled();
   });
@@ -240,7 +246,9 @@ describe('AlertManager channel dispatch', () => {
     const notif = makeNotificationManager();
     const manager = new AlertManager(storage as any, notif as any, makeLogger() as any);
 
-    await expect(manager.evaluate({ security: { rateLimitHitsTotal: 100 } })).resolves.not.toThrow();
+    await expect(
+      manager.evaluate({ security: { rateLimitHitsTotal: 100 } })
+    ).resolves.not.toThrow();
     vi.unstubAllGlobals();
   });
 });

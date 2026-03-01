@@ -1399,7 +1399,7 @@ export class SecureYeoman {
           masterSecret,
           logger: this.logger.child({ component: 'FederationManager' }),
           brainManager: this.brainManager ?? undefined,
-          marketplaceManager: this.marketplaceManager as any ?? undefined,
+          marketplaceManager: (this.marketplaceManager as any) ?? undefined,
           soulManager: this.soulManager ?? undefined,
         });
         this.federationManager.startHealthCycle();
@@ -1411,7 +1411,7 @@ export class SecureYeoman {
         this.alertStorage = new AlertStorage();
         this.alertManager = new AlertManager(
           this.alertStorage,
-          this.notificationManager!,
+          this.notificationManager,
           this.logger.child({ component: 'AlertManager' })
         );
         this.logger.debug('AlertManager initialized');
@@ -2785,7 +2785,8 @@ export class SecureYeoman {
       this.config!.security.inputValidation.jailbreakAction = updates.jailbreakAction;
     }
     if (updates.strictSystemPromptConfidentiality !== undefined) {
-      this.config!.security.strictSystemPromptConfidentiality = updates.strictSystemPromptConfidentiality;
+      this.config!.security.strictSystemPromptConfidentiality =
+        updates.strictSystemPromptConfidentiality;
     }
     if (updates.abuseDetectionEnabled !== undefined) {
       this.config!.security.abuseDetection.enabled = updates.abuseDetectionEnabled;
@@ -2806,9 +2807,7 @@ export class SecureYeoman {
   }
 
   /** Persist security policy settings to the database. */
-  private async persistSecurityPolicyToDb(
-    updates: Record<string, unknown>
-  ): Promise<void> {
+  private async persistSecurityPolicyToDb(updates: Record<string, unknown>): Promise<void> {
     try {
       const pool = getPool();
       const now = Date.now();
@@ -2864,11 +2863,24 @@ export class SecureYeoman {
       ] as const;
       // Special handling for nested config fields
       const nestedPolicyHandlers: Record<string, (val: unknown) => void> = {
-        promptGuardMode: (v) => { this.config!.security.promptGuard.mode = v as 'block' | 'warn' | 'disabled'; },
-        responseGuardMode: (v) => { this.config!.security.responseGuard.mode = v as 'block' | 'warn' | 'disabled'; },
-        jailbreakThreshold: (v) => { this.config!.security.inputValidation.jailbreakThreshold = v as number; },
-        jailbreakAction: (v) => { this.config!.security.inputValidation.jailbreakAction = v as 'block' | 'warn' | 'audit_only'; },
-        abuseDetectionEnabled: (v) => { this.config!.security.abuseDetection.enabled = v as boolean; },
+        promptGuardMode: (v) => {
+          this.config!.security.promptGuard.mode = v as 'block' | 'warn' | 'disabled';
+        },
+        responseGuardMode: (v) => {
+          this.config!.security.responseGuard.mode = v as 'block' | 'warn' | 'disabled';
+        },
+        jailbreakThreshold: (v) => {
+          this.config!.security.inputValidation.jailbreakThreshold = v as number;
+        },
+        jailbreakAction: (v) => {
+          this.config!.security.inputValidation.jailbreakAction = v as
+            | 'block'
+            | 'warn'
+            | 'audit_only';
+        },
+        abuseDetectionEnabled: (v) => {
+          this.config!.security.abuseDetection.enabled = v as boolean;
+        },
       };
       for (const row of result.rows) {
         const val = JSON.parse(row.value);

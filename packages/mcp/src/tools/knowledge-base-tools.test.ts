@@ -25,7 +25,9 @@ function makeMockClient(overrides: Partial<CoreApiClient> = {}): CoreApiClient {
 function noopMiddleware(): ToolMiddleware {
   return {
     rateLimiter: { check: () => ({ allowed: true }), reset: vi.fn(), wrap: vi.fn() },
-    inputValidator: { validate: () => ({ valid: true, blocked: false, warnings: [], injectionScore: 0 }) },
+    inputValidator: {
+      validate: () => ({ valid: true, blocked: false, warnings: [], injectionScore: 0 }),
+    },
     auditLogger: { log: vi.fn(), wrap: (_t: string, _a: unknown, fn: () => unknown) => fn() },
     secretRedactor: { redact: (v: unknown) => v },
   } as unknown as ToolMiddleware;
@@ -47,7 +49,9 @@ describe('knowledge-base-tools', () => {
 
   describe('kb_search', () => {
     it('calls GET /api/v1/brain/search/similar', async () => {
-      const client = makeMockClient({ get: vi.fn().mockResolvedValue({ results: [{ id: 'k1', score: 0.9 }] }) });
+      const client = makeMockClient({
+        get: vi.fn().mockResolvedValue({ results: [{ id: 'k1', score: 0.9 }] }),
+      });
       const server = new McpServer({ name: 'test', version: '1.0.0' });
       registerKnowledgeBaseTools(server, client, noopMiddleware());
 
@@ -128,7 +132,9 @@ describe('knowledge-base-tools', () => {
 
   describe('kb_list_documents', () => {
     it('calls GET /api/v1/brain/documents', async () => {
-      const client = makeMockClient({ get: vi.fn().mockResolvedValue({ documents: [], total: 0 }) });
+      const client = makeMockClient({
+        get: vi.fn().mockResolvedValue({ documents: [], total: 0 }),
+      });
       const server = new McpServer({ name: 'test', version: '1.0.0' });
       registerKnowledgeBaseTools(server, client, noopMiddleware());
 
@@ -140,7 +146,9 @@ describe('knowledge-base-tools', () => {
     });
 
     it('passes visibility filter', async () => {
-      const client = makeMockClient({ get: vi.fn().mockResolvedValue({ documents: [], total: 0 }) });
+      const client = makeMockClient({
+        get: vi.fn().mockResolvedValue({ documents: [], total: 0 }),
+      });
       const server = new McpServer({ name: 'test', version: '1.0.0' });
       registerKnowledgeBaseTools(server, client, noopMiddleware());
 

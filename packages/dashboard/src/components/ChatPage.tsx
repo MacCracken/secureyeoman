@@ -127,7 +127,9 @@ const MessageBubble = memo(function MessageBubble({
           {/* Edit button on user messages */}
           {msg.role === 'user' && !isPending && (
             <button
-              onClick={() => onEditStart(index)}
+              onClick={() => {
+                onEditStart(index);
+              }}
               className="ml-auto opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
               title="Edit and resend from here"
               data-testid={`edit-msg-${index}`}
@@ -139,15 +141,15 @@ const MessageBubble = memo(function MessageBubble({
           {/* Brain context indicator */}
           {hasBrainContext && (
             <button
-              onClick={() => onToggleBrain(index)}
+              onClick={() => {
+                onToggleBrain(index);
+              }}
               className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full hover:bg-primary/20 transition-colors"
               data-testid={`brain-indicator-${index}`}
               title="Brain context was used"
             >
               <Brain className="w-3 h-3" />
-              <span>
-                {msg.brainContext!.memoriesUsed + msg.brainContext!.knowledgeUsed}
-              </span>
+              <span>{msg.brainContext!.memoriesUsed + msg.brainContext!.knowledgeUsed}</span>
             </button>
           )}
         </div>
@@ -162,8 +164,7 @@ const MessageBubble = memo(function MessageBubble({
               <Brain className="w-3 h-3" /> Brain Context
             </div>
             <div className="text-muted-foreground">
-              {msg.brainContext.memoriesUsed} memories,{' '}
-              {msg.brainContext.knowledgeUsed} knowledge
+              {msg.brainContext.memoriesUsed} memories, {msg.brainContext.knowledgeUsed} knowledge
             </div>
             {msg.brainContext.contextSnippets.length > 0 && (
               <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
@@ -182,8 +183,7 @@ const MessageBubble = memo(function MessageBubble({
 
         {/* Phase 2 — Tool use (badges + creation outcomes), shown before the response */}
         {msg.role === 'assistant' &&
-          ((msg.toolCalls?.length ?? 0) > 0 ||
-            (msg.creationEvents?.length ?? 0) > 0) && (
+          ((msg.toolCalls?.length ?? 0) > 0 || (msg.creationEvents?.length ?? 0) > 0) && (
             <div
               className={`space-y-1 mb-2 ${msg.thinkingContent ? 'border-t border-muted-foreground/15 pt-2 mt-1' : ''}`}
             >
@@ -200,9 +200,7 @@ const MessageBubble = memo(function MessageBubble({
                       className="inline-flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full"
                     >
                       <Sparkles className="w-2.5 h-2.5" />
-                      {tc.isMcp && tc.serverName
-                        ? `${tc.serverName}: ${tc.toolName}`
-                        : tc.label}
+                      {tc.isMcp && tc.serverName ? `${tc.serverName}: ${tc.toolName}` : tc.label}
                     </span>
                   ))}
                 </div>
@@ -249,19 +247,17 @@ const MessageBubble = memo(function MessageBubble({
           {/* Remember button on assistant messages */}
           {msg.role === 'assistant' && (
             <button
-              onClick={() => onRemember(index)}
+              onClick={() => {
+                onRemember(index);
+              }}
               disabled={isRemembered}
               className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded hover:bg-primary/10 transition-colors ${
-                isRemembered
-                  ? 'text-primary opacity-70'
-                  : 'opacity-40 hover:opacity-70'
+                isRemembered ? 'text-primary opacity-70' : 'opacity-40 hover:opacity-70'
               }`}
               data-testid={`remember-btn-${index}`}
               title={isRemembered ? 'Remembered' : 'Remember this response'}
             >
-              <Bookmark
-                className={`w-3 h-3 ${isRemembered ? 'fill-current' : ''}`}
-              />
+              <Bookmark className={`w-3 h-3 ${isRemembered ? 'fill-current' : ''}`} />
               {isRemembered ? 'Remembered' : 'Remember'}
             </button>
           )}
@@ -270,7 +266,9 @@ const MessageBubble = memo(function MessageBubble({
           {msg.role === 'assistant' && (
             <>
               <button
-                onClick={() => onFeedback(index, 'positive')}
+                onClick={() => {
+                  onFeedback(index, 'positive');
+                }}
                 disabled={feedbackValue !== undefined}
                 className={`inline-flex items-center p-0.5 rounded hover:bg-primary/10 transition-colors ${
                   feedbackValue === 'positive'
@@ -285,7 +283,9 @@ const MessageBubble = memo(function MessageBubble({
                 />
               </button>
               <button
-                onClick={() => onFeedback(index, 'negative')}
+                onClick={() => {
+                  onFeedback(index, 'negative');
+                }}
                 disabled={feedbackValue !== undefined}
                 className={`inline-flex items-center p-0.5 rounded hover:bg-primary/10 transition-colors ${
                   feedbackValue === 'negative'
@@ -749,7 +749,8 @@ export function ChatPage() {
 
   // Auto-scroll on new messages / streaming
   useEffect(() => {
-    if (!messagesEndRef.current || typeof messagesEndRef.current.scrollIntoView !== 'function') return;
+    if (!messagesEndRef.current || typeof messagesEndRef.current.scrollIntoView !== 'function')
+      return;
     if (!initialScrollDone.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'instant' });
       if (messages.length > 0) initialScrollDone.current = true;
@@ -1128,9 +1129,7 @@ export function ChatPage() {
               )}
 
               {/* Virtualised message rows */}
-              <div
-                style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}
-              >
+              <div style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
                 {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                   const msg = messages[virtualRow.index];
                   const i = virtualRow.index;

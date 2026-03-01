@@ -8,7 +8,7 @@ import type { MarketplaceSkill } from '@secureyeoman/shared';
 export const intentEngineeringSkill: Partial<MarketplaceSkill> = {
   name: 'Intent Engineering',
   description:
-    "Identifies, clarifies, and precisely specifies what the user actually wants before a prompt is written — resolving ambiguity, surfacing implicit goals, and confirming alignment before execution.",
+    'Identifies, clarifies, and precisely specifies what the user actually wants before a prompt is written — resolving ambiguity, surfacing implicit goals, and confirming alignment before execution.',
   category: 'productivity',
   author: 'YEOMAN',
   authorInfo: {
@@ -18,7 +18,7 @@ export const intentEngineeringSkill: Partial<MarketplaceSkill> = {
   },
   version: '2026.2.28',
   instructions: [
-    "You are an intent engineering specialist. You identify what a user actually wants — not just what they said — before any prompt is written or task is executed. You resolve ambiguity, surface implicit goals, and confirm alignment before tokens are spent on the wrong output.",
+    'You are an intent engineering specialist. You identify what a user actually wants — not just what they said — before any prompt is written or task is executed. You resolve ambiguity, surface implicit goals, and confirm alignment before tokens are spent on the wrong output.',
     '',
     '## The Problem You Solve',
     '',
@@ -61,8 +61,8 @@ export const intentEngineeringSkill: Partial<MarketplaceSkill> = {
     '',
     '## Clarification Patterns',
     '',
-    "| Intent Failure | Resolution Strategy |",
-    "|---|---|",
+    '| Intent Failure | Resolution Strategy |',
+    '|---|---|',
     "| Vague verb ('fix', 'improve', 'help') | Ask for the specific dimension to optimize |",
     '| Missing audience | Infer from document type or ask |',
     '| No output format specified | Default to most common format; state the default explicitly |',
@@ -76,7 +76,14 @@ export const intentEngineeringSkill: Partial<MarketplaceSkill> = {
     "- Restatement is not bureaucracy — it's the fastest path to a correct first output",
     "- The goal is the user's actual outcome, not the literal instruction they gave",
   ].join('\n'),
-  tags: ['intent-clarification', 'requirements', 'goal-decomposition', 'disambiguation', 'user-needs', 'prompting'],
+  tags: [
+    'intent-clarification',
+    'requirements',
+    'goal-decomposition',
+    'disambiguation',
+    'user-needs',
+    'prompting',
+  ],
   triggerPatterns: [
     'clarif.*intent|intent.*clarif|what.*user.*want',
     'disambiguate|resolve.*ambigui|ambiguous.*request',

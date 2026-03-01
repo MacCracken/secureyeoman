@@ -5,7 +5,13 @@
 import { createWriteStream } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, extractCommonFlags, apiCall, colorContext } from '../utils.js';
+import {
+  extractFlag,
+  extractBoolFlag,
+  extractCommonFlags,
+  apiCall,
+  colorContext,
+} from '../utils.js';
 
 const USAGE = `
 Usage: secureyeoman training [--url URL] [--token TOKEN] [--json] <action> [options]
@@ -117,9 +123,7 @@ export const trainingCommand: Command = {
           if (limitResult.value) body.limit = Number(limitResult.value);
 
           const outPath = outResult.value;
-          const dest = outPath
-            ? createWriteStream(resolve(outPath))
-            : ctx.stdout;
+          const dest = outPath ? createWriteStream(resolve(outPath)) : ctx.stdout;
 
           if (!jsonOutput && outPath) {
             ctx.stderr.write(`Exporting ${fmt} to ${outPath}...\n`);

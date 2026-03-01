@@ -68,19 +68,30 @@ function makeFinetuneManager(overrides: Record<string, unknown> = {}) {
     cancelJob: vi.fn(async () => true),
     deleteJob: vi.fn(async (id: string) => id === 'ft-1'),
     registerWithOllama: vi.fn(async () => undefined),
-    streamLogs: vi.fn(async function* () { yield 'log line 1'; }),
+    streamLogs: vi.fn(async function* () {
+      yield 'log line 1';
+    }),
     ...overrides,
   } as any;
 }
 
-function buildMockSY(opts: {
-  distillationManager?: any;
-  finetuneManager?: any;
-  conversationStorage?: any;
-  aiClient?: any;
-} = {}) {
+function buildMockSY(
+  opts: {
+    distillationManager?: any;
+    finetuneManager?: any;
+    conversationStorage?: any;
+    aiClient?: any;
+  } = {}
+) {
   const defaultAiClient = {
-    chat: vi.fn(async () => ({ content: 'teacher response', id: 'r1', usage: {}, stopReason: 'end_turn', model: 'claude-opus-4-6', provider: 'anthropic' })),
+    chat: vi.fn(async () => ({
+      content: 'teacher response',
+      id: 'r1',
+      usage: {},
+      stopReason: 'end_turn',
+      model: 'claude-opus-4-6',
+      provider: 'anthropic',
+    })),
   };
   return {
     getConversationStorage: vi.fn(() => opts.conversationStorage ?? null),
@@ -112,7 +123,9 @@ describe('POST /api/v1/training/distillation/jobs', () => {
     app = await buildApp(buildMockSY({ distillationManager: dm }));
   });
 
-  afterEach(async () => { await app.close(); });
+  afterEach(async () => {
+    await app.close();
+  });
 
   it('creates a job and returns 201', async () => {
     const res = await app.inject({
@@ -135,7 +148,11 @@ describe('POST /api/v1/training/distillation/jobs', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/training/distillation/jobs',
-      payload: { teacherProvider: 'anthropic', teacherModel: 'claude', outputPath: '/tmp/out.jsonl' },
+      payload: {
+        teacherProvider: 'anthropic',
+        teacherModel: 'claude',
+        outputPath: '/tmp/out.jsonl',
+      },
     });
     expect(res.statusCode).toBe(400);
     expect(JSON.parse(res.payload).message).toContain('name');
@@ -179,7 +196,9 @@ describe('GET /api/v1/training/distillation/jobs', () => {
     app = await buildApp(buildMockSY({ distillationManager: makeDistillationManager() }));
   });
 
-  afterEach(async () => { await app.close(); });
+  afterEach(async () => {
+    await app.close();
+  });
 
   it('returns list of jobs', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/training/distillation/jobs' });
@@ -204,16 +223,24 @@ describe('GET /api/v1/training/distillation/jobs/:id', () => {
     app = await buildApp(buildMockSY({ distillationManager: makeDistillationManager() }));
   });
 
-  afterEach(async () => { await app.close(); });
+  afterEach(async () => {
+    await app.close();
+  });
 
   it('returns job by ID', async () => {
-    const res = await app.inject({ method: 'GET', url: '/api/v1/training/distillation/jobs/job-1' });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/distillation/jobs/job-1',
+    });
     expect(res.statusCode).toBe(200);
     expect(JSON.parse(res.payload).id).toBe('job-1');
   });
 
   it('returns 404 for unknown job', async () => {
-    const res = await app.inject({ method: 'GET', url: '/api/v1/training/distillation/jobs/unknown' });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/distillation/jobs/unknown',
+    });
     expect(res.statusCode).toBe(404);
   });
 });
@@ -225,7 +252,9 @@ describe('DELETE /api/v1/training/distillation/jobs/:id', () => {
     app = await buildApp(buildMockSY({ distillationManager: makeDistillationManager() }));
   });
 
-  afterEach(async () => { await app.close(); });
+  afterEach(async () => {
+    await app.close();
+  });
 
   it('deletes job and returns 204', async () => {
     const res = await app.inject({
@@ -251,11 +280,16 @@ describe('POST /api/v1/training/distillation/jobs/:id/run', () => {
   beforeEach(async () => {
     dm = makeDistillationManager();
     app = await buildApp(
-      buildMockSY({ distillationManager: dm, conversationStorage: { listConversations: vi.fn(async () => ({ conversations: [] })) } })
+      buildMockSY({
+        distillationManager: dm,
+        conversationStorage: { listConversations: vi.fn(async () => ({ conversations: [] })) },
+      })
     );
   });
 
-  afterEach(async () => { await app.close(); });
+  afterEach(async () => {
+    await app.close();
+  });
 
   it('returns 202 and fires job in background', async () => {
     const res = await app.inject({
@@ -347,7 +381,9 @@ describe('POST /api/v1/training/finetune/jobs', () => {
     app = await buildApp(buildMockSY({ finetuneManager: fm }));
   });
 
-  afterEach(async () => { await app.close(); });
+  afterEach(async () => {
+    await app.close();
+  });
 
   it('creates a job and returns 201', async () => {
     const res = await app.inject({
@@ -367,7 +403,9 @@ describe('POST /api/v1/training/finetune/jobs', () => {
   });
 
   it('returns 201 even when Docker start fails', async () => {
-    fm.startJob = vi.fn(async () => { throw new Error('Docker not available'); });
+    fm.startJob = vi.fn(async () => {
+      throw new Error('Docker not available');
+    });
     fm.getJob = vi.fn(async () => MOCK_FINETUNE_JOB);
     const res = await app.inject({
       method: 'POST',
@@ -416,7 +454,9 @@ describe('GET /api/v1/training/finetune/jobs', () => {
     app = await buildApp(buildMockSY({ finetuneManager: makeFinetuneManager() }));
   });
 
-  afterEach(async () => { await app.close(); });
+  afterEach(async () => {
+    await app.close();
+  });
 
   it('returns list of finetune jobs', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/training/finetune/jobs' });
@@ -434,7 +474,9 @@ describe('GET /api/v1/training/finetune/jobs/:id', () => {
     app = await buildApp(buildMockSY({ finetuneManager: makeFinetuneManager() }));
   });
 
-  afterEach(async () => { await app.close(); });
+  afterEach(async () => {
+    await app.close();
+  });
 
   it('returns job by ID', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/training/finetune/jobs/ft-1' });
@@ -462,7 +504,9 @@ describe('POST /api/v1/training/finetune/jobs/:id/register', () => {
     app = await buildApp(buildMockSY({ finetuneManager: fm }));
   });
 
-  afterEach(async () => { await app.close(); });
+  afterEach(async () => {
+    await app.close();
+  });
 
   it('registers adapter and returns success', async () => {
     const res = await app.inject({
@@ -505,7 +549,9 @@ describe('DELETE /api/v1/training/finetune/jobs/:id', () => {
     app = await buildApp(buildMockSY({ finetuneManager: makeFinetuneManager() }));
   });
 
-  afterEach(async () => { await app.close(); });
+  afterEach(async () => {
+    await app.close();
+  });
 
   it('deletes job and returns 204', async () => {
     const res = await app.inject({

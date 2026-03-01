@@ -9,7 +9,13 @@
 
 import type { BrainManager } from './manager.js';
 import type { BrainStorage } from './storage.js';
-import type { KbDocument, DocumentFormat, DocumentVisibility, KnowledgeHealthStats } from './types.js';
+import type {
+  KbDocument,
+  DocumentFormat,
+  DocumentVisibility,
+  KnowledgeHealthStats,
+  NotebookCorpus,
+} from './types.js';
 import type { SecureLogger } from '../logging/logger.js';
 import { chunk } from './chunker.js';
 
@@ -166,8 +172,8 @@ export class DocumentManager {
       Accept: 'application/vnd.github.v3+json',
       'User-Agent': 'SecureYeoman/KnowledgeBase',
     };
-    const token = githubToken ?? process.env['GITHUB_TOKEN'];
-    if (token) headers['Authorization'] = `token ${token}`;
+    const token = githubToken ?? process.env.GITHUB_TOKEN;
+    if (token) headers.Authorization = `token ${token}`;
 
     // Fetch repository tree to find markdown files
     const contentsUrl = `https://api.github.com/repos/${owner}/${repo}/contents/`;
@@ -180,12 +186,12 @@ export class DocumentManager {
       throw new Error(`GitHub API ${response.status}: ${response.statusText}`);
     }
 
-    const items = (await response.json()) as Array<{
+    const items = (await response.json()) as {
       name: string;
       path: string;
       type: string;
       download_url: string | null;
-    }>;
+    }[];
 
     const mdFiles = items.filter(
       (item) => item.type === 'file' && item.name.toLowerCase().endsWith('.md')
@@ -244,6 +250,64 @@ export class DocumentManager {
     return this.storage.getKnowledgeHealthStats(personalityId);
   }
 
+  /**
+   * Build the notebook corpus for a personality — all document chunks loaded in order.
+   *
+   * @param personalityId  Scopes results; null/undefined = global/all.
+   * @param tokenBudget    Token cap for budget check (default: Infinity — caller must compute).
+   */
+  async getNotebookCorpus(
+    personalityId?: string | null,
+    tokenBudget = Infinity
+  ): Promise<NotebookCorpus> {
+    const documents = await this.storage.getAllDocumentChunks(personalityId);
+    const totalTokens = documents.reduce((s, d) => s + d.estimatedTokens, 0);
+    return {
+      documents,
+      totalTokens,
+      fitsInBudget: totalTokens <= tokenBudget,
+      budget: tokenBudget,
+    };
+  }
+
+  /**
+   * Generate (or refresh) the Source Guide for a personality.
+   *
+   * The Source Guide is a compact metadata map stored as a special knowledge entry
+   * (`source: 'source_guide', topic: '__source_guide__'`) so the AI always knows
+   * what documents exist — even in RAG mode where full content is not loaded.
+   *
+   * Called automatically after every successful ingest.
+   */
+  async generateSourceGuide(personalityId: string | null): Promise<void> {
+    try {
+      const docs = await this.storage.listDocuments(
+        personalityId !== null ? { personalityId } : undefined
+      );
+      const readyDocs = docs.filter((d) => d.status === 'ready');
+      if (readyDocs.length === 0) return;
+
+      const totalChunks = readyDocs.reduce((s, d) => s + d.chunkCount, 0);
+      const lines = [
+        `KNOWLEDGE BASE OVERVIEW — ${readyDocs.length} document${readyDocs.length !== 1 ? 's' : ''}, ${totalChunks} total chunks`,
+        '',
+      ];
+      for (const doc of readyDocs) {
+        const format = doc.format ? ` (${doc.format})` : '';
+        lines.push(`- "${doc.title}"${format}: ${doc.chunkCount} chunk${doc.chunkCount !== 1 ? 's' : ''}`);
+      }
+
+      const guideText = lines.join('\n');
+      const source = 'source_guide';
+
+      // Upsert: delete old guide entry then re-create
+      await this.storage.deleteKnowledgeBySourcePrefix(source);
+      await this.brainManager.learn('__source_guide__', guideText, source, 1.0, personalityId ?? undefined);
+    } catch (err) {
+      this.logger.warn('Source guide generation failed', { error: String(err) });
+    }
+  }
+
   async logQuery(
     personalityId: string | null,
     query: string,
@@ -297,13 +361,7 @@ export class DocumentManager {
       const source = `document:${docId}:chunk${c.index}`;
 
       try {
-        await this.brainManager.learn(
-          topic,
-          c.text,
-          source,
-          0.9,
-          personalityId ?? undefined
-        );
+        await this.brainManager.learn(topic, c.text, source, 0.9, personalityId ?? undefined);
       } catch (err) {
         // Log and continue — don't fail the whole ingest if one chunk fails
         this.logger.warn('Failed to learn chunk', {

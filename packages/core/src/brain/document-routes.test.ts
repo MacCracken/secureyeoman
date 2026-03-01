@@ -76,7 +76,9 @@ function buildMultipartBody(
   );
 
   for (const [key, value] of Object.entries(fields ?? {})) {
-    parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="${key}"\r\n\r\n${value}\r\n`);
+    parts.push(
+      `--${boundary}\r\nContent-Disposition: form-data; name="${key}"\r\n\r\n${value}\r\n`
+    );
   }
 
   parts.push(`--${boundary}--\r\n`);
@@ -118,7 +120,9 @@ describe('Document Routes', () => {
     it('returns 400 when no file is provided', async () => {
       const app = await buildApp();
       const boundary = '----TestBoundary456';
-      const body = Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="title"\r\n\r\nOnly a field\r\n--${boundary}--\r\n`);
+      const body = Buffer.from(
+        `--${boundary}\r\nContent-Disposition: form-data; name="title"\r\n\r\nOnly a field\r\n--${boundary}--\r\n`
+      );
 
       const res = await app.inject({
         method: 'POST',
@@ -131,7 +135,9 @@ describe('Document Routes', () => {
     });
 
     it('passes visibility and personalityId fields', async () => {
-      const ingestBuffer = vi.fn().mockResolvedValue({ ...DOC, visibility: 'shared', personalityId: 'p-1' });
+      const ingestBuffer = vi
+        .fn()
+        .mockResolvedValue({ ...DOC, visibility: 'shared', personalityId: 'p-1' });
       const app = await buildApp({ ingestBuffer });
 
       const { body, boundary } = buildMultipartBody('test.md', '# Doc', {

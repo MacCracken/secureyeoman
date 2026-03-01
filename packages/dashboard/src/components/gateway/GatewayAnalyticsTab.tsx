@@ -183,9 +183,7 @@ function SummaryRow({
   onToggle: () => void;
 }) {
   const errorRate =
-    summary.requests24h > 0
-      ? ((summary.errors24h / summary.requests24h) * 100).toFixed(1)
-      : '0.0';
+    summary.requests24h > 0 ? ((summary.errors24h / summary.requests24h) * 100).toFixed(1) : '0.0';
   const errorHighlight =
     summary.errors24h > 0
       ? summary.errors24h / summary.requests24h > 0.1
@@ -195,10 +193,7 @@ function SummaryRow({
 
   return (
     <>
-      <tr
-        className="border-b border-border/50 hover:bg-muted/20 cursor-pointer"
-        onClick={onToggle}
-      >
+      <tr className="border-b border-border/50 hover:bg-muted/20 cursor-pointer" onClick={onToggle}>
         <td className="px-3 py-2.5">
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">
@@ -239,11 +234,7 @@ function SummaryRow({
       {expanded && (
         <tr className="border-b border-border/50">
           <td colSpan={6} className="px-3 py-3">
-            <UsageLogPanel
-              keyId={summary.keyId}
-              keyName={keyName}
-              onClose={onToggle}
-            />
+            <UsageLogPanel keyId={summary.keyId} keyName={keyName} onClose={onToggle} />
           </td>
         </tr>
       )}
@@ -256,7 +247,11 @@ function SummaryRow({
 export function GatewayAnalyticsTab() {
   const [expandedKeyId, setExpandedKeyId] = useState<string | null>(null);
 
-  const { data: summaryData, isLoading: summaryLoading, error: summaryError } = useQuery({
+  const {
+    data: summaryData,
+    isLoading: summaryLoading,
+    error: summaryError,
+  } = useQuery({
     queryKey: ['apiKeyUsageSummary'],
     queryFn: fetchApiKeyUsageSummary,
     refetchInterval: 60_000,
@@ -279,9 +274,7 @@ export function GatewayAnalyticsTab() {
   const totalTokens = summary.reduce((s, r) => s + r.tokens24h, 0);
   const totalErrors = summary.reduce((s, r) => s + r.errors24h, 0);
   const avgP95 =
-    summary.length > 0
-      ? summary.reduce((s, r) => s + r.p95LatencyMs, 0) / summary.length
-      : 0;
+    summary.length > 0 ? summary.reduce((s, r) => s + r.p95LatencyMs, 0) / summary.length : 0;
 
   function toggleExpand(keyId: string) {
     setExpandedKeyId((prev) => (prev === keyId ? null : keyId));
@@ -317,7 +310,13 @@ export function GatewayAnalyticsTab() {
             icon={<AlertTriangle className="w-3 h-3" />}
             label="Errors (24 h)"
             value={fmt(totalErrors)}
-            highlight={totalErrors > 0 ? (totalErrors / Math.max(totalRequests, 1) > 0.1 ? 'error' : 'warn') : undefined}
+            highlight={
+              totalErrors > 0
+                ? totalErrors / Math.max(totalRequests, 1) > 0.1
+                  ? 'error'
+                  : 'warn'
+                : undefined
+            }
           />
         </div>
         <div className="border border-border rounded-lg p-3 bg-card space-y-1">
@@ -378,7 +377,9 @@ export function GatewayAnalyticsTab() {
                     summary={s}
                     keyName={keyNameMap.get(s.keyId) ?? s.keyPrefix}
                     expanded={expandedKeyId === s.keyId}
-                    onToggle={() => toggleExpand(s.keyId)}
+                    onToggle={() => {
+                      toggleExpand(s.keyId);
+                    }}
                   />
                 ))}
               </tbody>

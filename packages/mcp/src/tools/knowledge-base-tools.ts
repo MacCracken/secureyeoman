@@ -42,7 +42,7 @@ export function registerKnowledgeBaseTools(
         limit: String(topK),
         threshold: String(minScore),
       };
-      if (personalityId) params['personalityId'] = personalityId;
+      if (personalityId) params.personalityId = personalityId;
 
       const result = await client.get('/api/v1/brain/search/similar', params);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
@@ -110,8 +110,8 @@ export function registerKnowledgeBaseTools(
     },
     wrapToolHandler('kb_list_documents', middleware, async ({ personalityId, visibility }) => {
       const params: Record<string, string> = {};
-      if (personalityId) params['personalityId'] = personalityId;
-      if (visibility) params['visibility'] = visibility;
+      if (personalityId) params.personalityId = personalityId;
+      if (visibility) params.visibility = visibility;
 
       const result = await client.get('/api/v1/brain/documents', params);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };

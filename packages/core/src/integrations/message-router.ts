@@ -31,7 +31,7 @@ export interface MessageRouterDeps {
   getActivePersonality?: () => Promise<{
     voice?: string | null;
     selectedIntegrations?: string[];
-    integrationAccess?: Array<{ id: string; mode: string }>;
+    integrationAccess?: { id: string; mode: string }[];
   } | null>;
   /** Optional outbound webhook dispatcher — fires message.inbound events */
   outboundWebhookDispatcher?: OutboundWebhookDispatcher | null;

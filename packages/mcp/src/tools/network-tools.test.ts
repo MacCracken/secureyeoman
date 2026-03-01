@@ -13,9 +13,9 @@ import type { ToolMiddleware } from './index.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-type ToolEntry = {
+interface ToolEntry {
   handler: (args: unknown) => Promise<{ content: Array<{ text: string }>; isError?: boolean }>;
-};
+}
 type ToolRecord = Record<string, ToolEntry>;
 
 function getRegistered(server: McpServer): ToolRecord {

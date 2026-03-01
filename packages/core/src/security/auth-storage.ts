@@ -175,16 +175,28 @@ export class AuthStorage extends PgBaseStorage {
     return this.queryMany<ApiKeyUsageRow>(sql, params);
   }
 
-  async getUsageSummary(): Promise<{
-    keyId: string; keyPrefix: string; personalityId: string | null;
-    requests24h: number; tokens24h: number; errors24h: number;
-    p50LatencyMs: number; p95LatencyMs: number;
-  }[]> {
+  async getUsageSummary(): Promise<
+    {
+      keyId: string;
+      keyPrefix: string;
+      personalityId: string | null;
+      requests24h: number;
+      tokens24h: number;
+      errors24h: number;
+      p50LatencyMs: number;
+      p95LatencyMs: number;
+    }[]
+  > {
     const cutoff = Date.now() - 86_400_000;
     const rows = await this.queryMany<{
-      key_id: string; key_prefix: string; personality_id: string | null;
-      requests24h: string; tokens24h: string; errors24h: string;
-      p50: string | null; p95: string | null;
+      key_id: string;
+      key_prefix: string;
+      personality_id: string | null;
+      requests24h: string;
+      tokens24h: string;
+      errors24h: string;
+      p50: string | null;
+      p95: string | null;
     }>(
       `SELECT
          u.key_id,

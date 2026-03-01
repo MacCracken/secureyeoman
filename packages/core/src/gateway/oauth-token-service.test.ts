@@ -258,7 +258,11 @@ describe('OAuthTokenService', () => {
   describe('forceRefreshById', () => {
     it('returns null when token ID not found', async () => {
       const storage = makeStorage({ getById: vi.fn().mockResolvedValue(null) });
-      const svc = new OAuthTokenService({ storage, logger, googleCredentials: { clientId: 'cid', clientSecret: 'csec' } });
+      const svc = new OAuthTokenService({
+        storage,
+        logger,
+        googleCredentials: { clientId: 'cid', clientSecret: 'csec' },
+      });
 
       const result = await svc.forceRefreshById('nonexistent-id');
       expect(result).toBeNull();
@@ -272,7 +276,11 @@ describe('OAuthTokenService', () => {
         ok: true,
         json: vi.fn().mockResolvedValue({ access_token: 'brand-new-token', expires_in: 3600 }),
       });
-      const svc = new OAuthTokenService({ storage, logger, googleCredentials: { clientId: 'cid', clientSecret: 'csec' } });
+      const svc = new OAuthTokenService({
+        storage,
+        logger,
+        googleCredentials: { clientId: 'cid', clientSecret: 'csec' },
+      });
 
       const result = await svc.forceRefreshById('tok-1');
       expect(result).toBe('brand-new-token');

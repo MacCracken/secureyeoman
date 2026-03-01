@@ -54,8 +54,10 @@ function runDocker(
           return;
         }
         resolve({
-          stdout: stdout.length > MAX_OUTPUT ? stdout.slice(0, MAX_OUTPUT) + '\n...[truncated]' : stdout,
-          stderr: stderr.length > MAX_OUTPUT ? stderr.slice(0, MAX_OUTPUT) + '\n...[truncated]' : stderr,
+          stdout:
+            stdout.length > MAX_OUTPUT ? stdout.slice(0, MAX_OUTPUT) + '\n...[truncated]' : stdout,
+          stderr:
+            stderr.length > MAX_OUTPUT ? stderr.slice(0, MAX_OUTPUT) + '\n...[truncated]' : stderr,
         });
       }
     );
@@ -108,7 +110,11 @@ export function registerDockerTools(
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ containers, count: containers.length, stderr: stderr || undefined }, null, 2),
+            text: JSON.stringify(
+              { containers, count: containers.length, stderr: stderr || undefined },
+              null,
+              2
+            ),
           },
         ],
       };
@@ -121,7 +127,13 @@ export function registerDockerTools(
     'Fetch logs from a Docker container',
     {
       container: z.string().min(1).describe('Container name or ID'),
-      tail: z.number().int().min(1).max(10000).default(100).describe('Number of lines from the end'),
+      tail: z
+        .number()
+        .int()
+        .min(1)
+        .max(10000)
+        .default(100)
+        .describe('Number of lines from the end'),
       timestamps: z.boolean().default(false).describe('Include timestamps'),
     },
     wrapToolHandler('docker_logs', middleware, async ({ container, tail, timestamps }) => {
@@ -146,9 +158,8 @@ export function registerDockerTools(
     },
     wrapToolHandler('docker_inspect', middleware, async ({ target, type }) => {
       if (!config.exposeDockerTools) return disabled();
-      const args = type === 'image'
-        ? ['image', 'inspect', target]
-        : ['container', 'inspect', target];
+      const args =
+        type === 'image' ? ['image', 'inspect', target] : ['container', 'inspect', target];
       const { stdout, stderr } = await runDocker(config, args);
       return {
         content: [{ type: 'text', text: stdout || stderr || '(no output)' }],
@@ -184,7 +195,11 @@ export function registerDockerTools(
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ stats, count: stats.length, stderr: stderr || undefined }, null, 2),
+            text: JSON.stringify(
+              { stats, count: stats.length, stderr: stderr || undefined },
+              null,
+              2
+            ),
           },
         ],
       };
@@ -196,7 +211,10 @@ export function registerDockerTools(
     'docker_images',
     'List locally available Docker images',
     {
-      filter: z.string().default('').describe('Optional filter (e.g. "dangling=true", "label=env=prod")'),
+      filter: z
+        .string()
+        .default('')
+        .describe('Optional filter (e.g. "dangling=true", "label=env=prod")'),
     },
     wrapToolHandler('docker_images', middleware, async ({ filter }) => {
       if (!config.exposeDockerTools) return disabled();
@@ -217,7 +235,11 @@ export function registerDockerTools(
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ images, count: images.length, stderr: stderr || undefined }, null, 2),
+            text: JSON.stringify(
+              { images, count: images.length, stderr: stderr || undefined },
+              null,
+              2
+            ),
           },
         ],
       };
@@ -246,11 +268,22 @@ export function registerDockerTools(
     'Stop one or more running Docker containers',
     {
       containers: z.array(z.string().min(1)).min(1).describe('Container names or IDs to stop'),
-      timeout: z.number().int().min(0).max(300).default(10).describe('Seconds to wait before SIGKILL'),
+      timeout: z
+        .number()
+        .int()
+        .min(0)
+        .max(300)
+        .default(10)
+        .describe('Seconds to wait before SIGKILL'),
     },
     wrapToolHandler('docker_stop', middleware, async ({ containers, timeout }) => {
       if (!config.exposeDockerTools) return disabled();
-      const { stdout, stderr } = await runDocker(config, ['stop', '--time', String(timeout), ...containers]);
+      const { stdout, stderr } = await runDocker(config, [
+        'stop',
+        '--time',
+        String(timeout),
+        ...containers,
+      ]);
       return {
         content: [{ type: 'text', text: stdout || stderr || '(stopped)' }],
       };
@@ -263,11 +296,22 @@ export function registerDockerTools(
     'Restart one or more Docker containers',
     {
       containers: z.array(z.string().min(1)).min(1).describe('Container names or IDs to restart'),
-      timeout: z.number().int().min(0).max(300).default(10).describe('Seconds to wait before SIGKILL'),
+      timeout: z
+        .number()
+        .int()
+        .min(0)
+        .max(300)
+        .default(10)
+        .describe('Seconds to wait before SIGKILL'),
     },
     wrapToolHandler('docker_restart', middleware, async ({ containers, timeout }) => {
       if (!config.exposeDockerTools) return disabled();
-      const { stdout, stderr } = await runDocker(config, ['restart', '--time', String(timeout), ...containers]);
+      const { stdout, stderr } = await runDocker(config, [
+        'restart',
+        '--time',
+        String(timeout),
+        ...containers,
+      ]);
       return {
         content: [{ type: 'text', text: stdout || stderr || '(restarted)' }],
       };
@@ -305,7 +349,10 @@ export function registerDockerTools(
     'docker_pull',
     'Pull a Docker image from a registry',
     {
-      image: z.string().min(1).describe('Image reference to pull (e.g. "nginx:latest", "ghcr.io/org/app:v1.2")'),
+      image: z
+        .string()
+        .min(1)
+        .describe('Image reference to pull (e.g. "nginx:latest", "ghcr.io/org/app:v1.2")'),
     },
     wrapToolHandler('docker_pull', middleware, async ({ image }) => {
       if (!config.exposeDockerTools) return disabled();
@@ -356,16 +403,28 @@ export function registerDockerTools(
       tail: z.number().int().min(1).max(10000).default(100).describe('Lines per service'),
       timestamps: z.boolean().default(false),
     },
-    wrapToolHandler('docker_compose_logs', middleware, async ({ workdir, service, tail, timestamps }) => {
-      if (!config.exposeDockerTools) return disabled();
-      const args = ['compose', '--project-directory', workdir, 'logs', '--tail', String(tail), '--no-color'];
-      if (timestamps) args.push('--timestamps');
-      if (service) args.push(service);
-      const { stdout, stderr } = await runDocker(config, args);
-      return {
-        content: [{ type: 'text', text: stdout || stderr || '(no output)' }],
-      };
-    })
+    wrapToolHandler(
+      'docker_compose_logs',
+      middleware,
+      async ({ workdir, service, tail, timestamps }) => {
+        if (!config.exposeDockerTools) return disabled();
+        const args = [
+          'compose',
+          '--project-directory',
+          workdir,
+          'logs',
+          '--tail',
+          String(tail),
+          '--no-color',
+        ];
+        if (timestamps) args.push('--timestamps');
+        if (service) args.push(service);
+        const { stdout, stderr } = await runDocker(config, args);
+        return {
+          content: [{ type: 'text', text: stdout || stderr || '(no output)' }],
+        };
+      }
+    )
   );
 
   // ── docker_compose_up ────────────────────────────────────────────────────
@@ -402,18 +461,28 @@ export function registerDockerTools(
     'Stop and remove containers, networks defined in a Docker Compose file',
     {
       workdir: z.string().min(1).describe('Directory containing the docker-compose.yml file'),
-      volumes: z.boolean().default(false).describe('Also remove named volumes declared in the compose file'),
-      removeOrphans: z.boolean().default(false).describe('Remove containers for services not defined in the compose file'),
+      volumes: z
+        .boolean()
+        .default(false)
+        .describe('Also remove named volumes declared in the compose file'),
+      removeOrphans: z
+        .boolean()
+        .default(false)
+        .describe('Remove containers for services not defined in the compose file'),
     },
-    wrapToolHandler('docker_compose_down', middleware, async ({ workdir, volumes, removeOrphans }) => {
-      if (!config.exposeDockerTools) return disabled();
-      const args = ['compose', '--project-directory', workdir, 'down'];
-      if (volumes) args.push('--volumes');
-      if (removeOrphans) args.push('--remove-orphans');
-      const { stdout, stderr } = await runDocker(config, args, COMPOSE_TIMEOUT);
-      return {
-        content: [{ type: 'text', text: stdout || stderr || '(stopped)' }],
-      };
-    })
+    wrapToolHandler(
+      'docker_compose_down',
+      middleware,
+      async ({ workdir, volumes, removeOrphans }) => {
+        if (!config.exposeDockerTools) return disabled();
+        const args = ['compose', '--project-directory', workdir, 'down'];
+        if (volumes) args.push('--volumes');
+        if (removeOrphans) args.push('--remove-orphans');
+        const { stdout, stderr } = await runDocker(config, args, COMPOSE_TIMEOUT);
+        return {
+          content: [{ type: 'text', text: stdout || stderr || '(stopped)' }],
+        };
+      }
+    )
   );
 }

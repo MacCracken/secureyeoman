@@ -119,7 +119,11 @@ export function registerFederationRoutes(
         await federationStorage.updateFeatures(request.params.id, request.body ?? {});
         return reply.send({ ok: true });
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to update features');
+        return sendError(
+          reply,
+          500,
+          err instanceof Error ? err.message : 'Failed to update features'
+        );
       }
     }
   );
@@ -151,7 +155,11 @@ export function registerFederationRoutes(
         );
         return reply.send({ skills });
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to list peer marketplace');
+        return sendError(
+          reply,
+          500,
+          err instanceof Error ? err.message : 'Failed to list peer marketplace'
+        );
       }
     }
   );
@@ -174,7 +182,11 @@ export function registerFederationRoutes(
         );
         return reply.send({ ok: true });
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to install skill');
+        return sendError(
+          reply,
+          500,
+          err instanceof Error ? err.message : 'Failed to install skill'
+        );
       }
     }
   );
@@ -195,10 +207,17 @@ export function registerFederationRoutes(
         );
         return reply
           .header('Content-Type', 'application/octet-stream')
-          .header('Content-Disposition', `attachment; filename="personality-${request.params.id}.syi"`)
+          .header(
+            'Content-Disposition',
+            `attachment; filename="personality-${request.params.id}.syi"`
+          )
           .send(bundle);
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to export bundle');
+        return sendError(
+          reply,
+          500,
+          err instanceof Error ? err.message : 'Failed to export bundle'
+        );
       }
     }
   );
@@ -213,7 +232,8 @@ export function registerFederationRoutes(
       reply
     ) => {
       const { bundle, passphrase, nameOverride } = request.body ?? {};
-      if (!bundle || !passphrase) return sendError(reply, 400, 'bundle and passphrase are required');
+      if (!bundle || !passphrase)
+        return sendError(reply, 400, 'bundle and passphrase are required');
       try {
         const personality = await federationManager.importPersonalityBundle(
           Buffer.from(bundle, 'base64'),
@@ -222,7 +242,11 @@ export function registerFederationRoutes(
         );
         return reply.code(201).send({ personality });
       } catch (err) {
-        return sendError(reply, 400, err instanceof Error ? err.message : 'Failed to import bundle');
+        return sendError(
+          reply,
+          400,
+          err instanceof Error ? err.message : 'Failed to import bundle'
+        );
       }
     }
   );
@@ -230,56 +254,51 @@ export function registerFederationRoutes(
   // ── Peer-incoming routes (custom Bearer auth) ─────────────────────────────
 
   // Federated knowledge search — called by peer instances
-  app.get(
-    '/api/v1/federation/knowledge/search',
-    async (request, reply) => {
-      const ok = await peerAuthPreHandler(request, reply, federationManager);
-      if (!ok) return;
-      if (!brainManager) return sendError(reply, 503, 'Brain manager not available');
-      const qs = request.query as Record<string, string>;
-      const query = qs.q ?? '';
-      const limit = Math.min(parseInt(qs.limit ?? '10', 10), 100);
-      try {
-        const entries = await brainManager.semanticSearch(query, { limit });
-        return reply.send({ entries });
-      } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Knowledge search failed');
-      }
+  app.get('/api/v1/federation/knowledge/search', async (request, reply) => {
+    const ok = await peerAuthPreHandler(request, reply, federationManager);
+    if (!ok) return;
+    if (!brainManager) return sendError(reply, 503, 'Brain manager not available');
+    const qs = request.query as Record<string, string>;
+    const query = qs.q ?? '';
+    const limit = Math.min(parseInt(qs.limit ?? '10', 10), 100);
+    try {
+      const entries = await brainManager.semanticSearch(query, { limit });
+      return reply.send({ entries });
+    } catch (err) {
+      return sendError(reply, 500, err instanceof Error ? err.message : 'Knowledge search failed');
     }
-  );
+  });
 
   // Federated marketplace listing — called by peer instances
-  app.get(
-    '/api/v1/federation/marketplace',
-    async (request, reply) => {
-      const ok = await peerAuthPreHandler(request, reply, federationManager);
-      if (!ok) return;
-      if (!marketplaceManager) return sendError(reply, 503, 'Marketplace manager not available');
-      const qs = request.query as Record<string, string>;
-      try {
-        const skills = await marketplaceManager.search(qs.query, { limit: 100 });
-        return reply.send({ skills });
-      } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Marketplace search failed');
-      }
+  app.get('/api/v1/federation/marketplace', async (request, reply) => {
+    const ok = await peerAuthPreHandler(request, reply, federationManager);
+    if (!ok) return;
+    if (!marketplaceManager) return sendError(reply, 503, 'Marketplace manager not available');
+    const qs = request.query as Record<string, string>;
+    try {
+      const skills = await marketplaceManager.search(qs.query, { limit: 100 });
+      return reply.send({ skills });
+    } catch (err) {
+      return sendError(
+        reply,
+        500,
+        err instanceof Error ? err.message : 'Marketplace search failed'
+      );
     }
-  );
+  });
 
   // Federated skill detail — called by peer instances
-  app.get(
-    '/api/v1/federation/marketplace/:skillId',
-    async (request, reply) => {
-      const ok = await peerAuthPreHandler(request, reply, federationManager);
-      if (!ok) return;
-      if (!marketplaceManager) return sendError(reply, 503, 'Marketplace manager not available');
-      const { skillId } = request.params as { skillId: string };
-      try {
-        const skill = await marketplaceManager.getSkill(skillId);
-        if (!skill) return sendError(reply, 404, 'Skill not found');
-        return reply.send(skill);
-      } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to get skill');
-      }
+  app.get('/api/v1/federation/marketplace/:skillId', async (request, reply) => {
+    const ok = await peerAuthPreHandler(request, reply, federationManager);
+    if (!ok) return;
+    if (!marketplaceManager) return sendError(reply, 503, 'Marketplace manager not available');
+    const { skillId } = request.params as { skillId: string };
+    try {
+      const skill = await marketplaceManager.getSkill(skillId);
+      if (!skill) return sendError(reply, 404, 'Skill not found');
+      return reply.send(skill);
+    } catch (err) {
+      return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to get skill');
     }
-  );
+  });
 }

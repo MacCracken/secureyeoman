@@ -265,10 +265,7 @@ describe('SwarmsPage', () => {
     await screen.findByText('New Swarm Template');
 
     await user.type(screen.getByPlaceholderText('e.g. review-and-deploy'), 'my-pipeline');
-    await user.type(
-      screen.getByPlaceholderText('What this swarm does...'),
-      'A test pipeline'
-    );
+    await user.type(screen.getByPlaceholderText('What this swarm does...'), 'A test pipeline');
 
     // Fill in the first role row
     const roleInputs = screen.getAllByPlaceholderText('role (e.g. reviewer)');

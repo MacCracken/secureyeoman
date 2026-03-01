@@ -105,7 +105,7 @@ export class TeamManager {
     });
 
     // Fire-and-forget: update run in background
-    void this._executeRun(team, teamRun, params).catch((err) => {
+    void this._executeRun(team, teamRun, params).catch((err: unknown) => {
       this.logger.error('Team run execution failed', {
         runId: teamRun.id,
         error: err instanceof Error ? err.message : String(err),
@@ -138,7 +138,10 @@ export class TeamManager {
     try {
       // Step 1: Build coordinator prompt
       const memberList = team.members
-        .map((m) => `- ${m.role} (profile: ${m.profileName})${m.description ? ': ' + m.description : ''}`)
+        .map(
+          (m) =>
+            `- ${m.role} (profile: ${m.profileName})${m.description ? ': ' + m.description : ''}`
+        )
         .join('\n');
 
       const coordinatorPrompt = `You are a team manager. Analyze the task and decide which team member(s) to assign.
@@ -163,7 +166,7 @@ Respond ONLY with JSON (no markdown, no explanation): {"assignTo": ["profileName
       // Step 3: Parse coordinator decision
       let decision: CoordinatorDecision;
       try {
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        const jsonMatch = /\{[\s\S]*\}/.exec(responseText);
         decision = JSON.parse(jsonMatch?.[0] ?? responseText) as CoordinatorDecision;
       } catch {
         // Fallback: assign first member if parsing fails

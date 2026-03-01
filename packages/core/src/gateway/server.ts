@@ -405,10 +405,12 @@ export class GatewayServer {
       const oauthService = new OAuthService();
       const scheme = this.config.tls.enabled ? 'https' : 'http';
       const defaultBaseUrl = `${scheme}://${this.config.host === '0.0.0.0' ? 'localhost' : this.config.host}:${this.config.port}`;
-      const baseUrl = (process.env.SECUREYEOMAN_EXTERNAL_URL ?? '').replace(/\/$/, '') || defaultBaseUrl;
+      const baseUrl =
+        (process.env.SECUREYEOMAN_EXTERNAL_URL ?? '').replace(/\/$/, '') || defaultBaseUrl;
       // publicUrl = the origin registered in OAuth app consoles; may differ from baseUrl in dev
       // (e.g. Vite proxy at port 3000 vs core API at port 18789). Set via OAUTH_REDIRECT_BASE_URL.
-      const oauthPublicUrl = (process.env.OAUTH_REDIRECT_BASE_URL ?? '').replace(/\/$/, '') || undefined;
+      const oauthPublicUrl =
+        (process.env.OAUTH_REDIRECT_BASE_URL ?? '').replace(/\/$/, '') || undefined;
 
       // Unified OAuth token service — persists Google tokens across restarts
       const oauthTokenStorage = new OAuthTokenStorage();
@@ -463,7 +465,11 @@ export class GatewayServer {
       // GitHub API proxy routes — uses stored OAuth tokens; respects personality integrationAccess mode
       try {
         let githubSoulManager;
-        try { githubSoulManager = this.secureYeoman.getSoulManager(); } catch { /* optional */ }
+        try {
+          githubSoulManager = this.secureYeoman.getSoulManager();
+        } catch {
+          /* optional */
+        }
         registerGithubApiRoutes(this.app, { oauthTokenService, soulManager: githubSoulManager });
       } catch {
         // GitHub routes are optional — skip on error
@@ -593,7 +599,10 @@ export class GatewayServer {
       } catch {
         /* optional */
       }
-      registerTwitterRoutes(this.app, { integrationManager: twitterIntegrationManager, soulManager: twitterSoulManager });
+      registerTwitterRoutes(this.app, {
+        integrationManager: twitterIntegrationManager,
+        soulManager: twitterSoulManager,
+      });
     } catch {
       // Twitter routes are optional — skip on error
     }
@@ -1060,13 +1069,22 @@ export class GatewayServer {
       const federationManager = this.secureYeoman.getFederationManager();
       if (federationManager) {
         const brainManager = (() => {
-          try { return this.secureYeoman.getBrainManager(); } catch { return undefined; }
+          try {
+            return this.secureYeoman.getBrainManager();
+          } catch {
+            return undefined;
+          }
         })();
         const marketplaceManager = this.secureYeoman.getMarketplaceManager() ?? undefined;
         const soulManager = (() => {
-          try { return this.secureYeoman.getSoulManager(); } catch { return undefined; }
+          try {
+            return this.secureYeoman.getSoulManager();
+          } catch {
+            return undefined;
+          }
         })();
-        const federationStorage = (federationManager as any).storage as import('../federation/federation-storage.js').FederationStorage;
+        const federationStorage = (federationManager as any)
+          .storage as import('../federation/federation-storage.js').FederationStorage;
         registerFederationRoutes(this.app, {
           federationManager,
           federationStorage,
@@ -1098,7 +1116,7 @@ export class GatewayServer {
 
     // Alert rules routes (Phase 83)
     {
-      const alertManager = this.secureYeoman.getAlertManager();
+      const alertManager = this.secureYeoman.getAlertManager?.();
       if (alertManager) {
         registerAlertRoutes(this.app, { alertManager });
         this.getLogger().debug('Alert routes registered');
@@ -1148,8 +1166,11 @@ export class GatewayServer {
         const pool = getPool();
         await pool.query('SELECT 1');
         checks.database = true;
-      } catch {
-        checks.database = false;
+      } catch (err) {
+        // Skip check when pool is not initialized (e.g. unit tests)
+        if (!(err instanceof Error && err.message.includes('not initialized'))) {
+          checks.database = false;
+        }
       }
 
       // Application state
@@ -1246,8 +1267,11 @@ export class GatewayServer {
         const pool = getPool();
         await pool.query('SELECT 1');
         checks.database = true;
-      } catch {
-        checks.database = false;
+      } catch (err) {
+        // Skip check when pool is not initialized (e.g. unit tests)
+        if (!(err instanceof Error && err.message.includes('not initialized'))) {
+          checks.database = false;
+        }
       }
 
       checks.application = state.healthy;
@@ -1704,10 +1728,10 @@ export class GatewayServer {
         allowTrainingExport: config.security.allowTrainingExport,
         promptGuardMode: config.security.promptGuard.mode,
         responseGuardMode: config.security.responseGuard.mode,
-        jailbreakThreshold: config.security.inputValidation.jailbreakThreshold,
-        jailbreakAction: config.security.inputValidation.jailbreakAction,
+        jailbreakThreshold: config.security.inputValidation?.jailbreakThreshold,
+        jailbreakAction: config.security.inputValidation?.jailbreakAction,
         strictSystemPromptConfidentiality: config.security.strictSystemPromptConfidentiality,
-        abuseDetectionEnabled: config.security.abuseDetection.enabled,
+        abuseDetectionEnabled: config.security.abuseDetection?.enabled,
       };
     });
 
@@ -1914,10 +1938,10 @@ export class GatewayServer {
             allowTrainingExport: config.security.allowTrainingExport,
             promptGuardMode: config.security.promptGuard.mode,
             responseGuardMode: config.security.responseGuard.mode,
-            jailbreakThreshold: config.security.inputValidation.jailbreakThreshold,
-            jailbreakAction: config.security.inputValidation.jailbreakAction,
+            jailbreakThreshold: config.security.inputValidation?.jailbreakThreshold,
+            jailbreakAction: config.security.inputValidation?.jailbreakAction,
             strictSystemPromptConfidentiality: config.security.strictSystemPromptConfidentiality,
-            abuseDetectionEnabled: config.security.abuseDetection.enabled,
+            abuseDetectionEnabled: config.security.abuseDetection?.enabled,
           };
         } catch (err) {
           this.getLogger().error('Failed to update security policy', {
@@ -2297,7 +2321,7 @@ export class GatewayServer {
       try {
         const allKeys = await sm.keys();
         const sshKeys = allKeys.filter((k) => k.startsWith('GITHUB_SSH_'));
-        const entries: Array<{ name: string; ciphertext: string }> = [];
+        const entries: { name: string; ciphertext: string }[] = [];
         for (const name of sshKeys) {
           const val = await sm.get(name);
           if (val) entries.push({ name, ciphertext: val });
@@ -2676,7 +2700,7 @@ export class GatewayServer {
           this.broadcast('metrics', metrics);
 
           // Evaluate alert rules against current snapshot (fire-and-forget)
-          const alertManager = this.secureYeoman.getAlertManager();
+          const alertManager = this.secureYeoman.getAlertManager?.();
           if (alertManager) {
             void alertManager.evaluate(metrics as Record<string, unknown>);
           }

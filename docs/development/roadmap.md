@@ -35,6 +35,7 @@
 | 86 | Inline Citations & Grounding | P4 — trust layer | Planned |
 | 87 | LLM Lifecycle Platform — Core | P4 — model ops | Planned |
 | 88 | Marketplace Shareables | P4 — community growth | Planned |
+| 89 | Test Coverage — Path to 88 % / 77 % | P2 — engineering quality | Planned |
 | Future | Observability & Telemetry, Workflow & Personality Versioning, LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Native Clients, Infrastructure | Future / Demand-Gated | — |
 
 ---
@@ -323,6 +324,70 @@ Advanced items (DPO, RLHF, continual learning, multi-GPU) are demand-gated in th
 - [ ] **Skills tab on sub-agent profiles** — Show the Skills tab in PersonalityEditor when viewing a sub-agent profile. Conditionally hide persona-specific tabs (voice, avatar) if not relevant.
 - [ ] **Swarm runner skill injection** — Confirm `buildAgentPrompt()` loads installed skills for sub-agent personality IDs; add test coverage.
 - [ ] **UX: install skill → select target agent** — In the marketplace install flow, allow selecting a sub-agent profile as the install target.
+
+---
+
+## Phase 89: Test Coverage — Path to 88 % / 77 %
+
+**Priority**: P2 — Engineering quality. Baseline snapshot taken 2026-02-28: **49.3 % statements · 37.7 % branches · 47.5 % functions · 50.9 % lines** across 396 test files / 8,611 passing core tests. Configured thresholds in `vitest.config.ts`: 87 % stmt / 75 % branch / 87 % fn / 87 % line (target: ≥ 88 % stmt / ≥ 77 % branch). *No new test files are written in this phase — existing suites are deepened.*
+
+> Note: `vitest.config.ts` already excludes `src/**/index.ts`, `src/**/types.ts`, `src/secureyeoman.ts`, and `src/cli.ts` from coverage instrumentation. The gap is in logic files only.
+
+### Why Coverage Is Low
+
+Most source files already have a companion `*.test.ts`. The gap is depth, not breadth:
+- Route handlers in `gateway/server.ts` (≈ 3,000 lines) are exercised only for happy-path happy flows; every `4xx`/`5xx` branch represents uncovered lines.
+- Integration adapters (31 platforms) mock external clients; error branches, retry logic, and auth-failure paths are rarely asserted.
+- Platform-specific code (`body/`, `sandbox/`, `security/keyring/`) guards on OS detection; tests running on a single host skip the other branches.
+- AI provider implementations (`ai/providers/`) share base-class paths but each has unique error/retry branches that tests do not exercise.
+- CLI commands (`cli/commands/`) test top-level dispatch but rarely exercise `--json` output mode, interactive prompts, or `--help` edge cases.
+
+### Target Lift per Module
+
+| Module | Est. stmt % now | Goal | Strategy |
+|--------|----------------|------|----------|
+| `gateway/server.ts` | ~30 % | 70 % | Add route tests for every `4xx` / `5xx` branch (malformed body, missing auth, unknown param, DB error stub). Largest single file — reaching 70 % here contributes ~3–4 % to overall statement coverage. |
+| `ai/client.ts` + providers | ~45 % | 75 % | Error injection (provider timeout, rate-limit 429, malformed response), fallback-chain exhaustion, local-first routing toggle. |
+| `integrations/` adapters × 31 | ~35 % | 70 % | Table-driven tests per adapter: `send()` error, `validate()` bad config, `connect()` / `disconnect()` lifecycle. |
+| `brain/vector/` stores | ~40 % | 72 % | FAISS index-not-found, Qdrant timeout, ChromaDB collection-exists, distance-metric branch. |
+| `sandbox/` (linux/darwin) | ~25 % | 50 % | `vi.stubEnv('platform', 'darwin')` per test; mock `child_process.execFile`; landlock / seccomp error paths. |
+| `body/` desktop control | ~30 % | 55 % | Platform stubs; clipboard read/write errors; camera / screen permissions-denied branch. |
+| `security/keyring/` providers | ~40 % | 70 % | Mock `libsecret` / `security` CLI; error when service unavailable; fallback provider selection. |
+| `cli/commands/` (26 cmds) | ~50 % | 78 % | `--json` flag output assertions; `--help`; non-zero exit on bad args; pipe-broken stdout. |
+| `workflow/workflow-engine.ts` | ~55 % | 82 % | Cycle detection, `triggerMode: 'any'` with mixed pass/fail deps, `outputSchemaMode: 'strict'` rejections, timeout / cancel. |
+| `training/` pipeline | ~48 % | 78 % | Distillation job `status: 'failed'` retry, LoRA sidecar timeout, evaluation threshold-miss, lineage FK cascade. |
+| `federation/` | ~20 % | 55 % | `federation-crypto` encrypt/decrypt round-trips, peer-sync conflict, `federation-storage` CRUD. |
+| `telemetry/otel-fastify-plugin.ts` | ~15 % | 60 % | Mock `@opentelemetry/api` tracer; span attribute assertions; `traceId` header injection. |
+| `logging/` chain + export | ~55 % | 80 % | HMAC chain break detection, syslog format, JSONL / CSV export edge cases, log-rotation size trigger. |
+| `soul/manager.ts` | ~45 % | 75 % | Prompt composition branches (all platform flags off, SAML role injection, per-personality hours). |
+
+### Branch-Coverage Hot Spots (37.7 % → 77 %)
+
+Branch coverage is the hardest gap. Key ternaries / conditionals to reach:
+
+- **`ai/client.ts`** — fallback-chain index incrementing, local-first guard, provider-specific error `instanceof` checks.
+- **`gateway/auth-middleware.ts`** — every `if (!token)`, `if (role < required)`, API-key vs JWT path, tenant header validation.
+- **`integrations/manager.ts`** — `switch (platform)` has 31 arms; most untested in CI.
+- **`security/rate-limiter.ts`** — Redis unavailable fallback to in-memory, sliding-window reset, per-IP vs per-user precedence.
+- **`workflow/workflow-engine.ts`** — `triggerMode: 'any'` with all-deps-fail, `outputSchemaMode: 'strict'` rejection path, human-approval timeout.
+- **`brain/chunker.ts`** — overlapping-window edge cases when chunk size > content length.
+- **`soul/skill-executor.ts`** — trust-tier enforcement (`blocked`, `sandboxed`, `trusted`), `doNotUseWhen` predicate evaluation.
+- **`sandbox/linux-sandbox.ts`** — Landlock unavailable fallback, seccomp profile load failure, resource limit apply error.
+
+### Non-Code Levers (config / infrastructure wins)
+
+- **Raise vitest thresholds** — bump `vitest.config.ts` thresholds from `{ stmt: 87, branch: 75 }` to `{ stmt: 88, branch: 77 }` to match the target.
+- **`fileParallelism`** — coverage runs currently sequential (`fileParallelism: false` required for integration tests); split config so unit tests run with `fileParallelism: true` and integration tests keep sequential. Reduces CI time without changing logic.
+- **Shared test helpers** — extract repeated `mockPool()` / `mockQuery()` boilerplate into `src/test-utils.ts` so branches are reachable inside existing per-file test files without duplication.
+- **`vi.stubEnv` patterns** — several platform guards (`process.platform`, `process.env.CI`) branch on environment values that can be overridden with `vi.stubEnv()` inside existing tests to cover the else-branch.
+
+### Acceptance Criteria
+
+- [ ] `vitest run --coverage` reports ≥ 88 % statements across core package.
+- [ ] `vitest run --coverage` reports ≥ 77 % branches across core package.
+- [ ] No existing test degraded (test count stable or growing).
+- [ ] `vitest.config.ts` thresholds bumped to `{ stmt: 88, branch: 77, fn: 88, lines: 88 }` and enforced in CI.
+- [ ] `docs/development/coverage-plan.md` created with per-file before/after table when work begins.
 
 ---
 

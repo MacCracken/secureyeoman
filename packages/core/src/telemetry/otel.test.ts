@@ -27,7 +27,9 @@ describe('initTracing', () => {
 
   it('accepts config.otlpEndpoint but gracefully fails when SDK missing', async () => {
     // Dynamic import of missing packages is caught internally
-    await expect(initTracing({ otlpEndpoint: 'http://localhost:4317', serviceName: 'test' })).resolves.not.toThrow();
+    await expect(
+      initTracing({ otlpEndpoint: 'http://localhost:4317', serviceName: 'test' })
+    ).resolves.not.toThrow();
   });
 });
 

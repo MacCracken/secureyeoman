@@ -89,8 +89,7 @@ export const BUILTIN_SWARM_TEMPLATES: Omit<SwarmTemplate, 'createdAt'>[] = [
       {
         role: 'prompt-crafter',
         profileName: 'prompt-crafter',
-        description:
-          'Diagnose weaknesses and rewrite the prompt using the optimal technique',
+        description: 'Diagnose weaknesses and rewrite the prompt using the optimal technique',
       },
       {
         role: 'context-engineer',

@@ -58,7 +58,7 @@ async function fetchGithub(
   };
   let resp = await fetch(url, {
     ...opts,
-    headers: { ...opts.headers, ...authHeaders },
+    headers: { ...(opts.headers as Record<string, string> | undefined), ...authHeaders },
   });
 
   if (resp.status === 401) {
@@ -66,7 +66,11 @@ async function fetchGithub(
     if (newToken && newToken !== accessToken) {
       resp = await fetch(url, {
         ...opts,
-        headers: { ...opts.headers, ...authHeaders, Authorization: `Bearer ${newToken}` },
+        headers: {
+          ...(opts.headers as Record<string, string> | undefined),
+          ...authHeaders,
+          Authorization: `Bearer ${newToken}`,
+        },
       });
     }
   }
@@ -80,7 +84,13 @@ async function fetchGithub(
 async function resolveGithubAccess(
   oauthTokenService: OAuthTokenService,
   soulManager?: SoulManager
-): Promise<{ accessToken: string; email: string; tokenId: string; mode: string; scopes: string } | null> {
+): Promise<{
+  accessToken: string;
+  email: string;
+  tokenId: string;
+  mode: string;
+  scopes: string;
+} | null> {
   const tokens = await oauthTokenService.listTokens();
   const githubToken = tokens.find((t) => t.provider === 'github');
   if (!githubToken) return null;
@@ -100,7 +110,13 @@ async function resolveGithubAccess(
     }
   }
 
-  return { accessToken, email: githubToken.email, tokenId: githubToken.id, mode, scopes: githubToken.scopes ?? '' };
+  return {
+    accessToken,
+    email: githubToken.email,
+    tokenId: githubToken.id,
+    mode,
+    scopes: githubToken.scopes ?? '',
+  };
 }
 
 /**
@@ -131,15 +147,35 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
   app.get('/api/v1/github/profile', async (_req, reply) => {
     const creds = await resolveGithubAccess(oauthTokenService, soulManager);
     if (!creds) {
-      return sendError(reply, 404, 'No GitHub account connected. Connect a GitHub account via Settings > Connections > OAuth.');
+      return sendError(
+        reply,
+        404,
+        'No GitHub account connected. Connect a GitHub account via Settings > Connections > OAuth.'
+      );
     }
-    const resp = await fetchGithub(`${GITHUB_API}/user`, {}, creds.tokenId, creds.accessToken, oauthTokenService);
+    const resp = await fetchGithub(
+      `${GITHUB_API}/user`,
+      {},
+      creds.tokenId,
+      creds.accessToken,
+      oauthTokenService
+    );
     if (!resp.ok) {
       const body = await resp.text();
-      return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, githubErrorMessage(resp.status, body));
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        githubErrorMessage(resp.status, body)
+      );
     }
     const data = await resp.json();
-    return reply.send({ ...(data as object), email: creds.email, mode: creds.mode, tokenId: creds.tokenId, scopes: creds.scopes });
+    return reply.send({
+      ...(data as object),
+      email: creds.email,
+      mode: creds.mode,
+      tokenId: creds.tokenId,
+      scopes: creds.scopes,
+    });
   });
 
   // GET /api/v1/github/repos
@@ -156,10 +192,20 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
       if (req.query.per_page) url.searchParams.set('per_page', req.query.per_page);
       if (req.query.page) url.searchParams.set('page', req.query.page);
 
-      const resp = await fetchGithub(url.toString(), {}, creds.tokenId, creds.accessToken, oauthTokenService);
+      const resp = await fetchGithub(
+        url.toString(),
+        {},
+        creds.tokenId,
+        creds.accessToken,
+        oauthTokenService
+      );
       if (!resp.ok) {
         const body = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, githubErrorMessage(resp.status, body));
+        return sendError(
+          reply,
+          resp.status as 400 | 401 | 403 | 404 | 500,
+          githubErrorMessage(resp.status, body)
+        );
       }
       const data = await resp.json();
       return reply.send(data);
@@ -183,7 +229,11 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
       );
       if (!resp.ok) {
         const body = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, githubErrorMessage(resp.status, body));
+        return sendError(
+          reply,
+          resp.status as 400 | 401 | 403 | 404 | 500,
+          githubErrorMessage(resp.status, body)
+        );
       }
       const data = await resp.json();
       return reply.send(data);
@@ -191,27 +241,37 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
   );
 
   // GET /api/v1/github/repos/:owner/:repo/pulls
-  app.get<{ Params: { owner: string; repo: string }; Querystring: { state?: string; per_page?: string; page?: string } }>(
-    '/api/v1/github/repos/:owner/:repo/pulls',
-    async (req, reply) => {
-      const creds = await resolveGithubAccess(oauthTokenService, soulManager);
-      if (!creds) {
-        return sendError(reply, 404, 'No GitHub account connected.');
-      }
-      const url = new URL(`${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}/pulls`);
-      if (req.query.state) url.searchParams.set('state', req.query.state);
-      if (req.query.per_page) url.searchParams.set('per_page', req.query.per_page);
-      if (req.query.page) url.searchParams.set('page', req.query.page);
-
-      const resp = await fetchGithub(url.toString(), {}, creds.tokenId, creds.accessToken, oauthTokenService);
-      if (!resp.ok) {
-        const body = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, githubErrorMessage(resp.status, body));
-      }
-      const data = await resp.json();
-      return reply.send(data);
+  app.get<{
+    Params: { owner: string; repo: string };
+    Querystring: { state?: string; per_page?: string; page?: string };
+  }>('/api/v1/github/repos/:owner/:repo/pulls', async (req, reply) => {
+    const creds = await resolveGithubAccess(oauthTokenService, soulManager);
+    if (!creds) {
+      return sendError(reply, 404, 'No GitHub account connected.');
     }
-  );
+    const url = new URL(`${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}/pulls`);
+    if (req.query.state) url.searchParams.set('state', req.query.state);
+    if (req.query.per_page) url.searchParams.set('per_page', req.query.per_page);
+    if (req.query.page) url.searchParams.set('page', req.query.page);
+
+    const resp = await fetchGithub(
+      url.toString(),
+      {},
+      creds.tokenId,
+      creds.accessToken,
+      oauthTokenService
+    );
+    if (!resp.ok) {
+      const body = await resp.text();
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        githubErrorMessage(resp.status, body)
+      );
+    }
+    const data = await resp.json();
+    return reply.send(data);
+  });
 
   // GET /api/v1/github/repos/:owner/:repo/pulls/:number
   app.get<{ Params: { owner: string; repo: string; number: string } }>(
@@ -230,7 +290,11 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
       );
       if (!resp.ok) {
         const body = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, githubErrorMessage(resp.status, body));
+        return sendError(
+          reply,
+          resp.status as 400 | 401 | 403 | 404 | 500,
+          githubErrorMessage(resp.status, body)
+        );
       }
       const data = await resp.json();
       return reply.send(data);
@@ -238,28 +302,38 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
   );
 
   // GET /api/v1/github/repos/:owner/:repo/issues
-  app.get<{ Params: { owner: string; repo: string }; Querystring: { state?: string; labels?: string; per_page?: string; page?: string } }>(
-    '/api/v1/github/repos/:owner/:repo/issues',
-    async (req, reply) => {
-      const creds = await resolveGithubAccess(oauthTokenService, soulManager);
-      if (!creds) {
-        return sendError(reply, 404, 'No GitHub account connected.');
-      }
-      const url = new URL(`${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}/issues`);
-      if (req.query.state) url.searchParams.set('state', req.query.state);
-      if (req.query.labels) url.searchParams.set('labels', req.query.labels);
-      if (req.query.per_page) url.searchParams.set('per_page', req.query.per_page);
-      if (req.query.page) url.searchParams.set('page', req.query.page);
-
-      const resp = await fetchGithub(url.toString(), {}, creds.tokenId, creds.accessToken, oauthTokenService);
-      if (!resp.ok) {
-        const body = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, githubErrorMessage(resp.status, body));
-      }
-      const data = await resp.json();
-      return reply.send(data);
+  app.get<{
+    Params: { owner: string; repo: string };
+    Querystring: { state?: string; labels?: string; per_page?: string; page?: string };
+  }>('/api/v1/github/repos/:owner/:repo/issues', async (req, reply) => {
+    const creds = await resolveGithubAccess(oauthTokenService, soulManager);
+    if (!creds) {
+      return sendError(reply, 404, 'No GitHub account connected.');
     }
-  );
+    const url = new URL(`${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}/issues`);
+    if (req.query.state) url.searchParams.set('state', req.query.state);
+    if (req.query.labels) url.searchParams.set('labels', req.query.labels);
+    if (req.query.per_page) url.searchParams.set('per_page', req.query.per_page);
+    if (req.query.page) url.searchParams.set('page', req.query.page);
+
+    const resp = await fetchGithub(
+      url.toString(),
+      {},
+      creds.tokenId,
+      creds.accessToken,
+      oauthTokenService
+    );
+    if (!resp.ok) {
+      const body = await resp.text();
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        githubErrorMessage(resp.status, body)
+      );
+    }
+    const data = await resp.json();
+    return reply.send(data);
+  });
 
   // GET /api/v1/github/repos/:owner/:repo/issues/:number
   app.get<{ Params: { owner: string; repo: string; number: string } }>(
@@ -278,7 +352,11 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
       );
       if (!resp.ok) {
         const body = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, githubErrorMessage(resp.status, body));
+        return sendError(
+          reply,
+          resp.status as 400 | 401 | 403 | 404 | 500,
+          githubErrorMessage(resp.status, body)
+        );
       }
       const data = await resp.json();
       return reply.send(data);
@@ -289,96 +367,115 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
   app.post<{
     Params: { owner: string; repo: string };
     Body: { title: string; body?: string; labels?: string[]; assignees?: string[] };
-  }>(
-    '/api/v1/github/repos/:owner/:repo/issues',
-    async (req, reply) => {
-      const creds = await resolveGithubAccess(oauthTokenService, soulManager);
-      if (!creds) {
-        return sendError(reply, 404, 'No GitHub account connected.');
-      }
-      if (creds.mode === 'suggest') {
-        return sendError(reply, 403, `GitHub mode is '${creds.mode}' — creating issues is not permitted in suggest mode. The personality may only read repository data.`);
-      }
-      const scopeErr = checkWriteScopes(creds.scopes);
-      if (scopeErr) return sendError(reply, 403, scopeErr);
-
-      const issueBody = {
-        title: req.body.title,
-        body: req.body.body,
-        labels: req.body.labels,
-        assignees: req.body.assignees,
-      };
-
-      const resp = await fetchGithub(
-        `${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}/issues`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(issueBody) },
-        creds.tokenId,
-        creds.accessToken,
-        oauthTokenService
-      );
-      if (!resp.ok) {
-        const errBody = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, githubErrorMessage(resp.status, errBody));
-      }
-      const data = await resp.json();
-      return reply.code(201).send(data);
+  }>('/api/v1/github/repos/:owner/:repo/issues', async (req, reply) => {
+    const creds = await resolveGithubAccess(oauthTokenService, soulManager);
+    if (!creds) {
+      return sendError(reply, 404, 'No GitHub account connected.');
     }
-  );
+    if (creds.mode === 'suggest') {
+      return sendError(
+        reply,
+        403,
+        `GitHub mode is '${creds.mode}' — creating issues is not permitted in suggest mode. The personality may only read repository data.`
+      );
+    }
+    const scopeErr = checkWriteScopes(creds.scopes);
+    if (scopeErr) return sendError(reply, 403, scopeErr);
+
+    const issueBody = {
+      title: req.body.title,
+      body: req.body.body,
+      labels: req.body.labels,
+      assignees: req.body.assignees,
+    };
+
+    const resp = await fetchGithub(
+      `${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}/issues`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(issueBody),
+      },
+      creds.tokenId,
+      creds.accessToken,
+      oauthTokenService
+    );
+    if (!resp.ok) {
+      const errBody = await resp.text();
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        githubErrorMessage(resp.status, errBody)
+      );
+    }
+    const data = await resp.json();
+    return reply.code(201).send(data);
+  });
 
   // POST /api/v1/github/repos/:owner/:repo/pulls  (mode: auto only; draft → preview JSON)
   app.post<{
     Params: { owner: string; repo: string };
     Body: { title: string; head: string; base: string; body?: string; draft?: boolean };
-  }>(
-    '/api/v1/github/repos/:owner/:repo/pulls',
-    async (req, reply) => {
-      const creds = await resolveGithubAccess(oauthTokenService, soulManager);
-      if (!creds) {
-        return sendError(reply, 404, 'No GitHub account connected.');
-      }
-      if (creds.mode === 'suggest') {
-        return sendError(reply, 403, `GitHub mode is '${creds.mode}' — creating pull requests is not permitted. The personality may only read repository data.`);
-      }
-      if (creds.mode === 'draft') {
-        // Return a preview instead of creating the PR
-        return reply.send({
-          preview: true,
-          message: 'GitHub mode is "draft" — this pull request has NOT been created. Review the details below and create it manually if approved.',
-          owner: req.params.owner,
-          repo: req.params.repo,
-          title: req.body.title,
-          head: req.body.head,
-          base: req.body.base,
-          body: req.body.body,
-          draft: req.body.draft,
-        });
-      }
-      const scopeErr = checkWriteScopes(creds.scopes);
-      if (scopeErr) return sendError(reply, 403, scopeErr);
-
-      const prBody = {
+  }>('/api/v1/github/repos/:owner/:repo/pulls', async (req, reply) => {
+    const creds = await resolveGithubAccess(oauthTokenService, soulManager);
+    if (!creds) {
+      return sendError(reply, 404, 'No GitHub account connected.');
+    }
+    if (creds.mode === 'suggest') {
+      return sendError(
+        reply,
+        403,
+        `GitHub mode is '${creds.mode}' — creating pull requests is not permitted. The personality may only read repository data.`
+      );
+    }
+    if (creds.mode === 'draft') {
+      // Return a preview instead of creating the PR
+      return reply.send({
+        preview: true,
+        message:
+          'GitHub mode is "draft" — this pull request has NOT been created. Review the details below and create it manually if approved.',
+        owner: req.params.owner,
+        repo: req.params.repo,
         title: req.body.title,
         head: req.body.head,
         base: req.body.base,
         body: req.body.body,
         draft: req.body.draft,
-      };
-
-      const resp = await fetchGithub(
-        `${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}/pulls`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(prBody) },
-        creds.tokenId,
-        creds.accessToken,
-        oauthTokenService
-      );
-      if (!resp.ok) {
-        const errBody = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, githubErrorMessage(resp.status, errBody));
-      }
-      const data = await resp.json();
-      return reply.code(201).send(data);
+      });
     }
-  );
+    const scopeErr = checkWriteScopes(creds.scopes);
+    if (scopeErr) return sendError(reply, 403, scopeErr);
+
+    const prBody = {
+      title: req.body.title,
+      head: req.body.head,
+      base: req.body.base,
+      body: req.body.body,
+      draft: req.body.draft,
+    };
+
+    const resp = await fetchGithub(
+      `${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}/pulls`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(prBody),
+      },
+      creds.tokenId,
+      creds.accessToken,
+      oauthTokenService
+    );
+    if (!resp.ok) {
+      const errBody = await resp.text();
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        githubErrorMessage(resp.status, errBody)
+      );
+    }
+    const data = await resp.json();
+    return reply.code(201).send(data);
+  });
 
   // GET /api/v1/github/ssh-keys  (list SSH keys — all modes)
   app.get('/api/v1/github/ssh-keys', async (_req, reply) => {
@@ -386,10 +483,20 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
     if (!creds) {
       return sendError(reply, 404, 'No GitHub account connected.');
     }
-    const resp = await fetchGithub(`${GITHUB_API}/user/keys`, {}, creds.tokenId, creds.accessToken, oauthTokenService);
+    const resp = await fetchGithub(
+      `${GITHUB_API}/user/keys`,
+      {},
+      creds.tokenId,
+      creds.accessToken,
+      oauthTokenService
+    );
     if (!resp.ok) {
       const body = await resp.text();
-      return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, githubErrorMessage(resp.status, body));
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        githubErrorMessage(resp.status, body)
+      );
     }
     const data = await resp.json();
     return reply.send(data);
@@ -398,39 +505,49 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
   // POST /api/v1/github/ssh-keys  (add SSH key — mode: draft → preview, auto only for live add)
   app.post<{
     Body: { title: string; key: string };
-  }>(
-    '/api/v1/github/ssh-keys',
-    async (req, reply) => {
-      const creds = await resolveGithubAccess(oauthTokenService, soulManager);
-      if (!creds) {
-        return sendError(reply, 404, 'No GitHub account connected.');
-      }
-      if (creds.mode === 'suggest') {
-        return sendError(reply, 403, `GitHub mode is '${creds.mode}' — adding SSH keys is not permitted. The personality may only read account data.`);
-      }
-      if (creds.mode === 'draft') {
-        return reply.send({
-          preview: true,
-          message: 'GitHub mode is "draft" — this SSH key has NOT been added. Review the details below and add it manually via GitHub Settings > SSH Keys if approved.',
-          title: req.body.title,
-          key: req.body.key,
-        });
-      }
-      const resp = await fetchGithub(
-        `${GITHUB_API}/user/keys`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: req.body.title, key: req.body.key }) },
-        creds.tokenId,
-        creds.accessToken,
-        oauthTokenService
-      );
-      if (!resp.ok) {
-        const errBody = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, githubErrorMessage(resp.status, errBody));
-      }
-      const data = await resp.json();
-      return reply.code(201).send(data);
+  }>('/api/v1/github/ssh-keys', async (req, reply) => {
+    const creds = await resolveGithubAccess(oauthTokenService, soulManager);
+    if (!creds) {
+      return sendError(reply, 404, 'No GitHub account connected.');
     }
-  );
+    if (creds.mode === 'suggest') {
+      return sendError(
+        reply,
+        403,
+        `GitHub mode is '${creds.mode}' — adding SSH keys is not permitted. The personality may only read account data.`
+      );
+    }
+    if (creds.mode === 'draft') {
+      return reply.send({
+        preview: true,
+        message:
+          'GitHub mode is "draft" — this SSH key has NOT been added. Review the details below and add it manually via GitHub Settings > SSH Keys if approved.',
+        title: req.body.title,
+        key: req.body.key,
+      });
+    }
+    const resp = await fetchGithub(
+      `${GITHUB_API}/user/keys`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: req.body.title, key: req.body.key }),
+      },
+      creds.tokenId,
+      creds.accessToken,
+      oauthTokenService
+    );
+    if (!resp.ok) {
+      const errBody = await resp.text();
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        githubErrorMessage(resp.status, errBody)
+      );
+    }
+    const data = await resp.json();
+    return reply.code(201).send(data);
+  });
 
   // DELETE /api/v1/github/ssh-keys/:key_id  (delete SSH key — auto only)
   app.delete<{ Params: { key_id: string } }>(
@@ -459,7 +576,11 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
       );
       if (!resp.ok) {
         const errBody = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, githubErrorMessage(resp.status, errBody));
+        return sendError(
+          reply,
+          resp.status as 400 | 401 | 403 | 404 | 500,
+          githubErrorMessage(resp.status, errBody)
+        );
       }
       return reply.code(204).send();
     }
@@ -468,101 +589,122 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
   // POST /api/v1/github/repos  (create repo — mode: auto only; draft → preview JSON)
   app.post<{
     Body: { name: string; description?: string; private?: boolean; auto_init?: boolean };
-  }>(
-    '/api/v1/github/repos',
-    async (req, reply) => {
-      const creds = await resolveGithubAccess(oauthTokenService, soulManager);
-      if (!creds) {
-        return sendError(reply, 404, 'No GitHub account connected.');
-      }
-      if (creds.mode === 'suggest') {
-        return sendError(reply, 403, `GitHub mode is '${creds.mode}' — creating repositories is not permitted. The personality may only read repository data.`);
-      }
-      if (creds.mode === 'draft') {
-        return reply.send({
-          preview: true,
-          message: 'GitHub mode is "draft" — this repository has NOT been created. Review the details below and create it manually if approved.',
-          name: req.body.name,
-          description: req.body.description,
-          private: req.body.private ?? false,
-          auto_init: req.body.auto_init ?? false,
-        });
-      }
-      const scopeErr = checkWriteScopes(creds.scopes);
-      if (scopeErr) return sendError(reply, 403, scopeErr);
-
-      const repoBody = {
+  }>('/api/v1/github/repos', async (req, reply) => {
+    const creds = await resolveGithubAccess(oauthTokenService, soulManager);
+    if (!creds) {
+      return sendError(reply, 404, 'No GitHub account connected.');
+    }
+    if (creds.mode === 'suggest') {
+      return sendError(
+        reply,
+        403,
+        `GitHub mode is '${creds.mode}' — creating repositories is not permitted. The personality may only read repository data.`
+      );
+    }
+    if (creds.mode === 'draft') {
+      return reply.send({
+        preview: true,
+        message:
+          'GitHub mode is "draft" — this repository has NOT been created. Review the details below and create it manually if approved.',
         name: req.body.name,
         description: req.body.description,
         private: req.body.private ?? false,
         auto_init: req.body.auto_init ?? false,
-      };
-
-      const resp = await fetchGithub(
-        `${GITHUB_API}/user/repos`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(repoBody) },
-        creds.tokenId,
-        creds.accessToken,
-        oauthTokenService
-      );
-      if (!resp.ok) {
-        const errBody = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, githubErrorMessage(resp.status, errBody));
-      }
-      const data = await resp.json();
-      return reply.code(201).send(data);
+      });
     }
-  );
+    const scopeErr = checkWriteScopes(creds.scopes);
+    if (scopeErr) return sendError(reply, 403, scopeErr);
+
+    const repoBody = {
+      name: req.body.name,
+      description: req.body.description,
+      private: req.body.private ?? false,
+      auto_init: req.body.auto_init ?? false,
+    };
+
+    const resp = await fetchGithub(
+      `${GITHUB_API}/user/repos`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(repoBody),
+      },
+      creds.tokenId,
+      creds.accessToken,
+      oauthTokenService
+    );
+    if (!resp.ok) {
+      const errBody = await resp.text();
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        githubErrorMessage(resp.status, errBody)
+      );
+    }
+    const data = await resp.json();
+    return reply.code(201).send(data);
+  });
 
   // POST /api/v1/github/repos/:owner/:repo/forks  (fork repo — mode: auto only; draft → preview JSON)
   app.post<{
     Params: { owner: string; repo: string };
     Body: { organization?: string; name?: string; default_branch_only?: boolean };
-  }>(
-    '/api/v1/github/repos/:owner/:repo/forks',
-    async (req, reply) => {
-      const creds = await resolveGithubAccess(oauthTokenService, soulManager);
-      if (!creds) {
-        return sendError(reply, 404, 'No GitHub account connected.');
-      }
-      if (creds.mode === 'suggest') {
-        return sendError(reply, 403, `GitHub mode is '${creds.mode}' — forking repositories is not permitted. The personality may only read repository data.`);
-      }
-      if (creds.mode === 'draft') {
-        return reply.send({
-          preview: true,
-          message: 'GitHub mode is "draft" — this repository has NOT been forked. Review the details below and fork it manually if approved.',
-          source_owner: req.params.owner,
-          source_repo: req.params.repo,
-          organization: req.body.organization,
-          name: req.body.name,
-          default_branch_only: req.body.default_branch_only ?? false,
-        });
-      }
-      const scopeErr = checkWriteScopes(creds.scopes);
-      if (scopeErr) return sendError(reply, 403, scopeErr);
-
-      const forkBody: Record<string, unknown> = {};
-      if (req.body.organization) forkBody.organization = req.body.organization;
-      if (req.body.name) forkBody.name = req.body.name;
-      if (req.body.default_branch_only !== undefined) forkBody.default_branch_only = req.body.default_branch_only;
-
-      const resp = await fetchGithub(
-        `${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}/forks`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(forkBody) },
-        creds.tokenId,
-        creds.accessToken,
-        oauthTokenService
-      );
-      if (!resp.ok) {
-        const errBody = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, githubErrorMessage(resp.status, errBody));
-      }
-      const data = await resp.json();
-      // GitHub returns 202 Accepted for forks (async operation)
-      return reply.code(202).send(data);
+  }>('/api/v1/github/repos/:owner/:repo/forks', async (req, reply) => {
+    const creds = await resolveGithubAccess(oauthTokenService, soulManager);
+    if (!creds) {
+      return sendError(reply, 404, 'No GitHub account connected.');
     }
-  );
+    if (creds.mode === 'suggest') {
+      return sendError(
+        reply,
+        403,
+        `GitHub mode is '${creds.mode}' — forking repositories is not permitted. The personality may only read repository data.`
+      );
+    }
+    if (creds.mode === 'draft') {
+      return reply.send({
+        preview: true,
+        message:
+          'GitHub mode is "draft" — this repository has NOT been forked. Review the details below and fork it manually if approved.',
+        source_owner: req.params.owner,
+        source_repo: req.params.repo,
+        organization: req.body.organization,
+        name: req.body.name,
+        default_branch_only: req.body.default_branch_only ?? false,
+      });
+    }
+    const scopeErr = checkWriteScopes(creds.scopes);
+    if (scopeErr) return sendError(reply, 403, scopeErr);
+
+    const forkBody: Record<string, unknown> = {};
+    if (req.body.organization) forkBody.organization = req.body.organization;
+    if (req.body.name) forkBody.name = req.body.name;
+    if (req.body.default_branch_only !== undefined)
+      forkBody.default_branch_only = req.body.default_branch_only;
+
+    const resp = await fetchGithub(
+      `${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}/forks`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(forkBody),
+      },
+      creds.tokenId,
+      creds.accessToken,
+      oauthTokenService
+    );
+    if (!resp.ok) {
+      const errBody = await resp.text();
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        githubErrorMessage(resp.status, errBody)
+      );
+    }
+    const data = await resp.json();
+    // GitHub returns 202 Accepted for forks (async operation)
+    return reply.code(202).send(data);
+  });
 
   // POST /api/v1/github/repos/:owner/:repo/sync-fork  (mode: auto only; draft → preview JSON; suggest → 403)
   // Calls GitHub POST /repos/{owner}/{repo}/merges to merge upstream changes into a fork branch.
@@ -570,92 +712,107 @@ export function registerGithubApiRoutes(app: FastifyInstance, opts: GithubApiRou
   app.post<{
     Params: { owner: string; repo: string };
     Body: { base: string; head?: string; commit_message?: string };
-  }>(
-    '/api/v1/github/repos/:owner/:repo/sync-fork',
-    async (req, reply) => {
-      const creds = await resolveGithubAccess(oauthTokenService, soulManager);
-      if (!creds) {
-        return sendError(reply, 404, 'No GitHub account connected.');
-      }
-      if (creds.mode === 'suggest') {
-        return sendError(reply, 403, `GitHub mode is '${creds.mode}' — syncing a fork is not permitted. The personality may only read repository data.`);
-      }
-      if (creds.mode === 'draft') {
-        return reply.send({
-          preview: true,
-          message: 'GitHub mode is "draft" — the fork sync has NOT been performed. Review the details below and sync manually if approved.',
-          owner: req.params.owner,
-          repo: req.params.repo,
-          base: req.body.base,
-          head: req.body.head ?? null,
-          commit_message: req.body.commit_message ?? null,
-        });
-      }
-      const scopeErr = checkWriteScopes(creds.scopes);
-      if (scopeErr) return sendError(reply, 403, scopeErr);
-
-      const mergeBody: Record<string, unknown> = { base: req.body.base };
-      if (req.body.head) mergeBody.head = req.body.head;
-      if (req.body.commit_message) mergeBody.commit_message = req.body.commit_message;
-
-      const resp = await fetchGithub(
-        `${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}/merges`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(mergeBody) },
-        creds.tokenId,
-        creds.accessToken,
-        oauthTokenService
-      );
-
-      // 204 = already up-to-date, no merge commit created
-      if (resp.status === 204) {
-        return reply.code(204).send();
-      }
-      if (!resp.ok) {
-        const errBody = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, githubErrorMessage(resp.status, errBody));
-      }
-      const data = await resp.json();
-      return reply.code(201).send(data);
+  }>('/api/v1/github/repos/:owner/:repo/sync-fork', async (req, reply) => {
+    const creds = await resolveGithubAccess(oauthTokenService, soulManager);
+    if (!creds) {
+      return sendError(reply, 404, 'No GitHub account connected.');
     }
-  );
+    if (creds.mode === 'suggest') {
+      return sendError(
+        reply,
+        403,
+        `GitHub mode is '${creds.mode}' — syncing a fork is not permitted. The personality may only read repository data.`
+      );
+    }
+    if (creds.mode === 'draft') {
+      return reply.send({
+        preview: true,
+        message:
+          'GitHub mode is "draft" — the fork sync has NOT been performed. Review the details below and sync manually if approved.',
+        owner: req.params.owner,
+        repo: req.params.repo,
+        base: req.body.base,
+        head: req.body.head ?? null,
+        commit_message: req.body.commit_message ?? null,
+      });
+    }
+    const scopeErr = checkWriteScopes(creds.scopes);
+    if (scopeErr) return sendError(reply, 403, scopeErr);
+
+    const mergeBody: Record<string, unknown> = { base: req.body.base };
+    if (req.body.head) mergeBody.head = req.body.head;
+    if (req.body.commit_message) mergeBody.commit_message = req.body.commit_message;
+
+    const resp = await fetchGithub(
+      `${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}/merges`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mergeBody),
+      },
+      creds.tokenId,
+      creds.accessToken,
+      oauthTokenService
+    );
+
+    // 204 = already up-to-date, no merge commit created
+    if (resp.status === 204) {
+      return reply.code(204).send();
+    }
+    if (!resp.ok) {
+      const errBody = await resp.text();
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        githubErrorMessage(resp.status, errBody)
+      );
+    }
+    const data = await resp.json();
+    return reply.code(201).send(data);
+  });
 
   // POST /api/v1/github/repos/:owner/:repo/issues/:number/comments  (mode: auto only)
   app.post<{
     Params: { owner: string; repo: string; number: string };
     Body: { body: string };
-  }>(
-    '/api/v1/github/repos/:owner/:repo/issues/:number/comments',
-    async (req, reply) => {
-      const creds = await resolveGithubAccess(oauthTokenService, soulManager);
-      if (!creds) {
-        return sendError(reply, 404, 'No GitHub account connected.');
-      }
-      if (creds.mode !== 'auto') {
-        return sendError(
-          reply,
-          403,
-          `GitHub mode is '${creds.mode}' — posting comments directly is not permitted. ` +
-            (creds.mode === 'draft'
-              ? 'Draft mode blocks direct comments; review and post manually.'
-              : 'The personality may only read repository data.')
-        );
-      }
-      const scopeErr = checkWriteScopes(creds.scopes);
-      if (scopeErr) return sendError(reply, 403, scopeErr);
-
-      const resp = await fetchGithub(
-        `${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}/issues/${req.params.number}/comments`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: req.body.body }) },
-        creds.tokenId,
-        creds.accessToken,
-        oauthTokenService
-      );
-      if (!resp.ok) {
-        const errBody = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, githubErrorMessage(resp.status, errBody));
-      }
-      const data = await resp.json();
-      return reply.code(201).send(data);
+  }>('/api/v1/github/repos/:owner/:repo/issues/:number/comments', async (req, reply) => {
+    const creds = await resolveGithubAccess(oauthTokenService, soulManager);
+    if (!creds) {
+      return sendError(reply, 404, 'No GitHub account connected.');
     }
-  );
+    if (creds.mode !== 'auto') {
+      return sendError(
+        reply,
+        403,
+        `GitHub mode is '${creds.mode}' — posting comments directly is not permitted. ` +
+          (creds.mode === 'draft'
+            ? 'Draft mode blocks direct comments; review and post manually.'
+            : 'The personality may only read repository data.')
+      );
+    }
+    const scopeErr = checkWriteScopes(creds.scopes);
+    if (scopeErr) return sendError(reply, 403, scopeErr);
+
+    const resp = await fetchGithub(
+      `${GITHUB_API}/repos/${req.params.owner}/${req.params.repo}/issues/${req.params.number}/comments`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: req.body.body }),
+      },
+      creds.tokenId,
+      creds.accessToken,
+      oauthTokenService
+    );
+    if (!resp.ok) {
+      const errBody = await resp.text();
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        githubErrorMessage(resp.status, errBody)
+      );
+    }
+    const data = await resp.json();
+    return reply.code(201).send(data);
+  });
 }

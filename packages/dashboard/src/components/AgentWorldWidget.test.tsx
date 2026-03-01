@@ -46,12 +46,14 @@ function makeQueryClient() {
   return new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
 }
 
-function renderWidget(props: {
-  maxAgents?: number;
-  onAgentClick?: (id: string) => void;
-  viewMode?: 'grid' | 'map' | 'large';
-  zoom?: number;
-} = {}) {
+function renderWidget(
+  props: {
+    maxAgents?: number;
+    onAgentClick?: (id: string) => void;
+    viewMode?: 'grid' | 'map' | 'large';
+    zoom?: number;
+  } = {}
+) {
   const qc = makeQueryClient();
   return render(
     <QueryClientProvider client={qc}>
@@ -60,11 +62,13 @@ function renderWidget(props: {
   );
 }
 
-function makePersonality(overrides: Partial<{
-  id: string;
-  name: string;
-  isActive: boolean;
-}> = {}) {
+function makePersonality(
+  overrides: Partial<{
+    id: string;
+    name: string;
+    isActive: boolean;
+  }> = {}
+) {
   return {
     id: 'p-001',
     name: 'Alice',
@@ -75,16 +79,18 @@ function makePersonality(overrides: Partial<{
   } as any;
 }
 
-function makeTask(overrides: Partial<{
-  id: string;
-  name: string;
-  status: string;
-  createdAt: number;
-  startedAt: number;
-  personalityId: string | undefined;
-  correlationId: string | undefined;
-  type: string | undefined;
-}> = {}) {
+function makeTask(
+  overrides: Partial<{
+    id: string;
+    name: string;
+    status: string;
+    createdAt: number;
+    startedAt: number;
+    personalityId: string | undefined;
+    correlationId: string | undefined;
+    type: string | undefined;
+  }> = {}
+) {
   const { personalityId = 'p-001', correlationId, type, ...rest } = overrides;
   return {
     id: 't-001',
@@ -185,9 +191,16 @@ describe('deriveAgentState', () => {
   it('returns meeting when personality has an active delegation it initiated', () => {
     const p = makePersonality({ id: 'p-001' });
     const delegation = {
-      delegationId: 'd-001', profileId: 'prof-1', profileName: 'researcher',
-      task: 'analyze codebase', status: 'running', depth: 1,
-      tokensUsed: 0, tokenBudget: 50000, startedAt: NOW - 2000, elapsedMs: 2000,
+      delegationId: 'd-001',
+      profileId: 'prof-1',
+      profileName: 'researcher',
+      task: 'analyze codebase',
+      status: 'running',
+      depth: 1,
+      tokensUsed: 0,
+      tokenBudget: 50000,
+      startedAt: NOW - 2000,
+      elapsedMs: 2000,
       initiatedByPersonalityId: 'p-001',
     } as any;
     const { state, taskLabel } = deriveAgentState(p, [], NOW, [delegation]);
@@ -199,9 +212,16 @@ describe('deriveAgentState', () => {
     const p = makePersonality({ id: 'p-001' });
     const task = makeTask({ startedAt: NOW - 5_000 });
     const delegation = {
-      delegationId: 'd-001', profileId: 'prof-1', profileName: 'researcher',
-      task: 'analyze codebase', status: 'running', depth: 1,
-      tokensUsed: 0, tokenBudget: 50000, startedAt: NOW - 2000, elapsedMs: 2000,
+      delegationId: 'd-001',
+      profileId: 'prof-1',
+      profileName: 'researcher',
+      task: 'analyze codebase',
+      status: 'running',
+      depth: 1,
+      tokensUsed: 0,
+      tokenBudget: 50000,
+      startedAt: NOW - 2000,
+      elapsedMs: 2000,
       initiatedByPersonalityId: 'p-001',
     } as any;
     const { state } = deriveAgentState(p, [task], NOW, [delegation]);
@@ -211,9 +231,16 @@ describe('deriveAgentState', () => {
   it('delegation for other personality does not affect meeting state', () => {
     const p = makePersonality({ id: 'p-001' });
     const delegation = {
-      delegationId: 'd-001', profileId: 'prof-1', profileName: 'researcher',
-      task: 'analyze codebase', status: 'running', depth: 1,
-      tokensUsed: 0, tokenBudget: 50000, startedAt: NOW - 2000, elapsedMs: 2000,
+      delegationId: 'd-001',
+      profileId: 'prof-1',
+      profileName: 'researcher',
+      task: 'analyze codebase',
+      status: 'running',
+      depth: 1,
+      tokensUsed: 0,
+      tokenBudget: 50000,
+      startedAt: NOW - 2000,
+      elapsedMs: 2000,
       initiatedByPersonalityId: 'p-999',
     } as any;
     const { state } = deriveAgentState(p, [], NOW, [delegation]);
@@ -223,9 +250,16 @@ describe('deriveAgentState', () => {
   it('offline takes priority over meeting', () => {
     const p = makePersonality({ id: 'p-001', isActive: false });
     const delegation = {
-      delegationId: 'd-001', profileId: 'prof-1', profileName: 'researcher',
-      task: 'analyze codebase', status: 'running', depth: 1,
-      tokensUsed: 0, tokenBudget: 50000, startedAt: NOW - 2000, elapsedMs: 2000,
+      delegationId: 'd-001',
+      profileId: 'prof-1',
+      profileName: 'researcher',
+      task: 'analyze codebase',
+      status: 'running',
+      depth: 1,
+      tokensUsed: 0,
+      tokenBudget: 50000,
+      startedAt: NOW - 2000,
+      elapsedMs: 2000,
       initiatedByPersonalityId: 'p-001',
     } as any;
     const { state } = deriveAgentState(p, [], NOW, [delegation]);
@@ -532,8 +566,18 @@ describe('map view zones', () => {
     // Two agents sharing a correlationId → both are meeting pairs
     mockFetchTasks.mockResolvedValue({
       tasks: [
-        makeTask({ id: 't-1', personalityId: 'p-1', correlationId: 'corr-1', startedAt: Date.now() - 20_000 }),
-        makeTask({ id: 't-2', personalityId: 'p-2', correlationId: 'corr-1', startedAt: Date.now() - 20_000 }),
+        makeTask({
+          id: 't-1',
+          personalityId: 'p-1',
+          correlationId: 'corr-1',
+          startedAt: Date.now() - 20_000,
+        }),
+        makeTask({
+          id: 't-2',
+          personalityId: 'p-2',
+          correlationId: 'corr-1',
+          startedAt: Date.now() - 20_000,
+        }),
       ],
       total: 2,
     });
@@ -665,12 +709,14 @@ describe('sub-agent delegation cards', () => {
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
   });
 
-  function makeDelegation(overrides: Partial<{
-    delegationId: string;
-    profileName: string;
-    task: string;
-    initiatedByPersonalityId: string;
-  }> = {}) {
+  function makeDelegation(
+    overrides: Partial<{
+      delegationId: string;
+      profileName: string;
+      task: string;
+      initiatedByPersonalityId: string;
+    }> = {}
+  ) {
     return {
       delegationId: 'd-001',
       profileId: 'prof-1',
@@ -799,7 +845,9 @@ describe('zoom prop', () => {
 
   it('grid view applies scale transform when zoom=2', async () => {
     renderWidget({ viewMode: 'grid', zoom: 2 });
-    await waitFor(() => expect(screen.getByRole('list', { name: /^agent world$/i })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('list', { name: /^agent world$/i })).toBeInTheDocument()
+    );
     const list = screen.getByRole('list', { name: /^agent world$/i });
     expect(list).toHaveStyle({ transform: 'scale(2)' });
   });

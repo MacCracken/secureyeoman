@@ -18,10 +18,7 @@ import type { SecurityConfig } from '@secureyeoman/shared';
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
-export type AbuseSignal =
-  | 'blocked_retry'
-  | 'topic_pivot'
-  | 'tool_anomaly';
+export type AbuseSignal = 'blocked_retry' | 'topic_pivot' | 'tool_anomaly';
 
 export interface AbuseCheckResult {
   /** True if the session is currently in cool-down. */
@@ -67,7 +64,7 @@ export class AbuseDetector {
    * gate access. Evicts stale sessions as a side-effect.
    */
   check(sessionId: string): AbuseCheckResult {
-    if (!this.cfg.enabled) {
+    if (!this.cfg?.enabled) {
       return { inCoolDown: false, coolDownUntil: null, triggeringSignal: null };
     }
     this.evictStale();
@@ -91,7 +88,7 @@ export class AbuseDetector {
    * Call after input validation returns blocked=true.
    */
   recordBlock(sessionId: string): void {
-    if (!this.cfg.enabled) return;
+    if (!this.cfg?.enabled) return;
     const rec = this.getOrCreate(sessionId);
     rec.blockedRetries += 1;
     if (rec.blockedRetries >= this.cfg.blockedRetryLimit) {
@@ -105,7 +102,7 @@ export class AbuseDetector {
    * @param messageText - raw user message text
    */
   recordMessage(sessionId: string, messageText: string): void {
-    if (!this.cfg.enabled) return;
+    if (!this.cfg?.enabled) return;
     const rec = this.getOrCreate(sessionId);
     const now = Date.now();
 
@@ -118,7 +115,13 @@ export class AbuseDetector {
         // Only flag if repeated; increment a counter tracked in blockedRetries repurposed below
         // We use a lightweight heuristic: two consecutive pivots within a session = anomaly
         const pivotKey = `${sessionId}:pivots`;
-        const pivotRec = this.sessions.get(pivotKey) ?? { blockedRetries: 0, lastWords: [], lastSeenMs: now, coolDownUntilMs: 0, triggeringSignal: null };
+        const pivotRec = this.sessions.get(pivotKey) ?? {
+          blockedRetries: 0,
+          lastWords: [],
+          lastSeenMs: now,
+          coolDownUntilMs: 0,
+          triggeringSignal: null,
+        };
         pivotRec.blockedRetries += 1;
         pivotRec.lastSeenMs = now;
         this.sessions.set(pivotKey, pivotRec);
@@ -144,7 +147,7 @@ export class AbuseDetector {
    * @param toolNames - array of tool names called in this turn
    */
   recordToolCalls(sessionId: string, toolNames: string[]): void {
-    if (!this.cfg.enabled) return;
+    if (!this.cfg?.enabled) return;
     if (toolNames.length <= 5) return; // only flag clear spikes
     const unique = new Set(toolNames).size;
     if (unique > 5) {

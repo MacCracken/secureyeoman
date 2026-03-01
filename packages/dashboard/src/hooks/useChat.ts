@@ -320,203 +320,210 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
     setActiveToolCalls([]);
   }, []);
 
-  const sendMessage = useCallback(async (text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed || isPending) return;
+  const sendMessage = useCallback(
+    async (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed || isPending) return;
 
-    // Cancel any in-flight request
-    abortRef.current?.abort();
-    abortRef.current = new AbortController();
+      // Cancel any in-flight request
+      abortRef.current?.abort();
+      abortRef.current = new AbortController();
 
-    const userMessage: ChatMessage = {
-      role: 'user',
-      content: trimmed,
-      timestamp: Date.now(),
-    };
+      const userMessage: ChatMessage = {
+        role: 'user',
+        content: trimmed,
+        timestamp: Date.now(),
+      };
 
-    setMessages((prev) => [...prev, userMessage]);
-    setIsPending(true);
-    setStreamingThinking('');
-    setStreamingContent('');
-    setActiveToolCalls([]);
-
-    // Auto-create conversation on first send
-    let convId = activeConversationId;
-    if (!convId) {
-      try {
-        const title = trimmed.length > 60 ? trimmed.slice(0, 57) + '...' : trimmed;
-        const conv = await createConversation(title, options?.personalityId ?? undefined);
-        convId = conv.id;
-        autoCreatedIds.current.add(convId);
-        setActiveConversationId(convId);
-        queryClient.invalidateQueries({ queryKey: ['conversations'] });
-      } catch {
-        // Continue without persistence
-      }
-    }
-
-    const history = [...messages, userMessage].map((m) => ({
-      role: m.role,
-      content: m.content,
-    }));
-
-    const memoryOn = options?.memoryEnabled ?? true;
-
-    try {
-      const streamToken = getAccessToken();
-      const res = await fetch('/api/v1/chat/stream', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(streamToken ? { Authorization: `Bearer ${streamToken}` } : {}),
-        },
-        signal: abortRef.current.signal,
-        body: JSON.stringify({
-          message: trimmed,
-          history: history.slice(0, -1),
-          ...(latestOptions.current?.personalityId
-            ? { personalityId: latestOptions.current.personalityId }
-            : {}),
-          ...(convId ? { conversationId: convId } : {}),
-          ...(latestOptions.current?.editorContent
-            ? { editorContent: latestOptions.current.editorContent }
-            : {}),
-          memoryEnabled: memoryOn,
-          saveAsMemory: memoryOn,
-          clientContext: {
-            viewportHint:
-              window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop',
-          },
-        }),
-      });
-
-      if (!res.ok) {
-        const errText = await res.text().catch(() => `HTTP ${res.status}`);
-        throw new Error(`Stream request failed (${res.status}): ${errText}`);
-      }
-      if (!res.body) throw new Error('No response body');
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let thinkingAcc = '';
-      let contentAcc = '';
-      const pendingEvents: CreationEvent[] = [];
-      const completedToolCalls: ToolCallRecord[] = [];
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const json = line.slice(6).trim();
-          if (!json) continue;
-          let event: Record<string, unknown>;
-          try {
-            event = JSON.parse(json);
-          } catch {
-            continue;
-          }
-
-          const type = event.type as string;
-
-          if (type === 'thinking_delta') {
-            thinkingAcc += event.thinking as string;
-            setStreamingThinking(thinkingAcc);
-          } else if (type === 'content_delta') {
-            contentAcc += event.content as string;
-            setStreamingContent(contentAcc);
-          } else if (type === 'tool_start') {
-            const tc: ToolCallRecord = {
-              toolName: event.toolName as string,
-              label: event.label as string,
-              isMcp: false,
-            };
-            setActiveToolCalls((prev) => [...prev, tc]);
-            completedToolCalls.push(tc);
-          } else if (type === 'tool_result') {
-            setActiveToolCalls((prev) =>
-              prev.filter((t) => t.toolName !== (event.toolName as string))
-            );
-          } else if (type === 'mcp_tool_start') {
-            const tc: ToolCallRecord = {
-              toolName: event.toolName as string,
-              label: event.toolName as string,
-              serverName: event.serverName as string,
-              isMcp: true,
-            };
-            setActiveToolCalls((prev) => [...prev, tc]);
-            completedToolCalls.push(tc);
-          } else if (type === 'mcp_tool_result') {
-            setActiveToolCalls((prev) =>
-              prev.filter((t) => t.toolName !== (event.toolName as string))
-            );
-          } else if (type === 'creation_event') {
-            pendingEvents.push(event.event as CreationEvent);
-          } else if (type === 'done') {
-            const doneEvent = event as {
-              content: string;
-              model: string;
-              provider: string;
-              tokensUsed?: number;
-              thinkingContent?: string;
-              creationEvents: CreationEvent[];
-              brainContext?: ChatMessage['brainContext'];
-            };
-            setMessages((prev) => [
-              ...prev,
-              {
-                role: 'assistant',
-                content: doneEvent.content,
-                timestamp: Date.now(),
-                model: doneEvent.model,
-                provider: doneEvent.provider,
-                tokensUsed: doneEvent.tokensUsed,
-                thinkingContent: doneEvent.thinkingContent,
-                brainContext: doneEvent.brainContext,
-                creationEvents:
-                  doneEvent.creationEvents.length > 0 ? doneEvent.creationEvents : undefined,
-                toolCalls: completedToolCalls.length > 0 ? [...completedToolCalls] : undefined,
-              },
-            ]);
-            setStreamingThinking('');
-            setStreamingContent('');
-            setActiveToolCalls([]);
-            queryClient.invalidateQueries({ queryKey: ['conversations'] });
-          } else if (type === 'error') {
-            setMessages((prev) => [
-              ...prev,
-              {
-                role: 'assistant',
-                content: `Error: ${event.message as string}`,
-                timestamp: Date.now(),
-              },
-            ]);
-          }
-        }
-      }
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === 'AbortError') return;
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: `Error: ${err instanceof Error ? err.message : String(err)}`,
-          timestamp: Date.now(),
-        },
-      ]);
-    } finally {
-      setIsPending(false);
+      setMessages((prev) => [...prev, userMessage]);
+      setIsPending(true);
       setStreamingThinking('');
       setStreamingContent('');
       setActiveToolCalls([]);
-    }
-  }, [isPending, messages, activeConversationId, options, queryClient]);
+
+      // Auto-create conversation on first send
+      let convId = activeConversationId;
+      if (!convId) {
+        try {
+          const title = trimmed.length > 60 ? trimmed.slice(0, 57) + '...' : trimmed;
+          const conv = await createConversation(title, options?.personalityId ?? undefined);
+          convId = conv.id;
+          autoCreatedIds.current.add(convId);
+          setActiveConversationId(convId);
+          queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        } catch {
+          // Continue without persistence
+        }
+      }
+
+      const history = [...messages, userMessage].map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      const memoryOn = options?.memoryEnabled ?? true;
+
+      try {
+        const streamToken = getAccessToken();
+        const res = await fetch('/api/v1/chat/stream', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(streamToken ? { Authorization: `Bearer ${streamToken}` } : {}),
+          },
+          signal: abortRef.current.signal,
+          body: JSON.stringify({
+            message: trimmed,
+            history: history.slice(0, -1),
+            ...(latestOptions.current?.personalityId
+              ? { personalityId: latestOptions.current.personalityId }
+              : {}),
+            ...(convId ? { conversationId: convId } : {}),
+            ...(latestOptions.current?.editorContent
+              ? { editorContent: latestOptions.current.editorContent }
+              : {}),
+            memoryEnabled: memoryOn,
+            saveAsMemory: memoryOn,
+            clientContext: {
+              viewportHint:
+                window.innerWidth < 768
+                  ? 'mobile'
+                  : window.innerWidth < 1024
+                    ? 'tablet'
+                    : 'desktop',
+            },
+          }),
+        });
+
+        if (!res.ok) {
+          const errText = await res.text().catch(() => `HTTP ${res.status}`);
+          throw new Error(`Stream request failed (${res.status}): ${errText}`);
+        }
+        if (!res.body) throw new Error('No response body');
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let thinkingAcc = '';
+        let contentAcc = '';
+        const pendingEvents: CreationEvent[] = [];
+        const completedToolCalls: ToolCallRecord[] = [];
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const json = line.slice(6).trim();
+            if (!json) continue;
+            let event: Record<string, unknown>;
+            try {
+              event = JSON.parse(json);
+            } catch {
+              continue;
+            }
+
+            const type = event.type as string;
+
+            if (type === 'thinking_delta') {
+              thinkingAcc += event.thinking as string;
+              setStreamingThinking(thinkingAcc);
+            } else if (type === 'content_delta') {
+              contentAcc += event.content as string;
+              setStreamingContent(contentAcc);
+            } else if (type === 'tool_start') {
+              const tc: ToolCallRecord = {
+                toolName: event.toolName as string,
+                label: event.label as string,
+                isMcp: false,
+              };
+              setActiveToolCalls((prev) => [...prev, tc]);
+              completedToolCalls.push(tc);
+            } else if (type === 'tool_result') {
+              setActiveToolCalls((prev) =>
+                prev.filter((t) => t.toolName !== (event.toolName as string))
+              );
+            } else if (type === 'mcp_tool_start') {
+              const tc: ToolCallRecord = {
+                toolName: event.toolName as string,
+                label: event.toolName as string,
+                serverName: event.serverName as string,
+                isMcp: true,
+              };
+              setActiveToolCalls((prev) => [...prev, tc]);
+              completedToolCalls.push(tc);
+            } else if (type === 'mcp_tool_result') {
+              setActiveToolCalls((prev) =>
+                prev.filter((t) => t.toolName !== (event.toolName as string))
+              );
+            } else if (type === 'creation_event') {
+              pendingEvents.push(event.event as CreationEvent);
+            } else if (type === 'done') {
+              const doneEvent = event as {
+                content: string;
+                model: string;
+                provider: string;
+                tokensUsed?: number;
+                thinkingContent?: string;
+                creationEvents: CreationEvent[];
+                brainContext?: ChatMessage['brainContext'];
+              };
+              setMessages((prev) => [
+                ...prev,
+                {
+                  role: 'assistant',
+                  content: doneEvent.content,
+                  timestamp: Date.now(),
+                  model: doneEvent.model,
+                  provider: doneEvent.provider,
+                  tokensUsed: doneEvent.tokensUsed,
+                  thinkingContent: doneEvent.thinkingContent,
+                  brainContext: doneEvent.brainContext,
+                  creationEvents:
+                    doneEvent.creationEvents.length > 0 ? doneEvent.creationEvents : undefined,
+                  toolCalls: completedToolCalls.length > 0 ? [...completedToolCalls] : undefined,
+                },
+              ]);
+              setStreamingThinking('');
+              setStreamingContent('');
+              setActiveToolCalls([]);
+              queryClient.invalidateQueries({ queryKey: ['conversations'] });
+            } else if (type === 'error') {
+              setMessages((prev) => [
+                ...prev,
+                {
+                  role: 'assistant',
+                  content: `Error: ${event.message as string}`,
+                  timestamp: Date.now(),
+                },
+              ]);
+            }
+          }
+        }
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: `Error: ${err instanceof Error ? err.message : String(err)}`,
+            timestamp: Date.now(),
+          },
+        ]);
+      } finally {
+        setIsPending(false);
+        setStreamingThinking('');
+        setStreamingContent('');
+        setActiveToolCalls([]);
+      }
+    },
+    [isPending, messages, activeConversationId, options, queryClient]
+  );
 
   return {
     messages,

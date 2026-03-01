@@ -77,8 +77,8 @@ describe('SubAgentStorage', () => {
   describe('seedBuiltinProfiles', () => {
     it('inserts each builtin profile via upsert', async () => {
       await storage.seedBuiltinProfiles();
-      // 4 builtin profiles
-      expect(mockQuery).toHaveBeenCalledTimes(4);
+      // 8 builtin profiles
+      expect(mockQuery).toHaveBeenCalledTimes(8);
     });
   });
 

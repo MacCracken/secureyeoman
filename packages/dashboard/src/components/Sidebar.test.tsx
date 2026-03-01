@@ -81,7 +81,8 @@ const BASE_POLICY = {
   allowOrgIntent: false,
   allowIntentEditor: false,
   allowCodeEditor: true,
-  allowAdvancedEditor: false, allowTrainingExport: false,
+  allowAdvancedEditor: false,
+  allowTrainingExport: false,
 };
 
 function renderSidebar() {

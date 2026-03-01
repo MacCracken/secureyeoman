@@ -629,11 +629,11 @@ export function SecuritySettings() {
             <select
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               value={promptGuardMode}
-              onChange={(e) =>
+              onChange={(e) => {
                 policyMutation.mutate({
                   promptGuardMode: e.target.value as 'block' | 'warn' | 'disabled',
-                })
-              }
+                });
+              }}
               disabled={policyMutation.isPending}
             >
               <option value="block">Block — reject request on high-severity finding</option>
@@ -646,16 +646,17 @@ export function SecuritySettings() {
           <div className="space-y-1">
             <label className="text-sm font-medium">Response Guard Mode</label>
             <p className="text-xs text-muted-foreground mb-2">
-              Scans LLM responses for output-side injection, role confusion, and exfiltration patterns.
+              Scans LLM responses for output-side injection, role confusion, and exfiltration
+              patterns.
             </p>
             <select
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               value={responseGuardMode}
-              onChange={(e) =>
+              onChange={(e) => {
                 policyMutation.mutate({
                   responseGuardMode: e.target.value as 'block' | 'warn' | 'disabled',
-                })
-              }
+                });
+              }}
               disabled={policyMutation.isPending}
             >
               <option value="block">Block — reject response on high-severity finding</option>
@@ -668,10 +669,13 @@ export function SecuritySettings() {
           <div className="space-y-1">
             <label className="text-sm font-medium flex items-center justify-between">
               <span>Jailbreak Score Threshold</span>
-              <span className="font-mono text-xs text-muted-foreground">{jailbreakThreshold.toFixed(2)}</span>
+              <span className="font-mono text-xs text-muted-foreground">
+                {jailbreakThreshold.toFixed(2)}
+              </span>
             </label>
             <p className="text-xs text-muted-foreground mb-2">
-              Weighted injection risk score [0–1] that triggers the jailbreak action. Lower = more sensitive.
+              Weighted injection risk score [0–1] that triggers the jailbreak action. Lower = more
+              sensitive.
             </p>
             <input
               type="range"
@@ -679,9 +683,9 @@ export function SecuritySettings() {
               max="1"
               step="0.05"
               value={jailbreakThreshold}
-              onChange={(e) =>
-                policyMutation.mutate({ jailbreakThreshold: parseFloat(e.target.value) })
-              }
+              onChange={(e) => {
+                policyMutation.mutate({ jailbreakThreshold: parseFloat(e.target.value) });
+              }}
               disabled={policyMutation.isPending}
               className="w-full accent-primary"
             />
@@ -696,11 +700,11 @@ export function SecuritySettings() {
             <select
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               value={jailbreakAction}
-              onChange={(e) =>
+              onChange={(e) => {
                 policyMutation.mutate({
                   jailbreakAction: e.target.value as 'block' | 'warn' | 'audit_only',
-                })
-              }
+                });
+              }}
               disabled={policyMutation.isPending}
             >
               <option value="block">Block — reject request (400)</option>
@@ -715,11 +719,11 @@ export function SecuritySettings() {
             icon={<Lock className="w-4 h-4 text-muted-foreground" />}
             enabled={strictSystemPromptConf}
             isPending={policyMutation.isPending}
-            onToggle={() =>
+            onToggle={() => {
               policyMutation.mutate({
                 strictSystemPromptConfidentiality: !strictSystemPromptConf,
-              })
-            }
+              });
+            }}
             description="Scan AI responses for n-gram overlap with system prompt contents. Detected leaks are redacted and audit-logged. Can be overridden per personality."
           />
 
@@ -729,9 +733,9 @@ export function SecuritySettings() {
             icon={<Shield className="w-4 h-4 text-muted-foreground" />}
             enabled={abuseDetectionEnabled}
             isPending={policyMutation.isPending}
-            onToggle={() =>
-              policyMutation.mutate({ abuseDetectionEnabled: !abuseDetectionEnabled })
-            }
+            onToggle={() => {
+              policyMutation.mutate({ abuseDetectionEnabled: !abuseDetectionEnabled });
+            }}
             description="Track blocked-message retries, topic pivoting, and tool-call anomalies per session. Triggered sessions enter a cool-down period and emit suspicious_pattern audit events."
           />
         </div>
@@ -1207,7 +1211,9 @@ export function SecuritySettings() {
             enabled={securityPolicy?.allowTrainingExport ?? false}
             isPending={policyMutation.isPending}
             onToggle={() => {
-              policyMutation.mutate({ allowTrainingExport: !(securityPolicy?.allowTrainingExport ?? false) });
+              policyMutation.mutate({
+                allowTrainingExport: !(securityPolicy?.allowTrainingExport ?? false),
+              });
             }}
             description={
               (securityPolicy?.allowTrainingExport ?? false)

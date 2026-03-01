@@ -30,10 +30,7 @@ function detectFormat(filename: string): DocumentFormat {
   return FORMAT_FROM_EXT[ext] ?? 'txt';
 }
 
-export function registerDocumentRoutes(
-  app: FastifyInstance,
-  opts: DocumentRoutesOptions
-): void {
+export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoutesOptions): void {
   const { documentManager } = opts;
 
   // ── POST /api/v1/brain/documents/upload ──────────────────────────────────
@@ -84,6 +81,9 @@ export function registerDocumentRoutes(
           title
         );
 
+        if (doc.status === 'ready') {
+          void documentManager.generateSourceGuide(personalityId);
+        }
         return reply.code(201).send({ document: doc });
       } catch (err) {
         return sendError(reply, 500, err instanceof Error ? err.message : 'Upload failed');
@@ -117,16 +117,13 @@ export function registerDocumentRoutes(
         return sendError(reply, 400, 'Invalid URL');
       }
 
-      const vis: DocumentVisibility =
-        visibility === 'shared' ? 'shared' : 'private';
+      const vis: DocumentVisibility = visibility === 'shared' ? 'shared' : 'private';
 
-      const doc = await documentManager.ingestUrl(
-        url,
-        personalityId ?? null,
-        vis,
-        depth ?? 1
-      );
+      const doc = await documentManager.ingestUrl(url, personalityId ?? null, vis, depth ?? 1);
 
+      if (doc.status === 'ready') {
+        void documentManager.generateSourceGuide(personalityId ?? null);
+      }
       return reply.code(201).send({ document: doc });
     }
   );
@@ -154,16 +151,13 @@ export function registerDocumentRoutes(
         return sendError(reply, 400, 'title is required');
       }
 
-      const vis: DocumentVisibility =
-        visibility === 'shared' ? 'shared' : 'private';
+      const vis: DocumentVisibility = visibility === 'shared' ? 'shared' : 'private';
 
-      const doc = await documentManager.ingestText(
-        text,
-        title,
-        personalityId ?? null,
-        vis
-      );
+      const doc = await documentManager.ingestText(text, title, personalityId ?? null, vis);
 
+      if (doc.status === 'ready') {
+        void documentManager.generateSourceGuide(personalityId ?? null);
+      }
       return reply.code(201).send({ document: doc });
     }
   );
@@ -190,12 +184,11 @@ export function registerDocumentRoutes(
         return sendError(reply, 400, 'repo is required');
       }
 
-      const docs = await documentManager.ingestGithubWiki(
-        owner,
-        repo,
-        personalityId ?? null
-      );
+      const docs = await documentManager.ingestGithubWiki(owner, repo, personalityId ?? null);
 
+      if (docs.some((d) => d.status === 'ready')) {
+        void documentManager.generateSourceGuide(personalityId ?? null);
+      }
       return reply.code(201).send({ documents: docs, count: docs.length });
     }
   );
@@ -217,10 +210,7 @@ export function registerDocumentRoutes(
   // ── GET /api/v1/brain/documents/:id ─────────────────────────────────────
   app.get(
     '/api/v1/brain/documents/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const doc = await documentManager.getDocument(request.params.id);
       if (!doc) return sendError(reply, 404, 'Document not found');
       return { document: doc };
@@ -230,10 +220,7 @@ export function registerDocumentRoutes(
   // ── DELETE /api/v1/brain/documents/:id ──────────────────────────────────
   app.delete(
     '/api/v1/brain/documents/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const doc = await documentManager.getDocument(request.params.id);
       if (!doc) return sendError(reply, 404, 'Document not found');
       await documentManager.deleteDocument(request.params.id);

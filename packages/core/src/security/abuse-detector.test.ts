@@ -155,8 +155,14 @@ describe('AbuseDetector — recordToolCalls()', () => {
     const { detector } = makeDetector();
     // 10 calls but only 4 unique → should NOT trigger
     detector.recordToolCalls('s3', [
-      'tool_a', 'tool_a', 'tool_b', 'tool_b',
-      'tool_c', 'tool_c', 'tool_d', 'tool_d',
+      'tool_a',
+      'tool_a',
+      'tool_b',
+      'tool_b',
+      'tool_c',
+      'tool_c',
+      'tool_d',
+      'tool_d',
     ]);
     expect(detector.check('s3').inCoolDown).toBe(false);
   });

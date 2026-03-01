@@ -225,7 +225,9 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
   const activePersonalities = personalities.filter((p: Personality) => p.isActive);
   const defaultPersonality = personalities.find((p: Personality) => p.isDefault);
 
-  const handleViewCosts = useCallback(() => { setActiveTab('costs'); }, []);
+  const handleViewCosts = useCallback(() => {
+    setActiveTab('costs');
+  }, []);
 
   const TAB_LABELS: Record<Tab, string> = {
     control: 'Mission Control',
@@ -251,7 +253,9 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
                 setCatalogueOpen((e) => !e);
               }}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors ${
-                editMode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
+                editMode
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-muted'
               }`}
             >
               <Sliders className="w-3.5 h-3.5" />
@@ -358,7 +362,16 @@ interface SectionCommonProps {
   setIsFullscreen: (v: boolean) => void;
 }
 
-const KpiBarSection = memo(function KpiBarSection({ metrics, activePersonalities, activeDelegations, defaultPersonality, heartbeatStatus, heartbeatRunning, navigate, onViewCosts }: SectionCommonProps) {
+const KpiBarSection = memo(function KpiBarSection({
+  metrics,
+  activePersonalities,
+  activeDelegations,
+  defaultPersonality,
+  heartbeatStatus,
+  heartbeatRunning,
+  navigate,
+  onViewCosts,
+}: SectionCommonProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
       <StatCard
@@ -422,7 +435,11 @@ const KpiBarSection = memo(function KpiBarSection({ metrics, activePersonalities
   );
 });
 
-const ResourceMonitoringSection = memo(function ResourceMonitoringSection({ metrics, history, onViewCosts }: SectionCommonProps) {
+const ResourceMonitoringSection = memo(function ResourceMonitoringSection({
+  metrics,
+  history,
+  onViewCosts,
+}: SectionCommonProps) {
   return (
     <div className="card">
       <div className="card-header">
@@ -476,9 +493,7 @@ const ResourceMonitoringSection = memo(function ResourceMonitoringSection({ metr
         <div className="grid grid-cols-4 gap-2">
           <div className="p-2 rounded-md bg-muted/30 text-center">
             <p className="text-xs text-muted-foreground">CPU</p>
-            <p className="text-sm font-bold">
-              {(metrics?.resources?.cpuPercent ?? 0).toFixed(1)}%
-            </p>
+            <p className="text-sm font-bold">{(metrics?.resources?.cpuPercent ?? 0).toFixed(1)}%</p>
           </div>
           <div className="p-2 rounded-md bg-muted/30 text-center">
             <p className="text-xs text-muted-foreground">Memory</p>
@@ -508,7 +523,10 @@ const ResourceMonitoringSection = memo(function ResourceMonitoringSection({ metr
   );
 });
 
-const ActiveTasksSection = memo(function ActiveTasksSection({ metrics, navigate }: SectionCommonProps) {
+const ActiveTasksSection = memo(function ActiveTasksSection({
+  metrics,
+  navigate,
+}: SectionCommonProps) {
   const { data: tasksData } = useQuery({
     queryKey: ['tasks-running'],
     queryFn: () => fetchTasks({ status: 'running', limit: 5 }),
@@ -604,7 +622,11 @@ const WorkflowRunsSection = memo(function WorkflowRunsSection({ navigate }: Sect
   );
 });
 
-const AgentHealthSection = memo(function AgentHealthSection({ activePersonalities, heartbeatRunning, navigate }: SectionCommonProps) {
+const AgentHealthSection = memo(function AgentHealthSection({
+  activePersonalities,
+  heartbeatRunning,
+  navigate,
+}: SectionCommonProps) {
   return (
     <div className="card">
       <div className="card-header">
@@ -663,7 +685,12 @@ const AgentHealthSection = memo(function AgentHealthSection({ activePersonalitie
   );
 });
 
-const SystemHealthSection = memo(function SystemHealthSection({ health, enabledMcp, mcpServers, navigate }: SectionCommonProps) {
+const SystemHealthSection = memo(function SystemHealthSection({
+  health,
+  enabledMcp,
+  mcpServers,
+  navigate,
+}: SectionCommonProps) {
   return (
     <div className="card">
       <div className="card-header">
@@ -706,7 +733,11 @@ const SystemHealthSection = memo(function SystemHealthSection({ health, enabledM
   );
 });
 
-const IntegrationGridSection = memo(function IntegrationGridSection({ mcpServers, enabledMcp, navigate }: SectionCommonProps) {
+const IntegrationGridSection = memo(function IntegrationGridSection({
+  mcpServers,
+  enabledMcp,
+  navigate,
+}: SectionCommonProps) {
   return (
     <div className="card">
       <div className="card-header">
@@ -755,7 +786,9 @@ const IntegrationGridSection = memo(function IntegrationGridSection({ mcpServers
   );
 });
 
-const SecurityEventsSection = memo(function SecurityEventsSection({ navigate }: SectionCommonProps) {
+const SecurityEventsSection = memo(function SecurityEventsSection({
+  navigate,
+}: SectionCommonProps) {
   const { data: eventsData } = useQuery({
     queryKey: ['security-events-feed'],
     queryFn: () => fetchSecurityEvents({ limit: 6 }),
@@ -790,9 +823,7 @@ const SecurityEventsSection = memo(function SecurityEventsSection({ navigate }: 
                   className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${SEV_DOT[evt.severity] ?? 'bg-muted'}`}
                 />
                 <div className="min-w-0">
-                  <p className="font-medium truncate capitalize">
-                    {evt.type.replace(/_/g, ' ')}
-                  </p>
+                  <p className="font-medium truncate capitalize">{evt.type.replace(/_/g, ' ')}</p>
                   <p className="text-muted-foreground truncate">{evt.message}</p>
                 </div>
               </div>
@@ -862,13 +893,22 @@ const AuditStreamSection = memo(function AuditStreamSection({ navigate }: Sectio
   );
 });
 
-const AgentWorldSection = memo(function AgentWorldSection({ worldViewMode, setAndPersistWorldView, worldZoom, adjustZoom, setIsFullscreen, navigate }: SectionCommonProps) {
+const AgentWorldSection = memo(function AgentWorldSection({
+  worldViewMode,
+  setAndPersistWorldView,
+  worldZoom,
+  adjustZoom,
+  setIsFullscreen,
+  navigate,
+}: SectionCommonProps) {
   return (
     <div className="card">
       <div
         className="card-header cursor-default select-none"
         title="Double-click to expand"
-        onDoubleClick={() => setIsFullscreen(true)}
+        onDoubleClick={() => {
+          setIsFullscreen(true);
+        }}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -881,23 +921,35 @@ const AgentWorldSection = memo(function AgentWorldSection({ worldViewMode, setAn
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <button
-                onClick={(e) => { e.stopPropagation(); adjustZoom(-0.25); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  adjustZoom(-0.25);
+                }}
                 disabled={worldZoom <= 0.5}
                 className="px-1.5 py-0.5 rounded hover:text-foreground disabled:opacity-30"
                 aria-label="Zoom out"
-              >−</button>
+              >
+                −
+              </button>
               <span className="tabular-nums w-9 text-center">{Math.round(worldZoom * 100)}%</span>
               <button
-                onClick={(e) => { e.stopPropagation(); adjustZoom(0.25); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  adjustZoom(0.25);
+                }}
                 disabled={worldZoom >= 2.0}
                 className="px-1.5 py-0.5 rounded hover:text-foreground disabled:opacity-30"
                 aria-label="Zoom in"
-              >+</button>
+              >
+                +
+              </button>
             </div>
             <span className="text-border text-xs">|</span>
             <div className="flex gap-0.5">
               <button
-                onClick={() => setAndPersistWorldView('grid')}
+                onClick={() => {
+                  setAndPersistWorldView('grid');
+                }}
                 className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'grid' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                 title="Card grid view"
                 aria-pressed={worldViewMode === 'grid'}
@@ -905,7 +957,9 @@ const AgentWorldSection = memo(function AgentWorldSection({ worldViewMode, setAn
                 ≡ Grid
               </button>
               <button
-                onClick={() => setAndPersistWorldView('map')}
+                onClick={() => {
+                  setAndPersistWorldView('map');
+                }}
                 className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'map' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                 title="World map view"
                 aria-pressed={worldViewMode === 'map'}
@@ -913,7 +967,9 @@ const AgentWorldSection = memo(function AgentWorldSection({ worldViewMode, setAn
                 ⊞ Map
               </button>
               <button
-                onClick={() => setAndPersistWorldView('large')}
+                onClick={() => {
+                  setAndPersistWorldView('large');
+                }}
                 className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'large' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                 title="Large zone view"
                 aria-pressed={worldViewMode === 'large'}
@@ -936,7 +992,12 @@ const AgentWorldSection = memo(function AgentWorldSection({ worldViewMode, setAn
   );
 });
 
-const SystemTopologySection = memo(function SystemTopologySection({ metrics, health, mcpServers, navigate }: SectionCommonProps) {
+const SystemTopologySection = memo(function SystemTopologySection({
+  metrics,
+  health,
+  mcpServers,
+  navigate,
+}: SectionCommonProps) {
   return (
     <div className="card">
       <div className="card-header">
@@ -973,7 +1034,10 @@ const SystemTopologySection = memo(function SystemTopologySection({ metrics, hea
   );
 });
 
-const CostBreakdownSection = memo(function CostBreakdownSection({ metrics, onViewCosts }: SectionCommonProps) {
+const CostBreakdownSection = memo(function CostBreakdownSection({
+  metrics,
+  onViewCosts,
+}: SectionCommonProps) {
   const { data: costBreakdown } = useQuery<CostBreakdownResponse>({
     queryKey: ['costs-breakdown-mc'],
     queryFn: fetchCostBreakdown,
@@ -1053,43 +1117,67 @@ interface SortableCardWrapperProps {
   children: React.ReactNode;
 }
 
-function SortableCardWrapper({ cardLayout, def, editMode, onRemove, onResize, children }: SortableCardWrapperProps) {
+function SortableCardWrapper({
+  cardLayout,
+  def,
+  editMode,
+  onRemove,
+  onResize,
+  children,
+}: SortableCardWrapperProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: cardLayout.id,
     disabled: !editMode || !!def.pinned,
   });
   const colClass: Record<number, string> = {
-    3:  'col-span-12 lg:col-span-3',
-    4:  'col-span-12 md:col-span-4',
-    6:  'col-span-12 lg:col-span-6',
+    3: 'col-span-12 lg:col-span-3',
+    4: 'col-span-12 md:col-span-4',
+    6: 'col-span-12 lg:col-span-6',
     12: 'col-span-12',
   };
   return (
     <div
       ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+      }}
       className={`${colClass[cardLayout.colSpan]} relative group`}
     >
-      {editMode && <div className="absolute inset-0 rounded-lg ring-2 ring-primary/30 pointer-events-none z-10" />}
+      {editMode && (
+        <div className="absolute inset-0 rounded-lg ring-2 ring-primary/30 pointer-events-none z-10" />
+      )}
       {editMode && !def.pinned && (
-        <button {...attributes} {...listeners}
-          className="absolute top-2 left-2 z-20 p-1 rounded bg-background/80 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          {...attributes}
+          {...listeners}
+          className="absolute top-2 left-2 z-20 p-1 rounded bg-background/80 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+        >
           <GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
       )}
       {editMode && !def.pinned && (
-        <button onClick={onRemove}
-          className="absolute top-2 right-2 z-20 p-1 rounded bg-background/80 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={onRemove}
+          className="absolute top-2 right-2 z-20 p-1 rounded bg-background/80 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+        >
           <X className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
       )}
       {editMode && (
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex gap-0.5 bg-background/90 border border-border rounded-full px-2 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
           {(['S', 'M', 'L'] as const).map((size) => {
-            const target = size === 'S' ? def.minColSpan : size === 'M' ? def.defaultColSpan : (12 as const);
+            const target =
+              size === 'S' ? def.minColSpan : size === 'M' ? def.defaultColSpan : (12 as const);
             return (
-              <button key={size} onClick={() => onResize(target)}
-                className={`text-xs px-1.5 py-0.5 rounded-full transition-colors ${cardLayout.colSpan === target ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>
+              <button
+                key={size}
+                onClick={() => {
+                  onResize(target);
+                }}
+                className={`text-xs px-1.5 py-0.5 rounded-full transition-colors ${cardLayout.colSpan === target ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+              >
                 {size}
               </button>
             );
@@ -1103,20 +1191,38 @@ function SortableCardWrapper({ cardLayout, def, editMode, onRemove, onResize, ch
 
 // ── MissionCardContent ────────────────────────────────────────────────
 
-const MissionCardContent = memo(function MissionCardContent({ id, sectionProps }: { id: MissionCardId; sectionProps: SectionCommonProps }) {
+const MissionCardContent = memo(function MissionCardContent({
+  id,
+  sectionProps,
+}: {
+  id: MissionCardId;
+  sectionProps: SectionCommonProps;
+}) {
   switch (id) {
-    case 'kpi-bar':             return <KpiBarSection {...sectionProps} />;
-    case 'resource-monitoring': return <ResourceMonitoringSection {...sectionProps} />;
-    case 'active-tasks':        return <ActiveTasksSection {...sectionProps} />;
-    case 'workflow-runs':       return <WorkflowRunsSection {...sectionProps} />;
-    case 'agent-health':        return <AgentHealthSection {...sectionProps} />;
-    case 'system-health':       return <SystemHealthSection {...sectionProps} />;
-    case 'integration-grid':    return <IntegrationGridSection {...sectionProps} />;
-    case 'security-events':     return <SecurityEventsSection {...sectionProps} />;
-    case 'audit-stream':        return <AuditStreamSection {...sectionProps} />;
-    case 'agent-world':         return <AgentWorldSection {...sectionProps} />;
-    case 'system-topology':     return <SystemTopologySection {...sectionProps} />;
-    case 'cost-breakdown':      return <CostBreakdownSection {...sectionProps} />;
+    case 'kpi-bar':
+      return <KpiBarSection {...sectionProps} />;
+    case 'resource-monitoring':
+      return <ResourceMonitoringSection {...sectionProps} />;
+    case 'active-tasks':
+      return <ActiveTasksSection {...sectionProps} />;
+    case 'workflow-runs':
+      return <WorkflowRunsSection {...sectionProps} />;
+    case 'agent-health':
+      return <AgentHealthSection {...sectionProps} />;
+    case 'system-health':
+      return <SystemHealthSection {...sectionProps} />;
+    case 'integration-grid':
+      return <IntegrationGridSection {...sectionProps} />;
+    case 'security-events':
+      return <SecurityEventsSection {...sectionProps} />;
+    case 'audit-stream':
+      return <AuditStreamSection {...sectionProps} />;
+    case 'agent-world':
+      return <AgentWorldSection {...sectionProps} />;
+    case 'system-topology':
+      return <SystemTopologySection {...sectionProps} />;
+    case 'cost-breakdown':
+      return <CostBreakdownSection {...sectionProps} />;
   }
 });
 
@@ -1173,11 +1279,11 @@ function MissionControlTab({
   }, []);
 
   // Agent World zoom (0.5–2.0, step 0.25, persisted)
-  const [worldZoom, setWorldZoom] = useState<number>(
-    () => parseFloat(localStorage.getItem('world:zoom') ?? '1')
+  const [worldZoom, setWorldZoom] = useState<number>(() =>
+    parseFloat(localStorage.getItem('world:zoom') ?? '1')
   );
   const adjustZoom = useCallback((delta: number) => {
-    setWorldZoom(prev => {
+    setWorldZoom((prev) => {
       const next = Math.max(0.5, Math.min(2.0, Math.round((prev + delta) * 4) / 4));
       localStorage.setItem('world:zoom', String(next));
       return next;
@@ -1188,9 +1294,13 @@ function MissionControlTab({
   const [isFullscreen, setIsFullscreen] = useState(false);
   useEffect(() => {
     if (!isFullscreen) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsFullscreen(false); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsFullscreen(false);
+    };
     window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    return () => {
+      window.removeEventListener('keydown', handler);
+    };
   }, [isFullscreen]);
 
   // ── Layout state ──────────────────────────────────────────────────
@@ -1210,66 +1320,101 @@ function MissionControlTab({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const handleDragEnd = useCallback(({ active, over }: DragEndEvent) => {
-    if (!over || active.id === over.id) return;
-    const sorted = [...cardLayouts].sort((a, b) => a.order - b.order);
-    const from = sorted.findIndex(c => c.id === active.id);
-    const to = sorted.findIndex(c => c.id === over.id);
-    updateLayouts(arrayMove(sorted, from, to).map((c, i) => ({ ...c, order: i })));
-  }, [cardLayouts, updateLayouts]);
+  const handleDragEnd = useCallback(
+    ({ active, over }: DragEndEvent) => {
+      if (!over || active.id === over.id) return;
+      const sorted = [...cardLayouts].sort((a, b) => a.order - b.order);
+      const from = sorted.findIndex((c) => c.id === active.id);
+      const to = sorted.findIndex((c) => c.id === over.id);
+      updateLayouts(arrayMove(sorted, from, to).map((c, i) => ({ ...c, order: i })));
+    },
+    [cardLayouts, updateLayouts]
+  );
 
   // Bundle all section data into a single memoized props object.
   // useMemo ensures the object reference is stable when unrelated state (editMode,
   // catalogueOpen, isFullscreen) changes — so React.memo'd sections skip re-renders.
-  const sectionProps: SectionCommonProps = useMemo(() => ({
-    metrics,
-    health,
-    history,
-    heartbeatStatus,
-    mcpServers,
-    enabledMcp,
-    enabledHb,
-    totalHbTasks,
-    activeDelegations,
-    activePersonalities,
-    defaultPersonality,
-    navigate,
-    onViewCosts,
-    heartbeatRunning,
-    worldViewMode,
-    setAndPersistWorldView,
-    worldZoom,
-    adjustZoom,
-    setIsFullscreen,
-  }), [
-    metrics, health, history, heartbeatStatus, mcpServers, enabledMcp, enabledHb,
-    totalHbTasks, activeDelegations, activePersonalities, defaultPersonality,
-    navigate, onViewCosts, heartbeatRunning, worldViewMode, setAndPersistWorldView,
-    worldZoom, adjustZoom, setIsFullscreen,
-  ]);
+  const sectionProps: SectionCommonProps = useMemo(
+    () => ({
+      metrics,
+      health,
+      history,
+      heartbeatStatus,
+      mcpServers,
+      enabledMcp,
+      enabledHb,
+      totalHbTasks,
+      activeDelegations,
+      activePersonalities,
+      defaultPersonality,
+      navigate,
+      onViewCosts,
+      heartbeatRunning,
+      worldViewMode,
+      setAndPersistWorldView,
+      worldZoom,
+      adjustZoom,
+      setIsFullscreen,
+    }),
+    [
+      metrics,
+      health,
+      history,
+      heartbeatStatus,
+      mcpServers,
+      enabledMcp,
+      enabledHb,
+      totalHbTasks,
+      activeDelegations,
+      activePersonalities,
+      defaultPersonality,
+      navigate,
+      onViewCosts,
+      heartbeatRunning,
+      worldViewMode,
+      setAndPersistWorldView,
+      worldZoom,
+      adjustZoom,
+      setIsFullscreen,
+    ]
+  );
 
   const sorted = [...cardLayouts].sort((a, b) => a.order - b.order);
 
   return (
     <>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={sorted.map(c => c.id)} strategy={rectSortingStrategy} disabled={!editMode}>
+        <SortableContext
+          items={sorted.map((c) => c.id)}
+          strategy={rectSortingStrategy}
+          disabled={!editMode}
+        >
           <div className="grid grid-cols-12 gap-4 sm:gap-5">
-            {sorted.filter(c => c.visible).map(cl => {
-              const def = CARD_REGISTRY.find(d => d.id === cl.id)!;
-              return (
-                <SortableCardWrapper
-                  key={cl.id}
-                  cardLayout={cl}
-                  def={def}
-                  editMode={editMode}
-                  onRemove={() => updateLayouts(cardLayouts.map(c => c.id === cl.id ? { ...c, visible: false } : c))}
-                  onResize={(colSpan) => updateLayouts(cardLayouts.map(c => c.id === cl.id ? { ...c, colSpan } : c))}
-                >
-                  <MissionCardContent id={cl.id} sectionProps={sectionProps} />
-                </SortableCardWrapper>
-              );
-            })}
+            {sorted
+              .filter((c) => c.visible)
+              .map((cl) => {
+                const def = CARD_REGISTRY.find((d) => d.id === cl.id)!;
+                return (
+                  <SortableCardWrapper
+                    key={cl.id}
+                    cardLayout={cl}
+                    def={def}
+                    editMode={editMode}
+                    onRemove={() => {
+                      updateLayouts(
+                        cardLayouts.map((c) => (c.id === cl.id ? { ...c, visible: false } : c))
+                      );
+                    }}
+                    onResize={(colSpan) => {
+                      updateLayouts(
+                        cardLayouts.map((c) => (c.id === cl.id ? { ...c, colSpan } : c))
+                      );
+                    }}
+                  >
+                    <MissionCardContent id={cl.id} sectionProps={sectionProps} />
+                  </SortableCardWrapper>
+                );
+              })}
           </div>
         </SortableContext>
       </DndContext>
@@ -1290,23 +1435,33 @@ function MissionControlTab({
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <button
-                  onClick={() => adjustZoom(-0.25)}
+                  onClick={() => {
+                    adjustZoom(-0.25);
+                  }}
                   disabled={worldZoom <= 0.5}
                   className="px-1.5 py-0.5 rounded hover:text-foreground disabled:opacity-30"
                   aria-label="Zoom out"
-                >−</button>
+                >
+                  −
+                </button>
                 <span className="tabular-nums w-9 text-center">{Math.round(worldZoom * 100)}%</span>
                 <button
-                  onClick={() => adjustZoom(0.25)}
+                  onClick={() => {
+                    adjustZoom(0.25);
+                  }}
                   disabled={worldZoom >= 2.0}
                   className="px-1.5 py-0.5 rounded hover:text-foreground disabled:opacity-30"
                   aria-label="Zoom in"
-                >+</button>
+                >
+                  +
+                </button>
               </div>
               <span className="text-border text-sm">|</span>
               <div className="flex gap-0.5">
                 <button
-                  onClick={() => setAndPersistWorldView('grid')}
+                  onClick={() => {
+                    setAndPersistWorldView('grid');
+                  }}
                   className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'grid' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                   title="Card grid view"
                   aria-pressed={worldViewMode === 'grid'}
@@ -1314,7 +1469,9 @@ function MissionControlTab({
                   ≡ Grid
                 </button>
                 <button
-                  onClick={() => setAndPersistWorldView('map')}
+                  onClick={() => {
+                    setAndPersistWorldView('map');
+                  }}
                   className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'map' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                   title="World map view"
                   aria-pressed={worldViewMode === 'map'}
@@ -1322,7 +1479,9 @@ function MissionControlTab({
                   ⊞ Map
                 </button>
                 <button
-                  onClick={() => setAndPersistWorldView('large')}
+                  onClick={() => {
+                    setAndPersistWorldView('large');
+                  }}
                   className={`px-2 py-0.5 text-xs rounded transition-colors ${worldViewMode === 'large' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                   title="Large zone view"
                   aria-pressed={worldViewMode === 'large'}
@@ -1332,7 +1491,9 @@ function MissionControlTab({
               </div>
               <span className="text-border text-sm">|</span>
               <button
-                onClick={() => setIsFullscreen(false)}
+                onClick={() => {
+                  setIsFullscreen(false);
+                }}
                 aria-label="Exit fullscreen"
                 className="p-1 rounded hover:bg-muted transition-colors"
               >
@@ -1344,7 +1505,10 @@ function MissionControlTab({
             <AgentWorldWidget
               viewMode={worldViewMode}
               zoom={worldZoom}
-              onAgentClick={(id) => { setIsFullscreen(false); navigate(`/soul/personalities?focus=${id}`); }}
+              onAgentClick={(id) => {
+                setIsFullscreen(false);
+                navigate(`/soul/personalities?focus=${id}`);
+              }}
               maxAgents={999}
             />
           </div>
@@ -1356,16 +1520,25 @@ function MissionControlTab({
         <div className="fixed inset-y-0 right-0 w-72 bg-background border-l border-border shadow-xl z-50 flex flex-col">
           <div className="p-4 border-b border-border flex items-center justify-between">
             <h3 className="font-semibold text-sm">Customize Dashboard</h3>
-            <button onClick={() => { setCatalogueOpen(false); setEditMode(false); }} className="p-1 rounded hover:bg-muted">
+            <button
+              onClick={() => {
+                setCatalogueOpen(false);
+                setEditMode(false);
+              }}
+              className="p-1 rounded hover:bg-muted"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-0.5">
-            {CARD_REGISTRY.map(def => {
-              const cl = cardLayouts.find(c => c.id === def.id);
+            {CARD_REGISTRY.map((def) => {
+              const cl = cardLayouts.find((c) => c.id === def.id);
               const isVisible = cl?.visible ?? def.defaultVisible;
               return (
-                <div key={def.id} className="flex items-center justify-between py-2.5 border-b border-border/50 last:border-0">
+                <div
+                  key={def.id}
+                  className="flex items-center justify-between py-2.5 border-b border-border/50 last:border-0"
+                >
                   <div className="flex-1 min-w-0 mr-3">
                     <p className="text-sm font-medium">{def.label}</p>
                     <p className="text-xs text-muted-foreground truncate">{def.description}</p>
@@ -1374,12 +1547,20 @@ function MissionControlTab({
                     role="switch"
                     aria-checked={isVisible}
                     disabled={!!def.pinned}
-                    onClick={() => updateLayouts(cardLayouts.map(c => c.id === def.id ? { ...c, visible: !c.visible } : c))}
+                    onClick={() => {
+                      updateLayouts(
+                        cardLayouts.map((c) =>
+                          c.id === def.id ? { ...c, visible: !c.visible } : c
+                        )
+                      );
+                    }}
                     className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors focus:outline-none ${
                       isVisible ? 'bg-primary' : 'bg-muted'
                     } ${def.pinned ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                   >
-                    <span className={`inline-block h-3 w-3 mt-1 ml-1 rounded-full bg-white transition-transform ${isVisible ? 'translate-x-4' : 'translate-x-0'}`} />
+                    <span
+                      className={`inline-block h-3 w-3 mt-1 ml-1 rounded-full bg-white transition-transform ${isVisible ? 'translate-x-4' : 'translate-x-0'}`}
+                    />
                   </button>
                 </div>
               );
@@ -1387,13 +1568,22 @@ function MissionControlTab({
           </div>
           <div className="p-4 border-t border-border space-y-2">
             <button
-              onClick={() => updateLayouts(defaultLayout().cards)}
+              onClick={() => {
+                updateLayouts(defaultLayout().cards);
+              }}
               className="w-full text-xs text-muted-foreground hover:text-foreground py-1"
-            >Reset to defaults</button>
+            >
+              Reset to defaults
+            </button>
             <button
-              onClick={() => { setCatalogueOpen(false); setEditMode(false); }}
+              onClick={() => {
+                setCatalogueOpen(false);
+                setEditMode(false);
+              }}
               className="w-full px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium"
-            >Done</button>
+            >
+              Done
+            </button>
           </div>
         </div>
       )}

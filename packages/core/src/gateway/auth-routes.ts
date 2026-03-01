@@ -164,6 +164,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         return reply.code(201).send({
           id: result.id,
           name: result.name,
+          key: result.key,
           rawKey: result.key,
           prefix: result.keyPrefix,
           role: result.role,
@@ -213,7 +214,12 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         // JWT failed — try as an API key (sck_… prefix or any non-JWT token)
         try {
           const user = await authService.validateApiKey(token);
-          return { valid: true, userId: user.userId, role: user.role, permissions: user.permissions };
+          return {
+            valid: true,
+            userId: user.userId,
+            role: user.role,
+            permissions: user.permissions,
+          };
         } catch {
           return { valid: false };
         }

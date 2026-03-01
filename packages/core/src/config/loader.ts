@@ -467,9 +467,7 @@ export function validateSecrets(config: Config): void {
     for (const fb of config.model.fallbacks) {
       if (fb.provider !== 'ollama' && !getSecret(fb.apiKeyEnv)) {
         if (isLoggerInitialized()) {
-          getLogger().warn(
-            `Fallback ${fb.provider}/${fb.model} API key not set: ${fb.apiKeyEnv}`
-          );
+          getLogger().warn(`Fallback ${fb.provider}/${fb.model} API key not set: ${fb.apiKeyEnv}`);
         } else {
           // Logger not yet available at early config-load time; fall back to stderr.
           process.stderr.write(

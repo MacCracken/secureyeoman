@@ -14,12 +14,12 @@
 import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from 'node:crypto';
 
 // HKDF parameters — changing these invalidates all existing encrypted keys.
-const HKDF_DIGEST   = 'sha256';
-const HKDF_SALT     = 'secureyeoman-ssh-key-v1';
-const HKDF_INFO     = 'ssh-private-key-encryption';
-const KEY_LEN       = 32; // AES-256
-const IV_LEN        = 12; // 96-bit GCM IV
-const TAG_LEN       = 16; // GCM auth tag
+const HKDF_DIGEST = 'sha256';
+const HKDF_SALT = 'secureyeoman-ssh-key-v1';
+const HKDF_INFO = 'ssh-private-key-encryption';
+const KEY_LEN = 32; // AES-256
+const IV_LEN = 12; // 96-bit GCM IV
+const TAG_LEN = 16; // GCM auth tag
 
 function deriveKey(tokenSecret: string): Buffer {
   const raw = hkdfSync(
@@ -37,14 +37,11 @@ function deriveKey(tokenSecret: string): Buffer {
  * Returns a base64-encoded blob that can be safely stored in SecretsManager.
  */
 export function encryptSshKey(plaintext: string, tokenSecret: string): string {
-  const key    = deriveKey(tokenSecret);
-  const iv     = randomBytes(IV_LEN);
+  const key = deriveKey(tokenSecret);
+  const iv = randomBytes(IV_LEN);
   const cipher = createCipheriv('aes-256-gcm', key, iv);
 
-  const encrypted = Buffer.concat([
-    cipher.update(plaintext, 'utf8'),
-    cipher.final(),
-  ]);
+  const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
   const tag = cipher.getAuthTag(); // always TAG_LEN bytes for GCM
 
   // iv || tag || ciphertext
@@ -63,15 +60,12 @@ export function decryptSshKey(ciphertext: string, tokenSecret: string): string {
     throw new Error('SSH key ciphertext too short — possibly corrupted');
   }
 
-  const iv        = buf.subarray(0, IV_LEN);
-  const tag       = buf.subarray(IV_LEN, IV_LEN + TAG_LEN);
+  const iv = buf.subarray(0, IV_LEN);
+  const tag = buf.subarray(IV_LEN, IV_LEN + TAG_LEN);
   const encrypted = buf.subarray(IV_LEN + TAG_LEN);
 
   const decipher = createDecipheriv('aes-256-gcm', key, iv);
   decipher.setAuthTag(tag);
 
-  return (
-    decipher.update(encrypted).toString('utf8') +
-    decipher.final('utf8')
-  );
+  return decipher.update(encrypted).toString('utf8') + decipher.final('utf8');
 }

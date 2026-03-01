@@ -46,11 +46,13 @@ function makeCtx(argv: string[] = []) {
   };
 }
 
-function makePersonality(overrides: Partial<{
-  id: string;
-  name: string;
-  isActive: boolean;
-}> = {}) {
+function makePersonality(
+  overrides: Partial<{
+    id: string;
+    name: string;
+    isActive: boolean;
+  }> = {}
+) {
   return {
     id: 'p-001',
     name: 'Alice',
@@ -59,16 +61,18 @@ function makePersonality(overrides: Partial<{
   };
 }
 
-function makeTask(overrides: Partial<{
-  id: string;
-  personalityId: string;
-  status: string;
-  title: string;
-  startedAt: number;
-  createdAt: number;
-  type: string;
-  correlationId: string;
-}> = {}) {
+function makeTask(
+  overrides: Partial<{
+    id: string;
+    personalityId: string;
+    status: string;
+    title: string;
+    startedAt: number;
+    createdAt: number;
+    type: string;
+    correlationId: string;
+  }> = {}
+) {
   return {
     id: 't-001',
     personalityId: 'p-001',
@@ -77,13 +81,15 @@ function makeTask(overrides: Partial<{
   };
 }
 
-function makeAuditEntry(overrides: Partial<{
-  id: string;
-  type: string;
-  action: string;
-  actorId: string;
-  timestamp: number;
-}> = {}) {
+function makeAuditEntry(
+  overrides: Partial<{
+    id: string;
+    type: string;
+    action: string;
+    actorId: string;
+    timestamp: number;
+  }> = {}
+) {
   return {
     id: 'a-001',
     ...overrides,

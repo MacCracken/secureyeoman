@@ -1,13 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  FileText,
-  Plus,
-  Download,
-  Loader2,
-  XCircle,
-  CheckCircle,
-} from 'lucide-react';
+import { FileText, Plus, Download, Loader2, XCircle, CheckCircle } from 'lucide-react';
 import { fetchReports, generateReport, downloadReport } from '../../api/client';
 import type { ReportSummary } from '../../api/client';
 

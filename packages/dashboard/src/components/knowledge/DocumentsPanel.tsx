@@ -29,7 +29,9 @@ function StatusBadge({ status }: { status: KbDocument['status'] }) {
     error: <AlertCircle className="w-3 h-3" />,
   };
   return (
-    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${cls[status] ?? ''}`}>
+    <span
+      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${cls[status] ?? ''}`}
+    >
       {icons[status]}
       {status}
     </span>
@@ -45,7 +47,9 @@ function FormatBadge({ format }: { format: KbDocument['format'] }) {
     url: 'bg-purple-50 text-purple-600',
   };
   return (
-    <span className={`px-1.5 py-0.5 rounded text-xs font-mono ${colors[format] ?? 'bg-gray-50 text-gray-600'}`}>
+    <span
+      className={`px-1.5 py-0.5 rounded text-xs font-mono ${colors[format] ?? 'bg-gray-50 text-gray-600'}`}
+    >
       {format}
     </span>
   );
@@ -132,12 +136,16 @@ export function DocumentsPanel() {
             <label className="text-xs text-muted-foreground">Personality:</label>
             <select
               value={selectedPersonalityId}
-              onChange={(e) => setSelectedPersonalityId(e.target.value)}
+              onChange={(e) => {
+                setSelectedPersonalityId(e.target.value);
+              }}
               className="bg-card border border-border rounded text-xs py-1 px-2"
             >
               <option value={ALL_PERSONALITIES}>All</option>
               {personalities.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
               ))}
             </select>
           </div>
@@ -148,7 +156,9 @@ export function DocumentsPanel() {
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
           ) : documents.length === 0 ? (
-            <p className="text-center text-xs text-muted-foreground py-8">No documents ingested yet.</p>
+            <p className="text-center text-xs text-muted-foreground py-8">
+              No documents ingested yet.
+            </p>
           ) : (
             <div className="divide-y divide-border">
               {documents.map((doc) => (
@@ -159,19 +169,27 @@ export function DocumentsPanel() {
                       <FormatBadge format={doc.format} />
                       <StatusBadge status={doc.status} />
                       {doc.visibility === 'shared' && (
-                        <span className="text-xs text-muted-foreground bg-blue-50 px-1.5 py-0.5 rounded">shared</span>
+                        <span className="text-xs text-muted-foreground bg-blue-50 px-1.5 py-0.5 rounded">
+                          shared
+                        </span>
                       )}
                     </div>
                     {doc.status === 'ready' && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{doc.chunkCount} chunk{doc.chunkCount !== 1 ? 's' : ''}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {doc.chunkCount} chunk{doc.chunkCount !== 1 ? 's' : ''}
+                      </p>
                     )}
                     {doc.status === 'error' && doc.errorMessage && (
-                      <p className="text-xs text-red-500 mt-0.5 truncate" title={doc.errorMessage}>{doc.errorMessage}</p>
+                      <p className="text-xs text-red-500 mt-0.5 truncate" title={doc.errorMessage}>
+                        {doc.errorMessage}
+                      </p>
                     )}
                   </div>
                   <button
                     className="shrink-0 p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-50"
-                    onClick={() => deleteMutation.mutate(doc.id)}
+                    onClick={() => {
+                      deleteMutation.mutate(doc.id);
+                    }}
                     disabled={deleteMutation.isPending}
                     title="Delete document"
                   >
@@ -199,12 +217,16 @@ export function DocumentsPanel() {
               <label className="text-xs text-muted-foreground block mb-1">Personality</label>
               <select
                 value={uploadPersonalityId}
-                onChange={(e) => setUploadPersonalityId(e.target.value)}
+                onChange={(e) => {
+                  setUploadPersonalityId(e.target.value);
+                }}
                 className="w-full bg-card border border-border rounded text-xs py-1.5 px-2"
               >
                 <option value="">Global (All Personalities)</option>
                 {personalities.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -212,7 +234,9 @@ export function DocumentsPanel() {
               <label className="text-xs text-muted-foreground block mb-1">Visibility</label>
               <select
                 value={uploadVisibility}
-                onChange={(e) => setUploadVisibility(e.target.value as 'private' | 'shared')}
+                onChange={(e) => {
+                  setUploadVisibility(e.target.value as 'private' | 'shared');
+                }}
                 className="w-full bg-card border border-border rounded text-xs py-1.5 px-2"
               >
                 <option value="private">Private</option>
@@ -225,7 +249,9 @@ export function DocumentsPanel() {
             <input
               type="text"
               value={uploadTitle}
-              onChange={(e) => setUploadTitle(e.target.value)}
+              onChange={(e) => {
+                setUploadTitle(e.target.value);
+              }}
               placeholder="Auto-detected from filename"
               className="w-full bg-card border border-border rounded text-xs py-1.5 px-2"
             />
@@ -239,9 +265,16 @@ export function DocumentsPanel() {
               isDragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
             }`}
             onClick={() => fileInputRef.current?.click()}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click(); }}
-            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-            onDragLeave={() => setIsDragging(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click();
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => {
+              setIsDragging(false);
+            }}
             onDrop={handleDrop}
           >
             {uploadMutation.isPending ? (

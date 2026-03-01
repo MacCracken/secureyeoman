@@ -66,7 +66,7 @@ export function MLSecurityTab() {
     refetchInterval: 15_000,
   });
 
-  const events = (eventsData?.events ?? []) as SecurityEvent[];
+  const events = eventsData?.events ?? [];
   const total = eventsData?.total ?? 0;
   const pageCount = Math.ceil(total / ML_PAGE_SIZE);
   const currentPage = Math.floor(offset / ML_PAGE_SIZE) + 1;

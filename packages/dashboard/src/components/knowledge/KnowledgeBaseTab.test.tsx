@@ -26,10 +26,48 @@ vi.mock('../../api/client', () => ({
     total: 1,
   }),
   deleteDocument: vi.fn().mockResolvedValue(undefined),
-  uploadDocument: vi.fn().mockResolvedValue({ document: { id: 'doc-2', title: 'Uploaded', status: 'processing', format: 'md', chunkCount: 0, visibility: 'private' } }),
-  ingestUrl: vi.fn().mockResolvedValue({ document: { id: 'doc-3', title: 'https://example.com', status: 'ready', format: 'url', chunkCount: 2, visibility: 'private' } }),
-  ingestText: vi.fn().mockResolvedValue({ document: { id: 'doc-4', title: 'Paste Title', status: 'ready', format: 'txt', chunkCount: 1, visibility: 'private' } }),
-  ingestGithubWiki: vi.fn().mockResolvedValue({ documents: [{ id: 'doc-5', title: 'wiki', status: 'ready', format: 'md', chunkCount: 1, visibility: 'shared' }] }),
+  uploadDocument: vi.fn().mockResolvedValue({
+    document: {
+      id: 'doc-2',
+      title: 'Uploaded',
+      status: 'processing',
+      format: 'md',
+      chunkCount: 0,
+      visibility: 'private',
+    },
+  }),
+  ingestUrl: vi.fn().mockResolvedValue({
+    document: {
+      id: 'doc-3',
+      title: 'https://example.com',
+      status: 'ready',
+      format: 'url',
+      chunkCount: 2,
+      visibility: 'private',
+    },
+  }),
+  ingestText: vi.fn().mockResolvedValue({
+    document: {
+      id: 'doc-4',
+      title: 'Paste Title',
+      status: 'ready',
+      format: 'txt',
+      chunkCount: 1,
+      visibility: 'private',
+    },
+  }),
+  ingestGithubWiki: vi.fn().mockResolvedValue({
+    documents: [
+      {
+        id: 'doc-5',
+        title: 'wiki',
+        status: 'ready',
+        format: 'md',
+        chunkCount: 1,
+        visibility: 'shared',
+      },
+    ],
+  }),
   fetchKnowledgeHealth: vi.fn().mockResolvedValue({
     totalDocuments: 5,
     totalChunks: 20,
@@ -103,7 +141,10 @@ describe('KnowledgeBaseTab', () => {
 
     await waitFor(() => screen.getByPlaceholderText(/https:\/\/example\.com\/docs/));
 
-    await user.type(screen.getByPlaceholderText(/https:\/\/example\.com\/docs/), 'https://mysite.com');
+    await user.type(
+      screen.getByPlaceholderText(/https:\/\/example\.com\/docs/),
+      'https://mysite.com'
+    );
     await user.click(screen.getByRole('button', { name: /ingest url/i }));
 
     await waitFor(() => {

@@ -14,7 +14,11 @@ export interface ToolManifestEntry {
 export function getToolManifest(): ToolManifestEntry[] {
   return [
     // Brain tools
-    { name: 'knowledge_search', description: 'Search the SecureYeoman knowledge base. Optional instanceId param searches a federated peer instance.' },
+    {
+      name: 'knowledge_search',
+      description:
+        'Search the SecureYeoman knowledge base. Optional instanceId param searches a federated peer instance.',
+    },
     { name: 'knowledge_get', description: 'Get a specific knowledge entry by ID' },
     { name: 'knowledge_store', description: 'Store a new knowledge entry' },
     { name: 'memory_recall', description: 'Recall memories matching a query' },
@@ -423,46 +427,123 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
 
     // Gmail tools (Phase 63)
-    { name: 'gmail_profile', description: 'Get connected Gmail account email, mode, message and thread counts' },
-    { name: 'gmail_list_messages', description: 'List Gmail messages with Gmail search syntax (is:unread, from:alice@...)' },
-    { name: 'gmail_read_message', description: 'Read full Gmail message content by ID (headers + body + labels)' },
-    { name: 'gmail_read_thread', description: 'Read all messages in a Gmail thread (full conversation chain)' },
-    { name: 'gmail_list_labels', description: 'List all Gmail labels including system labels (INBOX, SENT, TRASH)' },
-    { name: 'gmail_compose_draft', description: 'Create a Gmail draft (not sent — requires human review)' },
+    {
+      name: 'gmail_profile',
+      description: 'Get connected Gmail account email, mode, message and thread counts',
+    },
+    {
+      name: 'gmail_list_messages',
+      description: 'List Gmail messages with Gmail search syntax (is:unread, from:alice@...)',
+    },
+    {
+      name: 'gmail_read_message',
+      description: 'Read full Gmail message content by ID (headers + body + labels)',
+    },
+    {
+      name: 'gmail_read_thread',
+      description: 'Read all messages in a Gmail thread (full conversation chain)',
+    },
+    {
+      name: 'gmail_list_labels',
+      description: 'List all Gmail labels including system labels (INBOX, SENT, TRASH)',
+    },
+    {
+      name: 'gmail_compose_draft',
+      description: 'Create a Gmail draft (not sent — requires human review)',
+    },
     { name: 'gmail_send_email', description: 'Send email immediately via Gmail (auto mode only)' },
 
     // Twitter / X tools (Phase 63)
     { name: 'twitter_profile', description: 'Get authenticated Twitter / X account profile' },
-    { name: 'twitter_search', description: 'Search recent tweets (supports Twitter search operators)' },
+    {
+      name: 'twitter_search',
+      description: 'Search recent tweets (supports Twitter search operators)',
+    },
     { name: 'twitter_get_tweet', description: 'Get a single tweet by ID' },
     { name: 'twitter_get_user', description: 'Look up a Twitter / X user by username' },
-    { name: 'twitter_get_mentions', description: 'Get mentions of the authenticated Twitter / X account' },
-    { name: 'twitter_get_timeline', description: 'Get the authenticated Twitter / X account home timeline' },
-    { name: 'twitter_post_tweet', description: 'Post a tweet (or preview in draft mode without posting)' },
+    {
+      name: 'twitter_get_mentions',
+      description: 'Get mentions of the authenticated Twitter / X account',
+    },
+    {
+      name: 'twitter_get_timeline',
+      description: 'Get the authenticated Twitter / X account home timeline',
+    },
+    {
+      name: 'twitter_post_tweet',
+      description: 'Post a tweet (or preview in draft mode without posting)',
+    },
     { name: 'twitter_like_tweet', description: 'Like a tweet (auto mode only)' },
     { name: 'twitter_retweet', description: 'Retweet a tweet (auto mode only)' },
     { name: 'twitter_unretweet', description: 'Undo a retweet (auto mode only)' },
-    { name: 'twitter_upload_media', description: 'Upload an image or video to Twitter to attach to a tweet — requires OAuth 1.0a credentials and auto mode' },
+    {
+      name: 'twitter_upload_media',
+      description:
+        'Upload an image or video to Twitter to attach to a tweet — requires OAuth 1.0a credentials and auto mode',
+    },
 
     // GitHub API tools (Phase 70)
-    { name: 'github_profile', description: 'Get the connected GitHub account profile — login, name, email, public repos count, access mode, and two_factor_authentication status (boolean). Use to surface 2FA security recommendations.' },
-    { name: 'github_list_repos', description: 'List repositories for the authenticated GitHub user' },
+    {
+      name: 'github_profile',
+      description:
+        'Get the connected GitHub account profile — login, name, email, public repos count, access mode, and two_factor_authentication status (boolean). Use to surface 2FA security recommendations.',
+    },
+    {
+      name: 'github_list_repos',
+      description: 'List repositories for the authenticated GitHub user',
+    },
     { name: 'github_get_repo', description: 'Get details for a specific GitHub repository' },
     { name: 'github_list_prs', description: 'List pull requests for a GitHub repository' },
     { name: 'github_get_pr', description: 'Get details of a specific pull request' },
     { name: 'github_list_issues', description: 'List issues for a GitHub repository' },
     { name: 'github_get_issue', description: 'Get details of a specific issue' },
     { name: 'github_create_issue', description: 'Create a new GitHub issue' },
-    { name: 'github_create_pr', description: 'Create a new pull request (draft mode returns preview)' },
-    { name: 'github_comment', description: 'Add a comment to a GitHub issue or PR (auto mode only)' },
-    { name: 'github_list_ssh_keys', description: 'List SSH public keys on the connected GitHub account (all modes)' },
-    { name: 'github_add_ssh_key', description: 'Add an SSH public key to the connected GitHub account (draft → preview, suggest → blocked)' },
-    { name: 'github_delete_ssh_key', description: 'Remove an SSH public key from the connected GitHub account by key_id (auto mode only)' },
-    { name: 'github_setup_ssh', description: 'Generate ed25519 SSH key pair in this container, register public key with GitHub, configure ~/.ssh/ for git push/pull via SSH' },
-    { name: 'github_rotate_ssh_key', description: 'Rotate the container SSH key: generate new key, register with GitHub, revoke old key, update ~/.ssh/' },
-    { name: 'github_create_repo', description: 'Create a new GitHub repository (draft → preview, suggest → blocked)' },
-    { name: 'github_fork_repo', description: 'Fork a GitHub repository into the authenticated user or org (draft → preview, suggest → blocked)' },
-    { name: 'github_sync_fork', description: 'Sync a fork branch with its upstream repository via the GitHub Merges API (draft → preview, suggest → blocked, 204 = already up-to-date)' },
+    {
+      name: 'github_create_pr',
+      description: 'Create a new pull request (draft mode returns preview)',
+    },
+    {
+      name: 'github_comment',
+      description: 'Add a comment to a GitHub issue or PR (auto mode only)',
+    },
+    {
+      name: 'github_list_ssh_keys',
+      description: 'List SSH public keys on the connected GitHub account (all modes)',
+    },
+    {
+      name: 'github_add_ssh_key',
+      description:
+        'Add an SSH public key to the connected GitHub account (draft → preview, suggest → blocked)',
+    },
+    {
+      name: 'github_delete_ssh_key',
+      description:
+        'Remove an SSH public key from the connected GitHub account by key_id (auto mode only)',
+    },
+    {
+      name: 'github_setup_ssh',
+      description:
+        'Generate ed25519 SSH key pair in this container, register public key with GitHub, configure ~/.ssh/ for git push/pull via SSH',
+    },
+    {
+      name: 'github_rotate_ssh_key',
+      description:
+        'Rotate the container SSH key: generate new key, register with GitHub, revoke old key, update ~/.ssh/',
+    },
+    {
+      name: 'github_create_repo',
+      description: 'Create a new GitHub repository (draft → preview, suggest → blocked)',
+    },
+    {
+      name: 'github_fork_repo',
+      description:
+        'Fork a GitHub repository into the authenticated user or org (draft → preview, suggest → blocked)',
+    },
+    {
+      name: 'github_sync_fork',
+      description:
+        'Sync a fork branch with its upstream repository via the GitHub Merges API (draft → preview, suggest → blocked, 204 = already up-to-date)',
+    },
 
     // Ollama model lifecycle tools (Phase 64)
     {
@@ -477,25 +558,67 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
 
     // Docker management tools (Phase 74)
-    { name: 'docker_ps', description: 'List Docker containers (running by default; use all=true to include stopped)' },
-    { name: 'docker_logs', description: 'Fetch recent logs from a Docker container with optional timestamps' },
-    { name: 'docker_inspect', description: 'Return detailed metadata for a container or image as JSON' },
-    { name: 'docker_stats', description: 'One-shot snapshot of CPU, memory, and network I/O for running containers' },
-    { name: 'docker_images', description: 'List locally available Docker images with optional filter' },
+    {
+      name: 'docker_ps',
+      description: 'List Docker containers (running by default; use all=true to include stopped)',
+    },
+    {
+      name: 'docker_logs',
+      description: 'Fetch recent logs from a Docker container with optional timestamps',
+    },
+    {
+      name: 'docker_inspect',
+      description: 'Return detailed metadata for a container or image as JSON',
+    },
+    {
+      name: 'docker_stats',
+      description: 'One-shot snapshot of CPU, memory, and network I/O for running containers',
+    },
+    {
+      name: 'docker_images',
+      description: 'List locally available Docker images with optional filter',
+    },
     { name: 'docker_start', description: 'Start one or more stopped Docker containers' },
     { name: 'docker_stop', description: 'Stop one or more running Docker containers' },
     { name: 'docker_restart', description: 'Restart one or more Docker containers' },
-    { name: 'docker_exec', description: 'Execute a command inside a running Docker container and return its output' },
+    {
+      name: 'docker_exec',
+      description: 'Execute a command inside a running Docker container and return its output',
+    },
     { name: 'docker_pull', description: 'Pull a Docker image from a registry' },
     { name: 'docker_compose_ps', description: 'List services in a Docker Compose project' },
-    { name: 'docker_compose_logs', description: 'Fetch logs from a Docker Compose project or specific service' },
-    { name: 'docker_compose_up', description: 'Start Docker Compose services in detached mode (with optional build)' },
-    { name: 'docker_compose_down', description: 'Stop and remove containers and networks for a Docker Compose project' },
+    {
+      name: 'docker_compose_logs',
+      description: 'Fetch logs from a Docker Compose project or specific service',
+    },
+    {
+      name: 'docker_compose_up',
+      description: 'Start Docker Compose services in detached mode (with optional build)',
+    },
+    {
+      name: 'docker_compose_down',
+      description: 'Stop and remove containers and networks for a Docker Compose project',
+    },
 
     // Knowledge Base tools (Phase 82)
-    { name: 'kb_search', description: 'Semantic search across the knowledge base (documents + entries). Returns chunks ranked by relevance.' },
-    { name: 'kb_add_document', description: 'Ingest a URL or raw text into the knowledge base. URL is fetched and indexed; raw text is stored directly.' },
-    { name: 'kb_list_documents', description: 'List all documents ingested into the knowledge base with status and chunk counts.' },
-    { name: 'kb_delete_document', description: 'Delete a document from the knowledge base and remove all its indexed chunks.' },
+    {
+      name: 'kb_search',
+      description:
+        'Semantic search across the knowledge base (documents + entries). Returns chunks ranked by relevance.',
+    },
+    {
+      name: 'kb_add_document',
+      description:
+        'Ingest a URL or raw text into the knowledge base. URL is fetched and indexed; raw text is stored directly.',
+    },
+    {
+      name: 'kb_list_documents',
+      description:
+        'List all documents ingested into the knowledge base with status and chunk counts.',
+    },
+    {
+      name: 'kb_delete_document',
+      description: 'Delete a document from the knowledge base and remove all its indexed chunks.',
+    },
   ];
 }

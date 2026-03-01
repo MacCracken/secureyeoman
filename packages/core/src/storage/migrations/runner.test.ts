@@ -34,6 +34,17 @@ async function wipeMigrationsTable(): Promise<void> {
   // Truncate tracking table only — leaves all schema objects intact so SQL
   // with IF NOT EXISTS doesn't fail on re-apply.
   await getPool().query('TRUNCATE schema_migrations');
+
+  // Ensure the default tenant exists before re-applying migrations: migration
+  // 022 inserts the admin user using tenant_id DEFAULT 'default', which
+  // requires auth.tenants to have the 'default' row. Migration 058 seeds it,
+  // but 022 runs first during re-application when all the schema data has
+  // been cleaned up by a prior test suite's truncateAllTables() call.
+  await getPool().query(`
+    INSERT INTO auth.tenants (id, name, slug, plan, metadata, created_at, updated_at)
+    VALUES ('default', 'Default', 'default', 'enterprise', '{}', 0, 0)
+    ON CONFLICT DO NOTHING
+  `);
 }
 
 describe('runMigrations()', () => {

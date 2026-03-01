@@ -22,7 +22,9 @@ export function KnowledgeBaseTab() {
         {SUB_TABS.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveSubTab(tab.id)}
+            onClick={() => {
+              setActiveSubTab(tab.id);
+            }}
             className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 ${
               activeSubTab === tab.id
                 ? 'border-primary text-primary'

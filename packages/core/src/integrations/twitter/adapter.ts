@@ -57,7 +57,9 @@ export class TwitterIntegration implements Integration {
     const hasOAuth1 = Boolean(apiKey && apiKeySecret && accessToken && accessTokenSecret);
 
     if (!bearerToken && !hasOAuth1 && !oauth2AccessToken) {
-      throw new Error('Twitter integration requires bearerToken, OAuth 1.0a credentials, or oauth2AccessToken in config');
+      throw new Error(
+        'Twitter integration requires bearerToken, OAuth 1.0a credentials, or oauth2AccessToken in config'
+      );
     }
 
     // App-only / readonly client

@@ -17,7 +17,9 @@ function makeLogger() {
     warn: vi.fn(),
     error: vi.fn(),
     debug: vi.fn(),
-    child: vi.fn(function () { return this; }),
+    child: vi.fn(function () {
+      return this;
+    }),
   } as any;
 }
 
@@ -222,9 +224,9 @@ describe('DistillationManager', () => {
   describe('runJob()', () => {
     it('throws when job is not found', async () => {
       pool.query = vi.fn(async () => ({ rows: [], rowCount: 0 }));
-      await expect(
-        manager.runJob('missing', makeConvStorage(), makeTeacher())
-      ).rejects.toThrow('not found');
+      await expect(manager.runJob('missing', makeConvStorage(), makeTeacher())).rejects.toThrow(
+        'not found'
+      );
     });
 
     it('throws when job is not pending or failed', async () => {
@@ -232,9 +234,9 @@ describe('DistillationManager', () => {
         rows: [makeJobRow({ status: 'running' })],
         rowCount: 1,
       }));
-      await expect(
-        manager.runJob('job-1', makeConvStorage(), makeTeacher())
-      ).rejects.toThrow('cannot be run');
+      await expect(manager.runJob('job-1', makeConvStorage(), makeTeacher())).rejects.toThrow(
+        'cannot be run'
+      );
     });
 
     it('accepts failed jobs for retry', async () => {
@@ -246,7 +248,10 @@ describe('DistillationManager', () => {
         return { rows: [], rowCount: 1 };
       });
       // Minimal conv storage — returns empty list so job completes immediately
-      const convStorage = { listConversations: vi.fn(async () => ({ conversations: [] })), getMessages: vi.fn(async () => []) } as any;
+      const convStorage = {
+        listConversations: vi.fn(async () => ({ conversations: [] })),
+        getMessages: vi.fn(async () => []),
+      } as any;
       await manager.runJob('job-1', convStorage, makeTeacher());
       // Should not throw — job was accepted and completed
       expect(queryCount).toBeGreaterThan(1);
@@ -281,9 +286,7 @@ describe('DistillationManager', () => {
       });
 
       // Just verify it doesn't throw and completes
-      await expect(
-        manager.runJob('job-1', convStorage, teacher)
-      ).resolves.not.toThrow();
+      await expect(manager.runJob('job-1', convStorage, teacher)).resolves.not.toThrow();
     });
   });
 });

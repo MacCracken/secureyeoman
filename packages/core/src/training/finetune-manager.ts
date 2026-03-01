@@ -59,25 +59,23 @@ export interface FinetuneJob {
 
 function rowToJob(row: Record<string, unknown>): FinetuneJob {
   return {
-    id: row['id'] as string,
-    name: row['name'] as string,
-    baseModel: row['base_model'] as string,
-    adapterName: row['adapter_name'] as string,
-    datasetPath: row['dataset_path'] as string,
-    loraRank: (row['lora_rank'] as number) ?? 16,
-    loraAlpha: (row['lora_alpha'] as number) ?? 32,
-    batchSize: (row['batch_size'] as number) ?? 4,
-    epochs: (row['epochs'] as number) ?? 3,
-    vramBudgetGb: (row['vram_budget_gb'] as number) ?? 12,
-    image:
-      (row['image'] as string) ?? 'ghcr.io/secureyeoman/unsloth-trainer:latest',
-    containerId: (row['container_id'] as string | null) ?? null,
-    status: row['status'] as FinetuneStatus,
-    adapterPath: (row['adapter_path'] as string | null) ?? null,
-    errorMessage: (row['error_message'] as string | null) ?? null,
-    createdAt: row['created_at'] instanceof Date ? (row['created_at'] as Date).getTime() : Date.now(),
-    completedAt:
-      row['completed_at'] instanceof Date ? (row['completed_at'] as Date).getTime() : null,
+    id: row.id as string,
+    name: row.name as string,
+    baseModel: row.base_model as string,
+    adapterName: row.adapter_name as string,
+    datasetPath: row.dataset_path as string,
+    loraRank: (row.lora_rank as number) ?? 16,
+    loraAlpha: (row.lora_alpha as number) ?? 32,
+    batchSize: (row.batch_size as number) ?? 4,
+    epochs: (row.epochs as number) ?? 3,
+    vramBudgetGb: (row.vram_budget_gb as number) ?? 12,
+    image: (row.image as string) ?? 'ghcr.io/secureyeoman/unsloth-trainer:latest',
+    containerId: (row.container_id as string | null) ?? null,
+    status: row.status as FinetuneStatus,
+    adapterPath: (row.adapter_path as string | null) ?? null,
+    errorMessage: (row.error_message as string | null) ?? null,
+    createdAt: row.created_at instanceof Date ? row.created_at.getTime() : Date.now(),
+    completedAt: row.completed_at instanceof Date ? row.completed_at.getTime() : null,
   };
 }
 
@@ -89,7 +87,7 @@ export class FinetuneManager {
   constructor(
     private readonly pool: Pool,
     private readonly logger: SecureLogger,
-    workDir: string = '/tmp/secureyeoman-finetune'
+    workDir = '/tmp/secureyeoman-finetune'
   ) {
     this.workDir = workDir;
   }
@@ -117,7 +115,19 @@ export class FinetuneManager {
           lora_rank, lora_alpha, batch_size, epochs, vram_budget_gb, image)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        RETURNING *`,
-      [id, name, baseModel, adapterName, datasetPath, loraRank, loraAlpha, batchSize, epochs, vramBudgetGb, image]
+      [
+        id,
+        name,
+        baseModel,
+        adapterName,
+        datasetPath,
+        loraRank,
+        loraAlpha,
+        batchSize,
+        epochs,
+        vramBudgetGb,
+        image,
+      ]
     );
     return rowToJob(rows[0]!);
   }
@@ -160,10 +170,9 @@ export class FinetuneManager {
 
   async deleteJob(id: string): Promise<boolean> {
     await this.cancelJob(id);
-    const { rowCount } = await this.pool.query(
-      `DELETE FROM training.finetune_jobs WHERE id=$1`,
-      [id]
-    );
+    const { rowCount } = await this.pool.query(`DELETE FROM training.finetune_jobs WHERE id=$1`, [
+      id,
+    ]);
     return (rowCount ?? 0) > 0;
   }
 
@@ -202,9 +211,12 @@ export class FinetuneManager {
     const dockerArgs = [
       'run',
       '--rm',
-      '--gpus', 'all',
-      '-v', `${jobDir}:/workspace`,
-      '--name', `sy-finetune-${jobId}`,
+      '--gpus',
+      'all',
+      '-v',
+      `${jobDir}:/workspace`,
+      '--name',
+      `sy-finetune-${jobId}`,
       job.image,
     ];
 
@@ -222,7 +234,7 @@ export class FinetuneManager {
     this.logger.info('Finetune job started', { jobId, containerId, image: job.image });
 
     // Watch container completion in background
-    this._watchContainer(jobId, containerId, adapterDir).catch((err) => {
+    this._watchContainer(jobId, containerId, adapterDir).catch((err: unknown) => {
       this.logger.error('Finetune watcher error', {
         jobId,
         error: err instanceof Error ? err.message : 'unknown',

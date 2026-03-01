@@ -8,7 +8,12 @@
  * Registered channels fire-and-forget; errors are logged but never thrown.
  */
 
-import type { AlertStorage, AlertRule, AlertChannel, CreateAlertRuleData } from './alert-storage.js';
+import type {
+  AlertStorage,
+  AlertRule,
+  AlertChannel,
+  CreateAlertRuleData,
+} from './alert-storage.js';
 import type { NotificationManager } from '../notifications/notification-manager.js';
 import type { SecureLogger } from '../logging/logger.js';
 
@@ -68,6 +73,8 @@ export class AlertManager {
 
     for (const rule of rules) {
       try {
+        if (!rule.enabled) continue;
+
         const value = resolvePath(snapshot, rule.metricPath);
         if (value === undefined || value === null || typeof value !== 'number') continue;
 
@@ -145,7 +152,12 @@ export class AlertManager {
         body,
         level: 'error',
         source: 'alert-manager',
-        metadata: { ruleId: rule.id, metricPath: rule.metricPath, value, threshold: rule.threshold },
+        metadata: {
+          ruleId: rule.id,
+          metricPath: rule.metricPath,
+          value,
+          threshold: rule.threshold,
+        },
       });
     } catch (err) {
       this.logger.error('Failed to create alert notification', {
@@ -156,7 +168,7 @@ export class AlertManager {
 
     // External channel fan-out (fire-and-forget)
     for (const channel of rule.channels) {
-      void this._dispatchChannel(channel, rule, value).catch((err) => {
+      void this._dispatchChannel(channel, rule, value).catch((err: unknown) => {
         this.logger.error('Alert channel dispatch error', {
           ruleId: rule.id,
           channelType: channel.type,
@@ -276,11 +288,17 @@ export function compareOperator(
   threshold: number
 ): boolean {
   switch (operator) {
-    case 'gt':  return value > threshold;
-    case 'lt':  return value < threshold;
-    case 'gte': return value >= threshold;
-    case 'lte': return value <= threshold;
-    case 'eq':  return value === threshold;
-    default:    return false;
+    case 'gt':
+      return value > threshold;
+    case 'lt':
+      return value < threshold;
+    case 'gte':
+      return value >= threshold;
+    case 'lte':
+      return value <= threshold;
+    case 'eq':
+      return value === threshold;
+    default:
+      return false;
   }
 }

@@ -141,10 +141,9 @@ describe('FederationTab', () => {
     fireEvent.change(screen.getByPlaceholderText('My Partner Node'), {
       target: { value: 'New Peer' },
     });
-    fireEvent.change(
-      screen.getByPlaceholderText('Pre-shared key agreed with the peer operator'),
-      { target: { value: 'my-shared-secret' } }
-    );
+    fireEvent.change(screen.getByPlaceholderText('Pre-shared key agreed with the peer operator'), {
+      target: { value: 'my-shared-secret' },
+    });
 
     // Submit — there is now only the form's "Add Peer" button (header btn is hidden)
     fireEvent.click(screen.getByRole('button', { name: /add peer/i }));

@@ -41,22 +41,17 @@ export interface CreateApprovalConfig {
 
 function rowToRequest(row: Record<string, unknown>): ApprovalRequest {
   return {
-    id: row['id'] as string,
-    workflowRunId: row['workflow_run_id'] as string,
-    stepId: row['step_id'] as string,
-    status: row['status'] as ApprovalStatus,
-    report: (row['report'] as Record<string, unknown> | null) ?? null,
-    timeoutMs: (row['timeout_ms'] as number) ?? 86400000,
-    decidedBy: (row['decided_by'] as string | null) ?? null,
-    decisionReason: (row['decision_reason'] as string | null) ?? null,
-    createdAt:
-      row['created_at'] instanceof Date ? row['created_at'].getTime() : Date.now(),
-    decidedAt:
-      row['decided_at'] instanceof Date ? row['decided_at'].getTime() : null,
-    expiresAt:
-      row['expires_at'] instanceof Date
-        ? row['expires_at'].getTime()
-        : Date.now() + 86400000,
+    id: row.id as string,
+    workflowRunId: row.workflow_run_id as string,
+    stepId: row.step_id as string,
+    status: row.status as ApprovalStatus,
+    report: (row.report as Record<string, unknown> | null) ?? null,
+    timeoutMs: (row.timeout_ms as number) ?? 86400000,
+    decidedBy: (row.decided_by as string | null) ?? null,
+    decisionReason: (row.decision_reason as string | null) ?? null,
+    createdAt: row.created_at instanceof Date ? row.created_at.getTime() : Date.now(),
+    decidedAt: row.decided_at instanceof Date ? row.decided_at.getTime() : null,
+    expiresAt: row.expires_at instanceof Date ? row.expires_at.getTime() : Date.now() + 86400000,
   };
 }
 

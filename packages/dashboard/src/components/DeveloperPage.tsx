@@ -29,7 +29,12 @@ export function DeveloperPage() {
     { id: 'extensions', label: 'Extensions', icon: <Puzzle className="w-4 h-4" /> },
     { id: 'experiments', label: 'Experiments', icon: <FlaskConical className="w-4 h-4" /> },
     { id: 'storybook', label: 'Storybook', icon: <BookOpen className="w-4 h-4" /> },
-    { id: 'training', label: 'Training', icon: <Brain className="w-4 h-4" />, hidden: !trainingEnabled },
+    {
+      id: 'training',
+      label: 'Training',
+      icon: <Brain className="w-4 h-4" />,
+      hidden: !trainingEnabled,
+    },
     { id: 'gateway', label: 'Gateway Analytics', icon: <BarChart2 className="w-4 h-4" /> },
     { id: 'alerts', label: 'Alert Rules', icon: <Bell className="w-4 h-4" /> },
   ];
@@ -49,7 +54,9 @@ export function DeveloperPage() {
         {visibleTabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => {
+              setActiveTab(tab.id);
+            }}
             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
               activeTab === tab.id
                 ? 'bg-background shadow-sm text-foreground'
@@ -78,7 +85,9 @@ export function DeveloperPage() {
       ) : activeTab === 'gateway' ? (
         <GatewayAnalyticsTab />
       ) : activeTab === 'alerts' ? (
-        <Suspense fallback={<div className="py-8 text-center text-sm text-muted-foreground">Loading…</div>}>
+        <Suspense
+          fallback={<div className="py-8 text-center text-sm text-muted-foreground">Loading…</div>}
+        >
           <AlertRulesTab />
         </Suspense>
       ) : (

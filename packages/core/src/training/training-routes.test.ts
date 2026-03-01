@@ -158,7 +158,11 @@ describe('GET /api/v1/training/stats', () => {
   });
 
   it('returns zero counts for memories/knowledge when brain throws', async () => {
-    const brainManager = { getStats: vi.fn(async () => { throw new Error('not init'); }) };
+    const brainManager = {
+      getStats: vi.fn(async () => {
+        throw new Error('not init');
+      }),
+    };
     const app = await buildApp(buildMockSecureYeoman({ brainManager }));
     const res = await app.inject({ method: 'GET', url: '/api/v1/training/stats' });
     expect(res.statusCode).toBe(200);
@@ -406,7 +410,10 @@ describe('GET /api/v1/training/approvals', () => {
   it('filters to pending when status=pending query param', async () => {
     const approvalManager = buildMockApprovalManager();
     const { app } = await buildMLApp({ getPipelineApprovalManager: vi.fn(() => approvalManager) });
-    const res = await app.inject({ method: 'GET', url: '/api/v1/training/approvals?status=pending' });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/approvals?status=pending',
+    });
     expect(res.statusCode).toBe(200);
     expect(approvalManager.listPending).toHaveBeenCalled();
     await app.close();
@@ -425,7 +432,9 @@ describe('GET /api/v1/training/approvals/:id', () => {
 
   it('returns 404 when request not found', async () => {
     const { app } = await buildMLApp({
-      getPipelineApprovalManager: vi.fn(() => buildMockApprovalManager({ getRequest: vi.fn().mockResolvedValue(null) })),
+      getPipelineApprovalManager: vi.fn(() =>
+        buildMockApprovalManager({ getRequest: vi.fn().mockResolvedValue(null) })
+      ),
     });
     const res = await app.inject({ method: 'GET', url: '/api/v1/training/approvals/nonexistent' });
     expect(res.statusCode).toBe(404);
@@ -449,7 +458,9 @@ describe('POST /api/v1/training/approvals/:id/approve', () => {
 
   it('returns 404 when request not found', async () => {
     const { app } = await buildMLApp({
-      getPipelineApprovalManager: vi.fn(() => buildMockApprovalManager({ approve: vi.fn().mockResolvedValue(false) })),
+      getPipelineApprovalManager: vi.fn(() =>
+        buildMockApprovalManager({ approve: vi.fn().mockResolvedValue(false) })
+      ),
     });
     const res = await app.inject({
       method: 'POST',
@@ -503,7 +514,9 @@ describe('GET /api/v1/training/lineage', () => {
       updatedAt: Date.now(),
     };
     const { app } = await buildMLApp({
-      getPipelineLineageStorage: vi.fn(() => buildMockLineageStorage({ list: vi.fn().mockResolvedValue([lineageRecord]) })),
+      getPipelineLineageStorage: vi.fn(() =>
+        buildMockLineageStorage({ list: vi.fn().mockResolvedValue([lineageRecord]) })
+      ),
     });
     const res = await app.inject({ method: 'GET', url: '/api/v1/training/lineage' });
     expect(res.statusCode).toBe(200);
@@ -527,15 +540,26 @@ describe('GET /api/v1/training/lineage/:runId', () => {
       id: 'lin-1',
       workflowRunId: 'run-42',
       workflowId: 'wf-1',
-      dataset: { datasetId: 'ds-1', path: '/tmp/ds-1.jsonl', sampleCount: 100, snapshotAt: Date.now() },
+      dataset: {
+        datasetId: 'ds-1',
+        path: '/tmp/ds-1.jsonl',
+        sampleCount: 100,
+        snapshotAt: Date.now(),
+      },
       trainingJob: { jobId: 'job-1', jobType: 'finetune', jobStatus: 'complete' },
-      evaluation: { evalId: 'eval-1', metrics: { char_similarity: 0.8, sample_count: 50, exact_match: 0.3 }, completedAt: Date.now() },
+      evaluation: {
+        evalId: 'eval-1',
+        metrics: { char_similarity: 0.8, sample_count: 50, exact_match: 0.3 },
+        completedAt: Date.now(),
+      },
       deployment: null,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
     const { app } = await buildMLApp({
-      getPipelineLineageStorage: vi.fn(() => buildMockLineageStorage({ getByRunId: vi.fn().mockResolvedValue(lineageRecord) })),
+      getPipelineLineageStorage: vi.fn(() =>
+        buildMockLineageStorage({ getByRunId: vi.fn().mockResolvedValue(lineageRecord) })
+      ),
     });
     const res = await app.inject({ method: 'GET', url: '/api/v1/training/lineage/run-42' });
     expect(res.statusCode).toBe(200);

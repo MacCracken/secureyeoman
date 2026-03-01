@@ -55,20 +55,19 @@ export interface TeacherClient {
 
 function rowToJob(row: Record<string, unknown>): DistillationJob {
   return {
-    id: row['id'] as string,
-    name: row['name'] as string,
-    teacherProvider: row['teacher_provider'] as string,
-    teacherModel: row['teacher_model'] as string,
-    exportFormat: (row['export_format'] as ExportFormat) ?? 'sharegpt',
-    maxSamples: (row['max_samples'] as number) ?? 500,
-    personalityIds: (row['personality_ids'] as string[]) ?? [],
-    outputPath: row['output_path'] as string,
-    status: row['status'] as DistillationStatus,
-    samplesGenerated: (row['samples_generated'] as number) ?? 0,
-    errorMessage: (row['error_message'] as string | null) ?? null,
-    createdAt: row['created_at'] instanceof Date ? (row['created_at'] as Date).getTime() : Date.now(),
-    completedAt:
-      row['completed_at'] instanceof Date ? (row['completed_at'] as Date).getTime() : null,
+    id: row.id as string,
+    name: row.name as string,
+    teacherProvider: row.teacher_provider as string,
+    teacherModel: row.teacher_model as string,
+    exportFormat: (row.export_format as ExportFormat) ?? 'sharegpt',
+    maxSamples: (row.max_samples as number) ?? 500,
+    personalityIds: (row.personality_ids as string[]) ?? [],
+    outputPath: row.output_path as string,
+    status: row.status as DistillationStatus,
+    samplesGenerated: (row.samples_generated as number) ?? 0,
+    errorMessage: (row.error_message as string | null) ?? null,
+    createdAt: row.created_at instanceof Date ? row.created_at.getTime() : Date.now(),
+    completedAt: row.completed_at instanceof Date ? row.completed_at.getTime() : null,
   };
 }
 
@@ -102,7 +101,16 @@ export class DistillationManager {
           max_samples, personality_ids, output_path)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
        RETURNING *`,
-      [id, name, teacherProvider, teacherModel, exportFormat, maxSamples, personalityIds, outputPath]
+      [
+        id,
+        name,
+        teacherProvider,
+        teacherModel,
+        exportFormat,
+        maxSamples,
+        personalityIds,
+        outputPath,
+      ]
     );
     return rowToJob(rows[0]!);
   }
@@ -237,8 +245,7 @@ export class DistillationManager {
                     ],
                   }) + '\n';
               } else {
-                line =
-                  JSON.stringify({ instruction: userContent, output: teacherResponse }) + '\n';
+                line = JSON.stringify({ instruction: userContent, output: teacherResponse }) + '\n';
               }
 
               appendFileSync(job.outputPath, line, 'utf-8');

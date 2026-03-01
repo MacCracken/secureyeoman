@@ -51,7 +51,9 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
   const [searchResults, setSearchResults] = useState<VectorResult[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'search' | 'memories' | 'knowledge' | 'add' | 'documents'>('search');
+  const [activeTab, setActiveTab] = useState<
+    'search' | 'memories' | 'knowledge' | 'add' | 'documents'
+  >('search');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   /** Selected personality filter: ALL_PERSONALITIES or a personality id */

@@ -392,7 +392,11 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
               <button
                 key={i}
                 onClick={() => {
-                  if (item.kind === 'form') { setStep(item.step); } else { navigateTo(item.path); }
+                  if (item.kind === 'form') {
+                    setStep(item.step);
+                  } else {
+                    navigateTo(item.path);
+                  }
                 }}
                 className={`p-3 rounded-lg hover:bg-muted/50 transition-colors text-left border ${
                   isNav ? 'border-dashed' : ''

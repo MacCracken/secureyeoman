@@ -252,7 +252,10 @@ describe('DELETE /api/v1/auth/oauth/tokens/:id', () => {
 describe('POST /api/v1/auth/oauth/tokens/:id/refresh', () => {
   it('force-refreshes a token and returns 200', async () => {
     const app = buildApp({}, true);
-    const res = await app.inject({ method: 'POST', url: '/api/v1/auth/oauth/tokens/tok-1/refresh' });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/oauth/tokens/tok-1/refresh',
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json().message).toContain('refreshed');
   });
@@ -263,15 +266,23 @@ describe('POST /api/v1/auth/oauth/tokens/:id/refresh', () => {
       authService: {} as AuthService,
       oauthService: makeMockOAuthService(),
       baseUrl: 'http://localhost:3000',
-      oauthTokenService: makeMockTokenService({ forceRefreshById: vi.fn().mockResolvedValue(null) }),
+      oauthTokenService: makeMockTokenService({
+        forceRefreshById: vi.fn().mockResolvedValue(null),
+      }),
     });
-    const res = await app.inject({ method: 'POST', url: '/api/v1/auth/oauth/tokens/missing/refresh' });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/oauth/tokens/missing/refresh',
+    });
     expect(res.statusCode).toBe(404);
   });
 
   it('returns 503 when token service not configured', async () => {
     const app = buildApp({}, false);
-    const res = await app.inject({ method: 'POST', url: '/api/v1/auth/oauth/tokens/tok-1/refresh' });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/oauth/tokens/tok-1/refresh',
+    });
     expect(res.statusCode).toBe(503);
   });
 });

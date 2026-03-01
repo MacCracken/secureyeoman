@@ -1,7 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronRight, Check, Loader2, X, Cpu, Download, Trash2 } from 'lucide-react';
-import { fetchModelInfo, switchModel, patchModelConfig, fetchOllamaPull, deleteOllamaModel } from '../api/client';
+import {
+  fetchModelInfo,
+  switchModel,
+  patchModelConfig,
+  fetchOllamaPull,
+  deleteOllamaModel,
+} from '../api/client';
 import type { ModelInfo } from '../types';
 
 const LOCAL_PROVIDER_KEYS = new Set(['ollama', 'lmstudio', 'localai']);
@@ -263,7 +269,9 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
                       </button>
                       {isOllama && (
                         <button
-                          onClick={() => deleteMutation.mutate(m.model)}
+                          onClick={() => {
+                            deleteMutation.mutate(m.model);
+                          }}
                           disabled={deleteMutation.isPending}
                           className="p-2 hover:bg-destructive/10 hover:text-destructive rounded mr-1"
                           title={`Remove ${m.model}`}
@@ -287,7 +295,9 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
                       <input
                         type="text"
                         value={pullModel}
-                        onChange={(e) => setPullModel(e.target.value)}
+                        onChange={(e) => {
+                          setPullModel(e.target.value);
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') void handlePull();
                         }}
@@ -327,9 +337,7 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
                     {pullStatus === 'done' && (
                       <p className="text-xs text-green-600 mt-1">✓ Pulled successfully</p>
                     )}
-                    {pullError && (
-                      <p className="text-xs text-destructive mt-1">{pullError}</p>
-                    )}
+                    {pullError && <p className="text-xs text-destructive mt-1">{pullError}</p>}
                   </div>
                 )}
               </div>

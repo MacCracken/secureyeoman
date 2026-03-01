@@ -84,7 +84,13 @@ import {
   revokeApiKey,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
-import type { McpServerConfig, McpToolDef, McpFeatureConfig, IntegrationInfo, OAuthConnectedToken } from '../types';
+import type {
+  McpServerConfig,
+  McpToolDef,
+  McpFeatureConfig,
+  IntegrationInfo,
+  OAuthConnectedToken,
+} from '../types';
 import type { SecurityPolicy } from '../api/client';
 import { sanitizeText } from '../utils/sanitize';
 import { McpPrebuilts } from './McpPrebuilts';
@@ -1028,14 +1034,16 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
         label: 'OAuth 2.0 Access Token (alternative to OAuth 1.0a)',
         type: 'password' as const,
         placeholder: 'OAuth 2.0 access token',
-        helpText: 'User-context OAuth 2.0 token — alternative to OAuth 1.0a for posting. Note: media upload requires OAuth 1.0a.',
+        helpText:
+          'User-context OAuth 2.0 token — alternative to OAuth 1.0a for posting. Note: media upload requires OAuth 1.0a.',
       },
       {
         key: 'oauth2RefreshToken',
         label: 'OAuth 2.0 Refresh Token (optional)',
         type: 'password' as const,
         placeholder: 'OAuth 2.0 refresh token',
-        helpText: 'Refresh token for OAuth 2.0 — stored for reference; manual refresh not yet supported.',
+        helpText:
+          'Refresh token for OAuth 2.0 — stored for reference; manual refresh not yet supported.',
       },
     ],
     setupSteps: [
@@ -1745,8 +1753,12 @@ function MessagingTab({
                 {PLATFORM_META[connectingPlatform].icon}
               </div>
               <div>
-                <h3 className="font-semibold text-sm">Connect {PLATFORM_META[connectingPlatform].name}</h3>
-                <p className="text-xs text-muted-foreground">{PLATFORM_META[connectingPlatform].description}</p>
+                <h3 className="font-semibold text-sm">
+                  Connect {PLATFORM_META[connectingPlatform].name}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {PLATFORM_META[connectingPlatform].description}
+                </p>
               </div>
             </div>
             <button
@@ -1788,7 +1800,9 @@ function MessagingTab({
             >
               {PLATFORM_META[connectingPlatform].fields.map((field) => (
                 <div key={field.key}>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">{field.label}</label>
+                  <label className="text-sm font-medium text-foreground block mb-1.5">
+                    {field.label}
+                  </label>
                   <input
                     type={field.type}
                     placeholder={field.placeholder}
@@ -1809,7 +1823,9 @@ function MessagingTab({
 
               {createError && (
                 <div className="p-2.5 rounded-md bg-red-500/10 border border-red-500/20">
-                  <p className="text-sm text-red-600 dark:text-red-400">{createError.message || 'Connection failed'}</p>
+                  <p className="text-sm text-red-600 dark:text-red-400">
+                    {createError.message || 'Connection failed'}
+                  </p>
                 </div>
               )}
 
@@ -1989,43 +2005,53 @@ function IntegrationCard({
   });
 
   return (
-    <div className={`card overflow-hidden transition-colors ${
-      isConnected
-        ? 'border-green-500/50 bg-green-500/5'
-        : integration.status === 'error'
-        ? 'border-red-500/50 bg-red-500/5'
-        : ''
-    }`}>
+    <div
+      className={`card overflow-hidden transition-colors ${
+        isConnected
+          ? 'border-green-500/50 bg-green-500/5'
+          : integration.status === 'error'
+            ? 'border-red-500/50 bg-red-500/5'
+            : ''
+      }`}
+    >
       {/* Status bar across top */}
-      <div className={`h-1 w-full ${
-        isConnected ? 'bg-green-500' : integration.status === 'error' ? 'bg-red-500' : 'bg-border'
-      }`} />
+      <div
+        className={`h-1 w-full ${
+          isConnected ? 'bg-green-500' : integration.status === 'error' ? 'bg-red-500' : 'bg-border'
+        }`}
+      />
 
       <div className="p-4">
         {/* Header row */}
         <div className="flex items-start gap-3">
-          <div className={`p-2.5 rounded-xl shrink-0 ${
-            isConnected
-              ? 'bg-green-500/15 text-green-500'
-              : integration.status === 'error'
-              ? 'bg-red-500/15 text-red-500'
-              : 'bg-muted/50 text-muted-foreground'
-          }`}>
+          <div
+            className={`p-2.5 rounded-xl shrink-0 ${
+              isConnected
+                ? 'bg-green-500/15 text-green-500'
+                : integration.status === 'error'
+                  ? 'bg-red-500/15 text-red-500'
+                  : 'bg-muted/50 text-muted-foreground'
+            }`}
+          >
             {meta.icon}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <h3 className="font-semibold text-sm leading-tight truncate">{integration.displayName}</h3>
+                <h3 className="font-semibold text-sm leading-tight truncate">
+                  {integration.displayName}
+                </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">{meta.name}</p>
               </div>
-              <span className={`text-xs flex items-center gap-1 shrink-0 px-2 py-1 rounded-full font-medium border ${
-                isConnected
-                  ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30'
-                  : integration.status === 'error'
-                  ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30'
-                  : 'bg-muted/50 text-muted-foreground border-border'
-              }`}>
+              <span
+                className={`text-xs flex items-center gap-1 shrink-0 px-2 py-1 rounded-full font-medium border ${
+                  isConnected
+                    ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30'
+                    : integration.status === 'error'
+                      ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30'
+                      : 'bg-muted/50 text-muted-foreground border-border'
+                }`}
+              >
                 {statusConfig.icon}
                 <span>{statusConfig.label}</span>
               </span>
@@ -2063,12 +2089,18 @@ function IntegrationCard({
 
         {/* Test result */}
         {testResult && (
-          <div className={`flex items-center gap-1.5 mt-2 px-2.5 py-1.5 rounded-md text-xs border ${
-            testResult.ok
-              ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20'
-              : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
-          }`}>
-            {testResult.ok ? <CheckCircle className="w-3.5 h-3.5 shrink-0" /> : <XCircle className="w-3.5 h-3.5 shrink-0" />}
+          <div
+            className={`flex items-center gap-1.5 mt-2 px-2.5 py-1.5 rounded-md text-xs border ${
+              testResult.ok
+                ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20'
+                : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
+            }`}
+          >
+            {testResult.ok ? (
+              <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+            ) : (
+              <XCircle className="w-3.5 h-3.5 shrink-0" />
+            )}
             {testResult.message}
           </div>
         )}
@@ -2084,10 +2116,16 @@ function IntegrationCard({
               </div>
               <button
                 type="button"
-                onClick={() => { setEditEnabled((v) => !v); }}
+                onClick={() => {
+                  setEditEnabled((v) => !v);
+                }}
                 className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${editEnabled ? 'text-green-500' : 'text-muted-foreground'}`}
               >
-                {editEnabled ? <ToggleRight className="w-7 h-7" /> : <ToggleLeft className="w-7 h-7" />}
+                {editEnabled ? (
+                  <ToggleRight className="w-7 h-7" />
+                ) : (
+                  <ToggleLeft className="w-7 h-7" />
+                )}
                 {editEnabled ? 'Enabled' : 'Disabled'}
               </button>
             </div>
@@ -2095,28 +2133,38 @@ function IntegrationCard({
             {/* Read / Send permissions (email platforms only) */}
             {isEmailPlatform && (
               <div className="space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Permissions</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Permissions
+                </p>
                 <label className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
                   <div>
                     <span className="text-sm font-medium block">Read emails</span>
-                    <span className="text-xs text-muted-foreground">Poll inbox for new messages</span>
+                    <span className="text-xs text-muted-foreground">
+                      Poll inbox for new messages
+                    </span>
                   </div>
                   <input
                     type="checkbox"
                     checked={editRead}
-                    onChange={(e) => { setEditRead(e.target.checked); }}
+                    onChange={(e) => {
+                      setEditRead(e.target.checked);
+                    }}
                     className="w-4 h-4 rounded accent-primary"
                   />
                 </label>
                 <label className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
                   <div>
                     <span className="text-sm font-medium block">Send emails</span>
-                    <span className="text-xs text-muted-foreground">Allow sending and replying</span>
+                    <span className="text-xs text-muted-foreground">
+                      Allow sending and replying
+                    </span>
                   </div>
                   <input
                     type="checkbox"
                     checked={editSend}
-                    onChange={(e) => { setEditSend(e.target.checked); }}
+                    onChange={(e) => {
+                      setEditSend(e.target.checked);
+                    }}
                     className="w-4 h-4 rounded accent-primary"
                   />
                 </label>
@@ -2125,7 +2173,9 @@ function IntegrationCard({
 
             <div className="flex gap-2">
               <button
-                onClick={() => { saveMut.mutate(); }}
+                onClick={() => {
+                  saveMut.mutate();
+                }}
                 disabled={saveMut.isPending}
                 className="btn btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5"
               >
@@ -2133,7 +2183,9 @@ function IntegrationCard({
                 {saveMut.isPending ? 'Saving…' : 'Save'}
               </button>
               <button
-                onClick={() => { setIsEditing(false); }}
+                onClick={() => {
+                  setIsEditing(false);
+                }}
                 className="btn btn-ghost text-xs px-3 py-1.5"
               >
                 Cancel
@@ -2146,7 +2198,9 @@ function IntegrationCard({
         <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/60">
           {isConnected ? (
             <button
-              onClick={() => { onStop(integration.id); }}
+              onClick={() => {
+                onStop(integration.id);
+              }}
               disabled={isLoading}
               className="btn btn-ghost text-xs px-3 py-1.5"
             >
@@ -2154,7 +2208,9 @@ function IntegrationCard({
             </button>
           ) : (
             <button
-              onClick={() => { onStart(integration.id); }}
+              onClick={() => {
+                onStart(integration.id);
+              }}
               disabled={isLoading}
               className="btn btn-ghost text-xs px-3 py-1.5"
             >
@@ -2163,7 +2219,9 @@ function IntegrationCard({
           )}
           {onTest && (
             <button
-              onClick={() => { onTest(integration.id); }}
+              onClick={() => {
+                onTest(integration.id);
+              }}
               disabled={isLoading || isTesting}
               className="btn btn-ghost text-xs px-3 py-1.5 flex items-center gap-1.5"
             >
@@ -2172,7 +2230,9 @@ function IntegrationCard({
             </button>
           )}
           <button
-            onClick={() => { setIsEditing((v) => !v); }}
+            onClick={() => {
+              setIsEditing((v) => !v);
+            }}
             className={`btn btn-ghost text-xs px-3 py-1.5 flex items-center gap-1.5 ${isEditing ? 'text-primary' : ''}`}
             title="Edit settings"
           >
@@ -2653,7 +2713,9 @@ function LocalServerCard({
   function copyText(text: string, setter: (v: boolean) => void) {
     void navigator.clipboard.writeText(text).then(() => {
       setter(true);
-      setTimeout(() => setter(false), 2000);
+      setTimeout(() => {
+        setter(false);
+      }, 2000);
     });
   }
 
@@ -2728,17 +2790,25 @@ function LocalServerCard({
             {mcpUrl}
           </code>
           <button
-            onClick={() => copyText(mcpUrl, setCopiedUrl)}
+            onClick={() => {
+              copyText(mcpUrl, setCopiedUrl);
+            }}
             className="shrink-0 p-1 rounded hover:bg-muted/50 transition-colors text-muted-foreground"
             title="Copy URL"
           >
-            {copiedUrl ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+            {copiedUrl ? (
+              <Check className="w-3 h-3 text-green-400" />
+            ) : (
+              <Copy className="w-3 h-3" />
+            )}
           </button>
           {createMcpKeyMut.isPending ? (
             <Loader2 className="w-3 h-3 animate-spin text-muted-foreground shrink-0" />
           ) : (
             <button
-              onClick={() => createMcpKeyMut.mutate()}
+              onClick={() => {
+                createMcpKeyMut.mutate();
+              }}
               className="shrink-0 p-1 rounded hover:bg-muted/50 transition-colors text-muted-foreground"
               title="Generate new token"
             >
@@ -2759,28 +2829,42 @@ function LocalServerCard({
                 {showToken ? mcpToken : '••••••••••••••••••••••••••••••••'}
               </code>
               <button
-                onClick={() => setShowToken((v) => !v)}
+                onClick={() => {
+                  setShowToken((v) => !v);
+                }}
                 className="shrink-0 p-1 rounded hover:bg-muted/50 transition-colors text-muted-foreground"
                 title={showToken ? 'Hide token' : 'Reveal token'}
               >
                 {showToken ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
               </button>
               <button
-                onClick={() => copyText(mcpToken, setCopiedToken)}
+                onClick={() => {
+                  copyText(mcpToken, setCopiedToken);
+                }}
                 className="shrink-0 p-1 rounded hover:bg-muted/50 transition-colors text-muted-foreground"
                 title="Copy token"
               >
-                {copiedToken ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                {copiedToken ? (
+                  <Check className="w-3 h-3 text-green-400" />
+                ) : (
+                  <Copy className="w-3 h-3" />
+                )}
               </button>
             </div>
             <div>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] text-muted-foreground">Config snippet</span>
                 <button
-                  onClick={() => copyText(mcpJsonConfig, setCopiedConfig)}
+                  onClick={() => {
+                    copyText(mcpJsonConfig, setCopiedConfig);
+                  }}
                   className="text-[10px] flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {copiedConfig ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                  {copiedConfig ? (
+                    <Check className="w-3 h-3 text-green-400" />
+                  ) : (
+                    <Copy className="w-3 h-3" />
+                  )}
                   {copiedConfig ? 'Copied' : 'Copy'}
                 </button>
               </div>
@@ -2808,7 +2892,9 @@ function LocalServerCard({
                   {new Date(k.createdAt).toLocaleDateString()}
                 </span>
                 <button
-                  onClick={() => revokeMcpKeyMut.mutate(k.id)}
+                  onClick={() => {
+                    revokeMcpKeyMut.mutate(k.id);
+                  }}
                   disabled={revokeMcpKeyMut.isPending}
                   className="shrink-0 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                   title="Revoke key"
@@ -3935,17 +4021,20 @@ function EmailTab({
   );
 }
 
-const OAUTH_PROVIDER_META: Record<string, { name: string; icon: ReactNode; description: string; oauthUrl: string }> = {
+const OAUTH_PROVIDER_META: Record<
+  string,
+  { name: string; icon: ReactNode; description: string; oauthUrl: string }
+> = {
   google: {
     name: 'Google',
     description: 'Sign in with your Google account',
     icon: (
       // Monochrome "G" — uses currentColor so it matches the theme and GitHub icon style
       <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor" aria-hidden="true">
-        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
       </svg>
     ),
     oauthUrl: '/api/v1/auth/oauth/google',
@@ -3989,7 +4078,11 @@ function OAuthTab({
 }) {
   const location = useLocation();
   const queryClient = useQueryClient();
-  const [successBanner, setSuccessBanner] = useState<{ provider: string; email: string; name: string } | null>(null);
+  const [successBanner, setSuccessBanner] = useState<{
+    provider: string;
+    email: string;
+    name: string;
+  } | null>(null);
   const [disconnectTarget, setDisconnectTarget] = useState<OAuthConnectedToken | null>(null);
 
   useEffect(() => {
@@ -4047,10 +4140,23 @@ function OAuthTab({
         <div className="flex items-center gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-700 dark:text-green-400">
           <CheckCircle className="w-4 h-4 shrink-0" />
           <div className="text-sm">
-            <span className="font-medium capitalize">{successBanner.provider}</span> account connected
-            {successBanner.email && <span> as <span className="font-medium">{successBanner.email}</span></span>}
+            <span className="font-medium capitalize">{successBanner.provider}</span> account
+            connected
+            {successBanner.email && (
+              <span>
+                {' '}
+                as <span className="font-medium">{successBanner.email}</span>
+              </span>
+            )}
           </div>
-          <button onClick={() => setSuccessBanner(null)} className="ml-auto text-xs opacity-60 hover:opacity-100">✕</button>
+          <button
+            onClick={() => {
+              setSuccessBanner(null);
+            }}
+            className="ml-auto text-xs opacity-60 hover:opacity-100"
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -4078,7 +4184,9 @@ function OAuthTab({
                       <h3 className="font-medium text-sm">{meta.name}</h3>
                       <p className="text-xs text-muted-foreground mt-1">{meta.description}</p>
                       <button
-                        onClick={() => { window.location.href = meta.oauthUrl; }}
+                        onClick={() => {
+                          window.location.href = meta.oauthUrl;
+                        }}
                         className="btn btn-ghost text-xs px-3 py-1.5 mt-2"
                       >
                         Connect
@@ -4119,7 +4227,9 @@ function OAuthTab({
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <button
-                        onClick={() => refreshMut.mutate(token.id)}
+                        onClick={() => {
+                          refreshMut.mutate(token.id);
+                        }}
                         disabled={refreshMut.isPending}
                         className="btn btn-ghost text-xs"
                         title="Force-refresh this token"
@@ -4127,7 +4237,9 @@ function OAuthTab({
                         {refreshMut.isPending ? 'Refreshing…' : 'Refresh Token'}
                       </button>
                       <button
-                        onClick={() => setDisconnectTarget(token)}
+                        onClick={() => {
+                          setDisconnectTarget(token);
+                        }}
                         disabled={revokeMut.isPending}
                         className="btn btn-ghost text-xs text-destructive hover:bg-destructive/10"
                       >
@@ -4149,8 +4261,12 @@ function OAuthTab({
           message={`This will remove the connection for ${disconnectTarget.email}. You can reconnect at any time.`}
           confirmLabel="Disconnect"
           destructive
-          onConfirm={() => revokeMut.mutate(disconnectTarget.id)}
-          onCancel={() => setDisconnectTarget(null)}
+          onConfirm={() => {
+            revokeMut.mutate(disconnectTarget.id);
+          }}
+          onCancel={() => {
+            setDisconnectTarget(null);
+          }}
         />
       )}
     </div>

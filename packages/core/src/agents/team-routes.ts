@@ -7,10 +7,7 @@ import type { TeamManager } from './team-manager.js';
 import { sendError } from '../utils/errors.js';
 import { TeamCreateSchema, TeamUpdateSchema, TeamRunParamsSchema } from '@secureyeoman/shared';
 
-export function registerTeamRoutes(
-  app: FastifyInstance,
-  opts: { teamManager: TeamManager }
-): void {
+export function registerTeamRoutes(app: FastifyInstance, opts: { teamManager: TeamManager }): void {
   const { teamManager } = opts;
 
   // GET /api/v1/agents/teams — list teams
@@ -24,21 +21,18 @@ export function registerTeamRoutes(
   );
 
   // POST /api/v1/agents/teams — create team
-  app.post(
-    '/api/v1/agents/teams',
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      const parsed = TeamCreateSchema.safeParse(request.body);
-      if (!parsed.success) {
-        return sendError(reply, 400, parsed.error.issues.map((i) => i.message).join('; '));
-      }
-      try {
-        const team = await teamManager.createTeam(parsed.data);
-        return reply.code(201).send({ team });
-      } catch (err) {
-        return sendError(reply, 400, err instanceof Error ? err.message : 'Failed to create team');
-      }
+  app.post('/api/v1/agents/teams', async (request: FastifyRequest, reply: FastifyReply) => {
+    const parsed = TeamCreateSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendError(reply, 400, parsed.error.issues.map((i) => i.message).join('; '));
     }
-  );
+    try {
+      const team = await teamManager.createTeam(parsed.data);
+      return reply.code(201).send({ team });
+    } catch (err) {
+      return sendError(reply, 400, err instanceof Error ? err.message : 'Failed to create team');
+    }
+  });
 
   // GET /api/v1/agents/teams/runs/:runId — get run (must come before /:id)
   app.get(

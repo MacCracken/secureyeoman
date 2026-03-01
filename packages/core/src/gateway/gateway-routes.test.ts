@@ -117,9 +117,21 @@ describe('Gateway Routes', () => {
         return reply.send({ response: 'ok', tokensUsed: 1 });
       });
 
-      const res1 = await appRpm.inject({ method: 'POST', url: '/api/v1/gateway', payload: { message: 'a' } });
-      const res2 = await appRpm.inject({ method: 'POST', url: '/api/v1/gateway', payload: { message: 'b' } });
-      const res3 = await appRpm.inject({ method: 'POST', url: '/api/v1/gateway', payload: { message: 'c' } });
+      const res1 = await appRpm.inject({
+        method: 'POST',
+        url: '/api/v1/gateway',
+        payload: { message: 'a' },
+      });
+      const res2 = await appRpm.inject({
+        method: 'POST',
+        url: '/api/v1/gateway',
+        payload: { message: 'b' },
+      });
+      const res3 = await appRpm.inject({
+        method: 'POST',
+        url: '/api/v1/gateway',
+        payload: { message: 'c' },
+      });
 
       expect(res1.statusCode).toBe(200);
       expect(res2.statusCode).toBe(200);

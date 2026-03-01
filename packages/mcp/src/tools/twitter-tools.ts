@@ -55,9 +55,9 @@ export function registerTwitterTools(
       },
     },
     wrapToolHandler('twitter_search', middleware, async (args) => {
-      const query: Record<string, string> = { q: String(args.q) };
+      const query: Record<string, string> = { q: args.q };
       if (args.maxResults) query.maxResults = String(args.maxResults);
-      if (args.nextToken) query.nextToken = String(args.nextToken);
+      if (args.nextToken) query.nextToken = args.nextToken;
       const result = await client.get('/api/v1/twitter/search', query);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     })
@@ -67,7 +67,8 @@ export function registerTwitterTools(
   server.registerTool(
     'twitter_get_tweet',
     {
-      description: 'Fetch a single tweet by its ID, including author info, metrics (likes, retweets, replies), and referenced tweets.',
+      description:
+        'Fetch a single tweet by its ID, including author info, metrics (likes, retweets, replies), and referenced tweets.',
       inputSchema: {
         tweetId: z.string().describe('Tweet ID (the numeric string in the tweet URL)'),
       },
@@ -98,7 +99,7 @@ export function registerTwitterTools(
     wrapToolHandler('twitter_get_mentions', middleware, async (args) => {
       const query: Record<string, string> = {};
       if (args.maxResults) query.maxResults = String(args.maxResults);
-      if (args.sinceId) query.sinceId = String(args.sinceId);
+      if (args.sinceId) query.sinceId = args.sinceId;
       const result = await client.get('/api/v1/twitter/mentions', query);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     })
@@ -109,7 +110,7 @@ export function registerTwitterTools(
     'twitter_get_timeline',
     {
       description:
-        'Get the authenticated account\'s home timeline (tweets from followed accounts). Requires OAuth 1.0a credentials.',
+        "Get the authenticated account's home timeline (tweets from followed accounts). Requires OAuth 1.0a credentials.",
       inputSchema: {
         maxResults: z
           .number()
@@ -132,9 +133,12 @@ export function registerTwitterTools(
   server.registerTool(
     'twitter_get_user',
     {
-      description: 'Look up a Twitter/X user by their @username. Returns bio, follower counts, and profile info.',
+      description:
+        'Look up a Twitter/X user by their @username. Returns bio, follower counts, and profile info.',
       inputSchema: {
-        username: z.string().describe('Twitter username without the @ symbol (e.g. "sama", "OpenAI")'),
+        username: z
+          .string()
+          .describe('Twitter username without the @ symbol (e.g. "sama", "OpenAI")'),
       },
     },
     wrapToolHandler('twitter_get_user', middleware, async (args) => {
@@ -181,7 +185,9 @@ export function registerTwitterTools(
       inputSchema: {
         mimeType: z
           .string()
-          .describe('MIME type of the media (e.g. "image/jpeg", "image/png", "image/gif", "video/mp4")'),
+          .describe(
+            'MIME type of the media (e.g. "image/jpeg", "image/png", "image/gif", "video/mp4")'
+          ),
         url: z
           .string()
           .optional()
@@ -206,8 +212,7 @@ export function registerTwitterTools(
   server.registerTool(
     'twitter_like_tweet',
     {
-      description:
-        'Like a tweet. Only available in "auto" mode. Requires OAuth 1.0a credentials.',
+      description: 'Like a tweet. Only available in "auto" mode. Requires OAuth 1.0a credentials.',
       inputSchema: {
         tweetId: z.string().describe('ID of the tweet to like'),
       },

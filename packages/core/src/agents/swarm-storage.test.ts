@@ -63,9 +63,9 @@ describe('SwarmStorage', () => {
   });
 
   describe('seedBuiltinTemplates', () => {
-    it('upserts all builtin templates (4)', async () => {
+    it('upserts all builtin templates (5)', async () => {
       await storage.seedBuiltinTemplates();
-      expect(mockQuery).toHaveBeenCalledTimes(4);
+      expect(mockQuery).toHaveBeenCalledTimes(5);
     });
   });
 

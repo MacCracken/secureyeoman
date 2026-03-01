@@ -24,7 +24,8 @@ const TOKEN_ROW = {
   provider: 'google',
   email: 'user@example.com',
   scope: 'gmail',
-  scopes: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.modify',
+  scopes:
+    'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.modify',
   expiresAt: Date.now() + 3600_000,
   createdAt: Date.now(),
 };
@@ -34,12 +35,8 @@ function mockOAuthTokenService(opts?: {
   noValidToken?: boolean;
 }): OAuthTokenService {
   return {
-    listTokens: vi
-      .fn()
-      .mockResolvedValue(opts?.noTokens ? [] : [TOKEN_ROW]),
-    getValidToken: vi
-      .fn()
-      .mockResolvedValue(opts?.noValidToken ? null : 'access-token-abc'),
+    listTokens: vi.fn().mockResolvedValue(opts?.noTokens ? [] : [TOKEN_ROW]),
+    getValidToken: vi.fn().mockResolvedValue(opts?.noValidToken ? null : 'access-token-abc'),
     forceRefreshById: vi.fn().mockResolvedValue(null), // returns null → no retry
     storeToken: vi.fn(),
     revokeToken: vi.fn(),
@@ -66,10 +63,7 @@ function mockFetch(body: unknown, status = 200): ReturnType<typeof vi.fn> {
   });
 }
 
-async function buildApp(
-  oauthTokenService: OAuthTokenService,
-  soulManager?: SoulManager
-) {
+async function buildApp(oauthTokenService: OAuthTokenService, soulManager?: SoulManager) {
   const app = Fastify({ logger: false });
   registerGmailRoutes(app, { oauthTokenService, soulManager });
   await app.ready();
@@ -102,10 +96,7 @@ describe('Gmail Routes', () => {
     it('returns profile data on success', async () => {
       const svc = mockOAuthTokenService();
       const app = await buildApp(svc);
-      vi.stubGlobal(
-        'fetch',
-        mockFetch({ emailAddress: 'user@example.com', messagesTotal: 42 })
-      );
+      vi.stubGlobal('fetch', mockFetch({ emailAddress: 'user@example.com', messagesTotal: 42 }));
       const res = await app.inject({ method: 'GET', url: '/api/v1/gmail/profile' });
       expect(res.statusCode).toBe(200);
       const body = res.json();
@@ -307,9 +298,9 @@ describe('Gmail Routes', () => {
     it('accepts https://mail.google.com/ broad scope for drafts', async () => {
       const svcWithMailScope = {
         ...mockOAuthTokenService(),
-        listTokens: vi.fn().mockResolvedValue([
-          { ...TOKEN_ROW, scopes: 'https://mail.google.com/' },
-        ]),
+        listTokens: vi
+          .fn()
+          .mockResolvedValue([{ ...TOKEN_ROW, scopes: 'https://mail.google.com/' }]),
         getValidToken: vi.fn().mockResolvedValue('access-token-abc'),
       } as unknown as OAuthTokenService;
       const sm = mockSoulManager('auto');
@@ -326,9 +317,11 @@ describe('Gmail Routes', () => {
     it('returns 403 when stored scopes lack write permissions', async () => {
       const svcReadOnly = {
         ...mockOAuthTokenService(),
-        listTokens: vi.fn().mockResolvedValue([
-          { ...TOKEN_ROW, scopes: 'https://www.googleapis.com/auth/gmail.readonly' },
-        ]),
+        listTokens: vi
+          .fn()
+          .mockResolvedValue([
+            { ...TOKEN_ROW, scopes: 'https://www.googleapis.com/auth/gmail.readonly' },
+          ]),
         getValidToken: vi.fn().mockResolvedValue('access-token-abc'),
       } as unknown as OAuthTokenService;
       const sm = mockSoulManager('auto'); // use auto mode so the scope check runs

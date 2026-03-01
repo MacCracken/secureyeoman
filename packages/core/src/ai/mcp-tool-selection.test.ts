@@ -7,11 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  filterMcpTools,
-  selectMcpToolSchemas,
-  buildMcpToolCatalog,
-} from './chat-routes.js';
+import { filterMcpTools, selectMcpToolSchemas, buildMcpToolCatalog } from './chat-routes.js';
 import type { McpToolDef, McpFeatures } from '@secureyeoman/shared';
 import type { McpFeatureConfig } from '../mcp/storage.js';
 
@@ -84,7 +80,12 @@ const ALL_PERSONALITY: Partial<McpFeatures> = {
 describe('filterMcpTools — git/github split (Phase 72 bug fix)', () => {
   it('passes git_ tools when exposeGit is true', () => {
     const tools = [makeTool('git_status'), makeTool('git_log')];
-    const result = filterMcpTools(tools, [], { ...BASE_CONFIG, exposeGit: true }, { exposeGit: true });
+    const result = filterMcpTools(
+      tools,
+      [],
+      { ...BASE_CONFIG, exposeGit: true },
+      { exposeGit: true }
+    );
     expect(result.map((t) => t.name)).toEqual(['git_status', 'git_log']);
   });
 
@@ -100,7 +101,12 @@ describe('filterMcpTools — git/github split (Phase 72 bug fix)', () => {
       makeTool('github_issue_view'),
       makeTool('github_repo_view'),
     ];
-    const result = filterMcpTools(tools, [], { ...BASE_CONFIG, exposeGit: true }, { exposeGit: true });
+    const result = filterMcpTools(
+      tools,
+      [],
+      { ...BASE_CONFIG, exposeGit: true },
+      { exposeGit: true }
+    );
     expect(result).toHaveLength(3);
   });
 
@@ -160,8 +166,8 @@ describe('filterMcpTools — git/github split (Phase 72 bug fix)', () => {
   it('can expose both CLI and API github tools simultaneously', () => {
     const tools = [
       makeTool('git_status'),
-      makeTool('github_pr_list'),   // CLI
-      makeTool('github_profile'),   // API
+      makeTool('github_pr_list'), // CLI
+      makeTool('github_profile'), // API
       makeTool('github_sync_fork'), // API
     ];
     const result = filterMcpTools(
@@ -202,11 +208,7 @@ describe('filterMcpTools — git/github split (Phase 72 bug fix)', () => {
   });
 
   it('passes core tools (brain_, task_, sys_) unconditionally', () => {
-    const tools = [
-      makeTool('brain_remember'),
-      makeTool('task_create'),
-      makeTool('sys_stats'),
-    ];
+    const tools = [makeTool('brain_remember'), makeTool('task_create'), makeTool('sys_stats')];
     const result = filterMcpTools(tools, [], BASE_CONFIG, {});
     expect(result).toHaveLength(3);
   });
@@ -252,7 +254,12 @@ describe('selectMcpToolSchemas — relevance filter (Phase 72)', () => {
     const config = { ...BASE_CONFIG, exposeGithub: true };
     const perP: Partial<McpFeatures> = { exposeGithub: true };
     const { allAllowed, schemasToSend } = selectMcpToolSchemas(
-      tools, [], config, perP, 'hello world', []
+      tools,
+      [],
+      config,
+      perP,
+      'hello world',
+      []
     );
     expect(allAllowed.length).toBeGreaterThan(0);
     expect(schemasToSend.length).toBeGreaterThan(0);
@@ -271,7 +278,12 @@ describe('selectMcpToolSchemas — relevance filter (Phase 72)', () => {
     const tools = [...CORE_TOOLS, ...GITHUB_API_TOOLS, ...GMAIL_TOOLS];
     const config = { ...ALL_ON_CONFIG, alwaysSendFullSchemas: true };
     const { schemasToSend, allAllowed } = selectMcpToolSchemas(
-      tools, [], config, ALL_PERSONALITY, 'hi', []
+      tools,
+      [],
+      config,
+      ALL_PERSONALITY,
+      'hi',
+      []
     );
     expect(schemasToSend.length).toBe(allAllowed.length);
   });
@@ -281,7 +293,12 @@ describe('selectMcpToolSchemas — relevance filter (Phase 72)', () => {
     const config = { ...ALL_ON_CONFIG, alwaysSendFullSchemas: false };
     // Message mentions github → github schemas included; no email mention → gmail schemas excluded
     const { schemasToSend } = selectMcpToolSchemas(
-      tools, [], config, ALL_PERSONALITY, 'show me my github repos', []
+      tools,
+      [],
+      config,
+      ALL_PERSONALITY,
+      'show me my github repos',
+      []
     );
     expect(schemasToSend.some((t) => t.name.startsWith('github_'))).toBe(true);
     expect(schemasToSend.some((t) => t.name.startsWith('gmail_'))).toBe(false);
@@ -291,7 +308,12 @@ describe('selectMcpToolSchemas — relevance filter (Phase 72)', () => {
     const tools = [...CORE_TOOLS, ...GITHUB_API_TOOLS];
     const config = { ...BASE_CONFIG, exposeGithub: true };
     const { schemasToSend } = selectMcpToolSchemas(
-      tools, [], config, { exposeGithub: true }, 'just chatting', []
+      tools,
+      [],
+      config,
+      { exposeGithub: true },
+      'just chatting',
+      []
     );
     const coreNames = CORE_TOOLS.map((t) => t.name);
     for (const n of coreNames) {
@@ -303,7 +325,12 @@ describe('selectMcpToolSchemas — relevance filter (Phase 72)', () => {
     const tools = [...CORE_TOOLS, ...GMAIL_TOOLS];
     const config = { ...BASE_CONFIG, exposeGmail: true };
     const { schemasToSend } = selectMcpToolSchemas(
-      tools, [], config, { exposeGmail: true }, 'check my inbox', []
+      tools,
+      [],
+      config,
+      { exposeGmail: true },
+      'check my inbox',
+      []
     );
     expect(schemasToSend.some((t) => t.name.startsWith('gmail_'))).toBe(true);
   });
@@ -313,10 +340,18 @@ describe('selectMcpToolSchemas — relevance filter (Phase 72)', () => {
     const config = { ...BASE_CONFIG, exposeGithub: true };
     const history = [
       { role: 'user', content: 'list my repos' },
-      { role: 'assistant', content: 'I called github_list_repos and got your github repositories.' },
+      {
+        role: 'assistant',
+        content: 'I called github_list_repos and got your github repositories.',
+      },
     ];
     const { schemasToSend } = selectMcpToolSchemas(
-      tools, [], config, { exposeGithub: true }, 'thanks', history
+      tools,
+      [],
+      config,
+      { exposeGithub: true },
+      'thanks',
+      history
     );
     // History mentions github → schemas should be included
     expect(schemasToSend.some((t) => t.name.startsWith('github_'))).toBe(true);
@@ -326,7 +361,12 @@ describe('selectMcpToolSchemas — relevance filter (Phase 72)', () => {
     const tools = [makeTool('custom_action', 'my-mcp')];
     const config = { ...BASE_CONFIG };
     const { schemasToSend } = selectMcpToolSchemas(
-      tools, ['my-mcp'], config, {}, 'random message', []
+      tools,
+      ['my-mcp'],
+      config,
+      {},
+      'random message',
+      []
     );
     expect(schemasToSend.some((t) => t.name === 'custom_action')).toBe(true);
   });
@@ -341,7 +381,11 @@ describe('buildMcpToolCatalog (Phase 72)', () => {
 
   it('includes the catalog header', () => {
     const tools = [
-      { name: 'brain_remember', description: 'Save a memory', parameters: { type: 'object' as const, properties: {} } },
+      {
+        name: 'brain_remember',
+        description: 'Save a memory',
+        parameters: { type: 'object' as const, properties: {} },
+      },
     ];
     const catalog = buildMcpToolCatalog(tools);
     expect(catalog).toContain('## Available MCP Tools');
@@ -349,9 +393,21 @@ describe('buildMcpToolCatalog (Phase 72)', () => {
 
   it('groups tools by their group label', () => {
     const tools = [
-      { name: 'brain_remember', description: 'Save a memory', parameters: { type: 'object' as const, properties: {} } },
-      { name: 'github_profile', description: 'Get profile', parameters: { type: 'object' as const, properties: {} } },
-      { name: 'gmail_list_messages', description: 'List emails', parameters: { type: 'object' as const, properties: {} } },
+      {
+        name: 'brain_remember',
+        description: 'Save a memory',
+        parameters: { type: 'object' as const, properties: {} },
+      },
+      {
+        name: 'github_profile',
+        description: 'Get profile',
+        parameters: { type: 'object' as const, properties: {} },
+      },
+      {
+        name: 'gmail_list_messages',
+        description: 'List emails',
+        parameters: { type: 'object' as const, properties: {} },
+      },
     ];
     const catalog = buildMcpToolCatalog(tools);
     expect(catalog).toContain('Core (Brain, Tasks, System, Soul)');
@@ -361,7 +417,11 @@ describe('buildMcpToolCatalog (Phase 72)', () => {
 
   it('includes tool names in the catalog', () => {
     const tools = [
-      { name: 'git_status', description: 'Show status', parameters: { type: 'object' as const, properties: {} } },
+      {
+        name: 'git_status',
+        description: 'Show status',
+        parameters: { type: 'object' as const, properties: {} },
+      },
     ];
     const catalog = buildMcpToolCatalog(tools);
     expect(catalog).toContain('`git_status`');
@@ -369,8 +429,16 @@ describe('buildMcpToolCatalog (Phase 72)', () => {
 
   it('shows the count per group', () => {
     const tools = [
-      { name: 'gmail_list_messages', description: 'List emails', parameters: { type: 'object' as const, properties: {} } },
-      { name: 'gmail_send_email', description: 'Send email', parameters: { type: 'object' as const, properties: {} } },
+      {
+        name: 'gmail_list_messages',
+        description: 'List emails',
+        parameters: { type: 'object' as const, properties: {} },
+      },
+      {
+        name: 'gmail_send_email',
+        description: 'Send email',
+        parameters: { type: 'object' as const, properties: {} },
+      },
     ];
     const catalog = buildMcpToolCatalog(tools);
     expect(catalog).toContain('(2)');
@@ -378,7 +446,11 @@ describe('buildMcpToolCatalog (Phase 72)', () => {
 
   it('includes a note about on-demand schema loading', () => {
     const tools = [
-      { name: 'task_create', description: 'Create a task', parameters: { type: 'object' as const, properties: {} } },
+      {
+        name: 'task_create',
+        description: 'Create a task',
+        parameters: { type: 'object' as const, properties: {} },
+      },
     ];
     const catalog = buildMcpToolCatalog(tools);
     expect(catalog).toContain('on-demand');

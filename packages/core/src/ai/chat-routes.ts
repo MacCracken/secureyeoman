@@ -24,7 +24,7 @@ import { PromptGuard } from '../security/prompt-guard.js';
 import { createResponseGuard } from '../security/response-guard.js';
 import { AbuseDetector } from '../security/abuse-detector.js';
 import { LLMJudge } from '../security/llm-judge.js';
-import { ContextCompactor } from './context-compactor.js';
+import { ContextCompactor, getContextWindowSize } from './context-compactor.js';
 import { getLogger } from '../logging/logger.js';
 import { executeCreationTool } from '../soul/creation-tool-executor.js';
 
@@ -142,18 +142,86 @@ function isGitCliTool(name: string): boolean {
  * Phase 72 — MCP Tool Context Optimization.
  */
 const TOOL_GROUP_KEYWORDS: Record<string, string[]> = {
-  git: ['git', 'commit', 'branch', 'merge', 'diff', 'checkout', 'stash', 'pull request', 'rebase', 'blame', 'log'],
-  github_api: ['github', 'repo', 'repository', 'fork', 'ssh key', 'issue', 'pr', 'pull request', 'push', 'clone'],
-  fs: ['file', 'directory', 'folder', 'path', 'read file', 'write file', 'delete file', 'list files', 'mkdir'],
+  git: [
+    'git',
+    'commit',
+    'branch',
+    'merge',
+    'diff',
+    'checkout',
+    'stash',
+    'pull request',
+    'rebase',
+    'blame',
+    'log',
+  ],
+  github_api: [
+    'github',
+    'repo',
+    'repository',
+    'fork',
+    'ssh key',
+    'issue',
+    'pr',
+    'pull request',
+    'push',
+    'clone',
+  ],
+  fs: [
+    'file',
+    'directory',
+    'folder',
+    'path',
+    'read file',
+    'write file',
+    'delete file',
+    'list files',
+    'mkdir',
+  ],
   web_scrape: ['scrape', 'crawl', 'fetch url', 'fetch page', 'extract', 'parse html', 'web page'],
   web_search: ['search', 'google', 'look up', 'find online', 'search the web', 'web search'],
   browser: ['browser', 'chrome', 'screenshot', 'click', 'navigate', 'selenium', 'playwright'],
   gmail: ['email', 'gmail', 'inbox', 'compose', 'send email', 'message', 'mail', 'attachment'],
   twitter: ['twitter', 'tweet', 'post', 'mention', 'timeline', 'retweet', 'like', 'social media'],
-  github_connected: ['github', 'repo', 'repository', 'fork', 'ssh', 'issue', 'pull request', 'push', 'clone', 'star'],
-  network: ['network', 'device', 'topology', 'ping', 'traceroute', 'vlan', 'bgp', 'ospf', 'arp', 'interface', 'firewall', 'acl'],
+  github_connected: [
+    'github',
+    'repo',
+    'repository',
+    'fork',
+    'ssh',
+    'issue',
+    'pull request',
+    'push',
+    'clone',
+    'star',
+  ],
+  network: [
+    'network',
+    'device',
+    'topology',
+    'ping',
+    'traceroute',
+    'vlan',
+    'bgp',
+    'ospf',
+    'arp',
+    'interface',
+    'firewall',
+    'acl',
+  ],
   twingate: ['twingate', 'vpn', 'zero trust', 'network access', 'remote access'],
-  security: ['scan', 'nmap', 'sqlmap', 'nuclei', 'gobuster', 'hydra', 'vulnerability', 'pentest', 'bruteforce', 'security audit'],
+  security: [
+    'scan',
+    'nmap',
+    'sqlmap',
+    'nuclei',
+    'gobuster',
+    'hydra',
+    'vulnerability',
+    'pentest',
+    'bruteforce',
+    'security audit',
+  ],
   ollama: ['ollama', 'model', 'pull model', 'delete model', 'local model', 'llm'],
 };
 
@@ -186,19 +254,35 @@ function toolGroupName(name: string): string | null {
   if (isGitCliTool(name)) return 'git';
   if (name.startsWith('github_') && !isGitCliTool(name)) return 'github_api';
   if (name.startsWith('fs_')) return 'fs';
-  if (name.startsWith('web_scrape') || name === 'web_extract_structured' || name === 'web_fetch_markdown') return 'web_scrape';
+  if (
+    name.startsWith('web_scrape') ||
+    name === 'web_extract_structured' ||
+    name === 'web_fetch_markdown'
+  )
+    return 'web_scrape';
   if (name.startsWith('web_search')) return 'web_search';
   if (name.startsWith('browser_')) return 'browser';
   if (name.startsWith('gmail_')) return 'gmail';
   if (name.startsWith('twitter_')) return 'twitter';
-  if (NETWORK_DEVICE_PREFIXES.some((p) => name.startsWith(p)) ||
-      NETWORK_DISCOVERY_PREFIXES.some((p) => name.startsWith(p)) ||
-      NETWORK_AUDIT_PREFIXES.some((p) => name.startsWith(p)) ||
-      name.startsWith('netbox_') || name.startsWith('nvd_') ||
-      NETWORK_UTIL_PREFIXES.some((p) => name.startsWith(p))) return 'network';
+  if (
+    NETWORK_DEVICE_PREFIXES.some((p) => name.startsWith(p)) ||
+    NETWORK_DISCOVERY_PREFIXES.some((p) => name.startsWith(p)) ||
+    NETWORK_AUDIT_PREFIXES.some((p) => name.startsWith(p)) ||
+    name.startsWith('netbox_') ||
+    name.startsWith('nvd_') ||
+    NETWORK_UTIL_PREFIXES.some((p) => name.startsWith(p))
+  )
+    return 'network';
   if (name.startsWith('twingate_')) return 'twingate';
-  if (name.startsWith('sec_') || name.startsWith('nmap_') || name.startsWith('sqlmap_') ||
-      name.startsWith('nuclei_') || name.startsWith('gobuster_') || name.startsWith('hydra_')) return 'security';
+  if (
+    name.startsWith('sec_') ||
+    name.startsWith('nmap_') ||
+    name.startsWith('sqlmap_') ||
+    name.startsWith('nuclei_') ||
+    name.startsWith('gobuster_') ||
+    name.startsWith('hydra_')
+  )
+    return 'security';
   if (name.startsWith('ollama_')) return 'ollama';
   // Brain, task, sys, soul, audit, intent, skill, mem → core, always send
   return null;
@@ -238,7 +322,10 @@ export function buildMcpToolCatalog(tools: Tool[]): string {
     ollama: 'Ollama Model Management',
   };
 
-  const lines: string[] = ['## Available MCP Tools', 'Full tool schemas are loaded on-demand based on conversation context. All listed tools are available to call.'];
+  const lines: string[] = [
+    '## Available MCP Tools',
+    'Full tool schemas are loaded on-demand based on conversation context. All listed tools are available to call.',
+  ];
   for (const [group, entries] of Object.entries(groups)) {
     const label = GROUP_LABELS[group] ?? group;
     lines.push(`\n**${label}** (${entries.length}): ${entries.join(', ')}`);
@@ -360,7 +447,7 @@ export function selectMcpToolSchemas(
   globalConfig: McpFeatureConfig,
   perPersonality: Partial<McpFeatures>,
   currentMessage: string,
-  history: Array<{ role: string; content: string }>
+  history: { role: string; content: string }[]
 ): { schemasToSend: Tool[]; allAllowed: Tool[] } {
   // Pass 1: feature-flag filter
   const allAllowed = filterMcpTools(allMcpTools, selectedServers, globalConfig, perPersonality);
@@ -422,17 +509,129 @@ interface BrainContextMeta {
   memoriesUsed: number;
   knowledgeUsed: number;
   contextSnippets: string[];
+  /** Set when notebook or hybrid mode is active and the corpus was loaded. */
+  notebookBlock?: string;
+  /** Knowledge mode that was active for this request. */
+  knowledgeMode?: 'rag' | 'notebook' | 'hybrid';
 }
 
 // ── Brain context helpers (shared by streaming and non-streaming paths) ───────
 
+/**
+ * Token budget for notebook mode: 65% of the model's context window.
+ * Leaves ~35% for system prompt, tools, and conversation history.
+ */
+function notebookBudget(model: string, override?: number): number {
+  if (override && override > 0) return override;
+  return Math.floor(getContextWindowSize(model) * 0.65);
+}
+
+/**
+ * Build the [NOTEBOOK — SOURCE LIBRARY] block injected into the system prompt.
+ */
+function buildNotebookBlock(docs: { title: string; format: string | null; chunkCount: number; text: string }[]): string {
+  const lines: string[] = [
+    '[NOTEBOOK — SOURCE LIBRARY]',
+    'The following source documents are your primary knowledge base.',
+    'Prioritize information from these sources over your general training.',
+    'When answering, cite the source document by title.',
+    "If a question cannot be answered from the sources, clearly state this.",
+    `Document count: ${docs.length} | Source-grounded mode active`,
+    '',
+  ];
+  for (const doc of docs) {
+    const fmt = doc.format ? ` (${doc.format}, ${doc.chunkCount} chunks)` : '';
+    lines.push(`=== "${doc.title}"${fmt} ===`);
+    lines.push(doc.text);
+    lines.push('');
+  }
+  lines.push('[END SOURCE LIBRARY]');
+  return lines.join('\n');
+}
+
 async function gatherBrainContext(
   secureYeoman: SecureYeoman,
   message: string,
-  personalityId?: string
+  personalityId?: string,
+  knowledgeMode: 'rag' | 'notebook' | 'hybrid' = 'rag',
+  model = '',
+  notebookTokenBudgetOverride?: number
 ): Promise<BrainContextMeta> {
   try {
     const brainManager = secureYeoman.getBrainManager();
+
+    // ── Notebook / Hybrid paths ──────────────────────────────────────────
+    if (knowledgeMode === 'notebook' || knowledgeMode === 'hybrid') {
+      let docManager;
+      try {
+        docManager = secureYeoman.getDocumentManager();
+      } catch {
+        // Document manager unavailable — fall through to RAG
+      }
+
+      if (docManager) {
+        const budget = notebookBudget(model, notebookTokenBudgetOverride);
+        const corpus = await docManager.getNotebookCorpus(personalityId ?? null, budget);
+
+        const canUseNotebook = corpus.documents.length > 0 && corpus.fitsInBudget;
+
+        if (canUseNotebook) {
+          // Also fetch memories (still useful even in notebook mode)
+          const memories = await brainManager.recall({
+            search: message,
+            limit: 5,
+            ...(personalityId ? { personalityId } : {}),
+          });
+          const snippets: string[] = [];
+          for (const m of memories) snippets.push(`[${m.type}] ${m.content}`);
+
+          const notebookBlock = buildNotebookBlock(corpus.documents);
+          return {
+            memoriesUsed: memories.length,
+            knowledgeUsed: corpus.documents.length,
+            contextSnippets: snippets,
+            notebookBlock,
+            knowledgeMode,
+          };
+        }
+
+        // hybrid: corpus didn't fit → fall through to RAG
+        // notebook: corpus empty or oversized → fall through to RAG with warning
+        if (knowledgeMode === 'notebook' && corpus.documents.length > 0 && !corpus.fitsInBudget) {
+          // Load as many docs as fit, sorted by creation order (smallest first via chunkCount)
+          const sorted = [...corpus.documents].sort((a, b) => a.estimatedTokens - b.estimatedTokens);
+          const selected: typeof sorted = [];
+          let used = 0;
+          for (const doc of sorted) {
+            if (used + doc.estimatedTokens <= budget) {
+              selected.push(doc);
+              used += doc.estimatedTokens;
+            }
+          }
+          if (selected.length > 0) {
+            const memories = await brainManager.recall({
+              search: message,
+              limit: 5,
+              ...(personalityId ? { personalityId } : {}),
+            });
+            const snippets: string[] = [];
+            for (const m of memories) snippets.push(`[${m.type}] ${m.content}`);
+            const notebookBlock =
+              buildNotebookBlock(selected) +
+              `\n\n⚠ ${corpus.documents.length - selected.length} document(s) omitted — corpus exceeds ${budget.toLocaleString()} token budget. Switch to hybrid mode to auto-fall-back to RAG.`;
+            return {
+              memoriesUsed: memories.length,
+              knowledgeUsed: selected.length,
+              contextSnippets: snippets,
+              notebookBlock,
+              knowledgeMode,
+            };
+          }
+        }
+      }
+    }
+
+    // ── RAG path (default + hybrid fallback) ────────────────────────────
     const [memories, knowledge] = await Promise.all([
       brainManager.recall({
         search: message,
@@ -452,6 +651,7 @@ async function gatherBrainContext(
       memoriesUsed: memories.length,
       knowledgeUsed: knowledge.length,
       contextSnippets: snippets,
+      knowledgeMode: knowledgeMode === 'rag' ? 'rag' : knowledgeMode,
     };
   } catch {
     return { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] };
@@ -491,12 +691,13 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
   // Rate-aware abuse detector — tracks blocked retries, topic pivots, tool anomalies (Phase 77).
   const abuseDetector = new AbuseDetector(
     secureYeoman.getConfig().security.abuseDetection,
-    (params) => void secureYeoman.getAuditChain().record({
-      event: params.event,
-      level: params.level,
-      message: params.message,
-      metadata: params.metadata,
-    })
+    (params) =>
+      void secureYeoman.getAuditChain().record({
+        event: params.event,
+        level: params.level,
+        message: params.message,
+        metadata: params.metadata,
+      })
   );
 
   // LLM-as-Judge for high-autonomy tool calls (Phase 54).
@@ -614,8 +815,10 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           : (personality?.id ?? personalityId ?? undefined);
 
       // Gather Brain context metadata (best-effort — Brain may not be available)
+      const kbMode = (personality?.body?.knowledgeMode ?? 'rag') as 'rag' | 'notebook' | 'hybrid';
+      const kbModel = personality?.defaultModel?.model ?? '';
       const brainContext: BrainContextMeta = memoryEnabled
-        ? await gatherBrainContext(secureYeoman, message, effectivePersonalityId)
+        ? await gatherBrainContext(secureYeoman, message, effectivePersonalityId, kbMode, kbModel, personality?.body?.notebookTokenBudget)
         : { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] };
 
       let systemPrompt = memoryEnabled
@@ -625,6 +828,11 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       // Inject learned preferences into system prompt (best-effort)
       if (memoryEnabled && systemPrompt) {
         systemPrompt = await applyPreferenceInjection(secureYeoman, systemPrompt);
+      }
+
+      // Inject notebook source library block when notebook/hybrid mode loaded corpus
+      if (brainContext.notebookBlock) {
+        systemPrompt = (systemPrompt ?? '') + '\n\n' + brainContext.notebookBlock;
       }
 
       const messages: AIRequest['messages'] = [];
@@ -731,7 +939,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         // what tools exist even when their schemas are not sent this turn.
         const catalog = buildMcpToolCatalog(allAllowed);
         const firstMsg = messages[0];
-        if (catalog && firstMsg && firstMsg.role === 'system') {
+        if (catalog && firstMsg?.role === 'system') {
           messages[0] = { role: 'system', content: (firstMsg.content ?? '') + '\n\n' + catalog };
         }
 
@@ -1198,7 +1406,8 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 conversationId,
                 role: 'user',
                 content: message.trim(),
-                injectionScore: msgValidation.injectionScore > 0 ? msgValidation.injectionScore : null,
+                injectionScore:
+                  msgValidation.injectionScore > 0 ? msgValidation.injectionScore : null,
               });
               await convStorage.addMessage({
                 conversationId,
@@ -1424,8 +1633,10 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             : (personality?.id ?? personalityId ?? undefined);
 
         // Brain context
+        const kbModeS = (personality?.body?.knowledgeMode ?? 'rag') as 'rag' | 'notebook' | 'hybrid';
+        const kbModelS = personality?.defaultModel?.model ?? '';
         const brainContext: BrainContextMeta = memoryEnabled
-          ? await gatherBrainContext(secureYeoman, message, effectivePersonalityId)
+          ? await gatherBrainContext(secureYeoman, message, effectivePersonalityId, kbModeS, kbModelS, personality?.body?.notebookTokenBudget)
           : { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] };
 
         let systemPrompt = memoryEnabled
@@ -1439,6 +1650,11 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         // Inject learned preferences into system prompt (best-effort)
         if (memoryEnabled && systemPrompt) {
           systemPrompt = await applyPreferenceInjection(secureYeoman, systemPrompt);
+        }
+
+        // Inject notebook source library block when notebook/hybrid mode loaded corpus
+        if (brainContext.notebookBlock) {
+          systemPrompt = (systemPrompt ?? '') + '\n\n' + brainContext.notebookBlock;
         }
 
         const messages: AIRequest['messages'] = [];
@@ -1519,21 +1735,25 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
 
         if (personality?.body?.enabled && mcpClientStream && mcpStorageStream) {
           const globalConfigS = await mcpStorageStream.getConfig();
-          const { schemasToSend: streamSchemas, allAllowed: streamAllAllowed } = selectMcpToolSchemas(
-            mcpClientStream.getAllTools(),
-            personality.body.selectedServers ?? [],
-            globalConfigS,
-            personality.body.mcpFeatures ?? {},
-            message,
-            history ?? []
-          );
+          const { schemasToSend: streamSchemas, allAllowed: streamAllAllowed } =
+            selectMcpToolSchemas(
+              mcpClientStream.getAllTools(),
+              personality.body.selectedServers ?? [],
+              globalConfigS,
+              personality.body.mcpFeatures ?? {},
+              message,
+              history ?? []
+            );
           tools.push(...streamSchemas);
 
           // Phase 72: catalog injection for streaming handler
           const streamCatalog = buildMcpToolCatalog(streamAllAllowed);
           const streamFirstMsg = messages[0];
-          if (streamCatalog && streamFirstMsg && streamFirstMsg.role === 'system') {
-            messages[0] = { role: 'system', content: (streamFirstMsg.content ?? '') + '\n\n' + streamCatalog };
+          if (streamCatalog && streamFirstMsg?.role === 'system') {
+            messages[0] = {
+              role: 'system',
+              content: (streamFirstMsg.content ?? '') + '\n\n' + streamCatalog,
+            };
           }
 
           // Telemetry
@@ -2016,7 +2236,8 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 conversationId,
                 role: 'user',
                 content: message.trim(),
-                injectionScore: msgValidation.injectionScore > 0 ? msgValidation.injectionScore : null,
+                injectionScore:
+                  msgValidation.injectionScore > 0 ? msgValidation.injectionScore : null,
               });
               await convStorage.addMessage({
                 conversationId,

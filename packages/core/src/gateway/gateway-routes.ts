@@ -36,10 +36,7 @@ function checkRpm(keyId: string, limitRpm: number): boolean {
   return true;
 }
 
-export function registerGatewayRoutes(
-  app: FastifyInstance,
-  opts: GatewayRoutesOptions
-): void {
+export function registerGatewayRoutes(app: FastifyInstance, opts: GatewayRoutesOptions): void {
   const { authStorage } = opts;
 
   // ── Main gateway endpoint ─────────────────────────────────────────────────
@@ -117,15 +114,17 @@ export function registerGatewayRoutes(
       } finally {
         // 5. Record usage (fire & forget)
         if (authUser.apiKeyId) {
-          authStorage.recordKeyUsage({
-            key_id: authUser.apiKeyId,
-            timestamp: Date.now(),
-            tokens_used: usageAccumulator.tokensUsed,
-            latency_ms: Date.now() - start,
-            personality_id: (body.personalityId as string) ?? null,
-            status_code: statusCode,
-            error_message: null,
-          }).catch(() => {});
+          authStorage
+            .recordKeyUsage({
+              key_id: authUser.apiKeyId,
+              timestamp: Date.now(),
+              tokens_used: usageAccumulator.tokensUsed,
+              latency_ms: Date.now() - start,
+              personality_id: (body.personalityId as string) ?? null,
+              status_code: statusCode,
+              error_message: null,
+            })
+            .catch(() => {});
         }
       }
     }
@@ -145,7 +144,7 @@ export function registerGatewayRoutes(
     ) => {
       try {
         const fromTs = request.query.from ? parseInt(request.query.from, 10) : undefined;
-        const toTs   = request.query.to   ? parseInt(request.query.to,   10) : undefined;
+        const toTs = request.query.to ? parseInt(request.query.to, 10) : undefined;
         const rows = await authStorage.getKeyUsage(request.params.id, fromTs, toTs);
         return reply.send({ usage: rows });
       } catch (err) {
@@ -165,7 +164,16 @@ export function registerGatewayRoutes(
           const lines = [
             'keyId,keyPrefix,personalityId,requests24h,tokens24h,errors24h,p50LatencyMs,p95LatencyMs',
             ...summary.map((r) =>
-              [r.keyId, r.keyPrefix, r.personalityId ?? '', r.requests24h, r.tokens24h, r.errors24h, r.p50LatencyMs, r.p95LatencyMs].join(',')
+              [
+                r.keyId,
+                r.keyPrefix,
+                r.personalityId ?? '',
+                r.requests24h,
+                r.tokens24h,
+                r.errors24h,
+                r.p50LatencyMs,
+                r.p95LatencyMs,
+              ].join(',')
             ),
           ];
           return reply
@@ -176,7 +184,11 @@ export function registerGatewayRoutes(
 
         return reply.send({ summary });
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to get usage summary');
+        return sendError(
+          reply,
+          500,
+          err instanceof Error ? err.message : 'Failed to get usage summary'
+        );
       }
     }
   );

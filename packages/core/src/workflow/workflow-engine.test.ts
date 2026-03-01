@@ -865,7 +865,10 @@ describe('WorkflowEngine.execute — step dispatch: data_curation', () => {
 
     expect(storage.updateRun).toHaveBeenCalledWith(
       'run-1',
-      expect.objectContaining({ status: 'failed', error: expect.stringContaining('DataCurationManager') })
+      expect.objectContaining({
+        status: 'failed',
+        error: expect.stringContaining('DataCurationManager'),
+      })
     );
   });
 });
@@ -874,7 +877,8 @@ describe('WorkflowEngine.execute — step dispatch: training_job (finetune)', ()
   it('starts finetune job and polls until complete', async () => {
     const job = { id: 'job-1', status: 'complete', adapterPath: '/tmp/adapter' };
     const finetuneManager = {
-      getJob: vi.fn()
+      getJob: vi
+        .fn()
         .mockResolvedValueOnce({ id: 'job-1', status: 'pending', adapterPath: null })
         .mockResolvedValueOnce(job),
       startJob: vi.fn().mockResolvedValue(undefined),
@@ -912,7 +916,10 @@ describe('WorkflowEngine.execute — step dispatch: training_job (finetune)', ()
 
     expect(storage.updateRun).toHaveBeenCalledWith(
       'run-1',
-      expect.objectContaining({ status: 'failed', error: expect.stringContaining('FinetuneManager') })
+      expect.objectContaining({
+        status: 'failed',
+        error: expect.stringContaining('FinetuneManager'),
+      })
     );
   });
 });
@@ -920,7 +927,8 @@ describe('WorkflowEngine.execute — step dispatch: training_job (finetune)', ()
 describe('WorkflowEngine.execute — step dispatch: training_job (distillation)', () => {
   it('polls distillation job until complete', async () => {
     const distillationManager = {
-      getJob: vi.fn()
+      getJob: vi
+        .fn()
         .mockResolvedValueOnce({ id: 'job-2', status: 'running', outputPath: null })
         .mockResolvedValueOnce({ id: 'job-2', status: 'complete', outputPath: '/tmp/out.jsonl' })
         .mockResolvedValueOnce({ id: 'job-2', status: 'complete', outputPath: '/tmp/out.jsonl' }),
@@ -984,7 +992,9 @@ describe('WorkflowEngine.execute — step dispatch: evaluation', () => {
 
   it('fails when neither samples nor datasetPath provided', async () => {
     const evaluationManager = {
-      runEvaluation: vi.fn().mockRejectedValue(new Error('either samples or datasetPath must be provided')),
+      runEvaluation: vi
+        .fn()
+        .mockRejectedValue(new Error('either samples or datasetPath must be provided')),
     };
     const storage = makeStorage();
     const engine = makeEngine({ storage, evaluationManager });
@@ -1128,7 +1138,10 @@ describe('WorkflowEngine.execute — step dispatch: human_approval', () => {
 
     expect(storage.updateRun).toHaveBeenCalledWith(
       'run-1',
-      expect.objectContaining({ status: 'failed', error: expect.stringContaining('ApprovalManager') })
+      expect.objectContaining({
+        status: 'failed',
+        error: expect.stringContaining('ApprovalManager'),
+      })
     );
   });
 });
@@ -1319,10 +1332,7 @@ describe('WorkflowEngine.execute — outputSchemaMode', () => {
 
     await engine.execute(makeRun(), makeDefinition([makeSchemaStep()]));
 
-    expect(logger.warn).toHaveBeenCalledWith(
-      'Step output schema violation',
-      expect.any(Object)
-    );
+    expect(logger.warn).toHaveBeenCalledWith('Step output schema violation', expect.any(Object));
     expect(storage.updateRun).toHaveBeenCalledWith(
       'run-1',
       expect.objectContaining({ status: 'completed' })
@@ -1384,7 +1394,10 @@ describe('WorkflowEngine.execute — outputSchemaMode', () => {
 
     await engine.execute(makeRun(), makeDefinition([step]));
 
-    expect(logger.warn).not.toHaveBeenCalledWith('Step output schema violation', expect.any(Object));
+    expect(logger.warn).not.toHaveBeenCalledWith(
+      'Step output schema violation',
+      expect.any(Object)
+    );
     expect(storage.updateRun).toHaveBeenCalledWith(
       'run-1',
       expect.objectContaining({ status: 'completed' })

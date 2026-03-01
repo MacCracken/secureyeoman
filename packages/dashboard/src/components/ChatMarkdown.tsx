@@ -175,7 +175,10 @@ interface ChatMarkdownProps {
   size?: 'sm' | 'xs';
 }
 
-export const ChatMarkdown = memo(function ChatMarkdown({ content, size = 'sm' }: ChatMarkdownProps) {
+export const ChatMarkdown = memo(function ChatMarkdown({
+  content,
+  size = 'sm',
+}: ChatMarkdownProps) {
   const { isDark } = useTheme();
   const isSm = size === 'sm';
   const textBase = isSm ? 'text-sm' : 'text-xs';

@@ -196,7 +196,8 @@ describe('ApprovalManager.waitForDecision', () => {
     // First call (getTimeoutMs → getRequest): returns a request to set short deadline
     // Second call (poll loop → getRequest): returns null → triggers 'not found' throw
     const pool = {
-      query: vi.fn()
+      query: vi
+        .fn()
         .mockResolvedValueOnce({ rows: [makeRequest({ timeout_ms: 5000 })], rowCount: 1 })
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }),
     } as unknown as Pool;
@@ -222,9 +223,8 @@ describe('ApprovalManager.listAll', () => {
 
     await mgr.listAll('run-42');
 
-    expect(vi.mocked(pool.query)).toHaveBeenCalledWith(
-      expect.stringContaining('workflow_run_id'),
-      ['run-42']
-    );
+    expect(vi.mocked(pool.query)).toHaveBeenCalledWith(expect.stringContaining('workflow_run_id'), [
+      'run-42',
+    ]);
   });
 });

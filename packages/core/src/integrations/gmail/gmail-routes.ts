@@ -37,7 +37,9 @@ export interface GmailRoutesOptions {
 function gmailErrorMessage(status: number, body: string): string {
   if (
     status === 403 &&
-    (body.includes('SCOPE_INSUFFICIENT') || body.includes('insufficient_scopes') || body.includes('insufficientPermissions'))
+    (body.includes('SCOPE_INSUFFICIENT') ||
+      body.includes('insufficient_scopes') ||
+      body.includes('insufficientPermissions'))
   ) {
     return 'Gmail access denied: your account is missing required permissions. Please reconnect your Gmail account via Settings → Connections → OAuth and re-authorize with Gmail scopes.';
   }
@@ -62,7 +64,7 @@ async function fetchGmail(
   const authHeader = { Authorization: `Bearer ${accessToken}` };
   let resp = await fetch(url, {
     ...opts,
-    headers: { ...opts.headers, ...authHeader },
+    headers: { ...(opts.headers as Record<string, string> | undefined), ...authHeader },
   });
 
   if (resp.status === 401) {
@@ -71,7 +73,10 @@ async function fetchGmail(
     if (newToken && newToken !== accessToken) {
       resp = await fetch(url, {
         ...opts,
-        headers: { ...opts.headers, Authorization: `Bearer ${newToken}` },
+        headers: {
+          ...(opts.headers as Record<string, string> | undefined),
+          Authorization: `Bearer ${newToken}`,
+        },
       });
     }
   }
@@ -86,12 +91,17 @@ async function fetchGmail(
 async function resolveGmailAccess(
   oauthTokenService: OAuthTokenService,
   soulManager?: SoulManager
-): Promise<{ accessToken: string; email: string; tokenId: string; mode: string; scopes: string } | null> {
+): Promise<{
+  accessToken: string;
+  email: string;
+  tokenId: string;
+  mode: string;
+  scopes: string;
+} | null> {
   const tokens = await oauthTokenService.listTokens();
   // Prefer the gmail-specific token (has Gmail API scopes) over a generic google token
   const gmailToken =
-    tokens.find((t) => t.provider === 'gmail') ??
-    tokens.find((t) => t.provider === 'google');
+    tokens.find((t) => t.provider === 'gmail') ?? tokens.find((t) => t.provider === 'google');
   if (!gmailToken) return null;
 
   // Get a fresh access token (auto-refreshes if near expiry)
@@ -111,7 +121,13 @@ async function resolveGmailAccess(
     }
   }
 
-  return { accessToken, email: gmailToken.email, tokenId: gmailToken.id, mode, scopes: gmailToken.scopes ?? '' };
+  return {
+    accessToken,
+    email: gmailToken.email,
+    tokenId: gmailToken.id,
+    mode,
+    scopes: gmailToken.scopes ?? '',
+  };
 }
 
 /**
@@ -142,41 +158,70 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
   app.get('/api/v1/gmail/profile', async (_req, reply) => {
     const creds = await resolveGmailAccess(oauthTokenService, soulManager);
     if (!creds) {
-      return sendError(reply, 404, 'No Gmail account connected. Connect a Google account via Settings > Connections > OAuth.');
+      return sendError(
+        reply,
+        404,
+        'No Gmail account connected. Connect a Google account via Settings > Connections > OAuth.'
+      );
     }
-    const resp = await fetchGmail(`${GMAIL_API}/profile`, {}, creds.tokenId, creds.accessToken, oauthTokenService);
+    const resp = await fetchGmail(
+      `${GMAIL_API}/profile`,
+      {},
+      creds.tokenId,
+      creds.accessToken,
+      oauthTokenService
+    );
     if (!resp.ok) {
       const body = await resp.text();
-      return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, gmailErrorMessage(resp.status, body));
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        gmailErrorMessage(resp.status, body)
+      );
     }
     const data = await resp.json();
-    return reply.send({ ...(data as object), email: creds.email, mode: creds.mode, tokenId: creds.tokenId, scopes: creds.scopes });
+    return reply.send({
+      ...(data as object),
+      email: creds.email,
+      mode: creds.mode,
+      tokenId: creds.tokenId,
+      scopes: creds.scopes,
+    });
   });
 
   // GET /api/v1/gmail/messages?q=&maxResults=&pageToken=
-  app.get<{ Querystring: { q?: string; maxResults?: string; pageToken?: string; labelIds?: string } }>(
-    '/api/v1/gmail/messages',
-    async (req, reply) => {
-      const creds = await resolveGmailAccess(oauthTokenService, soulManager);
-      if (!creds) {
-        return sendError(reply, 404, 'No Gmail account connected.');
-      }
-
-      const url = new URL(`${GMAIL_API}/messages`);
-      if (req.query.q) url.searchParams.set('q', req.query.q);
-      if (req.query.maxResults) url.searchParams.set('maxResults', req.query.maxResults);
-      if (req.query.pageToken) url.searchParams.set('pageToken', req.query.pageToken);
-      if (req.query.labelIds) url.searchParams.set('labelIds', req.query.labelIds);
-
-      const resp = await fetchGmail(url.toString(), {}, creds.tokenId, creds.accessToken, oauthTokenService);
-      if (!resp.ok) {
-        const body = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, gmailErrorMessage(resp.status, body));
-      }
-      const data = await resp.json();
-      return reply.send(data);
+  app.get<{
+    Querystring: { q?: string; maxResults?: string; pageToken?: string; labelIds?: string };
+  }>('/api/v1/gmail/messages', async (req, reply) => {
+    const creds = await resolveGmailAccess(oauthTokenService, soulManager);
+    if (!creds) {
+      return sendError(reply, 404, 'No Gmail account connected.');
     }
-  );
+
+    const url = new URL(`${GMAIL_API}/messages`);
+    if (req.query.q) url.searchParams.set('q', req.query.q);
+    if (req.query.maxResults) url.searchParams.set('maxResults', req.query.maxResults);
+    if (req.query.pageToken) url.searchParams.set('pageToken', req.query.pageToken);
+    if (req.query.labelIds) url.searchParams.set('labelIds', req.query.labelIds);
+
+    const resp = await fetchGmail(
+      url.toString(),
+      {},
+      creds.tokenId,
+      creds.accessToken,
+      oauthTokenService
+    );
+    if (!resp.ok) {
+      const body = await resp.text();
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        gmailErrorMessage(resp.status, body)
+      );
+    }
+    const data = await resp.json();
+    return reply.send(data);
+  });
 
   // GET /api/v1/gmail/messages/:messageId
   app.get<{ Params: { messageId: string }; Querystring: { format?: string } }>(
@@ -197,7 +242,11 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
       );
       if (!resp.ok) {
         const body = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, gmailErrorMessage(resp.status, body));
+        return sendError(
+          reply,
+          resp.status as 400 | 401 | 403 | 404 | 500,
+          gmailErrorMessage(resp.status, body)
+        );
       }
       const data = await resp.json();
       return reply.send(data);
@@ -222,7 +271,11 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
       );
       if (!resp.ok) {
         const body = await resp.text();
-        return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, gmailErrorMessage(resp.status, body));
+        return sendError(
+          reply,
+          resp.status as 400 | 401 | 403 | 404 | 500,
+          gmailErrorMessage(resp.status, body)
+        );
       }
       const data = await resp.json();
       return reply.send(data);
@@ -245,7 +298,11 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
       return sendError(reply, 404, 'No Gmail account connected.');
     }
     if (creds.mode === 'suggest') {
-      return sendError(reply, 403, `Gmail mode is '${creds.mode}' — composing drafts is not permitted. The personality may only read messages.`);
+      return sendError(
+        reply,
+        403,
+        `Gmail mode is '${creds.mode}' — composing drafts is not permitted. The personality may only read messages.`
+      );
     }
     const scopeErr = checkWriteScopes(creds.scopes);
     if (scopeErr) return sendError(reply, 403, scopeErr);
@@ -272,7 +329,11 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
 
     const resp = await fetchGmail(
       `${GMAIL_API}/drafts`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draftBody) },
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draftBody),
+      },
       creds.tokenId,
       creds.accessToken,
       oauthTokenService
@@ -280,7 +341,11 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
 
     if (!resp.ok) {
       const errBody = await resp.text();
-      return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, gmailErrorMessage(resp.status, errBody));
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        gmailErrorMessage(resp.status, errBody)
+      );
     }
 
     const data = await resp.json();
@@ -341,7 +406,11 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
 
     const resp = await fetchGmail(
       `${GMAIL_API}/messages/send`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sendBody) },
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sendBody),
+      },
       creds.tokenId,
       creds.accessToken,
       oauthTokenService
@@ -349,7 +418,11 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
 
     if (!resp.ok) {
       const errBody = await resp.text();
-      return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, gmailErrorMessage(resp.status, errBody));
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        gmailErrorMessage(resp.status, errBody)
+      );
     }
 
     const data = await resp.json();
@@ -362,10 +435,20 @@ export function registerGmailRoutes(app: FastifyInstance, opts: GmailRoutesOptio
     if (!creds) {
       return sendError(reply, 404, 'No Gmail account connected.');
     }
-    const resp = await fetchGmail(`${GMAIL_API}/labels`, {}, creds.tokenId, creds.accessToken, oauthTokenService);
+    const resp = await fetchGmail(
+      `${GMAIL_API}/labels`,
+      {},
+      creds.tokenId,
+      creds.accessToken,
+      oauthTokenService
+    );
     if (!resp.ok) {
       const body = await resp.text();
-      return sendError(reply, resp.status as 400 | 401 | 403 | 404 | 500, gmailErrorMessage(resp.status, body));
+      return sendError(
+        reply,
+        resp.status as 400 | 401 | 403 | 404 | 500,
+        gmailErrorMessage(resp.status, body)
+      );
     }
     const data = await resp.json();
     return reply.send(data);

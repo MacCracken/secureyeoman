@@ -137,8 +137,7 @@ const BUILTIN_TEAMS: Omit<TeamDefinition, 'id' | 'createdAt' | 'updatedAt'>[] = 
   },
   {
     name: 'Security Audit Team',
-    description:
-      'A security-focused team for code audits and vulnerability assessments.',
+    description: 'A security-focused team for code audits and vulnerability assessments.',
     members: [
       {
         role: 'Analyst',
@@ -190,10 +189,7 @@ export class TeamStorage extends PgBaseStorage {
   }
 
   async getTeam(id: string): Promise<TeamDefinition | null> {
-    const row = await this.queryOne<TeamRow>(
-      'SELECT * FROM agents.teams WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne<TeamRow>('SELECT * FROM agents.teams WHERE id = $1', [id]);
     return row ? teamFromRow(row) : null;
   }
 
@@ -221,10 +217,26 @@ export class TeamStorage extends PgBaseStorage {
     const fields: string[] = ['updated_at = $1'];
     const values: unknown[] = [now];
     let i = 2;
-    if (updates.name !== undefined) { fields.push(`name = $${i}`); values.push(updates.name); i++; }
-    if (updates.description !== undefined) { fields.push(`description = $${i}`); values.push(updates.description); i++; }
-    if (updates.members !== undefined) { fields.push(`members = $${i}`); values.push(JSON.stringify(updates.members)); i++; }
-    if (updates.coordinatorProfileName !== undefined) { fields.push(`coordinator_profile_name = $${i}`); values.push(updates.coordinatorProfileName); i++; }
+    if (updates.name !== undefined) {
+      fields.push(`name = $${i}`);
+      values.push(updates.name);
+      i++;
+    }
+    if (updates.description !== undefined) {
+      fields.push(`description = $${i}`);
+      values.push(updates.description);
+      i++;
+    }
+    if (updates.members !== undefined) {
+      fields.push(`members = $${i}`);
+      values.push(JSON.stringify(updates.members));
+      i++;
+    }
+    if (updates.coordinatorProfileName !== undefined) {
+      fields.push(`coordinator_profile_name = $${i}`);
+      values.push(updates.coordinatorProfileName);
+      i++;
+    }
     values.push(id);
     const row = await this.queryOne<TeamRow>(
       `UPDATE agents.teams SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`,
@@ -286,17 +298,24 @@ export class TeamStorage extends PgBaseStorage {
          (id, team_id, team_name, task, status, assigned_members, token_budget, tokens_used, created_at, initiated_by)
        VALUES ($1,$2,$3,$4,'pending','[]',$5,0,$6,$7)
        RETURNING *`,
-      [id, params.teamId, params.teamName, params.task, params.tokenBudget, now, params.initiatedBy ?? null]
+      [
+        id,
+        params.teamId,
+        params.teamName,
+        params.task,
+        params.tokenBudget,
+        now,
+        params.initiatedBy ?? null,
+      ]
     );
     if (!row) throw new Error('Failed to create team run');
     return runFromRow(row);
   }
 
   async getRun(id: string): Promise<TeamRun | null> {
-    const row = await this.queryOne<TeamRunRow>(
-      'SELECT * FROM agents.team_runs WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne<TeamRunRow>('SELECT * FROM agents.team_runs WHERE id = $1', [
+      id,
+    ]);
     return row ? runFromRow(row) : null;
   }
 
@@ -316,20 +335,49 @@ export class TeamStorage extends PgBaseStorage {
     const fields: string[] = [];
     const values: unknown[] = [];
     let i = 1;
-    if (updates.status !== undefined) { fields.push(`status = $${i}`); values.push(updates.status); i++; }
-    if ('result' in updates) { fields.push(`result = $${i}`); values.push(updates.result); i++; }
-    if ('error' in updates) { fields.push(`error = $${i}`); values.push(updates.error); i++; }
-    if ('coordinatorReasoning' in updates) { fields.push(`coordinator_reasoning = $${i}`); values.push(updates.coordinatorReasoning); i++; }
-    if (updates.assignedMembers !== undefined) { fields.push(`assigned_members = $${i}`); values.push(JSON.stringify(updates.assignedMembers)); i++; }
-    if (updates.tokensUsed !== undefined) { fields.push(`tokens_used = $${i}`); values.push(updates.tokensUsed); i++; }
-    if (updates.startedAt !== undefined) { fields.push(`started_at = $${i}`); values.push(updates.startedAt); i++; }
-    if (updates.completedAt !== undefined) { fields.push(`completed_at = $${i}`); values.push(updates.completedAt); i++; }
+    if (updates.status !== undefined) {
+      fields.push(`status = $${i}`);
+      values.push(updates.status);
+      i++;
+    }
+    if ('result' in updates) {
+      fields.push(`result = $${i}`);
+      values.push(updates.result);
+      i++;
+    }
+    if ('error' in updates) {
+      fields.push(`error = $${i}`);
+      values.push(updates.error);
+      i++;
+    }
+    if ('coordinatorReasoning' in updates) {
+      fields.push(`coordinator_reasoning = $${i}`);
+      values.push(updates.coordinatorReasoning);
+      i++;
+    }
+    if (updates.assignedMembers !== undefined) {
+      fields.push(`assigned_members = $${i}`);
+      values.push(JSON.stringify(updates.assignedMembers));
+      i++;
+    }
+    if (updates.tokensUsed !== undefined) {
+      fields.push(`tokens_used = $${i}`);
+      values.push(updates.tokensUsed);
+      i++;
+    }
+    if (updates.startedAt !== undefined) {
+      fields.push(`started_at = $${i}`);
+      values.push(updates.startedAt);
+      i++;
+    }
+    if (updates.completedAt !== undefined) {
+      fields.push(`completed_at = $${i}`);
+      values.push(updates.completedAt);
+      i++;
+    }
     if (fields.length === 0) return;
     values.push(id);
-    await this.execute(
-      `UPDATE agents.team_runs SET ${fields.join(', ')} WHERE id = $${i}`,
-      values
-    );
+    await this.execute(`UPDATE agents.team_runs SET ${fields.join(', ')} WHERE id = $${i}`, values);
   }
 
   async listRuns(

@@ -908,7 +908,7 @@ export async function createDistillationJob(
 }
 
 export async function deleteDistillationJob(id: string): Promise<void> {
-  await request<void>(`/training/distillation/jobs/${encodeURIComponent(id)}`, {
+  await request<undefined>(`/training/distillation/jobs/${encodeURIComponent(id)}`, {
     method: 'DELETE',
   });
 }
@@ -967,12 +967,14 @@ export async function createFinetuneJob(req: CreateFinetuneJobRequest): Promise<
 }
 
 export async function deleteFinetuneJob(id: string): Promise<void> {
-  await request<void>(`/training/finetune/jobs/${encodeURIComponent(id)}`, {
+  await request<undefined>(`/training/finetune/jobs/${encodeURIComponent(id)}`, {
     method: 'DELETE',
   });
 }
 
-export async function registerFinetuneAdapter(id: string): Promise<{ success: boolean; adapterName: string }> {
+export async function registerFinetuneAdapter(
+  id: string
+): Promise<{ success: boolean; adapterName: string }> {
   return request<{ success: boolean; adapterName: string }>(
     `/training/finetune/jobs/${encodeURIComponent(id)}/register`,
     { method: 'POST' }
@@ -1321,7 +1323,7 @@ export async function* fetchOllamaPull(
   model: string
 ): AsyncGenerator<OllamaPullProgress, void, unknown> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (_accessToken) headers['Authorization'] = `Bearer ${_accessToken}`;
+  if (_accessToken) headers.Authorization = `Bearer ${_accessToken}`;
 
   const response = await fetch(`${API_BASE}/model/ollama/pull`, {
     method: 'POST',
@@ -4369,7 +4371,7 @@ export async function uploadDocument(
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as { message?: string };
+    const body = (await res.json().catch(() => ({}))) as { message?: string };
     throw new APIError(body.message ?? `Upload failed: ${res.status}`, res.status);
   }
   return res.json();
@@ -4422,9 +4424,7 @@ export async function deleteDocument(id: string): Promise<void> {
   await request(`/brain/documents/${id}`, { method: 'DELETE' });
 }
 
-export async function fetchKnowledgeHealth(
-  personalityId?: string
-): Promise<KnowledgeHealthStats> {
+export async function fetchKnowledgeHealth(personalityId?: string): Promise<KnowledgeHealthStats> {
   const qs = personalityId ? `?personalityId=${encodeURIComponent(personalityId)}` : '';
   return request(`/brain/knowledge-health${qs}`);
 }
@@ -4458,8 +4458,6 @@ export async function deleteAlertRule(id: string): Promise<void> {
   await request(`/alerts/rules/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
-export async function testAlertRule(
-  id: string
-): Promise<{ fired: boolean; value: number | null }> {
+export async function testAlertRule(id: string): Promise<{ fired: boolean; value: number | null }> {
   return request(`/alerts/rules/${encodeURIComponent(id)}/test`, { method: 'POST' });
 }

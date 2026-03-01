@@ -236,6 +236,23 @@ export const BodyConfigSchema = z
      * Falls back to the global security.strictSystemPromptConfidentiality setting when undefined.
      */
     strictSystemPromptConfidentiality: z.boolean().optional(),
+    /**
+     * Knowledge retrieval mode for this personality.
+     *
+     * - 'rag' (default) — top-K hybrid RRF retrieval (fast, works at any corpus size)
+     * - 'notebook'       — load the entire document corpus into context at once (NotebookLM style)
+     * - 'hybrid'         — try notebook first; fall back to RAG when corpus exceeds budget
+     *
+     * Notebook and hybrid modes require a model with a large context window (≥128K tokens
+     * recommended; Gemini 1M is ideal for large corpora).
+     */
+    knowledgeMode: z.enum(['rag', 'notebook', 'hybrid']).default('rag'),
+    /**
+     * Optional token budget cap for notebook mode.
+     * When set, overrides the auto-computed 65% of the model's context window.
+     * Useful for reserving more window space for conversation history.
+     */
+    notebookTokenBudget: z.number().int().min(1000).optional(),
   })
   .default({});
 

@@ -88,6 +88,7 @@ const BASE_BODY: PersonalityCreate['body'] = {
     timezone: 'UTC',
   },
   omnipresentMind: false,
+  knowledgeMode: 'rag' as const,
 };
 
 // ── Preset definitions ───────────────────────────────────────────────────────

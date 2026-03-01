@@ -354,7 +354,10 @@ describe('executeCreationTool — register_dynamic_tool', () => {
 
 describe('executeCreationTool — list_dynamic_tools', () => {
   it('returns list of tools from dtm.listTools()', async () => {
-    const tools = [{ name: 'tool_a', description: 'desc a' }, { name: 'tool_b', description: 'desc b' }];
+    const tools = [
+      { name: 'tool_a', description: 'desc a' },
+      { name: 'tool_b', description: 'desc b' },
+    ];
     const dtm = makeDtm({ listResult: tools });
     const sy = makeSecureYeoman(dtm);
     const result = await executeCreationTool(makeToolCall('list_dynamic_tools'), sy as any);
@@ -375,7 +378,10 @@ describe('executeCreationTool — delete_dynamic_tool', () => {
   it('deletes a tool by name', async () => {
     const dtm = makeDtm({ deleteResult: true });
     const sy = makeSecureYeoman(dtm);
-    const result = await executeCreationTool(makeToolCall('delete_dynamic_tool', { name: 'my_old_tool' }), sy as any);
+    const result = await executeCreationTool(
+      makeToolCall('delete_dynamic_tool', { name: 'my_old_tool' }),
+      sy as any
+    );
     expect(result.isError).toBe(false);
     expect((result.output as { deleted: boolean; name: string }).deleted).toBe(true);
     expect(dtm.deleteByName).toHaveBeenCalledWith('my_old_tool');
@@ -384,14 +390,20 @@ describe('executeCreationTool — delete_dynamic_tool', () => {
   it('returns error when tool not found', async () => {
     const dtm = makeDtm({ deleteResult: false });
     const sy = makeSecureYeoman(dtm);
-    const result = await executeCreationTool(makeToolCall('delete_dynamic_tool', { name: 'nonexistent' }), sy as any);
+    const result = await executeCreationTool(
+      makeToolCall('delete_dynamic_tool', { name: 'nonexistent' }),
+      sy as any
+    );
     expect(result.isError).toBe(true);
     expect((result.output as { error: string }).error).toMatch(/not found/i);
   });
 
   it('returns error when DTM not available', async () => {
     const sy = makeSecureYeoman();
-    const result = await executeCreationTool(makeToolCall('delete_dynamic_tool', { name: 'x' }), sy as any);
+    const result = await executeCreationTool(
+      makeToolCall('delete_dynamic_tool', { name: 'x' }),
+      sy as any
+    );
     expect(result.isError).toBe(true);
     expect((result.output as { error: string }).error).toMatch(/not enabled/i);
   });

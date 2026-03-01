@@ -76,7 +76,7 @@ export function registerOllamaTools(
       },
     },
     wrapToolHandler('ollama_rm', middleware, async (args) => {
-      const encodedName = encodeURIComponent(String(args.model));
+      const encodedName = encodeURIComponent(args.model);
       await client.delete(`/api/v1/model/ollama/${encodedName}`);
       return {
         content: [

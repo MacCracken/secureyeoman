@@ -528,7 +528,7 @@ async function ollamaPull(
 
   const url = `${baseUrl}/api/v1/model/ollama/pull`;
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   let response: Response;
   try {

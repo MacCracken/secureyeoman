@@ -19,6 +19,7 @@ import type {
   DocumentCreate,
   KnowledgeHealthStats,
   QueryLogCreate,
+  NotebookCorpusDocument,
 } from './types.js';
 import type { Skill, SkillCreate, SkillUpdate } from '@secureyeoman/shared';
 import { uuidv7 } from '../utils/crypto.js';
@@ -693,7 +694,8 @@ export class BrainStorage extends PgBaseStorage {
       `;
       params.push(personalityId);
     } else {
-      sql = "SELECT * FROM brain.skills WHERE enabled = true AND status = 'active' ORDER BY usage_count DESC, created_at DESC";
+      sql =
+        "SELECT * FROM brain.skills WHERE enabled = true AND status = 'active' ORDER BY usage_count DESC, created_at DESC";
     }
 
     const rows = await this.queryMany<SkillRow>(sql, params);
@@ -1136,7 +1138,10 @@ export class BrainStorage extends PgBaseStorage {
     return count > 0;
   }
 
-  async listDocuments(opts?: { personalityId?: string; visibility?: string }): Promise<KbDocument[]> {
+  async listDocuments(opts?: {
+    personalityId?: string;
+    visibility?: string;
+  }): Promise<KbDocument[]> {
     let sql = 'SELECT * FROM brain.documents WHERE 1=1';
     const params: unknown[] = [];
     let idx = 1;
@@ -1157,11 +1162,88 @@ export class BrainStorage extends PgBaseStorage {
   }
 
   async deleteKnowledgeBySourcePrefix(prefix: string): Promise<number> {
-    const count = await this.execute(
-      'DELETE FROM brain.knowledge WHERE source LIKE $1',
-      [prefix + '%']
-    );
+    const count = await this.execute('DELETE FROM brain.knowledge WHERE source LIKE $1', [
+      prefix + '%',
+    ]);
     return count;
+  }
+
+  /**
+   * Load all document chunks for notebook mode.
+   *
+   * Returns one entry per document, with chunks concatenated in source-index order
+   * (parsed from the `document:{id}:chunk{N}` source field).
+   *
+   * @param personalityId  When provided, returns chunks scoped to this personality OR global (NULL).
+   *                       When null/undefined, returns all chunks across all personalities.
+   */
+  async getAllDocumentChunks(
+    personalityId?: string | null
+  ): Promise<NotebookCorpusDocument[]> {
+    let sql = `
+      SELECT
+        k.content,
+        k.source,
+        d.id       AS doc_id,
+        d.title    AS doc_title,
+        d.format   AS doc_format,
+        d.chunk_count
+      FROM brain.knowledge k
+      JOIN brain.documents d
+        ON d.id::text = split_part(split_part(k.source, 'document:', 2), ':', 1)
+      WHERE k.source LIKE 'document:%:chunk%'
+        AND d.status = 'ready'
+    `;
+    const params: unknown[] = [];
+    if (personalityId !== undefined && personalityId !== null) {
+      sql += ` AND (k.personality_id = $1 OR k.personality_id IS NULL)`;
+      params.push(personalityId);
+    }
+    sql += ` ORDER BY d.created_at, doc_id`;
+
+    interface ChunkRow {
+      content: string;
+      source: string;
+      doc_id: string;
+      doc_title: string;
+      doc_format: string | null;
+      chunk_count: number | string;
+    }
+
+    const rows = await this.queryMany<ChunkRow>(sql, params);
+
+    // Group by document, preserving order
+    const docMap = new Map<string, { title: string; format: string | null; chunkCount: number; chunks: { idx: number; text: string }[] }>();
+    for (const row of rows) {
+      if (!docMap.has(row.doc_id)) {
+        docMap.set(row.doc_id, {
+          title: row.doc_title,
+          format: row.doc_format,
+          chunkCount: Number(row.chunk_count),
+          chunks: [],
+        });
+      }
+      // Parse chunk index from source: "document:{id}:chunk{N}"
+      const idxMatch = row.source.match(/:chunk(\d+)$/);
+      const idx = idxMatch ? parseInt(idxMatch[1] ?? '0', 10) : 0;
+      docMap.get(row.doc_id)!.chunks.push({ idx, text: row.content });
+    }
+
+    const result: NotebookCorpusDocument[] = [];
+    for (const [docId, doc] of docMap) {
+      doc.chunks.sort((a, b) => a.idx - b.idx);
+      const text = doc.chunks.map((c) => c.text).join('\n\n');
+      result.push({
+        docId,
+        title: doc.title,
+        format: doc.format,
+        chunkCount: doc.chunkCount,
+        text,
+        estimatedTokens: Math.ceil(text.length / 4),
+      });
+    }
+
+    return result;
   }
 
   // ── Knowledge Query Log ────────────────────────────────────────
@@ -1181,7 +1263,8 @@ export class BrainStorage extends PgBaseStorage {
     const since24h = Date.now() - 86_400_000;
 
     // Total documents + chunk sum + by-format breakdown
-    let docSql = 'SELECT COUNT(*) as total, COALESCE(SUM(chunk_count), 0) as total_chunks FROM brain.documents WHERE 1=1';
+    let docSql =
+      'SELECT COUNT(*) as total, COALESCE(SUM(chunk_count), 0) as total_chunks FROM brain.documents WHERE 1=1';
     const docParams: unknown[] = [];
     if (personalityId) {
       docSql += ' AND (personality_id = $1 OR personality_id IS NULL)';

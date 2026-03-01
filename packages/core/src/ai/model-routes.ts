@@ -17,8 +17,7 @@ async function pingLocalProvider(
   provider: string,
   baseUrl: string
 ): Promise<{ reachable: boolean; latencyMs: number }> {
-  const healthUrl =
-    provider === 'ollama' ? `${baseUrl}/api/tags` : `${baseUrl}/v1/models`;
+  const healthUrl = provider === 'ollama' ? `${baseUrl}/api/tags` : `${baseUrl}/v1/models`;
   const start = Date.now();
   try {
     const res = await fetch(healthUrl, { signal: AbortSignal.timeout(5000) });
@@ -68,10 +67,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
 
   app.patch(
     '/api/v1/model/config',
-    async (
-      request: FastifyRequest<{ Body: ModelConfigPatchBody }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: ModelConfigPatchBody }>, reply: FastifyReply) => {
       const { localFirst } = request.body;
       if (typeof localFirst !== 'boolean') {
         return sendError(reply, 400, 'localFirst (boolean) is required');
@@ -261,10 +257,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
 
   app.post(
     '/api/v1/model/ollama/pull',
-    async (
-      request: FastifyRequest<{ Body: { model: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: { model: string } }>, reply: FastifyReply) => {
       const { model } = request.body;
       if (!model || typeof model !== 'string') {
         return sendError(reply, 400, 'model is required');
@@ -273,7 +266,11 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
       const config = secureYeoman.getConfig();
       const { provider, baseUrl } = config.model;
       if (provider !== 'ollama') {
-        return sendError(reply, 400, 'Pull is only available when Ollama is the configured provider');
+        return sendError(
+          reply,
+          400,
+          'Pull is only available when Ollama is the configured provider'
+        );
       }
 
       const ollamaBaseUrl = baseUrl ?? 'http://localhost:11434';
@@ -302,16 +299,17 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
 
   app.delete(
     '/api/v1/model/ollama/:name',
-    async (
-      request: FastifyRequest<{ Params: { name: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { name: string } }>, reply: FastifyReply) => {
       const { name } = request.params;
 
       const config = secureYeoman.getConfig();
       const { provider, baseUrl } = config.model;
       if (provider !== 'ollama') {
-        return sendError(reply, 400, 'Delete is only available when Ollama is the configured provider');
+        return sendError(
+          reply,
+          400,
+          'Delete is only available when Ollama is the configured provider'
+        );
       }
 
       const ollamaBaseUrl = baseUrl ?? 'http://localhost:11434';
@@ -356,9 +354,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
         if (provider === 'ollama' && reachable) {
           try {
             const models = await OllamaProvider.fetchAvailableModels(providerBaseUrl);
-            const info = models.find(
-              (m) => m.id === model || m.id.startsWith(model + ':')
-            );
+            const info = models.find((m) => m.id === model || m.id.startsWith(model + ':'));
             if (info?.size) {
               modelSize = info.size;
               const totalMem = os.totalmem();

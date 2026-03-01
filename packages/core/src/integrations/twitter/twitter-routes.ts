@@ -79,7 +79,9 @@ async function resolveTwitterAccess(
     username?: string;
   };
 
-  const hasOAuth1 = Boolean(cfg.apiKey && cfg.apiKeySecret && cfg.accessToken && cfg.accessTokenSecret);
+  const hasOAuth1 = Boolean(
+    cfg.apiKey && cfg.apiKeySecret && cfg.accessToken && cfg.accessTokenSecret
+  );
 
   if (!cfg.bearerToken && !hasOAuth1 && !cfg.oauth2AccessToken) {
     return null;
@@ -89,13 +91,13 @@ async function resolveTwitterAccess(
   const readonlyClient = cfg.bearerToken
     ? new TwitterApi(cfg.bearerToken)
     : hasOAuth1
-    ? new TwitterApi({
-        appKey: cfg.apiKey!,
-        appSecret: cfg.apiKeySecret!,
-        accessToken: cfg.accessToken!,
-        accessSecret: cfg.accessTokenSecret!,
-      })
-    : new TwitterApi(cfg.oauth2AccessToken!);
+      ? new TwitterApi({
+          appKey: cfg.apiKey!,
+          appSecret: cfg.apiKeySecret!,
+          accessToken: cfg.accessToken!,
+          accessSecret: cfg.accessTokenSecret!,
+        })
+      : new TwitterApi(cfg.oauth2AccessToken!);
 
   // User-context client resolution priority:
   //   1. OAuth 2.0 access token (v2 endpoints only, no media upload)
@@ -132,18 +134,36 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
   app.get('/api/v1/twitter/profile', async (_req, reply) => {
     const creds = await resolveTwitterAccess(integrationManager, soulManager);
     if (!creds) {
-      return sendError(reply, 404, 'No Twitter integration configured. Add a Twitter integration via Settings > Connections.');
+      return sendError(
+        reply,
+        404,
+        'No Twitter integration configured. Add a Twitter integration via Settings > Connections.'
+      );
     }
     if (!creds.userClient) {
-      return sendError(reply, 400, 'Twitter profile lookup requires OAuth 1.0a credentials (apiKey, apiKeySecret, accessToken, accessTokenSecret).');
+      return sendError(
+        reply,
+        400,
+        'Twitter profile lookup requires OAuth 1.0a credentials (apiKey, apiKeySecret, accessToken, accessTokenSecret).'
+      );
     }
     try {
       const result = await creds.userClient.v2.me({
-        'user.fields': ['description', 'public_metrics', 'profile_image_url', 'created_at', 'verified'],
+        'user.fields': [
+          'description',
+          'public_metrics',
+          'profile_image_url',
+          'created_at',
+          'verified',
+        ],
       });
       return reply.send({ ...result.data, mode: creds.mode, integrationId: creds.integrationId });
     } catch (err) {
-      return sendError(reply, 500, `Twitter API error: ${err instanceof Error ? err.message : String(err)}`);
+      return sendError(
+        reply,
+        500,
+        `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
   });
 
@@ -167,7 +187,11 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         });
         return reply.send(result.data);
       } catch (err) {
-        return sendError(reply, 500, `Twitter API error: ${err instanceof Error ? err.message : String(err)}`);
+        return sendError(
+          reply,
+          500,
+          `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     }
   );
@@ -181,13 +205,24 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
 
       try {
         const result = await creds.readonlyClient.v2.singleTweet(req.params.tweetId, {
-          'tweet.fields': ['author_id', 'created_at', 'public_metrics', 'text', 'entities', 'referenced_tweets'],
+          'tweet.fields': [
+            'author_id',
+            'created_at',
+            'public_metrics',
+            'text',
+            'entities',
+            'referenced_tweets',
+          ],
           expansions: ['author_id', 'referenced_tweets.id'],
           'user.fields': ['name', 'username', 'profile_image_url'],
         });
         return reply.send(result.data);
       } catch (err) {
-        return sendError(reply, 500, `Twitter API error: ${err instanceof Error ? err.message : String(err)}`);
+        return sendError(
+          reply,
+          500,
+          `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     }
   );
@@ -213,7 +248,11 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         });
         return reply.send(result.data);
       } catch (err) {
-        return sendError(reply, 500, `Twitter API error: ${err instanceof Error ? err.message : String(err)}`);
+        return sendError(
+          reply,
+          500,
+          `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     }
   );
@@ -238,7 +277,11 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         });
         return reply.send({ ...result.data, selfId: me.data.id });
       } catch (err) {
-        return sendError(reply, 500, `Twitter API error: ${err instanceof Error ? err.message : String(err)}`);
+        return sendError(
+          reply,
+          500,
+          `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     }
   );
@@ -252,52 +295,72 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
 
       try {
         const result = await creds.readonlyClient.v2.userByUsername(req.params.username, {
-          'user.fields': ['description', 'public_metrics', 'profile_image_url', 'created_at', 'verified'],
+          'user.fields': [
+            'description',
+            'public_metrics',
+            'profile_image_url',
+            'created_at',
+            'verified',
+          ],
         });
         return reply.send(result.data);
       } catch (err) {
-        return sendError(reply, 500, `Twitter API error: ${err instanceof Error ? err.message : String(err)}`);
+        return sendError(
+          reply,
+          500,
+          `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     }
   );
 
   // POST /api/v1/twitter/tweets  (mode: auto → post; draft → preview; suggest → 403)
-  app.post<{ Body: { text: string; replyToTweetId?: string; quoteTweetId?: string; mediaIds?: string[] } }>(
-    '/api/v1/twitter/tweets',
-    async (req, reply) => {
-      const creds = await resolveTwitterAccess(integrationManager, soulManager);
-      if (!creds) return sendError(reply, 404, 'No Twitter integration configured.');
-      if (creds.mode === 'suggest') {
-        return sendError(reply, 403, `Twitter mode is '${creds.mode}' — posting tweets is not permitted. The personality may only read.`);
-      }
-
-      const { text, replyToTweetId, quoteTweetId, mediaIds } = req.body;
-
-      // Draft mode — return a preview without actually posting
-      if (creds.mode === 'draft') {
-        return reply.code(200).send({
-          draftMode: true,
-          preview: { text, replyToTweetId, quoteTweetId, mediaIds },
-          message: 'Draft mode active — tweet NOT posted. Show this preview to the user and ask for confirmation before posting.',
-        });
-      }
-
-      if (!creds.userClient) {
-        return sendError(reply, 400, 'Posting tweets requires OAuth 1.0a or OAuth 2.0 credentials.');
-      }
-
-      try {
-        const payload: Record<string, unknown> = { text };
-        if (replyToTweetId) payload.reply = { in_reply_to_tweet_id: replyToTweetId };
-        if (quoteTweetId) payload.quote_tweet_id = quoteTweetId;
-        if (mediaIds && mediaIds.length > 0) payload.media = { media_ids: mediaIds };
-        const result = await creds.userClient.v2.tweet(payload as Parameters<typeof creds.userClient.v2.tweet>[0]);
-        return reply.code(201).send(result.data);
-      } catch (err) {
-        return sendError(reply, 500, `Twitter API error: ${err instanceof Error ? err.message : String(err)}`);
-      }
+  app.post<{
+    Body: { text: string; replyToTweetId?: string; quoteTweetId?: string; mediaIds?: string[] };
+  }>('/api/v1/twitter/tweets', async (req, reply) => {
+    const creds = await resolveTwitterAccess(integrationManager, soulManager);
+    if (!creds) return sendError(reply, 404, 'No Twitter integration configured.');
+    if (creds.mode === 'suggest') {
+      return sendError(
+        reply,
+        403,
+        `Twitter mode is '${creds.mode}' — posting tweets is not permitted. The personality may only read.`
+      );
     }
-  );
+
+    const { text, replyToTweetId, quoteTweetId, mediaIds } = req.body;
+
+    // Draft mode — return a preview without actually posting
+    if (creds.mode === 'draft') {
+      return reply.code(200).send({
+        draftMode: true,
+        preview: { text, replyToTweetId, quoteTweetId, mediaIds },
+        message:
+          'Draft mode active — tweet NOT posted. Show this preview to the user and ask for confirmation before posting.',
+      });
+    }
+
+    if (!creds.userClient) {
+      return sendError(reply, 400, 'Posting tweets requires OAuth 1.0a or OAuth 2.0 credentials.');
+    }
+
+    try {
+      const payload: Record<string, unknown> = { text };
+      if (replyToTweetId) payload.reply = { in_reply_to_tweet_id: replyToTweetId };
+      if (quoteTweetId) payload.quote_tweet_id = quoteTweetId;
+      if (mediaIds && mediaIds.length > 0) payload.media = { media_ids: mediaIds };
+      const result = await creds.userClient.v2.tweet(
+        payload as Parameters<typeof creds.userClient.v2.tweet>[0]
+      );
+      return reply.code(201).send(result.data);
+    } catch (err) {
+      return sendError(
+        reply,
+        500,
+        `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+  });
 
   // POST /api/v1/twitter/media/upload  (requires OAuth 1.0a + auto mode)
   app.post<{ Body: { url?: string; data?: string; mimeType: string } }>(
@@ -306,10 +369,18 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
       const creds = await resolveTwitterAccess(integrationManager, soulManager);
       if (!creds) return sendError(reply, 404, 'No Twitter integration configured.');
       if (creds.mode !== 'auto') {
-        return sendError(reply, 400, `Media upload requires 'auto' mode; current mode is '${creds.mode}'.`);
+        return sendError(
+          reply,
+          400,
+          `Media upload requires 'auto' mode; current mode is '${creds.mode}'.`
+        );
       }
       if (!creds.hasV1Auth) {
-        return sendError(reply, 400, 'Media upload requires OAuth 1.0a credentials (Twitter v1.1 API). OAuth 2.0-only setups cannot upload media.');
+        return sendError(
+          reply,
+          400,
+          'Media upload requires OAuth 1.0a credentials (Twitter v1.1 API). OAuth 2.0-only setups cannot upload media.'
+        );
       }
 
       const { url, data, mimeType } = req.body;
@@ -332,14 +403,22 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
           buffer = Buffer.from(data!, 'base64');
         }
       } catch (err) {
-        return sendError(reply, 400, `Failed to retrieve media: ${err instanceof Error ? err.message : String(err)}`);
+        return sendError(
+          reply,
+          400,
+          `Failed to retrieve media: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
 
       try {
         const mediaId = await creds.userClient!.v1.uploadMedia(buffer, { mimeType });
         return reply.send({ mediaId });
       } catch (err) {
-        return sendError(reply, 500, `Twitter media upload error: ${err instanceof Error ? err.message : String(err)}`);
+        return sendError(
+          reply,
+          500,
+          `Twitter media upload error: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     }
   );
@@ -351,7 +430,11 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
       const creds = await resolveTwitterAccess(integrationManager, soulManager);
       if (!creds) return sendError(reply, 404, 'No Twitter integration configured.');
       if (creds.mode !== 'auto') {
-        return sendError(reply, 403, `Twitter mode is '${creds.mode}' — liking tweets requires 'auto' mode.`);
+        return sendError(
+          reply,
+          403,
+          `Twitter mode is '${creds.mode}' — liking tweets requires 'auto' mode.`
+        );
       }
       if (!creds.userClient) {
         return sendError(reply, 400, 'Liking tweets requires OAuth 1.0a credentials.');
@@ -362,7 +445,11 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         const result = await creds.userClient.v2.like(me.data.id, req.params.tweetId);
         return reply.send(result.data);
       } catch (err) {
-        return sendError(reply, 500, `Twitter API error: ${err instanceof Error ? err.message : String(err)}`);
+        return sendError(
+          reply,
+          500,
+          `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     }
   );
@@ -374,7 +461,11 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
       const creds = await resolveTwitterAccess(integrationManager, soulManager);
       if (!creds) return sendError(reply, 404, 'No Twitter integration configured.');
       if (creds.mode !== 'auto') {
-        return sendError(reply, 403, `Twitter mode is '${creds.mode}' — retweeting requires 'auto' mode.`);
+        return sendError(
+          reply,
+          403,
+          `Twitter mode is '${creds.mode}' — retweeting requires 'auto' mode.`
+        );
       }
       if (!creds.userClient) {
         return sendError(reply, 400, 'Retweeting requires OAuth 1.0a credentials.');
@@ -385,7 +476,11 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         const result = await creds.userClient.v2.retweet(me.data.id, req.params.tweetId);
         return reply.send(result.data);
       } catch (err) {
-        return sendError(reply, 500, `Twitter API error: ${err instanceof Error ? err.message : String(err)}`);
+        return sendError(
+          reply,
+          500,
+          `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     }
   );
@@ -397,7 +492,11 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
       const creds = await resolveTwitterAccess(integrationManager, soulManager);
       if (!creds) return sendError(reply, 404, 'No Twitter integration configured.');
       if (creds.mode !== 'auto') {
-        return sendError(reply, 403, `Twitter mode is '${creds.mode}' — unretweet requires 'auto' mode.`);
+        return sendError(
+          reply,
+          403,
+          `Twitter mode is '${creds.mode}' — unretweet requires 'auto' mode.`
+        );
       }
       if (!creds.userClient) {
         return sendError(reply, 400, 'Unretweeting requires OAuth 1.0a credentials.');
@@ -408,7 +507,11 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         const result = await creds.userClient.v2.unretweet(me.data.id, req.params.tweetId);
         return reply.send(result.data);
       } catch (err) {
-        return sendError(reply, 500, `Twitter API error: ${err instanceof Error ? err.message : String(err)}`);
+        return sendError(
+          reply,
+          500,
+          `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     }
   );

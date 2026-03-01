@@ -186,6 +186,7 @@ export default tseslint.config(
       '@typescript-eslint/await-thenable': 'off',
       '@typescript-eslint/no-unsafe-function-type': 'off',
       '@typescript-eslint/no-misused-spread': 'off',
+      '@typescript-eslint/no-extraneous-class': 'off',
       '@typescript-eslint/no-unused-expressions': 'off',
       '@typescript-eslint/restrict-plus-operands': 'off',
       '@typescript-eslint/use-unknown-in-catch-callback-variable': 'off',

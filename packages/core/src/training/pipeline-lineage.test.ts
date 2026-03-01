@@ -181,10 +181,9 @@ describe('PipelineLineageStorage.getByTrainingJobId', () => {
 
     await storage.getByTrainingJobId('job-1');
 
-    expect(vi.mocked(pool.query)).toHaveBeenCalledWith(
-      expect.stringContaining('training_job_id'),
-      ['job-1']
-    );
+    expect(vi.mocked(pool.query)).toHaveBeenCalledWith(expect.stringContaining('training_job_id'), [
+      'job-1',
+    ]);
   });
 });
 
@@ -205,9 +204,6 @@ describe('PipelineLineageStorage.list', () => {
 
     await storage.list(25);
 
-    expect(vi.mocked(pool.query)).toHaveBeenCalledWith(
-      expect.stringContaining('LIMIT'),
-      [25]
-    );
+    expect(vi.mocked(pool.query)).toHaveBeenCalledWith(expect.stringContaining('LIMIT'), [25]);
   });
 });

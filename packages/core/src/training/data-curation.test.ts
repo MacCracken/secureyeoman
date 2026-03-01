@@ -45,14 +45,14 @@ function makeConversationStorage(
   messages: Record<string, ReturnType<typeof makeMessages>>
 ): ConversationStorage {
   return {
-    listConversations: vi.fn().mockImplementation(
-      async (opts?: { personalityId?: string; limit?: number }) => {
+    listConversations: vi
+      .fn()
+      .mockImplementation(async (opts?: { personalityId?: string; limit?: number }) => {
         const filtered = opts?.personalityId
           ? conversations.filter((c) => c.personalityId === opts.personalityId)
           : conversations;
         return { conversations: filtered, total: filtered.length };
-      }
-    ),
+      }),
     getMessages: vi.fn().mockImplementation(async (id: string) => messages[id] ?? []),
   } as unknown as ConversationStorage;
 }
@@ -131,9 +131,7 @@ describe('DataCurationManager.curateDataset', () => {
 
   it('respects maxConversations limit', async () => {
     const conversations = Array.from({ length: 10 }, (_, i) => makeConversation(`c${i}`));
-    const messages = Object.fromEntries(
-      conversations.map((c) => [c.id, makeMessages(2)])
-    );
+    const messages = Object.fromEntries(conversations.map((c) => [c.id, makeMessages(2)]));
     const storage = makeConversationStorage(conversations, messages);
     const mgr = new DataCurationManager(storage, logger);
 
@@ -214,9 +212,7 @@ describe('DataCurationManager.curateDataset', () => {
 
     await mgr.curateDataset({ outputDir: '/tmp' });
 
-    const line = JSON.parse(
-      vi.mocked(appendFileSync).mock.calls[0]![1] as string
-    );
+    const line = JSON.parse(vi.mocked(appendFileSync).mock.calls[0]![1] as string);
     expect(line.conversations[0].from).toBe('human');
     expect(line.conversations[1].from).toBe('gpt');
   });

@@ -243,7 +243,10 @@ describe('PATCH /api/v1/agents/swarms/templates/:id', () => {
       url: '/api/v1/agents/swarms/templates/my-tmpl',
       payload: { name: 'new', description: 'updated desc' },
     });
-    expect(updateMock).toHaveBeenCalledWith('my-tmpl', expect.objectContaining({ name: 'new', description: 'updated desc' }));
+    expect(updateMock).toHaveBeenCalledWith(
+      'my-tmpl',
+      expect.objectContaining({ name: 'new', description: 'updated desc' })
+    );
   });
 });
 

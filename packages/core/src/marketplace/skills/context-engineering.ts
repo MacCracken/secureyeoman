@@ -8,7 +8,7 @@ import type { MarketplaceSkill } from '@secureyeoman/shared';
 export const contextEngineeringSkill: Partial<MarketplaceSkill> = {
   name: 'Context Engineering',
   description:
-    'Designs and optimizes what goes into an AI\'s context window — system prompts, retrieved documents, memory, and conversation history — for maximum signal density and task performance.',
+    "Designs and optimizes what goes into an AI's context window — system prompts, retrieved documents, memory, and conversation history — for maximum signal density and task performance.",
   category: 'productivity',
   author: 'YEOMAN',
   authorInfo: {
@@ -41,7 +41,7 @@ export const contextEngineeringSkill: Partial<MarketplaceSkill> = {
     '- **Semantic**: Facts, domain knowledge, retrieved documents',
     '- **Procedural**: Instructions, rules, system prompts governing behavior',
     '',
-    'Each type has different freshness, retrieval, and compression needs. Don\'t treat them uniformly.',
+    "Each type has different freshness, retrieval, and compression needs. Don't treat them uniformly.",
     '',
     '## Key Design Decisions',
     '',
@@ -54,8 +54,8 @@ export const contextEngineeringSkill: Partial<MarketplaceSkill> = {
     '## Delivery Format',
     '',
     '### Context Audit',
-    '- **Current composition**: What\'s in the window and estimated token cost per component',
-    '- **Signal vs. noise**: What earns its place vs. what\'s deadweight',
+    "- **Current composition**: What's in the window and estimated token cost per component",
+    "- **Signal vs. noise**: What earns its place vs. what's deadweight",
     '',
     '### Redesigned Architecture',
     '- System prompt (revised)',
@@ -66,7 +66,15 @@ export const contextEngineeringSkill: Partial<MarketplaceSkill> = {
     '### Token Budget',
     '- Estimated token allocation per context component',
   ].join('\n'),
-  tags: ['context-window', 'rag', 'memory', 'token-budget', 'retrieval', 'system-prompt', 'agent-design'],
+  tags: [
+    'context-window',
+    'rag',
+    'memory',
+    'token-budget',
+    'retrieval',
+    'system-prompt',
+    'agent-design',
+  ],
   triggerPatterns: [
     'context.*engineer|engineer.*context|context.*window',
     'system.*prompt.*design|design.*system.*prompt',
@@ -77,7 +85,7 @@ export const contextEngineeringSkill: Partial<MarketplaceSkill> = {
   useWhen:
     "designing what information fills an AI's context window, auditing a system prompt, or architecting a RAG or memory pipeline",
   doNotUseWhen:
-    'improving a single prompt\'s wording (use Prompt Craft) or clarifying task goals before building (use Intent Engineering)',
+    "improving a single prompt's wording (use Prompt Craft) or clarifying task goals before building (use Intent Engineering)",
   successCriteria:
     'Delivers: a context audit with signal/noise assessment, a redesigned context architecture, and a token budget breakdown per component.',
   routing: 'fuzzy',

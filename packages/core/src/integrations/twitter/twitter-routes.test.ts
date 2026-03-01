@@ -61,7 +61,10 @@ vi.mock('twitter-api-v2', () => ({
   },
 }));
 
-function mockIntegrationManager(opts?: { noIntegrations?: boolean; configOverride?: Partial<typeof TWITTER_INTEGRATION['config']> }): IntegrationManager {
+function mockIntegrationManager(opts?: {
+  noIntegrations?: boolean;
+  configOverride?: Partial<(typeof TWITTER_INTEGRATION)['config']>;
+}): IntegrationManager {
   const integrations = opts?.noIntegrations
     ? []
     : [
@@ -86,10 +89,7 @@ function mockSoulManager(mode = 'auto'): SoulManager {
   } as unknown as SoulManager;
 }
 
-async function buildApp(
-  integrationManager: IntegrationManager,
-  soulManager?: SoulManager
-) {
+async function buildApp(integrationManager: IntegrationManager, soulManager?: SoulManager) {
   const app = Fastify({ logger: false });
   registerTwitterRoutes(app, { integrationManager, soulManager });
   await app.ready();
@@ -338,7 +338,10 @@ describe('Twitter Routes', () => {
 
   describe('POST /api/v1/twitter/media/upload', () => {
     it('returns 404 when no integration configured', async () => {
-      const app = await buildApp(mockIntegrationManager({ noIntegrations: true }), mockSoulManager('auto'));
+      const app = await buildApp(
+        mockIntegrationManager({ noIntegrations: true }),
+        mockSoulManager('auto')
+      );
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/twitter/media/upload',
@@ -368,7 +371,7 @@ describe('Twitter Routes', () => {
             accessToken: undefined,
             accessTokenSecret: undefined,
             oauth2AccessToken: 'oauth2-token-xyz',
-          } as typeof TWITTER_INTEGRATION['config'] & { oauth2AccessToken?: string },
+          } as (typeof TWITTER_INTEGRATION)['config'] & { oauth2AccessToken?: string },
         }),
         mockSoulManager('auto')
       );
@@ -418,7 +421,7 @@ describe('Twitter Routes', () => {
       accessToken: undefined,
       accessTokenSecret: undefined,
       oauth2AccessToken: 'oauth2-token-xyz',
-    } as typeof TWITTER_INTEGRATION['config'] & { oauth2AccessToken?: string };
+    } as (typeof TWITTER_INTEGRATION)['config'] & { oauth2AccessToken?: string };
 
     it('creates userClient when oauth2AccessToken present (profile works)', async () => {
       const app = await buildApp(

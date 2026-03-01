@@ -55,59 +55,51 @@ export interface PipelineLineage {
 // ── Row mapping ───────────────────────────────────────────────────────────────
 
 function rowToLineage(row: Record<string, unknown>): PipelineLineage {
-  const dataset: DatasetLineageInfo | null = row['dataset_id']
+  const dataset: DatasetLineageInfo | null = row.dataset_id
     ? {
-        datasetId: row['dataset_id'] as string,
-        path: (row['dataset_path'] as string) ?? '',
-        sampleCount: (row['dataset_sample_count'] as number) ?? 0,
-        filters: (row['dataset_filters'] as Record<string, unknown> | null) ?? undefined,
+        datasetId: row.dataset_id as string,
+        path: (row.dataset_path as string) ?? '',
+        sampleCount: (row.dataset_sample_count as number) ?? 0,
+        filters: (row.dataset_filters as Record<string, unknown> | null) ?? undefined,
         snapshotAt:
-          row['dataset_snapshotted_at'] instanceof Date
-            ? row['dataset_snapshotted_at'].getTime()
-            : 0,
+          row.dataset_snapshotted_at instanceof Date ? row.dataset_snapshotted_at.getTime() : 0,
       }
     : null;
 
-  const trainingJob: TrainingJobLineageInfo | null = row['training_job_id']
+  const trainingJob: TrainingJobLineageInfo | null = row.training_job_id
     ? {
-        jobId: row['training_job_id'] as string,
-        jobType: (row['training_job_type'] as 'distillation' | 'finetune') ?? 'distillation',
-        jobStatus: (row['training_job_status'] as string) ?? 'unknown',
+        jobId: row.training_job_id as string,
+        jobType: (row.training_job_type as 'distillation' | 'finetune') ?? 'distillation',
+        jobStatus: (row.training_job_status as string) ?? 'unknown',
       }
     : null;
 
-  const evaluation: EvalLineageInfo | null = row['eval_id']
+  const evaluation: EvalLineageInfo | null = row.eval_id
     ? {
-        evalId: row['eval_id'] as string,
-        metrics: (row['eval_metrics'] as Record<string, number>) ?? {},
-        completedAt:
-          row['eval_completed_at'] instanceof Date
-            ? row['eval_completed_at'].getTime()
-            : 0,
+        evalId: row.eval_id as string,
+        metrics: (row.eval_metrics as Record<string, number>) ?? {},
+        completedAt: row.eval_completed_at instanceof Date ? row.eval_completed_at.getTime() : 0,
       }
     : null;
 
-  const deployment: DeploymentLineageInfo | null = row['deployed_model_version']
+  const deployment: DeploymentLineageInfo | null = row.deployed_model_version
     ? {
-        modelVersion: row['deployed_model_version'] as string,
-        personalityId: (row['deployed_personality_id'] as string) ?? '',
-        deployedAt:
-          row['deployed_at'] instanceof Date ? row['deployed_at'].getTime() : 0,
+        modelVersion: row.deployed_model_version as string,
+        personalityId: (row.deployed_personality_id as string) ?? '',
+        deployedAt: row.deployed_at instanceof Date ? row.deployed_at.getTime() : 0,
       }
     : null;
 
   return {
-    id: row['id'] as string,
-    workflowRunId: row['workflow_run_id'] as string,
-    workflowId: row['workflow_id'] as string,
+    id: row.id as string,
+    workflowRunId: row.workflow_run_id as string,
+    workflowId: row.workflow_id as string,
     dataset,
     trainingJob,
     evaluation,
     deployment,
-    createdAt:
-      row['created_at'] instanceof Date ? row['created_at'].getTime() : Date.now(),
-    updatedAt:
-      row['updated_at'] instanceof Date ? row['updated_at'].getTime() : Date.now(),
+    createdAt: row.created_at instanceof Date ? row.created_at.getTime() : Date.now(),
+    updatedAt: row.updated_at instanceof Date ? row.updated_at.getTime() : Date.now(),
   };
 }
 
@@ -161,7 +153,11 @@ export class PipelineLineageStorage {
     return result.rows.map(rowToLineage);
   }
 
-  async recordDataset(workflowRunId: string, workflowId: string, info: DatasetLineageInfo): Promise<void> {
+  async recordDataset(
+    workflowRunId: string,
+    workflowId: string,
+    info: DatasetLineageInfo
+  ): Promise<void> {
     await this.ensureRecord(workflowRunId, workflowId);
     await this.pool.query(
       `UPDATE training.pipeline_lineage
@@ -181,10 +177,17 @@ export class PipelineLineageStorage {
         info.snapshotAt,
       ]
     );
-    this.logger.debug('PipelineLineage: recorded dataset', { workflowRunId, datasetId: info.datasetId });
+    this.logger.debug('PipelineLineage: recorded dataset', {
+      workflowRunId,
+      datasetId: info.datasetId,
+    });
   }
 
-  async recordTrainingJob(workflowRunId: string, workflowId: string, info: TrainingJobLineageInfo): Promise<void> {
+  async recordTrainingJob(
+    workflowRunId: string,
+    workflowId: string,
+    info: TrainingJobLineageInfo
+  ): Promise<void> {
     await this.ensureRecord(workflowRunId, workflowId);
     await this.pool.query(
       `UPDATE training.pipeline_lineage
@@ -195,10 +198,17 @@ export class PipelineLineageStorage {
        WHERE workflow_run_id = $1`,
       [workflowRunId, info.jobId, info.jobType, info.jobStatus]
     );
-    this.logger.debug('PipelineLineage: recorded training job', { workflowRunId, jobId: info.jobId });
+    this.logger.debug('PipelineLineage: recorded training job', {
+      workflowRunId,
+      jobId: info.jobId,
+    });
   }
 
-  async recordEvaluation(workflowRunId: string, workflowId: string, info: EvalLineageInfo): Promise<void> {
+  async recordEvaluation(
+    workflowRunId: string,
+    workflowId: string,
+    info: EvalLineageInfo
+  ): Promise<void> {
     await this.ensureRecord(workflowRunId, workflowId);
     await this.pool.query(
       `UPDATE training.pipeline_lineage
@@ -209,10 +219,17 @@ export class PipelineLineageStorage {
        WHERE workflow_run_id = $1`,
       [workflowRunId, info.evalId, JSON.stringify(info.metrics), info.completedAt]
     );
-    this.logger.debug('PipelineLineage: recorded evaluation', { workflowRunId, evalId: info.evalId });
+    this.logger.debug('PipelineLineage: recorded evaluation', {
+      workflowRunId,
+      evalId: info.evalId,
+    });
   }
 
-  async recordDeployment(workflowRunId: string, workflowId: string, info: DeploymentLineageInfo): Promise<void> {
+  async recordDeployment(
+    workflowRunId: string,
+    workflowId: string,
+    info: DeploymentLineageInfo
+  ): Promise<void> {
     await this.ensureRecord(workflowRunId, workflowId);
     await this.pool.query(
       `UPDATE training.pipeline_lineage
@@ -223,6 +240,9 @@ export class PipelineLineageStorage {
        WHERE workflow_run_id = $1`,
       [workflowRunId, info.modelVersion, info.personalityId, info.deployedAt]
     );
-    this.logger.debug('PipelineLineage: recorded deployment', { workflowRunId, modelVersion: info.modelVersion });
+    this.logger.debug('PipelineLineage: recorded deployment', {
+      workflowRunId,
+      modelVersion: info.modelVersion,
+    });
   }
 }

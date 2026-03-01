@@ -39,7 +39,7 @@ export interface SecureLogger {
  * Create pino logger options from config
  */
 function createPinoOptions(config: LoggingConfig): LoggerOptions {
-  const logFormat = process.env['LOG_FORMAT'];
+  const logFormat = process.env.LOG_FORMAT;
   const isEcs = logFormat === 'ecs';
 
   const options: LoggerOptions = {

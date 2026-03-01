@@ -28,14 +28,18 @@ export function KnowledgeHealthPanel() {
   const filterPersonalityId =
     selectedPersonalityId === ALL_PERSONALITIES ? undefined : selectedPersonalityId;
 
-  const { data: stats, isLoading, refetch, isFetching } = useQuery({
+  const {
+    data: stats,
+    isLoading,
+    refetch,
+    isFetching,
+  } = useQuery({
     queryKey: ['knowledge-health', filterPersonalityId],
     queryFn: () => fetchKnowledgeHealth(filterPersonalityId),
     staleTime: 30000,
   });
 
-  const avgScore =
-    stats?.avgTopScore != null ? `${(stats.avgTopScore * 100).toFixed(1)}%` : '—';
+  const avgScore = stats?.avgTopScore != null ? `${(stats.avgTopScore * 100).toFixed(1)}%` : '—';
 
   return (
     <div className="space-y-4">
@@ -45,12 +49,16 @@ export function KnowledgeHealthPanel() {
           <label className="text-xs text-muted-foreground">Personality:</label>
           <select
             value={selectedPersonalityId}
-            onChange={(e) => setSelectedPersonalityId(e.target.value)}
+            onChange={(e) => {
+              setSelectedPersonalityId(e.target.value);
+            }}
             className="bg-card border border-border rounded text-xs py-1 px-2"
           >
             <option value={ALL_PERSONALITIES}>All</option>
             {personalities.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
             ))}
           </select>
         </div>
@@ -75,12 +83,47 @@ export function KnowledgeHealthPanel() {
             <KpiCard label="Total Documents" value={stats?.totalDocuments ?? 0} />
             <KpiCard label="Total Chunks" value={stats?.totalChunks ?? 0} />
             <KpiCard label="Queries (24h)" value={stats?.recentQueryCount ?? 0} />
-            <KpiCard
-              label="Avg Relevance"
-              value={avgScore}
-              sub="last 24h"
-            />
+            <KpiCard label="Avg Relevance" value={avgScore} sub="last 24h" />
           </div>
+
+          {/* Notebook budget estimate */}
+          {(stats?.totalChunks ?? 0) > 0 && (
+            <div className="card p-3 sm:p-4 space-y-2">
+              <p className="text-xs font-medium flex items-center gap-1.5">
+                <BarChart3 className="w-3.5 h-3.5 text-muted-foreground" />
+                Notebook Mode Corpus Estimate
+              </p>
+              {(() => {
+                // ~800 tokens/chunk average from chunker defaults
+                const estimatedTokens = (stats?.totalChunks ?? 0) * 800;
+                const models = [
+                  { name: 'Gemini 2.0 Flash', window: 1_000_000 },
+                  { name: 'Claude (Anthropic)', window: 200_000 },
+                  { name: 'GPT-4o', window: 128_000 },
+                ];
+                return (
+                  <div className="space-y-1.5">
+                    <p className="text-xs text-muted-foreground">
+                      ~{estimatedTokens.toLocaleString()} tokens estimated (65% budget applies)
+                    </p>
+                    {models.map((m) => {
+                      const budget = Math.floor(m.window * 0.65);
+                      const fits = estimatedTokens <= budget;
+                      return (
+                        <div key={m.name} className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${fits ? 'bg-green-500' : 'bg-red-400'}`} />
+                          <span className="text-xs text-muted-foreground flex-1">{m.name}</span>
+                          <span className={`text-xs font-medium ${fits ? 'text-green-600' : 'text-red-500'}`}>
+                            {fits ? 'fits' : 'exceeds'} ({(budget / 1000).toFixed(0)}K budget)
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
 
           {/* Low coverage warning */}
           {(stats?.lowCoverageQueries ?? 0) > 0 && (
@@ -88,9 +131,12 @@ export function KnowledgeHealthPanel() {
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs font-medium">
-                  {stats!.lowCoverageQueries} query{stats!.lowCoverageQueries !== 1 ? 's' : ''} returned 0 results in the last 24h
+                  {stats!.lowCoverageQueries} query{stats!.lowCoverageQueries !== 1 ? 's' : ''}{' '}
+                  returned 0 results in the last 24h
                 </p>
-                <p className="text-xs mt-0.5">Consider adding more documents to improve coverage.</p>
+                <p className="text-xs mt-0.5">
+                  Consider adding more documents to improve coverage.
+                </p>
               </div>
             </div>
           )}
@@ -113,14 +159,18 @@ export function KnowledgeHealthPanel() {
                         : 0;
                     return (
                       <div key={format} className="flex items-center gap-2">
-                        <span className="text-xs font-mono w-10 shrink-0 text-muted-foreground">{format}</span>
+                        <span className="text-xs font-mono w-10 shrink-0 text-muted-foreground">
+                          {format}
+                        </span>
                         <div className="flex-1 bg-muted rounded-full h-1.5 overflow-hidden">
                           <div
                             className="h-full bg-primary rounded-full"
                             style={{ width: `${pct}%` }}
                           />
                         </div>
-                        <span className="text-xs text-muted-foreground w-6 text-right">{count}</span>
+                        <span className="text-xs text-muted-foreground w-6 text-right">
+                          {count}
+                        </span>
                       </div>
                     );
                   })}

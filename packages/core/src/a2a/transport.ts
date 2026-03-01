@@ -20,7 +20,7 @@ export class RemoteDelegationTransport {
       if (span) {
         const ctx = span.spanContext();
         if (ctx.traceId && ctx.traceId !== '00000000000000000000000000000000') {
-          headers['traceparent'] = `00-${ctx.traceId}-${ctx.spanId}-01`;
+          headers.traceparent = `00-${ctx.traceId}-${ctx.spanId}-01`;
         }
       }
 

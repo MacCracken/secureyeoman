@@ -39,10 +39,7 @@ export function registerAlertRoutes(app: FastifyInstance, opts: AlertRoutesOptio
   // POST /api/v1/alerts/rules
   app.post(
     '/api/v1/alerts/rules',
-    async (
-      request: FastifyRequest<{ Body: CreateAlertRuleData }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: CreateAlertRuleData }>, reply: FastifyReply) => {
       try {
         const rule = await alertManager.createRule(request.body);
         return reply.code(201).send({ rule });

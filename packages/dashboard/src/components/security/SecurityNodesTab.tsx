@@ -1,27 +1,9 @@
 import { useState, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import {
-  Shield,
-  Activity,
-  Server,
-  Database,
-  Cpu,
-  Network,
-  Link,
-  ChevronDown,
-} from 'lucide-react';
-import {
-  fetchHealth,
-  fetchMetrics,
-  fetchAuditStats,
-  fetchMcpServers,
-} from '../../api/client';
-import type {
-  MetricsSnapshot,
-  HealthStatus,
-  McpServerConfig,
-} from '../../types';
+import { Shield, Activity, Server, Database, Cpu, Network, Link, ChevronDown } from 'lucide-react';
+import { fetchHealth, fetchMetrics, fetchAuditStats, fetchMcpServers } from '../../api/client';
+import type { MetricsSnapshot, HealthStatus, McpServerConfig } from '../../types';
 
 interface NodeDef {
   id: string;

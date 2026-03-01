@@ -51,8 +51,11 @@ function toShareGpt(
     value: m.content,
   }));
   return (
-    JSON.stringify({ id: conversationId, personality_id: personalityId, conversations: converted }) +
-    '\n'
+    JSON.stringify({
+      id: conversationId,
+      personality_id: personalityId,
+      conversations: converted,
+    }) + '\n'
   );
 }
 
@@ -78,10 +81,7 @@ function toInstruction(
   return lines;
 }
 
-function toRawText(
-  conversationId: string,
-  messages: { role: string; content: string }[]
-): string {
+function toRawText(conversationId: string, messages: { role: string; content: string }[]): string {
   const parts = [`=== Conversation ${conversationId} ===`];
   for (const m of messages) {
     parts.push(`[${m.role.toUpperCase()}]: ${m.content}`);
@@ -91,10 +91,7 @@ function toRawText(
 
 // ── Route registration ─────────────────────────────────────────────────────
 
-export function registerTrainingRoutes(
-  app: FastifyInstance,
-  opts: TrainingRoutesOptions
-): void {
+export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoutesOptions): void {
   const { secureYeoman } = opts;
 
   /**
@@ -109,7 +106,7 @@ export function registerTrainingRoutes(
         return sendError(reply, 503, 'Conversation storage not available');
       }
 
-      const body = (request.body as ExportBody) ?? {};
+      const body = request.body ?? {};
       const format: ExportFormat = body.format ?? 'sharegpt';
       const from = body.from;
       const to = body.to;
@@ -239,16 +236,14 @@ export function registerTrainingRoutes(
    */
   app.post(
     '/api/v1/training/distillation/jobs',
-    async (
-      request: FastifyRequest<{ Body: DistillationJobConfig }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: DistillationJobConfig }>, reply: FastifyReply) => {
       const manager = secureYeoman.getDistillationManager();
       if (!manager) return sendError(reply, 503, 'Distillation manager not available');
 
-      const body = request.body as DistillationJobConfig;
+      const body = request.body;
       if (!body.name?.trim()) return sendError(reply, 400, 'name is required');
-      if (!body.teacherProvider?.trim()) return sendError(reply, 400, 'teacherProvider is required');
+      if (!body.teacherProvider?.trim())
+        return sendError(reply, 400, 'teacherProvider is required');
       if (!body.teacherModel?.trim()) return sendError(reply, 400, 'teacherModel is required');
       if (!body.outputPath?.trim()) return sendError(reply, 400, 'outputPath is required');
 
@@ -357,14 +352,11 @@ export function registerTrainingRoutes(
    */
   app.post(
     '/api/v1/training/finetune/jobs',
-    async (
-      request: FastifyRequest<{ Body: FinetuneJobConfig }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: FinetuneJobConfig }>, reply: FastifyReply) => {
       const manager = secureYeoman.getFinetuneManager();
       if (!manager) return sendError(reply, 503, 'Finetune manager not available');
 
-      const body = request.body as FinetuneJobConfig;
+      const body = request.body;
       if (!body.name?.trim()) return sendError(reply, 400, 'name is required');
       if (!body.baseModel?.trim()) return sendError(reply, 400, 'baseModel is required');
       if (!body.adapterName?.trim()) return sendError(reply, 400, 'adapterName is required');
@@ -501,10 +493,8 @@ export function registerTrainingRoutes(
       if (!manager) return sendError(reply, 503, 'Approval manager not available');
 
       const { runId, status } = request.query as { runId?: string; status?: string };
-      let requests =
-        status === 'pending'
-          ? await manager.listPending()
-          : await manager.listAll(runId);
+      const requests =
+        status === 'pending' ? await manager.listPending() : await manager.listAll(runId);
       return { requests };
     }
   );

@@ -421,7 +421,9 @@ function FindingRow({
     <div className={`rounded border border-border ${compact ? 'p-2' : 'p-3'} space-y-1`}>
       <div
         className="flex items-start gap-2 cursor-pointer"
-        onClick={() => { if (!compact) setOpen(!open); }}
+        onClick={() => {
+          if (!compact) setOpen(!open);
+        }}
       >
         <span className="mt-0.5 shrink-0">{SEVERITY_ICONS[finding.severity]}</span>
         <div className="flex-1 min-w-0">

@@ -12,9 +12,7 @@ const TEAM = {
   id: 'team-1',
   name: 'Research Team',
   description: 'Research and analysis',
-  members: [
-    { role: 'Researcher', profileName: 'researcher', description: 'Gathers info' },
-  ],
+  members: [{ role: 'Researcher', profileName: 'researcher', description: 'Gathers info' }],
   coordinatorProfileName: 'researcher',
   isBuiltin: false,
   createdAt: 1000,

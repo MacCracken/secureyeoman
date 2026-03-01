@@ -309,10 +309,7 @@ describe('OllamaProvider', () => {
     });
 
     it('throws on error line', async () => {
-      const lines = [
-        { status: 'pulling manifest' },
-        { error: 'model not found' },
-      ];
+      const lines = [{ status: 'pulling manifest' }, { error: 'model not found' }];
       vi.spyOn(global, 'fetch').mockResolvedValue(
         new Response(makeNdjsonStream(lines), { status: 200 })
       );
@@ -336,9 +333,9 @@ describe('OllamaProvider', () => {
 
   describe('deleteModel()', () => {
     it('calls DELETE /api/delete and resolves on 200', async () => {
-      const mockFetch = vi.spyOn(global, 'fetch').mockResolvedValue(
-        new Response('', { status: 200 })
-      );
+      const mockFetch = vi
+        .spyOn(global, 'fetch')
+        .mockResolvedValue(new Response('', { status: 200 }));
 
       await expect(
         OllamaProvider.deleteModel('http://localhost:11434', 'llama3:8b')

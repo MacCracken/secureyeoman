@@ -15,7 +15,9 @@ vi.mock('openid-client', () => ({
 vi.mock('./saml-adapter.js', () => ({
   SamlAdapter: vi.fn().mockImplementation(function () {
     return {
-      getAuthorizeUrl: vi.fn().mockResolvedValue('https://saml-idp.example.com/sso?SAMLRequest=abc'),
+      getAuthorizeUrl: vi
+        .fn()
+        .mockResolvedValue('https://saml-idp.example.com/sso?SAMLRequest=abc'),
       validateCallback: vi.fn(),
       getSpMetadataXml: vi.fn(),
     };

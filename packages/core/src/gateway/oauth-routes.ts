@@ -417,7 +417,8 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
   const publicUrl = (opts.publicUrl ?? '').replace(/\/$/, '') || baseUrl;
 
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-  const getRedirectUri = (provider: string) => `${publicUrl}/api/v1/auth/oauth/${provider}/callback`;
+  const getRedirectUri = (provider: string) =>
+    `${publicUrl}/api/v1/auth/oauth/${provider}/callback`;
 
   app.get(
     '/api/v1/auth/oauth/:provider',
@@ -456,7 +457,11 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
       }
 
       const redirectUri = getRedirectUri(providerId);
-      const state = oauthService.generateState(providerId, redirectUri, frontendOrigin || undefined);
+      const state = oauthService.generateState(
+        providerId,
+        redirectUri,
+        frontendOrigin || undefined
+      );
 
       const params = new URLSearchParams({
         client_id: provider.clientId,
@@ -719,7 +724,11 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
       }
       const newToken = await oauthTokenService.forceRefreshById(request.params.id);
       if (newToken === null) {
-        return sendError(reply, 404, 'Token not found or refresh failed. You may need to reconnect the account.');
+        return sendError(
+          reply,
+          404,
+          'Token not found or refresh failed. You may need to reconnect the account.'
+        );
       }
       return reply.send({ message: 'Token refreshed successfully' });
     }

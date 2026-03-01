@@ -1047,7 +1047,10 @@ describe('GatewayServer', () => {
 
     it('returns empty list when no GITHUB_SSH_ keys exist', async () => {
       const emptyStore = new Map<string, string>([['API_KEY', 'val']]);
-      const emptyMgr = { keys: async () => Array.from(emptyStore.keys()), get: async (n: string) => emptyStore.get(n) };
+      const emptyMgr = {
+        keys: async () => Array.from(emptyStore.keys()),
+        get: async (n: string) => emptyStore.get(n),
+      };
       const emptyPort = 19898;
       const emptyServer = new GatewayServer({
         config: createMinimalConfig({ port: emptyPort }) as any,

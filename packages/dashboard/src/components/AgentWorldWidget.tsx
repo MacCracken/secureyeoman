@@ -206,7 +206,7 @@ interface AgentCardProps {
 }
 
 function AgentCard({ personality, state, taskLabel, frame, onClick }: AgentCardProps) {
-  const f = FRAMES[state][frame % 4]!;
+  const f = FRAMES[state][frame % 4];
   const name = trunc(personality.name, 10);
 
   return (
@@ -258,7 +258,7 @@ interface SubAgentCardProps {
 }
 
 function SubAgentCard({ delegation, frame }: SubAgentCardProps) {
-  const f = FRAMES_SPAWNED[frame % 4]!;
+  const f = FRAMES_SPAWNED[frame % 4];
   const name = trunc(delegation.profileName, 10);
   return (
     <div
@@ -286,7 +286,7 @@ function SubAgentCard({ delegation, frame }: SubAgentCardProps) {
 }
 
 function SubAgentPill({ delegation, frame }: SubAgentCardProps) {
-  const f = FRAMES_SPAWNED[frame % 4]!;
+  const f = FRAMES_SPAWNED[frame % 4];
   const name = trunc(delegation.profileName, 8);
   return (
     <div
@@ -310,7 +310,7 @@ interface AgentPillProps {
 }
 
 function AgentPill({ personality, state, frame, inMeeting, onClick }: AgentPillProps) {
-  const f = FRAMES[state][frame % 4]!;
+  const f = FRAMES[state][frame % 4];
   const name = trunc(personality.name, 8);
   const cls = inMeeting ? 'text-yellow-400' : STATE_FACE_CLS[state];
 
@@ -374,8 +374,7 @@ function ZoneBox({
       {/* Whiteboard in meeting room */}
       {hasMeeting && whiteboardText && (
         <div className="font-mono text-[0.9em] text-yellow-400/90 mb-1 px-1 border-b border-yellow-400/20 pb-1">
-          <span className="text-muted-foreground/40">╭─╮</span>
-          {' '}{trunc(whiteboardText, 14)}{' '}
+          <span className="text-muted-foreground/40">╭─╮</span> {trunc(whiteboardText, 14)}{' '}
           <span className="text-muted-foreground/40">╰─╯</span>
         </div>
       )}
@@ -395,7 +394,13 @@ function ZoneBox({
                 state={state}
                 taskLabel={taskLabel}
                 frame={framesMap.get(p.id) ?? 0}
-                onClick={onAgentClick ? () => onAgentClick(p.id) : undefined}
+                onClick={
+                  onAgentClick
+                    ? () => {
+                        onAgentClick(p.id);
+                      }
+                    : undefined
+                }
               />
             ) : (
               <AgentPill
@@ -404,18 +409,33 @@ function ZoneBox({
                 state={state}
                 frame={framesMap.get(p.id) ?? 0}
                 inMeeting={inMeeting}
-                onClick={onAgentClick ? () => onAgentClick(p.id) : undefined}
+                onClick={
+                  onAgentClick
+                    ? () => {
+                        onAgentClick(p.id);
+                      }
+                    : undefined
+                }
               />
             );
           })}
           {/* Sub-agent delegations — workspace zone only */}
-          {showDelegations && delegations.map((d) =>
-            mode === 'card' ? (
-              <SubAgentCard key={d.delegationId} delegation={d} frame={framesMap.get(d.delegationId) ?? 0} />
-            ) : (
-              <SubAgentPill key={d.delegationId} delegation={d} frame={framesMap.get(d.delegationId) ?? 0} />
-            )
-          )}
+          {showDelegations &&
+            delegations.map((d) =>
+              mode === 'card' ? (
+                <SubAgentCard
+                  key={d.delegationId}
+                  delegation={d}
+                  frame={framesMap.get(d.delegationId) ?? 0}
+                />
+              ) : (
+                <SubAgentPill
+                  key={d.delegationId}
+                  delegation={d}
+                  frame={framesMap.get(d.delegationId) ?? 0}
+                />
+              )
+            )}
         </div>
       )}
     </div>
@@ -452,42 +472,134 @@ interface MapViewProps {
   zoom?: number;
 }
 
-function AgentWorldMapView({ personalities, tasks, framesMap, onAgentClick, delegations = [], zoom = 1 }: MapViewProps) {
+function AgentWorldMapView({
+  personalities,
+  tasks,
+  framesMap,
+  onAgentClick,
+  delegations = [],
+  zoom = 1,
+}: MapViewProps) {
   const { zones, meetingPairs, activeJointTask, now } = distributeZones(personalities, tasks);
 
   return (
-    <div className="grid grid-cols-2 gap-2 font-mono" style={{ fontSize: `${Math.round(11 * zoom)}px` }} role="list" aria-label="Agent world map">
-      <ZoneBox label="Workspace" zoneId="workspace" agents={zones.workspace} tasks={tasks}
-        meetingPairs={meetingPairs} framesMap={framesMap} onAgentClick={onAgentClick} now={now}
-        delegations={delegations} />
-      <ZoneBox label="Meeting Room" zoneId="meeting" agents={zones.meeting} tasks={tasks}
-        meetingPairs={meetingPairs} framesMap={framesMap} whiteboardText={activeJointTask?.name}
-        onAgentClick={onAgentClick} now={now} />
-      <ZoneBox label="Break Room" zoneId="break-room" agents={zones['break-room']} tasks={tasks}
-        meetingPairs={meetingPairs} framesMap={framesMap} onAgentClick={onAgentClick} now={now} />
-      <ZoneBox label="Server Room" zoneId="server-room" agents={[]} tasks={tasks}
-        meetingPairs={meetingPairs} framesMap={framesMap} onAgentClick={onAgentClick} now={now} />
+    <div
+      className="grid grid-cols-2 gap-2 font-mono"
+      style={{ fontSize: `${Math.round(11 * zoom)}px` }}
+      role="list"
+      aria-label="Agent world map"
+    >
+      <ZoneBox
+        label="Workspace"
+        zoneId="workspace"
+        agents={zones.workspace}
+        tasks={tasks}
+        meetingPairs={meetingPairs}
+        framesMap={framesMap}
+        onAgentClick={onAgentClick}
+        now={now}
+        delegations={delegations}
+      />
+      <ZoneBox
+        label="Meeting Room"
+        zoneId="meeting"
+        agents={zones.meeting}
+        tasks={tasks}
+        meetingPairs={meetingPairs}
+        framesMap={framesMap}
+        whiteboardText={activeJointTask?.name}
+        onAgentClick={onAgentClick}
+        now={now}
+      />
+      <ZoneBox
+        label="Break Room"
+        zoneId="break-room"
+        agents={zones['break-room']}
+        tasks={tasks}
+        meetingPairs={meetingPairs}
+        framesMap={framesMap}
+        onAgentClick={onAgentClick}
+        now={now}
+      />
+      <ZoneBox
+        label="Server Room"
+        zoneId="server-room"
+        agents={[]}
+        tasks={tasks}
+        meetingPairs={meetingPairs}
+        framesMap={framesMap}
+        onAgentClick={onAgentClick}
+        now={now}
+      />
     </div>
   );
 }
 
 // ── AgentWorldLargeView (full card layout per zone) ────────────────────────────
 
-function AgentWorldLargeView({ personalities, tasks, framesMap, onAgentClick, delegations = [], zoom = 1 }: MapViewProps) {
+function AgentWorldLargeView({
+  personalities,
+  tasks,
+  framesMap,
+  onAgentClick,
+  delegations = [],
+  zoom = 1,
+}: MapViewProps) {
   const { zones, meetingPairs, activeJointTask, now } = distributeZones(personalities, tasks);
 
   return (
-    <div className="grid grid-cols-2 gap-3 font-mono" style={{ fontSize: `${Math.round(11 * zoom)}px` }} role="list" aria-label="Agent world large view">
-      <ZoneBox label="Workspace" zoneId="workspace" agents={zones.workspace} tasks={tasks}
-        meetingPairs={meetingPairs} framesMap={framesMap} onAgentClick={onAgentClick} now={now} mode="card"
-        delegations={delegations} />
-      <ZoneBox label="Meeting Room" zoneId="meeting" agents={zones.meeting} tasks={tasks}
-        meetingPairs={meetingPairs} framesMap={framesMap} whiteboardText={activeJointTask?.name}
-        onAgentClick={onAgentClick} now={now} mode="card" />
-      <ZoneBox label="Break Room" zoneId="break-room" agents={zones['break-room']} tasks={tasks}
-        meetingPairs={meetingPairs} framesMap={framesMap} onAgentClick={onAgentClick} now={now} mode="card" />
-      <ZoneBox label="Server Room" zoneId="server-room" agents={[]} tasks={tasks}
-        meetingPairs={meetingPairs} framesMap={framesMap} onAgentClick={onAgentClick} now={now} mode="card" />
+    <div
+      className="grid grid-cols-2 gap-3 font-mono"
+      style={{ fontSize: `${Math.round(11 * zoom)}px` }}
+      role="list"
+      aria-label="Agent world large view"
+    >
+      <ZoneBox
+        label="Workspace"
+        zoneId="workspace"
+        agents={zones.workspace}
+        tasks={tasks}
+        meetingPairs={meetingPairs}
+        framesMap={framesMap}
+        onAgentClick={onAgentClick}
+        now={now}
+        mode="card"
+        delegations={delegations}
+      />
+      <ZoneBox
+        label="Meeting Room"
+        zoneId="meeting"
+        agents={zones.meeting}
+        tasks={tasks}
+        meetingPairs={meetingPairs}
+        framesMap={framesMap}
+        whiteboardText={activeJointTask?.name}
+        onAgentClick={onAgentClick}
+        now={now}
+        mode="card"
+      />
+      <ZoneBox
+        label="Break Room"
+        zoneId="break-room"
+        agents={zones['break-room']}
+        tasks={tasks}
+        meetingPairs={meetingPairs}
+        framesMap={framesMap}
+        onAgentClick={onAgentClick}
+        now={now}
+        mode="card"
+      />
+      <ZoneBox
+        label="Server Room"
+        zoneId="server-room"
+        agents={[]}
+        tasks={tasks}
+        meetingPairs={meetingPairs}
+        framesMap={framesMap}
+        onAgentClick={onAgentClick}
+        now={now}
+        mode="card"
+      />
     </div>
   );
 }
@@ -506,7 +618,13 @@ export interface AgentWorldWidgetProps {
   zoom?: number;
 }
 
-export function AgentWorldWidget({ className = '', maxAgents = 16, onAgentClick, viewMode = 'grid', zoom = 1 }: AgentWorldWidgetProps) {
+export function AgentWorldWidget({
+  className = '',
+  maxAgents = 16,
+  onAgentClick,
+  viewMode = 'grid',
+  zoom = 1,
+}: AgentWorldWidgetProps) {
   // Per-personality frame counters — staggered so agents animate out of phase
   const framesRef = useRef(new Map<string, number>());
   const [tick, setTick] = useState(0);
@@ -518,17 +636,23 @@ export function AgentWorldWidget({ className = '', maxAgents = 16, onAgentClick,
     const el = containerRef.current;
     if (!el || typeof IntersectionObserver === 'undefined') return;
     const obs = new IntersectionObserver(
-      ([entry]) => { setIsVisible(entry.isIntersecting); },
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
       { threshold: 0.1 }
     );
     obs.observe(el);
-    return () => obs.disconnect();
+    return () => {
+      obs.disconnect();
+    };
   }, []);
 
   // WebSocket for real-time tasks + soul (personalities) updates
   const { lastMessage, subscribe } = useWebSocket('/ws/metrics');
   const [wsTasksData, setWsTasksData] = useState<{ tasks: Task[]; total: number } | null>(null);
-  const [wsPersonalitiesData, setWsPersonalitiesData] = useState<{ personalities: Personality[] } | null>(null);
+  const [wsPersonalitiesData, setWsPersonalitiesData] = useState<{
+    personalities: Personality[];
+  } | null>(null);
   const wsHasDataRef = useRef(false);
 
   useEffect(() => {
@@ -585,7 +709,9 @@ export function AgentWorldWidget({ className = '', maxAgents = 16, onAgentClick,
       }
       setTick((t) => t + 1);
     }, 250);
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+    };
   }, [isVisible]);
 
   void tick; // used only to trigger re-render
@@ -609,7 +735,10 @@ export function AgentWorldWidget({ className = '', maxAgents = 16, onAgentClick,
 
   if (personalities.length === 0 && delegations.length === 0) {
     return (
-      <p ref={containerRef as React.RefObject<HTMLParagraphElement>} className={`text-sm text-muted-foreground font-mono ${className}`}>
+      <p
+        ref={containerRef as React.RefObject<HTMLParagraphElement>}
+        className={`text-sm text-muted-foreground font-mono ${className}`}
+      >
         No agents found.
       </p>
     );
@@ -651,7 +780,13 @@ export function AgentWorldWidget({ className = '', maxAgents = 16, onAgentClick,
                   state={state}
                   taskLabel={taskLabel}
                   frame={framesRef.current.get(p.id) ?? 0}
-                  onClick={onAgentClick ? () => onAgentClick(p.id) : undefined}
+                  onClick={
+                    onAgentClick
+                      ? () => {
+                          onAgentClick(p.id);
+                        }
+                      : undefined
+                  }
                 />
               </div>
             );

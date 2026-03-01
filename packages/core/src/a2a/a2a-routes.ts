@@ -173,14 +173,9 @@ export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AM
 
   app.post(
     '/api/v1/a2a/receive',
-    async (
-      request: FastifyRequest<{ Body: Record<string, unknown> }>,
-      reply: FastifyReply
-    ) => {
-      const traceparent = request.headers['traceparent'];
-      const log = traceparent
-        ? request.log.child({ traceparent })
-        : request.log;
+    async (request: FastifyRequest<{ Body: Record<string, unknown> }>, reply: FastifyReply) => {
+      const traceparent = request.headers.traceparent;
+      const log = traceparent ? request.log.child({ traceparent }) : request.log;
 
       try {
         const message = request.body;
@@ -190,7 +185,7 @@ export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AM
       } catch (err) {
         log.error(
           { error: err instanceof Error ? err.message : String(err) },
-          'Failed to handle A2A receive',
+          'Failed to handle A2A receive'
         );
         return sendError(reply, 500, 'Failed to handle A2A message');
       }

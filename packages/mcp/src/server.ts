@@ -158,12 +158,12 @@ export class McpServiceServer {
     if (!tokenSecret) return; // no token → can't decrypt; skip
 
     try {
-      const result = await this.coreClient.get<{ keys: Array<{ name: string; ciphertext: string }> }>(
-        '/api/v1/internal/ssh-keys'
-      );
+      const result = await this.coreClient.get<{
+        keys: { name: string; ciphertext: string }[];
+      }>('/api/v1/internal/ssh-keys');
       if (!result?.keys?.length) return;
 
-      const sshDir  = `${homedir()}/.ssh`;
+      const sshDir = `${homedir()}/.ssh`;
       const keyPath = `${sshDir}/yeoman_github_ed25519`;
       await mkdir(sshDir, { recursive: true });
 
@@ -173,24 +173,32 @@ export class McpServiceServer {
           await writeFile(keyPath, privateKey, { mode: 0o600 });
 
           // Restore ~/.ssh/config block if not already present
-          const configPath    = `${sshDir}/config`;
-          const configEntry   =
+          const configPath = `${sshDir}/config`;
+          const configEntry =
             '\n# --- SecureYeoman managed — do not edit this block manually ---\n' +
             `Host github.com\n  IdentityFile ${keyPath}\n  IdentitiesOnly yes\n  StrictHostKeyChecking accept-new\n` +
             '# --- end SecureYeoman managed ---\n';
           let existing = '';
-          try { existing = await readFile(configPath, 'utf8'); } catch { /* first run */ }
+          try {
+            existing = await readFile(configPath, 'utf8');
+          } catch {
+            /* first run */
+          }
           if (!existing.includes('SecureYeoman managed')) {
             await writeFile(configPath, existing + configEntry, { mode: 0o600 });
           }
           console.info(`[secureyeoman-mcp] Restored SSH key from secret ${name} → ${keyPath}`);
         } catch (err) {
-          console.warn(`[secureyeoman-mcp] Failed to restore SSH key ${name}: ${err instanceof Error ? err.message : String(err)}`);
+          console.warn(
+            `[secureyeoman-mcp] Failed to restore SSH key ${name}: ${err instanceof Error ? err.message : String(err)}`
+          );
         }
       }
     } catch (err) {
       // Core may not have SSH keys or the route may not be registered yet — non-fatal
-      console.warn(`[secureyeoman-mcp] restoreSshKeys: ${err instanceof Error ? err.message : String(err)}`);
+      console.warn(
+        `[secureyeoman-mcp] restoreSshKeys: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
   }
 

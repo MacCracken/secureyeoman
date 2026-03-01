@@ -166,3 +166,33 @@ export interface QueryLogCreate {
   resultsCount: number;
   topScore?: number;
 }
+
+// ── Notebook Mode ──────────────────────────────────────────────
+
+/**
+ * A single document's worth of ordered, reconstructed text for notebook mode.
+ * Chunks are concatenated in source-index order to restore reading order.
+ */
+export interface NotebookCorpusDocument {
+  docId: string;
+  title: string;
+  format: string | null;
+  chunkCount: number;
+  /** Reconstructed full text (all chunks concatenated in order). */
+  text: string;
+  /** Rough token estimate (~4 chars/token). */
+  estimatedTokens: number;
+}
+
+/**
+ * The assembled notebook corpus for a personality — all documents + budget metadata.
+ */
+export interface NotebookCorpus {
+  documents: NotebookCorpusDocument[];
+  /** Total tokens across all documents. */
+  totalTokens: number;
+  /** Whether the corpus fits inside the provided token budget. */
+  fitsInBudget: boolean;
+  /** The budget used for the fit check (tokens). */
+  budget: number;
+}

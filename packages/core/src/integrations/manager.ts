@@ -102,7 +102,7 @@ export class IntegrationManager {
   }
 
   /** List all stored OAuth tokens (provider accounts). Returns [] when service not configured. */
-  async getOAuthTokens(): Promise<Array<{ id: string; provider: string; email: string }>> {
+  async getOAuthTokens(): Promise<{ id: string; provider: string; email: string }[]> {
     const svc = this.deps.oauthTokenService;
     if (!svc) return [];
     const tokens = await svc.listTokens();

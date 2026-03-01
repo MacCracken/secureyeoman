@@ -14,7 +14,8 @@ import type { FederationStorage, FederationPeer } from './federation-storage.js'
 import type { SecureLogger } from '../logging/logger.js';
 
 // SSRF-guard: block private/loopback ranges
-const BLOCKED_HOSTS = /^(localhost|127\.\d+\.\d+\.\d+|::1|0\.0\.0\.0|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|192\.168\.\d+\.\d+|169\.254\.\d+\.\d+|fc00:|fe80:)/i;
+const BLOCKED_HOSTS =
+  /^(localhost|127\.\d+\.\d+\.\d+|::1|0\.0\.0\.0|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|192\.168\.\d+\.\d+|169\.254\.\d+\.\d+|fc00:|fe80:)/i;
 
 function assertSafeUrl(rawUrl: string): URL {
   let parsed: URL;
@@ -37,7 +38,10 @@ export interface FederationManagerOptions {
   masterSecret: string;
   logger: SecureLogger;
   brainManager?: {
-    semanticSearch(query: string, opts?: { limit?: number; personalityId?: string }): Promise<unknown[]>;
+    semanticSearch(
+      query: string,
+      opts?: { limit?: number; personalityId?: string }
+    ): Promise<unknown[]>;
   };
   marketplaceManager?: {
     search(query?: string, opts?: { origin?: string; limit?: number }): Promise<unknown[]>;
@@ -87,14 +91,14 @@ export class FederationManager {
     assertSafeUrl(url);
 
     const secretHash = hashSecret(sharedSecret);
-    const secretEnc  = encryptSecret(sharedSecret, this.masterSecret);
+    const secretEnc = encryptSecret(sharedSecret, this.masterSecret);
 
     const peer = await this.storage.create({
       id: uuidv7(),
       name,
       url,
       sharedSecretHash: secretHash,
-      sharedSecretEnc:  secretEnc,
+      sharedSecretEnc: secretEnc,
       status: 'unknown',
       features: { knowledge: true, marketplace: true, personalities: false },
       lastSeen: null,
@@ -130,7 +134,9 @@ export class FederationManager {
     let status: 'online' | 'offline' = 'offline';
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5_000);
+      const timeout = setTimeout(() => {
+        controller.abort();
+      }, 5_000);
       const res = await fetch(`${peer.url}/health/ready`, {
         headers: { Authorization: `Bearer ${rawSecret}` },
         signal: controller.signal,
@@ -142,7 +148,12 @@ export class FederationManager {
     }
 
     await this.storage.updateStatus(peerId, status, status === 'online' ? new Date() : undefined);
-    await this.storage.logSync({ peerId, type: 'health_check', status: status === 'online' ? 'success' : 'error', metadata: {} });
+    await this.storage.logSync({
+      peerId,
+      type: 'health_check',
+      status: status === 'online' ? 'success' : 'error',
+      metadata: {},
+    });
     return status;
   }
 
@@ -151,7 +162,11 @@ export class FederationManager {
     await Promise.allSettled(peers.map((p) => this.checkHealth(p.id)));
   }
 
-  private async fetchPeer(peerId: string, path: string, query?: Record<string, string>): Promise<unknown> {
+  private async fetchPeer(
+    peerId: string,
+    path: string,
+    query?: Record<string, string>
+  ): Promise<unknown> {
     const peer = await this.storage.findById(peerId);
     if (!peer) throw new Error(`Unknown peer: ${peerId}`);
 
@@ -162,7 +177,9 @@ export class FederationManager {
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15_000);
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, 15_000);
     try {
       const res = await fetch(url.toString(), {
         headers: { Authorization: `Bearer ${rawSecret}` },
@@ -177,7 +194,11 @@ export class FederationManager {
     }
   }
 
-  async searchKnowledge(peerId: string, query: string, opts?: { limit?: number }): Promise<unknown[]> {
+  async searchKnowledge(
+    peerId: string,
+    query: string,
+    opts?: { limit?: number }
+  ): Promise<unknown[]> {
     const params: Record<string, string> = { q: query };
     if (opts?.limit) params.limit = String(opts.limit);
 
@@ -187,10 +208,20 @@ export class FederationManager {
       result = await this.fetchPeer(peerId, '/api/v1/federation/knowledge/search', params);
     } catch (err) {
       syncStatus = 'error';
-      await this.storage.logSync({ peerId, type: 'knowledge_search', status: syncStatus, metadata: { query, error: String(err) } });
+      await this.storage.logSync({
+        peerId,
+        type: 'knowledge_search',
+        status: syncStatus,
+        metadata: { query, error: String(err) },
+      });
       throw err;
     }
-    await this.storage.logSync({ peerId, type: 'knowledge_search', status: syncStatus, metadata: { query } });
+    await this.storage.logSync({
+      peerId,
+      type: 'knowledge_search',
+      status: syncStatus,
+      metadata: { query },
+    });
     return Array.isArray((result as any)?.entries) ? (result as any).entries : [];
   }
 
@@ -201,7 +232,11 @@ export class FederationManager {
     return Array.isArray((result as any)?.skills) ? (result as any).skills : [];
   }
 
-  async installSkillFromPeer(peerId: string, skillId: string, personalityId?: string): Promise<void> {
+  async installSkillFromPeer(
+    peerId: string,
+    skillId: string,
+    personalityId?: string
+  ): Promise<void> {
     if (!this.marketplaceManager) throw new Error('Marketplace manager not available');
 
     let skill: unknown;
@@ -210,7 +245,12 @@ export class FederationManager {
       skill = await this.fetchPeer(peerId, `/api/v1/federation/marketplace/${skillId}`);
     } catch (err) {
       syncStatus = 'error';
-      await this.storage.logSync({ peerId, type: 'skill_install', status: syncStatus, metadata: { skillId, error: String(err) } });
+      await this.storage.logSync({
+        peerId,
+        type: 'skill_install',
+        status: syncStatus,
+        metadata: { skillId, error: String(err) },
+      });
       throw err;
     }
 
@@ -219,11 +259,21 @@ export class FederationManager {
       await this.marketplaceManager.install((skill as any).id ?? skillId, personalityId);
     } catch (err) {
       syncStatus = 'error';
-      await this.storage.logSync({ peerId, type: 'skill_install', status: syncStatus, metadata: { skillId, error: String(err) } });
+      await this.storage.logSync({
+        peerId,
+        type: 'skill_install',
+        status: syncStatus,
+        metadata: { skillId, error: String(err) },
+      });
       throw err;
     }
 
-    await this.storage.logSync({ peerId, type: 'skill_install', status: syncStatus, metadata: { skillId } });
+    await this.storage.logSync({
+      peerId,
+      type: 'skill_install',
+      status: syncStatus,
+      metadata: { skillId },
+    });
   }
 
   async exportPersonalityBundle(personalityId: string, passphrase: string): Promise<Buffer> {
@@ -297,12 +347,18 @@ export class FederationManager {
     // (In a real implementation, this would call brainManager.createKnowledgeEntry for each)
     void knowledgeEntries; // acknowledged but not fully wired (brain CRUD is complex)
 
-    await this.storage.logSync({
-      peerId: 'local',
-      type: 'personality_import',
-      status: 'success',
-      metadata: { personalityName: sanitized.name, skillCount: skills.length, knowledgeCount: knowledgeEntries.length },
-    }).catch(() => {});
+    await this.storage
+      .logSync({
+        peerId: 'local',
+        type: 'personality_import',
+        status: 'success',
+        metadata: {
+          personalityName: sanitized.name,
+          skillCount: skills.length,
+          knowledgeCount: knowledgeEntries.length,
+        },
+      })
+      .catch(() => {});
 
     return created;
   }

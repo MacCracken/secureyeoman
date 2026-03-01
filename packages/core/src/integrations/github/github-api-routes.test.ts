@@ -154,7 +154,10 @@ describe('GitHub API Routes', () => {
       const svc = mockOAuthTokenService();
       const app = await buildApp(svc);
       vi.stubGlobal('fetch', mockFetch({ id: 1, name: 'hello-world' }));
-      const res = await app.inject({ method: 'GET', url: '/api/v1/github/repos/octocat/hello-world' });
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/github/repos/octocat/hello-world',
+      });
       expect(res.statusCode).toBe(200);
       expect(res.json().name).toBe('hello-world');
     });
@@ -167,7 +170,10 @@ describe('GitHub API Routes', () => {
       const svc = mockOAuthTokenService();
       const app = await buildApp(svc);
       vi.stubGlobal('fetch', mockFetch([{ number: 1, title: 'Bug report' }]));
-      const res = await app.inject({ method: 'GET', url: '/api/v1/github/repos/octocat/hello-world/issues' });
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/github/repos/octocat/hello-world/issues',
+      });
       expect(res.statusCode).toBe(200);
     });
   });
@@ -347,7 +353,10 @@ describe('GitHub API Routes', () => {
       const svc = mockOAuthTokenService();
       const sm = mockSoulManager('auto');
       const app = await buildApp(svc, sm);
-      vi.stubGlobal('fetch', mockFetch({ sha: 'abc123', commit: { message: 'Merge upstream' } }, 201));
+      vi.stubGlobal(
+        'fetch',
+        mockFetch({ sha: 'abc123', commit: { message: 'Merge upstream' } }, 201)
+      );
       const res = await app.inject({ method: 'POST', url: syncUrl, payload: syncBody });
       expect(res.statusCode).toBe(201);
       expect(res.json().sha).toBe('abc123');
@@ -357,7 +366,15 @@ describe('GitHub API Routes', () => {
       const svc = mockOAuthTokenService();
       const sm = mockSoulManager('auto');
       const app = await buildApp(svc, sm);
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 204, json: () => Promise.resolve(null), text: () => Promise.resolve('') }));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 204,
+          json: () => Promise.resolve(null),
+          text: () => Promise.resolve(''),
+        })
+      );
       const res = await app.inject({ method: 'POST', url: syncUrl, payload: syncBody });
       expect(res.statusCode).toBe(204);
     });
@@ -366,7 +383,11 @@ describe('GitHub API Routes', () => {
       const svc = mockOAuthTokenService();
       const sm = mockSoulManager('draft');
       const app = await buildApp(svc, sm);
-      const res = await app.inject({ method: 'POST', url: syncUrl, payload: { base: 'main', head: 'upstream:main' } });
+      const res = await app.inject({
+        method: 'POST',
+        url: syncUrl,
+        payload: { base: 'main', head: 'upstream:main' },
+      });
       expect(res.statusCode).toBe(200);
       const body = res.json();
       expect(body.preview).toBe(true);

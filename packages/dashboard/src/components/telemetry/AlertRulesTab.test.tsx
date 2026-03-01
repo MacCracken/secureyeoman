@@ -86,7 +86,10 @@ describe('AlertRulesTab', () => {
     await userEvent.click(screen.getByText(/New rule/i));
 
     await userEvent.type(screen.getByPlaceholderText(/High rate-limit hits/i), 'My Rule');
-    await userEvent.type(screen.getByPlaceholderText(/security.rateLimitHitsTotal/i), 'security.rateLimitHitsTotal');
+    await userEvent.type(
+      screen.getByPlaceholderText(/security.rateLimitHitsTotal/i),
+      'security.rateLimitHitsTotal'
+    );
 
     await userEvent.click(screen.getByRole('button', { name: /Save rule/i }));
 
@@ -116,7 +119,11 @@ describe('AlertRulesTab', () => {
 
   it('shows loading state while fetching', async () => {
     let resolve: (v: { rules: AlertRule[] }) => void;
-    mockList.mockReturnValue(new Promise((r) => { resolve = r; }));
+    mockList.mockReturnValue(
+      new Promise((r) => {
+        resolve = r;
+      })
+    );
     wrap(<AlertRulesTab />);
     expect(screen.getByText(/Loading rules/i)).toBeInTheDocument();
     resolve!({ rules: [] });

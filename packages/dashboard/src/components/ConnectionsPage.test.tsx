@@ -143,7 +143,8 @@ describe('ConnectionsPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false, allowTrainingExport: false,
+      allowAdvancedEditor: false,
+      allowTrainingExport: false,
     } as never);
   });
 
@@ -679,7 +680,8 @@ describe('ConnectionsPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false, allowTrainingExport: false,
+      allowAdvancedEditor: false,
+      allowTrainingExport: false,
     } as never);
 
     renderComponent();
@@ -714,7 +716,8 @@ describe('ConnectionsPage', () => {
       allowOrgIntent: false,
       allowIntentEditor: false,
       allowCodeEditor: true,
-      allowAdvancedEditor: false, allowTrainingExport: false,
+      allowAdvancedEditor: false,
+      allowTrainingExport: false,
     } as never);
 
     renderComponent();
@@ -756,7 +759,15 @@ describe('ConnectionsPage', () => {
   it('shows existing keys listing with revoke button', async () => {
     const user = userEvent.setup();
     mockFetchApiKeys.mockResolvedValue({
-      keys: [{ id: 'key-1', name: 'YEOMAN MCP', role: 'operator', prefix: 'sck_abcd', createdAt: '2026-02-27T00:00:00.000Z' }],
+      keys: [
+        {
+          id: 'key-1',
+          name: 'YEOMAN MCP',
+          role: 'operator',
+          prefix: 'sck_abcd',
+          createdAt: '2026-02-27T00:00:00.000Z',
+        },
+      ],
     } as never);
     mockFetchMcpServers.mockResolvedValue({ servers: [LOCAL_SERVER], total: 1 });
 

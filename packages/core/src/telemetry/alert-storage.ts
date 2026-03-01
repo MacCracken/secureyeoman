@@ -82,7 +82,7 @@ export class AlertStorage extends PgBaseStorage {
         data.operator,
         data.threshold,
         JSON.stringify(data.channels ?? []),
-        data.enabled !== false,
+        data.enabled,
         data.cooldownSeconds ?? 300,
         now,
         now,
@@ -151,9 +151,9 @@ export class AlertStorage extends PgBaseStorage {
   }
 
   async markFired(id: string, firedAt: number): Promise<void> {
-    await this.execute(
-      'UPDATE telemetry.alert_rules SET last_fired_at=$2 WHERE id=$1',
-      [id, firedAt]
-    );
+    await this.execute('UPDATE telemetry.alert_rules SET last_fired_at=$2 WHERE id=$1', [
+      id,
+      firedAt,
+    ]);
   }
 }

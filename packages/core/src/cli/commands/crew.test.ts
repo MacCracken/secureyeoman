@@ -17,8 +17,18 @@ vi.mock('node:fs', () => ({
 function createStreams() {
   let stdoutBuf = '';
   let stderrBuf = '';
-  const stdout = { write: (s: string) => { stdoutBuf += s; return true; } } as NodeJS.WritableStream;
-  const stderr = { write: (s: string) => { stderrBuf += s; return true; } } as NodeJS.WritableStream;
+  const stdout = {
+    write: (s: string) => {
+      stdoutBuf += s;
+      return true;
+    },
+  } as NodeJS.WritableStream;
+  const stderr = {
+    write: (s: string) => {
+      stderrBuf += s;
+      return true;
+    },
+  } as NodeJS.WritableStream;
   return { stdout, stderr, getStdout: () => stdoutBuf, getStderr: () => stderrBuf };
 }
 
@@ -219,7 +229,11 @@ describe('crew run', () => {
   it('starts run and polls until completed', async () => {
     mockFetch([
       { ok: true, status: 202, data: { run: { id: 'run-1' } } },
-      { ok: true, status: 200, data: { run: { ...RUN, status: 'completed', result: 'AI is growing fast' } } },
+      {
+        ok: true,
+        status: 200,
+        data: { run: { ...RUN, status: 'completed', result: 'AI is growing fast' } },
+      },
     ]);
     const { stdout, stderr, getStdout } = createStreams();
     const code = await crewCommand.run({

@@ -1096,11 +1096,11 @@ function InstalledSkillsTab({ onNavigateTab }: { onNavigateTab?: (tab: TabType) 
                 <div className="flex items-center gap-2 mb-3">
                   {section.icon}
                   <h3 className="text-sm font-semibold">{section.label}</h3>
-                  <span className="text-xs text-muted-foreground">({groupedSectionSkills.length})</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({groupedSectionSkills.length})
+                  </span>
                 </div>
-                <div className="space-y-2">
-                  {groupedSectionSkills.map(renderSkillGroup)}
-                </div>
+                <div className="space-y-2">{groupedSectionSkills.map(renderSkillGroup)}</div>
               </section>
             );
           })}
@@ -1536,7 +1536,13 @@ function MarketplaceTab() {
   const { data, isLoading } = useQuery({
     queryKey: ['marketplace', query, selectedPersonalityId],
     queryFn: () =>
-      fetchMarketplaceSkills(query || undefined, undefined, selectedPersonalityId, 'marketplace', 200),
+      fetchMarketplaceSkills(
+        query || undefined,
+        undefined,
+        selectedPersonalityId,
+        'marketplace',
+        200
+      ),
   });
 
   const invalidate = () => {
@@ -1573,10 +1579,7 @@ function MarketplaceTab() {
   const builtinSkills = allSkills.filter((s: CatalogSkill) => s.source === 'builtin');
   const publishedSkills = allSkills.filter((s: CatalogSkill) => s.source === 'published');
 
-  const renderGrid = (
-    skills: CatalogSkill[],
-    badgeFn?: (s: CatalogSkill) => React.ReactNode
-  ) => (
+  const renderGrid = (skills: CatalogSkill[], badgeFn?: (s: CatalogSkill) => React.ReactNode) => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {skills.map((skill) => (
         <SkillCard

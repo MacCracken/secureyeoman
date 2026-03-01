@@ -681,6 +681,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               timezone: 'UTC',
             },
             omnipresentMind: false,
+            knowledgeMode: 'rag' as const,
           },
         };
 

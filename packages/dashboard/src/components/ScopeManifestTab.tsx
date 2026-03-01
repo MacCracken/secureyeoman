@@ -1,6 +1,16 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, X, Plus, Crosshair, Loader2, Shield, ShieldOff, Zap, ZapOff } from 'lucide-react';
+import {
+  AlertTriangle,
+  X,
+  Plus,
+  Crosshair,
+  Loader2,
+  Shield,
+  ShieldOff,
+  Zap,
+  ZapOff,
+} from 'lucide-react';
 import { fetchMcpConfig, patchMcpConfig } from '../api/client';
 
 // ─── Validation ──────────────────────────────────────────────────────────────

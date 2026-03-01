@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Globe, Github, FileText, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Globe, GitBranch, FileText, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { ingestUrl, ingestText, ingestGithubWiki, fetchPersonalities } from '../../api/client';
 import type { KbDocument } from '../../types';
 
@@ -94,20 +94,30 @@ export function ConnectorsPanel() {
   const personalitySelector = (value: string, onChange: (v: string) => void) => (
     <select
       value={value}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={(e) => {
+        onChange(e.target.value);
+      }}
       className="bg-card border border-border rounded text-xs py-1.5 px-2 w-full"
     >
       <option value="">Global (All Personalities)</option>
       {personalities.map((p) => (
-        <option key={p.id} value={p.id}>{p.name}</option>
+        <option key={p.id} value={p.id}>
+          {p.name}
+        </option>
       ))}
     </select>
   );
 
   const resultBanner = (result: { ok: boolean; msg: string } | null) =>
     result ? (
-      <p className={`text-xs flex items-center gap-1 ${result.ok ? 'text-green-600' : 'text-red-600'}`}>
-        {result.ok ? <CheckCircle className="w-3 h-3 shrink-0" /> : <AlertCircle className="w-3 h-3 shrink-0" />}
+      <p
+        className={`text-xs flex items-center gap-1 ${result.ok ? 'text-green-600' : 'text-red-600'}`}
+      >
+        {result.ok ? (
+          <CheckCircle className="w-3 h-3 shrink-0" />
+        ) : (
+          <AlertCircle className="w-3 h-3 shrink-0" />
+        )}
         {result.msg}
       </p>
     ) : null;
@@ -121,13 +131,17 @@ export function ConnectorsPanel() {
             <Globe className="w-4 h-4 text-muted-foreground" />
             Web Crawl
           </h3>
-          <p className="text-xs text-muted-foreground mt-1">Fetch a URL and add its content to the knowledge base.</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Fetch a URL and add its content to the knowledge base.
+          </p>
         </div>
         <div className="card-content space-y-2 p-3 sm:p-4 pt-0 sm:pt-0">
           <input
             type="url"
             value={crawlUrl}
-            onChange={(e) => setCrawlUrl(e.target.value)}
+            onChange={(e) => {
+              setCrawlUrl(e.target.value);
+            }}
             placeholder="https://example.com/docs/page"
             className="w-full bg-card border border-border rounded text-sm py-1.5 px-2"
           />
@@ -148,17 +162,21 @@ export function ConnectorsPanel() {
       <div className="card">
         <div className="card-header p-3 sm:p-4">
           <h3 className="card-title text-sm flex items-center gap-2">
-            <Github className="w-4 h-4 text-muted-foreground" />
+            <GitBranch className="w-4 h-4 text-muted-foreground" />
             GitHub Wiki / Repository
           </h3>
-          <p className="text-xs text-muted-foreground mt-1">Sync all markdown files from a GitHub repository.</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Sync all markdown files from a GitHub repository.
+          </p>
         </div>
         <div className="card-content space-y-2 p-3 sm:p-4 pt-0 sm:pt-0">
           <div className="flex gap-2">
             <input
               type="text"
               value={wikiOwner}
-              onChange={(e) => setWikiOwner(e.target.value)}
+              onChange={(e) => {
+                setWikiOwner(e.target.value);
+              }}
               placeholder="owner"
               className="flex-1 bg-card border border-border rounded text-sm py-1.5 px-2"
             />
@@ -166,7 +184,9 @@ export function ConnectorsPanel() {
             <input
               type="text"
               value={wikiRepo}
-              onChange={(e) => setWikiRepo(e.target.value)}
+              onChange={(e) => {
+                setWikiRepo(e.target.value);
+              }}
               placeholder="repository"
               className="flex-1 bg-card border border-border rounded text-sm py-1.5 px-2"
             />
@@ -191,19 +211,25 @@ export function ConnectorsPanel() {
             <FileText className="w-4 h-4 text-muted-foreground" />
             Paste Text
           </h3>
-          <p className="text-xs text-muted-foreground mt-1">Directly paste content to add to the knowledge base.</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Directly paste content to add to the knowledge base.
+          </p>
         </div>
         <div className="card-content space-y-2 p-3 sm:p-4 pt-0 sm:pt-0">
           <input
             type="text"
             value={pasteTitle}
-            onChange={(e) => setPasteTitle(e.target.value)}
+            onChange={(e) => {
+              setPasteTitle(e.target.value);
+            }}
             placeholder="Title *"
             className="w-full bg-card border border-border rounded text-sm py-1.5 px-2"
           />
           <textarea
             value={pasteText}
-            onChange={(e) => setPasteText(e.target.value)}
+            onChange={(e) => {
+              setPasteText(e.target.value);
+            }}
             placeholder="Paste or type content here…"
             rows={6}
             className="w-full bg-card border border-border rounded text-sm py-1.5 px-2 font-mono resize-y"

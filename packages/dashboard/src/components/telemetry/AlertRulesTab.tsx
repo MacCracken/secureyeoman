@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Bell, Plus, Trash2, TestTube, ToggleLeft, ToggleRight, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Bell,
+  Plus,
+  Trash2,
+  TestTube,
+  ToggleLeft,
+  ToggleRight,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import {
   listAlertRules,
   createAlertRule,
@@ -13,10 +22,11 @@ import type { AlertRule, AlertChannel } from '../../types';
 // ── Toast helper ────────────────────────────────────────────────────────────
 
 function Toast({ message, type }: { message: string; type: 'success' | 'error' | 'info' }) {
-  const bg =
-    type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+  const bg = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
   return (
-    <div className={`fixed bottom-4 right-4 z-50 px-4 py-2 rounded-md text-white text-sm shadow-lg ${bg}`}>
+    <div
+      className={`fixed bottom-4 right-4 z-50 px-4 py-2 rounded-md text-white text-sm shadow-lg ${bg}`}
+    >
       {message}
     </div>
   );
@@ -33,7 +43,9 @@ const CHANNEL_COLORS: Record<string, string> = {
 
 function ChannelBadge({ type }: { type: string }) {
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium ${CHANNEL_COLORS[type] ?? 'bg-muted text-muted-foreground'}`}>
+    <span
+      className={`px-2 py-0.5 rounded text-xs font-medium ${CHANNEL_COLORS[type] ?? 'bg-muted text-muted-foreground'}`}
+    >
       {type}
     </span>
   );
@@ -86,20 +98,24 @@ function RuleForm({
 }) {
   const [form, setForm] = useState<RuleFormState>(initial ?? BLANK_FORM);
 
-  const set = (k: keyof RuleFormState, v: unknown) =>
+  const set = (k: keyof RuleFormState, v: unknown) => {
     setForm((f) => ({ ...f, [k]: v }));
+  };
 
-  const addChannel = () =>
+  const addChannel = () => {
     setForm((f) => ({ ...f, channels: [...f.channels, { type: 'webhook' as const }] }));
+  };
 
-  const removeChannel = (i: number) =>
+  const removeChannel = (i: number) => {
     setForm((f) => ({ ...f, channels: f.channels.filter((_, idx) => idx !== i) }));
+  };
 
-  const updateChannel = (i: number, patch: Partial<AlertChannel>) =>
+  const updateChannel = (i: number, patch: Partial<AlertChannel>) => {
     setForm((f) => ({
       ...f,
       channels: f.channels.map((c, idx) => (idx === i ? { ...c, ...patch } : c)),
     }));
+  };
 
   return (
     <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
@@ -109,7 +125,9 @@ function RuleForm({
           <input
             className="mt-1 w-full px-3 py-1.5 rounded border bg-background text-sm"
             value={form.name}
-            onChange={(e) => set('name', e.target.value)}
+            onChange={(e) => {
+              set('name', e.target.value);
+            }}
             placeholder="High rate-limit hits"
           />
         </div>
@@ -121,7 +139,9 @@ function RuleForm({
           <input
             className="mt-1 w-full px-3 py-1.5 rounded border bg-background text-sm font-mono"
             value={form.metricPath}
-            onChange={(e) => set('metricPath', e.target.value)}
+            onChange={(e) => {
+              set('metricPath', e.target.value);
+            }}
             placeholder="security.rateLimitHitsTotal"
           />
         </div>
@@ -130,7 +150,9 @@ function RuleForm({
           <input
             className="mt-1 w-full px-3 py-1.5 rounded border bg-background text-sm"
             value={form.description}
-            onChange={(e) => set('description', e.target.value)}
+            onChange={(e) => {
+              set('description', e.target.value);
+            }}
             placeholder="Optional description"
           />
         </div>
@@ -140,10 +162,14 @@ function RuleForm({
             <select
               className="mt-1 w-full px-3 py-1.5 rounded border bg-background text-sm"
               value={form.operator}
-              onChange={(e) => set('operator', e.target.value as AlertRule['operator'])}
+              onChange={(e) => {
+                set('operator', e.target.value as AlertRule['operator']);
+              }}
             >
               {Object.entries(OPERATOR_LABELS).map(([v, l]) => (
-                <option key={v} value={v}>{l} ({v})</option>
+                <option key={v} value={v}>
+                  {l} ({v})
+                </option>
               ))}
             </select>
           </div>
@@ -153,7 +179,9 @@ function RuleForm({
               type="number"
               className="mt-1 w-full px-3 py-1.5 rounded border bg-background text-sm"
               value={form.threshold}
-              onChange={(e) => set('threshold', e.target.value)}
+              onChange={(e) => {
+                set('threshold', e.target.value);
+              }}
             />
           </div>
           <div className="flex-1">
@@ -162,7 +190,9 @@ function RuleForm({
               type="number"
               className="mt-1 w-full px-3 py-1.5 rounded border bg-background text-sm"
               value={form.cooldownSeconds}
-              onChange={(e) => set('cooldownSeconds', e.target.value)}
+              onChange={(e) => {
+                set('cooldownSeconds', e.target.value);
+              }}
             />
           </div>
         </div>
@@ -185,7 +215,9 @@ function RuleForm({
             <select
               className="px-2 py-1.5 rounded border bg-background text-sm"
               value={ch.type}
-              onChange={(e) => updateChannel(i, { type: e.target.value as AlertChannel['type'] })}
+              onChange={(e) => {
+                updateChannel(i, { type: e.target.value as AlertChannel['type'] });
+              }}
             >
               <option value="slack">Slack</option>
               <option value="pagerduty">PagerDuty</option>
@@ -197,7 +229,9 @@ function RuleForm({
                 className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
                 placeholder="https://..."
                 value={ch.url ?? ''}
-                onChange={(e) => updateChannel(i, { url: e.target.value })}
+                onChange={(e) => {
+                  updateChannel(i, { url: e.target.value });
+                }}
               />
             )}
             {(ch.type === 'pagerduty' || ch.type === 'opsgenie') && (
@@ -205,12 +239,16 @@ function RuleForm({
                 className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
                 placeholder="Routing / Genie key"
                 value={ch.routingKey ?? ''}
-                onChange={(e) => updateChannel(i, { routingKey: e.target.value })}
+                onChange={(e) => {
+                  updateChannel(i, { routingKey: e.target.value });
+                }}
               />
             )}
             <button
               type="button"
-              onClick={() => removeChannel(i)}
+              onClick={() => {
+                removeChannel(i);
+              }}
               className="p-1.5 rounded hover:bg-destructive/10 text-destructive"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -222,17 +260,15 @@ function RuleForm({
       <div className="flex items-center gap-3 pt-1">
         <button
           type="button"
-          onClick={() => onSave(form)}
+          onClick={() => {
+            onSave(form);
+          }}
           disabled={saving || !form.name || !form.metricPath}
           className="px-4 py-1.5 rounded bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50"
         >
           {saving ? 'Saving…' : 'Save rule'}
         </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-1.5 rounded border text-sm"
-        >
+        <button type="button" onClick={onCancel} className="px-4 py-1.5 rounded border text-sm">
           Cancel
         </button>
         <label className="flex items-center gap-2 text-sm cursor-pointer ml-auto">
@@ -240,7 +276,9 @@ function RuleForm({
           <input
             type="checkbox"
             checked={form.enabled}
-            onChange={(e) => set('enabled', e.target.checked)}
+            onChange={(e) => {
+              set('enabled', e.target.checked);
+            }}
             className="w-4 h-4"
           />
         </label>
@@ -255,12 +293,17 @@ export function AlertRulesTab() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: 'success' | 'error' | 'info';
+  } | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
+    setTimeout(() => {
+      setToast(null);
+    }, 3500);
   };
 
   const { data, isLoading, isError } = useQuery({
@@ -285,7 +328,9 @@ export function AlertRulesTab() {
       setShowForm(false);
       showToast('Rule created', 'success');
     },
-    onError: (e: Error) => showToast(e.message, 'error'),
+    onError: (e: Error) => {
+      showToast(e.message, 'error');
+    },
   });
 
   const patchMutation = useMutation({
@@ -296,20 +341,24 @@ export function AlertRulesTab() {
       setEditingId(null);
       showToast('Rule updated', 'success');
     },
-    onError: (e: Error) => showToast(e.message, 'error'),
+    onError: (e: Error) => {
+      showToast(e.message, 'error');
+    },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteAlertRule,
+    mutationFn: (id: string) => deleteAlertRule(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alert-rules'] });
       showToast('Rule deleted', 'success');
     },
-    onError: (e: Error) => showToast(e.message, 'error'),
+    onError: (e: Error) => {
+      showToast(e.message, 'error');
+    },
   });
 
   const testMutation = useMutation({
-    mutationFn: testAlertRule,
+    mutationFn: (id: string) => testAlertRule(id),
     onSuccess: (result) => {
       if (result.fired) {
         showToast(`Fired — check your channel (value: ${result.value})`, 'success');
@@ -317,14 +366,18 @@ export function AlertRulesTab() {
         showToast(`Did not fire (value: ${result.value ?? 'n/a'})`, 'info');
       }
     },
-    onError: (e: Error) => showToast(e.message, 'error'),
+    onError: (e: Error) => {
+      showToast(e.message, 'error');
+    },
   });
 
   const rules = data?.rules ?? [];
 
-  const handleSaveNew = (form: RuleFormState) => createMutation.mutate(form);
+  const handleSaveNew = (form: RuleFormState) => {
+    createMutation.mutate(form);
+  };
 
-  const handleSaveEdit = (id: string, form: RuleFormState) =>
+  const handleSaveEdit = (id: string, form: RuleFormState) => {
     patchMutation.mutate({
       id,
       patch: {
@@ -338,6 +391,7 @@ export function AlertRulesTab() {
         channels: form.channels,
       },
     });
+  };
 
   return (
     <div className="space-y-4">
@@ -351,23 +405,7 @@ export function AlertRulesTab() {
             <span className="text-xs text-muted-foreground">({rules.length})</span>
           )}
         </div>
-        {!showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-primary text-primary-foreground text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" /> New rule
-          </button>
-        )}
       </div>
-
-      {showForm && (
-        <RuleForm
-          onSave={handleSaveNew}
-          onCancel={() => setShowForm(false)}
-          saving={createMutation.isPending}
-        />
-      )}
 
       {isLoading && (
         <div className="text-sm text-muted-foreground py-6 text-center">Loading rules…</div>
@@ -379,7 +417,9 @@ export function AlertRulesTab() {
       {!isLoading && !isError && rules.length === 0 && !showForm && (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
           <Bell className="w-8 h-8 opacity-40" />
-          <p className="text-sm">No alert rules yet. Create one to get notified when metrics cross thresholds.</p>
+          <p className="text-sm">
+            No alert rules yet. Create one to get notified when metrics cross thresholds.
+          </p>
         </div>
       )}
 
@@ -390,7 +430,9 @@ export function AlertRulesTab() {
             <div className="flex items-center gap-3 px-4 py-3">
               <button
                 className="text-muted-foreground hover:text-foreground"
-                onClick={() => setExpandedId(expandedId === rule.id ? null : rule.id)}
+                onClick={() => {
+                  setExpandedId(expandedId === rule.id ? null : rule.id);
+                }}
               >
                 {expandedId === rule.id ? (
                   <ChevronUp className="w-4 h-4" />
@@ -407,16 +449,18 @@ export function AlertRulesTab() {
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                  {rule.metricPath} {OPERATOR_LABELS[rule.operator]} {rule.threshold}
+                  <span>{rule.metricPath}</span>{' '}
+                  <span>{OPERATOR_LABELS[rule.operator]}</span>{' '}
+                  <span>{rule.threshold}</span>
                 </p>
               </div>
 
               <div className="flex items-center gap-1.5">
                 {/* Enabled toggle */}
                 <button
-                  onClick={() =>
-                    patchMutation.mutate({ id: rule.id, patch: { enabled: !rule.enabled } })
-                  }
+                  onClick={() => {
+                    patchMutation.mutate({ id: rule.id, patch: { enabled: !rule.enabled } });
+                  }}
                   className="p-1.5 rounded hover:bg-muted"
                   title={rule.enabled ? 'Disable' : 'Enable'}
                 >
@@ -429,8 +473,9 @@ export function AlertRulesTab() {
 
                 {/* Test-fire */}
                 <button
-                  onClick={() => testMutation.mutate(rule.id)}
-                  disabled={testMutation.isPending}
+                  onClick={() => {
+                    testMutation.mutate(rule.id);
+                  }}
                   className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
                   title="Test-fire"
                 >
@@ -440,7 +485,7 @@ export function AlertRulesTab() {
                 {/* Delete */}
                 <button
                   onClick={() => {
-                    if (confirm(`Delete rule "${rule.name}"?`)) {
+                    if (window.confirm(`Delete rule "${rule.name}"?`)) {
                       deleteMutation.mutate(rule.id);
                     }
                   }}
@@ -467,8 +512,12 @@ export function AlertRulesTab() {
                       enabled: rule.enabled,
                       channels: rule.channels,
                     }}
-                    onSave={(form) => handleSaveEdit(rule.id, form)}
-                    onCancel={() => setEditingId(null)}
+                    onSave={(form) => {
+                      handleSaveEdit(rule.id, form);
+                    }}
+                    onCancel={() => {
+                      setEditingId(null);
+                    }}
                     saving={patchMutation.isPending}
                   />
                 ) : (
@@ -487,7 +536,9 @@ export function AlertRulesTab() {
                       </p>
                     )}
                     <button
-                      onClick={() => setEditingId(rule.id)}
+                      onClick={() => {
+                        setEditingId(rule.id);
+                      }}
                       className="px-3 py-1.5 rounded border text-sm hover:bg-muted"
                     >
                       Edit
@@ -499,6 +550,27 @@ export function AlertRulesTab() {
           </div>
         ))}
       </div>
+
+      {showForm && (
+        <RuleForm
+          onSave={handleSaveNew}
+          onCancel={() => {
+            setShowForm(false);
+          }}
+          saving={createMutation.isPending}
+        />
+      )}
+
+      {!showForm && (
+        <button
+          onClick={() => {
+            setShowForm(true);
+          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-primary text-primary-foreground text-sm font-medium"
+        >
+          <Plus className="w-4 h-4" /> New rule
+        </button>
+      )}
     </div>
   );
 }

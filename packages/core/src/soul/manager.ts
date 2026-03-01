@@ -270,6 +270,7 @@ export class SoulManager {
             timezone: 'UTC',
           },
           omnipresentMind: false,
+          knowledgeMode: 'rag' as const,
         },
       },
       { isArchetype: true }
@@ -771,7 +772,9 @@ export class SoulManager {
       lines.push(`- **memory**: ${memMb} MB RSS`);
       lines.push(`- **cpu**: ${loadAvg} (1m load avg)`);
       lines.push(`- **mcp servers**: ${serverCount} connected`);
-      lines.push(`- **integrations**: ${integrationAccess.length > 0 ? integrationAccess.length + ' (see below)' : 'all accessible'}`);
+      lines.push(
+        `- **integrations**: ${integrationAccess.length > 0 ? `${integrationAccess.length} (see below)` : 'all accessible'}`
+      );
 
       const sec = this.deps.securityConfig;
       lines.push('');
@@ -960,7 +963,7 @@ export class SoulManager {
     if (this.integrationManager) {
       const integrationAccess = personality?.body?.integrationAccess ?? [];
       const oauthTokens = await this.integrationManager.getOAuthTokens();
-      const entries: Array<{ name: string; platform: string; mode: string }> = [];
+      const entries: { name: string; platform: string; mode: string }[] = [];
 
       if (integrationAccess.length > 0) {
         await Promise.all(
@@ -977,7 +980,11 @@ export class SoulManager {
             const token = oauthTokens.find((t) => t.id === access.id);
             if (token) {
               const providerName = token.provider.charAt(0).toUpperCase() + token.provider.slice(1);
-              entries.push({ name: `${providerName} (${token.email})`, platform: token.provider, mode: access.mode });
+              entries.push({
+                name: `${providerName} (${token.email})`,
+                platform: token.provider,
+                mode: access.mode,
+              });
             }
           })
         );
@@ -985,7 +992,11 @@ export class SoulManager {
         // No filter set — list all OAuth accounts as available
         for (const token of oauthTokens) {
           const providerName = token.provider.charAt(0).toUpperCase() + token.provider.slice(1);
-          entries.push({ name: `${providerName} (${token.email})`, platform: token.provider, mode: 'suggest' });
+          entries.push({
+            name: `${providerName} (${token.email})`,
+            platform: token.provider,
+            mode: 'suggest',
+          });
         }
       }
 
@@ -997,10 +1008,56 @@ export class SoulManager {
         };
         // Platform → available MCP tool names (for inline hints)
         const platformTools: Record<string, string[]> = {
-          gmail: ['gmail_profile', 'gmail_list_messages', 'gmail_read_message', 'gmail_read_thread', 'gmail_list_labels', 'gmail_compose_draft', 'gmail_send_email'],
-          google: ['gmail_profile', 'gmail_list_messages', 'gmail_read_message', 'gmail_read_thread', 'gmail_list_labels', 'gmail_compose_draft', 'gmail_send_email'],
-          twitter: ['twitter_profile', 'twitter_search', 'twitter_get_tweet', 'twitter_get_user', 'twitter_get_mentions', 'twitter_get_timeline', 'twitter_post_tweet', 'twitter_like_tweet', 'twitter_retweet', 'twitter_unretweet'],
-          github: ['github_profile', 'github_list_repos', 'github_get_repo', 'github_list_prs', 'github_get_pr', 'github_list_issues', 'github_get_issue', 'github_create_issue', 'github_create_pr', 'github_comment', 'github_create_repo', 'github_fork_repo', 'github_sync_fork', 'github_list_ssh_keys', 'github_add_ssh_key', 'github_delete_ssh_key', 'github_setup_ssh', 'github_rotate_ssh_key'],
+          gmail: [
+            'gmail_profile',
+            'gmail_list_messages',
+            'gmail_read_message',
+            'gmail_read_thread',
+            'gmail_list_labels',
+            'gmail_compose_draft',
+            'gmail_send_email',
+          ],
+          google: [
+            'gmail_profile',
+            'gmail_list_messages',
+            'gmail_read_message',
+            'gmail_read_thread',
+            'gmail_list_labels',
+            'gmail_compose_draft',
+            'gmail_send_email',
+          ],
+          twitter: [
+            'twitter_profile',
+            'twitter_search',
+            'twitter_get_tweet',
+            'twitter_get_user',
+            'twitter_get_mentions',
+            'twitter_get_timeline',
+            'twitter_post_tweet',
+            'twitter_like_tweet',
+            'twitter_retweet',
+            'twitter_unretweet',
+          ],
+          github: [
+            'github_profile',
+            'github_list_repos',
+            'github_get_repo',
+            'github_list_prs',
+            'github_get_pr',
+            'github_list_issues',
+            'github_get_issue',
+            'github_create_issue',
+            'github_create_pr',
+            'github_comment',
+            'github_create_repo',
+            'github_fork_repo',
+            'github_sync_fork',
+            'github_list_ssh_keys',
+            'github_add_ssh_key',
+            'github_delete_ssh_key',
+            'github_setup_ssh',
+            'github_rotate_ssh_key',
+          ],
         };
         const integLines: string[] = [
           '',
@@ -1015,24 +1072,40 @@ export class SoulManager {
           const tools = platformTools[e.platform.toLowerCase()];
           if (tools) {
             // Write-only tools that are blocked at non-auto modes, per platform
-          const writeOnlyTools: Record<string, string[]> = {
-            gmail: ['gmail_compose_draft', 'gmail_send_email'],
-            google: ['gmail_compose_draft', 'gmail_send_email'],
-            twitter: ['twitter_post_tweet', 'twitter_like_tweet', 'twitter_retweet', 'twitter_unretweet'],
-            github: ['github_create_issue', 'github_create_pr', 'github_comment', 'github_create_repo', 'github_fork_repo', 'github_sync_fork', 'github_add_ssh_key', 'github_delete_ssh_key', 'github_setup_ssh', 'github_rotate_ssh_key'],
-          };
-          const draftBlockedTools: Record<string, string[]> = {
-            gmail: ['gmail_send_email'],
-            google: ['gmail_send_email'],
-            twitter: [],  // draft mode returns preview, doesn't block tool
-            github: ['github_comment', 'github_delete_ssh_key', 'github_rotate_ssh_key'],  // draft blocks comments, destructive key ops
-          };
-          const platformKey = e.platform.toLowerCase();
-          const availableTools = tools.filter((t) => {
-            if (e.mode === 'suggest') return !(writeOnlyTools[platformKey] ?? []).includes(t);
-            if (e.mode === 'draft') return !(draftBlockedTools[platformKey] ?? []).includes(t);
-            return true;
-          });
+            const writeOnlyTools: Record<string, string[]> = {
+              gmail: ['gmail_compose_draft', 'gmail_send_email'],
+              google: ['gmail_compose_draft', 'gmail_send_email'],
+              twitter: [
+                'twitter_post_tweet',
+                'twitter_like_tweet',
+                'twitter_retweet',
+                'twitter_unretweet',
+              ],
+              github: [
+                'github_create_issue',
+                'github_create_pr',
+                'github_comment',
+                'github_create_repo',
+                'github_fork_repo',
+                'github_sync_fork',
+                'github_add_ssh_key',
+                'github_delete_ssh_key',
+                'github_setup_ssh',
+                'github_rotate_ssh_key',
+              ],
+            };
+            const draftBlockedTools: Record<string, string[]> = {
+              gmail: ['gmail_send_email'],
+              google: ['gmail_send_email'],
+              twitter: [], // draft mode returns preview, doesn't block tool
+              github: ['github_comment', 'github_delete_ssh_key', 'github_rotate_ssh_key'], // draft blocks comments, destructive key ops
+            };
+            const platformKey = e.platform.toLowerCase();
+            const availableTools = tools.filter((t) => {
+              if (e.mode === 'suggest') return !(writeOnlyTools[platformKey] ?? []).includes(t);
+              if (e.mode === 'draft') return !(draftBlockedTools[platformKey] ?? []).includes(t);
+              return true;
+            });
             line += `. MCP tools: ${availableTools.join(', ')}`;
           }
           integLines.push(line);

@@ -252,7 +252,11 @@ async function checkTshark(): Promise<boolean> {
   try {
     await new Promise<void>((resolve, reject) =>
       execFile('which', ['tshark'], (err) => {
-        if (err) { reject(new Error(err.message)); } else { resolve(); }
+        if (err) {
+          reject(new Error(err.message));
+        } else {
+          resolve();
+        }
       })
     );
     return true;

@@ -34,7 +34,7 @@ let _initialized = false;
 export async function initTracing(config: TelemetryConfig = {}): Promise<void> {
   if (_initialized) return;
 
-  const endpoint = config.otlpEndpoint ?? process.env['OTEL_EXPORTER_OTLP_ENDPOINT'];
+  const endpoint = config.otlpEndpoint ?? process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
   if (!endpoint) {
     // No endpoint configured — leave the global no-op API in place
     _initialized = true;
@@ -42,14 +42,17 @@ export async function initTracing(config: TelemetryConfig = {}): Promise<void> {
   }
 
   try {
-    const [{ NodeTracerProvider, BatchSpanProcessor }, { OTLPTraceExporter }, { resourceFromAttributes }] =
-      await Promise.all([
-        import('@opentelemetry/sdk-trace-node'),
-        import('@opentelemetry/exporter-trace-otlp-grpc'),
-        import('@opentelemetry/resources'),
-      ]);
+    const [
+      { NodeTracerProvider, BatchSpanProcessor },
+      { OTLPTraceExporter },
+      { resourceFromAttributes },
+    ] = await Promise.all([
+      import('@opentelemetry/sdk-trace-node'),
+      import('@opentelemetry/exporter-trace-otlp-grpc'),
+      import('@opentelemetry/resources'),
+    ]);
 
-    const serviceName = config.serviceName ?? process.env['OTEL_SERVICE_NAME'] ?? 'secureyeoman';
+    const serviceName = config.serviceName ?? process.env.OTEL_SERVICE_NAME ?? 'secureyeoman';
 
     const resource = resourceFromAttributes({ 'service.name': serviceName });
     const exporter = new OTLPTraceExporter({ url: endpoint });

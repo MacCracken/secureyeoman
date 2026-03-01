@@ -127,9 +127,7 @@ export class WorkflowEngine {
     for (const step of steps) {
       // For 'any' steps, require only 1 dep to complete (not all of them).
       const required =
-        step.triggerMode === 'any'
-          ? Math.min(1, step.dependsOn.length)
-          : step.dependsOn.length;
+        step.triggerMode === 'any' ? Math.min(1, step.dependsOn.length) : step.dependsOn.length;
       inDegree.set(step.id, required);
       for (const dep of step.dependsOn) {
         if (!adjacency.has(dep)) adjacency.set(dep, []);
@@ -582,12 +580,10 @@ export class WorkflowEngine {
         // Inline samples if provided
         const samplesRaw = cfg.samples;
         const samples = Array.isArray(samplesRaw)
-          ? (samplesRaw as Array<{ prompt: string; gold: string }>)
+          ? (samplesRaw as { prompt: string; gold: string }[])
           : undefined;
         if (!datasetPath && (!samples || samples.length === 0)) {
-          throw new Error(
-            'evaluation step requires either cfg.datasetPath or cfg.samples'
-          );
+          throw new Error('evaluation step requires either cfg.datasetPath or cfg.samples');
         }
         // Model function: use webhook-style call to a local model endpoint if provided
         const modelEndpoint = cfg.modelEndpoint

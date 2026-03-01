@@ -34,7 +34,9 @@ function makeLogger() {
     warn: vi.fn(),
     error: vi.fn(),
     debug: vi.fn(),
-    child: vi.fn(function () { return this; }),
+    child: vi.fn(function () {
+      return this;
+    }),
   } as any;
 }
 
@@ -229,9 +231,9 @@ describe('FinetuneManager', () => {
   describe('registerWithOllama()', () => {
     it('throws when job not found', async () => {
       pool.query = vi.fn(async () => ({ rows: [], rowCount: 0 }));
-      await expect(
-        manager.registerWithOllama('missing', 'http://localhost:11434')
-      ).rejects.toThrow('not found');
+      await expect(manager.registerWithOllama('missing', 'http://localhost:11434')).rejects.toThrow(
+        'not found'
+      );
     });
 
     it('throws when job is not complete', async () => {
@@ -239,9 +241,9 @@ describe('FinetuneManager', () => {
         rows: [makeJobRow({ status: 'running' })],
         rowCount: 1,
       }));
-      await expect(
-        manager.registerWithOllama('ft-1', 'http://localhost:11434')
-      ).rejects.toThrow('not complete');
+      await expect(manager.registerWithOllama('ft-1', 'http://localhost:11434')).rejects.toThrow(
+        'not complete'
+      );
     });
 
     it('calls ollama create for a complete job', async () => {

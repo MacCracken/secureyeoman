@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  ShieldAlert,
-  CheckCircle,
-} from 'lucide-react';
+import { ShieldAlert, CheckCircle } from 'lucide-react';
 import {
   fetchAutonomyOverview,
   fetchAuditRuns,

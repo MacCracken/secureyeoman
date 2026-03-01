@@ -170,19 +170,32 @@ describe('DocumentManager', () => {
 
   it('ingestGithubWiki fetches markdown files', async () => {
     const contentsResponse = [
-      { name: 'README.md', path: 'README.md', type: 'file', download_url: 'https://raw.github.com/owner/repo/README.md' },
-      { name: 'SETUP.md', path: 'SETUP.md', type: 'file', download_url: 'https://raw.github.com/owner/repo/SETUP.md' },
+      {
+        name: 'README.md',
+        path: 'README.md',
+        type: 'file',
+        download_url: 'https://raw.github.com/owner/repo/README.md',
+      },
+      {
+        name: 'SETUP.md',
+        path: 'SETUP.md',
+        type: 'file',
+        download_url: 'https://raw.github.com/owner/repo/SETUP.md',
+      },
       { name: 'image.png', path: 'image.png', type: 'file', download_url: null },
     ];
 
     let callCount = 0;
-    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) {
-        return Promise.resolve({ ok: true, json: async () => contentsResponse });
-      }
-      return Promise.resolve({ ok: true, text: async () => '# Wiki page content' });
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve({ ok: true, json: async () => contentsResponse });
+        }
+        return Promise.resolve({ ok: true, text: async () => '# Wiki page content' });
+      })
+    );
 
     const docs = await docManager.ingestGithubWiki('owner', 'repo', null);
     expect(docs.length).toBe(2); // 2 markdown files, 1 png ignored
@@ -192,10 +205,13 @@ describe('DocumentManager', () => {
   });
 
   it('ingestGithubWiki returns empty array when no markdown files', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => [{ name: 'image.png', type: 'file', download_url: null }],
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [{ name: 'image.png', type: 'file', download_url: null }],
+      })
+    );
 
     const docs = await docManager.ingestGithubWiki('owner', 'repo', null);
     expect(docs).toEqual([]);
@@ -204,9 +220,14 @@ describe('DocumentManager', () => {
   });
 
   it('ingestGithubWiki throws on GitHub API error', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404, statusText: 'Not Found' }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 404, statusText: 'Not Found' })
+    );
 
-    await expect(docManager.ingestGithubWiki('owner', 'missing-repo', null)).rejects.toThrow('GitHub API 404');
+    await expect(docManager.ingestGithubWiki('owner', 'missing-repo', null)).rejects.toThrow(
+      'GitHub API 404'
+    );
 
     vi.unstubAllGlobals();
   });

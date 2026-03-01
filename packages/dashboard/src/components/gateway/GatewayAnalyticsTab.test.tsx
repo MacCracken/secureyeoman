@@ -43,8 +43,28 @@ const mockSummary = [
 ];
 
 const mockKeys = [
-  { id: 'key-1', name: 'Production Key', key_prefix: 'sck_abc1', role: 'viewer', created_at: 0, expires_at: null, last_used_at: null, revoked_at: null, user_id: 'u1' },
-  { id: 'key-2', name: 'Dev Key', key_prefix: 'sck_def2', role: 'viewer', created_at: 0, expires_at: null, last_used_at: null, revoked_at: null, user_id: 'u1' },
+  {
+    id: 'key-1',
+    name: 'Production Key',
+    key_prefix: 'sck_abc1',
+    role: 'viewer',
+    created_at: 0,
+    expires_at: null,
+    last_used_at: null,
+    revoked_at: null,
+    user_id: 'u1',
+  },
+  {
+    id: 'key-2',
+    name: 'Dev Key',
+    key_prefix: 'sck_def2',
+    role: 'viewer',
+    created_at: 0,
+    expires_at: null,
+    last_used_at: null,
+    revoked_at: null,
+    user_id: 'u1',
+  },
 ];
 
 function renderTab() {
@@ -135,9 +155,7 @@ describe('GatewayAnalyticsTab', () => {
     mockFetchApiKeyUsageSummary.mockResolvedValue({ summary: [] });
     renderTab();
     await waitFor(() => {
-      expect(
-        screen.getByText('No API key activity in the last 24 hours.')
-      ).toBeInTheDocument();
+      expect(screen.getByText('No API key activity in the last 24 hours.')).toBeInTheDocument();
     });
   });
 

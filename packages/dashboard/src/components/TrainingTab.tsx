@@ -44,7 +44,10 @@ import {
 type TabType = 'export' | 'distillation' | 'finetune';
 type ExportFormat = 'sharegpt' | 'instruction' | 'raw';
 
-const FORMAT_INFO: Record<ExportFormat, { label: string; description: string; icon: React.ReactNode }> = {
+const FORMAT_INFO: Record<
+  ExportFormat,
+  { label: string; description: string; icon: React.ReactNode }
+> = {
   sharegpt: {
     label: 'ShareGPT JSONL',
     description:
@@ -67,15 +70,37 @@ const FORMAT_INFO: Record<ExportFormat, { label: string; description: string; ic
 
 function StatusChip({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string; icon: React.ReactNode }> = {
-    pending: { label: 'Pending', cls: 'bg-muted text-muted-foreground', icon: <Clock className="w-3 h-3" /> },
-    running: { label: 'Running', cls: 'bg-primary/10 text-primary', icon: <Loader2 className="w-3 h-3 animate-spin" /> },
-    complete: { label: 'Complete', cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: <CheckCircle2 className="w-3 h-3" /> },
-    failed: { label: 'Failed', cls: 'bg-destructive/10 text-destructive', icon: <XCircle className="w-3 h-3" /> },
-    cancelled: { label: 'Cancelled', cls: 'bg-muted text-muted-foreground', icon: <XCircle className="w-3 h-3" /> },
+    pending: {
+      label: 'Pending',
+      cls: 'bg-muted text-muted-foreground',
+      icon: <Clock className="w-3 h-3" />,
+    },
+    running: {
+      label: 'Running',
+      cls: 'bg-primary/10 text-primary',
+      icon: <Loader2 className="w-3 h-3 animate-spin" />,
+    },
+    complete: {
+      label: 'Complete',
+      cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+      icon: <CheckCircle2 className="w-3 h-3" />,
+    },
+    failed: {
+      label: 'Failed',
+      cls: 'bg-destructive/10 text-destructive',
+      icon: <XCircle className="w-3 h-3" />,
+    },
+    cancelled: {
+      label: 'Cancelled',
+      cls: 'bg-muted text-muted-foreground',
+      icon: <XCircle className="w-3 h-3" />,
+    },
   };
   const info = map[status] ?? { label: status, cls: 'bg-muted text-muted-foreground', icon: null };
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${info.cls}`}>
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${info.cls}`}
+    >
       {info.icon}
       {info.label}
     </span>
@@ -89,7 +114,11 @@ function ExportTab() {
   const [limit, setLimit] = useState('10000');
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
-  const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    error: statsError,
+  } = useQuery({
     queryKey: ['training-stats'],
     queryFn: fetchTrainingStats,
     retry: 1,
@@ -106,7 +135,9 @@ function ExportTab() {
       a.href = url;
       a.download = filename;
       a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 30_000);
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 30_000);
       setDownloadError(null);
     },
     onError: (err) => {
@@ -165,45 +196,51 @@ function ExportTab() {
       <div className="space-y-3">
         <h3 className="text-sm font-semibold">Export Format</h3>
         <div className="space-y-2">
-          {(Object.entries(FORMAT_INFO) as [ExportFormat, (typeof FORMAT_INFO)[ExportFormat]][]).map(
-            ([key, info]) => (
-              <label
-                key={key}
-                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                  format === key
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-muted-foreground/40'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="format"
-                  value={key}
-                  checked={format === key}
-                  onChange={() => setFormat(key)}
-                  className="mt-0.5 accent-primary"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-primary">{info.icon}</span>
-                    <span className="font-medium text-sm">{info.label}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">{info.description}</p>
+          {(
+            Object.entries(FORMAT_INFO) as [ExportFormat, (typeof FORMAT_INFO)[ExportFormat]][]
+          ).map(([key, info]) => (
+            <label
+              key={key}
+              className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                format === key
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-muted-foreground/40'
+              }`}
+            >
+              <input
+                type="radio"
+                name="format"
+                value={key}
+                checked={format === key}
+                onChange={() => {
+                  setFormat(key);
+                }}
+                className="mt-0.5 accent-primary"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-primary">{info.icon}</span>
+                  <span className="font-medium text-sm">{info.label}</span>
                 </div>
-              </label>
-            )
-          )}
+                <p className="text-xs text-muted-foreground mt-0.5">{info.description}</p>
+              </div>
+            </label>
+          ))}
         </div>
       </div>
 
       <div className="space-y-3">
         <h3 className="text-sm font-semibold">Options</h3>
         <div className="flex items-center gap-3">
-          <label className="text-sm text-muted-foreground whitespace-nowrap">Max conversations</label>
+          <label className="text-sm text-muted-foreground whitespace-nowrap">
+            Max conversations
+          </label>
           <input
             type="number"
             value={limit}
-            onChange={(e) => setLimit(e.target.value)}
+            onChange={(e) => {
+              setLimit(e.target.value);
+            }}
             min={1}
             max={100000}
             className="w-28 px-2 py-1 text-sm border rounded-md bg-background"
@@ -219,7 +256,9 @@ function ExportTab() {
       )}
 
       <button
-        onClick={() => exportMut.mutate()}
+        onClick={() => {
+          exportMut.mutate();
+        }}
         disabled={exportMut.isPending || !stats || stats.conversations === 0}
         className="btn btn-ghost flex items-center gap-2"
       >
@@ -241,8 +280,9 @@ function ExportTab() {
         </p>
         <div className="space-y-2 text-xs">
           <Step n={1} title="Export">
-            Download conversations above as <code className="bg-muted px-1 rounded">sharegpt</code> (for chat models) or{' '}
-            <code className="bg-muted px-1 rounded">raw</code> (for embedding models).
+            Download conversations above as <code className="bg-muted px-1 rounded">sharegpt</code>{' '}
+            (for chat models) or <code className="bg-muted px-1 rounded">raw</code> (for embedding
+            models).
           </Step>
           <Step n={2} title="Train embedding model (sentence-transformers)">
             <code className="bg-muted px-1 rounded block mt-1 p-1 font-mono">
@@ -257,11 +297,13 @@ function ExportTab() {
             <strong>Fine-tune</strong> tab to run LoRA training via Docker.
           </Step>
           <Step n={4} title="Serve via Ollama">
-            Copy adapter weights → create Modelfile → <code className="bg-muted px-1 rounded">ollama create my-model</code>
+            Copy adapter weights → create Modelfile →{' '}
+            <code className="bg-muted px-1 rounded">ollama create my-model</code>
           </Step>
           <Step n={5} title="Connect back">
-            Set <strong>Model Provider = Ollama</strong> and select your model in Settings → AI Model,
-            or set <strong>Vector Embedding Provider = Ollama</strong> with your embedding model in Settings → Brain.
+            Set <strong>Model Provider = Ollama</strong> and select your model in Settings → AI
+            Model, or set <strong>Vector Embedding Provider = Ollama</strong> with your embedding
+            model in Settings → Brain.
           </Step>
         </div>
       </div>
@@ -283,7 +325,11 @@ function DistillationTab() {
     outputPath: '/tmp/distillation-output.jsonl',
   });
 
-  const { data: jobs = [], isLoading, error } = useQuery({
+  const {
+    data: jobs = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['distillation-jobs'],
     queryFn: fetchDistillationJobs,
     refetchInterval: (query) => {
@@ -328,11 +374,14 @@ function DistillationTab() {
         <div>
           <h2 className="text-lg font-semibold">Model Distillation</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Generate high-quality training pairs by calling a teacher LLM on your conversation history.
+            Generate high-quality training pairs by calling a teacher LLM on your conversation
+            history.
           </p>
         </div>
         <button
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            setShowForm((v) => !v);
+          }}
           className="btn btn-ghost flex items-center gap-2 text-sm"
         >
           <Play className="w-4 h-4" />
@@ -349,7 +398,9 @@ function DistillationTab() {
               <input
                 type="text"
                 value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, name: e.target.value }));
+                }}
                 className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
                 placeholder="e.g. claude-opus distillation"
               />
@@ -358,7 +409,9 @@ function DistillationTab() {
               <label className="text-xs text-muted-foreground">Teacher Provider</label>
               <select
                 value={form.teacherProvider}
-                onChange={(e) => setForm((f) => ({ ...f, teacherProvider: e.target.value }))}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, teacherProvider: e.target.value }));
+                }}
                 className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
               >
                 <option value="anthropic">Anthropic</option>
@@ -371,7 +424,9 @@ function DistillationTab() {
               <input
                 type="text"
                 value={form.teacherModel}
-                onChange={(e) => setForm((f) => ({ ...f, teacherModel: e.target.value }))}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, teacherModel: e.target.value }));
+                }}
                 className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
                 placeholder="claude-opus-4-6"
               />
@@ -380,9 +435,12 @@ function DistillationTab() {
               <label className="text-xs text-muted-foreground">Export Format</label>
               <select
                 value={form.exportFormat}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, exportFormat: e.target.value as 'sharegpt' | 'instruction' }))
-                }
+                onChange={(e) => {
+                  setForm((f) => ({
+                    ...f,
+                    exportFormat: e.target.value as 'sharegpt' | 'instruction',
+                  }));
+                }}
                 className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
               >
                 <option value="sharegpt">ShareGPT JSONL</option>
@@ -394,7 +452,9 @@ function DistillationTab() {
               <input
                 type="number"
                 value={form.maxSamples}
-                onChange={(e) => setForm((f) => ({ ...f, maxSamples: e.target.value }))}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, maxSamples: e.target.value }));
+                }}
                 min={1}
                 max={10000}
                 className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
@@ -405,7 +465,9 @@ function DistillationTab() {
               <input
                 type="text"
                 value={form.outputPath}
-                onChange={(e) => setForm((f) => ({ ...f, outputPath: e.target.value }))}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, outputPath: e.target.value }));
+                }}
                 className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
                 placeholder="/data/distillation.jsonl"
               />
@@ -417,7 +479,12 @@ function DistillationTab() {
             </p>
           )}
           <div className="flex gap-2 justify-end">
-            <button onClick={() => setShowForm(false)} className="btn btn-ghost text-sm">
+            <button
+              onClick={() => {
+                setShowForm(false);
+              }}
+              className="btn btn-ghost text-sm"
+            >
               Cancel
             </button>
             <button
@@ -448,8 +515,12 @@ function DistillationTab() {
             <DistillationJobCard
               key={job.id}
               job={job}
-              onDelete={() => deleteMut.mutate(job.id)}
-              onRun={() => runMut.mutate(job.id)}
+              onDelete={() => {
+                deleteMut.mutate(job.id);
+              }}
+              onRun={() => {
+                runMut.mutate(job.id);
+              }}
               isRunning={runMut.isPending && runMut.variables === job.id}
             />
           ))}
@@ -512,7 +583,9 @@ function DistillationJobCard({
       {(job.status === 'running' || job.status === 'complete') && (
         <div>
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-            <span>{job.samplesGenerated} / {job.maxSamples} samples</span>
+            <span>
+              {job.samplesGenerated} / {job.maxSamples} samples
+            </span>
             <span>{progress}%</span>
           </div>
           <div className="h-1.5 bg-muted rounded">
@@ -528,9 +601,7 @@ function DistillationJobCard({
         <p className="text-xs text-muted-foreground">Output: {job.outputPath}</p>
       )}
 
-      {job.errorMessage && (
-        <p className="text-xs text-destructive">{job.errorMessage}</p>
-      )}
+      {job.errorMessage && <p className="text-xs text-destructive">{job.errorMessage}</p>}
     </div>
   );
 }
@@ -553,7 +624,11 @@ function FinetuneTab() {
   });
   const [logsJobId, setLogsJobId] = useState<string | null>(null);
 
-  const { data: jobs = [], isLoading, error } = useQuery({
+  const {
+    data: jobs = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['finetune-jobs'],
     queryFn: fetchFinetuneJobs,
     refetchInterval: (query) => {
@@ -600,11 +675,14 @@ function FinetuneTab() {
         <div>
           <h2 className="text-lg font-semibold">LoRA / QLoRA Fine-Tuning</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Fine-tune a local model adapter via Docker. Requires NVIDIA GPU + Docker with CUDA support.
+            Fine-tune a local model adapter via Docker. Requires NVIDIA GPU + Docker with CUDA
+            support.
           </p>
         </div>
         <button
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            setShowForm((v) => !v);
+          }}
           className="btn btn-ghost flex items-center gap-2 text-sm"
         >
           <Layers className="w-4 h-4" />
@@ -621,7 +699,9 @@ function FinetuneTab() {
               <input
                 type="text"
                 value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, name: e.target.value }));
+                }}
                 className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
                 placeholder="e.g. llama3 customer-support adapter"
               />
@@ -631,7 +711,9 @@ function FinetuneTab() {
               <input
                 type="text"
                 value={form.baseModel}
-                onChange={(e) => setForm((f) => ({ ...f, baseModel: e.target.value }))}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, baseModel: e.target.value }));
+                }}
                 className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
                 placeholder="llama3:8b"
               />
@@ -641,7 +723,9 @@ function FinetuneTab() {
               <input
                 type="text"
                 value={form.adapterName}
-                onChange={(e) => setForm((f) => ({ ...f, adapterName: e.target.value }))}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, adapterName: e.target.value }));
+                }}
                 className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
                 placeholder="my-custom-llama3"
               />
@@ -651,30 +735,77 @@ function FinetuneTab() {
               <input
                 type="text"
                 value={form.datasetPath}
-                onChange={(e) => setForm((f) => ({ ...f, datasetPath: e.target.value }))}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, datasetPath: e.target.value }));
+                }}
                 className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
                 placeholder="/data/distillation.jsonl"
               />
             </div>
             <div>
               <label className="text-xs text-muted-foreground">LoRA Rank</label>
-              <input type="number" value={form.loraRank} onChange={(e) => setForm((f) => ({ ...f, loraRank: e.target.value }))} min={4} max={128} className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background" />
+              <input
+                type="number"
+                value={form.loraRank}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, loraRank: e.target.value }));
+                }}
+                min={4}
+                max={128}
+                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+              />
             </div>
             <div>
               <label className="text-xs text-muted-foreground">LoRA Alpha</label>
-              <input type="number" value={form.loraAlpha} onChange={(e) => setForm((f) => ({ ...f, loraAlpha: e.target.value }))} min={4} max={256} className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background" />
+              <input
+                type="number"
+                value={form.loraAlpha}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, loraAlpha: e.target.value }));
+                }}
+                min={4}
+                max={256}
+                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+              />
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Batch Size</label>
-              <input type="number" value={form.batchSize} onChange={(e) => setForm((f) => ({ ...f, batchSize: e.target.value }))} min={1} max={32} className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background" />
+              <input
+                type="number"
+                value={form.batchSize}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, batchSize: e.target.value }));
+                }}
+                min={1}
+                max={32}
+                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+              />
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Epochs</label>
-              <input type="number" value={form.epochs} onChange={(e) => setForm((f) => ({ ...f, epochs: e.target.value }))} min={1} max={20} className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background" />
+              <input
+                type="number"
+                value={form.epochs}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, epochs: e.target.value }));
+                }}
+                min={1}
+                max={20}
+                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+              />
             </div>
             <div>
               <label className="text-xs text-muted-foreground">VRAM Budget (GB)</label>
-              <input type="number" value={form.vramBudgetGb} onChange={(e) => setForm((f) => ({ ...f, vramBudgetGb: e.target.value }))} min={4} max={80} className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background" />
+              <input
+                type="number"
+                value={form.vramBudgetGb}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, vramBudgetGb: e.target.value }));
+                }}
+                min={4}
+                max={80}
+                className="w-full mt-1 px-2 py-1 text-sm border rounded bg-background"
+              />
             </div>
           </div>
           {createMut.isError && (
@@ -683,7 +814,14 @@ function FinetuneTab() {
             </p>
           )}
           <div className="flex gap-2 justify-end">
-            <button onClick={() => setShowForm(false)} className="btn btn-ghost text-sm">Cancel</button>
+            <button
+              onClick={() => {
+                setShowForm(false);
+              }}
+              className="btn btn-ghost text-sm"
+            >
+              Cancel
+            </button>
             <button
               onClick={handleCreate}
               disabled={createMut.isPending || !form.name.trim() || !form.baseModel.trim()}
@@ -712,9 +850,15 @@ function FinetuneTab() {
             <FinetuneJobCard
               key={job.id}
               job={job}
-              onDelete={() => deleteMut.mutate(job.id)}
-              onRegister={() => registerMut.mutate(job.id)}
-              onViewLogs={() => setLogsJobId(logsJobId === job.id ? null : job.id)}
+              onDelete={() => {
+                deleteMut.mutate(job.id);
+              }}
+              onRegister={() => {
+                registerMut.mutate(job.id);
+              }}
+              onViewLogs={() => {
+                setLogsJobId(logsJobId === job.id ? null : job.id);
+              }}
               showLogs={logsJobId === job.id}
             />
           ))}
@@ -723,7 +867,8 @@ function FinetuneTab() {
 
       {registerMut.isError && (
         <p className="text-xs text-destructive">
-          Register failed: {registerMut.error instanceof Error ? registerMut.error.message : 'Unknown'}
+          Register failed:{' '}
+          {registerMut.error instanceof Error ? registerMut.error.message : 'Unknown'}
         </p>
       )}
     </div>
@@ -755,8 +900,11 @@ function FinetuneJobCard({
         </div>
         <div className="flex items-center gap-2">
           <StatusChip status={job.status} />
-          {(job.status === 'running') && (
-            <button onClick={onViewLogs} className="btn-ghost p-1 rounded text-xs flex items-center gap-1">
+          {job.status === 'running' && (
+            <button
+              onClick={onViewLogs}
+              className="btn-ghost p-1 rounded text-xs flex items-center gap-1"
+            >
               <Cpu className="w-3 h-3" />
               {showLogs ? 'Hide' : 'Logs'}
             </button>
@@ -784,9 +932,7 @@ function FinetuneJobCard({
       {job.adapterPath && (
         <p className="text-xs text-muted-foreground">Adapter: {job.adapterPath}</p>
       )}
-      {job.errorMessage && (
-        <p className="text-xs text-destructive">{job.errorMessage}</p>
-      )}
+      {job.errorMessage && <p className="text-xs text-destructive">{job.errorMessage}</p>}
     </div>
   );
 }
@@ -815,7 +961,9 @@ export function TrainingTab() {
             key={tab.id}
             role="tab"
             aria-selected={activeTab === tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => {
+              setActiveTab(tab.id);
+            }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
               activeTab === tab.id
                 ? 'bg-background shadow-sm text-foreground'

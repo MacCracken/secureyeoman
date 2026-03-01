@@ -53,7 +53,14 @@ vi.mock('../api/client', () => ({
   ingestUrl: vi.fn(),
   ingestText: vi.fn(),
   ingestGithubWiki: vi.fn(),
-  fetchKnowledgeHealth: vi.fn().mockResolvedValue({ totalDocuments: 0, totalChunks: 0, byFormat: {}, recentQueryCount: 0, avgTopScore: null, lowCoverageQueries: 0 }),
+  fetchKnowledgeHealth: vi.fn().mockResolvedValue({
+    totalDocuments: 0,
+    totalChunks: 0,
+    byFormat: {},
+    recentQueryCount: 0,
+    avgTopScore: null,
+    lowCoverageQueries: 0,
+  }),
   getAccessToken: vi.fn().mockReturnValue(null),
 }));
 
@@ -116,7 +123,8 @@ const DEFAULT_POLICY = {
   allowOrgIntent: false,
   allowIntentEditor: false,
   allowCodeEditor: true,
-  allowAdvancedEditor: false, allowTrainingExport: false,
+  allowAdvancedEditor: false,
+  allowTrainingExport: false,
   promptGuardMode: 'warn' as const,
   responseGuardMode: 'warn' as const,
   jailbreakThreshold: 0.5,

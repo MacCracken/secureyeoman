@@ -237,6 +237,8 @@ export interface Personality {
     maxPromptTokens?: number;
     omnipresentMind?: boolean;
     strictSystemPromptConfidentiality?: boolean;
+    knowledgeMode?: 'rag' | 'notebook' | 'hybrid';
+    notebookTokenBudget?: number;
     resourcePolicy?: {
       deletionMode?: 'auto' | 'request' | 'manual';
       automationLevel?: 'full_manual' | 'semi_auto' | 'supervised_auto';
@@ -1081,5 +1083,3 @@ export interface AlertRule {
   createdAt: number;
   updatedAt: number;
 }
-
-

@@ -172,7 +172,23 @@ describe('Prometheus Metrics', () => {
   });
 
   it('output starts with # HELP lines (text/plain 0.0.4 format)', () => {
-    const output = formatPrometheusMetrics({ tasks: { total: 1, byStatus: {}, byType: {}, successRate: 1, failureRate: 0, avgDurationMs: 0, minDurationMs: 0, maxDurationMs: 0, p50DurationMs: 0, p95DurationMs: 0, p99DurationMs: 0, queueDepth: 0, inProgress: 0 } });
+    const output = formatPrometheusMetrics({
+      tasks: {
+        total: 1,
+        byStatus: {},
+        byType: {},
+        successRate: 1,
+        failureRate: 0,
+        avgDurationMs: 0,
+        minDurationMs: 0,
+        maxDurationMs: 0,
+        p50DurationMs: 0,
+        p95DurationMs: 0,
+        p99DurationMs: 0,
+        queueDepth: 0,
+        inProgress: 0,
+      },
+    });
     expect(output).toMatch(/^# HELP/);
   });
 

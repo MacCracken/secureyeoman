@@ -74,7 +74,7 @@ async function loadSamplesFromDataset(
     if (samples.length >= maxSamples) break;
     try {
       const obj = JSON.parse(line) as {
-        conversations?: Array<{ from: string; value: string }>;
+        conversations?: { from: string; value: string }[];
       };
       const convs = obj.conversations ?? [];
       const humanTurn = convs.find((c) => c.from === 'human');

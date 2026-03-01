@@ -118,7 +118,9 @@ function AvatarLightbox({ src, alt, onClose }: { src: string; alt: string; onClo
       if (e.key === 'Escape') onClose();
     }
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
   }, [onClose]);
 
   // Non-passive so preventDefault actually stops browser scroll/back-swipe during zoom.
@@ -131,7 +133,9 @@ function AvatarLightbox({ src, alt, onClose }: { src: string; alt: string; onClo
       setScale(next);
     };
     el.addEventListener('wheel', handler, { passive: false });
-    return () => el.removeEventListener('wheel', handler);
+    return () => {
+      el.removeEventListener('wheel', handler);
+    };
   }, []);
 
   function clampScale(s: number) {
@@ -190,7 +194,9 @@ function AvatarLightbox({ src, alt, onClose }: { src: string; alt: string; onClo
         src={src}
         alt={alt}
         draggable={false}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
         onMouseDown={onMouseDown}
         style={{
           transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
@@ -207,12 +213,16 @@ function AvatarLightbox({ src, alt, onClose }: { src: string; alt: string; onClo
       {/* zoom controls */}
       <div
         className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 rounded-full px-4 py-2"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
       >
         <button
           type="button"
           className="text-white/80 hover:text-white"
-          onClick={() => setScale((s) => clampScale(s - 0.25))}
+          onClick={() => {
+            setScale((s) => clampScale(s - 0.25));
+          }}
         >
           <ZoomOut className="w-5 h-5" />
         </button>
@@ -227,7 +237,9 @@ function AvatarLightbox({ src, alt, onClose }: { src: string; alt: string; onClo
         <button
           type="button"
           className="text-white/80 hover:text-white"
-          onClick={() => setScale((s) => clampScale(s + 0.25))}
+          onClick={() => {
+            setScale((s) => clampScale(s + 0.25));
+          }}
         >
           <ZoomIn className="w-5 h-5" />
         </button>
@@ -278,7 +290,9 @@ function AvatarCropModal({
     const url = URL.createObjectURL(file);
     setImgSrc(url);
     setNaturalSize({ w: 0, h: 0 }); // reset until new image loads
-    return () => URL.revokeObjectURL(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
   }, [file]);
 
   useEffect(() => {
@@ -286,23 +300,22 @@ function AvatarCropModal({
       if (e.key === 'Escape') onCancel();
     }
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
   }, [onCancel]);
 
   // Constrain offset so the crop circle is always fully covered by the image.
-  const clamp = useCallback(
-    (ox: number, oy: number, s: number) => {
-      const img = imgRef.current;
-      if (!img) return { x: ox, y: oy };
-      const maxX = Math.max(0, (img.naturalWidth * s) / 2 - CROP_RADIUS);
-      const maxY = Math.max(0, (img.naturalHeight * s) / 2 - CROP_RADIUS);
-      return {
-        x: Math.max(-maxX, Math.min(maxX, ox)),
-        y: Math.max(-maxY, Math.min(maxY, oy)),
-      };
-    },
-    []
-  );
+  const clamp = useCallback((ox: number, oy: number, s: number) => {
+    const img = imgRef.current;
+    if (!img) return { x: ox, y: oy };
+    const maxX = Math.max(0, (img.naturalWidth * s) / 2 - CROP_RADIUS);
+    const maxY = Math.max(0, (img.naturalHeight * s) / 2 - CROP_RADIUS);
+    return {
+      x: Math.max(-maxX, Math.min(maxX, ox)),
+      y: Math.max(-maxY, Math.min(maxY, oy)),
+    };
+  }, []);
 
   const onImgLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
@@ -331,7 +344,9 @@ function AvatarCropModal({
       setOffset(clamp(offsetRef.current.x * ratio, offsetRef.current.y * ratio, next));
     };
     el.addEventListener('wheel', handler, { passive: false });
-    return () => el.removeEventListener('wheel', handler);
+    return () => {
+      el.removeEventListener('wheel', handler);
+    };
   }, [minScale, clamp]);
 
   const onMouseDown = (e: React.MouseEvent) => {
@@ -394,18 +409,28 @@ function AvatarCropModal({
         {/* Header */}
         <div className="flex items-center justify-between w-full">
           <span className="text-sm font-semibold">Crop Photo</span>
-          <span className="text-[10px] text-muted-foreground">Drag to position · scroll to zoom</span>
+          <span className="text-[10px] text-muted-foreground">
+            Drag to position · scroll to zoom
+          </span>
         </div>
 
         {/* Crop viewport */}
         <div
           ref={cropViewportRef}
           className="relative select-none overflow-hidden bg-muted rounded-sm"
-          style={{ width: CROP_CONTAINER, height: CROP_CONTAINER, cursor: dragging ? 'grabbing' : 'grab' }}
+          style={{
+            width: CROP_CONTAINER,
+            height: CROP_CONTAINER,
+            cursor: dragging ? 'grabbing' : 'grab',
+          }}
           onMouseDown={onMouseDown}
           onMouseMove={onMouseMove}
-          onMouseUp={() => setDragging(false)}
-          onMouseLeave={() => setDragging(false)}
+          onMouseUp={() => {
+            setDragging(false);
+          }}
+          onMouseLeave={() => {
+            setDragging(false);
+          }}
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
         >
@@ -506,7 +531,13 @@ export function PersonalityAvatar({
       <img
         src={src}
         alt={personality.name}
-        onClick={zoomable ? () => setLightboxOpen(true) : undefined}
+        onClick={
+          zoomable
+            ? () => {
+                setLightboxOpen(true);
+              }
+            : undefined
+        }
         style={{
           width: size,
           height: size,
@@ -516,7 +547,13 @@ export function PersonalityAvatar({
         }}
       />
       {lightboxOpen && (
-        <AvatarLightbox src={src} alt={personality.name} onClose={() => setLightboxOpen(false)} />
+        <AvatarLightbox
+          src={src}
+          alt={personality.name}
+          onClose={() => {
+            setLightboxOpen(false);
+          }}
+        />
       )}
     </>
   );
@@ -596,13 +633,21 @@ function AvatarUpload({
         <AvatarCropModal
           file={cropFile}
           onConfirm={(blob) => void handleCropConfirm(blob)}
-          onCancel={() => setCropFile(null)}
+          onCancel={() => {
+            setCropFile(null);
+          }}
         />
       )}
       <div className="flex items-center gap-4 mb-4">
         <div
           className={`w-24 h-24 rounded-full overflow-hidden flex items-center justify-center bg-muted flex-shrink-0${personality.avatarUrl ? ' cursor-zoom-in' : ''}`}
-          onClick={personality.avatarUrl ? () => setLightboxOpen(true) : undefined}
+          onClick={
+            personality.avatarUrl
+              ? () => {
+                  setLightboxOpen(true);
+                }
+              : undefined
+          }
           title={personality.avatarUrl ? 'Click to zoom' : undefined}
         >
           {personality.avatarUrl ? (
@@ -619,7 +664,9 @@ function AvatarUpload({
           <AvatarLightbox
             src={`${API_BASE}${personality.avatarUrl}?v=${personality.updatedAt}`}
             alt={personality.name}
-            onClose={() => setLightboxOpen(false)}
+            onClose={() => {
+              setLightboxOpen(false);
+            }}
           />
         )}
         <div className="flex flex-col gap-2">
@@ -650,7 +697,9 @@ function AvatarUpload({
             </button>
           )}
           {error && <p className="text-xs text-destructive">{error}</p>}
-          <p className="text-[10px] text-muted-foreground">JPEG · PNG · WebP · GIF · SVG · max 10 MB</p>
+          <p className="text-[10px] text-muted-foreground">
+            JPEG · PNG · WebP · GIF · SVG · max 10 MB
+          </p>
         </div>
       </div>
     </>
@@ -1118,6 +1167,10 @@ function BrainSection({
   onOmnipresentMindChange,
   strictSystemPromptConfidentiality,
   onStrictSystemPromptConfidentialityChange,
+  knowledgeMode,
+  onKnowledgeModeChange,
+  notebookTokenBudget,
+  onNotebookTokenBudgetChange,
   injectDateTime,
   onInjectDateTimeChange,
   defaultModel,
@@ -1153,6 +1206,10 @@ function BrainSection({
   onOmnipresentMindChange: (v: boolean) => void;
   strictSystemPromptConfidentiality: boolean;
   onStrictSystemPromptConfidentialityChange: (v: boolean | undefined) => void;
+  knowledgeMode: 'rag' | 'notebook' | 'hybrid';
+  onKnowledgeModeChange: (v: 'rag' | 'notebook' | 'hybrid') => void;
+  notebookTokenBudget: number | null;
+  onNotebookTokenBudgetChange: (v: number | null) => void;
   injectDateTime: boolean;
   onInjectDateTimeChange: (v: boolean) => void;
   defaultModel: { provider: string; model: string } | null;
@@ -1346,7 +1403,8 @@ function BrainSection({
             <div className="flex flex-col gap-0.5 min-w-0">
               <p className="text-sm font-medium">System Prompt Confidentiality</p>
               <p className="text-xs text-muted-foreground">
-                Override global setting: scan responses for system prompt content leaks. Falls back to the global Security setting when unchecked.
+                Override global setting: scan responses for system prompt content leaks. Falls back
+                to the global Security setting when unchecked.
               </p>
             </div>
           </div>
@@ -1362,6 +1420,84 @@ function BrainSection({
             />
             <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
           </label>
+        </div>
+
+        {/* Knowledge Retrieval Mode */}
+        <div className="p-3 rounded-lg border border-border space-y-2">
+          <div className="flex items-center gap-2.5">
+            <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+            <div>
+              <p className="text-sm font-medium">Knowledge Retrieval Mode</p>
+              <p className="text-xs text-muted-foreground">
+                How the AI reads your document library when answering questions.
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5 mt-1">
+            {(['rag', 'notebook', 'hybrid'] as const).map((mode) => {
+              const labels: Record<string, string> = {
+                rag: 'RAG',
+                notebook: 'Notebook',
+                hybrid: 'Hybrid',
+              };
+              const descs: Record<string, string> = {
+                rag: 'Top-K semantic search (fast)',
+                notebook: 'Full corpus in-context (NotebookLM style)',
+                hybrid: 'Notebook first, RAG fallback',
+              };
+              return (
+                <button
+                  key={mode}
+                  onClick={() => { onKnowledgeModeChange(mode); }}
+                  title={descs[mode]}
+                  className={`px-2 py-1.5 rounded text-xs font-medium border transition-colors text-center ${
+                    knowledgeMode === mode
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border text-muted-foreground hover:border-muted-foreground'
+                  }`}
+                >
+                  {labels[mode]}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-muted-foreground italic">
+            {knowledgeMode === 'rag' && 'Retrieves the most relevant snippets. Works at any corpus size.'}
+            {knowledgeMode === 'notebook' && 'Loads all documents into the context window. Requires a large-context model (Claude ≥200K, Gemini ≥1M recommended).'}
+            {knowledgeMode === 'hybrid' && 'Loads the full corpus when it fits in 65% of the context window, otherwise falls back to RAG automatically.'}
+          </p>
+          {(knowledgeMode === 'notebook' || knowledgeMode === 'hybrid') && (
+            <div className="space-y-1 pt-1 border-t border-border">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Override token budget</span>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={notebookTokenBudget !== null}
+                    onChange={(e) => { onNotebookTokenBudgetChange(e.target.checked ? 50000 : null); }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-primary after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+                </label>
+              </div>
+              {notebookTokenBudget !== null && (
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground block">
+                    Budget: {notebookTokenBudget.toLocaleString()} tokens
+                  </label>
+                  <input
+                    type="range"
+                    min={10000}
+                    max={900000}
+                    step={10000}
+                    value={notebookTokenBudget}
+                    onChange={(e) => { onNotebookTokenBudgetChange(Number(e.target.value)); }}
+                    className="w-full"
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Chronoception */}
@@ -2426,7 +2562,9 @@ function BodySection({
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) return [];
-      const body = await res.json() as { tokens?: Array<{ id: string; provider: string; email: string }> };
+      const body = (await res.json()) as {
+        tokens?: { id: string; provider: string; email: string }[];
+      };
       return body.tokens ?? [];
     },
   });
@@ -2439,9 +2577,7 @@ function BodySection({
     status: 'active',
     _email: t.email,
   }));
-  const oauthCovered = new Set(
-    oauthTokens.map((t) => `${t.platform}:${t._email}`)
-  );
+  const oauthCovered = new Set(oauthTokens.map((t) => `${t.platform}:${t._email}`));
   const dedupedIntegrations = (integrationsData?.integrations ?? []).filter(
     (i: { platform: string; config?: Record<string, unknown> }) => {
       const email = i.config?.email as string | undefined;
@@ -3707,9 +3843,16 @@ function BodySection({
           </p>
           <div className="flex items-start gap-2 text-[10px] text-muted-foreground bg-muted/30 rounded p-2">
             <span className="font-semibold text-foreground/60 shrink-0">Modes:</span>
-            <span><strong className="text-foreground/80">Auto</strong> — acts autonomously (send, post, reply).</span>
-            <span><strong className="text-foreground/80">Draft</strong> — composes but awaits approval.</span>
-            <span><strong className="text-foreground/80">Suggest</strong> — recommends only, never acts.</span>
+            <span>
+              <strong className="text-foreground/80">Auto</strong> — acts autonomously (send, post,
+              reply).
+            </span>
+            <span>
+              <strong className="text-foreground/80">Draft</strong> — composes but awaits approval.
+            </span>
+            <span>
+              <strong className="text-foreground/80">Suggest</strong> — recommends only, never acts.
+            </span>
           </div>
 
           {integrationsLoadingAll ? (
@@ -3763,15 +3906,29 @@ function BodySection({
                         <div className="flex gap-1 shrink-0">
                           {(
                             [
-                              { value: 'auto', label: 'Auto', activeClass: 'bg-green-600 text-white border-green-600' },
-                              { value: 'draft', label: 'Draft', activeClass: 'bg-amber-500 text-white border-amber-500' },
-                              { value: 'suggest', label: 'Suggest', activeClass: 'bg-blue-600 text-white border-blue-600' },
+                              {
+                                value: 'auto',
+                                label: 'Auto',
+                                activeClass: 'bg-green-600 text-white border-green-600',
+                              },
+                              {
+                                value: 'draft',
+                                label: 'Draft',
+                                activeClass: 'bg-amber-500 text-white border-amber-500',
+                              },
+                              {
+                                value: 'suggest',
+                                label: 'Suggest',
+                                activeClass: 'bg-blue-600 text-white border-blue-600',
+                              },
                             ] as const
                           ).map(({ value, label, activeClass }) => (
                             <button
                               key={value}
                               type="button"
-                              onClick={() => setMode(value)}
+                              onClick={() => {
+                                setMode(value);
+                              }}
                               className={`px-2.5 py-1 text-xs rounded border transition-colors ${
                                 mode === value
                                   ? activeClass
@@ -4147,7 +4304,11 @@ export function PersonalityEditor() {
   const [thinkingConfig, setThinkingConfig] = useState({ enabled: false, budgetTokens: 10000 });
   const [maxPromptTokens, setMaxPromptTokens] = useState<number | null>(null);
   const [omnipresentMind, setOmnipresentMind] = useState(false);
-  const [strictSystemPromptConfidentiality, setStrictSystemPromptConfidentiality] = useState<boolean | undefined>(undefined);
+  const [strictSystemPromptConfidentiality, setStrictSystemPromptConfidentiality] = useState<
+    boolean | undefined
+  >(undefined);
+  const [knowledgeMode, setKnowledgeMode] = useState<'rag' | 'notebook' | 'hybrid'>('rag');
+  const [notebookTokenBudget, setNotebookTokenBudget] = useState<number | null>(null);
 
   const [resourcePolicy, setResourcePolicy] = useState<{
     deletionMode: 'auto' | 'request' | 'manual';
@@ -4342,9 +4503,10 @@ export function PersonalityEditor() {
     setSelectedServers(body.selectedServers ?? []);
     // Migrate from legacy selectedIntegrations (string[]) to integrationAccess if needed
     const legacyIds: string[] = body.selectedIntegrations ?? [];
-    const access: IntegrationAccess[] = (body.integrationAccess ?? []).length > 0
-      ? (body.integrationAccess ?? [])
-      : legacyIds.map((id) => ({ id, mode: 'auto' as const }));
+    const access: IntegrationAccess[] =
+      (body.integrationAccess ?? []).length > 0
+        ? (body.integrationAccess ?? [])
+        : legacyIds.map((id) => ({ id, mode: 'auto' as const }));
     setIntegrationAccess(access);
     const caps = body.capabilities ?? [];
     setEnabledCaps({
@@ -4412,6 +4574,8 @@ export function PersonalityEditor() {
     setMaxPromptTokens(body.maxPromptTokens ?? null);
     setOmnipresentMind(body.omnipresentMind ?? false);
     setStrictSystemPromptConfidentiality(body.strictSystemPromptConfidentiality);
+    setKnowledgeMode((body.knowledgeMode as 'rag' | 'notebook' | 'hybrid') ?? 'rag');
+    setNotebookTokenBudget(body.notebookTokenBudget ?? null);
     setSetActiveOnSave(false);
     setEditing(p.id);
   };
@@ -4555,6 +4719,8 @@ export function PersonalityEditor() {
         ...(strictSystemPromptConfidentiality !== undefined
           ? { strictSystemPromptConfidentiality }
           : {}),
+        knowledgeMode,
+        ...(notebookTokenBudget !== null ? { notebookTokenBudget } : {}),
         resourcePolicy,
       },
     };
@@ -4860,6 +5026,10 @@ export function PersonalityEditor() {
             onOmnipresentMindChange={setOmnipresentMind}
             strictSystemPromptConfidentiality={strictSystemPromptConfidentiality ?? false}
             onStrictSystemPromptConfidentialityChange={setStrictSystemPromptConfidentiality}
+            knowledgeMode={knowledgeMode}
+            onKnowledgeModeChange={setKnowledgeMode}
+            notebookTokenBudget={notebookTokenBudget}
+            onNotebookTokenBudgetChange={setNotebookTokenBudget}
             injectDateTime={form.injectDateTime ?? false}
             onInjectDateTimeChange={(v) => {
               setForm((f) => ({ ...f, injectDateTime: v }));

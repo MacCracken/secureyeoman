@@ -95,7 +95,9 @@ function baseConfig(overrides: Partial<McpServiceConfig> = {}): McpServiceConfig
 function noopMiddleware(): ToolMiddleware {
   return {
     rateLimiter: { check: () => ({ allowed: true }), reset: vi.fn(), wrap: vi.fn() },
-    inputValidator: { validate: () => ({ valid: true, blocked: false, warnings: [], injectionScore: 0 }) },
+    inputValidator: {
+      validate: () => ({ valid: true, blocked: false, warnings: [], injectionScore: 0 }),
+    },
     auditLogger: { log: vi.fn(), wrap: (_t: string, _a: unknown, fn: () => unknown) => fn() },
     secretRedactor: { redact: (v: unknown) => v },
   } as unknown as ToolMiddleware;
@@ -166,7 +168,11 @@ describe('docker-tools', () => {
     registerDockerTools(server, baseConfig(), noopMiddleware());
 
     const { globalToolRegistry } = await import('./tool-utils.js');
-    await globalToolRegistry.get('docker_logs')!({ container: 'my-app', tail: 50, timestamps: false });
+    await globalToolRegistry.get('docker_logs')!({
+      container: 'my-app',
+      tail: 50,
+      timestamps: false,
+    });
     const args = (mockExecFile.mock.calls[0] as unknown[])[1] as string[];
     expect(args).toContain('logs');
     expect(args).toContain('my-app');

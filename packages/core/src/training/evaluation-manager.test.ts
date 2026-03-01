@@ -106,9 +106,9 @@ describe('EvaluationManager.runEvaluation', () => {
 
   it('throws when neither samples nor datasetPath provided', async () => {
     const mgr = new EvaluationManager(logger);
-    await expect(
-      mgr.runEvaluation({ modelFn: vi.fn() })
-    ).rejects.toThrow('either samples or datasetPath must be provided');
+    await expect(mgr.runEvaluation({ modelFn: vi.fn() })).rejects.toThrow(
+      'either samples or datasetPath must be provided'
+    );
   });
 
   it('handles model errors gracefully — continues to next sample', async () => {
@@ -134,9 +134,9 @@ describe('EvaluationManager.runEvaluation', () => {
   it('returns metrics with sample_count = 0 for empty inline samples', async () => {
     // samples array with 0 length falls back to error
     const mgr = new EvaluationManager(logger);
-    await expect(
-      mgr.runEvaluation({ samples: [], modelFn: vi.fn() })
-    ).rejects.toThrow('either samples or datasetPath must be provided');
+    await expect(mgr.runEvaluation({ samples: [], modelFn: vi.fn() })).rejects.toThrow(
+      'either samples or datasetPath must be provided'
+    );
   });
 
   it('metrics object contains exact_match, char_similarity, sample_count keys', async () => {

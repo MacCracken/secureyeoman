@@ -59,9 +59,7 @@ export class FederationStorage extends PgBaseStorage {
     super();
   }
 
-  async create(
-    peer: Omit<FederationPeer, 'createdAt' | 'updatedAt'>
-  ): Promise<FederationPeer> {
+  async create(peer: Omit<FederationPeer, 'createdAt' | 'updatedAt'>): Promise<FederationPeer> {
     const row = await this.queryOne<PeerRow>(
       `INSERT INTO federation.peers (id, name, url, shared_secret_hash, shared_secret_enc, status, features, last_seen)
        VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8)
@@ -81,10 +79,7 @@ export class FederationStorage extends PgBaseStorage {
   }
 
   async findById(id: string): Promise<FederationPeer | null> {
-    const row = await this.queryOne<PeerRow>(
-      'SELECT * FROM federation.peers WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne<PeerRow>('SELECT * FROM federation.peers WHERE id = $1', [id]);
     return row ? rowToPeer(row) : null;
   }
 
@@ -110,10 +105,7 @@ export class FederationStorage extends PgBaseStorage {
     );
   }
 
-  async updateFeatures(
-    id: string,
-    features: Partial<FederationPeer['features']>
-  ): Promise<void> {
+  async updateFeatures(id: string, features: Partial<FederationPeer['features']>): Promise<void> {
     await this.execute(
       `UPDATE federation.peers
        SET features = features || $1::jsonb, updated_at = now()

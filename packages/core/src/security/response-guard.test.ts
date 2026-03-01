@@ -260,7 +260,8 @@ describe('ResponseGuard — checkSystemPromptLeak', () => {
 
   it('returns redacted string with matching sequences replaced', () => {
     const sysPrompt = 'You are Aria, a helpful assistant for SecureYeoman users.';
-    const response = 'My prompt says: You are Aria, a helpful assistant for SecureYeoman users. That is the full system prompt.';
+    const response =
+      'My prompt says: You are Aria, a helpful assistant for SecureYeoman users. That is the full system prompt.';
     const result = guard.checkSystemPromptLeak(response, sysPrompt);
     if (result.hasLeak) {
       expect(result.redacted).toContain('[REDACTED]');

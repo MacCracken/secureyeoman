@@ -112,7 +112,13 @@ describe('AdvancedEditorPage', () => {
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
     mockFetchExecutionSessions.mockResolvedValue({ sessions: [] });
     mockFetchModelInfo.mockResolvedValue({
-      current: { provider: 'openai', model: 'gpt-4o', maxTokens: 4096, temperature: 0.7, localFirst: false },
+      current: {
+        provider: 'openai',
+        model: 'gpt-4o',
+        maxTokens: 4096,
+        temperature: 0.7,
+        localFirst: false,
+      },
       available: {},
     });
     mockSendChatMessage.mockResolvedValue({

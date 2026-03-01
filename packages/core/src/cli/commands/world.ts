@@ -80,13 +80,16 @@ export type ZoneId = 'workspace' | 'meeting' | 'server-room' | 'break-room';
 export type WorldSize = 'compact' | 'normal' | 'large';
 export type WorldMood = 'calm' | 'productive' | 'busy' | 'alert' | 'celebration';
 
-export interface WorldPos { row: number; col: number; }
+export interface WorldPos {
+  row: number;
+  col: number;
+}
 
 export interface FloorPlan {
   rows: string[];
-  walkable: Set<string>;          // "row,col" keys (0-indexed, 0=border)
+  walkable: Set<string>; // "row,col" keys (0-indexed, 0=border)
   desks: WorldPos[];
-  zoneOf: Map<string, ZoneId>;   // "row,col" → zone
+  zoneOf: Map<string, ZoneId>; // "row,col" → zone
   zoneWaypoints: Record<ZoneId, WorldPos>;
   serverRackPos?: WorldPos;
   coffeePos?: WorldPos;
@@ -216,9 +219,12 @@ const MAP_START_ROW = HEADER_H + 1; // row 3 (1-indexed terminal)
 /** Build a floor plan for the given world size. Exported for tests. */
 export function buildFloorPlan(size: WorldSize): FloorPlan {
   switch (size) {
-    case 'compact': return buildCompactPlan();
-    case 'large': return buildLargePlan();
-    default: return buildNormalPlan();
+    case 'compact':
+      return buildCompactPlan();
+    case 'large':
+      return buildLargePlan();
+    default:
+      return buildNormalPlan();
   }
 }
 
@@ -229,7 +235,7 @@ function buildCompactPlan(): FloorPlan {
   const deskRow = '\u2502' + deskContent + ' '.repeat(iw - deskContent.length) + '\u2502';
 
   const rows: string[] = [
-    '\u250c' + '\u2500'.repeat(iw) + '\u2510',           // ┌──┐
+    '\u250c' + '\u2500'.repeat(iw) + '\u2510', // ┌──┐
     '\u2502  WORKSPACE' + ' '.repeat(iw - 11) + '\u2502',
     '\u2502' + ' '.repeat(iw) + '\u2502',
     deskRow,
@@ -238,7 +244,7 @@ function buildCompactPlan(): FloorPlan {
     '\u2502' + ' '.repeat(iw) + '\u2502',
     '\u2502' + ' '.repeat(iw) + '\u2502',
     '\u2502' + ' '.repeat(iw) + '\u2502',
-    '\u2514' + '\u2500'.repeat(iw) + '\u2518',           // └──┘
+    '\u2514' + '\u2500'.repeat(iw) + '\u2518', // └──┘
   ];
 
   const walkable = new Set<string>();
@@ -357,7 +363,7 @@ function buildLargePlan(): FloorPlan {
   const ri = (s: string) => s + ' '.repeat(Math.max(0, riw - s.length));
 
   const coffeeRight = ' '.repeat(28) + '\u2615' + ' '.repeat(30); // ☕ at col ~88
-  const plantRight = ' '.repeat(28) + '\u2663' + ' '.repeat(30);  // ♣
+  const plantRight = ' '.repeat(28) + '\u2663' + ' '.repeat(30); // ♣
 
   const rows: string[] = [
     '\u250c' + '\u2500'.repeat(liw) + '\u252c' + '\u2500'.repeat(riw) + '\u2510',
@@ -422,11 +428,7 @@ function buildLargePlan(): FloorPlan {
  * Returns steps excluding start; empty if already at destination or unreachable.
  * Exported for tests.
  */
-export function findPath(
-  walkable: Set<string>,
-  from: WorldPos,
-  to: WorldPos
-): WorldPos[] {
+export function findPath(walkable: Set<string>, from: WorldPos, to: WorldPos): WorldPos[] {
   if (from.row === to.row && from.col === to.col) return [];
 
   const key = (p: WorldPos) => `${p.row},${p.col}`;
@@ -438,7 +440,12 @@ export function findPath(
   const cap = walkable.size * 4;
   let iterations = 0;
 
-  const DIRS: Array<[number, number]> = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+  const DIRS: [number, number][] = [
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1],
+  ];
 
   while (queue.length > 0) {
     iterations++;
@@ -687,7 +694,7 @@ class WorldRenderer {
       this.write(moveTo(MAP_START_ROW + r, 1) + A.clearLine);
       let row = plan.rows[r]!;
       // Alert: color server rack red
-      if (mood === 'alert' && plan.serverRackPos && r === plan.serverRackPos.row) {
+      if (mood === 'alert' && r === plan.serverRackPos?.row) {
         row = row.replace('\u2593\u2593', A.red + '\u2593\u2593' + A.reset);
       }
       this.write(row);
@@ -695,11 +702,10 @@ class WorldRenderer {
 
     // 2. Whiteboard text in meeting room
     if (plan.whiteboardRow !== undefined && activeTaskName) {
-      const col = plan.zoneWaypoints['meeting'].col - 8;
+      const col = plan.zoneWaypoints.meeting.col - 8;
       const text = truncate(activeTaskName, 20);
       this.write(
-        moveTo(MAP_START_ROW + plan.whiteboardRow, Math.max(2, col)) +
-          A.yellow + text + A.reset
+        moveTo(MAP_START_ROW + plan.whiteboardRow, Math.max(2, col)) + A.yellow + text + A.reset
       );
     }
 
@@ -723,11 +729,7 @@ class WorldRenderer {
     // 4. Desk glow: agent at home desk and typing
     for (const [pid, ap] of agentPositions) {
       const card = cards.find((c) => c.personality.id === pid);
-      if (
-        card?.state === 'typing' &&
-        ap.pos.row === ap.home.row &&
-        ap.pos.col === ap.home.col
-      ) {
+      if (card?.state === 'typing' && ap.pos.row === ap.home.row && ap.pos.col === ap.home.col) {
         this.write(moveTo(MAP_START_ROW + ap.pos.row, ap.pos.col) + A.brightCyan + '*' + A.reset);
       }
     }
@@ -742,14 +744,18 @@ class WorldRenderer {
       const bracket = inMeeting ? A.yellow : sc;
       this.write(
         moveTo(MAP_START_ROW + ap.pos.row, ap.pos.col) +
-          bracket + '[' + sc + f.face + bracket + ']' + A.reset
+          bracket +
+          '[' +
+          sc +
+          f.face +
+          bracket +
+          ']' +
+          A.reset
       );
     }
 
     // 6. Speech bubbles for meeting pairs
-    const meetingAgents = [...agentPositions.entries()].filter(([pid]) =>
-      meetingPairs.has(pid)
-    );
+    const meetingAgents = [...agentPositions.entries()].filter(([pid]) => meetingPairs.has(pid));
     if (meetingAgents.length >= 2 && activeTaskName) {
       const [, ap] = meetingAgents[0]!;
       const bubbleRow = MAP_START_ROW + ap.pos.row - 3;
@@ -758,16 +764,23 @@ class WorldRenderer {
       const lineLen = text.length + 2;
       if (bubbleRow >= 1) {
         this.write(
-          moveTo(bubbleRow, bubbleCol) + A.yellow +
-            '\u256d' + '\u2500'.repeat(lineLen) + '\u256e' + A.reset
+          moveTo(bubbleRow, bubbleCol) +
+            A.yellow +
+            '\u256d' +
+            '\u2500'.repeat(lineLen) +
+            '\u256e' +
+            A.reset
         );
         this.write(
-          moveTo(bubbleRow + 1, bubbleCol) + A.yellow +
-            '\u2502 ' + text + ' \u2502' + A.reset
+          moveTo(bubbleRow + 1, bubbleCol) + A.yellow + '\u2502 ' + text + ' \u2502' + A.reset
         );
         this.write(
-          moveTo(bubbleRow + 2, bubbleCol) + A.yellow +
-            '\u2570' + '\u2500'.repeat(lineLen) + '\u256f' + A.reset
+          moveTo(bubbleRow + 2, bubbleCol) +
+            A.yellow +
+            '\u2570' +
+            '\u2500'.repeat(lineLen) +
+            '\u256f' +
+            A.reset
         );
       }
     }
@@ -854,9 +867,7 @@ class WorldRenderer {
       ? centerIn(`${off ? A.dim : ''}[${f.extra}]${A.reset}`, w)
       : ' '.repeat(w);
     const labelStr = centerIn(`${sc}${label}${A.reset}`, w);
-    const taskStr = task
-      ? centerIn(`${A.dim}${task}${A.reset}`, w)
-      : ' '.repeat(w);
+    const taskStr = task ? centerIn(`${A.dim}${task}${A.reset}`, w) : ' '.repeat(w);
 
     const lines: string[] = [
       `${bc}┌${'─'.repeat(w)}┐${A.reset}`,
@@ -951,7 +962,8 @@ export const worldCommand: Command = {
   name: 'world',
   aliases: ['w'],
   description: 'ASCII animated agent world — watch your personalities come alive',
-  usage: 'secureyeoman world [--url URL] [--fps N] [--size compact|normal|large] [--speed slow|normal|fast]',
+  usage:
+    'secureyeoman world [--url URL] [--fps N] [--size compact|normal|large] [--speed slow|normal|fast]',
 
   async run(ctx: CommandContext): Promise<number> {
     let argv = ctx.argv;
@@ -1021,15 +1033,12 @@ Options:
     argv = argv5;
     void argv; // consumed
 
-    const size: WorldSize = (['compact', 'normal', 'large'].includes(sizeStr ?? ''))
+    const size: WorldSize = ['compact', 'normal', 'large'].includes(sizeStr ?? '')
       ? (sizeStr as WorldSize)
       : 'normal';
 
     const speedOverride: number | null =
-      speedStr === 'slow' ? 2
-      : speedStr === 'fast' ? 8
-      : speedStr === 'normal' ? 4
-      : null;
+      speedStr === 'slow' ? 2 : speedStr === 'fast' ? 8 : speedStr === 'normal' ? 4 : null;
 
     const fps = Math.min(16, Math.max(1, parseInt(fpsStr ?? '4', 10) || 4));
     const frameMs = Math.floor(1000 / fps);
@@ -1211,7 +1220,15 @@ Options:
     const initialCards = buildCards();
     renderer.setAgents(initialCards);
     if (currentPlan) {
-      renderer.renderMap(currentPlan, agentPositions, initialCards, currentMood, meetingPairsActive, '', celebTick);
+      renderer.renderMap(
+        currentPlan,
+        agentPositions,
+        initialCards,
+        currentMood,
+        meetingPairsActive,
+        '',
+        celebTick
+      );
     } else {
       renderer.render();
     }
@@ -1255,10 +1272,13 @@ Options:
         // Mood drives animation speed unless user set --speed
         currentMood = computeMood(tasks, recentAuditEntries, celebrationUntil, now);
         const moodFps =
-          currentMood === 'celebration' ? 8
-          : currentMood === 'busy' ? 6
-          : currentMood === 'productive' ? 4
-          : 2;
+          currentMood === 'celebration'
+            ? 8
+            : currentMood === 'busy'
+              ? 6
+              : currentMood === 'productive'
+                ? 4
+                : 2;
         void moodFps; // fps override is informational; interval already set
         void speedOverride; // consumed above
 
@@ -1337,7 +1357,15 @@ Options:
         renderer.scrollLog(key.name === 'pageup' ? 10 : 3);
         const cards = buildCards();
         if (currentPlan) {
-          renderer.renderMap(currentPlan, agentPositions, cards, currentMood, meetingPairsActive, '', celebTick);
+          renderer.renderMap(
+            currentPlan,
+            agentPositions,
+            cards,
+            currentMood,
+            meetingPairsActive,
+            '',
+            celebTick
+          );
         } else {
           renderer.render();
         }
@@ -1348,7 +1376,15 @@ Options:
         renderer.scrollLog(key.name === 'pagedown' ? -10 : -3);
         const cards = buildCards();
         if (currentPlan) {
-          renderer.renderMap(currentPlan, agentPositions, cards, currentMood, meetingPairsActive, '', celebTick);
+          renderer.renderMap(
+            currentPlan,
+            agentPositions,
+            cards,
+            currentMood,
+            meetingPairsActive,
+            '',
+            celebTick
+          );
         } else {
           renderer.render();
         }

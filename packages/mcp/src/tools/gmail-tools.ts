@@ -26,7 +26,10 @@ export function registerGmailTools(
       description:
         'List Gmail messages. Supports Gmail search syntax (e.g. "is:unread", "from:alice@example.com", "subject:invoice"). Returns a page of message stubs with IDs; use gmail_read_message to fetch full content.',
       inputSchema: {
-        q: z.string().optional().describe('Gmail search query (e.g. "is:unread", "from:boss@company.com")'),
+        q: z
+          .string()
+          .optional()
+          .describe('Gmail search query (e.g. "is:unread", "from:boss@company.com")'),
         maxResults: z
           .number()
           .int()
@@ -34,16 +37,22 @@ export function registerGmailTools(
           .max(100)
           .optional()
           .describe('Maximum number of messages to return (1–100, default 20)'),
-        pageToken: z.string().optional().describe('Page token from a previous response for pagination'),
-        labelIds: z.string().optional().describe('Comma-separated label IDs to filter by (e.g. "INBOX,UNREAD")'),
+        pageToken: z
+          .string()
+          .optional()
+          .describe('Page token from a previous response for pagination'),
+        labelIds: z
+          .string()
+          .optional()
+          .describe('Comma-separated label IDs to filter by (e.g. "INBOX,UNREAD")'),
       },
     },
     wrapToolHandler('gmail_list_messages', middleware, async (args) => {
       const query: Record<string, string> = {};
-      if (args.q) query.q = String(args.q);
+      if (args.q) query.q = args.q;
       if (args.maxResults) query.maxResults = String(args.maxResults);
-      if (args.pageToken) query.pageToken = String(args.pageToken);
-      if (args.labelIds) query.labelIds = String(args.labelIds);
+      if (args.pageToken) query.pageToken = args.pageToken;
+      if (args.labelIds) query.labelIds = args.labelIds;
 
       const result = await client.get('/api/v1/gmail/messages', query);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
@@ -73,7 +82,7 @@ export function registerGmailTools(
       description:
         'Read all messages in a Gmail thread. Returns the full conversation chain including all replies.',
       inputSchema: {
-        threadId: z.string().describe('Gmail thread ID (from a message\'s threadId field)'),
+        threadId: z.string().describe("Gmail thread ID (from a message's threadId field)"),
       },
     },
     wrapToolHandler('gmail_read_thread', middleware, async (args) => {
@@ -123,7 +132,10 @@ export function registerGmailTools(
         cc: z.string().optional().describe('CC recipients, comma-separated'),
         bcc: z.string().optional().describe('BCC recipients, comma-separated'),
         threadId: z.string().optional().describe('Thread ID to reply in'),
-        inReplyTo: z.string().optional().describe('Message-ID header of the message being replied to'),
+        inReplyTo: z
+          .string()
+          .optional()
+          .describe('Message-ID header of the message being replied to'),
         references: z.string().optional().describe('References header for threading'),
       },
     },
@@ -146,7 +158,8 @@ export function registerGmailTools(
   server.registerTool(
     'gmail_list_labels',
     {
-      description: 'List all Gmail labels (folders) including system labels like INBOX, SENT, TRASH and user-created labels.',
+      description:
+        'List all Gmail labels (folders) including system labels like INBOX, SENT, TRASH and user-created labels.',
       inputSchema: {},
     },
     wrapToolHandler('gmail_list_labels', middleware, async () => {
@@ -159,7 +172,8 @@ export function registerGmailTools(
   server.registerTool(
     'gmail_profile',
     {
-      description: 'Get the connected Gmail account profile — email address, access mode (auto/draft/suggest), and total message/thread counts.',
+      description:
+        'Get the connected Gmail account profile — email address, access mode (auto/draft/suggest), and total message/thread counts.',
       inputSchema: {},
     },
     wrapToolHandler('gmail_profile', middleware, async () => {

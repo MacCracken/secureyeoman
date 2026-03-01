@@ -560,19 +560,27 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   },
   '/api/v1/github/repos/:owner/:repo': { GET: { resource: 'integrations', action: 'read' } },
   '/api/v1/github/repos/:owner/:repo/pulls': { GET: { resource: 'integrations', action: 'read' } },
-  '/api/v1/github/repos/:owner/:repo/pulls/:number': { GET: { resource: 'integrations', action: 'read' } },
+  '/api/v1/github/repos/:owner/:repo/pulls/:number': {
+    GET: { resource: 'integrations', action: 'read' },
+  },
   '/api/v1/github/repos/:owner/:repo/issues': {
     GET: { resource: 'integrations', action: 'read' },
     POST: { resource: 'integrations', action: 'write' },
   },
-  '/api/v1/github/repos/:owner/:repo/issues/:number': { GET: { resource: 'integrations', action: 'read' } },
+  '/api/v1/github/repos/:owner/:repo/issues/:number': {
+    GET: { resource: 'integrations', action: 'read' },
+  },
   '/api/v1/github/ssh-keys': {
     GET: { resource: 'integrations', action: 'read' },
     POST: { resource: 'integrations', action: 'write' },
   },
   '/api/v1/github/ssh-keys/:key_id': { DELETE: { resource: 'integrations', action: 'write' } },
-  '/api/v1/github/repos/:owner/:repo/forks': { POST: { resource: 'integrations', action: 'write' } },
-  '/api/v1/github/repos/:owner/:repo/issues/:number/comments': { POST: { resource: 'integrations', action: 'write' } },
+  '/api/v1/github/repos/:owner/:repo/forks': {
+    POST: { resource: 'integrations', action: 'write' },
+  },
+  '/api/v1/github/repos/:owner/:repo/issues/:number/comments': {
+    POST: { resource: 'integrations', action: 'write' },
+  },
   // Internal SSH key store (MCP → core; returns ciphertexts for GITHUB_SSH_* secrets)
   '/api/v1/internal/ssh-keys': { GET: { resource: 'integrations', action: 'read' } },
   // Integration extras
@@ -744,7 +752,10 @@ export function createAuthHook(opts: AuthHookOptions) {
       const token = authHeader.slice(7);
       try {
         request.authUser = await opts.authService.validateToken(token);
-        request.log = request.log.child({ userId: request.authUser.userId, role: request.authUser.role });
+        request.log = request.log.child({
+          userId: request.authUser.userId,
+          role: request.authUser.role,
+        });
         return;
       } catch (err) {
         if (err instanceof AuthError) {
@@ -759,7 +770,10 @@ export function createAuthHook(opts: AuthHookOptions) {
     if (apiKey) {
       try {
         request.authUser = await opts.authService.validateApiKey(apiKey);
-        request.log = request.log.child({ userId: request.authUser.userId, role: request.authUser.role });
+        request.log = request.log.child({
+          userId: request.authUser.userId,
+          role: request.authUser.role,
+        });
         return;
       } catch (err) {
         if (err instanceof AuthError) {

@@ -12,7 +12,15 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, extractCommonFlags, apiCall, colorContext, Spinner, formatTable } from '../utils.js';
+import {
+  extractFlag,
+  extractBoolFlag,
+  extractCommonFlags,
+  apiCall,
+  colorContext,
+  Spinner,
+  formatTable,
+} from '../utils.js';
 import { TeamCreateSchema } from '@secureyeoman/shared';
 
 const USAGE = `
@@ -86,7 +94,16 @@ export const crewCommand: Command = {
             ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
             return 0;
           }
-          const { teams } = res.data as { teams: { id: string; name: string; description?: string; isBuiltin: boolean; members: { role: string }[] }[]; total: number };
+          const { teams } = res.data as {
+            teams: {
+              id: string;
+              name: string;
+              description?: string;
+              isBuiltin: boolean;
+              members: { role: string }[];
+            }[];
+            total: number;
+          };
           if (teams.length === 0) {
             ctx.stdout.write('No teams found.\n');
             return 0;
@@ -125,7 +142,16 @@ export const crewCommand: Command = {
             ctx.stdout.write(JSON.stringify(teamRes.data, null, 2) + '\n');
             return 0;
           }
-          const { team } = teamRes.data as { team: { id: string; name: string; description?: string; members: { role: string; profileName: string; description?: string }[]; coordinatorProfileName?: string; isBuiltin: boolean } };
+          const { team } = teamRes.data as {
+            team: {
+              id: string;
+              name: string;
+              description?: string;
+              members: { role: string; profileName: string; description?: string }[];
+              coordinatorProfileName?: string;
+              isBuiltin: boolean;
+            };
+          };
           ctx.stdout.write(`\n${bold(team.name)}${team.isBuiltin ? dim(' (builtin)') : ''}\n`);
           if (team.description) ctx.stdout.write(`${dim(team.description)}\n`);
           ctx.stdout.write(`\nID: ${team.id}\n`);
@@ -134,16 +160,22 @@ export const crewCommand: Command = {
           }
           ctx.stdout.write(`\nMembers:\n`);
           for (const m of team.members) {
-            ctx.stdout.write(`  ${cyan(m.role)} → ${m.profileName}${m.description ? `  ${dim(m.description)}` : ''}\n`);
+            ctx.stdout.write(
+              `  ${cyan(m.role)} → ${m.profileName}${m.description ? `  ${dim(m.description)}` : ''}\n`
+            );
           }
 
           if (runsRes.ok) {
-            const runsData = runsRes.data as { runs?: { id: string; status: string; task: string; createdAt: number }[] };
+            const runsData = runsRes.data as {
+              runs?: { id: string; status: string; task: string; createdAt: number }[];
+            };
             const runs = runsData.runs ?? [];
             if (runs.length > 0) {
               ctx.stdout.write('\nRecent runs:\n');
               for (const r of runs.slice(0, 5)) {
-                ctx.stdout.write(`  ${r.id}  ${r.status.padEnd(12)}  ${new Date(r.createdAt).toISOString().slice(0, 19)}  ${r.task.slice(0, 60)}\n`);
+                ctx.stdout.write(
+                  `  ${r.id}  ${r.status.padEnd(12)}  ${new Date(r.createdAt).toISOString().slice(0, 19)}  ${r.task.slice(0, 60)}\n`
+                );
               }
             }
           }
@@ -208,13 +240,22 @@ export const crewCommand: Command = {
             ctx.stderr.write(`Error: team not found: ${id}\n`);
             return 1;
           }
-          const { team } = res.data as { team: { name: string; description?: string; members: unknown[]; coordinatorProfileName?: string } };
+          const { team } = res.data as {
+            team: {
+              name: string;
+              description?: string;
+              members: unknown[];
+              coordinatorProfileName?: string;
+            };
+          };
           const yaml = await import('yaml');
           const yamlOut = yaml.stringify({
             name: team.name,
             ...(team.description ? { description: team.description } : {}),
             members: team.members,
-            ...(team.coordinatorProfileName ? { coordinatorProfileName: team.coordinatorProfileName } : {}),
+            ...(team.coordinatorProfileName
+              ? { coordinatorProfileName: team.coordinatorProfileName }
+              : {}),
           });
           if (outResult.value) {
             writeFileSync(outResult.value, yamlOut, 'utf-8');
@@ -247,12 +288,28 @@ export const crewCommand: Command = {
           const spinner = new Spinner(ctx.stdout);
           spinner.start(`Running team ${id} on task…`);
           const deadline = Date.now() + timeoutMs;
-          let finalRun: { status: string; result?: string; error?: string; coordinatorReasoning?: string; assignedMembers?: string[] } | null = null;
+          let finalRun: {
+            status: string;
+            result?: string;
+            error?: string;
+            coordinatorReasoning?: string;
+            assignedMembers?: string[];
+          } | null = null;
           while (Date.now() < deadline) {
             await new Promise((r) => setTimeout(r, 2000));
-            const pollRes = await apiCall(baseUrl, `/api/v1/agents/teams/runs/${run.id}`, { token });
+            const pollRes = await apiCall(baseUrl, `/api/v1/agents/teams/runs/${run.id}`, {
+              token,
+            });
             if (pollRes.ok) {
-              const { run: r } = pollRes.data as { run: { status: string; result?: string; error?: string; coordinatorReasoning?: string; assignedMembers?: string[] } };
+              const { run: r } = pollRes.data as {
+                run: {
+                  status: string;
+                  result?: string;
+                  error?: string;
+                  coordinatorReasoning?: string;
+                  assignedMembers?: string[];
+                };
+              };
               if (r.status === 'completed' || r.status === 'failed') {
                 finalRun = r;
                 break;
@@ -291,7 +348,14 @@ export const crewCommand: Command = {
             ? `/api/v1/agents/teams/runs/${teamId}`
             : '/api/v1/agents/teams?limit=1'; // fallback — list all via runs endpoint isn't direct
           // Use the runs listing via teamId or list all teams then their runs
-          let allRuns: { id: string; teamName: string; status: string; task: string; createdAt: number; completedAt?: number }[] = [];
+          let allRuns: {
+            id: string;
+            teamName: string;
+            status: string;
+            task: string;
+            createdAt: number;
+            completedAt?: number;
+          }[] = [];
           if (teamId) {
             const res = await apiCall(baseUrl, `/api/v1/agents/teams/${teamId}/runs`, { token });
             if (res.ok) {
@@ -302,11 +366,13 @@ export const crewCommand: Command = {
             const teamsRes = await apiCall(baseUrl, '/api/v1/agents/teams', { token });
             if (teamsRes.ok) {
               const { teams } = teamsRes.data as { teams: { id: string }[] };
-              const runPromises = teams.slice(0, 10).map((t) =>
-                apiCall(baseUrl, `/api/v1/agents/teams/${t.id}/runs`, { token }).then((r) =>
-                  r.ok ? ((r.data as { runs?: unknown[] }).runs ?? []) : []
-                )
-              );
+              const runPromises = teams
+                .slice(0, 10)
+                .map((t) =>
+                  apiCall(baseUrl, `/api/v1/agents/teams/${t.id}/runs`, { token }).then((r) =>
+                    r.ok ? ((r.data as { runs?: unknown[] }).runs ?? []) : []
+                  )
+                );
               const nested = await Promise.all(runPromises);
               allRuns = nested.flat() as typeof allRuns;
             }
@@ -335,7 +401,9 @@ export const crewCommand: Command = {
         }
 
         default:
-          ctx.stderr.write(`Unknown subcommand: ${sub ?? '(none)'}\nRun "secureyeoman crew --help" for usage.\n`);
+          ctx.stderr.write(
+            `Unknown subcommand: ${sub ?? '(none)'}\nRun "secureyeoman crew --help" for usage.\n`
+          );
           return 1;
       }
     } catch (err) {

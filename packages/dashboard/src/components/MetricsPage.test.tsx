@@ -622,13 +622,21 @@ describe('MetricsPage — Agent World card', () => {
     capturedOnNodeClick = undefined;
     mockNavigate.mockReset();
     // Make agent-world visible by default for this describe block
-    localStorage.setItem('mission-control:layout', JSON.stringify({
-      version: 1,
-      cards: [{ id: 'agent-world', visible: true, colSpan: 12, order: 0 }],
-    }));
+    localStorage.setItem(
+      'mission-control:layout',
+      JSON.stringify({
+        version: 1,
+        cards: [{ id: 'agent-world', visible: true, colSpan: 12, order: 0 }],
+      })
+    );
 
     mockFetchHeartbeatStatus.mockResolvedValue({
-      running: true, enabled: true, intervalMs: 60_000, beatCount: 0, lastBeat: null, tasks: [],
+      running: true,
+      enabled: true,
+      intervalMs: 60_000,
+      beatCount: 0,
+      lastBeat: null,
+      tasks: [],
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
@@ -755,7 +763,12 @@ describe('MetricsPage — Mission Control customization', () => {
     localStorage.removeItem('mission-control:layout');
 
     mockFetchHeartbeatStatus.mockResolvedValue({
-      running: true, enabled: true, intervalMs: 60_000, beatCount: 0, lastBeat: null, tasks: [],
+      running: true,
+      enabled: true,
+      intervalMs: 60_000,
+      beatCount: 0,
+      lastBeat: null,
+      tasks: [],
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
@@ -820,7 +833,7 @@ describe('MetricsPage — Mission Control customization', () => {
     await screen.findByText('Customize Dashboard');
     // Find the switch for Key Metrics Bar — it should be disabled
     const switches = screen.getAllByRole('switch');
-    const kpiSwitch = switches.find(s => {
+    const kpiSwitch = switches.find((s) => {
       const row = s.closest('div.flex');
       return row?.textContent?.includes('Key Metrics Bar');
     });
@@ -833,7 +846,7 @@ describe('MetricsPage — Mission Control customization', () => {
     fireEvent.click(screen.getByRole('button', { name: /customize/i }));
     await screen.findByText('Customize Dashboard');
     const switches = screen.getAllByRole('switch');
-    const agentWorldSwitch = switches.find(s => {
+    const agentWorldSwitch = switches.find((s) => {
       const row = s.closest('div.flex');
       return row?.textContent?.includes('Agent World');
     });
@@ -846,7 +859,7 @@ describe('MetricsPage — Mission Control customization', () => {
     fireEvent.click(screen.getByRole('button', { name: /customize/i }));
     await screen.findByText('Customize Dashboard');
     const switches = screen.getAllByRole('switch');
-    const agentWorldSwitch = switches.find(s => {
+    const agentWorldSwitch = switches.find((s) => {
       const row = s.closest('div.flex');
       return row?.textContent?.includes('Agent World');
     })!;
@@ -871,7 +884,7 @@ describe('MetricsPage — Mission Control customization', () => {
     await screen.findByText('Customize Dashboard');
     // Toggle agent-world on
     const switches = screen.getAllByRole('switch');
-    const agentWorldSwitch = switches.find(s => {
+    const agentWorldSwitch = switches.find((s) => {
       const row = s.closest('div.flex');
       return row?.textContent?.includes('Agent World');
     })!;
@@ -891,7 +904,7 @@ describe('MetricsPage — Mission Control customization', () => {
     fireEvent.click(screen.getByRole('button', { name: /customize/i }));
     await screen.findByText('Customize Dashboard');
     const switches = screen.getAllByRole('switch');
-    const costSwitch = switches.find(s => {
+    const costSwitch = switches.find((s) => {
       const row = s.closest('div.flex');
       return row?.textContent?.includes('Cost Breakdown');
     })!;

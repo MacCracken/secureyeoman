@@ -66,7 +66,7 @@ export class DataCurationManager {
     const personalityIds = config.personalityIds ?? [];
 
     // Build an iterable of conversations.
-    const conversationBatches: Array<{ id: string; personalityId: string | null }> = [];
+    const conversationBatches: { id: string; personalityId: string | null }[] = [];
 
     if (personalityIds.length > 0) {
       for (const pid of personalityIds) {

@@ -390,13 +390,19 @@ function TemplateForm({
 }) {
   const [name, setName] = useState(initialValues?.name ?? '');
   const [description, setDescription] = useState(initialValues?.description ?? '');
-  const [strategy, setStrategy] = useState<Strategy>((initialValues?.strategy as Strategy) ?? 'sequential');
+  const [strategy, setStrategy] = useState<Strategy>(initialValues?.strategy! ?? 'sequential');
   const [roles, setRoles] = useState<RoleDraft[]>(
     initialValues?.roles.length
-      ? initialValues.roles.map((r) => ({ role: r.role, profileName: r.profileName, description: r.description ?? '' }))
+      ? initialValues.roles.map((r) => ({
+          role: r.role,
+          profileName: r.profileName,
+          description: r.description ?? '',
+        }))
       : [{ role: '', profileName: '', description: '' }]
   );
-  const [coordinatorProfile, setCoordinatorProfile] = useState(initialValues?.coordinatorProfile ?? '');
+  const [coordinatorProfile, setCoordinatorProfile] = useState(
+    initialValues?.coordinatorProfile ?? ''
+  );
 
   function addRole() {
     setRoles([...roles, { role: '', profileName: '', description: '' }]);
@@ -460,9 +466,15 @@ function TemplateForm({
           }}
           className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
         >
-          <option value="sequential">Sequential — roles execute one after another, each receiving the previous result</option>
-          <option value="parallel">Parallel — all roles execute simultaneously; optional coordinator synthesizes</option>
-          <option value="dynamic">Dynamic — a coordinator agent decides how to delegate at runtime</option>
+          <option value="sequential">
+            Sequential — roles execute one after another, each receiving the previous result
+          </option>
+          <option value="parallel">
+            Parallel — all roles execute simultaneously; optional coordinator synthesizes
+          </option>
+          <option value="dynamic">
+            Dynamic — a coordinator agent decides how to delegate at runtime
+          </option>
         </select>
       </div>
 
@@ -528,8 +540,7 @@ function TemplateForm({
       {/* Coordinator Profile (optional) */}
       <div>
         <label className="text-sm font-medium block mb-1">
-          Coordinator Profile{' '}
-          <span className="text-muted-foreground font-normal">(optional)</span>
+          Coordinator Profile <span className="text-muted-foreground font-normal">(optional)</span>
         </label>
         <input
           value={coordinatorProfile}

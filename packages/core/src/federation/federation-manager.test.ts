@@ -312,9 +312,7 @@ describe('FederationManager', () => {
       ];
       mockStorage.list.mockResolvedValueOnce(peers);
       // For each checkHealth call
-      mockStorage.findById
-        .mockResolvedValueOnce(peers[0])
-        .mockResolvedValueOnce(peers[1]);
+      mockStorage.findById.mockResolvedValueOnce(peers[0]).mockResolvedValueOnce(peers[1]);
       mockFetch.mockResolvedValue({ ok: true });
 
       const manager = makeManager();

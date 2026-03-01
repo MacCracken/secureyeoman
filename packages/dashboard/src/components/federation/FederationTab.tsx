@@ -80,7 +80,9 @@ function ToggleSwitch({
       role="switch"
       aria-checked={checked}
       disabled={disabled}
-      onClick={() => onChange(!checked)}
+      onClick={() => {
+        onChange(!checked);
+      }}
       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 ${
         checked ? 'bg-primary' : 'bg-muted'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
@@ -194,7 +196,9 @@ function PeerRow({
                 </span>
                 <ToggleSwitch
                   checked={peer.features[feat]}
-                  onChange={(v) => onToggleFeature(feat, v)}
+                  onChange={(v) => {
+                    onToggleFeature(feat, v);
+                  }}
                   disabled={isTogglingFeature}
                 />
               </div>
@@ -242,7 +246,9 @@ function AddPeerForm({
             className="input input-sm w-full"
             placeholder="https://peer.example.com"
             value={url}
-            onChange={(e) => setUrl(e.target.value)}
+            onChange={(e) => {
+              setUrl(e.target.value);
+            }}
           />
         </div>
         <div>
@@ -251,7 +257,9 @@ function AddPeerForm({
             className="input input-sm w-full"
             placeholder="My Partner Node"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+            }}
           />
         </div>
         <div className="sm:col-span-2">
@@ -261,17 +269,25 @@ function AddPeerForm({
             type="password"
             placeholder="Pre-shared key agreed with the peer operator"
             value={secret}
-            onChange={(e) => setSecret(e.target.value)}
+            onChange={(e) => {
+              setSecret(e.target.value);
+            }}
           />
         </div>
       </div>
       <div className="flex gap-2">
         <button
-          onClick={() => onSubmit({ url: url.trim(), name: name.trim(), sharedSecret: secret })}
+          onClick={() => {
+            onSubmit({ url: url.trim(), name: name.trim(), sharedSecret: secret });
+          }}
           disabled={!valid || isAdding}
           className="btn btn-sm btn-primary flex items-center gap-1.5"
         >
-          {isAdding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+          {isAdding ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Plus className="w-3.5 h-3.5" />
+          )}
           Add Peer
         </button>
         <button onClick={onCancel} className="btn btn-sm btn-ghost">
@@ -284,13 +300,7 @@ function AddPeerForm({
 
 // ─── Peer Marketplace panel ────────────────────────────────────────────
 
-function PeerMarketplacePanel({
-  peer,
-  onClose,
-}: {
-  peer: FederationPeer;
-  onClose: () => void;
-}) {
+function PeerMarketplacePanel({ peer, onClose }: { peer: FederationPeer; onClose: () => void }) {
   const [query, setQuery] = useState('');
   const [installTarget, setInstallTarget] = useState('');
   const [installingSkillId, setInstallingSkillId] = useState<string | null>(null);
@@ -314,7 +324,9 @@ function PeerMarketplacePanel({
       queryClient.invalidateQueries({ queryKey: ['skills'] });
       setInstallingSkillId(null);
     },
-    onSettled: () => setInstallingSkillId(null),
+    onSettled: () => {
+      setInstallingSkillId(null);
+    },
   });
 
   const skills = (data?.skills ?? []) as { id: string; name: string; description?: string }[];
@@ -338,7 +350,9 @@ function PeerMarketplacePanel({
             className="input input-sm flex-1"
             placeholder="Search skills…"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+            }}
           />
           <button onClick={() => refetch()} className="btn btn-sm btn-ghost">
             <RefreshCw className="w-3.5 h-3.5" />
@@ -350,7 +364,9 @@ function PeerMarketplacePanel({
           <select
             className="input input-sm flex-1"
             value={installTarget}
-            onChange={(e) => setInstallTarget(e.target.value)}
+            onChange={(e) => {
+              setInstallTarget(e.target.value);
+            }}
           >
             <option value="">Global (All Personalities)</option>
             {personalities.map((p) => (
@@ -378,7 +394,9 @@ function PeerMarketplacePanel({
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{skill.name}</p>
                   {skill.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-2">{skill.description}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      {skill.description}
+                    </p>
                   )}
                 </div>
                 <button
@@ -439,9 +457,13 @@ function BundlesPanel() {
       setImportPassphrase('');
       setImportNameOverride('');
       if (fileInputRef.current) fileInputRef.current.value = '';
-      setTimeout(() => setImportSuccess(false), 3000);
+      setTimeout(() => {
+        setImportSuccess(false);
+      }, 3000);
     },
-    onError: (e) => setImportError(e instanceof Error ? e.message : 'Import failed'),
+    onError: (e) => {
+      setImportError(e instanceof Error ? e.message : 'Import failed');
+    },
   });
 
   const personalities = personalitiesData?.personalities ?? [];
@@ -505,7 +527,9 @@ function BundlesPanel() {
             <select
               className="input input-sm w-full"
               value={exportPersonalityId}
-              onChange={(e) => setExportPersonalityId(e.target.value)}
+              onChange={(e) => {
+                setExportPersonalityId(e.target.value);
+              }}
             >
               <option value="">Select personality…</option>
               {personalities.map((p) => (
@@ -526,7 +550,9 @@ function BundlesPanel() {
               type="password"
               placeholder="Strong passphrase"
               value={exportPassphrase}
-              onChange={(e) => setExportPassphrase(e.target.value)}
+              onChange={(e) => {
+                setExportPassphrase(e.target.value);
+              }}
             />
           </div>
         </div>
@@ -576,7 +602,9 @@ function BundlesPanel() {
               type="password"
               placeholder="Passphrase used to encrypt the bundle"
               value={importPassphrase}
-              onChange={(e) => setImportPassphrase(e.target.value)}
+              onChange={(e) => {
+                setImportPassphrase(e.target.value);
+              }}
             />
           </div>
           <div>
@@ -587,7 +615,9 @@ function BundlesPanel() {
               className="input input-sm w-full"
               placeholder="Rename on import"
               value={importNameOverride}
-              onChange={(e) => setImportNameOverride(e.target.value)}
+              onChange={(e) => {
+                setImportNameOverride(e.target.value);
+              }}
             />
           </div>
         </div>
@@ -635,15 +665,12 @@ export function FederationTab() {
   });
 
   const featureMut = useMutation({
-    mutationFn: ({
-      id,
-      features,
-    }: {
-      id: string;
-      features: Partial<FederationPeer['features']>;
-    }) => updateFederationPeerFeatures(id, features),
+    mutationFn: ({ id, features }: { id: string; features: Partial<FederationPeer['features']> }) =>
+      updateFederationPeerFeatures(id, features),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['federationPeers'] }),
-    onSettled: () => setTogglingFeatureId(null),
+    onSettled: () => {
+      setTogglingFeatureId(null);
+    },
   });
 
   async function handleHealthCheck(peer: FederationPeer) {
@@ -679,7 +706,9 @@ export function FederationTab() {
         ).map(([id, label, icon]) => (
           <button
             key={id}
-            onClick={() => setSubTab(id)}
+            onClick={() => {
+              setSubTab(id);
+            }}
             className={`flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 ${
               subTab === id
                 ? 'border-primary text-primary'
@@ -704,7 +733,9 @@ export function FederationTab() {
             </div>
             {!showAddForm && (
               <button
-                onClick={() => setShowAddForm(true)}
+                onClick={() => {
+                  setShowAddForm(true);
+                }}
                 className="btn btn-sm btn-primary flex items-center gap-1.5"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -717,7 +748,9 @@ export function FederationTab() {
             <AddPeerForm
               onSubmit={addMut.mutate}
               isAdding={addMut.isPending}
-              onCancel={() => setShowAddForm(false)}
+              onCancel={() => {
+                setShowAddForm(false);
+              }}
             />
           )}
           {addMut.error && (
@@ -729,7 +762,9 @@ export function FederationTab() {
           {marketplacePeer && (
             <PeerMarketplacePanel
               peer={marketplacePeer}
-              onClose={() => setMarketplacePeer(null)}
+              onClose={() => {
+                setMarketplacePeer(null);
+              }}
             />
           )}
 
@@ -747,7 +782,9 @@ export function FederationTab() {
               <Globe className="w-8 h-8 opacity-30" />
               <p className="text-sm">No federation peers configured.</p>
               <button
-                onClick={() => setShowAddForm(true)}
+                onClick={() => {
+                  setShowAddForm(true);
+                }}
                 className="btn btn-sm btn-ghost flex items-center gap-1.5"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -761,8 +798,12 @@ export function FederationTab() {
                   key={peer.id}
                   peer={peer}
                   expanded={expandedPeers.has(peer.id)}
-                  onToggleExpand={() => toggleExpand(peer.id)}
-                  onRemove={() => removeMut.mutate(peer.id)}
+                  onToggleExpand={() => {
+                    toggleExpand(peer.id);
+                  }}
+                  onRemove={() => {
+                    removeMut.mutate(peer.id);
+                  }}
                   onHealthCheck={() => handleHealthCheck(peer)}
                   isCheckingHealth={checkingHealthId === peer.id}
                   onToggleFeature={(feat, val) => {
@@ -770,7 +811,9 @@ export function FederationTab() {
                     featureMut.mutate({ id: peer.id, features: { [feat]: val } });
                   }}
                   isTogglingFeature={togglingFeatureId === peer.id && featureMut.isPending}
-                  onBrowseMarketplace={() => setMarketplacePeer(peer)}
+                  onBrowseMarketplace={() => {
+                    setMarketplacePeer(peer);
+                  }}
                 />
               ))}
             </div>
