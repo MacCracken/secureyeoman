@@ -6,6 +6,16 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.2] — 2026-03-02
 
+### Roadmap Reorganization & Proposal Consolidation
+
+- **ADR 185 — Screen Capture & Computer Use Platform**: Consolidated proposals 014–017 (screen capture security architecture, RBAC permissions, user consent, sandboxed execution) into a single ADR documenting what's already implemented and what remains as Phase 108.
+- **Proposals superseded**: 014, 015, 016, 017 status updated to "Superseded by ADR 185".
+- **Proposals deleted**: 019 (voice wake), 020 (push-to-talk), 021 (skill actions), 022 (skill triggers), 023 (scheduled skills) — all superseded by existing systems (multimodal pipeline, MCP tools, workflow engine, heartbeat).
+- **Roadmap reorganization**: Phase XX manual tests grouped by domain (Authentication & Multi-Tenancy, Agent & Personality, Marketplace & Workflows, Desktop & Editor). Non-test items moved to appropriate phases or new Engineering Backlog section.
+- **Phase renumbering**: Sequential from 105 — Test Coverage (was 94), License-Gated Feature Reveal (was 93), Reasoning/Personalities (was 102), Screen Capture (new 108), Editor Improvements (was 100), Inline Citations (was 110, was 101).
+- **Engineering Backlog**: New section for non-phase improvement items (workflow condition validation, injection early-exit optimization).
+- **Version bump**: All packages from `2026.3.1` to `2026.3.2`.
+
 ### Migration Consolidation
 
 - **Squashed 77 incremental migrations** (001_initial_schema through 077_conversation_branching) into a single `001_baseline.sql`. Generated from `pg_dump -s` of the final schema state plus seed data from migrations 022, 058, 059.

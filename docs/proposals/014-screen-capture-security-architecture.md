@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Superseded by [ADR 185 — Screen Capture & Computer Use Platform](../adr/185-screen-capture-computer-use.md)
 
 ## Context
 

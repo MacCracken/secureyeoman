@@ -6,27 +6,32 @@
 
 ## Phase XX: QA & Manual Testing (Ongoing)
 
-**Priority**: P1 — Ongoing. Continuous verification of features that lack automated integration coverage. Items move to Changelog when confirmed working; new regressions are added here as discovered.
+**Priority**: P0 — Ongoing. Continuous verification of features that lack automated integration coverage. Items move to Changelog when confirmed working; new regressions are added here as discovered.
 
-### Open Items
+### Manual Tests — Authentication & Multi-Tenancy
 
-- [ ] **Review: Catalog section** — Further review of the Catalog page (Skills, Workflows, Swarm Templates) across all tabs (Personal, Marketplace, Community, Installed). Assess UX, labelling, install/uninstall flows, filtering, search, sync behaviour, and any missing functionality before considering the section production-ready.
-- [ ] **Manual test: Per-Personality Memory Scoping** — End-to-end verification of ADR 134. Steps: (1) Chat with T.Ron → save a memory, confirm it appears in T.Ron recall but NOT in FRIDAY recall; (2) Check heartbeat stats show different Memories counts for T.Ron and FRIDAY; (3) Enable Omnipresent Mind on FRIDAY → confirm FRIDAY can now recall T.Ron's memories; (4) Disable Omnipresent Mind → scoping restored; (5) Verify `/api/v1/brain/stats?personalityId=<id>` returns per-personality counts. *(No automated DB integration test yet)*
-- [ ] **Manual test: SAML SP flow** — Configure SimpleSAMLphp (or mock). (1) `GET /api/v1/auth/sso/saml/:id/metadata` returns valid `<md:EntityDescriptor>` XML. (2) `GET /api/v1/auth/sso/authorize/:id` redirects to IdP with SAMLRequest. (3) Post-IdP redirect hits ACS, returns JWT in URL fragment.
-- [ ] **Manual test: RLS tenant isolation** — Create tenant B via API. Insert `soul.personality` scoped to tenant B. Query personalities as tenant A → empty. Query as tenant B → record visible. Existing default-tenant data unaffected.
-- [ ] **Manual test: OAuth token refresh end-to-end** — (1) Connect a Gmail account; (2) Wait for access token to expire (or use Connections → OAuth → "Refresh Token" button); (3) Confirm personality can still call `gmail_profile` without error; (4) Revoke the Google refresh token in Google Account → Security → Third-party apps, then trigger a Gmail tool call — confirm error message tells user to reconnect (not a silent 500).
-- [ ] **Manual test: AgentWorld sub-agents** — Sub-agents display when created, writing, meeting added. Verify delegation cards appear in grid/map/large views, disappear when delegation completes.
-- [ ] **Manual test: Skills** — Continued review of marketplace + community install/uninstall flow, per-personality skill injection, and sub-agent skill inheritance.
-- [ ] **Manual test: Docker MCP Tools** — Enable `MCP_EXPOSE_DOCKER=true` (socket mode). Verify `docker_ps` lists containers, `docker_logs` streams output, `docker_exec` runs commands correctly. Enable DinD mode via `MCP_DOCKER_MODE=dind` + `MCP_DOCKER_HOST` and repeat.
-- [ ] **Manual test: Workflow export/import round-trip** — Export a workflow with required integrations. Import on a fresh instance; verify compatibility warnings surface correctly for missing integrations. Install a community workflow from Marketplace → Workflows tab; verify it appears in workflow definitions.
-- [ ] **Manual test: Workflows & Swarms marketplace-only lifecycle** — Verify that after a clean rebuild: (1) Installed tab → Workflows shows zero items; (2) Installed tab → Swarm Templates shows zero items; (3) Marketplace tab → Workflows shows all YEOMAN built-ins (research-report-pipeline, code-review-webhook, parallel-intelligence-gather, distill-and-eval, finetune-and-deploy, dpo-loop, pr-ci-triage, build-failure-triage, daily-pr-digest, dev-env-provision) under "YEOMAN Workflows"; (4) Marketplace tab → Swarm Templates shows all YEOMAN built-ins (research-and-code, analyze-and-summarize, parallel-research, code-review, prompt-engineering-quartet) under "YEOMAN Swarm Templates"; (5) Click Install on a workflow → it now appears in Installed tab; (6) Community tab → Sync pulls in community workflows and swarm templates from the configured repo path; (7) Community tab → Workflows and Community tab → Swarm Templates show the synced items; (8) Search filters work across all views. Architecture note: builtin workflows are seeded with `createdBy: 'system'` and builtin swarms with `isBuiltin: true` — these flags are how Installed tab excludes them. Community sync wires `workflowManager` and `swarmManager` into `MarketplaceManager` via `setDelegationManagers()` (called from `bootDelegationChain()`).
-- [ ] **Manual test: Canvas Workspace** — Navigate to `/editor/advanced` (or click "Canvas Mode →" in the editor toolbar). Create ≥3 widgets, resize, move, minimize one. Reload page → verify layout is restored from localStorage. Pin a terminal output → frozen-output widget appears adjacent. Worktree selector lists git worktrees.
-- [ ] **Manual test: Unified editor features** — At `/editor` (standard editor): (1) Click Brain icon → toggle memory on; run a terminal command → verify it appears in the personality's memory via `/api/v1/brain/memories`; (2) Click CPU icon → ModelWidget popup shows current model; switch model → toolbar label updates; (3) Click Globe icon → Agent World panel expands below the main row; switch between Grid/Map/Large views; close via × and verify `localStorage('editor:showWorld')` is `'false'`; (4) Open 3 terminal tabs in MultiTerminal → verify each has independent output; (5) Set `allowAdvancedEditor: true` in security policy → `/editor` should redirect to Canvas workspace.
-- [ ] **Manual test: Adaptive Learning Pipeline** — Verify conversation quality scorer runs on schedule (check `training.conversation_quality` table grows). Trigger a distillation job with `priorityMode: 'failure-first'` → confirm lower-scored conversations appear first in the export.
-- [ ] **Base knowledge generic entries per-personality review** — `hierarchy`, `purpose`, and `interaction` are currently seeded globally. These may need per-personality variants. Low urgency.
-- [ ] **Consumer UX: Settings page split** — Extract `<AuditChainTab>`, `<SoulSystemTab>`, `<RateLimitingTab>` from the `SettingsPage.tsx` monolith into dedicated tab components.
-- [ ] **Validate workflow condition strings at save time** — `evaluateCondition()` in `WorkflowEngine` silently returns `false` for malformed JS expressions (e.g. `steps.nonexistent.output`). Move the `new Function(expr)` compile step to `createWorkflow`/`updateWorkflow` validation so operators get an immediate 400 error with the syntax problem, not a silent skip at runtime.
-- [ ] **Injection detection early-exit after first blocking match** — `InputValidator.detectInjection()` loops through all `INJECTION_PATTERNS` even after setting `blocked = true`. Once a pattern with `block: true` is matched, the loop should break; subsequent patterns only accumulate score, wasting CPU. Benchmark shows this matters at 8 KB inputs with multiple attack vectors.
+- [ ] **SAML SP flow** — Configure SimpleSAMLphp (or mock). (1) `GET /api/v1/auth/sso/saml/:id/metadata` returns valid `<md:EntityDescriptor>` XML. (2) `GET /api/v1/auth/sso/authorize/:id` redirects to IdP with SAMLRequest. (3) Post-IdP redirect hits ACS, returns JWT in URL fragment.
+- [ ] **RLS tenant isolation** — Create tenant B via API. Insert `soul.personality` scoped to tenant B. Query personalities as tenant A → empty. Query as tenant B → record visible. Existing default-tenant data unaffected.
+- [ ] **OAuth token refresh end-to-end** — (1) Connect a Gmail account; (2) Wait for access token to expire (or use Connections → OAuth → "Refresh Token" button); (3) Confirm personality can still call `gmail_profile` without error; (4) Revoke the Google refresh token in Google Account → Security → Third-party apps, then trigger a Gmail tool call — confirm error message tells user to reconnect (not a silent 500).
+
+### Manual Tests — Agent & Personality Features
+
+- [ ] **Per-Personality Memory Scoping** — End-to-end verification of ADR 133. Steps: (1) Chat with T.Ron → save a memory, confirm it appears in T.Ron recall but NOT in FRIDAY recall; (2) Check heartbeat stats show different Memories counts for T.Ron and FRIDAY; (3) Enable Omnipresent Mind on FRIDAY → confirm FRIDAY can now recall T.Ron's memories; (4) Disable Omnipresent Mind → scoping restored; (5) Verify `/api/v1/brain/stats?personalityId=<id>` returns per-personality counts. *(No automated DB integration test yet)*
+- [ ] **AgentWorld sub-agents** — Sub-agents display when created, writing, meeting added. Verify delegation cards appear in grid/map/large views, disappear when delegation completes.
+- [ ] **Adaptive Learning Pipeline** — Verify conversation quality scorer runs on schedule (check `training.conversation_quality` table grows). Trigger a distillation job with `priorityMode: 'failure-first'` → confirm lower-scored conversations appear first in the export.
+
+### Manual Tests — Marketplace & Workflows
+
+- [ ] **Skills marketplace flow** — Continued review of marketplace + community install/uninstall flow, per-personality skill injection, and sub-agent skill inheritance.
+- [ ] **Workflow export/import round-trip** — Export a workflow with required integrations. Import on a fresh instance; verify compatibility warnings surface correctly for missing integrations. Install a community workflow from Marketplace → Workflows tab; verify it appears in workflow definitions.
+- [ ] **Workflows & Swarms marketplace lifecycle** — Verify that after a clean rebuild: (1) Installed tab → Workflows shows zero items; (2) Installed tab → Swarm Templates shows zero items; (3) Marketplace tab → Workflows shows all YEOMAN built-ins (research-report-pipeline, code-review-webhook, parallel-intelligence-gather, distill-and-eval, finetune-and-deploy, dpo-loop, pr-ci-triage, build-failure-triage, daily-pr-digest, dev-env-provision) under "YEOMAN Workflows"; (4) Marketplace tab → Swarm Templates shows all YEOMAN built-ins (research-and-code, analyze-and-summarize, parallel-research, code-review, prompt-engineering-quartet) under "YEOMAN Swarm Templates"; (5) Click Install on a workflow → it now appears in Installed tab; (6) Community tab → Sync pulls in community workflows and swarm templates from the configured repo path; (7) Community tab → Workflows and Community tab → Swarm Templates show the synced items; (8) Search filters work across all views. Architecture note: builtin workflows are seeded with `createdBy: 'system'` and builtin swarms with `isBuiltin: true` — these flags are how Installed tab excludes them. Community sync wires `workflowManager` and `swarmManager` into `MarketplaceManager` via `setDelegationManagers()` (called from `bootDelegationChain()`).
+- [ ] **Catalog section review** — Further review of the Catalog page (Skills, Workflows, Swarm Templates) across all tabs (Personal, Marketplace, Community, Installed). Assess UX, labelling, install/uninstall flows, filtering, search, sync behaviour, and any missing functionality before considering the section production-ready.
+
+### Manual Tests — Desktop & Editor
+
+- [ ] **Docker MCP Tools** — Enable `MCP_EXPOSE_DOCKER=true` (socket mode). Verify `docker_ps` lists containers, `docker_logs` streams output, `docker_exec` runs commands correctly. Enable DinD mode via `MCP_DOCKER_MODE=dind` + `MCP_DOCKER_HOST` and repeat.
+- [ ] **Canvas Workspace** — Navigate to `/editor/advanced` (or click "Canvas Mode →" in the editor toolbar). Create ≥3 widgets, resize, move, minimize one. Reload page → verify layout is restored from localStorage. Pin a terminal output → frozen-output widget appears adjacent. Worktree selector lists git worktrees.
+- [ ] **Unified editor features** — At `/editor` (standard editor): (1) Click Brain icon → toggle memory on; run a terminal command → verify it appears in the personality's memory via `/api/v1/brain/memories`; (2) Click CPU icon → ModelWidget popup shows current model; switch model → toolbar label updates; (3) Click Globe icon → Agent World panel expands below the main row; switch between Grid/Map/Large views; close via × and verify `localStorage('editor:showWorld')` is `'false'`; (4) Open 3 terminal tabs in MultiTerminal → verify each has independent output; (5) Set `allowAdvancedEditor: true` in security policy → `/editor` should redirect to Canvas workspace.
 
 ---
 
@@ -34,19 +39,30 @@
 
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
-| XX | QA & Manual Testing | P1 — ongoing | 🔄 Continuous |
-| 93 | License-Gated Feature Reveal | P2 — commercial | Planned |
-| 94 | Test Coverage: Path to 88%/77% | P2 — engineering quality | 🔄 In Progress (80.85%/68.76%) |
-| 100 | Editor Improvements (Auto-Claude Style) | P3 — power user UX | 🔄 In Progress (unification ✅, IDE features planned) |
-| 101 | Inline Citations & Grounding | P4 — trust layer | Planned |
-| 102 | Reasoning Strategies, Security Templates & Portable Personalities | P2 — capability + distribution | Planned |
+| XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
+| 105 | Test Coverage: Path to 88%/77% | P1 — engineering quality | 🔄 In Progress (80.85%/68.76%) |
+| 106 | License-Gated Feature Reveal | P1 — commercial | Planned |
+| 107 | Reasoning Strategies, Security Templates & Portable Personalities | P2 — capability + distribution | Planned |
+| 108 | Screen Capture & Computer Use Platform | P2 — capability | Planned |
+| 109 | Editor Improvements (Auto-Claude Style) | P3 — power user UX | 🔄 In Progress (unification ✅, IDE features planned) |
+| 110 | Inline Citations & Grounding | P3 — trust layer | Planned |
 | Future | Workflow Versioning, LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Infrastructure | Future / Demand-Gated | — |
 
 ---
 
-## Phase 93: License-Gated Feature Reveal
+## Phase 105: Test Coverage: Path to 88%/77%
 
-**Priority**: P2 — Commercial. Enterprise features are built and instrumented but not yet gated. This phase makes the tier boundary real: community installs see upgrade prompts; enterprise installs unlock the full feature set. Directly tied to revenue (ADR 171).
+**Priority**: P1 — Engineering quality. Current: 80.85% statements / 68.76% branches. Target: 88% statements / 77% branches.
+
+*Previously Phase 94. Renumbered for sequential ordering.*
+
+---
+
+## Phase 106: License-Gated Feature Reveal
+
+**Priority**: P1 — Commercial. Enterprise features are built and instrumented but not yet gated. This phase makes the tier boundary real: community installs see upgrade prompts; enterprise installs unlock the full feature set. Directly tied to revenue (ADR 171).
+
+*Previously Phase 93. Renumbered for sequential ordering.*
 
 Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi_tenancy`, `cicd_integration`, `advanced_observability`.
 
@@ -58,34 +74,13 @@ Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi
 
 ---
 
-## Phase 100: Editor Improvements (Auto-Claude Style)
-
-**Priority**: P3 — High value for power users. Demand-gated — implement incrementally based on user feedback.
-
-**Remaining IDE features** — Auto-Claude–style patterns (plan display, step-by-step approval, AI commit messages, context badges), multi-file editing (tabs, split panes), project explorer, integrated Git, command palette, inline AI completion (Copilot-style), multi-file search & replace, collaborative editing (Yjs CRDT), keybindings editor, layout persistence, responsive/mobile layout, training integration (export/annotation), and plugin/extension system.
-
----
-
-## Phase 101: Inline Citations & Grounding
-
-**Priority**: P4 — Trust layer. Groundedness enforcement is the anchor item; web grounding is a stretch goal. Requires the Phase 82 knowledge base retrieval layer (complete — see [knowledge-base.md](../guides/knowledge-base.md)).
-
-Inspired by Google Cloud Vertex AI Grounding and Azure Groundedness Detection.
-
-- [ ] **Source-attributed responses** — When the AI uses retrieved knowledge base documents in a response, inject inline citations (`[1]`, `[2]`) and render a **Sources** section at the bottom of the response. Citation text includes: document title, page/chunk number, and a short excerpt. Stored as structured metadata on the conversation turn. Enabled per personality via `enableCitations: boolean`.
-- [ ] **Groundedness enforcement** — Post-processing pass: before returning a response, check each factual claim against the retrieved chunks using an embedding similarity threshold. Claims with no supporting chunk above threshold are flagged as `[unverified]` inline. Configurable mode: `annotate_only`, `block_unverified`, or `strip_unverified`.
-- [ ] **Web grounding** — Ground AI responses in live web search results, not just the local knowledge base. When web grounding is enabled and the query requires current information, perform a search (via existing web-search MCP tool), retrieve top results, and include them as retrieved context with citations.
-- [ ] **Grounding confidence score** — Per-response aggregate grounding score: what fraction of claims are supported by retrieved sources above threshold? Stored on the conversation turn. Low-grounding responses flagged in the Audit Log. Rolling average per personality surfaced in the Analytics tab as a "Response Trustworthiness" metric.
-- [ ] **Citation feedback** — Users can click a citation to see the full source chunk in a side drawer. They can mark citations as "not relevant" — negative feedback stored as a weak signal for the knowledge base quality scoring system.
-- [ ] **Document provenance scoring** — 8-dimension quality evaluation for knowledge base documents, inspired by [Substrate](https://github.com/danielmiessler/Substrate)'s library science methodology. Each `brain.documents` row gains a `source_quality` JSONB column scoring: Authority, Currency, Objectivity, Accuracy, Methodology, Coverage, Reliability, and Provenance (each 0.0–1.0). Composite `trust_score` (weighted average) used to boost/demote chunks during RAG retrieval in `BrainManager.recall()`. Auto-populated where possible (e.g., `.gov` URLs score high on Authority; age of document drives Currency). Manual override via document detail UI. Documents with no provenance data default to a neutral score (0.5). Trust scores surfaced in the Knowledge Base → Health panel and in citation footnotes when Phase 101 citations are enabled.
-
----
-
-## Phase 102: Reasoning Strategies, Security Templates & Portable Personalities
+## Phase 107: Reasoning Strategies, Security Templates & Portable Personalities
 
 **Priority**: P2 — Capability expansion + distribution. Inspired by [fabric](https://github.com/danielmiessler/fabric)'s patterns/strategies architecture. Six workstreams: composable reasoning strategies, security-domain prompt templates, CLI UX improvements, portable markdown personality format with injection model, personality-core distillation for transport, and ATHI threat governance taxonomy.
 
-### 102-A: Reasoning Strategies Layer
+*Previously Phase 102. Renumbered for sequential ordering. Includes "base knowledge generic entries per-personality review" from Phase XX.*
+
+### 107-A: Reasoning Strategies Layer
 
 *Composable meta-reasoning instructions that can be applied to any personality's system prompt. Orthogonal to the personality itself — "use chain-of-thought with FRIDAY" or "use tree-of-thought with T.Ron".*
 
@@ -99,8 +94,9 @@ Inspired by Google Cloud Vertex AI Grounding and Azure Groundedness Detection.
 - [ ] **CLI: `secureyeoman strategy`** — Subcommands: `list`, `show <slug>`, `create`, `delete`. `--strategy <slug>` flag on `secureyeoman chat` and `secureyeoman execute`.
 - [ ] **Strategy-aware evaluation** — `EvaluationManager` records which strategy was active during evaluated conversations. Evaluation results filterable by strategy to measure which reasoning approach works best for which task type.
 - [ ] **Deterministic routing preference** — Encode a "Code → CLI → Prompt → Skill" dispatch hierarchy in `SkillExecutor` and `WorkflowEngine`, inspired by [PAI](https://github.com/danielmiessler/Personal_AI_Infrastructure)'s principle that deterministic code paths should be preferred over LLM-routed paths when both can solve the task. When a workflow step or skill action can be resolved by a direct function call or shell command with known output, prefer that over sending the task to the LLM. Concretely: `WorkflowEngine` step dispatch checks for a `deterministic` flag on step config; when set, the step runs its `command` or `function` directly and only falls through to AI routing on failure. Skill routing order: code action → HTTP action → AI-assisted action. Reduces token cost and latency for routine operations.
+- [ ] **Base knowledge per-personality review** — `hierarchy`, `purpose`, and `interaction` are currently seeded globally. These may need per-personality variants. Low urgency.
 
-### 102-B: Security Prompt Templates
+### 107-B: Security Prompt Templates
 
 *Pre-built security-focused prompt templates inspired by fabric's security patterns. Delivered as marketplace skills and workflow templates with structured output specifications.*
 
@@ -113,7 +109,7 @@ Inspired by Google Cloud Vertex AI Grounding and Azure Groundedness Detection.
 - [ ] **Log analysis template** — Structured log analysis for security events. Identifies anomalies, correlates events, generates timeline, suggests investigation paths. Supports common log formats (syslog, JSON, CEF).
 - [ ] **Community security patterns directory** — Add `security-templates/` to the community repo structure. Each template is a directory with `system.md` (system prompt), `user.md` (optional input template), and `metadata.json` (category, tags, required integrations). `CommunitySyncResult` gains `securityTemplatesAdded`/`securityTemplatesUpdated`.
 
-### 102-C: CLI Enhancements
+### 107-C: CLI Enhancements
 
 *Unix-philosophy CLI improvements inspired by fabric's composable piping model.*
 
@@ -125,7 +121,7 @@ Inspired by Google Cloud Vertex AI Grounding and Azure Groundedness Detection.
 - [ ] **`--copy` / `-c` flag** — Copy AI response to system clipboard (xclip/xsel on Linux, pbcopy on macOS, clip on Windows). Complement to stdin piping for quick workflows.
 - [ ] **`--format` flag** — Output format control: `markdown` (default), `json` (structured response with metadata), `plain` (strip markdown formatting). JSON mode includes token counts, model used, strategy applied, and timing.
 
-### 102-D: Portable Personality Format — Markdown Injection Model
+### 107-D: Portable Personality Format — Markdown Injection Model
 
 *Bidirectional conversion between SecureYeoman's native personality format and portable markdown documents. The injection model serializes personalities TO markdown for transport/sharing and parses markdown back INTO the native format. Not flat-file storage — markdown is the interchange format.*
 
@@ -155,17 +151,17 @@ Inspired by Google Cloud Vertex AI Grounding and Azure Groundedness Detection.
 - [ ] **Dashboard export/import** — Export button on PersonalityEditor toolbar (downloads `.md` file). Import button on Personalities list page (file upload dialog with preview of parsed personality before confirmation).
 - [ ] **TELOS-style guided personality creation** — Structured onboarding wizard for creating personalities from natural language, inspired by [PAI](https://github.com/danielmiessler/Personal_AI_Infrastructure)'s TELOS goal framework. Instead of filling raw schema fields, the user answers 5–8 guided questions: "What is this personality's mission?", "What topics should it focus on?", "What tools does it need?", "What reasoning style should it use?", "What tone and communication style?", "What constraints or guardrails?". Answers are parsed into a `PersonalityCreate` object and previewed as a rendered markdown personality card before confirmation. Accessible from: (1) "Create with Wizard" button on Personalities list page, (2) `secureyeoman personality create --wizard` CLI flag. The wizard is an alternative to direct JSON/markdown creation — both paths produce the same native personality object.
 
-### 102-E: Personality Core Distillation to Markdown
+### 107-E: Personality Core Distillation to Markdown
 
 *Automated extraction of a personality's effective runtime state — not just its config, but the composed prompt including injected skills, memory context, active integrations, and strategy — into a single portable markdown document. This is the "distilled" view: what the AI actually sees.*
 
-- [ ] **`distillPersonality()` method** — `SoulManager` method that calls `composeSystemPrompt()` with all active skills, memory snippets, integration contexts, and strategy prefix, then wraps the result in the portable markdown format from 102-D. The distilled document includes a `# Runtime Context` section listing: active skills (count + names), memory entries (count), connected integrations, applied strategy, and model configuration.
+- [ ] **`distillPersonality()` method** — `SoulManager` method that calls `composeSystemPrompt()` with all active skills, memory snippets, integration contexts, and strategy prefix, then wraps the result in the portable markdown format from 107-D. The distilled document includes a `# Runtime Context` section listing: active skills (count + names), memory entries (count), connected integrations, applied strategy, and model configuration.
 - [ ] **Distillation route** — `GET /api/v1/soul/personalities/:id/distill` returns the distilled markdown. Accepts `?includeMemory=true` to embed the personality's top-k memory entries (default: metadata only, not full content — avoids leaking sensitive learned data).
 - [ ] **Distillation diff** — `GET /api/v1/soul/personalities/:id/distill/diff` compares the current distilled state against the last exported/tagged version. Returns a unified diff. Useful for understanding "what changed in what the AI sees" vs. "what changed in the config."
 - [ ] **CLI distill** — `secureyeoman personality distill <name> [--include-memory] [--output file]`. Outputs the full composed prompt as a readable markdown document.
 - [ ] **Transport use case** — Distilled personalities can be imported on another SecureYeoman instance. Skills and integrations referenced in the distilled doc that aren't available locally are listed as warnings. The system prompt is imported as-is; skills are matched by name/slug when available.
 
-### 102-F: ATHI Threat Governance Framework
+### 107-F: ATHI Threat Governance Framework
 
 *Actors/Techniques/Harms/Impacts taxonomy for AI threat modeling, adapted from Daniel Miessler's ATHI framework. Positioned as an organizational governance tool — extends SecureYeoman's existing security audit capabilities with an AI-specific threat lens communicable to non-technical stakeholders.*
 
@@ -173,10 +169,63 @@ Inspired by Google Cloud Vertex AI Grounding and Azure Groundedness Detection.
 - [ ] **ATHI storage & migration** — `security.athi_scenarios` table. Fields: id, org_id (nullable, for multi-tenancy), title, description, actor, techniques (JSONB), harms (JSONB), impacts (JSONB), likelihood (1-5), severity (1-5), risk_score (computed: likelihood × severity), mitigations (JSONB), status (identified | assessed | mitigated | accepted | monitoring), created_by, created_at, updated_at.
 - [ ] **ATHI manager** — `packages/core/src/security/athi-manager.ts`. CRUD + `getRiskMatrix()` (actor × technique heat map), `getTopRisks(limit)`, `getMitigationCoverage()` (% of scenarios with at least one mitigation), `generateExecutiveSummary()` (non-technical narrative for board-level reporting).
 - [ ] **ATHI routes** — `GET/POST/PUT/DELETE /api/v1/security/athi/scenarios`. `GET /api/v1/security/athi/matrix` (risk heat map data). `GET /api/v1/security/athi/summary` (executive narrative). Auth: `security:read`/`security:write`.
-- [ ] **AI-assisted scenario generation** — Skill/workflow template: given an organization description and its AI usage patterns, generate candidate ATHI threat scenarios. Uses the malware analysis and threat modeling security templates from 102-B as building blocks. Output reviewed by human before persisting.
+- [ ] **AI-assisted scenario generation** — Skill/workflow template: given an organization description and its AI usage patterns, generate candidate ATHI threat scenarios. Uses the malware analysis and threat modeling security templates from 107-B as building blocks. Output reviewed by human before persisting.
 - [ ] **Dashboard: ATHI tab** — New sub-tab in SecurityPage. Risk matrix visualization (likelihood × severity heat map). Scenario list with filters by actor/technique/status. Executive summary export (PDF/markdown). Mitigation coverage gauge.
 - [ ] **CLI: `secureyeoman athi`** — Subcommands: `list`, `show <id>`, `create`, `matrix`, `summary`. `--format json|table|markdown` output modes.
 - [ ] **Integration with existing security features** — ATHI scenarios can reference audit events (link scenario → observed events). Security Events tab cross-references ATHI scenarios when displaying events that match a known technique pattern. Alert rules can trigger on ATHI-mapped event patterns.
+
+---
+
+## Phase 108: Screen Capture & Computer Use Platform
+
+**Priority**: P2 — Capability. Consolidates proposals 014–017 into a phased implementation. Much of the foundation (RBAC capture permissions, desktop routes, sandbox config, computer use RL pipeline) is already in place. This phase wires the pieces together and adds the remaining security layers.
+
+*New phase. See [ADR 185](../adr/185-screen-capture-computer-use.md) for full context.*
+
+- [ ] **108-A: Wire RBAC into desktop routes** — Desktop routes currently gate on the boolean `allowDesktopControl` toggle. Wire `requireCapturePermission(resource, action)` middleware into each endpoint so role-based conditions (max duration, target restrictions) are evaluated per request.
+- [ ] **108-B: Capture audit logging** — Add audit events for capture operations. Each screenshot, screen recording start/stop, and clipboard access produces an audit chain entry with requester identity, capture scope, timestamp, and result hash. Integrates with existing `AuditChainStorage`.
+- [ ] **108-C: Desktop-to-training bridge** — Connect desktop interaction endpoints to the computer use RL pipeline. Record operator desktop actions as RL episodes in `training.computer_use_episodes` automatically. New `DesktopTrainingBridge` class wired between `desktop-routes.ts` and `ComputerUseManager`.
+- [ ] **108-D: Consent workflow** — WebSocket notification to dashboard when capture is requested. Approve/deny UI with scope summary, purpose, countdown. Configurable timeout (default 30s, max 5min, auto-deny on expiry). Mid-capture revocation. Consent records with cryptographic signatures.
+- [ ] **108-E: Screen recording & streaming** *(stretch)* — Extend screenshot endpoint to continuous capture: screen recording to file, live WebSocket streaming to dashboard, duration enforcement, quality configuration, content filters (blur, redaction, watermarking).
+- [ ] **108-F: Dashboard capture management UI** — Active capture indicator (pulsing dot + scope summary + stop button), capture history with audit trail links, consent approval dialog, capture settings panel.
+
+---
+
+## Phase 109: Editor Improvements (Auto-Claude Style)
+
+**Priority**: P3 — High value for power users. Demand-gated — implement incrementally based on user feedback.
+
+*Previously Phase 100. Renumbered for sequential ordering. Includes "settings page split" from Phase XX.*
+
+**Remaining IDE features** — Auto-Claude–style patterns (plan display, step-by-step approval, AI commit messages, context badges), multi-file editing (tabs, split panes), project explorer, integrated Git, command palette, inline AI completion (Copilot-style), multi-file search & replace, collaborative editing (Yjs CRDT), keybindings editor, layout persistence, responsive/mobile layout, training integration (export/annotation), and plugin/extension system.
+
+- [ ] **Settings page split** — Extract `<AuditChainTab>`, `<SoulSystemTab>`, `<RateLimitingTab>` from the `SettingsPage.tsx` monolith into dedicated tab components.
+
+---
+
+## Phase 110: Inline Citations & Grounding
+
+**Priority**: P3 — Trust layer. Groundedness enforcement is the anchor item; web grounding is a stretch goal. Requires the Phase 82 knowledge base retrieval layer (complete — see [knowledge-base.md](../guides/knowledge-base.md)).
+
+*Previously Phase 101. Renumbered for sequential ordering.*
+
+Inspired by Google Cloud Vertex AI Grounding and Azure Groundedness Detection.
+
+- [ ] **Source-attributed responses** — When the AI uses retrieved knowledge base documents in a response, inject inline citations (`[1]`, `[2]`) and render a **Sources** section at the bottom of the response. Citation text includes: document title, page/chunk number, and a short excerpt. Stored as structured metadata on the conversation turn. Enabled per personality via `enableCitations: boolean`.
+- [ ] **Groundedness enforcement** — Post-processing pass: before returning a response, check each factual claim against the retrieved chunks using an embedding similarity threshold. Claims with no supporting chunk above threshold are flagged as `[unverified]` inline. Configurable mode: `annotate_only`, `block_unverified`, or `strip_unverified`.
+- [ ] **Web grounding** — Ground AI responses in live web search results, not just the local knowledge base. When web grounding is enabled and the query requires current information, perform a search (via existing web-search MCP tool), retrieve top results, and include them as retrieved context with citations.
+- [ ] **Grounding confidence score** — Per-response aggregate grounding score: what fraction of claims are supported by retrieved sources above threshold? Stored on the conversation turn. Low-grounding responses flagged in the Audit Log. Rolling average per personality surfaced in the Analytics tab as a "Response Trustworthiness" metric.
+- [ ] **Citation feedback** — Users can click a citation to see the full source chunk in a side drawer. They can mark citations as "not relevant" — negative feedback stored as a weak signal for the knowledge base quality scoring system.
+- [ ] **Document provenance scoring** — 8-dimension quality evaluation for knowledge base documents, inspired by [Substrate](https://github.com/danielmiessler/Substrate)'s library science methodology. Each `brain.documents` row gains a `source_quality` JSONB column scoring: Authority, Currency, Objectivity, Accuracy, Methodology, Coverage, Reliability, and Provenance (each 0.0–1.0). Composite `trust_score` (weighted average) used to boost/demote chunks during RAG retrieval in `BrainManager.recall()`. Auto-populated where possible (e.g., `.gov` URLs score high on Authority; age of document drives Currency). Manual override via document detail UI. Documents with no provenance data default to a neutral score (0.5). Trust scores surfaced in the Knowledge Base → Health panel and in citation footnotes when Phase 110 citations are enabled.
+
+---
+
+## Engineering Backlog
+
+Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
+
+- [ ] **Validate workflow condition strings at save time** — `evaluateCondition()` in `WorkflowEngine` silently returns `false` for malformed JS expressions (e.g. `steps.nonexistent.output`). Move the `new Function(expr)` compile step to `createWorkflow`/`updateWorkflow` validation so operators get an immediate 400 error with the syntax problem, not a silent skip at runtime.
+- [ ] **Injection detection early-exit after first blocking match** — `InputValidator.detectInjection()` loops through all `INJECTION_PATTERNS` even after setting `blocked = true`. Once a pattern with `block: true` is matched, the loop should break; subsequent patterns only accumulate score, wasting CPU. Benchmark shows this matters at 8 KB inputs with multiple attack vectors.
 
 ---
 
