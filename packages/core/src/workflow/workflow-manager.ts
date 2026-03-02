@@ -25,6 +25,7 @@ import type {
   WorkflowRun,
   WorkflowStepRun,
 } from '@secureyeoman/shared';
+import type { AlertManager } from '../telemetry/alert-manager.js';
 
 export interface WorkflowManagerDeps {
   storage: WorkflowStorage;
@@ -39,6 +40,8 @@ export interface WorkflowManagerDeps {
   evaluationManager?: EvaluationManager | null;
   approvalManager?: PipelineApprovalManager | null;
   lineageStorage?: PipelineLineageStorage | null;
+  // Alert pipeline (Phase 104)
+  alertManager?: AlertManager | null;
 }
 
 export class WorkflowManager {
@@ -61,6 +64,7 @@ export class WorkflowManager {
       evaluationManager: deps.evaluationManager,
       approvalManager: deps.approvalManager,
       lineageStorage: deps.lineageStorage,
+      alertManager: deps.alertManager,
     });
   }
 

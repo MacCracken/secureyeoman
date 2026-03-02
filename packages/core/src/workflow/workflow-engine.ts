@@ -27,6 +27,8 @@ import type { DistillationManager } from '../training/distillation-manager.js';
 import type { FinetuneManager } from '../training/finetune-manager.js';
 import type { WorkflowDefinition, WorkflowRun, WorkflowStep } from '@secureyeoman/shared';
 import { assertPublicUrl } from '../utils/ssrf-guard.js';
+import type { AlertManager } from '../telemetry/alert-manager.js';
+import { emitJobCompletion } from '../telemetry/job-completion-events.js';
 
 const _outputSchemaValidator = new OutputSchemaValidator();
 
@@ -75,6 +77,8 @@ export interface WorkflowEngineDeps {
   lineageStorage?: PipelineLineageStorage | null;
   // CI/CD deps (Phase 90)
   cicdConfig?: CicdEngineConfig | null;
+  // Alert pipeline (Phase 104)
+  alertManager?: AlertManager | null;
 }
 
 export class WorkflowEngine {
@@ -95,6 +99,8 @@ export class WorkflowEngine {
   private readonly lineageStorage: PipelineLineageStorage | null;
   // CI/CD config (Phase 90)
   private readonly cicdConfig: CicdEngineConfig | null;
+  // Alert pipeline (Phase 104)
+  private readonly alertManager: AlertManager | null;
 
   constructor(deps: WorkflowEngineDeps) {
     this.storage = deps.storage;
@@ -109,6 +115,7 @@ export class WorkflowEngine {
     this.approvalManager = deps.approvalManager ?? null;
     this.lineageStorage = deps.lineageStorage ?? null;
     this.cicdConfig = deps.cicdConfig ?? null;
+    this.alertManager = deps.alertManager ?? null;
   }
 
   // ── Public API ────────────────────────────────────────────────
@@ -116,7 +123,8 @@ export class WorkflowEngine {
   async execute(run: WorkflowRun, definition: WorkflowDefinition): Promise<void> {
     this.logger.info('Workflow run started', { runId: run.id, workflowId: definition.id });
 
-    await this.storage.updateRun(run.id, { status: 'running', startedAt: Date.now() });
+    const startTime = Date.now();
+    await this.storage.updateRun(run.id, { status: 'running', startedAt: startTime });
 
     const ctx: WorkflowEngineContext = {
       steps: {},
@@ -138,6 +146,14 @@ export class WorkflowEngine {
       });
 
       this.logger.info('Workflow run completed', { runId: run.id });
+
+      void emitJobCompletion(this.alertManager, {
+        jobType: 'workflow',
+        status: 'completed',
+        jobId: run.id,
+        jobName: definition.name,
+        durationMs: Date.now() - startTime,
+      }, this.logger);
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
       await this.storage.updateRun(run.id, {
@@ -146,6 +162,14 @@ export class WorkflowEngine {
         completedAt: Date.now(),
       });
       this.logger.error('Workflow run failed', { runId: run.id, error });
+
+      void emitJobCompletion(this.alertManager, {
+        jobType: 'workflow',
+        status: 'failed',
+        jobId: run.id,
+        jobName: definition.name,
+        durationMs: Date.now() - startTime,
+      }, this.logger);
     }
   }
 

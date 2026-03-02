@@ -238,6 +238,70 @@ describe('AlertManager channel dispatch', () => {
     vi.unstubAllGlobals();
   });
 
+  it('calls ntfy endpoint with correct headers', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const rule = makeRule({
+      channels: [{ type: 'ntfy', url: 'https://ntfy.sh/my-topic', routingKey: 'tk_secret' }],
+    });
+    const storage = makeStorage([rule]);
+    const notif = makeNotificationManager();
+    const manager = new AlertManager(storage as any, notif as any, makeLogger() as any);
+
+    await manager.evaluate({ security: { rateLimitHitsTotal: 100 } });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://ntfy.sh/my-topic',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Title: expect.stringContaining('Test Rule'),
+          Priority: 'high',
+          Tags: 'warning',
+          Authorization: 'Bearer tk_secret',
+        }),
+      })
+    );
+    vi.unstubAllGlobals();
+  });
+
+  it('calls ntfy without Authorization when no routingKey', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const rule = makeRule({
+      channels: [{ type: 'ntfy', url: 'https://ntfy.sh/my-topic' }],
+    });
+    const storage = makeStorage([rule]);
+    const notif = makeNotificationManager();
+    const manager = new AlertManager(storage as any, notif as any, makeLogger() as any);
+
+    await manager.evaluate({ security: { rateLimitHitsTotal: 100 } });
+
+    const callHeaders = fetchMock.mock.calls[0][1].headers;
+    expect(callHeaders).not.toHaveProperty('Authorization');
+    vi.unstubAllGlobals();
+  });
+
+  it('skips ntfy dispatch when url is missing', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const rule = makeRule({
+      channels: [{ type: 'ntfy' }],
+    });
+    const storage = makeStorage([rule]);
+    const notif = makeNotificationManager();
+    const manager = new AlertManager(storage as any, notif as any, makeLogger() as any);
+
+    await manager.evaluate({ security: { rateLimitHitsTotal: 100 } });
+
+    // fetch should NOT have been called for the ntfy channel
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
   it('does not throw when fetch fails (fire-and-forget)', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
 

@@ -41,7 +41,7 @@ describe('MIGRATION_MANIFEST', () => {
     }
   });
 
-  it('starts with 001_initial_schema', () => {
-    expect(MIGRATION_MANIFEST[0]?.id).toBe('001_initial_schema');
+  it('starts with 001_baseline', () => {
+    expect(MIGRATION_MANIFEST[0]?.id).toBe('001_baseline');
   });
 });

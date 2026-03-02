@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Bell,
@@ -9,6 +9,7 @@ import {
   ToggleRight,
   ChevronDown,
   ChevronUp,
+  FileText,
 } from 'lucide-react';
 import {
   listAlertRules,
@@ -39,6 +40,7 @@ const CHANNEL_COLORS: Record<string, string> = {
   pagerduty: 'bg-green-100 text-green-700',
   opsgenie: 'bg-orange-100 text-orange-700',
   webhook: 'bg-blue-100 text-blue-700',
+  ntfy: 'bg-purple-100 text-purple-700',
 };
 
 function ChannelBadge({ type }: { type: string }) {
@@ -60,6 +62,92 @@ const OPERATOR_LABELS: Record<string, string> = {
   lte: '≤',
   eq: '=',
 };
+
+// ── Rule Templates ─────────────────────────────────────────────────────────
+
+interface RuleTemplate {
+  label: string;
+  category: string;
+  name: string;
+  description: string;
+  metricPath: string;
+  operator: AlertRule['operator'];
+  threshold: number;
+  cooldownSeconds: number;
+}
+
+const RULE_TEMPLATES: RuleTemplate[] = [
+  {
+    label: 'Workflow takes >5 min',
+    category: 'Workflows',
+    name: 'Slow workflow',
+    description: 'Fires when a workflow run exceeds 5 minutes',
+    metricPath: 'jobs.workflow.completed.durationMs',
+    operator: 'gt',
+    threshold: 300000,
+    cooldownSeconds: 600,
+  },
+  {
+    label: 'Workflow failure',
+    category: 'Workflows',
+    name: 'Workflow failure',
+    description: 'Fires on any workflow run failure',
+    metricPath: 'jobs.workflow.failed.error',
+    operator: 'gt',
+    threshold: 0,
+    cooldownSeconds: 60,
+  },
+  {
+    label: 'Distillation failure',
+    category: 'Training',
+    name: 'Distillation failure',
+    description: 'Fires when a distillation job fails',
+    metricPath: 'jobs.distillation.failed.error',
+    operator: 'gt',
+    threshold: 0,
+    cooldownSeconds: 60,
+  },
+  {
+    label: 'Distillation low throughput',
+    category: 'Training',
+    name: 'Distillation low throughput',
+    description: 'Fires when a distillation job produces fewer than 50 samples',
+    metricPath: 'jobs.distillation.completed.samplesGenerated',
+    operator: 'lt',
+    threshold: 50,
+    cooldownSeconds: 300,
+  },
+  {
+    label: 'Evaluation low accuracy',
+    category: 'Training',
+    name: 'Evaluation low accuracy',
+    description: 'Fires when evaluation exact-match drops below 50%',
+    metricPath: 'jobs.evaluation.completed.exactMatch',
+    operator: 'lt',
+    threshold: 0.5,
+    cooldownSeconds: 300,
+  },
+  {
+    label: 'Fine-tune failure',
+    category: 'Training',
+    name: 'Fine-tune failure',
+    description: 'Fires when a fine-tune job fails',
+    metricPath: 'jobs.finetune.failed.error',
+    operator: 'gt',
+    threshold: 0,
+    cooldownSeconds: 60,
+  },
+  {
+    label: 'High rate-limit hits',
+    category: 'Security',
+    name: 'High rate-limit hits',
+    description: 'Fires when total rate-limit hits exceed 100',
+    metricPath: 'security.rateLimitHitsTotal',
+    operator: 'gt',
+    threshold: 100,
+    cooldownSeconds: 300,
+  },
+];
 
 // ── Create/Edit Form ────────────────────────────────────────────────────────
 
@@ -223,6 +311,7 @@ function RuleForm({
               <option value="pagerduty">PagerDuty</option>
               <option value="opsgenie">OpsGenie</option>
               <option value="webhook">Webhook</option>
+              <option value="ntfy">ntfy</option>
             </select>
             {(ch.type === 'slack' || ch.type === 'webhook') && (
               <input
@@ -243,6 +332,26 @@ function RuleForm({
                   updateChannel(i, { routingKey: e.target.value });
                 }}
               />
+            )}
+            {ch.type === 'ntfy' && (
+              <>
+                <input
+                  className="flex-1 px-2 py-1.5 rounded border bg-background text-sm"
+                  placeholder="https://ntfy.sh/my-topic"
+                  value={ch.url ?? ''}
+                  onChange={(e) => {
+                    updateChannel(i, { url: e.target.value });
+                  }}
+                />
+                <input
+                  className="w-36 px-2 py-1.5 rounded border bg-background text-sm"
+                  placeholder="Auth token (optional)"
+                  value={ch.routingKey ?? ''}
+                  onChange={(e) => {
+                    updateChannel(i, { routingKey: e.target.value });
+                  }}
+                />
+              </>
             )}
             <button
               type="button"
@@ -292,12 +401,15 @@ function RuleForm({
 export function AlertRulesTab() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [formInitial, setFormInitial] = useState<RuleFormState | undefined>(undefined);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{
     message: string;
     type: 'success' | 'error' | 'info';
   } | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const templateRef = useRef<HTMLDivElement>(null);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToast({ message, type });
@@ -552,23 +664,72 @@ export function AlertRulesTab() {
 
       {showForm && (
         <RuleForm
+          initial={formInitial}
           onSave={handleSaveNew}
           onCancel={() => {
             setShowForm(false);
+            setFormInitial(undefined);
           }}
           saving={createMutation.isPending}
         />
       )}
 
       {!showForm && (
-        <button
-          onClick={() => {
-            setShowForm(true);
-          }}
-          className="btn btn-sm btn-ghost flex items-center gap-1.5"
-        >
-          <Plus className="w-4 h-4" /> New rule
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setFormInitial(undefined);
+              setShowForm(true);
+            }}
+            className="btn btn-sm btn-ghost flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" /> New rule
+          </button>
+
+          <div className="relative" ref={templateRef}>
+            <button
+              onClick={() => {
+                setShowTemplates((v) => !v);
+              }}
+              className="btn btn-sm btn-ghost flex items-center gap-1.5"
+            >
+              <FileText className="w-4 h-4" /> From template
+            </button>
+            {showTemplates && (
+              <div className="absolute left-0 top-full mt-1 z-50 w-72 bg-popover border rounded-lg shadow-lg py-1">
+                {Array.from(new Set(RULE_TEMPLATES.map((t) => t.category))).map((cat) => (
+                  <div key={cat}>
+                    <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      {cat}
+                    </div>
+                    {RULE_TEMPLATES.filter((t) => t.category === cat).map((t) => (
+                      <button
+                        key={t.label}
+                        className="w-full text-left px-3 py-1.5 text-sm hover:bg-muted transition-colors"
+                        onClick={() => {
+                          setFormInitial({
+                            name: t.name,
+                            description: t.description,
+                            metricPath: t.metricPath,
+                            operator: t.operator,
+                            threshold: String(t.threshold),
+                            cooldownSeconds: String(t.cooldownSeconds),
+                            enabled: true,
+                            channels: [],
+                          });
+                          setShowForm(true);
+                          setShowTemplates(false);
+                        }}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

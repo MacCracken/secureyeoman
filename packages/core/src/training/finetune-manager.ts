@@ -17,6 +17,8 @@ import { join } from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
 import type { Pool } from 'pg';
 import type { SecureLogger } from '../logging/logger.js';
+import type { AlertManager } from '../telemetry/alert-manager.js';
+import { emitJobCompletion } from '../telemetry/job-completion-events.js';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -89,7 +91,8 @@ export class FinetuneManager {
     private readonly pool: Pool,
     private readonly logger: SecureLogger,
     workDir = '/tmp/secureyeoman-finetune',
-    onJobComplete?: (jobId: string, job: FinetuneJob) => Promise<void>
+    onJobComplete?: (jobId: string, job: FinetuneJob) => Promise<void>,
+    private readonly getAlertManager?: () => AlertManager | null
   ) {
     this.workDir = workDir;
     this.onJobComplete = onJobComplete;
@@ -272,6 +275,12 @@ export class FinetuneManager {
           );
           this.logger.info('Finetune job completed', { jobId });
 
+          void emitJobCompletion(this.getAlertManager?.() ?? null, {
+            jobType: 'finetune',
+            status: 'completed',
+            jobId,
+          }, this.logger);
+
           if (this.onJobComplete) {
             const updatedJob = await this.getJob(jobId);
             if (updatedJob) {
@@ -291,6 +300,12 @@ export class FinetuneManager {
             [`Container exited with code ${exitCode}`, jobId]
           );
           this.logger.error('Finetune job failed', { jobId, exitCode });
+
+          void emitJobCompletion(this.getAlertManager?.() ?? null, {
+            jobType: 'finetune',
+            status: 'failed',
+            jobId,
+          }, this.logger);
         }
         resolve();
       });

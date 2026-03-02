@@ -1174,7 +1174,7 @@ export interface SwarmTemplateExport {
 // ─── Observability / Alert Rules (Phase 83) ──────────────────────────────────
 
 export interface AlertChannel {
-  type: 'slack' | 'pagerduty' | 'opsgenie' | 'webhook';
+  type: 'slack' | 'pagerduty' | 'opsgenie' | 'webhook' | 'ntfy';
   url?: string;
   routingKey?: string;
 }

@@ -16,6 +16,8 @@ import type { Pool } from 'pg';
 import type { ConversationStorage } from '../chat/conversation-storage.js';
 import type { SecureLogger } from '../logging/logger.js';
 import { trainingStream } from './training-stream.js';
+import type { AlertManager } from '../telemetry/alert-manager.js';
+import { emitJobCompletion } from '../telemetry/job-completion-events.js';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -109,7 +111,8 @@ export class DistillationManager {
 
   constructor(
     private readonly pool: Pool,
-    private readonly logger: SecureLogger
+    private readonly logger: SecureLogger,
+    private readonly getAlertManager?: () => AlertManager | null
   ) {}
 
   // ── CRUD ───────────────────────────────────────────────────────────────────
@@ -323,6 +326,13 @@ export class DistillationManager {
         [samplesWritten, counterfactualCount, jobId]
       );
       this.logger.info('Distillation job complete', { jobId, samplesWritten, counterfactualCount });
+
+      void emitJobCompletion(this.getAlertManager?.() ?? null, {
+        jobType: 'distillation',
+        status: 'completed',
+        jobId,
+        metrics: { samplesGenerated: samplesWritten, counterfactualCount },
+      }, this.logger);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       await this.pool.query(
@@ -332,6 +342,12 @@ export class DistillationManager {
         [msg, jobId]
       );
       this.logger.error('Distillation job failed', { jobId, error: msg });
+
+      void emitJobCompletion(this.getAlertManager?.() ?? null, {
+        jobType: 'distillation',
+        status: 'failed',
+        jobId,
+      }, this.logger);
     } finally {
       this.runningJobs.delete(jobId);
     }

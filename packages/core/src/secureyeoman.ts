@@ -1448,7 +1448,8 @@ export class SecureYeoman {
         const pool = getPool();
         this.distillationManager = new DistillationManager(
           pool,
-          this.logger.child({ component: 'DistillationManager' })
+          this.logger.child({ component: 'DistillationManager' }),
+          () => this.alertManager
         );
         this.logger.debug('DistillationManager initialized');
       }
@@ -1458,7 +1459,10 @@ export class SecureYeoman {
         const pool = getPool();
         this.finetuneManager = new FinetuneManager(
           pool,
-          this.logger.child({ component: 'FinetuneManager' })
+          this.logger.child({ component: 'FinetuneManager' }),
+          undefined,
+          undefined,
+          () => this.alertManager
         );
         this.logger.debug('FinetuneManager initialized');
       }
@@ -1475,7 +1479,8 @@ export class SecureYeoman {
           this.logger.debug('DataCurationManager initialized');
         }
         this.evaluationManager = new EvaluationManager(
-          this.logger.child({ component: 'EvaluationManager' })
+          this.logger.child({ component: 'EvaluationManager' }),
+          () => this.alertManager
         );
         this.logger.debug('EvaluationManager initialized');
         this.pipelineApprovalManager = new PipelineApprovalManager(
@@ -2962,6 +2967,7 @@ export class SecureYeoman {
           evaluationManager: this.evaluationManager,
           approvalManager: this.pipelineApprovalManager,
           lineageStorage: this.pipelineLineageStorage,
+          alertManager: this.alertManager,
         });
         await this.workflowManager.initialize();
         this.logger!.debug('Workflow manager initialized');

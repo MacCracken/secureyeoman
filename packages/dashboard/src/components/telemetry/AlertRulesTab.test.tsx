@@ -179,4 +179,56 @@ describe('AlertRulesTab', () => {
       expect(mockTest).toHaveBeenCalledWith('rule-1');
     });
   });
+
+  it('shows ntfy channel badge', async () => {
+    mockList.mockResolvedValue({
+      rules: [makeRule({ channels: [{ type: 'ntfy', url: 'https://ntfy.sh/topic' }] })],
+    });
+    wrap(<AlertRulesTab />);
+    await waitFor(() => {
+      expect(screen.getByText('ntfy')).toBeInTheDocument();
+    });
+  });
+
+  it('renders ntfy option in channel type selector', async () => {
+    wrap(<AlertRulesTab />);
+    await waitFor(() => screen.getByText(/New rule/i));
+    await userEvent.click(screen.getByText(/New rule/i));
+
+    // Click "Add channel"
+    await userEvent.click(screen.getByText(/Add channel/i));
+
+    // Check that ntfy option exists in the select
+    const selects = screen.getAllByRole('combobox');
+    const channelSelect = selects[selects.length - 1];
+    const options = channelSelect.querySelectorAll('option');
+    const optionValues = Array.from(options).map((o) => o.value);
+    expect(optionValues).toContain('ntfy');
+  });
+
+  it('shows "From template" button and opens dropdown', async () => {
+    wrap(<AlertRulesTab />);
+    await waitFor(() => screen.getByText(/From template/i));
+    await userEvent.click(screen.getByText(/From template/i));
+    // Should see template categories
+    await waitFor(() => {
+      expect(screen.getByText('Workflows')).toBeInTheDocument();
+      expect(screen.getByText('Training')).toBeInTheDocument();
+      expect(screen.getByText('Security')).toBeInTheDocument();
+    });
+  });
+
+  it('selecting a template pre-fills the form', async () => {
+    wrap(<AlertRulesTab />);
+    await waitFor(() => screen.getByText(/From template/i));
+    await userEvent.click(screen.getByText(/From template/i));
+    await waitFor(() => screen.getByText('Workflow failure'));
+    await userEvent.click(screen.getByText('Workflow failure'));
+
+    // The form should now be visible with the template values
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Workflow failure')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('jobs.workflow.failed.error')).toBeInTheDocument();
+    });
+  });
 });

@@ -110,6 +110,18 @@ function makeLogger(): SecureLogger {
   } as unknown as SecureLogger;
 }
 
+function makeAlertManager() {
+  return {
+    evaluate: vi.fn().mockResolvedValue(undefined),
+    createRule: vi.fn(),
+    updateRule: vi.fn(),
+    deleteRule: vi.fn(),
+    listRules: vi.fn(),
+    getRule: vi.fn(),
+    testRule: vi.fn(),
+  };
+}
+
 function makeEngine(
   opts: {
     storage?: WorkflowStorage;
@@ -123,6 +135,7 @@ function makeEngine(
     approvalManager?: unknown;
     lineageStorage?: unknown;
     cicdConfig?: unknown;
+    alertManager?: unknown;
   } = {}
 ): WorkflowEngine {
   return new WorkflowEngine({
@@ -137,6 +150,7 @@ function makeEngine(
     approvalManager: (opts.approvalManager ?? null) as never,
     lineageStorage: (opts.lineageStorage ?? null) as never,
     cicdConfig: (opts.cicdConfig ?? null) as never,
+    alertManager: (opts.alertManager ?? null) as never,
   });
 }
 
@@ -2110,5 +2124,84 @@ describe('WorkflowEngine — _conditionCache FIFO eviction (Phase 103)', () => {
     expect(engine.evaluateCondition('input.val === 42', ctx)).toBe(true);
     // Second call — from cache
     expect(engine.evaluateCondition('input.val === 42', ctx)).toBe(true);
+  });
+});
+
+// ── Job Completion Events (Phase 104) ─────────────────────────────────────────
+
+describe('WorkflowEngine job completion events', () => {
+  it('emits completion event on successful run', async () => {
+    const alertMgr = makeAlertManager();
+    const storage = makeStorage();
+    const engine = makeEngine({ storage, alertManager: alertMgr });
+
+    const def = makeDefinition([
+      makeStep({ id: 'step1', type: 'transform', config: { expression: '"done"' } }),
+    ]);
+    const run = makeRun();
+
+    await engine.execute(run, def);
+
+    // Allow fire-and-forget to settle
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(alertMgr.evaluate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobs: {
+          workflow: {
+            completed: expect.objectContaining({
+              durationMs: expect.any(Number),
+            }),
+          },
+        },
+      })
+    );
+  });
+
+  it('emits failure event when workflow fails', async () => {
+    const alertMgr = makeAlertManager();
+    const storage = makeStorage();
+    const engine = makeEngine({ storage, alertManager: alertMgr });
+
+    // Step depends on missing dep → will fail to resolve
+    const def = makeDefinition([
+      makeStep({
+        id: 'step1',
+        type: 'agent',
+        config: { prompt: 'test' },
+        dependsOn: ['nonexistent'],
+      }),
+    ]);
+    const run = makeRun();
+
+    await engine.execute(run, def);
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(alertMgr.evaluate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobs: {
+          workflow: {
+            failed: expect.objectContaining({
+              error: 1,
+              durationMs: expect.any(Number),
+            }),
+          },
+        },
+      })
+    );
+  });
+
+  it('works without alertManager (null)', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage, alertManager: null });
+
+    const def = makeDefinition([
+      makeStep({ id: 'step1', type: 'transform', config: { expression: '"ok"' } }),
+    ]);
+    const run = makeRun();
+
+    // Should not throw
+    await engine.execute(run, def);
   });
 });

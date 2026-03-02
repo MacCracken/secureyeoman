@@ -808,3 +808,21 @@ describe('DistillationManager — Phase 92 extensions', () => {
     });
   });
 });
+
+// ── Job Completion Alert Events (Phase 104) ──────────────────────────────────
+
+describe('DistillationManager alert events', () => {
+  it('accepts optional getAlertManager in constructor', () => {
+    const pool = makePool();
+    const logger = makeLogger();
+    const mgr = new DistillationManager(pool, logger, () => null);
+    expect(mgr).toBeInstanceOf(DistillationManager);
+  });
+
+  it('works without getAlertManager (backward compatible)', () => {
+    const pool = makePool();
+    const logger = makeLogger();
+    const mgr = new DistillationManager(pool, logger);
+    expect(mgr).toBeInstanceOf(DistillationManager);
+  });
+});

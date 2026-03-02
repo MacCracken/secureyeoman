@@ -574,3 +574,21 @@ describe('FinetuneManager', () => {
     });
   });
 });
+
+// ── Job Completion Alert Events (Phase 104) ──────────────────────────────────
+
+describe('FinetuneManager alert events', () => {
+  it('accepts optional getAlertManager as 5th constructor param', () => {
+    const p = makePool();
+    const l = makeLogger();
+    const mgr = new FinetuneManager(p, l, '/tmp/test', undefined, () => null);
+    expect(mgr).toBeInstanceOf(FinetuneManager);
+  });
+
+  it('works without getAlertManager (backward compatible)', () => {
+    const p = makePool();
+    const l = makeLogger();
+    const mgr = new FinetuneManager(p, l, '/tmp/test');
+    expect(mgr).toBeInstanceOf(FinetuneManager);
+  });
+});

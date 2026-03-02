@@ -8,7 +8,7 @@ import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
 
 export interface AlertChannel {
-  type: 'slack' | 'pagerduty' | 'opsgenie' | 'webhook';
+  type: 'slack' | 'pagerduty' | 'opsgenie' | 'webhook' | 'ntfy';
   url?: string;
   routingKey?: string;
 }

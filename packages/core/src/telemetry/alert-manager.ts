@@ -262,6 +262,25 @@ export class AlertManager {
         });
         break;
       }
+
+      case 'ntfy': {
+        if (!channel.url) return;
+        const headers: Record<string, string> = {
+          Title: `Alert: ${rule.name}`,
+          Priority: 'high',
+          Tags: 'warning',
+        };
+        if (channel.routingKey) {
+          headers.Authorization = `Bearer ${channel.routingKey}`;
+        }
+        await fetch(channel.url, {
+          method: 'POST',
+          headers,
+          body: text,
+          signal: AbortSignal.timeout(5000),
+        });
+        break;
+      }
     }
   }
 }

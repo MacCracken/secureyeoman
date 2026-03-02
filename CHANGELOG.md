@@ -1,5 +1,20 @@
 ## [2026.3.2] — 2026-03-02
 
+### Migration Consolidation
+
+- **Squashed 77 incremental migrations** (001_initial_schema through 077_conversation_branching) into a single `001_baseline.sql`. Generated from `pg_dump -s` of the final schema state plus seed data from migrations 022, 058, 059.
+- **Result**: 1 file (~4,580 lines) replaces 81 `.sql` files (~5,400 lines of incremental ALTER/DROP/CREATE noise). Schema is now readable at a glance.
+- **Manifest**: `MIGRATION_MANIFEST` reduced from 77 entries to 1. All manifest + runner unit tests pass. Clean startup verified from fresh volumes.
+
+### Phase 104: Job Completion Notifications + ntfy Channel + Alert Templates
+
+- **Job completion events**: Workflows, distillation, fine-tune, and evaluation jobs now emit synthetic snapshots through the alert pipeline on completion/failure. Metric paths: `jobs.<type>.<status>.<field>`. No changes to the core evaluation loop — reuses existing `resolvePath()` + `compareOperator()` infrastructure.
+- **ntfy alert channel**: Added `ntfy` as a 5th alert channel type. POST to topic URL with `Title`/`Priority`/`Tags` headers, optional Bearer auth. No DB migration needed (JSONB channels column).
+- **Alert rule templates**: 7 pre-built templates in the dashboard AlertRulesTab across 3 categories (Workflows, Training, Security). "From template" dropdown pre-populates the rule creation form.
+- **Wiring**: `WorkflowEngine`, `DistillationManager`, `FinetuneManager`, and `EvaluationManager` now receive alertManager references via constructor params. Lazy getter pattern (`() => AlertManager | null`) avoids circular init dependencies.
+- **ADR**: 180. **Guide**: `docs/guides/job-completion-notifications.md`.
+- **Tests**: 25 new tests across 6 files. All existing tests pass.
+
 ### Phase 103: Code Audit Hardening
 
 **Security fixes:**

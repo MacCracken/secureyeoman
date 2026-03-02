@@ -15,6 +15,8 @@ import { randomUUID } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { createInterface } from 'node:readline';
 import type { SecureLogger } from '../logging/logger.js';
+import type { AlertManager } from '../telemetry/alert-manager.js';
+import { emitJobCompletion } from '../telemetry/job-completion-events.js';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -235,7 +237,10 @@ async function fetchEmbedding(url: string, text: string): Promise<number[] | nul
 // ── Manager ───────────────────────────────────────────────────────────────────
 
 export class EvaluationManager {
-  constructor(private readonly logger: SecureLogger) {}
+  constructor(
+    private readonly logger: SecureLogger,
+    private readonly getAlertManager?: () => AlertManager | null
+  ) {}
 
   async runEvaluation(config: EvalConfig): Promise<EvalResult> {
     const evalId = randomUUID();
@@ -335,6 +340,19 @@ export class EvaluationManager {
       evalId,
       metrics: result.metrics,
     });
+
+    void emitJobCompletion(this.getAlertManager?.() ?? null, {
+      jobType: 'evaluation',
+      status: 'completed',
+      jobId: evalId,
+      metrics: {
+        exactMatch: result.metrics.exact_match,
+        charSimilarity: result.metrics.char_similarity,
+        sampleCount: result.metrics.sample_count,
+        toolNameAccuracy: result.metrics.tool_name_accuracy,
+        toolArgMatch: result.metrics.tool_arg_match,
+      },
+    }, this.logger);
 
     return result;
   }
