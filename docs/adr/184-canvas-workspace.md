@@ -1,4 +1,4 @@
-# ADR 171 — Canvas Workspace (Infinite Desktop)
+# ADR 184 — Canvas Workspace (Infinite Desktop)
 
 **Date:** 2026-03-01
 **Status:** Accepted

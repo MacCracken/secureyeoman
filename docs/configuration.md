@@ -1089,7 +1089,7 @@ metrics:
       path: /metrics
 ```
 
-See `deploy/prometheus/alert-rules.yml` for pre-built alert rules and `deploy/grafana/secureyeoman-dashboard.json` for a Grafana dashboard.
+See `deploy/prometheus/alert-rules.yml` for pre-built alert rules and `docs/ops/grafana/` for Grafana dashboards.
 
 ---
 

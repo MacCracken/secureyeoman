@@ -104,7 +104,7 @@ Swarms must be enabled at both the global and personality level:
 1. **Global**: Settings → Security → Sub-Agents → Enable Swarms
 2. **Personality**: Personality Editor → Creation Settings → Allow Swarms
 
-See the [Sub-Agent Delegation guide](./sub-agent-delegation.md) for setup details.
+See the [A2A Delegation guide](./a2a-delegation.md) for setup details.
 
 ## Agent Profiles
 

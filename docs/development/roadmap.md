@@ -191,7 +191,6 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 *As SecureYeoman moves into production deployments, operators need distributed tracing, metrics export, and correlation tooling beyond what the built-in audit log provides.*
 
 **Remaining / Future improvements (demand-gated)**:
-- [ ] **Workflow/job completion notifications** — Emit metric events when workflows, distillation jobs, and evaluation runs complete (or fail). Events fed into the existing `AlertManager` evaluation loop so operators can define alert rules like "notify me when any workflow takes >5 minutes" or "alert on distillation failure". Adds `ntfy` as a fifth alert channel type alongside slack/pagerduty/opsgenie/webhook — lightweight push notifications to mobile/desktop without requiring a full messaging platform. Inspired by [PAI](https://github.com/danielmiessler/Personal_AI_Infrastructure)'s ntfy/Discord notification routing for long-running tasks. Dashboard: alert rule templates for common job-completion patterns pre-populated in the Alert Rules UI.
 - [ ] **Histogram metrics** — Replace avg-latency gauge with proper p50/p95/p99 histograms per route using OpenMetrics format.
 - [ ] **AI completion spans** — Instrument every `aiClient.chat()` call with a child span including model, input/output token counts.
 - [ ] **MCP tool call spans** — Wrap each MCP tool invocation in a span for end-to-end tracing through agent → tool → external API.

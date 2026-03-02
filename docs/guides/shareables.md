@@ -15,7 +15,7 @@ SecureYeoman's marketplace hosts skills, workflows, and swarm templates as porta
 All three types follow the same two-tier pattern:
 
 - **Builtin** — Shipped with SecureYeoman, seeded at startup, read-only.
-- **Community** — Contributed to the [`secureyeoman-community-skills`](https://github.com/yourorg/secureyeoman-community-skills) repository; synced via the Marketplace → Community tab.
+- **Community** — Contributed to the [`secureyeoman-community-skills`](https://github.com/MacCracken/secureyeoman-community-skills) repository; synced via the Marketplace → Community tab.
 - **User** — Created by you on this instance.
 - **Imported** — Installed from a shared JSON file.
 
@@ -32,7 +32,7 @@ All three types follow the same two-tier pattern:
 ### Via the API
 
 ```bash
-curl http://localhost:3000/api/v1/workflows/<id>/export \
+curl https://localhost:18789/api/v1/workflows/<id>/export \
   -H "Authorization: Bearer $TOKEN" \
   | jq .
 ```
@@ -72,7 +72,7 @@ The `requires` field is **inferred automatically**:
 ### Via the API
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/workflows/import \
+curl -X POST https://localhost:18789/api/v1/workflows/import \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d @daily-morning-brief.workflow.json
@@ -106,7 +106,7 @@ Imports are **non-blocking**: the workflow is created regardless of compatibilit
 ### Via the API
 
 ```bash
-curl http://localhost:3000/api/v1/agents/swarms/templates/<id>/export \
+curl https://localhost:18789/api/v1/agents/swarms/templates/<id>/export \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -136,7 +136,7 @@ The `profileRoles` list is inferred from `roles[].profileName`. These are the su
 ### Via the API
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/agents/swarms/templates/import \
+curl -X POST https://localhost:18789/api/v1/agents/swarms/templates/import \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d @security-audit-team.swarm.json
@@ -253,7 +253,7 @@ The sync walks `workflows/` and `swarms/`, upserting definitions with `source='c
 
 ## Related
 
-- [Skill Marketplace](./marketplace.md)
+- [Skill Catalog](./skill-catalog.md)
 - [Swarms Guide](./swarms.md)
 - [Workflows Guide](./workflows.md)
 - [ADR 172 — Marketplace Shareables](../adr/172-marketplace-shareables.md)

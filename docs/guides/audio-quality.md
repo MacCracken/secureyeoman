@@ -191,5 +191,5 @@ OpenAI TTS supports `tts-1` (fast, lower quality) and `tts-1-hd` (slower, higher
 ## Related
 
 - [ADR 139: Audio Quality Improvements](../adr/139-audio-quality-improvements.md)
-- [Multimodal API reference](../api/multimodal.md) *(if present)*
+- [REST API Reference](../api/rest-api.md)
 - [Notifications Guide](notifications.md)

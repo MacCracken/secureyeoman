@@ -1,3 +1,9 @@
+# Changelog
+
+All notable changes to SecureYeoman are documented in this file. Versions use the date-based format `YYYY.M.D`.
+
+---
+
 ## [2026.3.2] — 2026-03-02
 
 ### Migration Consolidation
@@ -5,6 +11,15 @@
 - **Squashed 77 incremental migrations** (001_initial_schema through 077_conversation_branching) into a single `001_baseline.sql`. Generated from `pg_dump -s` of the final schema state plus seed data from migrations 022, 058, 059.
 - **Result**: 1 file (~4,580 lines) replaces 81 `.sql` files (~5,400 lines of incremental ALTER/DROP/CREATE noise). Schema is now readable at a glance.
 - **Manifest**: `MIGRATION_MANIFEST` reduced from 77 entries to 1. All manifest + runner unit tests pass. Clean startup verified from fresh volumes.
+
+### Documentation Audit
+
+- **Version numbers**: Updated from `2026.3.1` to `2026.3.2` across README badges, white paper, functional audit, features.md, and project website (index.html, whitepaper.html, llms.txt, sitemap.xml, .md mirrors).
+- **ADR deduplication**: Renumbered 4 colliding ADR pairs (127→181, 133→182, 141→183, 171→184). All 185 ADRs now have unique numbers.
+- **Broken links fixed**: 4 broken cross-references (personality-editor.md, sub-agent-delegation.md, api/multimodal.md, marketplace.md) pointed at correct targets. `yourorg` placeholder in shareables.md replaced with `MacCracken`.
+- **Stale content fixed**: swarms.md `allowSwarms: false` boolean inversion corrected. openapi.yaml license (MIT→AGPL-3.0), version, server port updated. architecture.md monorepo tree expanded with 6 missing packages. Migration references in 3 guides updated from specific numbers to baseline schema. Roadmap completed Phase 104 item removed.
+- **Site updates**: Dead Discord/Twitter footer links replaced with GitHub Discussions. Alert channel count `4→5` (ntfy). job-completion-notifications guide added to llms.txt.
+- **Changelog**: Added `# Changelog` H1 header per Keep a Changelog convention.
 
 ### Phase 104: Job Completion Notifications + ntfy Channel + Alert Templates
 
@@ -765,7 +780,7 @@
 - **`notifications` WebSocket channel** — added to `CHANNEL_PERMISSIONS`. Broadcast as `{ type: 'update', channel: 'notifications', payload: { notification } }`.
 - **`NotificationBell.tsx` upgrade** — handles two origins: *Local* (security/task WS events, `localStorage`-backed) and *Server* (DB-backed, `notifications` WS channel, REST mark-read/delete). Combined unread count badge; per-item dismiss button.
 - **Heartbeat → notification wiring** — `HeartbeatManager.executeNotifyAction()` calls `notificationManager?.notify()` for every notify action. `setNotificationManager()` method added; wired at Step 6.6 in `secureyeoman.ts`. `SecureYeoman.getNotificationManager()` public getter.
-- ADR 133 (`docs/adr/133-real-time-infrastructure.md`); guide: `docs/guides/notifications.md`.
+- ADR 182 (`docs/adr/182-real-time-infrastructure.md`); guide: `docs/guides/notifications.md`.
 - Tests: `notification-storage.test.ts` (14), `notification-routes.test.ts` (15).
 
 #### Phase 50 — Governance Hardening (OPA + CEL)
@@ -1188,7 +1203,7 @@
 - Security Settings toggle ("Twingate Remote Access") in dashboard
 - Per-personality Twingate checkbox in Personality Editor MCP Features section (disabled with helper text when global toggle is off)
 - `TWINGATE_API_KEY`, `TWINGATE_NETWORK`, `MCP_EXPOSE_TWINGATE_TOOLS` env vars documented in `docs/configuration.md`
-- ADR 127: `docs/adr/127-twingate-remote-mcp-access.md`
+- ADR 181: `docs/adr/181-twingate-remote-mcp-access.md`
 - Guide: `docs/guides/twingate.md` — prerequisites, configuration, workflow, service key lifecycle, troubleshooting
 - 19 unit tests in `packages/mcp/src/tools/twingate-tools.test.ts`
 

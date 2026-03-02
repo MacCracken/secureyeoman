@@ -1,6 +1,6 @@
 # Architectural Sovereignty & Agentic Governance
 
-**White Paper** | March 2026 | SecureYeoman v2026.3.1
+**White Paper** | March 2026 | SecureYeoman v2026.3.2
 
 Mitigating the Risks of Autonomous AI in Enterprise Environments. How SecureYeoman's three-pillar security model enables governed autonomy — full agent capability without cloud dependency or compliance exposure.
 
@@ -89,7 +89,7 @@ As deployments grow from a single agent to autonomous fleets, governance surface
 
 - **Mission Control Dashboard** — 12 customizable drag-and-drop cards: KPI bar, active tasks, security events, audit stream, cost breakdown, agent world map.
 - **OpenTelemetry** — Distributed tracing with OTLP export; `X-Trace-Id` response header; ECS-format structured logs.
-- **Alert Engine** — Dot-notation metric rules with cooldown, 4 channel types (Slack, PagerDuty, OpsGenie, webhook). Evaluated every 5 seconds.
+- **Alert Engine** — Dot-notation metric rules with cooldown, 5 channel types (Slack, PagerDuty, OpsGenie, webhook, ntfy). Evaluated every 5 seconds.
 - **API Gateway Mode** — Expose personalities as API endpoints with per-key RPM/TPD rate limits and p50/p95 latency analytics.
 - **Prometheus / Grafana** — Metrics endpoint ready; Kubernetes Helm chart includes HPA, PDBs, and NetworkPolicies.
 - **Backup & DR** — `pg_dump`/`pg_restore` via 6 REST endpoints; download + restore with confirm guard.
@@ -102,4 +102,4 @@ The choice is no longer between AI Productivity and Corporate Security. SecureYe
 
 ---
 
-SecureYeoman v2026.3.1 | 12,383 tests | 184 ADRs | AGPL-3.0 + Commercial License
+SecureYeoman v2026.3.2 | 12,408 tests | 185 ADRs | AGPL-3.0 + Commercial License

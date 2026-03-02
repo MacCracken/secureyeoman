@@ -72,13 +72,13 @@ Navigate to **Settings → General → License** and paste the key into the inpu
 
 ```bash
 # Set key
-curl -X POST http://localhost:3000/api/v1/license/key \
+curl -X POST https://localhost:18789/api/v1/license/key \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"key":"<your-key>"}'
 
 # Read status
-curl http://localhost:3000/api/v1/license/status \
+curl https://localhost:18789/api/v1/license/status \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -125,6 +125,7 @@ By submitting a pull request you agree to the CLA in `CONTRIBUTING.md`, which al
 
 ## References
 
-- `LICENSE` — AGPL-3.0 full text
-- `LICENSE.commercial` — Commercial license template
-- `docs/adr/171-dual-licensing.md` — Architectural decision record
+- [LICENSE](../../LICENSE) — AGPL-3.0 full text
+- [LICENSE.commercial](../../LICENSE.commercial) — Commercial license template
+- [ADR 171 — Dual Licensing](../adr/171-dual-licensing.md) — Architectural decision record
+- [Getting Started](./getting-started.md) — Installation and first run

@@ -33,7 +33,7 @@ Job completions are bridged into the existing alert pipeline as synthetic metric
 
 ```bash
 # Alert on any workflow failure
-curl -X POST http://localhost:3000/api/v1/alerts/rules \
+curl -X POST https://localhost:18789/api/v1/alerts/rules \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Workflow failure",

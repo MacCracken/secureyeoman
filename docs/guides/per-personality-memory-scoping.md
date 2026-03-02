@@ -149,4 +149,4 @@ curl "$BASE_URL/api/v1/brain/memories?personalityId=<personality-uuid>&limit=20"
 
 - [ADR 133 — Per-Personality Memory Scoping](../adr/133-per-personality-memory-scoping.md)
 - [ADR 134 — Vector Memory Multi-Personality Scoping](../adr/134-vector-memory-multi-personality.md)
-- [Personality Editor](./personality-editor.md) *(if it exists)*
+- [Getting Started](./getting-started.md)

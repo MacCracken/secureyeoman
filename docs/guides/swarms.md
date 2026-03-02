@@ -12,7 +12,7 @@ Swarms let a single task fan out across multiple sub-agents running concurrently
 - **Run** — an active execution of a swarm template against a specific task
 - **Member** — one agent instance within a run, assigned to a role
 
-Swarms require `allowSubAgents: true` and `allowSwarms: false` to be permitted — both controlled in **Settings → Security → Security Policy**.
+Swarms require `allowSubAgents: true` and `allowSwarms: true` to be permitted — both controlled in **Settings → Security → Security Policy**.
 
 ---
 

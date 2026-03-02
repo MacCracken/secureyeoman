@@ -27,7 +27,7 @@ Every user message is scored by the InputValidator's injection detection pipelin
 
 ### Score persistence
 
-`injection_score REAL` is stored on `chat.messages` (migration 064). The field is `null` for clean messages and for messages where injection detection is disabled.
+`injection_score REAL` is stored on `chat.messages` (included in the baseline schema). The field is `null` for clean messages and for messages where injection detection is disabled.
 
 ### Dashboard
 

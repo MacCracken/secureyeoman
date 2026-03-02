@@ -20,7 +20,7 @@ SecureYeoman supports multi-tenancy at the database level (Phase 61). Each tenan
 
 - Admin JWT required for all tenant management operations
 - PostgreSQL (the data store must support RLS — SQLite mode does not support multi-tenancy)
-- Migration 058 applied (included automatically since Phase 61)
+- Multi-tenancy schema applied (included in the baseline migration)
 
 ---
 
@@ -115,7 +115,7 @@ Returns 204 on success. Returns 400 if you attempt to delete the `default` tenan
 
 ## Data Isolation
 
-Migration 058 adds `tenant_id TEXT NOT NULL DEFAULT 'default'` to 9 core tables and installs RLS policies:
+The baseline schema includes `tenant_id TEXT NOT NULL DEFAULT 'default'` on 9 core tables with RLS policies:
 
 - `soul.personalities`
 - `chat.conversations` / `chat.messages`

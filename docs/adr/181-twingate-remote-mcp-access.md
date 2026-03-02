@@ -1,4 +1,4 @@
-# ADR 127 — Twingate Remote MCP Access (Phase 45)
+# ADR 181 — Twingate Remote MCP Access (Phase 45)
 
 **Status**: Accepted
 **Date**: 2026-02-24

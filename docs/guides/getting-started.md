@@ -508,8 +508,8 @@ Once enabled, these tools are available to YEOMAN agents:
 | `agnostic_session_list` | Recent QA sessions |
 | `agnostic_session_detail` | Full results for a session |
 | `agnostic_generate_report` | Generate executive/security/performance report |
-| `agnostic_submit_qa` | Submit a QA task to the full team *(requires Agnostic TODO P1)* |
-| `agnostic_task_status` | Poll task completion *(requires Agnostic TODO P1)* |
+| `agnostic_submit_qa` | Submit a QA task to the full team |
+| `agnostic_task_status` | Poll task completion |
 
 ### Lifecycle Management
 

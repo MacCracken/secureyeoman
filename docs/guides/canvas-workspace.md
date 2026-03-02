@@ -127,7 +127,7 @@ POST /api/v1/terminal/worktrees
 { "name": "feature-auth" }
 
 # Via curl
-curl -X POST localhost:3000/api/v1/terminal/worktrees \
+curl -X POST https://localhost:18789/api/v1/terminal/worktrees \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"feature-auth"}'

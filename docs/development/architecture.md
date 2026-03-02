@@ -53,51 +53,65 @@
 secureyeoman/
 ├── README.md                   # Project overview
 ├── CONTRIBUTING.md             # Development guide
-├── SECURITY.md                # Security policy
-├── LICENSE                    # MIT License
+├── SECURITY.md                 # Security policy
+├── LICENSE                     # AGPL-3.0-only
+├── LICENSE.commercial          # Commercial license template
 ├── packages/
-│   ├── shared/                # Shared types and utilities
+│   ├── shared/                 # Shared types and utilities
+│   │   └── src/types/          # TypeScript interfaces + Zod schemas
+│   ├── core/                   # Agent engine
 │   │   └── src/
-│   │       └── types/         # TypeScript interfaces
-│   ├── core/                  # Agent engine
-│   │   └── src/
-│   │       ├── ai/            # Multi-provider AI client, chat + model routes
-│   │       ├── cli.ts         # CLI entry point
-│   │       ├── config/        # Configuration management
-│   │       ├── gateway/       # Fastify server + auth
-│   │       ├── logging/       # Audit chain + storage
-│   │       ├── sandbox/       # Cross-platform sandbox
-│   │       ├── security/      # RBAC, auth, secrets
-│   │       ├── brain/          # Memory, knowledge, skills
+│   │       ├── ai/             # Multi-provider AI client, chat + model routes
+│   │       ├── cli/            # CLI commands (license, crew, agents, etc.)
+│   │       ├── config/         # Configuration management
+│   │       ├── gateway/        # Fastify server + auth + rate limiting
+│   │       ├── logging/        # Audit chain + storage
+│   │       ├── sandbox/        # Cross-platform sandbox (Landlock, macOS)
+│   │       ├── security/       # RBAC, auth, secrets, input validation
+│   │       ├── brain/          # Memory, knowledge, skills, documents (RAG)
 │   │       ├── comms/          # E2E encrypted agent comms
-│   │       ├── soul/          # Personality + identity
-│   │       ├── task/          # Task execution + storage
-│   │       ├── integrations/  # Platform adapters (Telegram, Discord, Slack, GitHub)
-│   │       ├── extensions/    # Lifecycle hook system and extension manager
-│   │       ├── execution/     # Sandboxed code execution (Python, Node.js, shell)
-│   │       ├── a2a/           # Agent-to-Agent protocol (discovery, delegation, messaging)
-│   │       ├── proactive/     # Proactive assistance (triggers, suggestions, pattern learning)
-│   │       └── utils/         # Crypto utilities
-│   └── dashboard/             # React dashboard
-│       └── src/
-│           ├── components/    # UI components
-│           ├── hooks/         # React hooks
-│           └── api/           # API client
-├── tests/                     # Security, load, and chaos tests
-│   ├── security/              # Injection, JWT, RBAC, rate limit tests
-│   ├── load/                  # k6 load test scripts
-│   └── chaos/                 # Database corruption, crash recovery tests
-├── deploy/                    # Deployment configurations
-│   ├── grafana/               # Grafana dashboard JSON
-│   ├── prometheus/            # Prometheus alert rules
-│   └── logging/               # Loki, Promtail, docker-compose configs
-├── scripts/                   # Utility scripts
-├── docs/                      # Documentation
-│   ├── api/                   # API documentation
-│   ├── guides/                # User guides
-│   ├── security/              # Security docs
-│   └── development/           # Development docs
-└── .github/                   # CI/CD workflows
+│   │       ├── soul/           # Personality + identity + archetypes
+│   │       ├── task/           # Task execution + storage
+│   │       ├── integrations/   # Platform adapters (31 platforms)
+│   │       ├── extensions/     # Lifecycle hook system + extension manager
+│   │       ├── execution/      # Sandboxed code execution
+│   │       ├── a2a/            # Agent-to-Agent protocol
+│   │       ├── proactive/      # Proactive assistance + triggers
+│   │       ├── training/       # Distillation, fine-tuning, evaluation, ML pipeline
+│   │       ├── telemetry/      # OTel, alert engine, Prometheus, job events
+│   │       ├── workflow/       # DAG workflow engine + templates
+│   │       ├── licensing/      # Ed25519 license manager (AGPL + commercial)
+│   │       ├── storage/        # PostgreSQL migrations, pools, pg-pool
+│   │       └── utils/          # Crypto utilities
+│   ├── dashboard/              # React dashboard (Vite + Tailwind)
+│   │   └── src/
+│   │       ├── components/     # UI components
+│   │       ├── hooks/          # React hooks
+│   │       └── api/            # API client
+│   ├── mcp/                    # MCP service (180+ tools, 7 resources, 4 prompts)
+│   │   └── src/tools/          # Tool implementations + manifest
+│   ├── desktop/                # Tauri v2 desktop shell
+│   │   └── src-tauri/          # Rust + Tauri config
+│   └── mobile/                 # Capacitor v6 mobile shell
+│       └── capacitor.config.ts
+├── site/                       # Project website (Astro)
+├── tests/                      # Security, load, and chaos tests
+│   ├── security/               # Injection, JWT, RBAC, rate limit tests
+│   ├── load/                   # k6 load test scripts
+│   └── chaos/                  # Database corruption, crash recovery tests
+├── deploy/                     # Deployment configurations
+│   ├── grafana/                # Grafana dashboard JSON
+│   ├── prometheus/             # Prometheus alert rules
+│   └── logging/                # Loki, Promtail, docker-compose configs
+├── scripts/                    # Utility scripts (license key gen, icons, build)
+├── docs/                       # Documentation
+│   ├── adr/                    # 185 Architecture Decision Records
+│   ├── api/                    # REST + WebSocket API reference
+│   ├── guides/                 # 58 user guides
+│   ├── ops/                    # Grafana dashboards, operational runbooks
+│   ├── security/               # Security model + threat model
+│   └── development/            # Architecture, roadmap, functional audit
+└── .github/                    # CI/CD workflows
 ```
 
 ---

@@ -1,4 +1,4 @@
-# ADR 133: Real-Time Infrastructure — Phase 51
+# ADR 182: Real-Time Infrastructure — Phase 51
 
 **Date:** 2026-02-25
 **Status:** Accepted
