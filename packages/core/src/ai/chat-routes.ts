@@ -1501,8 +1501,8 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         // Fire-and-forget anomaly detection (Phase 96)
         try {
           const anomalyDetector = secureYeoman.getUsageAnomalyDetector?.();
-          if (anomalyDetector && authUser?.id) {
-            anomalyDetector.recordMessage(authUser.id, effectivePersonalityId);
+          if (anomalyDetector && request.authUser?.userId) {
+            anomalyDetector.recordMessage(request.authUser.userId, effectivePersonalityId);
           }
         } catch {
           // Best-effort — skip on error
@@ -2376,8 +2376,8 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         // Fire-and-forget anomaly detection (Phase 96)
         try {
           const anomalyDetector = secureYeoman.getUsageAnomalyDetector?.();
-          if (anomalyDetector && authUser?.id) {
-            anomalyDetector.recordMessage(authUser.id, effectivePersonalityId);
+          if (anomalyDetector && request.authUser?.userId) {
+            anomalyDetector.recordMessage(request.authUser.userId, effectivePersonalityId);
           }
         } catch {
           // Best-effort — skip on error

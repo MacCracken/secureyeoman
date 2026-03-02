@@ -17,7 +17,6 @@ import {
   fetchEngagementMetrics,
   fetchKeyPhrases,
   fetchPersonalities,
-  type Personality,
 } from '../../api/client';
 import { SentimentTrendChart } from './SentimentTrendChart';
 import { EngagementMetricsPanel } from './EngagementMetricsPanel';
@@ -41,12 +40,13 @@ export default function AnalyticsTab() {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('sentiment');
   const [days, setDays] = useState<number>(30);
 
-  const { data: personalities = [] } = useQuery({
+  const { data: personalitiesData } = useQuery({
     queryKey: ['personalities'],
     queryFn: fetchPersonalities,
   });
-  const activePersonalities = personalities.filter((p: Personality) => p.isActive);
-  const defaultPersonality = personalities.find((p: Personality) => p.isDefault);
+  const personalities = personalitiesData?.personalities ?? [];
+  const activePersonalities = personalities.filter((p) => p.isActive);
+  const defaultPersonality = personalities.find((p) => p.isDefault);
   const selectedPersonalityId = defaultPersonality?.id ?? activePersonalities[0]?.id ?? null;
 
   const { data: sentimentData = [], isLoading: sentimentLoading } = useQuery({

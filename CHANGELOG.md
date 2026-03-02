@@ -147,6 +147,21 @@
 - **Frontend `refetchQueries`** for model-info on save/delete. **Sidebar `refetchInterval`** polling (3s) when no models.
 - **Net result**: Provider key changes immediately enable/disable Chat and Editor links.
 
+### Marketplace — SOP Writer Skill
+
+- **New built-in skill**: `SOP Writer` — creates comprehensive Standard Operating Procedures with step-by-step instructions. Supports 5 SOP types (Checklist, Hierarchical, Flowchart, Process, Emergency) and enforces 9 required document sections (Title, Purpose, Scope, Definitions, Responsibilities, Procedures, Safety/PPE, References, Revision History). Category: productivity.
+- Registered in `packages/core/src/marketplace/skills/sop-writer.ts`, exported via `skills/index.ts`, seeded in `storage.ts`.
+
+### Build & Type Safety Fixes
+
+- **`chat-routes.ts`**: Fixed `authUser` undefined reference in anomaly detection fire-and-forget blocks (both streaming and non-streaming paths). Corrected to `request.authUser?.userId`.
+- **`AIRequest.stream` property**: Added explicit `stream: false` to 5 callers that omitted the required field — `conversation-summarizer.ts`, `entity-extractor.ts`, `sentiment-analyzer.ts`, `branching-manager.ts` (×2). Fixes TS2345 against `AIRequestSchema` output type.
+- **`conversation-storage.ts`**: Added null guard for `row.rows[0]` in `branchFromMessage()` — throws descriptive error instead of passing `undefined` to `rowToConversation()`. Fixes TS2345.
+- **`secureyeoman.ts`**: `BranchingManager` init now guards on `getPool()` returning non-null before construction. Fixes TS2322 (`Pool | null` not assignable to `Pool`).
+- **`AnalyticsTab.tsx`**: Fixed `fetchPersonalities` return type handling — destructures `{ personalities }` wrapper instead of treating response as bare array. Removed stale `Personality` type import.
+- **Migration 076 FK type mismatch**: `training.experiments.finetune_job_id` and `training.model_versions.finetune_job_id` changed from `UUID` to `TEXT` to match `training.finetune_jobs.id` (TEXT PK). Prevented fresh-DB startup from completing migrations.
+- **Roadmap**: Removed Phase 94 (Test Coverage) and completed-item notes from Phase 100.
+
 ### Housekeeping
 
 - **Vitest 4 deprecation fix**: `maxWorkers: 1` + `isolate: false` replaces removed `singleFork`.

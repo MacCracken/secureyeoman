@@ -1113,13 +1113,18 @@ export class SecureYeoman {
 
       // Step 6.10b: Initialize branching manager
       try {
-        this.branchingManager = new BranchingManager({
-          conversationStorage: this.chatConversationStorage,
-          pool: this.getPool(),
-          logger: this.logger.child({ component: 'BranchingManager' }),
-          aiClient: this.aiClient ?? undefined,
-        });
-        this.logger.debug('Branching manager initialized');
+        const pool = this.getPool();
+        if (pool) {
+          this.branchingManager = new BranchingManager({
+            conversationStorage: this.chatConversationStorage,
+            pool,
+            logger: this.logger.child({ component: 'BranchingManager' }),
+            aiClient: this.aiClient ?? undefined,
+          });
+          this.logger.debug('Branching manager initialized');
+        } else {
+          this.logger.debug('Branching manager skipped — no database pool');
+        }
       } catch (err) {
         this.logger.warn('Branching manager init failed (non-fatal)', {
           error: err instanceof Error ? err.message : String(err),

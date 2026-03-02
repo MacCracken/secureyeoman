@@ -84,6 +84,7 @@ export class ConversationSummarizer {
 
     const response = await this.aiClient.chat({
       messages: [{ role: 'user', content: SUMMARIZE_PROMPT + truncated }],
+      stream: false,
     });
 
     return typeof response.content === 'string' ? response.content.trim() : '';

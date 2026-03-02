@@ -97,6 +97,7 @@ export class EntityExtractor {
 
     const response = await this.aiClient.chat({
       messages: [{ role: 'user', content: EXTRACT_PROMPT + truncated }],
+      stream: false,
     });
 
     const text = typeof response.content === 'string' ? response.content : '';

@@ -173,6 +173,7 @@ export class BranchingManager {
             const response = await this.aiClient.chat({
               messages: history.map((m) => ({ role: m.role, content: m.content })),
               model: config.model,
+              stream: false,
             });
 
             const assistantContent = response.content ?? '';
@@ -337,6 +338,7 @@ export class BranchingManager {
           const response = await this.aiClient.chat({
             messages: history.map((m) => ({ role: m.role, content: m.content })),
             model: config.replayModel,
+            stream: false,
           });
 
           const assistantContent = response.content ?? '';

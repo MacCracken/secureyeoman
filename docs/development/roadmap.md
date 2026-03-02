@@ -71,72 +71,9 @@ Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi
 
 ---
 
-## Phase 94: Test Coverage — Path to 88% / 77%
-
-**Priority**: P2 — Engineering quality. **Current baseline 2026-03-01**: **80.85% stmt · 68.76% branches · 82.62% fn · 81.56% lines** across 409 files / 8,892 core tests (10,400 total across all packages). Growth driven by Phase 89-A/B/C zero-coverage sweeps (+250 tests). Configured thresholds in `vitest.config.ts`: 87% stmt / 75% branch / 87% fn / 87% line (target: ≥ 88% stmt / ≥ 77% branch).
-
-> Note: `vitest.config.ts` already excludes `src/**/index.ts`, `src/**/types.ts`, `src/secureyeoman.ts`, and `src/cli.ts` from coverage instrumentation. The gap is in logic files only.
-
-### Why Coverage Is Low
-
-Most source files already have a companion `*.test.ts`. The gap is depth, not breadth:
-- Route handlers in `gateway/server.ts` (≈ 3,000 lines) are exercised only for happy-path flows; every `4xx`/`5xx` branch represents uncovered lines.
-- Integration adapters (31 platforms) mock external clients; error branches, retry logic, and auth-failure paths are rarely asserted.
-- Platform-specific code (`body/`, `sandbox/`, `security/keyring/`) guards on OS detection; tests running on a single host skip the other branches.
-- AI provider implementations (`ai/providers/`) share base-class paths but each has unique error/retry branches that tests do not exercise.
-- CLI commands (`cli/commands/`) test top-level dispatch but rarely exercise `--json` output mode, interactive prompts, or `--help` edge cases.
-
-### Target Lift per Module
-
-| Module | Actual stmt % | Branch % | Goal stmt | Remaining gap |
-|--------|--------------|----------|-----------|---------------|
-| `gateway/server.ts` | **62%** | 52% | 75% | `4xx`/`5xx` route branches, malformed body, DB error stubs (3,000-line file — biggest single lever). |
-| `ai/client.ts` + providers | **80%** | 74% | 88% | Rate-limit 429, malformed response, fallback-chain exhaustion. |
-| `integrations/` adapters × 31 | ~40% | ~35% | 70% | Table-driven per adapter: `send()` error, `validate()` bad config, `connect()`/`disconnect()` lifecycle. |
-| `brain/vector/` stores | **97%** | 78% | 97% ✅ | Near-target; FAISS/Qdrant/Chroma already well-covered. |
-| `sandbox/` (linux/darwin) | **77%** | 72% | 85% | Landlock unavailable fallback, seccomp profile load failure, resource-limit apply error. |
-| `body/` desktop control | **76–96%** | 58–96% | 85% | Actuator error paths (clipboard deny, camera permission-denied). |
-| `security/keyring/` providers | ~55% | ~40% | 70% | Mock `libsecret`/`security` CLI; service unavailable fallback. |
-| `cli/commands/` | **65%** | 55% | 80% | `--json` mode, `--help`, non-zero exit on bad args. |
-| `workflow/` | **87%** | 68% | 90% | Branch hot-spots: `triggerMode: 'any'` all-deps-fail, `outputSchemaMode: 'strict'` rejection, human-approval timeout. |
-| `training/` pipeline | **82%** | 67% | 85% | Distillation `status: 'failed'` retry, LoRA sidecar timeout, evaluation threshold-miss. |
-| `federation/` | **78%** | 52% | 80% | Branch coverage on peer-sync conflict, CRUD edge cases already tested (Phase 89-A). |
-| `soul/manager.ts` | ~78% | ~67% | 85% | Prompt composition branches (all platform flags off, SAML role injection, per-personality hours). |
-
-### Branch-Coverage Hot Spots (68.76% → 77%)
-
-Branch coverage is the hardest gap. Key ternaries / conditionals to reach:
-
-- **`ai/client.ts`** — fallback-chain index incrementing, local-first guard, provider-specific error `instanceof` checks.
-- **`gateway/auth-middleware.ts`** — every `if (!token)`, `if (role < required)`, API-key vs JWT path, tenant header validation.
-- **`integrations/manager.ts`** — `switch (platform)` has 31 arms; most untested in CI.
-- **`security/rate-limiter.ts`** — Redis unavailable fallback to in-memory, sliding-window reset, per-IP vs per-user precedence.
-- **`workflow/workflow-engine.ts`** — `triggerMode: 'any'` with all-deps-fail, `outputSchemaMode: 'strict'` rejection path, human-approval timeout.
-- **`brain/chunker.ts`** — overlapping-window edge cases when chunk size > content length.
-- **`soul/skill-executor.ts`** — trust-tier enforcement (`blocked`, `sandboxed`, `trusted`), `doNotUseWhen` predicate evaluation.
-- **`sandbox/linux-sandbox.ts`** — Landlock unavailable fallback, seccomp profile load failure, resource limit apply error.
-
-### Non-Code Levers (config / infrastructure wins)
-
-- **Raise vitest thresholds** — bump `vitest.config.ts` thresholds from `{ stmt: 87, branch: 75 }` to `{ stmt: 88, branch: 77 }` to match the target.
-- **Shared test helpers** — extract repeated `mockPool()` / `mockQuery()` boilerplate into `src/test-utils.ts` so branches are reachable inside existing per-file test files without duplication.
-- **`vi.stubEnv` patterns** — several platform guards (`process.platform`, `process.env.CI`) branch on environment values that can be overridden with `vi.stubEnv()` inside existing tests to cover the else-branch.
-
-### Acceptance Criteria
-
-- [ ] `vitest run --coverage` reports ≥ 88% statements across core package.
-- [ ] `vitest run --coverage` reports ≥ 77% branches across core package.
-- [ ] No existing test degraded (test count stable or growing).
-- [ ] `vitest.config.ts` thresholds bumped to `{ stmt: 88, branch: 77, fn: 88, lines: 88 }` and enforced in CI.
-- [ ] `docs/development/coverage-plan.md` created with per-file before/after table when work begins.
-
----
-
 ## Phase 100: Editor Improvements (Auto-Claude Style)
 
 **Priority**: P3 — High value for power users. Demand-gated — implement incrementally based on user feedback.
-
-**Completed (ADR 173 — 2026-03-01):** MultiTerminal (4-tab), Memory toggle, Model selector, Agent World panel — all now in the standard `/editor` page. Canvas route moved to `/editor/advanced` gated by `allowAdvancedEditor`.
 
 **Remaining IDE features** — Auto-Claude–style patterns (plan display, step-by-step approval, AI commit messages, context badges), multi-file editing (tabs, split panes), project explorer, integrated Git, command palette, inline AI completion (Copilot-style), multi-file search & replace, collaborative editing (Yjs CRDT), keybindings editor, layout persistence, responsive/mobile layout, training integration (export/annotation), and plugin/extension system.
 
@@ -153,6 +90,7 @@ Inspired by Google Cloud Vertex AI Grounding and Azure Groundedness Detection.
 - [ ] **Web grounding** — Ground AI responses in live web search results, not just the local knowledge base. When web grounding is enabled and the query requires current information, perform a search (via existing web-search MCP tool), retrieve top results, and include them as retrieved context with citations.
 - [ ] **Grounding confidence score** — Per-response aggregate grounding score: what fraction of claims are supported by retrieved sources above threshold? Stored on the conversation turn. Low-grounding responses flagged in the Audit Log. Rolling average per personality surfaced in the Analytics tab as a "Response Trustworthiness" metric.
 - [ ] **Citation feedback** — Users can click a citation to see the full source chunk in a side drawer. They can mark citations as "not relevant" — negative feedback stored as a weak signal for the knowledge base quality scoring system.
+- [ ] **Document provenance scoring** — 8-dimension quality evaluation for knowledge base documents, inspired by [Substrate](https://github.com/danielmiessler/Substrate)'s library science methodology. Each `brain.documents` row gains a `source_quality` JSONB column scoring: Authority, Currency, Objectivity, Accuracy, Methodology, Coverage, Reliability, and Provenance (each 0.0–1.0). Composite `trust_score` (weighted average) used to boost/demote chunks during RAG retrieval in `BrainManager.recall()`. Auto-populated where possible (e.g., `.gov` URLs score high on Authority; age of document drives Currency). Manual override via document detail UI. Documents with no provenance data default to a neutral score (0.5). Trust scores surfaced in the Knowledge Base → Health panel and in citation footnotes when Phase 101 citations are enabled.
 
 ---
 
@@ -173,6 +111,7 @@ Inspired by Google Cloud Vertex AI Grounding and Azure Groundedness Detection.
 - [ ] **Dashboard: Strategy selector** — Dropdown in chat interface header (next to model selector) listing available strategies. Selected strategy shown as a chip. Strategy management UI in Settings → Soul System tab.
 - [ ] **CLI: `secureyeoman strategy`** — Subcommands: `list`, `show <slug>`, `create`, `delete`. `--strategy <slug>` flag on `secureyeoman chat` and `secureyeoman execute`.
 - [ ] **Strategy-aware evaluation** — `EvaluationManager` records which strategy was active during evaluated conversations. Evaluation results filterable by strategy to measure which reasoning approach works best for which task type.
+- [ ] **Deterministic routing preference** — Encode a "Code → CLI → Prompt → Skill" dispatch hierarchy in `SkillExecutor` and `WorkflowEngine`, inspired by [PAI](https://github.com/danielmiessler/Personal_AI_Infrastructure)'s principle that deterministic code paths should be preferred over LLM-routed paths when both can solve the task. When a workflow step or skill action can be resolved by a direct function call or shell command with known output, prefer that over sending the task to the LLM. Concretely: `WorkflowEngine` step dispatch checks for a `deterministic` flag on step config; when set, the step runs its `command` or `function` directly and only falls through to AI routing on failure. Skill routing order: code action → HTTP action → AI-assisted action. Reduces token cost and latency for routine operations.
 
 ### 102-B: Security Prompt Templates
 
@@ -227,6 +166,7 @@ Inspired by Google Cloud Vertex AI Grounding and Azure Groundedness Detection.
 - [ ] **CLI export/import** — `secureyeoman personality export <name> [--format md|json] [--output file]` and `secureyeoman personality import <file>`. Round-trip: `export | import` produces an equivalent personality.
 - [ ] **Marketplace markdown transport** — Community repo `personalities/` directory uses `.md` files. `CommunitySyncResult` gains `personalitiesAdded`/`personalitiesUpdated`. Marketplace → Personalities tab shows imported community personalities with a "Community" badge.
 - [ ] **Dashboard export/import** — Export button on PersonalityEditor toolbar (downloads `.md` file). Import button on Personalities list page (file upload dialog with preview of parsed personality before confirmation).
+- [ ] **TELOS-style guided personality creation** — Structured onboarding wizard for creating personalities from natural language, inspired by [PAI](https://github.com/danielmiessler/Personal_AI_Infrastructure)'s TELOS goal framework. Instead of filling raw schema fields, the user answers 5–8 guided questions: "What is this personality's mission?", "What topics should it focus on?", "What tools does it need?", "What reasoning style should it use?", "What tone and communication style?", "What constraints or guardrails?". Answers are parsed into a `PersonalityCreate` object and previewed as a rendered markdown personality card before confirmation. Accessible from: (1) "Create with Wizard" button on Personalities list page, (2) `secureyeoman personality create --wizard` CLI flag. The wizard is an alternative to direct JSON/markdown creation — both paths produce the same native personality object.
 
 ### 102-E: Personality Core Distillation to Markdown
 
@@ -264,6 +204,7 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 *As SecureYeoman moves into production deployments, operators need distributed tracing, metrics export, and correlation tooling beyond what the built-in audit log provides.*
 
 **Remaining / Future improvements (demand-gated)**:
+- [ ] **Workflow/job completion notifications** — Emit metric events when workflows, distillation jobs, and evaluation runs complete (or fail). Events fed into the existing `AlertManager` evaluation loop so operators can define alert rules like "notify me when any workflow takes >5 minutes" or "alert on distillation failure". Adds `ntfy` as a fifth alert channel type alongside slack/pagerduty/opsgenie/webhook — lightweight push notifications to mobile/desktop without requiring a full messaging platform. Inspired by [PAI](https://github.com/danielmiessler/Personal_AI_Infrastructure)'s ntfy/Discord notification routing for long-running tasks. Dashboard: alert rule templates for common job-completion patterns pre-populated in the Alert Rules UI.
 - [ ] **Histogram metrics** — Replace avg-latency gauge with proper p50/p95/p99 histograms per route using OpenMetrics format.
 - [ ] **AI completion spans** — Instrument every `aiClient.chat()` call with a child span including model, input/output token counts.
 - [ ] **MCP tool call spans** — Wrap each MCP tool invocation in a span for end-to-end tracing through agent → tool → external API.
@@ -350,6 +291,7 @@ Versions use the project's date-based format: `YYYY.M.D` (e.g., `2026.2.28`). Sa
 - [ ] **AWS voice profile system** — Each personality can have a named Polly voice ID (`Joanna`, `Matthew`, `Aria`, etc.) plus a custom lexicon (pronunciation guide for domain-specific terms).
 - [ ] **Custom vocabulary for Transcribe** — Personality-specific custom vocabulary: product names, technical terms, proper nouns that Whisper frequently mishears. Managed via `POST /api/v1/multimodal/transcribe/vocabulary`.
 - [ ] **Provider auto-selection** — When `TRANSCRIBE_REGION` is set, prefer Transcribe over Whisper. When `POLLY_REGION` is set, prefer Polly over Voicebox. Fallback gracefully if credentials are absent.
+- [ ] **Task/workflow completion voice announcements** — When voice is enabled, announce workflow completions, distillation job results, and long-running task outcomes via TTS. Triggered by the same metric events that feed the AlertManager (see Observability section). Configurable per-personality: `voiceAnnouncements: boolean` + `voiceAnnouncementEvents: ('workflow_complete' | 'job_complete' | 'eval_complete')[]`. Particularly valuable for the Tauri desktop client (Phase 91) where the user may be working in another window. Inspired by [PAI](https://github.com/danielmiessler/Personal_AI_Infrastructure)'s ElevenLabs voice notification system.
 
 ---
 

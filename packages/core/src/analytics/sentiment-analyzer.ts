@@ -64,6 +64,7 @@ export class SentimentAnalyzer {
     const truncated = content.length > 2000 ? content.slice(0, 2000) + '...' : content;
     const response = await this.aiClient.chat({
       messages: [{ role: 'user', content: SENTIMENT_PROMPT + truncated }],
+      stream: false,
     });
 
     const text = typeof response.content === 'string' ? response.content : '';

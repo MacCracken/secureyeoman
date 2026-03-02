@@ -42,7 +42,7 @@ CREATE INDEX IF NOT EXISTS idx_curated_datasets_status
 CREATE TABLE IF NOT EXISTS training.experiments (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name            TEXT NOT NULL,
-  finetune_job_id UUID REFERENCES training.finetune_jobs(id),
+  finetune_job_id TEXT REFERENCES training.finetune_jobs(id),
   dataset_hash    TEXT,
   hyperparameters JSONB NOT NULL DEFAULT '{}',
   environment     JSONB NOT NULL DEFAULT '{}',
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS training.model_versions (
   personality_id  UUID NOT NULL,
   model_name      TEXT NOT NULL,
   experiment_id   UUID REFERENCES training.experiments(id),
-  finetune_job_id UUID REFERENCES training.finetune_jobs(id),
+  finetune_job_id TEXT REFERENCES training.finetune_jobs(id),
   previous_model  TEXT,
   is_active       BOOLEAN NOT NULL DEFAULT true,
   deployed_at     TIMESTAMPTZ NOT NULL DEFAULT now(),

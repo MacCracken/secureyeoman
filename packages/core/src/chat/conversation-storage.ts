@@ -447,6 +447,9 @@ export class ConversationStorage extends PgBaseStorage {
         'SELECT * FROM chat.conversations WHERE id = $1',
         [newId]
       );
+      if (!row.rows[0]) {
+        throw new Error(`Failed to retrieve forked conversation ${newId}`);
+      }
       return rowToConversation(row.rows[0]);
     });
   }
