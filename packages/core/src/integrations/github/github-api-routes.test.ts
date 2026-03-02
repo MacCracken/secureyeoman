@@ -447,5 +447,765 @@ describe('GitHub API Routes', () => {
       expect(res.statusCode).toBe(403);
       expect(res.json().message).toMatch(/repo or public_repo permissions/i);
     });
+
+    it('allows write when scopes include public_repo', async () => {
+      const svc = {
+        ...mockOAuthTokenService(),
+        listTokens: vi
+          .fn()
+          .mockResolvedValue([{ ...TOKEN_ROW, scopes: 'read:user public_repo' }]),
+        getValidToken: vi.fn().mockResolvedValue('gh-access-token'),
+      } as unknown as OAuthTokenService;
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      vi.stubGlobal('fetch', mockFetch({ number: 10 }, 201));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos/octocat/hello-world/issues',
+        payload: { title: 'Bug' },
+      });
+      expect(res.statusCode).toBe(201);
+    });
+
+    it('allows write when scopes is empty (no scope info)', async () => {
+      const svc = {
+        ...mockOAuthTokenService(),
+        listTokens: vi.fn().mockResolvedValue([{ ...TOKEN_ROW, scopes: '' }]),
+        getValidToken: vi.fn().mockResolvedValue('gh-access-token'),
+      } as unknown as OAuthTokenService;
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      vi.stubGlobal('fetch', mockFetch({ number: 11 }, 201));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos/octocat/hello-world/issues',
+        payload: { title: 'No scope' },
+      });
+      expect(res.statusCode).toBe(201);
+    });
+  });
+
+  // ── GET /api/v1/github/repos/:owner/:repo/pulls ───────────────────────────
+
+  describe('GET /api/v1/github/repos/:owner/:repo/pulls', () => {
+    it('returns pull requests list', async () => {
+      const svc = mockOAuthTokenService();
+      const app = await buildApp(svc);
+      vi.stubGlobal('fetch', mockFetch([{ number: 1, title: 'Fix bug' }]));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/github/repos/octocat/hello-world/pulls',
+      });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('passes query params (state, per_page, page)', async () => {
+      const svc = mockOAuthTokenService();
+      const app = await buildApp(svc);
+      const fetchMock = mockFetch([]);
+      vi.stubGlobal('fetch', fetchMock);
+      await app.inject({
+        method: 'GET',
+        url: '/api/v1/github/repos/octocat/hello-world/pulls?state=closed&per_page=5&page=2',
+      });
+      const url = fetchMock.mock.calls[0][0] as string;
+      expect(url).toContain('state=closed');
+      expect(url).toContain('per_page=5');
+      expect(url).toContain('page=2');
+    });
+
+    it('returns 404 when no token', async () => {
+      const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/github/repos/octocat/hello-world/pulls',
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('returns error on GitHub API failure', async () => {
+      const svc = mockOAuthTokenService();
+      const app = await buildApp(svc);
+      vi.stubGlobal('fetch', mockFetch({ message: 'Not found' }, 404));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/github/repos/octocat/hello-world/pulls',
+      });
+      expect(res.statusCode).toBe(404);
+    });
+  });
+
+  // ── GET /api/v1/github/repos/:owner/:repo/pulls/:number ───────────────────
+
+  describe('GET /api/v1/github/repos/:owner/:repo/pulls/:number', () => {
+    it('returns a single pull request', async () => {
+      const svc = mockOAuthTokenService();
+      const app = await buildApp(svc);
+      vi.stubGlobal('fetch', mockFetch({ number: 5, title: 'PR 5' }));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/github/repos/octocat/hello-world/pulls/5',
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().number).toBe(5);
+    });
+
+    it('returns 404 when no token', async () => {
+      const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/github/repos/octocat/hello-world/pulls/5',
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('returns error on GitHub API failure', async () => {
+      const svc = mockOAuthTokenService();
+      const app = await buildApp(svc);
+      vi.stubGlobal('fetch', mockFetch({ message: 'Not Found' }, 404));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/github/repos/octocat/hello-world/pulls/999',
+      });
+      expect(res.statusCode).toBe(404);
+    });
+  });
+
+  // ── GET /api/v1/github/repos/:owner/:repo/issues/:number ──────────────────
+
+  describe('GET /api/v1/github/repos/:owner/:repo/issues/:number', () => {
+    it('returns a single issue', async () => {
+      const svc = mockOAuthTokenService();
+      const app = await buildApp(svc);
+      vi.stubGlobal('fetch', mockFetch({ number: 7, title: 'Issue 7' }));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/github/repos/octocat/hello-world/issues/7',
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().number).toBe(7);
+    });
+
+    it('returns 404 when no token', async () => {
+      const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/github/repos/octocat/hello-world/issues/7',
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('returns error on GitHub API failure', async () => {
+      const svc = mockOAuthTokenService();
+      const app = await buildApp(svc);
+      vi.stubGlobal('fetch', mockFetch({ message: 'Internal' }, 500));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/github/repos/octocat/hello-world/issues/7',
+      });
+      expect(res.statusCode).toBe(500);
+    });
+  });
+
+  // ── query params for repos and issues ──────────────────────────────────────
+
+  describe('GET /api/v1/github/repos query params', () => {
+    it('passes type, sort, per_page, page query params', async () => {
+      const svc = mockOAuthTokenService();
+      const app = await buildApp(svc);
+      const fetchMock = mockFetch([]);
+      vi.stubGlobal('fetch', fetchMock);
+      await app.inject({
+        method: 'GET',
+        url: '/api/v1/github/repos?type=owner&sort=updated&per_page=10&page=3',
+      });
+      const url = fetchMock.mock.calls[0][0] as string;
+      expect(url).toContain('type=owner');
+      expect(url).toContain('sort=updated');
+      expect(url).toContain('per_page=10');
+      expect(url).toContain('page=3');
+    });
+  });
+
+  describe('GET /api/v1/github/repos/:owner/:repo/issues query params', () => {
+    it('passes state, labels, per_page, page query params', async () => {
+      const svc = mockOAuthTokenService();
+      const app = await buildApp(svc);
+      const fetchMock = mockFetch([]);
+      vi.stubGlobal('fetch', fetchMock);
+      await app.inject({
+        method: 'GET',
+        url: '/api/v1/github/repos/octocat/hello-world/issues?state=closed&labels=bug&per_page=5&page=1',
+      });
+      const url = fetchMock.mock.calls[0][0] as string;
+      expect(url).toContain('state=closed');
+      expect(url).toContain('labels=bug');
+      expect(url).toContain('per_page=5');
+      expect(url).toContain('page=1');
+    });
+  });
+
+  // ── GitHub API error handling (403, 404 messages) ──────────────────────────
+
+  describe('error formatting', () => {
+    it('returns 403 with scope reconnect message', async () => {
+      const svc = mockOAuthTokenService();
+      const app = await buildApp(svc);
+      vi.stubGlobal('fetch', mockFetch({ message: 'forbidden' }, 403));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/github/profile' });
+      expect(res.statusCode).toBe(403);
+      expect(res.json().message).toContain('access denied');
+    });
+
+    it('returns 404 with repo access message', async () => {
+      const svc = mockOAuthTokenService();
+      const app = await buildApp(svc);
+      vi.stubGlobal('fetch', mockFetch({ message: 'not found' }, 404));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/github/repos/octocat/nonexistent',
+      });
+      expect(res.statusCode).toBe(404);
+      expect(res.json().message).toContain('not found');
+    });
+  });
+
+  // ── resolveGithubAccess with soulManager error ─────────────────────────────
+
+  describe('resolveGithubAccess soulManager error', () => {
+    it('defaults to suggest mode when soulManager throws', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = {
+        getActivePersonality: vi.fn().mockRejectedValue(new Error('soulManager error')),
+      } as unknown as SoulManager;
+      const app = await buildApp(svc, sm);
+      vi.stubGlobal('fetch', mockFetch({ login: 'octocat' }));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/github/profile' });
+      expect(res.json().mode).toBe('suggest');
+    });
+
+    it('defaults to suggest when personality has no matching integrationAccess entry', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = {
+        getActivePersonality: vi.fn().mockResolvedValue({
+          id: 'p-1',
+          body: { integrationAccess: [{ id: 'some-other-id', mode: 'auto' }] },
+        }),
+      } as unknown as SoulManager;
+      const app = await buildApp(svc, sm);
+      vi.stubGlobal('fetch', mockFetch({ login: 'octocat' }));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/github/profile' });
+      expect(res.json().mode).toBe('suggest');
+    });
+
+    it('defaults to suggest when personality has no integrationAccess', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = {
+        getActivePersonality: vi.fn().mockResolvedValue({
+          id: 'p-1',
+          body: {},
+        }),
+      } as unknown as SoulManager;
+      const app = await buildApp(svc, sm);
+      vi.stubGlobal('fetch', mockFetch({ login: 'octocat' }));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/github/profile' });
+      expect(res.json().mode).toBe('suggest');
+    });
+  });
+
+  // ── GET /api/v1/github/ssh-keys ────────────────────────────────────────────
+
+  describe('GET /api/v1/github/ssh-keys', () => {
+    it('returns SSH keys list', async () => {
+      const svc = mockOAuthTokenService();
+      const app = await buildApp(svc);
+      vi.stubGlobal('fetch', mockFetch([{ id: 1, key: 'ssh-rsa AAAA' }]));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/github/ssh-keys' });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toHaveLength(1);
+    });
+
+    it('returns 404 when no token', async () => {
+      const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/github/ssh-keys' });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('returns error on GitHub API failure', async () => {
+      const svc = mockOAuthTokenService();
+      const app = await buildApp(svc);
+      vi.stubGlobal('fetch', mockFetch({ message: 'Unauthorized' }, 401));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/github/ssh-keys' });
+      expect(res.statusCode).toBe(401);
+    });
+  });
+
+  // ── POST /api/v1/github/ssh-keys ───────────────────────────────────────────
+
+  describe('POST /api/v1/github/ssh-keys', () => {
+    const keyPayload = { title: 'My Key', key: 'ssh-rsa AAAA...' };
+
+    it('adds SSH key in auto mode', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      vi.stubGlobal('fetch', mockFetch({ id: 100, title: 'My Key' }, 201));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/ssh-keys',
+        payload: keyPayload,
+      });
+      expect(res.statusCode).toBe(201);
+    });
+
+    it('returns preview in draft mode', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('draft');
+      const app = await buildApp(svc, sm);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/ssh-keys',
+        payload: keyPayload,
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().preview).toBe(true);
+      expect(res.json().title).toBe('My Key');
+    });
+
+    it('returns 403 in suggest mode', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('suggest');
+      const app = await buildApp(svc, sm);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/ssh-keys',
+        payload: keyPayload,
+      });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('returns 404 when no token', async () => {
+      const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/ssh-keys',
+        payload: keyPayload,
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('returns error on GitHub API failure', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      vi.stubGlobal('fetch', mockFetch({ message: 'conflict' }, 422));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/ssh-keys',
+        payload: keyPayload,
+      });
+      expect(res.statusCode).toBe(422);
+    });
+  });
+
+  // ── DELETE /api/v1/github/ssh-keys/:key_id ─────────────────────────────────
+
+  describe('DELETE /api/v1/github/ssh-keys/:key_id', () => {
+    it('deletes SSH key in auto mode', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 204,
+          json: () => Promise.resolve(null),
+          text: () => Promise.resolve(''),
+        })
+      );
+      const res = await app.inject({
+        method: 'DELETE',
+        url: '/api/v1/github/ssh-keys/42',
+      });
+      expect(res.statusCode).toBe(204);
+    });
+
+    it('returns 403 in draft mode', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('draft');
+      const app = await buildApp(svc, sm);
+      const res = await app.inject({
+        method: 'DELETE',
+        url: '/api/v1/github/ssh-keys/42',
+      });
+      expect(res.statusCode).toBe(403);
+      expect(res.json().message).toMatch(/draft/i);
+    });
+
+    it('returns 403 in suggest mode', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('suggest');
+      const app = await buildApp(svc, sm);
+      const res = await app.inject({
+        method: 'DELETE',
+        url: '/api/v1/github/ssh-keys/42',
+      });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('returns 404 when no token', async () => {
+      const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
+      const res = await app.inject({
+        method: 'DELETE',
+        url: '/api/v1/github/ssh-keys/42',
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('returns error on GitHub API failure', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      vi.stubGlobal('fetch', mockFetch({ message: 'Server Error' }, 500));
+      const res = await app.inject({
+        method: 'DELETE',
+        url: '/api/v1/github/ssh-keys/42',
+      });
+      expect(res.statusCode).toBe(500);
+    });
+  });
+
+  // ── POST /api/v1/github/repos (create repo) ───────────────────────────────
+
+  describe('POST /api/v1/github/repos', () => {
+    const repoPayload = { name: 'new-repo', description: 'test', private: true, auto_init: true };
+
+    it('creates repo in auto mode', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      vi.stubGlobal('fetch', mockFetch({ id: 1, name: 'new-repo' }, 201));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos',
+        payload: repoPayload,
+      });
+      expect(res.statusCode).toBe(201);
+    });
+
+    it('returns preview in draft mode', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('draft');
+      const app = await buildApp(svc, sm);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos',
+        payload: repoPayload,
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().preview).toBe(true);
+      expect(res.json().name).toBe('new-repo');
+      expect(res.json().private).toBe(true);
+    });
+
+    it('returns 403 in suggest mode', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('suggest');
+      const app = await buildApp(svc, sm);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos',
+        payload: repoPayload,
+      });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('returns 404 when no token', async () => {
+      const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos',
+        payload: repoPayload,
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('returns error on GitHub API failure', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      vi.stubGlobal('fetch', mockFetch({ message: 'Validation failed' }, 422));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos',
+        payload: repoPayload,
+      });
+      expect(res.statusCode).toBe(422);
+    });
+
+    it('returns 403 when scopes lack write permission', async () => {
+      const svc = {
+        ...mockOAuthTokenService(),
+        listTokens: vi.fn().mockResolvedValue([{ ...TOKEN_ROW, scopes: 'read:user' }]),
+        getValidToken: vi.fn().mockResolvedValue('gh-access-token'),
+      } as unknown as OAuthTokenService;
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos',
+        payload: repoPayload,
+      });
+      expect(res.statusCode).toBe(403);
+    });
+  });
+
+  // ── POST /api/v1/github/repos/:owner/:repo/forks ──────────────────────────
+
+  describe('POST /api/v1/github/repos/:owner/:repo/forks', () => {
+    const forkPayload = { organization: 'my-org', name: 'my-fork', default_branch_only: true };
+
+    it('forks repo in auto mode', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      vi.stubGlobal('fetch', mockFetch({ id: 2, full_name: 'my-org/my-fork' }, 202));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos/octocat/hello-world/forks',
+        payload: forkPayload,
+      });
+      expect(res.statusCode).toBe(202);
+    });
+
+    it('returns preview in draft mode', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('draft');
+      const app = await buildApp(svc, sm);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos/octocat/hello-world/forks',
+        payload: forkPayload,
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().preview).toBe(true);
+      expect(res.json().source_owner).toBe('octocat');
+      expect(res.json().source_repo).toBe('hello-world');
+    });
+
+    it('returns 403 in suggest mode', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('suggest');
+      const app = await buildApp(svc, sm);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos/octocat/hello-world/forks',
+        payload: {},
+      });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('returns 404 when no token', async () => {
+      const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos/octocat/hello-world/forks',
+        payload: {},
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('returns error on GitHub API failure', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      vi.stubGlobal('fetch', mockFetch({ message: 'error' }, 500));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos/octocat/hello-world/forks',
+        payload: {},
+      });
+      expect(res.statusCode).toBe(500);
+    });
+
+    it('sends fork body with optional fields', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      const fetchMock = mockFetch({ id: 3 }, 202);
+      vi.stubGlobal('fetch', fetchMock);
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos/octocat/hello-world/forks',
+        payload: forkPayload,
+      });
+      const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+      expect(body.organization).toBe('my-org');
+      expect(body.name).toBe('my-fork');
+      expect(body.default_branch_only).toBe(true);
+    });
+  });
+
+  // ── POST /api/v1/github/repos/:owner/:repo/issues (API error) ─────────────
+
+  describe('POST /api/v1/github/repos/:owner/:repo/issues API error', () => {
+    it('returns GitHub error on API failure', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      vi.stubGlobal('fetch', mockFetch({ message: 'Validation failed' }, 422));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos/octocat/hello-world/issues',
+        payload: { title: 'Test', body: 'desc', labels: ['bug'], assignees: ['dev'] },
+      });
+      expect(res.statusCode).toBe(422);
+    });
+  });
+
+  // ── POST /api/v1/github/repos/:owner/:repo/pulls (API error) ──────────────
+
+  describe('POST /api/v1/github/repos/:owner/:repo/pulls API error', () => {
+    it('returns GitHub error on API failure', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      vi.stubGlobal('fetch', mockFetch({ message: 'Validation failed' }, 422));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos/octocat/hello-world/pulls',
+        payload: { title: 'PR', head: 'feat', base: 'main' },
+      });
+      expect(res.statusCode).toBe(422);
+    });
+
+    it('returns 403 when scopes lack write permission for PR create', async () => {
+      const svc = {
+        ...mockOAuthTokenService(),
+        listTokens: vi.fn().mockResolvedValue([{ ...TOKEN_ROW, scopes: 'read:user' }]),
+        getValidToken: vi.fn().mockResolvedValue('gh-access-token'),
+      } as unknown as OAuthTokenService;
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos/octocat/hello-world/pulls',
+        payload: { title: 'PR', head: 'feat', base: 'main' },
+      });
+      expect(res.statusCode).toBe(403);
+    });
+  });
+
+  // ── POST comments — write scope check ─────────────────────────────────────
+
+  describe('POST /api/v1/github/repos/:owner/:repo/issues/:number/comments scope check', () => {
+    it('returns 403 when scopes lack write permission for comments', async () => {
+      const svc = {
+        ...mockOAuthTokenService(),
+        listTokens: vi.fn().mockResolvedValue([{ ...TOKEN_ROW, scopes: 'read:user' }]),
+        getValidToken: vi.fn().mockResolvedValue('gh-access-token'),
+      } as unknown as OAuthTokenService;
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos/octocat/hello-world/issues/1/comments',
+        payload: { body: 'comment' },
+      });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('returns 404 when no token', async () => {
+      const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos/octocat/hello-world/issues/1/comments',
+        payload: { body: 'comment' },
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('returns error on API failure', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      vi.stubGlobal('fetch', mockFetch({ message: 'error' }, 500));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos/octocat/hello-world/issues/1/comments',
+        payload: { body: 'comment' },
+      });
+      expect(res.statusCode).toBe(500);
+    });
+  });
+
+  // ── sync-fork error on GitHub API ──────────────────────────────────────────
+
+  describe('POST sync-fork API error', () => {
+    it('returns error on GitHub merge API failure', async () => {
+      const svc = mockOAuthTokenService();
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      vi.stubGlobal('fetch', mockFetch({ message: 'Conflict' }, 409));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos/myuser/my-fork/sync-fork',
+        payload: { base: 'main' },
+      });
+      expect(res.statusCode).toBe(409);
+    });
+
+    it('returns 403 when scopes lack write permission for sync-fork', async () => {
+      const svc = {
+        ...mockOAuthTokenService(),
+        listTokens: vi.fn().mockResolvedValue([{ ...TOKEN_ROW, scopes: 'read:user' }]),
+        getValidToken: vi.fn().mockResolvedValue('gh-access-token'),
+      } as unknown as OAuthTokenService;
+      const sm = mockSoulManager('auto');
+      const app = await buildApp(svc, sm);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/github/repos/myuser/my-fork/sync-fork',
+        payload: { base: 'main' },
+      });
+      expect(res.statusCode).toBe(403);
+    });
+  });
+
+  // ── GET /api/v1/github/repos/:owner/:repo error ───────────────────────────
+
+  describe('GET /api/v1/github/repos/:owner/:repo error', () => {
+    it('returns 404 when no token', async () => {
+      const app = await buildApp(mockOAuthTokenService({ noTokens: true }));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/github/repos/octocat/hello-world',
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('returns error on GitHub API failure', async () => {
+      const svc = mockOAuthTokenService();
+      const app = await buildApp(svc);
+      vi.stubGlobal('fetch', mockFetch({ message: 'error' }, 500));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/github/repos/octocat/hello-world',
+      });
+      expect(res.statusCode).toBe(500);
+    });
+  });
+
+  // ── repos API error ────────────────────────────────────────────────────────
+
+  describe('GET /api/v1/github/repos API error', () => {
+    it('returns error on GitHub API failure', async () => {
+      const svc = mockOAuthTokenService();
+      const app = await buildApp(svc);
+      vi.stubGlobal('fetch', mockFetch({ message: 'Unauthorized' }, 401));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/github/repos' });
+      expect(res.statusCode).toBe(401);
+    });
   });
 });

@@ -19,6 +19,8 @@ import type { FinetuneJobConfig } from './finetune-manager.js';
 import type { AIMessage } from '@secureyeoman/shared';
 import { trainingStream } from './training-stream.js';
 import type { ListEpisodesOptions } from './computer-use-manager.js';
+import type { EvalDatasetCreate } from '@secureyeoman/shared';
+import type { PreferencePairCreate, CurationRules, TrainingExperimentCreate, SideBySideRating } from '@secureyeoman/shared';
 
 export interface TrainingRoutesOptions {
   secureYeoman: SecureYeoman;
@@ -793,6 +795,776 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       const deleted = await manager.deleteEpisode(request.params.id);
       if (!deleted) return sendError(reply, 404, 'Episode not found');
       return reply.status(204).send();
+    }
+  );
+
+  // ── Phase 97: LLM-as-Judge endpoints ──────────────────────────────────────
+
+  /**
+   * POST /api/v1/training/judge/datasets
+   * Create an eval dataset.
+   */
+  app.post(
+    '/api/v1/training/judge/datasets',
+    async (request: FastifyRequest<{ Body: EvalDatasetCreate }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getLlmJudgeManager();
+      if (!manager) return sendError(reply, 503, 'LLM Judge manager not available');
+
+      const body = request.body;
+      if (!body?.name?.trim()) return sendError(reply, 400, 'name is required');
+      if (!body?.samples?.length) return sendError(reply, 400, 'samples must be a non-empty array');
+
+      const dataset = await manager.createDataset(body);
+      return reply.status(201).send(dataset);
+    }
+  );
+
+  /**
+   * GET /api/v1/training/judge/datasets
+   * List eval datasets.
+   */
+  app.get(
+    '/api/v1/training/judge/datasets',
+    async (
+      request: FastifyRequest<{ Querystring: { personalityId?: string } }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getLlmJudgeManager();
+      if (!manager) return sendError(reply, 503, 'LLM Judge manager not available');
+
+      const datasets = await manager.listDatasets({
+        personalityId: request.query.personalityId,
+      });
+      return { datasets };
+    }
+  );
+
+  /**
+   * GET /api/v1/training/judge/datasets/:id
+   * Get a specific eval dataset.
+   */
+  app.get(
+    '/api/v1/training/judge/datasets/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getLlmJudgeManager();
+      if (!manager) return sendError(reply, 503, 'LLM Judge manager not available');
+
+      const dataset = await manager.getDataset(request.params.id);
+      if (!dataset) return sendError(reply, 404, 'Dataset not found');
+      return dataset;
+    }
+  );
+
+  /**
+   * DELETE /api/v1/training/judge/datasets/:id
+   * Delete an eval dataset.
+   */
+  app.delete(
+    '/api/v1/training/judge/datasets/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getLlmJudgeManager();
+      if (!manager) return sendError(reply, 503, 'LLM Judge manager not available');
+
+      const deleted = await manager.deleteDataset(request.params.id);
+      if (!deleted) return sendError(reply, 404, 'Dataset not found');
+      return reply.status(204).send();
+    }
+  );
+
+  /**
+   * POST /api/v1/training/judge/pointwise
+   * Trigger a pointwise eval (202 async).
+   */
+  app.post(
+    '/api/v1/training/judge/pointwise',
+    async (
+      request: FastifyRequest<{
+        Body: { datasetId: string; modelName: string; finetuneJobId?: string; maxSamples?: number };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getLlmJudgeManager();
+      if (!manager) return sendError(reply, 503, 'LLM Judge manager not available');
+
+      const body = request.body;
+      if (!body?.datasetId) return sendError(reply, 400, 'datasetId is required');
+      if (!body?.modelName) return sendError(reply, 400, 'modelName is required');
+
+      let aiClient: ReturnType<typeof secureYeoman.getAIClient>;
+      try {
+        aiClient = secureYeoman.getAIClient();
+      } catch {
+        return sendError(reply, 503, 'AI client not available');
+      }
+
+      // Fire and forget — client polls GET /runs for results
+      void manager.runPointwiseEval({
+        datasetId: body.datasetId,
+        modelName: body.modelName,
+        finetuneJobId: body.finetuneJobId,
+        maxSamples: body.maxSamples,
+        modelFn: async (prompt) => {
+          const response = await aiClient.chat({
+            messages: [{ role: 'user', content: prompt }],
+            model: body.modelName,
+            stream: false,
+          });
+          return response.content;
+        },
+      });
+
+      return reply.status(202).send({ status: 'started', modelName: body.modelName });
+    }
+  );
+
+  /**
+   * GET /api/v1/training/judge/runs
+   * List eval run summaries.
+   */
+  app.get('/api/v1/training/judge/runs', async (_request, reply: FastifyReply) => {
+    const manager = secureYeoman.getLlmJudgeManager();
+    if (!manager) return sendError(reply, 503, 'LLM Judge manager not available');
+
+    const runs = await manager.listEvalRuns();
+    return { runs };
+  });
+
+  /**
+   * GET /api/v1/training/judge/runs/:id
+   * Get scores for a specific eval run.
+   */
+  app.get(
+    '/api/v1/training/judge/runs/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getLlmJudgeManager();
+      if (!manager) return sendError(reply, 503, 'LLM Judge manager not available');
+
+      const scores = await manager.getEvalRunScores(request.params.id);
+      return { scores };
+    }
+  );
+
+  /**
+   * DELETE /api/v1/training/judge/runs/:id
+   * Delete an eval run and its scores.
+   */
+  app.delete(
+    '/api/v1/training/judge/runs/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getLlmJudgeManager();
+      if (!manager) return sendError(reply, 503, 'LLM Judge manager not available');
+
+      const deleted = await manager.deleteEvalRun(request.params.id);
+      if (!deleted) return sendError(reply, 404, 'Eval run not found');
+      return reply.status(204).send();
+    }
+  );
+
+  /**
+   * POST /api/v1/training/judge/pairwise
+   * Trigger a pairwise comparison (202 async).
+   */
+  app.post(
+    '/api/v1/training/judge/pairwise',
+    async (
+      request: FastifyRequest<{
+        Body: { datasetId: string; modelA: string; modelB: string; maxSamples?: number };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getLlmJudgeManager();
+      if (!manager) return sendError(reply, 503, 'LLM Judge manager not available');
+
+      const body = request.body;
+      if (!body?.datasetId) return sendError(reply, 400, 'datasetId is required');
+      if (!body?.modelA) return sendError(reply, 400, 'modelA is required');
+      if (!body?.modelB) return sendError(reply, 400, 'modelB is required');
+
+      let aiClient: ReturnType<typeof secureYeoman.getAIClient>;
+      try {
+        aiClient = secureYeoman.getAIClient();
+      } catch {
+        return sendError(reply, 503, 'AI client not available');
+      }
+
+      // Fire and forget — client polls GET /comparisons for results
+      void manager.runPairwiseComparison({
+        datasetId: body.datasetId,
+        modelA: body.modelA,
+        modelB: body.modelB,
+        maxSamples: body.maxSamples,
+        modelFnA: async (prompt) => {
+          const response = await aiClient.chat({
+            messages: [{ role: 'user', content: prompt }],
+            model: body.modelA,
+            stream: false,
+          });
+          return response.content;
+        },
+        modelFnB: async (prompt) => {
+          const response = await aiClient.chat({
+            messages: [{ role: 'user', content: prompt }],
+            model: body.modelB,
+            stream: false,
+          });
+          return response.content;
+        },
+      });
+
+      return reply
+        .status(202)
+        .send({ status: 'started', modelA: body.modelA, modelB: body.modelB });
+    }
+  );
+
+  /**
+   * GET /api/v1/training/judge/comparisons
+   * List pairwise comparison summaries.
+   */
+  app.get('/api/v1/training/judge/comparisons', async (_request, reply: FastifyReply) => {
+    const manager = secureYeoman.getLlmJudgeManager();
+    if (!manager) return sendError(reply, 503, 'LLM Judge manager not available');
+
+    const comparisons = await manager.listComparisons();
+    return { comparisons };
+  });
+
+  /**
+   * GET /api/v1/training/judge/comparisons/:id
+   * Get details for a specific pairwise comparison.
+   */
+  app.get(
+    '/api/v1/training/judge/comparisons/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getLlmJudgeManager();
+      if (!manager) return sendError(reply, 503, 'LLM Judge manager not available');
+
+      const results = await manager.getComparisonDetails(request.params.id);
+      return { results };
+    }
+  );
+
+  /**
+   * POST /api/v1/training/judge/auto-eval
+   * Configure/trigger auto-eval for a model.
+   */
+  app.post(
+    '/api/v1/training/judge/auto-eval',
+    async (
+      request: FastifyRequest<{
+        Body: {
+          datasetId: string;
+          modelName: string;
+          finetuneJobId?: string;
+          thresholds?: { groundedness?: number; coherence?: number };
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getLlmJudgeManager();
+      if (!manager) return sendError(reply, 503, 'LLM Judge manager not available');
+
+      const body = request.body;
+      if (!body?.datasetId) return sendError(reply, 400, 'datasetId is required');
+      if (!body?.modelName) return sendError(reply, 400, 'modelName is required');
+
+      let aiClient: ReturnType<typeof secureYeoman.getAIClient>;
+      try {
+        aiClient = secureYeoman.getAIClient();
+      } catch {
+        return sendError(reply, 503, 'AI client not available');
+      }
+
+      const result = await manager.runAutoEval({
+        enabled: true,
+        datasetId: body.datasetId,
+        thresholds: {
+          groundedness: body.thresholds?.groundedness ?? 3.0,
+          coherence: body.thresholds?.coherence ?? 3.0,
+        },
+        modelName: body.modelName,
+        finetuneJobId: body.finetuneJobId,
+        modelFn: async (prompt) => {
+          const response = await aiClient.chat({
+            messages: [{ role: 'user', content: prompt }],
+            model: body.modelName,
+            stream: false,
+          });
+          return response.content;
+        },
+      });
+
+      return { passed: result.passed, summary: result.summary, failedDimensions: result.failedDimensions };
+    }
+  );
+
+  // ── Phase 98: Preference Annotation endpoints ───────────────────────────
+
+  app.post(
+    '/api/v1/training/preferences',
+    async (request: FastifyRequest<{ Body: PreferencePairCreate }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getPreferenceManager();
+      if (!manager) return sendError(reply, 503, 'Preference manager not available');
+
+      const body = request.body;
+      if (!body?.prompt?.trim()) return sendError(reply, 400, 'prompt is required');
+      if (!body?.chosen?.trim()) return sendError(reply, 400, 'chosen is required');
+      if (!body?.rejected?.trim()) return sendError(reply, 400, 'rejected is required');
+      if (!body?.source) return sendError(reply, 400, 'source is required');
+
+      const pair = await manager.recordAnnotation(body);
+      return reply.status(201).send(pair);
+    }
+  );
+
+  app.get(
+    '/api/v1/training/preferences',
+    async (
+      request: FastifyRequest<{
+        Querystring: { personalityId?: string; source?: string; limit?: string; offset?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getPreferenceManager();
+      if (!manager) return sendError(reply, 503, 'Preference manager not available');
+
+      const pairs = await manager.listAnnotations({
+        personalityId: request.query.personalityId,
+        source: request.query.source as 'annotation' | 'comparison' | 'multi_turn' | undefined,
+        limit: request.query.limit ? parseInt(request.query.limit, 10) : undefined,
+        offset: request.query.offset ? parseInt(request.query.offset, 10) : undefined,
+      });
+      return { pairs };
+    }
+  );
+
+  app.delete(
+    '/api/v1/training/preferences/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getPreferenceManager();
+      if (!manager) return sendError(reply, 503, 'Preference manager not available');
+
+      const deleted = await manager.deleteAnnotation(request.params.id);
+      if (!deleted) return sendError(reply, 404, 'Preference pair not found');
+      return reply.status(204).send();
+    }
+  );
+
+  app.post(
+    '/api/v1/training/preferences/export',
+    async (
+      request: FastifyRequest<{ Body: { personalityId?: string; source?: string } }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getPreferenceManager();
+      if (!manager) return sendError(reply, 503, 'Preference manager not available');
+
+      const body = request.body ?? {};
+      const filename = `dpo-export-${new Date().toISOString().slice(0, 10)}.jsonl`;
+      reply.raw.setHeader('Content-Type', 'application/x-ndjson');
+      reply.raw.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      reply.raw.writeHead(200);
+
+      try {
+        for await (const line of manager.exportAsDpo({
+          personalityId: body.personalityId,
+          source: body.source as 'annotation' | 'comparison' | 'multi_turn' | undefined,
+        })) {
+          reply.raw.write(line);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Export error';
+        reply.raw.write(`{"error":${JSON.stringify(msg)}}\n`);
+      }
+
+      reply.raw.end();
+      return reply;
+    }
+  );
+
+  // ── Phase 98: Dataset Curation endpoints ────────────────────────────────
+
+  app.post(
+    '/api/v1/training/curated-datasets/preview',
+    async (request: FastifyRequest<{ Body: CurationRules }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getDatasetCuratorManager();
+      if (!manager) return sendError(reply, 503, 'Dataset curator not available');
+
+      const preview = await manager.previewDataset(request.body ?? {});
+      return preview;
+    }
+  );
+
+  app.post(
+    '/api/v1/training/curated-datasets',
+    async (
+      request: FastifyRequest<{
+        Body: { name: string; personalityId?: string; rules: CurationRules; outputDir: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getDatasetCuratorManager();
+      if (!manager) return sendError(reply, 503, 'Dataset curator not available');
+
+      const body = request.body;
+      if (!body?.name?.trim()) return sendError(reply, 400, 'name is required');
+      if (!body?.outputDir?.trim()) return sendError(reply, 400, 'outputDir is required');
+
+      const dataset = await manager.commitDataset(
+        body.name,
+        body.personalityId,
+        body.rules ?? {},
+        body.outputDir
+      );
+      return reply.status(201).send(dataset);
+    }
+  );
+
+  app.get(
+    '/api/v1/training/curated-datasets',
+    async (
+      request: FastifyRequest<{ Querystring: { status?: string; limit?: string } }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getDatasetCuratorManager();
+      if (!manager) return sendError(reply, 503, 'Dataset curator not available');
+
+      const datasets = await manager.listDatasets({
+        status: request.query.status,
+        limit: request.query.limit ? parseInt(request.query.limit, 10) : undefined,
+      });
+      return { datasets };
+    }
+  );
+
+  app.get(
+    '/api/v1/training/curated-datasets/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getDatasetCuratorManager();
+      if (!manager) return sendError(reply, 503, 'Dataset curator not available');
+
+      const dataset = await manager.getDataset(request.params.id);
+      if (!dataset) return sendError(reply, 404, 'Dataset not found');
+      return dataset;
+    }
+  );
+
+  app.delete(
+    '/api/v1/training/curated-datasets/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getDatasetCuratorManager();
+      if (!manager) return sendError(reply, 503, 'Dataset curator not available');
+
+      const deleted = await manager.deleteDataset(request.params.id);
+      if (!deleted) return sendError(reply, 404, 'Dataset not found');
+      return reply.status(204).send();
+    }
+  );
+
+  // ── Phase 98: Experiment Registry endpoints ─────────────────────────────
+
+  app.post(
+    '/api/v1/training/experiments',
+    async (request: FastifyRequest<{ Body: TrainingExperimentCreate }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getExperimentRegistryManager();
+      if (!manager) return sendError(reply, 503, 'Experiment registry not available');
+
+      const body = request.body;
+      if (!body?.name?.trim()) return sendError(reply, 400, 'name is required');
+
+      const experiment = await manager.createExperiment(body);
+      return reply.status(201).send(experiment);
+    }
+  );
+
+  app.get(
+    '/api/v1/training/experiments',
+    async (
+      request: FastifyRequest<{ Querystring: { status?: string; limit?: string } }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getExperimentRegistryManager();
+      if (!manager) return sendError(reply, 503, 'Experiment registry not available');
+
+      const experiments = await manager.listExperiments({
+        status: request.query.status as 'draft' | 'running' | 'completed' | 'failed' | 'archived' | undefined,
+        limit: request.query.limit ? parseInt(request.query.limit, 10) : undefined,
+      });
+      return { experiments };
+    }
+  );
+
+  app.get(
+    '/api/v1/training/experiments/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getExperimentRegistryManager();
+      if (!manager) return sendError(reply, 503, 'Experiment registry not available');
+
+      const experiment = await manager.getExperiment(request.params.id);
+      if (!experiment) return sendError(reply, 404, 'Experiment not found');
+      return experiment;
+    }
+  );
+
+  app.patch(
+    '/api/v1/training/experiments/:id',
+    async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Body: { status?: string; notes?: string; hyperparameters?: Record<string, unknown> };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getExperimentRegistryManager();
+      if (!manager) return sendError(reply, 503, 'Experiment registry not available');
+
+      const body = request.body ?? {};
+      const experiment = await manager.updateExperiment(request.params.id, {
+        ...body,
+        status: body.status as 'draft' | 'running' | 'completed' | 'failed' | 'archived' | undefined,
+      });
+      if (!experiment) return sendError(reply, 404, 'Experiment not found');
+      return experiment;
+    }
+  );
+
+  app.delete(
+    '/api/v1/training/experiments/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getExperimentRegistryManager();
+      if (!manager) return sendError(reply, 503, 'Experiment registry not available');
+
+      const deleted = await manager.deleteExperiment(request.params.id);
+      if (!deleted) return sendError(reply, 404, 'Experiment not found');
+      return reply.status(204).send();
+    }
+  );
+
+  app.get(
+    '/api/v1/training/experiments/diff',
+    async (
+      request: FastifyRequest<{ Querystring: { idA: string; idB: string } }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getExperimentRegistryManager();
+      if (!manager) return sendError(reply, 503, 'Experiment registry not available');
+
+      const { idA, idB } = request.query;
+      if (!idA || !idB) return sendError(reply, 400, 'idA and idB query params are required');
+
+      const diff = await manager.diffExperiments(idA, idB);
+      if (!diff) return sendError(reply, 404, 'One or both experiments not found');
+      return diff;
+    }
+  );
+
+  // ── Phase 98: Model Deployment endpoints ────────────────────────────────
+
+  app.post(
+    '/api/v1/training/deploy',
+    async (
+      request: FastifyRequest<{
+        Body: {
+          personalityId: string;
+          modelName: string;
+          experimentId?: string;
+          finetuneJobId?: string;
+          ollamaBaseUrl?: string;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getModelVersionManager();
+      if (!manager) return sendError(reply, 503, 'Model version manager not available');
+
+      const body = request.body;
+      if (!body?.personalityId) return sendError(reply, 400, 'personalityId is required');
+      if (!body?.modelName?.trim()) return sendError(reply, 400, 'modelName is required');
+
+      const version = await manager.deployModel(body);
+      return reply.status(201).send(version);
+    }
+  );
+
+  app.post(
+    '/api/v1/training/deploy/rollback',
+    async (
+      request: FastifyRequest<{ Body: { personalityId: string } }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getModelVersionManager();
+      if (!manager) return sendError(reply, 503, 'Model version manager not available');
+
+      const body = request.body;
+      if (!body?.personalityId) return sendError(reply, 400, 'personalityId is required');
+
+      const version = await manager.rollback(body.personalityId);
+      if (!version) return sendError(reply, 404, 'No previous model to rollback to');
+      return version;
+    }
+  );
+
+  app.get(
+    '/api/v1/training/model-versions',
+    async (
+      request: FastifyRequest<{ Querystring: { personalityId: string } }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getModelVersionManager();
+      if (!manager) return sendError(reply, 503, 'Model version manager not available');
+
+      if (!request.query.personalityId) {
+        return sendError(reply, 400, 'personalityId query param is required');
+      }
+
+      const versions = await manager.listVersions(request.query.personalityId);
+      return { versions };
+    }
+  );
+
+  app.get(
+    '/api/v1/training/model-versions/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getModelVersionManager();
+      if (!manager) return sendError(reply, 503, 'Model version manager not available');
+
+      const version = await manager.getVersion(request.params.id);
+      if (!version) return sendError(reply, 404, 'Model version not found');
+      return version;
+    }
+  );
+
+  // ── Phase 98: A/B Test endpoints ────────────────────────────────────────
+
+  app.post(
+    '/api/v1/training/ab-tests',
+    async (
+      request: FastifyRequest<{
+        Body: {
+          personalityId: string;
+          name: string;
+          modelA: string;
+          modelB: string;
+          trafficPctB: number;
+          autoPromote?: boolean;
+          minConversations?: number;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getAbTestManager();
+      if (!manager) return sendError(reply, 503, 'A/B test manager not available');
+
+      const body = request.body;
+      if (!body?.personalityId) return sendError(reply, 400, 'personalityId is required');
+      if (!body?.name?.trim()) return sendError(reply, 400, 'name is required');
+      if (!body?.modelA?.trim()) return sendError(reply, 400, 'modelA is required');
+      if (!body?.modelB?.trim()) return sendError(reply, 400, 'modelB is required');
+
+      const test = await manager.createTest(body);
+      return reply.status(201).send(test);
+    }
+  );
+
+  app.get(
+    '/api/v1/training/ab-tests',
+    async (
+      request: FastifyRequest<{ Querystring: { personalityId?: string; status?: string } }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getAbTestManager();
+      if (!manager) return sendError(reply, 503, 'A/B test manager not available');
+
+      const tests = await manager.listTests({
+        personalityId: request.query.personalityId,
+        status: request.query.status,
+      });
+      return { tests };
+    }
+  );
+
+  app.get(
+    '/api/v1/training/ab-tests/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getAbTestManager();
+      if (!manager) return sendError(reply, 503, 'A/B test manager not available');
+
+      const test = await manager.getTest(request.params.id);
+      if (!test) return sendError(reply, 404, 'A/B test not found');
+      return test;
+    }
+  );
+
+  app.post(
+    '/api/v1/training/ab-tests/:id/complete',
+    async (
+      request: FastifyRequest<{ Params: { id: string }; Body: { winner: string } }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getAbTestManager();
+      if (!manager) return sendError(reply, 503, 'A/B test manager not available');
+
+      const body = request.body;
+      if (!body?.winner) return sendError(reply, 400, 'winner is required');
+
+      const test = await manager.completeTest(request.params.id, body.winner);
+      if (!test) return sendError(reply, 404, 'A/B test not found or not running');
+      return test;
+    }
+  );
+
+  app.post(
+    '/api/v1/training/ab-tests/:id/cancel',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getAbTestManager();
+      if (!manager) return sendError(reply, 503, 'A/B test manager not available');
+
+      const test = await manager.cancelTest(request.params.id);
+      if (!test) return sendError(reply, 404, 'A/B test not found or not running');
+      return test;
+    }
+  );
+
+  app.post(
+    '/api/v1/training/ab-tests/:id/evaluate',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getAbTestManager();
+      if (!manager) return sendError(reply, 503, 'A/B test manager not available');
+
+      const result = await manager.evaluateTest(request.params.id);
+      return result;
+    }
+  );
+
+  // ── Phase 98: Side-by-Side Rating ───────────────────────────────────────
+
+  app.post(
+    '/api/v1/training/side-by-side/rate',
+    async (request: FastifyRequest<{ Body: SideBySideRating }>, reply: FastifyReply) => {
+      const prefManager = secureYeoman.getPreferenceManager();
+      if (!prefManager) return sendError(reply, 503, 'Preference manager not available');
+
+      const body = request.body;
+      if (!body?.prompt?.trim()) return sendError(reply, 400, 'prompt is required');
+      if (!body?.responseA?.trim()) return sendError(reply, 400, 'responseA is required');
+      if (!body?.responseB?.trim()) return sendError(reply, 400, 'responseB is required');
+      if (body?.winner !== 'a' && body?.winner !== 'b') {
+        return sendError(reply, 400, 'winner must be "a" or "b"');
+      }
+
+      const chosen = body.winner === 'a' ? body.responseA : body.responseB;
+      const rejected = body.winner === 'a' ? body.responseB : body.responseA;
+
+      const pair = await prefManager.recordAnnotation({
+        prompt: body.prompt,
+        chosen,
+        rejected,
+        source: 'comparison',
+        personalityId: body.personalityId,
+        annotatorId: body.annotatorId,
+      });
+
+      return reply.status(201).send(pair);
     }
   );
 }

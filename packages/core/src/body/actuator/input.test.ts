@@ -290,3 +290,171 @@ describe('input actuator error recovery', () => {
     await expect(scrollMouse(0, 5)).rejects.toThrow('Scroll not supported');
   });
 });
+
+// ─── parseKeyCombo — additional key mappings ──────────────────────────────────
+
+describe('pressKey() — additional key mappings', () => {
+  it('maps "control" → LeftControl', async () => {
+    await pressKey('control+c');
+    const call = nutMock.keyboard.pressKey.mock.calls[0];
+    expect(call[0]).toBe('LeftControl');
+  });
+
+  it('maps "cmd" → LeftSuper', async () => {
+    await pressKey('cmd+c');
+    const call = nutMock.keyboard.pressKey.mock.calls[0];
+    expect(call[0]).toBe('LeftSuper');
+  });
+
+  it('maps "win" → LeftSuper', async () => {
+    await pressKey('win+c');
+    const call = nutMock.keyboard.pressKey.mock.calls[0];
+    expect(call[0]).toBe('LeftSuper');
+  });
+
+  it('maps "return" → Return', async () => {
+    await pressKey('return');
+    expect(nutMock.keyboard.pressKey).toHaveBeenCalledWith('Return');
+  });
+
+  it('maps "escape" → Escape', async () => {
+    await pressKey('escape');
+    expect(nutMock.keyboard.pressKey).toHaveBeenCalledWith('Escape');
+  });
+
+  it('maps "space" → Space', async () => {
+    await pressKey('space');
+    expect(nutMock.keyboard.pressKey).toHaveBeenCalledWith('Space');
+  });
+
+  it('maps "backspace" → Backspace', async () => {
+    await pressKey('backspace');
+    expect(nutMock.keyboard.pressKey).toHaveBeenCalledWith('Backspace');
+  });
+
+  it('maps "delete" → Delete', async () => {
+    await pressKey('delete');
+    expect(nutMock.keyboard.pressKey).toHaveBeenCalledWith('Delete');
+  });
+
+  it('maps "up" → Up', async () => {
+    await pressKey('up');
+    expect(nutMock.keyboard.pressKey).toHaveBeenCalledWith('Up');
+  });
+
+  it('maps "down" → Down', async () => {
+    await pressKey('down');
+    expect(nutMock.keyboard.pressKey).toHaveBeenCalledWith('Down');
+  });
+
+  it('maps "left" → Left', async () => {
+    await pressKey('left');
+    expect(nutMock.keyboard.pressKey).toHaveBeenCalledWith('Left');
+  });
+
+  it('maps "right" → Right', async () => {
+    await pressKey('right');
+    expect(nutMock.keyboard.pressKey).toHaveBeenCalledWith('Right');
+  });
+
+  it('maps "home" → Home', async () => {
+    await pressKey('home');
+    expect(nutMock.keyboard.pressKey).toHaveBeenCalledWith('Home');
+  });
+
+  it('maps "end" → End', async () => {
+    await pressKey('end');
+    expect(nutMock.keyboard.pressKey).toHaveBeenCalledWith('End');
+  });
+
+  it('maps "pageup" → PageUp', async () => {
+    await pressKey('pageup');
+    expect(nutMock.keyboard.pressKey).toHaveBeenCalledWith('PageUp');
+  });
+
+  it('maps "pagedown" → PageDown', async () => {
+    await pressKey('pagedown');
+    expect(nutMock.keyboard.pressKey).toHaveBeenCalledWith('PageDown');
+  });
+
+  it('passes through unmapped key names directly', async () => {
+    await pressKey('F12');
+    // F12 is not in keyMap, falls through to Key[mapped] ?? Key[lower] ?? mapped
+    expect(nutMock.keyboard.pressKey).toHaveBeenCalled();
+  });
+
+  it('handles multi-key combos like shift+alt+tab', async () => {
+    await pressKey('shift+alt+tab');
+    const call = nutMock.keyboard.pressKey.mock.calls[0];
+    expect(call[0]).toBe('LeftShift');
+    expect(call[1]).toBe('LeftAlt');
+    expect(call[2]).toBe('Tab');
+  });
+
+  it('handles tab key alone', async () => {
+    await pressKey('tab');
+    expect(nutMock.keyboard.pressKey).toHaveBeenCalledWith('Tab');
+  });
+});
+
+// ─── releaseKey — additional combos ──────────────────────────────────────────
+
+describe('releaseKey() — additional combos', () => {
+  it('releases a multi-key combo', async () => {
+    await releaseKey('ctrl+shift');
+    const call = nutMock.keyboard.releaseKey.mock.calls[0];
+    expect(call[0]).toBe('LeftControl');
+    expect(call[1]).toBe('LeftShift');
+  });
+});
+
+// ─── scrollMouse — simultaneous dx and dy ─────────────────────────────────────
+
+describe('scrollMouse() — both dx and dy', () => {
+  it('scrolls both vertically and horizontally when both are non-zero', async () => {
+    await scrollMouse(3, 5);
+    // First call: vertical (dy > 0 → direction 1)
+    expect(nutMock.mouse.scroll).toHaveBeenCalledWith(1, 5);
+    // Second call: horizontal (dx > 0 → direction 2)
+    expect(nutMock.mouse.scroll).toHaveBeenCalledWith(2, 3);
+    expect(nutMock.mouse.scroll).toHaveBeenCalledTimes(2);
+  });
+
+  it('scrolls up-left when both are negative', async () => {
+    await scrollMouse(-4, -7);
+    expect(nutMock.mouse.scroll).toHaveBeenCalledWith(-1, 7);
+    expect(nutMock.mouse.scroll).toHaveBeenCalledWith(-2, 4);
+    expect(nutMock.mouse.scroll).toHaveBeenCalledTimes(2);
+  });
+});
+
+// ─── clickMouse — button fallback for unknown button value ────────────────────
+
+describe('clickMouse() — edge cases', () => {
+  it('defaults to LEFT button when button string is not recognized', async () => {
+    // force an unknown string through type assertion
+    await clickMouse(10, 20, 'unknown' as any);
+    // btnMap[button] is undefined → falls back to Button.LEFT
+    expect(nutMock.mouse.click).toHaveBeenCalledWith(nutMock.Button.LEFT);
+  });
+
+  it('moves to position before double-clicking', async () => {
+    await clickMouse(50, 60, 'right', true);
+    expect(nutMock.mouse.move).toHaveBeenCalled();
+    expect(nutMock.mouse.doubleClick).toHaveBeenCalledWith(nutMock.Button.RIGHT);
+  });
+
+  it('does not move when only x is undefined', async () => {
+    await clickMouse(undefined, 50, 'left');
+    // x !== undefined check fails because x is undefined
+    expect(nutMock.mouse.move).not.toHaveBeenCalled();
+    expect(nutMock.mouse.click).toHaveBeenCalledWith(nutMock.Button.LEFT);
+  });
+
+  it('does not move when only y is undefined', async () => {
+    await clickMouse(50, undefined, 'left');
+    // Both must be defined to trigger move
+    expect(nutMock.mouse.move).not.toHaveBeenCalled();
+    expect(nutMock.mouse.click).toHaveBeenCalledWith(nutMock.Button.LEFT);
+  });
+});

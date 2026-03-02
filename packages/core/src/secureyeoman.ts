@@ -116,6 +116,7 @@ import { ExperimentManager } from './experiment/manager.js';
 import { MarketplaceStorage } from './marketplace/storage.js';
 import { MarketplaceManager } from './marketplace/manager.js';
 import { ConversationStorage } from './chat/conversation-storage.js';
+import { BranchingManager } from './chat/branching-manager.js';
 import { SubAgentStorage } from './agents/storage.js';
 import { SubAgentManager } from './agents/manager.js';
 import { SwarmStorage } from './agents/swarm-storage.js';
@@ -163,6 +164,12 @@ import { PipelineApprovalManager } from './training/approval-manager.js';
 import { PipelineLineageStorage } from './training/pipeline-lineage.js';
 import { ConversationQualityScorer } from './training/conversation-quality-scorer.js';
 import { ComputerUseManager } from './training/computer-use-manager.js';
+import { LlmJudgeManager } from './training/llm-judge-manager.js';
+import { PreferenceManager } from './training/preference-manager.js';
+import { DatasetCuratorManager } from './training/dataset-curator.js';
+import { ExperimentRegistryManager } from './training/experiment-registry.js';
+import { ModelVersionManager } from './training/model-version-manager.js';
+import { AbTestManager } from './training/ab-test-manager.js';
 import { FederationStorage } from './federation/federation-storage.js';
 import { FederationManager } from './federation/federation-manager.js';
 import { AlertStorage } from './telemetry/alert-storage.js';
@@ -253,6 +260,7 @@ export class SecureYeoman {
   private marketplaceStorage: MarketplaceStorage | null = null;
   private marketplaceManager: MarketplaceManager | null = null;
   private chatConversationStorage: ConversationStorage | null = null;
+  private branchingManager: BranchingManager | null = null;
   private subAgentStorage: SubAgentStorage | null = null;
   private subAgentManager: SubAgentManager | null = null;
   private swarmStorage: SwarmStorage | null = null;
@@ -298,6 +306,12 @@ export class SecureYeoman {
   private pipelineLineageStorage: PipelineLineageStorage | null = null;
   private conversationQualityScorer: ConversationQualityScorer | null = null;
   private computerUseManager: ComputerUseManager | null = null;
+  private llmJudgeManager: LlmJudgeManager | null = null;
+  private preferenceManager: PreferenceManager | null = null;
+  private datasetCuratorManager: DatasetCuratorManager | null = null;
+  private experimentRegistryManager: ExperimentRegistryManager | null = null;
+  private modelVersionManager: ModelVersionManager | null = null;
+  private abTestManager: AbTestManager | null = null;
   private federationStorage: FederationStorage | null = null;
   private federationManager: FederationManager | null = null;
   private alertStorage: AlertStorage | null = null;
@@ -1097,6 +1111,21 @@ export class SecureYeoman {
       this.chatConversationStorage = new ConversationStorage();
       this.logger.debug('Conversation storage initialized');
 
+      // Step 6.10b: Initialize branching manager
+      try {
+        this.branchingManager = new BranchingManager({
+          conversationStorage: this.chatConversationStorage,
+          pool: this.getPool(),
+          logger: this.logger.child({ component: 'BranchingManager' }),
+          aiClient: this.aiClient ?? undefined,
+        });
+        this.logger.debug('Branching manager initialized');
+      } catch (err) {
+        this.logger.warn('Branching manager init failed (non-fatal)', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+
       // Step 6.11: Initialize sub-agent delegation.
       // Boot the delegation chain when any of three conditions are true:
       //   1. config.delegation.enabled is set in the YAML/env config, OR
@@ -1462,6 +1491,45 @@ export class SecureYeoman {
         );
         this.conversationQualityScorer.start();
         this.logger.debug('ML Pipeline managers initialized');
+      }
+
+      // Step 6j-2: Initialize LlmJudgeManager (Phase 97)
+      {
+        const pool = getPool();
+        this.llmJudgeManager = new LlmJudgeManager({
+          pool,
+          logger: this.logger.child({ component: 'LlmJudgeManager' }),
+          aiClient: this.aiClient!,
+          notificationManager: this.notificationManager ?? undefined,
+        });
+        this.logger.debug('LlmJudgeManager initialized');
+      }
+
+      // Step 6j-3: Initialize Lifecycle Platform managers (Phase 98)
+      {
+        const pool = getPool();
+        this.preferenceManager = new PreferenceManager({
+          pool,
+          logger: this.logger.child({ component: 'PreferenceManager' }),
+        });
+        this.datasetCuratorManager = new DatasetCuratorManager({
+          pool,
+          logger: this.logger.child({ component: 'DatasetCuratorManager' }),
+        });
+        this.experimentRegistryManager = new ExperimentRegistryManager({
+          pool,
+          logger: this.logger.child({ component: 'ExperimentRegistryManager' }),
+        });
+        this.modelVersionManager = new ModelVersionManager({
+          pool,
+          logger: this.logger.child({ component: 'ModelVersionManager' }),
+          soulStorage: this.soulStorage!,
+        });
+        this.abTestManager = new AbTestManager({
+          pool,
+          logger: this.logger.child({ component: 'AbTestManager' }),
+        });
+        this.logger.debug('Lifecycle Platform managers initialized');
       }
 
       // Step 6k: Initialize FederationManager (Phase 79)
@@ -2174,6 +2242,11 @@ export class SecureYeoman {
     return this.chatConversationStorage;
   }
 
+  getBranchingManager(): BranchingManager | null {
+    this.ensureInitialized();
+    return this.branchingManager;
+  }
+
   /**
    * Get the sub-agent manager instance (may be null if delegation is disabled)
    */
@@ -2456,6 +2529,54 @@ export class SecureYeoman {
   getPipelineLineageStorage(): PipelineLineageStorage | null {
     this.ensureInitialized();
     return this.pipelineLineageStorage;
+  }
+
+  /**
+   * Get the LLM judge manager instance (Phase 97).
+   */
+  getLlmJudgeManager(): LlmJudgeManager | null {
+    this.ensureInitialized();
+    return this.llmJudgeManager;
+  }
+
+  /**
+   * Get the preference manager instance (Phase 98).
+   */
+  getPreferenceManager(): PreferenceManager | null {
+    this.ensureInitialized();
+    return this.preferenceManager;
+  }
+
+  /**
+   * Get the dataset curator manager instance (Phase 98).
+   */
+  getDatasetCuratorManager(): DatasetCuratorManager | null {
+    this.ensureInitialized();
+    return this.datasetCuratorManager;
+  }
+
+  /**
+   * Get the experiment registry manager instance (Phase 98).
+   */
+  getExperimentRegistryManager(): ExperimentRegistryManager | null {
+    this.ensureInitialized();
+    return this.experimentRegistryManager;
+  }
+
+  /**
+   * Get the model version manager instance (Phase 98).
+   */
+  getModelVersionManager(): ModelVersionManager | null {
+    this.ensureInitialized();
+    return this.modelVersionManager;
+  }
+
+  /**
+   * Get the A/B test manager instance (Phase 98).
+   */
+  getAbTestManager(): AbTestManager | null {
+    this.ensureInitialized();
+    return this.abTestManager;
   }
 
   /**

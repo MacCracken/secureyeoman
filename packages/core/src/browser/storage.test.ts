@@ -311,5 +311,142 @@ describe('BrowserSessionStorage', () => {
       expect(stats.closed).toBe(0);
       expect(stats.failed).toBe(0);
     });
+
+    it('ignores unknown status groups in total but does not assign to known fields', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [
+          { status: 'active', count: '2' },
+          { status: 'unknown_status', count: '3' },
+        ],
+        rowCount: 2,
+      });
+      const stats = await storage.getSessionStats();
+      // 'unknown_status' adds to total but not to active/closed/failed
+      expect(stats.total).toBe(5);
+      expect(stats.active).toBe(2);
+      expect(stats.closed).toBe(0);
+      expect(stats.failed).toBe(0);
+    });
+  });
+
+  // ── Additional branch coverage tests ─────────────────────────────────────────
+
+  describe('listSessions — combined filters', () => {
+    it('filters by both status and toolName simultaneously', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ count: '1' }], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [browserSessionRow], rowCount: 1 });
+
+      await storage.listSessions({ status: 'active', toolName: 'screenshot' });
+      const countSql = mockQuery.mock.calls[0][0] as string;
+      expect(countSql).toContain('status =');
+      expect(countSql).toContain('tool_name =');
+      expect(countSql).toContain('AND');
+    });
+
+    it('returns total 0 when countResult returns null count', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ count: null }], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+      const result = await storage.listSessions();
+      // parseInt(null ?? '0', 10) = 0
+      expect(result.total).toBe(0);
+    });
+
+    it('handles countResult returning no rows (queryOne returns null)', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+      const result = await storage.listSessions();
+      // countResult is null → countResult?.count is undefined → undefined ?? '0' = '0'
+      expect(result.total).toBe(0);
+    });
+  });
+
+  describe('updateSession — individual field branches', () => {
+    it('updates only url field', async () => {
+      const updatedRow = { ...browserSessionRow, url: 'https://updated.com' };
+      mockQuery.mockResolvedValueOnce({ rows: [updatedRow], rowCount: 1 });
+
+      await storage.updateSession('bsess-1', { url: 'https://updated.com' });
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('url =');
+      expect(sql).not.toContain('title =');
+      expect(sql).not.toContain('screenshot =');
+    });
+
+    it('updates only screenshot field', async () => {
+      const updatedRow = { ...browserSessionRow, screenshot: 'data:image/png;base64,abc' };
+      mockQuery.mockResolvedValueOnce({ rows: [updatedRow], rowCount: 1 });
+
+      await storage.updateSession('bsess-1', { screenshot: 'data:image/png;base64,abc' });
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('screenshot =');
+      expect(sql).not.toContain('url =');
+    });
+
+    it('updates only durationMs field', async () => {
+      const updatedRow = { ...browserSessionRow, duration_ms: 5000 };
+      mockQuery.mockResolvedValueOnce({ rows: [updatedRow], rowCount: 1 });
+
+      await storage.updateSession('bsess-1', { durationMs: 5000 });
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('duration_ms =');
+    });
+
+    it('updates only error field', async () => {
+      const updatedRow = { ...browserSessionRow, error: 'timeout' };
+      mockQuery.mockResolvedValueOnce({ rows: [updatedRow], rowCount: 1 });
+
+      await storage.updateSession('bsess-1', { error: 'timeout' });
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('error =');
+    });
+
+    it('does not add closed_at when status is active', async () => {
+      const updatedRow = { ...browserSessionRow, status: 'active' };
+      mockQuery.mockResolvedValueOnce({ rows: [updatedRow], rowCount: 1 });
+
+      await storage.updateSession('bsess-1', { status: 'active' });
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('status =');
+      expect(sql).not.toContain('closed_at = NOW()');
+    });
+  });
+
+  describe('rowToSession — edge cases', () => {
+    it('maps all optional fields when present', async () => {
+      const fullRow = {
+        ...browserSessionRow,
+        screenshot: 'data:image/png;base64,xyz',
+        duration_ms: 3500,
+        error: 'some error',
+        closed_at: new Date('2024-01-01T02:00:00.000Z'),
+      };
+      mockQuery.mockResolvedValueOnce({ rows: [fullRow], rowCount: 1 });
+      const result = await storage.getSession('bsess-1');
+      expect(result!.screenshot).toBe('data:image/png;base64,xyz');
+      expect(result!.durationMs).toBe(3500);
+      expect(result!.error).toBe('some error');
+      expect(result!.closedAt).toBe('2024-01-01T02:00:00.000Z');
+    });
+  });
+
+  describe('listSessions — filter parameter binding order', () => {
+    it('correctly binds params when only toolName filter is used', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ count: '3' }], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+      await storage.listSessions({ toolName: 'browser', limit: 10, offset: 5 });
+      const countParams = mockQuery.mock.calls[0][1] as unknown[];
+      expect(countParams).toContain('browser');
+      const selectParams = mockQuery.mock.calls[1][1] as unknown[];
+      expect(selectParams).toContain('browser');
+      expect(selectParams).toContain(10);
+      expect(selectParams).toContain(5);
+    });
   });
 });

@@ -556,13 +556,14 @@ describe('MetricsPage — Costs tab', () => {
     expect(costsBtn).toHaveAttribute('aria-selected', 'false');
   });
 
-  it('tab order is Mission Control | Costs | Full Metrics', () => {
+  it('tab order is Mission Control | Costs | Full Metrics | Analytics', () => {
     renderMetricsPage();
     const tabs = screen.getAllByRole('tab');
-    expect(tabs).toHaveLength(3);
+    expect(tabs).toHaveLength(4);
     expect(tabs[0]).toHaveTextContent(/mission control/i);
     expect(tabs[1]).toHaveTextContent(/costs/i);
     expect(tabs[2]).toHaveTextContent(/full metrics/i);
+    expect(tabs[3]).toHaveTextContent(/analytics/i);
   });
 
   it('switches to Costs tab when clicked', () => {

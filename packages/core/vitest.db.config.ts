@@ -23,8 +23,11 @@ const DB_TESTS = [
   'src/__integration__/**/*.test.ts',
   // Storage layer — always DB-backed
   'src/**/*-storage.test.ts',
-  // Brain module — all brain tests use real DB
-  'src/brain/*.test.ts',
+  // Brain module — tests that use real DB (setupTestDb/initPool)
+  'src/brain/brain.test.ts',
+  'src/brain/debug2.test.ts',
+  'src/brain/document-manager.test.ts',
+  'src/brain/notebook-context.test.ts',
   // Domain manager tests with real DB
   'src/soul/soul.test.ts',
   'src/spirit/spirit.test.ts',

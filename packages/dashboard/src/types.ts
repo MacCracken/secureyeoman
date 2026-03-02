@@ -661,8 +661,65 @@ export interface Conversation {
   title: string;
   personalityId: string | null;
   messageCount: number;
+  parentConversationId: string | null;
+  forkMessageIndex: number | null;
+  branchLabel: string | null;
   createdAt: number;
   updatedAt: number;
+}
+
+// ─── Branching & Replay Types (Phase 99) ────────────────────
+
+export interface BranchTreeNode {
+  conversationId: string;
+  title: string;
+  forkMessageIndex: number | null;
+  branchLabel: string | null;
+  model: string | null;
+  qualityScore: number | null;
+  messageCount: number;
+  children: BranchTreeNode[];
+}
+
+export interface ReplayJob {
+  id: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  sourceConversationIds: string[];
+  replayModel: string;
+  replayProvider: string;
+  replayPersonalityId: string | null;
+  totalConversations: number;
+  completedConversations: number;
+  failedConversations: number;
+  errorMessage: string | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface ReplayResult {
+  id: string;
+  replayJobId: string;
+  sourceConversationId: string;
+  replayConversationId: string;
+  sourceModel: string | null;
+  replayModel: string;
+  sourceQualityScore: number | null;
+  replayQualityScore: number | null;
+  pairwiseWinner: 'source' | 'replay' | 'tie' | null;
+  pairwiseReason: string | null;
+  createdAt: number;
+}
+
+export interface ReplayBatchReport {
+  job: ReplayJob;
+  results: ReplayResult[];
+  summary: {
+    sourceWins: number;
+    replayWins: number;
+    ties: number;
+    avgSourceQuality: number | null;
+    avgReplayQuality: number | null;
+  };
 }
 
 export interface ConversationMessageResponse {

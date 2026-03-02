@@ -92,6 +92,13 @@ vi.mock('./api/client', () => ({
   createSsoProvider: vi.fn(),
   updateSsoProvider: vi.fn(),
   deleteSsoProvider: vi.fn(),
+  fetchLicenseStatus: vi.fn(),
+  setLicenseKey: vi.fn(),
+  enablePersonality: vi.fn(),
+  disablePersonality: vi.fn(),
+  setDefaultPersonality: vi.fn(),
+  clearDefaultPersonality: vi.fn(),
+  downloadBackup: vi.fn(),
 }));
 
 import * as api from './api/client';
@@ -199,6 +206,17 @@ beforeEach(() => {
     maxPromptTokens: 4096,
   } as any);
   vi.mocked(api.fetchUsers).mockResolvedValue({ users: [] } as any);
+  vi.mocked(api.fetchLicenseStatus).mockResolvedValue({
+    tier: 'community',
+    valid: true,
+    organization: null,
+    seats: null,
+    features: [],
+    licenseId: null,
+    expiresAt: null,
+    error: null,
+  } as any);
+  vi.mocked(api.setLicenseKey).mockResolvedValue({} as any);
 });
 
 describe('a11y smoke tests (axe-core)', () => {

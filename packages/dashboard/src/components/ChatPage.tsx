@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState, memo } from 'react';
+import { useRef, useEffect, useCallback, useState, memo, lazy, Suspense } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import {
   Send,
@@ -24,6 +24,8 @@ import {
   Wrench,
   Star,
   AlertTriangle,
+  GitBranch,
+  RotateCcw,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -34,6 +36,7 @@ import {
   fetchConversations,
   deleteConversation,
   renameConversation,
+  branchFromMessage,
 } from '../api/client';
 import { ModelWidget } from './ModelWidget';
 import { VoiceToggle } from './VoiceToggle';
@@ -47,6 +50,9 @@ import type { ChatMessage } from '../types';
 import { sanitizeText } from '../utils/sanitize';
 import { ChatMarkdown } from './ChatMarkdown';
 import { GroupChatPage } from './GroupChatPage';
+
+const ReplayDialog = lazy(() => import('./chat/ReplayDialog').then((m) => ({ default: m.ReplayDialog })));
+const BranchTreeView = lazy(() => import('./chat/BranchTreeView').then((m) => ({ default: m.BranchTreeView })));
 import { PersonalityAvatar } from './PersonalityEditor';
 import { Link } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -66,6 +72,7 @@ interface MessageBubbleProps {
   onRemember: (i: number) => void;
   onFeedback: (i: number, type: 'positive' | 'negative') => void;
   onEditStart: (i: number) => void;
+  onBranch?: (i: number) => void;
 }
 
 const MessageBubble = memo(function MessageBubble({
@@ -81,6 +88,7 @@ const MessageBubble = memo(function MessageBubble({
   onRemember,
   onFeedback,
   onEditStart,
+  onBranch,
 }: MessageBubbleProps) {
   const hasBrainContext =
     msg.role === 'assistant' &&
@@ -136,6 +144,20 @@ const MessageBubble = memo(function MessageBubble({
               data-testid={`edit-msg-${index}`}
             >
               <Pencil className="w-3 h-3" />
+            </button>
+          )}
+
+          {/* Branch button */}
+          {!isPending && onBranch && (
+            <button
+              onClick={() => {
+                onBranch(index);
+              }}
+              className="opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
+              title="Branch from this message"
+              data-testid={`branch-msg-${index}`}
+            >
+              <GitBranch className="w-3 h-3" />
             </button>
           )}
 
@@ -482,6 +504,8 @@ export function ChatPage() {
     setSelectedConversationIdRaw(id);
   };
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showReplayDialog, setShowReplayDialog] = useState(false);
+  const [showBranchTree, setShowBranchTree] = useState(false);
   const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [memoryEnabled, setMemoryEnabled] = useState(true);
@@ -659,6 +683,21 @@ export function ChatPage() {
   const handleEditStart = useCallback((i: number) => {
     setEditingMsgIdx(i);
   }, []);
+
+  const handleBranch = useCallback(
+    async (messageIndex: number) => {
+      const cid = conversationIdRef.current;
+      if (!cid) return;
+      try {
+        const branch = await branchFromMessage(cid, messageIndex);
+        setSelectedConversationId(branch.id);
+        void queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      } catch {
+        // branch creation failed — silent for now
+      }
+    },
+    [queryClient, setSelectedConversationId]
+  );
 
   const handleCancelEdit = useCallback(() => {
     setEditingMsgIdx(null);
@@ -1099,6 +1138,26 @@ export function ChatPage() {
                     />
                   </div>
                 )}
+
+                {/* Replay & Branches — only visible on existing conversations */}
+                {selectedConversationId && (
+                  <>
+                    <button
+                      onClick={() => setShowReplayDialog(true)}
+                      className="btn-ghost text-xs px-2 py-1.5 rounded-full border"
+                      title="Replay with different model"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setShowBranchTree((v) => !v)}
+                      className={`btn-ghost text-xs px-2 py-1.5 rounded-full border ${showBranchTree ? 'bg-primary/15 border-primary text-primary' : ''}`}
+                      title="View branch tree"
+                    >
+                      <GitBranch className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
@@ -1170,6 +1229,7 @@ export function ChatPage() {
                           onRemember={handleRemember}
                           onFeedback={handleFeedback}
                           onEditStart={handleEditStart}
+                          onBranch={handleBranch}
                         />
                       </div>
                     </div>
@@ -1291,6 +1351,39 @@ export function ChatPage() {
         <div className="flex-1 min-h-0">
           <GroupChatPage />
         </div>
+      )}
+
+      {/* Branch tree side panel */}
+      {showBranchTree && selectedConversationId && (
+        <Suspense fallback={null}>
+          <div className="w-80 flex-shrink-0">
+            <BranchTreeView
+              conversationId={selectedConversationId}
+              activeConversationId={selectedConversationId}
+              onNavigate={(id) => {
+                setSelectedConversationId(id);
+                setShowBranchTree(false);
+              }}
+              onClose={() => setShowBranchTree(false)}
+            />
+          </div>
+        </Suspense>
+      )}
+
+      {/* Replay dialog modal */}
+      {showReplayDialog && selectedConversationId && (
+        <Suspense fallback={null}>
+          <ReplayDialog
+            conversationId={selectedConversationId}
+            open={showReplayDialog}
+            onClose={() => setShowReplayDialog(false)}
+            onReplayCreated={(replayId) => {
+              setSelectedConversationId(replayId);
+              setShowReplayDialog(false);
+              void queryClient.invalidateQueries({ queryKey: ['conversations'] });
+            }}
+          />
+        </Suspense>
       )}
     </div>
   );

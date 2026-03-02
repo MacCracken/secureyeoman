@@ -885,3 +885,192 @@ describe('outbound-webhook routes', () => {
     expect(res.statusCode).toBe(404);
   });
 });
+
+// ── Test connection error catch ─────────────────────────────────────────────
+
+describe('POST /api/v1/integrations/:id/test — error path', () => {
+  it('returns error message when testConnection throws', async () => {
+    const manager = buildMockManager();
+    const mockAdapter = {
+      isHealthy: vi.fn().mockReturnValue(true),
+      testConnection: vi.fn().mockRejectedValue(new Error('Connection timed out')),
+    };
+    manager.getAdapter = vi.fn().mockReturnValue(mockAdapter);
+    const { app } = await buildApp(manager);
+    const res = await app.inject({ method: 'POST', url: '/api/v1/integrations/intg-1/test' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.ok).toBe(false);
+    expect(body.message).toContain('Connection timed out');
+  });
+});
+
+// ── Custom webhook with transformer and signature verification ──────────────
+
+describe('POST /api/v1/webhooks/custom/:id — advanced paths', () => {
+  it('returns 401 when webhook signature is invalid', async () => {
+    // We need a mock adapter that returns false for verifyWebhook
+    const { GenericWebhookIntegration } = await import('./webhook/adapter.js').catch(() => ({
+      GenericWebhookIntegration: class {
+        verifyWebhook() { return false; }
+        handleInbound() { return Promise.resolve(); }
+      },
+    }));
+
+    const manager = buildMockManager();
+    manager.getIntegration = vi.fn().mockResolvedValue({ ...BASE_INTEGRATION, platform: 'webhook' });
+    const mockAdapter = Object.create(GenericWebhookIntegration.prototype);
+    mockAdapter.verifyWebhook = vi.fn().mockReturnValue(false);
+    mockAdapter.handleInbound = vi.fn().mockResolvedValue(undefined);
+    manager.getAdapter = vi.fn().mockReturnValue(mockAdapter);
+
+    const { app } = await buildApp(manager);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/webhooks/custom/intg-1',
+      headers: { 'x-webhook-signature': 'bad-sig' },
+      payload: { data: 'test' },
+    });
+    expect(res.statusCode).toBe(401);
+    expect(res.json().message).toContain('Invalid webhook signature');
+  });
+
+  it('handles custom webhook with valid signature and transformer', async () => {
+    const { GenericWebhookIntegration } = await import('./webhook/adapter.js').catch(() => ({
+      GenericWebhookIntegration: class {
+        verifyWebhook() { return true; }
+        handleInbound() { return Promise.resolve(); }
+      },
+    }));
+
+    const manager = buildMockManager();
+    manager.getIntegration = vi.fn().mockResolvedValue({ ...BASE_INTEGRATION, platform: 'webhook' });
+    const mockAdapter = Object.create(GenericWebhookIntegration.prototype);
+    mockAdapter.verifyWebhook = vi.fn().mockReturnValue(true);
+    mockAdapter.handleInbound = vi.fn().mockResolvedValue(undefined);
+    manager.getAdapter = vi.fn().mockReturnValue(mockAdapter);
+
+    // Build app with webhookTransformStorage
+    const app = Fastify({ logger: false });
+    const mockStorage = { listMessages: vi.fn().mockResolvedValue([]) } as any;
+    const wts = {
+      listRules: vi.fn().mockResolvedValue([]),
+      getRule: vi.fn().mockResolvedValue(null),
+      createRule: vi.fn(),
+      updateRule: vi.fn(),
+      deleteRule: vi.fn(),
+      getRulesForIntegration: vi.fn().mockResolvedValue([]),
+    } as any;
+    registerIntegrationRoutes(app, {
+      integrationManager: manager,
+      integrationStorage: mockStorage,
+      webhookTransformStorage: wts,
+    });
+    await app.ready();
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/webhooks/custom/intg-1',
+      headers: {
+        'x-webhook-signature': 'valid-sig',
+        'x-webhook-event': 'push',
+      },
+      payload: { data: 'test-payload' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().received).toBe(true);
+  });
+
+  it('handles custom webhook error gracefully', async () => {
+    const { GenericWebhookIntegration } = await import('./webhook/adapter.js').catch(() => ({
+      GenericWebhookIntegration: class {
+        verifyWebhook() { return true; }
+        handleInbound() { return Promise.reject(new Error('Processing failed')); }
+      },
+    }));
+
+    const manager = buildMockManager();
+    manager.getIntegration = vi.fn().mockResolvedValue({ ...BASE_INTEGRATION, platform: 'webhook' });
+    const mockAdapter = Object.create(GenericWebhookIntegration.prototype);
+    mockAdapter.verifyWebhook = vi.fn().mockReturnValue(true);
+    mockAdapter.handleInbound = vi.fn().mockRejectedValue(new Error('Processing failed'));
+    manager.getAdapter = vi.fn().mockReturnValue(mockAdapter);
+
+    const { app } = await buildApp(manager);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/webhooks/custom/intg-1',
+      headers: { 'x-webhook-signature': 'valid' },
+      payload: { data: 'test' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().message).toContain('Processing failed');
+  });
+});
+
+// ── Plugin hasConfigSchema branch ─────────────────────────────────────────────
+
+describe('plugin endpoints — hasConfigSchema', () => {
+  it('returns hasConfigSchema: true when configSchema is present', async () => {
+    const manager = buildMockManager();
+    manager.getLoadedPlugins = vi.fn().mockReturnValue([
+      { platform: 'custom', path: '/tmp/plugin.js', configSchema: { type: 'object' } },
+    ]);
+    const { app } = await buildApp(manager);
+    const res = await app.inject({ method: 'GET', url: '/api/v1/integrations/plugins' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.plugins[0].hasConfigSchema).toBe(true);
+  });
+
+  it('returns hasConfigSchema: false when configSchema is undefined', async () => {
+    const manager = buildMockManager();
+    manager.getLoadedPlugins = vi.fn().mockReturnValue([
+      { platform: 'custom', path: '/tmp/plugin.js', configSchema: undefined },
+    ]);
+    const { app } = await buildApp(manager);
+    const res = await app.inject({ method: 'GET', url: '/api/v1/integrations/plugins' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.plugins[0].hasConfigSchema).toBe(false);
+  });
+});
+
+// ── GitHub webhook with string body ─────────────────────────────────────────
+
+describe('webhook body string handling', () => {
+  it('POST /api/v1/webhooks/github/:id handles string body', async () => {
+    const manager = buildMockManager();
+    manager.getIntegration = vi.fn().mockResolvedValue({ ...BASE_INTEGRATION, platform: 'github' });
+    const { app } = await buildApp(manager);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/webhooks/github/intg-1',
+      headers: {
+        'x-hub-signature-256': 'sha256=abc',
+        'x-github-event': 'issues',
+        'content-type': 'text/plain',
+      },
+      payload: '{"action":"opened"}',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().received).toBe(true);
+  });
+});
+
+// ── Outbound webhook — createWebhook error path ────────────────────────────
+
+describe('outbound-webhook error paths', () => {
+  it('POST /api/v1/outbound-webhooks returns 400 on createWebhook error', async () => {
+    const { app } = await buildAppWithOutbound({
+      createWebhook: vi.fn().mockRejectedValue(new Error('duplicate')),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/outbound-webhooks',
+      payload: { url: 'https://example.com/hook', events: ['message'] },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().message).toContain('duplicate');
+  });
+});

@@ -299,4 +299,284 @@ describe('CaptureProcess', () => {
       expect(cp.getStatus()).toBe('created');
     });
   });
+
+  describe('capture()', () => {
+    it('throws if status is not running', async () => {
+      const cp = new CaptureProcess(makeCfg());
+      // status is 'created', not 'running'
+      await expect(cp.capture()).rejects.toThrow('Cannot capture in status: created');
+    });
+
+    it('captures data from stdout on exit code 0', async () => {
+      const cp = new CaptureProcess(makeCfg());
+      await cp.start();
+      const child = mockSpawn.mock.results[0].value;
+
+      const capturePromise = cp.capture();
+
+      // Simulate stdout data
+      child.stdout.emit('data', Buffer.from('hello '));
+      child.stdout.emit('data', Buffer.from('world'));
+      // Simulate exit with code 0
+      child.emit('exit', 0, null);
+
+      const result = await capturePromise;
+      expect(result.toString()).toBe('hello world');
+    });
+
+    it('rejects on exit with non-zero code', async () => {
+      const cp = new CaptureProcess(makeCfg());
+      await cp.start();
+      const child = mockSpawn.mock.results[0].value;
+
+      // Override kill to not emit exit (avoid double-fire)
+      child.kill = vi.fn();
+
+      const capturePromise = cp.capture();
+
+      child.emit('exit', 1, 'SIGTERM');
+
+      await expect(capturePromise).rejects.toThrow('Capture process exited with code 1');
+      expect(cp.getStatus()).toBe('failed');
+    });
+
+    it('rejects on child error event', async () => {
+      const cp = new CaptureProcess(makeCfg());
+      await cp.start();
+      const child = mockSpawn.mock.results[0].value;
+
+      child.kill = vi.fn();
+
+      const capturePromise = cp.capture();
+
+      child.emit('error', new Error('spawn ENOENT'));
+
+      await expect(capturePromise).rejects.toThrow('spawn ENOENT');
+      expect(cp.getStatus()).toBe('failed');
+    });
+
+    it('writes capture command to stdin', async () => {
+      const cp = new CaptureProcess(makeCfg());
+      await cp.start();
+      const child = mockSpawn.mock.results[0].value;
+
+      const capturePromise = cp.capture();
+
+      // stdin.write should have been called with the action JSON
+      expect(child.stdin.write).toHaveBeenCalled();
+      const written = child.stdin.write.mock.calls[0][0];
+      const parsed = JSON.parse(written.trim());
+      expect(parsed.action).toBe('capture');
+      expect(parsed.scope.type).toBe('screen');
+
+      // Complete the capture
+      child.emit('exit', 0, null);
+      await capturePromise;
+    });
+  });
+
+  describe('process exit handler (setupProcessHandlers)', () => {
+    it('marks status as failed on unexpected exit', async () => {
+      const onEvent = vi.fn();
+      const cp = new CaptureProcess(makeCfg({ onEvent }));
+      await cp.start();
+      const child = mockSpawn.mock.results[0].value;
+
+      // Override kill to not emit exit
+      child.kill = vi.fn();
+
+      // Simulate unexpected exit (not during stopping/terminated)
+      child.emit('exit', 137, 'SIGKILL');
+
+      expect(cp.getStatus()).toBe('failed');
+      const types = onEvent.mock.calls.map((c: any[]) => c[0].type);
+      expect(types).toContain('capture.failed');
+    });
+
+    it('does not change status on exit during stopping', async () => {
+      const cp = new CaptureProcess(makeCfg());
+      await cp.start();
+      // Terminate first (which sets status to 'terminated')
+      await cp.terminate('test');
+      // Now the exit handler should not change status
+      expect(cp.getStatus()).toBe('terminated');
+    });
+  });
+
+  describe('stderr handler', () => {
+    it('logs warning on non-empty stderr', async () => {
+      const cp = new CaptureProcess(makeCfg());
+      await cp.start();
+      const child = mockSpawn.mock.results[0].value;
+
+      // Emit stderr data
+      child.stderr.emit('data', Buffer.from('warning: low memory\n'));
+
+      // Should not throw, just log a warning
+      expect(cp.getStatus()).toBe('running');
+    });
+
+    it('ignores empty stderr data', async () => {
+      const cp = new CaptureProcess(makeCfg());
+      await cp.start();
+      const child = mockSpawn.mock.results[0].value;
+
+      // Emit empty stderr data
+      child.stderr.emit('data', Buffer.from('   \n'));
+
+      // Should not throw
+      expect(cp.getStatus()).toBe('running');
+    });
+  });
+
+  describe('monitoring — resource limit violation', () => {
+    it('terminates and fires onViolation when resource check fails', async () => {
+      const onViolation = vi.fn();
+      const onEvent = vi.fn();
+      const cp = new CaptureProcess(makeCfg({ onViolation, onEvent }));
+      await cp.start();
+
+      // Configure sandbox to fail resource check and return a violation
+      mockSandbox.checkResourceLimits.mockReturnValue(false);
+      mockSandbox.getViolations.mockReturnValue([
+        { type: 'memory', timestamp: Date.now(), message: 'over limit' },
+      ]);
+
+      // Advance timer by 1 second to trigger monitoring interval
+      vi.advanceTimersByTime(1001);
+
+      // Allow async to settle
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // Should have called onViolation with the latest violation
+      expect(onViolation).toHaveBeenCalled();
+      expect(onViolation.mock.calls[0][0].type).toBe('memory');
+    });
+
+    it('monitoring does nothing when status is not running', async () => {
+      const cp = new CaptureProcess(makeCfg());
+      await cp.start();
+      await cp.terminate('stop');
+
+      // Advance timer — monitoring should not cause errors
+      vi.advanceTimersByTime(2000);
+      await Promise.resolve();
+    });
+  });
+
+  describe('getSanitizedEnv', () => {
+    it('includes CAPTURE_SANDBOX and CAPTURE_MAX_DURATION in env', async () => {
+      const cp = new CaptureProcess(makeCfg({ sandboxConfig: { maxDuration: 60, maxMemory: 1024 } }));
+      await cp.start();
+
+      const spawnCall = mockSpawn.mock.calls[0];
+      const env = spawnCall[2].env;
+      expect(env.CAPTURE_SANDBOX).toBe('1');
+      expect(env.CAPTURE_MAX_DURATION).toBe('60');
+      expect(env.CAPTURE_MAX_MEMORY).toBe('1024');
+    });
+
+    it('includes PATH from process.env but excludes sensitive vars', async () => {
+      const cp = new CaptureProcess(makeCfg());
+      await cp.start();
+
+      const spawnCall = mockSpawn.mock.calls[0];
+      const env = spawnCall[2].env;
+      // PATH should be included if set
+      if (process.env.PATH) {
+        expect(env.PATH).toBe(process.env.PATH);
+      }
+      // Sensitive vars should not be present
+      expect(env.AWS_SECRET_KEY).toBeUndefined();
+      expect(env.DATABASE_URL).toBeUndefined();
+    });
+  });
+
+  describe('emitEvent with details', () => {
+    it('passes details to onEvent callbacks', async () => {
+      const onEvent = vi.fn();
+      const cp = new CaptureProcess(makeCfg({ onEvent }));
+      await cp.start();
+
+      // start() calls emitEvent('capture.started', { pid }) — check it
+      const startedEvent = onEvent.mock.calls.find((c: any[]) => c[0].type === 'capture.started');
+      expect(startedEvent).toBeDefined();
+      expect(startedEvent![0].details).toEqual({ pid: 12345 });
+      expect(startedEvent![0].timestamp).toBeGreaterThan(0);
+    });
+
+    it('emitEvent works when onEvent is undefined (no callback)', async () => {
+      // No onEvent callback — should not throw
+      const cp = new CaptureProcess(makeCfg());
+      await cp.start(); // emits events internally
+      expect(cp.getStatus()).toBe('running');
+    });
+  });
+
+  describe('SIGKILL fallback on terminate', () => {
+    it('sends SIGKILL if child not killed after 5 seconds', async () => {
+      const cp = new CaptureProcess(makeCfg());
+      await cp.start();
+      const child = mockSpawn.mock.results[0].value;
+
+      // Override kill to not actually set killed flag
+      child.kill = vi.fn(); // does not set child.killed = true
+      child.killed = false;
+
+      await cp.terminate('test');
+
+      // First call should be SIGTERM
+      expect(child.kill).toHaveBeenCalledWith('SIGTERM');
+
+      // Advance 5 seconds — should trigger SIGKILL fallback
+      vi.advanceTimersByTime(5001);
+
+      expect(child.kill).toHaveBeenCalledWith('SIGKILL');
+    });
+
+    it('does not send SIGKILL if child already killed', async () => {
+      const cp = new CaptureProcess(makeCfg());
+      await cp.start();
+      const child = mockSpawn.mock.results[0].value;
+
+      // kill sets killed = true
+      child.kill = vi.fn(() => {
+        child.killed = true;
+      });
+
+      await cp.terminate('test');
+
+      expect(child.kill).toHaveBeenCalledWith('SIGTERM');
+      child.kill.mockClear();
+
+      // Advance 5 seconds
+      vi.advanceTimersByTime(5001);
+
+      // SIGKILL should NOT be called because child.killed is true
+      expect(child.kill).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('start with null pid', () => {
+    it('handles child.pid being undefined', async () => {
+      // Override spawn to return a child with undefined pid
+      const childNoPid = new (await import('node:events')).EventEmitter() as any;
+      childNoPid.pid = undefined;
+      childNoPid.killed = false;
+      childNoPid.kill = vi.fn();
+      childNoPid.stdin = { write: vi.fn() };
+      childNoPid.stdout = new (await import('node:events')).EventEmitter();
+      childNoPid.stderr = new (await import('node:events')).EventEmitter();
+      mockSpawn.mockReturnValueOnce(childNoPid);
+
+      const cp = new CaptureProcess(makeCfg());
+      const handle = await cp.start();
+
+      // pid is null → handle.pid should be 0 (fallback)
+      expect(handle.pid).toBe(0);
+      expect(cp.getPid()).toBeNull();
+    });
+  });
 });

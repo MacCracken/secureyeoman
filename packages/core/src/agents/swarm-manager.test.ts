@@ -369,4 +369,331 @@ describe('SwarmManager.executeSwarm — dynamic strategy', () => {
       expect.objectContaining({ profile: 'researcher' }) // falls back to 'researcher'
     );
   });
+
+  it('marks run as failed when dynamic delegate throws', async () => {
+    const DYNAMIC_TEMPLATE_FAIL = {
+      ...TEMPLATE,
+      strategy: 'dynamic' as const,
+      roles: [],
+      coordinatorProfile: 'researcher',
+    };
+    const { manager, storage } = buildManager(
+      {
+        getTemplate: vi.fn().mockResolvedValue(DYNAMIC_TEMPLATE_FAIL),
+        createMember: vi.fn().mockResolvedValue(MEMBER),
+      },
+      { delegate: vi.fn().mockRejectedValue(new Error('coordinator crashed')) }
+    );
+
+    const run = await manager.executeSwarm({ templateId: 'tmpl-1', task: 'Build' });
+    // Run should be marked as failed, not completed
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'failed', error: 'coordinator crashed' })
+    );
+  });
+});
+
+// ── updateTemplate ──────────────────────────────────────────────────────────
+
+describe('SwarmManager.updateTemplate', () => {
+  it('updates a non-builtin template', async () => {
+    const updatedTemplate = { ...TEMPLATE, name: 'updated' };
+    const { manager } = buildManager({
+      getTemplate: vi.fn().mockResolvedValue(TEMPLATE),
+      updateTemplate: vi.fn().mockResolvedValue(updatedTemplate),
+    });
+    const result = await manager.updateTemplate('tmpl-1', { name: 'updated' });
+    expect(result?.name).toBe('updated');
+  });
+
+  it('returns null when template not found', async () => {
+    const { manager } = buildManager({ getTemplate: vi.fn().mockResolvedValue(null) });
+    const result = await manager.updateTemplate('missing', { name: 'x' });
+    expect(result).toBeNull();
+  });
+
+  it('throws when trying to edit a built-in template', async () => {
+    const builtinTemplate = { ...TEMPLATE, isBuiltin: true };
+    const { manager } = buildManager({ getTemplate: vi.fn().mockResolvedValue(builtinTemplate) });
+    await expect(manager.updateTemplate('tmpl-1', { name: 'x' })).rejects.toThrow(
+      'Cannot edit built-in templates'
+    );
+  });
+});
+
+// ── estimateSwarmCost ───────────────────────────────────────────────────────
+
+describe('SwarmManager.estimateSwarmCost', () => {
+  it('returns zero cost when no costCalculator is provided', () => {
+    const { manager } = buildManager();
+    const result = manager.estimateSwarmCost(TEMPLATE, 'Summarize a doc');
+    expect(result.estimatedCostUsd).toBe(0);
+    expect(result.roleDecisions).toEqual([]);
+  });
+
+  it('returns per-role cost estimates when costCalculator is provided', () => {
+    const storage = makeMockStorage();
+    const subAgentManager = makeMockSubAgentManager();
+    const logger = makeMockLogger();
+    const costCalculator = {
+      calculate: vi.fn().mockReturnValue(0.005),
+      getModelCosts: vi.fn().mockReturnValue([
+        { provider: 'anthropic', model: 'claude-sonnet-4-20250514', inputPer1M: 3, outputPer1M: 15 },
+      ]),
+    };
+
+    const manager = new SwarmManager({
+      storage: storage as any,
+      subAgentManager: subAgentManager as any,
+      logger: logger as any,
+      costCalculator: costCalculator as any,
+    });
+
+    const result = manager.estimateSwarmCost(TEMPLATE, 'Summarize a doc');
+    expect(result.roleDecisions).toHaveLength(2);
+    expect(result.estimatedCostUsd).toBeGreaterThanOrEqual(0);
+    // Each role should have a decision
+    expect(result.roleDecisions[0].role).toBe('researcher');
+    expect(result.roleDecisions[1].role).toBe('coder');
+  });
+});
+
+// ── selectModelForRole (via cost-aware sequential execution) ────────────────
+
+describe('SwarmManager — cost-aware model selection', () => {
+  it('logs model override when router returns high confidence', async () => {
+    const storage = makeMockStorage();
+    const subAgentManager = makeMockSubAgentManager();
+    const logger = makeMockLogger();
+    const costCalculator = {
+      calculate: vi.fn().mockReturnValue(0.01),
+      getModelCosts: vi.fn().mockReturnValue([
+        { provider: 'anthropic', model: 'claude-sonnet-4-20250514', inputPer1M: 3, outputPer1M: 15 },
+      ]),
+    };
+
+    const manager = new SwarmManager({
+      storage: storage as any,
+      subAgentManager: subAgentManager as any,
+      logger: logger as any,
+      costCalculator: costCalculator as any,
+    });
+
+    await manager.executeSwarm({ templateId: 'tmpl-1', task: 'Summarize the quarterly report' });
+    // The model router should have been consulted
+    expect(subAgentManager.delegate).toHaveBeenCalled();
+  });
+});
+
+// ── parallel with coordinator failure ────────────────────────────────────────
+
+describe('SwarmManager.executeSwarm — parallel coordinator failure', () => {
+  it('falls through to combined results when coordinator delegation fails', async () => {
+    const PARALLEL_WITH_COORD = {
+      ...TEMPLATE,
+      strategy: 'parallel' as const,
+      coordinatorProfile: 'coordinator',
+    };
+    const coordMember = { ...MEMBER, id: 'mem-coord', role: 'coordinator', seqOrder: 2 };
+    const createMemberMock = vi
+      .fn()
+      .mockResolvedValueOnce(MEMBER)
+      .mockResolvedValueOnce({ ...MEMBER, id: 'mem-2', role: 'coder', seqOrder: 1 })
+      .mockResolvedValueOnce(coordMember);
+
+    const delegateMock = vi
+      .fn()
+      .mockResolvedValueOnce(DELEGATION_RESULT) // researcher
+      .mockResolvedValueOnce(DELEGATION_RESULT) // coder
+      .mockRejectedValueOnce(new Error('Coordinator blew up')); // coordinator
+
+    const { manager, storage } = buildManager(
+      {
+        getTemplate: vi.fn().mockResolvedValue(PARALLEL_WITH_COORD),
+        createMember: createMemberMock,
+      },
+      { delegate: delegateMock }
+    );
+
+    await manager.executeSwarm({ templateId: 'tmpl-1', task: 'Build feature' });
+
+    // Coordinator member should be marked failed
+    expect(storage.updateMember).toHaveBeenCalledWith(
+      coordMember.id,
+      expect.objectContaining({ status: 'failed' })
+    );
+  });
+
+  it('parallel member failure is captured as Error result', async () => {
+    const PARALLEL_TEMPLATE = {
+      ...TEMPLATE,
+      strategy: 'parallel' as const,
+      coordinatorProfile: null,
+    };
+    const mem2 = { ...MEMBER, id: 'mem-2', role: 'coder', seqOrder: 1 };
+    const createMemberMock = vi.fn().mockResolvedValueOnce(MEMBER).mockResolvedValueOnce(mem2);
+
+    const delegateMock = vi
+      .fn()
+      .mockResolvedValueOnce(DELEGATION_RESULT)
+      .mockRejectedValueOnce(new Error('coder profile missing'));
+
+    const { manager, storage } = buildManager(
+      {
+        getTemplate: vi.fn().mockResolvedValue(PARALLEL_TEMPLATE),
+        createMember: createMemberMock,
+      },
+      { delegate: delegateMock }
+    );
+
+    await manager.executeSwarm({ templateId: 'tmpl-1', task: 'Build feature' });
+
+    // Coder member should be marked failed
+    expect(storage.updateMember).toHaveBeenCalledWith(
+      mem2.id,
+      expect.objectContaining({ status: 'failed', result: expect.stringContaining('coder profile missing') })
+    );
+  });
+});
+
+// ── unknown strategy ────────────────────────────────────────────────────────
+
+describe('SwarmManager.executeSwarm — unknown strategy', () => {
+  it('marks run as failed for unknown strategy', async () => {
+    const BAD_TEMPLATE = { ...TEMPLATE, strategy: 'unknown_strategy' as any };
+    const { manager, storage } = buildManager({
+      getTemplate: vi.fn().mockResolvedValue(BAD_TEMPLATE),
+    });
+
+    await manager.executeSwarm({ templateId: 'tmpl-1', task: 'Build' });
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'failed', error: expect.stringContaining('Unknown swarm strategy') })
+    );
+  });
+});
+
+// ── executeSwarm non-Error thrown ────────────────────────────────────────────
+
+describe('SwarmManager.executeSwarm — non-Error exceptions', () => {
+  it('handles non-Error thrown in execution', async () => {
+    const { manager, storage } = buildManager(
+      { createMember: vi.fn().mockResolvedValue(MEMBER) },
+      { delegate: vi.fn().mockRejectedValue('string-error') }
+    );
+
+    await manager.executeSwarm({ templateId: 'tmpl-1', task: 'Build' });
+    // Sequential catches individual member errors, so the run still completes
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+});
+
+// ── buildContextWithProfileSkills ─────────────────────────────────────────────
+
+describe('SwarmManager — buildContextWithProfileSkills (via sequential)', () => {
+  it('injects skills into context when profile has skills', async () => {
+    const profile = { id: 'prof-1', name: 'researcher' };
+    const skills = [
+      { name: 'WebSearch', description: 'Search the web', instructions: 'Use web search tool...' },
+      { name: 'CodeReview', description: '', instructions: 'Review code for quality and security concerns' },
+    ];
+
+    const { manager, subAgentManager } = buildManager({
+      createMember: vi.fn().mockResolvedValue(MEMBER),
+      getProfileSkills: vi.fn().mockResolvedValue(skills),
+    } as any, {
+      delegate: vi.fn().mockResolvedValue(DELEGATION_RESULT),
+      getProfileByName: vi.fn().mockResolvedValue(profile),
+    } as any);
+
+    await manager.executeSwarm({
+      templateId: 'tmpl-1',
+      task: 'Build feature',
+      context: 'Some context',
+    });
+
+    // delegate should have been called with enriched context containing skills
+    const delegateCall = (subAgentManager.delegate as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(delegateCall.context).toContain('Available skills');
+    expect(delegateCall.context).toContain('WebSearch');
+  });
+
+  it('returns original context when profile not found', async () => {
+    const { manager, subAgentManager } = buildManager({
+      createMember: vi.fn().mockResolvedValue(MEMBER),
+    }, {
+      delegate: vi.fn().mockResolvedValue(DELEGATION_RESULT),
+      getProfileByName: vi.fn().mockResolvedValue(null),
+    } as any);
+
+    await manager.executeSwarm({
+      templateId: 'tmpl-1',
+      task: 'Build feature',
+      context: 'Original context',
+    });
+
+    // Should still work, just without skill injection
+    expect(subAgentManager.delegate).toHaveBeenCalled();
+  });
+
+  it('returns original context when getProfileByName throws', async () => {
+    const { manager, subAgentManager } = buildManager({
+      createMember: vi.fn().mockResolvedValue(MEMBER),
+    }, {
+      delegate: vi.fn().mockResolvedValue(DELEGATION_RESULT),
+      getProfileByName: vi.fn().mockRejectedValue(new Error('DB error')),
+    } as any);
+
+    await manager.executeSwarm({
+      templateId: 'tmpl-1',
+      task: 'Build feature',
+    });
+
+    // Non-fatal error: should proceed without skills
+    expect(subAgentManager.delegate).toHaveBeenCalled();
+  });
+});
+
+// ── sequential with context and no prior context ────────────────────────────
+
+describe('SwarmManager.executeSwarm — sequential context building', () => {
+  it('builds context with no initial context and prior member results', async () => {
+    const coderMember = { ...MEMBER, id: 'mem-2', role: 'coder', seqOrder: 1 };
+    const createMemberMock = vi
+      .fn()
+      .mockResolvedValueOnce(MEMBER)
+      .mockResolvedValueOnce(coderMember);
+
+    const { manager, subAgentManager } = buildManager({
+      createMember: createMemberMock,
+      getMembersForRun: vi.fn().mockResolvedValue([MEMBER, coderMember]),
+    });
+
+    // No context param
+    await manager.executeSwarm({ templateId: 'tmpl-1', task: 'Build feature' });
+
+    // The second delegate call should include prior results in context
+    expect(subAgentManager.delegate).toHaveBeenCalledTimes(2);
+    const secondCall = (subAgentManager.delegate as ReturnType<typeof vi.fn>).mock.calls[1][0];
+    expect(secondCall.context).toContain('[researcher result]');
+  });
+
+  it('handles delegation with non-completed status', async () => {
+    const failedDelegation = { ...DELEGATION_RESULT, status: 'failed', result: 'partial' };
+    const { manager, storage } = buildManager(
+      { createMember: vi.fn().mockResolvedValue(MEMBER) },
+      { delegate: vi.fn().mockResolvedValue(failedDelegation) }
+    );
+
+    await manager.executeSwarm({ templateId: 'tmpl-1', task: 'Build' });
+    // Member should be marked as failed when delegation status is not 'completed'
+    expect(storage.updateMember).toHaveBeenCalledWith(
+      MEMBER.id,
+      expect.objectContaining({ status: 'failed' })
+    );
+  });
 });

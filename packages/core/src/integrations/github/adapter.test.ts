@@ -435,6 +435,41 @@ describe('GitHubIntegration', () => {
       expect(mocks.octokitIssuesAddLabels).not.toHaveBeenCalled();
     });
 
+    it('handles addLabels failure gracefully', async () => {
+      mocks.octokitIssuesAddLabels.mockRejectedValueOnce(new Error('GitHub API error'));
+      const config = makeConfig({
+        config: {
+          personalAccessToken: 'ghp_token',
+          webhookSecret: 'secret',
+          autoLabelKeywords: { bug: ['crash'] },
+        },
+      });
+      const deps = makeDeps();
+      await integration.init(config, deps);
+
+      const handler = getWebhookHandler('issues');
+      await handler!({
+        id: 'evt-err',
+        payload: {
+          action: 'opened',
+          issue: {
+            id: 444,
+            number: 8,
+            title: 'crash on start',
+            body: 'crashes',
+            state: 'open',
+            html_url: 'https://github.com/o/r/issues/8',
+          },
+          repository: { name: 'repo', owner: { login: 'owner' } },
+          sender: { login: 'dave' },
+        },
+      });
+
+      await new Promise((r) => setTimeout(r, 0));
+      // Should not throw, just warn
+      expect(deps.logger.warn).toHaveBeenCalled();
+    });
+
     it('does not call addLabels when action is not "opened"', async () => {
       const config = makeConfig({
         config: {
@@ -468,6 +503,379 @@ describe('GitHubIntegration', () => {
 
       await new Promise((r) => setTimeout(r, 0));
       expect(mocks.octokitIssuesAddLabels).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── push event handler ──────────────────────────────────────────────────────
+
+  describe('push event handler', () => {
+    it('dispatches push events to onMessage', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await integration.init(makeConfig(), makeDeps(onMessage));
+
+      const handler = getWebhookHandler('push');
+      expect(handler).toBeDefined();
+
+      handler!({
+        id: 'push-1',
+        payload: {
+          ref: 'refs/heads/main',
+          sender: { login: 'alice' },
+          repository: {
+            name: 'repo',
+            owner: { login: 'owner' },
+          },
+          commits: [{ message: 'Fix bug' }, { message: 'Add test' }],
+          head_commit: { id: 'abc123' },
+        },
+      });
+
+      expect(onMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'gh_push_push-1',
+          platform: 'github',
+          chatId: 'owner/repo',
+          text: expect.stringContaining('Fix bug'),
+          metadata: expect.objectContaining({
+            event: 'push',
+            ref: 'refs/heads/main',
+            commitCount: 2,
+          }),
+        })
+      );
+    });
+
+    it('handles push with no commits', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await integration.init(makeConfig(), makeDeps(onMessage));
+
+      const handler = getWebhookHandler('push');
+      handler!({
+        id: 'push-2',
+        payload: {
+          ref: 'refs/heads/main',
+          sender: { login: 'bob' },
+          repository: { name: 'repo', owner: { login: 'owner' } },
+          commits: null,
+          head_commit: null,
+        },
+      });
+
+      expect(onMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('no commits'),
+          metadata: expect.objectContaining({ commitCount: 0 }),
+        })
+      );
+    });
+  });
+
+  // ── pull_request event handler ──────────────────────────────────────────────
+
+  describe('pull_request event handler', () => {
+    it('dispatches PR events to onMessage', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await integration.init(makeConfig(), makeDeps(onMessage));
+
+      const handler = getWebhookHandler('pull_request');
+      expect(handler).toBeDefined();
+
+      handler!({
+        id: 'pr-1',
+        payload: {
+          action: 'opened',
+          pull_request: {
+            id: 999,
+            number: 42,
+            title: 'New feature',
+            state: 'open',
+            html_url: 'https://github.com/o/r/pull/42',
+          },
+          repository: { name: 'repo', owner: { login: 'owner' } },
+          sender: { login: 'carol' },
+        },
+      });
+
+      expect(onMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'gh_pr_pr-1',
+          chatId: 'owner/repo/pulls/42',
+          text: expect.stringContaining('PR #42 opened: New feature'),
+          metadata: expect.objectContaining({
+            event: 'pull_request',
+            action: 'opened',
+            prNumber: 42,
+          }),
+        })
+      );
+    });
+  });
+
+  // ── pull_request_review event handler ───────────────────────────────────────
+
+  describe('pull_request_review event handler', () => {
+    it('dispatches PR review events to onMessage', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await integration.init(makeConfig(), makeDeps(onMessage));
+
+      const handler = getWebhookHandler('pull_request_review');
+      expect(handler).toBeDefined();
+
+      handler!({
+        id: 'review-1',
+        payload: {
+          action: 'submitted',
+          review: {
+            id: 555,
+            body: 'LGTM!',
+            state: 'approved',
+          },
+          pull_request: {
+            number: 42,
+            html_url: 'https://github.com/o/r/pull/42',
+          },
+          repository: { name: 'repo', owner: { login: 'owner' } },
+          sender: { login: 'reviewer' },
+        },
+      });
+
+      expect(onMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'gh_review_review-1',
+          text: 'LGTM!',
+          metadata: expect.objectContaining({
+            event: 'pull_request_review',
+            reviewState: 'approved',
+          }),
+        })
+      );
+    });
+
+    it('uses fallback text when review body is null', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await integration.init(makeConfig(), makeDeps(onMessage));
+
+      const handler = getWebhookHandler('pull_request_review');
+      handler!({
+        id: 'review-2',
+        payload: {
+          action: 'submitted',
+          review: { id: 556, body: null, state: 'changes_requested' },
+          pull_request: { number: 10, html_url: 'url' },
+          repository: { name: 'repo', owner: { login: 'owner' } },
+          sender: { login: 'reviewer' },
+        },
+      });
+
+      expect(onMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('changes_requested'),
+        })
+      );
+    });
+  });
+
+  // ── pull_request_review_comment event handler ───────────────────────────────
+
+  describe('pull_request_review_comment event handler', () => {
+    it('dispatches PR review comment events to onMessage', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await integration.init(makeConfig(), makeDeps(onMessage));
+
+      const handler = getWebhookHandler('pull_request_review_comment');
+      expect(handler).toBeDefined();
+
+      handler!({
+        id: 'rcomment-1',
+        payload: {
+          action: 'created',
+          comment: {
+            id: 777,
+            body: 'Nit: missing semicolon',
+            path: 'src/index.ts',
+            line: 42,
+            html_url: 'https://github.com/o/r/pull/3#discussion_r777',
+            created_at: '2026-03-01T10:00:00Z',
+          },
+          pull_request: { number: 3, html_url: 'url' },
+          repository: { name: 'repo', owner: { login: 'owner' } },
+          sender: { login: 'reviewer' },
+        },
+      });
+
+      expect(onMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'gh_review_comment_rcomment-1',
+          text: 'Nit: missing semicolon',
+          metadata: expect.objectContaining({
+            event: 'pull_request_review_comment',
+            path: 'src/index.ts',
+            line: 42,
+          }),
+        })
+      );
+    });
+  });
+
+  // ── issue_comment event handler ─────────────────────────────────────────────
+
+  describe('issue_comment event handler', () => {
+    it('dispatches issue comment events to onMessage', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await integration.init(makeConfig(), makeDeps(onMessage));
+
+      const handler = getWebhookHandler('issue_comment');
+      expect(handler).toBeDefined();
+
+      handler!({
+        id: 'icomment-1',
+        payload: {
+          action: 'created',
+          comment: {
+            id: 888,
+            body: 'Thanks for the report!',
+            user: { login: 'maintainer' },
+            html_url: 'https://github.com/o/r/issues/5#issuecomment-888',
+            created_at: '2026-03-01T12:00:00Z',
+          },
+          issue: { number: 5 },
+          repository: { name: 'repo', owner: { login: 'owner' } },
+          sender: { login: 'maintainer' },
+        },
+      });
+
+      expect(onMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'gh_comment_icomment-1',
+          senderId: 'maintainer',
+          text: 'Thanks for the report!',
+          metadata: expect.objectContaining({
+            event: 'issue_comment',
+            issueNumber: 5,
+          }),
+        })
+      );
+    });
+
+    it('detects @friday search: trigger in comment body', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await integration.init(makeConfig(), makeDeps(onMessage));
+
+      const handler = getWebhookHandler('issue_comment');
+      handler!({
+        id: 'icomment-2',
+        payload: {
+          action: 'created',
+          comment: {
+            id: 889,
+            body: '@friday search: authentication bypass',
+            user: { login: 'security-researcher' },
+            html_url: 'url',
+            created_at: '2026-03-01T13:00:00Z',
+          },
+          issue: { number: 10 },
+          repository: { name: 'repo', owner: { login: 'owner' } },
+          sender: { login: 'security-researcher' },
+        },
+      });
+
+      expect(onMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata: expect.objectContaining({
+            isCodeSearchTrigger: true,
+            searchQuery: 'authentication bypass',
+          }),
+        })
+      );
+    });
+
+    it('does not set search trigger for normal comments', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await integration.init(makeConfig(), makeDeps(onMessage));
+
+      const handler = getWebhookHandler('issue_comment');
+      handler!({
+        id: 'icomment-3',
+        payload: {
+          action: 'created',
+          comment: {
+            id: 890,
+            body: 'This is a regular comment',
+            user: { login: 'user' },
+            html_url: 'url',
+            created_at: '2026-03-01T14:00:00Z',
+          },
+          issue: { number: 11 },
+          repository: { name: 'repo', owner: { login: 'owner' } },
+          sender: { login: 'user' },
+        },
+      });
+
+      expect(onMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata: expect.not.objectContaining({
+            isCodeSearchTrigger: true,
+          }),
+        })
+      );
+    });
+  });
+
+  // ── sendMessage with PR review options ──────────────────────────────────────
+
+  describe('sendMessage() with review options', () => {
+    beforeEach(async () => {
+      await integration.init(makeConfig(), makeDeps());
+    });
+
+    it('passes commit_id when metadata.commitId is provided', async () => {
+      await integration.sendMessage('owner/repo/pulls/7', 'Review', {
+        reviewEvent: 'COMMENT',
+        commitId: 'sha123',
+      });
+
+      expect(mocks.octokitPullsCreateReview).toHaveBeenCalledWith(
+        expect.objectContaining({
+          commit_id: 'sha123',
+        })
+      );
+    });
+
+    it('passes review comments when metadata.reviewComments is provided', async () => {
+      const comments = [{ path: 'src/index.ts', position: 5, body: 'Fix this' }];
+      await integration.sendMessage('owner/repo/pulls/7', 'Review', {
+        reviewEvent: 'REQUEST_CHANGES',
+        reviewComments: comments,
+      });
+
+      expect(mocks.octokitPullsCreateReview).toHaveBeenCalledWith(
+        expect.objectContaining({
+          comments,
+        })
+      );
+    });
+
+    it('does not include commit_id or comments when not in metadata', async () => {
+      await integration.sendMessage('owner/repo/pulls/7', 'LGTM', {
+        reviewEvent: 'APPROVE',
+      });
+
+      const call = mocks.octokitPullsCreateReview.mock.calls[0][0] as Record<string, unknown>;
+      expect(call).not.toHaveProperty('commit_id');
+      expect(call).not.toHaveProperty('comments');
+    });
+  });
+
+  // ── getWebhooksInstance ─────────────────────────────────────────────────────
+
+  describe('getWebhooksInstance()', () => {
+    it('returns null before init', () => {
+      expect(integration.getWebhooksInstance()).toBeNull();
+    });
+
+    it('returns the webhooks instance after init', async () => {
+      await integration.init(makeConfig(), makeDeps());
+      expect(integration.getWebhooksInstance()).toBe(mocks.mockWebhooksInstance);
     });
   });
 });

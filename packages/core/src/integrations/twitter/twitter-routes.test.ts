@@ -447,4 +447,432 @@ describe('Twitter Routes', () => {
       expect(res.json().message).toMatch(/oauth 1\.0a/i);
     });
   });
+
+  // ── GET /api/v1/twitter/mentions ─────────────────────────────────────────
+
+  describe('GET /api/v1/twitter/mentions', () => {
+    it('returns mentions in auto mode', async () => {
+      mockV2.userMentionTimeline.mockResolvedValue({ data: { data: [{ id: 'mention-1' }] } });
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/mentions' });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('returns 404 when no integration configured', async () => {
+      const app = await buildApp(mockIntegrationManager({ noIntegrations: true }));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/mentions' });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('returns 400 when only bearer token (no userClient)', async () => {
+      const app = await buildApp(
+        mockIntegrationManager({
+          configOverride: {
+            apiKey: undefined,
+            apiKeySecret: undefined,
+            accessToken: undefined,
+            accessTokenSecret: undefined,
+          },
+        })
+      );
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/mentions' });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 500 on Twitter API error', async () => {
+      mockV2.me.mockRejectedValue(new Error('Rate limited'));
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/mentions' });
+      expect(res.statusCode).toBe(500);
+    });
+
+    it('passes sinceId query param when provided', async () => {
+      mockV2.userMentionTimeline.mockResolvedValue({ data: { data: [] } });
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/twitter/mentions?sinceId=12345&maxResults=5',
+      });
+      expect(res.statusCode).toBe(200);
+    });
+  });
+
+  // ── GET /api/v1/twitter/timeline ─────────────────────────────────────────
+
+  describe('GET /api/v1/twitter/timeline', () => {
+    it('returns timeline in auto mode', async () => {
+      mockV2.homeTimeline.mockResolvedValue({ data: { data: [{ id: 'tl-1' }] } });
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/timeline' });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().selfId).toBe('uid-1');
+    });
+
+    it('returns 404 when no integration configured', async () => {
+      const app = await buildApp(mockIntegrationManager({ noIntegrations: true }));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/timeline' });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('returns 400 when only bearer token (no userClient)', async () => {
+      const app = await buildApp(
+        mockIntegrationManager({
+          configOverride: {
+            apiKey: undefined,
+            apiKeySecret: undefined,
+            accessToken: undefined,
+            accessTokenSecret: undefined,
+          },
+        })
+      );
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/timeline' });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 500 on Twitter API error', async () => {
+      mockV2.me.mockRejectedValue(new Error('Server error'));
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/timeline' });
+      expect(res.statusCode).toBe(500);
+    });
+
+    it('passes maxResults query param', async () => {
+      mockV2.homeTimeline.mockResolvedValue({ data: { data: [] } });
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/twitter/timeline?maxResults=50',
+      });
+      expect(res.statusCode).toBe(200);
+    });
+  });
+
+  // ── GET /api/v1/twitter/users/:username ────────────────────────────────
+
+  describe('GET /api/v1/twitter/users/:username', () => {
+    it('returns user info', async () => {
+      const app = await buildApp(mockIntegrationManager());
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/users/someuser' });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('returns 404 when no integration', async () => {
+      const app = await buildApp(mockIntegrationManager({ noIntegrations: true }));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/users/someone' });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('returns 500 on Twitter API error', async () => {
+      mockV2.userByUsername.mockRejectedValue(new Error('User lookup failed'));
+      const app = await buildApp(mockIntegrationManager());
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/users/bad' });
+      expect(res.statusCode).toBe(500);
+    });
+  });
+
+  // ── POST /api/v1/twitter/tweets — advanced payload branches ─────────────
+
+  describe('POST /api/v1/twitter/tweets — payload branches', () => {
+    it('sends reply payload when replyToTweetId is present', async () => {
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/twitter/tweets',
+        payload: { text: 'reply', replyToTweetId: 'tw-parent' },
+      });
+      expect(res.statusCode).toBe(201);
+      expect(mockV2.tweet).toHaveBeenCalled();
+    });
+
+    it('sends quote tweet payload when quoteTweetId is present', async () => {
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/twitter/tweets',
+        payload: { text: 'quoting', quoteTweetId: 'tw-quote' },
+      });
+      expect(res.statusCode).toBe(201);
+    });
+
+    it('sends media ids when mediaIds array is non-empty', async () => {
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/twitter/tweets',
+        payload: { text: 'with media', mediaIds: ['m-1', 'm-2'] },
+      });
+      expect(res.statusCode).toBe(201);
+    });
+
+    it('does not include empty mediaIds array', async () => {
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/twitter/tweets',
+        payload: { text: 'no media', mediaIds: [] },
+      });
+      expect(res.statusCode).toBe(201);
+    });
+
+    it('returns 500 on tweet API error', async () => {
+      mockV2.tweet.mockRejectedValue(new Error('Tweet failed'));
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/twitter/tweets',
+        payload: { text: 'fail' },
+      });
+      expect(res.statusCode).toBe(500);
+    });
+
+    it('returns 404 when no integration for tweet post', async () => {
+      const app = await buildApp(
+        mockIntegrationManager({ noIntegrations: true }),
+        mockSoulManager('auto')
+      );
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/twitter/tweets',
+        payload: { text: 'hello' },
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('handles non-Error thrown by tweet API', async () => {
+      mockV2.tweet.mockRejectedValue('string error');
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/twitter/tweets',
+        payload: { text: 'fail' },
+      });
+      expect(res.statusCode).toBe(500);
+      expect(res.json().message).toContain('string error');
+    });
+  });
+
+  // ── POST /api/v1/twitter/media/upload — URL branch + both url&data ─────
+
+  describe('POST /api/v1/twitter/media/upload — advanced branches', () => {
+    it('returns 400 when both url and data provided', async () => {
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/twitter/media/upload',
+        payload: {
+          mimeType: 'image/jpeg',
+          url: 'https://example.com/image.jpg',
+          data: Buffer.from('fake').toString('base64'),
+        },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().message).toMatch(/not both/i);
+    });
+
+    it('returns 500 when v1.uploadMedia throws', async () => {
+      mockV1.uploadMedia.mockRejectedValueOnce(new Error('Upload failed'));
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/twitter/media/upload',
+        payload: {
+          mimeType: 'image/jpeg',
+          data: Buffer.from('fake').toString('base64'),
+        },
+      });
+      expect(res.statusCode).toBe(500);
+      expect(res.json().message).toContain('Upload failed');
+    });
+  });
+
+  // ── Like / Retweet / Unretweet — no userClient branch ─────────────────
+
+  describe('like/retweet/unretweet — no userClient branch', () => {
+    const bearerOnlyConfig = {
+      apiKey: undefined,
+      apiKeySecret: undefined,
+      accessToken: undefined,
+      accessTokenSecret: undefined,
+    };
+
+    it('like returns 400 when no userClient', async () => {
+      const app = await buildApp(
+        mockIntegrationManager({ configOverride: bearerOnlyConfig }),
+        mockSoulManager('auto')
+      );
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/twitter/tweets/tw-1/like',
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('retweet returns 400 when no userClient', async () => {
+      const app = await buildApp(
+        mockIntegrationManager({ configOverride: bearerOnlyConfig }),
+        mockSoulManager('auto')
+      );
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/twitter/tweets/tw-1/retweet',
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('unretweet returns 400 when no userClient', async () => {
+      const app = await buildApp(
+        mockIntegrationManager({ configOverride: bearerOnlyConfig }),
+        mockSoulManager('auto')
+      );
+      const res = await app.inject({
+        method: 'DELETE',
+        url: '/api/v1/twitter/tweets/tw-1/retweet',
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('like returns 500 on API error', async () => {
+      mockV2.like.mockRejectedValue(new Error('API error'));
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/twitter/tweets/tw-1/like',
+      });
+      expect(res.statusCode).toBe(500);
+    });
+
+    it('retweet returns 500 on API error', async () => {
+      mockV2.retweet.mockRejectedValue(new Error('API error'));
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/twitter/tweets/tw-1/retweet',
+      });
+      expect(res.statusCode).toBe(500);
+    });
+
+    it('unretweet returns 500 on API error', async () => {
+      mockV2.unretweet.mockRejectedValue(new Error('API error'));
+      const app = await buildApp(mockIntegrationManager(), mockSoulManager('auto'));
+      const res = await app.inject({
+        method: 'DELETE',
+        url: '/api/v1/twitter/tweets/tw-1/retweet',
+      });
+      expect(res.statusCode).toBe(500);
+    });
+  });
+
+  // ── soulManager throws — falls back to 'suggest' mode ─────────────────
+
+  describe('soulManager error fallback', () => {
+    it('falls back to suggest mode when soulManager.getActivePersonality throws', async () => {
+      const badSoulManager = {
+        getActivePersonality: vi.fn().mockRejectedValue(new Error('soul error')),
+      } as unknown as SoulManager;
+      const app = await buildApp(mockIntegrationManager(), badSoulManager);
+      // Should still succeed (suggest mode for read operations)
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/search?q=test' });
+      expect(res.statusCode).toBe(200);
+    });
+  });
+
+  // ── search with nextToken and maxResults ──────────────────────────────
+
+  describe('GET /api/v1/twitter/search — advanced query params', () => {
+    it('passes nextToken when provided', async () => {
+      const app = await buildApp(mockIntegrationManager());
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/twitter/search?q=test&nextToken=abc&maxResults=25',
+      });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('returns 500 on search API error', async () => {
+      mockV2.search.mockRejectedValue(new Error('Search failed'));
+      const app = await buildApp(mockIntegrationManager());
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/twitter/search?q=fail',
+      });
+      expect(res.statusCode).toBe(500);
+    });
+  });
+
+  // ── GET /api/v1/twitter/tweets/:tweetId — error branch ───────────────
+
+  describe('GET /api/v1/twitter/tweets/:tweetId — error', () => {
+    it('returns 500 on API error', async () => {
+      mockV2.singleTweet.mockRejectedValue(new Error('Tweet not found'));
+      const app = await buildApp(mockIntegrationManager());
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/tweets/bad-id' });
+      expect(res.statusCode).toBe(500);
+    });
+
+    it('returns 404 when no integration', async () => {
+      const app = await buildApp(mockIntegrationManager({ noIntegrations: true }));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/tweets/tw-1' });
+      expect(res.statusCode).toBe(404);
+    });
+  });
+
+  // ── Non-Error thrown objects ──────────────────────────────────────────
+
+  describe('non-Error thrown objects in catch blocks', () => {
+    it('profile handles non-Error thrown object', async () => {
+      mockV2.me.mockRejectedValue(42);
+      const app = await buildApp(mockIntegrationManager());
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/profile' });
+      expect(res.statusCode).toBe(500);
+      expect(res.json().message).toContain('42');
+    });
+  });
+
+  // ── resolveTwitterAccess: personality has no matching integration ──────
+
+  describe('resolveTwitterAccess — no matching integration in personality access list', () => {
+    it('uses first integration and default suggest mode when personality access does not match', async () => {
+      const sm = {
+        getActivePersonality: vi.fn().mockResolvedValue({
+          id: 'p-1',
+          body: {
+            integrationAccess: [{ id: 'non-matching-id', mode: 'auto' }],
+          },
+        }),
+      } as unknown as SoulManager;
+      const app = await buildApp(mockIntegrationManager(), sm);
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/search?q=test' });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('handles null personality (no active personality)', async () => {
+      const sm = {
+        getActivePersonality: vi.fn().mockResolvedValue(null),
+      } as unknown as SoulManager;
+      const app = await buildApp(mockIntegrationManager(), sm);
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/search?q=test' });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('handles personality with no body', async () => {
+      const sm = {
+        getActivePersonality: vi.fn().mockResolvedValue({ id: 'p-1', body: null }),
+      } as unknown as SoulManager;
+      const app = await buildApp(mockIntegrationManager(), sm);
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/search?q=test' });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('handles personality with empty integrationAccess array', async () => {
+      const sm = {
+        getActivePersonality: vi.fn().mockResolvedValue({
+          id: 'p-1',
+          body: { integrationAccess: [] },
+        }),
+      } as unknown as SoulManager;
+      const app = await buildApp(mockIntegrationManager(), sm);
+      const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/search?q=test' });
+      expect(res.statusCode).toBe(200);
+    });
+  });
 });

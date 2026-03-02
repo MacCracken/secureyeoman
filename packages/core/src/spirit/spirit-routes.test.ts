@@ -88,6 +88,26 @@ describe('Spirit Routes — passions', () => {
     expect(res.json().passions).toHaveLength(1);
   });
 
+  it('GET /api/v1/spirit/passions passes limit and offset when provided', async () => {
+    const listMock = vi.fn().mockResolvedValue({ passions: [], total: 0 });
+    const mgr = makeMockManager({ listPassions: listMock });
+    const a = buildApp(mgr);
+    const res = await a.inject({
+      method: 'GET',
+      url: '/api/v1/spirit/passions?limit=10&offset=5',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(listMock).toHaveBeenCalledWith({ limit: 10, offset: 5 });
+  });
+
+  it('GET /api/v1/spirit/passions passes undefined limit/offset when absent', async () => {
+    const listMock = vi.fn().mockResolvedValue({ passions: [], total: 0 });
+    const mgr = makeMockManager({ listPassions: listMock });
+    const a = buildApp(mgr);
+    await a.inject({ method: 'GET', url: '/api/v1/spirit/passions' });
+    expect(listMock).toHaveBeenCalledWith({ limit: undefined, offset: undefined });
+  });
+
   it('POST /api/v1/spirit/passions creates passion', async () => {
     const res = await app.inject({
       method: 'POST',
@@ -105,6 +125,17 @@ describe('Spirit Routes — passions', () => {
     const a = buildApp(mgr);
     const res = await a.inject({ method: 'POST', url: '/api/v1/spirit/passions', payload: {} });
     expect(res.statusCode).toBe(400);
+    expect(res.json().message).toBe('limit exceeded');
+  });
+
+  it('POST /api/v1/spirit/passions returns Unknown error for non-Error throw', async () => {
+    const mgr = makeMockManager({
+      createPassion: vi.fn().mockRejectedValue('string error'),
+    });
+    const a = buildApp(mgr);
+    const res = await a.inject({ method: 'POST', url: '/api/v1/spirit/passions', payload: {} });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().message).toBe('Unknown error');
   });
 
   it('GET /api/v1/spirit/passions/:id returns passion', async () => {
@@ -118,6 +149,7 @@ describe('Spirit Routes — passions', () => {
     const a = buildApp(mgr);
     const res = await a.inject({ method: 'GET', url: '/api/v1/spirit/passions/missing' });
     expect(res.statusCode).toBe(404);
+    expect(res.json().message).toBe('Passion not found');
   });
 
   it('PUT /api/v1/spirit/passions/:id updates passion', async () => {
@@ -128,6 +160,18 @@ describe('Spirit Routes — passions', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().passion.id).toBe('p1');
+  });
+
+  it('PUT /api/v1/spirit/passions/:id passes id and body to manager', async () => {
+    const updateMock = vi.fn().mockResolvedValue(PASSION);
+    const mgr = makeMockManager({ updatePassion: updateMock });
+    const a = buildApp(mgr);
+    await a.inject({
+      method: 'PUT',
+      url: '/api/v1/spirit/passions/p1',
+      payload: { name: 'Updated', intensity: 0.5 },
+    });
+    expect(updateMock).toHaveBeenCalledWith('p1', { name: 'Updated', intensity: 0.5 });
   });
 
   it('PUT /api/v1/spirit/passions/:id returns 404 on manager error', async () => {
@@ -153,6 +197,7 @@ describe('Spirit Routes — passions', () => {
     const a = buildApp(mgr);
     const res = await a.inject({ method: 'DELETE', url: '/api/v1/spirit/passions/missing' });
     expect(res.statusCode).toBe(404);
+    expect(res.json().message).toBe('Passion not found');
   });
 });
 
@@ -169,6 +214,25 @@ describe('Spirit Routes — inspirations', () => {
     expect(res.json().inspirations).toHaveLength(1);
   });
 
+  it('GET /api/v1/spirit/inspirations passes limit and offset when provided', async () => {
+    const listMock = vi.fn().mockResolvedValue({ inspirations: [], total: 0 });
+    const mgr = makeMockManager({ listInspirations: listMock });
+    const a = buildApp(mgr);
+    await a.inject({
+      method: 'GET',
+      url: '/api/v1/spirit/inspirations?limit=15&offset=3',
+    });
+    expect(listMock).toHaveBeenCalledWith({ limit: 15, offset: 3 });
+  });
+
+  it('GET /api/v1/spirit/inspirations passes undefined limit/offset when absent', async () => {
+    const listMock = vi.fn().mockResolvedValue({ inspirations: [], total: 0 });
+    const mgr = makeMockManager({ listInspirations: listMock });
+    const a = buildApp(mgr);
+    await a.inject({ method: 'GET', url: '/api/v1/spirit/inspirations' });
+    expect(listMock).toHaveBeenCalledWith({ limit: undefined, offset: undefined });
+  });
+
   it('POST /api/v1/spirit/inspirations creates inspiration', async () => {
     const res = await app.inject({
       method: 'POST',
@@ -177,6 +241,22 @@ describe('Spirit Routes — inspirations', () => {
     });
     expect(res.statusCode).toBe(201);
     expect(res.json().inspiration.id).toBe('i1');
+  });
+
+  it('POST /api/v1/spirit/inspirations passes body to manager', async () => {
+    const createMock = vi.fn().mockResolvedValue(INSPIRATION);
+    const mgr = makeMockManager({ createInspiration: createMock });
+    const a = buildApp(mgr);
+    await a.inject({
+      method: 'POST',
+      url: '/api/v1/spirit/inspirations',
+      payload: { source: 'Turing', description: 'pioneer', impact: 0.95 },
+    });
+    expect(createMock).toHaveBeenCalledWith({
+      source: 'Turing',
+      description: 'pioneer',
+      impact: 0.95,
+    });
   });
 
   it('POST /api/v1/spirit/inspirations returns 400 on error', async () => {
@@ -188,11 +268,40 @@ describe('Spirit Routes — inspirations', () => {
     expect(res.statusCode).toBe(400);
   });
 
+  it('GET /api/v1/spirit/inspirations/:id returns inspiration', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/spirit/inspirations/i1' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().inspiration.id).toBe('i1');
+  });
+
   it('GET /api/v1/spirit/inspirations/:id returns 404 when not found', async () => {
     const mgr = makeMockManager({ getInspiration: vi.fn().mockResolvedValue(null) });
     const a = buildApp(mgr);
     const res = await a.inject({ method: 'GET', url: '/api/v1/spirit/inspirations/missing' });
     expect(res.statusCode).toBe(404);
+    expect(res.json().message).toBe('Inspiration not found');
+  });
+
+  it('PUT /api/v1/spirit/inspirations/:id updates inspiration', async () => {
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/spirit/inspirations/i1',
+      payload: { description: 'Updated' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().inspiration.id).toBe('i1');
+  });
+
+  it('PUT /api/v1/spirit/inspirations/:id passes id and body to manager', async () => {
+    const updateMock = vi.fn().mockResolvedValue(INSPIRATION);
+    const mgr = makeMockManager({ updateInspiration: updateMock });
+    const a = buildApp(mgr);
+    await a.inject({
+      method: 'PUT',
+      url: '/api/v1/spirit/inspirations/i1',
+      payload: { impact: 0.8 },
+    });
+    expect(updateMock).toHaveBeenCalledWith('i1', { impact: 0.8 });
   });
 
   it('PUT /api/v1/spirit/inspirations/:id returns 404 on error', async () => {
@@ -218,6 +327,7 @@ describe('Spirit Routes — inspirations', () => {
     const a = buildApp(mgr);
     const res = await a.inject({ method: 'DELETE', url: '/api/v1/spirit/inspirations/missing' });
     expect(res.statusCode).toBe(404);
+    expect(res.json().message).toBe('Inspiration not found');
   });
 });
 
@@ -234,6 +344,25 @@ describe('Spirit Routes — pains', () => {
     expect(res.json().pains).toHaveLength(1);
   });
 
+  it('GET /api/v1/spirit/pains passes limit and offset when provided', async () => {
+    const listMock = vi.fn().mockResolvedValue({ pains: [], total: 0 });
+    const mgr = makeMockManager({ listPains: listMock });
+    const a = buildApp(mgr);
+    await a.inject({
+      method: 'GET',
+      url: '/api/v1/spirit/pains?limit=25&offset=10',
+    });
+    expect(listMock).toHaveBeenCalledWith({ limit: 25, offset: 10 });
+  });
+
+  it('GET /api/v1/spirit/pains passes undefined limit/offset when absent', async () => {
+    const listMock = vi.fn().mockResolvedValue({ pains: [], total: 0 });
+    const mgr = makeMockManager({ listPains: listMock });
+    const a = buildApp(mgr);
+    await a.inject({ method: 'GET', url: '/api/v1/spirit/pains' });
+    expect(listMock).toHaveBeenCalledWith({ limit: undefined, offset: undefined });
+  });
+
   it('POST /api/v1/spirit/pains creates pain', async () => {
     const res = await app.inject({
       method: 'POST',
@@ -244,6 +373,22 @@ describe('Spirit Routes — pains', () => {
     expect(res.json().pain.id).toBe('pa1');
   });
 
+  it('POST /api/v1/spirit/pains passes body to manager', async () => {
+    const createMock = vi.fn().mockResolvedValue(PAIN);
+    const mgr = makeMockManager({ createPain: createMock });
+    const a = buildApp(mgr);
+    await a.inject({
+      method: 'POST',
+      url: '/api/v1/spirit/pains',
+      payload: { trigger: 'Outage', description: 'bad', severity: 0.7 },
+    });
+    expect(createMock).toHaveBeenCalledWith({
+      trigger: 'Outage',
+      description: 'bad',
+      severity: 0.7,
+    });
+  });
+
   it('POST /api/v1/spirit/pains returns 400 on error', async () => {
     const mgr = makeMockManager({ createPain: vi.fn().mockRejectedValue(new Error('limit')) });
     const a = buildApp(mgr);
@@ -251,11 +396,40 @@ describe('Spirit Routes — pains', () => {
     expect(res.statusCode).toBe(400);
   });
 
+  it('GET /api/v1/spirit/pains/:id returns pain', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/spirit/pains/pa1' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().pain.id).toBe('pa1');
+  });
+
   it('GET /api/v1/spirit/pains/:id returns 404 when not found', async () => {
     const mgr = makeMockManager({ getPain: vi.fn().mockResolvedValue(null) });
     const a = buildApp(mgr);
     const res = await a.inject({ method: 'GET', url: '/api/v1/spirit/pains/missing' });
     expect(res.statusCode).toBe(404);
+    expect(res.json().message).toBe('Pain not found');
+  });
+
+  it('PUT /api/v1/spirit/pains/:id updates pain', async () => {
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/spirit/pains/pa1',
+      payload: { severity: 0.5 },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().pain.id).toBe('pa1');
+  });
+
+  it('PUT /api/v1/spirit/pains/:id passes id and body to manager', async () => {
+    const updateMock = vi.fn().mockResolvedValue(PAIN);
+    const mgr = makeMockManager({ updatePain: updateMock });
+    const a = buildApp(mgr);
+    await a.inject({
+      method: 'PUT',
+      url: '/api/v1/spirit/pains/pa1',
+      payload: { description: 'updated' },
+    });
+    expect(updateMock).toHaveBeenCalledWith('pa1', { description: 'updated' });
   });
 
   it('PUT /api/v1/spirit/pains/:id returns 404 on error', async () => {
@@ -277,6 +451,7 @@ describe('Spirit Routes — pains', () => {
     const a = buildApp(mgr);
     const res = await a.inject({ method: 'DELETE', url: '/api/v1/spirit/pains/missing' });
     expect(res.statusCode).toBe(404);
+    expect(res.json().message).toBe('Pain not found');
   });
 });
 
@@ -306,5 +481,25 @@ describe('Spirit Routes — config, stats, prompt', () => {
     expect(body.prompt).toContain('## Spirit');
     expect(typeof body.charCount).toBe('number');
     expect(typeof body.estimatedTokens).toBe('number');
+  });
+
+  it('GET /api/v1/spirit/prompt/preview computes charCount and estimatedTokens correctly', async () => {
+    const promptText = 'A'.repeat(100);
+    const mgr = makeMockManager({ composeSpiritPrompt: vi.fn().mockResolvedValue(promptText) });
+    const a = buildApp(mgr);
+    const res = await a.inject({ method: 'GET', url: '/api/v1/spirit/prompt/preview' });
+    const body = res.json();
+    expect(body.charCount).toBe(100);
+    expect(body.estimatedTokens).toBe(25); // Math.ceil(100 / 4)
+  });
+
+  it('GET /api/v1/spirit/prompt/preview rounds up estimatedTokens', async () => {
+    const promptText = 'A'.repeat(101); // 101 / 4 = 25.25 -> 26
+    const mgr = makeMockManager({ composeSpiritPrompt: vi.fn().mockResolvedValue(promptText) });
+    const a = buildApp(mgr);
+    const res = await a.inject({ method: 'GET', url: '/api/v1/spirit/prompt/preview' });
+    const body = res.json();
+    expect(body.charCount).toBe(101);
+    expect(body.estimatedTokens).toBe(26);
   });
 });

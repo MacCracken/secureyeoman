@@ -126,4 +126,7 @@ export const MIGRATION_MANIFEST: { id: string; sql: string }[] = [
   { id: '072_shareables', sql: readSql('072_shareables.sql') },
   { id: '073_archetype_avatars', sql: readSql('073_archetype_avatars.sql') },
   { id: '074_conversation_analytics', sql: readSql('074_conversation_analytics.sql') },
+  { id: '075_llm_judge_eval', sql: readSql('075_llm_judge_eval.sql') },
+  { id: '076_lifecycle_platform', sql: readSql('076_lifecycle_platform.sql') },
+  { id: '077_conversation_branching', sql: readSql('077_conversation_branching.sql') },
 ];

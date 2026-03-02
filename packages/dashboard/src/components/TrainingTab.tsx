@@ -7,7 +7,7 @@
  *   Fine-tune  — LoRA/QLoRA fine-tuning via Docker sidecar
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Download,
@@ -28,6 +28,10 @@ import {
   Activity,
   Monitor,
   Zap,
+  Scale,
+  ThumbsUp,
+  FlaskConical,
+  Rocket,
 } from 'lucide-react';
 import {
   LineChart,
@@ -67,7 +71,20 @@ import {
   type SkillStat,
 } from '../api/client';
 
-type TabType = 'export' | 'distillation' | 'finetune' | 'live' | 'computer-use';
+const EvaluationTab = lazy(() =>
+  import('./training/EvaluationTab').then((m) => ({ default: m.EvaluationTab }))
+);
+const PreferencesTab = lazy(() =>
+  import('./training/PreferencesTab').then((m) => ({ default: m.PreferencesTab }))
+);
+const ExperimentsTab = lazy(() =>
+  import('./training/ExperimentsTab').then((m) => ({ default: m.ExperimentsTab }))
+);
+const DeploymentTab = lazy(() =>
+  import('./training/DeploymentTab').then((m) => ({ default: m.DeploymentTab }))
+);
+
+type TabType = 'export' | 'distillation' | 'finetune' | 'live' | 'computer-use' | 'evaluation' | 'preferences' | 'experiments' | 'deployment';
 type ExportFormat = 'sharegpt' | 'instruction' | 'raw';
 
 const FORMAT_INFO: Record<
@@ -1036,6 +1053,10 @@ export function TrainingTab() {
     { id: 'finetune', label: 'Fine-tune', icon: <Layers className="w-4 h-4" /> },
     { id: 'live', label: 'Live', icon: <Activity className="w-4 h-4" /> },
     { id: 'computer-use', label: 'Computer Use', icon: <Monitor className="w-4 h-4" /> },
+    { id: 'evaluation', label: 'Evaluation', icon: <Scale className="w-4 h-4" /> },
+    { id: 'preferences', label: 'Preferences', icon: <ThumbsUp className="w-4 h-4" /> },
+    { id: 'experiments', label: 'Experiments', icon: <FlaskConical className="w-4 h-4" /> },
+    { id: 'deployment', label: 'Deployment', icon: <Rocket className="w-4 h-4" /> },
   ];
 
   return (
@@ -1071,6 +1092,50 @@ export function TrainingTab() {
       {activeTab === 'finetune' && <FinetuneTab />}
       {activeTab === 'live' && <LiveTab />}
       {activeTab === 'computer-use' && <ComputerUseTab />}
+      {activeTab === 'evaluation' && (
+        <Suspense
+          fallback={
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading evaluation...
+            </div>
+          }
+        >
+          <EvaluationTab />
+        </Suspense>
+      )}
+      {activeTab === 'preferences' && (
+        <Suspense
+          fallback={
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading preferences...
+            </div>
+          }
+        >
+          <PreferencesTab />
+        </Suspense>
+      )}
+      {activeTab === 'experiments' && (
+        <Suspense
+          fallback={
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading experiments...
+            </div>
+          }
+        >
+          <ExperimentsTab />
+        </Suspense>
+      )}
+      {activeTab === 'deployment' && (
+        <Suspense
+          fallback={
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading deployment...
+            </div>
+          }
+        >
+          <DeploymentTab />
+        </Suspense>
+      )}
     </div>
   );
 }

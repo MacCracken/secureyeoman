@@ -678,4 +678,263 @@ describe('Model Routes', () => {
     expect(res.statusCode).toBe(404);
     expect(JSON.parse(res.payload).message).toBe('Model not found');
   });
+
+  it('DELETE /api/v1/model/ollama/:name returns 500 for generic error', async () => {
+    const { OllamaProvider } = await import('./providers/ollama.js');
+    vi.mocked(OllamaProvider.deleteModel).mockRejectedValueOnce(new Error('Connection refused'));
+
+    const mock = createMockSecureYeoman({ provider: 'ollama', model: 'llama3:latest' });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/model/ollama/llama3%3Alatest',
+    });
+
+    expect(res.statusCode).toBe(500);
+    expect(JSON.parse(res.payload).message).toContain('Connection refused');
+  });
+
+  // ── AI Health — local providers ──────────────────────────────────────────
+
+  it('GET /api/v1/ai/health returns reachable for local ollama provider', async () => {
+    const mock = createMockSecureYeoman({
+      provider: 'ollama',
+      model: 'llama3:latest',
+    });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    // fetch for health check returns ok, then fetchAvailableModels returns model info
+    mockFetch.mockImplementation((url: string) => {
+      if (typeof url === 'string' && url.includes('/api/tags')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            models: [{ name: 'llama3:latest', size: 4700000000 }],
+          }),
+        });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/ai/health' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.status).toBe('reachable');
+    expect(body.provider).toBe('ollama');
+    expect(body.local).toBe(true);
+    expect(body.baseUrl).toBe('http://localhost:11434');
+    expect(body.latencyMs).toBeDefined();
+  });
+
+  it('GET /api/v1/ai/health returns unreachable for local provider when fetch fails', async () => {
+    const mock = createMockSecureYeoman({
+      provider: 'ollama',
+      model: 'llama3:latest',
+    });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    mockFetch.mockRejectedValue(new Error('Connection refused'));
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/ai/health' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.status).toBe('unreachable');
+    expect(body.local).toBe(true);
+  });
+
+  it('GET /api/v1/ai/health uses lmstudio default URL', async () => {
+    const mock = createMockSecureYeoman({
+      provider: 'lmstudio',
+      model: 'my-model',
+    });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    mockFetch.mockImplementation((url: string) => {
+      if (typeof url === 'string' && url.includes('/v1/models')) {
+        return Promise.resolve({ ok: true });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/ai/health' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.baseUrl).toBe('http://localhost:1234');
+    expect(body.local).toBe(true);
+  });
+
+  it('GET /api/v1/ai/health uses localai default URL', async () => {
+    const mock = createMockSecureYeoman({
+      provider: 'localai',
+      model: 'my-model',
+    });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    mockFetch.mockImplementation((url: string) => {
+      if (typeof url === 'string' && url.includes('/v1/models')) {
+        return Promise.resolve({ ok: true });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/ai/health' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.baseUrl).toBe('http://localhost:8080');
+    expect(body.local).toBe(true);
+  });
+
+  it('GET /api/v1/ai/health uses custom baseUrl when provided', async () => {
+    const mock = createMockSecureYeoman({
+      provider: 'ollama',
+      model: 'llama3:latest',
+      baseUrl: 'http://gpu-server:11434',
+    });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    mockFetch.mockImplementation((url: string) => {
+      if (typeof url === 'string' && url.includes('gpu-server')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            models: [{ name: 'llama3:latest', size: 4700000000 }],
+          }),
+        });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/ai/health' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.baseUrl).toBe('http://gpu-server:11434');
+  });
+
+  it('GET /api/v1/ai/health returns configured for cloud provider with key', async () => {
+    const mock = createMockSecureYeoman({ provider: 'anthropic', model: 'claude-sonnet-4-20250514' });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/ai/health' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.status).toBe('configured');
+    expect(body.local).toBe(false);
+    expect(body.provider).toBe('anthropic');
+  });
+
+  it('GET /api/v1/ai/health returns missing_key for cloud provider without key', async () => {
+    // Temporarily remove key
+    const savedKey = process.env.ANTHROPIC_API_KEY;
+    delete process.env.ANTHROPIC_API_KEY;
+
+    const mock = createMockSecureYeoman({ provider: 'anthropic', model: 'claude-sonnet-4-20250514' });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/ai/health' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.status).toBe('missing_key');
+
+    if (savedKey) process.env.ANTHROPIC_API_KEY = savedKey;
+  });
+
+  it('GET /api/v1/ai/health returns 500 on error', async () => {
+    const mock = createMockSecureYeoman({ getConfigError: 'config broken' });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/ai/health' });
+    expect(res.statusCode).toBe(500);
+  });
+
+  // ── Ollama pull error streaming ──────────────────────────────────────────
+
+  it('POST /api/v1/model/ollama/pull streams error when pull throws', async () => {
+    const { OllamaProvider } = await import('./providers/ollama.js');
+    vi.mocked(OllamaProvider.pull).mockImplementation(async function* () {
+      throw new Error('Network timeout');
+    });
+
+    const mock = createMockSecureYeoman({ provider: 'ollama', model: 'llama3:latest' });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/model/ollama/pull',
+      payload: { model: 'phi3:mini' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload).toContain('error');
+    expect(res.payload).toContain('Network timeout');
+  });
+
+  it('POST /api/v1/model/ollama/pull uses default baseUrl when baseUrl is unset', async () => {
+    const { OllamaProvider } = await import('./providers/ollama.js');
+    vi.mocked(OllamaProvider.pull).mockImplementation(async function* () {
+      yield { status: 'done' };
+    });
+
+    // baseUrl is undefined in config
+    const mock = createMockSecureYeoman({ provider: 'ollama', model: 'llama3:latest', baseUrl: undefined });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/model/ollama/pull',
+      payload: { model: 'phi3:mini' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    // OllamaProvider.pull should have been called with default URL
+    expect(OllamaProvider.pull).toHaveBeenCalledWith('http://localhost:11434', 'phi3:mini');
+  });
+
+  // ── POST /api/v1/model/estimate-cost error path ──────────────────────────
+
+  it('POST /api/v1/model/estimate-cost returns 500 on internal error', async () => {
+    const mock = createMockSecureYeoman({
+      costCalculator: {
+        calculate: vi.fn().mockImplementation(() => {
+          throw new Error('calculator exploded');
+        }),
+        getModelCosts: vi.fn().mockReturnValue([]),
+      },
+    });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/model/estimate-cost',
+      payload: { task: 'analyze data' },
+    });
+    expect(res.statusCode).toBe(500);
+  });
+
+  // ── Ollama memory warning branch ─────────────────────────────────────────
+
+  it('GET /api/v1/ai/health returns modelSize when model found', async () => {
+    const mock = createMockSecureYeoman({
+      provider: 'ollama',
+      model: 'llama3',
+    });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const { OllamaProvider } = await import('./providers/ollama.js');
+    vi.mocked(OllamaProvider.fetchAvailableModels).mockResolvedValueOnce([
+      { id: 'llama3:latest', name: 'llama3:latest', size: 4700000000, provider: 'ollama', inputPer1M: 0, outputPer1M: 0 },
+    ]);
+
+    mockFetch.mockImplementation((url: string) => {
+      if (typeof url === 'string' && url.includes('/api/tags')) {
+        return Promise.resolve({ ok: true });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/ai/health' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.modelSize).toBe(4700000000);
+  });
 });

@@ -297,3 +297,80 @@ describe('getCaptureCacheStats', () => {
     expect(stats.size).toBe(1);
   });
 });
+
+describe('cache eviction', () => {
+  beforeEach(() => {
+    clearCapturePermissionCache();
+    vi.clearAllMocks();
+  });
+
+  it('evicts old entries when cache reaches MAX_CACHE_SIZE', async () => {
+    mockCheckPermission.mockReturnValue({
+      granted: true,
+      reason: undefined,
+      matchedPermission: undefined,
+    });
+    mockGetRole.mockReturnValue(null);
+
+    // Fill the cache with 1000 unique entries (MAX_CACHE_SIZE)
+    for (let i = 0; i < 1000; i++) {
+      await checkCapturePermission(
+        `capture.screen` as any,
+        'capture' as any,
+        { duration: i },
+        { userId: 'user-1', roleId: `role-${i}` }
+      );
+    }
+    expect(getCaptureCacheStats().size).toBe(1000);
+
+    // Adding one more should trigger eviction (removes ~20%)
+    await checkCapturePermission(
+      'capture.screen' as any,
+      'capture' as any,
+      { duration: 9999 },
+      { userId: 'user-1', roleId: 'role-overflow' }
+    );
+
+    // After eviction of 200 entries + adding 1, size should be <=801
+    const stats = getCaptureCacheStats();
+    expect(stats.size).toBeLessThanOrEqual(801);
+  });
+});
+
+describe('generateCacheKey', () => {
+  beforeEach(() => {
+    clearCapturePermissionCache();
+    vi.clearAllMocks();
+  });
+
+  it('uses different cache keys for different contexts', async () => {
+    mockCheckPermission.mockReturnValue({
+      granted: true,
+      reason: undefined,
+      matchedPermission: undefined,
+    });
+    mockGetRole.mockReturnValue(null);
+
+    // Use different field names to ensure different base64 hash (16-char slice)
+    await checkCapturePermission('capture.screen', 'capture', { duration: 10 }, userCtx);
+    await checkCapturePermission('capture.screen', 'capture', { quality: '720p' }, userCtx);
+
+    // Both should create cache entries (different context hashes)
+    expect(mockCheckPermission).toHaveBeenCalledTimes(2);
+    expect(getCaptureCacheStats().size).toBe(2);
+  });
+
+  it('uses different cache keys for different actions', async () => {
+    mockCheckPermission.mockReturnValue({
+      granted: true,
+      reason: undefined,
+      matchedPermission: undefined,
+    });
+    mockGetRole.mockReturnValue(null);
+
+    await checkCapturePermission('capture.screen', 'capture', {}, userCtx);
+    await checkCapturePermission('capture.screen', 'view', {}, userCtx);
+
+    expect(mockCheckPermission).toHaveBeenCalledTimes(2);
+  });
+});

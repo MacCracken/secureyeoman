@@ -413,6 +413,15 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/conversations/:id/history': { GET: { resource: 'chat', action: 'read' } },
   '/api/v1/conversations/:id/seal-topic': { POST: { resource: 'chat', action: 'write' } },
   '/api/v1/conversations/:id/compressed-context': { GET: { resource: 'chat', action: 'read' } },
+  // Branching & Replay (Phase 99)
+  '/api/v1/conversations/:id/branch': { POST: { resource: 'chat', action: 'write' } },
+  '/api/v1/conversations/:id/branches': { GET: { resource: 'chat', action: 'read' } },
+  '/api/v1/conversations/:id/tree': { GET: { resource: 'chat', action: 'read' } },
+  '/api/v1/conversations/:id/replay': { POST: { resource: 'chat', action: 'execute' } },
+  '/api/v1/conversations/replay-batch': { POST: { resource: 'chat', action: 'execute' } },
+  '/api/v1/replay-jobs': { GET: { resource: 'chat', action: 'read' } },
+  '/api/v1/replay-jobs/:id': { GET: { resource: 'chat', action: 'read' } },
+  '/api/v1/replay-jobs/:id/report': { GET: { resource: 'chat', action: 'read' } },
   // Execution
   '/api/v1/execution/run': { POST: { resource: 'execution', action: 'execute' } },
   '/api/v1/execution/sessions': { GET: { resource: 'execution', action: 'read' } },
@@ -706,6 +715,102 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   },
   '/api/v1/training/computer-use/episodes/:id': {
     DELETE: { resource: 'training', action: 'write' },
+  },
+  // Phase 97: LLM-as-Judge Evaluation
+  '/api/v1/training/judge/datasets': {
+    GET: { resource: 'training', action: 'read' },
+    POST: { resource: 'training', action: 'write' },
+  },
+  '/api/v1/training/judge/datasets/:id': {
+    GET: { resource: 'training', action: 'read' },
+    DELETE: { resource: 'training', action: 'write' },
+  },
+  '/api/v1/training/judge/pointwise': {
+    POST: { resource: 'training', action: 'write' },
+  },
+  '/api/v1/training/judge/runs': {
+    GET: { resource: 'training', action: 'read' },
+  },
+  '/api/v1/training/judge/runs/:id': {
+    GET: { resource: 'training', action: 'read' },
+    DELETE: { resource: 'training', action: 'write' },
+  },
+  '/api/v1/training/judge/pairwise': {
+    POST: { resource: 'training', action: 'write' },
+  },
+  '/api/v1/training/judge/comparisons': {
+    GET: { resource: 'training', action: 'read' },
+  },
+  '/api/v1/training/judge/comparisons/:id': {
+    GET: { resource: 'training', action: 'read' },
+  },
+  '/api/v1/training/judge/auto-eval': {
+    POST: { resource: 'training', action: 'write' },
+  },
+  // Phase 98: Lifecycle Platform
+  '/api/v1/training/preferences': {
+    GET: { resource: 'training', action: 'read' },
+    POST: { resource: 'training', action: 'write' },
+  },
+  '/api/v1/training/preferences/:id': {
+    DELETE: { resource: 'training', action: 'write' },
+  },
+  '/api/v1/training/preferences/export': {
+    POST: { resource: 'training', action: 'read' },
+  },
+  '/api/v1/training/curated-datasets/preview': {
+    POST: { resource: 'training', action: 'read' },
+  },
+  '/api/v1/training/curated-datasets': {
+    GET: { resource: 'training', action: 'read' },
+    POST: { resource: 'training', action: 'write' },
+  },
+  '/api/v1/training/curated-datasets/:id': {
+    GET: { resource: 'training', action: 'read' },
+    DELETE: { resource: 'training', action: 'write' },
+  },
+  '/api/v1/training/experiments': {
+    GET: { resource: 'training', action: 'read' },
+    POST: { resource: 'training', action: 'write' },
+  },
+  '/api/v1/training/experiments/:id': {
+    GET: { resource: 'training', action: 'read' },
+    PATCH: { resource: 'training', action: 'write' },
+    DELETE: { resource: 'training', action: 'write' },
+  },
+  '/api/v1/training/experiments/diff': {
+    GET: { resource: 'training', action: 'read' },
+  },
+  '/api/v1/training/deploy': {
+    POST: { resource: 'training', action: 'write' },
+  },
+  '/api/v1/training/deploy/rollback': {
+    POST: { resource: 'training', action: 'write' },
+  },
+  '/api/v1/training/model-versions': {
+    GET: { resource: 'training', action: 'read' },
+  },
+  '/api/v1/training/model-versions/:id': {
+    GET: { resource: 'training', action: 'read' },
+  },
+  '/api/v1/training/ab-tests': {
+    GET: { resource: 'training', action: 'read' },
+    POST: { resource: 'training', action: 'write' },
+  },
+  '/api/v1/training/ab-tests/:id': {
+    GET: { resource: 'training', action: 'read' },
+  },
+  '/api/v1/training/ab-tests/:id/complete': {
+    POST: { resource: 'training', action: 'write' },
+  },
+  '/api/v1/training/ab-tests/:id/cancel': {
+    POST: { resource: 'training', action: 'write' },
+  },
+  '/api/v1/training/ab-tests/:id/evaluate': {
+    POST: { resource: 'training', action: 'write' },
+  },
+  '/api/v1/training/side-by-side/rate': {
+    POST: { resource: 'training', action: 'write' },
   },
   // Phase 96: Conversation Analytics
   '/api/v1/analytics/sentiment/:conversationId': {

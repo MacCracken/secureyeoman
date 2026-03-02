@@ -5,7 +5,7 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSE.commercial)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: 10595](https://img.shields.io/badge/Tests-10595-brightgreen.svg)]()
+[![Tests: 12387](https://img.shields.io/badge/Tests-12387-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%20LTS-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
@@ -248,7 +248,7 @@ Always connect AI providers using official API keys from their developer console
 | **Security Testing** | [Security Testing Guide](docs/guides/security-testing.md) |
 | **Troubleshooting** | [Troubleshooting Guide](docs/troubleshooting.md) |
 | **Architecture Overview** | [Architecture](docs/development/architecture.md) |
-| **Architecture Decisions** | [ADRs](docs/adr/) (174 records) |
+| **Architecture Decisions** | [ADRs](docs/adr/) (184 records) |
 | **Roadmap** | [Development Roadmap](docs/development/roadmap.md) |
 | **Changelog** | [CHANGELOG.md](CHANGELOG.md) |
 | **Contributing** | [Contributing Guide](CONTRIBUTING.md) |

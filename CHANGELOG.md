@@ -1,15 +1,39 @@
-## [2026.3.1i] — 2026-03-01
+## [2026.3.1] — 2026-03-01
 
-### Housekeeping
+### Phase 99: Conversation Branching & Replay (ADR 179)
 
-- **Vitest 4 deprecation fix**: Replaced removed `test.poolOptions.forks.singleFork` with top-level `maxWorkers: 1` + `isolate: false` in `vitest.db.config.ts`.
-- **Chat routes fix**: Wrapped `getBrainManager()` call in content guardrail init with try-catch so `hasBrain === false` scenarios don't crash route registration.
+- **Migration 077**: `chat` schema — ALTER `conversations` (add `parent_conversation_id`, `fork_message_index`, `branch_label`), CREATE `replay_jobs` + `replay_results` tables with indexes.
+- **ConversationStorage extended**: `branchFromMessage()` (transactional message copy), `getBranchTree()` (recursive CTE), `getChildBranches()`, `getRootConversation()`, replay job/result CRUD.
+- **BranchingManager**: Branch creation, tree building (walks to root first), single replay (async via `setImmediate`), batch replay, pairwise quality comparison (0.05 tolerance), report generation with win/loss/tie summary.
+- **8 REST endpoints**: `POST .../branch` (201), `GET .../branches`, `GET .../tree`, `POST .../replay` (201), `POST .../replay-batch` (201), `GET /replay-jobs`, `GET /replay-jobs/:id`, `GET /replay-jobs/:id/report`. Auth: `chat:read`/`chat:write`/`chat:execute`.
+- **Dashboard**: Branch indicator (GitBranch icon) on ConversationList for branched conversations. MessageBubble branch button. Chat header Replay + Branch Tree buttons. 4 new lazy-loaded components: `ReplayDialog`, `BranchTreeView` (ReactFlow), `ReplayDiffView` (side-by-side with winner badge), `ReplayBatchPanel`.
+- **Shared types**: `packages/shared/src/types/branching.ts` — `BranchTreeNode`, `ReplayJob`, `ReplayResult`, `ReplayBatchReport`, `ReplayBatchSummary` with Zod schemas.
+- **Tests**: 65 (39 backend + 26 dashboard). **Guide**: `docs/guides/conversation-branching.md`.
 
----
+### Phase 98: LLM Lifecycle Platform (ADR 178)
 
-## [2026.3.1h] — 2026-03-01
+- **Migration 076**: `training` schema — 6 tables: `preference_pairs` (DPO annotation), `curated_datasets` (filtered snapshots), `experiments` (training run registry), `model_versions` (deployment registry), `ab_tests` (A/B model routing), `ab_test_assignments` (per-conversation variant).
+- **PreferenceManager**: DPO preference pair CRUD with source filtering (annotation/comparison/multi_turn), personality scoping, and async JSONL export generator.
+- **DatasetCuratorManager**: Filtered dataset snapshots from conversation data with quality threshold joins, token bounds, date ranges, tool-error exclusion, and JSONL commit to disk.
+- **ExperimentRegistryManager**: Training experiment CRUD with JSONB loss curve append, eval metrics linking, and side-by-side experiment diff computation.
+- **ModelVersionManager**: Transactional model deployment to personalities (deactivate old, insert new, update personality defaultModel) with Ollama alias support and rollback chain.
+- **AbTestManager**: A/B model shadow routing with traffic splitting, consistent per-conversation assignment, quality score aggregation, and statistical winner evaluation.
+- **A/B test chat interception**: Both streaming and non-streaming chat routes override `aiRequest.model` from active A/B test before LLM call.
+- **Side-by-side rating**: Dedicated endpoint converts winner ratings into preference pairs for DPO export.
+- **24 REST endpoints** under `/api/v1/training/*` — preferences CRUD + DPO export, curated datasets preview/commit/CRUD, experiments CRUD + diff, model deploy/rollback/versions, A/B tests CRUD + evaluate/complete/cancel, side-by-side rate. Auth: `training:read`/`training:write`.
+- **Dashboard**: 3 new lazy-loaded sub-tabs in TrainingTab — Preferences (annotation list with source filter, DPO export), Experiments (sortable table, loss curve LineChart, eval metrics RadarChart, diff view), Deployment (version history, deploy/rollback forms, A/B test management with quality metrics).
+- **Tests**: 70 across 5 manager test files.
 
-### Phase 96: Conversation Analytics
+### Phase 97: LLM-as-Judge Evaluation (ADR 177)
+
+- **Migration 075**: `training` schema — 3 tables: `eval_datasets` (versioned with content hash), `eval_scores` (pointwise 5-dimension scores), `pairwise_results` (A/B comparison).
+- **LlmJudgeManager**: Dataset CRUD with SHA-256 content-hash deduplication. Pointwise eval on 5 dimensions (groundedness, coherence, relevance, fluency, harmlessness) scored 1-5 by LLM judge. Pairwise comparison with randomized presentation order to mitigate position bias. Auto-eval gate for finetune deployment gating.
+- **FinetuneManager hook**: Optional `onJobComplete` callback invoked after successful container exit for auto-eval integration.
+- **12 REST endpoints** under `/api/v1/training/judge/*` — dataset CRUD, pointwise eval (202 async), pairwise comparison (202 async), eval run queries, auto-eval trigger. Auth: `training:read`/`training:write`.
+- **Dashboard**: `EvaluationTab` with dataset management, radar chart for 5-dimension scores, stacked bar chart for pairwise win rates, auto-eval threshold configuration. Lazy-loaded from TrainingTab.
+- **Tests**: ~52 across 2 test files.
+
+### Phase 96: Conversation Analytics (ADR 176)
 
 - **Migration 074**: `analytics` schema with 5 tables — `turn_sentiments`, `conversation_summaries`, `conversation_entities`, `key_phrases`, `usage_anomalies`.
 - **Sentiment Analyzer**: Background 5-min interval LLM classification of assistant messages into positive/neutral/negative with confidence scores.
@@ -18,201 +42,122 @@
 - **Engagement Metrics Service**: On-demand SQL queries — avg conversation length, follow-up rate, abandonment rate, tool call success rate.
 - **Usage Anomaly Detector**: In-memory rate tracking with persistent alerts — message rate spikes, off-hours activity, credential stuffing detection.
 - **11 REST endpoints** under `/api/v1/analytics/*` with `analytics:read`/`analytics:write` permissions.
-- **Chat route integration**: Fire-and-forget anomaly detection on every chat response.
-- **Quality scorer integration**: Negative sentiment conversations get training priority boost.
+- **Chat route integration**: Fire-and-forget anomaly detection on every chat response. Negative sentiment conversations get training priority boost.
 - **Dashboard**: New "Analytics" tab in MetricsPage with 5 sub-panels — Sentiment Trend, Engagement Metrics, Topic Cloud, Entity Explorer, Anomaly Alerts.
-- **ADR**: 176. **Tests**: ~140 across 8 test files.
+- **Tests**: ~140 across 8 test files.
 
----
+### Phase 95: Content Guardrails (ADR 174)
 
-## [2026.3.1g] — 2026-03-01
-
-### Provider Keys & Sidebar Reactivity Fixes
-
-- **Sidebar shallow copy mutation fix**: `[...BASE_TOP_ITEMS]` only shallow-copied the array — `chatItem.disabled = true` mutated the original constant objects, permanently disabling Chat/Editor links even after a provider key was added. Fixed by using `BASE_TOP_ITEMS.map(item => ({ ...item }))` to create fresh objects on each render.
-- **Backend model cache invalidation**: Added `clearModelCache()` call to secrets PUT and DELETE routes in `server.ts`. The 10-minute `_dynamicCache` in `cost-calculator.ts` was serving stale (empty) model lists after a provider key was added — now cleared immediately on any secret change.
-- **Frontend `refetchQueries` for model-info**: Changed `invalidateQueries` to `refetchQueries` for the `model-info` query key in `ProviderKeysSettings` save and delete mutations, ensuring an immediate network request instead of relying on stale-time invalidation.
-- **Sidebar `refetchInterval` polling**: Added conditional `refetchInterval` to the model-info query in `Sidebar.tsx` — polls every 3 seconds when no models are available, stops once models appear. Safety net for cross-component reactivity.
-- **Net result**: Adding or removing an AI provider key now immediately enables/disables Chat and Editor sidebar links without a browser refresh.
-
----
-
-## [2026.3.1f] — 2026-03-01
-
-### Theme Rebalancing — 10/10/10
-
-- **Rebalanced theme distribution**: 10 dark free, 10 light free, 10 enterprise + System (31 total, up from 24). Clean 10/10/10 split replaces the previous 6/6/11 imbalance.
-- **Moved to free**: Dracula and Solarized Dark (dark free), Solarized Light and GitHub Light (light free). Popular community themes should not be gated.
-- **New dark themes**: Rosé Pine, Horizon (free).
-- **New light themes**: Catppuccin Latte, Rosé Pine Dawn, Everforest Light, One Light, Ayu Light, Quiet Light, Winter Light (free). CSS variable blocks added for all.
-- **New enterprise themes**: Synthwave, Palenight, Night Owl. All enterprise themes are dark-only.
-- **12 new CSS theme blocks** in `index.css` with full variable coverage (background, foreground, card, popover, primary, secondary, muted, accent, destructive, border, input, ring, success, warning, info).
-- **Tests**: 17 new tests in `useTheme.test.ts` — validates 10/10/10 counts, unique IDs/names, preview hex format, DARK_THEMES set correctness, enterprise flag consistency, and expected theme ID presence.
-- **ADR**: 175.
-
----
-
-## [2026.3.1e] — 2026-03-01
-
-### Phase 95: Content Guardrails
-
-- **`ContentGuardrail` class** (new): Output-side content policy enforcement that runs after ResponseGuard in both streaming and non-streaming chat paths. Six capabilities: PII detection/redaction (email, phone, SSN, credit card, IP), topic restrictions (Jaccard keyword overlap), toxicity filtering (external HTTP classifier, fail-open), custom block lists (plain strings with word boundaries + regex patterns), guardrail audit trail (SHA-256 content hashes), and citation grounding checks against the knowledge base.
+- **`ContentGuardrail` class**: Output-side content policy enforcement after ResponseGuard in both streaming and non-streaming chat paths. Six capabilities: PII detection/redaction (email, phone, SSN, credit card, IP), topic restrictions (Jaccard keyword overlap), toxicity filtering (external HTTP classifier, fail-open), custom block lists (plain strings + regex patterns), guardrail audit trail (SHA-256 content hashes), and citation grounding checks against the knowledge base.
 - **Sync/async split**: `scanSync()` runs PII + block list (<5ms fast path). `scanAsync()` runs topic restriction, toxicity, and grounding. `scan()` combines both with sync-failure short-circuit.
-- **Shared types**: `ContentGuardrailConfigSchema` + `ContentGuardrailPersonalityConfigSchema` in `packages/shared/src/types/content-guardrail.ts`. Added to `SecurityConfigSchema` (global) and `BodyConfigSchema` (per-personality overrides: block list additions, topic additions, PII mode override).
-- **Security policy API**: 10 new `contentGuardrails*` fields in `GET/PATCH /api/v1/security/policy`. `updateSecurityPolicy()` in `secureyeoman.ts` updated with all new fields.
-- **Dashboard**: "Content Guardrails" card in SecuritySettings with master toggle, PII mode selector, toxicity controls (toggle + mode + classifier URL + threshold slider), block list textarea, blocked topics textarea, and grounding controls.
-- **Tests**: 53 new tests in `content-guardrail.test.ts` covering disabled state, PII detect_only (5 types + content hash), PII redact (6 replacement tests), block list (exact match, regex, personality additions, case-insensitive, special chars), topic restriction (keyword overlap, merging, fallback), toxicity (block/warn/audit modes, below threshold, fail-open on error/non-200, disabled/no-URL guards), grounding (quoted citations, [unverified] tagging, block mode, verified pass, disabled/no-brain guards, "according to" extraction), combined scan (short-circuit, merged findings, redact-then-async), audit trail (sync/async events, warn level, no-findings silence), per-personality PII override, and factory. 53 SecuritySettings dashboard tests updated.
-- **ADR**: 174. **Guide**: `docs/guides/content-guardrails.md`.
-
----
-
-## [2026.3.1d] — 2026-03-01
-
-### AI Provider Keys Management & Optional Startup
-
-- **`ProviderKeysSettings` component** (new): Purpose-built UI for managing AI provider API keys in **Administration > Secrets**. Dropdown-first design with 7 known providers (Anthropic, OpenAI, Google/Gemini, Groq, Mistral, DeepSeek, OpenRouter) plus a Custom option for arbitrary env var names. Selecting an unconfigured provider shows numbered help steps, a direct link to the provider's console, and a key input field. Configured providers show a "Replace Key" button and delete option with confirmation dialog. Cancel button resets dropdown and closes the detail panel.
-- **Renamed "API Keys" → "Yeoman API Keys"**: Existing `ApiKeysSettings` heading and description updated to distinguish programmatic API keys from AI provider keys.
-- **Settings tab ordering**: Secrets tab now shows: AI Provider Keys → Yeoman API Keys → Secrets.
-- **Optional AI provider key at startup**: `validateSecrets()` no longer treats missing AI provider keys as fatal. The server starts without them and logs a warning. Chat is disabled in the dashboard until at least one provider key is configured via the new UI or `.env`.
-- **Chat & Editor disabled state**: When no AI models are available (no provider keys configured), the Chat and Editor sidebar links are greyed out and unclickable. The chat page shows a warning banner directing users to Administration > Secrets > AI Provider Keys.
-- **Explicit RBAC for secrets routes**: Added `GET /api/v1/secrets` (`secrets:read`) and `GET/PUT/DELETE /api/v1/secrets/:name` (`secrets:read`/`secrets:write`) to `ROUTE_PERMISSIONS` in `auth-middleware.ts`.
-- **`.env.example` / `.env.dev.example` updated**: AI Providers section comment changed from "at least one required" to "optional — server starts without keys; chat disabled until configured". `ANTHROPIC_API_KEY` line commented out by default.
-- **Tests**: 19 new `ProviderKeysSettings` tests (rendering, dropdown, help steps, save/delete, validation, cancel, exit-without-key). `ApiKeysSettings` test assertions updated for new heading. `loader.test.ts` updated — API key missing test now asserts warning-not-throw; "list all missing secrets" test asserts API key is excluded from error.
-
----
-
-## [2026.3.1c] — 2026-03-01
-
-### Heartbeat Personality Consolidation & Audit Logging
-
-- **Personality field consolidation**: Removed dual-mode personality tracking (`activePersonalityId` + `activePersonalityIds`) from `HeartbeatManager`. `activePersonalityIds` is now the single source of truth. `setActivePersonalityId(id)` delegates to `activePersonalityIds` (wraps into array or clears). Cascading fallback in `logPersonalities` simplified to a single branch.
-- **Audit chain metadata**: Heartbeat audit records now include `activePersonalities` in metadata — an array of personality names (falling back to IDs when names are empty). Shows which personalities were active at each heartbeat in the audit log.
-- **Tests**: 3 new tests for audit chain personality metadata (named personalities, ID fallback, empty array). All 76 heartbeat tests pass.
-
----
-
-## [2026.3.1b] — 2026-03-01
-
-### MCP Tool Gating & Organizational Intent Access
-
-- **CI/CD platform tool gating**: Fixed non-functional CI/CD platform checkboxes in Connections > MCP > Yeoman MCP. Added `GHA_TOOL_PREFIXES`, `JENKINS_TOOL_PREFIXES`, `GITLAB_TOOL_PREFIXES`, `NORTHFLANK_TOOL_PREFIXES` constants and filter logic in `GET /api/v1/mcp/tools`. Added all CI/CD fields to `McpFeatureConfig` interface, defaults, and PATCH route body type.
-- **Knowledge Base tool gating**: All `kb_*` tools now gated behind `exposeKnowledgeBase` toggle. Added `disabled()` guard to all 4 KB tool handlers in `knowledge-base-tools.ts`. Dashboard toggle added in "Knowledge & Intent" section with BookOpen icon.
-- **Organizational Intent tool separation**: Separated `intent_*` tools into their own "Organizational Intent Access" checkbox. Added `INTENT_TOOL_PREFIXES` filter in `mcp-routes.ts`. Dashboard toggle added alongside Knowledge Base in the "Knowledge & Intent" section with Target icon.
-- **8 new intent writing tools**: `intent_list`, `intent_get`, `intent_get_active`, `intent_create`, `intent_update`, `intent_activate`, `intent_delete`, `intent_enforcement_log` — full CRUD + enforcement log access for organizational intent documents via MCP. All gated by `exposeOrgIntentTools` with `disabled()` guard.
-- **Audit chain fix**: Fixed audit chain breaking after first cycle — PostgreSQL `pg` driver returns BIGINT `timestamp` column as strings. Hash computed at write time with numeric timestamp vs. verify time with string timestamp caused mismatch. Fixed `rowToEntry()` in `sqlite-storage.ts` to cast: `typeof row.timestamp === 'string' ? Number(row.timestamp) : row.timestamp`.
-- **Security > Automations workflow gating**: Workflow tab now hidden when `allowWorkflows` is false in security policy. `AutomationsSecurityTab` accepts `allowWorkflows` prop; `visibleViews` array computed dynamically. Fallback `useEffect` redirects from hidden workflows view.
-- **Security > Autonomy overview workflow gating**: Autonomy overview endpoint skips workflow query when `allowWorkflows` is false. Added `getAllowWorkflows` getter to `AutonomyRoutesOptions`; wired in `server.ts`.
-- **Audit Wizard theme fix**: Replaced undefined `.input` CSS class with proper theme-aware Tailwind classes (`border-input bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary`).
-- **Tests**: 24 new MCP tests (13 intent-tools + 11 KB-tools with config param fix). SecurityPage tests updated: 2 workflow tests now set `allowWorkflows: true`; 1 new test verifying workflows hidden when disabled. ConnectionsPage test mock updated with `exposeKnowledgeBase`.
-
----
-
-## [2026.3.1] — 2026-03-01
-
-### Editor Unification & Canvas Re-gate (ADR 173)
-
-- **Unified editor**: Features from `AdvancedEditorPage` (the terminal-only workspace gated by `allowAdvancedEditor`) are merged into the standard `/editor` page so every user gets the full feature set.
-- **`MultiTerminal`** — tabbed terminal panel with up to 4 named tabs replaces the single-terminal panel. Each tab maintains independent command history, output buffer, and running state.
-- **Memory toggle** (Brain icon in toolbar) — when enabled, each completed terminal command is auto-saved to the personality's episodic memory via `addMemory()`. Toggle persists to `localStorage`. Activates/deactivates per session without a reload.
-- **Model selector** (CPU icon in toolbar) — shows the current model. Opening the popup renders `ModelWidget` inline. Selecting a personality with a `defaultModel` auto-switches the model via `switchModel()`.
-- **Agent World panel** (Globe icon in toolbar) — collapsible panel below the main editor/chat row. Grid / Map / Large view switcher. View mode and open/closed state persist to `localStorage`.
-- **Canvas re-gate**: `allowAdvancedEditor` security policy flag now redirects to the Canvas workspace (formerly `CanvasEditorPage`) instead of the old terminal-only workspace. Canvas is the appropriate "advanced" mode to gate for resource-constrained or security-sensitive deployments.
-- **Directory rename**: `components/CanvasEditor/` → `components/AdvancedEditor/`. Exported component `CanvasEditorPage` → `AdvancedEditorPage`. Route `/editor/canvas` → `/editor/advanced`. "Canvas Mode →" toolbar link updated accordingly.
-- **Old files deleted**: `AdvancedEditorPage.tsx` (terminal workspace, now merged) and its test file removed; `CanvasEditorPage.tsx` renamed in place.
-- **`EditorPage.tsx` test file** updated: mocks for `ModelWidget`, `AgentWorldWidget`, `addMemory`, `fetchModelInfo`, `switchModel` added. Mock path for `AdvancedEditorPage` updated to `./AdvancedEditor/AdvancedEditorPage`. All 10 EditorPage tests pass; 8 canvas-layout tests unaffected.
-- **ADR 173** (`docs/adr/173-editor-unification.md`). **Canvas guide** updated: route references changed from `/editor/canvas` to `/editor/advanced`.
-
----
-
-### Dual Licensing — AGPL-3.0 + Commercial (ADR 171)
-
-- **License change**: Project relicensed from MIT to **AGPL-3.0** (open-source) + **proprietary commercial license** (`LICENSE.commercial`). Closes the SaaS loophole — anyone offering SecureYeoman as a hosted service must publish modifications or purchase a commercial license.
-- **`LicenseManager`** (`packages/core/src/licensing/license-manager.ts`): Offline Ed25519 license key validation. No network call. Key format: `<header>.<payload>.<signature>` (base64url). Exposes `getTier()`, `hasFeature()`, `getClaims()`, `isValid()`, `getParseError()`, `toStatusObject()`.
-- **Enterprise features** (instrumented, not yet hard-gated — see roadmap): `adaptive_learning`, `sso_saml`, `multi_tenancy`, `cicd_integration`, `advanced_observability`.
-- **`scripts/generate-license-key.ts`**: Maintainer tool. `--init` generates Ed25519 keypair. Key issuance via `--org`, `--tier`, `--seats`, `--features`, `--expires` flags.
-- **License routes**: `GET /api/v1/license/status`, `POST /api/v1/license/key` (hot-swap without restart). Auth: `license:read` / `license:write`.
-- **`SecureYeoman`**: `licenseManager` field + `getLicenseManager()` + `reloadLicenseKey()`. Reads `SECUREYEOMAN_LICENSE_KEY` env var at startup.
-- **CLI**: `secureyeoman license status` and `secureyeoman license set <key>` (alias: `lic`).
-- **Dashboard**: License card in **Settings → General**. Shows tier, org, seats, expiry, feature chips. Password input for live key update.
-- **All `package.json`**: `"license": "AGPL-3.0-only"`. **README**: badges + Licensing section. **CONTRIBUTING.md**: CLA section.
-- **Tests**: `license-manager.test.ts` (20 tests — community tier, enterprise key, all features, expiry, bad signature, malformed).
-- **ADR 171** (`docs/adr/171-dual-licensing.md`). **Guide** `docs/guides/licensing.md`.
-
----
-
-### Phase 89 — Marketplace Shareables (ADR 172)
-
-- **Workflow export/import**: `GET /api/v1/workflows/:id/export` returns `{ exportedAt, requires: { integrations?, tools? }, workflow }`. `requires` is inferred automatically — integration keywords (`gmail`, `github`, `slack`, etc.) from step config strings; MCP tool names from `step.config.toolName`. `POST /api/v1/workflows/import` creates a definition with `source='imported'` and returns `{ definition, compatibility }`. Imports are non-blocking; compatibility gaps are surfaced as warnings.
-- **Swarm template export/import**: `GET /api/v1/agents/swarms/templates/:id/export` returns `{ exportedAt, requires: { profileRoles }, template }`. `profileRoles` inferred from `roles[].profileName`. `POST /api/v1/agents/swarms/templates/import` creates template and returns `{ template, compatibility }`.
-- **Profile skills CRUD**: New routes `GET/POST /api/v1/agents/profiles/:id/skills` and `DELETE /api/v1/agents/profiles/:id/skills/:skillId`. Skills are stored in new `agents.profile_skills` junction table (`072_shareables.sql`). During swarm execution, `SwarmManager.buildContextWithProfileSkills()` injects installed skills into each role's context before delegation.
-- **Community sync extension**: `MarketplaceManager.syncFromCommunity()` now walks `workflows/` and `swarms/` directories in the community repo (in addition to `skills/`). `CommunitySyncResult` gains `workflowsAdded`, `workflowsUpdated`, `swarmsAdded`, `swarmsUpdated` counters. Optional `workflowManager` and `swarmManager` deps added to `MarketplaceManagerDeps`.
-- **Migration `072_shareables.sql`**: Adds `source TEXT NOT NULL DEFAULT 'user'` and `requires_json JSONB` columns to `workflow.definitions` and `agents.swarm_templates`. Updates existing builtins. Creates `agents.profile_skills` (profile_id FK + skill_id FK, timestamped junction) with index on `profile_id`.
-- **Shared types** (`packages/shared/src/types/shareables.ts`): `WorkflowShareableRequires`, `SwarmTemplateRequires`, `CompatibilityCheckResult`, `WorkflowExport`, `SwarmTemplateExport` exported from `@secureyeoman/shared`.
-- **Dashboard type tabs**: Marketplace page gains a type selector row — **Skills / Workflows / Swarm Templates** — above the existing community/all/installed origin tabs. Workflow and swarm template views are lazy-loaded via `React.lazy`.
-- **`WorkflowsTab`**: Lists community workflows via `GET /api/v1/workflows?source=community`. Cards show name, description, autonomyLevel badge, step count. Export button downloads JSON; Install button calls export then import with compatibility warning display.
-- **`SwarmTemplatesTab`**: Lists community swarm templates. Cards show name, description, strategy badge, and role pills. Same Export + Install pattern.
-- **Profile skills section in SubAgentsPage**: Each agent profile card in **Sub-Agents → Profiles** gains a collapsible **Skills** section. Lists installed skills, supports adding from the marketplace catalog, and removes individual skills.
-- **Community repo content**: 3 workflow JSONs (`daily-morning-brief.json`, `content-review-gate.json`, `research-report-pipeline.json`) and 2 swarm template JSONs (`security-audit-team.json`, `full-stack-dev-crew.json`) added to the `secureyeoman-community-skills` repository. JSON Schema Draft-07 schemas added (`schema/workflow.schema.json`, `schema/swarm-template.schema.json`).
-- **Tests**: 62 new tests across 6 new test files (`workflow-routes-export.test.ts`, `swarm-routes-export.test.ts`, `profile-skills-routes.test.ts`, `marketplace-shareables.test.ts`, `WorkflowsTab.test.tsx`, `SwarmTemplatesTab.test.tsx`). `SubAgentsPage.test.tsx` updated with new API mock entries.
-- **ADR 172** (`docs/adr/172-marketplace-shareables.md`). **Guide** `docs/guides/shareables.md`.
-
----
-
-### Phase 78b — Canvas Workspace: Infinite Desktop (ADR 171)
-
-- **`/editor/canvas` route** — `CanvasEditorPage` replaces the old Phase 78 "full IDE" concept with an infinite canvas desktop. `/editor` (basic Monaco + terminal) is unchanged; EditorPage gains a "Canvas Mode →" link.
-- **ReactFlow canvas** — All widgets are `canvasWidget` custom ReactFlow nodes. `CanvasWidget.tsx` provides window chrome: drag handle (title bar), inline title editing (double-click), minimize (collapses to 36px title bar), fullscreen overlay (`role="dialog" aria-modal`), close (×), and resize via `NodeResizer`.
-- **11 widget types**: `terminal`, `editor`, `frozen-output`, `agent-world`, `chat`, `task-kanban`, `training-live`, `mission-card`, `git-panel`, `pipeline`, `cicd-monitor`.
-- **TerminalWidget** — Tech-stack hint strip from `GET /api/v1/terminal/tech-stack` (detected stacks + allowed commands). Command history (Up/Down arrows). "📌 Pin Output" creates a `frozen-output` node adjacent to the terminal. Worktree selector dropdown.
-- **TrainingLiveNode** — Extracts `LiveTab` SSE logic from `TrainingTab.tsx`; standalone rolling loss/reward charts + throughput/agreement KPIs + Score Now button.
-- **PipelineWidget** — Recent run picker + live step-status list; polls every 2s while running.
-- **CicdMonitorWidget** — Calls existing Phase-90 MCP tools (`gha_list_runs`, `jenkins_list_builds`) for live CI event display.
-- **ChatWidget** — Inline AI chat via `useChatStream`; embedded in any canvas position.
-- **FrozenOutputWidget** — Read-only pinned terminal output with command, exit code, and timestamp.
-- **WidgetCatalog** — Slide-in drawer grouping 11 widget types by category (Development Tools / AI & Agents / Monitoring / Pipelines). New nodes spawn at viewport center + random offset to avoid stacking.
-- **Layout persistence** — `canvas-layout.ts` serializes `Node<CanvasWidgetData>[]` + viewport to `localStorage('canvas:workspace')`; auto-saved (debounced 1s) on node change, manual Save button also available.
-- **`GET /api/v1/terminal/tech-stack`** — Scans `cwd` for 8 indicator files (package.json, Cargo.toml, pyproject.toml/requirements.txt, go.mod, pom.xml/build.gradle, Gemfile, docker-compose.yml, .git). Returns `{ stacks, allowedCommands }` — union of per-stack commands + 17 always-available common utilities.
-- **Command allowlist enforcement** in `POST /api/v1/terminal/execute` — New optional body fields `allowedCommands?: string[]` and `override?: boolean`. If `allowedCommands` present and base command not in list: 403 `{ blocked: true, command, error }`. If `override: true`: audit warn event `terminal_override` + executes.
-- **Git worktree CRUD** (`packages/core/src/gateway/worktree-routes.ts`): `POST /api/v1/terminal/worktrees` (creates `.worktrees/<name>`), `GET /api/v1/terminal/worktrees` (parses git porcelain), `DELETE /api/v1/terminal/worktrees/:id` (force remove + branch delete). Names/IDs validated: alphanumeric, dash, underscore only.
-- **Auth middleware** — 3 new route entries: `tech-stack` (execution:read), `worktrees` GET (execution:read) / POST (execution:execute), `worktrees/:id` DELETE (execution:execute).
-- **Dashboard API client** — `fetchTechStack()`, `listWorktrees()`, `createWorktree()`, `deleteWorktree()`. `executeTerminalCommand()` extended with optional `allowedCommands` and `override` params.
-- **Tests** — `worktree-routes.test.ts` (14 tests): POST creates / generates name / creates dir / validates name / handles git error; GET filters to .worktrees dir / handles git failure; DELETE returns 204 / validates id / handles failure.
-- **ADR 171** (`docs/adr/171-canvas-workspace.md`). **Guide** `docs/guides/canvas-workspace.md`.
-
----
+- **Shared types**: `ContentGuardrailConfigSchema` + `ContentGuardrailPersonalityConfigSchema`. Added to `SecurityConfigSchema` (global) and `BodyConfigSchema` (per-personality overrides).
+- **Security policy API**: 10 new `contentGuardrails*` fields in `GET/PATCH /api/v1/security/policy`.
+- **Dashboard**: "Content Guardrails" card in SecuritySettings with master toggle, PII mode selector, toxicity controls, block list/topics textareas, and grounding controls.
+- **Tests**: 53 new in `content-guardrail.test.ts`. **Guide**: `docs/guides/content-guardrails.md`.
 
 ### Phase 92 — Adaptive Learning Pipeline (ADR 170)
 
-- **Priority-weighted distillation sampling**: Three `priorityMode` values added to `DistillationJobConfig`: `failure-first` (low quality_score first via JOIN on `training.conversation_quality`), `success-first` (reverse order), `uniform` (unchanged default). Quality join uses `COALESCE(cq.quality_score, 0.5) ASC/DESC`.
-- **Curriculum ordering** (`curriculumMode: true`): Conversations binned into 4 complexity stages by message count. Stage 1 (≤4 msgs) processed at 25% quota first, then stages 2–4. Enables simple→complex training progression.
-- **Counterfactual synthetic data** (`counterfactualMode: true`): After normal quota, conversations from failed pipeline runs are re-submitted to the teacher LLM with a recovery system prompt. Synthetic samples tagged `"synthetic": true` in JSONL metadata. Capped by `maxCounterfactualSamples` (default 50).
-- **Factored tool-call evaluation metrics**: `EvaluationManager.runEvaluation()` now computes `tool_name_accuracy` (correct tool selected), `tool_arg_match` (avg per-argument precision), `outcome_correctness` (optional sandbox), `semantic_similarity` (optional Ollama embeddings + cosine similarity). New exported helpers: `parseToolCall()`, `computeToolNameAccuracy()`, `computeToolArgMatch()`, `cosineSimilarity()`, `computeSemanticSimilarity()`.
-- **`TrainingStreamBroadcaster`** (`training-stream.ts`): Singleton `EventEmitter`. `DistillationManager` emits `throughput` + `agreement` events every 10 samples. Training routes emit `reward` on computer-use episode record.
-- **`ConversationQualityScorer`**: Background service scoring new conversations every 5 minutes. Formula: `0.5 - 0.30*(outcome=failed) - 0.15*n_correction_phrases - 0.10*max(0, inj-0.5)`. `applyPrefailureBoost()` called from pipeline-lineage on failure. Exposed via `secureYeoman.getConversationQualityScorer()`.
-- **`ComputerUseManager`**: CRUD for RL episodes (`training.computer_use_episodes`). `recordEpisode()`, `listEpisodes()`, `getSessionStats()`, `getSkillBreakdown()`, `deleteEpisode()`, `exportEpisodes()` (paginated JSONL generator). Exposed via `secureYeoman.getComputerUseManager()`.
-- **Migrations**: `070_conversation_quality.sql` (quality scores + `idx_conv_quality_score`), `071_computer_use_episodes.sql` (episode storage + 3 indexes).
-- **New training routes** (`GET /api/v1/training/stream` SSE, `/quality`, `/quality/score`, `/computer-use/episodes` GET/POST, `/computer-use/stats`, `/computer-use/episodes/:id` DELETE). `POST /api/v1/training/export` gains `format: 'computer_use'` support.
-- **Auth middleware**: 6 new route entries under `training:read` / `training:write`.
-- **Dashboard TrainingTab**: Two new sub-tabs — **Live** (SSE EventSource, rolling LineChart for loss + reward, throughput/agreement KPIs, quality heatmap) and **Computer Use** (stat cards, skill breakdown table, session replay viewer). Distillation create form gains Priority Mode select, Curriculum/Counterfactual checkboxes. New `EvalResultRadarCard` (recharts RadarChart with 4 factored-metric axes).
-- **Dashboard API client**: `fetchTrainingStream()`, `fetchQualityScores()`, `triggerQualityScoring()`, `recordComputerUseEpisode()`, `fetchComputerUseEpisodes()`, `fetchComputerUseStats()`, `deleteComputerUseEpisode()`. `CreateDistillationJobRequest` extended with new fields.
-- **Tests**: 222 total training tests. New files: `conversation-quality-scorer.test.ts` (16), `computer-use-manager.test.ts` (17), `training-phase92-routes.test.ts` (20). Extended: `distillation-manager.test.ts` (+12 → 25 total), `evaluation-manager.test.ts` (+24 → 37 total).
-- **ADR 170** (`docs/adr/170-adaptive-learning-pipeline.md`). **Guide** `docs/guides/adaptive-learning-pipeline.md`.
+- **Priority-weighted distillation**: Three `priorityMode` values (`failure-first`, `success-first`, `uniform`) via JOIN on `training.conversation_quality`. Curriculum ordering bins conversations into 4 complexity stages. Counterfactual synthetic data re-submits failed conversations to teacher LLM.
+- **Factored tool-call evaluation metrics**: `tool_name_accuracy`, `tool_arg_match`, `outcome_correctness` (optional sandbox), `semantic_similarity` (optional Ollama embeddings).
+- **`TrainingStreamBroadcaster`**: Singleton EventEmitter; `DistillationManager` emits `throughput` + `agreement` events every 10 samples.
+- **`ConversationQualityScorer`**: Background 5-min scoring service. `applyPrefailureBoost()` from pipeline-lineage on failure.
+- **`ComputerUseManager`**: CRUD for RL episodes with JSONL export generator.
+- **Migrations**: `070_conversation_quality.sql`, `071_computer_use_episodes.sql`.
+- **New training routes**: SSE stream, quality scoring, computer-use CRUD, `format: 'computer_use'` export.
+- **Dashboard TrainingTab**: Two new sub-tabs — **Live** (SSE loss/reward charts, throughput/agreement KPIs) and **Computer Use** (stat cards, skill breakdown, session replay).
+- **Tests**: 222 total training tests. **Guide**: `docs/guides/adaptive-learning-pipeline.md`.
 
----
+### Phase 89 — Marketplace Shareables (ADR 172)
 
-### Codebase Refactor Audit — Benchmarks, Shared Helpers & Type Extraction (ADR 169)
+- **Workflow export/import**: `GET /api/v1/workflows/:id/export` with auto-inferred `requires`. `POST /api/v1/workflows/import` creates with compatibility warnings.
+- **Swarm template export/import**: Same pattern with `profileRoles` inference.
+- **Profile skills CRUD**: `agents.profile_skills` junction table (migration `072_shareables.sql`). Skills injected into swarm role context during execution.
+- **Community sync extension**: Walks `workflows/` and `swarms/` directories in addition to `skills/`.
+- **Dashboard**: Marketplace page type selector (Skills / Workflows / Swarm Templates). `WorkflowsTab`, `SwarmTemplatesTab`, profile skills section in SubAgentsPage.
+- **Tests**: 62 across 6 files. **Guide**: `docs/guides/shareables.md`.
 
-- **Performance benchmarks**: `vitest bench` infrastructure added. `input-validator.bench.ts` covers clean/attack/size-limit paths. `workflow-engine.bench.ts` covers topology sort, template resolution, and condition compilation. Run via `npm run bench` in `packages/core`.
-- **Shared OAuth fetch helper** (`packages/core/src/integrations/oauth-fetch.ts`): `fetchWithOAuthRetry()` + `createApiErrorFormatter()` replace ≈80 lines of duplicated 401-retry and error-formatting code in `github-api-routes.ts` and `gmail-routes.ts`.
-- **WorkflowEngine condition compile cache**: `evaluateCondition()` now caches compiled `new Function()` results in an instance-level `Map`. Repeated identical expressions (common in polling/recurring workflows) compile only once.
-- **MCP `registerApiProxyTool()` factory** (`packages/mcp/src/tools/tool-utils.ts`): Eliminates `server.registerTool` + `wrapToolHandler` + `JSON.stringify` boilerplate. 13 GitHub tools and 7 Gmail tools converted to factory registration.
-- **`DocumentManager` constructor normalised**: `brainManager` and `storage` moved into `DocumentManagerDeps`; constructor changed to `(deps: DocumentManagerDeps)`, consistent with all other managers.
-- **WorkflowTemplates step builders**: 5 builder helpers (`agentStep`, `transformStep`, `resourceStep`, `webhookStep`, `swarmStep`) replace verbose inline step objects. Templates 1–2 refactored.
-- **`ValidationResult`/`ValidationWarning`/`ValidationContext` moved to shared**: Now exported from `@secureyeoman/shared` — MCP and other consumers can import without a core dependency.
-- **`presets.ts` dynamic `mcpFeatures`**: `BASE_BODY.mcpFeatures` now derived from `McpFeaturesSchema.parse({})`. New feature flags are automatically included without manual updates.
-- **Generic `withRetry<T>()` utility** added to `packages/core/src/ai/retry-manager.ts`: Jittered exponential backoff for any async operation. Accepts optional `shouldRetry` predicate; defaults to network-error heuristic (ECONNRESET, 502/503, timeout).
-- **Phase XX roadmap entry added**: Validate workflow condition strings at save time; injection detection early-exit after first blocking match.
-- **ADR 169**: `docs/adr/169-codebase-refactor-audit.md`.
+### Phase 78b — Canvas Workspace: Infinite Desktop (ADR 171)
+
+- **`/editor/canvas` route**: ReactFlow infinite canvas with `CanvasWidget` window chrome (drag, title edit, minimize, fullscreen, close, resize).
+- **11 widget types**: `terminal`, `editor`, `frozen-output`, `agent-world`, `chat`, `task-kanban`, `training-live`, `mission-card`, `git-panel`, `pipeline`, `cicd-monitor`.
+- **Terminal enhancements**: Tech-stack hint strip, command history, "Pin Output" to frozen node, worktree selector.
+- **Layout persistence**: `canvas-layout.ts` auto-saves to localStorage (debounced 1s).
+- **`GET /api/v1/terminal/tech-stack`**: Scans `cwd` for 8 indicator files, returns detected stacks + allowed commands.
+- **Command allowlist enforcement** with optional `override` (audit event `terminal_override`).
+- **Git worktree CRUD**: `POST/GET/DELETE /api/v1/terminal/worktrees`.
+- **Tests**: 14 worktree-routes tests. **Guide**: `docs/guides/canvas-workspace.md`.
+
+### Codebase Refactor Audit (ADR 169)
+
+- **Performance benchmarks**: `vitest bench` for `input-validator` and `workflow-engine`.
+- **Shared OAuth fetch helper**: `fetchWithOAuthRetry()` + `createApiErrorFormatter()` deduplicate ~80 lines across GitHub and Gmail routes.
+- **WorkflowEngine condition compile cache**: Instance-level `Map` for `new Function()` results.
+- **MCP `registerApiProxyTool()` factory**: 20 tools converted to factory registration.
+- **`DocumentManager` constructor normalised** to `(deps: DocumentManagerDeps)` pattern.
+- **WorkflowTemplates step builders**: 5 helpers (`agentStep`, `transformStep`, `resourceStep`, `webhookStep`, `swarmStep`).
+- **Shared types**: `ValidationResult`/`ValidationWarning`/`ValidationContext` moved to `@secureyeoman/shared`.
+- **Generic `withRetry<T>()` utility**: Jittered exponential backoff for any async operation.
+
+### Editor Unification & Canvas Re-gate (ADR 173)
+
+- **Unified editor**: MultiTerminal (4 tabs), Memory toggle, Model selector, Agent World panel merged into standard `/editor`.
+- **Canvas re-gate**: `allowAdvancedEditor` now gates Canvas workspace at `/editor/advanced`.
+- **Directory rename**: `CanvasEditor/` → `AdvancedEditor/`. Route `/editor/canvas` → `/editor/advanced`.
+
+### Dual Licensing — AGPL-3.0 + Commercial (ADR 171)
+
+- **License change**: MIT → **AGPL-3.0** + proprietary commercial license. Closes SaaS loophole.
+- **`LicenseManager`**: Offline Ed25519 license key validation (`getTier()`, `hasFeature()`, `getClaims()`).
+- **Enterprise features**: `adaptive_learning`, `sso_saml`, `multi_tenancy`, `cicd_integration`, `advanced_observability` (instrumented, not yet hard-gated).
+- **`scripts/generate-license-key.ts`**: Maintainer tool for keypair generation and key issuance.
+- **License routes**: `GET /api/v1/license/status`, `POST /api/v1/license/key` (hot-swap). CLI: `secureyeoman license status|set`.
+- **Dashboard**: License card in Settings → General. **Tests**: 20 in `license-manager.test.ts`. **Guide**: `docs/guides/licensing.md`.
+
+### Theme Rebalancing — 10/10/10 (ADR 175)
+
+- **Rebalanced**: 10 dark free, 10 light free, 10 enterprise + System (31 total). Dracula, Solarized moved to free.
+- **New themes**: Rosé Pine, Horizon, Catppuccin Latte, Rosé Pine Dawn, Everforest Light, One Light, Ayu Light, Quiet Light, Winter Light (free). Synthwave, Palenight, Night Owl (enterprise).
+- **12 new CSS theme blocks** with full variable coverage. **Tests**: 17 in `useTheme.test.ts`.
+
+### AI Provider Keys Management & Optional Startup
+
+- **`ProviderKeysSettings` component**: Dropdown-first UI for 7 known providers + Custom. Help steps, direct console links, replace/delete with confirmation.
+- **Optional AI provider key at startup**: Server starts without AI keys; chat disabled until configured.
+- **Chat & Editor disabled state**: Sidebar links greyed out when no models available. Chat page shows warning banner.
+- **Explicit RBAC for secrets routes**. **Tests**: 19 new ProviderKeysSettings tests.
+
+### MCP Tool Gating & Organizational Intent Access
+
+- **CI/CD platform tool gating**: Fixed non-functional checkboxes. Added prefix constants and filter logic.
+- **Knowledge Base tool gating**: `kb_*` tools gated behind `exposeKnowledgeBase` toggle.
+- **8 new intent MCP tools**: Full CRUD + enforcement log for organizational intent documents, gated by `exposeOrgIntentTools`.
+- **Audit chain fix**: PostgreSQL BIGINT `timestamp` string→number cast mismatch.
+- **Security > Automations/Autonomy workflow gating**: Hidden when `allowWorkflows` is false. Audit Wizard theme fix.
+- **Tests**: 24 new MCP tests.
+
+### Heartbeat Personality Consolidation & Audit Logging
+
+- **Personality field consolidation**: `activePersonalityIds` is now the single source of truth. Audit records include `activePersonalities` metadata.
+- **Tests**: 3 new (76 total heartbeat tests pass).
+
+### Provider Keys & Sidebar Reactivity Fixes
+
+- **Sidebar shallow copy mutation fix**: `BASE_TOP_ITEMS.map(item => ({ ...item }))` prevents permanent disable.
+- **Backend model cache invalidation**: `clearModelCache()` on secret change.
+- **Frontend `refetchQueries`** for model-info on save/delete. **Sidebar `refetchInterval`** polling (3s) when no models.
+- **Net result**: Provider key changes immediately enable/disable Chat and Editor links.
+
+### Housekeeping
+
+- **Vitest 4 deprecation fix**: `maxWorkers: 1` + `isolate: false` replaces removed `singleFork`.
+- **Chat routes fix**: `getBrainManager()` wrapped in try-catch for `hasBrain === false` scenarios.
+
+### Testing Sweep & Dashboard Fixes
+
+- **~1,060 new unit tests** across 16 core domains: agents, ai, backup, body, brain, browser, cli, gateway, integrations, licensing, logging, multimodal, notifications, security, soul, spirit.
+- **Vitest config refinement**: Narrowed brain DB glob to 4 specific files — new pure-unit brain tests run in parallel pool.
+- **Dashboard test fixes** (Sidebar, MetricsPage, SkillsPage, a11y): Missing mocks for `fetchModelInfo`, `fetchWorkflows`, `fetchSwarmTemplates`, `fetchLicenseStatus` and 6 others. Updated assertions for page rename ("Skills"→"Catalog"), heading changes, and tab count (3→4).
+- **Dashboard total**: 927 tests, 61 files, 0 failures.
 
 ---
 

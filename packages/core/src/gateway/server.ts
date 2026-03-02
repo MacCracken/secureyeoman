@@ -57,6 +57,7 @@ import { registerMarketplaceRoutes } from '../marketplace/marketplace-routes.js'
 import { registerTerminalRoutes } from './terminal-routes.js';
 import { registerWorktreeRoutes } from './worktree-routes.js';
 import { registerConversationRoutes } from '../chat/conversation-routes.js';
+import { registerBranchingRoutes } from '../chat/branching-routes.js';
 import { registerAgentRoutes } from '../agents/agent-routes.js';
 import { registerSwarmRoutes } from '../agents/swarm-routes.js';
 import { registerProfileSkillsRoutes } from '../agents/profile-skills-routes.js';
@@ -725,6 +726,16 @@ export class GatewayServer {
       }
     } catch {
       // Conversation storage may not be available — skip routes
+    }
+
+    // Branching & replay routes (Phase 99)
+    try {
+      const branchingManager = this.secureYeoman.getBranchingManager();
+      if (branchingManager) {
+        registerBranchingRoutes(this.app, { branchingManager });
+      }
+    } catch {
+      // Branching manager may not be available — skip routes
     }
 
     // Agent delegation routes

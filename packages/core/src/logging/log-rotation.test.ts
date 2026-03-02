@@ -112,5 +112,115 @@ describe('LogRotator', () => {
       const rotator = new LogRotator();
       expect(rotator.cleanup(join(tmpDir, 'nope'))).toBe(0);
     });
+
+    it('should skip files that do not match rotated timestamp pattern', () => {
+      const rotator = new LogRotator({ retentionDays: 1 });
+
+      // Create a regular file that does NOT have a timestamp suffix
+      const regularFile = join(tmpDir, 'app.log');
+      writeFileSync(regularFile, 'current');
+      const oldDate = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+      utimesSync(regularFile, oldDate, oldDate);
+
+      // Create a file with a non-matching name pattern
+      const otherFile = join(tmpDir, 'notes.txt');
+      writeFileSync(otherFile, 'random');
+      utimesSync(otherFile, oldDate, oldDate);
+
+      const removed = rotator.cleanup(tmpDir);
+      expect(removed).toBe(0);
+      expect(existsSync(regularFile)).toBe(true);
+      expect(existsSync(otherFile)).toBe(true);
+    });
+
+    it('does not remove rotated files within retention window', () => {
+      const rotator = new LogRotator({ retentionDays: 30 });
+
+      // Create a rotated file that is recent (should NOT be removed)
+      const recentRotated = join(tmpDir, 'app.log.2026-03-01T10-30-00-000Z');
+      writeFileSync(recentRotated, 'data');
+      // It was just created, so mtime is now, well within 30 days
+
+      const removed = rotator.cleanup(tmpDir);
+      expect(removed).toBe(0);
+      expect(existsSync(recentRotated)).toBe(true);
+    });
+
+    it('handles compressed (.gz) rotated files', () => {
+      const rotator = new LogRotator({ retentionDays: 7 });
+
+      const oldGz = join(tmpDir, 'app.log.2024-06-15T12-00-00-000Z.gz');
+      writeFileSync(oldGz, 'compressed');
+      const oldDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      utimesSync(oldGz, oldDate, oldDate);
+
+      const removed = rotator.cleanup(tmpDir);
+      expect(removed).toBe(1);
+      expect(existsSync(oldGz)).toBe(false);
+    });
+
+    it('handles multiple old rotated files', () => {
+      const rotator = new LogRotator({ retentionDays: 1 });
+      const oldDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+
+      const file1 = join(tmpDir, 'app.log.2024-01-01T00-00-00-000Z');
+      const file2 = join(tmpDir, 'app.log.2024-01-02T00-00-00-000Z');
+      const file3 = join(tmpDir, 'app.log.2024-01-03T00-00-00-000Z');
+      writeFileSync(file1, 'old1');
+      writeFileSync(file2, 'old2');
+      writeFileSync(file3, 'old3');
+      utimesSync(file1, oldDate, oldDate);
+      utimesSync(file2, oldDate, oldDate);
+      utimesSync(file3, oldDate, oldDate);
+
+      const removed = rotator.cleanup(tmpDir);
+      expect(removed).toBe(3);
+    });
+  });
+
+  describe('constructor defaults', () => {
+    it('uses sensible defaults when no config is provided', () => {
+      const rotator = new LogRotator();
+      // We cannot inspect private config directly, but we can verify behavior:
+      // A small fresh file should not need rotation (default maxSizeBytes=50MB, maxAgeDays=1)
+      const filePath = join(tmpDir, 'default.log');
+      writeFileSync(filePath, 'small');
+      expect(rotator.needsRotation(filePath)).toBe(false);
+    });
+
+    it('accepts partial config, using defaults for omitted fields', () => {
+      const rotator = new LogRotator({ maxSizeBytes: 10 });
+      const filePath = join(tmpDir, 'partial.log');
+      writeFileSync(filePath, 'this is bigger than 10 bytes');
+      expect(rotator.needsRotation(filePath)).toBe(true);
+    });
+  });
+
+  describe('needsRotation — edge cases', () => {
+    it('returns true when file size equals maxSizeBytes exactly', () => {
+      const rotator = new LogRotator({ maxSizeBytes: 5, maxAgeDays: 999 });
+      const filePath = join(tmpDir, 'exact.log');
+      writeFileSync(filePath, '12345'); // exactly 5 bytes
+      expect(rotator.needsRotation(filePath)).toBe(true);
+    });
+
+    it('returns false when file size is one byte below threshold', () => {
+      const rotator = new LogRotator({ maxSizeBytes: 10, maxAgeDays: 999 });
+      const filePath = join(tmpDir, 'below.log');
+      writeFileSync(filePath, '123456789'); // 9 bytes, below 10
+      expect(rotator.needsRotation(filePath)).toBe(false);
+    });
+  });
+
+  describe('rotate — timestamp format', () => {
+    it('rotated file path contains an ISO-like timestamp', async () => {
+      const rotator = new LogRotator({ compressRotated: false });
+      const filePath = join(tmpDir, 'ts.log');
+      writeFileSync(filePath, 'data');
+
+      const rotatedPath = await rotator.rotate(filePath);
+      // Should match pattern like ts.log.2026-03-01T...
+      expect(rotatedPath).toMatch(/ts\.log\.\d{4}-\d{2}-\d{2}T/);
+    });
   });
 });

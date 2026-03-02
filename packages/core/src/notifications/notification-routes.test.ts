@@ -238,3 +238,154 @@ describe('DELETE /api/v1/notifications/:id', () => {
     expect(res.statusCode).toBe(500);
   });
 });
+
+// ── Additional branch coverage tests ─────────────────────────────────────────
+
+describe('GET /api/v1/notifications — unreadOnly branch', () => {
+  it('sets unreadOnly=false when query param is "false"', async () => {
+    const { app, mgr } = buildApp();
+    await app.inject({ method: 'GET', url: '/api/v1/notifications?unreadOnly=false' });
+    expect(mgr.list).toHaveBeenCalledWith(expect.objectContaining({ unreadOnly: false }));
+  });
+
+  it('sets unreadOnly=false when query param is "0"', async () => {
+    const { app, mgr } = buildApp();
+    await app.inject({ method: 'GET', url: '/api/v1/notifications?unreadOnly=0' });
+    expect(mgr.list).toHaveBeenCalledWith(expect.objectContaining({ unreadOnly: false }));
+  });
+
+  it('sets unreadOnly=false when query param is absent', async () => {
+    const { app, mgr } = buildApp();
+    await app.inject({ method: 'GET', url: '/api/v1/notifications' });
+    expect(mgr.list).toHaveBeenCalledWith(expect.objectContaining({ unreadOnly: false }));
+  });
+});
+
+describe('GET /api/v1/notifications — limit parsing branches', () => {
+  it('uses numeric limit when valid number is provided', async () => {
+    const { app, mgr } = buildApp();
+    await app.inject({ method: 'GET', url: '/api/v1/notifications?limit=30' });
+    expect(mgr.list).toHaveBeenCalledWith(expect.objectContaining({ limit: 30 }));
+  });
+
+  it('clamps limit to 100 when exactly 100', async () => {
+    const { app, mgr } = buildApp();
+    await app.inject({ method: 'GET', url: '/api/v1/notifications?limit=100' });
+    expect(mgr.list).toHaveBeenCalledWith(expect.objectContaining({ limit: 100 }));
+  });
+
+  it('uses 50 when limit is empty string', async () => {
+    const { app, mgr } = buildApp();
+    await app.inject({ method: 'GET', url: '/api/v1/notifications?limit=' });
+    // Empty string is falsy → falls to default 50
+    expect(mgr.list).toHaveBeenCalledWith(expect.objectContaining({ limit: 50 }));
+  });
+
+  it('uses 50 when limit is zero (Number("0") || 50 → 50)', async () => {
+    const { app, mgr } = buildApp();
+    await app.inject({ method: 'GET', url: '/api/v1/notifications?limit=0' });
+    // Number("0") is 0, which is falsy → 0 || 50 = 50, Math.min(50, 100) = 50
+    expect(mgr.list).toHaveBeenCalledWith(expect.objectContaining({ limit: 50 }));
+  });
+});
+
+describe('GET /api/v1/notifications — offset parsing branches', () => {
+  it('uses numeric offset when valid', async () => {
+    const { app, mgr } = buildApp();
+    await app.inject({ method: 'GET', url: '/api/v1/notifications?offset=10' });
+    expect(mgr.list).toHaveBeenCalledWith(expect.objectContaining({ offset: 10 }));
+  });
+
+  it('uses 0 when offset is empty string', async () => {
+    const { app, mgr } = buildApp();
+    await app.inject({ method: 'GET', url: '/api/v1/notifications?offset=' });
+    expect(mgr.list).toHaveBeenCalledWith(expect.objectContaining({ offset: 0 }));
+  });
+
+  it('uses 0 when offset is zero string', async () => {
+    const { app, mgr } = buildApp();
+    await app.inject({ method: 'GET', url: '/api/v1/notifications?offset=0' });
+    // Number("0") is 0, which is falsy → 0 || 0 = 0
+    expect(mgr.list).toHaveBeenCalledWith(expect.objectContaining({ offset: 0 }));
+  });
+});
+
+describe('GET /api/v1/notifications — combined query params', () => {
+  it('passes all query params together correctly', async () => {
+    const { app, mgr } = buildApp();
+    await app.inject({
+      method: 'GET',
+      url: '/api/v1/notifications?unreadOnly=true&limit=25&offset=50',
+    });
+    expect(mgr.list).toHaveBeenCalledWith({
+      unreadOnly: true,
+      limit: 25,
+      offset: 50,
+    });
+  });
+});
+
+describe('GET /api/v1/notifications — error with non-Error thrown', () => {
+  it('returns 500 when non-Error is thrown', async () => {
+    const { app } = buildApp({
+      list: vi.fn().mockRejectedValue('string error'),
+    });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/notifications' });
+    expect(res.statusCode).toBe(500);
+    const body = res.json();
+    expect(body.message).toBe('Unknown error');
+  });
+});
+
+describe('GET /api/v1/notifications/count — error with non-Error thrown', () => {
+  it('returns 500 with Unknown error message for non-Error throws', async () => {
+    const { app } = buildApp({
+      unreadCount: vi.fn().mockRejectedValue(42),
+    });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/notifications/count' });
+    expect(res.statusCode).toBe(500);
+    expect(res.json().message).toBe('Unknown error');
+  });
+});
+
+describe('POST /api/v1/notifications/:id/read — error with non-Error thrown', () => {
+  it('returns 500 with Unknown error message for non-Error throws', async () => {
+    const { app } = buildApp({
+      markRead: vi.fn().mockRejectedValue(null),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: `/api/v1/notifications/${NOTIF_ID}/read`,
+    });
+    expect(res.statusCode).toBe(500);
+    expect(res.json().message).toBe('Unknown error');
+  });
+});
+
+describe('POST /api/v1/notifications/read-all — error with non-Error thrown', () => {
+  it('returns 500 with Unknown error message for non-Error throws', async () => {
+    const { app } = buildApp({
+      markAllRead: vi.fn().mockRejectedValue(undefined),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/notifications/read-all',
+    });
+    expect(res.statusCode).toBe(500);
+    expect(res.json().message).toBe('Unknown error');
+  });
+});
+
+describe('DELETE /api/v1/notifications/:id — error with non-Error thrown', () => {
+  it('returns 500 with Unknown error message for non-Error throws', async () => {
+    const { app } = buildApp({
+      delete: vi.fn().mockRejectedValue('something broke'),
+    });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/notifications/${NOTIF_ID}`,
+    });
+    expect(res.statusCode).toBe(500);
+    expect(res.json().message).toBe('Unknown error');
+  });
+});

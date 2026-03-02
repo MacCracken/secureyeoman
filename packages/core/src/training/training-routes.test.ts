@@ -576,3 +576,995 @@ describe('GET /api/v1/training/lineage/:runId', () => {
     await app.close();
   });
 });
+
+// ── Distillation CRUD routes ─────────────────────────────────────────────────
+
+function buildMockDistillationManager(overrides: Record<string, unknown> = {}) {
+  return {
+    createJob: vi.fn().mockResolvedValue({ id: 'dist-1', name: 'test-job', status: 'pending' }),
+    listJobs: vi.fn().mockResolvedValue([{ id: 'dist-1', name: 'test-job' }]),
+    getJob: vi.fn().mockResolvedValue({ id: 'dist-1', name: 'test-job', status: 'pending', teacherModel: 'gpt-4' }),
+    deleteJob: vi.fn().mockResolvedValue(true),
+    isRunning: vi.fn().mockReturnValue(false),
+    runJob: vi.fn().mockResolvedValue(undefined),
+    ...overrides,
+  };
+}
+
+describe('POST /api/v1/training/distillation/jobs', () => {
+  it('creates a distillation job', async () => {
+    const dm = buildMockDistillationManager();
+    const { app } = await buildMLApp({ getDistillationManager: vi.fn(() => dm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/distillation/jobs',
+      payload: {
+        name: 'test-job',
+        teacherProvider: 'openai',
+        teacherModel: 'gpt-4',
+        outputPath: '/tmp/dist.jsonl',
+      },
+    });
+    expect(res.statusCode).toBe(201);
+    await app.close();
+  });
+
+  it('returns 503 when distillation manager unavailable', async () => {
+    const { app } = await buildMLApp({ getDistillationManager: vi.fn(() => null) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/distillation/jobs',
+      payload: { name: 'x', teacherProvider: 'y', teacherModel: 'z', outputPath: '/tmp/a' },
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('returns 400 when name is empty', async () => {
+    const dm = buildMockDistillationManager();
+    const { app } = await buildMLApp({ getDistillationManager: vi.fn(() => dm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/distillation/jobs',
+      payload: { name: '', teacherProvider: 'openai', teacherModel: 'gpt-4', outputPath: '/tmp/a' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 400 when teacherProvider is empty', async () => {
+    const dm = buildMockDistillationManager();
+    const { app } = await buildMLApp({ getDistillationManager: vi.fn(() => dm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/distillation/jobs',
+      payload: { name: 'x', teacherProvider: '', teacherModel: 'gpt-4', outputPath: '/tmp/a' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 400 when teacherModel is empty', async () => {
+    const dm = buildMockDistillationManager();
+    const { app } = await buildMLApp({ getDistillationManager: vi.fn(() => dm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/distillation/jobs',
+      payload: { name: 'x', teacherProvider: 'y', teacherModel: '', outputPath: '/tmp/a' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 400 when outputPath is empty', async () => {
+    const dm = buildMockDistillationManager();
+    const { app } = await buildMLApp({ getDistillationManager: vi.fn(() => dm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/distillation/jobs',
+      payload: { name: 'x', teacherProvider: 'y', teacherModel: 'z', outputPath: '' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/distillation/jobs', () => {
+  it('returns list of distillation jobs', async () => {
+    const dm = buildMockDistillationManager();
+    const { app } = await buildMLApp({ getDistillationManager: vi.fn(() => dm) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/distillation/jobs' });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).jobs).toHaveLength(1);
+    await app.close();
+  });
+
+  it('returns 503 when manager unavailable', async () => {
+    const { app } = await buildMLApp({ getDistillationManager: vi.fn(() => null) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/distillation/jobs' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/distillation/jobs/:id', () => {
+  it('returns a specific job', async () => {
+    const dm = buildMockDistillationManager();
+    const { app } = await buildMLApp({ getDistillationManager: vi.fn(() => dm) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/distillation/jobs/dist-1' });
+    expect(res.statusCode).toBe(200);
+    await app.close();
+  });
+
+  it('returns 404 when job not found', async () => {
+    const dm = buildMockDistillationManager({ getJob: vi.fn().mockResolvedValue(null) });
+    const { app } = await buildMLApp({ getDistillationManager: vi.fn(() => dm) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/distillation/jobs/bad' });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+});
+
+describe('DELETE /api/v1/training/distillation/jobs/:id', () => {
+  it('deletes a job', async () => {
+    const dm = buildMockDistillationManager();
+    const { app } = await buildMLApp({ getDistillationManager: vi.fn(() => dm) });
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/training/distillation/jobs/dist-1' });
+    expect(res.statusCode).toBe(204);
+    await app.close();
+  });
+
+  it('returns 404 when job not found', async () => {
+    const dm = buildMockDistillationManager({ deleteJob: vi.fn().mockResolvedValue(false) });
+    const { app } = await buildMLApp({ getDistillationManager: vi.fn(() => dm) });
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/training/distillation/jobs/bad' });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+});
+
+describe('POST /api/v1/training/distillation/jobs/:id/run', () => {
+  it('starts a pending job and returns 202', async () => {
+    const dm = buildMockDistillationManager();
+    const mockAiClient = { chat: vi.fn().mockResolvedValue({ content: 'response' }) };
+    const { app } = await buildMLApp({
+      getDistillationManager: vi.fn(() => dm),
+      getConversationStorage: vi.fn(() => buildMockConversationStorage()),
+      getAIClient: vi.fn(() => mockAiClient),
+    });
+    const res = await app.inject({ method: 'POST', url: '/api/v1/training/distillation/jobs/dist-1/run' });
+    expect(res.statusCode).toBe(202);
+    await app.close();
+  });
+
+  it('returns 404 when job not found', async () => {
+    const dm = buildMockDistillationManager({ getJob: vi.fn().mockResolvedValue(null) });
+    const { app } = await buildMLApp({
+      getDistillationManager: vi.fn(() => dm),
+      getConversationStorage: vi.fn(() => buildMockConversationStorage()),
+      getAIClient: vi.fn(() => ({ chat: vi.fn() })),
+    });
+    const res = await app.inject({ method: 'POST', url: '/api/v1/training/distillation/jobs/bad/run' });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+
+  it('returns 409 when job is already running', async () => {
+    const dm = buildMockDistillationManager({ isRunning: vi.fn().mockReturnValue(true) });
+    const { app } = await buildMLApp({
+      getDistillationManager: vi.fn(() => dm),
+      getConversationStorage: vi.fn(() => buildMockConversationStorage()),
+      getAIClient: vi.fn(() => ({ chat: vi.fn() })),
+    });
+    const res = await app.inject({ method: 'POST', url: '/api/v1/training/distillation/jobs/dist-1/run' });
+    expect(res.statusCode).toBe(409);
+    await app.close();
+  });
+
+  it('returns 409 when job is completed (not pending or failed)', async () => {
+    const dm = buildMockDistillationManager({
+      getJob: vi.fn().mockResolvedValue({ id: 'dist-1', status: 'completed', teacherModel: 'gpt-4' }),
+    });
+    const { app } = await buildMLApp({
+      getDistillationManager: vi.fn(() => dm),
+      getConversationStorage: vi.fn(() => buildMockConversationStorage()),
+      getAIClient: vi.fn(() => ({ chat: vi.fn() })),
+    });
+    const res = await app.inject({ method: 'POST', url: '/api/v1/training/distillation/jobs/dist-1/run' });
+    expect(res.statusCode).toBe(409);
+    await app.close();
+  });
+
+  it('returns 503 when conversation storage not available', async () => {
+    const dm = buildMockDistillationManager();
+    const { app } = await buildMLApp({
+      getDistillationManager: vi.fn(() => dm),
+      getConversationStorage: vi.fn(() => null),
+      getAIClient: vi.fn(() => ({ chat: vi.fn() })),
+    });
+    const res = await app.inject({ method: 'POST', url: '/api/v1/training/distillation/jobs/dist-1/run' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('returns 503 when AI client not available', async () => {
+    const dm = buildMockDistillationManager();
+    const { app } = await buildMLApp({
+      getDistillationManager: vi.fn(() => dm),
+      getConversationStorage: vi.fn(() => buildMockConversationStorage()),
+      getAIClient: vi.fn(() => { throw new Error('no client'); }),
+    });
+    const res = await app.inject({ method: 'POST', url: '/api/v1/training/distillation/jobs/dist-1/run' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+// ── Fine-tuning CRUD routes ──────────────────────────────────────────────────
+
+function buildMockFinetuneManager(overrides: Record<string, unknown> = {}) {
+  return {
+    createJob: vi.fn().mockResolvedValue({ id: 'ft-1', name: 'finetune-1', status: 'pending' }),
+    startJob: vi.fn().mockResolvedValue(undefined),
+    listJobs: vi.fn().mockResolvedValue([{ id: 'ft-1', name: 'finetune-1' }]),
+    getJob: vi.fn().mockResolvedValue({ id: 'ft-1', name: 'finetune-1', status: 'pending', adapterName: 'adapt-1' }),
+    deleteJob: vi.fn().mockResolvedValue(true),
+    streamLogs: vi.fn().mockImplementation(async function* () { yield 'log line 1'; }),
+    registerWithOllama: vi.fn().mockResolvedValue(undefined),
+    ...overrides,
+  };
+}
+
+describe('POST /api/v1/training/finetune/jobs', () => {
+  it('creates a finetune job', async () => {
+    const fm = buildMockFinetuneManager();
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/finetune/jobs',
+      payload: { name: 'ft', baseModel: 'llama', adapterName: 'adapt', datasetPath: '/tmp/ds' },
+    });
+    expect(res.statusCode).toBe(201);
+    await app.close();
+  });
+
+  it('returns 503 when finetune manager unavailable', async () => {
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => null) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/finetune/jobs',
+      payload: { name: 'ft', baseModel: 'llama', adapterName: 'adapt', datasetPath: '/tmp/ds' },
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('returns 400 when name is empty', async () => {
+    const fm = buildMockFinetuneManager();
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/finetune/jobs',
+      payload: { name: '', baseModel: 'llama', adapterName: 'adapt', datasetPath: '/tmp/ds' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 400 when baseModel is empty', async () => {
+    const fm = buildMockFinetuneManager();
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/finetune/jobs',
+      payload: { name: 'ft', baseModel: '', adapterName: 'adapt', datasetPath: '/tmp/ds' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 400 when adapterName is empty', async () => {
+    const fm = buildMockFinetuneManager();
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/finetune/jobs',
+      payload: { name: 'ft', baseModel: 'llama', adapterName: '', datasetPath: '/tmp/ds' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 400 when datasetPath is empty', async () => {
+    const fm = buildMockFinetuneManager();
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/finetune/jobs',
+      payload: { name: 'ft', baseModel: 'llama', adapterName: 'adapt', datasetPath: '' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 201 with startError when Docker fails', async () => {
+    const fm = buildMockFinetuneManager({
+      startJob: vi.fn().mockRejectedValue(new Error('Docker unavailable')),
+    });
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/finetune/jobs',
+      payload: { name: 'ft', baseModel: 'llama', adapterName: 'adapt', datasetPath: '/tmp/ds' },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(JSON.parse(res.payload).startError).toBe('Docker unavailable');
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/finetune/jobs', () => {
+  it('lists finetune jobs', async () => {
+    const fm = buildMockFinetuneManager();
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/finetune/jobs' });
+    expect(res.statusCode).toBe(200);
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/finetune/jobs/:id', () => {
+  it('returns a specific finetune job', async () => {
+    const fm = buildMockFinetuneManager();
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/finetune/jobs/ft-1' });
+    expect(res.statusCode).toBe(200);
+    await app.close();
+  });
+
+  it('returns 404 when job not found', async () => {
+    const fm = buildMockFinetuneManager({ getJob: vi.fn().mockResolvedValue(null) });
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/finetune/jobs/bad' });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+});
+
+describe('DELETE /api/v1/training/finetune/jobs/:id', () => {
+  it('deletes a finetune job', async () => {
+    const fm = buildMockFinetuneManager();
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/training/finetune/jobs/ft-1' });
+    expect(res.statusCode).toBe(204);
+    await app.close();
+  });
+
+  it('returns 404 when job not found', async () => {
+    const fm = buildMockFinetuneManager({ deleteJob: vi.fn().mockResolvedValue(false) });
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/training/finetune/jobs/bad' });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+});
+
+describe('POST /api/v1/training/finetune/jobs/:id/register', () => {
+  it('registers a complete job with Ollama', async () => {
+    const fm = buildMockFinetuneManager({
+      getJob: vi.fn().mockResolvedValue({ id: 'ft-1', status: 'complete', adapterName: 'adapt-1' }),
+    });
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({ method: 'POST', url: '/api/v1/training/finetune/jobs/ft-1/register' });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).success).toBe(true);
+    await app.close();
+  });
+
+  it('returns 400 when job is not complete', async () => {
+    const fm = buildMockFinetuneManager(); // default status is 'pending'
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({ method: 'POST', url: '/api/v1/training/finetune/jobs/ft-1/register' });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 404 when job not found', async () => {
+    const fm = buildMockFinetuneManager({ getJob: vi.fn().mockResolvedValue(null) });
+    const { app } = await buildMLApp({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({ method: 'POST', url: '/api/v1/training/finetune/jobs/bad/register' });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+});
+
+// ── Computer-use episode routes ──────────────────────────────────────────────
+
+function buildMockComputerUseManager(overrides: Record<string, unknown> = {}) {
+  return {
+    recordEpisode: vi.fn().mockResolvedValue({ id: 'ep-1', reward: 1.0 }),
+    listEpisodes: vi.fn().mockResolvedValue([{ id: 'ep-1' }]),
+    deleteEpisode: vi.fn().mockResolvedValue(true),
+    getSkillBreakdown: vi.fn().mockResolvedValue([
+      { skillName: 'click', episodeCount: 10, avgReward: 0.8 },
+      { skillName: 'type', episodeCount: 5, avgReward: 0.9 },
+    ]),
+    exportEpisodes: vi.fn().mockImplementation(async function* () { yield '{"ep":1}\n'; }),
+    ...overrides,
+  };
+}
+
+describe('POST /api/v1/training/computer-use/episodes', () => {
+  it('records an episode', async () => {
+    const cum = buildMockComputerUseManager();
+    const { app } = await buildMLApp({ getComputerUseManager: vi.fn(() => cum) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/computer-use/episodes',
+      payload: { sessionId: 's-1', skillName: 'click', actionType: 'click', reward: 1.0 },
+    });
+    expect(res.statusCode).toBe(201);
+    await app.close();
+  });
+
+  it('returns 503 when manager unavailable', async () => {
+    const { app } = await buildMLApp({ getComputerUseManager: vi.fn(() => null) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/computer-use/episodes',
+      payload: { sessionId: 's-1', skillName: 'click', actionType: 'click' },
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('returns 400 when sessionId missing', async () => {
+    const cum = buildMockComputerUseManager();
+    const { app } = await buildMLApp({ getComputerUseManager: vi.fn(() => cum) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/computer-use/episodes',
+      payload: { skillName: 'click', actionType: 'click' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 400 when skillName missing', async () => {
+    const cum = buildMockComputerUseManager();
+    const { app } = await buildMLApp({ getComputerUseManager: vi.fn(() => cum) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/computer-use/episodes',
+      payload: { sessionId: 's-1', actionType: 'click' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 400 when actionType missing', async () => {
+    const cum = buildMockComputerUseManager();
+    const { app } = await buildMLApp({ getComputerUseManager: vi.fn(() => cum) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/computer-use/episodes',
+      payload: { sessionId: 's-1', skillName: 'click' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/computer-use/episodes', () => {
+  it('lists episodes with optional filters', async () => {
+    const cum = buildMockComputerUseManager();
+    const { app } = await buildMLApp({ getComputerUseManager: vi.fn(() => cum) });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/computer-use/episodes?skillName=click&limit=10',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).episodes).toHaveLength(1);
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/computer-use/stats', () => {
+  it('returns skill breakdown and totals', async () => {
+    const cum = buildMockComputerUseManager();
+    const { app } = await buildMLApp({ getComputerUseManager: vi.fn(() => cum) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/computer-use/stats' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.totals.totalEpisodes).toBe(15);
+    expect(body.totals.avgReward).toBeCloseTo(0.833, 2);
+    await app.close();
+  });
+
+  it('returns zero avgReward when no episodes', async () => {
+    const cum = buildMockComputerUseManager({
+      getSkillBreakdown: vi.fn().mockResolvedValue([]),
+    });
+    const { app } = await buildMLApp({ getComputerUseManager: vi.fn(() => cum) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/computer-use/stats' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.totals.totalEpisodes).toBe(0);
+    expect(body.totals.avgReward).toBe(0);
+    await app.close();
+  });
+});
+
+describe('DELETE /api/v1/training/computer-use/episodes/:id', () => {
+  it('deletes an episode', async () => {
+    const cum = buildMockComputerUseManager();
+    const { app } = await buildMLApp({ getComputerUseManager: vi.fn(() => cum) });
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/training/computer-use/episodes/ep-1' });
+    expect(res.statusCode).toBe(204);
+    await app.close();
+  });
+
+  it('returns 404 when episode not found', async () => {
+    const cum = buildMockComputerUseManager({ deleteEpisode: vi.fn().mockResolvedValue(false) });
+    const { app } = await buildMLApp({ getComputerUseManager: vi.fn(() => cum) });
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/training/computer-use/episodes/bad' });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+});
+
+// ── Quality scoring routes ───────────────────────────────────────────────────
+
+function buildMockQualityScorer() {
+  return {
+    scoreNewConversations: vi.fn().mockResolvedValue(5),
+  };
+}
+
+describe('GET /api/v1/training/quality', () => {
+  it('returns quality scores', async () => {
+    const scorer = buildMockQualityScorer();
+    const mockPool = {
+      query: vi.fn().mockResolvedValue({
+        rows: [
+          { conversation_id: 'c-1', quality_score: 0.8, signal_source: 'auto', scored_at: new Date() },
+        ],
+      }),
+    };
+    const { app } = await buildMLApp({
+      getConversationQualityScorer: vi.fn(() => scorer),
+      getPool: vi.fn(() => mockPool),
+    });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/quality' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.conversations).toHaveLength(1);
+    await app.close();
+  });
+
+  it('returns 503 when scorer unavailable', async () => {
+    const { app } = await buildMLApp({ getConversationQualityScorer: vi.fn(() => null) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/quality' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('returns 503 when pool unavailable', async () => {
+    const scorer = buildMockQualityScorer();
+    const { app } = await buildMLApp({
+      getConversationQualityScorer: vi.fn(() => scorer),
+      getPool: vi.fn(() => null),
+    });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/quality' });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('handles scored_at as string (non-Date)', async () => {
+    const scorer = buildMockQualityScorer();
+    const mockPool = {
+      query: vi.fn().mockResolvedValue({
+        rows: [
+          { conversation_id: 'c-1', quality_score: 0.5, signal_source: 'manual', scored_at: '2026-03-01T00:00:00Z' },
+        ],
+      }),
+    };
+    const { app } = await buildMLApp({
+      getConversationQualityScorer: vi.fn(() => scorer),
+      getPool: vi.fn(() => mockPool),
+    });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/quality?limit=50' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.conversations[0].scoredAt).toBe('2026-03-01T00:00:00Z');
+    await app.close();
+  });
+});
+
+describe('POST /api/v1/training/quality/score', () => {
+  it('triggers scoring and returns count', async () => {
+    const scorer = buildMockQualityScorer();
+    const mockPool = { query: vi.fn() };
+    const { app } = await buildMLApp({
+      getConversationQualityScorer: vi.fn(() => scorer),
+      getPool: vi.fn(() => mockPool),
+    });
+    const res = await app.inject({ method: 'POST', url: '/api/v1/training/quality/score' });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).scored).toBe(5);
+    await app.close();
+  });
+});
+
+// ── Export: computer_use format ──────────────────────────────────────────────
+
+describe('POST /api/v1/training/export — computer_use format', () => {
+  it('exports computer-use episodes as JSONL', async () => {
+    const cum = buildMockComputerUseManager();
+    const { app } = await buildMLApp({ getComputerUseManager: vi.fn(() => cum) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/export',
+      payload: { format: 'computer_use' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toContain('application/x-ndjson');
+    await app.close();
+  });
+
+  it('returns 503 when computer-use manager unavailable', async () => {
+    const { app } = await buildMLApp({ getComputerUseManager: vi.fn(() => null) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/export',
+      payload: { format: 'computer_use' },
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('handles export error gracefully', async () => {
+    const cum = buildMockComputerUseManager({
+      exportEpisodes: vi.fn().mockImplementation(async function* () {
+        throw new Error('export broke');
+      }),
+    });
+    const { app } = await buildMLApp({ getComputerUseManager: vi.fn(() => cum) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/export',
+      payload: { format: 'computer_use' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.payload).toContain('export broke');
+    await app.close();
+  });
+});
+
+// ── Export: date filtering with "to" ─────────────────────────────────────────
+
+describe('POST /api/v1/training/export — to date filter', () => {
+  let storage: ReturnType<typeof buildMockConversationStorage>;
+
+  it('filters conversations after the to date', async () => {
+    storage = buildMockConversationStorage();
+    const app2 = await buildApp(buildMockSecureYeoman({ conversationStorage: storage }));
+    // conv-1 at 1700000000000, conv-2 at 1700000010000
+    // to = 1700000005000 should only include conv-1
+    const res = await app2.inject({
+      method: 'POST',
+      url: '/api/v1/training/export',
+      payload: { to: 1700000005000 },
+    });
+    expect(res.statusCode).toBe(200);
+    const lines = res.payload.trim().split('\n').filter(Boolean);
+    expect(lines.length).toBe(1);
+    expect(JSON.parse(lines[0]!).id).toBe('conv-1');
+    await app2.close();
+  });
+});
+
+// ── LLM Judge routes ─────────────────────────────────────────────────────────
+
+function buildMockLlmJudgeManager(overrides: Record<string, unknown> = {}) {
+  return {
+    createDataset: vi.fn().mockResolvedValue({ id: 'ds-1', name: 'test-ds' }),
+    listDatasets: vi.fn().mockResolvedValue([{ id: 'ds-1', name: 'test-ds' }]),
+    getDataset: vi.fn().mockResolvedValue({ id: 'ds-1', name: 'test-ds', samples: [] }),
+    deleteDataset: vi.fn().mockResolvedValue(true),
+    runPointwiseEval: vi.fn().mockResolvedValue(undefined),
+    listEvalRuns: vi.fn().mockResolvedValue([{ id: 'run-1' }]),
+    getEvalRunScores: vi.fn().mockResolvedValue([]),
+    deleteEvalRun: vi.fn().mockResolvedValue(true),
+    runPairwiseComparison: vi.fn().mockResolvedValue(undefined),
+    listComparisons: vi.fn().mockResolvedValue([]),
+    getComparisonDetails: vi.fn().mockResolvedValue([]),
+    runAutoEval: vi.fn().mockResolvedValue({ passed: true, summary: 'ok', failedDimensions: [] }),
+    ...overrides,
+  };
+}
+
+describe('POST /api/v1/training/judge/datasets', () => {
+  it('creates a dataset', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/datasets',
+      payload: { name: 'test-ds', samples: [{ input: 'hi', expected: 'hello' }] },
+    });
+    expect(res.statusCode).toBe(201);
+    await app.close();
+  });
+
+  it('returns 400 when name is empty', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/datasets',
+      payload: { name: '', samples: [{ input: 'hi' }] },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 400 when samples is empty', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/datasets',
+      payload: { name: 'test-ds', samples: [] },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/judge/datasets', () => {
+  it('lists datasets', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/judge/datasets' });
+    expect(res.statusCode).toBe(200);
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/judge/datasets/:id', () => {
+  it('returns 404 when dataset not found', async () => {
+    const jm = buildMockLlmJudgeManager({ getDataset: vi.fn().mockResolvedValue(null) });
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/judge/datasets/bad' });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+});
+
+describe('DELETE /api/v1/training/judge/datasets/:id', () => {
+  it('deletes a dataset', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/training/judge/datasets/ds-1' });
+    expect(res.statusCode).toBe(204);
+    await app.close();
+  });
+
+  it('returns 404 when dataset not found', async () => {
+    const jm = buildMockLlmJudgeManager({ deleteDataset: vi.fn().mockResolvedValue(false) });
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/training/judge/datasets/bad' });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+});
+
+describe('POST /api/v1/training/judge/pointwise', () => {
+  it('triggers pointwise eval', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({
+      getLlmJudgeManager: vi.fn(() => jm),
+      getAIClient: vi.fn(() => ({ chat: vi.fn().mockResolvedValue({ content: 'resp' }) })),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/pointwise',
+      payload: { datasetId: 'ds-1', modelName: 'gpt-4' },
+    });
+    expect(res.statusCode).toBe(202);
+    await app.close();
+  });
+
+  it('returns 400 when datasetId missing', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/pointwise',
+      payload: { modelName: 'gpt-4' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 400 when modelName missing', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/pointwise',
+      payload: { datasetId: 'ds-1' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 503 when AI client unavailable', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({
+      getLlmJudgeManager: vi.fn(() => jm),
+      getAIClient: vi.fn(() => { throw new Error('no client'); }),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/pointwise',
+      payload: { datasetId: 'ds-1', modelName: 'gpt-4' },
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+describe('POST /api/v1/training/judge/pairwise', () => {
+  it('triggers pairwise comparison', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({
+      getLlmJudgeManager: vi.fn(() => jm),
+      getAIClient: vi.fn(() => ({ chat: vi.fn().mockResolvedValue({ content: 'resp' }) })),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/pairwise',
+      payload: { datasetId: 'ds-1', modelA: 'gpt-4', modelB: 'llama' },
+    });
+    expect(res.statusCode).toBe(202);
+    await app.close();
+  });
+
+  it('returns 400 when datasetId missing', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/pairwise',
+      payload: { modelA: 'gpt-4', modelB: 'llama' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 400 when modelA missing', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/pairwise',
+      payload: { datasetId: 'ds-1', modelB: 'llama' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 400 when modelB missing', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/pairwise',
+      payload: { datasetId: 'ds-1', modelA: 'gpt-4' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 503 when AI client unavailable', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({
+      getLlmJudgeManager: vi.fn(() => jm),
+      getAIClient: vi.fn(() => { throw new Error('no client'); }),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/pairwise',
+      payload: { datasetId: 'ds-1', modelA: 'gpt-4', modelB: 'llama' },
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/judge/runs', () => {
+  it('lists eval runs', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/training/judge/runs' });
+    expect(res.statusCode).toBe(200);
+    await app.close();
+  });
+});
+
+describe('DELETE /api/v1/training/judge/runs/:id', () => {
+  it('deletes an eval run', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/training/judge/runs/run-1' });
+    expect(res.statusCode).toBe(204);
+    await app.close();
+  });
+
+  it('returns 404 when eval run not found', async () => {
+    const jm = buildMockLlmJudgeManager({ deleteEvalRun: vi.fn().mockResolvedValue(false) });
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/training/judge/runs/bad' });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+});
+
+describe('POST /api/v1/training/judge/auto-eval', () => {
+  it('runs auto-eval and returns result', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({
+      getLlmJudgeManager: vi.fn(() => jm),
+      getAIClient: vi.fn(() => ({ chat: vi.fn().mockResolvedValue({ content: 'resp' }) })),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/auto-eval',
+      payload: { datasetId: 'ds-1', modelName: 'gpt-4' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).passed).toBe(true);
+    await app.close();
+  });
+
+  it('returns 400 when datasetId missing', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/auto-eval',
+      payload: { modelName: 'gpt-4' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 400 when modelName missing', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({ getLlmJudgeManager: vi.fn(() => jm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/auto-eval',
+      payload: { datasetId: 'ds-1' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 503 when AI client unavailable', async () => {
+    const jm = buildMockLlmJudgeManager();
+    const { app } = await buildMLApp({
+      getLlmJudgeManager: vi.fn(() => jm),
+      getAIClient: vi.fn(() => { throw new Error('no client'); }),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/judge/auto-eval',
+      payload: { datasetId: 'ds-1', modelName: 'gpt-4' },
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});

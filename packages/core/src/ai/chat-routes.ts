@@ -1028,6 +1028,15 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         ...(thinkingBudgetTokens ? { thinkingBudgetTokens } : {}),
       };
 
+      // A/B test model override (Phase 98)
+      {
+        const abTestManager = secureYeoman.getAbTestManager();
+        if (abTestManager && personality && conversationId) {
+          const override = await abTestManager.resolveModel(personality.id, conversationId);
+          if (override) aiRequest.model = override.model;
+        }
+      }
+
       // Prompt-assembly injection guard — runs after all context is assembled,
       // before the LLM call. Catches injection that survived the HTTP boundary
       // (e.g. planted in brain memory, skill instructions, or spirit context).
@@ -1873,6 +1882,15 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           ...(tools.length > 0 ? { tools } : {}),
           ...(streamThinkingBudget ? { thinkingBudgetTokens: streamThinkingBudget } : {}),
         };
+
+        // A/B test model override (Phase 98)
+        {
+          const abTestManager = secureYeoman.getAbTestManager();
+          if (abTestManager && personality && conversationId) {
+            const override = await abTestManager.resolveModel(personality.id, conversationId);
+            if (override) aiRequest.model = override.model;
+          }
+        }
 
         const { uuidv7, sha256 } = await import('../utils/crypto.js');
         const { TaskStatus } = await import('@secureyeoman/shared');

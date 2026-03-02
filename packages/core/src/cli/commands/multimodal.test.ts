@@ -209,4 +209,332 @@ describe('multimodal command', () => {
     await multimodalCommand.run({ argv: ['--help'], stdout, stderr });
     expect(getStdout()).toContain('--json');
   });
+
+  // ── transcribe subcommand ──────────────────────────────────────────────────
+
+  it('should transcribe audio', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ text: 'Hello world transcription' }),
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await multimodalCommand.run({
+      argv: ['transcribe', 'https://example.com/audio.mp3'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('Transcription Result');
+    expect(getStdout()).toContain('Hello world transcription');
+  });
+
+  it('should output JSON with --json for transcribe', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ text: 'Transcribed text' }),
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await multimodalCommand.run({
+      argv: ['transcribe', 'https://example.com/audio.mp3', '--json'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('"text"');
+    expect(getStdout()).toContain('Transcribed text');
+  });
+
+  it('should return 1 when transcribe API fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        headers: { get: () => 'application/json' },
+        json: async () => ({}),
+      })
+    );
+
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await multimodalCommand.run({
+      argv: ['transcribe', 'https://example.com/audio.mp3'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('HTTP 500');
+  });
+
+  // ── generate subcommand ────────────────────────────────────────────────────
+
+  it('should generate an image', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ jobId: 'img-456', status: 'processing' }),
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await multimodalCommand.run({
+      argv: ['generate', 'A sunset over mountains'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('img-456');
+  });
+
+  it('should output JSON with --json for generate', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ jobId: 'img-789', url: 'https://cdn.example.com/img.png' }),
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await multimodalCommand.run({
+      argv: ['generate', 'A cat', '--json'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('"jobId"');
+    expect(getStdout()).toContain('img-789');
+  });
+
+  it('should return 1 when generate API fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+        headers: { get: () => 'application/json' },
+        json: async () => ({}),
+      })
+    );
+
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await multimodalCommand.run({
+      argv: ['generate', 'A landscape'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('HTTP 503');
+  });
+
+  // ── vision-analyze error branch ────────────────────────────────────────────
+
+  it('should return 1 when vision-analyze API fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 422,
+        headers: { get: () => 'application/json' },
+        json: async () => ({}),
+      })
+    );
+
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await multimodalCommand.run({
+      argv: ['vision-analyze', 'https://example.com/img.jpg'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('HTTP 422');
+  });
+
+  // ── speak error branch ─────────────────────────────────────────────────────
+
+  it('should return 1 when speak API fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        headers: { get: () => 'application/json' },
+        json: async () => ({}),
+      })
+    );
+
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await multimodalCommand.run({
+      argv: ['speak', 'Hello world'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('HTTP 500');
+  });
+
+  // ── --json for vision-analyze ──────────────────────────────────────────────
+
+  it('should output JSON with --json for vision-analyze', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ description: 'A dog' }),
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await multimodalCommand.run({
+      argv: ['vision-analyze', 'https://example.com/dog.jpg', '--json'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('"description"');
+    expect(getStdout()).toContain('A dog');
+  });
+
+  // ── --json for speak ───────────────────────────────────────────────────────
+
+  it('should output JSON with --json for speak', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ jobId: 'tts-1', status: 'queued' }),
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await multimodalCommand.run({
+      argv: ['speak', 'Hello', '--json'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('"jobId"');
+    expect(getStdout()).toContain('tts-1');
+  });
+
+  // ── jobs empty list ────────────────────────────────────────────────────────
+
+  it('should show "No multimodal jobs found" when job list is empty', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => [],
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await multimodalCommand.run({ argv: ['jobs'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('No multimodal jobs found');
+  });
+
+  // ── jobs API error ─────────────────────────────────────────────────────────
+
+  it('should return 1 when jobs API fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+        headers: { get: () => 'application/json' },
+        json: async () => ({}),
+      })
+    );
+
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await multimodalCommand.run({ argv: ['jobs'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('HTTP 503');
+  });
+
+  // ── unknown subcommand ─────────────────────────────────────────────────────
+
+  it('should return 1 for unknown subcommand', async () => {
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await multimodalCommand.run({ argv: ['foobar'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Unknown subcommand: foobar');
+  });
+
+  // ── no subcommand defaults to config ───────────────────────────────────────
+
+  it('should default to config when no subcommand is given', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ vision: { enabled: false } }),
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await multimodalCommand.run({ argv: [], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('Multimodal Configuration');
+  });
+
+  // ── catch branch — network error ──────────────────────────────────────────
+
+  it('should catch network errors and return 1', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new Error('Network error'))
+    );
+
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await multimodalCommand.run({ argv: ['config'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Network error');
+  });
+
+  it('should catch non-Error throws and return 1', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue('string error')
+    );
+
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await multimodalCommand.run({ argv: ['config'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('string error');
+  });
+
+  // ── help flag -h ───────────────────────────────────────────────────────────
+
+  it('should print help with -h flag', async () => {
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await multimodalCommand.run({ argv: ['-h'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('vision-analyze');
+  });
 });

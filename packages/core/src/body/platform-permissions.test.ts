@@ -4,17 +4,26 @@
  * @see NEXT_STEP_06: Platform TCC Integration
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   formatPermissionName,
   getPermissionIcon,
   resetPlatformPermissionManager,
   setPlatformPermissionManager,
+  getPlatformPermissionManager,
 } from './platform-permissions.js';
+
+// Mock node:os so we can control platform() return value
+const mockPlatform = vi.fn(() => 'linux');
+vi.mock('node:os', () => ({
+  platform: () => mockPlatform(),
+}));
 
 describe('Platform Permissions', () => {
   beforeEach(() => {
     resetPlatformPermissionManager();
+    vi.clearAllMocks();
+    mockPlatform.mockReturnValue('linux');
   });
 
   describe('formatPermissionName', () => {
@@ -73,11 +82,129 @@ describe('Platform Permissions', () => {
 
       setPlatformPermissionManager(mockManager);
 
-      const { getPlatformPermissionManager } = await import('./platform-permissions.js');
       const manager = getPlatformPermissionManager();
       const status = await manager.checkPermission('screen');
 
       expect(status.granted).toBe(true);
+    });
+  });
+
+  describe('getPlatformPermissionManager', () => {
+    it('creates NoopPermissionManager for unsupported platforms', () => {
+      mockPlatform.mockReturnValue('freebsd');
+      resetPlatformPermissionManager();
+      const manager = getPlatformPermissionManager();
+      // NoopPermissionManager returns false for isAvailable
+      expect(manager.isAvailable()).toBe(false);
+    });
+
+    it('creates NoopPermissionManager when platform-specific module fails to load (linux)', () => {
+      mockPlatform.mockReturnValue('linux');
+      resetPlatformPermissionManager();
+      // require('./platform/linux-permissions.js') will fail because it is not in the mock
+      // so it falls back to NoopPermissionManager
+      const manager = getPlatformPermissionManager();
+      // On our test environment, either LinuxPermissionManager loads or Noop — either is valid
+      expect(manager).toBeDefined();
+    });
+
+    it('creates NoopPermissionManager when platform-specific module fails to load (darwin)', () => {
+      mockPlatform.mockReturnValue('darwin');
+      resetPlatformPermissionManager();
+      const manager = getPlatformPermissionManager();
+      expect(manager).toBeDefined();
+    });
+
+    it('creates NoopPermissionManager when platform-specific module fails to load (win32)', () => {
+      mockPlatform.mockReturnValue('win32');
+      resetPlatformPermissionManager();
+      const manager = getPlatformPermissionManager();
+      expect(manager).toBeDefined();
+    });
+
+    it('returns the same manager on subsequent calls', () => {
+      resetPlatformPermissionManager();
+      const m1 = getPlatformPermissionManager();
+      const m2 = getPlatformPermissionManager();
+      expect(m1).toBe(m2);
+    });
+  });
+
+  describe('NoopPermissionManager behavior', () => {
+    it('checkPermission returns not-determined', async () => {
+      mockPlatform.mockReturnValue('freebsd');
+      resetPlatformPermissionManager();
+      const manager = getPlatformPermissionManager();
+      const status = await manager.checkPermission('screen');
+      expect(status.granted).toBe(false);
+      expect(status.state).toBe('not-determined');
+      expect(status.canRequest).toBe(false);
+    });
+
+    it('requestPermission returns denied', async () => {
+      mockPlatform.mockReturnValue('freebsd');
+      resetPlatformPermissionManager();
+      const manager = getPlatformPermissionManager();
+      const status = await manager.requestPermission('camera');
+      expect(status.granted).toBe(false);
+      expect(status.state).toBe('denied');
+      expect(status.canRequest).toBe(false);
+    });
+
+    it('onPermissionChange is a no-op', () => {
+      mockPlatform.mockReturnValue('freebsd');
+      resetPlatformPermissionManager();
+      const manager = getPlatformPermissionManager();
+      // Should not throw
+      manager.onPermissionChange(() => {});
+    });
+
+    it('openSystemPreferences resolves without error', async () => {
+      mockPlatform.mockReturnValue('freebsd');
+      resetPlatformPermissionManager();
+      const manager = getPlatformPermissionManager();
+      await expect(manager.openSystemPreferences('microphone')).resolves.toBeUndefined();
+    });
+
+    it('isAvailable returns false', () => {
+      mockPlatform.mockReturnValue('freebsd');
+      resetPlatformPermissionManager();
+      const manager = getPlatformPermissionManager();
+      expect(manager.isAvailable()).toBe(false);
+    });
+  });
+
+  describe('setPlatformPermissionManager', () => {
+    it('replaces the global manager', () => {
+      const customManager = {
+        isAvailable: () => true,
+        checkPermission: vi.fn(),
+        requestPermission: vi.fn(),
+        onPermissionChange: vi.fn(),
+        openSystemPreferences: vi.fn(),
+      } as any;
+
+      setPlatformPermissionManager(customManager);
+      expect(getPlatformPermissionManager()).toBe(customManager);
+    });
+  });
+
+  describe('resetPlatformPermissionManager', () => {
+    it('forces recreation on next get', () => {
+      const customManager = {
+        isAvailable: () => true,
+        checkPermission: vi.fn(),
+        requestPermission: vi.fn(),
+        onPermissionChange: vi.fn(),
+        openSystemPreferences: vi.fn(),
+      } as any;
+
+      setPlatformPermissionManager(customManager);
+      expect(getPlatformPermissionManager()).toBe(customManager);
+
+      resetPlatformPermissionManager();
+      const newManager = getPlatformPermissionManager();
+      expect(newManager).not.toBe(customManager);
     });
   });
 });

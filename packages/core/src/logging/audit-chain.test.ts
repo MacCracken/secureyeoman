@@ -732,6 +732,154 @@ describe('AuditChain additional branches', () => {
   });
 });
 
+describe('AuditChain — repairOnInit when chain is already valid', () => {
+  it('does not repair when chain is valid and repairOnInit is true', async () => {
+    const storage = new InMemoryAuditStorage();
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    await chain.initialize();
+
+    await chain.record({ event: 'e1', level: 'info', message: 'First' });
+    await chain.record({ event: 'e2', level: 'info', message: 'Second' });
+
+    // Create new chain with repairOnInit on existing valid storage
+    const newChain = new AuditChain({
+      storage,
+      signingKey: SIGNING_KEY,
+      repairOnInit: true,
+    });
+    await newChain.initialize();
+
+    // Chain should be valid without any repair
+    const result = await newChain.verify();
+    expect(result.valid).toBe(true);
+    expect(result.entriesChecked).toBe(2);
+
+    // Should be able to continue appending
+    await newChain.record({ event: 'e3', level: 'info', message: 'Third' });
+    const result2 = await newChain.verify();
+    expect(result2.valid).toBe(true);
+    expect(result2.entriesChecked).toBe(3);
+  });
+});
+
+describe('AuditChain — repair() auto-initializes', () => {
+  it('repair() calls initialize() when not yet initialized', async () => {
+    const storage = new InMemoryAuditStorage();
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    // Do NOT call initialize()
+    const result = await chain.repair();
+    expect(result.entriesTotal).toBe(0);
+    expect(result.repairedCount).toBe(0);
+  });
+});
+
+describe('AuditChain — verify() auto-initializes', () => {
+  it('verify() calls initialize() when not yet initialized', async () => {
+    const storage = new InMemoryAuditStorage();
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    // Do NOT call initialize()
+    const result = await chain.verify();
+    expect(result.valid).toBe(true);
+    expect(result.entriesChecked).toBe(0);
+  });
+});
+
+describe('InMemoryAuditStorage — updateIntegrity edge case', () => {
+  it('does nothing when entry ID is not found', async () => {
+    const storage = new InMemoryAuditStorage();
+    // Should not throw
+    await storage.updateIntegrity('nonexistent-id', 'sig', 'hash');
+    expect(await storage.count()).toBe(0);
+  });
+
+  it('getById returns null for unknown ID', async () => {
+    const storage = new InMemoryAuditStorage();
+    const result = await storage.getById('no-such-id');
+    expect(result).toBeNull();
+  });
+});
+
+describe('InMemoryAuditStorage — query() limit capping', () => {
+  it('caps limit at 1000 even when a larger value is requested', async () => {
+    const storage = new InMemoryAuditStorage();
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    await chain.initialize();
+    await chain.record({ event: 'e1', level: 'info', message: 'Test' });
+
+    const result = await storage.query({ limit: 5000 });
+    expect(result.limit).toBe(1000);
+  });
+
+  it('uses default limit of 50 when not specified', async () => {
+    const storage = new InMemoryAuditStorage();
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    await chain.initialize();
+    await chain.record({ event: 'e1', level: 'info', message: 'Test' });
+
+    const result = await storage.query({});
+    expect(result.limit).toBe(50);
+  });
+
+  it('sorts descending by default (newest first)', async () => {
+    const storage = new InMemoryAuditStorage();
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    await chain.initialize();
+    await chain.record({ event: 'first', level: 'info', message: 'First' });
+    // Small delay so timestamps differ
+    await new Promise((r) => setTimeout(r, 5));
+    await chain.record({ event: 'second', level: 'info', message: 'Second' });
+
+    const result = await storage.query({});
+    expect(result.entries[0]!.event).toBe('second');
+    expect(result.entries[1]!.event).toBe('first');
+  });
+});
+
+describe('AuditChain — record queue resilience', () => {
+  it('a failed record does not prevent subsequent records', async () => {
+    const storage = new InMemoryAuditStorage();
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    await chain.initialize();
+
+    // Override append to fail once, then succeed
+    let callCount = 0;
+    const originalAppend = storage.append.bind(storage);
+    storage.append = async (entry) => {
+      callCount++;
+      if (callCount === 2) {
+        throw new Error('Transient storage error');
+      }
+      return originalAppend(entry);
+    };
+
+    await chain.record({ event: 'e1', level: 'info', message: 'OK 1' });
+
+    // Second record will fail in storage.append
+    await expect(
+      chain.record({ event: 'e2', level: 'info', message: 'Fail' })
+    ).rejects.toThrow('Transient storage error');
+
+    // Third record should still succeed
+    const e3 = await chain.record({ event: 'e3', level: 'info', message: 'OK 3' });
+    expect(e3.event).toBe('e3');
+  });
+});
+
+describe('AuditChain — signing key rotation with verify', () => {
+  it('verify detects signature failure when using wrong key', async () => {
+    const storage = new InMemoryAuditStorage();
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    await chain.initialize();
+
+    await chain.record({ event: 'e1', level: 'info', message: 'Signed with original key' });
+
+    // Create a chain with a DIFFERENT signing key trying to verify the same storage
+    const wrongKeyChain = new AuditChain({ storage, signingKey: 'w'.repeat(64) });
+    // Initialize with repairOnInit=false will fail because last entry has wrong sig
+    await expect(wrongKeyChain.initialize()).rejects.toThrow('integrity compromised');
+  });
+});
+
 describe('AuditChain — correlation ID auto-enrichment', () => {
   it('entry recorded inside runWithCorrelationId scope has correlationId set', async () => {
     const storage = new InMemoryAuditStorage();

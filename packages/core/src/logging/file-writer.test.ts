@@ -125,4 +125,85 @@ describe('AppendOnlyLogWriter', () => {
     expect(lines).toHaveLength(1);
     expect(JSON.parse(lines[0])).toEqual(entry);
   });
+
+  // ── Additional branch coverage tests ────────────────────────────────────────
+
+  it('close() is idempotent — calling close twice does not throw', () => {
+    const filePath = join(tmpDir, 'double-close.jsonl');
+    const writer = new AppendOnlyLogWriter(filePath);
+    writer.write({ test: true });
+    writer.close();
+    // Second close should not throw
+    expect(() => writer.close()).not.toThrow();
+  });
+
+  it('reopen() works after close — can write again', () => {
+    const filePath = join(tmpDir, 'reopen-after-close.jsonl');
+    const writer = new AppendOnlyLogWriter(filePath);
+    writer.write({ phase: 'first' });
+    writer.close();
+
+    // Should throw when closed
+    expect(() => writer.write({ phase: 'closed' })).toThrow('Writer is closed');
+
+    // Reopen and write
+    writer.reopen();
+    writer.write({ phase: 'after-reopen' });
+    writer.close();
+
+    const lines = readFileSync(filePath, 'utf-8').trim().split('\n');
+    expect(lines).toHaveLength(2);
+    expect(JSON.parse(lines[0])).toEqual({ phase: 'first' });
+    expect(JSON.parse(lines[1])).toEqual({ phase: 'after-reopen' });
+  });
+
+  it('reopen() without prior close works (closes then reopens)', () => {
+    const filePath = join(tmpDir, 'reopen-no-close.jsonl');
+    const writer = new AppendOnlyLogWriter(filePath);
+    writer.write({ before: true });
+
+    // Reopen without explicit close first
+    writer.reopen();
+    writer.write({ after: true });
+    writer.close();
+
+    const lines = readFileSync(filePath, 'utf-8').trim().split('\n');
+    expect(lines).toHaveLength(2);
+    expect(JSON.parse(lines[0])).toEqual({ before: true });
+    expect(JSON.parse(lines[1])).toEqual({ after: true });
+  });
+
+  it('getCurrentPath() returns correct path after reopen', () => {
+    const filePath = join(tmpDir, 'path-reopen.jsonl');
+    const writer = new AppendOnlyLogWriter(filePath);
+    writer.close();
+    writer.reopen();
+    expect(writer.getCurrentPath()).toBe(filePath);
+    writer.close();
+  });
+
+  it('handles writing empty objects', () => {
+    const filePath = join(tmpDir, 'empty-obj.jsonl');
+    const writer = new AppendOnlyLogWriter(filePath);
+    writer.write({});
+    writer.close();
+
+    const content = readFileSync(filePath, 'utf-8').trim();
+    expect(JSON.parse(content)).toEqual({});
+  });
+
+  it('handles entries with boolean and null values', () => {
+    const filePath = join(tmpDir, 'types.jsonl');
+    const writer = new AppendOnlyLogWriter(filePath);
+    writer.write({ flag: true, nothing: null, count: 0, name: '' });
+    writer.close();
+
+    const lines = readFileSync(filePath, 'utf-8').trim().split('\n');
+    expect(lines).toHaveLength(1);
+    const parsed = JSON.parse(lines[0]);
+    expect(parsed.flag).toBe(true);
+    expect(parsed.nothing).toBeNull();
+    expect(parsed.count).toBe(0);
+    expect(parsed.name).toBe('');
+  });
 });

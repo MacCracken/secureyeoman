@@ -162,4 +162,189 @@ describe('browser command', () => {
     await browserCommand.run({ argv: ['--help'], stdout, stderr });
     expect(getStdout()).toContain('--json');
   });
+
+  // ── session subcommand ───────────────────────────────────────────────
+
+  it('should get session details', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ id: 'session-1', status: 'active', url: 'https://example.com' }),
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await browserCommand.run({ argv: ['session', 'session-1'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('Session Details');
+  });
+
+  it('should get session details with --json', async () => {
+    const session = { id: 'session-1', status: 'active', url: 'https://example.com' };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => session,
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await browserCommand.run({ argv: ['session', 'session-1', '--json'], stdout, stderr });
+    expect(code).toBe(0);
+    const parsed = JSON.parse(getStdout());
+    expect(parsed.id).toBe('session-1');
+  });
+
+  it('should return 1 when session not found', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ error: 'not found' }),
+      })
+    );
+
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await browserCommand.run({ argv: ['session', 'bad-id'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Session not found');
+  });
+
+  // ── unknown subcommand ───────────────────────────────────────────────
+
+  it('should return 1 for unknown subcommand', async () => {
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await browserCommand.run({ argv: ['unknown-cmd'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Unknown subcommand');
+  });
+
+  // ── empty sessions list ──────────────────────────────────────────────
+
+  it('should show no sessions message when list is empty', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => [],
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await browserCommand.run({ argv: ['list'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('No active browser sessions');
+  });
+
+  // ── stats error ──────────────────────────────────────────────────────
+
+  it('should return 1 when stats API fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        headers: { get: () => 'application/json' },
+        json: async () => ({}),
+      })
+    );
+
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await browserCommand.run({ argv: ['stats'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Failed to fetch stats');
+  });
+
+  // ── config error ─────────────────────────────────────────────────────
+
+  it('should return 1 when config API fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        headers: { get: () => 'application/json' },
+        json: async () => ({}),
+      })
+    );
+
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await browserCommand.run({ argv: ['config'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Failed to fetch config');
+  });
+
+  // ── network error (catch block) ─────────────────────────────────────
+
+  it('should handle fetch throwing an Error', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new Error('Network error'))
+    );
+
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await browserCommand.run({ argv: [], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Network error');
+  });
+
+  it('should handle fetch throwing a non-Error value', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue('string error')
+    );
+
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await browserCommand.run({ argv: [], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('string error');
+  });
+
+  // ── session subcommand without id ────────────────────────────────────
+
+  it('should return unknown subcommand when session has no id', async () => {
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await browserCommand.run({ argv: ['session'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Unknown subcommand');
+  });
+
+  // ── -h shorthand for help ────────────────────────────────────────────
+
+  it('should print help with -h flag', async () => {
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await browserCommand.run({ argv: ['-h'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('Usage');
+  });
+
+  // ── custom url ───────────────────────────────────────────────────────
+
+  it('should use custom --url for API calls', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => [],
+      })
+    );
+
+    const { stdout, stderr } = createStreams();
+    const code = await browserCommand.run({ argv: ['--url', 'http://custom:9000', 'list'], stdout, stderr });
+    expect(code).toBe(0);
+    const fetchMock = vi.mocked(fetch);
+    expect(fetchMock.mock.calls[0][0]).toContain('http://custom:9000');
+  });
 });

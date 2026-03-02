@@ -617,4 +617,207 @@ describe('computeMood', () => {
     });
     expect(computeMood([], [event], 0, NOW)).toBe('alert');
   });
+
+  it('returns productive with 1-4 running tasks', () => {
+    const tasks = Array.from({ length: 4 }, (_, i) =>
+      makeTask({ id: `t-${i}`, status: 'running' })
+    );
+    expect(computeMood(tasks, [], 0, NOW)).toBe('productive');
+  });
+
+  it('ignores non-running tasks for busy/productive calculation', () => {
+    const tasks = Array.from({ length: 10 }, (_, i) =>
+      makeTask({ id: `t-${i}`, status: 'completed' })
+    );
+    expect(computeMood(tasks, [], 0, NOW)).toBe('calm');
+  });
+
+  it('uses createdAt when timestamp is missing from event', () => {
+    const event = makeAuditEntry({
+      type: 'security_alert',
+      // timestamp is absent, createdAt present
+    });
+    // Manually set createdAt
+    (event as any).createdAt = NOW - 60_000;
+    expect(computeMood([], [event], 0, NOW)).toBe('alert');
+  });
+
+  it('uses 0 when both timestamp and createdAt are missing', () => {
+    const event = makeAuditEntry({
+      type: 'security_alert',
+    });
+    // age = NOW - 0 = NOW, which is > 5 min (NOW = 1_000_000)
+    expect(computeMood([], [event], 0, NOW)).toBe('calm');
+  });
+
+  it('does not trigger alert for non-security event', () => {
+    const event = makeAuditEntry({
+      type: 'user_login',
+      timestamp: NOW - 60_000,
+    });
+    expect(computeMood([], [event], 0, NOW)).toBe('calm');
+  });
+});
+
+// ── Additional buildFloorPlan coverage ───────────────────────────────────────
+
+describe('buildFloorPlan (additional)', () => {
+  it('compact: zoneOf maps all cells to workspace', () => {
+    const plan = buildFloorPlan('compact');
+    for (const [, zone] of plan.zoneOf) {
+      expect(zone).toBe('workspace');
+    }
+  });
+
+  it('compact: all 4 zone waypoints point to the same position', () => {
+    const plan = buildFloorPlan('compact');
+    const wp = plan.zoneWaypoints['workspace'];
+    expect(plan.zoneWaypoints['meeting']).toEqual(wp);
+    expect(plan.zoneWaypoints['server-room']).toEqual(wp);
+    expect(plan.zoneWaypoints['break-room']).toEqual(wp);
+  });
+
+  it('compact: has exactly 12 desks (6 per row, 2 rows)', () => {
+    const plan = buildFloorPlan('compact');
+    expect(plan.desks.length).toBe(12);
+  });
+
+  it('normal: has exactly 6 desks', () => {
+    const plan = buildFloorPlan('normal');
+    expect(plan.desks.length).toBe(6);
+  });
+
+  it('normal: has serverRackPos, coffeePos, and whiteboardRow', () => {
+    const plan = buildFloorPlan('normal');
+    expect(plan.serverRackPos).toBeDefined();
+    expect(plan.coffeePos).toBeDefined();
+    expect(plan.whiteboardRow).toBeDefined();
+  });
+
+  it('large: has exactly 12 desks (4 per row, 3 rows)', () => {
+    const plan = buildFloorPlan('large');
+    expect(plan.desks.length).toBe(12);
+  });
+
+  it('large: has serverRackPos, coffeePos, and whiteboardRow', () => {
+    const plan = buildFloorPlan('large');
+    expect(plan.serverRackPos).toBeDefined();
+    expect(plan.coffeePos).toBeDefined();
+    expect(plan.whiteboardRow).toBeDefined();
+  });
+
+  it('normal: zoneOf maps cells to correct zones by quadrant', () => {
+    const plan = buildFloorPlan('normal');
+    // top-left should be workspace
+    expect(plan.zoneOf.get('2,5')).toBe('workspace');
+    // top-right should be meeting
+    expect(plan.zoneOf.get('2,50')).toBe('meeting');
+    // bottom-left should be server-room
+    expect(plan.zoneOf.get('8,5')).toBe('server-room');
+    // bottom-right should be break-room
+    expect(plan.zoneOf.get('8,50')).toBe('break-room');
+  });
+
+  it('large: zoneOf maps cells to correct zones by quadrant', () => {
+    const plan = buildFloorPlan('large');
+    expect(plan.zoneOf.get('3,10')).toBe('workspace');
+    expect(plan.zoneOf.get('3,80')).toBe('meeting');
+    expect(plan.zoneOf.get('10,10')).toBe('server-room');
+    expect(plan.zoneOf.get('10,80')).toBe('break-room');
+  });
+
+  it('large: all 4 zones are mutually reachable', () => {
+    const plan = buildFloorPlan('large');
+    const zones = Object.values(plan.zoneWaypoints) as WorldPos[];
+    for (let i = 0; i < zones.length; i++) {
+      for (let j = i + 1; j < zones.length; j++) {
+        const path = findPath(plan.walkable, zones[i]!, zones[j]!);
+        expect(path.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('large: rows string array has 16 entries', () => {
+    const plan = buildFloorPlan('large');
+    expect(plan.rows.length).toBe(16);
+  });
+
+  it('normal: rows string array has 12 entries', () => {
+    const plan = buildFloorPlan('normal');
+    expect(plan.rows.length).toBe(12);
+  });
+
+  it('compact: rows string array has 10 entries', () => {
+    const plan = buildFloorPlan('compact');
+    expect(plan.rows.length).toBe(10);
+  });
+});
+
+// ── Additional findPath edge cases ──────────────────────────────────────────
+
+describe('findPath (additional)', () => {
+  it('finds path in a minimal 2-cell grid', () => {
+    const w = new Set(['0,0', '0,1']);
+    const path = findPath(w, { row: 0, col: 0 }, { row: 0, col: 1 });
+    expect(path).toEqual([{ row: 0, col: 1 }]);
+  });
+
+  it('returns empty when start is not walkable but destination is', () => {
+    const w = new Set(['1,1']);
+    // Start at 0,0 which is not walkable, destination is 1,1
+    const path = findPath(w, { row: 0, col: 0 }, { row: 1, col: 1 });
+    expect(path).toEqual([]);
+  });
+
+  it('finds path along a narrow corridor', () => {
+    // Horizontal corridor: row 0, cols 0-9
+    const w = new Set<string>();
+    for (let c = 0; c < 10; c++) w.add(`0,${c}`);
+    const path = findPath(w, { row: 0, col: 0 }, { row: 0, col: 9 });
+    expect(path.length).toBe(9);
+    expect(path[path.length - 1]).toEqual({ row: 0, col: 9 });
+  });
+});
+
+// ── Additional deriveState edge cases ───────────────────────────────────────
+
+describe('deriveState (additional)', () => {
+  const NOW = Date.now();
+
+  it('thinking state threshold is exactly at 2000ms boundary', () => {
+    const p = makePersonality();
+    const task = makeTask({ startedAt: NOW - 1999 });
+    const { state } = deriveState(p, [task], EMPTY_TALKING, NOW);
+    expect(state).toBe('thinking');
+  });
+
+  it('typing state at exactly 2000ms boundary', () => {
+    const p = makePersonality();
+    const task = makeTask({ startedAt: NOW - 2000 });
+    const { state } = deriveState(p, [task], EMPTY_TALKING, NOW);
+    expect(state).toBe('typing');
+  });
+
+  it('handles multiple running tasks for same personality (uses first match)', () => {
+    const p = makePersonality();
+    const task1 = makeTask({ id: 't-1', title: 'first task', startedAt: NOW - 5_000 });
+    const task2 = makeTask({ id: 't-2', title: 'second task', startedAt: NOW - 1_000 });
+    const { taskLabel } = deriveState(p, [task1, task2], EMPTY_TALKING, NOW);
+    expect(taskLabel).toBe('first task');
+  });
+
+  it('returns idle when talkingUntil map has different personality id', () => {
+    const p = makePersonality({ id: 'p-001' });
+    const talkingUntil = new Map([['p-other', NOW + 30_000]]);
+    const { state } = deriveState(p, [], talkingUntil, NOW);
+    expect(state).toBe('idle');
+  });
+
+  it('handles task with neither startedAt nor createdAt (age = 0)', () => {
+    const p = makePersonality();
+    const task = { id: 't-1', personalityId: 'p-001', status: 'running' };
+    const { state } = deriveState(p, [task], EMPTY_TALKING, NOW);
+    // age = now - now = 0, so < 2000 → thinking
+    expect(state).toBe('thinking');
+  });
 });

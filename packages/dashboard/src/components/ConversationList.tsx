@@ -9,6 +9,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  GitBranch,
 } from 'lucide-react';
 import {
   fetchConversations,
@@ -154,7 +155,11 @@ export function ConversationList({
               if (editingId !== conv.id) handleSelect(conv.id);
             }}
           >
-            <MessageSquare className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
+            {conv.parentConversationId ? (
+              <GitBranch className="w-3.5 h-3.5 flex-shrink-0 text-primary" />
+            ) : (
+              <MessageSquare className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
+            )}
 
             {editingId === conv.id ? (
               <div className="flex items-center gap-1 flex-1 min-w-0">

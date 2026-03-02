@@ -38,6 +38,7 @@ vi.mock('../api/client', () => ({
   fetchSecurityPolicy: vi.fn(),
   fetchProactiveConfig: vi.fn(),
   fetchHealth: vi.fn(),
+  fetchModelInfo: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -45,6 +46,7 @@ const mockFetchSecurityPolicy = vi.mocked(api.fetchSecurityPolicy);
 const mockFetchExtensionConfig = vi.mocked(api.fetchExtensionConfig);
 const mockFetchProactiveConfig = vi.mocked(api.fetchProactiveConfig);
 const mockFetchHealth = vi.mocked(api.fetchHealth);
+const mockFetchModelInfo = vi.mocked(api.fetchModelInfo);
 
 // ── Import after mocks ───────────────────────────────────────────────
 
@@ -116,6 +118,7 @@ describe('Sidebar nav order', () => {
     mockFetchExtensionConfig.mockResolvedValue({ config: { enabled: false } } as any);
     mockFetchProactiveConfig.mockResolvedValue({ config: { enabled: false } } as any);
     mockFetchHealth.mockResolvedValue({ version: '1.0.0' } as any);
+    mockFetchModelInfo.mockResolvedValue({ available: { ollama: ['llama3'] }, default: null } as any);
   });
 
   it('shows a Mission Control nav link pointing to /metrics', async () => {

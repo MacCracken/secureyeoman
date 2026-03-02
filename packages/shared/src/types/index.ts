@@ -628,6 +628,53 @@ export {
   type UsageAnomaly,
 } from './analytics.js';
 
+// Judge types (Phase 97)
+export {
+  JudgeDimensionSchema,
+  EvalDatasetSampleSchema,
+  EvalDatasetSchema,
+  EvalDatasetCreateSchema,
+  EvalScoreSchema,
+  EvalRunSummarySchema,
+  PairwiseWinnerSchema,
+  PairwiseResultSchema,
+  PairwiseComparisonSummarySchema,
+  AutoEvalConfigSchema,
+  type JudgeDimension,
+  type EvalDatasetSample,
+  type EvalDataset,
+  type EvalDatasetCreate,
+  type EvalScore,
+  type EvalRunSummary,
+  type PairwiseWinner,
+  type PairwiseResult,
+  type PairwiseComparisonSummary,
+  type AutoEvalConfig,
+} from './judge.js';
+
+// Lifecycle Platform types (Phase 98)
+export type {
+  PreferencePairSource,
+  PreferencePair,
+  PreferencePairCreate,
+  CuratedDatasetStatus,
+  CurationRules,
+  CuratedDataset,
+  CuratedDatasetPreview,
+  TrainingExperimentStatus,
+  LossCurvePoint,
+  TrainingExperiment,
+  TrainingExperimentCreate,
+  ExperimentDiff,
+  ModelVersion,
+  AbTestStatus,
+  AbTest,
+  AbTestCreate,
+  AbTestAssignment,
+  AbTestResolveResult,
+  SideBySideRating,
+} from './lifecycle.js';
+
 // Shareables types (Phase 89)
 export type {
   WorkflowShareableRequires,
@@ -664,3 +711,20 @@ export {
   type WorkflowRun,
   type WorkflowStepRun,
 } from './workflow.js';
+
+// Branching types (Phase 99)
+export {
+  ReplayJobStatusSchema,
+  ReplayJobSchema,
+  PairwiseWinnerValueSchema,
+  ReplayResultSchema,
+  ReplayBatchSummarySchema,
+  ReplayBatchReportSchema,
+  type BranchTreeNode,
+  type ReplayJobStatus,
+  type ReplayJob,
+  type PairwiseWinnerValue,
+  type ReplayResult,
+  type ReplayBatchSummary,
+  type ReplayBatchReport,
+} from './branching.js';

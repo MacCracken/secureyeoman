@@ -1090,6 +1090,151 @@ export async function deleteComputerUseEpisode(id: string): Promise<void> {
   });
 }
 
+// ─── Phase 97: LLM-as-Judge Evaluation ────────────────────────────
+
+export interface EvalDataset {
+  id: string;
+  name: string;
+  personalityId: string | null;
+  contentHash: string;
+  samples: { prompt: string; gold?: string }[];
+  sampleCount: number;
+  judgePrompt: string | null;
+  judgeModel: string | null;
+  createdAt: number;
+}
+
+export interface EvalRunSummary {
+  evalRunId: string;
+  datasetId: string;
+  modelName: string;
+  sampleCount: number;
+  avgGroundedness: number;
+  avgCoherence: number;
+  avgRelevance: number;
+  avgFluency: number;
+  avgHarmlessness: number;
+  scoredAt: number;
+}
+
+export interface EvalScore {
+  id: string;
+  evalRunId: string;
+  datasetId: string;
+  modelName: string;
+  sampleIndex: number;
+  prompt: string;
+  response: string;
+  groundedness: number;
+  coherence: number;
+  relevance: number;
+  fluency: number;
+  harmlessness: number;
+  rationale: Record<string, string> | null;
+  scoredAt: number;
+}
+
+export interface PairwiseComparisonSummary {
+  comparisonId: string;
+  datasetId: string;
+  modelA: string;
+  modelB: string;
+  sampleCount: number;
+  winsA: number;
+  winsB: number;
+  ties: number;
+  winRateA: number;
+  winRateB: number;
+  scoredAt: number;
+}
+
+export interface PairwiseResult {
+  id: string;
+  comparisonId: string;
+  datasetId: string;
+  modelA: string;
+  modelB: string;
+  sampleIndex: number;
+  prompt: string;
+  responseA: string;
+  responseB: string;
+  winner: 'a' | 'b' | 'tie';
+  reason: string;
+  scoredAt: number;
+}
+
+export async function fetchEvalDatasets(): Promise<EvalDataset[]> {
+  const data = await request<{ datasets: EvalDataset[] }>('/training/judge/datasets');
+  return data.datasets;
+}
+
+export async function createEvalDataset(req: {
+  name: string;
+  samples: { prompt: string; gold?: string }[];
+  personalityId?: string;
+}): Promise<EvalDataset> {
+  return request<EvalDataset>('/training/judge/datasets', {
+    method: 'POST',
+    body: JSON.stringify(req),
+  });
+}
+
+export async function deleteEvalDataset(id: string): Promise<void> {
+  await request<undefined>(`/training/judge/datasets/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function runPointwiseEval(req: {
+  datasetId: string;
+  modelName: string;
+  finetuneJobId?: string;
+  maxSamples?: number;
+}): Promise<{ status: string }> {
+  return request<{ status: string }>('/training/judge/pointwise', {
+    method: 'POST',
+    body: JSON.stringify(req),
+  });
+}
+
+export async function fetchEvalRuns(): Promise<EvalRunSummary[]> {
+  const data = await request<{ runs: EvalRunSummary[] }>('/training/judge/runs');
+  return data.runs;
+}
+
+export async function fetchEvalRunScores(runId: string): Promise<EvalScore[]> {
+  const data = await request<{ scores: EvalScore[] }>(
+    `/training/judge/runs/${encodeURIComponent(runId)}`
+  );
+  return data.scores;
+}
+
+export async function runPairwiseComparison(req: {
+  datasetId: string;
+  modelA: string;
+  modelB: string;
+  maxSamples?: number;
+}): Promise<{ status: string }> {
+  return request<{ status: string }>('/training/judge/pairwise', {
+    method: 'POST',
+    body: JSON.stringify(req),
+  });
+}
+
+export async function fetchPairwiseComparisons(): Promise<PairwiseComparisonSummary[]> {
+  const data = await request<{ comparisons: PairwiseComparisonSummary[] }>(
+    '/training/judge/comparisons'
+  );
+  return data.comparisons;
+}
+
+export async function fetchPairwiseDetails(comparisonId: string): Promise<PairwiseResult[]> {
+  const data = await request<{ results: PairwiseResult[] }>(
+    `/training/judge/comparisons/${encodeURIComponent(comparisonId)}`
+  );
+  return data.results;
+}
+
 // ─── AI Health ────────────────────────────────────────────────────
 
 export async function fetchAiHealth(): Promise<AiHealthStatus> {
@@ -2242,6 +2387,66 @@ export async function fetchCompressedContext(
 ): Promise<CompressedContext> {
   const params = maxTokens ? `?maxTokens=${maxTokens}` : '';
   return request(`/conversations/${conversationId}/compressed-context${params}`);
+}
+
+// ─── Conversation Branching & Replay API (Phase 99) ──────────────
+
+import type { BranchTreeNode, ReplayJob, ReplayBatchReport } from '../types.js';
+export type { BranchTreeNode, ReplayJob, ReplayBatchReport };
+
+export async function branchFromMessage(
+  conversationId: string,
+  messageIndex: number,
+  opts?: { title?: string; branchLabel?: string }
+): Promise<Conversation> {
+  return request(`/conversations/${conversationId}/branch`, {
+    method: 'POST',
+    body: JSON.stringify({ messageIndex, ...opts }),
+  });
+}
+
+export async function fetchBranches(
+  conversationId: string
+): Promise<{ branches: Conversation[] }> {
+  return request(`/conversations/${conversationId}/branches`);
+}
+
+export async function fetchBranchTree(conversationId: string): Promise<BranchTreeNode> {
+  return request(`/conversations/${conversationId}/tree`);
+}
+
+export async function replayConversation(
+  conversationId: string,
+  config: { model: string; provider: string; personalityId?: string }
+): Promise<{ replayConversationId: string; replayJobId: string }> {
+  return request(`/conversations/${conversationId}/replay`, {
+    method: 'POST',
+    body: JSON.stringify(config),
+  });
+}
+
+export async function createReplayBatch(config: {
+  sourceConversationIds: string[];
+  replayModel: string;
+  replayProvider: string;
+  replayPersonalityId?: string;
+}): Promise<ReplayJob> {
+  return request('/conversations/replay-batch', {
+    method: 'POST',
+    body: JSON.stringify(config),
+  });
+}
+
+export async function fetchReplayJobs(): Promise<{ jobs: ReplayJob[] }> {
+  return request('/replay-jobs');
+}
+
+export async function fetchReplayJob(id: string): Promise<ReplayJob> {
+  return request(`/replay-jobs/${id}`);
+}
+
+export async function fetchReplayReport(id: string): Promise<ReplayBatchReport> {
+  return request(`/replay-jobs/${id}/report`);
 }
 
 // ─── Sub-Agent Delegation API ─────────────────────────────────────
@@ -4865,4 +5070,303 @@ export async function fetchAnomalies(
 
 export async function triggerSummarize(): Promise<{ summarized: number }> {
   return request('/analytics/summarize', { method: 'POST' });
+}
+
+// ── Phase 98: Lifecycle Platform ────────────────────────────────────────────
+
+// Preference Pairs
+export interface PreferencePairItem {
+  id: string;
+  prompt: string;
+  chosen: string;
+  rejected: string;
+  source: 'annotation' | 'comparison' | 'multi_turn';
+  conversationId?: string | null;
+  personalityId?: string | null;
+  annotatorId?: string | null;
+  createdAt: string;
+}
+
+export async function fetchPreferencePairs(opts?: {
+  personalityId?: string;
+  source?: string;
+  limit?: number;
+}): Promise<{ pairs: PreferencePairItem[] }> {
+  const qs = new URLSearchParams();
+  if (opts?.personalityId) qs.set('personalityId', opts.personalityId);
+  if (opts?.source) qs.set('source', opts.source);
+  if (opts?.limit) qs.set('limit', String(opts.limit));
+  const q = qs.toString();
+  return request(`/training/preferences${q ? `?${q}` : ''}`);
+}
+
+export async function createPreferencePair(data: {
+  prompt: string;
+  chosen: string;
+  rejected: string;
+  source: string;
+  personalityId?: string;
+  annotatorId?: string;
+}): Promise<PreferencePairItem> {
+  return request('/training/preferences', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deletePreferencePair(id: string): Promise<void> {
+  return request(`/training/preferences/${id}`, { method: 'DELETE' });
+}
+
+export async function exportPreferencesAsDpo(opts?: {
+  personalityId?: string;
+  source?: string;
+}): Promise<Response> {
+  const token = getAccessToken();
+  const url = `${API_BASE}/training/preferences/export`;
+  return fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(opts ?? {}),
+  });
+}
+
+export async function rateSideBySide(data: {
+  prompt: string;
+  responseA: string;
+  responseB: string;
+  winner: 'a' | 'b';
+  personalityId?: string;
+  annotatorId?: string;
+}): Promise<PreferencePairItem> {
+  return request('/training/side-by-side/rate', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+// Curated Datasets
+export interface CuratedDatasetItem {
+  id: string;
+  name: string;
+  personalityId?: string | null;
+  rules: Record<string, unknown>;
+  datasetHash: string;
+  sampleCount: number;
+  totalTokens: number;
+  status: 'preview' | 'committed' | 'archived';
+  path?: string | null;
+  createdAt: string;
+}
+
+export async function previewCuratedDataset(
+  rules: Record<string, unknown>
+): Promise<{ sampleCount: number; totalTokens: number }> {
+  return request('/training/curated-datasets/preview', {
+    method: 'POST',
+    body: JSON.stringify(rules),
+  });
+}
+
+export async function createCuratedDataset(data: {
+  name: string;
+  personalityId?: string;
+  rules: Record<string, unknown>;
+  outputDir: string;
+}): Promise<CuratedDatasetItem> {
+  return request('/training/curated-datasets', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchCuratedDatasets(opts?: {
+  status?: string;
+}): Promise<{ datasets: CuratedDatasetItem[] }> {
+  const qs = new URLSearchParams();
+  if (opts?.status) qs.set('status', opts.status);
+  const q = qs.toString();
+  return request(`/training/curated-datasets${q ? `?${q}` : ''}`);
+}
+
+export async function deleteCuratedDataset(id: string): Promise<void> {
+  return request(`/training/curated-datasets/${id}`, { method: 'DELETE' });
+}
+
+// Experiments
+export interface TrainingExperimentItem {
+  id: string;
+  name: string;
+  finetuneJobId?: string | null;
+  datasetHash?: string | null;
+  hyperparameters: Record<string, unknown>;
+  environment: Record<string, unknown>;
+  lossCurve: { step: number; loss: number }[];
+  evalRunId?: string | null;
+  evalMetrics: Record<string, number>;
+  status: string;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExperimentDiffItem {
+  hyperparamDiffs: Record<string, { a: unknown; b: unknown }>;
+  metricDiffs: Record<string, { a: number | null; b: number | null }>;
+  lossCurveA: { step: number; loss: number }[];
+  lossCurveB: { step: number; loss: number }[];
+}
+
+export async function fetchTrainingExperiments(opts?: {
+  status?: string;
+}): Promise<{ experiments: TrainingExperimentItem[] }> {
+  const qs = new URLSearchParams();
+  if (opts?.status) qs.set('status', opts.status);
+  const q = qs.toString();
+  return request(`/training/experiments${q ? `?${q}` : ''}`);
+}
+
+export async function createTrainingExperiment(data: {
+  name: string;
+  finetuneJobId?: string;
+  datasetHash?: string;
+  hyperparameters?: Record<string, unknown>;
+  environment?: Record<string, unknown>;
+}): Promise<TrainingExperimentItem> {
+  return request('/training/experiments', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getTrainingExperiment(id: string): Promise<TrainingExperimentItem> {
+  return request(`/training/experiments/${id}`);
+}
+
+export async function deleteTrainingExperiment(id: string): Promise<void> {
+  return request(`/training/experiments/${id}`, { method: 'DELETE' });
+}
+
+export async function diffTrainingExperiments(
+  idA: string,
+  idB: string
+): Promise<ExperimentDiffItem> {
+  return request(`/training/experiments/diff?idA=${idA}&idB=${idB}`);
+}
+
+// Model Deployment
+export interface ModelVersionItem {
+  id: string;
+  personalityId: string;
+  modelName: string;
+  experimentId?: string | null;
+  finetuneJobId?: string | null;
+  previousModel?: string | null;
+  isActive: boolean;
+  deployedAt: string;
+  rolledBackAt?: string | null;
+}
+
+export async function deployModel(data: {
+  personalityId: string;
+  modelName: string;
+  experimentId?: string;
+  finetuneJobId?: string;
+}): Promise<ModelVersionItem> {
+  return request('/training/deploy', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function rollbackModel(personalityId: string): Promise<ModelVersionItem> {
+  return request('/training/deploy/rollback', {
+    method: 'POST',
+    body: JSON.stringify({ personalityId }),
+  });
+}
+
+export async function fetchModelVersions(
+  personalityId: string
+): Promise<{ versions: ModelVersionItem[] }> {
+  return request(`/training/model-versions?personalityId=${personalityId}`);
+}
+
+// A/B Tests
+export interface AbTestItem {
+  id: string;
+  personalityId: string;
+  name: string;
+  modelA: string;
+  modelB: string;
+  trafficPctB: number;
+  status: 'running' | 'completed' | 'cancelled';
+  autoPromote: boolean;
+  minConversations: number;
+  winner?: string | null;
+  conversationsA: number;
+  conversationsB: number;
+  avgQualityA?: number | null;
+  avgQualityB?: number | null;
+  createdAt: string;
+  completedAt?: string | null;
+}
+
+export async function createAbTest(data: {
+  personalityId: string;
+  name: string;
+  modelA: string;
+  modelB: string;
+  trafficPctB: number;
+  autoPromote?: boolean;
+  minConversations?: number;
+}): Promise<AbTestItem> {
+  return request('/training/ab-tests', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchAbTests(opts?: {
+  personalityId?: string;
+  status?: string;
+}): Promise<{ tests: AbTestItem[] }> {
+  const qs = new URLSearchParams();
+  if (opts?.personalityId) qs.set('personalityId', opts.personalityId);
+  if (opts?.status) qs.set('status', opts.status);
+  const q = qs.toString();
+  return request(`/training/ab-tests${q ? `?${q}` : ''}`);
+}
+
+export async function getAbTest(id: string): Promise<AbTestItem> {
+  return request(`/training/ab-tests/${id}`);
+}
+
+export async function completeAbTest(
+  id: string,
+  winner: string
+): Promise<AbTestItem> {
+  return request(`/training/ab-tests/${id}/complete`, {
+    method: 'POST',
+    body: JSON.stringify({ winner }),
+  });
+}
+
+export async function cancelAbTest(id: string): Promise<AbTestItem> {
+  return request(`/training/ab-tests/${id}/cancel`, { method: 'POST' });
+}
+
+export async function evaluateAbTest(
+  id: string
+): Promise<{
+  winner: string | null;
+  avgQualityA: number | null;
+  avgQualityB: number | null;
+  totalA: number;
+  totalB: number;
+}> {
+  return request(`/training/ab-tests/${id}/evaluate`, { method: 'POST' });
 }

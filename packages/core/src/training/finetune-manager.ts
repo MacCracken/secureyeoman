@@ -83,13 +83,16 @@ function rowToJob(row: Record<string, unknown>): FinetuneJob {
 
 export class FinetuneManager {
   private readonly workDir: string;
+  private readonly onJobComplete?: (jobId: string, job: FinetuneJob) => Promise<void>;
 
   constructor(
     private readonly pool: Pool,
     private readonly logger: SecureLogger,
-    workDir = '/tmp/secureyeoman-finetune'
+    workDir = '/tmp/secureyeoman-finetune',
+    onJobComplete?: (jobId: string, job: FinetuneJob) => Promise<void>
   ) {
     this.workDir = workDir;
+    this.onJobComplete = onJobComplete;
   }
 
   // ── CRUD ───────────────────────────────────────────────────────────────────
@@ -265,6 +268,18 @@ export class FinetuneManager {
             [adapterDir, jobId]
           );
           this.logger.info('Finetune job completed', { jobId });
+
+          if (this.onJobComplete) {
+            const updatedJob = await this.getJob(jobId);
+            if (updatedJob) {
+              this.onJobComplete(jobId, updatedJob).catch((err: unknown) => {
+                this.logger.error('onJobComplete callback failed', {
+                  jobId,
+                  error: err instanceof Error ? err.message : 'unknown',
+                });
+              });
+            }
+          }
         } else {
           await this.pool.query(
             `UPDATE training.finetune_jobs

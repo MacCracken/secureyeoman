@@ -1668,3 +1668,566 @@ describe('MultimodalManager — STT model resolution (Phase 58)', () => {
     delete process.env.OPENAI_API_KEY;
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Coverage gap: OpenAI vision provider branch
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('MultimodalManager — analyzeImage OpenAI vision provider', () => {
+  let storage: MultimodalStorage;
+  let deps: ReturnType<typeof createMockDeps>;
+  let manager: MultimodalManager;
+
+  beforeEach(async () => {
+    vi.resetAllMocks();
+    storage = createMockStorage();
+    deps = createMockDeps();
+    manager = new MultimodalManager(storage, deps, defaultConfig);
+    await manager.initialize();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.VISION_PROVIDER;
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.GOOGLE_API_KEY;
+    delete process.env.GEMINI_API_KEY;
+  });
+
+  it('routes to OpenAI vision API when VISION_PROVIDER=openai', async () => {
+    process.env.VISION_PROVIDER = 'openai';
+    process.env.OPENAI_API_KEY = 'sk-test-key-for-unit-test';
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: 'OpenAI sees a cat' } }],
+      }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await manager.analyzeImage({
+      imageBase64: 'dGVzdA==',
+      mimeType: 'image/jpeg',
+    });
+
+    expect(result.description).toBe('OpenAI sees a cat');
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('api.openai.com/v1/chat/completions'),
+      expect.objectContaining({ method: 'POST' })
+    );
+  });
+
+  it('throws when VISION_PROVIDER=openai without OPENAI_API_KEY', async () => {
+    process.env.VISION_PROVIDER = 'openai';
+    delete process.env.OPENAI_API_KEY;
+
+    await expect(
+      manager.analyzeImage({ imageBase64: 'dGVzdA==', mimeType: 'image/jpeg' })
+    ).rejects.toThrow('OPENAI_API_KEY');
+  });
+
+  it('throws when OpenAI vision returns non-ok status', async () => {
+    process.env.VISION_PROVIDER = 'openai';
+    process.env.OPENAI_API_KEY = 'sk-test-key-for-unit-test';
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 429,
+        text: async () => 'Rate limit exceeded',
+      })
+    );
+
+    await expect(
+      manager.analyzeImage({ imageBase64: 'dGVzdA==', mimeType: 'image/jpeg' })
+    ).rejects.toThrow('OpenAI vision error (429)');
+  });
+
+  it('routes to Gemini vision API when VISION_PROVIDER=gemini', async () => {
+    process.env.VISION_PROVIDER = 'gemini';
+    process.env.GOOGLE_API_KEY = 'gemini-test-key';
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        candidates: [{ content: { parts: [{ text: 'Gemini sees a dog' }] } }],
+      }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await manager.analyzeImage({
+      imageBase64: 'dGVzdA==',
+      mimeType: 'image/jpeg',
+    });
+
+    expect(result.description).toBe('Gemini sees a dog');
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('generativelanguage.googleapis.com'),
+      expect.objectContaining({ method: 'POST' })
+    );
+  });
+
+  it('uses GEMINI_API_KEY when GOOGLE_API_KEY is not set', async () => {
+    process.env.VISION_PROVIDER = 'gemini';
+    delete process.env.GOOGLE_API_KEY;
+    process.env.GEMINI_API_KEY = 'gemini-alt-key';
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          candidates: [{ content: { parts: [{ text: 'Gemini alt' }] } }],
+        }),
+      })
+    );
+
+    const result = await manager.analyzeImage({
+      imageBase64: 'dGVzdA==',
+      mimeType: 'image/jpeg',
+    });
+    expect(result.description).toBe('Gemini alt');
+  });
+
+  it('throws when VISION_PROVIDER=gemini without API key', async () => {
+    process.env.VISION_PROVIDER = 'gemini';
+    delete process.env.GOOGLE_API_KEY;
+    delete process.env.GEMINI_API_KEY;
+
+    await expect(
+      manager.analyzeImage({ imageBase64: 'dGVzdA==', mimeType: 'image/jpeg' })
+    ).rejects.toThrow('GOOGLE_API_KEY or GEMINI_API_KEY');
+  });
+
+  it('throws when Gemini vision returns non-ok status', async () => {
+    process.env.VISION_PROVIDER = 'gemini';
+    process.env.GOOGLE_API_KEY = 'gemini-test-key';
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+        text: async () => 'Service Unavailable',
+      })
+    );
+
+    await expect(
+      manager.analyzeImage({ imageBase64: 'dGVzdA==', mimeType: 'image/jpeg' })
+    ).rejects.toThrow('Gemini vision error (503)');
+  });
+
+  it('uses custom prompt when provided', async () => {
+    const result = await manager.analyzeImage({
+      imageBase64: 'dGVzdA==',
+      mimeType: 'image/jpeg',
+      prompt: 'What color is the sky?',
+    });
+
+    expect(result.description).toBeDefined();
+    // The AIClient.chat should have been called with the custom prompt
+    expect(deps.aiClient.chat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messages: expect.arrayContaining([
+          expect.objectContaining({
+            content: expect.stringContaining('What color is the sky?'),
+          }),
+        ]),
+      })
+    );
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Coverage gap: DALL-E no images, invalid URL for isAllowedDalleUrl
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('MultimodalManager — generateImage edge cases', () => {
+  let storage: MultimodalStorage;
+  let deps: ReturnType<typeof createMockDeps>;
+  let manager: MultimodalManager;
+
+  beforeEach(async () => {
+    vi.resetAllMocks();
+    storage = createMockStorage();
+    deps = createMockDeps();
+    manager = new MultimodalManager(storage, deps, defaultConfig);
+    await manager.initialize();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.OPENAI_API_KEY;
+  });
+
+  it('throws when DALL-E returns empty data array', async () => {
+    process.env.OPENAI_API_KEY = 'sk-test-key-for-unit-test';
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: [] }),
+      })
+    );
+
+    await expect(
+      manager.generateImage({
+        prompt: 'A cat',
+        size: '1024x1024',
+        quality: 'standard',
+        style: 'vivid',
+      })
+    ).rejects.toThrow('DALL-E API returned no images');
+  });
+
+  it('throws when DALL-E API returns non-ok status', async () => {
+    process.env.OPENAI_API_KEY = 'sk-test-key-for-unit-test';
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        text: async () => 'Bad prompt',
+      })
+    );
+
+    await expect(
+      manager.generateImage({
+        prompt: 'A cat',
+        size: '1024x1024',
+        quality: 'standard',
+        style: 'vivid',
+      })
+    ).rejects.toThrow('DALL-E API error (400)');
+  });
+
+  it('throws when OPENAI_API_KEY is missing for image gen', async () => {
+    delete process.env.OPENAI_API_KEY;
+
+    await expect(
+      manager.generateImage({
+        prompt: 'A cat',
+        size: '1024x1024',
+        quality: 'standard',
+        style: 'vivid',
+      })
+    ).rejects.toThrow('OPENAI_API_KEY');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Coverage gap: getStorage, getConfig, no extensionManager
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('MultimodalManager — getStorage and getConfig', () => {
+  it('getStorage returns the underlying storage instance', () => {
+    const storage = createMockStorage();
+    const deps = createMockDeps();
+    const manager = new MultimodalManager(storage, deps, defaultConfig);
+    expect(manager.getStorage()).toBe(storage);
+  });
+
+  it('getConfig returns the provided config', () => {
+    const storage = createMockStorage();
+    const deps = createMockDeps();
+    const manager = new MultimodalManager(storage, deps, defaultConfig);
+    const config = manager.getConfig();
+    expect(config.enabled).toBe(true);
+    expect(config.vision.enabled).toBe(true);
+  });
+});
+
+describe('MultimodalManager — no extensionManager', () => {
+  it('works without extensionManager (null)', async () => {
+    const storage = createMockStorage();
+    const deps = createMockDeps();
+    deps.extensionManager = null;
+    const manager = new MultimodalManager(storage, deps, defaultConfig);
+    await manager.initialize();
+
+    // analyzeImage should work without emitting hooks
+    const result = await manager.analyzeImage({
+      imageBase64: 'dGVzdA==',
+      mimeType: 'image/jpeg',
+    });
+    expect(result.description).toBeDefined();
+  });
+
+  it('works without extensionManager (undefined)', async () => {
+    const storage = createMockStorage();
+    const deps = createMockDeps();
+    delete (deps as any).extensionManager;
+    const manager = new MultimodalManager(storage, deps, defaultConfig);
+    await manager.initialize();
+
+    const result = await manager.triggerHaptic({ pattern: 100 });
+    expect(result.triggered).toBe(true);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Coverage gap: sanitizeErrorMessage with Token pattern and sk_ pattern
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('MultimodalManager — error sanitization patterns', () => {
+  let storage: MultimodalStorage;
+  let deps: ReturnType<typeof createMockDeps>;
+  let manager: MultimodalManager;
+
+  beforeEach(async () => {
+    vi.resetAllMocks();
+    storage = createMockStorage();
+    deps = createMockDeps();
+    manager = new MultimodalManager(storage, deps, defaultConfig);
+    await manager.initialize();
+  });
+
+  it('strips sk_ prefixed tokens from error messages', async () => {
+    (deps.aiClient.chat as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('Failed with key sk_abc123def456ghi789jkl012mno345')
+    );
+
+    await expect(
+      manager.analyzeImage({ imageBase64: 'dGVzdA==', mimeType: 'image/jpeg' })
+    ).rejects.toThrow('[REDACTED]');
+  });
+
+  it('strips Token prefixed values from error messages', async () => {
+    (deps.aiClient.chat as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('Failed with Token abcdefghijklmnopqrstuvwxyz12')
+    );
+
+    await expect(
+      manager.analyzeImage({ imageBase64: 'dGVzdA==', mimeType: 'image/jpeg' })
+    ).rejects.toThrow('Token [REDACTED]');
+  });
+
+  it('handles non-Error thrown objects', async () => {
+    (deps.aiClient.chat as ReturnType<typeof vi.fn>).mockRejectedValue(42);
+
+    await expect(
+      manager.analyzeImage({ imageBase64: 'dGVzdA==', mimeType: 'image/jpeg' })
+    ).rejects.toThrow('42');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Coverage gap: TTS provider-specific voice selection (non-alloy voice)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('MultimodalManager — TTS custom voice selection', () => {
+  let storage: MultimodalStorage;
+  let deps: ReturnType<typeof createMockDeps>;
+  let manager: MultimodalManager;
+
+  beforeEach(async () => {
+    vi.resetAllMocks();
+    storage = createMockStorage();
+    deps = createMockDeps();
+    manager = new MultimodalManager(storage, deps, defaultConfig);
+    await manager.initialize();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.TTS_PROVIDER;
+    delete process.env.ELEVENLABS_API_KEY;
+    delete process.env.DEEPGRAM_API_KEY;
+    delete process.env.CARTESIA_API_KEY;
+  });
+
+  it('uses custom voice for ElevenLabs when voice is not alloy', async () => {
+    process.env.TTS_PROVIDER = 'elevenlabs';
+    process.env.ELEVENLABS_API_KEY = 'sk_test';
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => Buffer.from('audio').buffer,
+      })
+    );
+
+    await manager.synthesizeSpeech({
+      text: 'Hello',
+      voice: 'custom-voice-id',
+      model: 'tts-1',
+      responseFormat: 'mp3',
+    });
+
+    const fetchCall = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(fetchCall[0]).toContain('custom-voice-id');
+  });
+
+  it('uses custom voice for Deepgram when voice is not alloy', async () => {
+    process.env.TTS_PROVIDER = 'deepgram';
+    process.env.DEEPGRAM_API_KEY = 'dg_test';
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => Buffer.from('audio').buffer,
+      })
+    );
+
+    await manager.synthesizeSpeech({
+      text: 'Hello',
+      voice: 'aura-custom',
+      model: 'tts-1',
+      responseFormat: 'mp3',
+    });
+
+    const fetchCall = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(fetchCall[0]).toContain('aura-custom');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Coverage gap: OpenAI STT with language param, Whisper API error
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('MultimodalManager — OpenAI STT branches', () => {
+  let storage: MultimodalStorage;
+  let deps: ReturnType<typeof createMockDeps>;
+  let manager: MultimodalManager;
+
+  beforeEach(async () => {
+    vi.resetAllMocks();
+    storage = createMockStorage();
+    deps = createMockDeps();
+    manager = new MultimodalManager(storage, deps, defaultConfig);
+    await manager.initialize();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.OPENAI_API_KEY;
+  });
+
+  it('sends language param to OpenAI Whisper when provided', async () => {
+    process.env.OPENAI_API_KEY = 'sk-test-key-for-unit-test';
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ text: 'hola', language: 'es' }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await manager.transcribeAudio({
+      audioBase64: 'dGVzdA==',
+      format: 'wav',
+      language: 'es',
+    });
+
+    expect(result.text).toBe('hola');
+    const formData = mockFetch.mock.calls[0][1].body as FormData;
+    expect(formData.get('language')).toBe('es');
+  });
+
+  it('throws when OpenAI Whisper API returns non-ok status', async () => {
+    process.env.OPENAI_API_KEY = 'sk-test-key-for-unit-test';
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: async () => 'Server Error',
+      })
+    );
+
+    await expect(
+      manager.transcribeAudio({ audioBase64: 'dGVzdA==', format: 'wav' })
+    ).rejects.toThrow('Whisper API error (500)');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Coverage gap: OpenAI TTS synthesizeSpeech (non-voicebox default path)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('MultimodalManager — OpenAI TTS default path', () => {
+  let storage: MultimodalStorage;
+  let deps: ReturnType<typeof createMockDeps>;
+  let manager: MultimodalManager;
+
+  beforeEach(async () => {
+    vi.resetAllMocks();
+    storage = createMockStorage();
+    deps = createMockDeps();
+    manager = new MultimodalManager(storage, deps, defaultConfig);
+    await manager.initialize();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.TTS_PROVIDER;
+    delete process.env.OPENAI_API_KEY;
+  });
+
+  it('routes to OpenAI TTS as default provider', async () => {
+    process.env.OPENAI_API_KEY = 'sk-test-key-for-unit-test';
+
+    const audioBytes = Buffer.from('fake-tts-audio');
+    const ab = audioBytes.buffer.slice(audioBytes.byteOffset, audioBytes.byteOffset + audioBytes.byteLength);
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => ab,
+      })
+    );
+
+    const result = await manager.synthesizeSpeech({
+      text: 'Hello OpenAI',
+      voice: 'alloy',
+      model: 'tts-1',
+      responseFormat: 'mp3',
+    });
+
+    expect(result.audioBase64).toBeDefined();
+    expect(result.format).toBe('mp3');
+    expect(storage.completeJob).toHaveBeenCalled();
+  });
+
+  it('throws when OPENAI_API_KEY is missing for default TTS', async () => {
+    delete process.env.OPENAI_API_KEY;
+
+    await expect(
+      manager.synthesizeSpeech({
+        text: 'Hello',
+        voice: 'alloy',
+        model: 'tts-1',
+        responseFormat: 'mp3',
+      })
+    ).rejects.toThrow('OPENAI_API_KEY');
+  });
+
+  it('throws when OpenAI TTS returns non-ok status', async () => {
+    process.env.OPENAI_API_KEY = 'sk-test-key-for-unit-test';
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        text: async () => 'Bad Request',
+      })
+    );
+
+    await expect(
+      manager.synthesizeSpeech({
+        text: 'Hello',
+        voice: 'alloy',
+        model: 'tts-1',
+        responseFormat: 'mp3',
+      })
+    ).rejects.toThrow('TTS API error (400)');
+  });
+});

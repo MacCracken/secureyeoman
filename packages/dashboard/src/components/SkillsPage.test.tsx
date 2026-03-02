@@ -35,6 +35,8 @@ vi.mock('../api/client', () => ({
   fetchCommunityStatus: vi.fn(),
   fetchPersonalities: vi.fn(),
   fetchSecurityPolicy: vi.fn(),
+  fetchWorkflows: vi.fn(),
+  fetchSwarmTemplates: vi.fn(),
   getAccessToken: vi.fn().mockReturnValue(null),
 }));
 
@@ -65,6 +67,8 @@ const mockFetchCommunityStatus = vi.mocked(api.fetchCommunityStatus);
 const mockCreateSkill = vi.mocked(api.createSkill);
 const mockSyncCommunitySkills = vi.mocked(api.syncCommunitySkills);
 const mockFetchSecurityPolicy = vi.mocked(api.fetchSecurityPolicy);
+const mockFetchWorkflows = vi.mocked(api.fetchWorkflows);
+const mockFetchSwarmTemplates = vi.mocked(api.fetchSwarmTemplates);
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
@@ -139,6 +143,8 @@ beforeEach(() => {
     lastSyncedAt: null,
   });
   mockFetchSecurityPolicy.mockResolvedValue({ allowCommunityGitFetch: false } as never);
+  mockFetchWorkflows.mockResolvedValue({ definitions: [], total: 0 });
+  mockFetchSwarmTemplates.mockResolvedValue({ templates: [] });
 });
 
 // ── Tests ───────────────────────────────────────────────────────────
@@ -146,7 +152,7 @@ beforeEach(() => {
 describe('SkillsPage', () => {
   it('renders My Skills tab without crashing', async () => {
     renderComponent();
-    expect(await screen.findByText('Skills')).toBeInTheDocument();
+    expect(await screen.findByText('Catalog')).toBeInTheDocument();
     expect(screen.getByText('Personal')).toBeInTheDocument();
   });
 
@@ -172,13 +178,19 @@ describe('SkillsPage', () => {
     mockFetchSecurityPolicy.mockResolvedValue({ allowCommunityGitFetch: true } as never);
     renderComponent([{ pathname: '/skills', state: { initialTab: 'community' } }]);
 
-    // Community tab content should be visible
-    expect(await screen.findByText(/Sync Community Skills/i)).toBeInTheDocument();
+    // The community tab button becomes visible once the policy query resolves
+    const communityBtn = await screen.findByRole('button', { name: /^community$/i });
+    // Click it to ensure community content is active (effect may have reset activeTab
+    // before the policy resolved)
+    fireEvent.click(communityBtn);
+
+    // Community tab content should be visible — empty state shows "No community skills found"
+    expect(await screen.findByText(/No community skills found/i)).toBeInTheDocument();
   });
 
   it('Community tab button is hidden by default (allowCommunityGitFetch: false)', async () => {
     renderComponent();
-    await screen.findByText('Skills');
+    await screen.findByText('Catalog');
     expect(screen.queryByRole('button', { name: /^community$/i })).not.toBeInTheDocument();
   });
 
@@ -201,7 +213,7 @@ describe('SkillsPage', () => {
   it('renders Import button next to Add Skill button on Personal tab', async () => {
     renderComponent();
     // Personal tab is active by default
-    expect(await screen.findByText('Skills')).toBeInTheDocument();
+    expect(await screen.findByText('Catalog')).toBeInTheDocument();
     // Both action buttons should be present
     expect(screen.getByRole('button', { name: /import/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add skill/i })).toBeInTheDocument();
@@ -209,7 +221,7 @@ describe('SkillsPage', () => {
 
   it('shows error banner when importing a file with wrong $schema', async () => {
     renderComponent();
-    await screen.findByText('Skills');
+    await screen.findByText('Catalog');
 
     // Simulate selecting a file with a wrong schema marker via the hidden fallback input
     const badSkillJson = JSON.stringify({
@@ -229,7 +241,7 @@ describe('SkillsPage', () => {
 
   it('shows error banner when importing a non-JSON file', async () => {
     renderComponent();
-    await screen.findByText('Skills');
+    await screen.findByText('Catalog');
 
     const file = new File(['<svg></svg>'], 'image.svg', { type: 'image/svg+xml' });
     const input = document.querySelector('input[type="file"]')!;
@@ -289,7 +301,7 @@ describe('SkillsPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Summarize Text')).toBeInTheDocument();
-      expect(screen.getByText('YEOMAN Built-ins')).toBeInTheDocument();
+      expect(screen.getByText('YEOMAN Skills')).toBeInTheDocument();
     });
   });
 
@@ -335,8 +347,8 @@ describe('SkillsPage', () => {
     const communityBtn = await screen.findByRole('button', { name: /^community$/i });
     fireEvent.click(communityBtn);
 
-    // Community content visible
-    await screen.findByText(/Sync Community Skills/i);
+    // Community content visible — empty state shows "No community skills found"
+    await screen.findByText(/No community skills found/i);
 
     // fetchMarketplaceSkills must have fired — not gated by personality init
     await waitFor(() => {
@@ -358,7 +370,7 @@ describe('SkillsPage', () => {
     // Open community tab
     const communityBtn = await screen.findByRole('button', { name: /^community$/i });
     fireEvent.click(communityBtn);
-    await screen.findByText(/Sync Community Skills/i);
+    await screen.findByText(/No community skills found/i);
 
     // The personality selector should include a "Global" option (value='')
     const select = await screen.findByRole('combobox');

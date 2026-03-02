@@ -603,4 +603,197 @@ describe('ContentGuardrail', () => {
       expect(result.passed).toBe(true);
     });
   });
+
+  // ── Additional branch coverage tests ─────────────────────────────────
+
+  describe('topic restriction — brain manager semantic search fallback', () => {
+    it('falls through to keyword fallback when semantic search throws', async () => {
+      const mockSearch = vi.fn().mockRejectedValue(new Error('search failed'));
+      const { guardrail } = makeGuardrail(
+        { blockedTopics: ['nuclear weapons'], topicThreshold: 0.2 },
+        { brainManager: { semanticSearch: mockSearch } }
+      );
+      const result = await guardrail.scanAsync('nuclear weapons are very dangerous weapons', ctx);
+      // Should still detect via keyword fallback
+      expect(result.passed).toBe(false);
+      expect(result.findings.some((f) => f.type === 'topic')).toBe(true);
+    });
+
+    it('uses keyword overlap even when brain manager is available but returns empty', async () => {
+      const mockSearch = vi.fn().mockResolvedValue([]);
+      const { guardrail } = makeGuardrail(
+        { blockedTopics: ['financial fraud'], topicThreshold: 0.3 },
+        { brainManager: { semanticSearch: mockSearch } }
+      );
+      const result = await guardrail.scanAsync('Details about financial fraud schemes', ctx);
+      expect(result.passed).toBe(false);
+    });
+  });
+
+  describe('grounding — citation extraction edge cases', () => {
+    it('extracts "as stated by" citation patterns', async () => {
+      const mockSearch = vi.fn().mockResolvedValue([]);
+      const { guardrail } = makeGuardrail(
+        { groundingEnabled: true, groundingMode: 'flag' },
+        { brainManager: { semanticSearch: mockSearch } }
+      );
+      const result = await guardrail.scanAsync(
+        'As stated by the World Health Organization, vaccines save lives.',
+        ctx
+      );
+      expect(result.findings.some((f) => f.type === 'grounding')).toBe(true);
+    });
+
+    it('extracts "as reported by" citation patterns', async () => {
+      const mockSearch = vi.fn().mockResolvedValue([]);
+      const { guardrail } = makeGuardrail(
+        { groundingEnabled: true, groundingMode: 'flag' },
+        { brainManager: { semanticSearch: mockSearch } }
+      );
+      const result = await guardrail.scanAsync(
+        'As reported by Reuters and the Associated Press, the event occurred.',
+        ctx
+      );
+      expect(result.findings.some((f) => f.type === 'grounding')).toBe(true);
+    });
+
+    it('skips individual citation check failures', async () => {
+      const mockSearch = vi.fn().mockRejectedValue(new Error('search failed'));
+      const { guardrail } = makeGuardrail(
+        { groundingEnabled: true, groundingMode: 'block' },
+        { brainManager: { semanticSearch: mockSearch } }
+      );
+      const result = await guardrail.scanAsync(
+        'The report states "this is a very important long quoted statement" as a key finding.',
+        ctx
+      );
+      // Should pass because the search failed and we skip (not block)
+      expect(result.passed).toBe(true);
+    });
+
+    it('does not extract quotes shorter than 10 characters', async () => {
+      const mockSearch = vi.fn().mockResolvedValue([]);
+      const { guardrail } = makeGuardrail(
+        { groundingEnabled: true, groundingMode: 'block' },
+        { brainManager: { semanticSearch: mockSearch } }
+      );
+      const result = await guardrail.scanAsync(
+        'He said "short" and moved on.',
+        ctx
+      );
+      // "short" is only 5 chars — should not be extracted as citation
+      expect(mockSearch).not.toHaveBeenCalled();
+      expect(result.passed).toBe(true);
+    });
+  });
+
+  describe('scanAsync — no findings branch', () => {
+    it('does not audit when there are no findings', async () => {
+      const { guardrail, deps } = makeGuardrail({});
+      await guardrail.scanAsync('clean text without issues', ctx);
+      expect(deps.auditRecord).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('block list — personality additions without global block list', () => {
+    it('returns global block list when no personality additions', () => {
+      const { guardrail } = makeGuardrail({ blockList: ['forbidden'] });
+      const result = guardrail.scanSync('This is forbidden content', ctx);
+      expect(result.passed).toBe(false);
+    });
+
+    it('returns global block list when personality additions are empty', () => {
+      const { guardrail } = makeGuardrail({ blockList: ['forbidden'] });
+      const personalityCfg: ContentGuardrailPersonalityConfig = {
+        blockListAdditions: [],
+        blockedTopicAdditions: [],
+      };
+      const result = guardrail.scanSync('This is forbidden content', ctx, personalityCfg);
+      expect(result.passed).toBe(false);
+    });
+  });
+
+  describe('scan() combined — async failure path', () => {
+    it('returns false when async blocks after sync passes', async () => {
+      const { guardrail } = makeGuardrail({
+        blockedTopics: ['violence'],
+        topicThreshold: 0.3,
+      });
+      const result = await guardrail.scan('violence violence violence violence', ctx);
+      expect(result.passed).toBe(false);
+      expect(result.findings.some((f) => f.type === 'topic')).toBe(true);
+    });
+  });
+
+  describe('toxicity — detail with and without categories', () => {
+    let mockFetch: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+      mockFetch = vi.fn();
+      vi.stubGlobal('fetch', mockFetch);
+    });
+
+    it('includes categories in detail when present', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ score: 0.9, categories: ['hate', 'violence'] }),
+      });
+      const { guardrail } = makeGuardrail({
+        toxicityEnabled: true,
+        toxicityMode: 'warn',
+        toxicityClassifierUrl: 'http://classifier.test/classify',
+        toxicityThreshold: 0.7,
+      });
+      const result = await guardrail.scanAsync('toxic content', ctx);
+      expect(result.findings[0].detail).toContain('hate, violence');
+    });
+
+    it('omits categories in detail when absent', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ score: 0.8 }),
+      });
+      const { guardrail } = makeGuardrail({
+        toxicityEnabled: true,
+        toxicityMode: 'warn',
+        toxicityClassifierUrl: 'http://classifier.test/classify',
+        toxicityThreshold: 0.7,
+      });
+      const result = await guardrail.scanAsync('toxic content', ctx);
+      expect(result.findings[0].detail).not.toContain('(');
+    });
+  });
+
+  describe('PII disabled mode', () => {
+    it('produces no PII findings when piiMode is disabled', () => {
+      const { guardrail } = makeGuardrail({ piiMode: 'disabled' });
+      const result = guardrail.scanSync('Email: user@test.com, SSN: 123-45-6789', ctx);
+      expect(result.findings.filter((f) => f.type === 'pii')).toHaveLength(0);
+    });
+  });
+
+  describe('personality piiMode override', () => {
+    it('personality detect_only overrides global disabled', () => {
+      const { guardrail } = makeGuardrail({ piiMode: 'disabled' });
+      const personalityCfg: ContentGuardrailPersonalityConfig = {
+        piiMode: 'detect_only',
+        blockListAdditions: [],
+        blockedTopicAdditions: [],
+      };
+      const result = guardrail.scanSync('Email: user@test.com', ctx, personalityCfg);
+      expect(result.findings.some((f) => f.type === 'pii')).toBe(true);
+      expect(result.text).toContain('user@test.com'); // detect_only, no redaction
+    });
+  });
+
+  describe('jaccardOverlap edge cases', () => {
+    it('passes when topic has low overlap with response', async () => {
+      const { guardrail } = makeGuardrail({
+        blockedTopics: ['nuclear weapons manufacturing'],
+        topicThreshold: 0.75,
+      });
+      const result = await guardrail.scanAsync('The weather is great today', ctx);
+      expect(result.passed).toBe(true);
+    });
+  });
 });
