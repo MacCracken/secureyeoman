@@ -272,3 +272,236 @@ describe('DELETE /api/v1/users/me/notification-prefs/:id', () => {
     expect(res.statusCode).toBe(401);
   });
 });
+
+// ── Phase 105: Branch coverage for body parsing + error paths ─────────────────
+
+describe('POST body parsing branches (Phase 105)', () => {
+  it('handles non-string integrationId (sets null)', async () => {
+    const storage = makeStorage();
+    const app = await buildApp(storage);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/users/me/notification-prefs',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ channel: 'slack', chatId: 'C123', integrationId: 42 }),
+    });
+    expect(res.statusCode).toBe(201);
+    expect(storage.upsert).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ integrationId: null })
+    );
+  });
+
+  it('handles string integrationId (passes through)', async () => {
+    const storage = makeStorage();
+    const app = await buildApp(storage);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/users/me/notification-prefs',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ channel: 'slack', chatId: 'C123', integrationId: 'int-1' }),
+    });
+    expect(res.statusCode).toBe(201);
+    expect(storage.upsert).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ integrationId: 'int-1' })
+    );
+  });
+
+  it('defaults enabled to true when not provided', async () => {
+    const storage = makeStorage();
+    const app = await buildApp(storage);
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/users/me/notification-prefs',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ channel: 'telegram', chatId: '123' }),
+    });
+    expect(storage.upsert).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ enabled: true })
+    );
+  });
+
+  it('converts enabled to boolean when provided', async () => {
+    const storage = makeStorage();
+    const app = await buildApp(storage);
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/users/me/notification-prefs',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ channel: 'telegram', chatId: '123', enabled: false }),
+    });
+    expect(storage.upsert).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ enabled: false })
+    );
+  });
+
+  it('parses numeric quietHoursStart and quietHoursEnd', async () => {
+    const storage = makeStorage();
+    const app = await buildApp(storage);
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/users/me/notification-prefs',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ channel: 'slack', chatId: 'C1', quietHoursStart: 22, quietHoursEnd: 8 }),
+    });
+    expect(storage.upsert).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ quietHoursStart: 22, quietHoursEnd: 8 })
+    );
+  });
+
+  it('sets null for NaN quietHoursStart/End', async () => {
+    const storage = makeStorage();
+    const app = await buildApp(storage);
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/users/me/notification-prefs',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ channel: 'slack', chatId: 'C1', quietHoursStart: 'abc', quietHoursEnd: 'xyz' }),
+    });
+    expect(storage.upsert).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ quietHoursStart: null, quietHoursEnd: null })
+    );
+  });
+
+  it('returns 400 when chatId is empty string', async () => {
+    const storage = makeStorage();
+    const app = await buildApp(storage);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/users/me/notification-prefs',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ channel: 'slack', chatId: '   ' }),
+    });
+    expect(res.statusCode).toBe(400);
+  });
+});
+
+describe('PUT body parsing branches (Phase 105)', () => {
+  it('returns 400 for invalid minLevel in update', async () => {
+    const storage = makeStorage();
+    const app = await buildApp(storage);
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/users/me/notification-prefs/pref-1',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ minLevel: 'debug' }),
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('passes through patch fields: channel, chatId, integrationId, enabled, quietHours, minLevel', async () => {
+    const storage = makeStorage();
+    const app = await buildApp(storage);
+    await app.inject({
+      method: 'PUT',
+      url: '/api/v1/users/me/notification-prefs/pref-1',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        channel: 'discord',
+        chatId: ' trimmed ',
+        integrationId: 'int-2',
+        enabled: true,
+        quietHoursStart: 23,
+        quietHoursEnd: 7,
+        minLevel: 'warn',
+      }),
+    });
+    expect(storage.update).toHaveBeenCalledWith(
+      'user-1',
+      'pref-1',
+      expect.objectContaining({
+        channel: 'discord',
+        chatId: 'trimmed',
+        integrationId: 'int-2',
+        enabled: true,
+        quietHoursStart: 23,
+        quietHoursEnd: 7,
+        minLevel: 'warn',
+      })
+    );
+  });
+
+  it('sets integrationId to null when non-string', async () => {
+    const storage = makeStorage();
+    const app = await buildApp(storage);
+    await app.inject({
+      method: 'PUT',
+      url: '/api/v1/users/me/notification-prefs/pref-1',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ integrationId: 99 }),
+    });
+    expect(storage.update).toHaveBeenCalledWith(
+      'user-1',
+      'pref-1',
+      expect.objectContaining({ integrationId: null })
+    );
+  });
+
+  it('sets quietHoursStart/End to null for NaN values', async () => {
+    const storage = makeStorage();
+    const app = await buildApp(storage);
+    await app.inject({
+      method: 'PUT',
+      url: '/api/v1/users/me/notification-prefs/pref-1',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ quietHoursStart: 'bad', quietHoursEnd: 'bad' }),
+    });
+    expect(storage.update).toHaveBeenCalledWith(
+      'user-1',
+      'pref-1',
+      expect.objectContaining({ quietHoursStart: null, quietHoursEnd: null })
+    );
+  });
+});
+
+describe('Error catch blocks (Phase 105)', () => {
+  it('GET returns 500 when storage.list throws', async () => {
+    const storage = makeStorage();
+    storage.list.mockRejectedValueOnce(new Error('db error'));
+    const app = await buildApp(storage);
+    const res = await app.inject({ method: 'GET', url: '/api/v1/users/me/notification-prefs' });
+    expect(res.statusCode).toBe(500);
+  });
+
+  it('POST returns 500 when storage.upsert throws', async () => {
+    const storage = makeStorage();
+    storage.upsert.mockRejectedValueOnce(new Error('db error'));
+    const app = await buildApp(storage);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/users/me/notification-prefs',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ channel: 'slack', chatId: 'C1' }),
+    });
+    expect(res.statusCode).toBe(500);
+  });
+
+  it('PUT returns 500 when storage.update throws', async () => {
+    const storage = makeStorage();
+    storage.update.mockRejectedValueOnce(new Error('db error'));
+    const app = await buildApp(storage);
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/users/me/notification-prefs/pref-1',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ enabled: true }),
+    });
+    expect(res.statusCode).toBe(500);
+  });
+
+  it('DELETE returns 500 when storage.delete throws', async () => {
+    const storage = makeStorage();
+    storage.delete.mockRejectedValueOnce(new Error('db error'));
+    const app = await buildApp(storage);
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/users/me/notification-prefs/pref-1',
+    });
+    expect(res.statusCode).toBe(500);
+  });
+});

@@ -221,4 +221,68 @@ describe('Analytics Routes', () => {
       expect(body.anomalies[0].anomalyType).toBe('message_rate_spike');
     });
   });
+
+  // ── Phase 105: 503 guard branches ─────────────────────────────────────────
+
+  describe('503 when services unavailable (Phase 105)', () => {
+    it('sentiment/trend returns 503 when storage null', async () => {
+      mockSecureYeoman.getAnalyticsStorage.mockReturnValueOnce(null);
+      const res = await app.inject({ method: 'GET', url: '/api/v1/analytics/sentiment/trend/p1' });
+      expect(res.statusCode).toBe(503);
+    });
+
+    it('engagement/:personalityId returns 503 when service null', async () => {
+      mockSecureYeoman.getEngagementMetricsService.mockReturnValueOnce(null);
+      const res = await app.inject({ method: 'GET', url: '/api/v1/analytics/engagement/p1' });
+      expect(res.statusCode).toBe(503);
+    });
+
+    it('engagement (global) returns 503 when service null', async () => {
+      mockSecureYeoman.getEngagementMetricsService.mockReturnValueOnce(null);
+      const res = await app.inject({ method: 'GET', url: '/api/v1/analytics/engagement' });
+      expect(res.statusCode).toBe(503);
+    });
+
+    it('summary/:conversationId returns 503 when storage null', async () => {
+      mockSecureYeoman.getAnalyticsStorage.mockReturnValueOnce(null);
+      const res = await app.inject({ method: 'GET', url: '/api/v1/analytics/summary/c1' });
+      expect(res.statusCode).toBe(503);
+    });
+
+    it('summarize returns 503 when summarizer null', async () => {
+      mockSecureYeoman.getConversationSummarizer.mockReturnValueOnce(null);
+      const res = await app.inject({ method: 'POST', url: '/api/v1/analytics/summarize' });
+      expect(res.statusCode).toBe(503);
+    });
+
+    it('entities/:conversationId returns 503 when storage null', async () => {
+      mockSecureYeoman.getAnalyticsStorage.mockReturnValueOnce(null);
+      const res = await app.inject({ method: 'GET', url: '/api/v1/analytics/entities/c1' });
+      expect(res.statusCode).toBe(503);
+    });
+
+    it('entities (search) returns 503 when storage null', async () => {
+      mockSecureYeoman.getAnalyticsStorage.mockReturnValueOnce(null);
+      const res = await app.inject({ method: 'GET', url: '/api/v1/analytics/entities?entity=foo' });
+      expect(res.statusCode).toBe(503);
+    });
+
+    it('entities/top/:personalityId returns 503 when storage null', async () => {
+      mockSecureYeoman.getAnalyticsStorage.mockReturnValueOnce(null);
+      const res = await app.inject({ method: 'GET', url: '/api/v1/analytics/entities/top/p1' });
+      expect(res.statusCode).toBe(503);
+    });
+
+    it('phrases/:personalityId returns 503 when storage null', async () => {
+      mockSecureYeoman.getAnalyticsStorage.mockReturnValueOnce(null);
+      const res = await app.inject({ method: 'GET', url: '/api/v1/analytics/phrases/p1' });
+      expect(res.statusCode).toBe(503);
+    });
+
+    it('anomalies returns 503 when storage null', async () => {
+      mockSecureYeoman.getAnalyticsStorage.mockReturnValueOnce(null);
+      const res = await app.inject({ method: 'GET', url: '/api/v1/analytics/anomalies' });
+      expect(res.statusCode).toBe(503);
+    });
+  });
 });

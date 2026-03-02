@@ -249,6 +249,233 @@ describe('NotificationManager fan-out (Phase 55)', () => {
   });
 });
 
+// ─── Phase 105: Quiet hours + edge case branch coverage ──────────────────────
+
+describe('NotificationManager fan-out quiet hours (Phase 105)', () => {
+  let dateSpy: ReturnType<typeof vi.spyOn>;
+
+  afterEach(() => {
+    dateSpy?.mockRestore();
+  });
+
+  function mockUTCHour(hour: number) {
+    dateSpy = vi.spyOn(Date.prototype, 'getUTCHours').mockReturnValue(hour);
+  }
+
+  async function flushFanout() {
+    // _fanout is fire-and-forget; give microtasks time to settle
+    await new Promise((r) => setImmediate(r));
+    await new Promise((r) => setImmediate(r));
+  }
+
+  it('skips notification during daytime quiet hours (e > s, hour in range)', async () => {
+    mockUTCHour(12); // Quiet hours 9–17 → should skip
+    const storage = makeStorage();
+    const prefs = [makePref({ quietHoursStart: 9, quietHoursEnd: 17 })];
+    const prefsStorage = makePrefsStorage(prefs);
+    const im = makeIntegrationManager();
+
+    const manager = new NotificationManager(storage);
+    manager.setUserPrefsStorage(prefsStorage as any);
+    manager.setIntegrationManager(im as any);
+
+    await manager.notify({ type: 'test', title: 'T', body: 'B', level: 'error' });
+    await flushFanout();
+
+    expect(im._sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('sends notification outside daytime quiet hours (hour below start)', async () => {
+    mockUTCHour(7); // Quiet hours 9–17 → should send
+    const storage = makeStorage();
+    const prefs = [makePref({ quietHoursStart: 9, quietHoursEnd: 17 })];
+    const prefsStorage = makePrefsStorage(prefs);
+    const im = makeIntegrationManager();
+
+    const manager = new NotificationManager(storage);
+    manager.setUserPrefsStorage(prefsStorage as any);
+    manager.setIntegrationManager(im as any);
+
+    await manager.notify({ type: 'test', title: 'T', body: 'B', level: 'error' });
+    await flushFanout();
+
+    expect(im._sendMessage).toHaveBeenCalled();
+  });
+
+  it('skips notification during overnight quiet hours (s=22, e=8, hour=23)', async () => {
+    mockUTCHour(23); // Quiet hours 22–08 overnight → should skip
+    const storage = makeStorage();
+    const prefs = [makePref({ quietHoursStart: 22, quietHoursEnd: 8 })];
+    const prefsStorage = makePrefsStorage(prefs);
+    const im = makeIntegrationManager();
+
+    const manager = new NotificationManager(storage);
+    manager.setUserPrefsStorage(prefsStorage as any);
+    manager.setIntegrationManager(im as any);
+
+    await manager.notify({ type: 'test', title: 'T', body: 'B', level: 'error' });
+    await flushFanout();
+
+    expect(im._sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('sends notification outside overnight quiet hours (s=22, e=8, hour=12)', async () => {
+    mockUTCHour(12); // Quiet hours 22–08 overnight → should send
+    const storage = makeStorage();
+    const prefs = [makePref({ quietHoursStart: 22, quietHoursEnd: 8 })];
+    const prefsStorage = makePrefsStorage(prefs);
+    const im = makeIntegrationManager();
+
+    const manager = new NotificationManager(storage);
+    manager.setUserPrefsStorage(prefsStorage as any);
+    manager.setIntegrationManager(im as any);
+
+    await manager.notify({ type: 'test', title: 'T', body: 'B', level: 'error' });
+    await flushFanout();
+
+    expect(im._sendMessage).toHaveBeenCalled();
+  });
+
+  it('skips quiet hours check when only start is set (end is null)', async () => {
+    mockUTCHour(23); // Only start set → quiet hours block skipped, should send
+    const storage = makeStorage();
+    const prefs = [makePref({ quietHoursStart: 22, quietHoursEnd: null })];
+    const prefsStorage = makePrefsStorage(prefs);
+    const im = makeIntegrationManager();
+
+    const manager = new NotificationManager(storage);
+    manager.setUserPrefsStorage(prefsStorage as any);
+    manager.setIntegrationManager(im as any);
+
+    await manager.notify({ type: 'test', title: 'T', body: 'B', level: 'error' });
+    await flushFanout();
+
+    expect(im._sendMessage).toHaveBeenCalled();
+  });
+
+  it('skips quiet hours check when only end is set (start is null)', async () => {
+    mockUTCHour(12); // Only end set → quiet hours block skipped, should send
+    const storage = makeStorage();
+    const prefs = [makePref({ quietHoursStart: null, quietHoursEnd: 17 })];
+    const prefsStorage = makePrefsStorage(prefs);
+    const im = makeIntegrationManager();
+
+    const manager = new NotificationManager(storage);
+    manager.setUserPrefsStorage(prefsStorage as any);
+    manager.setIntegrationManager(im as any);
+
+    await manager.notify({ type: 'test', title: 'T', body: 'B', level: 'error' });
+    await flushFanout();
+
+    expect(im._sendMessage).toHaveBeenCalled();
+  });
+});
+
+describe('NotificationManager fan-out adapter edge cases (Phase 105)', () => {
+  it('returns early when getAdaptersByPlatform() returns empty array', async () => {
+    const storage = makeStorage();
+    const prefs = [makePref({ integrationId: null })]; // no integrationId → uses getAdaptersByPlatform
+    const prefsStorage = makePrefsStorage(prefs);
+    const im = {
+      getAdapter: vi.fn(),
+      getAdaptersByPlatform: vi.fn().mockReturnValue([]), // empty → no adapter
+    };
+
+    const manager = new NotificationManager(storage);
+    manager.setUserPrefsStorage(prefsStorage as any);
+    manager.setIntegrationManager(im as any);
+
+    await manager.notify({ type: 'test', title: 'T', body: 'B', level: 'error' });
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(im.getAdaptersByPlatform).toHaveBeenCalledWith('telegram');
+    expect(im.getAdapter).not.toHaveBeenCalled();
+  });
+
+  it('continues to next pref when adapter.sendMessage() throws', async () => {
+    const storage = makeStorage();
+    const sendMessage1 = vi.fn().mockRejectedValue(new Error('network error'));
+    const sendMessage2 = vi.fn().mockResolvedValue('msg-id');
+    const prefs = [
+      makePref({ id: 'pref-1', chatId: '-100' }),
+      makePref({ id: 'pref-2', chatId: '-200' }),
+    ];
+    const prefsStorage = makePrefsStorage(prefs);
+
+    let callCount = 0;
+    const im = {
+      getAdapter: vi.fn(),
+      getAdaptersByPlatform: vi.fn().mockImplementation(() => {
+        callCount++;
+        return [{ sendMessage: callCount === 1 ? sendMessage1 : sendMessage2 }];
+      }),
+    };
+
+    const manager = new NotificationManager(storage);
+    manager.setUserPrefsStorage(prefsStorage as any);
+    manager.setIntegrationManager(im as any);
+
+    await manager.notify({ type: 'test', title: 'T', body: 'B', level: 'error' });
+    await new Promise((r) => setTimeout(r, 50));
+
+    // First pref threw, second pref should still be called
+    expect(sendMessage1).toHaveBeenCalled();
+    expect(sendMessage2).toHaveBeenCalled();
+  });
+});
+
+describe('NotificationManager fan-out storage error (Phase 105)', () => {
+  it('returns silently when userPrefsStorage.listAll throws', async () => {
+    const storage = makeStorage();
+    const prefsStorage = { listAll: vi.fn().mockRejectedValue(new Error('db down')) };
+    const im = makeIntegrationManager();
+
+    const manager = new NotificationManager(storage);
+    manager.setUserPrefsStorage(prefsStorage as any);
+    manager.setIntegrationManager(im as any);
+
+    await manager.notify({ type: 'test', title: 'T', body: 'B', level: 'error' });
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(im._sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('returns silently when userPrefsStorage is not set', async () => {
+    const storage = makeStorage();
+    const im = makeIntegrationManager();
+
+    const manager = new NotificationManager(storage);
+    // Only set integrationManager, not userPrefsStorage
+    manager.setIntegrationManager(im as any);
+
+    await expect(
+      manager.notify({ type: 'test', title: 'T', body: 'B', level: 'error' })
+    ).resolves.toBeDefined();
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(im._sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('skips pref when getAdapter returns null (integrationId set but adapter missing)', async () => {
+    const storage = makeStorage();
+    const prefs = [makePref({ integrationId: 'missing-integ' })];
+    const prefsStorage = makePrefsStorage(prefs);
+    const im = {
+      getAdapter: vi.fn().mockReturnValue(null),
+      getAdaptersByPlatform: vi.fn().mockReturnValue([]),
+    };
+
+    const manager = new NotificationManager(storage);
+    manager.setUserPrefsStorage(prefsStorage as any);
+    manager.setIntegrationManager(im as any);
+
+    await manager.notify({ type: 'test', title: 'T', body: 'B', level: 'error' });
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(im.getAdapter).toHaveBeenCalledWith('missing-integ');
+  });
+});
+
 // ─── Phase 55: Cleanup job tests ─────────────────────────────────────────────
 
 describe('NotificationManager cleanup job (Phase 55)', () => {

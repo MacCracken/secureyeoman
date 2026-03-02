@@ -826,3 +826,55 @@ describe('DistillationManager alert events', () => {
     expect(mgr).toBeInstanceOf(DistillationManager);
   });
 });
+
+// ── Phase 105: rowToJob nullish coalescing branches ──────────────────────────
+
+describe('DistillationManager — rowToJob fallback branches (Phase 105)', () => {
+  it('rowToJob uses defaults when optional fields are null', async () => {
+    const nullishRow = {
+      id: 'job-null',
+      name: 'Null Job',
+      teacher_provider: 'openai',
+      teacher_model: 'gpt-4',
+      export_format: null,
+      max_samples: null,
+      personality_ids: null,
+      output_path: '/tmp/null.jsonl',
+      status: 'pending',
+      samples_generated: null,
+      error_message: null,
+      created_at: 'not-a-date',
+      completed_at: null,
+      priority_mode: null,
+      curriculum_mode: null,
+      counterfactual_mode: null,
+      max_counterfactual_samples: null,
+      counterfactual_count: null,
+    };
+    const pool = makePool([nullishRow]);
+    const logger = makeLogger();
+    const manager = new DistillationManager(pool, logger);
+
+    const job = await manager.getJob('job-null');
+    expect(job).toBeDefined();
+    expect(job!.exportFormat).toBe('sharegpt');
+    expect(job!.maxSamples).toBe(500);
+    expect(job!.personalityIds).toEqual([]);
+    expect(job!.samplesGenerated).toBe(0);
+    expect(job!.priorityMode).toBe('uniform');
+    expect(job!.curriculumMode).toBe(false);
+    expect(job!.counterfactualMode).toBe(false);
+    // created_at is not a Date instance → Date.now() used
+    expect(job!.createdAt).toBeGreaterThan(0);
+  });
+
+  it('rowToJob uses completed_at when it is a Date', async () => {
+    const row = makeJobRow({ completed_at: new Date('2026-03-01T12:00:00Z') });
+    const pool = makePool([row]);
+    const logger = makeLogger();
+    const manager = new DistillationManager(pool, logger);
+
+    const job = await manager.getJob('job-1');
+    expect(job!.completedAt).toBe(new Date('2026-03-01T12:00:00Z').getTime());
+  });
+});

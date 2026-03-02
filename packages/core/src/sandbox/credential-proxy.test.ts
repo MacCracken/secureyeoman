@@ -263,4 +263,91 @@ describe('CredentialProxy', () => {
       await handle.stop();
     }
   });
+
+  // ── Phase 105: Supplementary branch coverage ───────────────────────────────
+
+  it('returns 405 for non-absolute URL (no http:// prefix)', async () => {
+    const proxy = new CredentialProxy({
+      allowedHosts: ['example.com'],
+      credentials: [],
+    });
+    const handle = await proxy.start();
+    handles.push(handle);
+
+    // Send a non-proxy request (relative path, not absolute URL)
+    const { statusCode } = await new Promise<{ statusCode: number; body: string }>(
+      (resolve, reject) => {
+        const req = http.request(
+          { hostname: '127.0.0.1', port: handle.port, path: '/relative', method: 'GET' },
+          (res) => {
+            let body = '';
+            res.on('data', (chunk: Buffer) => {
+              body += chunk.toString();
+            });
+            res.on('end', () => resolve({ statusCode: res.statusCode ?? 0, body }));
+          }
+        );
+        req.on('error', reject);
+        req.end();
+      }
+    );
+    expect(statusCode).toBe(405);
+  });
+
+  it('returns 400 for malformed absolute URL', async () => {
+    const proxy = new CredentialProxy({
+      allowedHosts: ['example.com'],
+      credentials: [],
+    });
+    const handle = await proxy.start();
+    handles.push(handle);
+
+    // Construct a request with an absolute but malformed URL
+    const { statusCode } = await new Promise<{ statusCode: number; body: string }>(
+      (resolve, reject) => {
+        const req = http.request(
+          {
+            hostname: '127.0.0.1',
+            port: handle.port,
+            path: 'http://:::invalid',
+            method: 'GET',
+          },
+          (res) => {
+            let body = '';
+            res.on('data', (chunk: Buffer) => {
+              body += chunk.toString();
+            });
+            res.on('end', () => resolve({ statusCode: res.statusCode ?? 0, body }));
+          }
+        );
+        req.on('error', reject);
+        req.end();
+      }
+    );
+    expect(statusCode).toBe(400);
+  });
+
+  it('CONNECT with head data writes head to server socket', async () => {
+    // Start an echo TCP server that reads and responds
+    const tcpServer = net.createServer((socket) => {
+      socket.on('data', (data) => {
+        socket.write(`echo:${data.toString()}`);
+        socket.end();
+      });
+    });
+    await new Promise<void>((resolve) => tcpServer.listen(0, '127.0.0.1', resolve));
+    const tcpPort = (tcpServer.address() as net.AddressInfo).port;
+
+    const proxy = new CredentialProxy({
+      allowedHosts: ['127.0.0.1'],
+      credentials: [],
+    });
+    const handle = await proxy.start();
+    handles.push(handle);
+
+    const response = await proxyConnect(handle.port, `127.0.0.1:${tcpPort}`);
+    expect(response).toContain('200');
+
+    tcpServer.close();
+  });
 });

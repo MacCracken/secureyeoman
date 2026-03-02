@@ -438,4 +438,303 @@ describe('Federation Routes', () => {
       expect(JSON.parse(res.body).message).toContain('Skill not found');
     });
   });
+
+  // ── Phase 105: Error catch block coverage ──────────────────────────────
+
+  function buildAppWithoutOptionalManagers() {
+    const a = Fastify({ logger: false });
+    a.addHook('onRequest', async (request) => {
+      (request as any).authUser = { userId: 'admin', role: 'admin', permissions: [] };
+    });
+    registerFederationRoutes(a, {
+      federationManager: mockFederationManager as any,
+      federationStorage: mockFederationStorage as any,
+      // no brainManager, no marketplaceManager
+    });
+    return a;
+  }
+
+  describe('GET /api/v1/federation/peers — error catch (Phase 105)', () => {
+    it('returns 500 when listPeers throws Error', async () => {
+      mockFederationManager.listPeers.mockRejectedValueOnce(new Error('db error'));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/federation/peers' });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).message).toBe('db error');
+    });
+
+    it('returns 500 with fallback when listPeers throws non-Error', async () => {
+      mockFederationManager.listPeers.mockRejectedValueOnce('string-err');
+      const res = await app.inject({ method: 'GET', url: '/api/v1/federation/peers' });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).message).toContain('Failed to list peers');
+    });
+  });
+
+  describe('POST /api/v1/federation/peers — non-Error throw (Phase 105)', () => {
+    it('returns 400 with fallback when addPeer throws non-Error', async () => {
+      mockFederationManager.addPeer.mockRejectedValueOnce(42);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/federation/peers',
+        payload: { url: 'https://x.com', name: 'P', sharedSecret: 's' },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).message).toContain('Failed to add peer');
+    });
+  });
+
+  describe('DELETE /api/v1/federation/peers/:id — error catch (Phase 105)', () => {
+    it('returns 500 when removePeer throws Error', async () => {
+      mockFederationManager.removePeer.mockRejectedValueOnce(new Error('not found'));
+      const res = await app.inject({ method: 'DELETE', url: '/api/v1/federation/peers/p1' });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).message).toBe('not found');
+    });
+
+    it('returns 500 with fallback when removePeer throws non-Error', async () => {
+      mockFederationManager.removePeer.mockRejectedValueOnce(null);
+      const res = await app.inject({ method: 'DELETE', url: '/api/v1/federation/peers/p1' });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).message).toContain('Failed to remove peer');
+    });
+  });
+
+  describe('PUT /api/v1/federation/peers/:id/features — error catch (Phase 105)', () => {
+    it('returns 500 when updateFeatures throws Error', async () => {
+      mockFederationStorage.updateFeatures.mockRejectedValueOnce(new Error('peer gone'));
+      const res = await app.inject({
+        method: 'PUT',
+        url: '/api/v1/federation/peers/p1/features',
+        payload: { knowledge: true },
+      });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).message).toBe('peer gone');
+    });
+
+    it('returns 500 with fallback when updateFeatures throws non-Error', async () => {
+      mockFederationStorage.updateFeatures.mockRejectedValueOnce(undefined);
+      const res = await app.inject({
+        method: 'PUT',
+        url: '/api/v1/federation/peers/p1/features',
+        payload: { knowledge: true },
+      });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).message).toContain('Failed to update features');
+    });
+  });
+
+  describe('POST /api/v1/federation/peers/:id/health — error catch (Phase 105)', () => {
+    it('returns 500 when checkHealth throws Error', async () => {
+      mockFederationManager.checkHealth.mockRejectedValueOnce(new Error('timeout'));
+      const res = await app.inject({ method: 'POST', url: '/api/v1/federation/peers/p1/health' });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).message).toBe('timeout');
+    });
+
+    it('returns 500 with fallback when checkHealth throws non-Error', async () => {
+      mockFederationManager.checkHealth.mockRejectedValueOnce(false);
+      const res = await app.inject({ method: 'POST', url: '/api/v1/federation/peers/p1/health' });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).message).toContain('Health check failed');
+    });
+  });
+
+  describe('GET /api/v1/federation/peers/:id/marketplace — error catch (Phase 105)', () => {
+    it('returns 500 when listPeerMarketplace throws Error', async () => {
+      mockFederationManager.listPeerMarketplace.mockRejectedValueOnce(new Error('peer offline'));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/federation/peers/p1/marketplace',
+      });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).message).toBe('peer offline');
+    });
+
+    it('returns 500 with fallback when listPeerMarketplace throws non-Error', async () => {
+      mockFederationManager.listPeerMarketplace.mockRejectedValueOnce(null);
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/federation/peers/p1/marketplace',
+      });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).message).toContain('Failed to list peer marketplace');
+    });
+  });
+
+  describe('POST /api/v1/federation/peers/:id/marketplace/:skillId/install — error catch (Phase 105)', () => {
+    it('returns 500 when installSkillFromPeer throws Error', async () => {
+      mockFederationManager.installSkillFromPeer.mockRejectedValueOnce(new Error('conflict'));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/federation/peers/p1/marketplace/s1/install',
+        payload: {},
+      });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).message).toBe('conflict');
+    });
+  });
+
+  describe('POST /api/v1/federation/personalities/:id/export — error catch (Phase 105)', () => {
+    it('returns 500 when exportPersonalityBundle throws Error', async () => {
+      mockFederationManager.exportPersonalityBundle.mockRejectedValueOnce(new Error('no such personality'));
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/federation/personalities/pers-1/export',
+        payload: { passphrase: 'pass' },
+      });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).message).toBe('no such personality');
+    });
+
+    it('returns 500 with fallback when export throws non-Error', async () => {
+      mockFederationManager.exportPersonalityBundle.mockRejectedValueOnce(42);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/federation/personalities/pers-1/export',
+        payload: { passphrase: 'pass' },
+      });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).message).toContain('Failed to export bundle');
+    });
+  });
+
+  describe('POST /api/v1/federation/personalities/import — additional branches (Phase 105)', () => {
+    it('passes nameOverride option when provided', async () => {
+      mockFederationManager.importPersonalityBundle.mockResolvedValueOnce({
+        id: 'new-p',
+        name: 'Custom Name',
+      });
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/federation/personalities/import',
+        payload: {
+          bundle: Buffer.from('data').toString('base64'),
+          passphrase: 'pass',
+          nameOverride: 'Custom Name',
+        },
+      });
+      expect(res.statusCode).toBe(201);
+      expect(mockFederationManager.importPersonalityBundle).toHaveBeenCalledWith(
+        expect.any(Buffer),
+        'pass',
+        { nameOverride: 'Custom Name' }
+      );
+    });
+
+    it('returns 400 with fallback when import throws non-Error', async () => {
+      mockFederationManager.importPersonalityBundle.mockRejectedValueOnce(null);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/federation/personalities/import',
+        payload: {
+          bundle: Buffer.from('data').toString('base64'),
+          passphrase: 'pass',
+        },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).message).toContain('Failed to import bundle');
+    });
+  });
+
+  describe('GET /api/v1/federation/knowledge/search — error catch (Phase 105)', () => {
+    it('returns 500 when semanticSearch throws Error', async () => {
+      mockFederationManager.validateIncomingSecret.mockResolvedValueOnce({ id: 'p1' });
+      mockBrainManager.semanticSearch.mockRejectedValueOnce(new Error('index corrupt'));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/federation/knowledge/search?q=test',
+        headers: { Authorization: 'Bearer valid-secret' },
+      });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).message).toBe('index corrupt');
+    });
+
+    it('returns 500 with fallback when semanticSearch throws non-Error', async () => {
+      mockFederationManager.validateIncomingSecret.mockResolvedValueOnce({ id: 'p1' });
+      mockBrainManager.semanticSearch.mockRejectedValueOnce(undefined);
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/federation/knowledge/search?q=test',
+        headers: { Authorization: 'Bearer valid-secret' },
+      });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).message).toContain('Knowledge search failed');
+    });
+  });
+
+  describe('GET /api/v1/federation/marketplace — 503 + error catch (Phase 105)', () => {
+    it('returns 503 when marketplaceManager not available', async () => {
+      const a = buildAppWithoutOptionalManagers();
+      mockFederationManager.validateIncomingSecret.mockResolvedValueOnce({ id: 'p1' });
+      const res = await a.inject({
+        method: 'GET',
+        url: '/api/v1/federation/marketplace',
+        headers: { Authorization: 'Bearer valid-secret' },
+      });
+      expect(res.statusCode).toBe(503);
+      await a.close();
+    });
+
+    it('returns 500 when marketplace search throws Error', async () => {
+      mockFederationManager.validateIncomingSecret.mockResolvedValueOnce({ id: 'p1' });
+      mockMarketplaceManager.search.mockRejectedValueOnce(new Error('search down'));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/federation/marketplace',
+        headers: { Authorization: 'Bearer valid-secret' },
+      });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).message).toBe('search down');
+    });
+
+    it('returns 500 with fallback when marketplace search throws non-Error', async () => {
+      mockFederationManager.validateIncomingSecret.mockResolvedValueOnce({ id: 'p1' });
+      mockMarketplaceManager.search.mockRejectedValueOnce(false);
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/federation/marketplace',
+        headers: { Authorization: 'Bearer valid-secret' },
+      });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).message).toContain('Marketplace search failed');
+    });
+  });
+
+  describe('GET /api/v1/federation/marketplace/:skillId — 503 + error catch (Phase 105)', () => {
+    it('returns 503 when marketplaceManager not available', async () => {
+      const a = buildAppWithoutOptionalManagers();
+      mockFederationManager.validateIncomingSecret.mockResolvedValueOnce({ id: 'p1' });
+      const res = await a.inject({
+        method: 'GET',
+        url: '/api/v1/federation/marketplace/s1',
+        headers: { Authorization: 'Bearer valid-secret' },
+      });
+      expect(res.statusCode).toBe(503);
+      await a.close();
+    });
+
+    it('returns 500 when getSkill throws Error', async () => {
+      mockFederationManager.validateIncomingSecret.mockResolvedValueOnce({ id: 'p1' });
+      mockMarketplaceManager.getSkill.mockRejectedValueOnce(new Error('storage fail'));
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/federation/marketplace/s1',
+        headers: { Authorization: 'Bearer valid-secret' },
+      });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).message).toBe('storage fail');
+    });
+
+    it('returns 500 with fallback when getSkill throws non-Error', async () => {
+      mockFederationManager.validateIncomingSecret.mockResolvedValueOnce({ id: 'p1' });
+      mockMarketplaceManager.getSkill.mockRejectedValueOnce(null);
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/federation/marketplace/s1',
+        headers: { Authorization: 'Bearer valid-secret' },
+      });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.body).message).toContain('Failed to get skill');
+    });
+  });
 });

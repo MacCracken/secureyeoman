@@ -904,3 +904,109 @@ describe('AuditChain — correlation ID auto-enrichment', () => {
     expect(entry.correlationId).toBeUndefined();
   });
 });
+
+// ── Phase 105: Additional branch coverage ────────────────────────────────────
+
+describe('AuditChain — sortedKeysReplacer (Phase 105)', () => {
+  it('passes arrays through unchanged during hashing', async () => {
+    const storage = new InMemoryAuditStorage();
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    await chain.initialize();
+
+    // Record entry with array in metadata — exercises sortedKeysReplacer's array branch
+    const entry = await chain.record({
+      event: 'test_array',
+      level: 'info',
+      message: 'array metadata',
+      metadata: { tags: ['a', 'b', 'c'], nested: { list: [1, 2, 3] } },
+    });
+    expect(entry.metadata?.tags).toEqual(['a', 'b', 'c']);
+
+    // Verify chain is still valid (hashing with arrays works correctly)
+    const verification = await chain.verify();
+    expect(verification.valid).toBe(true);
+  });
+});
+
+describe('AuditChain — repair skip-path (Phase 105)', () => {
+  it('repair() skips entries that already have correct signatures', async () => {
+    const storage = new InMemoryAuditStorage();
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    await chain.initialize();
+
+    // Record a few valid entries
+    await chain.record({ event: 'e1', level: 'info', message: 'first' });
+    await chain.record({ event: 'e2', level: 'info', message: 'second' });
+    await chain.record({ event: 'e3', level: 'info', message: 'third' });
+
+    // Repair on an already-valid chain should repair 0 entries
+    const result = await chain.repair();
+    expect(result.repairedCount).toBe(0);
+    expect(result.entriesTotal).toBe(3);
+  });
+});
+
+describe('AuditChain — repairOnInit triggers repair (Phase 105)', () => {
+  it('initialize() with repairOnInit: true triggers repair on broken chain', async () => {
+    const storage = new InMemoryAuditStorage();
+    const chain1 = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    await chain1.initialize();
+    await chain1.record({ event: 'e1', level: 'info', message: 'ok' });
+    await chain1.record({ event: 'e2', level: 'info', message: 'ok' });
+
+    // Tamper with the first entry's signature
+    let i = 0;
+    for await (const entry of storage.iterate()) {
+      if (i === 0) {
+        entry.integrity.signature = 'tampered';
+      }
+      i++;
+    }
+
+    // Create a new chain with repairOnInit that will detect and fix the broken sig
+    const chain2 = new AuditChain({ storage, signingKey: SIGNING_KEY, repairOnInit: true });
+    await chain2.initialize();
+
+    // Verify the chain is now valid
+    const verification = await chain2.verify();
+    expect(verification.valid).toBe(true);
+  });
+});
+
+describe('AuditChain — verify error handling (Phase 105)', () => {
+  it('verify() returns error when iteration throws', async () => {
+    // Create a storage that throws during iteration
+    const errorStorage: InstanceType<typeof InMemoryAuditStorage> = {
+      append: async () => {},
+      getLast: async () => null,
+      count: async () => 0,
+      getById: async () => null,
+      updateIntegrity: async () => {},
+      query: async () => ({ entries: [], total: 0, limit: 50, offset: 0 }),
+      async *iterate() {
+        throw new Error('storage corruption');
+      },
+    } as any;
+
+    const chain = new AuditChain({ storage: errorStorage, signingKey: SIGNING_KEY });
+    await chain.initialize();
+
+    const result = await chain.verify();
+    expect(result.valid).toBe(false);
+    expect(result.error).toMatch(/storage corruption/);
+  });
+});
+
+describe('AuditChain — record() schema validation (Phase 105)', () => {
+  it('record() schema validation failure throws descriptive error', async () => {
+    const storage = new InMemoryAuditStorage();
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    await chain.initialize();
+
+    // Record with an invalid level to trigger schema validation failure
+    // AuditEntrySchema requires level to be one of: info, warn, error, critical, debug
+    await expect(
+      chain.record({ event: 'test', level: 'INVALID' as any, message: 'bad level' })
+    ).rejects.toThrow(/Invalid audit entry/i);
+  });
+});

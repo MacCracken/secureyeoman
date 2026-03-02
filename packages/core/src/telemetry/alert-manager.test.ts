@@ -107,6 +107,10 @@ describe('compareOperator', () => {
     expect(compareOperator(10, 'eq', 10)).toBe(true);
     expect(compareOperator(11, 'eq', 10)).toBe(false);
   });
+
+  it('returns false for unknown operator (default case)', () => {
+    expect(compareOperator(10, 'unknown_op' as any, 5)).toBe(false);
+  });
 });
 
 // ── AlertManager.evaluate ────────────────────────────────────────────────────
@@ -298,6 +302,73 @@ describe('AlertManager channel dispatch', () => {
     await manager.evaluate({ security: { rateLimitHitsTotal: 100 } });
 
     // fetch should NOT have been called for the ntfy channel
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  // ── Phase 105: Supplementary channel branch coverage ──────────────────────
+
+  it('skips slack dispatch when url is missing', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const rule = makeRule({ channels: [{ type: 'slack' } as AlertChannel] });
+    const storage = makeStorage([rule]);
+    const notif = makeNotificationManager();
+    const manager = new AlertManager(storage as any, notif as any, makeLogger() as any);
+
+    await manager.evaluate({ security: { rateLimitHitsTotal: 100 } });
+    // Allow fire-and-forget promises to settle
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it('skips pagerduty dispatch when routingKey is missing', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const rule = makeRule({ channels: [{ type: 'pagerduty' } as AlertChannel] });
+    const storage = makeStorage([rule]);
+    const notif = makeNotificationManager();
+    const manager = new AlertManager(storage as any, notif as any, makeLogger() as any);
+
+    await manager.evaluate({ security: { rateLimitHitsTotal: 100 } });
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it('skips opsgenie dispatch when routingKey is missing', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const rule = makeRule({ channels: [{ type: 'opsgenie' } as AlertChannel] });
+    const storage = makeStorage([rule]);
+    const notif = makeNotificationManager();
+    const manager = new AlertManager(storage as any, notif as any, makeLogger() as any);
+
+    await manager.evaluate({ security: { rateLimitHitsTotal: 100 } });
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it('skips webhook dispatch when url is missing', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const rule = makeRule({ channels: [{ type: 'webhook' } as AlertChannel] });
+    const storage = makeStorage([rule]);
+    const notif = makeNotificationManager();
+    const manager = new AlertManager(storage as any, notif as any, makeLogger() as any);
+
+    await manager.evaluate({ security: { rateLimitHitsTotal: 100 } });
+    await new Promise((r) => setTimeout(r, 50));
+
     expect(fetchMock).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });

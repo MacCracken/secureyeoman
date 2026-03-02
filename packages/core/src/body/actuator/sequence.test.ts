@@ -134,4 +134,20 @@ describe('executeSequence', () => {
     expect(result.clipboardReads).toEqual(['first', 'second']);
     expect(result.stepsCompleted).toBe(2);
   });
+
+  // ── Phase 105: Supplementary branch coverage ───────────────────────────────
+
+  it('throws on unknown action type', async () => {
+    await expect(
+      executeSequence([{ action: { type: 'unknown_action' } as any }])
+    ).rejects.toThrow(/unknown action type/i);
+  });
+
+  it('skips delayAfterMs when it is 0', async () => {
+    const result = await executeSequence([
+      { action: { type: 'type', text: 'hi' }, delayAfterMs: 0 },
+    ]);
+    expect(result.stepsCompleted).toBe(1);
+    expect(vi.mocked(inputMod.typeText)).toHaveBeenCalledWith('hi');
+  });
 });

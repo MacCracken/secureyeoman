@@ -2205,3 +2205,48 @@ describe('WorkflowEngine job completion events', () => {
     await engine.execute(run, def);
   });
 });
+
+// ── Phase 105: Static validation branch coverage ─────────────────────────────
+
+describe('WorkflowEngine.validateConditionExpression (Phase 105)', () => {
+  it('returns valid=true for a correct expression', () => {
+    const result = WorkflowEngine.validateConditionExpression('steps.a.output === "ok"');
+    expect(result.valid).toBe(true);
+    expect(result.error).toBeUndefined();
+  });
+
+  it('returns valid=false with error for syntax error', () => {
+    const result = WorkflowEngine.validateConditionExpression('invalid ===');
+    expect(result.valid).toBe(false);
+    expect(result.error).toBeDefined();
+  });
+});
+
+describe('WorkflowEngine.validateWorkflowConditions (Phase 105)', () => {
+  it('returns empty array for steps with valid conditions', () => {
+    const steps = [
+      { id: 'a', condition: 'steps.b.output', type: 'agent', name: 'A', dependsOn: [], onError: 'fail' as const },
+    ] as any[];
+    const errors = WorkflowEngine.validateWorkflowConditions(steps);
+    expect(errors).toEqual([]);
+  });
+
+  it('returns errors for steps with invalid condition expressions', () => {
+    const steps = [
+      { id: 'a', condition: 'invalid ===', type: 'agent', name: 'A', dependsOn: [], onError: 'fail' as const },
+      { id: 'b', type: 'agent', name: 'B', dependsOn: [], onError: 'fail' as const },
+    ] as any[];
+    const errors = WorkflowEngine.validateWorkflowConditions(steps);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]!.stepId).toBe('a');
+    expect(errors[0]!.error).toBeDefined();
+  });
+
+  it('skips steps without conditions', () => {
+    const steps = [
+      { id: 'a', type: 'agent', name: 'A', dependsOn: [], onError: 'fail' as const },
+    ] as any[];
+    const errors = WorkflowEngine.validateWorkflowConditions(steps);
+    expect(errors).toEqual([]);
+  });
+});

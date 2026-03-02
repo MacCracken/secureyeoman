@@ -220,6 +220,78 @@ describe('LicenseManager — all features key', () => {
   });
 });
 
+// ─── Phase 105: Additional branch coverage ───────────────────────────────────
+
+describe('LicenseManager — validate() error paths (Phase 105)', () => {
+  it('throws on non-JSON base64 payload', () => {
+    // Craft a key where the payload is valid base64url but not valid JSON
+    const header = Buffer.from(JSON.stringify({ alg: 'EdDSA' })).toString('base64url');
+    const payload = Buffer.from('not-json').toString('base64url');
+    const fakeKey = `${header}.${payload}.fakesig`;
+    const lm = new LicenseManager(fakeKey);
+    // Signature check fails first (before JSON parse), so expect signature error
+    expect(lm.getParseError()).toBeTruthy();
+    expect(lm.isValid()).toBe(false);
+  });
+
+  it('throws when payload missing tier field', () => {
+    const claims = { organization: 'Acme', seats: 5, features: [], licenseId: 'x', iat: 100 };
+    const key = buildKey(claims as any);
+    const lm = withTestKey(() => lm, key);
+    expect(lm.getParseError()).toMatch(/missing required fields/i);
+    expect(lm.isValid()).toBe(false);
+  });
+
+  it('throws when payload missing organization field', () => {
+    const claims = { tier: 'enterprise', seats: 5, features: [], licenseId: 'x', iat: 100 };
+    const key = buildKey(claims as any);
+    const lm = withTestKey(() => lm, key);
+    expect(lm.getParseError()).toMatch(/missing required fields/i);
+  });
+
+  it('throws when features is not an array', () => {
+    const claims = {
+      tier: 'enterprise',
+      organization: 'Acme',
+      seats: 5,
+      features: 'not-array',
+      licenseId: 'x',
+      iat: 100,
+    };
+    const key = buildKey(claims as any);
+    const lm = withTestKey(() => lm, key);
+    expect(lm.getParseError()).toMatch(/missing required fields/i);
+  });
+});
+
+describe('LicenseManager — toStatusObject() branches (Phase 105)', () => {
+  it('returns expiresAt: null for perpetual license (no exp)', () => {
+    const claims = validClaims();
+    delete claims.exp; // perpetual
+    const key = buildKey(claims);
+    const lm = withTestKey(() => lm, key);
+    const status = lm.toStatusObject();
+    expect(status.expiresAt).toBeNull();
+    expect(status.valid).toBe(true);
+  });
+
+  it('returns ISO string when exp is present', () => {
+    const exp = Math.floor(Date.now() / 1000) + 86400;
+    const key = buildKey(validClaims({ exp }));
+    const lm = withTestKey(() => lm, key);
+    const status = lm.toStatusObject();
+    expect(status.expiresAt).toBe(new Date(exp * 1000).toISOString());
+  });
+
+  it('hasFeature() returns false on enterprise tier with empty features array', () => {
+    const key = buildKey(validClaims({ features: [] }));
+    const lm = withTestKey(() => lm, key);
+    expect(lm.getTier()).toBe('enterprise');
+    expect(lm.hasFeature('adaptive_learning')).toBe(false);
+    expect(lm.hasFeature('sso_saml')).toBe(false);
+  });
+});
+
 describe('LicenseManager — error cases', () => {
   it('expired key → getTier() community, parseError set', () => {
     const key = buildKey(validClaims({ exp: Math.floor(Date.now() / 1000) - 3600 }));

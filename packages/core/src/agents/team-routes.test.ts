@@ -230,3 +230,86 @@ describe('GET /api/v1/agents/teams/runs/:runId', () => {
     expect(res.statusCode).toBe(404);
   });
 });
+
+// ── Phase 105: Error branch coverage ──────────────────────────────────────────
+
+describe('PUT /api/v1/agents/teams/:id — generic error fallthrough (Phase 105)', () => {
+  it('returns 400 on generic error (not "not found" and not "builtin")', async () => {
+    const app = buildApp({
+      updateTeam: vi.fn().mockRejectedValue(new Error('validation failed')),
+    });
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/agents/teams/team-1',
+      payload: { name: 'Test' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('returns 400 with fallback message when error is not an Error instance', async () => {
+    const app = buildApp({
+      updateTeam: vi.fn().mockRejectedValue('string-error'),
+    });
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/agents/teams/team-1',
+      payload: { name: 'Test' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().message).toContain('Failed to update team');
+  });
+});
+
+describe('DELETE /api/v1/agents/teams/:id — additional error branches (Phase 105)', () => {
+  it('returns 404 when team not found', async () => {
+    const app = buildApp({
+      deleteTeam: vi.fn().mockRejectedValue(new Error('Team not found: x')),
+    });
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/agents/teams/x' });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('returns 400 on generic error (not "not found" and not "builtin")', async () => {
+    const app = buildApp({
+      deleteTeam: vi.fn().mockRejectedValue(new Error('database error')),
+    });
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/agents/teams/team-1' });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('returns 400 with fallback message when error is not an Error instance', async () => {
+    const app = buildApp({
+      deleteTeam: vi.fn().mockRejectedValue(42),
+    });
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/agents/teams/team-1' });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().message).toContain('Failed to delete team');
+  });
+});
+
+describe('POST /api/v1/agents/teams/:id/run — generic error (Phase 105)', () => {
+  it('returns 400 on generic error (not "not found")', async () => {
+    const app = buildApp({
+      run: vi.fn().mockRejectedValue(new Error('insufficient tokens')),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/agents/teams/team-1/run',
+      payload: { task: 'test' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('returns 400 with fallback message when error is not an Error instance', async () => {
+    const app = buildApp({
+      run: vi.fn().mockRejectedValue(null),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/agents/teams/team-1/run',
+      payload: { task: 'test' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().message).toContain('Failed to start team run');
+  });
+});

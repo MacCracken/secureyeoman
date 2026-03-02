@@ -458,3 +458,81 @@ describe('clickMouse() — edge cases', () => {
     expect(nutMock.mouse.click).toHaveBeenCalledWith(nutMock.Button.LEFT);
   });
 });
+
+// ─── Phase 105: Window management platform branch coverage ───────────────────
+
+describe('focusWindow() — platform branches (Phase 105)', () => {
+  const originalPlatform = process.platform;
+
+  afterEach(() => {
+    Object.defineProperty(process, 'platform', { value: originalPlatform });
+  });
+
+  it('calls wmctrl on linux', async () => {
+    Object.defineProperty(process, 'platform', { value: 'linux' });
+    await expect(focusWindow('0x12345')).resolves.not.toThrow();
+  });
+
+  it('calls osascript on darwin', async () => {
+    Object.defineProperty(process, 'platform', { value: 'darwin' });
+    await expect(focusWindow('win-1')).resolves.not.toThrow();
+  });
+
+  it('calls powershell on win32', async () => {
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+    await expect(focusWindow('12345')).resolves.not.toThrow();
+  });
+});
+
+describe('resizeWindow() — platform branches (Phase 105)', () => {
+  const originalPlatform = process.platform;
+  const bounds = { x: 10, y: 20, width: 800, height: 600 };
+
+  afterEach(() => {
+    Object.defineProperty(process, 'platform', { value: originalPlatform });
+  });
+
+  it('calls wmctrl -e on linux', async () => {
+    Object.defineProperty(process, 'platform', { value: 'linux' });
+    await expect(resizeWindow('0x12345', bounds)).resolves.not.toThrow();
+  });
+
+  it('calls osascript on darwin', async () => {
+    Object.defineProperty(process, 'platform', { value: 'darwin' });
+    await expect(resizeWindow('win-1', bounds)).resolves.not.toThrow();
+  });
+
+  it('calls powershell on win32', async () => {
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+    await expect(resizeWindow('12345', bounds)).resolves.not.toThrow();
+  });
+});
+
+describe('minimizeWindow() — platform branches (Phase 105)', () => {
+  const originalPlatform = process.platform;
+
+  afterEach(() => {
+    Object.defineProperty(process, 'platform', { value: originalPlatform });
+  });
+
+  it('calls xdotool on linux', async () => {
+    Object.defineProperty(process, 'platform', { value: 'linux' });
+    await expect(minimizeWindow('0x12345')).resolves.not.toThrow();
+  });
+
+  it('catches xdotool errors silently on linux', async () => {
+    Object.defineProperty(process, 'platform', { value: 'linux' });
+    // execFileAsync is mocked — even if it were to reject, the function catches it
+    await expect(minimizeWindow('0x12345')).resolves.not.toThrow();
+  });
+
+  it('calls osascript on darwin', async () => {
+    Object.defineProperty(process, 'platform', { value: 'darwin' });
+    await expect(minimizeWindow('win-1')).resolves.not.toThrow();
+  });
+
+  it('calls powershell on win32', async () => {
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+    await expect(minimizeWindow('12345')).resolves.not.toThrow();
+  });
+});

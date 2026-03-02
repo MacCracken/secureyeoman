@@ -227,6 +227,97 @@ describe('DELETE /api/v1/soul/strategies/:id', () => {
   });
 });
 
+// ── Phase 105: Error branch coverage ──────────────────────────────────────────
+
+describe('PUT /api/v1/soul/strategies/:id — error branches', () => {
+  it('returns 409 on duplicate slug error', async () => {
+    const { app } = buildApp({
+      updateStrategy: vi.fn().mockRejectedValue(new Error('unique constraint violation')),
+    });
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/soul/strategies/strat-custom',
+      payload: { name: 'Clash' },
+    });
+    expect(res.statusCode).toBe(409);
+  });
+
+  it('returns 500 on unknown error (fallthrough)', async () => {
+    const { app } = buildApp({
+      updateStrategy: vi.fn().mockRejectedValue(new Error('unexpected db failure')),
+    });
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/soul/strategies/strat-custom',
+      payload: { name: 'X' },
+    });
+    expect(res.statusCode).toBe(500);
+  });
+});
+
+describe('POST /api/v1/soul/strategies — error fallthrough', () => {
+  it('returns 500 on unknown error (not unique/duplicate)', async () => {
+    const { app } = buildApp({
+      createStrategy: vi.fn().mockRejectedValue(new Error('connection timeout')),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/soul/strategies',
+      payload: {
+        name: 'Fail',
+        slug: 'fail-slug',
+        category: 'standard',
+        promptPrefix: 'X',
+      },
+    });
+    expect(res.statusCode).toBe(500);
+  });
+});
+
+describe('DELETE /api/v1/soul/strategies/:id — error fallthrough', () => {
+  it('returns 500 on non-builtin error', async () => {
+    const { app } = buildApp({
+      deleteStrategy: vi.fn().mockRejectedValue(new Error('db connection lost')),
+    });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/soul/strategies/strat-custom',
+    });
+    expect(res.statusCode).toBe(500);
+  });
+});
+
+describe('strategy routes — auditChain optional chaining (Phase 105)', () => {
+  it('logs injection attempt when validator blocks and auditChain is provided', async () => {
+    const validator = {
+      validate: vi.fn().mockReturnValue({ blocked: true, blockReason: 'injection' }),
+    };
+    const auditChain = {
+      record: vi.fn().mockResolvedValue(undefined),
+    };
+    const app = Fastify();
+    registerStrategyRoutes(app, {
+      strategyStorage: makeMockStorage(),
+      validator: validator as any,
+      auditChain: auditChain as any,
+    });
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/soul/strategies',
+      payload: {
+        name: 'Evil',
+        slug: 'evil',
+        category: 'standard',
+        promptPrefix: 'Hack',
+      },
+    });
+    expect(auditChain.record).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'injection_attempt' })
+    );
+  });
+});
+
 // ── Input validation ─────────────────────────────────────────────────────────
 
 describe('input validation', () => {

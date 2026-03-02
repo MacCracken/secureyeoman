@@ -320,6 +320,118 @@ describe('SkillTriggerMatcher', () => {
       const skill = makeSkill([makeTrigger({ type: 'unknown_type' as never })]);
       expect(matcher.findMatchingTriggers([skill], makeContext())).toHaveLength(0);
     });
+
+    // ── Phase 105: evaluateCondition branch coverage ──────────────────────────
+
+    it('evaluates lte operator', () => {
+      const currentHour = new Date().getHours();
+      const skill = makeSkill([
+        makeTrigger({
+          type: 'condition',
+          condition: {
+            logical: 'AND',
+            conditions: [{ field: 'hour', operator: 'lte', value: currentHour }],
+          },
+        }),
+      ]);
+      expect(matcher.findMatchingTriggers([skill], makeContext())).toHaveLength(1);
+    });
+
+    it('evaluates between operator with non-array target — returns false', () => {
+      const skill = makeSkill([
+        makeTrigger({
+          type: 'condition',
+          condition: {
+            logical: 'AND',
+            conditions: [{ field: 'hour', operator: 'between', value: 'not-an-array' }],
+          },
+        }),
+      ]);
+      expect(matcher.findMatchingTriggers([skill], makeContext())).toHaveLength(0);
+    });
+
+    it('evaluates between operator with wrong-length array — returns false', () => {
+      const skill = makeSkill([
+        makeTrigger({
+          type: 'condition',
+          condition: {
+            logical: 'AND',
+            conditions: [{ field: 'hour', operator: 'between', value: [1] }],
+          },
+        }),
+      ]);
+      expect(matcher.findMatchingTriggers([skill], makeContext())).toHaveLength(0);
+    });
+
+    it('evaluates unknown operator — returns false (default case)', () => {
+      const skill = makeSkill([
+        makeTrigger({
+          type: 'condition',
+          condition: {
+            logical: 'AND',
+            conditions: [{ field: 'hour', operator: 'invalid_op', value: 1 }],
+          },
+        }),
+      ]);
+      expect(matcher.findMatchingTriggers([skill], makeContext())).toHaveLength(0);
+    });
+
+    it('returns false for message trigger when message sub-field is falsy', () => {
+      const skill = makeSkill([
+        makeTrigger({
+          type: 'message',
+          message: null,
+        }),
+      ]);
+      const ctx = makeContext({ message: { text: 'hello', userId: 'u1', timestamp: 0 } });
+      expect(matcher.findMatchingTriggers([skill], ctx)).toHaveLength(0);
+    });
+
+    it('returns false for tool_use trigger when toolUse sub-field is falsy', () => {
+      const skill = makeSkill([
+        makeTrigger({
+          type: 'tool_use',
+          toolUse: null,
+        }),
+      ]);
+      const ctx = makeContext({ tool: { name: 'search', input: {}, success: true } });
+      expect(matcher.findMatchingTriggers([skill], ctx)).toHaveLength(0);
+    });
+
+    it('returns false for event trigger when event sub-field is falsy', () => {
+      const skill = makeSkill([
+        makeTrigger({
+          type: 'event',
+          event: null,
+        }),
+      ]);
+      const ctx = makeContext({ event: { type: 'startup', data: {} } });
+      expect(matcher.findMatchingTriggers([skill], ctx)).toHaveLength(0);
+    });
+
+    it('returns false for condition trigger when condition sub-field is falsy', () => {
+      const skill = makeSkill([
+        makeTrigger({
+          type: 'condition',
+          condition: null,
+        }),
+      ]);
+      expect(matcher.findMatchingTriggers([skill], makeContext())).toHaveLength(0);
+    });
+
+    it('getFieldValue returns undefined for unknown field (default case)', () => {
+      const skill = makeSkill([
+        makeTrigger({
+          type: 'condition',
+          condition: {
+            logical: 'AND',
+            conditions: [{ field: 'unknown_field', operator: 'eq', value: undefined }],
+          },
+        }),
+      ]);
+      // unknown field → value is undefined, eq undefined === undefined → true
+      expect(matcher.findMatchingTriggers([skill], makeContext())).toHaveLength(1);
+    });
   });
 
   describe('cooldown', () => {

@@ -284,4 +284,71 @@ describe('ComputerUseManager', () => {
       expect(lines).toHaveLength(250);
     });
   });
+
+  // ── Phase 105: rowToEpisode fallback branches ──────────────────────────────
+
+  describe('rowToEpisode fallback branches (Phase 105)', () => {
+    it('maps null optional fields to defaults', async () => {
+      const nullishRow = {
+        id: 'ep-null',
+        session_id: 'sess-null',
+        skill_name: 'type',
+        state_encoding: null,
+        action_type: 'type',
+        action_target: null,
+        action_value: null,
+        reward: null,
+        done: null,
+        created_at: 'not-a-date-object',
+      };
+      pool.query = vi.fn(async () => ({ rows: [nullishRow], rowCount: 1 }));
+
+      const episodes = await manager.listEpisodes();
+      expect(episodes).toHaveLength(1);
+      const ep = episodes[0]!;
+      expect(ep.stateEncoding).toEqual({});
+      expect(ep.actionTarget).toBe('');
+      expect(ep.actionValue).toBe('');
+      expect(ep.reward).toBe(0);
+      expect(ep.done).toBe(false);
+      // created_at not a Date → String() fallback
+      expect(ep.createdAt).toBe('not-a-date-object');
+    });
+
+    it('maps null created_at to current ISO string', async () => {
+      const nullCreatedRow = {
+        id: 'ep-null-ts',
+        session_id: 's',
+        skill_name: 'scroll',
+        state_encoding: {},
+        action_type: 'scroll',
+        action_target: 'win',
+        action_value: '0',
+        reward: 0.5,
+        done: true,
+        created_at: null,
+      };
+      pool.query = vi.fn(async () => ({ rows: [nullCreatedRow], rowCount: 1 }));
+
+      const episodes = await manager.listEpisodes();
+      // null ?? new Date().toISOString() → gets current timestamp string
+      expect(episodes[0]!.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    });
+  });
+
+  // ── Phase 105: getSkillBreakdown edge cases ─────────────────────────────
+
+  describe('getSkillBreakdown edge cases (Phase 105)', () => {
+    it('returns 0 successRate when episodeCount is 0', async () => {
+      pool.query = vi.fn(async () => ({
+        rows: [{ skill_name: 'click', cnt: '0', done_count: '0', avg_reward: null }],
+        rowCount: 1,
+      }));
+
+      const stats = await manager.getSkillBreakdown();
+      expect(stats).toHaveLength(1);
+      expect(stats[0]!.successRate).toBe(0);
+      expect(stats[0]!.avgReward).toBe(0);
+    });
+  });
 });

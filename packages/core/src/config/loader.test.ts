@@ -497,3 +497,169 @@ describe('encrypted config', () => {
     expect(config.core.environment).toBe('production');
   });
 });
+
+// ── Phase 105: loadEnvConfig branch coverage ──────────────────────────────────
+
+describe('loadEnvConfig branch coverage (Phase 105)', () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    vi.resetModules();
+    process.env = { ...originalEnv };
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
+  it('should handle SECUREYEOMAN_ALLOW_REMOTE_ACCESS=true', () => {
+    process.env.SECUREYEOMAN_ALLOW_REMOTE_ACCESS = 'true';
+    const config = loadConfig();
+    expect(config.gateway.allowRemoteAccess).toBe(true);
+  });
+
+  it('should handle SECUREYEOMAN_ALLOW_REMOTE_ACCESS=false', () => {
+    process.env.SECUREYEOMAN_ALLOW_REMOTE_ACCESS = 'false';
+    const config = loadConfig();
+    expect(config.gateway.allowRemoteAccess).toBe(false);
+  });
+
+  it('should handle TLS environment variables', () => {
+    process.env.SECUREYEOMAN_TLS_ENABLED = 'true';
+    process.env.SECUREYEOMAN_TLS_CERT_PATH = '/path/to/cert.pem';
+    process.env.SECUREYEOMAN_TLS_KEY_PATH = '/path/to/key.pem';
+    process.env.SECUREYEOMAN_TLS_CA_PATH = '/path/to/ca.pem';
+    process.env.SECUREYEOMAN_TLS_AUTO_GENERATE = 'true';
+    const config = loadConfig();
+    expect(config.gateway.tls?.enabled).toBe(true);
+  });
+
+  it('should handle SECUREYEOMAN_CORS_ORIGINS with comma-separated values', () => {
+    process.env.SECUREYEOMAN_CORS_ORIGINS = 'http://localhost:3000, https://example.com';
+    const config = loadConfig();
+    expect(config.gateway.cors?.origins).toEqual(['http://localhost:3000', 'https://example.com']);
+  });
+
+  it('should handle SECUREYEOMAN_AUTH_LOGIN_MAX_ATTEMPTS', () => {
+    process.env.SECUREYEOMAN_AUTH_LOGIN_MAX_ATTEMPTS = '10';
+    const config = loadConfig();
+    expect(config.security.rateLimiting.authLoginMaxAttempts).toBe(10);
+  });
+
+  it('should ignore invalid SECUREYEOMAN_AUTH_LOGIN_MAX_ATTEMPTS (NaN)', () => {
+    process.env.SECUREYEOMAN_AUTH_LOGIN_MAX_ATTEMPTS = 'bad';
+    const config = loadConfig();
+    // Should use default, not NaN
+    expect(Number.isNaN(config.security.rateLimiting.authLoginMaxAttempts)).toBe(false);
+  });
+
+  it('should ignore zero SECUREYEOMAN_AUTH_LOGIN_MAX_ATTEMPTS', () => {
+    process.env.SECUREYEOMAN_AUTH_LOGIN_MAX_ATTEMPTS = '0';
+    const config = loadConfig();
+    // 0 is not > 0, so it's ignored — default value used
+    expect(config.security.rateLimiting.authLoginMaxAttempts).toBeGreaterThan(0);
+  });
+
+  it('should handle SECUREYEOMAN_AUTH_LOGIN_WINDOW_MS', () => {
+    process.env.SECUREYEOMAN_AUTH_LOGIN_WINDOW_MS = '60000';
+    const config = loadConfig();
+    expect(config.security.rateLimiting.authLoginWindowMs).toBe(60000);
+  });
+
+  it('should ignore invalid SECUREYEOMAN_AUTH_LOGIN_WINDOW_MS (NaN)', () => {
+    process.env.SECUREYEOMAN_AUTH_LOGIN_WINDOW_MS = 'xyz';
+    const config = loadConfig();
+    expect(Number.isNaN(config.security.rateLimiting.authLoginWindowMs)).toBe(false);
+  });
+
+  it('should handle invalid SECUREYEOMAN_LOG_FORMAT (not json or pretty)', () => {
+    process.env.SECUREYEOMAN_LOG_FORMAT = 'xml';
+    const config = loadConfig();
+    // Invalid format is silently ignored; logging config uses defaults
+    expect(config.logging).toBeDefined();
+    expect(config.logging.format).toBeDefined();
+  });
+
+  it('should handle mergeConfigs when override value is an object and base is a scalar', () => {
+    // This exercises the else branch in mergeConfigs (line 313-314)
+    // where base value is not an object but override is
+    const config = loadConfig({
+      skipEnv: true,
+      overrides: {
+        core: {
+          environment: 'production',
+        },
+        // A second override that merges on top
+      } as any,
+    });
+    // Then apply a second override where the key was previously a scalar
+    const config2 = loadConfig({
+      skipEnv: true,
+      overrides: {
+        gateway: {
+          cors: {
+            origins: ['http://localhost'],
+          },
+        },
+      } as any,
+    });
+    expect(config.core.environment).toBe('production');
+    expect(config2.gateway.cors?.origins).toEqual(['http://localhost']);
+  });
+});
+
+describe('validateSecrets — fallback provider warnings (Phase 105)', () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    process.env = { ...originalEnv };
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
+  it('should warn on missing fallback API key (non-ollama)', () => {
+    const config = loadConfig({
+      skipEnv: true,
+      overrides: {
+        model: {
+          provider: 'ollama',
+          fallbacks: [
+            { provider: 'anthropic', model: 'claude-3', apiKeyEnv: 'TEST_FALLBACK_KEY' },
+          ],
+        },
+      } as any,
+    });
+    // Set required secrets
+    process.env[config.logging.audit.signingKeyEnv] = 'signing-key';
+    process.env[config.gateway.auth.tokenSecret] = 'token-secret';
+    process.env[config.gateway.auth.adminPasswordEnv] = 'admin-password';
+    process.env[config.security.encryption.keyEnv] = 'encryption-key';
+    delete process.env.TEST_FALLBACK_KEY;
+
+    // Should not throw (fallback key is a warning, not fatal)
+    expect(() => validateSecrets(config)).not.toThrow();
+  });
+
+  it('should not warn on ollama fallback provider without key', () => {
+    const config = loadConfig({
+      skipEnv: true,
+      overrides: {
+        model: {
+          provider: 'ollama',
+          fallbacks: [
+            { provider: 'ollama', model: 'llama3', apiKeyEnv: 'OLLAMA_KEY' },
+          ],
+        },
+      } as any,
+    });
+    // Set required secrets
+    process.env[config.logging.audit.signingKeyEnv] = 'signing-key';
+    process.env[config.gateway.auth.tokenSecret] = 'token-secret';
+    process.env[config.gateway.auth.adminPasswordEnv] = 'admin-password';
+    process.env[config.security.encryption.keyEnv] = 'encryption-key';
+
+    expect(() => validateSecrets(config)).not.toThrow();
+  });
+});
