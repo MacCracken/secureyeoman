@@ -357,6 +357,7 @@ export class SecureYeoman {
         const smConfig: import('./security/secrets-manager.js').SecretsManagerConfig = {
           backend: this.config.security.secretBackend,
           keyringManager: this.keyringManager,
+          knownKeys: knownSecretKeys,
           ...(vaultCfg && {
             vault: {
               address: vaultCfg.address,
@@ -2795,6 +2796,16 @@ export class SecureYeoman {
     jailbreakAction?: 'block' | 'warn' | 'audit_only';
     strictSystemPromptConfidentiality?: boolean;
     abuseDetectionEnabled?: boolean;
+    contentGuardrailsEnabled?: boolean;
+    contentGuardrailsPiiMode?: 'disabled' | 'detect_only' | 'redact';
+    contentGuardrailsToxicityEnabled?: boolean;
+    contentGuardrailsToxicityMode?: 'block' | 'warn' | 'audit_only';
+    contentGuardrailsToxicityClassifierUrl?: string;
+    contentGuardrailsToxicityThreshold?: number;
+    contentGuardrailsBlockList?: string[];
+    contentGuardrailsBlockedTopics?: string[];
+    contentGuardrailsGroundingEnabled?: boolean;
+    contentGuardrailsGroundingMode?: 'flag' | 'block';
   }): void {
     this.ensureInitialized();
 
@@ -2916,6 +2927,36 @@ export class SecureYeoman {
     }
     if (updates.abuseDetectionEnabled !== undefined) {
       this.config!.security.abuseDetection.enabled = updates.abuseDetectionEnabled;
+    }
+    if (updates.contentGuardrailsEnabled !== undefined) {
+      this.config!.security.contentGuardrails.enabled = updates.contentGuardrailsEnabled;
+    }
+    if (updates.contentGuardrailsPiiMode !== undefined) {
+      this.config!.security.contentGuardrails.piiMode = updates.contentGuardrailsPiiMode;
+    }
+    if (updates.contentGuardrailsToxicityEnabled !== undefined) {
+      this.config!.security.contentGuardrails.toxicityEnabled = updates.contentGuardrailsToxicityEnabled;
+    }
+    if (updates.contentGuardrailsToxicityMode !== undefined) {
+      this.config!.security.contentGuardrails.toxicityMode = updates.contentGuardrailsToxicityMode;
+    }
+    if (updates.contentGuardrailsToxicityClassifierUrl !== undefined) {
+      this.config!.security.contentGuardrails.toxicityClassifierUrl = updates.contentGuardrailsToxicityClassifierUrl;
+    }
+    if (updates.contentGuardrailsToxicityThreshold !== undefined) {
+      this.config!.security.contentGuardrails.toxicityThreshold = updates.contentGuardrailsToxicityThreshold;
+    }
+    if (updates.contentGuardrailsBlockList !== undefined) {
+      this.config!.security.contentGuardrails.blockList = updates.contentGuardrailsBlockList;
+    }
+    if (updates.contentGuardrailsBlockedTopics !== undefined) {
+      this.config!.security.contentGuardrails.blockedTopics = updates.contentGuardrailsBlockedTopics;
+    }
+    if (updates.contentGuardrailsGroundingEnabled !== undefined) {
+      this.config!.security.contentGuardrails.groundingEnabled = updates.contentGuardrailsGroundingEnabled;
+    }
+    if (updates.contentGuardrailsGroundingMode !== undefined) {
+      this.config!.security.contentGuardrails.groundingMode = updates.contentGuardrailsGroundingMode;
     }
 
     this.logger?.info('Security policy updated', updates);

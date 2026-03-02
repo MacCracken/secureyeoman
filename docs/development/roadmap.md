@@ -45,7 +45,7 @@
 | 89 | Marketplace Shareables | P3 — community growth | ✅ Complete |
 | 93 | License-Gated Feature Reveal | P2 — commercial | Planned |
 | 94 | Test Coverage: Path to 88%/77% | P2 — engineering quality | 🔄 In Progress (80.85%/68.76%) |
-| 95 | Content Guardrails | P2 — enterprise compliance | Planned |
+| 95 | Content Guardrails | P2 — enterprise compliance | ✅ Complete |
 | 96 | Conversation Analytics | P3 — operational intelligence | Planned |
 | 97 | LLM-as-Judge Evaluation | P3 — ML quality signal | Planned |
 | 98 | LLM Lifecycle Platform — Completion | P3 — model ops | Planned |
@@ -128,21 +128,6 @@ Branch coverage is the hardest gap. Key ternaries / conditionals to reach:
 - [ ] No existing test degraded (test count stable or growing).
 - [ ] `vitest.config.ts` thresholds bumped to `{ stmt: 88, branch: 77, fn: 88, lines: 88 }` and enforced in CI.
 - [ ] `docs/development/coverage-plan.md` created with per-file before/after table when work begins.
-
----
-
-## Phase 95: Content Guardrails
-
-**Priority**: P2 — Enterprise compliance. Required for regulated industries (healthcare, finance, legal) and a key differentiator in enterprise sales. PII redaction and topic restrictions are the must-have items; toxicity and grounding checks are the depth tier.
-
-Complements Phase 77 (Prompt Security) which guards the input side. This phase operates on AI outputs before they reach the user.
-
-- [ ] **PII detection & redaction** — Detect and optionally redact personally identifiable information in AI outputs before they reach the user: names, email addresses, phone numbers, SSNs, credit card numbers, IP addresses. Configurable per personality: `detect_only` (flag + audit) or `redact` (replace with `[REDACTED]`). Uses NER model (spaCy or Comprehend-compatible) or regex patterns for low-latency enforcement.
-- [ ] **Topic restrictions** — Block AI from discussing configurable topic categories, regardless of system prompt. Example: `blocked_topics: ['competitor products', 'legal advice', 'medical diagnosis']`. Implemented as an embedding-based classifier: compare the input/output embedding against a set of seed topic embeddings; block if similarity exceeds threshold. Configurable per personality in the security settings.
-- [ ] **Toxicity filter** — Block or warn on outputs containing hate speech, harassment, or explicit content. Uses an external classifier endpoint (configurable: local Ollama model, OpenAI Moderation API, or custom). Modes: `block` (refuses to send output), `warn_user`, `audit_only`.
-- [ ] **Custom block lists** — Per-personality keyword/phrase deny lists with regex support. Applied as a fast pre-filter before the semantic checks. Useful for brand protection, legal compliance, or content policy enforcement.
-- [ ] **Guardrail audit trail** — Every guardrail trigger (PII redaction, topic block, toxicity flag) logged to the audit chain with: rule that fired, original content hash (not plaintext), action taken, and conversation ID. Queryable in the Audit Log tab with a "Guardrail Events" filter.
-- [ ] **Grounding check** — Detect hallucinated citations or factual claims that contradict the personality's knowledge base. If the AI asserts a fact with a citation, verify the citation exists in the knowledge base. Flag unverifiable claims with a `[unverified]` annotation in the response. Optional mode: block responses with unverifiable claims outright.
 
 ---
 
@@ -526,6 +511,17 @@ Versions use the project's date-based format: `YYYY.M.D` (e.g., `2026.2.28`). Sa
 
 ---
 
+### Theme Editor & Custom Themes
+
+*Demand-Gated — extends the 10/10/10 theme system (ADR 175) with user-created themes.*
+
+- [ ] **Theme editor** — Visual theme editor in Appearance settings: live-preview color pickers for all CSS variables (background, foreground, primary, secondary, muted, accent, destructive, border, ring, success, warning, info). Export as JSON; import to apply.
+- [ ] **Theme upload** — Users upload a JSON theme file via the dashboard. Stored per-user in `settings.custom_themes`. Custom themes appear in a "Custom" section below the built-in themes.
+- [ ] **Community theme gallery** — Browse and install community-shared themes from the Marketplace. Themes are shareable JSON files with metadata (name, author, preview colors, dark/light flag). Marketplace sync includes `themes/` directory.
+- [ ] **Theme scheduling** — Auto-switch between a light and dark theme based on time of day or OS schedule. Configurable transition time.
+
+---
+
 ### Infrastructure & Platform
 
 *Demand-Gated — implement once operational scale or compliance requirements justify the investment.*
@@ -555,4 +551,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-01 — Phases 89 (Marketplace Shareables), 90 (CI/CD Integration), 91 (Native Clients Scaffold), 92 (Adaptive Learning Pipeline), Dual Licensing (ADR 171), Canvas Workspace (78b) all complete. Roadmap reorganised: phases 93–101 replace legacy numbering (78a/81/83/85/86/87/88/90); completed phases removed from body. See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-01 — See [Changelog](../../CHANGELOG.md) for full history.*

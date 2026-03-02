@@ -349,16 +349,18 @@ describe('validateSecrets', () => {
     expect(() => validateSecrets(config)).toThrow('Missing required secrets');
   });
 
-  it('should throw when API key is missing for non-ollama provider', () => {
+  it('should warn but not throw when API key is missing for non-ollama provider', () => {
     const config = loadConfig({ skipEnv: true });
 
-    // Set all secrets except API key
+    // Set all required secrets except API key
     process.env[config.logging.audit.signingKeyEnv] = 'signing-key';
     process.env[config.gateway.auth.tokenSecret] = 'token-secret';
+    process.env[config.gateway.auth.adminPasswordEnv] = 'admin-password';
     process.env[config.security.encryption.keyEnv] = 'encryption-key';
     delete process.env[config.model.apiKeyEnv];
 
-    expect(() => validateSecrets(config)).toThrow('Missing required secrets');
+    // Should not throw — API key is optional; chat is disabled until configured
+    expect(() => validateSecrets(config)).not.toThrow();
   });
 
   it('should not require API key for ollama provider', () => {
@@ -422,7 +424,8 @@ describe('validateSecrets', () => {
       const message = (error as Error).message;
       expect(message).toContain('Missing required secrets');
       expect(message).toContain(config.logging.audit.signingKeyEnv);
-      expect(message).toContain(config.model.apiKeyEnv);
+      // API key is no longer required — it's a warning, not fatal
+      expect(message).not.toContain(config.model.apiKeyEnv);
       expect(message).toContain(config.gateway.auth.tokenSecret);
     }
   });

@@ -222,6 +222,15 @@ beforeEach(() => {
     jailbreakAction: 'warn' as const,
     strictSystemPromptConfidentiality: false,
     abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
   });
 });
 
@@ -408,6 +417,15 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -463,6 +481,15 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -513,6 +540,15 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -563,6 +599,15 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -683,6 +728,15 @@ describe('PersonalityEditor — Organizational Intent toggle', () => {
       jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     mockFetchMcpConfig.mockResolvedValue({ exposeOrgIntentTools: true } as any);
 

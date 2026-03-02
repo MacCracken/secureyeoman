@@ -444,32 +444,25 @@ export function validateSecrets(config: Config): void {
     requiredSecrets.push(config.logging.audit.signingKeyEnv);
   }
 
-  // API key based on provider (Ollama is local, no key needed)
-  if (config.model.provider !== 'ollama') {
-    requiredSecrets.push(config.model.apiKeyEnv);
-  }
-
-  // Provider-specific key validation for Gemini and OpenAI
-  if (config.model.provider === 'gemini' && config.model.apiKeyEnv === 'ANTHROPIC_API_KEY') {
-    // User likely forgot to set apiKeyEnv for Gemini — check GOOGLE_API_KEY as fallback
-    if (!getSecret('ANTHROPIC_API_KEY') && getSecret('GOOGLE_API_KEY')) {
-      // GOOGLE_API_KEY is available; they should set apiKeyEnv to GOOGLE_API_KEY in config
-    }
-  }
-  if (config.model.provider === 'openai' && config.model.apiKeyEnv === 'ANTHROPIC_API_KEY') {
-    if (!getSecret('ANTHROPIC_API_KEY') && getSecret('OPENAI_API_KEY')) {
-      // OPENAI_API_KEY is available; they should set apiKeyEnv to OPENAI_API_KEY in config
+  // Warn (don't fail) on missing AI provider API keys.
+  // The server starts without them; chat is disabled in the dashboard until a key
+  // is added via Administration > Secrets > AI Provider Keys.
+  if (config.model.provider !== 'ollama' && !getSecret(config.model.apiKeyEnv)) {
+    const msg = `AI provider key not set (${config.model.apiKeyEnv}). Chat will be unavailable until a key is configured.`;
+    if (isLoggerInitialized()) {
+      getLogger().warn(msg);
+    } else {
+      process.stderr.write(`[warn] ${msg}\n`);
     }
   }
 
-  // Warn (don't fail) on missing fallback API keys
+  // Warn on missing fallback API keys
   if (config.model.fallbacks) {
     for (const fb of config.model.fallbacks) {
       if (fb.provider !== 'ollama' && !getSecret(fb.apiKeyEnv)) {
         if (isLoggerInitialized()) {
           getLogger().warn(`Fallback ${fb.provider}/${fb.model} API key not set: ${fb.apiKeyEnv}`);
         } else {
-          // Logger not yet available at early config-load time; fall back to stderr.
           process.stderr.write(
             `[warn] Fallback ${fb.provider}/${fb.model} API key not set: ${fb.apiKeyEnv}\n`
           );

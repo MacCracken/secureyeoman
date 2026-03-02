@@ -588,6 +588,20 @@ export {
   type TeamRun,
 } from './team.js';
 
+// Content Guardrail types (Phase 95)
+export {
+  ContentGuardrailConfigSchema,
+  ContentGuardrailPersonalityConfigSchema,
+  type ContentGuardrailConfig,
+  type ContentGuardrailPersonalityConfig,
+  type GuardrailAction,
+  type GuardrailFinding,
+  type GuardrailContext,
+  type GuardrailSyncResult,
+  type GuardrailAsyncResult,
+  type GuardrailResult,
+} from './content-guardrail.js';
+
 // Shareables types (Phase 89)
 export type {
   WorkflowShareableRequires,

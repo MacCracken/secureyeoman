@@ -156,6 +156,8 @@ export function ProviderKeysSettings() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['secret-keys'] });
       setKeyValue('');
+      setSelectedProviderId('');
+      setCustomEnvName('');
     },
   });
 

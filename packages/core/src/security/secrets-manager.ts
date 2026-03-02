@@ -33,6 +33,8 @@ export interface SecretsManagerConfig {
   keyringManager?: KeyringManager;
   /** Pre-built VaultBackend instance (used in tests to inject a mock) */
   _vaultBackend?: VaultBackend;
+  /** Pre-seed tracked key names for keyring/env backends (which can't enumerate). */
+  knownKeys?: string[];
 }
 
 export class SecretsManager {
@@ -40,9 +42,15 @@ export class SecretsManager {
   private fileStore: SecretStore | null = null;
   private vaultBackend: VaultBackend | null = null;
   private logger: SecureLogger | null = null;
+  /** Tracks key names set/deleted through this manager (keyring/env can't enumerate). */
+  private readonly managedKeys = new Set<string>();
 
   constructor(config: SecretsManagerConfig) {
     this.config = config;
+    // Pre-seed tracked keys so keys() can enumerate them on keyring/env backends
+    if (config.knownKeys) {
+      for (const k of config.knownKeys) this.managedKeys.add(k);
+    }
   }
 
   /** Initialize storage (loads file store, validates vault connectivity). */
@@ -115,6 +123,7 @@ export class SecretsManager {
 
   /** Store a secret. Also mirrors to process.env for sync access. */
   async set(name: string, value: string): Promise<void> {
+    this.managedKeys.add(name);
     const backend = this.effectiveBackend();
 
     if (backend === 'vault' && this.vaultBackend) {
@@ -154,6 +163,7 @@ export class SecretsManager {
 
   /** Delete a secret. Returns true when the secret existed and was removed. */
   async delete(name: string): Promise<boolean> {
+    this.managedKeys.delete(name);
     const backend = this.effectiveBackend();
 
     if (backend === 'vault' && this.vaultBackend) {
@@ -213,8 +223,8 @@ export class SecretsManager {
       return this.fileStore.keys();
     }
 
-    // keyring / env — not enumerable; return empty list
-    return [];
+    // keyring / env — not natively enumerable; return names tracked by set()
+    return [...this.managedKeys].filter((k) => process.env[k] !== undefined);
   }
 
   // ── Private ─────────────────────────────────────────────────────

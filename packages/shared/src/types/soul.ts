@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 import { ToolSchema } from './ai.js';
+import { ContentGuardrailPersonalityConfigSchema } from './content-guardrail.js';
 
 // ─── Personality ──────────────────────────────────────────────
 
@@ -238,6 +239,8 @@ export const BodyConfigSchema = z
      * Falls back to the global security.strictSystemPromptConfidentiality setting when undefined.
      */
     strictSystemPromptConfidentiality: z.boolean().optional(),
+    /** Per-personality content guardrail overrides (block list additions, topic additions, PII mode). */
+    contentGuardrails: ContentGuardrailPersonalityConfigSchema.optional(),
     /**
      * Knowledge retrieval mode for this personality.
      *

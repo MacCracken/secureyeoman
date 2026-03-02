@@ -135,6 +135,15 @@ describe('SecuritySettings', () => {
       jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     mockUpdateSecurityPolicy.mockResolvedValue({
       allowSubAgents: true,
@@ -170,6 +179,15 @@ describe('SecuritySettings', () => {
       jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
     vi.mocked(api.fetchModelDefault).mockResolvedValue({ provider: null, model: null });
@@ -237,6 +255,15 @@ describe('SecuritySettings', () => {
       jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle A2A Networks');
@@ -356,6 +383,15 @@ describe('SecuritySettings', () => {
       jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle A2A Networks');
@@ -407,6 +443,15 @@ describe('SecuritySettings', () => {
       jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle Agent Swarms');
@@ -448,6 +493,15 @@ describe('SecuritySettings', () => {
       jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle Agent Swarms');
@@ -583,6 +637,15 @@ describe('SecuritySettings', () => {
       jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     renderComponent();
     const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
@@ -624,6 +687,15 @@ describe('SecuritySettings', () => {
       jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     renderComponent();
     const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
@@ -675,6 +747,15 @@ describe('SecuritySettings', () => {
       jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     renderComponent();
     const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
@@ -859,6 +940,15 @@ describe('SecuritySettings', () => {
       responseGuardMode: 'warn' as const, jailbreakThreshold: 0.5,
       jailbreakAction: 'warn' as const, strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     renderComponent();
     const advancedToggle = await screen.findByLabelText('Toggle Advanced Editor Mode');
@@ -904,6 +994,15 @@ describe('SecuritySettings', () => {
       jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     renderComponent();
     expect(await screen.findByText(/requires code editor/i)).toBeInTheDocument();

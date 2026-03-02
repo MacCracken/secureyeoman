@@ -117,6 +117,15 @@ describe('ExtensionsPage', () => {
       jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     mockFetchExtensions.mockResolvedValue(MOCK_EXTENSIONS);
     mockFetchExtensionHooks.mockResolvedValue(MOCK_HOOKS);
@@ -166,6 +175,15 @@ describe('ExtensionsPage', () => {
       jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     renderComponent();
     expect(await screen.findByText('Extensions Not Enabled')).toBeInTheDocument();
@@ -207,6 +225,15 @@ describe('ExtensionsPage', () => {
       jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     renderComponent();
     expect(await screen.findByText('Discover')).toBeInTheDocument();
@@ -249,6 +276,15 @@ describe('ExtensionsPage', () => {
       jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     renderComponent();
     expect(await screen.findByText('Discover')).toBeInTheDocument();

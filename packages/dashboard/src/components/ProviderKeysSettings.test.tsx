@@ -162,6 +162,30 @@ describe('ProviderKeysSettings', () => {
     });
   });
 
+  it('resets dropdown and shows configured list after saving', async () => {
+    mockFetchSecretKeys
+      .mockResolvedValueOnce({ keys: [] })
+      .mockResolvedValueOnce({ keys: ['ANTHROPIC_API_KEY'] });
+    mockSetSecret.mockResolvedValue(undefined);
+    renderComponent();
+    await screen.findByText('AI Provider Keys');
+
+    const select = screen.getByDisplayValue('Select a provider...');
+    fireEvent.change(select, { target: { value: 'anthropic' } });
+
+    const keyInput = screen.getByPlaceholderText('sk-ant-...');
+    fireEvent.change(keyInput, { target: { value: 'sk-ant-1234567890abcdef' } });
+
+    fireEvent.click(screen.getByText('Save Key'));
+
+    // After save, dropdown should reset and configured provider list should appear
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Select a provider...')).toBeInTheDocument();
+    });
+    // Detail panel should be gone
+    expect(screen.queryByText('How to get your API key')).not.toBeInTheDocument();
+  });
+
   it('shows "Replace Key" for already-configured provider', async () => {
     mockFetchSecretKeys.mockResolvedValue({ keys: ['ANTHROPIC_API_KEY'] });
     renderComponent();

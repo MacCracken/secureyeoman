@@ -17,6 +17,7 @@ import {
   HeartbeatConfigSchema,
   ExternalBrainConfigSchema,
 } from './soul.js';
+import { ContentGuardrailConfigSchema } from './content-guardrail.js';
 import { z as zz } from 'zod';
 
 // ─── History Compression Config ─────────────────────────────────
@@ -364,6 +365,8 @@ export const SecurityConfigSchema = z.object({
       sessionTtlMs: z.number().int().positive().default(1_800_000),
     })
     .default({}),
+  /** Output-side content policy enforcement: PII redaction, topic restrictions, toxicity, block lists, grounding. */
+  contentGuardrails: ContentGuardrailConfigSchema.default({}),
   secretBackend: z.enum(['auto', 'keyring', 'env', 'file', 'vault']).default('auto'),
   vault: z
     .object({

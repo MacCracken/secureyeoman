@@ -1,3 +1,57 @@
+## [2026.3.1f] — 2026-03-01
+
+### Theme Rebalancing — 10/10/10
+
+- **Rebalanced theme distribution**: 10 dark free, 10 light free, 10 enterprise + System (31 total, up from 24). Clean 10/10/10 split replaces the previous 6/6/11 imbalance.
+- **Moved to free**: Dracula and Solarized Dark (dark free), Solarized Light and GitHub Light (light free). Popular community themes should not be gated.
+- **New dark themes**: Rosé Pine, Horizon (free).
+- **New light themes**: Catppuccin Latte, Rosé Pine Dawn, Everforest Light, One Light, Ayu Light, Quiet Light, Winter Light (free). CSS variable blocks added for all.
+- **New enterprise themes**: Synthwave, Palenight, Night Owl. All enterprise themes are dark-only.
+- **12 new CSS theme blocks** in `index.css` with full variable coverage (background, foreground, card, popover, primary, secondary, muted, accent, destructive, border, input, ring, success, warning, info).
+- **Tests**: 17 new tests in `useTheme.test.ts` — validates 10/10/10 counts, unique IDs/names, preview hex format, DARK_THEMES set correctness, enterprise flag consistency, and expected theme ID presence.
+- **ADR**: 175.
+
+---
+
+## [2026.3.1e] — 2026-03-01
+
+### Phase 95: Content Guardrails
+
+- **`ContentGuardrail` class** (new): Output-side content policy enforcement that runs after ResponseGuard in both streaming and non-streaming chat paths. Six capabilities: PII detection/redaction (email, phone, SSN, credit card, IP), topic restrictions (Jaccard keyword overlap), toxicity filtering (external HTTP classifier, fail-open), custom block lists (plain strings with word boundaries + regex patterns), guardrail audit trail (SHA-256 content hashes), and citation grounding checks against the knowledge base.
+- **Sync/async split**: `scanSync()` runs PII + block list (<5ms fast path). `scanAsync()` runs topic restriction, toxicity, and grounding. `scan()` combines both with sync-failure short-circuit.
+- **Shared types**: `ContentGuardrailConfigSchema` + `ContentGuardrailPersonalityConfigSchema` in `packages/shared/src/types/content-guardrail.ts`. Added to `SecurityConfigSchema` (global) and `BodyConfigSchema` (per-personality overrides: block list additions, topic additions, PII mode override).
+- **Security policy API**: 10 new `contentGuardrails*` fields in `GET/PATCH /api/v1/security/policy`. `updateSecurityPolicy()` in `secureyeoman.ts` updated with all new fields.
+- **Dashboard**: "Content Guardrails" card in SecuritySettings with master toggle, PII mode selector, toxicity controls (toggle + mode + classifier URL + threshold slider), block list textarea, blocked topics textarea, and grounding controls.
+- **Tests**: 53 new tests in `content-guardrail.test.ts` covering disabled state, PII detect_only (5 types + content hash), PII redact (6 replacement tests), block list (exact match, regex, personality additions, case-insensitive, special chars), topic restriction (keyword overlap, merging, fallback), toxicity (block/warn/audit modes, below threshold, fail-open on error/non-200, disabled/no-URL guards), grounding (quoted citations, [unverified] tagging, block mode, verified pass, disabled/no-brain guards, "according to" extraction), combined scan (short-circuit, merged findings, redact-then-async), audit trail (sync/async events, warn level, no-findings silence), per-personality PII override, and factory. 53 SecuritySettings dashboard tests updated.
+- **ADR**: 174. **Guide**: `docs/guides/content-guardrails.md`.
+
+---
+
+## [2026.3.1d] — 2026-03-01
+
+### AI Provider Keys Management & Optional Startup
+
+- **`ProviderKeysSettings` component** (new): Purpose-built UI for managing AI provider API keys in **Administration > Secrets**. Dropdown-first design with 7 known providers (Anthropic, OpenAI, Google/Gemini, Groq, Mistral, DeepSeek, OpenRouter) plus a Custom option for arbitrary env var names. Selecting an unconfigured provider shows numbered help steps, a direct link to the provider's console, and a key input field. Configured providers show a "Replace Key" button and delete option with confirmation dialog. Cancel button resets dropdown and closes the detail panel.
+- **Renamed "API Keys" → "Yeoman API Keys"**: Existing `ApiKeysSettings` heading and description updated to distinguish programmatic API keys from AI provider keys.
+- **Settings tab ordering**: Secrets tab now shows: AI Provider Keys → Yeoman API Keys → Secrets.
+- **Optional AI provider key at startup**: `validateSecrets()` no longer treats missing AI provider keys as fatal. The server starts without them and logs a warning. Chat is disabled in the dashboard until at least one provider key is configured via the new UI or `.env`.
+- **Chat & Editor disabled state**: When no AI models are available (no provider keys configured), the Chat and Editor sidebar links are greyed out and unclickable. The chat page shows a warning banner directing users to Administration > Secrets > AI Provider Keys.
+- **Explicit RBAC for secrets routes**: Added `GET /api/v1/secrets` (`secrets:read`) and `GET/PUT/DELETE /api/v1/secrets/:name` (`secrets:read`/`secrets:write`) to `ROUTE_PERMISSIONS` in `auth-middleware.ts`.
+- **`.env.example` / `.env.dev.example` updated**: AI Providers section comment changed from "at least one required" to "optional — server starts without keys; chat disabled until configured". `ANTHROPIC_API_KEY` line commented out by default.
+- **Tests**: 19 new `ProviderKeysSettings` tests (rendering, dropdown, help steps, save/delete, validation, cancel, exit-without-key). `ApiKeysSettings` test assertions updated for new heading. `loader.test.ts` updated — API key missing test now asserts warning-not-throw; "list all missing secrets" test asserts API key is excluded from error.
+
+---
+
+## [2026.3.1c] — 2026-03-01
+
+### Heartbeat Personality Consolidation & Audit Logging
+
+- **Personality field consolidation**: Removed dual-mode personality tracking (`activePersonalityId` + `activePersonalityIds`) from `HeartbeatManager`. `activePersonalityIds` is now the single source of truth. `setActivePersonalityId(id)` delegates to `activePersonalityIds` (wraps into array or clears). Cascading fallback in `logPersonalities` simplified to a single branch.
+- **Audit chain metadata**: Heartbeat audit records now include `activePersonalities` in metadata — an array of personality names (falling back to IDs when names are empty). Shows which personalities were active at each heartbeat in the audit log.
+- **Tests**: 3 new tests for audit chain personality metadata (named personalities, ID fallback, empty array). All 76 heartbeat tests pass.
+
+---
+
 ## [2026.3.1b] — 2026-03-01
 
 ### MCP Tool Gating & Organizational Intent Access

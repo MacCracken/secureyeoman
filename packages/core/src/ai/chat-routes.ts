@@ -23,6 +23,7 @@ import { ToolOutputScanner } from '../security/tool-output-scanner.js';
 import { PromptGuard } from '../security/prompt-guard.js';
 import { createResponseGuard } from '../security/response-guard.js';
 import { AbuseDetector } from '../security/abuse-detector.js';
+import { createContentGuardrail } from '../security/content-guardrail.js';
 import { LLMJudge } from '../security/llm-judge.js';
 import { ContextCompactor, getContextWindowSize } from './context-compactor.js';
 import { getLogger } from '../logging/logger.js';
@@ -700,6 +701,21 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       })
   );
 
+  // Output-side content policy enforcement: PII, topic restrictions, toxicity, block lists, grounding (Phase 95).
+  const contentGuardrail = createContentGuardrail(
+    secureYeoman.getConfig().security.contentGuardrails,
+    {
+      brainManager: secureYeoman.getBrainManager?.() ?? null,
+      auditRecord: (p) =>
+        void secureYeoman.getAuditChain().record({
+          event: p.event,
+          level: p.level as 'info' | 'warn' | 'error',
+          message: p.message,
+          metadata: p.metadata,
+        }),
+    }
+  );
+
   // LLM-as-Judge for high-autonomy tool calls (Phase 54).
   let llmJudge: LLMJudge | null = null;
   try {
@@ -1373,6 +1389,21 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 metadata: { overlapRatio: _leakResult.overlapRatio.toFixed(3) },
               });
             }
+          }
+        }
+
+        // ── Content Guardrails (Phase 95) — PII, topics, toxicity, block list, grounding
+        {
+          const cgResult = await contentGuardrail.scan(
+            response.content,
+            { source: 'dashboard_chat', personalityId: personality?.id, conversationId: conversationId as string | undefined },
+            personality?.body?.contentGuardrails
+          );
+          if (!cgResult.passed) {
+            return sendError(reply, 400, 'Response blocked: content policy violation');
+          }
+          if (cgResult.text !== response.content) {
+            response.content = cgResult.text;
           }
         }
 
@@ -2209,11 +2240,26 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           }
         }
 
+        // ── Content Guardrails (Phase 95) — PII, topics, toxicity, block list, grounding (stream)
+        let guardrailedContent = safeContent;
+        {
+          const cgResultS = await contentGuardrail.scan(
+            safeContent,
+            { source: 'dashboard_chat_stream', personalityId: personality?.id, conversationId: conversationId as string | undefined },
+            personality?.body?.contentGuardrails
+          );
+          if (!cgResultS.passed) {
+            emit({ type: 'error', message: 'Response blocked: content policy violation' });
+            return;
+          }
+          guardrailedContent = cgResultS.text;
+        }
+
         // ── OPA output compliance (Phase 54) ──────────────────────────────────
         try {
           const _intentMgrNSS = secureYeoman.getIntentManager?.();
           if (_intentMgrNSS) {
-            const complianceResult = await _intentMgrNSS.checkOutputCompliance(safeContent);
+            const complianceResult = await _intentMgrNSS.checkOutputCompliance(guardrailedContent);
             if (!complianceResult.compliant) {
               void secureYeoman.getAuditChain().record({
                 event: 'output_compliance_warning',
@@ -2242,7 +2288,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               await convStorage.addMessage({
                 conversationId,
                 role: 'assistant',
-                content: safeContent,
+                content: guardrailedContent,
                 model: finalModel,
                 provider: finalProvider,
                 tokensUsed: totalTokensUsed,
@@ -2262,7 +2308,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             const brainManager = secureYeoman.getBrainManager();
             await brainManager.remember(
               'episodic',
-              `User: ${message.trim()}\nAssistant: ${safeContent}`,
+              `User: ${message.trim()}\nAssistant: ${guardrailedContent}`,
               'dashboard_chat',
               { personalityId: personalityId ?? 'default' },
               undefined,
@@ -2275,7 +2321,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
 
         emit({
           type: 'done',
-          content: safeContent,
+          content: guardrailedContent,
           model: finalModel,
           provider: finalProvider,
           tokensUsed: totalTokensUsed,

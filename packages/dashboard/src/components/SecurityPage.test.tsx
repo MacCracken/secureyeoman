@@ -202,6 +202,15 @@ beforeEach(() => {
     jailbreakAction: 'warn' as const,
     strictSystemPromptConfidentiality: false,
     abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
   });
 });
 
@@ -443,6 +452,15 @@ function enableMlPolicy() {
     jailbreakAction: 'warn' as const,
     strictSystemPromptConfidentiality: false,
     abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
   });
 }
 
@@ -610,6 +628,15 @@ describe('SecurityPage — Automations tab', () => {
       allowTrainingExport: false, promptGuardMode: 'warn' as const, responseGuardMode: 'warn' as const,
       jailbreakThreshold: 0.5, jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false, abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     renderWithRoute('/security?tab=automations');
     // Wait for Workflows tab to appear (async — depends on policy query resolving)
@@ -668,6 +695,15 @@ describe('SecurityPage — Automations tab', () => {
       allowTrainingExport: false, promptGuardMode: 'warn' as const, responseGuardMode: 'warn' as const,
       jailbreakThreshold: 0.5, jailbreakAction: 'warn' as const,
       strictSystemPromptConfidentiality: false, abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled' as const,
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn' as const,
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag' as const,
     });
     mockFetchWorkflows.mockResolvedValue({
       definitions: [

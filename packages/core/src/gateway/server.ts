@@ -1767,6 +1767,16 @@ export class GatewayServer {
         jailbreakAction: config.security.inputValidation?.jailbreakAction,
         strictSystemPromptConfidentiality: config.security.strictSystemPromptConfidentiality,
         abuseDetectionEnabled: config.security.abuseDetection?.enabled,
+        contentGuardrailsEnabled: config.security.contentGuardrails?.enabled ?? false,
+        contentGuardrailsPiiMode: config.security.contentGuardrails?.piiMode ?? 'disabled',
+        contentGuardrailsToxicityEnabled: config.security.contentGuardrails?.toxicityEnabled ?? false,
+        contentGuardrailsToxicityMode: config.security.contentGuardrails?.toxicityMode ?? 'warn',
+        contentGuardrailsToxicityClassifierUrl: config.security.contentGuardrails?.toxicityClassifierUrl,
+        contentGuardrailsToxicityThreshold: config.security.contentGuardrails?.toxicityThreshold ?? 0.7,
+        contentGuardrailsBlockList: config.security.contentGuardrails?.blockList ?? [],
+        contentGuardrailsBlockedTopics: config.security.contentGuardrails?.blockedTopics ?? [],
+        contentGuardrailsGroundingEnabled: config.security.contentGuardrails?.groundingEnabled ?? false,
+        contentGuardrailsGroundingMode: config.security.contentGuardrails?.groundingMode ?? 'flag',
       };
     });
 
@@ -1810,6 +1820,16 @@ export class GatewayServer {
             jailbreakAction?: 'block' | 'warn' | 'audit_only';
             strictSystemPromptConfidentiality?: boolean;
             abuseDetectionEnabled?: boolean;
+            contentGuardrailsEnabled?: boolean;
+            contentGuardrailsPiiMode?: 'disabled' | 'detect_only' | 'redact';
+            contentGuardrailsToxicityEnabled?: boolean;
+            contentGuardrailsToxicityMode?: 'block' | 'warn' | 'audit_only';
+            contentGuardrailsToxicityClassifierUrl?: string;
+            contentGuardrailsToxicityThreshold?: number;
+            contentGuardrailsBlockList?: string[];
+            contentGuardrailsBlockedTopics?: string[];
+            contentGuardrailsGroundingEnabled?: boolean;
+            contentGuardrailsGroundingMode?: 'flag' | 'block';
           };
         }>,
         reply: FastifyReply
@@ -1850,6 +1870,16 @@ export class GatewayServer {
             jailbreakAction,
             strictSystemPromptConfidentiality,
             abuseDetectionEnabled,
+            contentGuardrailsEnabled,
+            contentGuardrailsPiiMode,
+            contentGuardrailsToxicityEnabled,
+            contentGuardrailsToxicityMode,
+            contentGuardrailsToxicityClassifierUrl,
+            contentGuardrailsToxicityThreshold,
+            contentGuardrailsBlockList,
+            contentGuardrailsBlockedTopics,
+            contentGuardrailsGroundingEnabled,
+            contentGuardrailsGroundingMode,
           } = request.body;
           if (
             allowSubAgents === undefined &&
@@ -1885,7 +1915,17 @@ export class GatewayServer {
             jailbreakThreshold === undefined &&
             jailbreakAction === undefined &&
             strictSystemPromptConfidentiality === undefined &&
-            abuseDetectionEnabled === undefined
+            abuseDetectionEnabled === undefined &&
+            contentGuardrailsEnabled === undefined &&
+            contentGuardrailsPiiMode === undefined &&
+            contentGuardrailsToxicityEnabled === undefined &&
+            contentGuardrailsToxicityMode === undefined &&
+            contentGuardrailsToxicityClassifierUrl === undefined &&
+            contentGuardrailsToxicityThreshold === undefined &&
+            contentGuardrailsBlockList === undefined &&
+            contentGuardrailsBlockedTopics === undefined &&
+            contentGuardrailsGroundingEnabled === undefined &&
+            contentGuardrailsGroundingMode === undefined
           ) {
             return sendError(reply, 400, 'No valid fields provided');
           }
@@ -1924,6 +1964,16 @@ export class GatewayServer {
             jailbreakAction,
             strictSystemPromptConfidentiality,
             abuseDetectionEnabled,
+            contentGuardrailsEnabled,
+            contentGuardrailsPiiMode,
+            contentGuardrailsToxicityEnabled,
+            contentGuardrailsToxicityMode,
+            contentGuardrailsToxicityClassifierUrl,
+            contentGuardrailsToxicityThreshold,
+            contentGuardrailsBlockList,
+            contentGuardrailsBlockedTopics,
+            contentGuardrailsGroundingEnabled,
+            contentGuardrailsGroundingMode,
           });
 
           // Audit the policy change
@@ -1977,6 +2027,16 @@ export class GatewayServer {
             jailbreakAction: config.security.inputValidation?.jailbreakAction,
             strictSystemPromptConfidentiality: config.security.strictSystemPromptConfidentiality,
             abuseDetectionEnabled: config.security.abuseDetection?.enabled,
+            contentGuardrailsEnabled: config.security.contentGuardrails?.enabled ?? false,
+            contentGuardrailsPiiMode: config.security.contentGuardrails?.piiMode ?? 'disabled',
+            contentGuardrailsToxicityEnabled: config.security.contentGuardrails?.toxicityEnabled ?? false,
+            contentGuardrailsToxicityMode: config.security.contentGuardrails?.toxicityMode ?? 'warn',
+            contentGuardrailsToxicityClassifierUrl: config.security.contentGuardrails?.toxicityClassifierUrl,
+            contentGuardrailsToxicityThreshold: config.security.contentGuardrails?.toxicityThreshold ?? 0.7,
+            contentGuardrailsBlockList: config.security.contentGuardrails?.blockList ?? [],
+            contentGuardrailsBlockedTopics: config.security.contentGuardrails?.blockedTopics ?? [],
+            contentGuardrailsGroundingEnabled: config.security.contentGuardrails?.groundingEnabled ?? false,
+            contentGuardrailsGroundingMode: config.security.contentGuardrails?.groundingMode ?? 'flag',
           };
         } catch (err) {
           this.getLogger().error('Failed to update security policy', {

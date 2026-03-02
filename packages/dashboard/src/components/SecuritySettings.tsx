@@ -429,6 +429,16 @@ export function SecuritySettings() {
   const jailbreakAction = securityPolicy?.jailbreakAction ?? 'warn';
   const strictSystemPromptConf = securityPolicy?.strictSystemPromptConfidentiality ?? false;
   const abuseDetectionEnabled = securityPolicy?.abuseDetectionEnabled ?? true;
+  const cgEnabled = securityPolicy?.contentGuardrailsEnabled ?? false;
+  const cgPiiMode = securityPolicy?.contentGuardrailsPiiMode ?? 'disabled';
+  const cgToxicityEnabled = securityPolicy?.contentGuardrailsToxicityEnabled ?? false;
+  const cgToxicityMode = securityPolicy?.contentGuardrailsToxicityMode ?? 'warn';
+  const cgToxicityUrl = securityPolicy?.contentGuardrailsToxicityClassifierUrl ?? '';
+  const cgToxicityThreshold = securityPolicy?.contentGuardrailsToxicityThreshold ?? 0.7;
+  const cgBlockList = securityPolicy?.contentGuardrailsBlockList ?? [];
+  const cgBlockedTopics = securityPolicy?.contentGuardrailsBlockedTopics ?? [];
+  const cgGroundingEnabled = securityPolicy?.contentGuardrailsGroundingEnabled ?? false;
+  const cgGroundingMode = securityPolicy?.contentGuardrailsGroundingMode ?? 'flag';
   const gvisorAllowed = securityPolicy?.sandboxGvisor ?? false;
   const wasmAllowed = securityPolicy?.sandboxWasm ?? false;
   const credentialProxyAllowed = securityPolicy?.sandboxCredentialProxy ?? false;
@@ -739,6 +749,172 @@ export function SecuritySettings() {
             }}
             description="Track blocked-message retries, topic pivoting, and tool-call anomalies per session. Triggered sessions enter a cool-down period and emit suspicious_pattern audit events."
           />
+        </div>
+      </div>
+
+      {/* Content Guardrails (Phase 95) */}
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <Shield className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Content Guardrails</h3>
+        </div>
+        <div className="p-4 space-y-5">
+          <PolicyToggle
+            label="Enable Content Guardrails"
+            enabled={cgEnabled}
+            isPending={policyMutation.isPending}
+            onToggle={() => {
+              policyMutation.mutate({ contentGuardrailsEnabled: !cgEnabled });
+            }}
+            description="Enforce output-side content policies: PII redaction, topic restrictions, toxicity filtering, custom block lists, and citation grounding."
+          />
+
+          {cgEnabled && (
+            <>
+              {/* PII mode */}
+              <div className="space-y-1">
+                <label className="text-sm font-medium">PII Detection Mode</label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Detect or redact personally identifiable information (emails, phone numbers, SSNs, credit cards, IPs).
+                </p>
+                <select
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={cgPiiMode}
+                  onChange={(e) => {
+                    policyMutation.mutate({ contentGuardrailsPiiMode: e.target.value as 'disabled' | 'detect_only' | 'redact' });
+                  }}
+                  disabled={policyMutation.isPending}
+                >
+                  <option value="disabled">Disabled</option>
+                  <option value="detect_only">Detect Only — log but do not modify</option>
+                  <option value="redact">Redact — replace with placeholders</option>
+                </select>
+              </div>
+
+              {/* Toxicity */}
+              <div className="space-y-3">
+                <PolicyToggle
+                  label="Toxicity Filtering"
+                  enabled={cgToxicityEnabled}
+                  isPending={policyMutation.isPending}
+                  onToggle={() => {
+                    policyMutation.mutate({ contentGuardrailsToxicityEnabled: !cgToxicityEnabled });
+                  }}
+                  description="Use an external classifier to detect toxic or harmful content in responses."
+                />
+                {cgToxicityEnabled && (
+                  <div className="pl-4 space-y-3">
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium">Toxicity Mode</label>
+                      <select
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={cgToxicityMode}
+                        onChange={(e) => {
+                          policyMutation.mutate({ contentGuardrailsToxicityMode: e.target.value as 'block' | 'warn' | 'audit_only' });
+                        }}
+                        disabled={policyMutation.isPending}
+                      >
+                        <option value="block">Block — reject toxic responses</option>
+                        <option value="warn">Warn — log and allow</option>
+                        <option value="audit_only">Audit Only — silent logging</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium">Classifier URL</label>
+                      <input
+                        type="text"
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        placeholder="https://toxicity-classifier.example.com/classify"
+                        value={cgToxicityUrl}
+                        onChange={(e) => {
+                          policyMutation.mutate({ contentGuardrailsToxicityClassifierUrl: e.target.value });
+                        }}
+                        disabled={policyMutation.isPending}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium">Threshold: {cgToxicityThreshold.toFixed(2)}</label>
+                      <input
+                        type="range"
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        className="w-full"
+                        value={cgToxicityThreshold}
+                        onChange={(e) => {
+                          policyMutation.mutate({ contentGuardrailsToxicityThreshold: parseFloat(e.target.value) });
+                        }}
+                        disabled={policyMutation.isPending}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Block list */}
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Block List</label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  One entry per line. Prefix with <code>regex:</code> for regex patterns.
+                </p>
+                <textarea
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+                  rows={4}
+                  value={cgBlockList.join('\n')}
+                  onChange={(e) => {
+                    policyMutation.mutate({ contentGuardrailsBlockList: e.target.value.split('\n').filter(Boolean) });
+                  }}
+                  disabled={policyMutation.isPending}
+                />
+              </div>
+
+              {/* Blocked topics */}
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Blocked Topics</label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  One topic per line. Responses touching these topics will be blocked.
+                </p>
+                <textarea
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+                  rows={3}
+                  value={cgBlockedTopics.join('\n')}
+                  onChange={(e) => {
+                    policyMutation.mutate({ contentGuardrailsBlockedTopics: e.target.value.split('\n').filter(Boolean) });
+                  }}
+                  disabled={policyMutation.isPending}
+                />
+              </div>
+
+              {/* Grounding */}
+              <div className="space-y-3">
+                <PolicyToggle
+                  label="Grounding Verification"
+                  enabled={cgGroundingEnabled}
+                  isPending={policyMutation.isPending}
+                  onToggle={() => {
+                    policyMutation.mutate({ contentGuardrailsGroundingEnabled: !cgGroundingEnabled });
+                  }}
+                  description="Verify cited claims against the knowledge base. Unverified citations are flagged or blocked."
+                />
+                {cgGroundingEnabled && (
+                  <div className="pl-4 space-y-1">
+                    <label className="text-sm font-medium">Grounding Mode</label>
+                    <select
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={cgGroundingMode}
+                      onChange={(e) => {
+                        policyMutation.mutate({ contentGuardrailsGroundingMode: e.target.value as 'flag' | 'block' });
+                      }}
+                      disabled={policyMutation.isPending}
+                    >
+                      <option value="flag">Flag — tag unverified citations with [unverified]</option>
+                      <option value="block">Block — reject responses with unverified citations</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
 

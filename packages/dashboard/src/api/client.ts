@@ -2470,6 +2470,16 @@ export interface SecurityPolicy {
   jailbreakAction: 'block' | 'warn' | 'audit_only';
   strictSystemPromptConfidentiality: boolean;
   abuseDetectionEnabled: boolean;
+  contentGuardrailsEnabled: boolean;
+  contentGuardrailsPiiMode: 'disabled' | 'detect_only' | 'redact';
+  contentGuardrailsToxicityEnabled: boolean;
+  contentGuardrailsToxicityMode: 'block' | 'warn' | 'audit_only';
+  contentGuardrailsToxicityClassifierUrl?: string;
+  contentGuardrailsToxicityThreshold: number;
+  contentGuardrailsBlockList: string[];
+  contentGuardrailsBlockedTopics: string[];
+  contentGuardrailsGroundingEnabled: boolean;
+  contentGuardrailsGroundingMode: 'flag' | 'block';
 }
 
 export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
@@ -2510,6 +2520,15 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
       jailbreakAction: 'warn',
       strictSystemPromptConfidentiality: false,
       abuseDetectionEnabled: true,
+      contentGuardrailsEnabled: false,
+      contentGuardrailsPiiMode: 'disabled',
+      contentGuardrailsToxicityEnabled: false,
+      contentGuardrailsToxicityMode: 'warn',
+      contentGuardrailsToxicityThreshold: 0.7,
+      contentGuardrailsBlockList: [],
+      contentGuardrailsBlockedTopics: [],
+      contentGuardrailsGroundingEnabled: false,
+      contentGuardrailsGroundingMode: 'flag',
     };
   }
 }
