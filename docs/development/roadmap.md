@@ -47,6 +47,7 @@
 | 109 | Editor Improvements (Auto-Claude Style) | P3 — power user UX | 🔄 In Progress (unification ✅, IDE features planned) |
 | 110 | Inline Citations & Grounding | P3 — trust layer | Planned |
 | 111 | Departmental Risk Register & Risk Posture Tracking | P2 — risk governance | Planned |
+| 112 | Multi-Account AI Provider Keys & Per-Account Cost Tracking | P2 — cost governance | Planned |
 | Future | Workflow Versioning, LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Infrastructure | Future / Demand-Gated | — |
 
 ---
@@ -351,6 +352,70 @@ Six sub-phases: data model → shared types & backend → integration → report
 - [ ] **Department form modal** — Create/edit department modal. Two sections: **Organization** (name, description, mission, objectives, parent department via searchable dropdown, linked team via dropdown) and **Risk Governance** (risk appetite sliders per domain 0–100 with preset buttons: Conservative = 30, Moderate = 50, Aggressive = 70; compliance targets). Validation: name required, appetite values in range.
   - **Inputs**: user form input, department tree and team list for selectors.
   - **Outputs**: `POST /PUT /api/v1/risk/departments` API calls, optimistic UI update.
+
+---
+
+## Phase 112: Multi-Account AI Provider Keys & Per-Account Cost Tracking
+
+**Priority**: P2 — Cost governance. Today each provider has a single API key (stored as an env var like `ANTHROPIC_API_KEY` via `SecretsManager`). Personalities reference provider + model but not *which account*. Organizations that use separate billing accounts per team, project, or cost center have no way to route personality A through one API key and personality B through another. This phase introduces **provider accounts** — multiple named API keys per provider with key validation on connect, account metadata (email/username), per-account cost tracking, and personality-level account selection.
+
+Four sub-phases: data model & backend → key validation & account discovery → personality wiring & cost tracking → dashboard & CLI.
+
+### 112-A: Data Model & Backend
+
+*Migration `004_provider_accounts.sql` + new storage/manager/routes.*
+
+- [ ] **`ai.provider_accounts` table** — Multiple named accounts per provider. Columns: `id` (UUID PK), `provider` (VARCHAR 50 — `anthropic`, `openai`, `gemini`, `deepseek`, `mistral`, `grok`, `groq`, `openrouter`, `ollama`, `lmstudio`, `localai`, `opencode`, `letta`), `label` (VARCHAR 200 — user-chosen name, e.g. "Team Alpha — OpenAI", "Personal — Anthropic"), `secret_name` (VARCHAR 200 — the `SecretsManager` key name where the actual API key is stored, e.g. `OPENAI_API_KEY_TEAM_ALPHA`), `is_default` (BOOLEAN DEFAULT false — one default per provider per tenant, enforced by partial unique index), `account_info` (JSONB, nullable — `{ email?, username?, orgId?, orgName?, plan?, rateLimit? }` populated by key validation), `status` (VARCHAR 20 — `active`, `invalid`, `expired`, `rate_limited`), `last_validated_at` (TIMESTAMPTZ, nullable), `base_url` (VARCHAR 500, nullable — custom endpoint override for this account), `tenant_id` (UUID FK), `created_by` (VARCHAR 200), `created_at`, `updated_at`. Indexes: `idx_provider_accounts_provider` (provider, tenant_id), `idx_provider_accounts_default` (provider, tenant_id) WHERE `is_default = true` (unique partial — enforces one default per provider per tenant).
+- [ ] **`ai.account_cost_records` table** — Per-account cost tracking. Columns: `id` (UUID PK), `account_id` (UUID FK → `ai.provider_accounts`), `personality_id` (UUID FK → `soul.personalities`, nullable — null for non-personality API calls), `model` (VARCHAR 100), `input_tokens` (INTEGER), `output_tokens` (INTEGER), `total_tokens` (INTEGER), `cost_usd` (NUMERIC 10,6 — calculated from token counts × model pricing), `request_id` (VARCHAR 200, nullable — provider-side request ID for reconciliation), `recorded_at` (TIMESTAMPTZ DEFAULT NOW()), `tenant_id` (UUID FK). Indexes: `idx_cost_records_account_recorded` (account_id, recorded_at DESC), `idx_cost_records_personality` (personality_id, recorded_at DESC), `idx_cost_records_tenant_id`.
+- [ ] **`ProviderAccountStorage`** — `packages/core/src/ai/provider-account-storage.ts`. Methods: `createAccount`, `getAccount`, `updateAccount`, `deleteAccount`, `listAccounts` (filters: provider, tenant), `getDefaultAccount(provider)`, `setDefaultAccount(accountId)` (unsets previous default for that provider+tenant), `recordCost`, `getCostSummary` (filters: accountId, personalityId, dateRange — returns aggregate totals), `getCostBreakdown` (grouped by model or personality or day), `getAccountsByProvider(provider)`.
+- [ ] **`ProviderAccountManager`** — `packages/core/src/ai/provider-account-manager.ts`. Orchestration layer. Methods: `addAccount(provider, label, apiKey, baseUrl?)` (stores key via `SecretsManager`, creates DB row, triggers validation), `removeAccount(accountId)` (deletes DB row + secret, prevents deleting the sole account for a provider that has personalities referencing it), `setDefault(accountId)`, `listAccounts`, `getAccountForPersonality(personalityId, provider)` (returns the personality's assigned account, or the provider default, or the sole account — resolution chain), `validateAccount(accountId)` (tests key, updates `account_info` + `status` + `last_validated_at`), `validateAllAccounts()` (batch validation, e.g. on startup or schedule), `getCostDashboard(filters)` (assembles cost summary + breakdown for dashboard consumption), `resolveApiKey(provider, personalityId?)` (the key resolution method called by `AIClient` — returns the actual API key string from SecretsManager for the resolved account).
+- [ ] **`provider-account-routes.ts`** — `packages/core/src/ai/provider-account-routes.ts`. Endpoints: `GET /api/v1/ai/accounts` (list all, `?provider=` filter), `POST /api/v1/ai/accounts` (add account — body: `{ provider, label, apiKey, baseUrl? }`), `GET /api/v1/ai/accounts/:id`, `PUT /api/v1/ai/accounts/:id` (update label, base URL), `DELETE /api/v1/ai/accounts/:id`, `POST /api/v1/ai/accounts/:id/set-default`, `POST /api/v1/ai/accounts/:id/validate` (trigger key test), `POST /api/v1/ai/accounts/:id/rotate-key` (replace API key without changing account identity — new key validated before old one is removed), `GET /api/v1/ai/accounts/:id/costs` (`?from=&to=&groupBy=model|personality|day`), `GET /api/v1/ai/costs/summary` (cross-account cost overview, `?from=&to=`).
+- [ ] **Wiring** — `secureyeoman.ts`: add `providerAccountStorage`, `providerAccountManager` fields; initialize after pool + secretsManager ready; expose `getProviderAccountManager()`. `server.ts`: register `providerAccountRoutes`. `auth-middleware.ts`: routes under `ai:read`/`ai:write` (account CRUD + rotate = write, list + costs = read, validate = write).
+- [ ] **Shared types** — `packages/shared/src/types/provider-accounts.ts`: `ProviderAccount`, `ProviderAccountCreate`, `ProviderAccountUpdate`, `AccountInfo`, `AccountStatus`, `CostRecord`, `CostSummary`, `CostBreakdown`, `CostBreakdownGroupBy`. Zod schemas. Export from index.
+
+### 112-B: Key Validation & Account Discovery
+
+*When a user connects an API key, validate it and pull back account metadata. Provider-specific validation logic.*
+
+- [ ] **`ProviderKeyValidator`** — `packages/core/src/ai/provider-key-validator.ts`. Per-provider validation that tests the key and retrieves account info. Method: `validate(provider, apiKey, baseUrl?): Promise<{ valid: boolean, error?: string, accountInfo?: AccountInfo }>`. Provider-specific logic:
+  - **Anthropic** — `GET /v1/messages` with minimal request or `GET /v1/models` (when available). Extract: org name from response headers (`anthropic-organization`), rate limits from headers.
+  - **OpenAI** — `GET /v1/models` (lightweight, returns model list confirming key works). `GET /v1/organization/users/me` or `/v1/me` if available. Extract: org ID, org name, user email from response.
+  - **Google Gemini** — `GET /v1beta/models` with API key param. Extract: available models (confirms key scope).
+  - **DeepSeek / Mistral / Grok / Groq** — `GET /v1/models` (OpenAI-compatible). Extract: available model list.
+  - **OpenRouter** — `GET /api/v1/auth/key` (returns key metadata: label, usage, rate limit, credits remaining). Extract: credits, rate limit, label.
+  - **Local providers (Ollama, LM Studio, LocalAI)** — `GET /api/tags` or `GET /v1/models` health check. No API key needed; validates endpoint reachability. Extract: available models, version.
+  - Timeout: 10s per validation. Non-blocking — runs in background, updates `provider_accounts.status` + `account_info` + `last_validated_at` on completion.
+- [ ] **Scheduled re-validation** — Optional background job (configurable interval, default: daily) that calls `validateAllAccounts()`. Marks accounts as `invalid` if the key no longer works (revoked, expired). Emits alert via `AlertManager` when an account transitions from `active` to `invalid` — synthetic snapshot: `{ ai: { account_invalid: { provider, label, error } } }`.
+- [ ] **Backward compatibility & existing entry points** — On first startup after migration, auto-import existing single-key env vars (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.) as provider accounts with `label: 'Default'`, `is_default: true`. Existing personalities with no account assignment continue to resolve to the default account. Zero-config upgrade path — existing installs work identically until the user adds a second key. Three existing key-entry surfaces are preserved and upgraded: (1) the **dashboard** `ProviderKeysSettings` component (currently single-key per provider — becomes the multi-account UI in 112-D); (2) the **`secureyeoman init` wizard** Step 2 "API Keys — Connect AI providers" (adds the initial key as the default account); (3) the **`/api/v1/secrets` REST API** (remains as the low-level secret store — account management is layered above it). The new **`secureyeoman provider` CLI** (112-D) provides full post-setup account management from the terminal, filling the gap where no CLI existed for adding/rotating/listing provider keys after initial setup.
+
+### 112-C: Personality Wiring & Cost Tracking
+
+*Personalities gain an optional account reference. AIClient resolves the correct key. Every API call logs cost.*
+
+- [ ] **Personality schema update** — Add `defaultAccount` field to `DefaultModelSchema` in `packages/shared/src/types/soul.ts`: `{ provider: string, model: string, accountId?: string }`. The `accountId` is optional — when omitted, the provider's default account is used. Personality fallbacks also gain optional `accountId`. No migration needed — `defaultModel` is already JSONB on `soul.personalities`.
+- [ ] **AIClient key resolution** — Modify `packages/core/src/ai/client.ts` to call `providerAccountManager.resolveApiKey(provider, personalityId)` instead of directly reading `process.env[apiKeyEnv]`. Resolution chain: (1) personality's explicit `accountId` → (2) provider default for tenant → (3) sole account for provider → (4) legacy env var fallback (`process.env[apiKeyEnv]` for backward compat). The resolved `accountId` is attached to the request context for cost recording.
+- [ ] **Cost recording hook** — After every AI API call completes (success or failure), `AIClient` calls `providerAccountManager.recordCost({ accountId, personalityId, model, inputTokens, outputTokens, totalTokens, costUsd, requestId })`. Cost calculation uses the existing `CostCalculator` pricing tables. Fire-and-forget — cost recording failures are logged but never block the response.
+- [ ] **Cost aggregation queries** — `getCostDashboard` supports: per-account totals (daily/weekly/monthly), per-personality totals, per-model breakdown, cross-account comparison. Powers both the dashboard cost panels and the future "Cost budget alerts" roadmap item (LLM Provider Improvements section).
+
+### 112-D: Dashboard & CLI
+
+*ProviderKeysSettings redesign, PersonalityEditor account selector, cost dashboard, CLI commands.*
+
+- [ ] **ProviderKeysSettings redesign** — Replace the current single-key-per-provider UI (`packages/dashboard/src/components/ProviderKeysSettings.tsx`) with a multi-account view. Each provider section expands to show a list of accounts (label, status badge, account info, default star icon). "Add Account" button per provider. Per-account actions: set default, validate (with spinner + result), rotate key, delete. New account form: label input, API key input (masked), optional base URL. On save, key is validated automatically — success shows account info (email/org/plan), failure shows error with retry option.
+- [ ] **PersonalityEditor account selector** — In the Model section of `PersonalityEditor.tsx`, add an "Account" dropdown below the provider/model selectors. Behavior: (1) when the user selects a provider that has only one account, the dropdown is hidden (implicit); (2) when the provider has multiple accounts, the dropdown appears showing all accounts for that provider with the default pre-selected and marked with a "(Default)" suffix; (3) the user can switch to any account; (4) the selection is saved as `defaultModel.accountId`. The dropdown shows: account label, status indicator (green dot = active, red = invalid), and account info (email/org) as secondary text.
+- [ ] **Cost dashboard panel** — New "Costs" sub-tab in the existing Settings → General or a dedicated section in the Developer page. Components:
+  - **Cost overview cards** — Total spend (this month), daily average, top provider by spend, top personality by spend.
+  - **Cost by account table** — Rows: each provider account. Columns: Provider, Account Label, This Month, Last Month, Delta %, Total All-Time. Sortable.
+  - **Cost by personality chart** — Recharts `BarChart` — top 10 personalities by spend in the selected period. Period selector: 7d / 30d / 90d.
+  - **Cost trend line** — Recharts `LineChart` — daily spend over time, one line per account (toggleable). Optional: overlay budget lines if cost budget alerts are configured (future Phase — LLM Provider Improvements).
+  - **Export** — CSV download of cost records for accounting/chargeback.
+- [ ] **CLI commands** — `secureyeoman provider` (alias: `prov`). Subcommands:
+  - `provider list [--provider <name>]` — List all accounts, grouped by provider. Shows: label, status, default flag, account info (email/org).
+  - `provider add <provider>` — Interactive: prompts for label, API key (masked input), optional base URL. Validates key on save, displays account info on success.
+  - `provider validate [--all | --provider <name> | --account <label>]` — Trigger key validation. Shows result per account.
+  - `provider set-default <provider> <label>` — Set the default account for a provider.
+  - `provider costs [--provider <name>] [--personality <name>] [--from <date>] [--to <date>] [--format table|json|csv]` — Cost report.
+  - `provider rotate <provider> <label>` — Interactive: prompts for new API key, validates, then replaces.
 
 ---
 
