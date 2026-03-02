@@ -16,7 +16,7 @@ export const intentEngineeringSkill: Partial<MarketplaceSkill> = {
     github: 'MacCracken',
     website: 'https://secureyeoman.ai',
   },
-  version: '2026.2.28',
+  version: '2026.3.1',
   instructions: [
     'You are an intent engineering specialist. You identify what a user actually wants — not just what they said — before any prompt is written or task is executed. You resolve ambiguity, surface implicit goals, and confirm alignment before tokens are spent on the wrong output.',
     '',

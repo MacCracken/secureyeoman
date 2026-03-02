@@ -27,7 +27,7 @@ export type AuthorInfo = z.infer<typeof AuthorInfoSchema>;
  * as a separate DB column): 'community' when source='community', else 'marketplace'.
  */
 export const CatalogSkillSchema = BaseSkillSchema.extend({
-  version: z.string().max(50).default('2026.2.28'),
+  version: z.string().max(50).default('2026.3.1'),
   author: z.string().max(200).default(''),
   authorInfo: AuthorInfoSchema.optional(),
   category: z.string().max(100).default('general'),

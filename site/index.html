@@ -86,7 +86,7 @@
       <!-- Release badge — centered across full page width, above columns -->
       <div class="hero-badge">
         <span class="badge-dot"></span>
-        <span>v2026.2.28 Now Available</span>
+        <span>v2026.3.1 Now Available</span>
         <a
           href="https://github.com/MacCracken/secureyeoman/releases"
           target="_blank"
@@ -153,22 +153,22 @@
           </div>
           <div class="hero-stats">
             <div class="stat">
-              <span class="stat-value">10,400+</span>
+              <span class="stat-value">12,383</span>
               <span class="stat-label">Tests</span>
             </div>
             <div class="stat-divider"></div>
             <div class="stat">
-              <span class="stat-value">MIT</span>
+              <span class="stat-value">AGPL-3.0</span>
               <span class="stat-label">License</span>
             </div>
             <div class="stat-divider"></div>
             <div class="stat">
-              <span class="stat-value">180+</span>
+              <span class="stat-value">200+</span>
               <span class="stat-label">MCP Tools</span>
             </div>
             <div class="stat-divider"></div>
             <div class="stat">
-              <span class="stat-value">26</span>
+              <span class="stat-value">30</span>
               <span class="stat-label">CLI Commands</span>
             </div>
           </div>
@@ -224,6 +224,10 @@
           <div class="provider-logo" title="Letta">
             <i class="fas fa-memory"></i>
             <span>Letta</span>
+          </div>
+          <div class="provider-logo" title="Groq">
+            <i class="fas fa-microchip"></i>
+            <span>Groq</span>
           </div>
         </div>
       </div>
@@ -312,17 +316,17 @@
             <div class="feature-icon-wrapper">
               <i class="fas fa-plug"></i>
             </div>
-            <h3 class="feature-title">180+ MCP Tools & Integrations</h3>
+            <h3 class="feature-title">200+ MCP Tools & Integrations</h3>
             <p class="feature-desc">
-              31 platform integrations: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams,
+              36 platform integrations: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams,
               GitHub, GitLab, Gmail, Google Calendar, Jira, Notion, AWS, Azure DevOps, and more.
-              180+ built-in MCP tools, 9 resources, and 4 prompts — with SSRF protection,
+              200+ built-in MCP tools, 9 resources, and 4 prompts — with SSRF protection,
               encrypted credentials, and Markdown-for-Agents content negotiation
               (<code>Accept: text/markdown</code>, <code>Content-Signal</code> enforcement).
             </p>
             <ul class="feature-list">
-              <li>31 platform integrations</li>
-              <li>180+ tools · 9 resources · 4 prompts</li>
+              <li>36 platform integrations</li>
+              <li>200+ tools · 9 resources · 4 prompts</li>
               <li>SSRF protection + encrypted creds</li>
               <li>Markdown-for-Agents content negotiation</li>
             </ul>
@@ -376,15 +380,15 @@
             </div>
             <h3 class="feature-title">Developer Experience</h3>
             <p class="feature-desc">
-              26-command CLI with shell completions and <code>--json</code> scripting output.
-              Full-screen TUI (<code>secureyeoman tui</code>). 38 lifecycle hook points with
+              30-command CLI with shell completions and <code>--json</code> scripting output.
+              Full-screen TUI (<code>secureyeoman tui</code>). Rich lifecycle hook system with
               observe/transform/veto semantics. Sandboxed code execution (Python, Node.js,
               shell). Desktop control — screen capture, keyboard/mouse, clipboard — gated by
               explicit consent and audit trail.
             </p>
             <ul class="feature-list">
-              <li>26 CLI commands + full-screen TUI</li>
-              <li>38 lifecycle hook points</li>
+              <li>30 CLI commands + full-screen TUI</li>
+              <li>Rich lifecycle hooks</li>
               <li>Sandboxed code execution</li>
               <li>Desktop control (consent-gated)</li>
             </ul>
@@ -402,7 +406,7 @@
               TLS — with a live badge in the dashboard. Multi-user workspaces, voice I/O (10
               TTS + 7 STT providers with binary streaming and Whisper model selection), and
               portable skill marketplace sync. Per-user notification preferences with quiet
-              hours and severity filters across 31 platforms.
+              hours and severity filters across 36 platforms.
             </p>
             <ul class="feature-list">
               <li>Single binary + Docker + K8s Helm</li>
@@ -432,6 +436,44 @@
               <li>Marketplace + Community origins with unified schema</li>
               <li>Skill routing quality — useWhen / successCriteria</li>
               <li>Trust Tier install pipeline (sandboxed execution)</li>
+            </ul>
+          </div>
+
+          <!-- 10. AI Training & Evaluation — ML teams, data scientists -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-graduation-cap"></i>
+            </div>
+            <h3 class="feature-title">AI Training &amp; Evaluation</h3>
+            <p class="feature-desc">
+              Conversation dataset export, knowledge distillation, LoRA fine-tuning via Unsloth,
+              LLM-as-Judge (pointwise scoring, pairwise comparison), conversation quality scoring,
+              computer-use RL episodes, and live training stream (SSE).
+            </p>
+            <ul class="feature-list">
+              <li>Distillation (priority / curriculum / counterfactual)</li>
+              <li>LoRA fine-tuning</li>
+              <li>LLM-as-Judge auto-eval</li>
+              <li>Conversation analytics (sentiment, entities)</li>
+            </ul>
+          </div>
+
+          <!-- 11. ML Lifecycle Platform — platform engineers, ML ops -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-flask"></i>
+            </div>
+            <h3 class="feature-title">ML Lifecycle Platform</h3>
+            <p class="feature-desc">
+              Preference annotation, experiment registry, model versioning, A/B testing,
+              and conversation branching — branch from any message, replay with a different model,
+              or batch-replay entire conversations for comparison.
+            </p>
+            <ul class="feature-list">
+              <li>Experiment registry &amp; model versioning</li>
+              <li>A/B testing framework</li>
+              <li>Conversation branching &amp; replay</li>
+              <li>Preference annotation</li>
             </ul>
           </div>
 
@@ -496,7 +538,7 @@
             </div>
             <h3>Threat Intelligence</h3>
             <p>
-              Aggregate data across 31 platforms, enrich findings with NVD CVE lookups, and
+              Aggregate data across 36 platforms, enrich findings with NVD CVE lookups, and
               surface insights your team can act on.
             </p>
           </div>
@@ -600,7 +642,7 @@
 
           <div class="compare-row compare-row-alt">
             <div class="compare-feature-col"><i class="fas fa-tools"></i> MCP Tools</div>
-            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 180+</span></div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 200+</span></div>
             <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> Limited</span></div>
             <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> External</span></div>
             <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
@@ -645,7 +687,7 @@
 
           <div class="compare-row">
             <div class="compare-feature-col"><i class="fas fa-plug"></i> Integrations</div>
-            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 31 platforms</span></div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 36 platforms</span></div>
             <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> 23+</span></div>
             <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> CLI / Web</span></div>
             <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> 10+</span></div>
@@ -659,6 +701,24 @@
             <div class="compare-col"><span class="cmp-warn">4 GB min</span></div>
             <div class="compare-col"><span class="cmp-yes"><i class="fas fa-star"></i> 10–20 MB</span></div>
             <div class="compare-col"><span class="cmp-neutral">Not published</span></div>
+          </div>
+
+          <div class="compare-row">
+            <div class="compare-feature-col"><i class="fas fa-graduation-cap"></i> AI Training Pipeline</div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> Full</span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+          </div>
+
+          <div class="compare-row compare-row-alt">
+            <div class="compare-feature-col"><i class="fas fa-flask"></i> ML Lifecycle (A/B, Versioning)</div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> Full</span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
           </div>
         </div>
 
@@ -810,11 +870,11 @@
               <span class="exec-role exec-role-cto">CTO</span>
             </div>
             <h3>Operational Efficiency</h3>
-            <p>37 network security tools, 31 platform integrations, 180+ MCP tools — one platform, one deployment, one vendor relationship. Replace fragmented point solutions: network scanner, vulnerability feed, workflow engine, secrets manager, AI gateway, and agent orchestration. Delivered as a single ~80 MB binary or a Helm chart. Your team ships faster; your vendor list shrinks.</p>
+            <p>37 network security tools, 36 platform integrations, 200+ MCP tools — one platform, one deployment, one vendor relationship. Replace fragmented point solutions: network scanner, vulnerability feed, workflow engine, secrets manager, AI gateway, and agent orchestration. Delivered as a single ~80 MB binary or a Helm chart. Your team ships faster; your vendor list shrinks.</p>
             <div class="exec-proof">
               <span class="proof-item"><i class="fas fa-check-circle"></i> Single binary or Kubernetes Helm</span>
               <span class="proof-item"><i class="fas fa-check-circle"></i> Replaces 6+ point tools</span>
-              <span class="proof-item"><i class="fas fa-check-circle"></i> 31 platform integrations built-in</span>
+              <span class="proof-item"><i class="fas fa-check-circle"></i> 36 platform integrations built-in</span>
             </div>
           </div>
 
@@ -825,7 +885,7 @@
               <span class="exec-role exec-role-ceo">CEO / Board</span>
             </div>
             <h3>Strategic Advantage</h3>
-            <p>The enterprise AI adoption race has a hidden variable: organisations deploying vulnerable frameworks are one incident away from regulatory scrutiny, customer trust damage, and emergency remediation spend. SecureYeoman lets you deploy AI at full operational speed — autonomous agent workflows, multi-agent swarms, 31 platform integrations, DAG orchestration — without the exposure. Your competitors are patching. You are shipping.</p>
+            <p>The enterprise AI adoption race has a hidden variable: organisations deploying vulnerable frameworks are one incident away from regulatory scrutiny, customer trust damage, and emergency remediation spend. SecureYeoman lets you deploy AI at full operational speed — autonomous agent workflows, multi-agent swarms, 36 platform integrations, DAG orchestration — without the exposure. Your competitors are patching. You are shipping.</p>
             <div class="exec-proof">
               <span class="proof-item"><i class="fas fa-check-circle"></i> Autonomous agent workflows at scale</span>
               <span class="proof-item"><i class="fas fa-check-circle"></i> Governance-first architecture</span>
@@ -1222,11 +1282,11 @@ SECUREYEOMAN_ADMIN_PASSWORD="..."</code></pre>
             <div class="card-content">
               <div class="stat-row">
                 <span class="stat-name">License</span>
-                <span class="stat-value">MIT</span>
+                <span class="stat-value">AGPL-3.0</span>
               </div>
               <div class="stat-row">
                 <span class="stat-name">Tests</span>
-                <span class="stat-value">10,400+</span>
+                <span class="stat-value">12,383</span>
               </div>
               <div class="stat-row">
                 <span class="stat-name">TS Files</span>
@@ -1436,7 +1496,7 @@ SECUREYEOMAN_ADMIN_PASSWORD="..."</code></pre>
           </div>
         </div>
         <div class="footer-bottom">
-          <p>&copy; 2026 SecureYeoman — MIT License</p>
+          <p>&copy; 2026 SecureYeoman — AGPL-3.0</p>
           <div class="footer-legal">
             <a href="https://github.com/MacCracken/secureyeoman/blob/main/LICENSE" target="_blank"
               >License</a

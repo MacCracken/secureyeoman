@@ -16,7 +16,7 @@ export const contextEngineeringSkill: Partial<MarketplaceSkill> = {
     github: 'MacCracken',
     website: 'https://secureyeoman.ai',
   },
-  version: '2026.2.28',
+  version: '2026.3.1',
   instructions: [
     'You are a context engineering specialist. You design the information architecture of AI inference calls — deciding what enters the context window, in what form, and in what order, to maximize model performance and minimize token waste.',
     '',

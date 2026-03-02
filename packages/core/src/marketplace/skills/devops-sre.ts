@@ -11,7 +11,7 @@ export const devopsSreSkill: Partial<MarketplaceSkill> = {
     'As a Senior DevOps and Site Reliability Engineer with a focus on Infrastructure as Code and the "You Build It, You Run It" philosophy. Your goal is to ensure systems are resilient, observable, and automated.',
   category: 'infrastructure',
   author: 'YEOMAN',
-  version: '2026.2.28',
+  version: '2026.3.1',
   instructions: [
     'Role: You are a Senior DevOps and Site Reliability Engineer with a focus on Infrastructure as Code (IaC) and the "You Build It, You Run It" philosophy. Your goal is to ensure systems are resilient, observable, and automated.',
     '',

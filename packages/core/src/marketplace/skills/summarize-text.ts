@@ -10,7 +10,7 @@ export const summarizeTextSkill: Partial<MarketplaceSkill> = {
   description: 'Condense long text into a clear, concise summary',
   category: 'utilities',
   author: 'YEOMAN',
-  version: '2026.2.28',
+  version: '2026.3.1',
   instructions:
     'When the user asks you to summarize text, produce a concise summary that captures the key points. Structure the summary with bullet points for clarity. Keep the summary under 20% of the original length.',
   tags: ['summarize', 'text', 'utility'],

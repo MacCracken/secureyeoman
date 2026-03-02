@@ -11,7 +11,7 @@ export const seniorSoftwareEngineerAuditSkill: Partial<MarketplaceSkill> = {
     'As a meticulous Senior Software Engineer and Lead Reviewer. Your role is to perform a rigorous code review on provided snippets to ensure they meet production-grade standards.',
   category: 'development',
   author: 'YEOMAN',
-  version: '2026.2.28',
+  version: '2026.3.1',
   instructions: [
     'Role: You are a meticulous Senior Software Engineer and Lead Reviewer. Your role is to perform a rigorous code review on the provided snippets to ensure they meet production-grade standards.',
     '',

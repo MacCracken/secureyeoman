@@ -5,7 +5,7 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSE.commercial)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: 12387](https://img.shields.io/badge/Tests-12387-brightgreen.svg)]()
+[![Tests: 12383](https://img.shields.io/badge/Tests-12383-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%20LTS-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
@@ -17,14 +17,7 @@
 >
 > A yeoman owns their land. So should you.
 
-Ships with the default Agent Personality **F.R.I.D.A.Y.**:
-
-* **F**riendly
-* **R**eliable
-* **I**ntelligent
-* **D**igitally
-* **A**daptable
-* **Y**eoman
+Ships with the default Agent Personality **F.R.I.D.A.Y.** — **F**riendly, **R**eliable, **I**ntelligent, **D**igitally **A**daptable **Y**eoman.
 
 ---
 
@@ -58,36 +51,97 @@ Then open http://localhost:18789 and complete the onboarding wizard.
 
 ## What is SECUREYEOMAN?
 
-SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYeoman** core. Unlike traditional AI assistants, SECUREYEOMAN:
+A **sovereign AI agent platform** that runs entirely on your infrastructure. SecureYeoman gives you multi-model intelligence, enterprise-grade security, and a full training pipeline — without sending a single byte of data off-premises.
 
-- **Prioritizes Security**: Enterprise-grade RBAC, encryption, sandboxing, and audit trails
-- **Respects Privacy**: Local-first architecture with data that never leaves your system
-- **Provides Observability**: Every action is logged with cryptographic integrity verification
-- **Offers Flexibility**: Multi-provider AI support (Anthropic, OpenAI, Gemini, Ollama, DeepSeek, Mistral, Grok, Letta, and more)
-- **Learns and Adapts**: Editable personality, learnable skills, and a marketplace for sharing them
-- **Selectable Personalities**: Ships with built-in personality presets — including the security watchdog **T.Ron** — each instantly instantiable via the UI or API
+- **Self-hosted, not SaaS** — single binary, Docker, or Kubernetes. Your data stays on your machines.
+- **Governed by design** — RBAC, audit trails, cryptographic integrity, sandboxed execution, organizational intent policies.
+- **Multi-agent orchestration** — swarms, teams, DAG workflows, A2A protocol, and a 200+ tool MCP server.
+- **Full ML lifecycle** — distillation, LoRA fine-tuning, LLM-as-Judge evaluation, conversation analytics, A/B experiments, and model versioning.
 
 ---
 
 ## Key Features
 
-- **Security** — RBAC, JWT + API key auth, mTLS, AES-256-GCM encryption, sandboxed execution (Landlock/seccomp/gVisor/WASM), ToolOutputScanner credential redaction, Skill Trust Tiers, Outbound Credential Proxy; SecretsManager (env/keyring/file/Vault/OpenBao backends); TLS lifecycle management with auto-generated dev certs and expiry monitoring; Organizational Intent (machine-readable governance: hard boundaries, soft policies with OPA integration, authorized tool gating, signal monitoring, goal-to-skill affinity); **Prompt Security** — jailbreak scoring, system-prompt confidentiality (trigram leak detection), abuse pattern detection (topic pivots, tool anomaly, blocked-retry cool-down); **Content Guardrails** — output-side PII detection/redaction, topic restrictions, toxicity filtering (external classifier, fail-open), custom block lists, citation grounding checks against knowledge base, guardrail audit trail with SHA-256 content hashes
-- **AI Integration** — 11 providers with automatic fallback chains; dynamic model discovery and routing (Anthropic, OpenAI, Gemini, Ollama, LM Studio, LocalAI, DeepSeek, Mistral, Grok, Letta, and more); local-first routing; Ollama model lifecycle (pull, delete, quantization-aware memory warning)
-- **Agent Architecture** — Soul/Spirit/Brain/Body cognitive model; personality presets (F.R.I.D.A.Y., T.Ron); per-personality active hours; Diagnostics capability (Channel B health reporting + integration ping); Desktop Control capability (screen capture, keyboard/mouse input, camera, clipboard)
-- **Cognitive Memory** — Vector search (FAISS/Qdrant/ChromaDB), hybrid FTS + RRF (Reciprocal Rank Fusion), content-chunked indexing, proactive context compaction, self-repairing task loop; **Knowledge Base & RAG** — document ingestion (PDF, HTML, Markdown, plain text, URL crawl, GitHub Wiki); background chunking pipeline; knowledge health analytics; 4 MCP tools (`kb_search`, `kb_add_document`, `kb_list_documents`, `kb_delete_document`); **Notebook Mode** — NotebookLM-style long context windowing: load full corpus into context (RAG / Notebook / Hybrid modes per personality), 65% token budget reservation, auto Source Guide, oversized-chunk guard
-- **Dashboard** — React + Vite + Tailwind; rich Markdown chat, Mermaid diagrams, KaTeX math, real-time collaborative editing (Yjs CRDT), Group Chat, WebGL graph visualization; live network mode badge (Local / LAN / Public); Mission Control with drag-and-drop card customization (12 cards, S/M/L resize); 19-theme system; agent world map view
-- **Multi-Agent** — Sub-agent delegation, Agent Swarms (sequential/parallel/dynamic, 5 built-in templates), **Teams** (dynamic auto-manager: coordinator LLM assigns members per-run, 3 built-in teams, `crew` CLI with YAML import/export), A2A protocol, dynamic tool creation, intelligent model routing, DAG Workflow Orchestration (14 step types + `triggerMode: 'any'` OR-trigger + `outputSchemaMode: 'strict'` enforcement; includes ML pipeline: data curation, training job, evaluation, conditional deploy, human approval; visual ReactFlow builder); **Multi-Instance Federation** — encrypted peer sync, federated knowledge search, personality bundle export/import
-- **API Gateway Mode** — expose personalities as API endpoints with per-key RPM/TPD rate limits, usage analytics (p50/p95 latency), CSV export
-- **AI Training Pipeline** — conversation dataset export (ShareGPT/instruction/raw/computer_use formats), knowledge distillation manager (priority/curriculum/counterfactual modes), LoRA fine-tuning via Unsloth sidecar, model evaluation (tool-name accuracy, arg-match, semantic similarity via Ollama), ML pipeline orchestration (3 built-in pipeline templates with lineage tracking and human approval gates); **Adaptive Learning** — conversation quality scoring (background 5-min interval, pre-failure boost), computer use episode tracking (RL episodes, skill breakdown, JSONL export), live training stream (SSE: loss/throughput/agreement/reward metrics)
-- **Observability & Telemetry** — OpenTelemetry distributed tracing (OTLP gRPC, `X-Trace-Id` header, W3C traceparent A2A propagation); standard `/metrics` Prometheus endpoint (Grafana dashboard bundle in `docs/ops/grafana/`); alert rules engine (threshold + operator, 4 channel types: Slack/PagerDuty/OpsGenie/webhook, cooldown, test-fire, dashboard UI); ECS log format (`LOG_FORMAT=ecs`) for Loki/Elasticsearch; per-request `userId`/`role` log enrichment
-- **Skills & Marketplace** — Skill routing quality (`useWhen`/`doNotUseWhen`/`successCriteria`), import/export (portable `.skill.json`), community repo sync, install pipeline with trust tiers; **Marketplace Shareables** — workflow export/import with compatibility checks, swarm template export/import, profile skills CRUD, community sync for workflows + swarm templates
-- **MCP Protocol** — 180+ tools, 9 resources, 4 prompts; Kali Security Toolkit; Network Security Toolkit (37 tools: device discovery, port scanning, SSH, NetBox, NVD/CVE); Docker MCP Tools (14 tools: ps/logs/inspect/stats/images/start/stop/restart/exec/pull + Compose); **CI/CD Integration** (21 tools: GitHub Actions, Jenkins, GitLab CI, Northflank; `ci_trigger`/`ci_wait` workflow steps; webhook ingest with HMAC); Twingate zero-trust remote MCP proxy; Agnostic QA Bridge; Desktop Control; Diagnostic Tools; Markdown-for-Agents content negotiation; streamable HTTP, SSE, and stdio transports
-- **Integrations** — 31 platforms: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, GitHub, GitLab, Google Chat, Gmail, Google Calendar, Email (IMAP/SMTP), Jira, Notion, AWS, Azure DevOps, Linear, Airtable, DingTalk, LINE, QQ, Twitter/X, Spotify, Stripe, YouTube, Zapier, Figma, Todoist, iMessage, CLI, Generic Webhook
-- **Enterprise** — **Dual Licensing** (AGPL-3.0 + commercial, Ed25519 offline license validation, `LicenseManager` with tier/feature gating, CLI + dashboard + API key management); **Multi-tenancy** (PostgreSQL RLS partitioning, tenant CRUD API); **SSO** (OIDC: Okta, Azure AD, Auth0; **SAML 2.0**: Okta, Azure AD, Keycloak, ADFS, SimpleSAMLphp; group-to-role mapping); **Backup & DR** (`pg_dump`/`pg_restore`, download API, restore confirmation, scheduling examples); **Audit Export** (JSONL/CSV/syslog); **Rate Limiting** (sliding window, per-user/per-IP/global, Redis-backed for multi-instance)
-- **Team Collaboration** — Multi-user workspaces, SSO/OIDC + SAML 2.0, CRDT collaborative editing, presence indicators
-- **Deployment** — Single binary (~80 MB, Bun-compiled), Docker (~80 MB), Kubernetes Helm chart; Linux x64/arm64 + macOS arm64 + Windows x64; `--dev` fast single-platform build; **Native Clients** — Tauri v2 desktop shell + Capacitor v6 mobile shell (shared dashboard frontend)
-- **Extensions** — 38 lifecycle hook points, TypeScript plugin modules, hot-reload support
-- **CLI** — 26 commands, full-screen TUI (`secureyeoman tui`), agent world ASCII map (`secureyeoman world`), shell completions, `--json` scripting output
+### Security & Governance
+
+| Capability | Details |
+|---|---|
+| Authentication | JWT + API key, OIDC SSO (Okta/Azure AD/Auth0), SAML 2.0 |
+| Authorization | RBAC, per-personality active hours, Organizational Intent (OPA) |
+| Encryption | AES-256-GCM at rest, mTLS in transit, TLS lifecycle management |
+| Sandboxing | Landlock, seccomp, gVisor, WASM |
+| Prompt Security | Jailbreak scoring, system-prompt leak detection, abuse pattern detection |
+| Content Guardrails | PII redaction, topic restrictions, toxicity filtering, citation grounding |
+| Secrets Management | env / keyring / file / Vault / OpenBao backends |
+| Audit | Cryptographic integrity verification, JSONL/CSV/syslog export |
+
+### AI & Models
+
+| Capability | Details |
+|---|---|
+| Providers | 12 — Anthropic, OpenAI, Gemini, Ollama, LM Studio, LocalAI, DeepSeek, Mistral, Grok, Letta, OpenCode Zen, and more |
+| Routing | Automatic fallback chains, dynamic model discovery, local-first routing |
+| Ollama lifecycle | Pull, delete, quantization-aware memory warnings |
+
+### Agents & Workflows
+
+| Capability | Details |
+|---|---|
+| Cognitive model | Soul / Spirit / Brain / Body architecture; personality presets (F.R.I.D.A.Y., T.Ron) |
+| Sub-agents | Delegation, Agent Swarms (sequential / parallel / dynamic, 5 templates) |
+| Teams | Dynamic auto-manager with coordinator LLM, 3 built-in teams, `crew` CLI with YAML import/export |
+| Workflows | DAG orchestration with 14 step types, `triggerMode: 'any'` OR-trigger, `outputSchemaMode: 'strict'`, visual ReactFlow builder |
+| A2A Protocol | Cross-instance agent delegation with W3C trace propagation |
+| Federation | Encrypted peer sync, federated knowledge search, personality bundle export/import |
+
+### Training & Evaluation
+
+| Capability | Details |
+|---|---|
+| Dataset export | ShareGPT, instruction, raw, and computer_use formats |
+| Distillation | Priority, curriculum, and counterfactual modes |
+| Fine-tuning | LoRA via Unsloth sidecar |
+| Evaluation | Tool-name accuracy, arg-match, semantic similarity (Ollama) |
+| LLM-as-Judge | Pointwise scoring, pairwise comparison, auto-eval quality gates |
+| Conversation Analytics | Sentiment tracking, engagement metrics, entity extraction, summarization |
+| Lifecycle Platform | Preference annotation, experiment registry, model versioning, A/B testing |
+| Adaptive Learning | Conversation quality scoring, computer-use RL episodes, live training stream (SSE) |
+
+### Dashboard & Editor
+
+| Capability | Details |
+|---|---|
+| Stack | React + Vite + Tailwind, 19-theme system |
+| Chat | Rich Markdown, Mermaid diagrams, KaTeX math, conversation branching |
+| Collaboration | Real-time CRDT editing (Yjs), group chat, presence indicators |
+| Mission Control | Drag-and-drop card layout (12 cards, S/M/L resize) |
+| Editor | Multi-terminal, memory panel, model selector, agent world map, canvas workspace |
+| Visualization | WebGL graph, live network-mode badge (Local / LAN / Public) |
+
+### Integrations & MCP
+
+| Capability | Details |
+|---|---|
+| MCP server | 200+ tools, 9 resources, 4 prompts; streamable HTTP, SSE, and stdio transports |
+| Platforms | 36 — Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, GitHub, GitLab, Google Chat, Gmail, Google Calendar, Email (IMAP/SMTP), Jira, Notion, AWS, Azure DevOps, Linear, Airtable, DingTalk, LINE, QQ, Twitter/X, Spotify, Stripe, YouTube, Zapier, Figma, Todoist, iMessage, CLI, Generic Webhook, and more |
+| CI/CD | 21 tools — GitHub Actions, Jenkins, GitLab CI, Northflank; `ci_trigger`/`ci_wait` workflow steps; webhook ingest |
+| Security toolkits | Kali (pentest), Network (37 tools: discovery, scanning, SSH, NetBox, NVD/CVE), Docker (14 tools) |
+| Knowledge Base | Document ingestion (PDF, HTML, Markdown, URL, GitHub Wiki), RAG / Notebook / Hybrid modes, Source Guide |
+| Skills & Marketplace | Skill trust tiers, community repo sync, workflow + swarm template export/import |
+
+### Enterprise & Operations
+
+| Capability | Details |
+|---|---|
+| Licensing | Dual: AGPL-3.0 + commercial. Ed25519 offline validation, CLI + dashboard + API management |
+| Multi-tenancy | PostgreSQL RLS partitioning, tenant CRUD API |
+| Observability | OpenTelemetry (OTLP gRPC), Prometheus `/metrics`, alert rules engine (Slack/PagerDuty/OpsGenie/webhook), ECS logs, Grafana dashboards |
+| API Gateway | Expose personalities as endpoints with per-key RPM/TPD rate limits, usage analytics (p50/p95), CSV export |
+| Deployment | Single binary (~80 MB), Docker (~80 MB), Kubernetes Helm chart; Linux x64/arm64, macOS arm64, Windows x64 |
+| Native clients | Tauri v2 desktop + Capacitor v6 mobile (shared dashboard frontend) |
+| CLI | 30 commands, full-screen TUI, agent world ASCII map, shell completions, `--json` scripting output |
+| Extensions | Rich lifecycle hook system, TypeScript plugin modules, hot-reload support |
+| Backup & DR | `pg_dump`/`pg_restore`, download API, restore confirmation, scheduling |
 
 See the [Feature Reference](docs/features.md) for the complete breakdown.
 
@@ -102,41 +156,12 @@ See the [Feature Reference](docs/features.md) for the complete breakdown.
 
 ## Network Access Modes
 
-SecureYeoman supports three network modes, selectable via `config.yml`. The **About** panel in the dashboard reflects the current mode in real time.
-
-| Mode | `gateway.host` | `gateway.tls.enabled` | Dashboard label | Use case |
-|------|---------------|----------------------|-----------------|----------|
-| **Local** (default) | `127.0.0.1` | `false` | Local Only | Single-machine, max privacy |
-| **LAN** | `0.0.0.0` | `false` | Network (No TLS) ⚠️ | Trusted internal network |
-| **Public** | `0.0.0.0` | `true` | Public (TLS Secured) | Internet / remote team |
-
-**Enabling public access** (via environment variables):
-```bash
-SECUREYEOMAN_TLS_ENABLED=true
-SECUREYEOMAN_TLS_CERT_PATH=/etc/ssl/certs/server.crt
-SECUREYEOMAN_TLS_KEY_PATH=/etc/ssl/private/server.key
-SECUREYEOMAN_ALLOW_REMOTE_ACCESS=true
-SECUREYEOMAN_CORS_ORIGINS=https://your-domain.example.com
-```
-
-Or via `secureyeoman.yaml`:
-```yaml
-gateway:
-  host: "0.0.0.0"
-  allowRemoteAccess: true
-  tls:
-    enabled: true
-    certPath: "/etc/ssl/certs/server.crt"
-    keyPath:  "/etc/ssl/private/server.key"
-  cors:
-    origins:
-      - "https://your-domain.example.com"
-```
+SecureYeoman supports **Local** (127.0.0.1, default), **LAN** (0.0.0.0, no TLS), and **Public** (0.0.0.0 + TLS) modes — selectable via `config.yml` or environment variables. The dashboard About panel and `/health` endpoint reflect the current mode.
 
 > [!WARNING]
 > Do **not** expose SecureYeoman to the internet without TLS enabled. Without TLS, API keys and session tokens travel in plaintext.
 
-The `/health` endpoint now includes `networkMode` (`"local"` | `"lan"` | `"public"`) so monitoring tools and reverse proxies can assert the expected access tier.
+See the [Getting Started Guide](docs/guides/getting-started.md) and [Configuration Reference](docs/configuration.md) for setup details.
 
 ---
 
@@ -210,50 +235,53 @@ See the [REST API Reference](docs/api/rest-api.md) and [WebSocket API](docs/api/
 
 Or connect via HTTP: `http://localhost:3001/mcp` (when running with `--profile mcp`).
 
----
-
-## Usage Nuances
-
-### AI Provider Authentication — Use API Keys, Not OAuth
-
 > [!WARNING]
 > **Never use OAuth tokens, session cookies, or credentials from Claude.ai, ChatGPT, or any other
 > AI provider's consumer product.** This violates every major provider's Terms of Service and can
-> result in account suspension or permanent bans.
-
-Always connect AI providers using official API keys from their developer consoles. See [AI Provider API Keys](docs/guides/ai-provider-api-keys.md) for details and provider links.
+> result in account suspension or permanent bans. Always use official API keys from developer consoles.
+> See [AI Provider API Keys](docs/guides/ai-provider-api-keys.md) for details.
 
 ---
 
 ## Documentation
 
+**Start Here**
+
 | Topic | Link |
 |-------|------|
-| **Getting Started** | [Getting Started Guide](docs/guides/getting-started.md) |
-| **Configuration** | [Config Reference](docs/configuration.md) |
-| **Feature Reference** | [Full Feature Breakdown](docs/features.md) |
-| **REST API** | [REST API Reference](docs/api/rest-api.md) |
-| **WebSocket API** | [WebSocket API](docs/api/websocket-api.md) |
-| **OpenAPI Spec** | [OpenAPI 3.1](docs/openapi.yaml) |
-| **Security Model** | [Security Model](docs/security/security-model.md) |
-| **White Paper** | [Architectural Sovereignty & Agentic Governance](docs/white-paper.md) |
-| **Deployment** | [Deployment Guide](docs/deployment.md) |
-| **Kubernetes** | [Kubernetes Deployment Guide](docs/guides/kubernetes-deployment.md) |
-| **Integrations** | [Integration Setup](docs/guides/integrations.md) |
-| **AI Provider Keys** | [AI Provider API Keys](docs/guides/ai-provider-api-keys.md) |
-| **Content Guardrails** | [Content Guardrails Guide](docs/guides/content-guardrails.md) |
-| **CI/CD Integration** | [CI/CD Integration Guide](docs/guides/cicd-integration.md) |
-| **Observability** | [Observability Guide](docs/guides/observability.md) |
-| **Knowledge Base** | [Knowledge Base Guide](docs/guides/knowledge-base.md) |
-| **Security Testing** | [Security Testing Guide](docs/guides/security-testing.md) |
-| **Troubleshooting** | [Troubleshooting Guide](docs/troubleshooting.md) |
-| **Architecture Overview** | [Architecture](docs/development/architecture.md) |
-| **Architecture Decisions** | [ADRs](docs/adr/) (184 records) |
-| **Roadmap** | [Development Roadmap](docs/development/roadmap.md) |
-| **Changelog** | [CHANGELOG.md](CHANGELOG.md) |
-| **Contributing** | [Contributing Guide](CONTRIBUTING.md) |
-| **Code of Conduct** | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) |
-| **Security Policy** | [SECURITY.md](SECURITY.md) |
+| Getting Started | [Getting Started Guide](docs/guides/getting-started.md) |
+| Configuration | [Config Reference](docs/configuration.md) |
+| Feature Reference | [Full Feature Breakdown](docs/features.md) |
+
+**API**
+
+| Topic | Link |
+|-------|------|
+| REST API | [REST API Reference](docs/api/rest-api.md) |
+| WebSocket API | [WebSocket API](docs/api/websocket-api.md) |
+| OpenAPI Spec | [OpenAPI 3.1](docs/openapi.yaml) |
+
+**Operations**
+
+| Topic | Link |
+|-------|------|
+| Deployment | [Deployment Guide](docs/deployment.md) |
+| Kubernetes | [Kubernetes Guide](docs/guides/kubernetes-deployment.md) |
+| Observability | [Observability Guide](docs/guides/observability.md) |
+| Security Model | [Security Model](docs/security/security-model.md) |
+| White Paper | [Architectural Sovereignty & Agentic Governance](docs/white-paper.md) |
+
+**Development**
+
+| Topic | Link |
+|-------|------|
+| Architecture | [Architecture Overview](docs/development/architecture.md) |
+| ADRs | [184 Architecture Decision Records](docs/adr/) |
+| Roadmap | [Development Roadmap](docs/development/roadmap.md) |
+| Contributing | [Contributing Guide](CONTRIBUTING.md) |
+| Changelog | [CHANGELOG.md](CHANGELOG.md) |
+
+See [`docs/guides/`](docs/guides/) for all 57 guides, including integrations, CI/CD, knowledge base, security testing, content guardrails, and more.
 
 ---
 
@@ -275,24 +303,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, test database conf
 
 ---
 
-## Contributing
+## Community
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for:
+We welcome contributions — see [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code style, testing requirements, and the pull request process.
 
-- Development setup
-- Code style and testing requirements
-- Pull request process
-- Community guidelines
-
----
-
-## Security
-
-Security is our top priority. For security issues:
-
-- **DO NOT** open a public issue
-- Email: security@secureyeoman.ai
-- See our [Security Policy](SECURITY.md)
+For security vulnerabilities, email security@secureyeoman.ai (do **not** open a public issue). See [SECURITY.md](SECURITY.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
 ---
 

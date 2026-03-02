@@ -1,0 +1,39 @@
+# SecureYeoman
+
+> SecureYeoman is a sovereign AI agent platform that runs entirely on your infrastructure. It provides multi-model intelligence (12 AI providers), enterprise-grade security (RBAC, SSO/SAML, sandboxing, audit trails), multi-agent orchestration (swarms, teams, DAG workflows, A2A protocol), a 200+ tool MCP server, and a full ML lifecycle platform — without sending data off-premises. Dual-licensed: AGPL-3.0 + Commercial.
+
+- Version: 2026.3.1
+- 12,383 tests, 184 ADRs, 57 guides
+- 36 platform integrations, 200+ MCP tools, 30 CLI commands
+
+## Documentation
+
+- [Getting Started](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/getting-started.md): Installation, configuration, first run
+- [Configuration Reference](https://github.com/MacCracken/secureyeoman/blob/main/docs/configuration.md): All YAML fields and environment variables
+- [Feature Reference](https://github.com/MacCracken/secureyeoman/blob/main/docs/features.md): Complete feature breakdown
+- [REST API](https://github.com/MacCracken/secureyeoman/blob/main/docs/api/rest-api.md): HTTP API reference
+- [WebSocket API](https://github.com/MacCracken/secureyeoman/blob/main/docs/api/websocket-api.md): Real-time WebSocket API
+- [OpenAPI Spec](https://github.com/MacCracken/secureyeoman/blob/main/docs/openapi.yaml): OpenAPI 3.1 specification
+- [Architecture](https://github.com/MacCracken/secureyeoman/blob/main/docs/development/architecture.md): System architecture overview
+- [Security Model](https://github.com/MacCracken/secureyeoman/blob/main/docs/security/security-model.md): Security architecture and threat model
+- [White Paper](https://github.com/MacCracken/secureyeoman/blob/main/docs/white-paper.md): Architectural sovereignty and agentic governance
+
+## Guides
+
+- [Integrations](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/integrations.md): Platform integration setup
+- [Knowledge Base](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/knowledge-base.md): RAG and document ingestion
+- [Observability](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/observability.md): OpenTelemetry, Prometheus, alerts
+- [CI/CD Integration](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/cicd-integration.md): GitHub Actions, Jenkins, GitLab CI
+- [Security Testing](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/security-testing.md): Security testing guide
+- [Content Guardrails](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/content-guardrails.md): PII, toxicity, topic restrictions
+- [Kubernetes](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/kubernetes-deployment.md): Helm chart deployment
+- [Deployment](https://github.com/MacCracken/secureyeoman/blob/main/docs/deployment.md): Docker and deployment guide
+- [Licensing](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/licensing.md): AGPL-3.0 and commercial license details
+- [Troubleshooting](https://github.com/MacCracken/secureyeoman/blob/main/docs/troubleshooting.md): Common problems and fixes
+
+## Optional
+
+- [ADRs](https://github.com/MacCracken/secureyeoman/tree/main/docs/adr): 184 architecture decision records
+- [Roadmap](https://github.com/MacCracken/secureyeoman/blob/main/docs/development/roadmap.md): Development roadmap
+- [Changelog](https://github.com/MacCracken/secureyeoman/blob/main/CHANGELOG.md): Release history
+- [Contributing](https://github.com/MacCracken/secureyeoman/blob/main/CONTRIBUTING.md): Contribution guide
