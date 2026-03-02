@@ -2,7 +2,7 @@
 
 **Date**: 2026-02-23
 **Status**: Accepted
-**See also**: ADR 034 (sub-agent delegation), ADR 055 (agent swarms), ADR 057 (swarms policy), ADR 059 (dynamic tool creation), ADR 108 (Resources section in personality editor)
+**See also**: ADR 034 (sub-agent delegation), ADR 055 (agent swarms & swarms policy), ADR 059 (dynamic tool creation), ADR 108 (Resources section in personality editor)
 
 ---
 

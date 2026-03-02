@@ -1,4 +1,4 @@
-# ADR 071: SSO/OIDC via openid-client (Okta, Azure AD, Auth0)
+# ADR 071: SSO — OIDC & SAML 2.0
 
 **Status:** Accepted  
 **Date:** 2026-02-19  
@@ -86,3 +86,31 @@ Two defects discovered during the Phase 25 bug hunt:
 - `packages/core/src/gateway/sso-routes.ts` — operator-precedence fix in authorize route
 - `packages/core/src/security/sso-manager.test.ts` — new edge-case tests
 - `packages/core/src/gateway/sso-routes.test.ts` — new scheme + callback error tests
+
+---
+
+## SAML 2.0 Support (formerly ADR 143)
+
+**Date:** 2026-02-26 — Phase 61 (Enterprise Features)
+
+### Context
+
+Enterprise customers use SAML 2.0 identity providers (Okta, Azure AD, ADFS, Ping Identity). The database schema already had `type IN ('oidc','saml')`, `entityId`, `acsUrl`, and `metadataUrl` columns.
+
+### Decision
+
+SP-initiated SAML 2.0 via `node-saml` (lazy import; startup never fails if package is absent).
+
+- **`SamlAdapter`**: Wraps `node-saml` SAML instance. Handles `getAuthorizeUrl`, `validateCallback` (normalizes attributes, resolves role via `groupRoleMap`), and `getSpMetadataXml`.
+- **`SsoManager` changes**: `getAuthorizationUrl` branches on `provider.type`; new `handleSamlCallback` method; adapter cache keyed by provider ID.
+- **New routes**:
+  - `GET /api/v1/auth/sso/saml/:id/metadata` — public SP metadata XML
+  - `POST /api/v1/auth/sso/saml/:id/acs` — ACS endpoint for SAMLResponse
+- **SAML config** stored in the existing `config JSONB` column: `entryPoint`, `idpCert`, `spPrivateKey`, `groupAttribute`, `groupRoleMap`, `nameIdFormat`.
+- **Dashboard**: SSO provider form shows SAML fields when type is `saml`.
+
+### Consequences
+
+- Existing OIDC flow is entirely unchanged.
+- Group-to-role mapping enables JIT provisioning with appropriate roles.
+- `node-saml` must be installed for SAML to function.

@@ -1,4 +1,4 @@
-# ADR 128 — Machine Readable Organizational Intent
+# ADR 128 — Organizational Intent & Governance Framework
 
 **Status**: Accepted
 **Date**: 2026-02-24
@@ -126,3 +126,62 @@ Both are supported: `intent.filePath` config bootstraps from a YAML/JSON file, b
 | `packages/dashboard/src/components/SettingsPage.tsx` | Added Intent tab |
 | `packages/dashboard/src/api/client.ts` | Added `allowOrgIntent`, Intent API functions |
 | `docs/guides/organizational-intent.md` | New |
+
+---
+
+## AI Autonomy Level Audit (formerly ADR 130)
+
+**Date:** 2026-02-24 — Phase 49
+
+### Decision
+
+Classify how autonomous each skill and workflow is, with a formal review process.
+
+1. **`autonomyLevel`** (`'L1'`–`'L5'`) and **`emergencyStopProcedure`** fields added to `SkillSchema` and `WorkflowDefinitionSchema`. Governance documentation only — does not affect runtime. Defaults: L1 (skills), L2 (workflows).
+
+2. **Escalation warning**: When a skill/workflow is saved with a higher `autonomyLevel` than before, the response includes a `warnings[]` array. Dashboard shows a confirmation modal. Save is not blocked (post-hoc governance prompt).
+
+3. **Audit run system**: `autonomy_audit_runs` table with 16-item checklist across 4 sections (A: Inventory, B: Level Assignment Review, C: Authority & Accountability via DeepMind framework, D: Gap Remediation). Items have `pending | pass | fail | deferred` status. Finalizing generates Markdown + JSON reports.
+
+4. **REST API**: 7 endpoints under `/api/v1/autonomy/` (overview, CRUD audits, item updates, finalize, emergency stop).
+
+5. **Dashboard**: Security → Autonomy tab with Overview Panel (filterable table with L1–L5 badges), Audit Wizard (guided Sections A–D), Emergency Stop Registry (L5 items with one-click stop for admins).
+
+### Frameworks Adopted
+- **Knight First Amendment Institute** (arXiv:2506.12469) — 5-level taxonomy (L1 Operator → L5 Observer)
+- **Google DeepMind** (arXiv:2602.11865) — Section C accountability checklist
+
+---
+
+## Governance Hardening (formerly ADR 132)
+
+**Date:** 2026-02-25 — Phase 50
+
+Closes all deferred items from Phase 48 and 49.
+
+### 1. OPA Sidecar Pattern
+
+OPA runs as a Docker/k8s sidecar. Policies uploaded as raw Rego via `PUT /v1/policies/{id}`. Capabilities file blocks `http.send` and network builtins (SSRF prevention). All OPA operations are non-fatal: errors fall back to natural-language rule matching.
+
+### 2. Hard Boundary OPA Evaluation
+
+`checkHardBoundaries()` evaluates `boundary_{id}/allow` via OPA when `OPA_ADDR` is set and boundary has a `rego` field. OPA `false` → violated; `null` (error) → fallback to substring matching.
+
+### 3. CEL Expression Evaluation
+
+Implemented a CEL subset evaluator (`intent/cel-evaluator.ts`) without external dependencies. Supports: `==`, `!=`, `<`, `>`, `<=`, `>=`, `&&`, `||`, `!`, parentheses, string/number/boolean literals, field access (`key` or `ctx.key`). Auto-detects CEL vs legacy `key=value AND key=value` format.
+
+### 4. MCP Tool Signal Dispatch
+
+`_fetchSignalValue()` handles `ds.type === 'mcp_tool'` via optional `callMcpTool` callback in `IntentManagerDeps`.
+
+### 5. Dashboard Policies Tab
+
+`IntentEditor.tsx` Policies tab: blocking (red) vs warning (yellow) badges, per-policy cards with OPA Rego badge, expandable Rego source view.
+
+### References
+
+- [OPA REST API documentation](https://www.openpolicyagent.org/docs/latest/rest-api/)
+- [CEL specification](https://github.com/google/cel-spec)
+- [AI Autonomy Audit Guide](../guides/ai-autonomy-audit.md)
+- [Organizational Intent Guide](../guides/organizational-intent.md)

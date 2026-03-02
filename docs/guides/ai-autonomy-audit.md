@@ -196,5 +196,5 @@ Run the audit before any production deployment that introduces new skills, MCP t
 
 - [Organizational Intent Guide](./organizational-intent.md)
 - [Skill Routing Quality Guide](./skill-routing.md)
-- [ADR 130: AI Autonomy Level Audit](../adr/130-ai-autonomy-level-audit.md)
+- [ADR 128: Organizational Intent & Governance Framework](../adr/128-machine-readable-organizational-intent.md)
 - [Configuration Reference](../configuration.md)

@@ -65,7 +65,21 @@ Four templates are seeded on startup:
 - `parallel` delegations all count against `maxConcurrent` simultaneously; templates with many roles may hit the concurrency limit
 - Dynamic strategy effectiveness depends on the coordinator profile's system prompt quality
 
-See ADR 057 for the `allowSwarms` security policy toggle and per-personality swarms enablement added in the same phase.
+---
+
+## Security Policy & Per-Personality Settings (formerly ADR 057)
+
+### Global Security Policy — `allowSwarms`
+
+`allowSwarms: z.boolean().default(false)` added to `SecurityConfigSchema` alongside `allowSubAgents` and `allowA2A`. Propagated through `secureyeoman.ts`, gateway security policy routes, dashboard `SecuritySettings.tsx`, and `SubAgentsPage.tsx` (Swarms tab hidden when disabled).
+
+### Per-Personality Settings — `allowA2A` and `allowSwarms` in `CreationConfig`
+
+When `creationConfig.subAgents === true`, nested `allowA2A` and `allowSwarms` boolean fields control whether each personality can use A2A networking or swarms, subject to the global policy ceiling. Both default to `false`. The "Enable All" toggle intentionally excludes them — they must be explicitly enabled.
+
+### Security Model
+
+Swarms are a first-class citizen in the security policy hierarchy: global kill switch → personality opt-in → runtime execution.
 
 ---
 

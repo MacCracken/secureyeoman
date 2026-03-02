@@ -15,7 +15,8 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 ### Documentation Audit
 
 - **Version numbers**: Updated from `2026.3.1` to `2026.3.2` across README badges, white paper, functional audit, features.md, and project website (index.html, whitepaper.html, llms.txt, sitemap.xml, .md mirrors).
-- **ADR deduplication**: Renumbered 4 colliding ADR pairs (127→181, 133→182, 141→183, 171→184). All 185 ADRs now have unique numbers.
+- **ADR deduplication**: Renumbered 4 colliding ADR pairs (127→181, 133→182, 141→183, 171→184).
+- **ADR consolidation**: Deleted 27 non-ADR records (bug fixes, audits, UI tweaks). Moved 9 unimplemented proposals to `docs/proposals/`. Merged 7 related ADR groups (K8s deployment+observability, SSO OIDC+SAML, swarms+security policy, FTS+chunked indexing, metrics+costs, governance framework phases 48–50, memory scoping+vector scoping). 151 ADRs remain with all cross-references updated.
 - **Broken links fixed**: 4 broken cross-references (personality-editor.md, sub-agent-delegation.md, api/multimodal.md, marketplace.md) pointed at correct targets. `yourorg` placeholder in shareables.md replaced with `MacCracken`.
 - **Stale content fixed**: swarms.md `allowSwarms: false` boolean inversion corrected. openapi.yaml license (MIT→AGPL-3.0), version, server port updated. architecture.md monorepo tree expanded with 6 missing packages. Migration references in 3 guides updated from specific numbers to baseline schema. Roadmap completed Phase 104 item removed.
 - **Site updates**: Dead Discord/Twitter footer links replaced with GitHub Discussions. Alert channel count `4→5` (ntfy). job-completion-notifications guide added to llms.txt.

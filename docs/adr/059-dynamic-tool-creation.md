@@ -3,7 +3,7 @@
 **Status**: Accepted
 **Phase**: 17
 **Date**: 2026-02-18
-**See also**: ADR 034 (sub-agent delegation), ADR 055 (agent swarms), ADR 057 (swarms policy), ADR 056 (per-personality model fallbacks)
+**See also**: ADR 034 (sub-agent delegation), ADR 055 (agent swarms & swarms policy), ADR 056 (per-personality model fallbacks)
 
 ---
 

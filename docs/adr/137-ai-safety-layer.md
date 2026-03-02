@@ -102,6 +102,5 @@ llmJudge: LLMJudgeConfigSchema            // enabled, model?, triggers.automatio
 ## Related
 
 - ADR 124 — PromptGuard (input-side injection scanner)
-- ADR 132 — Governance Hardening (OPA, CEL, IntentManager)
-- ADR 130 — AI Autonomy Level Audit
+- ADR 128 — Organizational Intent & Governance Framework (OPA, CEL, Autonomy Audit)
 - Guide: `docs/guides/ai-safety-layer.md`

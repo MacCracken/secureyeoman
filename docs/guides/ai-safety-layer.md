@@ -174,5 +174,4 @@ To test LLM-as-Judge, set `llmJudge.enabled: true`, use a personality with `auto
 
 - ADR 137: `docs/adr/137-ai-safety-layer.md`
 - ADR 124: PromptGuard (input-side)
-- ADR 132: Governance Hardening (OPA, IntentManager)
-- ADR 130: AI Autonomy Level Audit
+- ADR 128: Organizational Intent & Governance Framework (OPA, IntentManager, Autonomy Audit)

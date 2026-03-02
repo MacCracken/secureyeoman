@@ -1,4 +1,4 @@
-# ADR 095 — Hybrid FTS + Vector Search with Reciprocal Rank Fusion
+# ADR 095 — Hybrid FTS + RRF Search & Content-Chunked Indexing
 
 **Status:** Accepted
 **Date:** 2026-02-21
@@ -84,8 +84,36 @@ The FTS sub-query handles rows where `search_vec IS NULL` (legacy rows before mi
 
 ---
 
+## Content-Chunked Workspace Indexing (formerly ADR 096)
+
+**Date:** 2026-02-21 — Phase 35
+
+### Context
+
+Documents indexed as a single unit cause context overflow (exceeding embedding model token limits) and diluted retrieval (averaged embedding pulled toward the document's dominant theme).
+
+### Decision
+
+Add content-chunked indexing as a supplementary layer. Large documents are split into overlapping ~800-token chunks via `chunk()` in `packages/core/src/brain/chunker.ts`. Each chunk receives its own FTS vector and optional pgvector embedding.
+
+**Algorithm:** Split at paragraph boundaries (double newlines), then sentence boundaries. Greedily pack sentences into chunks up to `maxTokens` (800). Seed each subsequent chunk with 15% overlap from the previous chunk's tail.
+
+**Migration `030_document_chunks.sql`:** New `brain.document_chunks` table with `source_id`, `source_table`, `chunk_index`, `content`, `search_vec` (tsvector with trigger), `embedding` (vector(384)).
+
+**Storage:** `createChunks()`, `deleteChunksForSource()`, `updateChunkEmbedding()`, `queryChunksByRRF()`.
+
+**Manager:** `remember()` and `learn()` call `createChunks()` when content > 200 chars and produces > 1 chunk. `forget()` and `deleteKnowledge()` clean up orphaned chunks.
+
+### Consequences
+
+- Long documents no longer overflow embedding models — each chunk is independently within budget.
+- Fine-grained retrieval at paragraph granularity.
+- Chunks inherit the FTS + RRF infrastructure from this ADR.
+- Small documents (< 200 chars) are not chunked.
+
+---
+
 ## Related
 
 - [ADR 031 — Vector Semantic Memory](031-vector-semantic-memory.md)
-- [Migration 003 — Vector Memory](../../../packages/core/src/storage/migrations/003_vector_memory.sql)
-- [Migration 029 — FTS RRF](../../../packages/core/src/storage/migrations/029_fts_rrf.sql)
+- `packages/core/src/brain/chunker.ts`

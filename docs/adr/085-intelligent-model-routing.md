@@ -160,4 +160,4 @@ Clients (dashboard, CLI, API consumers) can call this before executing a swarm t
 - [ADR 034 — Sub-Agent Delegation](034-sub-agent-delegation.md)
 - [ADR 055 — Agent Swarms](055-agent-swarms.md)
 - [ADR 056 — Per-Personality Model Fallbacks](056-personality-model-fallbacks.md)
-- [ADR 057 — Swarms Policy & Per-Personality Sub-Agent Settings](057-swarms-policy.md)
+- [ADR 055 — Agent Swarms](055-agent-swarms.md) (includes security policy & per-personality settings)

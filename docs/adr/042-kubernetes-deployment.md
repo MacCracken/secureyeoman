@@ -1,4 +1,4 @@
-# ADR 042: Kubernetes Deployment
+# ADR 042: Kubernetes Deployment & Observability
 
 ## Status
 
@@ -137,8 +137,29 @@ and a rolling restart confirmed the fast-path (no migration SQL executed on seco
 - **`migrate-job.yaml` ConfigMap ref** — The ConfigMap is also a regular resource not yet
   created at pre-install time. Replaced `configMapRef` with inline `env` for DB host/port/name/user.
 
+## Observability (formerly ADR 043)
+
+### Prometheus Operator CRDs
+
+`ServiceMonitor` and `PrometheusRule` CRDs (Prometheus Operator) for auto-discovery and lifecycle management via Helm. All 9 existing alert rules from `deploy/prometheus/alert-rules.yml` are migrated to a `PrometheusRule` CRD.
+
+### Grafana Sidecar Dashboard
+
+The Grafana dashboard JSON is mounted as a ConfigMap with label `grafana_dashboard: "1"`. The Grafana sidecar (kube-prometheus-stack) auto-discovers and loads it.
+
+### Pod Annotations for Legacy Scraping
+
+For clusters without the Prometheus Operator: `prometheus.io/scrape: "true"`, `prometheus.io/port: "18789"`, `prometheus.io/path: "/metrics"`.
+
+### Conditional Enablement
+
+All observability resources are gated behind `.Values.monitoring.enabled` to avoid CRD errors on clusters without the Prometheus Operator.
+
 ## References
 
 - Helm chart: `deploy/helm/secureyeoman/`
 - CI jobs: `.github/workflows/ci.yml` (docker-push, helm-lint)
 - Deployment guide: `docs/guides/kubernetes-deployment.md`
+- ServiceMonitor: `deploy/helm/secureyeoman/templates/servicemonitor.yaml`
+- PrometheusRule: `deploy/helm/secureyeoman/templates/prometheusrule.yaml`
+- Grafana ConfigMap: `deploy/helm/secureyeoman/templates/grafana-dashboard-configmap.yaml`

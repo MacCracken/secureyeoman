@@ -105,7 +105,7 @@ secureyeoman/
 │   └── logging/                # Loki, Promtail, docker-compose configs
 ├── scripts/                    # Utility scripts (license key gen, icons, build)
 ├── docs/                       # Documentation
-│   ├── adr/                    # 185 Architecture Decision Records
+│   ├── adr/                    # 151 Architecture Decision Records
 │   ├── api/                    # REST + WebSocket API reference
 │   ├── guides/                 # 58 user guides
 │   ├── ops/                    # Grafana dashboards, operational runbooks

@@ -2,7 +2,7 @@
 
 **Date**: 2026-02-23
 **Status**: Accepted
-**See also**: ADR 057 (swarms policy & per-personality sub-agent settings), ADR 059 (dynamic tool creation), ADR 107 (creationConfig tool injection)
+**See also**: ADR 055 (agent swarms & swarms policy), ADR 059 (dynamic tool creation), ADR 107 (creationConfig tool injection)
 
 ---
 

@@ -1,4 +1,4 @@
-# ADR 105: Metrics Dashboard — Overview & Full Metrics Views
+# ADR 105: Metrics Dashboard — Overview, Costs & Full Metrics
 
 ## Status
 
@@ -112,13 +112,25 @@ A comprehensive analytics view surfacing all `MetricsSnapshot` fields:
 - **`ResourceMonitor.tsx` is no longer imported** by any live code path; it remains in the repo as
   standalone reusable component but is not actively rendered.
 
+## Costs View Consolidation (formerly ADR 106)
+
+The entire `CostsPage` was absorbed into `MetricsPage` as a third tab:
+
+```
+[ Overview ]  [ Costs ]  [ Full Metrics ]
+```
+
+**Costs tab content** renders two sub-tabs:
+- **Summary** — provider cost breakdown cards, monthly/daily/today cost stats, recommendation cards.
+- **History** — filterable table with date-range, provider, model, and personality filters; pagination-ready.
+
+**Routing:** `/costs` redirects to `/metrics` (backward compat). **Sidebar:** Costs nav item removed. **Internal nav:** `navigate('/costs')` updated to `navigate('/metrics')` or internal tab switch.
+
 ## Files changed
 
-- `packages/dashboard/src/components/MetricsPage.tsx` — new standalone component (Overview + Full Metrics tabs)
-- `packages/dashboard/src/components/DashboardLayout.tsx` — remove embedded `OverviewPage`; add `MetricsPage` lazy import and `/metrics` route; redirect `/` → `/metrics`
-- `packages/dashboard/src/components/Sidebar.tsx` — rename nav item to "Metrics", update route and icon
-- `packages/dashboard/src/components/MetricsPage.test.tsx` — 27 new tests
-- `packages/dashboard/src/components/DashboardLayout.test.tsx` — updated routing tests (4 tests)
-- `packages/dashboard/src/components/Sidebar.test.tsx` — 2 new tests for Metrics nav item
-- `docs/adr/105-metrics-dashboard.md` — this ADR
-- `CHANGELOG.md` — Phase 42 entry
+- `packages/dashboard/src/components/MetricsPage.tsx` — Overview + Costs + Full Metrics tabs
+- `packages/dashboard/src/components/DashboardLayout.tsx` — `MetricsPage` lazy import; `/metrics` route; `/` and `/costs` redirect to `/metrics`
+- `packages/dashboard/src/components/Sidebar.tsx` — "Metrics" nav item (Costs removed)
+- `packages/dashboard/src/components/MetricsPage.test.tsx` — 34 tests (27 original + 7 costs)
+- `packages/dashboard/src/components/DashboardLayout.test.tsx` — updated routing tests
+- `packages/dashboard/src/components/Sidebar.test.tsx` — updated nav tests

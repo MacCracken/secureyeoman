@@ -154,9 +154,33 @@ One manager instance per personality, sharing the same storage. Would eliminate 
 
 ---
 
+## Vector Memory Multi-Personality Scoping (formerly ADR 134)
+
+**Date:** 2026-02-26 — Phase 52
+
+### Decision
+
+Extend personality scoping to the vector search path and per-personality self-identity.
+
+**Personality scoping in vector recall:**
+- `VectorMemoryManager.searchMemories()` and `searchKnowledge()` accept `personalityId?: string | null`:
+  - `undefined` — omnipresent (sees all)
+  - `string` — scoped (personality's entries + global `null` entries)
+- `BrainManager.recall()` resolves personality before the vector path, passing through external vector store, pgvector RRF, and post-fetch safety filter.
+
+**Per-personality self-identity:**
+- `seedBaseKnowledge(personalities)` seeds `self-identity` per personality with content "I am {name}".
+- Generic entries (hierarchy, purpose, interaction) remain global.
+- Legacy global self-identity entries auto-deleted and replaced on startup.
+
+**Dashboard:**
+- Personality dropdown on `VectorMemoryExplorerPage` — all tabs respect the selection.
+- Vector Memory promoted to first tab in Agents page.
+
+---
+
 ## Related
 
 - Migration `002_personality_scoping.sql` — `personality_id` columns on brain tables
-- ADR 128 — Organizational Intent
-- ADR 130 — AI Autonomy Level Audit
+- ADR 128 — Organizational Intent & Governance Framework
 - [Guide: Per-Personality Memory Scoping](../guides/per-personality-memory-scoping.md)
