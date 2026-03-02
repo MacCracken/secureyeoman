@@ -155,6 +155,7 @@ export function ProviderKeysSettings() {
     mutationFn: ({ name, value }: { name: string; value: string }) => setSecret(name, value),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['secret-keys'] });
+      void queryClient.refetchQueries({ queryKey: ['model-info'] });
       setKeyValue('');
       setSelectedProviderId('');
       setCustomEnvName('');
@@ -165,6 +166,7 @@ export function ProviderKeysSettings() {
     mutationFn: (name: string) => deleteSecret(name),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['secret-keys'] });
+      void queryClient.refetchQueries({ queryKey: ['model-info'] });
       setDeleteTarget(null);
     },
   });

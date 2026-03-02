@@ -41,6 +41,7 @@ import { OutboundWebhookStorage } from '../integrations/outbound-webhook-storage
 import { OutboundWebhookDispatcher } from '../integrations/outbound-webhook-dispatcher.js';
 import { registerChatRoutes } from '../ai/chat-routes.js';
 import { registerModelRoutes } from '../ai/model-routes.js';
+import { _clearDynamicCache as clearModelCache } from '../ai/cost-calculator.js';
 import { uuidv7, sha256 } from '../utils/crypto.js';
 import { runWithCorrelationId } from '../utils/correlation-context.js';
 import { Task, TaskType, TaskStatus } from '@secureyeoman/shared';
@@ -2357,6 +2358,7 @@ export class GatewayServer {
         }
         try {
           await sm.set(name, value);
+          clearModelCache();
           await this.secureYeoman.getAuditChain().record({
             event: 'secret_access',
             level: 'security',
@@ -2388,6 +2390,7 @@ export class GatewayServer {
         try {
           const deleted = await sm.delete(name);
           if (!deleted) return sendError(reply, 404, 'Secret not found');
+          clearModelCache();
           await this.secureYeoman.getAuditChain().record({
             event: 'secret_access',
             level: 'security',

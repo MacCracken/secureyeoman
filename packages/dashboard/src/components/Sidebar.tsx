@@ -140,6 +140,12 @@ export function Sidebar({
     queryKey: ['model-info'],
     queryFn: fetchModelInfo,
     staleTime: 30000,
+    // Poll every 3s while no AI provider keys are configured so the
+    // sidebar enables Chat/Editor as soon as a key is added.
+    refetchInterval: (query) => {
+      const d = query.state.data;
+      return d && Object.keys(d.available ?? {}).length === 0 ? 3000 : false;
+    },
   });
 
   const noModelsAvailable =
@@ -162,7 +168,8 @@ export function Sidebar({
   const workflowsAllowed = securityPolicy?.allowWorkflows ?? false;
 
   const topItems = useMemo(() => {
-    const top: NavItem[] = [...BASE_TOP_ITEMS];
+    // Deep-copy so we never mutate the static BASE_TOP_ITEMS objects
+    const top: NavItem[] = BASE_TOP_ITEMS.map((item) => ({ ...item }));
     // Disable Chat when no AI provider keys are configured
     if (noModelsAvailable) {
       const chatItem = top.find((i) => i.to === '/chat');
