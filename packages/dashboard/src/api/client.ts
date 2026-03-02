@@ -4756,3 +4756,113 @@ export async function setLicenseKey(key: string): Promise<LicenseStatus> {
     body: JSON.stringify({ key }),
   });
 }
+
+// ── Conversation Analytics (Phase 96) ─────────────────────────────────────────
+
+export interface SentimentTrendPoint {
+  date: string;
+  positive: number;
+  neutral: number;
+  negative: number;
+  avgScore: number;
+}
+
+export interface EngagementMetrics {
+  personalityId: string | null;
+  periodDays: number;
+  avgConversationLength: number;
+  followUpRate: number;
+  abandonmentRate: number;
+  toolCallSuccessRate: number;
+  totalConversations: number;
+}
+
+export interface KeyPhraseItem {
+  id: string;
+  personalityId: string;
+  phrase: string;
+  frequency: number;
+  windowStart: string;
+  windowEnd: string;
+  updatedAt: string;
+}
+
+export interface EntityItem {
+  id: string;
+  conversationId: string;
+  personalityId: string | null;
+  entityType: string;
+  entityValue: string;
+  mentionCount: number;
+  firstSeenAt: string;
+}
+
+export interface TopEntityItem {
+  entityType: string;
+  entityValue: string;
+  totalMentions: number;
+  conversationCount: number;
+}
+
+export interface UsageAnomalyItem {
+  id: string;
+  anomalyType: string;
+  personalityId: string | null;
+  userId: string | null;
+  severity: string;
+  details: Record<string, unknown>;
+  detectedAt: string;
+}
+
+export async function fetchSentimentTrend(
+  personalityId: string,
+  days: number = 30
+): Promise<SentimentTrendPoint[]> {
+  return request(`/analytics/sentiment/trend/${encodeURIComponent(personalityId)}?days=${days}`);
+}
+
+export async function fetchEngagementMetrics(
+  personalityId?: string,
+  periodDays: number = 30
+): Promise<EngagementMetrics> {
+  if (personalityId) {
+    return request(`/analytics/engagement/${encodeURIComponent(personalityId)}?periodDays=${periodDays}`);
+  }
+  return request(`/analytics/engagement?periodDays=${periodDays}`);
+}
+
+export async function fetchKeyPhrases(
+  personalityId: string,
+  limit: number = 50
+): Promise<KeyPhraseItem[]> {
+  return request(`/analytics/phrases/${encodeURIComponent(personalityId)}?limit=${limit}`);
+}
+
+export async function fetchTopEntities(
+  personalityId: string,
+  limit: number = 20
+): Promise<TopEntityItem[]> {
+  return request(`/analytics/entities/top/${encodeURIComponent(personalityId)}?limit=${limit}`);
+}
+
+export async function searchEntities(
+  entity: string,
+  entityType: string = 'concept'
+): Promise<{ conversationId: string; title: string | null; mentionCount: number }[]> {
+  const qs = new URLSearchParams({ entity, entityType }).toString();
+  return request(`/analytics/entities?${qs}`);
+}
+
+export async function fetchAnomalies(
+  opts?: { limit?: number; anomalyType?: string }
+): Promise<{ anomalies: UsageAnomalyItem[]; total: number }> {
+  const qs = new URLSearchParams();
+  if (opts?.limit) qs.set('limit', String(opts.limit));
+  if (opts?.anomalyType) qs.set('anomalyType', opts.anomalyType);
+  const q = qs.toString();
+  return request(`/analytics/anomalies${q ? `?${q}` : ''}`);
+}
+
+export async function triggerSummarize(): Promise<{ summarized: number }> {
+  return request('/analytics/summarize', { method: 'POST' });
+}

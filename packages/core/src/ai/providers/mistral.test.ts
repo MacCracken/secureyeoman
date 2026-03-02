@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MistralProvider } from './mistral.js';
 import type { AIRequest, ModelConfig } from '@secureyeoman/shared';
-import { RateLimitError } from '../errors.js';
+import {
+  RateLimitError,
+  TokenLimitError,
+  ProviderUnavailableError,
+  InvalidResponseError,
+} from '../errors.js';
 
 const mockCreate = vi.fn();
 const mockFetch = vi.fn();
@@ -397,7 +402,6 @@ describe('MistralProvider', () => {
   describe('additional error handling', () => {
     it('maps 400 token error to TokenLimitError', async () => {
       const { APIError } = await import('openai');
-      const { TokenLimitError } = await import('../errors.js');
       mockCreate.mockRejectedValueOnce(
         new (APIError as any)(400, 'context length exceeded token limit')
       );
@@ -406,21 +410,18 @@ describe('MistralProvider', () => {
 
     it('maps 502 to ProviderUnavailableError', async () => {
       const { APIError } = await import('openai');
-      const { ProviderUnavailableError } = await import('../errors.js');
       mockCreate.mockRejectedValueOnce(new (APIError as any)(502, 'bad gateway'));
       await expect(provider.chat(simpleRequest)).rejects.toThrow(ProviderUnavailableError);
     });
 
     it('maps 503 to ProviderUnavailableError', async () => {
       const { APIError } = await import('openai');
-      const { ProviderUnavailableError } = await import('../errors.js');
       mockCreate.mockRejectedValueOnce(new (APIError as any)(503, 'service unavailable'));
       await expect(provider.chat(simpleRequest)).rejects.toThrow(ProviderUnavailableError);
     });
 
     it('maps 400 non-token error to InvalidResponseError', async () => {
       const { APIError } = await import('openai');
-      const { InvalidResponseError } = await import('../errors.js');
       mockCreate.mockRejectedValueOnce(new (APIError as any)(400, 'bad request'));
       await expect(provider.chat(simpleRequest)).rejects.toThrow(InvalidResponseError);
     });
@@ -433,6 +434,227 @@ describe('MistralProvider', () => {
     it('rethrows regular Error as-is', async () => {
       mockCreate.mockRejectedValueOnce(new Error('network timeout'));
       await expect(provider.chat(simpleRequest)).rejects.toThrow('network timeout');
+    });
+  });
+
+  // ─── Extended Error Handling Coverage ──────────────────────────────────
+
+  describe('extended error handling', () => {
+    it('maps 429 with structured error metadata', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(429, 'Rate limit exceeded'));
+      try {
+        await provider.chat(simpleRequest);
+        expect.unreachable();
+      } catch (error) {
+        expect(error).toBeInstanceOf(RateLimitError);
+        expect((error as RateLimitError).statusCode).toBe(429);
+        expect((error as RateLimitError).recoverable).toBe(true);
+        expect((error as RateLimitError).provider).toBe('mistral');
+        expect((error as RateLimitError).code).toBe('RATE_LIMIT');
+      }
+    });
+
+    it('maps 502 with statusCode preserved in ProviderUnavailableError', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(502, 'Bad Gateway'));
+      try {
+        await provider.chat(simpleRequest);
+        expect.unreachable();
+      } catch (error) {
+        expect(error).toBeInstanceOf(ProviderUnavailableError);
+        expect((error as ProviderUnavailableError).statusCode).toBe(502);
+        expect((error as ProviderUnavailableError).provider).toBe('mistral');
+      }
+    });
+
+    it('maps connection timeout (non-APIError) as regular Error', async () => {
+      const timeoutError = new Error('connect ETIMEDOUT');
+      mockCreate.mockRejectedValueOnce(timeoutError);
+      try {
+        await provider.chat(simpleRequest);
+        expect.unreachable();
+      } catch (error) {
+        expect(error).toBe(timeoutError);
+        expect((error as Error).message).toBe('connect ETIMEDOUT');
+      }
+    });
+
+    it('maps non-Error thrown values to Error with string message', async () => {
+      mockCreate.mockRejectedValueOnce(undefined);
+      await expect(provider.chat(simpleRequest)).rejects.toThrow('undefined');
+    });
+
+    it('preserves cause chain from APIError', async () => {
+      const { APIError } = await import('openai');
+      const original = new (APIError as any)(429, 'rate limited');
+      mockCreate.mockRejectedValueOnce(original);
+      try {
+        await provider.chat(simpleRequest);
+        expect.unreachable();
+      } catch (error) {
+        expect(error).toBeInstanceOf(RateLimitError);
+        expect((error as RateLimitError).cause).toBe(original);
+      }
+    });
+
+    it('maps 500 to InvalidResponseError (catch-all for unknown status)', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(500, 'internal server error'));
+      try {
+        await provider.chat(simpleRequest);
+        expect.unreachable();
+      } catch (error) {
+        expect(error).toBeInstanceOf(InvalidResponseError);
+        expect((error as InvalidResponseError).provider).toBe('mistral');
+      }
+    });
+  });
+
+  // ─── Stream Error Propagation ─────────────────────────────────────────
+
+  describe('stream error propagation', () => {
+    it('maps 503 stream error to ProviderUnavailableError', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(503, 'Service Unavailable'));
+      await expect(async () => {
+        for await (const _ of provider.chatStream(simpleRequest)) {
+          /* drain */
+        }
+      }).rejects.toThrow(ProviderUnavailableError);
+    });
+
+    it('maps 400 token stream error to TokenLimitError', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(
+        new (APIError as any)(400, 'maximum context length exceeded token')
+      );
+      await expect(async () => {
+        for await (const _ of provider.chatStream(simpleRequest)) {
+          /* drain */
+        }
+      }).rejects.toThrow(TokenLimitError);
+    });
+
+    it('maps stream 502 to ProviderUnavailableError', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(502, 'Bad Gateway'));
+      await expect(async () => {
+        for await (const _ of provider.chatStream(simpleRequest)) {
+          /* drain */
+        }
+      }).rejects.toThrow(ProviderUnavailableError);
+    });
+  });
+
+  // ─── Constructor Edge Cases ───────────────────────────────────────────
+
+  describe('constructor edge cases', () => {
+    it('throws when no API key is provided', () => {
+      const config = makeConfig();
+      config.apiKey = '';
+      delete process.env.MISTRAL_API_KEY;
+      expect(() => new MistralProvider({ model: config.model })).toThrow(
+        'Mistral provider requires MISTRAL_API_KEY'
+      );
+    });
+
+    it('accepts API key from config', () => {
+      expect(() => new MistralProvider(makeConfig())).not.toThrow();
+    });
+  });
+
+  // ─── Model Resolution ─────────────────────────────────────────────────
+
+  describe('model resolution', () => {
+    it('uses request model override when provided', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: 'ok' }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
+      });
+      const response = await provider.chat({
+        ...simpleRequest,
+        model: 'mistral-small-latest',
+      });
+      const callArgs = mockCreate.mock.calls[0][0];
+      expect(callArgs.model).toBe('mistral-small-latest');
+      expect(response.model).toBe('mistral-small-latest');
+    });
+
+    it('uses config model when request does not specify', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: 'ok' }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
+      });
+      await provider.chat(simpleRequest);
+      const callArgs = mockCreate.mock.calls[0][0];
+      expect(callArgs.model).toBe('mistral-large-latest');
+    });
+
+    it('uses request maxTokens override', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: 'ok' }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
+      });
+      await provider.chat({
+        ...simpleRequest,
+        maxTokens: 2048,
+      });
+      const callArgs = mockCreate.mock.calls[0][0];
+      expect(callArgs.max_tokens).toBe(2048);
+    });
+
+    it('uses request temperature override', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: 'ok' }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
+      });
+      await provider.chat({
+        ...simpleRequest,
+        temperature: 0.2,
+      });
+      const callArgs = mockCreate.mock.calls[0][0];
+      expect(callArgs.temperature).toBe(0.2);
+    });
+  });
+
+  // ─── Response Mapping Edge Cases ──────────────────────────────────────
+
+  describe('response mapping edge cases', () => {
+    it('maps response with no usage to zero tokens', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: 'ok' }, finish_reason: 'stop' }],
+        usage: undefined,
+      });
+      const response = await provider.chat(simpleRequest);
+      expect(response.usage.inputTokens).toBe(0);
+      expect(response.usage.outputTokens).toBe(0);
+      expect(response.usage.totalTokens).toBe(0);
+    });
+
+    it('maps response with null content to empty string', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: null }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+      });
+      const response = await provider.chat(simpleRequest);
+      expect(response.content).toBe('');
+    });
+
+    it('returns undefined toolCalls when none present', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: 'hi' }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
+      });
+      const response = await provider.chat(simpleRequest);
+      expect(response.toolCalls).toBeUndefined();
     });
   });
 });

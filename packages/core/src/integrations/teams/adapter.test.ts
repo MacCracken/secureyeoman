@@ -224,4 +224,123 @@ describe('TeamsIntegration', () => {
       expect(adapter.isHealthy()).toBe(false);
     });
   });
+
+  // ── Error Path & Lifecycle Tests ──────────────────────────────────
+
+  describe('init() — error paths', () => {
+    it('should throw when both botId and botPassword are empty strings', async () => {
+      const cfg = makeConfig({ config: { botId: '', botPassword: '' } });
+      await expect(adapter.init(cfg, makeDeps())).rejects.toThrow(
+        'Teams integration requires botId and botPassword'
+      );
+    });
+
+    it('should throw when config object is completely empty', async () => {
+      const cfg = makeConfig({ config: {} });
+      await expect(adapter.init(cfg, makeDeps())).rejects.toThrow(
+        'Teams integration requires botId and botPassword'
+      );
+    });
+  });
+
+  describe('start() / stop() — lifecycle edge cases', () => {
+    it('should be idempotent — calling stop twice does not throw', async () => {
+      await adapter.init(makeConfig(), makeDeps());
+      await adapter.start();
+      await adapter.stop();
+      await expect(adapter.stop()).resolves.not.toThrow();
+      expect(adapter.isHealthy()).toBe(false);
+    });
+
+    it('should support restart cycle (start → stop → start)', async () => {
+      await adapter.init(makeConfig(), makeDeps());
+      await adapter.start();
+      expect(adapter.isHealthy()).toBe(true);
+      await adapter.stop();
+      expect(adapter.isHealthy()).toBe(false);
+      await adapter.start();
+      expect(adapter.isHealthy()).toBe(true);
+    });
+  });
+
+  describe('sendMessage() — error paths', () => {
+    it('should throw when serviceUrl is an empty string', async () => {
+      const cfg = makeConfig({
+        config: { botId: 'bot-app-id', botPassword: 'secret', serviceUrl: '' },
+      });
+      await adapter.init(cfg, makeDeps());
+      await expect(adapter.sendMessage('conv_abc', 'Hello')).rejects.toThrow(
+        'Teams service URL not configured'
+      );
+    });
+  });
+
+  describe('handleBotFrameworkActivity() — edge cases', () => {
+    it('should use from.id as senderName when from.name is absent', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await adapter.init(makeConfig(), makeDeps(onMessage));
+
+      adapter.handleBotFrameworkActivity({
+        type: 'message',
+        id: 'activity_456',
+        from: { id: 'user_no_name' },
+        conversation: { id: 'conv_xyz' },
+        text: 'Hello',
+      });
+
+      expect(onMessage).toHaveBeenCalledOnce();
+      const msg: UnifiedMessage = onMessage.mock.calls[0][0];
+      expect(msg.senderName).toBe('user_no_name');
+    });
+
+    it('should use channelData.channel.id as chatId when conversation is absent', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await adapter.init(makeConfig(), makeDeps(onMessage));
+
+      adapter.handleBotFrameworkActivity({
+        type: 'message',
+        id: 'activity_789',
+        from: { id: 'user_1', name: 'Bob' },
+        channelData: { channel: { id: 'channel_abc' } },
+        text: 'Channel message',
+      });
+
+      expect(onMessage).toHaveBeenCalledOnce();
+      const msg: UnifiedMessage = onMessage.mock.calls[0][0];
+      expect(msg.chatId).toBe('channel_abc');
+    });
+
+    it('should use from.id as chatId when both conversation and channelData are absent', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await adapter.init(makeConfig(), makeDeps(onMessage));
+
+      adapter.handleBotFrameworkActivity({
+        type: 'message',
+        id: 'activity_000',
+        from: { id: 'user_1', name: 'Alice' },
+        text: 'Direct message',
+      });
+
+      expect(onMessage).toHaveBeenCalledOnce();
+      const msg: UnifiedMessage = onMessage.mock.calls[0][0];
+      expect(msg.chatId).toBe('user_1');
+    });
+
+    it('should use Date.now() as timestamp when activity timestamp is absent', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await adapter.init(makeConfig(), makeDeps(onMessage));
+      const before = Date.now();
+
+      adapter.handleBotFrameworkActivity({
+        type: 'message',
+        id: 'activity_notimestamp',
+        from: { id: 'user_1' },
+        text: 'No timestamp',
+      });
+
+      const msg: UnifiedMessage = onMessage.mock.calls[0][0];
+      expect(msg.timestamp).toBeGreaterThanOrEqual(before);
+      expect(msg.timestamp).toBeLessThanOrEqual(Date.now());
+    });
+  });
 });

@@ -113,4 +113,64 @@ describe('chunk()', () => {
     const result = chunk(content);
     expect(result.length).toBeGreaterThanOrEqual(1);
   });
+
+  it('returns empty array for whitespace-only input', () => {
+    expect(chunk('   \n\n\t\t  ')).toEqual([]);
+  });
+
+  it('returns empty array for newline-only input', () => {
+    expect(chunk('\n\n\n\n')).toEqual([]);
+  });
+
+  it('handles very large single-word content (no sentence boundaries)', () => {
+    // A single word of 5000 chars = ~1250 tokens, well over default 800 budget
+    const word = 'Supercalifragilisticexpialidocious'.repeat(200);
+    const result = chunk(word, { maxTokens: 800 });
+    // Single "sentence" exceeds budget — pushed as its own oversized chunk
+    expect(result.length).toBeGreaterThanOrEqual(1);
+    expect(result[0]!.text).toBe(word);
+    expect(result[0]!.estimatedTokens).toBeGreaterThan(800);
+  });
+
+  it('returns single chunk when maxTokens is larger than content', () => {
+    const content = 'Short content here.';
+    const result = chunk(content, { maxTokens: 10000 });
+    expect(result).toHaveLength(1);
+    expect(result[0]!.text).toBe(content);
+  });
+
+  it('overlapping window edge case: chunk size equals content length', () => {
+    // Content of exactly maxTokens should produce a single chunk
+    const content = 'A'.repeat(3200); // 3200 chars / 4 = 800 tokens exactly
+    const result = chunk(content, { maxTokens: 800 });
+    expect(result).toHaveLength(1);
+    expect(result[0]!.index).toBe(0);
+  });
+
+  it('handles content just barely exceeding one chunk', () => {
+    // Create content that is just over 800 tokens with sentence boundaries
+    const sentence = 'This is a test sentence. '; // ~6 tokens
+    // 134 * 6 = 804 tokens > 800 budget
+    const content = sentence.repeat(134);
+    const result = chunk(content, { maxTokens: 800 });
+    expect(result.length).toBeGreaterThan(1);
+    // Each chunk should be within or slightly over the budget
+    for (const c of result) {
+      expect(c.text.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('handles mixed paragraph and sentence content', () => {
+    const content = [
+      'First paragraph. It has two sentences.',
+      '',
+      'Second paragraph is longer. It has three sentences. And this is the third.',
+      '',
+      'Third paragraph.',
+    ].join('\n');
+    const result = chunk(content, { maxTokens: 800 });
+    expect(result).toHaveLength(1); // Short enough for one chunk
+    expect(result[0]!.text).toContain('First paragraph');
+    expect(result[0]!.text).toContain('Third paragraph');
+  });
 });

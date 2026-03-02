@@ -8,7 +8,13 @@ import type {
   ModelConfig,
   FallbackModelConfig,
 } from '@secureyeoman/shared';
-import { RateLimitError, ProviderUnavailableError, AuthenticationError } from './errors.js';
+import {
+  RateLimitError,
+  ProviderUnavailableError,
+  AuthenticationError,
+  TokenLimitError,
+} from './errors.js';
+import { UsageTracker } from './usage-tracker.js';
 
 // Mock getSecret to return a fake key
 vi.mock('../config/loader.js', () => ({
@@ -46,6 +52,69 @@ vi.mock('./providers/gemini.js', () => ({
 vi.mock('./providers/ollama.js', () => ({
   OllamaProvider: class {
     name = 'ollama';
+    chat = vi.fn();
+    chatStream = vi.fn();
+    constructor() {}
+  },
+}));
+
+vi.mock('./providers/opencode.js', () => ({
+  OpenCodeProvider: class {
+    name = 'opencode';
+    chat = vi.fn();
+    chatStream = vi.fn();
+    constructor() {}
+  },
+}));
+
+vi.mock('./providers/lmstudio.js', () => ({
+  LMStudioProvider: class {
+    name = 'lmstudio';
+    chat = vi.fn();
+    chatStream = vi.fn();
+    constructor() {}
+  },
+}));
+
+vi.mock('./providers/localai.js', () => ({
+  LocalAIProvider: class {
+    name = 'localai';
+    chat = vi.fn();
+    chatStream = vi.fn();
+    constructor() {}
+  },
+}));
+
+vi.mock('./providers/deepseek.js', () => ({
+  DeepSeekProvider: class {
+    name = 'deepseek';
+    chat = vi.fn();
+    chatStream = vi.fn();
+    constructor() {}
+  },
+}));
+
+vi.mock('./providers/mistral.js', () => ({
+  MistralProvider: class {
+    name = 'mistral';
+    chat = vi.fn();
+    chatStream = vi.fn();
+    constructor() {}
+  },
+}));
+
+vi.mock('./providers/grok.js', () => ({
+  GrokProvider: class {
+    name = 'grok';
+    chat = vi.fn();
+    chatStream = vi.fn();
+    constructor() {}
+  },
+}));
+
+vi.mock('./providers/letta.js', () => ({
+  LettaProvider: class {
+    name = 'letta';
     chat = vi.fn();
     chatStream = vi.fn();
     constructor() {}
@@ -689,6 +758,749 @@ describe('AIClient', () => {
       (client as any).fallbackProviders.set(0, mockLocalProvider);
 
       await expect(client.chat(mockRequest)).rejects.toThrow(RateLimitError);
+    });
+  });
+
+  // ─── Request-Level Fallback Override ──────────────────────────────────
+
+  describe('request-level fallback override', () => {
+    const systemFallbacks: FallbackModelConfig[] = [
+      { provider: 'openai', model: 'gpt-4o', apiKeyEnv: 'OPENAI_API_KEY' },
+    ];
+
+    const requestFallbacks: FallbackModelConfig[] = [
+      { provider: 'gemini', model: 'gemini-2.0-flash', apiKeyEnv: 'GOOGLE_API_KEY' },
+    ];
+
+    it('uses per-request fallbacks instead of system fallbacks', async () => {
+      const client = new AIClient({ model: makeModelConfig('anthropic', systemFallbacks) });
+      (client as any).provider.chat = vi.fn().mockRejectedValue(new RateLimitError('anthropic'));
+
+      const geminiResponse: AIResponse = {
+        ...mockResponse,
+        provider: 'gemini',
+        model: 'gemini-2.0-flash',
+        content: 'Gemini fallback',
+      };
+
+      // Override createProvider so the lazily-created fallback is our mock
+      (client as any).createProvider = () => ({
+        name: 'gemini',
+        chat: vi.fn().mockResolvedValue(geminiResponse),
+        chatStream: vi.fn(),
+      });
+
+      const result = await client.chat(mockRequest, undefined, requestFallbacks);
+      expect(result.content).toBe('Gemini fallback');
+      expect(result.provider).toBe('gemini');
+    });
+
+    it('does NOT cache per-request fallback providers that differ from system config', async () => {
+      const client = new AIClient({ model: makeModelConfig('anthropic', systemFallbacks) });
+      (client as any).provider.chat = vi.fn().mockRejectedValue(new RateLimitError('anthropic'));
+
+      const geminiResponse: AIResponse = {
+        ...mockResponse,
+        provider: 'gemini',
+        model: 'gemini-2.0-flash',
+        content: 'Request fallback',
+      };
+
+      // Intercept createProvider to inject a mock
+      const originalCreate = (client as any).createProvider.bind(client);
+      let createdCount = 0;
+      (client as any).createProvider = (config: any) => {
+        createdCount++;
+        const p = originalCreate(config);
+        p.chat = vi.fn().mockResolvedValue(geminiResponse);
+        return p;
+      };
+
+      // First call with request fallbacks
+      await client.chat(mockRequest, undefined, requestFallbacks);
+
+      // The fallback provider should NOT have been cached since the system config
+      // at index 0 is 'openai' but the request fallback is 'gemini'
+      // Verify by checking fallbackProviders map doesn't contain the request fallback
+      const cachedProvider = (client as any).fallbackProviders.get(0);
+      // If cached, its name would be 'gemini'; but since system config differs, it should not be cached
+      expect(cachedProvider?.name).not.toBe('gemini');
+    });
+
+    it('chatStream uses per-request fallbacks instead of system fallbacks', async () => {
+      const client = new AIClient({ model: makeModelConfig('anthropic', systemFallbacks) });
+      (client as any).provider.chatStream = vi.fn().mockImplementation(async function* () {
+        throw new RateLimitError('anthropic');
+      });
+
+      const fbChunks: AIStreamChunk[] = [
+        { type: 'content_delta', content: 'Stream fallback' },
+        {
+          type: 'done',
+          stopReason: 'end_turn',
+          usage: { inputTokens: 3, outputTokens: 5, cachedTokens: 0, totalTokens: 8 },
+        },
+      ];
+
+      // Override createProvider so the lazily-created fallback is our mock
+      (client as any).createProvider = () => ({
+        name: 'gemini',
+        chat: vi.fn(),
+        chatStream: vi.fn().mockImplementation(async function* () {
+          for (const chunk of fbChunks) yield chunk;
+        }),
+      });
+
+      const received: AIStreamChunk[] = [];
+      for await (const chunk of client.chatStream(mockRequest, undefined, requestFallbacks)) {
+        received.push(chunk);
+      }
+
+      expect(received).toHaveLength(2);
+      expect(received[0]).toEqual({ type: 'content_delta', content: 'Stream fallback' });
+    });
+  });
+
+  // ─── Daily Token Limit ────────────────────────────────────────────────
+
+  describe('daily token limit', () => {
+    it('throws TokenLimitError when daily limit is exceeded in chat()', async () => {
+      const config = makeModelConfig('anthropic');
+      config.maxTokensPerDay = 50; // set a low limit
+      const client = new AIClient({ model: config });
+      const provider = (client as any).provider;
+      provider.chat = vi.fn().mockResolvedValue(mockResponse);
+
+      // First call uses 30 tokens
+      await client.chat(mockRequest);
+
+      // Second call uses another 30 tokens = 60 total > 50 limit
+      await client.chat(mockRequest);
+
+      // Third call should be blocked
+      await expect(client.chat(mockRequest)).rejects.toThrow(TokenLimitError);
+      // Provider should NOT have been called for the blocked request
+      expect(provider.chat).toHaveBeenCalledTimes(2);
+    });
+
+    it('throws TokenLimitError when daily limit is exceeded in chatStream()', async () => {
+      const config = makeModelConfig('anthropic');
+      config.maxTokensPerDay = 10; // very low limit
+      const client = new AIClient({ model: config });
+      const provider = (client as any).provider;
+
+      const chunks: AIStreamChunk[] = [
+        { type: 'content_delta', content: 'Hi' },
+        {
+          type: 'done',
+          stopReason: 'end_turn',
+          usage: { inputTokens: 5, outputTokens: 10, cachedTokens: 0, totalTokens: 15 },
+        },
+      ];
+      provider.chatStream = vi.fn().mockImplementation(async function* () {
+        for (const chunk of chunks) yield chunk;
+      });
+
+      // First call uses 15 tokens > 10 limit (usage tracked on 'done' chunk)
+      const received: AIStreamChunk[] = [];
+      for await (const chunk of client.chatStream(mockRequest)) {
+        received.push(chunk);
+      }
+
+      // Second call should be blocked before calling provider
+      await expect(async () => {
+        for await (const _ of client.chatStream(mockRequest)) {
+          /* drain */
+        }
+      }).rejects.toThrow(TokenLimitError);
+    });
+
+    it('does not block when no daily limit is configured', async () => {
+      const config = makeModelConfig('anthropic');
+      // maxTokensPerDay is undefined by default
+      const client = new AIClient({ model: config });
+      const provider = (client as any).provider;
+      provider.chat = vi.fn().mockResolvedValue(mockResponse);
+
+      // Should not throw regardless of usage
+      await client.chat(mockRequest);
+      await client.chat(mockRequest);
+      await client.chat(mockRequest);
+      expect(provider.chat).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  // ─── Fallback Provider Cache Invalidation ─────────────────────────────
+
+  describe('fallback provider cache invalidation', () => {
+    it('does not reuse cached provider when fallback config at the same index changes provider type', async () => {
+      const systemFallbacks: FallbackModelConfig[] = [
+        { provider: 'openai', model: 'gpt-4o', apiKeyEnv: 'OPENAI_API_KEY' },
+      ];
+      const client = new AIClient({ model: makeModelConfig('anthropic', systemFallbacks) });
+
+      // Simulate a cached fallback provider from a previous call
+      const cachedOpenAI = {
+        name: 'openai',
+        chat: vi.fn().mockResolvedValue(mockResponse),
+        chatStream: vi.fn(),
+      };
+      (client as any).fallbackProviders.set(0, cachedOpenAI);
+
+      // Call getOrCreateFallbackProvider with a DIFFERENT provider config at the same index
+      const differentConfig: FallbackModelConfig = {
+        provider: 'gemini',
+        model: 'gemini-2.0-flash',
+        apiKeyEnv: 'GOOGLE_API_KEY',
+      };
+      const provider = (client as any).getOrCreateFallbackProvider(0, differentConfig);
+
+      // Should NOT return the cached openai provider
+      expect(provider).not.toBe(cachedOpenAI);
+      expect(provider.name).toBe('gemini');
+    });
+
+    it('reuses cached provider when fallback config matches', async () => {
+      const systemFallbacks: FallbackModelConfig[] = [
+        { provider: 'openai', model: 'gpt-4o', apiKeyEnv: 'OPENAI_API_KEY' },
+      ];
+      const client = new AIClient({ model: makeModelConfig('anthropic', systemFallbacks) });
+
+      const cachedOpenAI = {
+        name: 'openai',
+        chat: vi.fn().mockResolvedValue(mockResponse),
+        chatStream: vi.fn(),
+      };
+      (client as any).fallbackProviders.set(0, cachedOpenAI);
+
+      // Same config as system fallback at index 0
+      const sameConfig: FallbackModelConfig = {
+        provider: 'openai',
+        model: 'gpt-4o',
+        apiKeyEnv: 'OPENAI_API_KEY',
+      };
+      const provider = (client as any).getOrCreateFallbackProvider(0, sameConfig);
+
+      // Should return the cached provider
+      expect(provider).toBe(cachedOpenAI);
+    });
+
+    it('does not reuse cached provider when model changes at the same index', async () => {
+      const systemFallbacks: FallbackModelConfig[] = [
+        { provider: 'openai', model: 'gpt-4o', apiKeyEnv: 'OPENAI_API_KEY' },
+      ];
+      const client = new AIClient({ model: makeModelConfig('anthropic', systemFallbacks) });
+
+      const cachedOpenAI = {
+        name: 'openai',
+        chat: vi.fn(),
+        chatStream: vi.fn(),
+      };
+      (client as any).fallbackProviders.set(0, cachedOpenAI);
+
+      // Same provider but different model
+      const differentModelConfig: FallbackModelConfig = {
+        provider: 'openai',
+        model: 'gpt-4o-mini',
+        apiKeyEnv: 'OPENAI_API_KEY',
+      };
+      const provider = (client as any).getOrCreateFallbackProvider(0, differentModelConfig);
+
+      // Should create a new provider, not return cached
+      expect(provider).not.toBe(cachedOpenAI);
+    });
+  });
+
+  // ─── Usage Tracker Integration ────────────────────────────────────────
+
+  describe('usage tracker integration', () => {
+    it('calls recordError and recordLatency on provider exception', async () => {
+      const client = new AIClient({ model: makeModelConfig('anthropic') });
+      const provider = (client as any).provider;
+      provider.chat = vi.fn().mockRejectedValue(new Error('provider failure'));
+
+      const tracker = (client as any).usageTracker;
+      const spyRecordError = vi.spyOn(tracker, 'recordError');
+      const spyRecordLatency = vi.spyOn(tracker, 'recordLatency');
+
+      await expect(client.chat(mockRequest)).rejects.toThrow('provider failure');
+
+      expect(spyRecordError).toHaveBeenCalledWith('anthropic', 'default');
+      expect(spyRecordLatency).toHaveBeenCalledWith(expect.any(Number));
+    });
+
+    it('records error with explicit model name when request specifies model', async () => {
+      const client = new AIClient({ model: makeModelConfig('anthropic') });
+      const provider = (client as any).provider;
+      provider.chat = vi.fn().mockRejectedValue(new Error('fail'));
+
+      const tracker = (client as any).usageTracker;
+      const spyRecordError = vi.spyOn(tracker, 'recordError');
+
+      const requestWithModel: AIRequest = {
+        messages: [{ role: 'user', content: 'Hello' }],
+        stream: false,
+        model: 'claude-sonnet-4-20250514',
+      };
+
+      await expect(client.chat(requestWithModel)).rejects.toThrow('fail');
+
+      expect(spyRecordError).toHaveBeenCalledWith('anthropic', 'claude-sonnet-4-20250514');
+    });
+
+    it('tracks cost via costCalculator on successful call', async () => {
+      const client = new AIClient({ model: makeModelConfig('anthropic') });
+      const provider = (client as any).provider;
+      provider.chat = vi.fn().mockResolvedValue(mockResponse);
+
+      const tracker = (client as any).usageTracker;
+      const spyRecord = vi.spyOn(tracker, 'record');
+
+      await client.chat(mockRequest);
+
+      expect(spyRecord).toHaveBeenCalledTimes(1);
+      const recordArg = spyRecord.mock.calls[0][0];
+      expect(recordArg.provider).toBe('anthropic');
+      expect(recordArg.model).toBe('test-model');
+      expect(recordArg.usage).toEqual(mockResponse.usage);
+      expect(typeof recordArg.costUsd).toBe('number');
+      expect(recordArg.costUsd).toBeGreaterThanOrEqual(0);
+      expect(typeof recordArg.latencyMs).toBe('number');
+    });
+
+    it('includes personality ID in usage record when soulManager is set', async () => {
+      const mockSoulManager = {
+        getActivePersonality: vi.fn().mockResolvedValue({ id: 'pers-123', name: 'default' }),
+      };
+      const client = new AIClient(
+        { model: makeModelConfig('anthropic') },
+        { soulManager: mockSoulManager as any }
+      );
+      const provider = (client as any).provider;
+      provider.chat = vi.fn().mockResolvedValue(mockResponse);
+
+      const tracker = (client as any).usageTracker;
+      const spyRecord = vi.spyOn(tracker, 'record');
+
+      await client.chat(mockRequest);
+
+      const recordArg = spyRecord.mock.calls[0][0];
+      expect(recordArg.personalityId).toBe('pers-123');
+    });
+
+    it('records null personalityId when soulManager.getActivePersonality rejects', async () => {
+      const mockSoulManager = {
+        getActivePersonality: vi.fn().mockRejectedValue(new Error('no personality')),
+      };
+      const client = new AIClient(
+        { model: makeModelConfig('anthropic') },
+        { soulManager: mockSoulManager as any }
+      );
+      const provider = (client as any).provider;
+      provider.chat = vi.fn().mockResolvedValue(mockResponse);
+
+      const tracker = (client as any).usageTracker;
+      const spyRecord = vi.spyOn(tracker, 'record');
+
+      await client.chat(mockRequest);
+
+      const recordArg = spyRecord.mock.calls[0][0];
+      expect(recordArg.personalityId).toBeUndefined();
+    });
+  });
+
+  // ─── Audit Event Metadata ─────────────────────────────────────────────
+
+  describe('audit event metadata', () => {
+    it('records ai_error events with warn level', async () => {
+      const mockAuditChain = { record: vi.fn().mockResolvedValue(undefined) };
+      const client = new AIClient(
+        { model: makeModelConfig('anthropic') },
+        { auditChain: mockAuditChain as any }
+      );
+      const provider = (client as any).provider;
+      provider.chat = vi.fn().mockRejectedValue(new Error('provider failure'));
+
+      await expect(client.chat(mockRequest)).rejects.toThrow('provider failure');
+
+      const errorCall = mockAuditChain.record.mock.calls.find(
+        (c: any) => c[0].event === 'ai_error'
+      );
+      expect(errorCall).toBeDefined();
+      expect(errorCall![0].level).toBe('warn');
+      expect(errorCall![0].metadata.error).toBe('provider failure');
+      expect(typeof errorCall![0].metadata.latencyMs).toBe('number');
+    });
+
+    it('records ai_response events with info level', async () => {
+      const mockAuditChain = { record: vi.fn().mockResolvedValue(undefined) };
+      const client = new AIClient(
+        { model: makeModelConfig('anthropic') },
+        { auditChain: mockAuditChain as any }
+      );
+      const provider = (client as any).provider;
+      provider.chat = vi.fn().mockResolvedValue(mockResponse);
+
+      await client.chat(mockRequest);
+
+      const responseCall = mockAuditChain.record.mock.calls.find(
+        (c: any) => c[0].event === 'ai_response'
+      );
+      expect(responseCall).toBeDefined();
+      expect(responseCall![0].level).toBe('info');
+      expect(responseCall![0].metadata.inputTokens).toBe(10);
+      expect(responseCall![0].metadata.outputTokens).toBe(20);
+    });
+
+    it('records ai_request events with info level', async () => {
+      const mockAuditChain = { record: vi.fn().mockResolvedValue(undefined) };
+      const client = new AIClient(
+        { model: makeModelConfig('anthropic') },
+        { auditChain: mockAuditChain as any }
+      );
+      const provider = (client as any).provider;
+      provider.chat = vi.fn().mockResolvedValue(mockResponse);
+
+      await client.chat(mockRequest);
+
+      const requestCall = mockAuditChain.record.mock.calls.find(
+        (c: any) => c[0].event === 'ai_request'
+      );
+      expect(requestCall).toBeDefined();
+      expect(requestCall![0].level).toBe('info');
+      expect(requestCall![0].metadata.messageCount).toBe(1);
+      expect(requestCall![0].metadata.stream).toBe(false);
+    });
+
+    it('records ai_fallback_exhausted with warn level', async () => {
+      const mockAuditChain = { record: vi.fn().mockResolvedValue(undefined) };
+      const fallbacks: FallbackModelConfig[] = [
+        { provider: 'openai', model: 'gpt-4o', apiKeyEnv: 'OPENAI_API_KEY' },
+      ];
+      const client = new AIClient(
+        { model: makeModelConfig('anthropic', fallbacks) },
+        { auditChain: mockAuditChain as any }
+      );
+      (client as any).provider.chat = vi.fn().mockRejectedValue(new RateLimitError('anthropic'));
+
+      const mockFb = {
+        name: 'openai',
+        chat: vi.fn().mockRejectedValue(new RateLimitError('openai')),
+        chatStream: vi.fn(),
+      };
+      (client as any).fallbackProviders.set(0, mockFb);
+
+      await expect(client.chat(mockRequest)).rejects.toThrow();
+
+      const exhaustedCall = mockAuditChain.record.mock.calls.find(
+        (c: any) => c[0].event === 'ai_fallback_exhausted'
+      );
+      expect(exhaustedCall).toBeDefined();
+      expect(exhaustedCall![0].level).toBe('warn');
+    });
+
+    it('records ai_stream_error with warn level', async () => {
+      const mockAuditChain = { record: vi.fn().mockResolvedValue(undefined) };
+      const client = new AIClient(
+        { model: makeModelConfig('anthropic') },
+        { auditChain: mockAuditChain as any }
+      );
+      const provider = (client as any).provider;
+      provider.chatStream = vi.fn().mockImplementation(async function* () {
+        throw new Error('stream failure');
+      });
+
+      await expect(async () => {
+        for await (const _ of client.chatStream(mockRequest)) {
+          /* drain */
+        }
+      }).rejects.toThrow('stream failure');
+
+      const errorCall = mockAuditChain.record.mock.calls.find(
+        (c: any) => c[0].event === 'ai_stream_error'
+      );
+      expect(errorCall).toBeDefined();
+      expect(errorCall![0].level).toBe('warn');
+    });
+
+    it('silently swallows audit chain failures without blocking AI operations', async () => {
+      const mockAuditChain = {
+        record: vi.fn().mockRejectedValue(new Error('audit db down')),
+      };
+      const mockLogger = {
+        warn: vi.fn(),
+        info: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+      };
+      const client = new AIClient(
+        { model: makeModelConfig('anthropic') },
+        { auditChain: mockAuditChain as any, logger: mockLogger as any }
+      );
+      const provider = (client as any).provider;
+      provider.chat = vi.fn().mockResolvedValue(mockResponse);
+
+      // Should NOT throw despite audit chain failure
+      const result = await client.chat(mockRequest);
+      expect(result.content).toBe('Hello world');
+      // Logger should have warned about the failure
+      expect(mockLogger.warn).toHaveBeenCalled();
+    });
+
+    it('passes context to ai_request audit event', async () => {
+      const mockAuditChain = { record: vi.fn().mockResolvedValue(undefined) };
+      const client = new AIClient(
+        { model: makeModelConfig('anthropic') },
+        { auditChain: mockAuditChain as any }
+      );
+      const provider = (client as any).provider;
+      provider.chat = vi.fn().mockResolvedValue(mockResponse);
+
+      await client.chat(mockRequest, { conversationId: 'conv-abc', userId: 'user-1' });
+
+      const requestCall = mockAuditChain.record.mock.calls.find(
+        (c: any) => c[0].event === 'ai_request'
+      );
+      expect(requestCall![0].metadata.conversationId).toBe('conv-abc');
+      expect(requestCall![0].metadata.userId).toBe('user-1');
+    });
+  });
+
+  // ─── Provider Factory Edge Cases ──────────────────────────────────────
+
+  describe('provider factory edge cases', () => {
+    it('should throw for unknown provider', () => {
+      expect(() => new AIClient({ model: makeModelConfig('unknown-provider') })).toThrow(
+        'Unknown AI provider: unknown-provider'
+      );
+    });
+
+    it('should create providers for all supported types', () => {
+      const providers = [
+        'anthropic',
+        'openai',
+        'gemini',
+        'ollama',
+        'opencode',
+        'lmstudio',
+        'localai',
+        'deepseek',
+        'mistral',
+        'grok',
+        'letta',
+      ];
+      for (const p of providers) {
+        const client = new AIClient({ model: makeModelConfig(p) });
+        expect(client.getProviderName()).toBe(p);
+      }
+    });
+  });
+
+  // ─── setSoulManager ───────────────────────────────────────────────────
+
+  describe('setSoulManager', () => {
+    it('allows injecting a SoulManager after construction', async () => {
+      const client = new AIClient({ model: makeModelConfig('anthropic') });
+      const provider = (client as any).provider;
+      provider.chat = vi.fn().mockResolvedValue(mockResponse);
+
+      const tracker = (client as any).usageTracker;
+      const spyRecord = vi.spyOn(tracker, 'record');
+
+      // No soul manager initially
+      await client.chat(mockRequest);
+      expect(spyRecord.mock.calls[0][0].personalityId).toBeUndefined();
+
+      spyRecord.mockClear();
+
+      // Inject soul manager
+      const mockSoulManager = {
+        getActivePersonality: vi.fn().mockResolvedValue({ id: 'pers-injected' }),
+      };
+      client.setSoulManager(mockSoulManager as any);
+
+      await client.chat(mockRequest);
+      expect(spyRecord.mock.calls[0][0].personalityId).toBe('pers-injected');
+    });
+  });
+
+  // ─── init / ensureInitialized idempotency ─────────────────────────────
+
+  describe('init idempotency', () => {
+    it('calling init() multiple times only invokes tracker.init() once', async () => {
+      const client = new AIClient({ model: makeModelConfig('anthropic') });
+      const tracker = (client as any).usageTracker;
+      const spyInit = vi.spyOn(tracker, 'init').mockResolvedValue(undefined);
+
+      await client.init();
+      await client.init();
+      await client.init();
+
+      expect(spyInit).toHaveBeenCalledTimes(1);
+    });
+
+    it('chat() auto-initializes on first call', async () => {
+      const client = new AIClient({ model: makeModelConfig('anthropic') });
+      const provider = (client as any).provider;
+      provider.chat = vi.fn().mockResolvedValue(mockResponse);
+
+      const tracker = (client as any).usageTracker;
+      const spyInit = vi.spyOn(tracker, 'init').mockResolvedValue(undefined);
+
+      await client.chat(mockRequest);
+
+      expect(spyInit).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // ─── Fallback: non-recoverable error from fallback stops chain ────────
+
+  describe('fallback non-recoverable error', () => {
+    it('stops the fallback chain when a fallback throws a non-recoverable error', async () => {
+      const fallbacks: FallbackModelConfig[] = [
+        { provider: 'openai', model: 'gpt-4o', apiKeyEnv: 'OPENAI_API_KEY' },
+        { provider: 'gemini', model: 'gemini-2.0-flash', apiKeyEnv: 'GOOGLE_API_KEY' },
+      ];
+      const client = new AIClient({ model: makeModelConfig('anthropic', fallbacks) });
+      (client as any).provider.chat = vi.fn().mockRejectedValue(new RateLimitError('anthropic'));
+
+      // First fallback throws a non-recoverable error (AuthenticationError)
+      const mockFb0 = {
+        name: 'openai',
+        chat: vi.fn().mockRejectedValue(new AuthenticationError('openai')),
+        chatStream: vi.fn(),
+      };
+      const mockFb1 = {
+        name: 'gemini',
+        chat: vi.fn().mockResolvedValue(mockResponse),
+        chatStream: vi.fn(),
+      };
+      (client as any).fallbackProviders.set(0, mockFb0);
+      (client as any).fallbackProviders.set(1, mockFb1);
+
+      // Should throw the AuthenticationError and NOT try gemini
+      await expect(client.chat(mockRequest)).rejects.toThrow(AuthenticationError);
+      expect(mockFb1.chat).not.toHaveBeenCalled();
+    });
+
+    it('stops the stream fallback chain on non-recoverable error', async () => {
+      const fallbacks: FallbackModelConfig[] = [
+        { provider: 'openai', model: 'gpt-4o', apiKeyEnv: 'OPENAI_API_KEY' },
+        { provider: 'gemini', model: 'gemini-2.0-flash', apiKeyEnv: 'GOOGLE_API_KEY' },
+      ];
+      const client = new AIClient({ model: makeModelConfig('anthropic', fallbacks) });
+      (client as any).provider.chatStream = vi.fn().mockImplementation(async function* () {
+        throw new RateLimitError('anthropic');
+      });
+
+      const mockFb0 = {
+        name: 'openai',
+        chat: vi.fn(),
+        chatStream: vi.fn().mockImplementation(async function* () {
+          throw new AuthenticationError('openai');
+        }),
+      };
+      const mockFb1 = {
+        name: 'gemini',
+        chat: vi.fn(),
+        chatStream: vi.fn().mockImplementation(async function* () {
+          yield { type: 'content_delta', content: 'ok' } as AIStreamChunk;
+        }),
+      };
+      (client as any).fallbackProviders.set(0, mockFb0);
+      (client as any).fallbackProviders.set(1, mockFb1);
+
+      await expect(async () => {
+        for await (const _ of client.chatStream(mockRequest)) {
+          /* drain */
+        }
+      }).rejects.toThrow(AuthenticationError);
+      expect(mockFb1.chatStream).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── Stream usage tracking with soulManager ───────────────────────────
+
+  describe('stream usage tracking', () => {
+    it('tracks usage from done chunk in stream with personality', async () => {
+      const mockSoulManager = {
+        getActivePersonality: vi.fn().mockResolvedValue({ id: 'pers-stream' }),
+      };
+      const client = new AIClient(
+        { model: makeModelConfig('anthropic') },
+        { soulManager: mockSoulManager as any }
+      );
+      const provider = (client as any).provider;
+
+      const chunks: AIStreamChunk[] = [
+        { type: 'content_delta', content: 'Hi' },
+        {
+          type: 'done',
+          stopReason: 'end_turn',
+          usage: { inputTokens: 5, outputTokens: 10, cachedTokens: 0, totalTokens: 15 },
+        },
+      ];
+      provider.chatStream = vi.fn().mockImplementation(async function* () {
+        for (const chunk of chunks) yield chunk;
+      });
+
+      const tracker = (client as any).usageTracker;
+      const spyRecord = vi.spyOn(tracker, 'record');
+
+      for await (const _ of client.chatStream(mockRequest)) {
+        /* drain */
+      }
+
+      expect(spyRecord).toHaveBeenCalledTimes(1);
+      const recordArg = spyRecord.mock.calls[0][0];
+      expect(recordArg.personalityId).toBe('pers-stream');
+      expect(recordArg.usage.totalTokens).toBe(15);
+    });
+
+    it('records stream errors in usage tracker', async () => {
+      const client = new AIClient({ model: makeModelConfig('anthropic') });
+      const provider = (client as any).provider;
+      provider.chatStream = vi.fn().mockImplementation(async function* () {
+        throw new Error('stream fail');
+      });
+
+      const tracker = (client as any).usageTracker;
+      const spyRecordError = vi.spyOn(tracker, 'recordError');
+
+      await expect(async () => {
+        for await (const _ of client.chatStream(mockRequest)) {
+          /* drain */
+        }
+      }).rejects.toThrow('stream fail');
+
+      expect(spyRecordError).toHaveBeenCalledWith('anthropic', 'default');
+    });
+  });
+
+  // ─── getUsageTracker / getCostCalculator ──────────────────────────────
+
+  describe('accessor methods', () => {
+    it('getUsageTracker returns the tracker instance', () => {
+      const client = new AIClient({ model: makeModelConfig('anthropic') });
+      const tracker = client.getUsageTracker();
+      expect(tracker).toBeDefined();
+      expect(typeof tracker.checkLimit).toBe('function');
+    });
+
+    it('getCostCalculator returns the calculator instance', () => {
+      const client = new AIClient({ model: makeModelConfig('anthropic') });
+      const calc = client.getCostCalculator();
+      expect(calc).toBeDefined();
+      expect(typeof calc.calculate).toBe('function');
+    });
+
+    it('reuses provided usageTracker from deps', () => {
+      const externalTracker = new UsageTracker(100_000);
+      const client = new AIClient(
+        { model: makeModelConfig('anthropic') },
+        { usageTracker: externalTracker }
+      );
+      expect(client.getUsageTracker()).toBe(externalTracker);
     });
   });
 });

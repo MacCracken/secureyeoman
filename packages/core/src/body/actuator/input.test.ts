@@ -261,3 +261,32 @@ describe('minimizeWindow()', () => {
     await expect(minimizeWindow('win-123')).resolves.not.toThrow();
   });
 });
+
+// ─── Error recovery ──────────────────────────────────────────────────────────
+
+describe('input actuator error recovery', () => {
+  it('moveMouse propagates error when nut-js mouse.move fails', async () => {
+    nutMock.mouse.move.mockRejectedValueOnce(new Error('Display server unavailable'));
+    await expect(moveMouse(100, 200)).rejects.toThrow('Display server unavailable');
+  });
+
+  it('clickMouse propagates error when nut-js mouse.click fails', async () => {
+    nutMock.mouse.click.mockRejectedValueOnce(new Error('Click failed'));
+    await expect(clickMouse(undefined, undefined)).rejects.toThrow('Click failed');
+  });
+
+  it('typeText propagates error when keyboard.type fails', async () => {
+    nutMock.keyboard.type.mockRejectedValueOnce(new Error('Keyboard not accessible'));
+    await expect(typeText('hello')).rejects.toThrow('Keyboard not accessible');
+  });
+
+  it('pressKey propagates error when keyboard.pressKey fails', async () => {
+    nutMock.keyboard.pressKey.mockRejectedValueOnce(new Error('Key press failed'));
+    await expect(pressKey('ctrl+c')).rejects.toThrow('Key press failed');
+  });
+
+  it('scrollMouse propagates error when mouse.scroll fails', async () => {
+    nutMock.mouse.scroll.mockRejectedValueOnce(new Error('Scroll not supported'));
+    await expect(scrollMouse(0, 5)).rejects.toThrow('Scroll not supported');
+  });
+});

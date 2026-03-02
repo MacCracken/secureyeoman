@@ -169,6 +169,12 @@ import { AlertStorage } from './telemetry/alert-storage.js';
 import { AlertManager } from './telemetry/alert-manager.js';
 import { initTracing } from './telemetry/otel.js';
 import { LicenseManager } from './licensing/license-manager.js';
+import { AnalyticsStorage } from './analytics/analytics-storage.js';
+import { SentimentAnalyzer } from './analytics/sentiment-analyzer.js';
+import { ConversationSummarizer } from './analytics/conversation-summarizer.js';
+import { EntityExtractor } from './analytics/entity-extractor.js';
+import { EngagementMetricsService } from './analytics/engagement-metrics.js';
+import { UsageAnomalyDetector } from './analytics/usage-anomaly-detector.js';
 
 export interface SecureYeomanOptions {
   /** Configuration options */
@@ -296,6 +302,12 @@ export class SecureYeoman {
   private federationManager: FederationManager | null = null;
   private alertStorage: AlertStorage | null = null;
   private alertManager: AlertManager | null = null;
+  private analyticsStorage: AnalyticsStorage | null = null;
+  private sentimentAnalyzer: SentimentAnalyzer | null = null;
+  private conversationSummarizer: ConversationSummarizer | null = null;
+  private entityExtractor: EntityExtractor | null = null;
+  private engagementMetricsService: EngagementMetricsService | null = null;
+  private usageAnomalyDetector: UsageAnomalyDetector | null = null;
   private licenseManager: LicenseManager = new LicenseManager();
   private modelDefaultSet = false;
   private initialized = false;
@@ -1479,6 +1491,41 @@ export class SecureYeoman {
         this.logger.debug('AlertManager initialized');
       }
 
+      // Step 6m: Initialize Conversation Analytics (Phase 96)
+      {
+        const pool = getPool();
+        this.analyticsStorage = new AnalyticsStorage(pool);
+        this.engagementMetricsService = new EngagementMetricsService(pool);
+        this.usageAnomalyDetector = new UsageAnomalyDetector(
+          this.analyticsStorage,
+          this.logger.child({ component: 'UsageAnomalyDetector' })
+        );
+        if (this.aiClient) {
+          this.sentimentAnalyzer = new SentimentAnalyzer(
+            pool,
+            this.aiClient,
+            this.analyticsStorage,
+            this.logger.child({ component: 'SentimentAnalyzer' })
+          );
+          this.conversationSummarizer = new ConversationSummarizer(
+            pool,
+            this.aiClient,
+            this.analyticsStorage,
+            this.logger.child({ component: 'ConversationSummarizer' })
+          );
+          this.entityExtractor = new EntityExtractor(
+            pool,
+            this.aiClient,
+            this.analyticsStorage,
+            this.logger.child({ component: 'EntityExtractor' })
+          );
+          this.sentimentAnalyzer.start();
+          this.conversationSummarizer.start();
+          this.entityExtractor.start();
+        }
+        this.logger.debug('Conversation Analytics initialized');
+      }
+
       // Step 7: Record initialization in audit log
       await this.auditChain.record({
         event: 'system_initialized',
@@ -2427,6 +2474,54 @@ export class SecureYeoman {
   }
 
   /**
+   * Get the analytics storage instance (Phase 96).
+   */
+  getAnalyticsStorage(): AnalyticsStorage | null {
+    this.ensureInitialized();
+    return this.analyticsStorage;
+  }
+
+  /**
+   * Get the sentiment analyzer instance (Phase 96).
+   */
+  getSentimentAnalyzer(): SentimentAnalyzer | null {
+    this.ensureInitialized();
+    return this.sentimentAnalyzer;
+  }
+
+  /**
+   * Get the conversation summarizer instance (Phase 96).
+   */
+  getConversationSummarizer(): ConversationSummarizer | null {
+    this.ensureInitialized();
+    return this.conversationSummarizer;
+  }
+
+  /**
+   * Get the entity extractor instance (Phase 96).
+   */
+  getEntityExtractor(): EntityExtractor | null {
+    this.ensureInitialized();
+    return this.entityExtractor;
+  }
+
+  /**
+   * Get the engagement metrics service instance (Phase 96).
+   */
+  getEngagementMetricsService(): EngagementMetricsService | null {
+    this.ensureInitialized();
+    return this.engagementMetricsService;
+  }
+
+  /**
+   * Get the usage anomaly detector instance (Phase 96).
+   */
+  getUsageAnomalyDetector(): UsageAnomalyDetector | null {
+    this.ensureInitialized();
+    return this.usageAnomalyDetector;
+  }
+
+  /**
    * Get the conversation quality scorer instance (Phase 92).
    */
   getConversationQualityScorer(): ConversationQualityScorer | null {
@@ -3259,6 +3354,20 @@ export class SecureYeoman {
     if (this.conversationQualityScorer) {
       this.conversationQualityScorer.stop();
       this.conversationQualityScorer = null;
+    }
+
+    // Stop conversation analytics (Phase 96)
+    if (this.sentimentAnalyzer) {
+      this.sentimentAnalyzer.stop();
+      this.sentimentAnalyzer = null;
+    }
+    if (this.conversationSummarizer) {
+      this.conversationSummarizer.stop();
+      this.conversationSummarizer = null;
+    }
+    if (this.entityExtractor) {
+      this.entityExtractor.stop();
+      this.entityExtractor = null;
     }
 
     // Stop heartbeat

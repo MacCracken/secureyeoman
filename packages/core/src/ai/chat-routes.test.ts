@@ -95,6 +95,13 @@ function createMockSecureYeoman(
         promptGuard: { mode: 'disabled' },
         responseGuard: { mode: 'disabled' },
         llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
+        contentGuardrails: {
+          enabled: false, piiMode: 'disabled', toxicityEnabled: false,
+          toxicityMode: 'warn', toxicityThreshold: 0.7, blockList: [],
+          blockedTopics: [], topicThreshold: 0.75, groundingEnabled: false, groundingMode: 'flag',
+        },
+        abuseDetection: { enabled: false },
+        inputValidation: {},
       },
     }),
     getValidator: vi.fn().mockReturnValue({
@@ -109,6 +116,7 @@ function createMockSecureYeoman(
     }),
     getMcpClientManager: vi.fn().mockReturnValue(overrides.mcpClient ?? null),
     getMcpStorage: vi.fn().mockReturnValue(overrides.mcpStorage ?? null),
+    getUsageAnomalyDetector: vi.fn().mockReturnValue(null),
     getConversationStorage:
       overrides.hasConversationStorage === false
         ? vi.fn().mockReturnValue(null)
@@ -1282,6 +1290,13 @@ describe('Chat Routes — additional branch coverage', () => {
         promptGuard: { mode: 'block' },
         responseGuard: { mode: 'disabled' },
         llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
+        contentGuardrails: {
+          enabled: false, piiMode: 'disabled', toxicityEnabled: false,
+          toxicityMode: 'warn', toxicityThreshold: 0.7, blockList: [],
+          blockedTopics: [], topicThreshold: 0.75, groundingEnabled: false, groundingMode: 'flag',
+        },
+        abuseDetection: { enabled: false },
+        inputValidation: {},
       },
     });
     registerChatRoutes(app, { secureYeoman: mock });

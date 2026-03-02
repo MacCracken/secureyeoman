@@ -96,6 +96,7 @@ import { VERSION } from '../version.js';
 import { otelFastifyPlugin } from '../telemetry/otel-fastify-plugin.js';
 import { registerAlertRoutes } from '../telemetry/alert-routes.js';
 import { registerCicdWebhookRoutes } from '../integrations/cicd/cicd-webhook-routes.js';
+import { registerAnalyticsRoutes } from '../analytics/analytics-routes.js';
 
 /**
  * Check if an IP address belongs to a private/loopback range.
@@ -1157,6 +1158,16 @@ export class GatewayServer {
         registerAlertRoutes(this.app, { alertManager });
         this.getLogger().debug('Alert routes registered');
       }
+    }
+
+    // Conversation Analytics routes (Phase 96)
+    try {
+      registerAnalyticsRoutes(this.app, { secureYeoman: this.secureYeoman });
+      this.getLogger().debug('Analytics routes registered');
+    } catch (err) {
+      this.getLogger().debug('Analytics routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
     }
 
     // Standard Prometheus scrape endpoint /metrics (unauthenticated, public)

@@ -218,4 +218,99 @@ describe('GoogleChatIntegration', () => {
       expect(adapter.isHealthy()).toBe(false);
     });
   });
+
+  // ── Error Path & Lifecycle Tests ──────────────────────────────────
+
+  describe('init() — error paths', () => {
+    it('should throw when botToken is an empty string', async () => {
+      const cfg = makeConfig({ config: { botToken: '', spaceId: 'spaces/ABC' } });
+      await expect(adapter.init(cfg, makeDeps())).rejects.toThrow(
+        'Google Chat integration requires a botToken'
+      );
+    });
+
+    it('should throw when config has no botToken key at all', async () => {
+      const cfg = makeConfig({ config: {} });
+      await expect(adapter.init(cfg, makeDeps())).rejects.toThrow(
+        'Google Chat integration requires a botToken'
+      );
+    });
+  });
+
+  describe('start() / stop() — lifecycle edge cases', () => {
+    it('should be idempotent — calling stop twice does not throw', async () => {
+      await adapter.init(makeConfig(), makeDeps());
+      await adapter.start();
+      await adapter.stop();
+      await expect(adapter.stop()).resolves.not.toThrow();
+      expect(adapter.isHealthy()).toBe(false);
+    });
+
+    it('should support restart cycle (start → stop → start)', async () => {
+      await adapter.init(makeConfig(), makeDeps());
+      await adapter.start();
+      expect(adapter.isHealthy()).toBe(true);
+      await adapter.stop();
+      expect(adapter.isHealthy()).toBe(false);
+      await adapter.start();
+      expect(adapter.isHealthy()).toBe(true);
+    });
+  });
+
+  describe('sendMessage() — error paths', () => {
+    it('should propagate network errors when fetch throws', async () => {
+      const mockFetch = vi.fn().mockRejectedValue(new Error('Network unreachable'));
+      vi.stubGlobal('fetch', mockFetch);
+
+      await adapter.init(makeConfig(), makeDeps());
+      await expect(adapter.sendMessage('AAAA1234', 'Hello')).rejects.toThrow(
+        'Network unreachable'
+      );
+    });
+
+    it('should include error details from failed API response', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        text: () => Promise.resolve('Invalid space ID provided'),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await adapter.init(makeConfig(), makeDeps());
+      await expect(adapter.sendMessage('BAD_ID', 'Hello')).rejects.toThrow(
+        'Invalid space ID provided'
+      );
+    });
+
+    it('should handle empty text message without error', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ name: 'spaces/X/messages/1' }),
+        text: () => Promise.resolve(''),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await adapter.init(makeConfig(), makeDeps());
+      const id = await adapter.sendMessage('AAAA1234', '');
+      expect(id).toBe('spaces/X/messages/1');
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.text).toBe('');
+    });
+
+    it('should not include cards when metadata has no card field', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ name: 'spaces/X/messages/2' }),
+        text: () => Promise.resolve(''),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await adapter.init(makeConfig(), makeDeps());
+      await adapter.sendMessage('AAAA1234', 'Just text', { someOtherField: true });
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.cards).toBeUndefined();
+      expect(body.text).toBe('Just text');
+    });
+  });
 });

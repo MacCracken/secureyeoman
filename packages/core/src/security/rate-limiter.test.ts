@@ -202,6 +202,93 @@ describe('RateLimiter', () => {
     });
   });
 
+  describe('per-IP vs per-user precedence', () => {
+    it('IP-keyed and user-keyed rules are tracked independently', () => {
+      limiter.addRule({
+        name: 'ip_rule',
+        windowMs: 60000,
+        maxRequests: 2,
+        keyType: 'ip',
+        onExceed: 'reject',
+      });
+      limiter.addRule({
+        name: 'user_rule',
+        windowMs: 60000,
+        maxRequests: 5,
+        keyType: 'user',
+        onExceed: 'reject',
+      });
+
+      // Use up IP rule for 1.2.3.4
+      expect(limiter.check('ip_rule', '1.2.3.4').allowed).toBe(true);
+      expect(limiter.check('ip_rule', '1.2.3.4').allowed).toBe(true);
+      expect(limiter.check('ip_rule', '1.2.3.4').allowed).toBe(false);
+
+      // User rule for the same logical user should still have capacity
+      expect(limiter.check('user_rule', 'user-1').allowed).toBe(true);
+    });
+
+    it('different IPs have independent windows', () => {
+      limiter.addRule({
+        name: 'per_ip',
+        windowMs: 60000,
+        maxRequests: 1,
+        keyType: 'ip',
+        onExceed: 'reject',
+      });
+
+      expect(limiter.check('per_ip', '10.0.0.1').allowed).toBe(true);
+      expect(limiter.check('per_ip', '10.0.0.1').allowed).toBe(false);
+      // Different IP — should be allowed
+      expect(limiter.check('per_ip', '10.0.0.2').allowed).toBe(true);
+    });
+  });
+
+  describe('sliding window reset timing', () => {
+    it('starts a new window after exact windowMs boundary', () => {
+      vi.useFakeTimers();
+
+      limiter.addRule({
+        name: 'precise',
+        windowMs: 5000,
+        maxRequests: 1,
+        keyType: 'user',
+        onExceed: 'reject',
+      });
+
+      expect(limiter.check('precise', 'u1').allowed).toBe(true);
+      expect(limiter.check('precise', 'u1').allowed).toBe(false);
+
+      // Advance just under the window — still blocked
+      vi.advanceTimersByTime(4999);
+      expect(limiter.check('precise', 'u1').allowed).toBe(false);
+
+      // Advance past the window — allowed again
+      vi.advanceTimersByTime(2);
+      expect(limiter.check('precise', 'u1').allowed).toBe(true);
+
+      vi.useRealTimers();
+    });
+  });
+
+  describe('totalHits and totalChecks tracking', () => {
+    it('increments totalChecks on every check and totalHits on rejections', () => {
+      const stats0 = limiter.getStats();
+      expect(stats0.totalChecks).toBe(0);
+      expect(stats0.totalHits).toBe(0);
+
+      // 10 allowed + 1 rejected
+      for (let i = 0; i < 10; i++) {
+        limiter.check('default', 'user-x');
+      }
+      limiter.check('default', 'user-x'); // rejected
+
+      const stats = limiter.getStats();
+      expect(stats.totalChecks).toBe(11);
+      expect(stats.totalHits).toBe(1);
+    });
+  });
+
   describe('createRateLimiter()', () => {
     it('should create a limiter with default rules', () => {
       const rl = createRateLimiter({
@@ -268,6 +355,61 @@ describe('RateLimiter', () => {
       }
       // 6th blocked
       expect(rl.check('auth_attempts', '10.0.0.1').allowed).toBe(false);
+
+      rl.stop();
+    });
+
+    it('creates RedisRateLimiter when redisUrl is provided', () => {
+      // We cannot actually connect to Redis in unit tests, but we can verify
+      // the factory attempts to construct the Redis-backed limiter
+      // The constructor will create a Redis client that fails async — that's ok
+      const rl = createRateLimiter({
+        rateLimiting: {
+          defaultWindowMs: 60000,
+          defaultMaxRequests: 100,
+          redisUrl: 'redis://localhost:6379',
+          redisPrefix: 'test:rl',
+        },
+        inputValidation: {
+          maxInputLength: 10000,
+          maxFileSize: 1048576,
+          enableInjectionDetection: true,
+        },
+      } as any);
+
+      // Should be a RedisRateLimiter (has addRule/check/stop/getStats)
+      expect(typeof rl.addRule).toBe('function');
+      expect(typeof rl.check).toBe('function');
+      expect(typeof rl.stop).toBe('function');
+      expect(typeof rl.getStats).toBe('function');
+
+      rl.stop();
+    });
+
+    it('includes auth_refresh and auth_reset_password rules', () => {
+      const rl = createRateLimiter({
+        rateLimiting: {
+          defaultWindowMs: 60000,
+          defaultMaxRequests: 100,
+        },
+        inputValidation: {
+          maxInputLength: 10000,
+          maxFileSize: 1048576,
+          enableInjectionDetection: true,
+        },
+      } as any);
+
+      // auth_refresh allows 10 per minute per IP
+      for (let i = 0; i < 10; i++) {
+        expect(rl.check('auth_refresh', '1.2.3.4').allowed).toBe(true);
+      }
+      expect(rl.check('auth_refresh', '1.2.3.4').allowed).toBe(false);
+
+      // auth_reset_password allows 3 per hour per IP
+      for (let i = 0; i < 3; i++) {
+        expect(rl.check('auth_reset_password', '1.2.3.4').allowed).toBe(true);
+      }
+      expect(rl.check('auth_reset_password', '1.2.3.4').allowed).toBe(false);
 
       rl.stop();
     });

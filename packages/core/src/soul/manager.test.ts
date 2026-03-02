@@ -1498,4 +1498,248 @@ describe('SoulManager', () => {
       ).rejects.toThrow();
     });
   });
+
+  // ── Phase 94: Additional prompt composition edge cases ──────────────────────
+
+  describe('composeSoulPrompt — edge cases', () => {
+    it('omits body section entirely when body is disabled and no heartbeat', async () => {
+      const personality = {
+        ...PERSONALITY,
+        body: { ...PERSONALITY.body, enabled: false },
+      };
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(personality),
+      });
+
+      const prompt = await manager.composeSoulPrompt();
+
+      // Should NOT contain the Body header
+      expect(prompt).not.toContain('## Body');
+    });
+
+    it('includes personality sex when not "unspecified"', async () => {
+      const personality = { ...PERSONALITY, sex: 'female' };
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(personality),
+      });
+
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).toContain('Sex: female');
+    });
+
+    it('includes voice style when set', async () => {
+      const personality = { ...PERSONALITY, voice: 'warm and calm' };
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(personality),
+      });
+
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).toContain('Voice style: warm and calm');
+    });
+
+    it('includes preferred language when set', async () => {
+      const personality = { ...PERSONALITY, preferredLanguage: 'Japanese' };
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(personality),
+      });
+
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).toContain('Preferred language: Japanese');
+    });
+
+    it('includes traits in Soul section', async () => {
+      const personality = {
+        ...PERSONALITY,
+        traits: { formality: 'formal', humor: 'dry', verbosity: 'concise' },
+      };
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(personality),
+      });
+
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).toContain('Traits:');
+      expect(prompt).toContain('formality: formal');
+      expect(prompt).toContain('humor: dry');
+    });
+
+    it('omits archetypes when personality.includeArchetypes is false', async () => {
+      const personality = { ...PERSONALITY, includeArchetypes: false };
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(personality),
+      });
+
+      const prompt = await manager.composeSoulPrompt();
+      // Should not contain the archetypes cosmological text
+      expect(prompt).not.toContain('No-Thing-Ness');
+    });
+
+    it('includes MCP feature toggles section with all features disabled', async () => {
+      const personality = {
+        ...PERSONALITY,
+        body: {
+          ...PERSONALITY.body,
+          enabled: true,
+          selectedServers: ['local-mcp'],
+          mcpFeatures: {
+            exposeGit: false,
+            exposeFilesystem: false,
+            exposeWeb: false,
+            exposeWebScraping: false,
+            exposeWebSearch: false,
+            exposeBrowser: false,
+          },
+        },
+      };
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(personality),
+      });
+
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).toContain('MCP Connections');
+      expect(prompt).toContain('local-mcp');
+      expect(prompt).toContain('Git: disabled');
+      expect(prompt).toContain('Filesystem: disabled');
+      expect(prompt).toContain('Web: disabled');
+      expect(prompt).toContain('Browser: disabled');
+    });
+
+    it('includes creation tools section that respects security policy gates', async () => {
+      const personality = {
+        ...PERSONALITY,
+        body: {
+          ...PERSONALITY.body,
+          enabled: true,
+          creationConfig: {
+            skills: true,
+            tasks: true,
+            subAgents: true,
+            allowA2A: true,
+            allowSwarms: true,
+            allowDynamicTools: true,
+          },
+        },
+      };
+      // Security policy disables subAgents and swarms
+      const { manager } = makeManager(
+        {
+          getActivePersonality: vi.fn().mockResolvedValue(personality),
+        },
+        {},
+      );
+      // Set security config via deps
+      (manager as any).deps.securityConfig = {
+        allowSubAgents: false,
+        allowA2A: false,
+        allowSwarms: false,
+        allowDynamicTools: false,
+      };
+
+      const prompt = await manager.composeSoulPrompt();
+      // Should include skills and tasks (not security-gated)
+      expect(prompt).toContain('create_skill');
+      expect(prompt).toContain('create_task');
+      // Should NOT include subAgents, A2A, swarms, dynamicTools (security-gated off)
+      expect(prompt).not.toContain('delegate_task');
+      expect(prompt).not.toContain('a2a_connect');
+      expect(prompt).not.toContain('create_swarm');
+      expect(prompt).not.toContain('register_dynamic_tool');
+    });
+
+    it('falls back to active personality when personalityId not found', async () => {
+      const { manager } = makeManager({
+        getPersonality: vi.fn().mockResolvedValue(null),
+        getActivePersonality: vi.fn().mockResolvedValue(PERSONALITY),
+      });
+
+      const prompt = await manager.composeSoulPrompt('test', 'nonexistent-id');
+      expect(prompt).toContain('FRIDAY');
+    });
+
+    it('includes owner context with nickname and notes', async () => {
+      const owner = {
+        ...USER,
+        isOwner: true,
+        nickname: 'Bob',
+        notes: 'Prefers concise answers',
+        preferences: { theme: 'dark', lang: 'en' },
+      };
+      const { manager } = makeManager({
+        getOwner: vi.fn().mockResolvedValue(owner),
+      });
+
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).toContain('Owner: Alice');
+      expect(prompt).toContain('Nickname: Bob');
+      expect(prompt).toContain('Notes: Prefers concise answers');
+      expect(prompt).toContain('theme: dark');
+    });
+
+    it('includes empathyResonance in body prompt when enabled', async () => {
+      const personality = {
+        ...PERSONALITY,
+        empathyResonance: true,
+        body: { ...PERSONALITY.body, enabled: true },
+      };
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(personality),
+      });
+
+      const prompt = await manager.composeSoulPrompt();
+      // Body section should be present
+      expect(prompt).toContain('## Body');
+    });
+  });
+
+  // ── Phase 94: isPersonalityWithinActiveHours ────────────────────────────────
+
+  describe('isPersonalityWithinActiveHours (exported function)', () => {
+    it('returns false when activeHours is not enabled', async () => {
+      const { isPersonalityWithinActiveHours } = await import('./manager.js');
+      const p = {
+        ...PERSONALITY,
+        body: { ...PERSONALITY.body, activeHours: { enabled: false, start: '09:00', end: '17:00', daysOfWeek: ['mon'], timezone: 'UTC' } },
+      } as any;
+      expect(isPersonalityWithinActiveHours(p)).toBe(false);
+    });
+
+    it('returns false when activeHours is undefined', async () => {
+      const { isPersonalityWithinActiveHours } = await import('./manager.js');
+      const p = { ...PERSONALITY, body: { ...PERSONALITY.body, activeHours: undefined } } as any;
+      expect(isPersonalityWithinActiveHours(p)).toBe(false);
+    });
+  });
+
+  // ── Phase 94: deletePersonality edge cases ──────────────────────────────────
+
+  describe('deletePersonality — additional edge cases', () => {
+    it('allows deletion when resourcePolicy is undefined (defaults to auto)', async () => {
+      const personality = {
+        ...PERSONALITY,
+        isActive: false,
+        isArchetype: false,
+        body: { ...PERSONALITY.body, resourcePolicy: undefined },
+      };
+      const { manager, storage } = makeManager({
+        getPersonality: vi.fn().mockResolvedValue(personality),
+      });
+
+      await manager.deletePersonality('p-1');
+      expect(storage.deletePersonality).toHaveBeenCalledWith('p-1');
+    });
+
+    it('allows deletion in request mode (backend allows, frontend confirms)', async () => {
+      const personality = {
+        ...PERSONALITY,
+        isActive: false,
+        isArchetype: false,
+        body: { ...PERSONALITY.body, resourcePolicy: { deletionMode: 'request' } },
+      };
+      const { manager, storage } = makeManager({
+        getPersonality: vi.fn().mockResolvedValue(personality),
+      });
+
+      await manager.deletePersonality('p-1');
+      expect(storage.deletePersonality).toHaveBeenCalledWith('p-1');
+    });
+  });
 });

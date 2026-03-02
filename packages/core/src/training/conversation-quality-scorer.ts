@@ -181,6 +181,20 @@ export class ConversationQualityScorer {
       }
     }
 
+    // Sentiment penalty — negative conversations get priority boost (Phase 96)
+    try {
+      const { rows: sentimentRows } = await pool.query<{ avg: number | null }>(
+        `SELECT AVG(score) AS avg FROM analytics.turn_sentiments WHERE conversation_id = $1`,
+        [conversationId]
+      );
+      const avgSentiment = sentimentRows[0]?.avg;
+      if (avgSentiment != null && avgSentiment < 0.4) {
+        score -= 0.1 * (0.4 - avgSentiment);
+      }
+    } catch {
+      // analytics schema may not exist — skip
+    }
+
     return Math.max(0.0, Math.min(1.0, score));
   }
 }

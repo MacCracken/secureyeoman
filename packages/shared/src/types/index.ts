@@ -602,6 +602,32 @@ export {
   type GuardrailResult,
 } from './content-guardrail.js';
 
+// Analytics types (Phase 96)
+export {
+  SentimentLabelSchema,
+  TurnSentimentSchema,
+  SentimentTrendPointSchema,
+  EngagementMetricsSchema,
+  ConversationSummarySchema,
+  ConversationEntitySchema,
+  EntitySearchResultSchema,
+  TopEntitySchema,
+  KeyPhraseSchema,
+  AnomalySeveritySchema,
+  UsageAnomalySchema,
+  type SentimentLabel,
+  type TurnSentiment,
+  type SentimentTrendPoint,
+  type EngagementMetrics,
+  type ConversationSummary,
+  type ConversationEntity,
+  type EntitySearchResult,
+  type TopEntity,
+  type KeyPhrase,
+  type AnomalySeverity,
+  type UsageAnomaly,
+} from './analytics.js';
+
 // Shareables types (Phase 89)
 export type {
   WorkflowShareableRequires,

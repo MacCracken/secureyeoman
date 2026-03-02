@@ -67,10 +67,7 @@ export default defineConfig({
     // A single fork prevents truncateAllTables() race conditions.
     fileParallelism: false,
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: true,
-      },
-    },
+    maxWorkers: 1,
+    isolate: false,
   },
 });

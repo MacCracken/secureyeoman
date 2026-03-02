@@ -22,6 +22,19 @@ function createMockSecureYeoman(overrides?: Record<string, unknown>) {
         allowAnomalyDetection: false,
         allowCodeEditor: true,
         allowAdvancedEditor: false,
+        abuseDetection: { enabled: false },
+        contentGuardrails: {
+          enabled: false,
+          piiMode: 'disabled',
+          toxicityEnabled: false,
+          toxicityMode: 'warn',
+          toxicityThreshold: 0.7,
+          blockList: [],
+          blockedTopics: [],
+          groundingEnabled: false,
+          groundingMode: 'flag',
+        },
+        inputValidation: {},
       },
     }),
     getMetrics: () => Promise.resolve({ cpu: 10, mem: 50 }),
@@ -37,9 +50,13 @@ function createMockSecureYeoman(overrides?: Record<string, unknown>) {
     getSpiritManager: () => {
       throw new Error('not available');
     },
-    getBrainManager: () => {
-      throw new Error('not available');
-    },
+    getBrainManager: () => ({
+      recall: async () => [],
+      remember: async () => {},
+      forget: async () => {},
+      queryKnowledge: async () => ({ results: [], total: 0 }),
+      getStats: async () => ({ totalMemories: 0, totalDocuments: 0 }),
+    }),
     getHeartbeatManager: () => null,
     getExternalBrainSync: () => null,
     getAgentComms: () => null,
@@ -358,6 +375,13 @@ describe('GatewayServer', () => {
               allowAnomalyDetection: false,
               allowCodeEditor: true,
               allowAdvancedEditor: false,
+              abuseDetection: { enabled: false },
+              contentGuardrails: {
+                enabled: false, piiMode: 'disabled', toxicityEnabled: false,
+                toxicityMode: 'warn', toxicityThreshold: 0.7, blockList: [],
+                blockedTopics: [], groundingEnabled: false, groundingMode: 'flag',
+              },
+              inputValidation: {},
             },
           }),
         }) as any,
@@ -720,6 +744,13 @@ describe('GatewayServer', () => {
               allowAnomalyDetection: false,
               allowCodeEditor: true,
               allowAdvancedEditor: false,
+              abuseDetection: { enabled: false },
+              contentGuardrails: {
+                enabled: false, piiMode: 'disabled', toxicityEnabled: false,
+                toxicityMode: 'warn', toxicityThreshold: 0.7, blockList: [],
+                blockedTopics: [], groundingEnabled: false, groundingMode: 'flag',
+              },
+              inputValidation: {},
             },
           }),
         }) as any,
@@ -833,6 +864,13 @@ describe('GatewayServer', () => {
               allowAnomalyDetection: false,
               allowCodeEditor: true,
               allowAdvancedEditor: false,
+              abuseDetection: { enabled: false },
+              contentGuardrails: {
+                enabled: false, piiMode: 'disabled', toxicityEnabled: false,
+                toxicityMode: 'warn', toxicityThreshold: 0.7, blockList: [],
+                blockedTopics: [], groundingEnabled: false, groundingMode: 'flag',
+              },
+              inputValidation: {},
             },
           }),
         }) as any,
@@ -900,6 +938,13 @@ describe('GatewayServer', () => {
               allowDesktopControl: false,
               allowCamera: false,
               allowAnomalyDetection: true,
+              abuseDetection: { enabled: false },
+              contentGuardrails: {
+                enabled: false, piiMode: 'disabled', toxicityEnabled: false,
+                toxicityMode: 'warn', toxicityThreshold: 0.7, blockList: [],
+                blockedTopics: [], groundingEnabled: false, groundingMode: 'flag',
+              },
+              inputValidation: {},
             },
           }),
         }) as any,
@@ -1064,6 +1109,791 @@ describe('GatewayServer', () => {
         expect(json.keys).toHaveLength(0);
       } finally {
         await emptyServer.stop();
+      }
+    });
+  });
+
+  // ── Phase 94: Secrets Manager Happy Paths ──────────────────────────────────
+
+  describe('secrets manager happy paths', () => {
+    let secretsServer: GatewayServer | null = null;
+    const secretsPort = 19950;
+    const secretsBase = `http://127.0.0.1:${secretsPort}`;
+
+    const secretStore = new Map<string, string>([
+      ['API_KEY', 'secret-val-1'],
+      ['DB_PASSWORD', 'secret-val-2'],
+    ]);
+    const mockSecretsManager = {
+      keys: async () => Array.from(secretStore.keys()),
+      has: async (name: string) => secretStore.has(name),
+      get: async (name: string) => secretStore.get(name),
+      set: async (name: string, value: string) => {
+        secretStore.set(name, value);
+      },
+      delete: async (name: string) => {
+        const had = secretStore.has(name);
+        secretStore.delete(name);
+        return had;
+      },
+    };
+
+    beforeAll(async () => {
+      secretsServer = new GatewayServer({
+        config: createMinimalConfig({ port: secretsPort }) as any,
+        secureYeoman: createMockSecureYeoman({
+          getSecretsManager: () => mockSecretsManager,
+          getAuditChain: () => ({ record: async () => {} }),
+          getConfig: () => ({
+            core: { environment: 'development' },
+            security: {
+              promptGuard: { mode: 'disabled' },
+              responseGuard: { mode: 'disabled' },
+              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
+            },
+          }),
+        }) as any,
+      });
+      await secretsServer.start();
+    });
+
+    afterAll(async () => {
+      if (secretsServer) {
+        await secretsServer.stop();
+        secretsServer = null;
+      }
+    });
+
+    it('GET /api/v1/secrets returns list of keys', async () => {
+      const res = await fetch(`${secretsBase}/api/v1/secrets`);
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as { keys: string[] };
+      expect(json.keys).toContain('API_KEY');
+      expect(json.keys).toContain('DB_PASSWORD');
+    });
+
+    it('GET /api/v1/secrets/:name returns 400 for invalid name format', async () => {
+      const res = await fetch(`${secretsBase}/api/v1/secrets/my-secret`);
+      expect(res.status).toBe(400);
+    });
+
+    it('GET /api/v1/secrets/:name returns 404 for valid name that does not exist', async () => {
+      const res = await fetch(`${secretsBase}/api/v1/secrets/NONEXISTENT_KEY`);
+      expect(res.status).toBe(404);
+    });
+
+    it('GET /api/v1/secrets/:name returns 200 with exists:true for existing secret', async () => {
+      const res = await fetch(`${secretsBase}/api/v1/secrets/API_KEY`);
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as { name: string; exists: boolean };
+      expect(json.name).toBe('API_KEY');
+      expect(json.exists).toBe(true);
+    });
+
+    it('PUT /api/v1/secrets/:name returns 400 for invalid name format', async () => {
+      const res = await fetch(`${secretsBase}/api/v1/secrets/bad-name`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: 'test' }),
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('PUT /api/v1/secrets/:name returns 400 when value is missing', async () => {
+      const res = await fetch(`${secretsBase}/api/v1/secrets/VALID_NAME`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('PUT /api/v1/secrets/:name returns 400 when value is empty string', async () => {
+      const res = await fetch(`${secretsBase}/api/v1/secrets/VALID_NAME`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: '' }),
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('PUT /api/v1/secrets/:name returns 204 on success', async () => {
+      const res = await fetch(`${secretsBase}/api/v1/secrets/NEW_SECRET`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: 'new-secret-value' }),
+      });
+      expect(res.status).toBe(204);
+      expect(secretStore.has('NEW_SECRET')).toBe(true);
+    });
+
+    it('DELETE /api/v1/secrets/:name returns 400 for invalid name', async () => {
+      const res = await fetch(`${secretsBase}/api/v1/secrets/bad-name`, { method: 'DELETE' });
+      expect(res.status).toBe(400);
+    });
+
+    it('DELETE /api/v1/secrets/:name returns 404 for nonexistent secret', async () => {
+      const res = await fetch(`${secretsBase}/api/v1/secrets/DOES_NOT_EXIST`, {
+        method: 'DELETE',
+      });
+      expect(res.status).toBe(404);
+    });
+
+    it('DELETE /api/v1/secrets/:name returns 204 on success', async () => {
+      // Ensure the key exists first
+      secretStore.set('TO_DELETE', 'temp-value');
+      const res = await fetch(`${secretsBase}/api/v1/secrets/TO_DELETE`, { method: 'DELETE' });
+      expect(res.status).toBe(204);
+      expect(secretStore.has('TO_DELETE')).toBe(false);
+    });
+
+    it('GET /api/v1/secrets/:name returns 500 when sm.has throws', async () => {
+      const origHas = mockSecretsManager.has;
+      mockSecretsManager.has = async () => {
+        throw new Error('storage failure');
+      };
+      try {
+        const res = await fetch(`${secretsBase}/api/v1/secrets/API_KEY`);
+        expect(res.status).toBe(500);
+      } finally {
+        mockSecretsManager.has = origHas;
+      }
+    });
+
+    it('PUT /api/v1/secrets/:name returns 500 when sm.set throws', async () => {
+      const origSet = mockSecretsManager.set;
+      mockSecretsManager.set = async () => {
+        throw new Error('write failure');
+      };
+      try {
+        const res = await fetch(`${secretsBase}/api/v1/secrets/FAIL_KEY`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: 'val' }),
+        });
+        expect(res.status).toBe(500);
+      } finally {
+        mockSecretsManager.set = origSet;
+      }
+    });
+
+    it('DELETE /api/v1/secrets/:name returns 500 when sm.delete throws', async () => {
+      const origDelete = mockSecretsManager.delete;
+      mockSecretsManager.delete = async () => {
+        throw new Error('delete failure');
+      };
+      try {
+        const res = await fetch(`${secretsBase}/api/v1/secrets/API_KEY`, { method: 'DELETE' });
+        expect(res.status).toBe(500);
+      } finally {
+        mockSecretsManager.delete = origDelete;
+      }
+    });
+
+    it('GET /api/v1/secrets returns 500 when sm.keys throws', async () => {
+      const origKeys = mockSecretsManager.keys;
+      mockSecretsManager.keys = async () => {
+        throw new Error('keys failure');
+      };
+      try {
+        const res = await fetch(`${secretsBase}/api/v1/secrets`);
+        expect(res.status).toBe(500);
+      } finally {
+        mockSecretsManager.keys = origKeys;
+      }
+    });
+  });
+
+  // ── Phase 94: TLS Manager Happy Paths ──────────────────────────────────────
+
+  describe('TLS manager happy paths', () => {
+    let tlsServer: GatewayServer | null = null;
+    const tlsPort = 19960;
+    const tlsBase = `http://127.0.0.1:${tlsPort}`;
+
+    const mockTlsManager = {
+      getCertStatus: async () => ({
+        valid: true,
+        expiresAt: Date.now() + 86400000,
+        issuer: 'self-signed',
+      }),
+      ensureCerts: async () => ({ cert: '/tmp/cert.pem', key: '/tmp/key.pem' }),
+    };
+
+    beforeAll(async () => {
+      tlsServer = new GatewayServer({
+        config: createMinimalConfig({ port: tlsPort }) as any,
+        secureYeoman: createMockSecureYeoman({
+          getTlsManager: () => mockTlsManager,
+          getConfig: () => ({
+            core: { environment: 'development' },
+            security: {
+              promptGuard: { mode: 'disabled' },
+              responseGuard: { mode: 'disabled' },
+              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
+            },
+          }),
+        }) as any,
+      });
+      await tlsServer.start();
+    });
+
+    afterAll(async () => {
+      if (tlsServer) {
+        await tlsServer.stop();
+        tlsServer = null;
+      }
+    });
+
+    it('GET /api/v1/security/tls returns cert status', async () => {
+      const res = await fetch(`${tlsBase}/api/v1/security/tls`);
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as Record<string, unknown>;
+      expect(json.valid).toBe(true);
+      expect(json.issuer).toBe('self-signed');
+      expect(json.expiresAt).toBeDefined();
+    });
+
+    it('POST /api/v1/security/tls/generate in dev mode returns generated:true', async () => {
+      const res = await fetch(`${tlsBase}/api/v1/security/tls/generate`, { method: 'POST' });
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as Record<string, unknown>;
+      expect(json.generated).toBe(true);
+      expect(json.paths).toBeDefined();
+    });
+
+    it('GET /api/v1/security/tls returns 500 when getCertStatus throws', async () => {
+      const origGetCertStatus = mockTlsManager.getCertStatus;
+      mockTlsManager.getCertStatus = async () => {
+        throw new Error('cert read failure');
+      };
+      try {
+        const res = await fetch(`${tlsBase}/api/v1/security/tls`);
+        expect(res.status).toBe(500);
+      } finally {
+        mockTlsManager.getCertStatus = origGetCertStatus;
+      }
+    });
+
+    it('POST /api/v1/security/tls/generate returns 500 when ensureCerts throws', async () => {
+      const origEnsureCerts = mockTlsManager.ensureCerts;
+      mockTlsManager.ensureCerts = async () => {
+        throw new Error('cert gen failure');
+      };
+      try {
+        const res = await fetch(`${tlsBase}/api/v1/security/tls/generate`, { method: 'POST' });
+        expect(res.status).toBe(500);
+      } finally {
+        mockTlsManager.ensureCerts = origEnsureCerts;
+      }
+    });
+  });
+
+  describe('TLS generate in production mode', () => {
+    it('POST /api/v1/security/tls/generate returns 403 in production', async () => {
+      const prodPort = 19962;
+      const mockTlsMgr = {
+        getCertStatus: async () => ({ valid: true }),
+        ensureCerts: async () => ({ cert: '/tmp/c.pem', key: '/tmp/k.pem' }),
+      };
+      const srv = new GatewayServer({
+        config: createMinimalConfig({ port: prodPort }) as any,
+        secureYeoman: createMockSecureYeoman({
+          getTlsManager: () => mockTlsMgr,
+          getConfig: () => ({
+            core: { environment: 'production' },
+            security: {
+              promptGuard: { mode: 'disabled' },
+              responseGuard: { mode: 'disabled' },
+              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
+            },
+          }),
+        }) as any,
+      });
+      await srv.start();
+      try {
+        const res = await fetch(`http://127.0.0.1:${prodPort}/api/v1/security/tls/generate`, {
+          method: 'POST',
+        });
+        expect(res.status).toBe(403);
+      } finally {
+        await srv.stop();
+      }
+    });
+  });
+
+  // ── Phase 94: Task Routes with Executor ────────────────────────────────────
+
+  describe('task routes with executor', () => {
+    let execServer: GatewayServer | null = null;
+    const execPort = 19970;
+    const execBase = `http://127.0.0.1:${execPort}`;
+
+    beforeAll(async () => {
+      const tasks = new Map<string, unknown>();
+      const mockTaskStorage = {
+        listTasks: async () => ({ tasks: Array.from(tasks.values()), total: tasks.size }),
+        getTask: async (id: string) => tasks.get(id) ?? null,
+        storeTask: async (task: unknown) => {
+          tasks.set((task as Record<string, string>).id, task);
+        },
+        updateTaskMetadata: async (id: string, data: unknown) => {
+          const existing = tasks.get(id);
+          if (existing) tasks.set(id, { ...(existing as object), ...(data as object) });
+        },
+        deleteTask: async (id: string) => {
+          tasks.delete(id);
+        },
+      };
+      const mockExecutor = {
+        submit: async (taskDef: any) => ({ ...taskDef, id: 'exec-task-1', status: 'running' }),
+      };
+      execServer = new GatewayServer({
+        config: createMinimalConfig({ port: execPort }) as any,
+        secureYeoman: createMockSecureYeoman({
+          getTaskStorage: () => mockTaskStorage,
+          getTaskExecutor: () => mockExecutor,
+          getConfig: () => ({
+            core: { environment: 'development' },
+            security: {
+              promptGuard: { mode: 'disabled' },
+              responseGuard: { mode: 'disabled' },
+              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
+            },
+          }),
+        }) as any,
+      });
+      await execServer.start();
+    });
+
+    afterAll(async () => {
+      if (execServer) {
+        await execServer.stop();
+        execServer = null;
+      }
+    });
+
+    it('POST /api/v1/tasks with executor returns 201', async () => {
+      const res = await fetch(`${execBase}/api/v1/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Executor Task', description: 'runs via executor' }),
+      });
+      expect(res.status).toBe(201);
+      const json = (await res.json()) as Record<string, unknown>;
+      expect(json.id).toBe('exec-task-1');
+      expect(json.status).toBe('running');
+    });
+  });
+
+  describe('task routes with failing executor', () => {
+    it('POST /api/v1/tasks returns 500 when executor throws', async () => {
+      const failPort = 19971;
+      const failExecutor = {
+        submit: async () => {
+          throw new Error('executor crashed');
+        },
+      };
+      const srv = new GatewayServer({
+        config: createMinimalConfig({ port: failPort }) as any,
+        secureYeoman: createMockSecureYeoman({
+          getTaskStorage: () => ({
+            listTasks: async () => ({ tasks: [], total: 0 }),
+            getTask: async () => null,
+            storeTask: async () => {},
+            updateTaskMetadata: async () => {},
+            deleteTask: async () => {},
+          }),
+          getTaskExecutor: () => failExecutor,
+          getConfig: () => ({
+            core: { environment: 'development' },
+            security: {
+              promptGuard: { mode: 'disabled' },
+              responseGuard: { mode: 'disabled' },
+              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
+            },
+          }),
+        }) as any,
+      });
+      await srv.start();
+      try {
+        const res = await fetch(`http://127.0.0.1:${failPort}/api/v1/tasks`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: 'Fail Task' }),
+        });
+        expect(res.status).toBe(500);
+      } finally {
+        await srv.stop();
+      }
+    });
+  });
+
+  // ── Phase 94: Task Update/Delete Success Paths ─────────────────────────────
+
+  describe('task update and delete success paths', () => {
+    let taskSrv: GatewayServer | null = null;
+    const taskSrvPort = 19973;
+    const taskSrvBase = `http://127.0.0.1:${taskSrvPort}`;
+
+    beforeAll(async () => {
+      const tasks = new Map<string, unknown>();
+      const mockTaskStorage = {
+        listTasks: async () => ({ tasks: Array.from(tasks.values()), total: tasks.size }),
+        getTask: async (id: string) => tasks.get(id) ?? null,
+        storeTask: async (task: unknown) => {
+          tasks.set((task as Record<string, string>).id, task);
+        },
+        updateTaskMetadata: async (id: string, data: unknown) => {
+          const existing = tasks.get(id);
+          if (existing) tasks.set(id, { ...(existing as object), ...(data as object) });
+        },
+        deleteTask: async (id: string) => {
+          tasks.delete(id);
+        },
+      };
+      taskSrv = new GatewayServer({
+        config: createMinimalConfig({ port: taskSrvPort }) as any,
+        secureYeoman: createMockSecureYeoman({
+          getTaskStorage: () => mockTaskStorage,
+          getTaskExecutor: () => null,
+          getConfig: () => ({
+            core: { environment: 'development' },
+            security: {
+              promptGuard: { mode: 'disabled' },
+              responseGuard: { mode: 'disabled' },
+              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
+            },
+          }),
+        }) as any,
+      });
+      await taskSrv.start();
+    });
+
+    afterAll(async () => {
+      if (taskSrv) {
+        await taskSrv.stop();
+        taskSrv = null;
+      }
+    });
+
+    it('PUT /api/v1/tasks/:id returns updated task on success', async () => {
+      // Create a task first
+      const createRes = await fetch(`${taskSrvBase}/api/v1/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Original Name' }),
+      });
+      expect(createRes.status).toBe(201);
+      const created = (await createRes.json()) as Record<string, unknown>;
+
+      // Update the task
+      const res = await fetch(`${taskSrvBase}/api/v1/tasks/${created.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Updated Name' }),
+      });
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as Record<string, unknown>;
+      expect(json.name).toBe('Updated Name');
+    });
+
+    it('DELETE /api/v1/tasks/:id returns success:true on success', async () => {
+      // Create a task first
+      const createRes = await fetch(`${taskSrvBase}/api/v1/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'To Be Deleted' }),
+      });
+      const created = (await createRes.json()) as Record<string, unknown>;
+
+      const res = await fetch(`${taskSrvBase}/api/v1/tasks/${created.id}`, { method: 'DELETE' });
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as Record<string, unknown>;
+      expect(json.success).toBe(true);
+    });
+
+    it('PUT /api/v1/tasks/:id returns 404 for nonexistent task', async () => {
+      const res = await fetch(`${taskSrvBase}/api/v1/tasks/nonexistent-id`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Nope' }),
+      });
+      expect(res.status).toBe(404);
+    });
+  });
+
+  // ── Phase 94: Audit Repair Route ───────────────────────────────────────────
+
+  describe('audit repair route', () => {
+    it('POST /api/v1/audit/repair returns success', async () => {
+      const repairPort = 19974;
+      const srv = new GatewayServer({
+        config: createMinimalConfig({ port: repairPort }) as any,
+        secureYeoman: createMockSecureYeoman({
+          repairAuditChain: async () => ({ repaired: true, count: 42 }),
+          getConfig: () => ({
+            core: { environment: 'development' },
+            security: {
+              promptGuard: { mode: 'disabled' },
+              responseGuard: { mode: 'disabled' },
+              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
+            },
+          }),
+        }) as any,
+      });
+      await srv.start();
+      try {
+        const res = await fetch(`http://127.0.0.1:${repairPort}/api/v1/audit/repair`, {
+          method: 'POST',
+        });
+        expect(res.status).toBe(200);
+        const json = (await res.json()) as Record<string, unknown>;
+        expect(json.repaired).toBe(true);
+        expect(json.count).toBe(42);
+      } finally {
+        await srv.stop();
+      }
+    });
+  });
+
+  // ── Phase 94: Health Deep Check ────────────────────────────────────────────
+
+  describe('health deep check', () => {
+    it('GET /health/deep returns component status', async () => {
+      const deepPort = 19975;
+      const srv = new GatewayServer({
+        config: createMinimalConfig({ port: deepPort }) as any,
+        secureYeoman: createMockSecureYeoman({
+          getIntentManager: () => null,
+        }) as any,
+      });
+      await srv.start();
+      try {
+        const res = await fetch(`http://127.0.0.1:${deepPort}/health/deep`);
+        // May be 200 or 207 depending on DB availability
+        expect([200, 207]).toContain(res.status);
+        const json = (await res.json()) as Record<string, unknown>;
+        expect(json).toHaveProperty('status');
+        expect(json).toHaveProperty('version');
+        expect(json).toHaveProperty('components');
+        const components = json.components as Record<string, { ok: boolean }>;
+        expect(components).toHaveProperty('auth');
+        expect(components).toHaveProperty('websocket');
+      } finally {
+        await srv.stop();
+      }
+    });
+  });
+
+  // ── Phase 94: Audit Retention with both maxAgeDays and maxEntries ──────────
+
+  describe('audit retention combined params', () => {
+    it('POST /api/v1/audit/retention with valid maxAgeDays AND maxEntries returns 200', async () => {
+      const retPort = 19976;
+      const srv = new GatewayServer({
+        config: createMinimalConfig({ port: retPort }) as any,
+        secureYeoman: createMockSecureYeoman({
+          enforceAuditRetention: () => 5,
+          getAuditStats: () => Promise.resolve({ total: 100 }),
+          getConfig: () => ({
+            core: { environment: 'development' },
+            security: {
+              promptGuard: { mode: 'disabled' },
+              responseGuard: { mode: 'disabled' },
+              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
+            },
+          }),
+        }) as any,
+      });
+      await srv.start();
+      try {
+        const res = await fetch(`http://127.0.0.1:${retPort}/api/v1/audit/retention`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ maxAgeDays: 90, maxEntries: 5000 }),
+        });
+        expect(res.status).toBe(200);
+        const json = (await res.json()) as Record<string, unknown>;
+        expect(json.deleted).toBe(5);
+      } finally {
+        await srv.stop();
+      }
+    });
+  });
+
+  // ── Phase 94: Security events with severity filter ─────────────────────────
+
+  describe('security events with severity filter', () => {
+    it('GET /api/v1/security/events with severity=error filters by level', async () => {
+      const sevPort = 19977;
+      const entries = [
+        { event: 'auth_failure', level: 'error', timestamp: Date.now() - 1000 },
+        { event: 'rate_limit', level: 'warn', timestamp: Date.now() - 2000 },
+      ];
+      const srv = new GatewayServer({
+        config: createMinimalConfig({ port: sevPort }) as any,
+        secureYeoman: createMockSecureYeoman({
+          queryAuditLog: ({ level }: { level?: string[] }) => {
+            const filtered = level
+              ? entries.filter((e) => level.includes(e.level))
+              : entries;
+            return Promise.resolve({
+              entries: filtered,
+              total: filtered.length,
+              limit: 50,
+              offset: 0,
+            });
+          },
+          getConfig: () => ({
+            core: { environment: 'development' },
+            security: {
+              promptGuard: { mode: 'disabled' },
+              responseGuard: { mode: 'disabled' },
+              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
+            },
+          }),
+        }) as any,
+      });
+      await srv.start();
+      try {
+        const res = await fetch(
+          `http://127.0.0.1:${sevPort}/api/v1/security/events?severity=error`
+        );
+        expect(res.status).toBe(200);
+        const json = (await res.json()) as { events: unknown[]; total: number };
+        expect(json.events.length).toBe(1);
+      } finally {
+        await srv.stop();
+      }
+    });
+  });
+
+  // ── Phase 94: ML summary with period=7d (covers the 3rd branch) ───────────
+
+  describe('ML summary with period=7d', () => {
+    it('GET /api/v1/security/ml/summary with period=7d covers the 7d branch', async () => {
+      const mlPort7d = 19978;
+      const srv = new GatewayServer({
+        config: createMinimalConfig({ port: mlPort7d }) as any,
+        secureYeoman: createMockSecureYeoman({
+          queryAuditLog: () =>
+            Promise.resolve({ entries: [], total: 0, limit: 10000, offset: 0 }),
+          getConfig: () => ({
+            core: { environment: 'development' },
+            security: {
+              promptGuard: { mode: 'disabled' },
+              responseGuard: { mode: 'disabled' },
+              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: true,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
+            },
+          }),
+        }) as any,
+      });
+      await srv.start();
+      try {
+        const res = await fetch(
+          `http://127.0.0.1:${mlPort7d}/api/v1/security/ml/summary?period=7d`
+        );
+        expect(res.status).toBe(200);
+        const json = (await res.json()) as Record<string, unknown>;
+        expect(json.period).toBe('7d');
+        expect(json.enabled).toBe(true);
+        expect(Array.isArray(json.trend)).toBe(true);
+        const trend = json.trend as Array<{ bucket: string }>;
+        // 7d period creates 7 daily buckets
+        expect(trend.length).toBe(7);
+      } finally {
+        await srv.stop();
       }
     });
   });

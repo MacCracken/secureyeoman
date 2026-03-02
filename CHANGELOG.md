@@ -1,3 +1,30 @@
+## [2026.3.1i] — 2026-03-01
+
+### Housekeeping
+
+- **Vitest 4 deprecation fix**: Replaced removed `test.poolOptions.forks.singleFork` with top-level `maxWorkers: 1` + `isolate: false` in `vitest.db.config.ts`.
+- **Chat routes fix**: Wrapped `getBrainManager()` call in content guardrail init with try-catch so `hasBrain === false` scenarios don't crash route registration.
+
+---
+
+## [2026.3.1h] — 2026-03-01
+
+### Phase 96: Conversation Analytics
+
+- **Migration 074**: `analytics` schema with 5 tables — `turn_sentiments`, `conversation_summaries`, `conversation_entities`, `key_phrases`, `usage_anomalies`.
+- **Sentiment Analyzer**: Background 5-min interval LLM classification of assistant messages into positive/neutral/negative with confidence scores.
+- **Conversation Summarizer**: Background 10-min interval LLM summarization for conversations above configurable message threshold.
+- **Entity & Key Phrase Extractor**: Background 15-min interval LLM extraction of named entities and key phrases per conversation.
+- **Engagement Metrics Service**: On-demand SQL queries — avg conversation length, follow-up rate, abandonment rate, tool call success rate.
+- **Usage Anomaly Detector**: In-memory rate tracking with persistent alerts — message rate spikes, off-hours activity, credential stuffing detection.
+- **11 REST endpoints** under `/api/v1/analytics/*` with `analytics:read`/`analytics:write` permissions.
+- **Chat route integration**: Fire-and-forget anomaly detection on every chat response.
+- **Quality scorer integration**: Negative sentiment conversations get training priority boost.
+- **Dashboard**: New "Analytics" tab in MetricsPage with 5 sub-panels — Sentiment Trend, Engagement Metrics, Topic Cloud, Entity Explorer, Anomaly Alerts.
+- **ADR**: 176. **Tests**: ~140 across 8 test files.
+
+---
+
 ## [2026.3.1g] — 2026-03-01
 
 ### Provider Keys & Sidebar Reactivity Fixes

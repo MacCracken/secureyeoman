@@ -60,4 +60,26 @@ describe('clipboard actuator', () => {
       expect(mockWrite).toHaveBeenCalledWith('');
     });
   });
+
+  describe('error handling', () => {
+    it('readClipboard propagates permission-denied error', async () => {
+      mockRead.mockRejectedValueOnce(new Error('Permission denied: clipboard access not allowed'));
+      await expect(readClipboard()).rejects.toThrow('Permission denied');
+    });
+
+    it('writeClipboard propagates permission-denied error', async () => {
+      mockWrite.mockRejectedValueOnce(new Error('Permission denied: clipboard access not allowed'));
+      await expect(writeClipboard('test')).rejects.toThrow('Permission denied');
+    });
+
+    it('clearClipboard propagates error when clipboard is locked', async () => {
+      mockWrite.mockRejectedValueOnce(new Error('Clipboard is in use by another process'));
+      await expect(clearClipboard()).rejects.toThrow('Clipboard is in use');
+    });
+
+    it('readClipboard propagates when clipboardy fails to load', async () => {
+      mockRead.mockRejectedValueOnce(new Error('xclip not found'));
+      await expect(readClipboard()).rejects.toThrow('xclip not found');
+    });
+  });
 });

@@ -6,6 +6,7 @@ import {
   TokenLimitError,
   ProviderUnavailableError,
   InvalidResponseError,
+  AuthenticationError,
 } from '../errors.js';
 
 const mockCreate = vi.fn();
@@ -305,6 +306,231 @@ describe('GrokProvider', () => {
         'grok-2-1212',
         'grok-2-vision-1212',
       ]);
+    });
+  });
+
+  // ─── Extended Error Handling Coverage ──────────────────────────────────
+
+  describe('extended error handling', () => {
+    it('maps 429 rate limit with retryAfter from RateLimitError', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(429, 'Too Many Requests'));
+      try {
+        await provider.chat(simpleRequest);
+        expect.unreachable();
+      } catch (error) {
+        expect(error).toBeInstanceOf(RateLimitError);
+        expect((error as RateLimitError).statusCode).toBe(429);
+        expect((error as RateLimitError).recoverable).toBe(true);
+        expect((error as RateLimitError).code).toBe('RATE_LIMIT');
+      }
+    });
+
+    it('maps 502 to ProviderUnavailableError with statusCode', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(502, 'Bad Gateway'));
+      try {
+        await provider.chat(simpleRequest);
+        expect.unreachable();
+      } catch (error) {
+        expect(error).toBeInstanceOf(ProviderUnavailableError);
+        expect((error as ProviderUnavailableError).statusCode).toBe(502);
+        expect((error as ProviderUnavailableError).recoverable).toBe(true);
+      }
+    });
+
+    it('maps connection timeout (non-APIError) as regular Error', async () => {
+      const timeoutError = new Error('Connection timeout');
+      timeoutError.name = 'AbortError';
+      mockCreate.mockRejectedValueOnce(timeoutError);
+      await expect(provider.chat(simpleRequest)).rejects.toThrow('Connection timeout');
+    });
+
+    it('maps non-Error thrown values to Error instances', async () => {
+      mockCreate.mockRejectedValueOnce(42);
+      await expect(provider.chat(simpleRequest)).rejects.toThrow('42');
+    });
+
+    it('maps 400 with token in message to TokenLimitError', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(
+        new (APIError as any)(400, 'This model max token limit is 32768')
+      );
+      try {
+        await provider.chat(simpleRequest);
+        expect.unreachable();
+      } catch (error) {
+        expect(error).toBeInstanceOf(TokenLimitError);
+        expect((error as TokenLimitError).code).toBe('TOKEN_LIMIT');
+        expect((error as TokenLimitError).recoverable).toBe(false);
+      }
+    });
+
+    it('maps 400 without token keyword to InvalidResponseError', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(
+        new (APIError as any)(400, 'Invalid model parameter')
+      );
+      try {
+        await provider.chat(simpleRequest);
+        expect.unreachable();
+      } catch (error) {
+        expect(error).toBeInstanceOf(InvalidResponseError);
+        expect((error as InvalidResponseError).code).toBe('INVALID_RESPONSE');
+      }
+    });
+
+    it('maps 500 to InvalidResponseError', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(500, 'Internal server error'));
+      await expect(provider.chat(simpleRequest)).rejects.toThrow(InvalidResponseError);
+    });
+
+    it('preserves cause chain from original APIError', async () => {
+      const { APIError } = await import('openai');
+      const originalError = new (APIError as any)(429, 'rate limited');
+      mockCreate.mockRejectedValueOnce(originalError);
+      try {
+        await provider.chat(simpleRequest);
+        expect.unreachable();
+      } catch (error) {
+        expect(error).toBeInstanceOf(RateLimitError);
+        expect((error as RateLimitError).cause).toBe(originalError);
+      }
+    });
+  });
+
+  // ─── Stream Error Propagation ─────────────────────────────────────────
+
+  describe('stream error propagation', () => {
+    it('maps 503 stream error to ProviderUnavailableError', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(503, 'Service Unavailable'));
+      await expect(async () => {
+        for await (const _ of provider.chatStream(simpleRequest)) {
+          /* drain */
+        }
+      }).rejects.toThrow(ProviderUnavailableError);
+    });
+
+    it('maps 400 token stream error to TokenLimitError', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(
+        new (APIError as any)(400, 'context length exceeded token limit')
+      );
+      await expect(async () => {
+        for await (const _ of provider.chatStream(simpleRequest)) {
+          /* drain */
+        }
+      }).rejects.toThrow(TokenLimitError);
+    });
+
+    it('yields tool_call_delta with accumulated id and name', async () => {
+      async function* mockStream() {
+        yield {
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  { id: 'call_A', function: { name: 'get_weather', arguments: '' } },
+                ],
+              },
+              finish_reason: null,
+            },
+          ],
+          usage: null,
+        };
+        yield {
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  { function: { arguments: '{"loc":"SF"}' } },
+                ],
+              },
+              finish_reason: null,
+            },
+          ],
+          usage: null,
+        };
+        yield { choices: [{ delta: {}, finish_reason: 'tool_calls' }], usage: null };
+      }
+      mockCreate.mockResolvedValueOnce(mockStream());
+      const chunks: any[] = [];
+      for await (const chunk of provider.chatStream(simpleRequest)) {
+        chunks.push(chunk);
+      }
+      // First tool_call_delta should have the id and name
+      const tcChunks = chunks.filter((c) => c.type === 'tool_call_delta');
+      expect(tcChunks.length).toBeGreaterThanOrEqual(2);
+      expect(tcChunks[0].toolCall.id).toBe('call_A');
+      expect(tcChunks[0].toolCall.name).toBe('get_weather');
+      // Second should carry forward the id and name
+      expect(tcChunks[1].toolCall.id).toBe('call_A');
+      expect(tcChunks[1].toolCall.name).toBe('get_weather');
+    });
+  });
+
+  // ─── Message Mapping Edge Cases ───────────────────────────────────────
+
+  describe('message mapping edge cases', () => {
+    it('maps user messages with null content to empty string', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: 'ok' }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
+      });
+      await provider.chat({
+        messages: [{ role: 'user', content: undefined as any }],
+        stream: false,
+      });
+      const callArgs = mockCreate.mock.calls[0][0];
+      expect(callArgs.messages[0].content).toBe('');
+    });
+
+    it('maps tools to function format when tools are provided', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: 'ok' }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
+      });
+      await provider.chat({
+        messages: [{ role: 'user', content: 'hi' }],
+        stream: false,
+        tools: [
+          {
+            name: 'get_weather',
+            description: 'Get weather',
+            parameters: { type: 'object', properties: { city: { type: 'string' } } },
+          },
+        ],
+      });
+      const callArgs = mockCreate.mock.calls[0][0];
+      expect(callArgs.tools).toHaveLength(1);
+      expect(callArgs.tools[0].type).toBe('function');
+      expect(callArgs.tools[0].function.name).toBe('get_weather');
+    });
+
+    it('maps response with no usage to zero tokens', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: 'ok' }, finish_reason: 'stop' }],
+        usage: undefined,
+      });
+      const response = await provider.chat(simpleRequest);
+      expect(response.usage.inputTokens).toBe(0);
+      expect(response.usage.outputTokens).toBe(0);
+      expect(response.usage.totalTokens).toBe(0);
+    });
+
+    it('maps response with no choices gracefully', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: null }, finish_reason: null }],
+        usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+      });
+      const response = await provider.chat(simpleRequest);
+      expect(response.content).toBe('');
     });
   });
 });

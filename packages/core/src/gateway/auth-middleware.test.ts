@@ -822,5 +822,125 @@ describe('Auth Middleware', () => {
       expect(reply.wasSent()).toBe(true);
       expect(reply.sentCode()).toBe(401);
     });
+
+    it('returns 401 "Missing authentication credentials" when no Bearer and no API key', async () => {
+      const hook = createAuthHook({ authService, logger: noopLogger() });
+      const req: any = {
+        method: 'GET',
+        routeOptions: { url: '/api/v1/metrics' },
+        url: '/api/v1/metrics',
+        headers: {},
+        raw: { socket: {} },
+      };
+      const reply = makeReply();
+      await hook(req, reply as any);
+      expect(reply.wasSent()).toBe(true);
+      expect(reply.sentCode()).toBe(401);
+    });
+
+    it('returns AuthError statusCode when Bearer token throws AuthError', async () => {
+      const fakeAuth = {
+        validateToken: async () => {
+          const err = new AuthError('Token expired', 401);
+          throw err;
+        },
+        validateApiKey: async () => {
+          throw new Error('no key');
+        },
+      } as unknown as typeof authService;
+
+      const hook = createAuthHook({ authService: fakeAuth, logger: noopLogger() });
+      const req: any = {
+        method: 'GET',
+        routeOptions: { url: '/api/v1/metrics' },
+        url: '/api/v1/metrics',
+        headers: { authorization: 'Bearer expired-token' },
+        raw: { socket: {} },
+      };
+      const reply = makeReply();
+      await hook(req, reply as any);
+      expect(reply.wasSent()).toBe(true);
+      expect(reply.sentCode()).toBe(401);
+    });
+
+    it('returns AuthError statusCode when API key throws AuthError', async () => {
+      const fakeAuth = {
+        validateToken: async () => {
+          throw new Error('no token');
+        },
+        validateApiKey: async () => {
+          const err = new AuthError('API key revoked', 403);
+          throw err;
+        },
+      } as unknown as typeof authService;
+
+      const hook = createAuthHook({ authService: fakeAuth, logger: noopLogger() });
+      const req: any = {
+        method: 'GET',
+        routeOptions: { url: '/api/v1/metrics' },
+        url: '/api/v1/metrics',
+        headers: { 'x-api-key': 'revoked-key' },
+        raw: { socket: {} },
+      };
+      const reply = makeReply();
+      await hook(req, reply as any);
+      expect(reply.wasSent()).toBe(true);
+      expect(reply.sentCode()).toBe(403);
+    });
+
+    it('prefers Bearer token over API key when both are present', async () => {
+      const token = await loginAndGetToken();
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/metrics',
+        headers: {
+          authorization: `Bearer ${token}`,
+          'x-api-key': 'should-not-be-used',
+        },
+      });
+      // Bearer succeeds first — API key path is never reached
+      expect(res.statusCode).toBe(200);
+      expect(res.json().user).toBe('admin');
+    });
+
+    it('RBAC hook returns 401 "Not authenticated" when authUser is missing on protected route', async () => {
+      const rbacHook = createRbacHook({ rbac, auditChain, logger: noopLogger() });
+      const req: any = {
+        method: 'GET',
+        routeOptions: { url: '/api/v1/metrics' },
+        url: '/api/v1/metrics',
+        authUser: undefined,
+      };
+      const reply = makeReply();
+      await rbacHook(req, reply as any);
+      expect(reply.wasSent()).toBe(true);
+      expect(reply.sentCode()).toBe(401);
+    });
+
+    it('RBAC hook skips non-API/non-WS paths', async () => {
+      const rbacHook = createRbacHook({ rbac, auditChain, logger: noopLogger() });
+      const req: any = {
+        method: 'GET',
+        routeOptions: { url: '/dashboard/settings' },
+        url: '/dashboard/settings',
+        authUser: undefined,
+      };
+      const reply = makeReply();
+      await rbacHook(req, reply as any);
+      expect(reply.wasSent()).toBe(false); // No auth check for SPA routes
+    });
+
+    it('RBAC hook skips avatar GET requests', async () => {
+      const rbacHook = createRbacHook({ rbac, auditChain, logger: noopLogger() });
+      const req: any = {
+        method: 'GET',
+        routeOptions: { url: '/api/v1/soul/personalities/:id/avatar' },
+        url: '/api/v1/soul/personalities/abc/avatar',
+        authUser: undefined,
+      };
+      const reply = makeReply();
+      await rbacHook(req, reply as any);
+      expect(reply.wasSent()).toBe(false); // Avatar bypass
+    });
   });
 });

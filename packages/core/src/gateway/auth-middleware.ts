@@ -707,6 +707,40 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/training/computer-use/episodes/:id': {
     DELETE: { resource: 'training', action: 'write' },
   },
+  // Phase 96: Conversation Analytics
+  '/api/v1/analytics/sentiment/:conversationId': {
+    GET: { resource: 'analytics', action: 'read' },
+  },
+  '/api/v1/analytics/sentiment/trend/:personalityId': {
+    GET: { resource: 'analytics', action: 'read' },
+  },
+  '/api/v1/analytics/engagement/:personalityId': {
+    GET: { resource: 'analytics', action: 'read' },
+  },
+  '/api/v1/analytics/engagement': {
+    GET: { resource: 'analytics', action: 'read' },
+  },
+  '/api/v1/analytics/summary/:conversationId': {
+    GET: { resource: 'analytics', action: 'read' },
+  },
+  '/api/v1/analytics/summarize': {
+    POST: { resource: 'analytics', action: 'write' },
+  },
+  '/api/v1/analytics/entities/:conversationId': {
+    GET: { resource: 'analytics', action: 'read' },
+  },
+  '/api/v1/analytics/entities': {
+    GET: { resource: 'analytics', action: 'read' },
+  },
+  '/api/v1/analytics/entities/top/:personalityId': {
+    GET: { resource: 'analytics', action: 'read' },
+  },
+  '/api/v1/analytics/phrases/:personalityId': {
+    GET: { resource: 'analytics', action: 'read' },
+  },
+  '/api/v1/analytics/anomalies': {
+    GET: { resource: 'analytics', action: 'read' },
+  },
   // License routes
   '/api/v1/license/status': {
     GET: { resource: 'license', action: 'read' },

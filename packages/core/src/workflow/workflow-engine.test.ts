@@ -1632,3 +1632,331 @@ describe('WorkflowEngine.execute — step dispatch: ci_wait (github-actions)', (
     );
   });
 });
+
+// ── Phase 94 — Additional coverage tests ─────────────────────────────────────
+
+describe('WorkflowEngine.execute — ci_trigger (gitlab)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('dispatches GitLab pipeline and returns runId from response', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      json: async () => ({ id: 42, web_url: 'https://gitlab.example.com/p/123' }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const storage = makeStorage();
+    const engine = makeEngine({
+      storage,
+      cicdConfig: { gitlabUrl: 'https://gitlab.example.com', gitlabToken: 'gl-tok' },
+    });
+    const step = makeStep({
+      id: 'gl-trigger',
+      type: 'ci_trigger',
+      config: {
+        provider: 'gitlab',
+        projectId: '123',
+        ref: 'main',
+        inputs: { ENV: 'staging' },
+      },
+    });
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+    const fetchCall = fetchMock.mock.calls[0]!;
+    expect(fetchCall[0]).toContain('/api/v4/projects/123/pipeline');
+    const opts = fetchCall[1] as RequestInit;
+    expect(opts.headers).toMatchObject({ 'PRIVATE-TOKEN': 'gl-tok' });
+  });
+
+  it('fails workflow when GitLab trigger returns error', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      text: async () => 'Bad ref',
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const storage = makeStorage();
+    const engine = makeEngine({ storage, cicdConfig: { gitlabToken: 'gl-tok' } });
+    const step = makeStep({
+      id: 'gl-trigger',
+      type: 'ci_trigger',
+      config: { provider: 'gitlab', projectId: '99', ref: 'bad-branch' },
+    });
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'failed', error: expect.stringContaining('GitLab pipeline trigger failed') })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — ci_wait (gitlab)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('polls GitLab pipeline until terminal status', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ status: 'running', web_url: 'https://gl.example.com/p/1' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ status: 'success', web_url: 'https://gl.example.com/p/1' }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+    const storage = makeStorage();
+    const engine = makeEngine({
+      storage,
+      cicdConfig: { gitlabUrl: 'https://gl.example.com', gitlabToken: 'gl-tok' },
+    });
+    const step = makeStep({
+      id: 'gl-wait',
+      type: 'ci_wait',
+      config: {
+        provider: 'gitlab',
+        projectId: '10',
+        runId: '42',
+        pollIntervalMs: 1,
+        timeoutMs: 5000,
+      },
+    });
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+
+  it('times out when GitLab pipeline never reaches terminal', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ status: 'running', web_url: 'https://gl.example.com' }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const storage = makeStorage();
+    const engine = makeEngine({ storage, cicdConfig: { gitlabToken: 'gl-tok' } });
+    const step = makeStep({
+      id: 'gl-wait',
+      type: 'ci_wait',
+      config: {
+        provider: 'gitlab',
+        projectId: '10',
+        runId: '42',
+        pollIntervalMs: 1,
+        timeoutMs: 10, // very short timeout
+      },
+    });
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'failed',
+        error: expect.stringContaining('did not complete within'),
+      })
+    );
+  });
+
+  it('fails for unsupported ci_wait provider', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'wait-bad',
+      type: 'ci_wait',
+      config: { provider: 'circleci', runId: '1' },
+    });
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'failed',
+        error: expect.stringContaining('unsupported provider'),
+      })
+    );
+  });
+});
+
+describe('WorkflowEngine.evaluateCondition — cache hit', () => {
+  it('returns cached compiled function on second call with same expression', () => {
+    const engine = makeEngine();
+    const ctx = { steps: {}, input: { x: 5 } };
+
+    // First call — compiles and caches
+    const result1 = engine.evaluateCondition('input.x > 3', ctx);
+    expect(result1).toBe(true);
+
+    // Second call — should hit cache (same expression)
+    const result2 = engine.evaluateCondition('input.x > 3', ctx);
+    expect(result2).toBe(true);
+
+    // Different expression — miss
+    const result3 = engine.evaluateCondition('input.x > 10', ctx);
+    expect(result3).toBe(false);
+  });
+});
+
+describe('WorkflowEngine.execute — human_approval timeout', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('fails workflow when waitForDecision throws (timeout/rejection)', async () => {
+    const approvalManager = {
+      createRequest: vi.fn().mockResolvedValue({ id: 'req-1' }),
+      waitForDecision: vi.fn().mockRejectedValue(new Error('Approval request timed out')),
+    };
+    const storage = makeStorage();
+    const engine = makeEngine({ storage, approvalManager });
+    const step = makeStep({
+      id: 'approval',
+      type: 'human_approval',
+      config: { timeoutMs: 100, reportTemplate: '{"summary":"test"}' },
+    });
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({
+        status: 'failed',
+        error: expect.stringContaining('timed out'),
+      })
+    );
+  });
+
+  it('human_approval with non-JSON reportTemplate wraps as summary', async () => {
+    const approvalManager = {
+      createRequest: vi.fn().mockResolvedValue({ id: 'req-2' }),
+      waitForDecision: vi.fn().mockResolvedValue(undefined),
+    };
+    const storage = makeStorage();
+    const engine = makeEngine({ storage, approvalManager });
+    const step = makeStep({
+      id: 'approval',
+      type: 'human_approval',
+      config: { reportTemplate: 'plain text report' },
+    });
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    // The createRequest call should have report: { summary: 'plain text report' }
+    const createCall = approvalManager.createRequest.mock.calls[0]![0] as Record<string, unknown>;
+    expect(createCall.report).toEqual({ summary: 'plain text report' });
+  });
+});
+
+describe('WorkflowEngine.execute — onError: skip marks step as skipped', () => {
+  it('step is recorded as skipped and workflow completes', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    // Use agent step without subAgentManager to trigger error
+    const step = makeStep({
+      id: 'agent-step',
+      type: 'agent',
+      name: 'Failing agent',
+      config: { profile: 'coder', taskTemplate: 'do something' },
+      onError: 'skip',
+    });
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    // Step should be recorded as skipped
+    expect(storage.updateStepRun).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ status: 'skipped' })
+    );
+    // Workflow should complete
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — onError: fallback executes fallback step', () => {
+  it('runs the fallbackStepId when primary step fails with onError=fallback', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    // Primary step fails (agent without manager)
+    const primary = makeStep({
+      id: 'primary',
+      type: 'agent',
+      name: 'Primary Agent',
+      config: { profile: 'x', taskTemplate: 'task' },
+      onError: 'fallback',
+      fallbackStepId: 'backup',
+    });
+    // Fallback is a simple transform
+    const backup = makeStep({
+      id: 'backup',
+      type: 'transform',
+      name: 'Backup Transform',
+      config: { outputTemplate: 'fallback output' },
+      dependsOn: [],
+    });
+    await engine.execute(makeRun(), makeDefinition([primary, backup]));
+
+    // Primary should be marked failed
+    expect(storage.updateStepRun).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ status: 'failed' })
+    );
+    // Backup step should also have run (createStepRun called for it)
+    const createCalls = (storage.createStepRun as ReturnType<typeof vi.fn>).mock.calls;
+    const backupCreated = createCalls.some(
+      (c: unknown[]) => c[1] === 'backup'
+    );
+    expect(backupCreated).toBe(true);
+    // Workflow should complete
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+  });
+});
+
+describe('WorkflowEngine.execute — outputSchemaMode: strict with onError: fallback', () => {
+  it('strict schema failure triggers fallback step execution', async () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const primary = makeStep({
+      id: 'typed',
+      type: 'transform',
+      config: {
+        outputTemplate: 'not-json',
+        outputSchema: { type: 'object', properties: { result: { type: 'string' } } },
+        outputSchemaMode: 'strict',
+      },
+      onError: 'fallback',
+      fallbackStepId: 'recovery',
+    });
+    const recovery = makeStep({
+      id: 'recovery',
+      type: 'transform',
+      name: 'Recovery',
+      config: { outputTemplate: 'recovered' },
+    });
+    await engine.execute(makeRun(), makeDefinition([primary, recovery]));
+
+    // Workflow should complete (fallback ran)
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
+    // Recovery step created
+    const createCalls = (storage.createStepRun as ReturnType<typeof vi.fn>).mock.calls;
+    const recoveryCreated = createCalls.some(
+      (c: unknown[]) => c[1] === 'recovery'
+    );
+    expect(recoveryCreated).toBe(true);
+  });
+});

@@ -126,7 +126,9 @@ const TOOLTIP_STYLE = {
   fontSize: '12px',
 } as const;
 
-type Tab = 'control' | 'costs' | 'full';
+type Tab = 'control' | 'costs' | 'full' | 'analytics';
+
+const AnalyticsTab = lazy(() => import('./analytics/AnalyticsTab.js'));
 
 interface HistoryPoint {
   time: string;
@@ -233,6 +235,7 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
     control: 'Mission Control',
     costs: 'Costs',
     full: 'Full Metrics',
+    analytics: 'Analytics',
   };
 
   return (
@@ -267,7 +270,7 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
             role="tablist"
             aria-label="Mission Control views"
           >
-            {(['control', 'costs', 'full'] as Tab[]).map((tab) => (
+            {(['control', 'costs', 'full', 'analytics'] as Tab[]).map((tab) => (
               <button
                 key={tab}
                 role="tab"
@@ -317,6 +320,11 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
           navigate={navigate}
           onViewCosts={handleViewCosts}
         />
+      )}
+      {activeTab === 'analytics' && (
+        <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}>
+          <AnalyticsTab />
+        </Suspense>
       )}
     </div>
   );

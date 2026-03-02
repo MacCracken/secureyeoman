@@ -381,4 +381,366 @@ describe('FederationManager', () => {
       expect(skills).toEqual([]);
     });
   });
+
+  // ── Phase 94: installSkillFromPeer ──────────────────────────────────────────
+
+  describe('installSkillFromPeer', () => {
+    it('fetches skill from peer, publishes, and installs locally', async () => {
+      const peer = makePeer();
+      mockStorage.findById.mockResolvedValueOnce(peer);
+      const skillData = { id: 's1', name: 'Remote Skill', instructions: 'do stuff' };
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => skillData,
+      });
+
+      const mockMarketplace = {
+        publish: vi.fn().mockResolvedValue(undefined),
+        install: vi.fn().mockResolvedValue(true),
+        search: vi.fn(),
+        getSkill: vi.fn(),
+      };
+
+      const manager = new FederationManager({
+        storage: mockStorage as any,
+        masterSecret: 'test-master-secret',
+        logger: {
+          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
+          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+        } as any,
+        marketplaceManager: mockMarketplace as any,
+      });
+
+      await manager.installSkillFromPeer('peer-1', 's1', 'personality-1');
+
+      expect(mockMarketplace.publish).toHaveBeenCalledWith(skillData);
+      expect(mockMarketplace.install).toHaveBeenCalledWith('s1', 'personality-1');
+      expect(mockStorage.logSync).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'skill_install', status: 'success' })
+      );
+    });
+
+    it('throws when marketplaceManager not available', async () => {
+      const manager = makeManager(); // no marketplace manager
+      await expect(manager.installSkillFromPeer('peer-1', 's1')).rejects.toThrow(
+        'Marketplace manager not available'
+      );
+    });
+
+    it('logs error sync when peer fetch fails', async () => {
+      const peer = makePeer();
+      mockStorage.findById.mockResolvedValueOnce(peer);
+      mockFetch.mockRejectedValueOnce(new Error('Connection reset'));
+
+      const mockMarketplace = {
+        publish: vi.fn(),
+        install: vi.fn(),
+        search: vi.fn(),
+        getSkill: vi.fn(),
+      };
+
+      const manager = new FederationManager({
+        storage: mockStorage as any,
+        masterSecret: 'test-master-secret',
+        logger: {
+          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
+          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+        } as any,
+        marketplaceManager: mockMarketplace as any,
+      });
+
+      await expect(manager.installSkillFromPeer('peer-1', 's1')).rejects.toThrow();
+      expect(mockStorage.logSync).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'skill_install', status: 'error' })
+      );
+    });
+
+    it('logs error sync when publish/install fails', async () => {
+      const peer = makePeer();
+      mockStorage.findById.mockResolvedValueOnce(peer);
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: 's1', name: 'Skill' }),
+      });
+
+      const mockMarketplace = {
+        publish: vi.fn().mockRejectedValue(new Error('Publish failed')),
+        install: vi.fn(),
+        search: vi.fn(),
+        getSkill: vi.fn(),
+      };
+
+      const manager = new FederationManager({
+        storage: mockStorage as any,
+        masterSecret: 'test-master-secret',
+        logger: {
+          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
+          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+        } as any,
+        marketplaceManager: mockMarketplace as any,
+      });
+
+      await expect(manager.installSkillFromPeer('peer-1', 's1')).rejects.toThrow('Publish failed');
+      expect(mockStorage.logSync).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'skill_install', status: 'error' })
+      );
+    });
+  });
+
+  // ── Phase 94: exportPersonalityBundle ───────────────────────────────────────
+
+  describe('exportPersonalityBundle', () => {
+    it('exports personality with knowledge as encrypted buffer', async () => {
+      const mockSoul = {
+        getPersonality: vi.fn().mockResolvedValue({ id: 'p1', name: 'Test' }),
+        createPersonality: vi.fn(),
+      };
+      const mockBrain = {
+        semanticSearch: vi.fn().mockResolvedValue([{ id: 'k1', content: 'fact' }]),
+      };
+
+      const manager = new FederationManager({
+        storage: mockStorage as any,
+        masterSecret: 'test-master-secret',
+        logger: {
+          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
+          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+        } as any,
+        soulManager: mockSoul as any,
+        brainManager: mockBrain as any,
+      });
+
+      const buffer = await manager.exportPersonalityBundle('p1', 'passphrase123');
+
+      expect(Buffer.isBuffer(buffer)).toBe(true);
+      // The mock encryptBundle just JSON.stringifies, so we can parse back
+      const data = JSON.parse(buffer.toString());
+      expect(data.version).toBe('1');
+      expect(data.personality.name).toBe('Test');
+      expect(data.knowledgeEntries).toHaveLength(1);
+    });
+
+    it('throws when soulManager not available', async () => {
+      const manager = makeManager();
+      await expect(manager.exportPersonalityBundle('p1', 'pass')).rejects.toThrow(
+        'Soul manager not available'
+      );
+    });
+
+    it('throws when brainManager not available', async () => {
+      const mockSoul = {
+        getPersonality: vi.fn().mockResolvedValue({ id: 'p1', name: 'Test' }),
+        createPersonality: vi.fn(),
+      };
+
+      const manager = new FederationManager({
+        storage: mockStorage as any,
+        masterSecret: 'test-master-secret',
+        logger: {
+          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
+          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+        } as any,
+        soulManager: mockSoul as any,
+      });
+
+      await expect(manager.exportPersonalityBundle('p1', 'pass')).rejects.toThrow(
+        'Brain manager not available'
+      );
+    });
+
+    it('throws when personality not found', async () => {
+      const mockSoul = {
+        getPersonality: vi.fn().mockResolvedValue(null),
+        createPersonality: vi.fn(),
+      };
+      const mockBrain = { semanticSearch: vi.fn() };
+
+      const manager = new FederationManager({
+        storage: mockStorage as any,
+        masterSecret: 'test-master-secret',
+        logger: {
+          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
+          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+        } as any,
+        soulManager: mockSoul as any,
+        brainManager: mockBrain as any,
+      });
+
+      await expect(manager.exportPersonalityBundle('missing', 'pass')).rejects.toThrow(
+        'Personality not found'
+      );
+    });
+
+    it('handles brain search failure gracefully (empty knowledge)', async () => {
+      const mockSoul = {
+        getPersonality: vi.fn().mockResolvedValue({ id: 'p1', name: 'Test' }),
+        createPersonality: vi.fn(),
+      };
+      const mockBrain = {
+        semanticSearch: vi.fn().mockRejectedValue(new Error('search failed')),
+      };
+
+      const manager = new FederationManager({
+        storage: mockStorage as any,
+        masterSecret: 'test-master-secret',
+        logger: {
+          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
+          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+        } as any,
+        soulManager: mockSoul as any,
+        brainManager: mockBrain as any,
+      });
+
+      const buffer = await manager.exportPersonalityBundle('p1', 'pass');
+      const data = JSON.parse(buffer.toString());
+      expect(data.knowledgeEntries).toEqual([]);
+    });
+  });
+
+  // ── Phase 94: importPersonalityBundle ───────────────────────────────────────
+
+  describe('importPersonalityBundle', () => {
+    it('decrypts bundle and creates personality with new ID', async () => {
+      const bundle = {
+        version: '1',
+        personality: { id: 'old-id', name: 'Imported', integrationAccess: { github: { mode: 'allow' } } },
+        skills: [],
+        knowledgeEntries: [],
+      };
+      const encrypted = Buffer.from(JSON.stringify(bundle), 'utf8');
+
+      const mockSoul = {
+        getPersonality: vi.fn(),
+        createPersonality: vi.fn().mockResolvedValue({ id: 'test-uuid-123', name: 'Imported' }),
+      };
+
+      const manager = new FederationManager({
+        storage: mockStorage as any,
+        masterSecret: 'test-master-secret',
+        logger: {
+          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
+          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+        } as any,
+        soulManager: mockSoul as any,
+      });
+
+      const result = await manager.importPersonalityBundle(encrypted, 'pass');
+
+      expect(mockSoul.createPersonality).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'test-uuid-123', // new UUID assigned
+          name: 'Imported',
+          integrationAccess: { github: { mode: 'suggest' } }, // sanitized
+        })
+      );
+      expect(result).toMatchObject({ id: 'test-uuid-123' });
+    });
+
+    it('applies nameOverride when provided', async () => {
+      const bundle = {
+        version: '1',
+        personality: { id: 'old', name: 'Original', integrationAccess: {} },
+        skills: [],
+        knowledgeEntries: [],
+      };
+      const encrypted = Buffer.from(JSON.stringify(bundle), 'utf8');
+
+      const mockSoul = {
+        getPersonality: vi.fn(),
+        createPersonality: vi.fn().mockResolvedValue({ id: 'test-uuid-123', name: 'Custom Name' }),
+      };
+
+      const manager = new FederationManager({
+        storage: mockStorage as any,
+        masterSecret: 'test-master-secret',
+        logger: {
+          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
+          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+        } as any,
+        soulManager: mockSoul as any,
+      });
+
+      await manager.importPersonalityBundle(encrypted, 'pass', { nameOverride: 'Custom Name' });
+
+      expect(mockSoul.createPersonality).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'Custom Name' })
+      );
+    });
+
+    it('throws when soulManager not available', async () => {
+      const manager = makeManager();
+      await expect(
+        manager.importPersonalityBundle(Buffer.from('{}'), 'pass')
+      ).rejects.toThrow('Soul manager not available');
+    });
+
+    it('throws on unsupported bundle version', async () => {
+      const bundle = { version: '2', personality: {} };
+      const encrypted = Buffer.from(JSON.stringify(bundle), 'utf8');
+
+      const mockSoul = {
+        getPersonality: vi.fn(),
+        createPersonality: vi.fn(),
+      };
+
+      const manager = new FederationManager({
+        storage: mockStorage as any,
+        masterSecret: 'test-master-secret',
+        logger: {
+          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
+          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+        } as any,
+        soulManager: mockSoul as any,
+      });
+
+      await expect(
+        manager.importPersonalityBundle(encrypted, 'pass')
+      ).rejects.toThrow('Unsupported bundle version');
+    });
+  });
+
+  // ── Phase 94: checkHealth decrypt failure path ──────────────────────────────
+
+  describe('checkHealth — decrypt failure', () => {
+    it('returns offline when secret decryption fails', async () => {
+      const peer = makePeer({ sharedSecretEnc: 'corrupted-data' });
+      mockStorage.findById.mockResolvedValueOnce(peer);
+
+      // Override decryptSecret to throw for this test
+      const { decryptSecret } = await import('./federation-crypto.js');
+      vi.mocked(decryptSecret).mockImplementationOnce(() => {
+        throw new Error('Decryption failed');
+      });
+
+      const manager = makeManager();
+      const status = await manager.checkHealth('peer-1');
+
+      expect(status).toBe('offline');
+    });
+  });
+
+  // ── Phase 94: SSRF guard edge cases ─────────────────────────────────────────
+
+  describe('addPeer — SSRF guard edge cases', () => {
+    it('rejects 172.16.x.x (RFC 1918 Class B)', async () => {
+      const manager = makeManager();
+      await expect(manager.addPeer('https://172.16.0.1', 'Peer', 'sec')).rejects.toThrow(
+        /private\/loopback/
+      );
+    });
+
+    it('rejects 169.254.x.x (link-local)', async () => {
+      const manager = makeManager();
+      await expect(manager.addPeer('https://169.254.1.1', 'Peer', 'sec')).rejects.toThrow(
+        /private\/loopback/
+      );
+    });
+
+    it('rejects non-http/https protocol', async () => {
+      const manager = makeManager();
+      await expect(manager.addPeer('ftp://example.com', 'Peer', 'sec')).rejects.toThrow(
+        /http or https/
+      );
+    });
+  });
 });

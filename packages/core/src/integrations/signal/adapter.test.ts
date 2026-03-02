@@ -258,4 +258,136 @@ describe('SignalIntegration', () => {
       expect(adapter.isHealthy()).toBe(false);
     });
   });
+
+  // ── Error Path & Lifecycle Tests ──────────────────────────────────
+
+  describe('init() — error paths', () => {
+    it('should initialize with completely empty config (no required fields)', async () => {
+      const cfg = makeConfig({ config: {} });
+      await expect(adapter.init(cfg, makeDeps())).resolves.not.toThrow();
+    });
+  });
+
+  describe('start() / stop() — lifecycle edge cases', () => {
+    it('should be idempotent — calling stop twice does not throw', async () => {
+      await adapter.init(makeConfig(), makeDeps());
+      await adapter.start();
+      await adapter.stop();
+      await expect(adapter.stop()).resolves.not.toThrow();
+      expect(adapter.isHealthy()).toBe(false);
+    });
+
+    it('should support restart cycle (start → stop → start)', async () => {
+      await adapter.init(makeConfig(), makeDeps());
+      await adapter.start();
+      expect(adapter.isHealthy()).toBe(true);
+      await adapter.stop();
+      expect(adapter.isHealthy()).toBe(false);
+      await adapter.start();
+      expect(adapter.isHealthy()).toBe(true);
+    });
+  });
+
+  describe('sendMessage() — error paths', () => {
+    it('should propagate network errors when fetch throws', async () => {
+      const mockFetch = vi.fn().mockRejectedValue(new Error('Connection refused'));
+      vi.stubGlobal('fetch', mockFetch);
+
+      await adapter.init(makeConfig(), makeDeps());
+      await expect(adapter.sendMessage('+1234567890', 'Hello')).rejects.toThrow(
+        'Connection refused'
+      );
+    });
+
+    it('should include the API error text in the thrown error', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        text: () => Promise.resolve('Rate limit exceeded'),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await adapter.init(makeConfig(), makeDeps());
+      await expect(adapter.sendMessage('+123', 'Hi')).rejects.toThrow('Rate limit exceeded');
+    });
+
+    it('should include the signal-cli URL in the fetch call', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ timestamp: 999 }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const cfg = makeConfig({
+        config: {
+          webhookSecret: 's',
+          signalCliUrl: 'http://custom-host:9090',
+          signalCliToken: 'tok',
+        },
+      });
+      await adapter.init(cfg, makeDeps());
+      await adapter.sendMessage('+1234567890', 'Hello');
+
+      const [url] = mockFetch.mock.calls[0];
+      expect(url).toBe('http://custom-host:9090/v2/send');
+    });
+  });
+
+  describe('handleWebhook() — edge cases', () => {
+    it('should use source field when sourceNumber and sourceUuid are absent', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await adapter.init(makeConfig(), makeDeps(onMessage));
+
+      adapter.handleWebhook({
+        envelope: {
+          source: 'legacy-source-id',
+          message: { body: 'Hello', timestamp: 100 },
+        },
+      });
+
+      expect(onMessage).toHaveBeenCalledOnce();
+      const msg: UnifiedMessage = onMessage.mock.calls[0][0];
+      expect(msg.senderId).toBe('legacy-source-id');
+    });
+
+    it('should use "unknown" when no source identifier is present', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await adapter.init(makeConfig(), makeDeps(onMessage));
+
+      adapter.handleWebhook({
+        envelope: {
+          message: { body: 'Hello', timestamp: 100 },
+        },
+      });
+
+      expect(onMessage).toHaveBeenCalledOnce();
+      const msg: UnifiedMessage = onMessage.mock.calls[0][0];
+      expect(msg.senderId).toBe('unknown');
+    });
+
+    it('should use Date.now() as timestamp when message timestamp is absent', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await adapter.init(makeConfig(), makeDeps(onMessage));
+      const before = Date.now();
+
+      adapter.handleWebhook({
+        envelope: {
+          sourceNumber: '+123',
+          message: { body: 'No timestamp' },
+        },
+      });
+
+      const msg: UnifiedMessage = onMessage.mock.calls[0][0];
+      expect(msg.timestamp).toBeGreaterThanOrEqual(before);
+      expect(msg.timestamp).toBeLessThanOrEqual(Date.now());
+    });
+
+    it('should ignore payloads where message is entirely absent', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await adapter.init(makeConfig(), makeDeps(onMessage));
+
+      adapter.handleWebhook({ envelope: { sourceNumber: '+123' } });
+
+      expect(onMessage).not.toHaveBeenCalled();
+    });
+  });
 });

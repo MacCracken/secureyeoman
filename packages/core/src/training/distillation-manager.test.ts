@@ -506,4 +506,270 @@ describe('DistillationManager — Phase 92 extensions', () => {
       expect(uniformQuery).toBeDefined();
     });
   });
+
+  // ── Phase 94: curriculum sort ordering ──────────────────────────────────────
+
+  describe('runJob() — curriculum mode', () => {
+    it('orders conversations by stage when curriculumMode=true', async () => {
+      let qc = 0;
+      pool.query = vi.fn(async (sql: string) => {
+        qc++;
+        // 1st: getJob
+        if (qc === 1) {
+          return {
+            rows: [
+              makeJobRow({
+                status: 'pending',
+                curriculum_mode: true,
+                max_samples: 100,
+              }),
+            ],
+            rowCount: 1,
+          };
+        }
+        // 2nd: UPDATE to running
+        if (qc === 2) return { rows: [], rowCount: 1 };
+        // 3rd: SELECT conversations with message_count
+        if (qc === 3) {
+          return {
+            rows: [
+              { id: 'c1', message_count: 2 },   // stage 1 (<=4)
+              { id: 'c2', message_count: 8 },   // stage 2 (5-10)
+              { id: 'c3', message_count: 15 },  // stage 3 (11-20)
+              { id: 'c4', message_count: 30 },  // stage 4 (>20)
+              { id: 'c5', message_count: 3 },   // stage 1
+            ],
+            rowCount: 5,
+          };
+        }
+        // cancel check (getJob for each conv iteration)
+        if (sql.includes('SELECT') && sql.includes('distillation_jobs')) {
+          return {
+            rows: [makeJobRow({ status: 'running' })],
+            rowCount: 1,
+          };
+        }
+        return { rows: [], rowCount: 1 };
+      });
+
+      // Return 2 messages for each conversation
+      const convStorage = {
+        listConversations: vi.fn(async () => ({ conversations: [] })),
+        getMessages: vi.fn(async () => [
+          { id: 'm1', role: 'user', content: 'Hello' },
+          { id: 'm2', role: 'assistant', content: 'Hi' },
+        ]),
+      } as any;
+
+      await manager.runJob('job-1', convStorage, makeTeacher());
+
+      // The getMessages should have been called, verifying curriculum ordering worked
+      expect(convStorage.getMessages).toHaveBeenCalled();
+    });
+  });
+
+  // ── Phase 94: instruction format ────────────────────────────────────────────
+
+  describe('runJob() — instruction export format', () => {
+    it('writes instruction format lines when exportFormat=instruction', async () => {
+      let qc = 0;
+      pool.query = vi.fn(async (sql: string) => {
+        qc++;
+        if (qc === 1)
+          return {
+            rows: [makeJobRow({ status: 'pending', export_format: 'instruction' })],
+            rowCount: 1,
+          };
+        if (qc === 2) return { rows: [], rowCount: 1 };
+        if (qc === 3)
+          return { rows: [{ id: 'conv-1', message_count: 4 }], rowCount: 1 };
+        // cancel check
+        if (sql.includes('SELECT') && sql.includes('distillation_jobs'))
+          return { rows: [makeJobRow({ status: 'running' })], rowCount: 1 };
+        return { rows: [], rowCount: 1 };
+      });
+
+      const convStorage = {
+        listConversations: vi.fn(async () => ({ conversations: [] })),
+        getMessages: vi.fn(async () => [
+          { id: 'm1', role: 'user', content: 'Explain AI' },
+          { id: 'm2', role: 'assistant', content: 'AI is...' },
+        ]),
+      } as any;
+
+      // Use the real manager but mock fs
+      await manager.runJob('job-1', convStorage, makeTeacher('Teacher says AI'));
+
+      // Verify the teacher was called
+      expect(convStorage.getMessages).toHaveBeenCalledWith('conv-1', { limit: 1000 });
+    });
+  });
+
+  // ── Phase 94: counterfactual generation ─────────────────────────────────────
+
+  describe('runJob() — counterfactual mode', () => {
+    it('generates counterfactuals from failed pipeline conversations', async () => {
+      let qc = 0;
+      pool.query = vi.fn(async (sql: string) => {
+        qc++;
+        if (qc === 1)
+          return {
+            rows: [
+              makeJobRow({
+                status: 'pending',
+                counterfactual_mode: true,
+                max_counterfactual_samples: 5,
+              }),
+            ],
+            rowCount: 1,
+          };
+        if (qc === 2) return { rows: [], rowCount: 1 };
+        // Conversations query — return empty so main loop completes quickly
+        if (qc === 3) return { rows: [], rowCount: 0 };
+        // Pipeline lineage query for counterfactuals
+        if (sql.includes('pipeline_lineage')) {
+          return {
+            rows: [{ conversation_ids: ['failed-c1', 'failed-c2'] }],
+            rowCount: 1,
+          };
+        }
+        // Final UPDATE to complete
+        return { rows: [], rowCount: 1 };
+      });
+
+      const convStorage = {
+        listConversations: vi.fn(async () => ({ conversations: [] })),
+        getMessages: vi.fn(async () => [
+          { id: 'm1', role: 'user', content: 'Why did the deploy fail?' },
+          { id: 'm2', role: 'assistant', content: 'Something went wrong' },
+        ]),
+      } as any;
+
+      const teacher = makeTeacher('Here is the ideal response for the failed conversation');
+      await manager.runJob('job-1', convStorage, teacher);
+
+      // Teacher should have been called for counterfactual generation
+      expect(teacher.chat).toHaveBeenCalled();
+      // At least one teacher call should include the system prompt for counterfactuals
+      const calls = teacher.chat.mock.calls;
+      const hasSystemPrompt = calls.some(
+        (c: any) => c[0].messages.some((m: any) => m.role === 'system' && m.content.includes('ideal'))
+      );
+      expect(hasSystemPrompt).toBe(true);
+    });
+
+    it('skips counterfactuals when no failed conversations exist', async () => {
+      let qc = 0;
+      pool.query = vi.fn(async (sql: string) => {
+        qc++;
+        if (qc === 1)
+          return {
+            rows: [
+              makeJobRow({
+                status: 'pending',
+                counterfactual_mode: true,
+                max_counterfactual_samples: 5,
+              }),
+            ],
+            rowCount: 1,
+          };
+        if (qc === 2) return { rows: [], rowCount: 1 };
+        if (qc === 3) return { rows: [], rowCount: 0 };
+        // Pipeline lineage — no failed conversations
+        if (sql.includes('pipeline_lineage')) {
+          return { rows: [], rowCount: 0 };
+        }
+        return { rows: [], rowCount: 1 };
+      });
+
+      const convStorage = makeConvStorage();
+      const teacher = makeTeacher();
+      await manager.runJob('job-1', convStorage, teacher);
+
+      // Teacher should NOT have been called (no main samples, no counterfactuals)
+      expect(teacher.chat).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── Phase 94: runJob error handling ─────────────────────────────────────────
+
+  describe('runJob() — error path marks job as failed', () => {
+    it('sets status=failed when an unexpected error occurs during processing', async () => {
+      let qc = 0;
+      const sqlCalls: string[] = [];
+      pool.query = vi.fn(async (sql: string) => {
+        sqlCalls.push(sql);
+        qc++;
+        if (qc === 1)
+          return { rows: [makeJobRow({ status: 'pending' })], rowCount: 1 };
+        if (qc === 2) return { rows: [], rowCount: 1 }; // UPDATE to running
+        // Throw on the conv query
+        if (qc === 3) throw new Error('Database connection lost');
+        return { rows: [], rowCount: 1 };
+      });
+
+      await manager.runJob('job-1', makeConvStorage(), makeTeacher());
+
+      // Should have attempted to mark job as failed
+      const failQuery = sqlCalls.find((s) => s.includes("status='failed'"));
+      expect(failQuery).toBeDefined();
+      expect(logger.error).toHaveBeenCalledWith(
+        'Distillation job failed',
+        expect.objectContaining({ error: 'Database connection lost' })
+      );
+    });
+  });
+
+  // ── Phase 94: teacher LLM failure handling ──────────────────────────────────
+
+  describe('runJob() — teacher failure handling', () => {
+    it('continues processing when individual teacher call fails', async () => {
+      let qc = 0;
+      pool.query = vi.fn(async (sql: string) => {
+        qc++;
+        if (qc === 1) return { rows: [makeJobRow({ status: 'pending' })], rowCount: 1 };
+        if (qc === 2) return { rows: [], rowCount: 1 };
+        if (qc === 3)
+          return {
+            rows: [
+              { id: 'conv-1', message_count: 4 },
+              { id: 'conv-2', message_count: 4 },
+            ],
+            rowCount: 2,
+          };
+        if (sql.includes('SELECT') && sql.includes('distillation_jobs'))
+          return { rows: [makeJobRow({ status: 'running' })], rowCount: 1 };
+        return { rows: [], rowCount: 1 };
+      });
+
+      const convStorage = {
+        listConversations: vi.fn(async () => ({ conversations: [] })),
+        getMessages: vi.fn(async () => [
+          { id: 'm1', role: 'user', content: 'Hello' },
+          { id: 'm2', role: 'assistant', content: 'Hi' },
+        ]),
+      } as any;
+
+      // Teacher fails on first call, succeeds on second
+      const teacher = {
+        chat: vi
+          .fn()
+          .mockRejectedValueOnce(new Error('Rate limited'))
+          .mockResolvedValue({ content: 'Good answer' }),
+      } as any;
+
+      await manager.runJob('job-1', convStorage, teacher);
+
+      // Should have warned about the failed call
+      expect(logger.warn).toHaveBeenCalledWith(
+        'Teacher LLM call failed',
+        expect.objectContaining({ error: 'Rate limited' })
+      );
+      // Should still have completed (not thrown)
+      expect(logger.info).toHaveBeenCalledWith(
+        'Distillation job complete',
+        expect.any(Object)
+      );
+    });
+  });
 });

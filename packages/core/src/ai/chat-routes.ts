@@ -709,7 +709,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
   const contentGuardrail = createContentGuardrail(
     secureYeoman.getConfig().security.contentGuardrails,
     {
-      brainManager: secureYeoman.getBrainManager?.() ?? null,
+      brainManager: (() => { try { return secureYeoman.getBrainManager?.() ?? null; } catch { return null; } })(),
       auditRecord: (p) =>
         void secureYeoman.getAuditChain().record({
           event: p.event,
@@ -1487,6 +1487,16 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           } catch {
             // Brain not available — skip memory storage
           }
+        }
+
+        // Fire-and-forget anomaly detection (Phase 96)
+        try {
+          const anomalyDetector = secureYeoman.getUsageAnomalyDetector?.();
+          if (anomalyDetector && authUser?.id) {
+            anomalyDetector.recordMessage(authUser.id, effectivePersonalityId);
+          }
+        } catch {
+          // Best-effort — skip on error
         }
 
         return {
@@ -2343,6 +2353,16 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           } catch {
             /* best-effort */
           }
+        }
+
+        // Fire-and-forget anomaly detection (Phase 96)
+        try {
+          const anomalyDetector = secureYeoman.getUsageAnomalyDetector?.();
+          if (anomalyDetector && authUser?.id) {
+            anomalyDetector.recordMessage(authUser.id, effectivePersonalityId);
+          }
+        } catch {
+          // Best-effort — skip on error
         }
 
         emit({

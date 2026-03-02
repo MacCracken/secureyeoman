@@ -107,5 +107,68 @@ describe('KeyringManager', () => {
       const provider = manager.getProvider();
       expect(provider).toBeDefined();
     });
+
+    it('defaults to fallback (environment) provider before initialize()', () => {
+      const manager = new KeyringManager();
+      const provider = manager.getProvider();
+      // Before initialize, should be using environment provider
+      expect(provider.isAvailable()).toBe(true);
+    });
+  });
+
+  describe('auto backend fallback', () => {
+    it('auto backend falls back to env when no system keyring is available', () => {
+      const manager = new KeyringManager();
+      manager.initialize('auto', []);
+      // Both LinuxSecretServiceProvider and MacOSKeychainProvider return isAvailable=false
+      // so auto should fall back to EnvironmentProvider
+      const provider = manager.getProvider();
+      expect(provider.isAvailable()).toBe(true);
+    });
+
+    it('file backend falls through to auto behavior (fallback to env)', () => {
+      const manager = new KeyringManager();
+      // 'file' backend falls through to auto logic in selectProvider
+      manager.initialize('file' as any, []);
+      const provider = manager.getProvider();
+      expect(provider.isAvailable()).toBe(true);
+    });
+  });
+
+  describe('preloadSecrets', () => {
+    it('does not overwrite existing env vars during preload', () => {
+      process.env.EXISTING_KEY = 'original-value';
+      const manager = new KeyringManager();
+      manager.initialize('env', ['EXISTING_KEY']);
+      // env provider reads from process.env, so value should still be original
+      expect(process.env.EXISTING_KEY).toBe('original-value');
+      delete process.env.EXISTING_KEY;
+    });
+
+    it('skips preloading when using env provider (already reads process.env)', () => {
+      const manager = new KeyringManager();
+      manager.initialize('env', ['SOME_KEY', 'ANOTHER_KEY']);
+      // No error and no side effects — env provider short-circuits preload
+      expect(manager.getProvider().isAvailable()).toBe(true);
+    });
+  });
+
+  describe('storeSecret / getSecret / deleteSecret round-trip', () => {
+    it('round-trips a secret through store, get, delete', () => {
+      const manager = new KeyringManager();
+      manager.initialize('env', []);
+      manager.storeSecret('ROUND_TRIP_KEY', 'secret-value');
+      expect(manager.getSecret('ROUND_TRIP_KEY')).toBe('secret-value');
+      expect(process.env.ROUND_TRIP_KEY).toBe('secret-value');
+      manager.deleteSecret('ROUND_TRIP_KEY');
+      expect(manager.getSecret('ROUND_TRIP_KEY')).toBeUndefined();
+      expect(process.env.ROUND_TRIP_KEY).toBeUndefined();
+    });
+
+    it('getSecret returns undefined for non-existent key', () => {
+      const manager = new KeyringManager();
+      manager.initialize('env', []);
+      expect(manager.getSecret('TOTALLY_NONEXISTENT_KEY_12345')).toBeUndefined();
+    });
   });
 });

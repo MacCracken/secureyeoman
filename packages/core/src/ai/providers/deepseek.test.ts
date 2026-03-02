@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DeepSeekProvider } from './deepseek.js';
 import type { AIRequest, ModelConfig } from '@secureyeoman/shared';
-import { RateLimitError } from '../errors.js';
+import {
+  RateLimitError,
+  TokenLimitError,
+  ProviderUnavailableError,
+  InvalidResponseError,
+} from '../errors.js';
 
 const mockCreate = vi.fn();
 const mockFetch = vi.fn();
@@ -395,7 +400,6 @@ describe('DeepSeekProvider', () => {
   describe('additional error handling', () => {
     it('maps 400 token error to TokenLimitError', async () => {
       const { APIError } = await import('openai');
-      const { TokenLimitError } = await import('../errors.js');
       mockCreate.mockRejectedValueOnce(
         new (APIError as any)(400, 'context length exceeded token limit')
       );
@@ -404,21 +408,18 @@ describe('DeepSeekProvider', () => {
 
     it('maps 502 to ProviderUnavailableError', async () => {
       const { APIError } = await import('openai');
-      const { ProviderUnavailableError } = await import('../errors.js');
       mockCreate.mockRejectedValueOnce(new (APIError as any)(502, 'bad gateway'));
       await expect(provider.chat(simpleRequest)).rejects.toThrow(ProviderUnavailableError);
     });
 
     it('maps 503 to ProviderUnavailableError', async () => {
       const { APIError } = await import('openai');
-      const { ProviderUnavailableError } = await import('../errors.js');
       mockCreate.mockRejectedValueOnce(new (APIError as any)(503, 'service unavailable'));
       await expect(provider.chat(simpleRequest)).rejects.toThrow(ProviderUnavailableError);
     });
 
     it('maps 400 non-token error to InvalidResponseError', async () => {
       const { APIError } = await import('openai');
-      const { InvalidResponseError } = await import('../errors.js');
       mockCreate.mockRejectedValueOnce(new (APIError as any)(400, 'bad request'));
       await expect(provider.chat(simpleRequest)).rejects.toThrow(InvalidResponseError);
     });
@@ -431,6 +432,149 @@ describe('DeepSeekProvider', () => {
     it('rethrows regular Error as-is', async () => {
       mockCreate.mockRejectedValueOnce(new Error('network timeout'));
       await expect(provider.chat(simpleRequest)).rejects.toThrow('network timeout');
+    });
+  });
+
+  // ─── Constructor Edge Cases ───────────────────────────────────────────
+
+  describe('constructor', () => {
+    it('throws when no API key is provided', () => {
+      const config = makeConfig();
+      config.apiKey = '';
+      delete process.env.DEEPSEEK_API_KEY;
+      expect(() => new DeepSeekProvider({ model: config.model })).toThrow(
+        'DeepSeek provider requires DEEPSEEK_API_KEY'
+      );
+    });
+  });
+
+  // ─── Extended Error Metadata ──────────────────────────────────────────
+
+  describe('error metadata', () => {
+    it('RateLimitError has correct structured fields', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(429, 'rate limited'));
+      try {
+        await provider.chat(simpleRequest);
+        expect.unreachable();
+      } catch (error) {
+        expect(error).toBeInstanceOf(RateLimitError);
+        const e = error as RateLimitError;
+        expect(e.provider).toBe('deepseek');
+        expect(e.statusCode).toBe(429);
+        expect(e.recoverable).toBe(true);
+        expect(e.code).toBe('RATE_LIMIT');
+      }
+    });
+
+    it('TokenLimitError is marked as non-recoverable', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(
+        new (APIError as any)(400, 'token limit reached')
+      );
+      try {
+        await provider.chat(simpleRequest);
+        expect.unreachable();
+      } catch (error) {
+        expect(error).toBeInstanceOf(TokenLimitError);
+        expect((error as TokenLimitError).recoverable).toBe(false);
+        expect((error as TokenLimitError).provider).toBe('deepseek');
+      }
+    });
+
+    it('ProviderUnavailableError carries the statusCode', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(503, 'down'));
+      try {
+        await provider.chat(simpleRequest);
+        expect.unreachable();
+      } catch (error) {
+        expect(error).toBeInstanceOf(ProviderUnavailableError);
+        expect((error as ProviderUnavailableError).statusCode).toBe(503);
+      }
+    });
+
+    it('preserves the original APIError as cause', async () => {
+      const { APIError } = await import('openai');
+      const original = new (APIError as any)(429, 'rate limited');
+      mockCreate.mockRejectedValueOnce(original);
+      try {
+        await provider.chat(simpleRequest);
+        expect.unreachable();
+      } catch (error) {
+        expect((error as RateLimitError).cause).toBe(original);
+      }
+    });
+  });
+
+  // ─── Stream Error Propagation ─────────────────────────────────────────
+
+  describe('stream error details', () => {
+    it('maps stream 502 to ProviderUnavailableError', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(502, 'Bad Gateway'));
+      await expect(async () => {
+        for await (const _ of provider.chatStream(simpleRequest)) {
+          /* drain */
+        }
+      }).rejects.toThrow(ProviderUnavailableError);
+    });
+
+    it('maps stream 400 token error to TokenLimitError', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(
+        new (APIError as any)(400, 'context token limit exceeded')
+      );
+      await expect(async () => {
+        for await (const _ of provider.chatStream(simpleRequest)) {
+          /* drain */
+        }
+      }).rejects.toThrow(TokenLimitError);
+    });
+
+    it('maps non-Error stream values to Error', async () => {
+      mockCreate.mockRejectedValueOnce(null);
+      await expect(async () => {
+        for await (const _ of provider.chatStream(simpleRequest)) {
+          /* drain */
+        }
+      }).rejects.toThrow('null');
+    });
+  });
+
+  // ─── Response Edge Cases ──────────────────────────────────────────────
+
+  describe('response edge cases', () => {
+    it('maps response with null content to empty string', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: null }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
+      });
+      const response = await provider.chat(simpleRequest);
+      expect(response.content).toBe('');
+    });
+
+    it('maps response with undefined usage to zero tokens', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: 'hi' }, finish_reason: 'stop' }],
+        usage: undefined,
+      });
+      const response = await provider.chat(simpleRequest);
+      expect(response.usage.inputTokens).toBe(0);
+      expect(response.usage.outputTokens).toBe(0);
+      expect(response.usage.totalTokens).toBe(0);
+    });
+
+    it('returns undefined toolCalls when none present in response', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: 'hi' }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
+      });
+      const response = await provider.chat(simpleRequest);
+      expect(response.toolCalls).toBeUndefined();
     });
   });
 });

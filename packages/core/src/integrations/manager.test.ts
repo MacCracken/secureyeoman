@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { IntegrationManager } from './manager.js';
 
 const makeLogger = () => ({
@@ -49,12 +49,12 @@ function makeIntegration(overrides: any = {}) {
   };
 }
 
-function makeManager(storageOverrides: any = {}) {
+function makeManager(storageOverrides: any = {}, reconnectConfig?: any) {
   const storage = makeStorage(storageOverrides);
   const logger = makeLogger();
   const onMessage = vi.fn();
   const deps = { logger: logger as any, onMessage };
-  const manager = new IntegrationManager(storage as any, deps);
+  const manager = new IntegrationManager(storage as any, deps, reconnectConfig);
   return { manager, storage, logger, onMessage };
 }
 
@@ -363,6 +363,464 @@ describe('IntegrationManager', () => {
       await manager.close();
       expect(storage.close).toHaveBeenCalled();
       expect(manager.getRunningCount()).toBe(0);
+    });
+  });
+
+  // ── Error Path & Lifecycle Tests ──────────────────────────────────
+
+  describe('stopIntegration — error handling', () => {
+    it('logs error but does not throw when adapter.stop() rejects', async () => {
+      const { manager, storage, logger } = makeManager();
+      const integration = makeIntegration({
+        stop: vi.fn().mockRejectedValue(new Error('cleanup failed')),
+      });
+      manager.registerPlatform('slack' as any, () => integration as any);
+      await manager.startIntegration('int-1');
+
+      // Should not throw
+      await expect(manager.stopIntegration('int-1')).resolves.not.toThrow();
+
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining('cleanup failed')
+      );
+      // Still removes from registry and marks disconnected
+      expect(manager.isRunning('int-1')).toBe(false);
+      expect(storage.updateStatus).toHaveBeenCalledWith('int-1', 'disconnected');
+    });
+
+    it('logs error when adapter.stop() throws a non-Error value', async () => {
+      const { manager, logger } = makeManager();
+      const integration = makeIntegration({
+        stop: vi.fn().mockRejectedValue('string error'),
+      });
+      manager.registerPlatform('slack' as any, () => integration as any);
+      await manager.startIntegration('int-1');
+
+      await manager.stopIntegration('int-1');
+
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining('string error')
+      );
+    });
+  });
+
+  describe('startIntegration — init failure', () => {
+    it('records error status when init() fails', async () => {
+      const { manager, storage } = makeManager();
+      const integration = makeIntegration({
+        init: vi.fn().mockRejectedValue(new Error('bad credentials')),
+      });
+      manager.registerPlatform('slack' as any, () => integration as any);
+
+      await expect(manager.startIntegration('int-1')).rejects.toThrow('bad credentials');
+      expect(storage.updateStatus).toHaveBeenCalledWith('int-1', 'error', 'bad credentials');
+    });
+
+    it('records error status for non-Error thrown values', async () => {
+      const { manager, storage } = makeManager();
+      const integration = makeIntegration({
+        init: vi.fn().mockRejectedValue(42),
+      });
+      manager.registerPlatform('slack' as any, () => integration as any);
+
+      await expect(manager.startIntegration('int-1')).rejects.toBe(42);
+      expect(storage.updateStatus).toHaveBeenCalledWith('int-1', 'error', '42');
+    });
+  });
+
+  describe('sendMessage — error propagation', () => {
+    it('propagates adapter sendMessage rejection', async () => {
+      const { manager } = makeManager();
+      const integration = makeIntegration({
+        sendMessage: vi.fn().mockRejectedValue(new Error('API timeout')),
+      });
+      manager.registerPlatform('slack' as any, () => integration as any);
+      await manager.startIntegration('int-1');
+
+      await expect(manager.sendMessage('int-1', 'chat-1', 'Hello')).rejects.toThrow('API timeout');
+    });
+
+    it('does not store message when adapter sendMessage fails', async () => {
+      const { manager, storage } = makeManager();
+      const integration = makeIntegration({
+        sendMessage: vi.fn().mockRejectedValue(new Error('send failed')),
+      });
+      manager.registerPlatform('slack' as any, () => integration as any);
+      await manager.startIntegration('int-1');
+
+      await expect(manager.sendMessage('int-1', 'chat-1', 'Hi')).rejects.toThrow();
+      expect(storage.storeMessage).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('sendMessage — rate limiting', () => {
+    it('throws rate limit error when bucket is exhausted', async () => {
+      const { manager } = makeManager();
+      const integration = makeIntegration({
+        platformRateLimit: { maxPerSecond: 1 },
+      });
+      manager.registerPlatform('slack' as any, () => integration as any);
+      await manager.startIntegration('int-1');
+
+      // First message should succeed (bucket starts with 1 token)
+      await manager.sendMessage('int-1', 'chat-1', 'msg1');
+
+      // Second message should be rate-limited (no tokens remain)
+      await expect(manager.sendMessage('int-1', 'chat-1', 'msg2')).rejects.toThrow(
+        'Rate limit exceeded'
+      );
+    });
+
+    it('rate limit error includes platform name', async () => {
+      const { manager } = makeManager();
+      const integration = makeIntegration({
+        platformRateLimit: { maxPerSecond: 1 },
+      });
+      manager.registerPlatform('slack' as any, () => integration as any);
+      await manager.startIntegration('int-1');
+      await manager.sendMessage('int-1', 'c', 'm1');
+
+      await expect(manager.sendMessage('int-1', 'c', 'm2')).rejects.toThrow('slack');
+    });
+
+    it('falls back to DEFAULT_RATE_LIMITS when adapter has no platformRateLimit', async () => {
+      const { manager } = makeManager();
+      // null platformRateLimit → falls back to DEFAULT_RATE_LIMITS['slack'] = { maxPerSecond: 1 }
+      const integration = makeIntegration({ platformRateLimit: null });
+      manager.registerPlatform('slack' as any, () => integration as any);
+      await manager.startIntegration('int-1');
+
+      // slack default is 1/s, so first message succeeds
+      await manager.sendMessage('int-1', 'c', 'm1');
+      // second should be rate-limited
+      await expect(manager.sendMessage('int-1', 'c', 'm2')).rejects.toThrow('Rate limit exceeded');
+    });
+  });
+
+  describe('auto-reconnect — reconnect failure path', () => {
+    it('removes integration from registry when reconnect fails', async () => {
+      const { manager, storage, logger } = makeManager(
+        {},
+        { maxRetries: 5, baseDelayMs: 0, healthCheckIntervalMs: 100_000 }
+      );
+
+      let callCount = 0;
+      manager.registerPlatform('slack' as any, () => {
+        callCount++;
+        if (callCount === 1) {
+          // First instance starts fine but will be unhealthy when checked
+          return makeIntegration({ isHealthy: vi.fn().mockReturnValue(false) }) as any;
+        }
+        // Reconnect instance fails to start
+        return makeIntegration({
+          start: vi.fn().mockRejectedValue(new Error('still down')),
+        }) as any;
+      });
+
+      await manager.startIntegration('int-1');
+      expect(manager.isRunning('int-1')).toBe(true);
+
+      // Health check finds unhealthy, attempts reconnect which fails
+      await manager.runHealthChecks();
+
+      // Integration should be removed from registry since reconnect failed
+      expect(manager.isRunning('int-1')).toBe(false);
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('reconnect attempt'));
+      expect(storage.updateStatus).toHaveBeenCalledWith('int-1', 'error', 'still down');
+    });
+
+    it('reconnect stop errors are silently ignored', async () => {
+      const { manager } = makeManager(
+        {},
+        { maxRetries: 5, baseDelayMs: 0, healthCheckIntervalMs: 100_000 }
+      );
+
+      let callCount = 0;
+      manager.registerPlatform('slack' as any, () => {
+        callCount++;
+        if (callCount === 1) {
+          return makeIntegration({
+            isHealthy: vi.fn().mockReturnValue(false),
+            stop: vi.fn().mockRejectedValue(new Error('stop failed')),
+          }) as any;
+        }
+        return makeIntegration() as any;
+      });
+
+      await manager.startIntegration('int-1');
+
+      // Should not throw even though stop() fails during reconnect
+      await expect(manager.runHealthChecks()).resolves.not.toThrow();
+      // Reconnect succeeded with new instance
+      expect(manager.isRunning('int-1')).toBe(true);
+    });
+
+    it('successful reconnect logs the attempt count', async () => {
+      const { manager, logger } = makeManager(
+        {},
+        { maxRetries: 5, baseDelayMs: 0, healthCheckIntervalMs: 100_000 }
+      );
+
+      let callCount = 0;
+      manager.registerPlatform('slack' as any, () => {
+        callCount++;
+        if (callCount === 1) {
+          return makeIntegration({ isHealthy: vi.fn().mockReturnValue(false) }) as any;
+        }
+        return makeIntegration() as any;
+      });
+
+      await manager.startIntegration('int-1');
+      await manager.runHealthChecks();
+
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.stringContaining('reconnected after 1 attempt')
+      );
+    });
+  });
+
+  describe('auto-reconnect — backoff timing', () => {
+    it('does not retry before the backoff delay has elapsed', async () => {
+      vi.useFakeTimers();
+      try {
+        const { manager } = makeManager(
+          {},
+          { maxRetries: 5, baseDelayMs: 10_000, healthCheckIntervalMs: 100_000 }
+        );
+
+        let callCount = 0;
+        const startMock = vi.fn().mockRejectedValue(new Error('still down'));
+        manager.registerPlatform('slack' as any, () => {
+          callCount++;
+          if (callCount === 1) {
+            return makeIntegration({ isHealthy: vi.fn().mockReturnValue(false) }) as any;
+          }
+          return makeIntegration({ start: startMock }) as any;
+        });
+
+        await manager.startIntegration('int-1');
+        startMock.mockClear();
+
+        // First health check triggers reconnect attempt 1
+        await manager.runHealthChecks();
+        expect(startMock).toHaveBeenCalledTimes(1);
+        startMock.mockClear();
+
+        // Running health checks immediately should NOT retry (backoff not elapsed)
+        await manager.runHealthChecks();
+        expect(startMock).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
+  describe('startAll — partial failure', () => {
+    it('continues starting other integrations when one fails', async () => {
+      const config2 = { ...CONFIG, id: 'int-2', displayName: 'Slack 2' };
+      const { manager, storage, logger } = makeManager({
+        listIntegrations: vi.fn().mockResolvedValue([CONFIG, config2]),
+        getIntegration: vi.fn().mockImplementation((id: string) => {
+          if (id === 'int-1') return CONFIG;
+          if (id === 'int-2') return config2;
+          return null;
+        }),
+      });
+
+      let callCount = 0;
+      manager.registerPlatform('slack' as any, () => {
+        callCount++;
+        if (callCount === 1) {
+          return makeIntegration({
+            start: vi.fn().mockRejectedValue(new Error('first fails')),
+          }) as any;
+        }
+        return makeIntegration() as any;
+      });
+
+      await manager.startAll();
+
+      // First failed, second succeeded
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to auto-start')
+      );
+      expect(manager.isRunning('int-2')).toBe(true);
+    });
+  });
+
+  describe('reloadIntegration', () => {
+    it('stops and restarts a running integration', async () => {
+      const { manager, storage } = makeManager();
+      const integration1 = makeIntegration();
+      const integration2 = makeIntegration();
+      let callCount = 0;
+      manager.registerPlatform('slack' as any, () => {
+        callCount++;
+        return (callCount === 1 ? integration1 : integration2) as any;
+      });
+
+      await manager.startIntegration('int-1');
+      expect(integration1.start).toHaveBeenCalled();
+
+      await manager.reloadIntegration('int-1');
+      expect(integration1.stop).toHaveBeenCalled();
+      expect(integration2.start).toHaveBeenCalled();
+      expect(manager.isRunning('int-1')).toBe(true);
+    });
+
+    it('throws when integration does not exist', async () => {
+      const { manager } = makeManager({
+        getIntegration: vi.fn().mockResolvedValue(null),
+      });
+      await expect(manager.reloadIntegration('missing')).rejects.toThrow('not found');
+    });
+  });
+
+  describe('getAdaptersByPlatform', () => {
+    it('returns all adapters matching the given platform', async () => {
+      const config2 = { ...CONFIG, id: 'int-2', displayName: 'Slack 2' };
+      const { manager } = makeManager({
+        getIntegration: vi.fn().mockImplementation((id: string) => {
+          if (id === 'int-1') return CONFIG;
+          if (id === 'int-2') return config2;
+          return null;
+        }),
+      });
+
+      const i1 = makeIntegration();
+      const i2 = makeIntegration();
+      let callCount = 0;
+      manager.registerPlatform('slack' as any, () => {
+        callCount++;
+        return (callCount === 1 ? i1 : i2) as any;
+      });
+
+      await manager.startIntegration('int-1');
+      await manager.startIntegration('int-2');
+
+      const adapters = manager.getAdaptersByPlatform('slack');
+      expect(adapters).toHaveLength(2);
+    });
+
+    it('returns empty array when no adapters match', () => {
+      const { manager } = makeManager();
+      expect(manager.getAdaptersByPlatform('discord')).toEqual([]);
+    });
+  });
+
+  describe('deleteIntegration — stops running integration', () => {
+    it('stops a running integration before deleting', async () => {
+      const { manager, storage } = makeManager();
+      const integration = makeIntegration();
+      manager.registerPlatform('slack' as any, () => integration as any);
+      await manager.startIntegration('int-1');
+
+      const result = await manager.deleteIntegration('int-1');
+      expect(result).toBe(true);
+      expect(storage.deleteIntegration).toHaveBeenCalledWith('int-1');
+    });
+  });
+
+  describe('outbound webhook dispatcher', () => {
+    it('dispatches integration.started event on successful start', async () => {
+      const { manager } = makeManager();
+      const dispatcher = { dispatch: vi.fn() };
+      manager.setOutboundWebhookDispatcher(dispatcher as any);
+      manager.registerPlatform('slack' as any, () => makeIntegration() as any);
+
+      await manager.startIntegration('int-1');
+
+      expect(dispatcher.dispatch).toHaveBeenCalledWith(
+        'integration.started',
+        expect.objectContaining({ integrationId: 'int-1', platform: 'slack' })
+      );
+    });
+
+    it('dispatches integration.error event on start failure', async () => {
+      const { manager } = makeManager();
+      const dispatcher = { dispatch: vi.fn() };
+      manager.setOutboundWebhookDispatcher(dispatcher as any);
+      manager.registerPlatform(
+        'slack' as any,
+        () => makeIntegration({ start: vi.fn().mockRejectedValue(new Error('boom')) }) as any
+      );
+
+      await expect(manager.startIntegration('int-1')).rejects.toThrow('boom');
+
+      expect(dispatcher.dispatch).toHaveBeenCalledWith(
+        'integration.error',
+        expect.objectContaining({ integrationId: 'int-1', error: 'boom' })
+      );
+    });
+
+    it('dispatches integration.stopped event on stop', async () => {
+      const { manager } = makeManager();
+      const dispatcher = { dispatch: vi.fn() };
+      manager.setOutboundWebhookDispatcher(dispatcher as any);
+      manager.registerPlatform('slack' as any, () => makeIntegration() as any);
+
+      await manager.startIntegration('int-1');
+      await manager.stopIntegration('int-1');
+
+      expect(dispatcher.dispatch).toHaveBeenCalledWith(
+        'integration.stopped',
+        expect.objectContaining({ integrationId: 'int-1', platform: 'slack' })
+      );
+    });
+
+    it('dispatches message.outbound event on sendMessage', async () => {
+      const { manager } = makeManager();
+      const dispatcher = { dispatch: vi.fn() };
+      manager.setOutboundWebhookDispatcher(dispatcher as any);
+      manager.registerPlatform('slack' as any, () => makeIntegration() as any);
+
+      await manager.startIntegration('int-1');
+      await manager.sendMessage('int-1', 'chat-1', 'Hello');
+
+      expect(dispatcher.dispatch).toHaveBeenCalledWith(
+        'message.outbound',
+        expect.objectContaining({
+          integrationId: 'int-1',
+          chatId: 'chat-1',
+          text: 'Hello',
+          platformMessageId: 'msg-id-1',
+        })
+      );
+    });
+  });
+
+  describe('getOAuthTokens', () => {
+    it('returns empty array when no oauth service configured', async () => {
+      const { manager } = makeManager();
+      const tokens = await manager.getOAuthTokens();
+      expect(tokens).toEqual([]);
+    });
+
+    it('returns mapped tokens from oauth service', async () => {
+      const storage = makeStorage();
+      const logger = makeLogger();
+      const oauthTokenService = {
+        listTokens: vi.fn().mockResolvedValue([
+          { id: 't1', provider: 'google', email: 'user@example.com', accessToken: 'secret' },
+        ]),
+      };
+      const deps = { logger: logger as any, onMessage: vi.fn(), oauthTokenService };
+      const manager = new IntegrationManager(storage as any, deps as any);
+
+      const tokens = await manager.getOAuthTokens();
+      expect(tokens).toEqual([{ id: 't1', provider: 'google', email: 'user@example.com' }]);
+    });
+  });
+
+  describe('setMultimodalManager / setOAuthTokenService', () => {
+    it('setMultimodalManager updates deps without throwing', () => {
+      const { manager } = makeManager();
+      expect(() => manager.setMultimodalManager(null)).not.toThrow();
+    });
+
+    it('setOAuthTokenService updates deps without throwing', () => {
+      const { manager } = makeManager();
+      expect(() => manager.setOAuthTokenService(null)).not.toThrow();
     });
   });
 });
