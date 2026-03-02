@@ -17,6 +17,7 @@ import {
   contextEngineeringSkill,
   intentEngineeringSkill,
   specificationEngineeringSkill,
+  sopWriterSkill,
 } from './skills/index.js';
 
 export class MarketplaceStorage extends PgBaseStorage {
@@ -351,6 +352,7 @@ export class MarketplaceStorage extends PgBaseStorage {
       contextEngineeringSkill,
       intentEngineeringSkill,
       specificationEngineeringSkill,
+      sopWriterSkill,
     ];
     for (const skill of BUILTIN_SKILLS) {
       if (!skill.name) continue;

@@ -30,6 +30,7 @@ vi.mock('./skills/index.js', () => ({
     author: 'YEOMAN',
     version: '1.0.0',
   },
+  sopWriterSkill: { name: 'SOP Writer', author: 'YEOMAN', version: '1.0.0' },
 }));
 
 // ─── Test Data ────────────────────────────────────────────────
@@ -357,9 +358,9 @@ describe('MarketplaceStorage', () => {
 
   describe('seedBuiltinSkills', () => {
     it('inserts skills that do not already exist', async () => {
-      // 10 skills total; all return null (no existing) → all 10 get inserted
+      // 11 skills total; all return null (no existing) → all 11 get inserted
       // Each skill: one queryOne (SELECT id) + one execute (INSERT)
-      // That's 20 queries total
+      // That's 22 queries total
       mockQuery.mockResolvedValue({ rows: [], rowCount: 0 }); // all checks return null, all inserts succeed
 
       await storage.seedBuiltinSkills();
@@ -368,7 +369,7 @@ describe('MarketplaceStorage', () => {
       const selectCalls = mockQuery.mock.calls.filter(
         (c: any[]) => typeof c[0] === 'string' && c[0].includes('SELECT id FROM marketplace.skills')
       );
-      expect(selectCalls).toHaveLength(10);
+      expect(selectCalls).toHaveLength(11);
     });
 
     it('skips skills that already exist', async () => {

@@ -52,6 +52,7 @@
 | 99 | Conversation Branching & Replay | P3 — developer experience | Planned |
 | 100 | Editor Improvements (Auto-Claude Style) | P3 — power user UX | 🔄 In Progress (unification ✅, IDE features planned) |
 | 101 | Inline Citations & Grounding | P4 — trust layer | Planned |
+| 102 | Reasoning Strategies, Security Templates & Portable Personalities | P2 — capability + distribution | Planned |
 | Future | Workflow Versioning, LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Infrastructure | Future / Demand-Gated | — |
 
 ---
@@ -152,6 +153,103 @@ Inspired by Google Cloud Vertex AI Grounding and Azure Groundedness Detection.
 - [ ] **Web grounding** — Ground AI responses in live web search results, not just the local knowledge base. When web grounding is enabled and the query requires current information, perform a search (via existing web-search MCP tool), retrieve top results, and include them as retrieved context with citations.
 - [ ] **Grounding confidence score** — Per-response aggregate grounding score: what fraction of claims are supported by retrieved sources above threshold? Stored on the conversation turn. Low-grounding responses flagged in the Audit Log. Rolling average per personality surfaced in the Analytics tab as a "Response Trustworthiness" metric.
 - [ ] **Citation feedback** — Users can click a citation to see the full source chunk in a side drawer. They can mark citations as "not relevant" — negative feedback stored as a weak signal for the knowledge base quality scoring system.
+
+---
+
+## Phase 102: Reasoning Strategies, Security Templates & Portable Personalities
+
+**Priority**: P2 — Capability expansion + distribution. Inspired by [fabric](https://github.com/danielmiessler/fabric)'s patterns/strategies architecture. Six workstreams: composable reasoning strategies, security-domain prompt templates, CLI UX improvements, portable markdown personality format with injection model, personality-core distillation for transport, and ATHI threat governance taxonomy.
+
+### 102-A: Reasoning Strategies Layer
+
+*Composable meta-reasoning instructions that can be applied to any personality's system prompt. Orthogonal to the personality itself — "use chain-of-thought with FRIDAY" or "use tree-of-thought with T.Ron".*
+
+- [ ] **Strategy schema & storage** — `ReasoningStrategySchema` in `packages/shared/src/types/soul.ts`: `{ id, name, slug, description, promptPrefix, category, isBuiltin }`. Migration adds `soul.reasoning_strategies` table. Category enum: `chain_of_thought | tree_of_thought | reflexion | self_refine | self_consistent | chain_of_density | argument_of_thought | standard`.
+- [ ] **Built-in strategies** — Seed 8 strategies matching fabric's set: CoT ("Think step by step"), ToT ("Generate multiple reasoning paths, select the best"), Reflexion ("Answer, critique, refine"), Self-Refine ("Iteratively improve"), Self-Consistent ("Multiple samples, majority vote"), Chain-of-Density (density-based summarization), Argument-of-Thought (argument-structured reasoning), Standard (baseline/no prefix). Stored as builtins with `isBuiltin: true`.
+- [ ] **Strategy injection in SoulManager** — `manager.ts` `composeSystemPrompt()` accepts optional `strategyId`. When set, prepends the strategy's `promptPrefix` before the personality's system prompt. Strategy sits between Sacred Archetypes preamble and personality identity.
+- [ ] **Per-conversation strategy selection** — `POST /api/v1/chat` and `/chat/stream` accept optional `strategyId` query param. Stored on the conversation metadata. Default: `null` (no strategy override; personality uses its own prompt as-is).
+- [ ] **Per-personality default strategy** — New `defaultStrategyId` field on `PersonalityCreate`. When set and no per-conversation override, this strategy is always applied.
+- [ ] **Strategy CRUD routes** — `GET/POST/PUT/DELETE /api/v1/soul/strategies`. Builtin strategies are read-only. Custom strategies support full CRUD. Auth: `soul:read`/`soul:write`.
+- [ ] **Dashboard: Strategy selector** — Dropdown in chat interface header (next to model selector) listing available strategies. Selected strategy shown as a chip. Strategy management UI in Settings → Soul System tab.
+- [ ] **CLI: `secureyeoman strategy`** — Subcommands: `list`, `show <slug>`, `create`, `delete`. `--strategy <slug>` flag on `secureyeoman chat` and `secureyeoman execute`.
+- [ ] **Strategy-aware evaluation** — `EvaluationManager` records which strategy was active during evaluated conversations. Evaluation results filterable by strategy to measure which reasoning approach works best for which task type.
+
+### 102-B: Security Prompt Templates
+
+*Pre-built security-focused prompt templates inspired by fabric's security patterns. Delivered as marketplace skills and workflow templates with structured output specifications.*
+
+- [ ] **STRIDE threat model template** — Skill + workflow template. Input: system description (architecture doc, API spec, or free-text). Output: structured STRIDE per-element analysis with severity scores (Critical/High/Medium/Low), attack trees, and recommended mitigations. Output format: markdown with tables.
+- [ ] **SIGMA rule generator** — Skill that converts threat intelligence reports, IOC lists, or incident descriptions into SIEM-ready SIGMA detection rules (YAML). Includes logsource, detection, and condition fields. Validates output against SIGMA schema.
+- [ ] **Malware analysis template** — 8-section structured analysis: executive summary, IOCs (hashes, IPs, domains, URLs), MITRE ATT&CK technique mapping, behavioral analysis, YARA rule generation, network indicators, persistence mechanisms, and recommended pivots. Anti-hallucination guard: "Acknowledge missing information rather than inventing indicators."
+- [ ] **Email header forensics** — Analyzes raw email headers for SPF/DKIM/DMARC/ARC authentication results. Generates DNS lookup verification scripts. Identifies header anomalies and spoofing indicators.
+- [ ] **TTRC analysis (Time to Remediate/Compromise)** — Calculates and visualizes the ratio between how long it takes to find and fix vulnerabilities vs. how long it takes attackers to exploit them. Outputs narrative + data for dashboard metrics.
+- [ ] **Security architecture review** — Generates "secure by design" review questions for a given system architecture. Covers: authentication, authorization, data protection, network segmentation, supply chain, logging, incident response, and compliance alignment.
+- [ ] **Log analysis template** — Structured log analysis for security events. Identifies anomalies, correlates events, generates timeline, suggests investigation paths. Supports common log formats (syslog, JSON, CEF).
+- [ ] **Community security patterns directory** — Add `security-templates/` to the community repo structure. Each template is a directory with `system.md` (system prompt), `user.md` (optional input template), and `metadata.json` (category, tags, required integrations). `CommunitySyncResult` gains `securityTemplatesAdded`/`securityTemplatesUpdated`.
+
+### 102-C: CLI Enhancements
+
+*Unix-philosophy CLI improvements inspired by fabric's composable piping model.*
+
+- [ ] **Stdin piping** — `secureyeoman chat` reads from stdin when not a TTY. Enables `cat report.txt | secureyeoman chat -p friday` and `pbpaste | secureyeoman chat --strategy cot`. Input piped as the user message; response written to stdout.
+- [ ] **`--dry-run` flag** — Preview the full composed prompt (system prompt + strategy prefix + personality + skills + user message) without sending to the AI provider. Outputs the prompt to stdout. Useful for debugging prompt composition and reviewing what the AI will see.
+- [ ] **`--output` / `-o` flag** — Write AI response to a file instead of (or in addition to) stdout. `secureyeoman chat -p friday -o response.md "Analyze this threat"`.
+- [ ] **Personality aliasing** — `secureyeoman alias create wisdom "chat -p friday --strategy cot"`. Stored in `~/.config/secureyeoman/aliases.json`. Usage: `secureyeoman wisdom "Analyze this document"`. `secureyeoman alias list` / `secureyeoman alias delete <name>`.
+- [ ] **Pipeline chaining** — Stdout output is clean (no progress spinners or status messages when piped) so responses can chain: `secureyeoman chat -p friday "Analyze this" | secureyeoman chat -p t-ron "Summarize"`. Detect non-TTY stdout and suppress decorations.
+- [ ] **`--copy` / `-c` flag** — Copy AI response to system clipboard (xclip/xsel on Linux, pbcopy on macOS, clip on Windows). Complement to stdin piping for quick workflows.
+- [ ] **`--format` flag** — Output format control: `markdown` (default), `json` (structured response with metadata), `plain` (strip markdown formatting). JSON mode includes token counts, model used, strategy applied, and timing.
+
+### 102-D: Portable Personality Format — Markdown Injection Model
+
+*Bidirectional conversion between SecureYeoman's native personality format and portable markdown documents. The injection model serializes personalities TO markdown for transport/sharing and parses markdown back INTO the native format. Not flat-file storage — markdown is the interchange format.*
+
+- [ ] **`PersonalityMarkdownSerializer`** — `packages/core/src/soul/personality-serializer.ts`. Methods: `toMarkdown(personality: Personality): string` and `fromMarkdown(md: string): PersonalityCreate`. The markdown format uses structured sections with YAML frontmatter:
+  ```
+  ---
+  name: FRIDAY
+  version: 2026.3.2
+  traits: [analytical, security-focused, direct]
+  defaultModel: { provider: ollama, model: llama3 }
+  category: security
+  tags: [assistant, security, general-purpose]
+  ---
+  # Identity & Purpose
+  <system prompt text>
+  # Skills
+  - skill_name: description (autonomy: L3)
+  # Configuration
+  <YAML block of body config subset — only non-default values>
+  # Reasoning Strategy
+  <default strategy slug and description>
+  ```
+- [ ] **Export route** — `GET /api/v1/soul/personalities/:id/export?format=md` returns the markdown document. Also supports `format=json` (existing raw format). Content-Disposition header for download.
+- [ ] **Import route** — `POST /api/v1/soul/personalities/import` accepts `multipart/form-data` with `.md` or `.json` file. Parses markdown via `fromMarkdown()`, validates against `PersonalityCreateSchema`, creates the personality. Returns `{ personality, warnings[] }` — warnings for referenced skills/integrations not found locally.
+- [ ] **CLI export/import** — `secureyeoman personality export <name> [--format md|json] [--output file]` and `secureyeoman personality import <file>`. Round-trip: `export | import` produces an equivalent personality.
+- [ ] **Marketplace markdown transport** — Community repo `personalities/` directory uses `.md` files. `CommunitySyncResult` gains `personalitiesAdded`/`personalitiesUpdated`. Marketplace → Personalities tab shows imported community personalities with a "Community" badge.
+- [ ] **Dashboard export/import** — Export button on PersonalityEditor toolbar (downloads `.md` file). Import button on Personalities list page (file upload dialog with preview of parsed personality before confirmation).
+
+### 102-E: Personality Core Distillation to Markdown
+
+*Automated extraction of a personality's effective runtime state — not just its config, but the composed prompt including injected skills, memory context, active integrations, and strategy — into a single portable markdown document. This is the "distilled" view: what the AI actually sees.*
+
+- [ ] **`distillPersonality()` method** — `SoulManager` method that calls `composeSystemPrompt()` with all active skills, memory snippets, integration contexts, and strategy prefix, then wraps the result in the portable markdown format from 102-D. The distilled document includes a `# Runtime Context` section listing: active skills (count + names), memory entries (count), connected integrations, applied strategy, and model configuration.
+- [ ] **Distillation route** — `GET /api/v1/soul/personalities/:id/distill` returns the distilled markdown. Accepts `?includeMemory=true` to embed the personality's top-k memory entries (default: metadata only, not full content — avoids leaking sensitive learned data).
+- [ ] **Distillation diff** — `GET /api/v1/soul/personalities/:id/distill/diff` compares the current distilled state against the last exported/tagged version. Returns a unified diff. Useful for understanding "what changed in what the AI sees" vs. "what changed in the config."
+- [ ] **CLI distill** — `secureyeoman personality distill <name> [--include-memory] [--output file]`. Outputs the full composed prompt as a readable markdown document.
+- [ ] **Transport use case** — Distilled personalities can be imported on another SecureYeoman instance. Skills and integrations referenced in the distilled doc that aren't available locally are listed as warnings. The system prompt is imported as-is; skills are matched by name/slug when available.
+
+### 102-F: ATHI Threat Governance Framework
+
+*Actors/Techniques/Harms/Impacts taxonomy for AI threat modeling, adapted from Daniel Miessler's ATHI framework. Positioned as an organizational governance tool — extends SecureYeoman's existing security audit capabilities with an AI-specific threat lens communicable to non-technical stakeholders.*
+
+- [ ] **ATHI schema** — `packages/shared/src/types/security.ts`: `AthiActor` (nation_state, cybercriminal, insider, hacktivist, competitor, automated_agent), `AthiTechnique` (prompt_injection, data_poisoning, model_theft, supply_chain, social_engineering, adversarial_input, privilege_escalation), `AthiHarm` (data_breach, misinformation, service_disruption, privacy_violation, financial_loss, reputational_damage, safety_risk), `AthiImpact` (regulatory_penalty, operational_downtime, customer_trust_loss, ip_theft, legal_liability). `AthiThreatScenario`: `{ actor, techniques[], harms[], impacts[], likelihood, severity, mitigations[], status }`.
+- [ ] **ATHI storage & migration** — `security.athi_scenarios` table. Fields: id, org_id (nullable, for multi-tenancy), title, description, actor, techniques (JSONB), harms (JSONB), impacts (JSONB), likelihood (1-5), severity (1-5), risk_score (computed: likelihood × severity), mitigations (JSONB), status (identified | assessed | mitigated | accepted | monitoring), created_by, created_at, updated_at.
+- [ ] **ATHI manager** — `packages/core/src/security/athi-manager.ts`. CRUD + `getRiskMatrix()` (actor × technique heat map), `getTopRisks(limit)`, `getMitigationCoverage()` (% of scenarios with at least one mitigation), `generateExecutiveSummary()` (non-technical narrative for board-level reporting).
+- [ ] **ATHI routes** — `GET/POST/PUT/DELETE /api/v1/security/athi/scenarios`. `GET /api/v1/security/athi/matrix` (risk heat map data). `GET /api/v1/security/athi/summary` (executive narrative). Auth: `security:read`/`security:write`.
+- [ ] **AI-assisted scenario generation** — Skill/workflow template: given an organization description and its AI usage patterns, generate candidate ATHI threat scenarios. Uses the malware analysis and threat modeling security templates from 102-B as building blocks. Output reviewed by human before persisting.
+- [ ] **Dashboard: ATHI tab** — New sub-tab in SecurityPage. Risk matrix visualization (likelihood × severity heat map). Scenario list with filters by actor/technique/status. Executive summary export (PDF/markdown). Mitigation coverage gauge.
+- [ ] **CLI: `secureyeoman athi`** — Subcommands: `list`, `show <id>`, `create`, `matrix`, `summary`. `--format json|table|markdown` output modes.
+- [ ] **Integration with existing security features** — ATHI scenarios can reference audit events (link scenario → observed events). Security Events tab cross-references ATHI scenarios when displaying events that match a known technique pattern. Alert rules can trigger on ATHI-mapped event patterns.
 
 ---
 
@@ -319,4 +417,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-01 — See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-02 — See [Changelog](../../CHANGELOG.md) for full history.*
