@@ -5370,3 +5370,57 @@ export async function evaluateAbTest(
 }> {
   return request(`/training/ab-tests/${id}/evaluate`, { method: 'POST' });
 }
+
+// ── Capture Management (Phase 108-F) ──────────────────────────────────────
+
+export interface CaptureConsentItem {
+  id: string;
+  requestedBy: string;
+  userId: string;
+  scope: { resource: string; duration: number; purpose: string };
+  status: 'pending' | 'granted' | 'denied' | 'expired' | 'revoked';
+  expiresAt: number;
+  grantedAt?: number;
+  requestedAt: number;
+}
+
+export interface CaptureRecordingItem {
+  id: string;
+  userId: string;
+  status: 'active' | 'completed' | 'stopped' | 'failed';
+  config: Record<string, unknown>;
+  filePath?: string;
+  fileSize?: number;
+  startedAt: number;
+  stoppedAt?: number;
+}
+
+export async function fetchPendingConsents(): Promise<{ consents: CaptureConsentItem[] }> {
+  return request('/capture/consent/pending');
+}
+
+export async function grantConsent(id: string): Promise<CaptureConsentItem> {
+  return request(`/capture/consent/${id}/grant`, { method: 'POST' });
+}
+
+export async function denyConsent(id: string, reason?: string): Promise<CaptureConsentItem> {
+  return request(`/capture/consent/${id}/deny`, {
+    method: 'POST',
+    body: JSON.stringify({ reason: reason ?? 'User denied' }),
+  });
+}
+
+export async function revokeConsent(id: string): Promise<CaptureConsentItem> {
+  return request(`/capture/consent/${id}/revoke`, { method: 'POST' });
+}
+
+export async function fetchActiveRecordings(): Promise<{ recordings: CaptureRecordingItem[] }> {
+  return request('/desktop/recording/active');
+}
+
+export async function stopRecording(sessionId: string): Promise<CaptureRecordingItem> {
+  return request('/desktop/recording/stop', {
+    method: 'POST',
+    body: JSON.stringify({ sessionId }),
+  });
+}

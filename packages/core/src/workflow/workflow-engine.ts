@@ -975,6 +975,42 @@ export class WorkflowEngine {
     });
   }
 
+  // ── Condition Validation ─────────────────────────────────────
+
+  /**
+   * Validate a condition expression at save time (static check — no execution context).
+   * Returns { valid: true } or { valid: false, error: <syntax error message> }.
+   */
+  static validateConditionExpression(expr: string): { valid: boolean; error?: string } {
+    try {
+      // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
+      new Function('steps', 'input', `"use strict"; return !!(${expr});`);
+      return { valid: true };
+    } catch (e) {
+      return { valid: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
+  /**
+   * Validate all condition expressions across workflow steps.
+   * Returns an array of errors (empty if all valid).
+   */
+  static validateWorkflowConditions(
+    steps: WorkflowStep[]
+  ): { stepId: string; expression: string; error: string }[] {
+    const errors: { stepId: string; expression: string; error: string }[] = [];
+    for (const step of steps) {
+      const condition = (step as Record<string, unknown>).condition as string | undefined;
+      if (condition) {
+        const result = WorkflowEngine.validateConditionExpression(condition);
+        if (!result.valid) {
+          errors.push({ stepId: step.id, expression: condition, error: result.error! });
+        }
+      }
+    }
+    return errors;
+  }
+
   // ── Condition Evaluation ──────────────────────────────────────
 
   evaluateCondition(expr: string, ctx: WorkflowEngineContext): boolean {

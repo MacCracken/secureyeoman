@@ -4,6 +4,7 @@
 
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
+import { WorkflowEngine } from './workflow-engine.js';
 import type {
   WorkflowDefinition,
   WorkflowDefinitionCreate,
@@ -156,6 +157,20 @@ export class WorkflowStorage extends PgBaseStorage {
   }
 
   async createDefinition(data: WorkflowDefinitionCreate): Promise<WorkflowDefinition> {
+    // Validate condition expressions at save time
+    if (data.steps?.length) {
+      const conditionErrors = WorkflowEngine.validateWorkflowConditions(data.steps);
+      if (conditionErrors.length > 0) {
+        const details = conditionErrors
+          .map((e) => `step "${e.stepId}": ${e.error}`)
+          .join('; ');
+        throw Object.assign(new Error(`Invalid condition expression(s): ${details}`), {
+          statusCode: 400,
+          conditionErrors,
+        });
+      }
+    }
+
     const id = uuidv7();
     const now = Date.now();
     const row = await this.queryOne<WorkflowDefinitionRow>(
@@ -216,6 +231,20 @@ export class WorkflowStorage extends PgBaseStorage {
     id: string,
     data: WorkflowDefinitionUpdate
   ): Promise<WorkflowDefinition | null> {
+    // Validate condition expressions at save time
+    if (data.steps?.length) {
+      const conditionErrors = WorkflowEngine.validateWorkflowConditions(data.steps);
+      if (conditionErrors.length > 0) {
+        const details = conditionErrors
+          .map((e) => `step "${e.stepId}": ${e.error}`)
+          .join('; ');
+        throw Object.assign(new Error(`Invalid condition expression(s): ${details}`), {
+          statusCode: 400,
+          conditionErrors,
+        });
+      }
+    }
+
     const updates: string[] = [];
     const values: unknown[] = [];
     let p = 1;

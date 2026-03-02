@@ -853,6 +853,76 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/license/key': {
     POST: { resource: 'license', action: 'write' },
   },
+  // Desktop control routes (Phase 108 — granular capture RBAC)
+  '/api/v1/desktop/screenshot': {
+    POST: { resource: 'capture.screen', action: 'capture' },
+  },
+  '/api/v1/desktop/windows': {
+    GET: { resource: 'capture.screen', action: 'capture' },
+  },
+  '/api/v1/desktop/displays': {
+    GET: { resource: 'capture.screen', action: 'capture' },
+  },
+  '/api/v1/desktop/camera': {
+    POST: { resource: 'capture.camera', action: 'capture' },
+  },
+  '/api/v1/desktop/mouse/move': {
+    POST: { resource: 'capture.screen', action: 'configure' },
+  },
+  '/api/v1/desktop/mouse/click': {
+    POST: { resource: 'capture.screen', action: 'configure' },
+  },
+  '/api/v1/desktop/mouse/scroll': {
+    POST: { resource: 'capture.screen', action: 'configure' },
+  },
+  '/api/v1/desktop/keyboard/type': {
+    POST: { resource: 'capture.screen', action: 'configure' },
+  },
+  '/api/v1/desktop/keyboard/key': {
+    POST: { resource: 'capture.screen', action: 'configure' },
+  },
+  '/api/v1/desktop/window/focus': {
+    POST: { resource: 'capture.screen', action: 'configure' },
+  },
+  '/api/v1/desktop/window/resize': {
+    POST: { resource: 'capture.screen', action: 'configure' },
+  },
+  '/api/v1/desktop/clipboard': {
+    GET: { resource: 'capture.clipboard', action: 'capture' },
+    POST: { resource: 'capture.clipboard', action: 'configure' },
+  },
+  '/api/v1/desktop/input/sequence': {
+    POST: { resource: 'capture.screen', action: 'configure' },
+  },
+  // Capture consent routes (Phase 108-D)
+  '/api/v1/capture/consent/request': {
+    POST: { resource: 'capture.screen', action: 'capture' },
+  },
+  '/api/v1/capture/consent/pending': {
+    GET: { resource: 'capture.screen', action: 'capture' },
+  },
+  '/api/v1/capture/consent/:id': {
+    GET: { resource: 'capture.screen', action: 'capture' },
+  },
+  '/api/v1/capture/consent/:id/grant': {
+    POST: { resource: 'capture.screen', action: 'configure' },
+  },
+  '/api/v1/capture/consent/:id/deny': {
+    POST: { resource: 'capture.screen', action: 'configure' },
+  },
+  '/api/v1/capture/consent/:id/revoke': {
+    POST: { resource: 'capture.screen', action: 'configure' },
+  },
+  // Screen recording routes (Phase 108-E)
+  '/api/v1/desktop/recording/start': {
+    POST: { resource: 'capture.screen', action: 'stream' },
+  },
+  '/api/v1/desktop/recording/stop': {
+    POST: { resource: 'capture.screen', action: 'configure' },
+  },
+  '/api/v1/desktop/recording/active': {
+    GET: { resource: 'capture.screen', action: 'capture' },
+  },
 };
 
 const PUBLIC_ROUTES = new Set([

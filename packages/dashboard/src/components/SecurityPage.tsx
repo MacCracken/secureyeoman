@@ -11,6 +11,7 @@ import {
   Server,
   Crosshair,
   Loader2,
+  Camera,
 } from 'lucide-react';
 import {
   fetchSecurityEvents,
@@ -45,6 +46,7 @@ const ReportsTab = lazy(() =>
 const NodeDetailsTab = lazy(() =>
   import('./security/SecurityNodesTab').then((m) => ({ default: m.NodeDetailsTab }))
 );
+const CaptureTab = lazy(() => import('./capture/CaptureTab'));
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -57,7 +59,8 @@ type TabType =
   | 'nodes'
   | 'autonomy'
   | 'risk'
-  | 'scope';
+  | 'scope'
+  | 'capture';
 
 // ─── Shared localStorage helpers ─────────────────────────────────────────────
 
@@ -337,6 +340,19 @@ export function SecurityPage() {
           <Server className="w-4 h-4" />
           System
         </button>
+        <button
+          onClick={() => {
+            setActiveTab('capture');
+          }}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'capture'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Camera className="w-4 h-4" />
+          Capture
+        </button>
       </div>
 
       {activeTab === 'overview' && (
@@ -400,6 +416,12 @@ export function SecurityPage() {
       {activeTab === 'risk' && <RiskAssessmentTab />}
 
       {activeTab === 'scope' && <ScopeManifestTab />}
+
+      {activeTab === 'capture' && (
+        <Suspense fallback={<TabSkeleton />}>
+          <CaptureTab />
+        </Suspense>
+      )}
     </div>
   );
 }

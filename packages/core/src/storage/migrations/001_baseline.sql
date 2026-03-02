@@ -53,6 +53,12 @@ CREATE SCHEMA brain;
 CREATE SCHEMA browser;
 
 --
+-- Name: capture; Type: SCHEMA; Schema: -; Owner: secureyeoman
+--
+
+CREATE SCHEMA capture;
+
+--
 -- Name: chat; Type: SCHEMA; Schema: -; Owner: secureyeoman
 --
 
@@ -4584,3 +4590,35 @@ ON CONFLICT DO NOTHING;
 -- MCP defaults (059_mcp_gmail_twitter_defaults)
 INSERT INTO mcp.config (key, value) VALUES ('exposeGmail', 'false') ON CONFLICT DO NOTHING;
 INSERT INTO mcp.config (key, value) VALUES ('exposeTwitter', 'false') ON CONFLICT DO NOTHING;
+
+-- ── Capture consent & recording tables (Phase 108) ──────────────────
+
+CREATE TABLE IF NOT EXISTS capture.consents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  requested_by TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  scope JSONB NOT NULL,
+  purpose TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('pending','granted','denied','expired','revoked')),
+  expires_at TIMESTAMPTZ,
+  granted_at TIMESTAMPTZ,
+  signature TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_consents_user_status ON capture.consents (user_id, status);
+CREATE INDEX IF NOT EXISTS idx_consents_expires ON capture.consents (expires_at) WHERE status = 'pending';
+
+CREATE TABLE IF NOT EXISTS capture.recordings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  consent_id UUID REFERENCES capture.consents(id),
+  user_id TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('active','completed','stopped','failed')),
+  config JSONB,
+  file_path TEXT,
+  file_size BIGINT,
+  started_at TIMESTAMPTZ DEFAULT NOW(),
+  stopped_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_recordings_status ON capture.recordings (status) WHERE status = 'active';

@@ -338,6 +338,7 @@ export class InputValidator {
             injectionType: name,
             pattern: pattern.source,
           });
+          break;
         } else {
           // Sanitize by escaping the pattern
           sanitized = sanitized.replace(pattern, (match) => {

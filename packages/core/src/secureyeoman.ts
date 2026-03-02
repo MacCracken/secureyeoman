@@ -164,6 +164,8 @@ import { PipelineApprovalManager } from './training/approval-manager.js';
 import { PipelineLineageStorage } from './training/pipeline-lineage.js';
 import { ConversationQualityScorer } from './training/conversation-quality-scorer.js';
 import { ComputerUseManager } from './training/computer-use-manager.js';
+import { CaptureAuditLogger } from './body/capture-audit-logger.js';
+import { DesktopTrainingBridge } from './body/desktop-training-bridge.js';
 import { LlmJudgeManager } from './training/llm-judge-manager.js';
 import { PreferenceManager } from './training/preference-manager.js';
 import { DatasetCuratorManager } from './training/dataset-curator.js';
@@ -306,6 +308,8 @@ export class SecureYeoman {
   private pipelineLineageStorage: PipelineLineageStorage | null = null;
   private conversationQualityScorer: ConversationQualityScorer | null = null;
   private computerUseManager: ComputerUseManager | null = null;
+  private captureAuditLogger: CaptureAuditLogger | null = null;
+  private desktopTrainingBridge: DesktopTrainingBridge | null = null;
   private llmJudgeManager: LlmJudgeManager | null = null;
   private preferenceManager: PreferenceManager | null = null;
   private datasetCuratorManager: DatasetCuratorManager | null = null;
@@ -1501,6 +1505,16 @@ export class SecureYeoman {
         );
         this.conversationQualityScorer.start();
         this.logger.debug('ML Pipeline managers initialized');
+
+        // Phase 108: Capture audit logger + desktop training bridge
+        this.captureAuditLogger = new CaptureAuditLogger({
+          signingKey: requireSecret(this.config.gateway.auth.tokenSecret),
+        });
+        await this.captureAuditLogger.initialize();
+        this.desktopTrainingBridge = new DesktopTrainingBridge({
+          getComputerUseManager: () => this.computerUseManager,
+        });
+        this.logger.debug('Capture audit logger and desktop training bridge initialized');
       }
 
       // Step 6j-2: Initialize LlmJudgeManager (Phase 97)
@@ -2666,6 +2680,20 @@ export class SecureYeoman {
   getComputerUseManager(): ComputerUseManager | null {
     this.ensureInitialized();
     return this.computerUseManager;
+  }
+
+  /**
+   * Get the capture audit logger instance (Phase 108-B).
+   */
+  getCaptureAuditLogger(): CaptureAuditLogger | null {
+    return this.captureAuditLogger;
+  }
+
+  /**
+   * Get the desktop training bridge instance (Phase 108-C).
+   */
+  getDesktopTrainingBridge(): DesktopTrainingBridge | null {
+    return this.desktopTrainingBridge;
   }
 
   /**

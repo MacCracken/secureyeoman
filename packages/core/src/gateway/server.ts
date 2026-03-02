@@ -70,6 +70,7 @@ import { registerProactiveRoutes } from '../proactive/proactive-routes.js';
 import { registerDiagnosticRoutes } from '../diagnostics/diagnostic-routes.js';
 import { registerMultimodalRoutes } from '../multimodal/multimodal-routes.js';
 import { registerDesktopRoutes } from '../body/desktop-routes.js';
+import { registerCaptureConsentRoutes } from '../body/capture-consent-routes.js';
 import { registerBrowserRoutes } from '../browser/browser-routes.js';
 import { registerGroupChatRoutes } from '../integrations/group-chat-routes.js';
 import { registerRoutingRulesRoutes } from '../integrations/routing-rules-routes.js';
@@ -987,10 +988,31 @@ export class GatewayServer {
           this.secureYeoman.getConfig().security.allowDesktopControl ?? false,
         getAllowCamera: () => this.secureYeoman.getConfig().security.allowCamera ?? false,
         getAllowMultimodal: () => this.secureYeoman.getConfig().security.allowMultimodal ?? false,
+        getCaptureAuditLogger: () => this.secureYeoman.getCaptureAuditLogger(),
+        getTrainingBridge: () => this.secureYeoman.getDesktopTrainingBridge(),
       });
       this.getLogger().info('Desktop control routes registered');
     } catch (err) {
       this.getLogger().debug('Desktop control routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Capture Consent routes (Phase 108-D)
+    try {
+      registerCaptureConsentRoutes(this.app, {
+        getConsentManager: () => {
+          try {
+            const { getConsentManager } = require('../body/consent-manager.js');
+            return getConsentManager();
+          } catch {
+            return null;
+          }
+        },
+      });
+      this.getLogger().info('Capture consent routes registered');
+    } catch (err) {
+      this.getLogger().debug('Capture consent routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }

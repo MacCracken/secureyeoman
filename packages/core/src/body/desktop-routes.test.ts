@@ -46,6 +46,33 @@ vi.mock('./actuator/sequence.js', () => ({
   executeSequence: vi.fn().mockResolvedValue({ ok: true, stepsExecuted: 1 }),
 }));
 
+// Mock capture-permissions — always grant by default (Phase 108-A)
+vi.mock('./capture-permissions.js', () => ({
+  checkCapturePermission: vi.fn().mockResolvedValue({ granted: true }),
+}));
+
+// Mock capture/recording — for recording endpoints (Phase 108-E)
+vi.mock('./capture/recording.js', () => {
+  const sessions = new Map<string, Record<string, unknown>>();
+  class MockScreenRecordingManager {
+    async startRecording(userId: string, config: Record<string, unknown>) {
+      const session = { id: 'rec-1', userId, status: 'active', config, filePath: '/tmp/rec.bin', fileSize: 0, startedAt: Date.now() };
+      sessions.set('rec-1', session);
+      return session;
+    }
+    async stopRecording(id: string) {
+      const session = sessions.get(id);
+      if (!session) return null;
+      sessions.delete(id);
+      return { ...session, status: 'completed', stoppedAt: Date.now() };
+    }
+    getActiveRecordings() {
+      return [];
+    }
+  }
+  return { ScreenRecordingManager: MockScreenRecordingManager };
+});
+
 function buildApp(
   opts: {
     allowDesktop?: boolean;
@@ -56,6 +83,8 @@ function buildApp(
       mimeType: string;
       prompt?: string;
     }) => Promise<{ description: string }>;
+    captureAuditLogger?: Record<string, unknown> | null;
+    trainingBridge?: Record<string, unknown> | null;
   } = {}
 ) {
   const app = Fastify({ logger: false });
@@ -64,6 +93,8 @@ function buildApp(
     getAllowCamera: vi.fn().mockReturnValue(opts.allowCamera ?? false),
     getAllowMultimodal: vi.fn().mockReturnValue(opts.allowMultimodal ?? false),
     analyzeImage: opts.analyzeImage,
+    getCaptureAuditLogger: vi.fn().mockReturnValue(opts.captureAuditLogger ?? null),
+    getTrainingBridge: vi.fn().mockReturnValue(opts.trainingBridge ?? null),
   });
   return app;
 }
@@ -397,5 +428,156 @@ describe('desktop-routes — enabled paths', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().ok).toBe(true);
+  });
+});
+
+// ── RBAC enforcement (Phase 108-A) ────────────────────────────────────────────
+
+describe('desktop-routes — RBAC enforcement (108-A)', () => {
+  it('POST /screenshot calls checkCapturePermission', async () => {
+    const { checkCapturePermission } = await import('./capture-permissions.js');
+    const app = buildApp({ allowDesktop: true });
+    await app.inject({ method: 'POST', url: '/api/v1/desktop/screenshot', payload: {} });
+    expect(vi.mocked(checkCapturePermission)).toHaveBeenCalledWith(
+      'capture.screen',
+      'capture',
+      {},
+      expect.objectContaining({ userId: 'anonymous', roleId: 'default' })
+    );
+  });
+
+  it('POST /camera calls checkCapturePermission with capture.camera', async () => {
+    const { checkCapturePermission } = await import('./capture-permissions.js');
+    vi.mocked(checkCapturePermission).mockClear();
+    const app = buildApp({ allowDesktop: true, allowCamera: true });
+    await app.inject({ method: 'POST', url: '/api/v1/desktop/camera', payload: {} });
+    expect(vi.mocked(checkCapturePermission)).toHaveBeenCalledWith(
+      'capture.camera',
+      'capture',
+      {},
+      expect.objectContaining({ userId: 'anonymous' })
+    );
+  });
+
+  it('GET /clipboard calls checkCapturePermission with capture.clipboard', async () => {
+    const { checkCapturePermission } = await import('./capture-permissions.js');
+    vi.mocked(checkCapturePermission).mockClear();
+    const app = buildApp({ allowDesktop: true });
+    await app.inject({ method: 'GET', url: '/api/v1/desktop/clipboard' });
+    expect(vi.mocked(checkCapturePermission)).toHaveBeenCalledWith(
+      'capture.clipboard',
+      'capture',
+      {},
+      expect.objectContaining({ userId: 'anonymous' })
+    );
+  });
+
+  it('POST /mouse/move calls checkCapturePermission with configure action', async () => {
+    const { checkCapturePermission } = await import('./capture-permissions.js');
+    vi.mocked(checkCapturePermission).mockClear();
+    const app = buildApp({ allowDesktop: true });
+    await app.inject({ method: 'POST', url: '/api/v1/desktop/mouse/move', payload: { x: 0, y: 0 } });
+    expect(vi.mocked(checkCapturePermission)).toHaveBeenCalledWith(
+      'capture.screen',
+      'configure',
+      {},
+      expect.objectContaining({ userId: 'anonymous' })
+    );
+  });
+});
+
+// ── Audit logging (Phase 108-B) ──────────────────────────────────────────────
+
+describe('desktop-routes — audit logging (108-B)', () => {
+  it('POST /screenshot calls audit logger on success', async () => {
+    const mockLogger = { logCaptureEvent: vi.fn().mockResolvedValue({}) };
+    const app = buildApp({ allowDesktop: true, captureAuditLogger: mockLogger });
+    await app.inject({ method: 'POST', url: '/api/v1/desktop/screenshot', payload: {} });
+    expect(mockLogger.logCaptureEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'capture.completed',
+        result: expect.objectContaining({ success: true, action: 'screenshot' }),
+      })
+    );
+  });
+
+  it('POST /clipboard calls audit logger for clipboard access', async () => {
+    const mockLogger = { logCaptureEvent: vi.fn().mockResolvedValue({}) };
+    const app = buildApp({ allowDesktop: true, captureAuditLogger: mockLogger });
+    await app.inject({ method: 'POST', url: '/api/v1/desktop/clipboard', payload: { text: 'x' } });
+    expect(mockLogger.logCaptureEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'capture.completed',
+        result: expect.objectContaining({ action: 'clipboard_write' }),
+      })
+    );
+  });
+});
+
+// ── Training bridge (Phase 108-C) ──────────────────────────────────────────────
+
+describe('desktop-routes — training bridge (108-C)', () => {
+  it('POST /screenshot records action via bridge', async () => {
+    const mockBridge = { recordAction: vi.fn().mockResolvedValue(undefined) };
+    const app = buildApp({ allowDesktop: true, trainingBridge: mockBridge });
+    await app.inject({ method: 'POST', url: '/api/v1/desktop/screenshot', payload: {} });
+    expect(mockBridge.recordAction).toHaveBeenCalledWith(
+      expect.objectContaining({ actionType: 'screenshot' })
+    );
+  });
+
+  it('POST /keyboard/type records action via bridge', async () => {
+    const mockBridge = { recordAction: vi.fn().mockResolvedValue(undefined) };
+    const app = buildApp({ allowDesktop: true, trainingBridge: mockBridge });
+    await app.inject({ method: 'POST', url: '/api/v1/desktop/keyboard/type', payload: { text: 'hi' } });
+    expect(mockBridge.recordAction).toHaveBeenCalledWith(
+      expect.objectContaining({ actionType: 'keyboard_type' })
+    );
+  });
+});
+
+// ── Recording endpoints (Phase 108-E) ────────────────────────────────────────
+
+describe('desktop-routes — recording endpoints (108-E)', () => {
+  it('POST /recording/start returns 403 when desktop disabled', async () => {
+    const app = buildApp({ allowDesktop: false });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/desktop/recording/start',
+      payload: {},
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('POST /recording/start creates recording session', async () => {
+    const app = buildApp({ allowDesktop: true });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/desktop/recording/start',
+      payload: { duration: 60 },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(res.json().id).toBe('rec-1');
+    expect(res.json().status).toBe('active');
+  });
+
+  it('POST /recording/stop returns completed session', async () => {
+    const app = buildApp({ allowDesktop: true });
+    // Start then stop
+    await app.inject({ method: 'POST', url: '/api/v1/desktop/recording/start', payload: {} });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/desktop/recording/stop',
+      payload: { sessionId: 'rec-1' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().status).toBe('completed');
+  });
+
+  it('GET /recording/active returns list', async () => {
+    const app = buildApp({ allowDesktop: true });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/desktop/recording/active' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().recordings).toBeDefined();
   });
 });

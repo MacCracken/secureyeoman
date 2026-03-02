@@ -728,3 +728,10 @@ export {
   type ReplayBatchSummary,
   type ReplayBatchReport,
 } from './branching.js';
+
+// Capture types (Phase 108)
+export type {
+  CaptureConsentStatus,
+  CaptureConsentRequest,
+  CaptureConsentConfig,
+} from './capture.js';

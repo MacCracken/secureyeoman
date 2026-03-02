@@ -1193,3 +1193,28 @@ export interface AlertRule {
   createdAt: number;
   updatedAt: number;
 }
+
+// Capture consent (Phase 108)
+export type CaptureConsentStatus = 'pending' | 'granted' | 'denied' | 'expired' | 'revoked';
+
+export interface CaptureConsentItem {
+  id: string;
+  requestedBy: string;
+  userId: string;
+  scope: { resource: string; duration: number; purpose: string };
+  status: CaptureConsentStatus;
+  expiresAt: number;
+  grantedAt?: number;
+  requestedAt: number;
+}
+
+export interface CaptureRecordingItem {
+  id: string;
+  userId: string;
+  status: 'active' | 'completed' | 'stopped' | 'failed';
+  config: Record<string, unknown>;
+  filePath?: string;
+  fileSize?: number;
+  startedAt: number;
+  stoppedAt?: number;
+}

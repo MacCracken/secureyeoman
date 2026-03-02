@@ -32,6 +32,24 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Site updates**: Dead Discord/Twitter footer links replaced with GitHub Discussions. Alert channel count `4→5` (ntfy). job-completion-notifications guide added to llms.txt.
 - **Changelog**: Added `# Changelog` H1 header per Keep a Changelog convention.
 
+### Phase 108: Screen Capture & Computer Use Platform
+
+- **108-A: RBAC enforcement on desktop routes** — All 12 desktop control endpoints now enforce granular capture permissions (`capture.screen`, `capture.camera`, `capture.clipboard`, `capture.keystrokes`) with action-level checks (`capture`, `stream`, `configure`, `review`) via `checkCapturePermission()`. The existing `allowDesktopControl` boolean remains as a first-gate feature toggle; RBAC is the second layer.
+- **108-B: Capture audit logging** — Every desktop action (screenshot, mouse, keyboard, clipboard, window management) produces a chain-integrity audit entry via `CaptureAuditLogger`. Fire-and-forget pattern ensures audit logging never blocks route responses. Failed operations logged with `capture.failed` event type.
+- **108-C: Desktop-to-training bridge** — New `DesktopTrainingBridge` class records desktop interactions as RL episodes in `training.computer_use_episodes` via `ComputerUseManager.recordEpisode()`. Wired into all desktop route handlers with fire-and-forget error handling.
+- **108-D: Consent workflow** — New `CaptureConsentManager` with full lifecycle (pending → granted/denied/expired/revoked). 6 REST endpoints at `/api/v1/capture/consent/*`. Ed25519 cryptographic signatures on granted consents. Auto-deny on configurable timeout (default 30s). WebSocket broadcast on consent requests. New `capture.consents` table with indexes.
+- **108-E: Screen recording** — New `ScreenRecordingManager` with `startRecording()`, `stopRecording()`, `getActiveRecordings()`. Duration enforcement (max 600s auto-stop), concurrent session limit (max 3 active). 3 new endpoints: `POST /recording/start`, `POST /recording/stop`, `GET /recording/active`. New `capture.recordings` table.
+- **108-F: Dashboard capture management UI** — New `CaptureTab` in SecurityPage with 3 sections: Active Captures (pulsing indicator + stop button), Pending Consents (approve/deny with countdown), Capture Settings. New `ConsentDialog` modal with scope summary, countdown timer, approve/deny buttons. Lazy-loaded for performance.
+- **Shared types**: New `packages/shared/src/types/capture.ts` with `CaptureConsentStatus`, `CaptureConsentRequest`, `CaptureConsentConfig`.
+- **Auth middleware**: ~60 new `ROUTE_PERMISSIONS` entries for desktop, consent, and recording routes with granular capture resource/action mappings.
+- **Schema**: `capture` schema with `consents` and `recordings` tables added to baseline migration.
+- **ADR**: 185. **Tests**: 94 new across 5 files.
+
+### Engineering Backlog Fixes
+
+- **Workflow condition validation at save time** — Added `WorkflowEngine.validateConditionExpression()` and `validateWorkflowConditions()` static methods. `createDefinition()` and `updateDefinition()` in workflow storage now validate all condition expressions and return a 400 error with syntax details on malformed expressions.
+- **Injection detection early-exit** — `InputValidator.detectInjection()` now breaks after the first blocking pattern match, preserving the match's reason/score and skipping unnecessary pattern evaluation.
+
 ### Phase 104: Job Completion Notifications + ntfy Channel + Alert Templates
 
 - **Job completion events**: Workflows, distillation, fine-tune, and evaluation jobs now emit synthetic snapshots through the alert pipeline on completion/failure. Metric paths: `jobs.<type>.<status>.<field>`. No changes to the core evaluation loop — reuses existing `resolvePath()` + `compareOperator()` infrastructure.

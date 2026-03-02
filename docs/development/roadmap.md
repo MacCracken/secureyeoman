@@ -43,7 +43,7 @@
 | 105 | Test Coverage: Path to 88%/77% | P1 — engineering quality | 🔄 In Progress (80.85%/68.76%) |
 | 106 | License-Gated Feature Reveal | P1 — commercial | Planned |
 | 107 | Reasoning Strategies, Security Templates & Portable Personalities | P2 — capability + distribution | Planned |
-| 108 | Screen Capture & Computer Use Platform | P2 — capability | Planned |
+| 108 | Screen Capture & Computer Use Platform | P2 — capability | ✅ Complete |
 | 109 | Editor Improvements (Auto-Claude Style) | P3 — power user UX | 🔄 In Progress (unification ✅, IDE features planned) |
 | 110 | Inline Citations & Grounding | P3 — trust layer | Planned |
 | Future | Workflow Versioning, LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Infrastructure | Future / Demand-Gated | — |
@@ -176,19 +176,6 @@ Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi
 
 ---
 
-## Phase 108: Screen Capture & Computer Use Platform
-
-**Priority**: P2 — Capability. Consolidates proposals 014–017 into a phased implementation. Much of the foundation (RBAC capture permissions, desktop routes, sandbox config, computer use RL pipeline) is already in place. This phase wires the pieces together and adds the remaining security layers.
-
-*New phase. See [ADR 185](../adr/185-screen-capture-computer-use.md) for full context.*
-
-- [ ] **108-A: Wire RBAC into desktop routes** — Desktop routes currently gate on the boolean `allowDesktopControl` toggle. Wire `requireCapturePermission(resource, action)` middleware into each endpoint so role-based conditions (max duration, target restrictions) are evaluated per request.
-- [ ] **108-B: Capture audit logging** — Add audit events for capture operations. Each screenshot, screen recording start/stop, and clipboard access produces an audit chain entry with requester identity, capture scope, timestamp, and result hash. Integrates with existing `AuditChainStorage`.
-- [ ] **108-C: Desktop-to-training bridge** — Connect desktop interaction endpoints to the computer use RL pipeline. Record operator desktop actions as RL episodes in `training.computer_use_episodes` automatically. New `DesktopTrainingBridge` class wired between `desktop-routes.ts` and `ComputerUseManager`.
-- [ ] **108-D: Consent workflow** — WebSocket notification to dashboard when capture is requested. Approve/deny UI with scope summary, purpose, countdown. Configurable timeout (default 30s, max 5min, auto-deny on expiry). Mid-capture revocation. Consent records with cryptographic signatures.
-- [ ] **108-E: Screen recording & streaming** *(stretch)* — Extend screenshot endpoint to continuous capture: screen recording to file, live WebSocket streaming to dashboard, duration enforcement, quality configuration, content filters (blur, redaction, watermarking).
-- [ ] **108-F: Dashboard capture management UI** — Active capture indicator (pulsing dot + scope summary + stop button), capture history with audit trail links, consent approval dialog, capture settings panel.
-
 ---
 
 ## Phase 109: Editor Improvements (Auto-Claude Style)
@@ -224,8 +211,7 @@ Inspired by Google Cloud Vertex AI Grounding and Azure Groundedness Detection.
 
 Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
 
-- [ ] **Validate workflow condition strings at save time** — `evaluateCondition()` in `WorkflowEngine` silently returns `false` for malformed JS expressions (e.g. `steps.nonexistent.output`). Move the `new Function(expr)` compile step to `createWorkflow`/`updateWorkflow` validation so operators get an immediate 400 error with the syntax problem, not a silent skip at runtime.
-- [ ] **Injection detection early-exit after first blocking match** — `InputValidator.detectInjection()` loops through all `INJECTION_PATTERNS` even after setting `blocked = true`. Once a pattern with `block: true` is matched, the loop should break; subsequent patterns only accumulate score, wasting CPU. Benchmark shows this matters at 8 KB inputs with multiple attack vectors.
+*No open items — all backlog items completed in Phase 108 (see Changelog [2026.3.2]).*
 
 ---
 
