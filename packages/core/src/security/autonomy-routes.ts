@@ -14,15 +14,18 @@ import { sendError, toErrorMessage } from '../utils/errors.js';
 export interface AutonomyRoutesOptions {
   autonomyAuditManager: AutonomyAuditManager;
   auditChain?: AuditChain | null;
+  /** Returns whether workflow orchestration is currently enabled. */
+  getAllowWorkflows?: () => boolean;
 }
 
 export function registerAutonomyRoutes(app: FastifyInstance, opts: AutonomyRoutesOptions): void {
-  const { autonomyAuditManager } = opts;
+  const { autonomyAuditManager, getAllowWorkflows } = opts;
 
   // ── GET /api/v1/autonomy/overview ─────────────────────────────────────────
   app.get('/api/v1/autonomy/overview', async (_req, reply) => {
     try {
-      const overview = await autonomyAuditManager.getOverview();
+      const includeWorkflows = getAllowWorkflows ? getAllowWorkflows() : true;
+      const overview = await autonomyAuditManager.getOverview({ includeWorkflows });
       return reply.send({ overview });
     } catch (err) {
       return sendError(reply, 500, toErrorMessage(err));

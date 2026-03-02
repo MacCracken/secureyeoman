@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerKnowledgeBaseTools } from './knowledge-base-tools.js';
 import type { CoreApiClient } from '../core-client.js';
+import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
 
 // ─── Mock factories ───────────────────────────────────────────────────────────
@@ -33,6 +34,13 @@ function noopMiddleware(): ToolMiddleware {
   } as unknown as ToolMiddleware;
 }
 
+function makeConfig(overrides: Partial<McpServiceConfig> = {}): McpServiceConfig {
+  return {
+    exposeKnowledgeBase: true,
+    ...overrides,
+  } as McpServiceConfig;
+}
+
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('knowledge-base-tools', () => {
@@ -43,8 +51,24 @@ describe('knowledge-base-tools', () => {
   it('registers all 4 kb_* tools without throwing', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     expect(() =>
-      registerKnowledgeBaseTools(server, makeMockClient(), noopMiddleware())
+      registerKnowledgeBaseTools(server, makeMockClient(), makeConfig(), noopMiddleware())
     ).not.toThrow();
+  });
+
+  it('returns disabled error when exposeKnowledgeBase is false', async () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    registerKnowledgeBaseTools(
+      server,
+      makeMockClient(),
+      makeConfig({ exposeKnowledgeBase: false }),
+      noopMiddleware()
+    );
+
+    const { globalToolRegistry } = await import('./tool-utils.js');
+    const handler = globalToolRegistry.get('kb_search');
+    const result = await handler!({ query: 'test', topK: 5, minScore: 0.6 });
+    expect(result.isError).toBe(true);
+    expect((result.content[0] as { text: string }).text).toContain('disabled');
   });
 
   describe('kb_search', () => {
@@ -53,7 +77,7 @@ describe('knowledge-base-tools', () => {
         get: vi.fn().mockResolvedValue({ results: [{ id: 'k1', score: 0.9 }] }),
       });
       const server = new McpServer({ name: 'test', version: '1.0.0' });
-      registerKnowledgeBaseTools(server, client, noopMiddleware());
+      registerKnowledgeBaseTools(server, client, makeConfig(), noopMiddleware());
 
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('kb_search');
@@ -70,7 +94,7 @@ describe('knowledge-base-tools', () => {
     it('includes personalityId when provided', async () => {
       const client = makeMockClient();
       const server = new McpServer({ name: 'test', version: '1.0.0' });
-      registerKnowledgeBaseTools(server, client, noopMiddleware());
+      registerKnowledgeBaseTools(server, client, makeConfig(), noopMiddleware());
 
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('kb_search');
@@ -87,7 +111,7 @@ describe('knowledge-base-tools', () => {
     it('calls ingest-url when content starts with https://', async () => {
       const client = makeMockClient();
       const server = new McpServer({ name: 'test', version: '1.0.0' });
-      registerKnowledgeBaseTools(server, client, noopMiddleware());
+      registerKnowledgeBaseTools(server, client, makeConfig(), noopMiddleware());
 
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('kb_add_document');
@@ -102,7 +126,7 @@ describe('knowledge-base-tools', () => {
     it('calls ingest-text when content does not start with http', async () => {
       const client = makeMockClient();
       const server = new McpServer({ name: 'test', version: '1.0.0' });
-      registerKnowledgeBaseTools(server, client, noopMiddleware());
+      registerKnowledgeBaseTools(server, client, makeConfig(), noopMiddleware());
 
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('kb_add_document');
@@ -117,7 +141,7 @@ describe('knowledge-base-tools', () => {
     it('defaults title to Untitled when not provided for text', async () => {
       const client = makeMockClient();
       const server = new McpServer({ name: 'test', version: '1.0.0' });
-      registerKnowledgeBaseTools(server, client, noopMiddleware());
+      registerKnowledgeBaseTools(server, client, makeConfig(), noopMiddleware());
 
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('kb_add_document');
@@ -136,7 +160,7 @@ describe('knowledge-base-tools', () => {
         get: vi.fn().mockResolvedValue({ documents: [], total: 0 }),
       });
       const server = new McpServer({ name: 'test', version: '1.0.0' });
-      registerKnowledgeBaseTools(server, client, noopMiddleware());
+      registerKnowledgeBaseTools(server, client, makeConfig(), noopMiddleware());
 
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('kb_list_documents');
@@ -150,7 +174,7 @@ describe('knowledge-base-tools', () => {
         get: vi.fn().mockResolvedValue({ documents: [], total: 0 }),
       });
       const server = new McpServer({ name: 'test', version: '1.0.0' });
-      registerKnowledgeBaseTools(server, client, noopMiddleware());
+      registerKnowledgeBaseTools(server, client, makeConfig(), noopMiddleware());
 
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('kb_list_documents');
@@ -167,7 +191,7 @@ describe('knowledge-base-tools', () => {
     it('calls DELETE /api/v1/brain/documents/:id', async () => {
       const client = makeMockClient({ delete: vi.fn().mockResolvedValue(undefined) });
       const server = new McpServer({ name: 'test', version: '1.0.0' });
-      registerKnowledgeBaseTools(server, client, noopMiddleware());
+      registerKnowledgeBaseTools(server, client, makeConfig(), noopMiddleware());
 
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('kb_delete_document');
@@ -183,7 +207,7 @@ describe('knowledge-base-tools', () => {
         delete: vi.fn().mockRejectedValue(new Error('Server error')),
       });
       const server = new McpServer({ name: 'test', version: '1.0.0' });
-      registerKnowledgeBaseTools(server, client, noopMiddleware());
+      registerKnowledgeBaseTools(server, client, makeConfig(), noopMiddleware());
 
       const { globalToolRegistry } = await import('./tool-utils.js');
       const handler = globalToolRegistry.get('kb_delete_document');

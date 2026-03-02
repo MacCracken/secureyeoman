@@ -357,7 +357,7 @@ export async function fetchMetrics(): Promise<MetricsSnapshot> {
         eventsBySeverity: {},
         eventsByType: {},
         auditEntriesTotal: 0,
-        auditChainValid: false,
+        auditChainValid: true,
       },
     };
   }
@@ -1832,6 +1832,7 @@ export interface McpConfigResponse {
   exposeTwitter: boolean;
   exposeGithub: boolean;
   alwaysSendFullSchemas: boolean;
+  exposeKnowledgeBase: boolean;
   exposeDockerTools: boolean;
   // CI/CD (Phase 90)
   exposeGithubActions: boolean;
@@ -1874,6 +1875,7 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
       exposeTwitter: false,
       exposeGithub: false,
       alwaysSendFullSchemas: false,
+      exposeKnowledgeBase: false,
       exposeDockerTools: false,
       exposeGithubActions: false,
       exposeJenkins: false,

@@ -228,7 +228,7 @@ export function AutonomyTab() {
                 review.
               </p>
               <input
-                className="input w-full"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="Audit name (e.g. Q1 2026 Autonomy Review)"
                 value={wizardName}
                 onChange={(e) => {
@@ -311,7 +311,7 @@ export function AutonomyTab() {
                         ))}
                       </div>
                       <input
-                        className="input w-full text-xs"
+                        className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                         placeholder="Notes (optional)"
                         value={item.note}
                         onChange={(e) => {

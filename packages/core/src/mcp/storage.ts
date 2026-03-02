@@ -47,8 +47,23 @@ export interface McpFeatureConfig {
   exposeGithub: boolean;
   // Phase 72 — token efficiency
   alwaysSendFullSchemas: boolean;
+  // Organizational Intent tools (Phase 48)
+  exposeOrgIntentTools: boolean;
+  // Knowledge Base tools (Phase 82)
+  exposeKnowledgeBase: boolean;
   // Docker management tools (Phase 74)
   exposeDockerTools: boolean;
+  // CI/CD tools (Phase 90)
+  exposeGithubActions: boolean;
+  exposeJenkins: boolean;
+  jenkinsUrl?: string;
+  jenkinsUsername?: string;
+  jenkinsApiToken?: string;
+  exposeGitlabCi: boolean;
+  gitlabUrl?: string;
+  gitlabToken?: string;
+  exposeNorthflank: boolean;
+  northflankApiKey?: string;
 }
 
 const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
@@ -75,7 +90,14 @@ const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
   exposeTwitter: false,
   exposeGithub: false,
   alwaysSendFullSchemas: false,
+  exposeOrgIntentTools: false,
+  exposeKnowledgeBase: false,
   exposeDockerTools: false,
+  // CI/CD tools (Phase 90)
+  exposeGithubActions: false,
+  exposeJenkins: false,
+  exposeGitlabCi: false,
+  exposeNorthflank: false,
 };
 
 export class McpStorage extends PgBaseStorage {

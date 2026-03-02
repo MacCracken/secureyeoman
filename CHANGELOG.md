@@ -1,3 +1,19 @@
+## [2026.3.1b] — 2026-03-01
+
+### MCP Tool Gating & Organizational Intent Access
+
+- **CI/CD platform tool gating**: Fixed non-functional CI/CD platform checkboxes in Connections > MCP > Yeoman MCP. Added `GHA_TOOL_PREFIXES`, `JENKINS_TOOL_PREFIXES`, `GITLAB_TOOL_PREFIXES`, `NORTHFLANK_TOOL_PREFIXES` constants and filter logic in `GET /api/v1/mcp/tools`. Added all CI/CD fields to `McpFeatureConfig` interface, defaults, and PATCH route body type.
+- **Knowledge Base tool gating**: All `kb_*` tools now gated behind `exposeKnowledgeBase` toggle. Added `disabled()` guard to all 4 KB tool handlers in `knowledge-base-tools.ts`. Dashboard toggle added in "Knowledge & Intent" section with BookOpen icon.
+- **Organizational Intent tool separation**: Separated `intent_*` tools into their own "Organizational Intent Access" checkbox. Added `INTENT_TOOL_PREFIXES` filter in `mcp-routes.ts`. Dashboard toggle added alongside Knowledge Base in the "Knowledge & Intent" section with Target icon.
+- **8 new intent writing tools**: `intent_list`, `intent_get`, `intent_get_active`, `intent_create`, `intent_update`, `intent_activate`, `intent_delete`, `intent_enforcement_log` — full CRUD + enforcement log access for organizational intent documents via MCP. All gated by `exposeOrgIntentTools` with `disabled()` guard.
+- **Audit chain fix**: Fixed audit chain breaking after first cycle — PostgreSQL `pg` driver returns BIGINT `timestamp` column as strings. Hash computed at write time with numeric timestamp vs. verify time with string timestamp caused mismatch. Fixed `rowToEntry()` in `sqlite-storage.ts` to cast: `typeof row.timestamp === 'string' ? Number(row.timestamp) : row.timestamp`.
+- **Security > Automations workflow gating**: Workflow tab now hidden when `allowWorkflows` is false in security policy. `AutomationsSecurityTab` accepts `allowWorkflows` prop; `visibleViews` array computed dynamically. Fallback `useEffect` redirects from hidden workflows view.
+- **Security > Autonomy overview workflow gating**: Autonomy overview endpoint skips workflow query when `allowWorkflows` is false. Added `getAllowWorkflows` getter to `AutonomyRoutesOptions`; wired in `server.ts`.
+- **Audit Wizard theme fix**: Replaced undefined `.input` CSS class with proper theme-aware Tailwind classes (`border-input bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary`).
+- **Tests**: 24 new MCP tests (13 intent-tools + 11 KB-tools with config param fix). SecurityPage tests updated: 2 workflow tests now set `allowWorkflows: true`; 1 new test verifying workflows hidden when disabled. ConnectionsPage test mock updated with `exposeKnowledgeBase`.
+
+---
+
 ## [2026.3.1] — 2026-03-01
 
 ### Editor Unification & Canvas Re-gate (ADR 173)

@@ -598,10 +598,31 @@ describe('SecurityPage — Automations tab', () => {
   });
 
   it('shows Tasks, Workflows, and Heartbeats subview buttons in Automations tab', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: false, allowA2A: false, allowSwarms: false, allowExtensions: false,
+      allowExecution: true, allowProactive: false, allowExperiments: false, allowStorybook: false,
+      allowMultimodal: false, allowDesktopControl: false, allowCamera: false, allowDynamicTools: false,
+      sandboxDynamicTools: true, allowAnomalyDetection: false, sandboxGvisor: false, sandboxWasm: false,
+      sandboxCredentialProxy: false, allowNetworkTools: false, allowNetBoxWrite: false,
+      allowWorkflows: true,
+      allowCommunityGitFetch: false, allowTwingate: false, allowOrgIntent: false,
+      allowIntentEditor: false, allowCodeEditor: true, allowAdvancedEditor: false,
+      allowTrainingExport: false, promptGuardMode: 'warn' as const, responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5, jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false, abuseDetectionEnabled: true,
+    });
+    renderWithRoute('/security?tab=automations');
+    // Wait for Workflows tab to appear (async — depends on policy query resolving)
+    expect(await screen.findByRole('tab', { name: 'Workflows' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Tasks' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Heartbeats' })).toBeInTheDocument();
+  });
+
+  it('hides Workflows subview button when allowWorkflows is false', async () => {
     renderWithRoute('/security?tab=automations');
     await screen.findByRole('tablist', { name: 'Automations views' });
     expect(screen.getByRole('tab', { name: 'Tasks' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Workflows' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Workflows' })).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Heartbeats' })).toBeInTheDocument();
   });
 
@@ -635,6 +656,19 @@ describe('SecurityPage — Automations tab', () => {
   });
 
   it('switches to Workflows subview on click', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: false, allowA2A: false, allowSwarms: false, allowExtensions: false,
+      allowExecution: true, allowProactive: false, allowExperiments: false, allowStorybook: false,
+      allowMultimodal: false, allowDesktopControl: false, allowCamera: false, allowDynamicTools: false,
+      sandboxDynamicTools: true, allowAnomalyDetection: false, sandboxGvisor: false, sandboxWasm: false,
+      sandboxCredentialProxy: false, allowNetworkTools: false, allowNetBoxWrite: false,
+      allowWorkflows: true,
+      allowCommunityGitFetch: false, allowTwingate: false, allowOrgIntent: false,
+      allowIntentEditor: false, allowCodeEditor: true, allowAdvancedEditor: false,
+      allowTrainingExport: false, promptGuardMode: 'warn' as const, responseGuardMode: 'warn' as const,
+      jailbreakThreshold: 0.5, jailbreakAction: 'warn' as const,
+      strictSystemPromptConfidentiality: false, abuseDetectionEnabled: true,
+    });
     mockFetchWorkflows.mockResolvedValue({
       definitions: [
         {
@@ -653,8 +687,9 @@ describe('SecurityPage — Automations tab', () => {
       total: 1,
     });
     renderWithRoute('/security?tab=automations');
-    await screen.findByRole('tablist', { name: 'Automations views' });
-    fireEvent.click(screen.getByRole('tab', { name: 'Workflows' }));
+    // Wait for Workflows tab to appear (async — depends on policy query resolving with allowWorkflows: true)
+    const workflowsTab = await screen.findByRole('tab', { name: 'Workflows' });
+    fireEvent.click(workflowsTab);
     expect(await screen.findByText('Nightly Backup')).toBeInTheDocument();
   });
 

@@ -149,6 +149,8 @@ export const McpServiceConfigSchema = z.object({
   /** When true (default), honour Content-Signal: ai-input=no and refuse to feed blocked content to the agent. Set MCP_RESPECT_CONTENT_SIGNAL=false to override. */
   respectContentSignal: z.boolean().default(true),
   allowBruteForce: z.boolean().default(false),
+  /** Enable Knowledge Base tools (kb_search, kb_add_document, kb_list_documents, kb_delete_document). Off by default. */
+  exposeKnowledgeBase: z.boolean().default(false),
   /** Enable Docker management tools (ps, logs, exec, images, compose). Off by default. Set MCP_EXPOSE_DOCKER=true. */
   exposeDockerTools: z.boolean().default(false),
   /** How the MCP container reaches Docker: 'socket' = host /var/run/docker.sock, 'dind' = Docker-in-Docker sidecar. */

@@ -5,7 +5,7 @@
 
 UPDATE soul.personalities
 SET
-  avatar_url   = '/avatars/friday.jpg',
+  avatar_url   = '/avatars/friday.png',
   sex          = 'female',
   updated_at   = (extract(epoch from now()) * 1000)::bigint
 WHERE is_archetype = true
@@ -14,7 +14,7 @@ WHERE is_archetype = true
 
 UPDATE soul.personalities
 SET
-  avatar_url   = '/avatars/t_ron.jpg',
+  avatar_url   = '/avatars/t_ron.png',
   updated_at   = (extract(epoch from now()) * 1000)::bigint
 WHERE is_archetype = true
   AND name        = 'T.Ron'

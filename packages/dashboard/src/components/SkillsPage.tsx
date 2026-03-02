@@ -118,7 +118,7 @@ export function SkillsPage() {
       {activeTab === 'my-skills' && <PersonalTab />}
       {activeTab === 'marketplace' && <MarketplaceTab workflowsEnabled={workflowsEnabled} subAgentsEnabled={subAgentsEnabled} />}
       {activeTab === 'community' && communityEnabled && <CommunityTab workflowsEnabled={workflowsEnabled} subAgentsEnabled={subAgentsEnabled} />}
-      {activeTab === 'installed' && <InstalledTab onNavigateTab={setActiveTab} />}
+      {activeTab === 'installed' && <InstalledTab onNavigateTab={setActiveTab} workflowsEnabled={workflowsEnabled} subAgentsEnabled={subAgentsEnabled} />}
     </div>
   );
 }

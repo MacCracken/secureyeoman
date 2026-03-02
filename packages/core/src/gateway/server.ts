@@ -830,7 +830,11 @@ export class GatewayServer {
         } catch {
           /* optional */
         }
-        registerAutonomyRoutes(this.app, { autonomyAuditManager, auditChain: autonomyAuditChain });
+        registerAutonomyRoutes(this.app, {
+          autonomyAuditManager,
+          auditChain: autonomyAuditChain,
+          getAllowWorkflows: () => this.secureYeoman.getConfig().security?.allowWorkflows ?? false,
+        });
         this.getLogger().info('Autonomy audit routes registered');
       }
     } catch (err) {

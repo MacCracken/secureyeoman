@@ -11,13 +11,27 @@
 
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
 import { wrapToolHandler } from './tool-utils.js';
 
+function disabled(): { content: { type: 'text'; text: string }[]; isError: boolean } {
+  return {
+    content: [
+      {
+        type: 'text',
+        text: 'Knowledge Base tools are disabled. Enable Knowledge Base Access in MCP config to use kb_* tools.',
+      },
+    ],
+    isError: true,
+  };
+}
+
 export function registerKnowledgeBaseTools(
   server: McpServer,
   client: CoreApiClient,
+  config: McpServiceConfig,
   middleware: ToolMiddleware
 ): void {
   // ── kb_search ────────────────────────────────────────────────────────────
@@ -36,6 +50,7 @@ export function registerKnowledgeBaseTools(
         .describe('Minimum relevance score threshold (0–1)'),
     },
     wrapToolHandler('kb_search', middleware, async ({ query, personalityId, topK, minScore }) => {
+      if (!config.exposeKnowledgeBase) return disabled();
       const params: Record<string, string> = {
         query,
         type: 'knowledge',
@@ -72,6 +87,7 @@ export function registerKnowledgeBaseTools(
       'kb_add_document',
       middleware,
       async ({ content, title, personalityId, visibility }) => {
+        if (!config.exposeKnowledgeBase) return disabled();
         let result: unknown;
 
         if (content.startsWith('http://') || content.startsWith('https://')) {
@@ -109,6 +125,7 @@ export function registerKnowledgeBaseTools(
         .describe("Filter by visibility: 'private' or 'shared'"),
     },
     wrapToolHandler('kb_list_documents', middleware, async ({ personalityId, visibility }) => {
+      if (!config.exposeKnowledgeBase) return disabled();
       const params: Record<string, string> = {};
       if (personalityId) params.personalityId = personalityId;
       if (visibility) params.visibility = visibility;
@@ -126,6 +143,7 @@ export function registerKnowledgeBaseTools(
       id: z.string().min(1).describe('Document ID to delete'),
     },
     wrapToolHandler('kb_delete_document', middleware, async ({ id }) => {
+      if (!config.exposeKnowledgeBase) return disabled();
       await client.delete(`/api/v1/brain/documents/${id}`);
       return {
         content: [

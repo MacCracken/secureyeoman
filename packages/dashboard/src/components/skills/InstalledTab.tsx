@@ -255,8 +255,13 @@ function InstalledSwarms({ onNavigateTab }: { onNavigateTab?: (tab: TabType) => 
 
 // ── Main InstalledTab ─────────────────────────────────────────────────────────
 
-export function InstalledTab({ onNavigateTab }: { onNavigateTab?: (tab: TabType) => void }) {
+export function InstalledTab({ onNavigateTab, workflowsEnabled = false, subAgentsEnabled = false }: { onNavigateTab?: (tab: TabType) => void; workflowsEnabled?: boolean; subAgentsEnabled?: boolean }) {
   const [filterPersonalityId, setFilterPersonalityId] = useState<string>('');
+  const visibleOptions = CONTENT_TYPE_OPTIONS.filter((o) => {
+    if (o.value === 'workflows' && !workflowsEnabled) return false;
+    if (o.value === 'swarms' && !subAgentsEnabled) return false;
+    return true;
+  });
   const [contentType, setContentType] = useState<ContentType>('skills');
 
   const { data, isLoading } = useQuery({
@@ -328,25 +333,27 @@ export function InstalledTab({ onNavigateTab }: { onNavigateTab?: (tab: TabType)
     <div className="space-y-6">
       {/* Filters row */}
       <div className="flex flex-wrap items-center gap-2">
-        {/* Content type dropdown */}
-        <div className="relative">
-          <select
-            value={contentType}
-            onChange={(e) => setContentType(e.target.value as ContentType)}
-            className="bg-card border border-border rounded-lg pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
-          >
-            {CONTENT_TYPE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-            <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+        {/* Content type dropdown — hidden when only skills available */}
+        {visibleOptions.length > 1 && (
+          <div className="relative">
+            <select
+              value={contentType}
+              onChange={(e) => setContentType(e.target.value as ContentType)}
+              className="bg-card border border-border rounded-lg pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
+            >
+              {visibleOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Personality filter — only relevant for skills */}
         {contentType === 'skills' && (

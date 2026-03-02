@@ -96,6 +96,7 @@ describe('ConnectionsPage', () => {
       exposeTwitter: false,
       exposeGithub: false,
       alwaysSendFullSchemas: false,
+      exposeKnowledgeBase: false,
       exposeDockerTools: false,
       exposeGithubActions: false,
       exposeJenkins: false,

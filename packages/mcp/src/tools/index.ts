@@ -85,7 +85,7 @@ export async function registerAllTools(
   registerGithubApiTools(server, client, middleware, config.tokenSecret);
   registerOllamaTools(server, client, middleware);
   registerDockerTools(server, config, middleware);
-  registerKnowledgeBaseTools(server, client, middleware);
+  registerKnowledgeBaseTools(server, client, config, middleware);
   // CI/CD tools (Phase 90)
   registerGithubActionsTools(server, config, middleware);
   registerJenkinsTools(server, config, middleware);

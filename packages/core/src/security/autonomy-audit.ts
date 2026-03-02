@@ -273,7 +273,7 @@ export class AutonomyAuditStorage extends PgBaseStorage {
     return row ? rowToAuditRun(row) : null;
   }
 
-  async getOverview(): Promise<AutonomyOverview> {
+  async getOverview(opts?: { includeWorkflows?: boolean }): Promise<AutonomyOverview> {
     const skillRows = await this.queryMany<{
       id: string;
       name: string;
@@ -283,14 +283,16 @@ export class AutonomyAuditStorage extends PgBaseStorage {
       `SELECT id, name, autonomy_level, emergency_stop_procedure FROM soul.skills WHERE enabled = true`
     );
 
-    const workflowRows = await this.queryMany<{
-      id: string;
-      name: string;
-      autonomy_level: string | null;
-      emergency_stop_procedure: string | null;
-    }>(
-      `SELECT id, name, autonomy_level, emergency_stop_procedure FROM workflow.definitions WHERE is_enabled = true`
-    );
+    const workflowRows = (opts?.includeWorkflows ?? true)
+      ? await this.queryMany<{
+          id: string;
+          name: string;
+          autonomy_level: string | null;
+          emergency_stop_procedure: string | null;
+        }>(
+          `SELECT id, name, autonomy_level, emergency_stop_procedure FROM workflow.definitions WHERE is_enabled = true`
+        )
+      : [];
 
     const levels: AutonomyLevel[] = ['L1', 'L2', 'L3', 'L4', 'L5'];
     const byLevel: Record<AutonomyLevel, AutonomyOverviewItem[]> = {
@@ -349,8 +351,8 @@ export class AutonomyAuditManager {
     return this.storage;
   }
 
-  async getOverview(): Promise<AutonomyOverview> {
-    return this.storage.getOverview();
+  async getOverview(opts?: { includeWorkflows?: boolean }): Promise<AutonomyOverview> {
+    return this.storage.getOverview(opts);
   }
 
   async createAuditRun(name: string, createdBy?: string): Promise<AuditRun> {

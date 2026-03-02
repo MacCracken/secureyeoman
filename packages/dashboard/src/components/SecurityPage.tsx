@@ -369,7 +369,7 @@ export function SecurityPage() {
 
       {activeTab === 'automations' && (
         <Suspense fallback={<TabSkeleton />}>
-          <AutomationsSecurityTab />
+          <AutomationsSecurityTab allowWorkflows={policy?.allowWorkflows ?? false} />
         </Suspense>
       )}
 

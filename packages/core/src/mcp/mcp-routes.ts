@@ -39,7 +39,13 @@ const NETBOX_TOOL_PREFIXES = ['netbox_'];
 const TWINGATE_TOOL_PREFIXES = ['twingate_'];
 const GMAIL_TOOL_PREFIXES = ['gmail_'];
 const TWITTER_TOOL_PREFIXES = ['twitter_'];
+const INTENT_TOOL_PREFIXES = ['intent_'];
+const KB_TOOL_PREFIXES = ['kb_'];
 const DOCKER_TOOL_PREFIXES = ['docker_'];
+const GHA_TOOL_PREFIXES = ['gha_'];
+const JENKINS_TOOL_PREFIXES = ['jenkins_'];
+const GITLAB_TOOL_PREFIXES = ['gitlab_'];
+const NORTHFLANK_TOOL_PREFIXES = ['northflank_'];
 
 export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions): void {
   const {
@@ -213,7 +219,19 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
         return false;
       if (!config.exposeTwitter && TWITTER_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
         return false;
+      if (!config.exposeOrgIntentTools && INTENT_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
+      if (!config.exposeKnowledgeBase && KB_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
       if (!config.exposeDockerTools && DOCKER_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
+      if (!config.exposeGithubActions && GHA_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
+      if (!config.exposeJenkins && JENKINS_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
+      if (!config.exposeGitlabCi && GITLAB_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
+      if (!config.exposeNorthflank && NORTHFLANK_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
         return false;
       return true;
     });
@@ -282,7 +300,20 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
           exposeTwitter?: boolean;
           exposeGithub?: boolean;
           alwaysSendFullSchemas?: boolean;
+          exposeOrgIntentTools?: boolean;
+          exposeKnowledgeBase?: boolean;
           exposeDockerTools?: boolean;
+          // CI/CD tools (Phase 90)
+          exposeGithubActions?: boolean;
+          exposeJenkins?: boolean;
+          jenkinsUrl?: string;
+          jenkinsUsername?: string;
+          jenkinsApiToken?: string;
+          exposeGitlabCi?: boolean;
+          gitlabUrl?: string;
+          gitlabToken?: string;
+          exposeNorthflank?: boolean;
+          northflankApiKey?: string;
         };
       }>
     ) => {

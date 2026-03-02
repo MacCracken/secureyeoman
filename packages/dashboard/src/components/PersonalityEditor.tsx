@@ -105,7 +105,7 @@ const API_BASE = '/api/v1';
 
 /**
  * Resolve an avatarUrl to an absolute src string.
- * - Static public assets (e.g. '/avatars/friday.jpg') are used as-is.
+ * - Static public assets (e.g. '/avatars/friday.png') are used as-is.
  * - API-relative paths get the API_BASE prefix + cache-buster appended.
  * - null/undefined → null (show Bot icon fallback).
  */

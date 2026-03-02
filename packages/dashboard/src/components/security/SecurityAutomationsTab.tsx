@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Layers,
@@ -701,14 +701,25 @@ function AutomationsWorkflowsView() {
   );
 }
 
-export function AutomationsSecurityTab() {
+export function AutomationsSecurityTab({ allowWorkflows = false }: { allowWorkflows?: boolean } = {}) {
   const [subview, setSubview] = useState<AutomationsSubview>('heartbeats');
+
+  const visibleViews: AutomationsSubview[] = allowWorkflows
+    ? ['heartbeats', 'tasks', 'workflows']
+    : ['heartbeats', 'tasks'];
 
   const SUBVIEW_LABELS: Record<AutomationsSubview, string> = {
     heartbeats: 'Heartbeats',
     tasks: 'Tasks',
     workflows: 'Workflows',
   };
+
+  // Fall back if current subview was hidden
+  useEffect(() => {
+    if (!visibleViews.includes(subview)) {
+      setSubview('heartbeats');
+    }
+  }, [allowWorkflows]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="space-y-4">
@@ -727,7 +738,7 @@ export function AutomationsSecurityTab() {
           role="tablist"
           aria-label="Automations views"
         >
-          {(['heartbeats', 'tasks', 'workflows'] as AutomationsSubview[]).map((v) => (
+          {visibleViews.map((v) => (
             <button
               key={v}
               role="tab"
@@ -749,7 +760,7 @@ export function AutomationsSecurityTab() {
 
       {subview === 'heartbeats' && <HeartbeatsView />}
       {subview === 'tasks' && <AutomationsTasksView />}
-      {subview === 'workflows' && <AutomationsWorkflowsView />}
+      {subview === 'workflows' && allowWorkflows && <AutomationsWorkflowsView />}
     </div>
   );
 }

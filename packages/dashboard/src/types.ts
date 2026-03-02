@@ -802,6 +802,7 @@ export interface McpFeatureConfig {
   exposeGmail: boolean;
   exposeTwitter: boolean;
   exposeGithub: boolean;
+  exposeKnowledgeBase: boolean;
   exposeDockerTools: boolean;
   // CI/CD (Phase 90)
   exposeGithubActions: boolean;

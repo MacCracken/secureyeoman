@@ -37,11 +37,11 @@ interface AuditRow {
   user_id: string | null;
   task_id: string | null;
   metadata: unknown | null;
-  timestamp: number;
+  timestamp: number | string; // pg returns BIGINT as string
   integrity_version: string;
   integrity_signature: string;
   integrity_previous_hash: string;
-  seq: number;
+  seq: number | string; // pg returns BIGINT as string
 }
 
 function rowToEntry(row: AuditRow): AuditEntry {
@@ -58,7 +58,7 @@ function rowToEntry(row: AuditRow): AuditEntry {
         ? JSON.parse(row.metadata)
         : row.metadata
       : undefined,
-    timestamp: row.timestamp,
+    timestamp: typeof row.timestamp === 'string' ? Number(row.timestamp) : row.timestamp,
     integrity: {
       version: row.integrity_version,
       signature: row.integrity_signature,

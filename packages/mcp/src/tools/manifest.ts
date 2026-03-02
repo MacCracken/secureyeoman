@@ -425,6 +425,45 @@ export function getToolManifest(): ToolManifestEntry[] {
       description:
         'Read the current value of a named signal from the active organizational intent document',
     },
+    {
+      name: 'intent_list',
+      description: 'List all organizational intent documents (metadata only)',
+    },
+    {
+      name: 'intent_get',
+      description:
+        'Get a specific organizational intent document by ID with full body (goals, signals, boundaries, policies)',
+    },
+    {
+      name: 'intent_get_active',
+      description:
+        'Get the currently active organizational intent document with full body',
+    },
+    {
+      name: 'intent_create',
+      description:
+        'Create a new organizational intent document with goals, signals, authorized actions, boundaries, and policies',
+    },
+    {
+      name: 'intent_update',
+      description:
+        'Update an existing organizational intent document (partial update — only included fields change)',
+    },
+    {
+      name: 'intent_activate',
+      description:
+        'Set a specific intent document as the active one (deactivates all others)',
+    },
+    {
+      name: 'intent_delete',
+      description:
+        'Delete an organizational intent document and deactivate it if active',
+    },
+    {
+      name: 'intent_enforcement_log',
+      description:
+        'Query the intent enforcement log (boundary_violated, action_blocked, goal_activated, policy_warn, etc.)',
+    },
 
     // Gmail tools (Phase 63)
     {
