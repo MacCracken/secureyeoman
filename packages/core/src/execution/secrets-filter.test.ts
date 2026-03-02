@@ -94,4 +94,36 @@ describe('createSecretsFilter', () => {
     expect(result).toContain('[REDACTED]');
     expect(result).not.toContain('longersecret');
   });
+
+  // ── Phase 103: ReDoS prevention ─────────────────────────────────────────
+
+  it('caps secrets to 200 entries', () => {
+    // Set 250 secret env vars
+    for (let i = 0; i < 250; i++) {
+      process.env[`BATCH_${i}_API_KEY`] = `secret_value_${i}_abcdef`;
+    }
+    // Should not throw — capped internally
+    const filter = createSecretsFilter();
+    const result = filter('secret_value_0_abcdef and secret_value_199_abcdef and secret_value_249_abcdef');
+    // First 200 should be redacted (after sorting by length, first 200 by index)
+    expect(result).toContain('[REDACTED]');
+  });
+
+  it('excludes secrets longer than 500 chars', () => {
+    const longSecret = 'A'.repeat(501);
+    process.env.VERY_LONG_API_KEY = longSecret;
+    process.env.NORMAL_API_KEY = 'normalkey123';
+    const filter = createSecretsFilter();
+    const line = `${longSecret} normalkey123`;
+    const result = filter(line);
+    // The long secret should NOT be redacted (excluded), but the normal one should
+    expect(result).toContain(longSecret);
+    expect(result).not.toContain('normalkey123');
+  });
+
+  it('still filters normal secrets within caps', () => {
+    process.env.TEST_API_KEY = 'mykey123';
+    const filter = createSecretsFilter();
+    expect(filter('using mykey123')).toBe('using [REDACTED]');
+  });
 });

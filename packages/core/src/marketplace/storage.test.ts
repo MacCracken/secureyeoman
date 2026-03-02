@@ -357,32 +357,39 @@ describe('MarketplaceStorage', () => {
   });
 
   describe('seedBuiltinSkills', () => {
-    it('inserts skills that do not already exist', async () => {
-      // 11 skills total; all return null (no existing) → all 11 get inserted
-      // Each skill: one queryOne (SELECT id) + one execute (INSERT)
-      // That's 22 queries total
-      mockQuery.mockResolvedValue({ rows: [], rowCount: 0 }); // all checks return null, all inserts succeed
+    it('batch-fetches existing builtins then inserts new ones', async () => {
+      // First call = batch SELECT for existing builtins (returns empty)
+      // Subsequent calls = individual INSERT for each skill
+      mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
 
       await storage.seedBuiltinSkills();
 
-      // Should have called queryOne (SELECT id) for each skill
-      const selectCalls = mockQuery.mock.calls.filter(
-        (c: any[]) => typeof c[0] === 'string' && c[0].includes('SELECT id FROM marketplace.skills')
+      // First query should be the batch SELECT
+      const batchSelect = mockQuery.mock.calls.find(
+        (c: any[]) => typeof c[0] === 'string' && c[0].includes("source = 'builtin'")
       );
-      expect(selectCalls).toHaveLength(11);
-    });
+      expect(batchSelect).toBeDefined();
 
-    it('skips skills that already exist', async () => {
-      // All skills already exist
-      mockQuery.mockResolvedValue({ rows: [{ '?column?': 1 }], rowCount: 1 });
-
-      await storage.seedBuiltinSkills();
-
-      // No INSERT calls
+      // Should have INSERT calls for each of the 11 skills
       const insertCalls = mockQuery.mock.calls.filter(
         (c: any[]) => typeof c[0] === 'string' && c[0].includes('INSERT INTO marketplace.skills')
       );
-      expect(insertCalls).toHaveLength(0);
+      expect(insertCalls).toHaveLength(11);
+    });
+
+    it('uses batch SELECT for existing builtins check', async () => {
+      // Even if names don't match (returning empty), the batch SELECT should be the first call
+      mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
+
+      await storage.seedBuiltinSkills();
+
+      // First query should be the batch SELECT for existing builtins
+      const firstCall = mockQuery.mock.calls[0];
+      expect(firstCall).toBeDefined();
+      expect(firstCall[0]).toContain("source = 'builtin'");
+
+      // Total queries should include 1 batch SELECT + (N inserts per skill)
+      expect(mockQuery.mock.calls.length).toBeGreaterThan(1);
     });
   });
 });

@@ -62,6 +62,13 @@ const PII_PATTERNS: PiiPattern[] = [
   },
 ];
 
+/** Pre-compiled replace regexes to avoid creating new RegExp objects per scanSync call. */
+const PII_REPLACE_REGEXES = PII_PATTERNS.map((p) => ({
+  type: p.type,
+  replaceRegex: new RegExp(p.regex.source, p.regex.flags),
+  replacement: p.replacement,
+}));
+
 // ── Helpers ───────────────────────────────────────────────────────────
 
 function contentHash(text: string): string {
@@ -120,10 +127,11 @@ export class ContentGuardrail {
     // PII detection
     const piiMode = personalityCfg?.piiMode ?? this.config.piiMode;
     if (piiMode !== 'disabled') {
-      for (const pattern of PII_PATTERNS) {
-        // Reset lastIndex for global regex
+      for (let i = 0; i < PII_PATTERNS.length; i++) {
+        const pattern = PII_PATTERNS[i]!;
+        // Reset lastIndex for global regex reuse
         pattern.regex.lastIndex = 0;
-        const matches = text.matchAll(new RegExp(pattern.regex.source, pattern.regex.flags));
+        const matches = text.matchAll(pattern.regex);
         for (const match of matches) {
           findings.push({
             type: 'pii',
@@ -133,10 +141,9 @@ export class ContentGuardrail {
           });
         }
         if (piiMode === 'redact') {
-          modified = modified.replace(
-            new RegExp(pattern.regex.source, pattern.regex.flags),
-            pattern.replacement
-          );
+          const rr = PII_REPLACE_REGEXES[i]!;
+          rr.replaceRegex.lastIndex = 0;
+          modified = modified.replace(rr.replaceRegex, rr.replacement);
         }
       }
     }
@@ -145,7 +152,7 @@ export class ContentGuardrail {
     const allRegexes = this.getBlockListRegexes(personalityCfg);
     for (const regex of allRegexes) {
       regex.lastIndex = 0;
-      const matches = modified.matchAll(new RegExp(regex.source, regex.flags));
+      const matches = modified.matchAll(regex);
       for (const match of matches) {
         findings.push({
           type: 'block_list',

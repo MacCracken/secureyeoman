@@ -1,3 +1,40 @@
+## [2026.3.2] — 2026-03-02
+
+### Phase 103: Code Audit Hardening
+
+**Security fixes:**
+
+- **Command injection** in `finetune-manager.ts`: Replaced `execSync` string interpolation with `execFileSync` + array args for `docker stop` and `ollama create`. Added input validation regex for `containerId` and `adapterName`.
+- **Command injection** in `namespaces.ts`: Added `ALLOWED_COMMANDS` whitelist for `isCommandAvailable()`. Switched from `execSync` to `execFileSync`.
+- **Prototype pollution** in `workflow-engine.ts`: Webhook header parsing now filters `__proto__`, `constructor`, `prototype` keys from parsed JSON.
+- **SSRF** in `workflow-engine.ts`: Added `assertPublicUrl()` guard before `fetch()` in webhook steps. Blocks internal/metadata IPs.
+- **ReDoS** in `secrets-filter.ts`: Capped secrets at 200 entries and 500 chars per value before regex construction.
+- **Content guardrail regex** in `content-guardrail.ts`: Pre-compiled replace regexes at module scope; `lastIndex` reset eliminates per-call `new RegExp()` allocations.
+
+**Memory leak fixes:**
+
+- **`_conditionCache`** in `workflow-engine.ts`: FIFO eviction at 1,000 entries.
+- **`triggerPatternCache`** in `soul/manager.ts`: FIFO eviction at 10,000 entries.
+- **`AbuseDetector`** session map: Background 60s eviction timer (`.unref()`'d) + `stop()` method for cleanup.
+- **Rate limit map** in `brain-routes.ts`: Periodic 60s cleanup of expired windows + 50,000-entry cap.
+
+**Performance fixes:**
+
+- **Marketplace seeding** in `marketplace/storage.ts`: Batch `SELECT` for existing builtins (1 query vs N).
+- **Double COUNT** in `analytics-storage.ts`: CTE-based query eliminates duplicate subquery execution.
+- **Message fetch** in `conversation-summarizer.ts`: Batch `WHERE conversation_id = ANY($1)` replaces per-conversation queries.
+- **Message fetch** in `distillation-manager.ts`: Batch fetch in chunks of 50 conversations.
+
+**Benchmarks added:**
+
+- `security/content-guardrail.bench.ts` — PII scan + block list at various text sizes
+- `ai/response-cache.bench.ts` — Hit/miss, set at capacity, eviction
+- `security/abuse-detector.bench.ts` — Session check, topic pivot, block recording
+- `execution/secrets-filter.bench.ts` — Filter with 10/50/200 secrets
+- `brain/brain-manager.bench.ts` — remember, recall, getEnabledSkills (mocked)
+
+---
+
 ## [2026.3.1] — 2026-03-01
 
 ### Phase 99: Conversation Branching & Replay (ADR 179)

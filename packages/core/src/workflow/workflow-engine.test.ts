@@ -1960,3 +1960,155 @@ describe('WorkflowEngine.execute — outputSchemaMode: strict with onError: fall
     expect(recoveryCreated).toBe(true);
   });
 });
+
+// ── Phase 103: Security & Memory fixes ──────────────────────────────────────
+
+describe('WorkflowEngine — prototype pollution prevention (Phase 103)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('strips __proto__ key from headers template', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      status: 200,
+      text: vi.fn().mockResolvedValue('{}'),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'hook',
+      type: 'webhook',
+      config: {
+        url: 'https://example.com/hook',
+        headersTemplate: '{"__proto__":{"polluted":true},"X-Custom":"safe"}',
+      },
+    });
+
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    const fetchHeaders = mockFetch.mock.calls[0]?.[1]?.headers;
+    expect(fetchHeaders).not.toHaveProperty('__proto__');
+    expect(fetchHeaders).toHaveProperty('X-Custom', 'safe');
+  });
+
+  it('strips constructor and prototype keys from headers template', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      status: 200,
+      text: vi.fn().mockResolvedValue('{}'),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'hook',
+      type: 'webhook',
+      config: {
+        url: 'https://example.com/hook',
+        headersTemplate: '{"constructor":"bad","prototype":"bad","Accept":"json"}',
+      },
+    });
+
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    const fetchHeaders = mockFetch.mock.calls[0]?.[1]?.headers;
+    expect(fetchHeaders).not.toHaveProperty('constructor');
+    expect(fetchHeaders).not.toHaveProperty('prototype');
+    expect(fetchHeaders).toHaveProperty('Accept', 'json');
+  });
+});
+
+describe('WorkflowEngine — SSRF prevention in webhook step (Phase 103)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('rejects webhook to localhost', async () => {
+    const mockFetch = vi.fn();
+    vi.stubGlobal('fetch', mockFetch);
+
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'hook',
+      type: 'webhook',
+      config: { url: 'http://127.0.0.1/admin' },
+    });
+
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'failed' })
+    );
+  });
+
+  it('rejects webhook to cloud metadata endpoint', async () => {
+    const mockFetch = vi.fn();
+    vi.stubGlobal('fetch', mockFetch);
+
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'hook',
+      type: 'webhook',
+      config: { url: 'http://169.254.169.254/latest/meta-data/' },
+    });
+
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('allows webhook to valid public URL', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      status: 200,
+      text: vi.fn().mockResolvedValue('ok'),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const step = makeStep({
+      id: 'hook',
+      type: 'webhook',
+      config: { url: 'https://hooks.example.com/wf' },
+    });
+
+    await engine.execute(makeRun(), makeDefinition([step]));
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://hooks.example.com/wf',
+      expect.any(Object)
+    );
+  });
+});
+
+describe('WorkflowEngine — _conditionCache FIFO eviction (Phase 103)', () => {
+  it('evicts oldest entry when cache exceeds 1000', () => {
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+
+    // Fill the cache to 1000
+    for (let i = 0; i < 1000; i++) {
+      engine.evaluateCondition(`true || ${i}`, { steps: {}, input: {} });
+    }
+
+    // Add one more — should evict the first
+    engine.evaluateCondition('true || 1000', { steps: {}, input: {} });
+
+    // Verify the cache didn't grow beyond 1000
+    // Access private field via cast for testing
+    const cache = (engine as any)._conditionCache as Map<string, unknown>;
+    expect(cache.size).toBeLessThanOrEqual(1000);
+  });
+
+  it('returns correct result for cached conditions', () => {
+    const engine = makeEngine();
+    const ctx = { steps: {}, input: { val: 42 } };
+
+    // First call — compiles and caches
+    expect(engine.evaluateCondition('input.val === 42', ctx)).toBe(true);
+    // Second call — from cache
+    expect(engine.evaluateCondition('input.val === 42', ctx)).toBe(true);
+  });
+});

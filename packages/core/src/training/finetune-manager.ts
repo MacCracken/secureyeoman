@@ -14,7 +14,7 @@
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { spawn, execSync } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import type { Pool } from 'pg';
 import type { SecureLogger } from '../logging/logger.js';
 
@@ -156,8 +156,11 @@ export class FinetuneManager {
 
     // Stop Docker container if running
     if (job.containerId) {
+      if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(job.containerId)) {
+        throw new Error(`Invalid container ID: ${job.containerId}`);
+      }
       try {
-        execSync(`docker stop ${job.containerId}`, { stdio: 'ignore' });
+        execFileSync('docker', ['stop', job.containerId], { stdio: 'ignore' });
       } catch {
         /* container may already be stopped */
       }
@@ -350,7 +353,10 @@ export class FinetuneManager {
     const modelfilePath = join(job.adapterPath, 'Modelfile');
     writeFileSync(modelfilePath, modelfile);
 
-    execSync(`ollama create ${job.adapterName} -f ${modelfilePath}`, {
+    if (!/^[a-zA-Z0-9_-]+$/.test(job.adapterName)) {
+      throw new Error(`Invalid adapter name: ${job.adapterName}`);
+    }
+    execFileSync('ollama', ['create', job.adapterName, '-f', modelfilePath], {
       env: { ...process.env, OLLAMA_HOST: ollamaBaseUrl },
     });
 

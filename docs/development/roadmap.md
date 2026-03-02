@@ -35,21 +35,8 @@
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P1 — ongoing | 🔄 Continuous |
-| 78b | Canvas Workspace — Infinite Desktop | P2 — power user | ✅ Complete |
-| 83 | Observability & Telemetry + CrewAI Enhancements | P2 — ops + ML | ✅ Complete |
-| 84 | Notebook Mode: Long Context Windowing | P2 — knowledge UX | ✅ Complete |
-| 82 | Knowledge Base & RAG Platform | P2 — knowledge | ✅ Complete |
-| 90 | CI/CD Integration | P2 — developer lifecycle | ✅ Complete |
-| 91 | Native Clients Scaffold (Tauri Desktop + Capacitor Mobile) | P2 — distribution | ✅ Complete |
-| 92 | Adaptive Learning Pipeline | P2 — ML quality & training | ✅ Complete |
-| 89 | Marketplace Shareables | P3 — community growth | ✅ Complete |
 | 93 | License-Gated Feature Reveal | P2 — commercial | Planned |
 | 94 | Test Coverage: Path to 88%/77% | P2 — engineering quality | 🔄 In Progress (80.85%/68.76%) |
-| 95 | Content Guardrails | P2 — enterprise compliance | ✅ Complete |
-| 96 | Conversation Analytics | P3 — operational intelligence | Planned |
-| 97 | LLM-as-Judge Evaluation | P3 — ML quality signal | Planned |
-| 98 | LLM Lifecycle Platform — Completion | P3 — model ops | Planned |
-| 99 | Conversation Branching & Replay | P3 — developer experience | Planned |
 | 100 | Editor Improvements (Auto-Claude Style) | P3 — power user UX | 🔄 In Progress (unification ✅, IDE features planned) |
 | 101 | Inline Citations & Grounding | P4 — trust layer | Planned |
 | 102 | Reasoning Strategies, Security Templates & Portable Personalities | P2 — capability + distribution | Planned |

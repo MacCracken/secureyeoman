@@ -52,10 +52,23 @@ export class AbuseDetector {
   private readonly cfg: SecurityConfig['abuseDetection'];
   private readonly sessions = new Map<string, SessionRecord>();
   private readonly auditRecord: AuditRecordFn;
+  private evictTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(cfg: SecurityConfig['abuseDetection'], auditRecord: AuditRecordFn) {
     this.cfg = cfg;
     this.auditRecord = auditRecord;
+    if (cfg?.enabled) {
+      this.evictTimer = setInterval(() => this.evictStale(), 60_000);
+      this.evictTimer.unref?.();
+    }
+  }
+
+  /** Stop the background eviction timer. Call during shutdown. */
+  stop(): void {
+    if (this.evictTimer) {
+      clearInterval(this.evictTimer);
+      this.evictTimer = null;
+    }
   }
 
   /**

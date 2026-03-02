@@ -3,6 +3,7 @@ import {
   detectNamespaceSupport,
   buildUnshareCommand,
   runInNamespace,
+  isCommandAvailable,
   NamespaceError,
 } from './namespaces.js';
 
@@ -68,6 +69,25 @@ describe('NamespaceError', () => {
     expect(err.name).toBe('NamespaceError');
     expect(err.message).toBe('test message');
     expect(err.code).toBe('TEST_CODE');
+  });
+});
+
+describe('isCommandAvailable — whitelist (Phase 103)', () => {
+  it('returns false for non-whitelisted command', () => {
+    expect(isCommandAvailable('curl')).toBe(false);
+    expect(isCommandAvailable('wget')).toBe(false);
+  });
+
+  it('returns false for command with shell metacharacters', () => {
+    expect(isCommandAvailable('unshare; rm -rf /')).toBe(false);
+    expect(isCommandAvailable('bwrap && cat /etc/passwd')).toBe(false);
+  });
+
+  it('allows whitelisted commands (result depends on system)', () => {
+    // On any system, whitelisted commands either succeed or fail
+    // based on presence, but must not throw
+    const result = isCommandAvailable('unshare');
+    expect(typeof result).toBe('boolean');
   });
 });
 

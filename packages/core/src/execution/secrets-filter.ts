@@ -33,10 +33,17 @@ export function createSecretsFilter(additionalPatterns: string[] = []): (line: s
   // Sort longest first so longer values are replaced before substrings
   secretValues.sort((a, b) => b.length - a.length);
 
+  // Cap secrets to prevent ReDoS with very large alternation regexes
+  const MAX_SECRETS = 200;
+  const MAX_SECRET_LENGTH = 500;
+  const capped = secretValues
+    .slice(0, MAX_SECRETS)
+    .filter((v) => v.length <= MAX_SECRET_LENGTH);
+
   // Build a single regex from all secret values if any exist
   let secretsRegex: RegExp | null = null;
-  if (secretValues.length > 0) {
-    const escaped = secretValues.map((v) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  if (capped.length > 0) {
+    const escaped = capped.map((v) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
     secretsRegex = new RegExp(escaped.join('|'), 'g');
   }
 

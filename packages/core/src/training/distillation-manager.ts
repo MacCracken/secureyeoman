@@ -234,14 +234,22 @@ export class DistillationManager {
       // ── Collect ordered conversation IDs based on priorityMode + curriculumMode ──
       const orderedConvIds = await this._collectOrderedConvIds(job);
 
-      outer: for (const convId of orderedConvIds) {
+      // Batch-fetch messages in chunks of 50 conversations to reduce N+1 queries
+      const BATCH_SIZE = 50;
+      outer: for (let batchIdx = 0; batchIdx < orderedConvIds.length; batchIdx += BATCH_SIZE) {
         if (samplesWritten >= job.maxSamples) break outer;
 
         // Check for cancellation
         const current = await this.getJob(jobId);
         if (current?.status === 'cancelled') break outer;
 
-        const messages = await conversationStorage.getMessages(convId, { limit: 1000 });
+        const batchIds = orderedConvIds.slice(batchIdx, batchIdx + BATCH_SIZE);
+        const messagesByConv = await this._batchFetchMessages(batchIds);
+
+        for (const convId of batchIds) {
+        if (samplesWritten >= job.maxSamples) break outer;
+
+        const messages = messagesByConv.get(convId) ?? [];
         if (messages.length < 2) continue;
 
         // Find user→assistant pairs
@@ -295,7 +303,8 @@ export class DistillationManager {
             trainingStream.broadcast({ type: 'agreement', value: avgAgreement, ts: Date.now() });
           }
         }
-      }
+        } // end for (const convId of batchIds)
+      } // end outer: for (let batchIdx)
 
       // ── Counterfactual generation ───────────────────────────────────────────
       if (job.counterfactualMode && counterfactualCount < job.maxCounterfactualSamples) {
@@ -348,6 +357,36 @@ export class DistillationManager {
       );
     }
     return JSON.stringify({ instruction: userContent, output: response, ...(meta ?? {}) }) + '\n';
+  }
+
+  /**
+   * Batch-fetch messages for multiple conversations in a single query.
+   * Groups results by conversation_id for efficient iteration.
+   */
+  private async _batchFetchMessages(
+    convIds: string[]
+  ): Promise<Map<string, { role: string; content: string }[]>> {
+    if (convIds.length === 0) return new Map();
+    const { rows } = await this.pool.query<{
+      conversation_id: string;
+      role: string;
+      content: string;
+    }>(
+      `SELECT conversation_id, role, content FROM chat.messages
+       WHERE conversation_id = ANY($1) AND content IS NOT NULL
+       ORDER BY created_at ASC`,
+      [convIds]
+    );
+    const map = new Map<string, { role: string; content: string }[]>();
+    for (const msg of rows) {
+      let arr = map.get(msg.conversation_id);
+      if (!arr) {
+        arr = [];
+        map.set(msg.conversation_id, arr);
+      }
+      arr.push({ role: msg.role, content: msg.content });
+    }
+    return map;
   }
 
   /**

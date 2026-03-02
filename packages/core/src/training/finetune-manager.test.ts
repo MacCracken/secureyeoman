@@ -11,6 +11,7 @@ vi.mock('node:child_process', () => ({
     stderr: { on: vi.fn() },
   })),
   execSync: vi.fn(),
+  execFileSync: vi.fn(),
 }));
 
 vi.mock('node:fs', async (importOriginal) => {
@@ -274,8 +275,8 @@ describe('FinetuneManager', () => {
     });
 
     it('calls ollama create for a complete job', async () => {
-      const { execSync } = await import('node:child_process');
-      const mockExecSync = vi.mocked(execSync);
+      const { execFileSync } = await import('node:child_process');
+      const mockExecFileSync = vi.mocked(execFileSync);
 
       pool.query = vi.fn(async () => ({
         rows: [makeJobRow({ status: 'complete', adapter_path: '/workspace/adapter' })],
@@ -284,8 +285,9 @@ describe('FinetuneManager', () => {
 
       await manager.registerWithOllama('ft-1', 'http://localhost:11434');
 
-      expect(mockExecSync).toHaveBeenCalledWith(
-        expect.stringContaining('ollama create my-adapter'),
+      expect(mockExecFileSync).toHaveBeenCalledWith(
+        'ollama',
+        ['create', 'my-adapter', '-f', expect.stringContaining('Modelfile')],
         expect.any(Object)
       );
     });
@@ -306,8 +308,8 @@ describe('FinetuneManager', () => {
 
   describe('cancelJob() with containerId', () => {
     it('cancels a running job with containerId — stops docker container', async () => {
-      const { execSync } = await import('node:child_process');
-      const mockExecSync = vi.mocked(execSync);
+      const { execFileSync } = await import('node:child_process');
+      const mockExecFileSync = vi.mocked(execFileSync);
 
       pool.query = vi
         .fn()
@@ -319,13 +321,13 @@ describe('FinetuneManager', () => {
 
       const result = await manager.cancelJob('ft-1');
       expect(result).toBe(true);
-      expect(mockExecSync).toHaveBeenCalledWith('docker stop sy-finetune-ft-1', { stdio: 'ignore' });
+      expect(mockExecFileSync).toHaveBeenCalledWith('docker', ['stop', 'sy-finetune-ft-1'], { stdio: 'ignore' });
     });
 
     it('handles docker stop failure gracefully', async () => {
-      const { execSync } = await import('node:child_process');
-      const mockExecSync = vi.mocked(execSync);
-      mockExecSync.mockImplementation(() => {
+      const { execFileSync } = await import('node:child_process');
+      const mockExecFileSync = vi.mocked(execFileSync);
+      mockExecFileSync.mockImplementation(() => {
         throw new Error('container not found');
       });
 
@@ -491,6 +493,60 @@ describe('FinetuneManager', () => {
 
       const job = await manager.getJob('ft-1');
       expect(job!.completedAt).toBeNull(); // not Date instance => null
+    });
+  });
+
+  // ── Input validation (Phase 103 — command injection prevention) ─────────────
+
+  describe('input validation — containerId', () => {
+    it('rejects containerId with shell metacharacters', async () => {
+      pool.query = vi
+        .fn()
+        .mockResolvedValueOnce({
+          rows: [makeJobRow({ status: 'running', container_id: 'valid; rm -rf /' })],
+          rowCount: 1,
+        });
+
+      await expect(manager.cancelJob('ft-1')).rejects.toThrow('Invalid container ID');
+    });
+
+    it('accepts valid containerId', async () => {
+      const { execFileSync } = await import('node:child_process');
+      const mockExecFileSync = vi.mocked(execFileSync);
+
+      pool.query = vi
+        .fn()
+        .mockResolvedValueOnce({
+          rows: [makeJobRow({ status: 'running', container_id: 'sy-finetune-ft.1_test' })],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+
+      await manager.cancelJob('ft-1');
+      expect(mockExecFileSync).toHaveBeenCalledWith('docker', ['stop', 'sy-finetune-ft.1_test'], { stdio: 'ignore' });
+    });
+  });
+
+  describe('input validation — adapterName', () => {
+    it('rejects adapterName with shell metacharacters', async () => {
+      pool.query = vi.fn(async () => ({
+        rows: [makeJobRow({ status: 'complete', adapter_path: '/workspace/adapter', adapter_name: 'bad; rm -rf /' })],
+        rowCount: 1,
+      }));
+
+      await expect(manager.registerWithOllama('ft-1', 'http://localhost:11434')).rejects.toThrow('Invalid adapter name');
+    });
+
+    it('accepts valid adapterName with hyphens and underscores', async () => {
+      const { execFileSync } = await import('node:child_process');
+      vi.mocked(execFileSync).mockReturnValue(Buffer.from(''));
+
+      pool.query = vi.fn(async () => ({
+        rows: [makeJobRow({ status: 'complete', adapter_path: '/workspace/adapter', adapter_name: 'my_adapter-v2' })],
+        rowCount: 1,
+      }));
+
+      await expect(manager.registerWithOllama('ft-1', 'http://localhost:11434')).resolves.toBeUndefined();
     });
   });
 

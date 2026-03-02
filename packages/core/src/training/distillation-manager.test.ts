@@ -275,14 +275,25 @@ describe('DistillationManager', () => {
       ];
       const convStorage = makeConvStorage(convs, messages);
 
-      // Sequence: getJob (pending), update running, getJob (check cancel x2), update complete
-      let callIdx = 0;
-      pool.query = vi.fn(async (sql: string) => {
-        callIdx++;
-        if (sql.includes('SELECT') && callIdx === 1) {
-          return { rows: [makeJobRow()], rowCount: 1 };
+      // Sequence: getJob (pending), update running, _collectOrderedConvIds, getJob (check cancel), batch messages, update complete
+      let selectJobIdx = 0;
+      pool.query = vi.fn(async (sql: string, params?: unknown[]) => {
+        // Batch message fetch for distillation
+        if (sql.includes('chat.messages') && sql.includes('ANY')) {
+          return {
+            rows: messages.map((m) => ({ conversation_id: 'c1', role: m.role, content: m.content })),
+            rowCount: messages.length,
+          };
         }
-        if (sql.includes('SELECT') && callIdx > 1) {
+        // Conversation ordering query
+        if (sql.includes('chat.conversations') && sql.includes('ORDER BY')) {
+          return { rows: [{ id: 'c1' }], rowCount: 1 };
+        }
+        if (sql.includes('SELECT')) {
+          selectJobIdx++;
+          if (selectJobIdx === 1) {
+            return { rows: [makeJobRow()], rowCount: 1 };
+          }
           return { rows: [makeJobRow({ status: 'running' })], rowCount: 1 };
         }
         return { rows: [], rowCount: 1 };
@@ -512,7 +523,7 @@ describe('DistillationManager — Phase 92 extensions', () => {
   describe('runJob() — curriculum mode', () => {
     it('orders conversations by stage when curriculumMode=true', async () => {
       let qc = 0;
-      pool.query = vi.fn(async (sql: string) => {
+      pool.query = vi.fn(async (sql: string, args?: any[]) => {
         qc++;
         // 1st: getJob
         if (qc === 1) {
@@ -549,22 +560,30 @@ describe('DistillationManager — Phase 92 extensions', () => {
             rowCount: 1,
           };
         }
+        // Batch message fetch for conversations
+        if (sql.includes('chat.messages') && sql.includes('ANY')) {
+          const convIds = args?.[0] as string[] ?? [];
+          const rows = convIds.flatMap((cid: string) => [
+            { conversation_id: cid, role: 'user', content: 'Hello' },
+            { conversation_id: cid, role: 'assistant', content: 'Hi' },
+          ]);
+          return { rows, rowCount: rows.length };
+        }
         return { rows: [], rowCount: 1 };
       });
 
-      // Return 2 messages for each conversation
       const convStorage = {
         listConversations: vi.fn(async () => ({ conversations: [] })),
-        getMessages: vi.fn(async () => [
-          { id: 'm1', role: 'user', content: 'Hello' },
-          { id: 'm2', role: 'assistant', content: 'Hi' },
-        ]),
+        getMessages: vi.fn(async () => []),
       } as any;
 
       await manager.runJob('job-1', convStorage, makeTeacher());
 
-      // The getMessages should have been called, verifying curriculum ordering worked
-      expect(convStorage.getMessages).toHaveBeenCalled();
+      // Verify batch message fetch was called (via pool.query with chat.messages)
+      const batchCalls = (pool.query as any).mock.calls.filter(
+        (c: any[]) => typeof c[0] === 'string' && c[0].includes('chat.messages') && c[0].includes('ANY')
+      );
+      expect(batchCalls.length).toBeGreaterThan(0);
     });
   });
 
@@ -573,7 +592,7 @@ describe('DistillationManager — Phase 92 extensions', () => {
   describe('runJob() — instruction export format', () => {
     it('writes instruction format lines when exportFormat=instruction', async () => {
       let qc = 0;
-      pool.query = vi.fn(async (sql: string) => {
+      pool.query = vi.fn(async (sql: string, args?: any[]) => {
         qc++;
         if (qc === 1)
           return {
@@ -583,6 +602,16 @@ describe('DistillationManager — Phase 92 extensions', () => {
         if (qc === 2) return { rows: [], rowCount: 1 };
         if (qc === 3)
           return { rows: [{ id: 'conv-1', message_count: 4 }], rowCount: 1 };
+        // Batch message fetch
+        if (sql.includes('chat.messages') && sql.includes('ANY')) {
+          return {
+            rows: [
+              { conversation_id: 'conv-1', role: 'user', content: 'Explain AI' },
+              { conversation_id: 'conv-1', role: 'assistant', content: 'AI is...' },
+            ],
+            rowCount: 2,
+          };
+        }
         // cancel check
         if (sql.includes('SELECT') && sql.includes('distillation_jobs'))
           return { rows: [makeJobRow({ status: 'running' })], rowCount: 1 };
@@ -591,17 +620,17 @@ describe('DistillationManager — Phase 92 extensions', () => {
 
       const convStorage = {
         listConversations: vi.fn(async () => ({ conversations: [] })),
-        getMessages: vi.fn(async () => [
-          { id: 'm1', role: 'user', content: 'Explain AI' },
-          { id: 'm2', role: 'assistant', content: 'AI is...' },
-        ]),
+        getMessages: vi.fn(async () => []),
       } as any;
 
       // Use the real manager but mock fs
       await manager.runJob('job-1', convStorage, makeTeacher('Teacher says AI'));
 
-      // Verify the teacher was called
-      expect(convStorage.getMessages).toHaveBeenCalledWith('conv-1', { limit: 1000 });
+      // Verify batch message fetch was used
+      const batchCalls = (pool.query as any).mock.calls.filter(
+        (c: any[]) => typeof c[0] === 'string' && c[0].includes('chat.messages') && c[0].includes('ANY')
+      );
+      expect(batchCalls.length).toBeGreaterThan(0);
     });
   });
 
@@ -725,7 +754,7 @@ describe('DistillationManager — Phase 92 extensions', () => {
   describe('runJob() — teacher failure handling', () => {
     it('continues processing when individual teacher call fails', async () => {
       let qc = 0;
-      pool.query = vi.fn(async (sql: string) => {
+      pool.query = vi.fn(async (sql: string, args?: any[]) => {
         qc++;
         if (qc === 1) return { rows: [makeJobRow({ status: 'pending' })], rowCount: 1 };
         if (qc === 2) return { rows: [], rowCount: 1 };
@@ -737,6 +766,15 @@ describe('DistillationManager — Phase 92 extensions', () => {
             ],
             rowCount: 2,
           };
+        // Batch message fetch
+        if (sql.includes('chat.messages') && sql.includes('ANY')) {
+          const convIds = args?.[0] as string[] ?? [];
+          const rows = convIds.flatMap((cid: string) => [
+            { conversation_id: cid, role: 'user', content: 'Hello' },
+            { conversation_id: cid, role: 'assistant', content: 'Hi' },
+          ]);
+          return { rows, rowCount: rows.length };
+        }
         if (sql.includes('SELECT') && sql.includes('distillation_jobs'))
           return { rows: [makeJobRow({ status: 'running' })], rowCount: 1 };
         return { rows: [], rowCount: 1 };
@@ -744,10 +782,7 @@ describe('DistillationManager — Phase 92 extensions', () => {
 
       const convStorage = {
         listConversations: vi.fn(async () => ({ conversations: [] })),
-        getMessages: vi.fn(async () => [
-          { id: 'm1', role: 'user', content: 'Hello' },
-          { id: 'm2', role: 'assistant', content: 'Hi' },
-        ]),
+        getMessages: vi.fn(async () => []),
       } as any;
 
       // Teacher fails on first call, succeeds on second

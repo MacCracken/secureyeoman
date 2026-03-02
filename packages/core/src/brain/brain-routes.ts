@@ -25,13 +25,28 @@ export interface BrainRoutesOptions {
 const MAX_QUERY_LIMIT = 200;
 
 /** Rate limit tracking for mutation endpoints. */
+const MAX_RATE_LIMIT_ENTRIES = 50_000;
 const rateLimitWindows = new Map<string, { count: number; resetAt: number }>();
+
+// Periodic cleanup of expired rate limit entries
+const _rateLimitCleanupTimer = setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitWindows) {
+    if (now >= entry.resetAt) rateLimitWindows.delete(key);
+  }
+}, 60_000);
+_rateLimitCleanupTimer.unref?.();
 
 function checkBrainRateLimit(key: string, maxPerMinute: number): boolean {
   const now = Date.now();
   const entry = rateLimitWindows.get(key);
 
   if (!entry || now >= entry.resetAt) {
+    // Evict oldest if at capacity
+    if (rateLimitWindows.size >= MAX_RATE_LIMIT_ENTRIES && !rateLimitWindows.has(key)) {
+      const oldest = rateLimitWindows.keys().next().value;
+      if (oldest !== undefined) rateLimitWindows.delete(oldest);
+    }
     rateLimitWindows.set(key, { count: 1, resetAt: now + 60_000 });
     return true;
   }

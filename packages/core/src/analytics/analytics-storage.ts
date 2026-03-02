@@ -202,13 +202,18 @@ export class AnalyticsStorage {
     limit: number
   ): Promise<UnsummarizedConversation[]> {
     const { rows } = await this.pool.query<UnsummarizedConversation>(
-      `SELECT c.id, c.personality_id, c.title,
-              (SELECT COUNT(*)::int FROM chat.messages WHERE conversation_id = c.id) AS message_count
-       FROM   chat.conversations c
-       LEFT   JOIN analytics.conversation_summaries cs ON cs.conversation_id = c.id
-       WHERE  cs.conversation_id IS NULL
-       HAVING (SELECT COUNT(*) FROM chat.messages WHERE conversation_id = c.id) >= $1
-       ORDER  BY c.updated_at DESC
+      `WITH conv_counts AS (
+         SELECT c.id, c.personality_id, c.title,
+                (SELECT COUNT(*)::int FROM chat.messages WHERE conversation_id = c.id) AS message_count,
+                c.updated_at
+         FROM   chat.conversations c
+         LEFT   JOIN analytics.conversation_summaries cs ON cs.conversation_id = c.id
+         WHERE  cs.conversation_id IS NULL
+       )
+       SELECT id, personality_id, title, message_count
+       FROM   conv_counts
+       WHERE  message_count >= $1
+       ORDER  BY updated_at DESC
        LIMIT  $2`,
       [minMessages, limit]
     );

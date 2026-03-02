@@ -354,16 +354,20 @@ export class MarketplaceStorage extends PgBaseStorage {
       specificationEngineeringSkill,
       sopWriterSkill,
     ];
+
+    // Batch-fetch all existing builtins in one query instead of N individual SELECTs
+    const existingRows = await this.queryMany<{ id: string; name: string; author: string }>(
+      `SELECT id, name, author FROM marketplace.skills WHERE source = 'builtin'`
+    );
+    const existingMap = new Map(existingRows.map((r) => [`${r.name}:${r.author}`, r.id]));
+
     for (const skill of BUILTIN_SKILLS) {
       if (!skill.name) continue;
       try {
-        const existing = await this.queryOne<{ id: string }>(
-          'SELECT id FROM marketplace.skills WHERE name = $1 AND author = $2',
-          [skill.name, skill.author]
-        );
-        if (existing) {
-          // Update all fields (including source) so re-deploys pick up changes
-          await this.updateSkill(existing.id, { ...skill, source: 'builtin' });
+        const key = `${skill.name}:${skill.author}`;
+        const existingId = existingMap.get(key);
+        if (existingId) {
+          await this.updateSkill(existingId, { ...skill, source: 'builtin' });
         } else {
           await this.addSkill({ ...skill, source: 'builtin' });
         }

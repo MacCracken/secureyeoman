@@ -796,4 +796,32 @@ describe('ContentGuardrail', () => {
       expect(result.passed).toBe(true);
     });
   });
+
+  // ── Phase 103: Regex optimization regression tests ─────────────────
+
+  describe('PII redaction consistency after regex optimization (Phase 103)', () => {
+    it('produces consistent results across multiple sequential calls', () => {
+      const { guardrail } = makeGuardrail({ piiMode: 'redact' });
+      const text = 'Contact me at alice@example.com or call 555-123-4567';
+
+      const result1 = guardrail.scanSync(text, ctx);
+      const result2 = guardrail.scanSync(text, ctx);
+      const result3 = guardrail.scanSync(text, ctx);
+
+      expect(result1.text).toBe(result2.text);
+      expect(result2.text).toBe(result3.text);
+      expect(result1.findings.length).toBe(result2.findings.length);
+    });
+
+    it('correctly redacts PII with pre-compiled regexes', () => {
+      const { guardrail } = makeGuardrail({ piiMode: 'redact' });
+      const text = 'SSN 123-45-6789, email test@test.com';
+      const result = guardrail.scanSync(text, ctx);
+
+      expect(result.text).toContain('[SSN REDACTED]');
+      expect(result.text).toContain('[EMAIL REDACTED]');
+      expect(result.text).not.toContain('123-45-6789');
+      expect(result.text).not.toContain('test@test.com');
+    });
+  });
 });

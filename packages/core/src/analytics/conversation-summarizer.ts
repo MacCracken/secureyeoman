@@ -48,10 +48,14 @@ export class ConversationSummarizer {
     );
     if (unsummarized.length === 0) return 0;
 
+    // Batch-fetch all messages for the batch in one query instead of N+1
+    const convIds = unsummarized.map((c) => c.id);
+    const messagesByConv = await this.batchFetchMessages(convIds);
+
     let summarized = 0;
     for (const conv of unsummarized) {
       try {
-        const messages = await this.getConversationMessages(conv.id);
+        const messages = messagesByConv.get(conv.id) ?? [];
         if (messages.length < this.config.minMessageCount) continue;
 
         const summary = await this.generateSummary(messages);
@@ -90,16 +94,30 @@ export class ConversationSummarizer {
     return typeof response.content === 'string' ? response.content.trim() : '';
   }
 
-  private async getConversationMessages(
-    conversationId: string
-  ): Promise<{ role: string; content: string }[]> {
-    const { rows } = await this.pool.query<{ role: string; content: string }>(
-      `SELECT role, content FROM chat.messages
-       WHERE conversation_id = $1 AND content IS NOT NULL
+  private async batchFetchMessages(
+    convIds: string[]
+  ): Promise<Map<string, { role: string; content: string }[]>> {
+    if (convIds.length === 0) return new Map();
+    const { rows } = await this.pool.query<{
+      conversation_id: string;
+      role: string;
+      content: string;
+    }>(
+      `SELECT conversation_id, role, content FROM chat.messages
+       WHERE conversation_id = ANY($1) AND content IS NOT NULL
        ORDER BY created_at ASC`,
-      [conversationId]
+      [convIds]
     );
-    return rows;
+    const map = new Map<string, { role: string; content: string }[]>();
+    for (const msg of rows) {
+      let arr = map.get(msg.conversation_id);
+      if (!arr) {
+        arr = [];
+        map.set(msg.conversation_id, arr);
+      }
+      arr.push({ role: msg.role, content: msg.content });
+    }
+    return map;
   }
 
   start(): void {

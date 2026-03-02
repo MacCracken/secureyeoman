@@ -26,6 +26,7 @@ import type { PipelineLineageStorage } from '../training/pipeline-lineage.js';
 import type { DistillationManager } from '../training/distillation-manager.js';
 import type { FinetuneManager } from '../training/finetune-manager.js';
 import type { WorkflowDefinition, WorkflowRun, WorkflowStep } from '@secureyeoman/shared';
+import { assertPublicUrl } from '../utils/ssrf-guard.js';
 
 const _outputSchemaValidator = new OutputSchemaValidator();
 
@@ -84,6 +85,7 @@ export class WorkflowEngine {
   private readonly logger: SecureLogger;
   /** Compiled condition functions, keyed by expression string. */
   private readonly _conditionCache = new Map<string, (...args: unknown[]) => unknown>();
+  private static readonly MAX_CONDITION_CACHE = 1000;
   // ML Pipeline managers (Phase 73)
   private readonly dataCurationManager: DataCurationManager | null;
   private readonly distillationManager: DistillationManager | null;
@@ -419,6 +421,7 @@ export class WorkflowEngine {
 
       case 'webhook': {
         const url = this.resolveTemplate(String(cfg.url ?? ''), ctx);
+        assertPublicUrl(url, 'Webhook URL');
         const method = String(cfg.method ?? 'POST').toUpperCase();
         const body = cfg.bodyTemplate
           ? this.resolveTemplate(String(cfg.bodyTemplate), ctx)
@@ -427,7 +430,11 @@ export class WorkflowEngine {
         if (cfg.headersTemplate) {
           try {
             const resolvedHeaders = this.resolveTemplate(String(cfg.headersTemplate), ctx);
-            Object.assign(headers, JSON.parse(resolvedHeaders));
+            const parsed = JSON.parse(resolvedHeaders) as Record<string, unknown>;
+            for (const key of Object.keys(parsed)) {
+              if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+              headers[key] = String(parsed[key]);
+            }
           } catch {
             // ignore malformed headers template
           }
@@ -954,6 +961,10 @@ export class WorkflowEngine {
         fn = new Function('steps', 'input', `"use strict"; return !!(${expr});`) as (
           ...args: unknown[]
         ) => unknown;
+        if (this._conditionCache.size >= WorkflowEngine.MAX_CONDITION_CACHE) {
+          const oldest = this._conditionCache.keys().next().value;
+          if (oldest !== undefined) this._conditionCache.delete(oldest);
+        }
         this._conditionCache.set(expr, fn);
       }
       return fn(ctx.steps, ctx.input) === true;

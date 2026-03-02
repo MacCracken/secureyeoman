@@ -11,7 +11,7 @@
  * - `unshare` command not available
  */
 
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import { platform } from 'node:os';
 import { existsSync, readFileSync } from 'node:fs';
 
@@ -135,12 +135,17 @@ export function runInNamespace(command: string, opts: NamespaceOptions = {}): st
   }
 }
 
+/** Whitelist of commands that isCommandAvailable is allowed to check. */
+const ALLOWED_COMMANDS = new Set(['unshare', 'bwrap', 'bubblewrap', 'firejail', 'nsjail']);
+
 /**
- * Check if a command is available on the system
+ * Check if a command is available on the system.
+ * Only whitelisted commands are checked to prevent command injection.
  */
-function isCommandAvailable(cmd: string): boolean {
+export function isCommandAvailable(cmd: string): boolean {
+  if (!ALLOWED_COMMANDS.has(cmd)) return false;
   try {
-    execSync(`which ${cmd}`, { encoding: 'utf-8', stdio: 'pipe' });
+    execFileSync('which', [cmd], { encoding: 'utf-8', stdio: 'pipe' });
     return true;
   } catch {
     return false;

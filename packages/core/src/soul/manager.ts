@@ -62,10 +62,15 @@ export function isPersonalityWithinActiveHours(p: Personality): boolean {
 }
 
 // Compiled RegExp cache — patterns are stable after DB load, so we compile once.
+const MAX_TRIGGER_CACHE = 10_000;
 const triggerPatternCache = new Map<string, RegExp | null>();
 
 function compileTriggerPattern(pattern: string): RegExp | null {
   if (triggerPatternCache.has(pattern)) return triggerPatternCache.get(pattern)!;
+  if (triggerPatternCache.size >= MAX_TRIGGER_CACHE) {
+    const oldest = triggerPatternCache.keys().next().value;
+    if (oldest !== undefined) triggerPatternCache.delete(oldest);
+  }
   let re: RegExp | null;
   try {
     re = new RegExp(pattern, 'i');

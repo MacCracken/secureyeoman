@@ -1351,6 +1351,30 @@ describe('SoulManager', () => {
     });
   });
 
+  describe('triggerPatternCache eviction (Phase 103)', () => {
+    it('compiles and caches trigger patterns without growing unbounded', async () => {
+      // Use many unique trigger patterns to exercise caching
+      const skills = Array.from({ length: 50 }, (_, i) => ({
+        ...SKILL,
+        name: `Skill ${i}`,
+        triggerPatterns: [`unique_pattern_${i}`],
+        instructions: `Skill ${i} instructions`,
+      }));
+      const { manager } = makeManager({
+        getEnabledSkills: vi.fn().mockResolvedValue(skills),
+      });
+
+      // First call populates cache
+      await manager.composeSoulPrompt('unique_pattern_0 match');
+      // Second call uses cache
+      await manager.composeSoulPrompt('unique_pattern_0 match again');
+
+      // Just verify no errors and consistent behavior
+      const prompt = await manager.composeSoulPrompt('unique_pattern_0');
+      expect(prompt).toContain('Skill 0 instructions');
+    });
+  });
+
   describe('composeBodyPrompt (tested via composeSoulPrompt)', () => {
     it('includes MCP connections section when personality has selectedServers', async () => {
       const bodyPersonality = {

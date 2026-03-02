@@ -80,12 +80,14 @@ describe('ConversationSummarizer', () => {
       expect(count).toBe(0);
     });
 
-    it('summarizes eligible conversations', async () => {
+    it('summarizes eligible conversations via batch fetch', async () => {
       mockStorage.getUnsummarizedConversations.mockResolvedValueOnce([
         { id: 'c1', personality_id: 'p1', message_count: 15, title: 'Chat 1' },
       ]);
+      // Batch fetch returns messages tagged with conversation_id
       mockQuery.mockResolvedValueOnce({
         rows: Array.from({ length: 15 }, (_, i) => ({
+          conversation_id: 'c1',
           role: i % 2 === 0 ? 'user' : 'assistant',
           content: `Message ${i}`,
         })),
@@ -107,10 +109,11 @@ describe('ConversationSummarizer', () => {
       mockStorage.getUnsummarizedConversations.mockResolvedValueOnce([
         { id: 'c1', personality_id: 'p1', message_count: 3, title: 'Short chat' },
       ]);
+      // Batch fetch returns only 2 messages
       mockQuery.mockResolvedValueOnce({
         rows: [
-          { role: 'user', content: 'Hi' },
-          { role: 'assistant', content: 'Hello' },
+          { conversation_id: 'c1', role: 'user', content: 'Hi' },
+          { conversation_id: 'c1', role: 'assistant', content: 'Hello' },
         ],
       });
 
@@ -124,14 +127,13 @@ describe('ConversationSummarizer', () => {
         { id: 'c1', personality_id: 'p1', message_count: 10, title: 'Chat 1' },
         { id: 'c2', personality_id: 'p1', message_count: 12, title: 'Chat 2' },
       ]);
-      // First conversation: query succeeds, AI fails
-      mockQuery
-        .mockResolvedValueOnce({
-          rows: Array.from({ length: 10 }, () => ({ role: 'user', content: 'msg' })),
-        })
-        .mockResolvedValueOnce({
-          rows: Array.from({ length: 12 }, () => ({ role: 'user', content: 'msg' })),
-        });
+      // Batch fetch returns messages for both conversations
+      mockQuery.mockResolvedValueOnce({
+        rows: [
+          ...Array.from({ length: 10 }, () => ({ conversation_id: 'c1', role: 'user', content: 'msg' })),
+          ...Array.from({ length: 12 }, () => ({ conversation_id: 'c2', role: 'user', content: 'msg' })),
+        ],
+      });
       mockAiClient.chat
         .mockRejectedValueOnce(new Error('LLM error'))
         .mockResolvedValueOnce({ content: 'Summary 2.' });

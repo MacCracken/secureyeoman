@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AbuseDetector, type AuditRecordFn } from './abuse-detector.js';
 import type { SecurityConfig } from '@secureyeoman/shared';
 
@@ -187,5 +187,59 @@ describe('AbuseDetector — session eviction', () => {
     // Now 's1' starts fresh — one block should not trigger cool-down
     detector.recordBlock('s1');
     expect(detector.check('s1').inCoolDown).toBe(false);
+  });
+});
+
+// ─── Phase 103: Background eviction timer & stop() ───────────────────────────
+
+describe('AbuseDetector — background eviction timer (Phase 103)', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('background timer evicts stale sessions', () => {
+    const { detector } = makeDetector({ sessionTtlMs: 30_000 });
+    detector.recordBlock('sess-1');
+
+    // Advance time past sessionTtlMs
+    vi.advanceTimersByTime(30_001);
+
+    // Advance to trigger the 60s eviction interval
+    vi.advanceTimersByTime(60_000);
+
+    // Session should be evicted — fresh start, no cool-down
+    expect(detector.check('sess-1').inCoolDown).toBe(false);
+    detector.stop();
+  });
+
+  it('stop() clears the timer', () => {
+    const { detector } = makeDetector();
+    detector.stop();
+    // Advancing time should not cause errors
+    vi.advanceTimersByTime(120_000);
+    // No assertion needed — no error = pass
+    detector.stop(); // double-stop is safe
+  });
+
+  it('sessions within TTL are NOT evicted by background timer', () => {
+    // Use long cool-down (5 min) and long TTL so that 60s eviction cycle
+    // does not expire either the session or the cool-down
+    const { detector } = makeDetector({
+      sessionTtlMs: 300_000,
+      blockedRetryLimit: 3,
+      coolDownMs: 300_000,
+    });
+    detector.recordBlock('active');
+    detector.recordBlock('active');
+    detector.recordBlock('active');
+
+    // In cool-down now
+    expect(detector.check('active').inCoolDown).toBe(true);
+
+    // Advance past eviction interval but NOT past TTL or cool-down
+    vi.advanceTimersByTime(60_000);
+
+    // Session still exists and in cool-down
+    expect(detector.check('active').inCoolDown).toBe(true);
+    detector.stop();
   });
 });
