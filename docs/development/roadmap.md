@@ -43,7 +43,6 @@
 | 105 | Test Coverage: Path to 88%/77% | P1 — engineering quality | 🔄 Near target (87.01%/76.01%) |
 | 106 | License-Gated Feature Reveal | P1 — commercial | 🔄 In Progress (context ✅, card ✅, CLI guard ✅) |
 | 107 | Reasoning Strategies, Security Templates & Portable Personalities | P2 — capability + distribution | 🔄 In Progress (107-A ✅, 107-C ✅) |
-| 108 | Screen Capture & Computer Use Platform | P2 — capability | ✅ Complete |
 | 109 | Editor Improvements (Auto-Claude Style) | P3 — power user UX | 🔄 In Progress (unification ✅, IDE features planned) |
 | 110 | Inline Citations & Grounding | P3 — trust layer | Planned |
 | 111 | Departmental Risk Register & Risk Posture Tracking | P2 — risk governance | Planned |
@@ -74,7 +73,6 @@ Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi
 
 - [ ] **Gateway route guards** — Add `requiresLicense(feature: EnterpriseFeature)` hook to the routes that serve enterprise functionality (training advanced modes, SAML endpoints, RLS multi-tenant API, CI/CD webhook, alert rules). Returns `402 Payment Required` with `{ error: 'enterprise_license_required', feature: '<name>' }` for community-tier callers. `LicenseManager` singleton accessed via `secureYeoman.getLicenseManager()` inside route plugins.
 - [ ] **Feature lock UX** — Components for guarded features (Training advanced modes, SSO config, Multi-tenancy settings, CI/CD platforms, Alert Rules) wrap in a `<FeatureLock feature="adaptive_learning">` guard component. Community-tier users see the feature greyed out with a lock icon and an "Upgrade to Enterprise" prompt linking to `docs/guides/licensing.md` rather than a blank 403.
-- [x] **CLI guard** — ~~`secureyeoman` CLI commands that wrap enterprise API endpoints surface the `402` error as a human-readable message.~~ ✅ Implemented in `handleLicenseError()` helper; wired into `chat`, `training`, and `crew` commands.
 
 ---
 
@@ -84,9 +82,9 @@ Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi
 
 *Previously Phase 102. Renumbered for sequential ordering. Includes "base knowledge generic entries per-personality review" from Phase XX.*
 
-### 107-A: Reasoning Strategies Layer ✅ Complete
+### 107-A Remaining Items
 
-*Composable meta-reasoning instructions that can be applied to any personality's system prompt. Orthogonal to the personality itself — "use chain-of-thought with FRIDAY" or "use tree-of-thought with T.Ron". See Changelog [2026.3.2].*
+*107-A (Reasoning Strategies Layer) and 107-C (CLI Enhancements) are complete — see Changelog [2026.3.2]. The items below were scoped under 107-A but not yet implemented.*
 
 - [ ] **Deterministic routing preference** — Encode a "Code → CLI → Prompt → Skill" dispatch hierarchy in `SkillExecutor` and `WorkflowEngine`, inspired by [PAI](https://github.com/danielmiessler/Personal_AI_Infrastructure)'s principle that deterministic code paths should be preferred over LLM-routed paths when both can solve the task. When a workflow step or skill action can be resolved by a direct function call or shell command with known output, prefer that over sending the task to the LLM. Concretely: `WorkflowEngine` step dispatch checks for a `deterministic` flag on step config; when set, the step runs its `command` or `function` directly and only falls through to AI routing on failure. Skill routing order: code action → HTTP action → AI-assisted action. Reduces token cost and latency for routine operations.
 - [ ] **Base knowledge per-personality review** — `hierarchy`, `purpose`, and `interaction` are currently seeded globally. These may need per-personality variants. Low urgency.
@@ -103,10 +101,6 @@ Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi
 - [ ] **Security architecture review** — Generates "secure by design" review questions for a given system architecture. Covers: authentication, authorization, data protection, network segmentation, supply chain, logging, incident response, and compliance alignment.
 - [ ] **Log analysis template** — Structured log analysis for security events. Identifies anomalies, correlates events, generates timeline, suggests investigation paths. Supports common log formats (syslog, JSON, CEF).
 - [ ] **Community security patterns directory** — Add `security-templates/` to the community repo structure. Each template is a directory with `system.md` (system prompt), `user.md` (optional input template), and `metadata.json` (category, tags, required integrations). `CommunitySyncResult` gains `securityTemplatesAdded`/`securityTemplatesUpdated`.
-
-### 107-C: CLI Enhancements ✅ Complete
-
-*Unix-philosophy CLI improvements inspired by fabric's composable piping model. See Changelog [2026.3.2].*
 
 ### 107-D: Portable Personality Format — Markdown Injection Model
 
@@ -160,8 +154,6 @@ Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi
 - [ ] **Dashboard: ATHI tab** — New sub-tab in SecurityPage. Risk matrix visualization (likelihood × severity heat map). Scenario list with filters by actor/technique/status. Executive summary export (PDF/markdown). Mitigation coverage gauge.
 - [ ] **CLI: `secureyeoman athi`** — Subcommands: `list`, `show <id>`, `create`, `matrix`, `summary`. `--format json|table|markdown` output modes.
 - [ ] **Integration with existing security features** — ATHI scenarios can reference audit events (link scenario → observed events). Security Events tab cross-references ATHI scenarios when displaying events that match a known technique pattern. Alert rules can trigger on ATHI-mapped event patterns.
-
----
 
 ---
 
@@ -445,7 +437,6 @@ Current: 87.01% stmt / 76.02% branches. Target: 88% / 77%. Gap: <1% each.
 - [ ] **Logging branch coverage** — `logging/` at 74.93% stmt / 62.18% branch. Audit chain integrity verification, export format branches, and log rotation logic are unit-testable with mocked storage.
 - [ ] **Actuator branch coverage** — `body/actuator/` at 75.63% stmt / 61.17% branch. Desktop control action dispatch and platform-specific branching.
 - [ ] **Notification branch coverage** — `notifications/` at 90% stmt / 64.22% branch. Notification preference filtering and channel dispatch branches.
-- [x] ~~**Pre-existing `chat-routes.test.ts` failure** — 8 tests fail due to `viewportHint`/`strategyId` parameter mismatch in `composeSoulPrompt` mock expectations.~~ ✅ Fixed in Phase 107-A (all 164 tests passing).
 
 ---
 

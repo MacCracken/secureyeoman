@@ -131,6 +131,33 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - `execution/secrets-filter.bench.ts` — Filter with 10/50/200 secrets
 - `brain/brain-manager.bench.ts` — remember, recall, getEnabledSkills (mocked)
 
+### Phase 111 (roadmap): Departmental Risk Register & Risk Posture Tracking
+
+- **New roadmap entry**: Phase 111 — 6 sub-phases (111-A through 111-F) covering departmental risk governance. Departments are first-class organizational units with hierarchy, team linkage, and per-domain risk appetite thresholds.
+- **Intent/Risk view separation**: Dashboard design splits each department into an Intent view (mission, objectives, appetite strategy, mitigation plans, compliance targets) and a Risk view (scores, register entries, trends) — goals and threats are reasoned about independently.
+- **Data model**: Migration `003_departmental_risk.sql` — 3 new tables (`risk.departments`, `risk.register_entries`, `risk.department_scores`) + 2 ALTER statements adding nullable `department_id` to `risk.assessments` and `risk.external_findings`.
+- **Backend**: ~22 REST endpoints including intent-specific routes (`/intent`, `/objectives`, `/compliance-targets`), register CRUD, scores/analytics, and report generation (JSON/HTML/MD/CSV).
+- **Integration**: Alert pipeline for appetite breaches, MetricsSnapshot extension, enforcement log auto-attribution to departments.
+- **CLI**: `secureyeoman risk` (alias `rsk`) — departments, register, heatmap, summary, report subcommands.
+- **Dashboard**: "Departments" sub-tab in RiskAssessmentTab with Intent view (mission/objectives, appetite radar, mitigation plans), Risk view (scorecard, register, trend chart), and cross-department views (heatmap grid, executive summary).
+
+### Phase 112 (roadmap): Multi-Account AI Provider Keys & Per-Account Cost Tracking
+
+- **New roadmap entry**: Phase 112 — 4 sub-phases (112-A through 112-D) covering multi-account provider key management and per-account cost tracking.
+- **Data model**: Migration `004_provider_accounts.sql` — `ai.provider_accounts` table (multiple named keys per provider, partial unique index for one-default-per-provider-per-tenant) + `ai.account_cost_records` table (per-request cost logging with personality attribution).
+- **Key validation on connect**: `ProviderKeyValidator` with per-provider logic — tests key, pulls account metadata (email, org, plan, rate limits). Scheduled daily re-validation with AlertManager notification on account invalidation.
+- **Backward compatibility**: Auto-imports existing single-key env vars on first startup. Three existing key-entry surfaces preserved (dashboard ProviderKeysSettings, `secureyeoman init` wizard, `/api/v1/secrets` API). New `secureyeoman provider` CLI fills post-setup management gap.
+- **Personality wiring**: `defaultModel` gains optional `accountId`. AIClient resolution chain: personality explicit → provider default → sole account → legacy env var.
+- **Cost tracking**: Fire-and-forget cost recording on every AI API call. Dashboard cost panels: overview cards, per-account table, per-personality chart, trend line, CSV export.
+- **CLI**: `secureyeoman provider` (alias `prov`) — list, add, validate, set-default, costs, rotate subcommands.
+
+### Roadmap Cleanup
+
+- **Removed completed Phase 108** (Screen Capture & Computer Use Platform) from timeline — fully documented in this changelog.
+- **Removed completed sub-sections**: 107-A (Reasoning Strategies Layer) and 107-C (CLI Enhancements) body sections removed from roadmap; remaining 107-A items (deterministic routing, base knowledge review) preserved under "107-A Remaining Items".
+- **Removed checked items**: Phase 106 CLI guard (`[x]`), Engineering Backlog chat-routes.test.ts fix (`[x]`).
+- **Fixed**: duplicate `---` separator between Phase 107 and 109.
+
 ---
 
 ## [2026.3.1] — 2026-03-01
