@@ -63,7 +63,7 @@ Contributors must agree to a Contributor License Agreement granting the project 
 ### Neutral
 
 - Existing MIT-licensed code is relicensed by the copyright holders (SecureYeoman Project Contributors) — no third-party copyright is affected.
-- Enterprise features are not yet hard-gated at the code level. The roadmap item "License-gated feature reveal" tracks the work to enforce this (see `docs/development/roadmap.md`).
+- Enterprise features are partially gated at the dashboard level (Phase 106 in progress). `LicenseContext` provides app-wide license state; the `LicenseCard` shows feature availability with green/grey chips and expiry countdown banners. Backend route guards and CLI guards are tracked as remaining Phase 106 work (see `docs/development/roadmap.md`).
 
 ---
 
@@ -78,6 +78,7 @@ Contributors must agree to a Contributor License Agreement granting the project 
 | Key issuance tool | `scripts/generate-license-key.ts` |
 | CLI command | `secureyeoman license status|set` |
 | Dashboard card | Settings > General > License |
+| Dashboard context | `packages/dashboard/src/hooks/useLicense.tsx` (`LicenseProvider`, `useLicense()`) |
 | User guide | `docs/guides/licensing.md` |
 
 ---

@@ -25,6 +25,7 @@ import type { IntegrationManager } from '../integrations/manager.js';
 import type { SpiritManager } from '../spirit/manager.js';
 import type { HeartbeatManager } from '../body/heartbeat.js';
 import { HeartManager } from '../body/heart.js';
+import type { StrategyStorage } from './strategy-storage.js';
 import type {
   Personality,
   PersonalityCreate,
@@ -132,6 +133,11 @@ export class SoulManager {
   private dynamicToolManager: DynamicToolManager | null = null;
   private intentManager: IntentManager | null = null;
   private integrationManager: IntegrationManager | null = null;
+  private strategyStorage: StrategyStorage | null = null;
+
+  setStrategyStorage(storage: StrategyStorage): void {
+    this.strategyStorage = storage;
+  }
 
   setIntegrationManager(mgr: IntegrationManager): void {
     this.integrationManager = mgr;
@@ -863,7 +869,8 @@ export class SoulManager {
   async composeSoulPrompt(
     input?: string,
     personalityId?: string,
-    clientContext?: { viewportHint?: 'mobile' | 'tablet' | 'desktop' }
+    clientContext?: { viewportHint?: 'mobile' | 'tablet' | 'desktop' },
+    strategyId?: string | null
   ): Promise<string> {
     if (!this.config.enabled) {
       return '';
@@ -880,6 +887,21 @@ export class SoulManager {
     const includeArchetypes = personality?.includeArchetypes ?? true;
     if (includeArchetypes) {
       parts.push(composeArchetypesPreamble());
+    }
+
+    // Reasoning strategy injection — resolve: explicit → personality default → none
+    if (this.strategyStorage) {
+      const resolvedId = strategyId ?? personality?.body?.defaultStrategyId ?? null;
+      if (resolvedId) {
+        try {
+          const strategy = await this.strategyStorage.getStrategy(resolvedId);
+          if (strategy && strategy.promptPrefix) {
+            parts.push(`## Reasoning Strategy: ${strategy.name}\n${strategy.promptPrefix}`);
+          }
+        } catch {
+          // silently skip if strategy lookup fails
+        }
+      }
     }
 
     // Soul section — identity (personality is the sole source of identity)

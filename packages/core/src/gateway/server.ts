@@ -31,6 +31,7 @@ import { registerOAuthRoutes, OAuthService } from './oauth-routes.js';
 import { OAuthTokenStorage } from './oauth-token-storage.js';
 import { OAuthTokenService } from './oauth-token-service.js';
 import { registerSoulRoutes } from '../soul/soul-routes.js';
+import { registerStrategyRoutes } from '../soul/strategy-routes.js';
 import { registerBrainRoutes } from '../brain/brain-routes.js';
 import { registerDocumentRoutes } from '../brain/document-routes.js';
 import { registerSpiritRoutes } from '../spirit/spirit-routes.js';
@@ -524,6 +525,22 @@ export class GatewayServer {
       });
     } catch {
       // Soul manager may not be available — skip routes
+    }
+
+    // Strategy routes (Phase 107-A)
+    try {
+      const strategyStorage = this.secureYeoman.getStrategyStorage();
+      let strategyValidator;
+      try { strategyValidator = this.secureYeoman.getValidator(); } catch { /* optional */ }
+      let strategyAuditChain;
+      try { strategyAuditChain = this.secureYeoman.getAuditChain(); } catch { /* optional */ }
+      registerStrategyRoutes(this.app, {
+        strategyStorage,
+        validator: strategyValidator,
+        auditChain: strategyAuditChain,
+      });
+    } catch {
+      // Strategy storage may not be available — skip routes
     }
 
     // Spirit routes

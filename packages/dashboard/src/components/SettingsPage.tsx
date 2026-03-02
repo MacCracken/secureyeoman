@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   Palette,
   Check,
+  Lock,
   Database,
   Download,
   Trash2,
@@ -41,11 +42,13 @@ import {
   createBackup,
   downloadBackup,
   deleteBackup,
-  fetchLicenseStatus,
   setLicenseKey,
-  type LicenseStatus,
+  fetchStrategies,
+  createStrategy,
+  deleteStrategy,
 } from '../api/client';
-import type { Personality, SoulConfig, BackupRecord } from '../types';
+import type { Personality, SoulConfig, BackupRecord, ReasoningStrategy } from '../types';
+import { useLicense, ALL_ENTERPRISE_FEATURES } from '../hooks/useLicense';
 import { NotificationSettings } from './NotificationSettings';
 import { LogRetentionSettings } from './LogRetentionSettings';
 import { SecuritySettings, RolesSettings, SecretsPanel } from './SecuritySettings';
@@ -490,26 +493,30 @@ const FEATURE_LABELS: Record<string, string> = {
   advanced_observability: 'Advanced Observability',
 };
 
+function getDaysUntilExpiry(expiresAt: string | null): number | null {
+  if (!expiresAt) return null;
+  const now = Date.now();
+  const exp = new Date(expiresAt).getTime();
+  return Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
+}
+
 function LicenseCard() {
-  const queryClient = useQueryClient();
+  const { license, isLoading, isEnterprise, hasFeature, refresh } = useLicense();
   const [keyInput, setKeyInput] = useState('');
   const [showInput, setShowInput] = useState(false);
-
-  const { data: license, isLoading } = useQuery<LicenseStatus>({
-    queryKey: ['license-status'],
-    queryFn: fetchLicenseStatus,
-  });
 
   const setKeyMutation = useMutation({
     mutationFn: (key: string) => setLicenseKey(key),
     onSuccess: () => {
       setKeyInput('');
       setShowInput(false);
-      void queryClient.invalidateQueries({ queryKey: ['license-status'] });
+      void refresh();
     },
   });
 
-  const isEnterprise = license?.tier === 'enterprise';
+  const daysUntilExpiry = getDaysUntilExpiry(license?.expiresAt ?? null);
+  const showExpiryBanner =
+    isEnterprise && daysUntilExpiry !== null && daysUntilExpiry <= 30;
 
   return (
     <div className="card">
@@ -540,6 +547,22 @@ function LicenseCard() {
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : (
           <>
+            {/* Expiry countdown banner */}
+            {showExpiryBanner && (
+              <div
+                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium ${
+                  daysUntilExpiry! <= 7
+                    ? 'bg-destructive/10 text-destructive'
+                    : 'bg-warning/10 text-warning'
+                }`}
+              >
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                {daysUntilExpiry! <= 0
+                  ? 'License has expired. Enterprise features are disabled.'
+                  : `License expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'}. Contact your administrator to renew.`}
+              </div>
+            )}
+
             {isEnterprise && license && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                 <div>
@@ -559,24 +582,33 @@ function LicenseCard() {
               </div>
             )}
 
-            {isEnterprise && license && license.features.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {license.features.map((f) => (
+            {/* Feature chips — green for available, grey/locked for missing */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {ALL_ENTERPRISE_FEATURES.map((f) => {
+                const available = hasFeature(f);
+                return (
                   <span
                     key={f}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-success/10 text-success font-medium"
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                      available
+                        ? 'bg-success/10 text-success'
+                        : 'bg-muted text-muted-foreground'
+                    }`}
                   >
-                    <Check className="w-3 h-3" />
+                    {available ? (
+                      <Check className="w-3 h-3" />
+                    ) : (
+                      <Lock className="w-3 h-3" />
+                    )}
                     {FEATURE_LABELS[f] ?? f}
                   </span>
-                ))}
-              </div>
-            )}
+                );
+              })}
+            </div>
 
             {!isEnterprise && (
               <p className="text-sm text-muted-foreground">
-                Running on the community tier. Enterprise features (Adaptive Learning, SSO/SAML,
-                Multi-Tenancy, CI/CD, Advanced Observability) require a license key.
+                Running on the community tier. Enter a license key to unlock enterprise features.
               </p>
             )}
 
@@ -923,6 +955,9 @@ function GeneralTab() {
         </div>
       )}
 
+      {/* ── Reasoning Strategies ──────────────────────────────── */}
+      <StrategyManagementCard />
+
       {/* ── Active Souls ──────────────────────────────────────── */}
       {personalitiesData && (
         <div className="card">
@@ -1052,6 +1087,173 @@ function SoulRow({ personality: p, globalMaxPromptTokens }: SoulRowProps) {
         </div>
         {p.description && (
           <p className="text-xs text-muted-foreground truncate mt-0.5">{p.description}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Strategy Management Card ────────────────────────────────────────────
+
+const STRATEGY_CATEGORIES = [
+  'chain_of_thought',
+  'tree_of_thought',
+  'reflexion',
+  'self_refine',
+  'self_consistent',
+  'chain_of_density',
+  'argument_of_thought',
+  'standard',
+] as const;
+
+function StrategyManagementCard() {
+  const queryClient = useQueryClient();
+  const { data: strategiesData } = useQuery({
+    queryKey: ['strategies'],
+    queryFn: () => fetchStrategies(),
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteStrategy(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['strategies'] }),
+  });
+  const createMutation = useMutation({
+    mutationFn: (data: Parameters<typeof createStrategy>[0]) => createStrategy(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['strategies'] });
+      setShowForm(false);
+      setFormName('');
+      setFormSlug('');
+      setFormCategory('chain_of_thought');
+      setFormDescription('');
+      setFormPrefix('');
+    },
+  });
+
+  const [showForm, setShowForm] = useState(false);
+  const [formName, setFormName] = useState('');
+  const [formSlug, setFormSlug] = useState('');
+  const [formCategory, setFormCategory] = useState<string>('chain_of_thought');
+  const [formDescription, setFormDescription] = useState('');
+  const [formPrefix, setFormPrefix] = useState('');
+
+  const strategies = strategiesData?.items ?? [];
+
+  return (
+    <div className="card p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="font-medium text-sm flex items-center gap-2">
+          <Zap className="w-4 h-4" />
+          Reasoning Strategies
+        </h3>
+        <button
+          onClick={() => setShowForm((v) => !v)}
+          className="btn btn-ghost btn-sm text-xs flex items-center gap-1"
+        >
+          <Plus className="w-3 h-3" />
+          New
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="space-y-2 border rounded-lg p-3">
+          <input
+            placeholder="Name"
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+            className="w-full px-2 py-1.5 text-sm rounded border bg-background"
+          />
+          <input
+            placeholder="slug-like-this"
+            value={formSlug}
+            onChange={(e) => setFormSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+            className="w-full px-2 py-1.5 text-sm rounded border bg-background font-mono"
+          />
+          <select
+            value={formCategory}
+            onChange={(e) => setFormCategory(e.target.value)}
+            className="w-full px-2 py-1.5 text-sm rounded border bg-background"
+          >
+            {STRATEGY_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c.replace(/_/g, ' ')}
+              </option>
+            ))}
+          </select>
+          <input
+            placeholder="Description (optional)"
+            value={formDescription}
+            onChange={(e) => setFormDescription(e.target.value)}
+            className="w-full px-2 py-1.5 text-sm rounded border bg-background"
+          />
+          <textarea
+            placeholder="Prompt prefix..."
+            value={formPrefix}
+            onChange={(e) => setFormPrefix(e.target.value)}
+            rows={3}
+            className="w-full px-2 py-1.5 text-sm rounded border bg-background resize-y"
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setShowForm(false)}
+              className="btn btn-ghost btn-sm text-xs"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() =>
+                createMutation.mutate({
+                  name: formName,
+                  slug: formSlug,
+                  category: formCategory,
+                  description: formDescription,
+                  promptPrefix: formPrefix,
+                })
+              }
+              disabled={!formName || !formSlug || !formPrefix || createMutation.isPending}
+              className="btn btn-ghost btn-sm text-xs"
+            >
+              {createMutation.isPending ? 'Creating…' : 'Create'}
+            </button>
+          </div>
+          {createMutation.isError && (
+            <p className="text-xs text-destructive">
+              {createMutation.error instanceof Error ? createMutation.error.message : 'Failed'}
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className="space-y-1">
+        {strategies.map((s) => (
+          <div
+            key={s.id}
+            className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-muted/50 text-sm"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-medium truncate">{s.name}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                {s.category.replace(/_/g, ' ')}
+              </span>
+              {s.isBuiltin && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                  builtin
+                </span>
+              )}
+            </div>
+            {!s.isBuiltin && (
+              <button
+                onClick={() => deleteMutation.mutate(s.id)}
+                disabled={deleteMutation.isPending}
+                className="btn btn-ghost btn-sm p-1 text-muted-foreground hover:text-destructive"
+                title="Delete strategy"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        ))}
+        {strategies.length === 0 && (
+          <p className="text-xs text-muted-foreground py-2">No strategies found.</p>
         )}
       </div>
     </div>

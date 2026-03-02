@@ -43,6 +43,8 @@ export interface EvalConfig {
   ollamaEmbedUrl?: string;
   /** Optional sandbox to execute tool calls and check outcome correctness. */
   sandboxFn?: (toolName: string, args: Record<string, unknown>) => Promise<unknown>;
+  /** Optional reasoning strategy ID used during evaluation. */
+  strategyId?: string;
 }
 
 export interface EvalResult {
@@ -56,6 +58,8 @@ export interface EvalResult {
     outcome_correctness?: number;
     semantic_similarity?: number;
   };
+  /** Reasoning strategy used during this evaluation run, if any. */
+  strategyId?: string;
   completedAt: number;
 }
 
@@ -333,6 +337,7 @@ export class EvaluationManager {
     const result: EvalResult = {
       evalId,
       metrics,
+      ...(config.strategyId ? { strategyId: config.strategyId } : {}),
       completedAt: Date.now(),
     };
 

@@ -40,9 +40,9 @@
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
-| 105 | Test Coverage: Path to 88%/77% | P1 — engineering quality | 🔄 In Progress (80.85%/68.76%) |
-| 106 | License-Gated Feature Reveal | P1 — commercial | Planned |
-| 107 | Reasoning Strategies, Security Templates & Portable Personalities | P2 — capability + distribution | Planned |
+| 105 | Test Coverage: Path to 88%/77% | P1 — engineering quality | 🔄 Near target (87.01%/76.01%) |
+| 106 | License-Gated Feature Reveal | P1 — commercial | 🔄 In Progress (context ✅, card ✅, CLI guard ✅) |
+| 107 | Reasoning Strategies, Security Templates & Portable Personalities | P2 — capability + distribution | 🔄 In Progress (107-A ✅, 107-C ✅) |
 | 108 | Screen Capture & Computer Use Platform | P2 — capability | ✅ Complete |
 | 109 | Editor Improvements (Auto-Claude Style) | P3 — power user UX | 🔄 In Progress (unification ✅, IDE features planned) |
 | 110 | Inline Citations & Grounding | P3 — trust layer | Planned |
@@ -52,9 +52,13 @@
 
 ## Phase 105: Test Coverage: Path to 88%/77%
 
-**Priority**: P1 — Engineering quality. Current: 80.85% statements / 68.76% branches. Target: 88% statements / 77% branches.
+**Priority**: P1 — Engineering quality. Current: **87.01% statements / 76.01% branches** (up from 80.85%/68.76%). Target: 88% statements / 77% branches. Less than 1% from both targets.
 
 *Previously Phase 94. Renumbered for sequential ordering.*
+
+**Current counts (2026-03-02)**: 12,590 tests total — Core unit: 9,748 (385 files), Dashboard: 957 (63 files), MCP: 660 (49 files), DB integration: ~1,225 (60 files). Functions: 86.83%, Lines: 87.92%.
+
+**Remaining gap analysis**: Statements need +0.99pp (≈45 more covered statements). Branches need +0.99pp (≈35 more covered branches). Biggest uncovered areas by module: training (3.72% stmt), telemetry (5.45%), workflow (1.72%), tenants (6.81%). These are DB-heavy integration modules — most gain comes from adding integration tests that exercise the storage + manager layers with a running Postgres database.
 
 ---
 
@@ -67,10 +71,8 @@
 Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi_tenancy`, `cicd_integration`, `advanced_observability`.
 
 - [ ] **Gateway route guards** — Add `requiresLicense(feature: EnterpriseFeature)` hook to the routes that serve enterprise functionality (training advanced modes, SAML endpoints, RLS multi-tenant API, CI/CD webhook, alert rules). Returns `402 Payment Required` with `{ error: 'enterprise_license_required', feature: '<name>' }` for community-tier callers. `LicenseManager` singleton accessed via `secureYeoman.getLicenseManager()` inside route plugins.
-- [ ] **License context in dashboard** — On app load, call `GET /api/v1/license/status` and store the result in a top-level React context (`LicenseContext`). All downstream components read from this context — no prop drilling.
 - [ ] **Feature lock UX** — Components for guarded features (Training advanced modes, SSO config, Multi-tenancy settings, CI/CD platforms, Alert Rules) wrap in a `<FeatureLock feature="adaptive_learning">` guard component. Community-tier users see the feature greyed out with a lock icon and an "Upgrade to Enterprise" prompt linking to `docs/guides/licensing.md` rather than a blank 403.
-- [ ] **Settings → License card enhancements** — The existing `LicenseCard` in Settings → General should show: current tier chip, list of available features as green chips and locked features as grey chips, expiry countdown banner if expiring within 30 days.
-- [ ] **CLI guard** — `secureyeoman` CLI commands that wrap enterprise API endpoints (e.g., `secureyeoman training`, `secureyeoman crew`) should surface the `402` error as a human-readable message: *"This command requires an Enterprise license. Run `secureyeoman license status` to check your current tier."*
+- [x] **CLI guard** — ~~`secureyeoman` CLI commands that wrap enterprise API endpoints surface the `402` error as a human-readable message.~~ ✅ Implemented in `handleLicenseError()` helper; wired into `chat`, `training`, and `crew` commands.
 
 ---
 
@@ -80,19 +82,10 @@ Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi
 
 *Previously Phase 102. Renumbered for sequential ordering. Includes "base knowledge generic entries per-personality review" from Phase XX.*
 
-### 107-A: Reasoning Strategies Layer
+### 107-A: Reasoning Strategies Layer ✅ Complete
 
-*Composable meta-reasoning instructions that can be applied to any personality's system prompt. Orthogonal to the personality itself — "use chain-of-thought with FRIDAY" or "use tree-of-thought with T.Ron".*
+*Composable meta-reasoning instructions that can be applied to any personality's system prompt. Orthogonal to the personality itself — "use chain-of-thought with FRIDAY" or "use tree-of-thought with T.Ron". See Changelog [2026.3.2].*
 
-- [ ] **Strategy schema & storage** — `ReasoningStrategySchema` in `packages/shared/src/types/soul.ts`: `{ id, name, slug, description, promptPrefix, category, isBuiltin }`. Migration adds `soul.reasoning_strategies` table. Category enum: `chain_of_thought | tree_of_thought | reflexion | self_refine | self_consistent | chain_of_density | argument_of_thought | standard`.
-- [ ] **Built-in strategies** — Seed 8 strategies matching fabric's set: CoT ("Think step by step"), ToT ("Generate multiple reasoning paths, select the best"), Reflexion ("Answer, critique, refine"), Self-Refine ("Iteratively improve"), Self-Consistent ("Multiple samples, majority vote"), Chain-of-Density (density-based summarization), Argument-of-Thought (argument-structured reasoning), Standard (baseline/no prefix). Stored as builtins with `isBuiltin: true`.
-- [ ] **Strategy injection in SoulManager** — `manager.ts` `composeSystemPrompt()` accepts optional `strategyId`. When set, prepends the strategy's `promptPrefix` before the personality's system prompt. Strategy sits between Sacred Archetypes preamble and personality identity.
-- [ ] **Per-conversation strategy selection** — `POST /api/v1/chat` and `/chat/stream` accept optional `strategyId` query param. Stored on the conversation metadata. Default: `null` (no strategy override; personality uses its own prompt as-is).
-- [ ] **Per-personality default strategy** — New `defaultStrategyId` field on `PersonalityCreate`. When set and no per-conversation override, this strategy is always applied.
-- [ ] **Strategy CRUD routes** — `GET/POST/PUT/DELETE /api/v1/soul/strategies`. Builtin strategies are read-only. Custom strategies support full CRUD. Auth: `soul:read`/`soul:write`.
-- [ ] **Dashboard: Strategy selector** — Dropdown in chat interface header (next to model selector) listing available strategies. Selected strategy shown as a chip. Strategy management UI in Settings → Soul System tab.
-- [ ] **CLI: `secureyeoman strategy`** — Subcommands: `list`, `show <slug>`, `create`, `delete`. `--strategy <slug>` flag on `secureyeoman chat` and `secureyeoman execute`.
-- [ ] **Strategy-aware evaluation** — `EvaluationManager` records which strategy was active during evaluated conversations. Evaluation results filterable by strategy to measure which reasoning approach works best for which task type.
 - [ ] **Deterministic routing preference** — Encode a "Code → CLI → Prompt → Skill" dispatch hierarchy in `SkillExecutor` and `WorkflowEngine`, inspired by [PAI](https://github.com/danielmiessler/Personal_AI_Infrastructure)'s principle that deterministic code paths should be preferred over LLM-routed paths when both can solve the task. When a workflow step or skill action can be resolved by a direct function call or shell command with known output, prefer that over sending the task to the LLM. Concretely: `WorkflowEngine` step dispatch checks for a `deterministic` flag on step config; when set, the step runs its `command` or `function` directly and only falls through to AI routing on failure. Skill routing order: code action → HTTP action → AI-assisted action. Reduces token cost and latency for routine operations.
 - [ ] **Base knowledge per-personality review** — `hierarchy`, `purpose`, and `interaction` are currently seeded globally. These may need per-personality variants. Low urgency.
 
@@ -109,17 +102,9 @@ Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi
 - [ ] **Log analysis template** — Structured log analysis for security events. Identifies anomalies, correlates events, generates timeline, suggests investigation paths. Supports common log formats (syslog, JSON, CEF).
 - [ ] **Community security patterns directory** — Add `security-templates/` to the community repo structure. Each template is a directory with `system.md` (system prompt), `user.md` (optional input template), and `metadata.json` (category, tags, required integrations). `CommunitySyncResult` gains `securityTemplatesAdded`/`securityTemplatesUpdated`.
 
-### 107-C: CLI Enhancements
+### 107-C: CLI Enhancements ✅ Complete
 
-*Unix-philosophy CLI improvements inspired by fabric's composable piping model.*
-
-- [ ] **Stdin piping** — `secureyeoman chat` reads from stdin when not a TTY. Enables `cat report.txt | secureyeoman chat -p friday` and `pbpaste | secureyeoman chat --strategy cot`. Input piped as the user message; response written to stdout.
-- [ ] **`--dry-run` flag** — Preview the full composed prompt (system prompt + strategy prefix + personality + skills + user message) without sending to the AI provider. Outputs the prompt to stdout. Useful for debugging prompt composition and reviewing what the AI will see.
-- [ ] **`--output` / `-o` flag** — Write AI response to a file instead of (or in addition to) stdout. `secureyeoman chat -p friday -o response.md "Analyze this threat"`.
-- [ ] **Personality aliasing** — `secureyeoman alias create wisdom "chat -p friday --strategy cot"`. Stored in `~/.config/secureyeoman/aliases.json`. Usage: `secureyeoman wisdom "Analyze this document"`. `secureyeoman alias list` / `secureyeoman alias delete <name>`.
-- [ ] **Pipeline chaining** — Stdout output is clean (no progress spinners or status messages when piped) so responses can chain: `secureyeoman chat -p friday "Analyze this" | secureyeoman chat -p t-ron "Summarize"`. Detect non-TTY stdout and suppress decorations.
-- [ ] **`--copy` / `-c` flag** — Copy AI response to system clipboard (xclip/xsel on Linux, pbcopy on macOS, clip on Windows). Complement to stdin piping for quick workflows.
-- [ ] **`--format` flag** — Output format control: `markdown` (default), `json` (structured response with metadata), `plain` (strip markdown formatting). JSON mode includes token counts, model used, strategy applied, and timing.
+*Unix-philosophy CLI improvements inspired by fabric's composable piping model. See Changelog [2026.3.2].*
 
 ### 107-D: Portable Personality Format — Markdown Injection Model
 
@@ -188,6 +173,15 @@ Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi
 
 - [ ] **Settings page split** — Extract `<AuditChainTab>`, `<SoulSystemTab>`, `<RateLimitingTab>` from the `SettingsPage.tsx` monolith into dedicated tab components.
 
+### 109-B: Canvas Workspace Improvements
+
+*Extends the Phase 100 canvas workspace (`/editor/advanced`) with power-user features. The 11-widget canvas is functional; these items address the gaps identified during QA.*
+
+- [ ] **Inter-widget communication** — Event bus for widget-to-widget data flow. Primary use case: terminal output → auto-populate an editor widget with the result, or terminal error → create a chat widget pre-seeded with the error for AI diagnosis. `CanvasEventBus` singleton with `emit(event)` / `on(event, handler)` / `off()`. Widgets subscribe in `useEffect` and clean up on unmount.
+- [ ] **Canvas keyboard shortcuts** — `Cmd/Ctrl+1..9` to focus widget by position order. `Cmd/Ctrl+W` to close focused widget. `Cmd/Ctrl+N` to open widget catalog. `Cmd/Ctrl+S` to force-save layout. `Escape` to exit fullscreen. Implemented via a `useCanvasShortcuts` hook attached to the canvas container.
+- [ ] **Multiple saved layouts & export** — Replace single `canvas:workspace` localStorage key with a named-layout system. `canvas:layouts` stores `{ [name]: CanvasLayout }`. Layout switcher dropdown in the canvas toolbar. Export layout as JSON; import from file. Presets: "Dev" (terminal + editor + git), "Ops" (CI/CD + pipeline + training live), "Chat" (chat + agent world + task kanban).
+- [ ] **Mission card embedding** — Extract the mission card renderer from `MissionControlPage` into a reusable `<MissionCardEmbed cardId={id} />` component. Wire it into `MissionCardNode` widget (currently a placeholder). Card shows objective, progress, and linked tasks.
+
 ---
 
 ## Phase 110: Inline Citations & Grounding
@@ -211,7 +205,14 @@ Inspired by Google Cloud Vertex AI Grounding and Azure Groundedness Detection.
 
 Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
 
-*No open items — all backlog items completed in Phase 108 (see Changelog [2026.3.2]).*
+### Test Coverage — Final 1% Push (Phase 105)
+
+Current: 87.01% stmt / 76.01% branches. Target: 88% / 77%. Gap: <1% each.
+
+- [ ] **Training module integration tests** — `training/` sits at 3.72% stmt coverage. The unit tests exist in the DB config but need a running Postgres. Adding unit-mockable tests for `distillation-manager.ts`, `finetune-manager.ts`, and `evaluation-manager.ts` core logic paths (not DB operations) would lift both stmt and branch numbers.
+- [ ] **Telemetry unit tests** — `telemetry/` at 5.45% stmt. `alert-manager.ts` evaluate/notify paths, `otel.ts` init branching, and `otel-fastify-plugin.ts` span wrapping are all unit-testable with mocked dependencies.
+- [ ] **Workflow engine unit tests** — `workflow/` at 1.72% stmt. Step dispatch logic, condition evaluation cache, and template builders are testable without DB.
+- [ ] **Pre-existing `chat-routes.test.ts` failure** — 8 tests fail due to `viewportHint` parameter mismatch in `composeSoulPrompt` mock expectations. Fix the mock to match the current function signature.
 
 ---
 

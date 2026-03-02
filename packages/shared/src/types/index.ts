@@ -244,6 +244,15 @@ export {
   type ThinkingPersonalityConfig,
   type MessageType,
   type CommsConfig,
+  // Reasoning Strategies (Phase 107-A)
+  ReasoningStrategyCategorySchema,
+  ReasoningStrategySchema,
+  ReasoningStrategyCreateSchema,
+  ReasoningStrategyUpdateSchema,
+  type ReasoningStrategyCategory,
+  type ReasoningStrategy,
+  type ReasoningStrategyCreate,
+  type ReasoningStrategyUpdate,
 } from './soul.js';
 
 // Integration types

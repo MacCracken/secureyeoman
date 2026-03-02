@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
+import { LicenseProvider } from './hooks/useLicense';
 import { configureAxe } from 'vitest-axe';
 import * as axeMatchers from 'vitest-axe/matchers';
 
@@ -110,7 +111,9 @@ function makeQC() {
 function Wrapper({ children }: { children: React.ReactNode }) {
   return (
     <MemoryRouter>
-      <QueryClientProvider client={makeQC()}>{children}</QueryClientProvider>
+      <QueryClientProvider client={makeQC()}>
+        <LicenseProvider>{children}</LicenseProvider>
+      </QueryClientProvider>
     </MemoryRouter>
   );
 }

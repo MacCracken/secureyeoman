@@ -103,6 +103,19 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/soul/onboarding/complete': {
     POST: { resource: 'soul', action: 'write' },
   },
+  // Reasoning strategy routes (Phase 107-A)
+  '/api/v1/soul/strategies': {
+    GET: { resource: 'soul', action: 'read' },
+    POST: { resource: 'soul', action: 'write' },
+  },
+  '/api/v1/soul/strategies/:id': {
+    GET: { resource: 'soul', action: 'read' },
+    PUT: { resource: 'soul', action: 'write' },
+    DELETE: { resource: 'soul', action: 'write' },
+  },
+  '/api/v1/soul/strategies/slug/:slug': {
+    GET: { resource: 'soul', action: 'read' },
+  },
   // Integration routes
   '/api/v1/integrations': {
     GET: { resource: 'integrations', action: 'read' },

@@ -37,6 +37,7 @@ import {
   deleteConversation,
   renameConversation,
   branchFromMessage,
+  fetchStrategies,
 } from '../api/client';
 import { ModelWidget } from './ModelWidget';
 import { VoiceToggle } from './VoiceToggle';
@@ -509,6 +510,15 @@ export function ChatPage() {
   const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [memoryEnabled, setMemoryEnabled] = useState(true);
+  const [selectedStrategyId, setSelectedStrategyIdRaw] = useState<string | null>(() =>
+    localStorage.getItem('soul:chatStrategyId')
+  );
+  const setSelectedStrategyId = (id: string | null) => {
+    if (id) localStorage.setItem('soul:chatStrategyId', id);
+    else localStorage.removeItem('soul:chatStrategyId');
+    setSelectedStrategyIdRaw(id);
+  };
+  const [showStrategyPicker, setShowStrategyPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   // Track whether the initial batch of messages has been scrolled to instantly.
@@ -545,6 +555,14 @@ export function ChatPage() {
     queryKey: ['model-info'],
     queryFn: fetchModelInfo,
   });
+
+  const { data: strategiesData } = useQuery({
+    queryKey: ['strategies'],
+    queryFn: () => fetchStrategies(),
+  });
+
+  const strategies = strategiesData?.items ?? [];
+  const selectedStrategy = strategies.find((s) => s.id === selectedStrategyId) ?? null;
 
   const personalities = personalitiesData?.personalities ?? [];
   const defaultPersonality =
@@ -602,6 +620,7 @@ export function ChatPage() {
     activeToolCalls,
   } = useChatStream({
     personalityId: effectivePersonalityId,
+    strategyId: selectedStrategyId,
     conversationId: selectedConversationId,
     memoryEnabled,
   });
@@ -1138,6 +1157,53 @@ export function ChatPage() {
                     />
                   </div>
                 )}
+
+                {/* Strategy picker */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowStrategyPicker((v) => !v)}
+                    className={`btn-ghost text-xs px-3 py-1.5 rounded-full border max-w-[10rem] truncate ${
+                      selectedStrategy ? 'bg-primary/15 border-primary text-primary' : ''
+                    }`}
+                    title={selectedStrategy?.name ?? 'Select reasoning strategy'}
+                  >
+                    {selectedStrategy?.name ?? 'Strategy'}
+                  </button>
+                  {showStrategyPicker && (
+                    <div className="absolute right-0 top-full mt-2 z-50 card p-2 shadow-lg min-w-[14rem] max-h-60 overflow-y-auto">
+                      <button
+                        onClick={() => {
+                          setSelectedStrategyId(null);
+                          setShowStrategyPicker(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-xs rounded hover:bg-muted ${
+                          !selectedStrategyId ? 'bg-muted font-medium' : ''
+                        }`}
+                      >
+                        None (default)
+                      </button>
+                      {strategies.map((s) => (
+                        <button
+                          key={s.id}
+                          onClick={() => {
+                            setSelectedStrategyId(s.id);
+                            setShowStrategyPicker(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-xs rounded hover:bg-muted ${
+                            selectedStrategyId === s.id ? 'bg-muted font-medium' : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span>{s.name}</span>
+                            <span className="text-muted-foreground text-[10px] px-1 py-0.5 rounded bg-muted">
+                              {s.category}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {/* Replay & Branches — only visible on existing conversations */}
                 {selectedConversationId && (

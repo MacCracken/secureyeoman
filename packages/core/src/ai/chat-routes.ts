@@ -488,6 +488,7 @@ interface ChatRequestBody {
   message: string;
   history?: { role: string; content: string }[];
   personalityId?: string;
+  strategyId?: string;
   saveAsMemory?: boolean;
   memoryEnabled?: boolean;
   conversationId?: string;
@@ -742,6 +743,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         message,
         history,
         personalityId,
+        strategyId,
         saveAsMemory,
         memoryEnabled = true,
         conversationId,
@@ -849,8 +851,8 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         : { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] };
 
       let systemPrompt = memoryEnabled
-        ? await soulManager.composeSoulPrompt(message, personalityId, { viewportHint })
-        : await soulManager.composeSoulPrompt(undefined, personalityId, { viewportHint });
+        ? await soulManager.composeSoulPrompt(message, personalityId, { viewportHint }, strategyId)
+        : await soulManager.composeSoulPrompt(undefined, personalityId, { viewportHint }, strategyId);
 
       // Inject learned preferences into system prompt (best-effort)
       if (memoryEnabled && systemPrompt) {
@@ -1590,6 +1592,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         message,
         history,
         personalityId,
+        strategyId: strategyIdS,
         saveAsMemory,
         memoryEnabled = true,
         conversationId,
@@ -1714,10 +1717,10 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         let systemPrompt = memoryEnabled
           ? await soulManager.composeSoulPrompt(message, personalityId, {
               viewportHint: viewportHintS,
-            })
+            }, strategyIdS)
           : await soulManager.composeSoulPrompt(undefined, personalityId, {
               viewportHint: viewportHintS,
-            });
+            }, strategyIdS);
 
         // Inject learned preferences into system prompt (best-effort)
         if (memoryEnabled && systemPrompt) {

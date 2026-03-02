@@ -1714,6 +1714,137 @@ describe('SoulManager', () => {
     });
   });
 
+  // ── Phase 107-A: Reasoning Strategy Injection ─────────────────────────────
+
+  describe('composeSoulPrompt — strategy injection', () => {
+    it('injects strategy promptPrefix when strategyId is passed', async () => {
+      const mockStrategyStorage = {
+        getStrategy: vi.fn().mockResolvedValue({
+          id: 'strat-1',
+          name: 'Chain of Thought',
+          slug: 'chain-of-thought',
+          promptPrefix: 'Think step by step.',
+          category: 'chain_of_thought',
+          isBuiltin: true,
+        }),
+      };
+      const { manager } = makeManager();
+      manager.setStrategyStorage(mockStrategyStorage as any);
+
+      const prompt = await manager.composeSoulPrompt(undefined, undefined, undefined, 'strat-1');
+      expect(prompt).toContain('Reasoning Strategy: Chain of Thought');
+      expect(prompt).toContain('Think step by step.');
+    });
+
+    it('skips injection when strategyId is null', async () => {
+      const mockStrategyStorage = { getStrategy: vi.fn() };
+      const { manager } = makeManager();
+      manager.setStrategyStorage(mockStrategyStorage as any);
+
+      const prompt = await manager.composeSoulPrompt(undefined, undefined, undefined, null);
+      expect(mockStrategyStorage.getStrategy).not.toHaveBeenCalled();
+      expect(prompt).not.toContain('Reasoning Strategy');
+    });
+
+    it('falls back to personality defaultStrategyId', async () => {
+      const personalityWithDefault = {
+        ...PERSONALITY,
+        body: { ...PERSONALITY.body, defaultStrategyId: 'strat-default' },
+      };
+      const mockStrategyStorage = {
+        getStrategy: vi.fn().mockResolvedValue({
+          id: 'strat-default',
+          name: 'Reflexion',
+          slug: 'reflexion',
+          promptPrefix: 'Reflect on your answer.',
+          category: 'reflexion',
+          isBuiltin: true,
+        }),
+      };
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(personalityWithDefault),
+      });
+      manager.setStrategyStorage(mockStrategyStorage as any);
+
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).toContain('Reasoning Strategy: Reflexion');
+      expect(prompt).toContain('Reflect on your answer.');
+    });
+
+    it('explicit strategyId overrides personality default', async () => {
+      const personalityWithDefault = {
+        ...PERSONALITY,
+        body: { ...PERSONALITY.body, defaultStrategyId: 'strat-default' },
+      };
+      const mockStrategyStorage = {
+        getStrategy: vi.fn().mockResolvedValue({
+          id: 'strat-explicit',
+          name: 'Tree of Thought',
+          slug: 'tree-of-thought',
+          promptPrefix: 'Multiple paths.',
+          category: 'tree_of_thought',
+          isBuiltin: true,
+        }),
+      };
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(personalityWithDefault),
+      });
+      manager.setStrategyStorage(mockStrategyStorage as any);
+
+      const prompt = await manager.composeSoulPrompt(undefined, undefined, undefined, 'strat-explicit');
+      expect(mockStrategyStorage.getStrategy).toHaveBeenCalledWith('strat-explicit');
+      expect(prompt).toContain('Tree of Thought');
+    });
+
+    it('skips injection when strategy not found', async () => {
+      const mockStrategyStorage = {
+        getStrategy: vi.fn().mockResolvedValue(null),
+      };
+      const { manager } = makeManager();
+      manager.setStrategyStorage(mockStrategyStorage as any);
+
+      const prompt = await manager.composeSoulPrompt(undefined, undefined, undefined, 'nonexistent');
+      expect(prompt).not.toContain('Reasoning Strategy');
+    });
+
+    it('skips injection when strategy has empty promptPrefix', async () => {
+      const mockStrategyStorage = {
+        getStrategy: vi.fn().mockResolvedValue({
+          id: 'strat-std',
+          name: 'Standard',
+          slug: 'standard',
+          promptPrefix: '',
+          category: 'standard',
+          isBuiltin: true,
+        }),
+      };
+      const { manager } = makeManager();
+      manager.setStrategyStorage(mockStrategyStorage as any);
+
+      const prompt = await manager.composeSoulPrompt(undefined, undefined, undefined, 'strat-std');
+      expect(prompt).not.toContain('Reasoning Strategy');
+    });
+
+    it('silently skips on strategy lookup error', async () => {
+      const mockStrategyStorage = {
+        getStrategy: vi.fn().mockRejectedValue(new Error('DB down')),
+      };
+      const { manager } = makeManager();
+      manager.setStrategyStorage(mockStrategyStorage as any);
+
+      // Should not throw
+      const prompt = await manager.composeSoulPrompt(undefined, undefined, undefined, 'strat-1');
+      expect(prompt).not.toContain('Reasoning Strategy');
+    });
+
+    it('does not inject when no strategyStorage is set', async () => {
+      const { manager } = makeManager();
+      // No setStrategyStorage call
+      const prompt = await manager.composeSoulPrompt(undefined, undefined, undefined, 'strat-1');
+      expect(prompt).not.toContain('Reasoning Strategy');
+    });
+  });
+
   // ── Phase 94: isPersonalityWithinActiveHours ────────────────────────────────
 
   describe('isPersonalityWithinActiveHours (exported function)', () => {

@@ -178,6 +178,7 @@ import { AlertStorage } from './telemetry/alert-storage.js';
 import { AlertManager } from './telemetry/alert-manager.js';
 import { initTracing } from './telemetry/otel.js';
 import { LicenseManager } from './licensing/license-manager.js';
+import { StrategyStorage } from './soul/strategy-storage.js';
 import { AnalyticsStorage } from './analytics/analytics-storage.js';
 import { SentimentAnalyzer } from './analytics/sentiment-analyzer.js';
 import { ConversationSummarizer } from './analytics/conversation-summarizer.js';
@@ -327,6 +328,7 @@ export class SecureYeoman {
   private engagementMetricsService: EngagementMetricsService | null = null;
   private usageAnomalyDetector: UsageAnomalyDetector | null = null;
   private licenseManager: LicenseManager = new LicenseManager();
+  private strategyStorage: StrategyStorage | null = null;
   private modelDefaultSet = false;
   private initialized = false;
   private startedAt: number | null = null;
@@ -1110,6 +1112,16 @@ export class SecureYeoman {
         this.soulManager.setMarketplaceManager(this.marketplaceManager);
       }
       this.logger.debug('Marketplace manager initialized');
+
+      // Step 6.10a: Initialize reasoning strategy storage
+      {
+        this.strategyStorage = new StrategyStorage();
+        await this.strategyStorage.seedBuiltinStrategies();
+        if (this.soulManager) {
+          this.soulManager.setStrategyStorage(this.strategyStorage);
+        }
+        this.logger.debug('Strategy storage initialized');
+      }
 
       // Step 6.10: Initialize conversation storage
       this.chatConversationStorage = new ConversationStorage();
@@ -2608,6 +2620,14 @@ export class SecureYeoman {
    */
   getLicenseManager(): LicenseManager {
     return this.licenseManager;
+  }
+
+  getStrategyStorage(): StrategyStorage {
+    this.ensureInitialized();
+    if (!this.strategyStorage) {
+      throw new Error('Strategy storage not initialized');
+    }
+    return this.strategyStorage;
   }
 
   /**

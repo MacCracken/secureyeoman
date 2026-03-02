@@ -6,6 +6,45 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.2] — 2026-03-02
 
+### Phase 106 (partial): License Context & Card Enhancements
+
+- **`LicenseContext` provider** (`packages/dashboard/src/hooks/useLicense.tsx`): New top-level React context that fetches `GET /api/v1/license/status` on app load and caches it (5-minute stale time). Exports `useLicense()` hook with `license`, `isLoading`, `isEnterprise`, `hasFeature(feature)`, and `refresh()`. Eliminates prop drilling — all downstream components read license state from context. `LicenseProvider` wired into `main.tsx` inside `AuthProvider`.
+- **`ALL_ENTERPRISE_FEATURES` constant**: Canonical list of 5 enterprise feature slugs exported from the context module for iteration.
+- **LicenseCard enhancements** (`SettingsPage.tsx`): Now reads from `useLicense()` context instead of a local `useQuery`. All 5 enterprise features always visible — green chips (Check icon) for available features, grey chips (Lock icon) for locked features. Expiry countdown banner appears when license expires within 30 days: warning style for 8–30 days, destructive style for ≤7 days, "has expired" message for past expiry.
+- **Tests**: 29 new tests — `useLicense.test.tsx` (8: context error, loading, community/enterprise tiers, `hasFeature`, `valid=false` edge case), `SettingsPage.test.tsx` (6: community locked chips, enterprise green chips, expiry banners at 15/3/0/60 days), `a11y.test.tsx` wrapper updated. 957/957 dashboard tests passing.
+
+### Phase 107-A: Reasoning Strategies Layer
+
+- **Shared types** (`packages/shared/src/types/soul.ts`): `ReasoningStrategyCategorySchema` (8-value enum), `ReasoningStrategySchema`, `ReasoningStrategyCreateSchema`, `ReasoningStrategyUpdateSchema`. `defaultStrategyId` field added to `BodyConfigSchema` for per-personality default strategy.
+- **Migration** (`002_reasoning_strategies.sql`): `soul.reasoning_strategies` table with category CHECK constraint, unique slug, 3 indexes. `strategy_id text` column on `chat.conversations`.
+- **`StrategyStorage`** (`packages/core/src/soul/strategy-storage.ts`): Full CRUD extending `PgBaseStorage`. `seedBuiltinStrategies()` upserts 8 built-in strategies (Standard, Chain of Thought, Tree of Thought, Reflexion, Self-Refine, Self-Consistent, Chain of Density, Argument of Thought) with idempotent `ON CONFLICT(slug) DO UPDATE`. Built-in strategies are read-only — update and delete operations throw for `isBuiltin: true` rows.
+- **SoulManager strategy injection** (`packages/core/src/soul/manager.ts`): `composeSoulPrompt()` gains 4th param `strategyId?: string | null`. Resolution order: explicit strategyId → `personality.body.defaultStrategyId` → null (no injection). Strategy `promptPrefix` injected between Sacred Archetypes preamble and Soul Identity section. Null/missing/not-found silently skipped.
+- **Strategy CRUD routes** (`packages/core/src/soul/strategy-routes.ts`): 6 endpoints at `/api/v1/soul/strategies`. `GET` list (optional `?category=` filter), `GET /:id`, `GET /slug/:slug`, `POST` create (validates text via InputValidator), `PUT /:id` (403 if builtin), `DELETE /:id` (403 if builtin). Auth: `soul:read`/`soul:write`.
+- **Chat integration**: `strategyId` accepted in `POST /api/v1/chat` and `/chat/stream` request bodies, passed through to `composeSoulPrompt()`. `POST /api/v1/conversations` accepts `strategyId`, stored on conversation metadata.
+- **CLI** (`packages/core/src/cli/commands/strategy.ts`): `secureyeoman strategy` (alias: `strat`) with subcommands: `list` (table/JSON output), `show <slug>`, `create --name --slug --category --prompt-prefix`, `delete <id>`.
+- **Dashboard: Strategy selector** (`ChatPage.tsx`): Dropdown in chat toolbar (after model selector) with strategy list and category badges. Selection persisted in localStorage. Strategy management card in Settings → General tab with list view, create form, and delete buttons for custom strategies.
+- **Strategy-aware evaluation**: `EvalConfig` and `EvalResult` gain `strategyId` field for filtering evaluation results by reasoning strategy.
+- **Wiring** (`secureyeoman.ts`): `StrategyStorage` created and seeded in `initialize()`. `getStrategyStorage()` getter. Storage injected into `SoulManager` via `setStrategyStorage()`.
+- **Tests**: ~60 new — `strategy-storage.test.ts` (15 DB tests: seeding, CRUD, constraints, pagination), `strategy-routes.test.ts` (16 unit tests: all endpoints + validation), `strategy.test.ts` (13 CLI tests: all subcommands + help + errors), `manager.test.ts` (+8 strategy injection tests), `chat-routes.test.ts` (8 existing assertions updated for 4th arg).
+
+### Phase 105: Test Coverage Audit
+
+- **Coverage (core unit config)**: 87.01% statements (was 80.85%, +6.16pp), 76.01% branches (was 68.76%, +7.25pp), 86.83% functions, 87.92% lines. Less than 1% from both targets (88%/77%).
+- **Test counts**: 12,590 total — Core unit: 9,748 (385 files), Dashboard: 957 (63 files), MCP: 660 (49 files), DB integration: ~1,225 (60 files).
+- **Gap analysis**: Remaining coverage gap concentrated in DB-heavy integration modules: training (3.72% stmt), telemetry (5.45%), workflow (1.72%), tenants (6.81%). Engineering Backlog items created for the final push.
+
+### Phase 107-C: Unix-Philosophy CLI Enhancements
+
+- **`secureyeoman chat` command** (`packages/core/src/cli/commands/chat.ts`): New composable chat command with Unix piping support. Reads from stdin when not a TTY (`cat report.txt | secureyeoman chat -p friday`), writes clean output to stdout when piped (no spinners or decorations). Flags: `-p`/`--personality`, `--strategy`, `--dry-run` (preview prompt without sending), `-o`/`--output` (write to file), `-c`/`--copy` (clipboard via pbcopy/xclip/xsel/clip), `--format` (markdown/json/plain). JSON format includes response, model, tokens, timing metadata. Plain format strips markdown formatting.
+- **`secureyeoman alias` command** (`packages/core/src/cli/commands/alias.ts`): User-defined command aliases stored in `~/.config/secureyeoman/aliases.json`. `alias create wisdom chat -p friday --strategy cot` → `secureyeoman wisdom "Analyze this"`. CRUD: `create`, `list`, `delete`. Reserved name protection (all 35 built-in commands blocked). Alias resolution integrated into `cli.ts` router — lazy-loads alias module only when an unrecognized command is encountered.
+- **`handleLicenseError()` helper** (`packages/core/src/cli/utils.ts`): Shared 402 error handler for CLI commands. Detects enterprise license requirement responses and surfaces human-readable message with `secureyeoman license status` hint. Wired into `chat`, `training` (stats action), and `crew` (list/run actions) commands.
+- **Pipeline chaining**: Non-TTY stdout detection suppresses progress spinners and status messages, enabling `secureyeoman chat -p friday "Analyze this" | secureyeoman chat -p t-ron "Summarize"`.
+- **Tests**: 30 new tests across 2 files — `chat.test.ts` (15: help, no-message error, basic chat, personality/strategy flags, format modes, file output, 402 guard, API/connection errors, dry-run, multi-word message), `alias.test.ts` (15: CRUD, reserved names, resolve, load/save edge cases). All passing.
+
+### Phase 109-B: Canvas Workspace Improvements (roadmap)
+
+- **4 new roadmap items** added to Phase 109: inter-widget communication (event bus), canvas keyboard shortcuts, multiple saved layouts & export with presets, mission card embedding.
+
 ### Roadmap Reorganization & Proposal Consolidation
 
 - **ADR 185 — Screen Capture & Computer Use Platform**: Consolidated proposals 014–017 (screen capture security architecture, RBAC permissions, user consent, sandboxed execution) into a single ADR documenting what's already implemented and what remains as Phase 108.

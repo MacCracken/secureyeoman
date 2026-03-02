@@ -283,3 +283,25 @@ export async function apiCall(
 
   return { ok: response.ok, status: response.status, data };
 }
+
+/**
+ * Check an API response for a 402 enterprise license error and write a
+ * human-readable message to stderr. Returns true if the error was handled.
+ *
+ * Usage:
+ *   const result = await apiCall(baseUrl, path, opts);
+ *   if (handleLicenseError(result, ctx.stderr)) return 1;
+ */
+export function handleLicenseError(
+  result: { ok: boolean; status: number; data: unknown },
+  stderr: NodeJS.WritableStream,
+): boolean {
+  if (result.status !== 402) return false;
+  const data = result.data as { error?: string; feature?: string };
+  const feature = data.feature ? ` (feature: ${data.feature})` : '';
+  stderr.write(
+    `This command requires an Enterprise license${feature}.\n` +
+    'Run `secureyeoman license status` to check your current tier.\n',
+  );
+  return true;
+}

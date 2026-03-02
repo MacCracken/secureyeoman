@@ -14,6 +14,7 @@ interface ConversationRow {
   id: string;
   title: string;
   personality_id: string | null;
+  strategy_id: string | null;
   message_count: number;
   parent_conversation_id: string | null;
   fork_message_index: number | null;
@@ -74,6 +75,7 @@ export interface Conversation {
   id: string;
   title: string;
   personalityId: string | null;
+  strategyId: string | null;
   messageCount: number;
   parentConversationId: string | null;
   forkMessageIndex: number | null;
@@ -130,6 +132,7 @@ function rowToConversation(row: ConversationRow): Conversation {
     id: row.id,
     title: row.title,
     personalityId: row.personality_id,
+    strategyId: row.strategy_id ?? null,
     messageCount: row.message_count,
     parentConversationId: row.parent_conversation_id ?? null,
     forkMessageIndex: row.fork_message_index ?? null,
@@ -212,6 +215,7 @@ export class ConversationStorage extends PgBaseStorage {
   async createConversation(data: {
     title: string;
     personalityId?: string | null;
+    strategyId?: string | null;
     parentConversationId?: string | null;
     forkMessageIndex?: number | null;
     branchLabel?: string | null;
@@ -220,12 +224,13 @@ export class ConversationStorage extends PgBaseStorage {
     const id = uuidv7();
 
     await this.execute(
-      `INSERT INTO chat.conversations (id, title, personality_id, message_count, parent_conversation_id, fork_message_index, branch_label, created_at, updated_at)
-       VALUES ($1, $2, $3, 0, $4, $5, $6, $7, $8)`,
+      `INSERT INTO chat.conversations (id, title, personality_id, strategy_id, message_count, parent_conversation_id, fork_message_index, branch_label, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, 0, $5, $6, $7, $8, $9)`,
       [
         id,
         data.title,
         data.personalityId ?? null,
+        data.strategyId ?? null,
         data.parentConversationId ?? null,
         data.forkMessageIndex ?? null,
         data.branchLabel ?? null,

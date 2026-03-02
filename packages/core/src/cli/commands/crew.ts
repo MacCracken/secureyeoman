@@ -18,6 +18,7 @@ import {
   extractCommonFlags,
   apiCall,
   colorContext,
+  handleLicenseError,
   Spinner,
   formatTable,
 } from '../utils.js';
@@ -87,6 +88,7 @@ export const crewCommand: Command = {
         case 'list': {
           const res = await apiCall(baseUrl, '/api/v1/agents/teams', { token });
           if (!res.ok) {
+            if (handleLicenseError(res, ctx.stderr)) return 1;
             ctx.stderr.write(`Error: ${JSON.stringify(res.data)}\n`);
             return 1;
           }
@@ -281,6 +283,7 @@ export const crewCommand: Command = {
             token,
           });
           if (!runRes.ok) {
+            if (handleLicenseError(runRes, ctx.stderr)) return 1;
             ctx.stderr.write(`Error: ${JSON.stringify(runRes.data)}\n`);
             return 1;
           }

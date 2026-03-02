@@ -89,17 +89,18 @@ export function registerConversationRoutes(
     '/api/v1/conversations',
     async (
       request: FastifyRequest<{
-        Body: { title: string; personalityId?: string };
+        Body: { title: string; personalityId?: string; strategyId?: string };
       }>,
       reply: FastifyReply
     ) => {
-      const { title, personalityId } = request.body;
+      const { title, personalityId, strategyId } = request.body;
       if (!title || typeof title !== 'string' || title.trim().length === 0) {
         return sendError(reply, 400, 'Title is required');
       }
       const conversation = await conversationStorage.createConversation({
         title: title.trim(),
         personalityId,
+        strategyId,
       });
       return reply.code(201).send(conversation);
     }

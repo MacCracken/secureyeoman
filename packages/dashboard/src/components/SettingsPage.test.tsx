@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { SettingsPage } from './SettingsPage';
+import { LicenseProvider } from '../hooks/useLicense';
 import { createSoulConfig } from '../test/mocks';
 
 // ── Mock hooks ───────────────────────────────────────────────────
@@ -82,7 +83,9 @@ function renderComponent() {
   return render(
     <MemoryRouter>
       <QueryClientProvider client={qc}>
-        <SettingsPage />
+        <LicenseProvider>
+          <SettingsPage />
+        </LicenseProvider>
       </QueryClientProvider>
     </MemoryRouter>
   );
@@ -314,5 +317,117 @@ describe('SettingsPage', () => {
     await user.click(await screen.findByRole('button', { name: /Backup/i }));
     expect(await screen.findByText('daily backup')).toBeInTheDocument();
     expect(screen.getByText('completed')).toBeInTheDocument();
+  });
+
+  // ── License Card Tests ──────────────────────────────────────────
+
+  it('shows community tier chip and all features as locked when on community tier', async () => {
+    renderComponent();
+    expect(await screen.findByText('Community')).toBeInTheDocument();
+    expect(screen.getByText('Adaptive Learning Pipeline')).toBeInTheDocument();
+    expect(screen.getByText('SSO / SAML')).toBeInTheDocument();
+    expect(screen.getByText('Multi-Tenancy')).toBeInTheDocument();
+    expect(screen.getByText('CI/CD Integration')).toBeInTheDocument();
+    expect(screen.getByText('Advanced Observability')).toBeInTheDocument();
+    // Community tier message
+    expect(
+      screen.getByText(/Enter a license key to unlock enterprise features/),
+    ).toBeInTheDocument();
+  });
+
+  it('shows enterprise tier with green feature chips for enabled features', async () => {
+    mockFetchLicenseStatus.mockResolvedValue({
+      tier: 'enterprise',
+      valid: true,
+      organization: 'Acme Corp',
+      seats: 25,
+      features: ['adaptive_learning', 'sso_saml', 'cicd_integration'],
+      licenseId: 'lic-123',
+      expiresAt: null,
+      error: null,
+    });
+    renderComponent();
+    expect(await screen.findByText('Enterprise')).toBeInTheDocument();
+    expect(screen.getByText('Acme Corp')).toBeInTheDocument();
+    expect(screen.getByText('25')).toBeInTheDocument();
+    expect(screen.getByText('Never')).toBeInTheDocument();
+    // All 5 features are shown — 3 enabled, 2 locked
+    expect(screen.getByText('Adaptive Learning Pipeline')).toBeInTheDocument();
+    expect(screen.getByText('SSO / SAML')).toBeInTheDocument();
+    expect(screen.getByText('CI/CD Integration')).toBeInTheDocument();
+    expect(screen.getByText('Multi-Tenancy')).toBeInTheDocument();
+    expect(screen.getByText('Advanced Observability')).toBeInTheDocument();
+  });
+
+  it('shows expiry countdown banner when license expires within 30 days', async () => {
+    const in15Days = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString();
+    mockFetchLicenseStatus.mockResolvedValue({
+      tier: 'enterprise',
+      valid: true,
+      organization: 'Acme Corp',
+      seats: 10,
+      features: ['adaptive_learning'],
+      licenseId: 'lic-456',
+      expiresAt: in15Days,
+      error: null,
+    });
+    renderComponent();
+    expect(
+      await screen.findByText(/License expires in 15 days/),
+    ).toBeInTheDocument();
+  });
+
+  it('shows urgent expiry banner when license expires within 7 days', async () => {
+    const in3Days = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    mockFetchLicenseStatus.mockResolvedValue({
+      tier: 'enterprise',
+      valid: true,
+      organization: 'Acme Corp',
+      seats: 10,
+      features: ['adaptive_learning'],
+      licenseId: 'lic-789',
+      expiresAt: in3Days,
+      error: null,
+    });
+    renderComponent();
+    expect(
+      await screen.findByText(/License expires in 3 days/),
+    ).toBeInTheDocument();
+  });
+
+  it('shows expired banner when license has expired', async () => {
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    mockFetchLicenseStatus.mockResolvedValue({
+      tier: 'enterprise',
+      valid: true,
+      organization: 'Acme Corp',
+      seats: 10,
+      features: [],
+      licenseId: 'lic-exp',
+      expiresAt: yesterday,
+      error: null,
+    });
+    renderComponent();
+    expect(
+      await screen.findByText(/License has expired/),
+    ).toBeInTheDocument();
+  });
+
+  it('does not show expiry banner when license expires in more than 30 days', async () => {
+    const in60Days = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
+    mockFetchLicenseStatus.mockResolvedValue({
+      tier: 'enterprise',
+      valid: true,
+      organization: 'Acme Corp',
+      seats: 10,
+      features: ['adaptive_learning'],
+      licenseId: 'lic-ok',
+      expiresAt: in60Days,
+      error: null,
+    });
+    renderComponent();
+    expect(await screen.findByText('Enterprise')).toBeInTheDocument();
+    expect(screen.queryByText(/License expires/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/License has expired/)).not.toBeInTheDocument();
   });
 });

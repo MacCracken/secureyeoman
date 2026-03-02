@@ -258,6 +258,12 @@ export const BodyConfigSchema = z
      * Useful for reserving more window space for conversation history.
      */
     notebookTokenBudget: z.number().int().min(1000).optional(),
+    /**
+     * Default reasoning strategy for this personality.
+     * When set, all conversations using this personality will apply the strategy
+     * unless overridden per-request.
+     */
+    defaultStrategyId: z.string().nullable().optional(),
   })
   .default({});
 
@@ -1004,3 +1010,41 @@ export const CommsConfigSchema = z
   .default({});
 
 export type CommsConfig = z.infer<typeof CommsConfigSchema>;
+
+// ─── Reasoning Strategies ────────────────────────────────────
+
+export const ReasoningStrategyCategorySchema = z.enum([
+  'chain_of_thought',
+  'tree_of_thought',
+  'reflexion',
+  'self_refine',
+  'self_consistent',
+  'chain_of_density',
+  'argument_of_thought',
+  'standard',
+]);
+export type ReasoningStrategyCategory = z.infer<typeof ReasoningStrategyCategorySchema>;
+
+export const ReasoningStrategySchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1).max(200),
+  slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
+  description: z.string().max(2000).default(''),
+  promptPrefix: z.string().max(4000),
+  category: ReasoningStrategyCategorySchema,
+  isBuiltin: z.boolean().default(false),
+  createdAt: z.number().int().nonnegative(),
+  updatedAt: z.number().int().nonnegative(),
+});
+export type ReasoningStrategy = z.infer<typeof ReasoningStrategySchema>;
+
+export const ReasoningStrategyCreateSchema = ReasoningStrategySchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  isBuiltin: true,
+});
+export type ReasoningStrategyCreate = z.infer<typeof ReasoningStrategyCreateSchema>;
+
+export const ReasoningStrategyUpdateSchema = ReasoningStrategyCreateSchema.partial();
+export type ReasoningStrategyUpdate = z.infer<typeof ReasoningStrategyUpdateSchema>;

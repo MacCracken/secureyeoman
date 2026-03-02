@@ -11,6 +11,7 @@ import {
   extractCommonFlags,
   apiCall,
   colorContext,
+  handleLicenseError,
 } from '../utils.js';
 
 const USAGE = `
@@ -90,6 +91,7 @@ export const trainingCommand: Command = {
         case 'stats': {
           const result = await apiCall(baseUrl, '/api/v1/training/stats', { token });
           if (!result.ok) {
+            if (handleLicenseError(result, ctx.stderr)) return 1;
             ctx.stderr.write(`Failed to get training stats (${result.status})\n`);
             return 1;
           }

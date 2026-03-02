@@ -10,6 +10,7 @@ import type { ChatMessage, CreationEvent, ToolCallRecord } from '../types';
 
 export interface UseChatOptions {
   personalityId?: string | null;
+  strategyId?: string | null;
   editorContent?: string;
   conversationId?: string | null;
   memoryEnabled?: boolean;
@@ -233,6 +234,7 @@ export interface ActiveToolCall {
 
 export interface UseChatStreamOptions {
   personalityId?: string | null;
+  strategyId?: string | null;
   conversationId?: string | null;
   memoryEnabled?: boolean;
   editorContent?: string;
@@ -377,6 +379,9 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
             history: history.slice(0, -1),
             ...(latestOptions.current?.personalityId
               ? { personalityId: latestOptions.current.personalityId }
+              : {}),
+            ...(latestOptions.current?.strategyId
+              ? { strategyId: latestOptions.current.strategyId }
               : {}),
             ...(convId ? { conversationId: convId } : {}),
             ...(latestOptions.current?.editorContent

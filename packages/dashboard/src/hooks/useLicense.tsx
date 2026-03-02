@@ -1,0 +1,72 @@
+import { createContext, useContext, useCallback, type ReactNode } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchLicenseStatus, type LicenseStatus } from '../api/client';
+
+const ALL_ENTERPRISE_FEATURES = [
+  'adaptive_learning',
+  'sso_saml',
+  'multi_tenancy',
+  'cicd_integration',
+  'advanced_observability',
+] as const;
+
+export type EnterpriseFeature = (typeof ALL_ENTERPRISE_FEATURES)[number];
+
+export { ALL_ENTERPRISE_FEATURES };
+
+interface LicenseContextValue {
+  license: LicenseStatus | null;
+  isLoading: boolean;
+  isEnterprise: boolean;
+  hasFeature: (feature: string) => boolean;
+  refresh: () => Promise<void>;
+}
+
+const LicenseContext = createContext<LicenseContextValue | null>(null);
+
+export function LicenseProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
+
+  const { data: license = null, isLoading } = useQuery<LicenseStatus>({
+    queryKey: ['license-status'],
+    queryFn: fetchLicenseStatus,
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
+
+  const isEnterprise = license?.tier === 'enterprise' && license.valid;
+
+  const hasFeature = useCallback(
+    (feature: string): boolean => {
+      if (!isEnterprise || !license) return false;
+      return license.features.includes(feature);
+    },
+    [isEnterprise, license],
+  );
+
+  const refresh = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['license-status'] });
+  }, [queryClient]);
+
+  return (
+    <LicenseContext.Provider
+      value={{
+        license,
+        isLoading,
+        isEnterprise,
+        hasFeature,
+        refresh,
+      }}
+    >
+      {children}
+    </LicenseContext.Provider>
+  );
+}
+
+export function useLicense(): LicenseContextValue {
+  const context = useContext(LicenseContext);
+  if (!context) {
+    throw new Error('useLicense must be used within a LicenseProvider');
+  }
+  return context;
+}

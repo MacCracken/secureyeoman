@@ -58,9 +58,11 @@ import type {
   WorkflowExport,
   SwarmTemplateExport,
   CompatibilityCheckResult,
+  ReasoningStrategy,
 } from '../types.js';
 
 export type { CompatibilityCheckResult } from '../types.js';
+export type { ReasoningStrategy } from '../types.js';
 
 const API_BASE = '/api/v1';
 
@@ -1472,6 +1474,7 @@ export async function sendChatMessage(data: {
   message: string;
   history?: { role: string; content: string }[];
   personalityId?: string;
+  strategyId?: string;
   editorContent?: string;
   saveAsMemory?: boolean;
   memoryEnabled?: boolean;
@@ -5423,4 +5426,50 @@ export async function stopRecording(sessionId: string): Promise<CaptureRecording
     method: 'POST',
     body: JSON.stringify({ sessionId }),
   });
+}
+
+// ── Reasoning Strategies (Phase 107-A) ────────────────────────
+
+export async function fetchStrategies(
+  category?: string
+): Promise<{ items: ReasoningStrategy[]; total: number }> {
+  const qs = category ? `?category=${encodeURIComponent(category)}` : '';
+  return request(`/soul/strategies${qs}`);
+}
+
+export async function fetchStrategy(id: string): Promise<ReasoningStrategy> {
+  return request(`/soul/strategies/${id}`);
+}
+
+export async function createStrategy(data: {
+  name: string;
+  slug: string;
+  category: string;
+  description?: string;
+  promptPrefix: string;
+}): Promise<ReasoningStrategy> {
+  return request('/soul/strategies', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateStrategy(
+  id: string,
+  data: Partial<{
+    name: string;
+    slug: string;
+    category: string;
+    description: string;
+    promptPrefix: string;
+  }>
+): Promise<ReasoningStrategy> {
+  return request(`/soul/strategies/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteStrategy(id: string): Promise<void> {
+  return request(`/soul/strategies/${id}`, { method: 'DELETE' });
 }

@@ -42,7 +42,7 @@ The following capabilities are part of the enterprise tier and require a valid l
 | CI/CD Integration (Phase 90) | `cicd_integration` |
 | Advanced Observability (Phase 83) | `advanced_observability` |
 
-> **Note**: Runtime enforcement (API gating, UI locks) is planned — see the roadmap item "License-gated feature reveal". Until that ships, the license system is instrumented but not enforced.
+> **Note**: Dashboard UI shows feature availability via green/grey chips and expiry countdown banners (Phase 106 partial). Backend route guards (`402 Payment Required`) and CLI guards are planned — see the roadmap item "License-gated feature reveal".
 
 ---
 
@@ -67,6 +67,8 @@ secureyeoman license status
 ### Dashboard
 
 Navigate to **Settings → General → License** and paste the key into the input field, then click **Apply**.
+
+The license card shows your current tier, organisation, seat count, and expiry date. All five enterprise features are listed with green chips (available) or grey/locked chips (not included in your key). If your license expires within 30 days, a countdown banner appears.
 
 ### API
 

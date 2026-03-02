@@ -166,7 +166,8 @@ describe('Chat Routes', () => {
     expect(mockSoulManager.composeSoulPrompt).toHaveBeenCalledWith(
       'Hi there',
       undefined,
-      expect.any(Object)
+      expect.any(Object),
+      undefined
     );
     const chatCall = mockAiClient.chat.mock.calls[0][0];
     expect(chatCall.messages[0]).toEqual({ role: 'system', content: 'You are FRIDAY.' });
@@ -250,7 +251,8 @@ describe('Chat Routes', () => {
     expect(mockSoulManager.composeSoulPrompt).toHaveBeenCalledWith(
       'Hello!',
       'p-custom',
-      expect.any(Object)
+      expect.any(Object),
+      undefined
     );
   });
 
@@ -267,7 +269,8 @@ describe('Chat Routes', () => {
     expect(mockSoulManager.composeSoulPrompt).toHaveBeenCalledWith(
       'Hello!',
       undefined,
-      expect.any(Object)
+      expect.any(Object),
+      undefined
     );
   });
 
@@ -2554,7 +2557,8 @@ describe('Chat Routes — viewport hint', () => {
     expect(mockSoulManager.composeSoulPrompt).toHaveBeenCalledWith(
       'hello',
       undefined,
-      expect.objectContaining({ viewportHint: 'mobile' })
+      expect.objectContaining({ viewportHint: 'mobile' }),
+      undefined
     );
   });
 
@@ -2574,7 +2578,8 @@ describe('Chat Routes — viewport hint', () => {
     expect(mockSoulManager.composeSoulPrompt).toHaveBeenCalledWith(
       'hello',
       undefined,
-      expect.objectContaining({ viewportHint: undefined })
+      expect.objectContaining({ viewportHint: undefined }),
+      undefined
     );
   });
 });
@@ -3192,7 +3197,8 @@ describe('Chat Routes — composeSoulPrompt with memoryEnabled=false', () => {
     expect(mockSoulManager.composeSoulPrompt).toHaveBeenCalledWith(
       undefined,
       undefined,
-      expect.any(Object)
+      expect.any(Object),
+      undefined
     );
   });
 });
@@ -3252,7 +3258,8 @@ describe('Chat Routes — streaming additional branches', () => {
     expect(mockSoulManager.composeSoulPrompt).toHaveBeenCalledWith(
       'hello',
       undefined,
-      expect.objectContaining({ viewportHint: 'tablet' })
+      expect.objectContaining({ viewportHint: 'tablet' }),
+      undefined
     );
   });
 
@@ -3273,7 +3280,8 @@ describe('Chat Routes — streaming additional branches', () => {
     expect(mockSoulManager.composeSoulPrompt).toHaveBeenCalledWith(
       undefined,
       undefined,
-      expect.any(Object)
+      expect.any(Object),
+      undefined
     );
   });
 

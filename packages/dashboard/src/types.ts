@@ -1218,3 +1218,17 @@ export interface CaptureRecordingItem {
   startedAt: number;
   stoppedAt?: number;
 }
+
+// ── Reasoning Strategies (Phase 107-A) ────────────────────────
+
+export interface ReasoningStrategy {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  promptPrefix: string;
+  category: string;
+  isBuiltin: boolean;
+  createdAt: number;
+  updatedAt: number;
+}

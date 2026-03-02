@@ -262,11 +262,33 @@ router.registerLazy({
 });
 
 router.registerLazy({
+  name: 'chat',
+  description: 'Send a message to a personality (supports stdin piping)',
+  usage: 'secureyeoman chat [-p personality] [--strategy slug] [--format fmt] [message]',
+  loader: () => import('./cli/commands/chat.js').then((m) => m.chatCommand),
+});
+
+router.registerLazy({
+  name: 'alias',
+  description: 'Create, list, and delete CLI command aliases',
+  usage: 'secureyeoman alias <create|list|delete> [options]',
+  loader: () => import('./cli/commands/alias.js').then((m) => m.aliasCommand),
+});
+
+router.registerLazy({
   name: 'license',
   aliases: ['lic'],
   description: 'View and manage the SecureYeoman license key',
   usage: 'secureyeoman license <status|set> [options]',
   loader: () => import('./cli/commands/license.js').then((m) => m.licenseCommand),
+});
+
+router.registerLazy({
+  name: 'strategy',
+  aliases: ['strat'],
+  description: 'Manage reasoning strategies',
+  usage: 'secureyeoman strategy <list|show|create|delete> [options]',
+  loader: () => import('./cli/commands/strategy.js').then((m) => m.strategyCommand),
 });
 
 // ── Help command (eager — uses router directly) ────────────────────────────
@@ -281,9 +303,29 @@ router.register({
   },
 });
 
-// ── Resolve and run ────────────────────────────────────────────────────────
+// ── Resolve and run (with user alias expansion) ─────────────────────────────
 
-const { command, rest } = router.resolve(process.argv);
+let resolved = router.resolve(process.argv);
+
+// If the resolved command is the default (start) but argv[2] doesn't look like
+// a start flag, check if it's a user-defined alias before falling through.
+if (
+  resolved.command.name === 'start' &&
+  process.argv[2] &&
+  !process.argv[2].startsWith('-')
+) {
+  // Lazy-import alias resolution to avoid loading fs on every CLI invocation
+  // unless we actually need it.
+  const { resolveAlias } = await import('./cli/commands/alias.js');
+  const expansion = resolveAlias(process.argv[2]);
+  if (expansion) {
+    // Re-resolve with the expanded tokens + any trailing args
+    const expandedArgv = [process.argv[0]!, process.argv[1]!, ...expansion, ...process.argv.slice(3)];
+    resolved = router.resolve(expandedArgv);
+  }
+}
+
+const { command, rest } = resolved;
 
 command
   .run({ argv: rest, stdout: process.stdout, stderr: process.stderr })
