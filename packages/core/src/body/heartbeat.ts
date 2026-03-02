@@ -96,7 +96,6 @@ export class HeartbeatManager {
   private running = false;
   private taskLastRun = new Map<string, number>();
   private actionHistory = new Map<string, number>(); // Track last action execution per check
-  private activePersonalityId: string | null = null;
   private activePersonalityIds: { id: string; name: string; omnipresentMind?: boolean }[] = [];
   private personalitySchedule: {
     enabled: boolean;
@@ -599,7 +598,7 @@ export class HeartbeatManager {
   }
 
   setActivePersonalityId(id: string | null): void {
-    this.activePersonalityId = id;
+    this.activePersonalityIds = id ? [{ id, name: '', omnipresentMind: false }] : [];
     this.logger.debug('Active personality ID updated', { personalityId: id });
   }
 
@@ -673,9 +672,7 @@ export class HeartbeatManager {
         const logPersonalities =
           this.activePersonalityIds.length > 0
             ? this.activePersonalityIds
-            : this.activePersonalityId
-              ? [{ id: this.activePersonalityId, name: '', omnipresentMind: false }]
-              : [{ id: null as unknown as string, name: '', omnipresentMind: false }];
+            : [{ id: null as unknown as string, name: '', omnipresentMind: false }];
         for (const p of logPersonalities) {
           // For system_health, compute scoped stats per personality so each entry
           // shows accurate per-personality memory/knowledge counts rather than
@@ -756,6 +753,7 @@ export class HeartbeatManager {
           checksRun: checks.length,
           hasWarnings,
           hasErrors,
+          activePersonalities: this.activePersonalityIds.map(p => p.name || p.id).filter(Boolean),
         },
       });
     }

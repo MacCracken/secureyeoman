@@ -39,14 +39,14 @@ describe('ApiKeysSettings', () => {
   it('renders the heading', async () => {
     mockFetchApiKeys.mockResolvedValue({ keys: [] });
     renderComponent();
-    expect(await screen.findByText('API Keys')).toBeInTheDocument();
+    expect(await screen.findByText('Yeoman API Keys')).toBeInTheDocument();
   });
 
   it('displays description', async () => {
     mockFetchApiKeys.mockResolvedValue({ keys: [] });
     renderComponent();
     expect(
-      await screen.findByText('Manage API keys for programmatic access to SecureYeoman')
+      await screen.findByText('Manage API keys for programmatic access to the SecureYeoman API')
     ).toBeInTheDocument();
   });
 

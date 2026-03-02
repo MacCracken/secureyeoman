@@ -1129,6 +1129,52 @@ describe('HeartbeatManager', () => {
     });
   });
 
+  describe('audit chain personality metadata', () => {
+    it('includes activePersonalities in audit chain record metadata', async () => {
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig());
+      hb.setActivePersonalityIds([
+        { id: 'p1', name: 'Alpha', omnipresentMind: false },
+        { id: 'p2', name: 'Beta', omnipresentMind: true },
+      ]);
+      await hb.beat();
+      expect(audit.record).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'heartbeat',
+          metadata: expect.objectContaining({
+            activePersonalities: ['Alpha', 'Beta'],
+          }),
+        })
+      );
+    });
+
+    it('includes id as fallback when personality name is empty', async () => {
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig());
+      hb.setActivePersonalityId('pers-99');
+      await hb.beat();
+      expect(audit.record).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'heartbeat',
+          metadata: expect.objectContaining({
+            activePersonalities: ['pers-99'],
+          }),
+        })
+      );
+    });
+
+    it('has empty activePersonalities when no personality set', async () => {
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig());
+      await hb.beat();
+      expect(audit.record).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'heartbeat',
+          metadata: expect.objectContaining({
+            activePersonalities: [],
+          }),
+        })
+      );
+    });
+  });
+
   describe('personality active hours', () => {
     beforeEach(() => {
       vi.useFakeTimers();

@@ -283,6 +283,15 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
     PUT: { resource: 'workspaces', action: 'write' },
     DELETE: { resource: 'workspaces', action: 'write' },
   },
+  // Secrets routes
+  '/api/v1/secrets': {
+    GET: { resource: 'secrets', action: 'read' },
+  },
+  '/api/v1/secrets/:name': {
+    GET: { resource: 'secrets', action: 'read' },
+    PUT: { resource: 'secrets', action: 'write' },
+    DELETE: { resource: 'secrets', action: 'write' },
+  },
   // User management routes (admin: auth:write; operator: auth:read is not enough for user mgmt)
   '/api/v1/users': {
     GET: { resource: 'auth', action: 'read' },

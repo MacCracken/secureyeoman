@@ -39,6 +39,7 @@ import {
   fetchSecurityPolicy,
   fetchProactiveConfig,
   fetchHealth,
+  fetchModelInfo,
 } from '../api/client';
 
 export interface SidebarProps {
@@ -54,6 +55,7 @@ interface NavItem {
   label: string;
   icon: React.ReactNode;
   end?: boolean;
+  disabled?: boolean;
 }
 
 const BASE_TOP_ITEMS: NavItem[] = [
@@ -134,6 +136,16 @@ export function Sidebar({
     staleTime: 30000,
   });
 
+  const { data: modelInfoData } = useQuery({
+    queryKey: ['model-info'],
+    queryFn: fetchModelInfo,
+    staleTime: 30000,
+  });
+
+  const noModelsAvailable =
+    modelInfoData !== undefined &&
+    Object.keys(modelInfoData.available ?? {}).length === 0;
+
   const subAgentsAllowed = securityPolicy?.allowSubAgents ?? false;
   const a2aAllowed = securityPolicy?.allowA2A ?? false;
   const multimodalAllowed = securityPolicy?.allowMultimodal ?? false;
@@ -151,13 +163,18 @@ export function Sidebar({
 
   const topItems = useMemo(() => {
     const top: NavItem[] = [...BASE_TOP_ITEMS];
+    // Disable Chat when no AI provider keys are configured
+    if (noModelsAvailable) {
+      const chatItem = top.find((i) => i.to === '/chat');
+      if (chatItem) chatItem.disabled = true;
+    }
     // Insert Automation after Security (index 2) when workflows are enabled
     if (workflowsAllowed)
       top.splice(2, 0, { to: '/automation', label: 'Automation', icon: <Layers className="w-5 h-5" /> });
     // Insert Editor after Chat when allowed
     const chatIdx = top.findIndex((i) => i.to === '/chat');
     if (codeEditorAllowed)
-      top.splice(chatIdx + 1, 0, { to: '/editor', label: 'Editor', icon: <Code className="w-5 h-5" /> });
+      top.splice(chatIdx + 1, 0, { to: '/editor', label: 'Editor', icon: <Code className="w-5 h-5" />, disabled: noModelsAvailable });
     if (orgIntentAllowed)
       top.push({ to: '/intent', label: 'Intent', icon: <Target className="w-5 h-5" /> });
     if (proactiveEnabled)
@@ -165,7 +182,7 @@ export function Sidebar({
     if (hasAgents)
       top.push({ to: '/agents', label: 'Agents', icon: <Users className="w-5 h-5" /> });
     return top;
-  }, [hasAgents, proactiveEnabled, codeEditorAllowed, orgIntentAllowed, workflowsAllowed]);
+  }, [hasAgents, proactiveEnabled, codeEditorAllowed, orgIntentAllowed, workflowsAllowed, noModelsAvailable]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -186,22 +203,41 @@ export function Sidebar({
     };
   }, []);
 
-  const renderNavItem = (item: NavItem) => (
-    <NavLink
-      key={item.to}
-      to={item.to}
-      end={item.end}
-      className={({ isActive }) => navLinkClass(isActive, collapsed)}
-    >
-      <span className="w-5 h-5 flex-shrink-0">{item.icon}</span>
-      <span
-        className={`transition-opacity duration-200 ${collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
+  const renderNavItem = (item: NavItem) => {
+    if (item.disabled) {
+      return (
+        <span
+          key={item.to}
+          className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground/40 cursor-not-allowed ${collapsed ? 'justify-center' : ''}`}
+          title="No AI provider keys configured"
+        >
+          <span className="w-5 h-5 flex-shrink-0">{item.icon}</span>
+          <span
+            className={`transition-opacity duration-200 ${collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
+          >
+            {item.label}
+          </span>
+          {collapsed && <span className="sidebar-tooltip">{item.label}</span>}
+        </span>
+      );
+    }
+    return (
+      <NavLink
+        key={item.to}
+        to={item.to}
+        end={item.end}
+        className={({ isActive }) => navLinkClass(isActive, collapsed)}
       >
-        {item.label}
-      </span>
-      {collapsed && <span className="sidebar-tooltip">{item.label}</span>}
-    </NavLink>
-  );
+        <span className="w-5 h-5 flex-shrink-0">{item.icon}</span>
+        <span
+          className={`transition-opacity duration-200 ${collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
+        >
+          {item.label}
+        </span>
+        {collapsed && <span className="sidebar-tooltip">{item.label}</span>}
+      </NavLink>
+    );
+  };
 
   const sidebarContent = (
     <div className="flex flex-col h-full">

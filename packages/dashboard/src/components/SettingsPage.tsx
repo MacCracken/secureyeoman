@@ -50,6 +50,7 @@ import { NotificationSettings } from './NotificationSettings';
 import { LogRetentionSettings } from './LogRetentionSettings';
 import { SecuritySettings, RolesSettings, SecretsPanel } from './SecuritySettings';
 import { ApiKeysSettings } from './ApiKeysSettings';
+import { ProviderKeysSettings } from './ProviderKeysSettings';
 import { UsersSettings } from './UsersSettings';
 import { WorkspacesSettings } from './WorkspacesSettings';
 import { NotificationPrefsPanel } from './NotificationPrefsPanel';
@@ -215,6 +216,7 @@ export function SettingsPage() {
       {activeTab === 'security' && <SecuritySettings />}
       {activeTab === 'keys' && (
         <div className="space-y-8">
+          <ProviderKeysSettings />
           <ApiKeysSettings />
           <SecretsPanel />
         </div>

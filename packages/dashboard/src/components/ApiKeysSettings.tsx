@@ -90,10 +90,10 @@ export function ApiKeysSettings() {
       <div>
         <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
           <Key className="w-5 h-5" />
-          API Keys
+          Yeoman API Keys
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Manage API keys for programmatic access to SecureYeoman
+          Manage API keys for programmatic access to the SecureYeoman API
         </p>
       </div>
 

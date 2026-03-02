@@ -23,6 +23,7 @@ import {
   Sparkles,
   Wrench,
   Star,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -312,6 +313,7 @@ const MessageBubble = memo(function MessageBubble({
 interface ChatInputAreaProps {
   onSend: (text: string) => void;
   isPending: boolean;
+  disabled?: boolean;
   editValue: string;
   onCancelEdit: () => void;
   isEditing: boolean;
@@ -326,6 +328,7 @@ interface ChatInputAreaProps {
 const ChatInputArea = memo(function ChatInputArea({
   onSend,
   isPending,
+  disabled,
   editValue,
   onCancelEdit,
   isEditing,
@@ -413,8 +416,8 @@ const ChatInputArea = memo(function ChatInputArea({
             onTyping();
           }}
           onKeyDown={handleKeyDown}
-          placeholder={`Message ${personalityName ?? 'the assistant'}...`}
-          disabled={isPending}
+          placeholder={disabled ? 'No AI provider keys configured. Add one in Administration > Secrets.' : `Message ${personalityName ?? 'the assistant'}...`}
+          disabled={isPending || disabled}
           rows={3}
           className="flex-1 resize-none rounded-lg border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 min-h-[80px] max-h-[200px]"
         />
@@ -429,7 +432,7 @@ const ChatInputArea = memo(function ChatInputArea({
         )}
         <button
           onClick={handleSend}
-          disabled={!localInput.trim() || isPending}
+          disabled={!localInput.trim() || isPending || disabled}
           className="btn btn-ghost px-3 py-3 rounded-lg disabled:opacity-50 h-[52px]"
           title={isEditing ? 'Update and resend' : 'Send message'}
         >
@@ -545,6 +548,10 @@ export function ChatPage() {
   const currentModel = modelInfoData?.current
     ? `${modelInfoData.current.provider}/${modelInfoData.current.model}`
     : null;
+
+  const noModelsAvailable =
+    modelInfoData !== undefined &&
+    Object.keys(modelInfoData.available ?? {}).length === 0;
 
   const personalityCapabilities = personality?.body?.capabilities ?? [];
   const hasVision = personalityCapabilities.includes('vision');
@@ -1246,10 +1253,25 @@ export function ChatPage() {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* No provider key warning */}
+            {noModelsAvailable && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-warning/10 border border-warning/30 text-warning text-sm">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>
+                  No AI provider API keys configured. Add one in{' '}
+                  <a href="/settings" className="underline font-medium">
+                    Administration &gt; Secrets
+                  </a>{' '}
+                  to enable chat.
+                </span>
+              </div>
+            )}
+
             {/* Input area — decoupled local state */}
             <ChatInputArea
               onSend={handleSendWrapper}
               isPending={isPending}
+              disabled={noModelsAvailable}
               editValue={editValue}
               onCancelEdit={handleCancelEdit}
               isEditing={editingMsgIdx !== null}
