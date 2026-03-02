@@ -39,12 +39,8 @@ services:
       DATABASE_HOST: postgres
       DATABASE_USER: secureyeoman
       DATABASE_NAME: secureyeoman
-      GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID:-}
-      GITHUB_OAUTH_CLIENT_SECRET: ${GITHUB_OAUTH_CLIENT_SECRET:-}
-      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
-      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
-      GMAIL_OAUTH_CLIENT_ID: ${GMAIL_OAUTH_CLIENT_ID:-}
-      GMAIL_OAUTH_CLIENT_SECRET: ${GMAIL_OAUTH_CLIENT_SECRET:-}
+      # OAuth credentials loaded from env_file (.env.dev) — do not re-declare here
+      # as ${VAR:-} resolves against the host shell and overrides env_file values.
       # OPA sidecar for Rego policy evaluation (Phase 50).
       # Unset to disable OPA; core falls back to natural-language rule matching.
       OPA_ADDR: ${OPA_ADDR:-}

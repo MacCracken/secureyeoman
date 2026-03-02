@@ -1,3 +1,15 @@
+## [2026.3.1g] — 2026-03-01
+
+### Provider Keys & Sidebar Reactivity Fixes
+
+- **Sidebar shallow copy mutation fix**: `[...BASE_TOP_ITEMS]` only shallow-copied the array — `chatItem.disabled = true` mutated the original constant objects, permanently disabling Chat/Editor links even after a provider key was added. Fixed by using `BASE_TOP_ITEMS.map(item => ({ ...item }))` to create fresh objects on each render.
+- **Backend model cache invalidation**: Added `clearModelCache()` call to secrets PUT and DELETE routes in `server.ts`. The 10-minute `_dynamicCache` in `cost-calculator.ts` was serving stale (empty) model lists after a provider key was added — now cleared immediately on any secret change.
+- **Frontend `refetchQueries` for model-info**: Changed `invalidateQueries` to `refetchQueries` for the `model-info` query key in `ProviderKeysSettings` save and delete mutations, ensuring an immediate network request instead of relying on stale-time invalidation.
+- **Sidebar `refetchInterval` polling**: Added conditional `refetchInterval` to the model-info query in `Sidebar.tsx` — polls every 3 seconds when no models are available, stops once models appear. Safety net for cross-component reactivity.
+- **Net result**: Adding or removing an AI provider key now immediately enables/disables Chat and Editor sidebar links without a browser refresh.
+
+---
+
 ## [2026.3.1f] — 2026-03-01
 
 ### Theme Rebalancing — 10/10/10
