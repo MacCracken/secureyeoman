@@ -21,8 +21,18 @@ function makeCtx(argv: string[] = []): CommandContext & { outLines: string[]; er
   const errLines: string[] = [];
   return {
     argv,
-    stdout: { write: (s: string) => { outLines.push(s); return true; } } as any,
-    stderr: { write: (s: string) => { errLines.push(s); return true; } } as any,
+    stdout: {
+      write: (s: string) => {
+        outLines.push(s);
+        return true;
+      },
+    } as any,
+    stderr: {
+      write: (s: string) => {
+        errLines.push(s);
+        return true;
+      },
+    } as any,
     outLines,
     errLines,
   };
@@ -35,7 +45,9 @@ function makeHeaders(contentType = 'application/json') {
 
 function apiOk(data: unknown) {
   return Promise.resolve({
-    ok: true, status: 200, data,
+    ok: true,
+    status: 200,
+    data,
     headers: makeHeaders(),
     json: async () => data,
     text: async () => JSON.stringify(data),
@@ -103,7 +115,7 @@ describe('trainingCommand', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: { get: (k: string) => k === 'content-type' ? 'application/json' : null },
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({ conversations: 42, memories: 100, knowledge: 5 }),
       });
 
@@ -120,7 +132,7 @@ describe('trainingCommand', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        headers: { get: (k: string) => k === 'content-type' ? 'application/json' : null },
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({ conversations: 7, memories: 3, knowledge: 1 }),
       });
 
@@ -133,8 +145,9 @@ describe('trainingCommand', () => {
 
     it('returns 1 on stats API error', async () => {
       mockFetch.mockResolvedValueOnce({
-        ok: false, status: 500,
-        headers: { get: (k: string) => k === 'content-type' ? 'application/json' : null },
+        ok: false,
+        status: 500,
+        headers: { get: (k: string) => (k === 'content-type' ? 'application/json' : null) },
         json: async () => ({}),
       });
       const ctx = makeCtx(['stats']);

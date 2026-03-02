@@ -741,24 +741,26 @@ export class WorkflowEngine {
         const repo = this.resolveTemplate(String(cfg.repo ?? ''), ctx);
         const ref = this.resolveTemplate(String(cfg.ref ?? 'main'), ctx);
         const workflowId = this.resolveTemplate(String(cfg.workflowId ?? ''), ctx);
-        const inputsRaw = cfg.inputs
-          ? this.resolveTemplate(JSON.stringify(cfg.inputs), ctx)
-          : '{}';
+        const inputsRaw = cfg.inputs ? this.resolveTemplate(JSON.stringify(cfg.inputs), ctx) : '{}';
         const inputs = JSON.parse(inputsRaw) as Record<string, string>;
 
-        this.logger.info('ci_trigger: dispatching CI job', { provider, owner, repo, ref, workflowId });
+        this.logger.info('ci_trigger: dispatching CI job', {
+          provider,
+          owner,
+          repo,
+          ref,
+          workflowId,
+        });
 
         if (provider === 'github-actions') {
           const token =
-            this.cicdConfig?.githubToken ??
-            process.env.GITHUB_TOKEN ??
-            process.env.GH_TOKEN;
+            this.cicdConfig?.githubToken ?? process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
           const headers: Record<string, string> = {
             Accept: 'application/vnd.github+json',
             'X-GitHub-Api-Version': '2022-11-28',
             'Content-Type': 'application/json',
           };
-          if (token) headers['Authorization'] = `Bearer ${token}`;
+          if (token) headers.Authorization = `Bearer ${token}`;
           const res = await fetch(
             `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowId}/dispatches`,
             { method: 'POST', headers, body: JSON.stringify({ ref, inputs }) }
@@ -769,7 +771,16 @@ export class WorkflowEngine {
           }
           // GHA dispatch returns 204 — no run ID is synchronously available.
           // Return a sentinel so ci_wait can poll by listing runs.
-          return { runId: 'dispatched', url: `https://github.com/${owner}/${repo}/actions`, status: 'queued', provider, owner, repo, ref, workflowId };
+          return {
+            runId: 'dispatched',
+            url: `https://github.com/${owner}/${repo}/actions`,
+            status: 'queued',
+            provider,
+            owner,
+            repo,
+            ref,
+            workflowId,
+          };
         }
 
         if (provider === 'gitlab') {
@@ -778,21 +789,31 @@ export class WorkflowEngine {
           const headers: Record<string, string> = { 'Content-Type': 'application/json' };
           if (gitlabToken) headers['PRIVATE-TOKEN'] = gitlabToken;
           const projectId = this.resolveTemplate(String(cfg.projectId ?? ''), ctx);
-          const variables = inputs as Record<string, string>;
+          const variables = inputs;
           const variableList = Object.entries(variables).map(([key, value]) => ({ key, value }));
-          const res = await fetch(
-            `${gitlabUrl}/api/v4/projects/${projectId}/pipeline`,
-            { method: 'POST', headers, body: JSON.stringify({ ref, variables: variableList }) }
-          );
+          const res = await fetch(`${gitlabUrl}/api/v4/projects/${projectId}/pipeline`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ ref, variables: variableList }),
+          });
           if (!res.ok) {
             const errBody = await res.text();
             throw new Error(`GitLab pipeline trigger failed (${res.status}): ${errBody}`);
           }
-          const data = await res.json() as { id: number; web_url: string };
-          return { runId: String(data.id), url: data.web_url, status: 'queued', provider, projectId, ref };
+          const data = (await res.json()) as { id: number; web_url: string };
+          return {
+            runId: String(data.id),
+            url: data.web_url,
+            status: 'queued',
+            provider,
+            projectId,
+            ref,
+          };
         }
 
-        throw new Error(`ci_trigger: unsupported provider "${provider}". Supported: github-actions, gitlab`);
+        throw new Error(
+          `ci_trigger: unsupported provider "${provider}". Supported: github-actions, gitlab`
+        );
       }
 
       case 'ci_wait': {
@@ -811,14 +832,12 @@ export class WorkflowEngine {
           const owner = this.resolveTemplate(String(cfg.owner ?? ''), ctx);
           const repo = this.resolveTemplate(String(cfg.repo ?? ''), ctx);
           const token =
-            this.cicdConfig?.githubToken ??
-            process.env.GITHUB_TOKEN ??
-            process.env.GH_TOKEN;
+            this.cicdConfig?.githubToken ?? process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
           const headers: Record<string, string> = {
             Accept: 'application/vnd.github+json',
             'X-GitHub-Api-Version': '2022-11-28',
           };
-          if (token) headers['Authorization'] = `Bearer ${token}`;
+          if (token) headers.Authorization = `Bearer ${token}`;
           const terminalStatuses = new Set(['completed']);
           while (Date.now() < deadline) {
             const res = await fetch(
@@ -826,7 +845,12 @@ export class WorkflowEngine {
               { headers }
             );
             if (res.ok) {
-              const data = await res.json() as { status: string; conclusion: string; logs_url?: string; html_url: string };
+              const data = (await res.json()) as {
+                status: string;
+                conclusion: string;
+                logs_url?: string;
+                html_url: string;
+              };
               if (terminalStatuses.has(data.status)) {
                 return {
                   status: data.status,
@@ -838,7 +862,9 @@ export class WorkflowEngine {
             }
             await new Promise((r) => setTimeout(r, pollMs));
           }
-          throw new Error(`ci_wait: GitHub Actions run ${runId} did not complete within ${timeoutMs}ms`);
+          throw new Error(
+            `ci_wait: GitHub Actions run ${runId} did not complete within ${timeoutMs}ms`
+          );
         }
 
         if (provider === 'gitlab') {
@@ -854,7 +880,7 @@ export class WorkflowEngine {
               { headers }
             );
             if (res.ok) {
-              const data = await res.json() as { status: string; web_url: string };
+              const data = (await res.json()) as { status: string; web_url: string };
               if (terminalStatuses.has(data.status)) {
                 return {
                   status: data.status,
@@ -866,10 +892,14 @@ export class WorkflowEngine {
             }
             await new Promise((r) => setTimeout(r, pollMs));
           }
-          throw new Error(`ci_wait: GitLab pipeline ${runId} did not complete within ${timeoutMs}ms`);
+          throw new Error(
+            `ci_wait: GitLab pipeline ${runId} did not complete within ${timeoutMs}ms`
+          );
         }
 
-        throw new Error(`ci_wait: unsupported provider "${provider}". Supported: github-actions, gitlab`);
+        throw new Error(
+          `ci_wait: unsupported provider "${provider}". Supported: github-actions, gitlab`
+        );
       }
 
       default:

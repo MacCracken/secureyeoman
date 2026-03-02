@@ -46,7 +46,9 @@ describe('OllamaEmbeddingProvider', () => {
     });
 
     it('returns 768 for nomic-embed-text:latest', () => {
-      expect(new OllamaEmbeddingProvider({ model: 'nomic-embed-text:latest' }).dimensions()).toBe(768);
+      expect(new OllamaEmbeddingProvider({ model: 'nomic-embed-text:latest' }).dimensions()).toBe(
+        768
+      );
     });
 
     it('returns 1024 for mxbai-embed-large', () => {
@@ -58,7 +60,9 @@ describe('OllamaEmbeddingProvider', () => {
     });
 
     it('returns 1024 for snowflake-arctic-embed', () => {
-      expect(new OllamaEmbeddingProvider({ model: 'snowflake-arctic-embed' }).dimensions()).toBe(1024);
+      expect(new OllamaEmbeddingProvider({ model: 'snowflake-arctic-embed' }).dimensions()).toBe(
+        1024
+      );
     });
 
     it('returns 1024 for bge-m3', () => {
@@ -72,7 +76,10 @@ describe('OllamaEmbeddingProvider', () => {
 
   describe('embed() via doEmbed()', () => {
     it('returns embeddings from Ollama API', async () => {
-      const embeddings = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]];
+      const embeddings = [
+        [0.1, 0.2, 0.3],
+        [0.4, 0.5, 0.6],
+      ];
       mockFetch.mockResolvedValueOnce(okResponse(embeddings));
 
       const provider = new OllamaEmbeddingProvider();

@@ -333,9 +333,14 @@ export class SecureYeoman {
       // Step 2.05b: Initialize LicenseManager
       this.licenseManager = new LicenseManager(process.env.SECUREYEOMAN_LICENSE_KEY);
       const licTier = this.licenseManager.getTier();
-      this.logger.info(`License: ${licTier}`, { tier: licTier, org: this.licenseManager.getClaims()?.organization ?? null });
+      this.logger.info(`License: ${licTier}`, {
+        tier: licTier,
+        org: this.licenseManager.getClaims()?.organization ?? null,
+      });
       if (this.licenseManager.getParseError()) {
-        this.logger.warn('License key invalid, running as community tier', { err: this.licenseManager.getParseError() });
+        this.logger.warn('License key invalid, running as community tier', {
+          err: this.licenseManager.getParseError(),
+        });
       }
 
       // Step 2.5: Initialize keyring (pre-loads secrets from system keyring)
@@ -2935,28 +2940,34 @@ export class SecureYeoman {
       this.config!.security.contentGuardrails.piiMode = updates.contentGuardrailsPiiMode;
     }
     if (updates.contentGuardrailsToxicityEnabled !== undefined) {
-      this.config!.security.contentGuardrails.toxicityEnabled = updates.contentGuardrailsToxicityEnabled;
+      this.config!.security.contentGuardrails.toxicityEnabled =
+        updates.contentGuardrailsToxicityEnabled;
     }
     if (updates.contentGuardrailsToxicityMode !== undefined) {
       this.config!.security.contentGuardrails.toxicityMode = updates.contentGuardrailsToxicityMode;
     }
     if (updates.contentGuardrailsToxicityClassifierUrl !== undefined) {
-      this.config!.security.contentGuardrails.toxicityClassifierUrl = updates.contentGuardrailsToxicityClassifierUrl;
+      this.config!.security.contentGuardrails.toxicityClassifierUrl =
+        updates.contentGuardrailsToxicityClassifierUrl;
     }
     if (updates.contentGuardrailsToxicityThreshold !== undefined) {
-      this.config!.security.contentGuardrails.toxicityThreshold = updates.contentGuardrailsToxicityThreshold;
+      this.config!.security.contentGuardrails.toxicityThreshold =
+        updates.contentGuardrailsToxicityThreshold;
     }
     if (updates.contentGuardrailsBlockList !== undefined) {
       this.config!.security.contentGuardrails.blockList = updates.contentGuardrailsBlockList;
     }
     if (updates.contentGuardrailsBlockedTopics !== undefined) {
-      this.config!.security.contentGuardrails.blockedTopics = updates.contentGuardrailsBlockedTopics;
+      this.config!.security.contentGuardrails.blockedTopics =
+        updates.contentGuardrailsBlockedTopics;
     }
     if (updates.contentGuardrailsGroundingEnabled !== undefined) {
-      this.config!.security.contentGuardrails.groundingEnabled = updates.contentGuardrailsGroundingEnabled;
+      this.config!.security.contentGuardrails.groundingEnabled =
+        updates.contentGuardrailsGroundingEnabled;
     }
     if (updates.contentGuardrailsGroundingMode !== undefined) {
-      this.config!.security.contentGuardrails.groundingMode = updates.contentGuardrailsGroundingMode;
+      this.config!.security.contentGuardrails.groundingMode =
+        updates.contentGuardrailsGroundingMode;
     }
 
     this.logger?.info('Security policy updated', updates);

@@ -436,8 +436,7 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'intent_get_active',
-      description:
-        'Get the currently active organizational intent document with full body',
+      description: 'Get the currently active organizational intent document with full body',
     },
     {
       name: 'intent_create',
@@ -451,13 +450,11 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'intent_activate',
-      description:
-        'Set a specific intent document as the active one (deactivates all others)',
+      description: 'Set a specific intent document as the active one (deactivates all others)',
     },
     {
       name: 'intent_delete',
-      description:
-        'Delete an organizational intent document and deactivate it if active',
+      description: 'Delete an organizational intent document and deactivate it if active',
     },
     {
       name: 'intent_enforcement_log',
@@ -667,11 +664,13 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'gha_dispatch_workflow',
-      description: 'Trigger a workflow_dispatch event for a GitHub Actions workflow on a specified ref with optional inputs.',
+      description:
+        'Trigger a workflow_dispatch event for a GitHub Actions workflow on a specified ref with optional inputs.',
     },
     {
       name: 'gha_list_runs',
-      description: 'List workflow runs for a GitHub repository, optionally filtered by branch and status.',
+      description:
+        'List workflow runs for a GitHub repository, optionally filtered by branch and status.',
     },
     {
       name: 'gha_get_run',
@@ -689,7 +688,8 @@ export function getToolManifest(): ToolManifestEntry[] {
     // CI/CD — Jenkins (Phase 90)
     {
       name: 'jenkins_list_jobs',
-      description: 'List all jobs on the Jenkins server with their name, URL, and build color/status.',
+      description:
+        'List all jobs on the Jenkins server with their name, URL, and build color/status.',
     },
     {
       name: 'jenkins_trigger_build',
@@ -697,7 +697,8 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'jenkins_get_build',
-      description: 'Get details of a specific Jenkins job build (status, result, duration, timestamp).',
+      description:
+        'Get details of a specific Jenkins job build (status, result, duration, timestamp).',
     },
     {
       name: 'jenkins_get_build_log',
@@ -705,17 +706,20 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'jenkins_queue_item',
-      description: 'Get the status of a Jenkins queue item to find the build number after triggering.',
+      description:
+        'Get the status of a Jenkins queue item to find the build number after triggering.',
     },
 
     // CI/CD — GitLab CI (Phase 90)
     {
       name: 'gitlab_list_pipelines',
-      description: 'List recent CI/CD pipelines for a GitLab project, optionally filtered by ref and status.',
+      description:
+        'List recent CI/CD pipelines for a GitLab project, optionally filtered by ref and status.',
     },
     {
       name: 'gitlab_trigger_pipeline',
-      description: 'Trigger a new GitLab CI/CD pipeline on a specified ref with optional variables.',
+      description:
+        'Trigger a new GitLab CI/CD pipeline on a specified ref with optional variables.',
     },
     {
       name: 'gitlab_get_pipeline',

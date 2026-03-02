@@ -753,7 +753,7 @@ export class HeartbeatManager {
           checksRun: checks.length,
           hasWarnings,
           hasErrors,
-          activePersonalities: this.activePersonalityIds.map(p => p.name || p.id).filter(Boolean),
+          activePersonalities: this.activePersonalityIds.map((p) => p.name || p.id).filter(Boolean),
         },
       });
     }

@@ -30,16 +30,20 @@ export function TaskKanbanWidget() {
 
   const tasks: Task[] = data?.tasks ?? [];
   const stages: KanbanStage[] = ['Planning', 'Executing', 'Validating', 'Done', 'Failed'];
-  const grouped = stages.reduce<Record<KanbanStage, Task[]>>((acc, s) => {
-    acc[s] = tasks.filter((t) => getStage(t.status) === s);
-    return acc;
-  }, {} as Record<KanbanStage, Task[]>);
-
-  if (isLoading) return (
-    <div className="flex items-center justify-center h-full">
-      <Loader2 className="animate-spin w-4 h-4" />
-    </div>
+  const grouped = stages.reduce<Record<KanbanStage, Task[]>>(
+    (acc, s) => {
+      acc[s] = tasks.filter((t) => getStage(t.status) === s);
+      return acc;
+    },
+    {} as Record<KanbanStage, Task[]>
   );
+
+  if (isLoading)
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="animate-spin w-4 h-4" />
+      </div>
+    );
 
   return (
     <div className="flex h-full gap-1 p-2 overflow-x-auto">

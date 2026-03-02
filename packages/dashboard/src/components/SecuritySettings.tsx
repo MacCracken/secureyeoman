@@ -775,13 +775,19 @@ export function SecuritySettings() {
               <div className="space-y-1">
                 <label className="text-sm font-medium">PII Detection Mode</label>
                 <p className="text-xs text-muted-foreground mb-2">
-                  Detect or redact personally identifiable information (emails, phone numbers, SSNs, credit cards, IPs).
+                  Detect or redact personally identifiable information (emails, phone numbers, SSNs,
+                  credit cards, IPs).
                 </p>
                 <select
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   value={cgPiiMode}
                   onChange={(e) => {
-                    policyMutation.mutate({ contentGuardrailsPiiMode: e.target.value as 'disabled' | 'detect_only' | 'redact' });
+                    policyMutation.mutate({
+                      contentGuardrailsPiiMode: e.target.value as
+                        | 'disabled'
+                        | 'detect_only'
+                        | 'redact',
+                    });
                   }}
                   disabled={policyMutation.isPending}
                 >
@@ -810,7 +816,12 @@ export function SecuritySettings() {
                         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                         value={cgToxicityMode}
                         onChange={(e) => {
-                          policyMutation.mutate({ contentGuardrailsToxicityMode: e.target.value as 'block' | 'warn' | 'audit_only' });
+                          policyMutation.mutate({
+                            contentGuardrailsToxicityMode: e.target.value as
+                              | 'block'
+                              | 'warn'
+                              | 'audit_only',
+                          });
                         }}
                         disabled={policyMutation.isPending}
                       >
@@ -827,13 +838,17 @@ export function SecuritySettings() {
                         placeholder="https://toxicity-classifier.example.com/classify"
                         value={cgToxicityUrl}
                         onChange={(e) => {
-                          policyMutation.mutate({ contentGuardrailsToxicityClassifierUrl: e.target.value });
+                          policyMutation.mutate({
+                            contentGuardrailsToxicityClassifierUrl: e.target.value,
+                          });
                         }}
                         disabled={policyMutation.isPending}
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-sm font-medium">Threshold: {cgToxicityThreshold.toFixed(2)}</label>
+                      <label className="text-sm font-medium">
+                        Threshold: {cgToxicityThreshold.toFixed(2)}
+                      </label>
                       <input
                         type="range"
                         min={0}
@@ -842,7 +857,9 @@ export function SecuritySettings() {
                         className="w-full"
                         value={cgToxicityThreshold}
                         onChange={(e) => {
-                          policyMutation.mutate({ contentGuardrailsToxicityThreshold: parseFloat(e.target.value) });
+                          policyMutation.mutate({
+                            contentGuardrailsToxicityThreshold: parseFloat(e.target.value),
+                          });
                         }}
                         disabled={policyMutation.isPending}
                       />
@@ -862,7 +879,9 @@ export function SecuritySettings() {
                   rows={4}
                   value={cgBlockList.join('\n')}
                   onChange={(e) => {
-                    policyMutation.mutate({ contentGuardrailsBlockList: e.target.value.split('\n').filter(Boolean) });
+                    policyMutation.mutate({
+                      contentGuardrailsBlockList: e.target.value.split('\n').filter(Boolean),
+                    });
                   }}
                   disabled={policyMutation.isPending}
                 />
@@ -879,7 +898,9 @@ export function SecuritySettings() {
                   rows={3}
                   value={cgBlockedTopics.join('\n')}
                   onChange={(e) => {
-                    policyMutation.mutate({ contentGuardrailsBlockedTopics: e.target.value.split('\n').filter(Boolean) });
+                    policyMutation.mutate({
+                      contentGuardrailsBlockedTopics: e.target.value.split('\n').filter(Boolean),
+                    });
                   }}
                   disabled={policyMutation.isPending}
                 />
@@ -892,7 +913,9 @@ export function SecuritySettings() {
                   enabled={cgGroundingEnabled}
                   isPending={policyMutation.isPending}
                   onToggle={() => {
-                    policyMutation.mutate({ contentGuardrailsGroundingEnabled: !cgGroundingEnabled });
+                    policyMutation.mutate({
+                      contentGuardrailsGroundingEnabled: !cgGroundingEnabled,
+                    });
                   }}
                   description="Verify cited claims against the knowledge base. Unverified citations are flagged or blocked."
                 />
@@ -903,12 +926,18 @@ export function SecuritySettings() {
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       value={cgGroundingMode}
                       onChange={(e) => {
-                        policyMutation.mutate({ contentGuardrailsGroundingMode: e.target.value as 'flag' | 'block' });
+                        policyMutation.mutate({
+                          contentGuardrailsGroundingMode: e.target.value as 'flag' | 'block',
+                        });
                       }}
                       disabled={policyMutation.isPending}
                     >
-                      <option value="flag">Flag — tag unverified citations with [unverified]</option>
-                      <option value="block">Block — reject responses with unverified citations</option>
+                      <option value="flag">
+                        Flag — tag unverified citations with [unverified]
+                      </option>
+                      <option value="block">
+                        Block — reject responses with unverified citations
+                      </option>
                     </select>
                   </div>
                 )}
@@ -962,7 +991,9 @@ export function SecuritySettings() {
                 : 'Organizational intent is disabled. Enable to allow machine-readable goals, signals, boundaries, and context for agent guidance.'
             }
           />
-          <div className={`border-t border-border pt-4 ${!orgIntentAllowed ? 'opacity-40 pointer-events-none' : ''}`}>
+          <div
+            className={`border-t border-border pt-4 ${!orgIntentAllowed ? 'opacity-40 pointer-events-none' : ''}`}
+          >
             <PolicyToggle
               label="Intent Document Editor"
               icon={<Target className="w-4 h-4 text-muted-foreground" />}

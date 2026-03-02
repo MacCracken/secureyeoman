@@ -40,7 +40,10 @@ export function WidgetCatalog({ onAdd, onClose }: WidgetCatalogProps) {
                 {widgets.map((def) => (
                   <button
                     key={def.type}
-                    onClick={() => { onAdd(def.type); onClose(); }}
+                    onClick={() => {
+                      onAdd(def.type);
+                      onClose();
+                    }}
                     className="text-left p-2.5 rounded-lg border hover:border-primary hover:bg-primary/5 transition-colors"
                   >
                     <div className="text-xs font-medium">{def.label}</div>

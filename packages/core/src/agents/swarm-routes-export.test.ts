@@ -14,8 +14,16 @@ const TEMPLATE = {
   description: 'A security audit swarm',
   strategy: 'sequential',
   roles: [
-    { role: 'researcher', profileName: 'security-researcher', description: 'Researches vulnerabilities' },
-    { role: 'hacker', profileName: 'ethical-whitehat-hacker', description: 'Probes for weaknesses' },
+    {
+      role: 'researcher',
+      profileName: 'security-researcher',
+      description: 'Researches vulnerabilities',
+    },
+    {
+      role: 'hacker',
+      profileName: 'ethical-whitehat-hacker',
+      description: 'Probes for weaknesses',
+    },
     { role: 'writer', profileName: 'technical-writer', description: 'Documents findings' },
   ],
   coordinatorProfile: null,

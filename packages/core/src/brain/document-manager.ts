@@ -296,7 +296,9 @@ export class DocumentManager {
       ];
       for (const doc of readyDocs) {
         const format = doc.format ? ` (${doc.format})` : '';
-        lines.push(`- "${doc.title}"${format}: ${doc.chunkCount} chunk${doc.chunkCount !== 1 ? 's' : ''}`);
+        lines.push(
+          `- "${doc.title}"${format}: ${doc.chunkCount} chunk${doc.chunkCount !== 1 ? 's' : ''}`
+        );
       }
 
       const guideText = lines.join('\n');
@@ -304,7 +306,13 @@ export class DocumentManager {
 
       // Upsert: delete old guide entry then re-create
       await this.storage.deleteKnowledgeBySourcePrefix(source);
-      await this.brainManager.learn('__source_guide__', guideText, source, 1.0, personalityId ?? undefined);
+      await this.brainManager.learn(
+        '__source_guide__',
+        guideText,
+        source,
+        1.0,
+        personalityId ?? undefined
+      );
     } catch (err) {
       this.logger.warn('Source guide generation failed', { error: String(err) });
     }

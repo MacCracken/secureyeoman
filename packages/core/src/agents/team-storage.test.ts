@@ -16,9 +16,7 @@ const teamRow = {
   id: 'team-1',
   name: 'Research Team',
   description: 'A research team',
-  members: [
-    { role: 'Researcher', profileName: 'researcher', description: 'Does research' },
-  ],
+  members: [{ role: 'Researcher', profileName: 'researcher', description: 'Does research' }],
   coordinator_profile_name: 'researcher',
   is_builtin: false,
   created_at: now,
@@ -73,13 +71,15 @@ describe('TeamStorage', () => {
 
     it('throws when DB returns no row', async () => {
       mockQuery.mockResolvedValueOnce(ok([]));
-      await expect(
-        storage.createTeam({ name: 'Fail', members: [] })
-      ).rejects.toThrow('Failed to create team');
+      await expect(storage.createTeam({ name: 'Fail', members: [] })).rejects.toThrow(
+        'Failed to create team'
+      );
     });
 
     it('handles optional fields', async () => {
-      mockQuery.mockResolvedValueOnce(ok([{ ...teamRow, description: null, coordinator_profile_name: null }]));
+      mockQuery.mockResolvedValueOnce(
+        ok([{ ...teamRow, description: null, coordinator_profile_name: null }])
+      );
       const result = await storage.createTeam({ name: 'Minimal', members: [] });
       expect(result.description).toBeUndefined();
       expect(result.coordinatorProfileName).toBeUndefined();
@@ -104,25 +104,21 @@ describe('TeamStorage', () => {
     it('returns teams with total', async () => {
       const team2 = { ...teamRow, id: 'team-2', name: 'Security Team' };
       mockQuery
-        .mockResolvedValueOnce(ok([teamRow, team2]))    // rows
-        .mockResolvedValueOnce(ok([{ count: '2' }]));   // count
+        .mockResolvedValueOnce(ok([teamRow, team2])) // rows
+        .mockResolvedValueOnce(ok([{ count: '2' }])); // count
       const result = await storage.listTeams();
       expect(result.total).toBe(2);
       expect(result.teams).toHaveLength(2);
     });
 
     it('uses default limit/offset', async () => {
-      mockQuery
-        .mockResolvedValueOnce(ok([]))
-        .mockResolvedValueOnce(ok([{ count: '0' }]));
+      mockQuery.mockResolvedValueOnce(ok([])).mockResolvedValueOnce(ok([{ count: '0' }]));
       const result = await storage.listTeams();
       expect(result.total).toBe(0);
     });
 
     it('passes custom limit and offset', async () => {
-      mockQuery
-        .mockResolvedValueOnce(ok([]))
-        .mockResolvedValueOnce(ok([{ count: '10' }]));
+      mockQuery.mockResolvedValueOnce(ok([])).mockResolvedValueOnce(ok([{ count: '10' }]));
       await storage.listTeams({ limit: 5, offset: 5 });
       expect(mockQuery).toHaveBeenCalledTimes(2);
     });
@@ -272,26 +268,20 @@ describe('TeamStorage', () => {
 
   describe('listRuns', () => {
     it('returns all runs without team filter', async () => {
-      mockQuery
-        .mockResolvedValueOnce(ok([runRow]))
-        .mockResolvedValueOnce(ok([{ count: '1' }]));
+      mockQuery.mockResolvedValueOnce(ok([runRow])).mockResolvedValueOnce(ok([{ count: '1' }]));
       const result = await storage.listRuns();
       expect(result.total).toBe(1);
       expect(result.runs).toHaveLength(1);
     });
 
     it('filters by teamId', async () => {
-      mockQuery
-        .mockResolvedValueOnce(ok([runRow]))
-        .mockResolvedValueOnce(ok([{ count: '1' }]));
+      mockQuery.mockResolvedValueOnce(ok([runRow])).mockResolvedValueOnce(ok([{ count: '1' }]));
       const result = await storage.listRuns('team-1');
       expect(result.runs).toHaveLength(1);
     });
 
     it('maps null timestamps correctly', async () => {
-      mockQuery
-        .mockResolvedValueOnce(ok([runRow]))
-        .mockResolvedValueOnce(ok([{ count: '1' }]));
+      mockQuery.mockResolvedValueOnce(ok([runRow])).mockResolvedValueOnce(ok([{ count: '1' }]));
       const result = await storage.listRuns();
       expect(result.runs[0].startedAt).toBeNull();
       expect(result.runs[0].completedAt).toBeNull();

@@ -151,7 +151,9 @@ export async function withRetry<T>(
       if (attempt >= cfg.maxRetries || !isRetryable(lastError)) throw lastError;
       const exp = cfg.baseDelayMs * Math.pow(2, attempt);
       const clamped = Math.min(exp, cfg.maxDelayMs);
-      await new Promise((r) => setTimeout(r, Math.floor(clamped / 2 + (Math.random() * clamped) / 2)));
+      await new Promise((r) =>
+        setTimeout(r, Math.floor(clamped / 2 + (Math.random() * clamped) / 2))
+      );
     }
   }
   throw lastError!;

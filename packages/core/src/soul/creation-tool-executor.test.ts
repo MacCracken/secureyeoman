@@ -1532,10 +1532,7 @@ describe('executeCreationTool — gating edge cases', () => {
 
   it('handler map: truly unknown tool names fall through to DTM / unknown-tool error', async () => {
     const sy = makeSecureYeoman(makeDtm({ has: false }));
-    const result = await executeCreationTool(
-      makeToolCall('totally_unknown_xyz', {}),
-      sy as any
-    );
+    const result = await executeCreationTool(makeToolCall('totally_unknown_xyz', {}), sy as any);
     expect(result.isError).toBe(true);
     expect((result.output as { error: string }).error).toMatch(/Unknown tool/);
   });

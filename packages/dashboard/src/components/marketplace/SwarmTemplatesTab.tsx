@@ -4,7 +4,17 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Download, Upload, Users, Shield, GitBranch, Loader2, CheckCircle, AlertTriangle, Search } from 'lucide-react';
+import {
+  Download,
+  Upload,
+  Users,
+  Shield,
+  GitBranch,
+  Loader2,
+  CheckCircle,
+  AlertTriangle,
+  Search,
+} from 'lucide-react';
 import {
   fetchCommunitySwarmTemplates,
   exportSwarmTemplate,
@@ -14,8 +24,8 @@ import type { SwarmTemplate, CompatibilityCheckResult } from '../../api/client';
 
 const STRATEGY_COLORS: Record<string, string> = {
   sequential: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-  parallel:   'bg-green-500/10 text-green-600 border-green-500/20',
-  dynamic:    'bg-purple-500/10 text-purple-600 border-purple-500/20',
+  parallel: 'bg-green-500/10 text-green-600 border-green-500/20',
+  dynamic: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
 };
 
 function CompatibilityBadge({ gaps }: { gaps: CompatibilityCheckResult['gaps'] }) {
@@ -34,7 +44,10 @@ function CompatibilityBadge({ gaps }: { gaps: CompatibilityCheckResult['gaps'] }
   );
 }
 
-export function SwarmTemplatesTab({ source, query: externalQuery }: { source?: string; query?: string } = {}) {
+export function SwarmTemplatesTab({
+  source,
+  query: externalQuery,
+}: { source?: string; query?: string } = {}) {
   const [toast, setToast] = useState<string | null>(null);
   const [internalQuery, setInternalQuery] = useState('');
   const isControlled = externalQuery !== undefined;
@@ -68,11 +81,15 @@ export function SwarmTemplatesTab({ source, query: externalQuery }: { source?: s
         ? 'Swarm template imported successfully'
         : `Imported — missing profiles: ${(compatibility.gaps.profileRoles ?? []).join(', ')}`;
       setToast(msg);
-      setTimeout(() => setToast(null), 4000);
+      setTimeout(() => {
+        setToast(null);
+      }, 4000);
     },
     onError: (err) => {
       setToast(err instanceof Error ? err.message : 'Import failed');
-      setTimeout(() => setToast(null), 4000);
+      setTimeout(() => {
+        setToast(null);
+      }, 4000);
     },
   });
 
@@ -106,9 +123,15 @@ export function SwarmTemplatesTab({ source, query: externalQuery }: { source?: s
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-            placeholder={source === 'community' ? 'Search community swarm templates…' : 'Search swarm templates…'}
+            placeholder={
+              source === 'community'
+                ? 'Search community swarm templates…'
+                : 'Search swarm templates…'
+            }
             value={internalQuery}
-            onChange={(e) => setInternalQuery(e.target.value)}
+            onChange={(e) => {
+              setInternalQuery(e.target.value);
+            }}
           />
         </div>
       )}
@@ -149,56 +172,60 @@ export function SwarmTemplatesTab({ source, query: externalQuery }: { source?: s
             <span className="text-xs text-muted-foreground">({templates.length})</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {templates.map((tmpl: SwarmTemplate) => (
-            <div key={tmpl.id} className="card p-4 flex flex-col">
-              <div className="flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="font-medium text-sm truncate">{tmpl.name}</h3>
-                  <span
-                    className={`text-xs px-1.5 py-0.5 rounded border ${STRATEGY_COLORS[tmpl.strategy] ?? ''}`}
-                  >
-                    {tmpl.strategy}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                  {tmpl.description || 'No description'}
-                </p>
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {tmpl.roles.map((r) => (
+            {templates.map((tmpl: SwarmTemplate) => (
+              <div key={tmpl.id} className="card p-4 flex flex-col">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="font-medium text-sm truncate">{tmpl.name}</h3>
                     <span
-                      key={r.role}
-                      className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded"
+                      className={`text-xs px-1.5 py-0.5 rounded border ${STRATEGY_COLORS[tmpl.strategy] ?? ''}`}
                     >
-                      {r.role}
+                      {tmpl.strategy}
                     </span>
-                  ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                    {tmpl.description || 'No description'}
+                  </p>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {tmpl.roles.map((r) => (
+                      <span
+                        key={r.role}
+                        className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded"
+                      >
+                        {r.role}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-border flex gap-2">
+                  <button
+                    className="btn btn-ghost btn-sm flex-1 flex items-center gap-1 justify-center"
+                    onClick={() => {
+                      exportMut.mutate(tmpl.id);
+                    }}
+                    disabled={exportMut.isPending}
+                    title="Export as JSON"
+                  >
+                    <Upload className="w-3.5 h-3.5" /> Export
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm flex-1 flex items-center gap-1 justify-center"
+                    onClick={() => {
+                      importMut.mutate(tmpl);
+                    }}
+                    disabled={importMut.isPending}
+                    title="Install swarm template"
+                  >
+                    {importMut.isPending ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5" />
+                    )}
+                    Install
+                  </button>
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-border flex gap-2">
-                <button
-                  className="btn btn-ghost btn-sm flex-1 flex items-center gap-1 justify-center"
-                  onClick={() => exportMut.mutate(tmpl.id)}
-                  disabled={exportMut.isPending}
-                  title="Export as JSON"
-                >
-                  <Upload className="w-3.5 h-3.5" /> Export
-                </button>
-                <button
-                  className="btn btn-ghost btn-sm flex-1 flex items-center gap-1 justify-center"
-                  onClick={() => importMut.mutate(tmpl)}
-                  disabled={importMut.isPending}
-                  title="Install swarm template"
-                >
-                  {importMut.isPending ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Download className="w-3.5 h-3.5" />
-                  )}
-                  Install
-                </button>
-              </div>
-            </div>
-          ))}
+            ))}
           </div>
         </div>
       )}

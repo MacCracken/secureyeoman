@@ -4,8 +4,15 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import crypto from 'node:crypto';
-import { ContentGuardrail, createContentGuardrail, type ContentGuardrailDeps } from './content-guardrail.js';
-import type { ContentGuardrailConfig, ContentGuardrailPersonalityConfig } from '@secureyeoman/shared';
+import {
+  ContentGuardrail,
+  createContentGuardrail,
+  type ContentGuardrailDeps,
+} from './content-guardrail.js';
+import type {
+  ContentGuardrailConfig,
+  ContentGuardrailPersonalityConfig,
+} from '@secureyeoman/shared';
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
@@ -92,26 +99,26 @@ describe('ContentGuardrail', () => {
     it('detects phone numbers', () => {
       const { guardrail } = makeGuardrail({ piiMode: 'detect_only' });
       const result = guardrail.scanSync('Call me at 555-123-4567', ctx);
-      expect(result.findings.some(f => f.detail === 'phone detected')).toBe(true);
+      expect(result.findings.some((f) => f.detail === 'phone detected')).toBe(true);
       expect(result.text).toContain('555-123-4567');
     });
 
     it('detects SSN', () => {
       const { guardrail } = makeGuardrail({ piiMode: 'detect_only' });
       const result = guardrail.scanSync('SSN is 123-45-6789', ctx);
-      expect(result.findings.some(f => f.detail === 'ssn detected')).toBe(true);
+      expect(result.findings.some((f) => f.detail === 'ssn detected')).toBe(true);
     });
 
     it('detects credit card numbers', () => {
       const { guardrail } = makeGuardrail({ piiMode: 'detect_only' });
       const result = guardrail.scanSync('Card: 4111 1111 1111 1111', ctx);
-      expect(result.findings.some(f => f.detail === 'credit_card detected')).toBe(true);
+      expect(result.findings.some((f) => f.detail === 'credit_card detected')).toBe(true);
     });
 
     it('detects IP addresses', () => {
       const { guardrail } = makeGuardrail({ piiMode: 'detect_only' });
       const result = guardrail.scanSync('Server at 192.168.1.100', ctx);
-      expect(result.findings.some(f => f.detail === 'ip detected')).toBe(true);
+      expect(result.findings.some((f) => f.detail === 'ip detected')).toBe(true);
     });
 
     it('generates correct contentHash for each finding', () => {
@@ -262,9 +269,13 @@ describe('ContentGuardrail', () => {
         blockedTopicAdditions: ['drugs'],
       };
       // Text containing exact topic word with high overlap
-      const result = await guardrail.scanAsync('drugs drugs drugs information', ctx, personalityCfg);
+      const result = await guardrail.scanAsync(
+        'drugs drugs drugs information',
+        ctx,
+        personalityCfg
+      );
       expect(result.passed).toBe(false);
-      expect(result.findings.some(f => f.detail.includes('drugs'))).toBe(true);
+      expect(result.findings.some((f) => f.detail.includes('drugs'))).toBe(true);
     });
 
     it('uses keyword fallback when no brain manager', async () => {
@@ -409,7 +420,7 @@ describe('ContentGuardrail', () => {
         ctx
       );
       expect(mockSearch).toHaveBeenCalled();
-      expect(result.findings.some(f => f.type === 'grounding')).toBe(true);
+      expect(result.findings.some((f) => f.type === 'grounding')).toBe(true);
       expect(result.findings[0].action).toBe('flag');
     });
 
@@ -463,11 +474,11 @@ describe('ContentGuardrail', () => {
     });
 
     it('does not check grounding when no brain manager', async () => {
-      const { guardrail } = makeGuardrail(
-        { groundingEnabled: true },
-        { brainManager: null }
+      const { guardrail } = makeGuardrail({ groundingEnabled: true }, { brainManager: null });
+      const result = await guardrail.scanAsync(
+        'Text with "a long quoted citation string" here.',
+        ctx
       );
-      const result = await guardrail.scanAsync('Text with "a long quoted citation string" here.', ctx);
       expect(result.passed).toBe(true);
     });
 
@@ -481,7 +492,7 @@ describe('ContentGuardrail', () => {
         'According to the quarterly financial report of 2025, revenue increased.',
         ctx
       );
-      expect(result.findings.some(f => f.type === 'grounding')).toBe(true);
+      expect(result.findings.some((f) => f.type === 'grounding')).toBe(true);
     });
   });
 
@@ -494,7 +505,7 @@ describe('ContentGuardrail', () => {
       );
       const result = await guardrail.scan('This contains banned content', ctx);
       expect(result.passed).toBe(false);
-      expect(result.findings.some(f => f.type === 'block_list')).toBe(true);
+      expect(result.findings.some((f) => f.type === 'block_list')).toBe(true);
       // Async should not have been called (topic search)
       expect(mockSearch).not.toHaveBeenCalled();
     });
@@ -515,8 +526,8 @@ describe('ContentGuardrail', () => {
       );
       expect(result.passed).toBe(true);
       // Should have both PII and grounding findings
-      expect(result.findings.some(f => f.type === 'pii')).toBe(true);
-      expect(result.findings.some(f => f.type === 'grounding')).toBe(true);
+      expect(result.findings.some((f) => f.type === 'pii')).toBe(true);
+      expect(result.findings.some((f) => f.type === 'grounding')).toBe(true);
     });
 
     it('redacts PII and then runs async on redacted text', async () => {
@@ -543,9 +554,7 @@ describe('ContentGuardrail', () => {
     it('records audit event at warn level for block list hits', () => {
       const { guardrail, deps } = makeGuardrail({ blockList: ['secret'] });
       guardrail.scanSync('This is a secret message', ctx);
-      expect(deps.auditRecord).toHaveBeenCalledWith(
-        expect.objectContaining({ level: 'warn' })
-      );
+      expect(deps.auditRecord).toHaveBeenCalledWith(expect.objectContaining({ level: 'warn' }));
     });
 
     it('records audit event on async findings', async () => {

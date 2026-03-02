@@ -530,13 +530,15 @@ function notebookBudget(model: string, override?: number): number {
 /**
  * Build the [NOTEBOOK — SOURCE LIBRARY] block injected into the system prompt.
  */
-function buildNotebookBlock(docs: { title: string; format: string | null; chunkCount: number; text: string }[]): string {
+function buildNotebookBlock(
+  docs: { title: string; format: string | null; chunkCount: number; text: string }[]
+): string {
   const lines: string[] = [
     '[NOTEBOOK — SOURCE LIBRARY]',
     'The following source documents are your primary knowledge base.',
     'Prioritize information from these sources over your general training.',
     'When answering, cite the source document by title.',
-    "If a question cannot be answered from the sources, clearly state this.",
+    'If a question cannot be answered from the sources, clearly state this.',
     `Document count: ${docs.length} | Source-grounded mode active`,
     '',
   ];
@@ -600,7 +602,9 @@ async function gatherBrainContext(
         // notebook: corpus empty or oversized → fall through to RAG with warning
         if (knowledgeMode === 'notebook' && corpus.documents.length > 0 && !corpus.fitsInBudget) {
           // Load as many docs as fit, sorted by creation order (smallest first via chunkCount)
-          const sorted = [...corpus.documents].sort((a, b) => a.estimatedTokens - b.estimatedTokens);
+          const sorted = [...corpus.documents].sort(
+            (a, b) => a.estimatedTokens - b.estimatedTokens
+          );
           const selected: typeof sorted = [];
           let used = 0;
           for (const doc of sorted) {
@@ -831,10 +835,17 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           : (personality?.id ?? personalityId ?? undefined);
 
       // Gather Brain context metadata (best-effort — Brain may not be available)
-      const kbMode = (personality?.body?.knowledgeMode ?? 'rag') as 'rag' | 'notebook' | 'hybrid';
+      const kbMode = personality?.body?.knowledgeMode ?? 'rag';
       const kbModel = personality?.defaultModel?.model ?? '';
       const brainContext: BrainContextMeta = memoryEnabled
-        ? await gatherBrainContext(secureYeoman, message, effectivePersonalityId, kbMode, kbModel, personality?.body?.notebookTokenBudget)
+        ? await gatherBrainContext(
+            secureYeoman,
+            message,
+            effectivePersonalityId,
+            kbMode,
+            kbModel,
+            personality?.body?.notebookTokenBudget
+          )
         : { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] };
 
       let systemPrompt = memoryEnabled
@@ -1396,7 +1407,11 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         {
           const cgResult = await contentGuardrail.scan(
             response.content,
-            { source: 'dashboard_chat', personalityId: personality?.id, conversationId: conversationId as string | undefined },
+            {
+              source: 'dashboard_chat',
+              personalityId: personality?.id,
+              conversationId: conversationId,
+            },
             personality?.body?.contentGuardrails
           );
           if (!cgResult.passed) {
@@ -1664,10 +1679,17 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             : (personality?.id ?? personalityId ?? undefined);
 
         // Brain context
-        const kbModeS = (personality?.body?.knowledgeMode ?? 'rag') as 'rag' | 'notebook' | 'hybrid';
+        const kbModeS = personality?.body?.knowledgeMode ?? 'rag';
         const kbModelS = personality?.defaultModel?.model ?? '';
         const brainContext: BrainContextMeta = memoryEnabled
-          ? await gatherBrainContext(secureYeoman, message, effectivePersonalityId, kbModeS, kbModelS, personality?.body?.notebookTokenBudget)
+          ? await gatherBrainContext(
+              secureYeoman,
+              message,
+              effectivePersonalityId,
+              kbModeS,
+              kbModelS,
+              personality?.body?.notebookTokenBudget
+            )
           : { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] };
 
         let systemPrompt = memoryEnabled
@@ -2245,7 +2267,11 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         {
           const cgResultS = await contentGuardrail.scan(
             safeContent,
-            { source: 'dashboard_chat_stream', personalityId: personality?.id, conversationId: conversationId as string | undefined },
+            {
+              source: 'dashboard_chat_stream',
+              personalityId: personality?.id,
+              conversationId: conversationId,
+            },
             personality?.body?.contentGuardrails
           );
           if (!cgResultS.passed) {

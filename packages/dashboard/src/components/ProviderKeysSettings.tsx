@@ -208,7 +208,9 @@ export function ProviderKeysSettings() {
         confirmLabel="Delete"
         destructive
         onConfirm={handleConfirmDelete}
-        onCancel={() => setDeleteTarget(null)}
+        onCancel={() => {
+          setDeleteTarget(null);
+        }}
       />
 
       <div>
@@ -229,7 +231,9 @@ export function ProviderKeysSettings() {
           <div className="relative">
             <select
               value={selectedProviderId}
-              onChange={(e) => handleSelectProvider(e.target.value)}
+              onChange={(e) => {
+                handleSelectProvider(e.target.value);
+              }}
               className="w-full px-3 py-2 rounded-lg border bg-background text-foreground text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary pr-8"
             >
               <option value="">Select a provider...</option>
@@ -308,15 +312,15 @@ export function ProviderKeysSettings() {
                 <input
                   type="password"
                   value={keyValue}
-                  onChange={(e) => setKeyValue(e.target.value)}
+                  onChange={(e) => {
+                    setKeyValue(e.target.value);
+                  }}
                   placeholder={selectedProvider.placeholder || 'Paste API key...'}
                   className="px-3 py-1.5 rounded-lg border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
                   autoComplete="off"
                 />
                 {keyValue.length > 0 && keyValue.length < 8 && (
-                  <p className="text-xs text-destructive mt-1">
-                    Key must be at least 8 characters
-                  </p>
+                  <p className="text-xs text-destructive mt-1">Key must be at least 8 characters</p>
                 )}
               </div>
 
@@ -327,27 +331,25 @@ export function ProviderKeysSettings() {
                   onClick={handleSave}
                   disabled={!canSave || setMutation.isPending}
                 >
-                  {setMutation.isPending
-                    ? 'Saving...'
-                    : isConfigured
-                      ? 'Replace Key'
-                      : 'Save Key'}
+                  {setMutation.isPending ? 'Saving...' : isConfigured ? 'Replace Key' : 'Save Key'}
                 </button>
                 <button
                   className="btn btn-ghost text-sm px-4 py-1.5"
-                  onClick={() => handleSelectProvider('')}
+                  onClick={() => {
+                    handleSelectProvider('');
+                  }}
                 >
                   Cancel
                 </button>
                 {isConfigured && (
                   <button
                     className="text-destructive hover:text-destructive/80 text-sm flex items-center gap-1 px-2 py-1.5"
-                    onClick={() =>
+                    onClick={() => {
                       setDeleteTarget({
                         envVarName: selectedProvider.envVarName,
                         label: selectedProvider.label,
-                      })
-                    }
+                      });
+                    }}
                     aria-label={`Delete ${selectedProvider.label} key`}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -388,9 +390,9 @@ export function ProviderKeysSettings() {
                 <input
                   type="text"
                   value={customEnvName}
-                  onChange={(e) =>
-                    setCustomEnvName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))
-                  }
+                  onChange={(e) => {
+                    setCustomEnvName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''));
+                  }}
                   placeholder="MY_PROVIDER_API_KEY"
                   className="px-3 py-1.5 rounded-lg border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
                 />
@@ -402,7 +404,9 @@ export function ProviderKeysSettings() {
                     <input
                       type="password"
                       value={keyValue}
-                      onChange={(e) => setKeyValue(e.target.value)}
+                      onChange={(e) => {
+                        setKeyValue(e.target.value);
+                      }}
                       placeholder="Paste API key..."
                       className="px-3 py-1.5 rounded-lg border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
                       autoComplete="off"
@@ -423,7 +427,9 @@ export function ProviderKeysSettings() {
                     </button>
                     <button
                       className="btn btn-ghost text-sm px-4 py-1.5"
-                      onClick={() => handleSelectProvider('')}
+                      onClick={() => {
+                        handleSelectProvider('');
+                      }}
                     >
                       Cancel
                     </button>
@@ -441,7 +447,9 @@ export function ProviderKeysSettings() {
               {!customEnvName && (
                 <button
                   className="btn btn-ghost text-sm px-4 py-1.5"
-                  onClick={() => handleSelectProvider('')}
+                  onClick={() => {
+                    handleSelectProvider('');
+                  }}
                 >
                   Cancel
                 </button>
@@ -457,7 +465,9 @@ export function ProviderKeysSettings() {
               <div
                 key={provider.id}
                 className="flex items-center justify-between p-2 rounded bg-muted/30 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
-                onClick={() => handleSelectProvider(provider.id)}
+                onClick={() => {
+                  handleSelectProvider(provider.id);
+                }}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {

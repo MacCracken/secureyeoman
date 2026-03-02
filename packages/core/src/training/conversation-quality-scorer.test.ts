@@ -14,7 +14,15 @@ function makePool(overrides: Record<string, unknown[][]> = {}) {
 }
 
 function makeLogger() {
-  return { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn(), child: vi.fn(function(this: any) { return this; }) } as any;
+  return {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    child: vi.fn(function (this: any) {
+      return this;
+    }),
+  } as any;
 }
 
 function makeScorer(pool: any, logger: any) {

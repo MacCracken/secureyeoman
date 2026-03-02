@@ -143,9 +143,7 @@ describe('RiskReportGenerator', () => {
       const assessment = makeAssessment({
         riskLevel: 'low',
         compositeScore: 10,
-        findings: [
-          { id: 'f', domain: 'd', severity: 'low', title: 'T', description: 'D' } as any,
-        ],
+        findings: [{ id: 'f', domain: 'd', severity: 'low', title: 'T', description: 'D' } as any],
       });
       const html = gen.generateHtml(assessment);
       expect(html).toContain('#16a34a'); // low color
@@ -182,9 +180,7 @@ describe('RiskReportGenerator', () => {
 
     it('shows no-critical message when none', () => {
       const assessment = makeAssessment({
-        findings: [
-          { id: 'f', domain: 'd', severity: 'low', title: 'T', description: 'D' } as any,
-        ],
+        findings: [{ id: 'f', domain: 'd', severity: 'low', title: 'T', description: 'D' } as any],
       });
       const md = gen.generateMarkdown(assessment);
       expect(md).toContain('No critical or high findings');
@@ -196,7 +192,9 @@ describe('RiskReportGenerator', () => {
     });
 
     it('recommends escalation when score >= 75', () => {
-      const md = gen.generateMarkdown(makeAssessment({ compositeScore: 80, riskLevel: 'critical' }));
+      const md = gen.generateMarkdown(
+        makeAssessment({ compositeScore: 80, riskLevel: 'critical' })
+      );
       expect(md).toContain('CRITICAL');
     });
 
@@ -220,9 +218,7 @@ describe('RiskReportGenerator', () => {
 
     it('shows no evidence message when none', () => {
       const assessment = makeAssessment({
-        findings: [
-          { id: 'f', domain: 'd', severity: 'low', title: 'T', description: 'D' } as any,
-        ],
+        findings: [{ id: 'f', domain: 'd', severity: 'low', title: 'T', description: 'D' } as any],
       });
       const md = gen.generateMarkdown(assessment);
       expect(md).toContain('No evidence attached');
@@ -233,7 +229,9 @@ describe('RiskReportGenerator', () => {
     it('has correct header row', () => {
       const csv = gen.generateCsv(makeAssessment());
       const header = csv.split('\n')[0];
-      expect(header).toBe('id,domain,severity,title,affected_resource,recommendation,evidence_summary');
+      expect(header).toBe(
+        'id,domain,severity,title,affected_resource,recommendation,evidence_summary'
+      );
     });
 
     it('has one row per finding', () => {
@@ -295,4 +293,3 @@ describe('RiskReportGenerator', () => {
     });
   });
 });
-

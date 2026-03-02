@@ -18,7 +18,9 @@ interface Props {
 export function TerminalWidget({ worktreeId, onFreezeOutput }: Props) {
   const [cwd, setCwd] = useState(worktreeId ? `.worktrees/${worktreeId}` : '.');
   const [command, setCommand] = useState('');
-  const [history, setHistory] = useState<{ command: string; output: string; error: string; exitCode: number }[]>([]);
+  const [history, setHistory] = useState<
+    { command: string; output: string; error: string; exitCode: number }[]
+  >([]);
   const [historyIdx, setHistoryIdx] = useState(-1);
   const [running, setRunning] = useState(false);
   const outputRef = useRef<HTMLDivElement>(null);
@@ -103,7 +105,9 @@ export function TerminalWidget({ worktreeId, onFreezeOutput }: Props) {
       {/* Tech stack hint */}
       {techStack && techStack.stacks.length > 0 && (
         <div className="px-2 py-1 bg-muted/40 border-b text-[10px] text-muted-foreground truncate">
-          Detected: {techStack.stacks.join(', ')} | Allowed: {allowedCommands.slice(0, 8).join(', ')}{allowedCommands.length > 8 ? '...' : ''}
+          Detected: {techStack.stacks.join(', ')} | Allowed:{' '}
+          {allowedCommands.slice(0, 8).join(', ')}
+          {allowedCommands.length > 8 ? '...' : ''}
         </div>
       )}
 
@@ -121,7 +125,9 @@ export function TerminalWidget({ worktreeId, onFreezeOutput }: Props) {
           >
             <option value="">Main branch</option>
             {worktreesData?.worktrees?.map((w) => (
-              <option key={w.id} value={w.id}>{w.id} ({w.branch})</option>
+              <option key={w.id} value={w.id}>
+                {w.id} ({w.branch})
+              </option>
             ))}
           </select>
         </div>
@@ -132,11 +138,17 @@ export function TerminalWidget({ worktreeId, onFreezeOutput }: Props) {
         {history.map((entry, i) => (
           <div key={i}>
             <div className="text-primary">$ {entry.command}</div>
-            {entry.output && <pre className="whitespace-pre-wrap text-foreground">{entry.output}</pre>}
-            {entry.error && <pre className="whitespace-pre-wrap text-destructive">{entry.error}</pre>}
+            {entry.output && (
+              <pre className="whitespace-pre-wrap text-foreground">{entry.output}</pre>
+            )}
+            {entry.error && (
+              <pre className="whitespace-pre-wrap text-destructive">{entry.error}</pre>
+            )}
             {onFreezeOutput && (entry.output || entry.error) && (
               <button
-                onClick={() => onFreezeOutput(entry.command, entry.output || entry.error, entry.exitCode)}
+                onClick={() => {
+                  onFreezeOutput(entry.command, entry.output || entry.error, entry.exitCode);
+                }}
                 className="flex items-center gap-0.5 text-muted-foreground hover:text-foreground mt-0.5"
               >
                 <Pin className="w-2.5 h-2.5" /> Pin Output
@@ -149,18 +161,26 @@ export function TerminalWidget({ worktreeId, onFreezeOutput }: Props) {
 
       {/* Input */}
       <div className="flex items-center gap-1 px-2 py-1.5 border-t bg-muted/20">
-        <span className="text-muted-foreground">{cwd.length > 20 ? '...' + cwd.slice(-18) : cwd} $</span>
+        <span className="text-muted-foreground">
+          {cwd.length > 20 ? '...' + cwd.slice(-18) : cwd} $
+        </span>
         <input
           className="flex-1 bg-transparent outline-none text-xs font-mono"
           value={command}
-          onChange={(e) => setCommand(e.target.value)}
+          onChange={(e) => {
+            setCommand(e.target.value);
+          }}
           onKeyDown={handleKeyDown}
           placeholder="Enter command..."
           disabled={running}
           autoComplete="off"
           spellCheck={false}
         />
-        <button onClick={() => void runCommand()} disabled={running} className="text-muted-foreground hover:text-foreground">
+        <button
+          onClick={() => void runCommand()}
+          disabled={running}
+          className="text-muted-foreground hover:text-foreground"
+        >
           <Play className="w-3 h-3" />
         </button>
       </div>

@@ -24,7 +24,13 @@ function hmacSig(secret: string, body: string): string {
   return `sha256=${createHmac('sha256', secret).update(body).digest('hex')}`;
 }
 
-function mockWorkflowManager(defs: { id: string; isEnabled: boolean; triggers: { type: string; config: Record<string, unknown> }[] }[] = []): WorkflowManager {
+function mockWorkflowManager(
+  defs: {
+    id: string;
+    isEnabled: boolean;
+    triggers: { type: string; config: Record<string, unknown> }[];
+  }[] = []
+): WorkflowManager {
   return {
     listDefinitions: vi.fn().mockResolvedValue({ definitions: defs, total: defs.length }),
     triggerRun: vi.fn().mockResolvedValue({ id: 'run-1', status: 'pending' }),
@@ -103,7 +109,11 @@ describe('CI/CD Webhook Routes', () => {
     it('returns 200 when GitHub HMAC signature is correct', async () => {
       process.env.SECUREYEOMAN_WEBHOOK_SECRET = 'mysecret';
       const app = await buildApp();
-      const payloadBody = JSON.stringify({ action: 'completed', workflow_run: { id: 1, head_branch: 'main', conclusion: 'success' }, repository: {} });
+      const payloadBody = JSON.stringify({
+        action: 'completed',
+        workflow_run: { id: 1, head_branch: 'main', conclusion: 'success' },
+        repository: {},
+      });
       const sig = hmacSig('mysecret', payloadBody);
       const res = await app.inject({
         method: 'POST',
@@ -271,7 +281,11 @@ describe('CI/CD Webhook Routes', () => {
       await app.inject({
         method: 'POST',
         url: '/api/v1/webhooks/ci/github',
-        payload: { action: 'completed', workflow_run: { id: 2, head_branch: 'dev', conclusion: 'failure' }, repository: {} },
+        payload: {
+          action: 'completed',
+          workflow_run: { id: 2, head_branch: 'dev', conclusion: 'failure' },
+          repository: {},
+        },
         headers: { 'x-github-event': 'workflow_run' },
       });
       await new Promise((r) => setTimeout(r, 10));

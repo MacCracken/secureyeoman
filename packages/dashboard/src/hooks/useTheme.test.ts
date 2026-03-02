@@ -77,7 +77,7 @@ describe('useTheme — theme registry', () => {
         'solarized-dark',
         'rose-pine',
         'horizon',
-      ] satisfies ThemeId[]),
+      ] satisfies ThemeId[])
     );
   });
 
@@ -95,7 +95,7 @@ describe('useTheme — theme registry', () => {
         'github-light',
         'quiet-light',
         'winter-light',
-      ] satisfies ThemeId[]),
+      ] satisfies ThemeId[])
     );
   });
 
@@ -113,7 +113,7 @@ describe('useTheme — theme registry', () => {
         'synthwave',
         'palenight',
         'nightowl',
-      ] satisfies ThemeId[]),
+      ] satisfies ThemeId[])
     );
   });
 

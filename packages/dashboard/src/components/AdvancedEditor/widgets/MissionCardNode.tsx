@@ -16,8 +16,8 @@ export function MissionCardNode({ cardId }: Props) {
       <div>
         <div className="font-medium mb-1">Mission Card: {cardId}</div>
         <div className="text-[10px]">
-          Card sections are embedded in Mission Control. Open the{' '}
-          <strong>Mission Control</strong> view to see this card.
+          Card sections are embedded in Mission Control. Open the <strong>Mission Control</strong>{' '}
+          view to see this card.
         </div>
       </div>
     </div>

@@ -77,15 +77,25 @@ export function PipelineWidget({ workflowRunId, onConfigChange }: Props) {
           {(recentRuns?.runs ?? []).map((run) => (
             <button
               key={run.id}
-              onClick={() => { setSelectedRunId(run.id); onConfigChange?.(run.id); }}
+              onClick={() => {
+                setSelectedRunId(run.id);
+                onConfigChange?.(run.id);
+              }}
               className="w-full text-left p-2 rounded border hover:bg-muted/50 text-[11px]"
             >
-              <div className="font-mono text-[10px] text-muted-foreground">{run.id.slice(0, 8)}</div>
+              <div className="font-mono text-[10px] text-muted-foreground">
+                {run.id.slice(0, 8)}
+              </div>
               <div className="flex items-center gap-1">
-                <span className={
-                  run.status === 'completed' ? 'text-green-500' :
-                  run.status === 'failed' ? 'text-red-500' : 'text-blue-500'
-                }>
+                <span
+                  className={
+                    run.status === 'completed'
+                      ? 'text-green-500'
+                      : run.status === 'failed'
+                        ? 'text-red-500'
+                        : 'text-blue-500'
+                  }
+                >
                   {run.status}
                 </span>
               </div>
@@ -100,9 +110,14 @@ export function PipelineWidget({ workflowRunId, onConfigChange }: Props) {
     <div className="flex flex-col h-full p-3 space-y-2 text-xs">
       <div className="flex items-center gap-1.5">
         <GitMerge className="w-3.5 h-3.5" />
-        <span className="font-mono text-[10px] text-muted-foreground">{selectedRunId.slice(0, 8)}</span>
+        <span className="font-mono text-[10px] text-muted-foreground">
+          {selectedRunId.slice(0, 8)}
+        </span>
         <button
-          onClick={() => { setSelectedRunId(''); onConfigChange?.(''); }}
+          onClick={() => {
+            setSelectedRunId('');
+            onConfigChange?.('');
+          }}
           className="ml-auto text-[10px] text-muted-foreground hover:text-foreground"
         >
           Change

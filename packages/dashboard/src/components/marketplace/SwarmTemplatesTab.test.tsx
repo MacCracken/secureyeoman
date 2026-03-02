@@ -33,7 +33,9 @@ const TEMPLATE = {
 
 const EXPORT_PAYLOAD = {
   exportedAt: Date.now(),
-  requires: { profileRoles: ['security-researcher', 'ethical-whitehat-hacker', 'technical-writer'] },
+  requires: {
+    profileRoles: ['security-researcher', 'ethical-whitehat-hacker', 'technical-writer'],
+  },
   template: TEMPLATE,
 };
 

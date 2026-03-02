@@ -24,7 +24,12 @@ import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js
 function noopLogger(): SecureLogger {
   const noop = () => {};
   return {
-    trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop,
+    trace: noop,
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    fatal: noop,
     child: () => noopLogger(),
     level: 'silent',
   } as SecureLogger;
@@ -58,8 +63,12 @@ describe('Notebook Mode', () => {
   let brainManager: BrainManager;
   let docManager: DocumentManager;
 
-  beforeAll(async () => { await setupTestDb(); });
-  afterAll(async () => { await teardownTestDb(); });
+  beforeAll(async () => {
+    await setupTestDb();
+  });
+  afterAll(async () => {
+    await teardownTestDb();
+  });
   beforeEach(async () => {
     await truncateAllTables();
     storage = new BrainStorage();

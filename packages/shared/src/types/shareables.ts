@@ -10,37 +10,37 @@ import type { SwarmTemplate } from './swarm.js';
 
 // ─── Compatibility manifests ─────────────────────────────────────────────────
 
-export type WorkflowShareableRequires = {
+export interface WorkflowShareableRequires {
   /** Integration names required, e.g. ['gmail', 'github'] */
   integrations?: string[];
   /** MCP tool names required, e.g. ['github_list_issues'] */
   tools?: string[];
-};
+}
 
-export type SwarmTemplateRequires = {
+export interface SwarmTemplateRequires {
   /** Agent profile/personality names that must exist, e.g. ['coder', 'reviewer'] */
   profileRoles?: string[];
-};
+}
 
-export type CompatibilityCheckResult = {
+export interface CompatibilityCheckResult {
   compatible: boolean;
   gaps: {
     integrations?: string[];
     tools?: string[];
     profileRoles?: string[];
   };
-};
+}
 
 // ─── Export envelopes ────────────────────────────────────────────────────────
 
-export type WorkflowExport = {
+export interface WorkflowExport {
   exportedAt: number;
   requires: WorkflowShareableRequires;
   workflow: WorkflowDefinition;
-};
+}
 
-export type SwarmTemplateExport = {
+export interface SwarmTemplateExport {
   exportedAt: number;
   requires: SwarmTemplateRequires;
   template: SwarmTemplate;
-};
+}

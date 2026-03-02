@@ -57,15 +57,19 @@ function withTestKey<T>(fn: (mgr: LicenseManager) => T, licenseKey: string): Lic
     static override validate(key: string): LicenseClaims {
       const { createPublicKey, verify } = require('node:crypto') as typeof import('node:crypto');
       const parts = key.trim().split('.');
-      if (parts.length !== 3) throw new Error('Invalid license key format (expected 3 dot-separated segments)');
+      if (parts.length !== 3)
+        throw new Error('Invalid license key format (expected 3 dot-separated segments)');
       const [headerB64, payloadB64, sigB64] = parts;
       const message = Buffer.from(`${headerB64}.${payloadB64}`);
       const signature = Buffer.from(sigB64, 'base64url');
       const pubKey = createPublicKey(testPublicKeyPem);
       const valid = verify(null, message, pubKey, signature);
       if (!valid) throw new Error('License key signature invalid');
-      const claims = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8')) as LicenseClaims;
-      if (claims.exp !== undefined && Date.now() / 1000 > claims.exp) throw new Error('License key has expired');
+      const claims = JSON.parse(
+        Buffer.from(payloadB64, 'base64url').toString('utf8')
+      ) as LicenseClaims;
+      if (claims.exp !== undefined && Date.now() / 1000 > claims.exp)
+        throw new Error('License key has expired');
       if (!claims.tier || !claims.organization || !Array.isArray(claims.features)) {
         throw new Error('License key payload is missing required fields');
       }
@@ -100,7 +104,11 @@ describe('LicenseManager — community tier (no key)', () => {
   it('hasFeature() always returns false', () => {
     const lm = new LicenseManager();
     const features: EnterpriseFeature[] = [
-      'adaptive_learning', 'sso_saml', 'multi_tenancy', 'cicd_integration', 'advanced_observability',
+      'adaptive_learning',
+      'sso_saml',
+      'multi_tenancy',
+      'cicd_integration',
+      'advanced_observability',
     ];
     for (const f of features) {
       expect(lm.hasFeature(f)).toBe(false);
@@ -184,15 +192,27 @@ describe('LicenseManager — all features key', () => {
   let lm: LicenseManager;
 
   beforeAll(() => {
-    const key = buildKey(validClaims({
-      features: ['adaptive_learning', 'sso_saml', 'multi_tenancy', 'cicd_integration', 'advanced_observability'],
-    }));
+    const key = buildKey(
+      validClaims({
+        features: [
+          'adaptive_learning',
+          'sso_saml',
+          'multi_tenancy',
+          'cicd_integration',
+          'advanced_observability',
+        ],
+      })
+    );
     lm = withTestKey(() => lm, key);
   });
 
   it('hasFeature() returns true for all enterprise features', () => {
     const features: EnterpriseFeature[] = [
-      'adaptive_learning', 'sso_saml', 'multi_tenancy', 'cicd_integration', 'advanced_observability',
+      'adaptive_learning',
+      'sso_saml',
+      'multi_tenancy',
+      'cicd_integration',
+      'advanced_observability',
     ];
     for (const f of features) {
       expect(lm.hasFeature(f)).toBe(true);

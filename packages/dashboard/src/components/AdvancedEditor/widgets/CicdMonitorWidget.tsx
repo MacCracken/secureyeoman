@@ -14,16 +14,18 @@ async function fetchCiEvents(provider?: string): Promise<{ events: CiEvent[] }> 
   const token = localStorage.getItem('accessToken') ?? '';
   try {
     const toolName =
-      provider === 'jenkins' ? 'jenkins_list_builds' :
-      provider === 'gitlab' ? 'gitlab_list_pipelines' :
-      'gha_list_runs';
+      provider === 'jenkins'
+        ? 'jenkins_list_builds'
+        : provider === 'gitlab'
+          ? 'gitlab_list_pipelines'
+          : 'gha_list_runs';
     const res = await fetch('/api/v1/mcp/tools/call', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ name: toolName, args: {} }),
     });
     if (!res.ok) return { events: [] };
-    const data = await res.json() as { result?: unknown[] };
+    const data = (await res.json()) as { result?: unknown[] };
     const items = (data.result ?? []).slice(0, 10);
     return {
       events: items.map((r) => {
@@ -44,9 +46,12 @@ async function fetchCiEvents(provider?: string): Promise<{ events: CiEvent[] }> 
 }
 
 function StatusIcon({ status }: { status: string }) {
-  if (status === 'success' || status === 'completed') return <CheckCircle className="w-3.5 h-3.5 text-green-500" />;
-  if (status === 'failure' || status === 'failed') return <XCircle className="w-3.5 h-3.5 text-red-500" />;
-  if (status === 'in_progress' || status === 'running') return <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />;
+  if (status === 'success' || status === 'completed')
+    return <CheckCircle className="w-3.5 h-3.5 text-green-500" />;
+  if (status === 'failure' || status === 'failed')
+    return <XCircle className="w-3.5 h-3.5 text-red-500" />;
+  if (status === 'in_progress' || status === 'running')
+    return <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />;
   return <Activity className="w-3.5 h-3.5 text-muted-foreground" />;
 }
 
@@ -77,14 +82,21 @@ export function CicdMonitorWidget({ provider }: Props) {
               <span className="text-muted-foreground truncate max-w-[60px]">{evt.branch}</span>
             )}
             {evt.url && (
-              <a href={evt.url} target="_blank" rel="noreferrer" className="text-primary hover:underline text-[9px]">
+              <a
+                href={evt.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary hover:underline text-[9px]"
+              >
                 &uarr;
               </a>
             )}
           </div>
         ))}
         {!isLoading && (data?.events ?? []).length === 0 && (
-          <div className="text-muted-foreground text-[10px] text-center py-4">No recent CI events</div>
+          <div className="text-muted-foreground text-[10px] text-center py-4">
+            No recent CI events
+          </div>
         )}
       </div>
     </div>

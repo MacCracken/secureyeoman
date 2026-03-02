@@ -38,7 +38,11 @@ vi.mock('node:fs', () => ({
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-interface ErrorBody { error: string; message: string; statusCode: number; }
+interface ErrorBody {
+  error: string;
+  message: string;
+  statusCode: number;
+}
 
 async function buildApp() {
   const app = Fastify({ logger: false });
@@ -50,7 +54,12 @@ async function buildApp() {
 // promisify(execFile) calls back with (err, {stdout, stderr})
 function mockExecSuccess(stdout = '', stderr = '') {
   mockExecFile.mockImplementation(
-    (_cmd: string, _args: string[], _opts: unknown, callback: (err: null, result: { stdout: string; stderr: string }) => void) => {
+    (
+      _cmd: string,
+      _args: string[],
+      _opts: unknown,
+      callback: (err: null, result: { stdout: string; stderr: string }) => void
+    ) => {
       callback(null, { stdout, stderr });
     }
   );
@@ -113,7 +122,9 @@ describe('POST /api/v1/terminal/worktrees', () => {
       payload: JSON.stringify({ name: 'my-branch' }),
       headers: { 'content-type': 'application/json' },
     });
-    expect(mockMkdirSync).toHaveBeenCalledWith(expect.stringContaining('.worktrees'), { recursive: true });
+    expect(mockMkdirSync).toHaveBeenCalledWith(expect.stringContaining('.worktrees'), {
+      recursive: true,
+    });
   });
 
   it('returns 400 for invalid name with special chars', async () => {
@@ -152,10 +163,7 @@ describe('GET /api/v1/terminal/worktrees', () => {
 
   it('returns empty list when no worktrees match .worktrees dir', async () => {
     // git returns only the main worktree (not under .worktrees/)
-    mockExecSuccess(
-      'worktree /home/user/project\nHEAD abc123\nbranch refs/heads/main\n\n',
-      ''
-    );
+    mockExecSuccess('worktree /home/user/project\nHEAD abc123\nbranch refs/heads/main\n\n', '');
     const app = await buildApp();
     const res = await app.inject({ method: 'GET', url: '/api/v1/terminal/worktrees' });
     expect(res.statusCode).toBe(200);
@@ -201,7 +209,10 @@ describe('DELETE /api/v1/terminal/worktrees/:id', () => {
   it('removes worktree and branch, returns 204', async () => {
     mockExecSuccess('', '');
     const app = await buildApp();
-    const res = await app.inject({ method: 'DELETE', url: '/api/v1/terminal/worktrees/my-feature' });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/terminal/worktrees/my-feature',
+    });
     expect(res.statusCode).toBe(204);
     expect(mockExecFile).toHaveBeenCalledWith(
       'git',
@@ -221,7 +232,10 @@ describe('DELETE /api/v1/terminal/worktrees/:id', () => {
   it('returns 500 when git worktree remove fails', async () => {
     mockExecError('worktree not found');
     const app = await buildApp();
-    const res = await app.inject({ method: 'DELETE', url: '/api/v1/terminal/worktrees/ghost-branch' });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/terminal/worktrees/ghost-branch',
+    });
     expect(res.statusCode).toBe(500);
     expect(res.json<ErrorBody>().message).toContain('Failed to remove worktree');
   });
@@ -229,7 +243,12 @@ describe('DELETE /api/v1/terminal/worktrees/:id', () => {
   it('succeeds even if branch delete fails (branch may already be deleted)', async () => {
     let callCount = 0;
     mockExecFile.mockImplementation(
-      (_cmd: string, args: string[], _opts: unknown, callback: (err: Error | null, result?: { stdout: string; stderr: string }) => void) => {
+      (
+        _cmd: string,
+        args: string[],
+        _opts: unknown,
+        callback: (err: Error | null, result?: { stdout: string; stderr: string }) => void
+      ) => {
         callCount++;
         if (args.includes('remove')) {
           // first call (worktree remove) succeeds

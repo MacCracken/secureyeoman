@@ -11,7 +11,12 @@ import {
   GitMerge,
   Network,
 } from 'lucide-react';
-import { fetchSkills, fetchPersonalities, fetchWorkflows, fetchSwarmTemplates } from '../../api/client';
+import {
+  fetchSkills,
+  fetchPersonalities,
+  fetchWorkflows,
+  fetchSwarmTemplates,
+} from '../../api/client';
 import type { WorkflowDefinition, SwarmTemplate } from '../../api/client';
 import type { Skill } from '../../types';
 import { sanitizeText } from '../../utils/sanitize';
@@ -94,7 +99,8 @@ function InstalledWorkflows({ onNavigateTab }: { onNavigateTab?: (tab: TabType) 
     return (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          No workflows installed yet. Browse the Marketplace or sync the Community repo to find workflows to install.
+          No workflows installed yet. Browse the Marketplace or sync the Community repo to find
+          workflows to install.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div
@@ -181,7 +187,8 @@ function InstalledSwarms({ onNavigateTab }: { onNavigateTab?: (tab: TabType) => 
     return (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          No swarm templates installed yet. Browse the Marketplace or sync the Community repo to find templates to install.
+          No swarm templates installed yet. Browse the Marketplace or sync the Community repo to
+          find templates to install.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div
@@ -227,8 +234,8 @@ function InstalledSwarms({ onNavigateTab }: { onNavigateTab?: (tab: TabType) => 
                 t.strategy === 'parallel'
                   ? 'bg-green-500/10 text-green-600 border-green-500/20'
                   : t.strategy === 'dynamic'
-                  ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
-                  : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                    ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
+                    : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
               }`}
             >
               {t.strategy}
@@ -255,7 +262,15 @@ function InstalledSwarms({ onNavigateTab }: { onNavigateTab?: (tab: TabType) => 
 
 // ── Main InstalledTab ─────────────────────────────────────────────────────────
 
-export function InstalledTab({ onNavigateTab, workflowsEnabled = false, subAgentsEnabled = false }: { onNavigateTab?: (tab: TabType) => void; workflowsEnabled?: boolean; subAgentsEnabled?: boolean }) {
+export function InstalledTab({
+  onNavigateTab,
+  workflowsEnabled = false,
+  subAgentsEnabled = false,
+}: {
+  onNavigateTab?: (tab: TabType) => void;
+  workflowsEnabled?: boolean;
+  subAgentsEnabled?: boolean;
+}) {
   const [filterPersonalityId, setFilterPersonalityId] = useState<string>('');
   const visibleOptions = CONTENT_TYPE_OPTIONS.filter((o) => {
     if (o.value === 'workflows' && !workflowsEnabled) return false;
@@ -338,7 +353,9 @@ export function InstalledTab({ onNavigateTab, workflowsEnabled = false, subAgent
           <div className="relative">
             <select
               value={contentType}
-              onChange={(e) => setContentType(e.target.value as ContentType)}
+              onChange={(e) => {
+                setContentType(e.target.value as ContentType);
+              }}
               className="bg-card border border-border rounded-lg pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
             >
               {visibleOptions.map((o) => (
@@ -348,8 +365,18 @@ export function InstalledTab({ onNavigateTab, workflowsEnabled = false, subAgent
               ))}
             </select>
             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <svg
+                className="w-4 h-4 text-muted-foreground"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </div>
           </div>

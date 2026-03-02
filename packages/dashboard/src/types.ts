@@ -1100,19 +1100,19 @@ export interface CompatibilityCheckResult {
 // WorkflowDefinition and SwarmTemplate are defined in api/client.ts (authoritative).
 // WorkflowExport and SwarmTemplateExport use any for the entity to avoid duplication.
 
-export type WorkflowExport = {
+export interface WorkflowExport {
   exportedAt: number;
   requires: WorkflowShareableRequires;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   workflow: any;
-};
+}
 
-export type SwarmTemplateExport = {
+export interface SwarmTemplateExport {
   exportedAt: number;
   requires: SwarmTemplateRequires;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   template: any;
-};
+}
 
 // ─── Observability / Alert Rules (Phase 83) ──────────────────────────────────
 

@@ -20,8 +20,18 @@ import type {
 // ── Deps ──────────────────────────────────────────────────────────────
 
 export interface ContentGuardrailDeps {
-  brainManager?: { semanticSearch(query: string, opts?: { limit?: number; threshold?: number; type?: string; personalityId?: string }): Promise<{ id: string; score: number; metadata?: Record<string, unknown> }[]> } | null;
-  auditRecord: (params: { event: string; level: string; message: string; metadata?: Record<string, unknown> }) => void;
+  brainManager?: {
+    semanticSearch(
+      query: string,
+      opts?: { limit?: number; threshold?: number; type?: string; personalityId?: string }
+    ): Promise<{ id: string; score: number; metadata?: Record<string, unknown> }[]>;
+  } | null;
+  auditRecord: (params: {
+    event: string;
+    level: string;
+    message: string;
+    metadata?: Record<string, unknown>;
+  }) => void;
 }
 
 // ── PII patterns ──────────────────────────────────────────────────────
@@ -33,11 +43,23 @@ interface PiiPattern {
 }
 
 const PII_PATTERNS: PiiPattern[] = [
-  { type: 'email', regex: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, replacement: '[EMAIL REDACTED]' },
-  { type: 'phone', regex: /\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g, replacement: '[PHONE REDACTED]' },
+  {
+    type: 'email',
+    regex: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+    replacement: '[EMAIL REDACTED]',
+  },
+  {
+    type: 'phone',
+    regex: /\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g,
+    replacement: '[PHONE REDACTED]',
+  },
   { type: 'ssn', regex: /\b\d{3}-\d{2}-\d{4}\b/g, replacement: '[SSN REDACTED]' },
   { type: 'credit_card', regex: /\b(?:\d{4}[-\s]?){3}\d{4}\b/g, replacement: '[CARD REDACTED]' },
-  { type: 'ip', regex: /\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b/g, replacement: '[IP REDACTED]' },
+  {
+    type: 'ip',
+    regex: /\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b/g,
+    replacement: '[IP REDACTED]',
+  },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────
@@ -47,7 +69,11 @@ function contentHash(text: string): string {
 }
 
 function tokenize(text: string): string[] {
-  return text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean);
 }
 
 function jaccardOverlap(a: string[], b: string[]): number {
@@ -79,7 +105,11 @@ export class ContentGuardrail {
 
   // ── Sync scan (fast path) ───────────────────────────────────────────
 
-  scanSync(text: string, ctx: GuardrailContext, personalityCfg?: ContentGuardrailPersonalityConfig): GuardrailSyncResult {
+  scanSync(
+    text: string,
+    ctx: GuardrailContext,
+    personalityCfg?: ContentGuardrailPersonalityConfig
+  ): GuardrailSyncResult {
     if (!this.config.enabled) {
       return { passed: true, findings: [], text };
     }
@@ -103,7 +133,10 @@ export class ContentGuardrail {
           });
         }
         if (piiMode === 'redact') {
-          modified = modified.replace(new RegExp(pattern.regex.source, pattern.regex.flags), pattern.replacement);
+          modified = modified.replace(
+            new RegExp(pattern.regex.source, pattern.regex.flags),
+            pattern.replacement
+          );
         }
       }
     }
@@ -123,7 +156,7 @@ export class ContentGuardrail {
       }
     }
 
-    const blockListBlocked = findings.some(f => f.type === 'block_list');
+    const blockListBlocked = findings.some((f) => f.type === 'block_list');
 
     // Audit findings
     if (findings.length > 0) {
@@ -134,7 +167,7 @@ export class ContentGuardrail {
         metadata: {
           source: ctx.source,
           personalityId: ctx.personalityId,
-          findingTypes: findings.map(f => f.type),
+          findingTypes: findings.map((f) => f.type),
         },
       });
     }
@@ -148,7 +181,11 @@ export class ContentGuardrail {
 
   // ── Async scan (slow path) ──────────────────────────────────────────
 
-  async scanAsync(text: string, ctx: GuardrailContext, personalityCfg?: ContentGuardrailPersonalityConfig): Promise<GuardrailAsyncResult> {
+  async scanAsync(
+    text: string,
+    ctx: GuardrailContext,
+    personalityCfg?: ContentGuardrailPersonalityConfig
+  ): Promise<GuardrailAsyncResult> {
     if (!this.config.enabled) {
       return { passed: true, findings: [], text };
     }
@@ -181,7 +218,12 @@ export class ContentGuardrail {
     if (this.config.toxicityEnabled && this.config.toxicityClassifierUrl) {
       const toxResult = await this.checkToxicity(text);
       if (toxResult) {
-        const action = this.config.toxicityMode === 'block' ? 'block' : this.config.toxicityMode === 'warn' ? 'warn' : 'flag';
+        const action =
+          this.config.toxicityMode === 'block'
+            ? 'block'
+            : this.config.toxicityMode === 'warn'
+              ? 'warn'
+              : 'flag';
         findings.push({
           type: 'toxicity',
           action,
@@ -200,7 +242,10 @@ export class ContentGuardrail {
         if (gf.action === 'block') blocked = true;
         if (gf.action === 'flag') {
           // Tag unverified citations
-          modified = modified.replace(gf.detail.replace('Unverified citation: ', ''), (match) => `${match} [unverified]`);
+          modified = modified.replace(
+            gf.detail.replace('Unverified citation: ', ''),
+            (match) => `${match} [unverified]`
+          );
         }
       }
     }
@@ -214,7 +259,7 @@ export class ContentGuardrail {
         metadata: {
           source: ctx.source,
           personalityId: ctx.personalityId,
-          findingTypes: findings.map(f => f.type),
+          findingTypes: findings.map((f) => f.type),
         },
       });
     }
@@ -224,7 +269,11 @@ export class ContentGuardrail {
 
   // ── Combined scan ───────────────────────────────────────────────────
 
-  async scan(text: string, ctx: GuardrailContext, personalityCfg?: ContentGuardrailPersonalityConfig): Promise<GuardrailResult> {
+  async scan(
+    text: string,
+    ctx: GuardrailContext,
+    personalityCfg?: ContentGuardrailPersonalityConfig
+  ): Promise<GuardrailResult> {
     const syncResult = this.scanSync(text, ctx, personalityCfg);
     if (!syncResult.passed) {
       return syncResult;
@@ -271,7 +320,10 @@ export class ContentGuardrail {
     // Try embedding-based search first
     if (this.deps.brainManager) {
       try {
-        const results = await this.deps.brainManager.semanticSearch(topic, { limit: 1, threshold: this.config.topicThreshold });
+        const results = await this.deps.brainManager.semanticSearch(topic, {
+          limit: 1,
+          threshold: this.config.topicThreshold,
+        });
         // Check if the response text semantically matches the blocked topic
         // We search with the topic as query against a synthetic corpus of [text]
         // But semanticSearch searches the knowledge base, not arbitrary text.
@@ -291,10 +343,14 @@ export class ContentGuardrail {
 
   // ── Toxicity filter ─────────────────────────────────────────────────
 
-  private async checkToxicity(text: string): Promise<{ score: number; categories?: string[] } | null> {
+  private async checkToxicity(
+    text: string
+  ): Promise<{ score: number; categories?: string[] } | null> {
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
+      const timeout = setTimeout(() => {
+        controller.abort();
+      }, 5000);
       const response = await fetch(this.config.toxicityClassifierUrl!, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -303,7 +359,7 @@ export class ContentGuardrail {
       });
       clearTimeout(timeout);
       if (!response.ok) return null; // fail-open
-      const result = await response.json() as { score: number; categories?: string[] };
+      const result = (await response.json()) as { score: number; categories?: string[] };
       if (result.score >= this.config.toxicityThreshold) {
         return result;
       }
@@ -322,7 +378,11 @@ export class ContentGuardrail {
 
     for (const citation of citations) {
       try {
-        const results = await this.deps.brainManager!.semanticSearch(citation, { type: 'knowledge', limit: 1, threshold: 0.5 });
+        const results = await this.deps.brainManager!.semanticSearch(citation, {
+          type: 'knowledge',
+          limit: 1,
+          threshold: 0.5,
+        });
         if (results.length === 0) {
           findings.push({
             type: 'grounding',
@@ -350,7 +410,8 @@ export class ContentGuardrail {
     }
 
     // "According to..." patterns
-    const accordingRegex = /(?:according to|as stated (?:by|in)|as reported (?:by|in))\s+(.{10,100}?)(?:\.|,|;|\n)/gi;
+    const accordingRegex =
+      /(?:according to|as stated (?:by|in)|as reported (?:by|in))\s+(.{10,100}?)(?:\.|,|;|\n)/gi;
     while ((match = accordingRegex.exec(text)) !== null) {
       if (match[1]) citations.push(match[1].trim());
     }
@@ -361,6 +422,9 @@ export class ContentGuardrail {
 
 // ── Factory ───────────────────────────────────────────────────────────
 
-export function createContentGuardrail(config: ContentGuardrailConfig, deps: ContentGuardrailDeps): ContentGuardrail {
+export function createContentGuardrail(
+  config: ContentGuardrailConfig,
+  deps: ContentGuardrailDeps
+): ContentGuardrail {
   return new ContentGuardrail(config, deps);
 }

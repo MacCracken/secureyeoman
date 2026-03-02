@@ -8,7 +8,15 @@ function makePool(rows: Record<string, unknown>[] = [], rowCount = rows.length) 
 }
 
 function makeLogger() {
-  return { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn(), child: vi.fn(function(this: any) { return this; }) } as any;
+  return {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    child: vi.fn(function (this: any) {
+      return this;
+    }),
+  } as any;
 }
 
 function makeEpisodeRow(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
@@ -231,7 +239,10 @@ describe('ComputerUseManager', () => {
     it('yields JSONL lines for all episodes', async () => {
       pool.query = vi
         .fn()
-        .mockResolvedValueOnce({ rows: [makeEpisodeRow(), makeEpisodeRow({ id: 'ep-2' })], rowCount: 2 })
+        .mockResolvedValueOnce({
+          rows: [makeEpisodeRow(), makeEpisodeRow({ id: 'ep-2' })],
+          rowCount: 2,
+        })
         .mockResolvedValueOnce({ rows: [], rowCount: 0 });
 
       const lines: string[] = [];

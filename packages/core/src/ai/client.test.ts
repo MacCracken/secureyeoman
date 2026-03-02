@@ -603,7 +603,9 @@ describe('AIClient', () => {
     });
 
     it('getLocalFirstPreAttemptIndices returns [] when primary is already a local provider', () => {
-      const client = new AIClient({ model: { ...makeModelConfig('ollama'), localFirst: true } as ModelConfig });
+      const client = new AIClient({
+        model: { ...makeModelConfig('ollama'), localFirst: true } as ModelConfig,
+      });
       const indices = (client as any).getLocalFirstPreAttemptIndices();
       expect(indices).toEqual([]);
     });

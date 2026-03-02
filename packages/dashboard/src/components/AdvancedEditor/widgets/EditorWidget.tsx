@@ -4,10 +4,23 @@ import { useTheme } from '../../../hooks/useTheme';
 import { FolderOpen } from 'lucide-react';
 
 const LANG_MAP: Record<string, string> = {
-  ts: 'typescript', tsx: 'typescript', js: 'javascript', jsx: 'javascript',
-  py: 'python', rb: 'ruby', rs: 'rust', go: 'go', java: 'java',
-  json: 'json', yaml: 'yaml', yml: 'yaml', md: 'markdown',
-  html: 'html', css: 'css', sql: 'sql', sh: 'shell',
+  ts: 'typescript',
+  tsx: 'typescript',
+  js: 'javascript',
+  jsx: 'javascript',
+  py: 'python',
+  rb: 'ruby',
+  rs: 'rust',
+  go: 'go',
+  java: 'java',
+  json: 'json',
+  yaml: 'yaml',
+  yml: 'yaml',
+  md: 'markdown',
+  html: 'html',
+  css: 'css',
+  sql: 'sql',
+  sh: 'shell',
 };
 
 function detectLang(path: string) {
@@ -26,10 +39,13 @@ export function EditorWidget({ filePath: initialPath, onConfigChange }: Props) {
   const [isDirty, setIsDirty] = useState(false);
   const { theme } = useTheme();
 
-  const handlePathChange = useCallback((path: string) => {
-    setFilePath(path);
-    onConfigChange?.(path);
-  }, [onConfigChange]);
+  const handlePathChange = useCallback(
+    (path: string) => {
+      setFilePath(path);
+      onConfigChange?.(path);
+    },
+    [onConfigChange]
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -39,7 +55,9 @@ export function EditorWidget({ filePath: initialPath, onConfigChange }: Props) {
           className="flex-1 bg-transparent outline-none text-xs font-mono"
           placeholder="File path..."
           value={filePath}
-          onChange={(e) => handlePathChange(e.target.value)}
+          onChange={(e) => {
+            handlePathChange(e.target.value);
+          }}
         />
         {isDirty && <span className="text-yellow-500 text-[10px]">●</span>}
       </div>
@@ -49,7 +67,10 @@ export function EditorWidget({ filePath: initialPath, onConfigChange }: Props) {
           language={detectLang(filePath)}
           value={content}
           theme={theme === 'dark' ? 'vs-dark' : 'light'}
-          onChange={(v) => { setContent(v ?? ''); setIsDirty(true); }}
+          onChange={(v) => {
+            setContent(v ?? '');
+            setIsDirty(true);
+          }}
           options={{
             minimap: { enabled: false },
             fontSize: 12,

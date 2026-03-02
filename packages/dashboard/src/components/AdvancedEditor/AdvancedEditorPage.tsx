@@ -65,12 +65,7 @@ function AdvancedEditorInner() {
   );
 
   const handleFreezeOutput = useCallback(
-    (
-      sourceId: string,
-      command: string,
-      output: string,
-      exitCode: number
-    ) => {
+    (sourceId: string, command: string, output: string, exitCode: number) => {
       const sourceNode = nodes.find((n) => n.id === sourceId);
       const id = generateNodeId();
       const x = (sourceNode?.position.x ?? 200) + 40;
@@ -151,7 +146,9 @@ function AdvancedEditorInner() {
         </span>
         <div className="w-px h-4 bg-border mx-1" />
         <button
-          onClick={() => setCatalogOpen((v) => !v)}
+          onClick={() => {
+            setCatalogOpen((v) => !v);
+          }}
           className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -192,7 +189,12 @@ function AdvancedEditorInner() {
         </ReactFlow>
 
         {catalogOpen && (
-          <WidgetCatalog onAdd={addWidget} onClose={() => setCatalogOpen(false)} />
+          <WidgetCatalog
+            onAdd={addWidget}
+            onClose={() => {
+              setCatalogOpen(false);
+            }}
+          />
         )}
       </div>
     </div>

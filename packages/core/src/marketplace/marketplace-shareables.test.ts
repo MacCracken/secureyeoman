@@ -187,9 +187,7 @@ describe('syncFromCommunity — swarms/', () => {
     writeJson('swarms/security-team.json', {
       name: 'Security Audit Team',
       strategy: 'sequential',
-      roles: [
-        { role: 'researcher', profileName: 'security-researcher' },
-      ],
+      roles: [{ role: 'researcher', profileName: 'security-researcher' }],
     });
 
     const existingTmpl = { id: 'tmpl-existing', name: 'Security Audit Team', isBuiltin: false };

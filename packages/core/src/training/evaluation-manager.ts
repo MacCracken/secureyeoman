@@ -108,7 +108,7 @@ export function parseToolCall(
   response: string
 ): { name: string; args: Record<string, unknown> } | null {
   // Try fenced code block first
-  const fenceMatch = response.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+  const fenceMatch = /```(?:json)?\s*(\{[\s\S]*?\})\s*```/.exec(response);
   const raw = fenceMatch ? fenceMatch[1]! : response.trim();
 
   try {
@@ -142,7 +142,7 @@ export function computeToolNameAccuracy(responses: string[], goldResponses: stri
   for (let i = 0; i < responses.length; i++) {
     const pred = parseToolCall(responses[i]!);
     const gold = parseToolCall(goldResponses[i]!);
-    if (pred && gold && pred.name === gold.name) correct++;
+    if (pred && pred.name === gold?.name) correct++;
   }
   return correct / responses.length;
 }
@@ -307,11 +307,7 @@ export class EvaluationManager {
     // Semantic similarity (optional)
     let semanticSim: number | undefined;
     if (config.semanticSimilarity && config.ollamaEmbedUrl) {
-      semanticSim = await computeSemanticSimilarity(
-        allResponses,
-        allGolds,
-        config.ollamaEmbedUrl
-      );
+      semanticSim = await computeSemanticSimilarity(allResponses, allGolds, config.ollamaEmbedUrl);
     }
 
     const metrics: EvalResult['metrics'] = {

@@ -75,7 +75,20 @@ export function registerGitlabCiTools(
         .describe('GitLab project ID (numeric) or URL-encoded path (e.g. group%2Frepo)'),
       ref: z.string().default('').describe('Filter by branch or tag (empty = all)'),
       status: z
-        .enum(['created', 'waiting_for_resource', 'preparing', 'pending', 'running', 'success', 'failed', 'canceled', 'skipped', 'manual', 'scheduled', ''])
+        .enum([
+          'created',
+          'waiting_for_resource',
+          'preparing',
+          'pending',
+          'running',
+          'success',
+          'failed',
+          'canceled',
+          'skipped',
+          'manual',
+          'scheduled',
+          '',
+        ])
         .default('')
         .describe('Filter by pipeline status (empty = all)'),
       perPage: z.number().int().min(1).max(100).default(20).describe('Pipelines to return'),
@@ -88,10 +101,11 @@ export function registerGitlabCiTools(
         const params = new URLSearchParams({ per_page: String(perPage) });
         if (ref) params.set('ref', ref);
         if (status) params.set('status', status);
-        const { ok, status: s, body } = await gitlabFetch(
-          config,
-          `/api/v4/projects/${projectId}/pipelines?${params}`
-        );
+        const {
+          ok,
+          status: s,
+          body,
+        } = await gitlabFetch(config, `/api/v4/projects/${projectId}/pipelines?${params}`);
         if (!ok) {
           return {
             content: [{ type: 'text', text: `GitLab API error ${s}: ${JSON.stringify(body)}` }],
@@ -130,7 +144,9 @@ export function registerGitlabCiTools(
         );
         if (!ok) {
           return {
-            content: [{ type: 'text', text: `GitLab API error ${status}: ${JSON.stringify(body)}` }],
+            content: [
+              { type: 'text', text: `GitLab API error ${status}: ${JSON.stringify(body)}` },
+            ],
             isError: true,
           };
         }

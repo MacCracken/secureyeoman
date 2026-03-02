@@ -132,7 +132,10 @@ describe('gitlab-ci-tools', () => {
       registerGitlabCiTools(server, baseConfig({ exposeGitlabCi: false }), noopMiddleware());
       const { globalToolRegistry } = await import('./tool-utils.js');
       const result = await globalToolRegistry.get('gitlab_list_pipelines')!({
-        projectId: '42', ref: '', status: '', perPage: 10,
+        projectId: '42',
+        ref: '',
+        status: '',
+        perPage: 10,
       });
       expect(result.isError).toBe(true);
       expect((result.content[0] as { text: string }).text).toContain('exposeGitlabCi=true');
@@ -146,7 +149,10 @@ describe('gitlab-ci-tools', () => {
       mockFetchOk([{ id: 1, status: 'success' }]);
       const { globalToolRegistry } = await import('./tool-utils.js');
       const result = await globalToolRegistry.get('gitlab_list_pipelines')!({
-        projectId: '42', ref: '', status: '', perPage: 20,
+        projectId: '42',
+        ref: '',
+        status: '',
+        perPage: 20,
       });
       expect(result.isError).toBeFalsy();
       expect((result.content[0] as { text: string }).text).toContain('success');
@@ -158,7 +164,10 @@ describe('gitlab-ci-tools', () => {
       mockFetchOk({ message: 'Forbidden' }, 403);
       const { globalToolRegistry } = await import('./tool-utils.js');
       const result = await globalToolRegistry.get('gitlab_list_pipelines')!({
-        projectId: '42', ref: '', status: '', perPage: 10,
+        projectId: '42',
+        ref: '',
+        status: '',
+        perPage: 10,
       });
       expect(result.isError).toBe(true);
     });
@@ -168,10 +177,15 @@ describe('gitlab-ci-tools', () => {
     it('returns pipeline data on 201', async () => {
       const server = new McpServer({ name: 'test', version: '1.0.0' });
       registerGitlabCiTools(server, baseConfig(), noopMiddleware());
-      mockFetchOk({ id: 100, status: 'created', web_url: 'https://gitlab.com/p/r/-/pipelines/100' }, 201);
+      mockFetchOk(
+        { id: 100, status: 'created', web_url: 'https://gitlab.com/p/r/-/pipelines/100' },
+        201
+      );
       const { globalToolRegistry } = await import('./tool-utils.js');
       const result = await globalToolRegistry.get('gitlab_trigger_pipeline')!({
-        projectId: '42', ref: 'main', variables: [],
+        projectId: '42',
+        ref: 'main',
+        variables: [],
       });
       expect(result.isError).toBeFalsy();
       const parsed = JSON.parse((result.content[0] as { text: string }).text);
@@ -190,7 +204,9 @@ describe('gitlab-ci-tools', () => {
       vi.stubGlobal('fetch', mockFetch);
       const { globalToolRegistry } = await import('./tool-utils.js');
       await globalToolRegistry.get('gitlab_trigger_pipeline')!({
-        projectId: '42', ref: 'main', variables: [{ key: 'DEPLOY_ENV', value: 'staging' }],
+        projectId: '42',
+        ref: 'main',
+        variables: [{ key: 'DEPLOY_ENV', value: 'staging' }],
       });
       const body = JSON.parse((mockFetch.mock.calls[0] as { 1: { body: string } }[])[1].body);
       expect(body.variables).toEqual([{ key: 'DEPLOY_ENV', value: 'staging' }]);
@@ -204,7 +220,8 @@ describe('gitlab-ci-tools', () => {
       mockFetchOk({ id: 77, status: 'failed', sha: 'abc' });
       const { globalToolRegistry } = await import('./tool-utils.js');
       const result = await globalToolRegistry.get('gitlab_get_pipeline')!({
-        projectId: '42', pipelineId: 77,
+        projectId: '42',
+        pipelineId: 77,
       });
       expect(result.isError).toBeFalsy();
       expect((result.content[0] as { text: string }).text).toContain('failed');
@@ -226,7 +243,8 @@ describe('gitlab-ci-tools', () => {
       );
       const { globalToolRegistry } = await import('./tool-utils.js');
       const result = await globalToolRegistry.get('gitlab_get_job_log')!({
-        projectId: '42', jobId: 55,
+        projectId: '42',
+        jobId: 55,
       });
       expect(result.isError).toBeFalsy();
       expect((result.content[0] as { text: string }).text).toContain('Running build');
@@ -240,7 +258,8 @@ describe('gitlab-ci-tools', () => {
       mockFetchOk({ id: 99, status: 'canceled' });
       const { globalToolRegistry } = await import('./tool-utils.js');
       const result = await globalToolRegistry.get('gitlab_cancel_pipeline')!({
-        projectId: '42', pipelineId: 99,
+        projectId: '42',
+        pipelineId: 99,
       });
       expect(result.isError).toBeFalsy();
       expect((result.content[0] as { text: string }).text).toContain('canceled');

@@ -12,10 +12,13 @@ export function GitPanelWidget({ worktreeId }: Props) {
   const [commitMsg, setCommitMsg] = useState('');
   const [output, setOutput] = useState('');
 
-  const runGit = useCallback(async (args: string) => {
-    const result = await executeTerminalCommand(`git ${args}`, cwd);
-    setOutput(result.output || result.error);
-  }, [cwd]);
+  const runGit = useCallback(
+    async (args: string) => {
+      const result = await executeTerminalCommand(`git ${args}`, cwd);
+      setOutput(result.output || result.error);
+    },
+    [cwd]
+  );
 
   const { data: statusData, refetch } = useQuery({
     queryKey: ['git-status', cwd],
@@ -31,7 +34,10 @@ export function GitPanelWidget({ worktreeId }: Props) {
       <div className="flex items-center gap-1 font-medium">
         <GitBranch className="w-3.5 h-3.5" />
         Git Panel
-        <button onClick={() => void refetch()} className="ml-auto text-muted-foreground hover:text-foreground">
+        <button
+          onClick={() => void refetch()}
+          className="ml-auto text-muted-foreground hover:text-foreground"
+        >
           <RefreshCw className="w-3 h-3" />
         </button>
       </div>
@@ -39,16 +45,33 @@ export function GitPanelWidget({ worktreeId }: Props) {
         <pre>{statusData || 'Clean working tree'}</pre>
       </div>
       <div className="flex gap-1">
-        <button onClick={() => void runGit('add -A')} className="px-2 py-1 rounded border hover:bg-muted">Stage All</button>
-        <button onClick={() => void runGit('diff --stat')} className="px-2 py-1 rounded border hover:bg-muted">Diff</button>
-        <button onClick={() => void runGit('log --oneline -5')} className="px-2 py-1 rounded border hover:bg-muted">Log</button>
+        <button
+          onClick={() => void runGit('add -A')}
+          className="px-2 py-1 rounded border hover:bg-muted"
+        >
+          Stage All
+        </button>
+        <button
+          onClick={() => void runGit('diff --stat')}
+          className="px-2 py-1 rounded border hover:bg-muted"
+        >
+          Diff
+        </button>
+        <button
+          onClick={() => void runGit('log --oneline -5')}
+          className="px-2 py-1 rounded border hover:bg-muted"
+        >
+          Log
+        </button>
       </div>
       <div className="flex gap-1">
         <input
           className="flex-1 text-xs rounded border px-1.5 py-1 bg-background"
           placeholder="Commit message..."
           value={commitMsg}
-          onChange={(e) => setCommitMsg(e.target.value)}
+          onChange={(e) => {
+            setCommitMsg(e.target.value);
+          }}
         />
         <button
           onClick={() => {

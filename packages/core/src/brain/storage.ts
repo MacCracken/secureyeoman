@@ -1177,9 +1177,7 @@ export class BrainStorage extends PgBaseStorage {
    * @param personalityId  When provided, returns chunks scoped to this personality OR global (NULL).
    *                       When null/undefined, returns all chunks across all personalities.
    */
-  async getAllDocumentChunks(
-    personalityId?: string | null
-  ): Promise<NotebookCorpusDocument[]> {
+  async getAllDocumentChunks(personalityId?: string | null): Promise<NotebookCorpusDocument[]> {
     let sql = `
       SELECT
         k.content,
@@ -1213,7 +1211,15 @@ export class BrainStorage extends PgBaseStorage {
     const rows = await this.queryMany<ChunkRow>(sql, params);
 
     // Group by document, preserving order
-    const docMap = new Map<string, { title: string; format: string | null; chunkCount: number; chunks: { idx: number; text: string }[] }>();
+    const docMap = new Map<
+      string,
+      {
+        title: string;
+        format: string | null;
+        chunkCount: number;
+        chunks: { idx: number; text: string }[];
+      }
+    >();
     for (const row of rows) {
       if (!docMap.has(row.doc_id)) {
         docMap.set(row.doc_id, {
@@ -1224,7 +1230,7 @@ export class BrainStorage extends PgBaseStorage {
         });
       }
       // Parse chunk index from source: "document:{id}:chunk{N}"
-      const idxMatch = row.source.match(/:chunk(\d+)$/);
+      const idxMatch = /:chunk(\d+)$/.exec(row.source);
       const idx = idxMatch ? parseInt(idxMatch[1] ?? '0', 10) : 0;
       docMap.get(row.doc_id)!.chunks.push({ idx, text: row.content });
     }

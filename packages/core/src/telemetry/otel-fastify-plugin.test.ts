@@ -28,11 +28,11 @@ import { getTracer } from './otel.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
-type HookMap = {
+interface HookMap {
   onRequest?: (req: any, reply: any) => Promise<void>;
   onResponse?: (req: any, reply: any) => Promise<void>;
   onError?: (req: any, reply: any, error: Error) => Promise<void>;
-};
+}
 
 function makeFakeApp() {
   const hooks: HookMap = {};
@@ -108,10 +108,7 @@ describe('otelFastifyPlugin', () => {
       await otelFastifyPlugin(app as any);
       const req = makeRequest({ routeOptions: undefined, url: '/api/test?foo=bar' });
       await app._hooks.onRequest!(req, makeReply());
-      expect(mockTracer.startSpan).toHaveBeenCalledWith(
-        'GET /api/test',
-        expect.any(Object)
-      );
+      expect(mockTracer.startSpan).toHaveBeenCalledWith('GET /api/test', expect.any(Object));
     });
   });
 
@@ -188,9 +185,7 @@ describe('otelFastifyPlugin', () => {
     it('skips gracefully when no span on request', async () => {
       await otelFastifyPlugin(app as any);
       const req = makeRequest();
-      await expect(
-        app._hooks.onError!(req, makeReply(), new Error('x'))
-      ).resolves.not.toThrow();
+      await expect(app._hooks.onError!(req, makeReply(), new Error('x'))).resolves.not.toThrow();
       expect(mockSpan.recordException).not.toHaveBeenCalled();
     });
   });

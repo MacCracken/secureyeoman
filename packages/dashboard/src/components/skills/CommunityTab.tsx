@@ -1,6 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { RefreshCw, GitBranch, Search, Loader2, AlertCircle, CheckCircle, Users } from 'lucide-react';
+import {
+  RefreshCw,
+  GitBranch,
+  Search,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+  Users,
+} from 'lucide-react';
 import {
   fetchMarketplaceSkills,
   syncCommunitySkills,
@@ -22,7 +30,7 @@ import {
   type ContentType,
 } from './shared';
 
-type SyncResult = {
+interface SyncResult {
   added: number;
   updated: number;
   skipped: number;
@@ -32,9 +40,12 @@ type SyncResult = {
   workflowsUpdated?: number;
   swarmsAdded?: number;
   swarmsUpdated?: number;
-};
+}
 
-export function CommunityTab({ workflowsEnabled = false, subAgentsEnabled = false }: { workflowsEnabled?: boolean; subAgentsEnabled?: boolean } = {}) {
+export function CommunityTab({
+  workflowsEnabled = false,
+  subAgentsEnabled = false,
+}: { workflowsEnabled?: boolean; subAgentsEnabled?: boolean } = {}) {
   const queryClient = useQueryClient();
   const hiddenTypes: ContentType[] = [
     ...(!workflowsEnabled ? ['workflows' as const] : []),
@@ -184,14 +195,23 @@ export function CommunityTab({ workflowsEnabled = false, subAgentsEnabled = fals
                   className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   placeholder="Search community workflows…"
                   value={workflowQuery}
-                  onChange={(e) => setWorkflowQuery(e.target.value)}
+                  onChange={(e) => {
+                    setWorkflowQuery(e.target.value);
+                  }}
                 />
               </div>
               <button
-                onClick={() => { setSyncResult(null); syncMut.mutate(); }}
+                onClick={() => {
+                  setSyncResult(null);
+                  syncMut.mutate();
+                }}
                 disabled={syncMut.isPending}
                 className="btn btn-secondary flex items-center gap-2 whitespace-nowrap"
-                title={statusData?.communityRepoPath ? `Sync from ${statusData.communityRepoPath}` : 'Sync from community repo'}
+                title={
+                  statusData?.communityRepoPath
+                    ? `Sync from ${statusData.communityRepoPath}`
+                    : 'Sync from community repo'
+                }
               >
                 <RefreshCw className={`w-4 h-4 ${syncMut.isPending ? 'animate-spin' : ''}`} />
                 {syncMut.isPending ? 'Syncing…' : 'Sync'}
@@ -200,23 +220,39 @@ export function CommunityTab({ workflowsEnabled = false, subAgentsEnabled = fals
             {statusData && (
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <GitBranch className="w-3.5 h-3.5 shrink-0" />
-                <span className="font-mono truncate">{statusData.communityRepoPath ?? 'No path configured'}</span>
+                <span className="font-mono truncate">
+                  {statusData.communityRepoPath ?? 'No path configured'}
+                </span>
                 {lastSynced && <span className="shrink-0">· Last synced {lastSynced}</span>}
               </div>
             )}
             {syncResult && (
-              <div className={`p-3 rounded-lg border text-xs space-y-1 ${syncResult.errors.length > 0 ? 'bg-warning/10 border-warning/20' : 'bg-success/10 border-success/20'}`}>
+              <div
+                className={`p-3 rounded-lg border text-xs space-y-1 ${syncResult.errors.length > 0 ? 'bg-warning/10 border-warning/20' : 'bg-success/10 border-success/20'}`}
+              >
                 <div className="flex items-center gap-2 font-medium">
-                  {syncResult.errors.length > 0 ? <AlertCircle className="w-4 h-4 text-warning" /> : <CheckCircle className="w-4 h-4 text-success" />}
+                  {syncResult.errors.length > 0 ? (
+                    <AlertCircle className="w-4 h-4 text-warning" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4 text-success" />
+                  )}
                   Sync complete
                 </div>
                 <div className="text-muted-foreground space-y-0.5">
-                  {(syncResult.workflowsAdded !== undefined || syncResult.workflowsUpdated !== undefined) && (
-                    <p>Workflows: {syncResult.workflowsAdded ?? 0} added, {syncResult.workflowsUpdated ?? 0} updated</p>
+                  {(syncResult.workflowsAdded !== undefined ||
+                    syncResult.workflowsUpdated !== undefined) && (
+                    <p>
+                      Workflows: {syncResult.workflowsAdded ?? 0} added,{' '}
+                      {syncResult.workflowsUpdated ?? 0} updated
+                    </p>
                   )}
                   {syncResult.errors.length > 0 && (
                     <ul className="mt-1 space-y-0.5">
-                      {syncResult.errors.map((e, i) => <li key={i} className="truncate">· {e}</li>)}
+                      {syncResult.errors.map((e, i) => (
+                        <li key={i} className="truncate">
+                          · {e}
+                        </li>
+                      ))}
                     </ul>
                   )}
                 </div>
@@ -238,14 +274,23 @@ export function CommunityTab({ workflowsEnabled = false, subAgentsEnabled = fals
                   className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   placeholder="Search community swarm templates…"
                   value={swarmQuery}
-                  onChange={(e) => setSwarmQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSwarmQuery(e.target.value);
+                  }}
                 />
               </div>
               <button
-                onClick={() => { setSyncResult(null); syncMut.mutate(); }}
+                onClick={() => {
+                  setSyncResult(null);
+                  syncMut.mutate();
+                }}
                 disabled={syncMut.isPending}
                 className="btn btn-secondary flex items-center gap-2 whitespace-nowrap"
-                title={statusData?.communityRepoPath ? `Sync from ${statusData.communityRepoPath}` : 'Sync from community repo'}
+                title={
+                  statusData?.communityRepoPath
+                    ? `Sync from ${statusData.communityRepoPath}`
+                    : 'Sync from community repo'
+                }
               >
                 <RefreshCw className={`w-4 h-4 ${syncMut.isPending ? 'animate-spin' : ''}`} />
                 {syncMut.isPending ? 'Syncing…' : 'Sync'}
@@ -254,23 +299,39 @@ export function CommunityTab({ workflowsEnabled = false, subAgentsEnabled = fals
             {statusData && (
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <GitBranch className="w-3.5 h-3.5 shrink-0" />
-                <span className="font-mono truncate">{statusData.communityRepoPath ?? 'No path configured'}</span>
+                <span className="font-mono truncate">
+                  {statusData.communityRepoPath ?? 'No path configured'}
+                </span>
                 {lastSynced && <span className="shrink-0">· Last synced {lastSynced}</span>}
               </div>
             )}
             {syncResult && (
-              <div className={`p-3 rounded-lg border text-xs space-y-1 ${syncResult.errors.length > 0 ? 'bg-warning/10 border-warning/20' : 'bg-success/10 border-success/20'}`}>
+              <div
+                className={`p-3 rounded-lg border text-xs space-y-1 ${syncResult.errors.length > 0 ? 'bg-warning/10 border-warning/20' : 'bg-success/10 border-success/20'}`}
+              >
                 <div className="flex items-center gap-2 font-medium">
-                  {syncResult.errors.length > 0 ? <AlertCircle className="w-4 h-4 text-warning" /> : <CheckCircle className="w-4 h-4 text-success" />}
+                  {syncResult.errors.length > 0 ? (
+                    <AlertCircle className="w-4 h-4 text-warning" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4 text-success" />
+                  )}
                   Sync complete
                 </div>
                 <div className="text-muted-foreground space-y-0.5">
-                  {(syncResult.swarmsAdded !== undefined || syncResult.swarmsUpdated !== undefined) && (
-                    <p>Swarm templates: {syncResult.swarmsAdded ?? 0} added, {syncResult.swarmsUpdated ?? 0} updated</p>
+                  {(syncResult.swarmsAdded !== undefined ||
+                    syncResult.swarmsUpdated !== undefined) && (
+                    <p>
+                      Swarm templates: {syncResult.swarmsAdded ?? 0} added,{' '}
+                      {syncResult.swarmsUpdated ?? 0} updated
+                    </p>
                   )}
                   {syncResult.errors.length > 0 && (
                     <ul className="mt-1 space-y-0.5">
-                      {syncResult.errors.map((e, i) => <li key={i} className="truncate">· {e}</li>)}
+                      {syncResult.errors.map((e, i) => (
+                        <li key={i} className="truncate">
+                          · {e}
+                        </li>
+                      ))}
                     </ul>
                   )}
                 </div>
@@ -383,7 +444,9 @@ export function CommunityTab({ workflowsEnabled = false, subAgentsEnabled = fals
                   {syncResult.errors.length > 0 && (
                     <ul className="mt-1 space-y-0.5">
                       {syncResult.errors.map((e, i) => (
-                        <li key={i} className="truncate">· {e}</li>
+                        <li key={i} className="truncate">
+                          · {e}
+                        </li>
                       ))}
                     </ul>
                   )}
@@ -402,8 +465,8 @@ export function CommunityTab({ workflowsEnabled = false, subAgentsEnabled = fals
                 <p className="text-muted-foreground font-medium">No community skills found</p>
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                   Click <strong>Sync</strong> to import skills from the community repo — git fetch
-                  runs automatically when{' '}
-                  <span className="font-mono">allowCommunityGitFetch</span> is enabled.
+                  runs automatically when <span className="font-mono">allowCommunityGitFetch</span>{' '}
+                  is enabled.
                 </p>
                 {statusData?.communityRepoPath && (
                   <p className="text-xs text-muted-foreground font-mono">

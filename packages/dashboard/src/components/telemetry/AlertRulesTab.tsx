@@ -449,8 +449,7 @@ export function AlertRulesTab() {
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                  <span>{rule.metricPath}</span>{' '}
-                  <span>{OPERATOR_LABELS[rule.operator]}</span>{' '}
+                  <span>{rule.metricPath}</span> <span>{OPERATOR_LABELS[rule.operator]}</span>{' '}
                   <span>{rule.threshold}</span>
                 </p>
               </div>

@@ -239,7 +239,9 @@ function MultiTerminal({ outputRef, onCommandComplete }: MultiTerminalProps) {
           className="flex-1 bg-transparent font-mono text-xs outline-none text-foreground placeholder:text-muted-foreground/40 caret-primary"
           placeholder="command..."
           value={activeTab.input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            setInput(e.target.value);
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
@@ -1033,7 +1035,9 @@ function StandardEditorPage() {
         {/* Top row — Code Editor & Chat side by side */}
         <div className="flex-1 flex flex-col lg:flex-row gap-3 min-h-0 lg:min-h-0">
           {/* Left panel — Code Editor */}
-          <div className={`flex flex-col flex-1 ${showChat ? 'lg:flex-[60]' : ''} min-h-[250px] lg:min-h-0 border rounded-lg overflow-hidden bg-card`}>
+          <div
+            className={`flex flex-col flex-1 ${showChat ? 'lg:flex-[60]' : ''} min-h-[250px] lg:min-h-0 border rounded-lg overflow-hidden bg-card`}
+          >
             {/* Editor toolbar with tabs */}
             <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30 flex-wrap">
               <button
@@ -1211,7 +1215,9 @@ function StandardEditorPage() {
               <div className="relative">
                 <button
                   ref={modelBtnRef}
-                  onClick={() => setModelOpen((v) => !v)}
+                  onClick={() => {
+                    setModelOpen((v) => !v);
+                  }}
                   className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
                   title="Switch model"
                 >
@@ -1223,7 +1229,9 @@ function StandardEditorPage() {
                 {modelOpen && (
                   <div className="absolute right-0 top-full mt-1 z-50">
                     <ModelWidget
-                      onClose={() => setModelOpen(false)}
+                      onClose={() => {
+                        setModelOpen(false);
+                      }}
                       onModelSwitch={() => {
                         setModelOpen(false);
                         void queryClient.invalidateQueries({ queryKey: ['model-info'] });
@@ -1431,331 +1439,335 @@ function StandardEditorPage() {
 
           {/* Right panel — Chat Sidebar */}
           {showChat && (
-          <div className="flex flex-col flex-1 lg:flex-[40] min-h-[200px] lg:min-h-0 border rounded-lg overflow-hidden bg-card">
-            {/* Sidebar header */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
-              <Bot className="w-4 h-4 text-primary flex-shrink-0" />
-              {currentPersonality?.isDefault && (
-                <span title="Default personality">
-                  <Star className="w-3 h-3 fill-current text-primary flex-shrink-0" />
-                </span>
-              )}
+            <div className="flex flex-col flex-1 lg:flex-[40] min-h-[200px] lg:min-h-0 border rounded-lg overflow-hidden bg-card">
+              {/* Sidebar header */}
+              <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
+                <Bot className="w-4 h-4 text-primary flex-shrink-0" />
+                {currentPersonality?.isDefault && (
+                  <span title="Default personality">
+                    <Star className="w-3 h-3 fill-current text-primary flex-shrink-0" />
+                  </span>
+                )}
 
-              {/* Personality selector */}
-              <div className="relative flex-1 min-w-0">
-                <select
-                  value={effectivePersonalityId ?? ''}
-                  onChange={(e) => {
-                    setSelectedPersonalityId(e.target.value || null);
-                  }}
-                  className="w-full bg-transparent border border-border rounded px-2 py-1 text-xs appearance-none pr-6 focus:outline-none focus:ring-1 focus:ring-primary truncate"
-                >
-                  <option value="">Default Assistant</option>
-                  {personalities.map((p: Personality) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                      {p.isActive ? ' (active)' : ''}
-                      {p.isDefault ? ' (default)' : ''}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground" />
-              </div>
-              <button
-                onClick={() => {
-                  localStorage.setItem('editor:showChat', 'false');
-                  setShowChat(false);
-                }}
-                className="text-muted-foreground hover:text-foreground flex-shrink-0"
-                title="Close chat"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* Chat messages */}
-            <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
-              {messages.length === 0 && (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <div className="text-center">
-                    <Bot className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                    {personalitiesData && personalities.length === 0 ? (
-                      <>
-                        <p className="text-xs font-medium">No personalities configured.</p>
-                        <p className="text-xs mt-1">
-                          <Link to="/personality" className="text-primary hover:underline">
-                            Create a personality
-                          </Link>{' '}
-                          to start chatting.
-                        </p>
-                      </>
-                    ) : (
-                      <p className="text-xs">
-                        Chat with {currentPersonality?.name ?? 'the assistant'} about your code.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {messages.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[90%] rounded-lg px-3 py-2 ${
-                      msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                    }`}
+                {/* Personality selector */}
+                <div className="relative flex-1 min-w-0">
+                  <select
+                    value={effectivePersonalityId ?? ''}
+                    onChange={(e) => {
+                      setSelectedPersonalityId(e.target.value || null);
+                    }}
+                    className="w-full bg-transparent border border-border rounded px-2 py-1 text-xs appearance-none pr-6 focus:outline-none focus:ring-1 focus:ring-primary truncate"
                   >
-                    <div className="flex items-center gap-1.5 mb-1">
-                      {msg.role === 'user' ? (
-                        <User className="w-3 h-3" />
-                      ) : (
-                        <Bot className="w-3 h-3" />
-                      )}
-                      <span className="text-[10px] opacity-70">
-                        {msg.role === 'user' ? 'You' : (currentPersonality?.name ?? 'Assistant')}
-                      </span>
-                    </div>
-                    {/* Phase 1 — Thinking */}
-                    {msg.role === 'assistant' && msg.thinkingContent && (
-                      <ThinkingBlock thinking={msg.thinkingContent} />
-                    )}
+                    <option value="">Default Assistant</option>
+                    {personalities.map((p: Personality) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                        {p.isActive ? ' (active)' : ''}
+                        {p.isDefault ? ' (default)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground" />
+                </div>
+                <button
+                  onClick={() => {
+                    localStorage.setItem('editor:showChat', 'false');
+                    setShowChat(false);
+                  }}
+                  className="text-muted-foreground hover:text-foreground flex-shrink-0"
+                  title="Close chat"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
 
-                    {/* Phase 2 — Tool use (badges + creation outcomes), shown before the response */}
-                    {msg.role === 'assistant' &&
-                      ((msg.toolCalls?.length ?? 0) > 0 ||
-                        (msg.creationEvents?.length ?? 0) > 0) && (
+              {/* Chat messages */}
+              <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+                {messages.length === 0 && (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    <div className="text-center">
+                      <Bot className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                      {personalitiesData && personalities.length === 0 ? (
+                        <>
+                          <p className="text-xs font-medium">No personalities configured.</p>
+                          <p className="text-xs mt-1">
+                            <Link to="/personality" className="text-primary hover:underline">
+                              Create a personality
+                            </Link>{' '}
+                            to start chatting.
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-xs">
+                          Chat with {currentPersonality?.name ?? 'the assistant'} about your code.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {messages.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[90%] rounded-lg px-3 py-2 ${
+                        msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 mb-1">
+                        {msg.role === 'user' ? (
+                          <User className="w-3 h-3" />
+                        ) : (
+                          <Bot className="w-3 h-3" />
+                        )}
+                        <span className="text-[10px] opacity-70">
+                          {msg.role === 'user' ? 'You' : (currentPersonality?.name ?? 'Assistant')}
+                        </span>
+                      </div>
+                      {/* Phase 1 — Thinking */}
+                      {msg.role === 'assistant' && msg.thinkingContent && (
+                        <ThinkingBlock thinking={msg.thinkingContent} />
+                      )}
+
+                      {/* Phase 2 — Tool use (badges + creation outcomes), shown before the response */}
+                      {msg.role === 'assistant' &&
+                        ((msg.toolCalls?.length ?? 0) > 0 ||
+                          (msg.creationEvents?.length ?? 0) > 0) && (
+                          <div
+                            className={`space-y-0.5 mb-1.5 ${msg.thinkingContent ? 'border-t border-muted-foreground/15 pt-1.5 mt-1' : ''}`}
+                          >
+                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70 mb-1">
+                              <Wrench className="w-2.5 h-2.5 shrink-0" />
+                              <span>Tools used</span>
+                            </div>
+                            {/* Tool call badges */}
+                            {msg.toolCalls && msg.toolCalls.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mb-0.5">
+                                {msg.toolCalls.map((tc, j) => (
+                                  <span
+                                    key={j}
+                                    className="inline-flex items-center gap-0.5 text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full"
+                                  >
+                                    <Sparkles className="w-2 h-2" />
+                                    {tc.isMcp && tc.serverName
+                                      ? `${tc.serverName}: ${tc.toolName}`
+                                      : tc.label}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {/* Creation outcomes */}
+                            {msg.creationEvents?.map((ev: CreationEvent, j: number) => (
+                              <div
+                                key={j}
+                                className="flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20"
+                              >
+                                <Sparkles className="w-2.5 h-2.5 shrink-0" />
+                                <span>
+                                  {ev.label} {ev.action ?? 'Created'}:{' '}
+                                  <strong className="font-medium">{sanitizeText(ev.name)}</strong>
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                      {/* Phase 3 — Response */}
+                      {msg.role === 'assistant' ? (
                         <div
-                          className={`space-y-0.5 mb-1.5 ${msg.thinkingContent ? 'border-t border-muted-foreground/15 pt-1.5 mt-1' : ''}`}
+                          className={
+                            msg.thinkingContent ||
+                            (msg.toolCalls?.length ?? 0) > 0 ||
+                            (msg.creationEvents?.length ?? 0) > 0
+                              ? 'border-t border-muted-foreground/15 pt-1.5 mt-1'
+                              : ''
+                          }
+                        >
+                          <ChatMarkdown content={sanitizeText(msg.content)} size="xs" />
+                        </div>
+                      ) : (
+                        <p className="text-xs whitespace-pre-wrap">{sanitizeText(msg.content)}</p>
+                      )}
+
+                      {msg.role === 'assistant' && (
+                        <button
+                          onClick={() => {
+                            handleInsertAtCursor(msg);
+                          }}
+                          className="flex items-center gap-1 text-[10px] text-primary mt-1.5 hover:underline"
+                          title="Insert code at cursor position in editor"
+                        >
+                          <ArrowDownToLine className="w-3 h-3" />
+                          Insert at Cursor
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Live streaming response */}
+                {isPending && (
+                  <div className="flex justify-start">
+                    <div className="bg-muted rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <Bot className="w-3 h-3" />
+                        <span className="text-[10px] opacity-70">
+                          {currentPersonality?.name ?? 'Assistant'}
+                        </span>
+                      </div>
+
+                      {/* Phase 1 — Live thinking */}
+                      {streamingThinking && (
+                        <ThinkingBlock thinking={streamingThinking} live={true} />
+                      )}
+
+                      {/* Phase 2 — Active tool calls */}
+                      {activeToolCalls.length > 0 && (
+                        <div
+                          className={`mb-1 ${streamingThinking ? 'border-t border-muted-foreground/15 pt-1.5 mt-1' : ''}`}
                         >
                           <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70 mb-1">
                             <Wrench className="w-2.5 h-2.5 shrink-0" />
-                            <span>Tools used</span>
+                            <span>Using tools</span>
                           </div>
-                          {/* Tool call badges */}
-                          {msg.toolCalls && msg.toolCalls.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mb-0.5">
-                              {msg.toolCalls.map((tc, j) => (
-                                <span
-                                  key={j}
-                                  className="inline-flex items-center gap-0.5 text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full"
-                                >
-                                  <Sparkles className="w-2 h-2" />
-                                  {tc.isMcp && tc.serverName
-                                    ? `${tc.serverName}: ${tc.toolName}`
-                                    : tc.label}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                          {/* Creation outcomes */}
-                          {msg.creationEvents?.map((ev: CreationEvent, j: number) => (
-                            <div
-                              key={j}
-                              className="flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20"
-                            >
-                              <Sparkles className="w-2.5 h-2.5 shrink-0" />
-                              <span>
-                                {ev.label} {ev.action ?? 'Created'}:{' '}
-                                <strong className="font-medium">{sanitizeText(ev.name)}</strong>
+                          <div className="flex flex-wrap gap-1">
+                            {activeToolCalls.map((tc) => (
+                              <span
+                                key={tc.toolName}
+                                className="inline-flex items-center gap-0.5 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full animate-pulse"
+                              >
+                                <Sparkles className="w-2 h-2" />
+                                {tc.isMcp ? `${tc.serverName}: ${tc.toolName}` : tc.label}
                               </span>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
                       )}
 
-                    {/* Phase 3 — Response */}
-                    {msg.role === 'assistant' ? (
-                      <div
-                        className={
-                          msg.thinkingContent ||
-                          (msg.toolCalls?.length ?? 0) > 0 ||
-                          (msg.creationEvents?.length ?? 0) > 0
-                            ? 'border-t border-muted-foreground/15 pt-1.5 mt-1'
-                            : ''
-                        }
-                      >
-                        <ChatMarkdown content={sanitizeText(msg.content)} size="xs" />
-                      </div>
-                    ) : (
-                      <p className="text-xs whitespace-pre-wrap">{sanitizeText(msg.content)}</p>
-                    )}
-
-                    {msg.role === 'assistant' && (
-                      <button
-                        onClick={() => {
-                          handleInsertAtCursor(msg);
-                        }}
-                        className="flex items-center gap-1 text-[10px] text-primary mt-1.5 hover:underline"
-                        title="Insert code at cursor position in editor"
-                      >
-                        <ArrowDownToLine className="w-3 h-3" />
-                        Insert at Cursor
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              {/* Live streaming response */}
-              {isPending && (
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-lg px-3 py-2">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Bot className="w-3 h-3" />
-                      <span className="text-[10px] opacity-70">
-                        {currentPersonality?.name ?? 'Assistant'}
-                      </span>
-                    </div>
-
-                    {/* Phase 1 — Live thinking */}
-                    {streamingThinking && (
-                      <ThinkingBlock thinking={streamingThinking} live={true} />
-                    )}
-
-                    {/* Phase 2 — Active tool calls */}
-                    {activeToolCalls.length > 0 && (
-                      <div
-                        className={`mb-1 ${streamingThinking ? 'border-t border-muted-foreground/15 pt-1.5 mt-1' : ''}`}
-                      >
-                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70 mb-1">
-                          <Wrench className="w-2.5 h-2.5 shrink-0" />
-                          <span>Using tools</span>
+                      {/* Phase 3 — Response */}
+                      {streamingContent ? (
+                        <div
+                          className={
+                            streamingThinking || hadActiveTools
+                              ? 'border-t border-muted-foreground/15 pt-1.5 mt-1'
+                              : ''
+                          }
+                        >
+                          <p className="text-xs whitespace-pre-wrap">{streamingContent}</p>
                         </div>
-                        <div className="flex flex-wrap gap-1">
-                          {activeToolCalls.map((tc) => (
-                            <span
-                              key={tc.toolName}
-                              className="inline-flex items-center gap-0.5 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full animate-pulse"
-                            >
-                              <Sparkles className="w-2 h-2" />
-                              {tc.isMcp ? `${tc.serverName}: ${tc.toolName}` : tc.label}
+                      ) : (
+                        !streamingThinking &&
+                        activeToolCalls.length === 0 && (
+                          <div className="flex items-center gap-1.5 mt-1.5">
+                            <span className="text-[10px] text-muted-foreground animate-pulse">
+                              Thinking
                             </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Phase 3 — Response */}
-                    {streamingContent ? (
-                      <div
-                        className={
-                          streamingThinking || hadActiveTools
-                            ? 'border-t border-muted-foreground/15 pt-1.5 mt-1'
-                            : ''
-                        }
-                      >
-                        <p className="text-xs whitespace-pre-wrap">{streamingContent}</p>
-                      </div>
-                    ) : (
-                      !streamingThinking &&
-                      activeToolCalls.length === 0 && (
-                        <div className="flex items-center gap-1.5 mt-1.5">
-                          <span className="text-[10px] text-muted-foreground animate-pulse">
-                            Thinking
-                          </span>
-                          <div className="flex gap-1">
-                            <span
-                              className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
-                              style={{ animationDelay: '0ms' }}
-                            />
-                            <span
-                              className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
-                              style={{ animationDelay: '150ms' }}
-                            />
-                            <span
-                              className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
-                              style={{ animationDelay: '300ms' }}
-                            />
+                            <div className="flex gap-1">
+                              <span
+                                className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
+                                style={{ animationDelay: '0ms' }}
+                              />
+                              <span
+                                className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
+                                style={{ animationDelay: '150ms' }}
+                              />
+                              <span
+                                className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
+                                style={{ animationDelay: '300ms' }}
+                              />
+                            </div>
                           </div>
-                        </div>
-                      )
-                    )}
+                        )
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
-
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Chat input */}
-            <div className="border-t px-3 py-2">
-              <div className="flex gap-2 items-end">
-                <textarea
-                  value={chatInput}
-                  onChange={(e) => {
-                    setChatInput(e.target.value);
-                  }}
-                  onKeyDown={handleKeyDown}
-                  placeholder={`Message ${currentPersonality?.name ?? 'assistant'}...`}
-                  disabled={isPending}
-                  rows={3}
-                  className="flex-1 resize-none rounded border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 min-h-[80px] max-h-[200px]"
-                />
-                <button
-                  onClick={voice.toggleVoice}
-                  disabled={!voice.supported}
-                  className={`btn px-3 py-2 rounded disabled:opacity-50 h-[52px] ${
-                    voice.voiceEnabled ? 'btn-primary' : 'btn-ghost'
-                  }`}
-                  title={voice.voiceEnabled ? 'Voice enabled' : 'Enable voice'}
-                >
-                  {voice.isListening ? (
-                    <Mic className="w-3 h-3 animate-pulse" />
-                  ) : voice.voiceEnabled ? (
-                    <Mic className="w-3 h-3" />
-                  ) : (
-                    <Mic className="w-3 h-3 opacity-50" />
-                  )}
-                </button>
-                {hasVision && (
-                  <button
-                    onClick={() => {
-                      setWatchEnabled((v) => !v);
-                    }}
-                    className={`btn px-3 py-2 rounded h-[52px] ${
-                      watchEnabled ? 'btn-primary' : 'btn-ghost'
-                    }`}
-                    title={
-                      watchEnabled
-                        ? 'Watch on — terminal output visible to personality'
-                        : 'Watch off — enable terminal vision'
-                    }
-                  >
-                    <Eye className="w-3 h-3" />
-                  </button>
                 )}
-                <button
-                  onClick={handleSend}
-                  disabled={!chatInput.trim() || isPending}
-                  className="btn btn-ghost px-3 py-2 rounded disabled:opacity-50 h-[52px]"
-                >
-                  {isPending ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <Send className="w-3 h-3" />
-                  )}
-                </button>
-              </div>
-            </div>
 
-            <VoiceOverlay
-              isActive={ptt.isActive}
-              audioLevel={ptt.audioLevel}
-              duration={ptt.duration}
-              transcript={ptt.transcript}
-              error={ptt.error}
-            />
-          </div>
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Chat input */}
+              <div className="border-t px-3 py-2">
+                <div className="flex gap-2 items-end">
+                  <textarea
+                    value={chatInput}
+                    onChange={(e) => {
+                      setChatInput(e.target.value);
+                    }}
+                    onKeyDown={handleKeyDown}
+                    placeholder={`Message ${currentPersonality?.name ?? 'assistant'}...`}
+                    disabled={isPending}
+                    rows={3}
+                    className="flex-1 resize-none rounded border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 min-h-[80px] max-h-[200px]"
+                  />
+                  <button
+                    onClick={voice.toggleVoice}
+                    disabled={!voice.supported}
+                    className={`btn px-3 py-2 rounded disabled:opacity-50 h-[52px] ${
+                      voice.voiceEnabled ? 'btn-primary' : 'btn-ghost'
+                    }`}
+                    title={voice.voiceEnabled ? 'Voice enabled' : 'Enable voice'}
+                  >
+                    {voice.isListening ? (
+                      <Mic className="w-3 h-3 animate-pulse" />
+                    ) : voice.voiceEnabled ? (
+                      <Mic className="w-3 h-3" />
+                    ) : (
+                      <Mic className="w-3 h-3 opacity-50" />
+                    )}
+                  </button>
+                  {hasVision && (
+                    <button
+                      onClick={() => {
+                        setWatchEnabled((v) => !v);
+                      }}
+                      className={`btn px-3 py-2 rounded h-[52px] ${
+                        watchEnabled ? 'btn-primary' : 'btn-ghost'
+                      }`}
+                      title={
+                        watchEnabled
+                          ? 'Watch on — terminal output visible to personality'
+                          : 'Watch off — enable terminal vision'
+                      }
+                    >
+                      <Eye className="w-3 h-3" />
+                    </button>
+                  )}
+                  <button
+                    onClick={handleSend}
+                    disabled={!chatInput.trim() || isPending}
+                    className="btn btn-ghost px-3 py-2 rounded disabled:opacity-50 h-[52px]"
+                  >
+                    {isPending ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Send className="w-3 h-3" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <VoiceOverlay
+                isActive={ptt.isActive}
+                audioLevel={ptt.audioLevel}
+                duration={ptt.duration}
+                transcript={ptt.transcript}
+                error={ptt.error}
+              />
+            </div>
           )}
         </div>
 
         {/* Bottom row — Terminal (+ Agent World side-by-side when visible) */}
-        <div className={`flex ${showWorld ? 'flex-col lg:flex-row' : 'flex-col'} gap-3 h-[200px] sm:h-[220px] lg:h-[240px] flex-shrink-0`}>
+        <div
+          className={`flex ${showWorld ? 'flex-col lg:flex-row' : 'flex-col'} gap-3 h-[200px] sm:h-[220px] lg:h-[240px] flex-shrink-0`}
+        >
           {/* Terminal / Sessions / History */}
-          <div className={`flex flex-col border rounded-lg overflow-hidden bg-card ${showWorld ? 'flex-1 lg:flex-[60]' : 'flex-1'} min-h-0`}>
+          <div
+            className={`flex flex-col border rounded-lg overflow-hidden bg-card ${showWorld ? 'flex-1 lg:flex-[60]' : 'flex-1'} min-h-0`}
+          >
             {/* Tab bar */}
             <div className="flex items-center border-b bg-muted/30 min-w-0">
               <div className="flex flex-shrink-0">

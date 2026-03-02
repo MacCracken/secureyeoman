@@ -19,7 +19,7 @@ const NORTHFLANK_BASE = 'https://api.northflank.com/v1';
 
 function northflankHeaders(config: McpServiceConfig): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (config.northflankApiKey) headers['Authorization'] = `Bearer ${config.northflankApiKey}`;
+  if (config.northflankApiKey) headers.Authorization = `Bearer ${config.northflankApiKey}`;
   return headers;
 }
 
@@ -74,13 +74,12 @@ export function registerNorthflankTools(
     },
     wrapToolHandler('northflank_list_services', middleware, async ({ projectId }) => {
       if (!config.exposeNorthflank) return disabled();
-      const { ok, status, body } = await northflankFetch(
-        config,
-        `/projects/${projectId}/services`
-      );
+      const { ok, status, body } = await northflankFetch(config, `/projects/${projectId}/services`);
       if (!ok) {
         return {
-          content: [{ type: 'text', text: `Northflank API error ${status}: ${JSON.stringify(body)}` }],
+          content: [
+            { type: 'text', text: `Northflank API error ${status}: ${JSON.stringify(body)}` },
+          ],
           isError: true,
         };
       }
@@ -104,8 +103,8 @@ export function registerNorthflankTools(
       async ({ projectId, serviceId, branch, sha }) => {
         if (!config.exposeNorthflank) return disabled();
         const payload: Record<string, string> = {};
-        if (branch) payload['branch'] = branch;
-        if (sha) payload['sha'] = sha;
+        if (branch) payload.branch = branch;
+        if (sha) payload.sha = sha;
         const { ok, status, body } = await northflankFetch(
           config,
           `/projects/${projectId}/services/${serviceId}/builds`,
@@ -116,7 +115,9 @@ export function registerNorthflankTools(
         );
         if (!ok) {
           return {
-            content: [{ type: 'text', text: `Northflank API error ${status}: ${JSON.stringify(body)}` }],
+            content: [
+              { type: 'text', text: `Northflank API error ${status}: ${JSON.stringify(body)}` },
+            ],
             isError: true,
           };
         }
@@ -134,20 +135,26 @@ export function registerNorthflankTools(
       serviceId: z.string().min(1).describe('Service ID'),
       buildId: z.string().min(1).describe('Build ID'),
     },
-    wrapToolHandler('northflank_get_build', middleware, async ({ projectId, serviceId, buildId }) => {
-      if (!config.exposeNorthflank) return disabled();
-      const { ok, status, body } = await northflankFetch(
-        config,
-        `/projects/${projectId}/services/${serviceId}/builds/${buildId}`
-      );
-      if (!ok) {
-        return {
-          content: [{ type: 'text', text: `Northflank API error ${status}: ${JSON.stringify(body)}` }],
-          isError: true,
-        };
+    wrapToolHandler(
+      'northflank_get_build',
+      middleware,
+      async ({ projectId, serviceId, buildId }) => {
+        if (!config.exposeNorthflank) return disabled();
+        const { ok, status, body } = await northflankFetch(
+          config,
+          `/projects/${projectId}/services/${serviceId}/builds/${buildId}`
+        );
+        if (!ok) {
+          return {
+            content: [
+              { type: 'text', text: `Northflank API error ${status}: ${JSON.stringify(body)}` },
+            ],
+            isError: true,
+          };
+        }
+        return { content: [{ type: 'text', text: JSON.stringify(body, null, 2) }] };
       }
-      return { content: [{ type: 'text', text: JSON.stringify(body, null, 2) }] };
-    })
+    )
   );
 
   // ── northflank_list_deployments ───────────────────────────────────────────
@@ -165,7 +172,9 @@ export function registerNorthflankTools(
       );
       if (!ok) {
         return {
-          content: [{ type: 'text', text: `Northflank API error ${status}: ${JSON.stringify(body)}` }],
+          content: [
+            { type: 'text', text: `Northflank API error ${status}: ${JSON.stringify(body)}` },
+          ],
           isError: true,
         };
       }
@@ -188,7 +197,7 @@ export function registerNorthflankTools(
       async ({ projectId, deploymentId, imageTag }) => {
         if (!config.exposeNorthflank) return disabled();
         const payload: Record<string, string> = {};
-        if (imageTag) payload['imageTag'] = imageTag;
+        if (imageTag) payload.imageTag = imageTag;
         const { ok, status, body } = await northflankFetch(
           config,
           `/projects/${projectId}/deployments/${deploymentId}/deploy`,
@@ -199,7 +208,9 @@ export function registerNorthflankTools(
         );
         if (!ok) {
           return {
-            content: [{ type: 'text', text: `Northflank API error ${status}: ${JSON.stringify(body)}` }],
+            content: [
+              { type: 'text', text: `Northflank API error ${status}: ${JSON.stringify(body)}` },
+            ],
             isError: true,
           };
         }

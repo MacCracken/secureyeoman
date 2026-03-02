@@ -67,11 +67,11 @@ function isBlockedCommand(command: string): boolean {
 }
 
 // Tech-stack detection: marker file → { stack name, allowed commands }
-const TECH_STACK_DETECTORS: Array<{
+const TECH_STACK_DETECTORS: {
   files: string[];
   stack: string;
   commands: string[];
-}> = [
+}[] = [
   {
     files: ['package.json'],
     stack: 'node',
@@ -115,8 +115,23 @@ const TECH_STACK_DETECTORS: Array<{
 ];
 
 const COMMON_COMMANDS = [
-  'ls', 'cat', 'head', 'tail', 'grep', 'find', 'mkdir', 'touch', 'cp', 'mv',
-  'echo', 'pwd', 'env', 'which', 'curl', 'wget', 'jq',
+  'ls',
+  'cat',
+  'head',
+  'tail',
+  'grep',
+  'find',
+  'mkdir',
+  'touch',
+  'cp',
+  'mv',
+  'echo',
+  'pwd',
+  'env',
+  'which',
+  'curl',
+  'wget',
+  'jq',
 ];
 
 export function registerTerminalRoutes(app: FastifyInstance): void {

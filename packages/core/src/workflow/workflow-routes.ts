@@ -13,9 +13,23 @@ import type { WorkflowExport } from '@secureyeoman/shared';
 
 /** Known integration keywords to detect from step config strings. */
 const INTEGRATION_KEYWORDS = [
-  'github', 'gmail', 'slack', 'discord', 'telegram', 'notion',
-  'jira', 'stripe', 'twitter', 'youtube', 'spotify', 'linear',
-  'airtable', 'figma', 'gitlab', 'azure', 'aws',
+  'github',
+  'gmail',
+  'slack',
+  'discord',
+  'telegram',
+  'notion',
+  'jira',
+  'stripe',
+  'twitter',
+  'youtube',
+  'spotify',
+  'linear',
+  'airtable',
+  'figma',
+  'gitlab',
+  'azure',
+  'aws',
 ] as const;
 
 export function registerWorkflowRoutes(
@@ -160,8 +174,7 @@ export function registerWorkflowRoutes(
       if (requires.tools?.length) {
         compatibility.gaps.tools = requires.tools;
       }
-      compatibility.compatible =
-        Object.keys(compatibility.gaps).length === 0;
+      compatibility.compatible = Object.keys(compatibility.gaps).length === 0;
 
       try {
         const definition = await workflowManager.createDefinition({

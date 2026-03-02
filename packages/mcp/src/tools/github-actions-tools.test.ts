@@ -122,15 +122,17 @@ describe('github-actions-tools', () => {
 
   it('registers all 6 gha_* tools without throwing', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
-    expect(() =>
-      registerGithubActionsTools(server, baseConfig(), noopMiddleware())
-    ).not.toThrow();
+    expect(() => registerGithubActionsTools(server, baseConfig(), noopMiddleware())).not.toThrow();
   });
 
   describe('disabled gate', () => {
     it('returns isError when exposeGithubActions=false (gha_list_workflows)', async () => {
       const server = new McpServer({ name: 'test', version: '1.0.0' });
-      registerGithubActionsTools(server, baseConfig({ exposeGithubActions: false }), noopMiddleware());
+      registerGithubActionsTools(
+        server,
+        baseConfig({ exposeGithubActions: false }),
+        noopMiddleware()
+      );
       const { globalToolRegistry } = await import('./tool-utils.js');
       const result = await globalToolRegistry.get('gha_list_workflows')!({ owner: 'o', repo: 'r' });
       expect(result.isError).toBe(true);
@@ -139,10 +141,18 @@ describe('github-actions-tools', () => {
 
     it('returns isError when exposeGithubActions=false (gha_dispatch_workflow)', async () => {
       const server = new McpServer({ name: 'test', version: '1.0.0' });
-      registerGithubActionsTools(server, baseConfig({ exposeGithubActions: false }), noopMiddleware());
+      registerGithubActionsTools(
+        server,
+        baseConfig({ exposeGithubActions: false }),
+        noopMiddleware()
+      );
       const { globalToolRegistry } = await import('./tool-utils.js');
       const result = await globalToolRegistry.get('gha_dispatch_workflow')!({
-        owner: 'o', repo: 'r', workflowId: 'ci.yml', ref: 'main', inputs: {},
+        owner: 'o',
+        repo: 'r',
+        workflowId: 'ci.yml',
+        ref: 'main',
+        inputs: {},
       });
       expect(result.isError).toBe(true);
     });
@@ -154,7 +164,10 @@ describe('github-actions-tools', () => {
       registerGithubActionsTools(server, baseConfig(), noopMiddleware());
       mockFetchOk({ workflows: [{ id: 1, name: 'CI' }], total_count: 1 });
       const { globalToolRegistry } = await import('./tool-utils.js');
-      const result = await globalToolRegistry.get('gha_list_workflows')!({ owner: 'org', repo: 'repo' });
+      const result = await globalToolRegistry.get('gha_list_workflows')!({
+        owner: 'org',
+        repo: 'repo',
+      });
       expect(result.isError).toBeFalsy();
       const text = (result.content[0] as { text: string }).text;
       expect(text).toContain('workflows');
@@ -185,7 +198,11 @@ describe('github-actions-tools', () => {
       );
       const { globalToolRegistry } = await import('./tool-utils.js');
       const result = await globalToolRegistry.get('gha_dispatch_workflow')!({
-        owner: 'org', repo: 'repo', workflowId: 'ci.yml', ref: 'main', inputs: {},
+        owner: 'org',
+        repo: 'repo',
+        workflowId: 'ci.yml',
+        ref: 'main',
+        inputs: {},
       });
       expect(result.isError).toBeFalsy();
       const parsed = JSON.parse((result.content[0] as { text: string }).text);
@@ -204,9 +221,15 @@ describe('github-actions-tools', () => {
       vi.stubGlobal('fetch', mockFetch);
       const { globalToolRegistry } = await import('./tool-utils.js');
       await globalToolRegistry.get('gha_dispatch_workflow')!({
-        owner: 'org', repo: 'repo', workflowId: 'ci.yml', ref: 'feature', inputs: { env: 'staging' },
+        owner: 'org',
+        repo: 'repo',
+        workflowId: 'ci.yml',
+        ref: 'feature',
+        inputs: { env: 'staging' },
       });
-      const callBody = JSON.parse((mockFetch.mock.calls[0] as unknown as { 1: { body: string } }[])[1].body);
+      const callBody = JSON.parse(
+        (mockFetch.mock.calls[0] as unknown as { 1: { body: string } }[])[1].body
+      );
       expect(callBody.inputs).toEqual({ env: 'staging' });
       expect(callBody.ref).toBe('feature');
     });
@@ -219,7 +242,11 @@ describe('github-actions-tools', () => {
       mockFetchOk({ workflow_runs: [{ id: 42, status: 'completed' }], total_count: 1 });
       const { globalToolRegistry } = await import('./tool-utils.js');
       const result = await globalToolRegistry.get('gha_list_runs')!({
-        owner: 'o', repo: 'r', branch: '', status: '', perPage: 10,
+        owner: 'o',
+        repo: 'r',
+        branch: '',
+        status: '',
+        perPage: 10,
       });
       expect(result.isError).toBeFalsy();
     });
@@ -231,7 +258,11 @@ describe('github-actions-tools', () => {
       registerGithubActionsTools(server, baseConfig(), noopMiddleware());
       mockFetchOk({ id: 99, status: 'completed', conclusion: 'success' });
       const { globalToolRegistry } = await import('./tool-utils.js');
-      const result = await globalToolRegistry.get('gha_get_run')!({ owner: 'o', repo: 'r', runId: 99 });
+      const result = await globalToolRegistry.get('gha_get_run')!({
+        owner: 'o',
+        repo: 'r',
+        runId: 99,
+      });
       expect(result.isError).toBeFalsy();
       expect((result.content[0] as { text: string }).text).toContain('success');
     });
@@ -251,7 +282,11 @@ describe('github-actions-tools', () => {
         })
       );
       const { globalToolRegistry } = await import('./tool-utils.js');
-      const result = await globalToolRegistry.get('gha_cancel_run')!({ owner: 'o', repo: 'r', runId: 55 });
+      const result = await globalToolRegistry.get('gha_cancel_run')!({
+        owner: 'o',
+        repo: 'r',
+        runId: 55,
+      });
       expect(result.isError).toBeFalsy();
       const parsed = JSON.parse((result.content[0] as { text: string }).text);
       expect(parsed.cancelled).toBe(true);
@@ -266,12 +301,18 @@ describe('github-actions-tools', () => {
         'fetch',
         vi.fn().mockResolvedValue({
           status: 302,
-          headers: { get: (h: string) => (h === 'location' ? 'https://s3.example.com/logs.zip' : null) },
+          headers: {
+            get: (h: string) => (h === 'location' ? 'https://s3.example.com/logs.zip' : null),
+          },
           text: () => Promise.resolve(''),
         })
       );
       const { globalToolRegistry } = await import('./tool-utils.js');
-      const result = await globalToolRegistry.get('gha_get_run_logs')!({ owner: 'o', repo: 'r', runId: 77 });
+      const result = await globalToolRegistry.get('gha_get_run_logs')!({
+        owner: 'o',
+        repo: 'r',
+        runId: 77,
+      });
       expect(result.isError).toBeFalsy();
       const parsed = JSON.parse((result.content[0] as { text: string }).text);
       expect(parsed.logsUrl).toBe('https://s3.example.com/logs.zip');
@@ -289,7 +330,11 @@ describe('github-actions-tools', () => {
         })
       );
       const { globalToolRegistry } = await import('./tool-utils.js');
-      const result = await globalToolRegistry.get('gha_get_run_logs')!({ owner: 'o', repo: 'r', runId: 78 });
+      const result = await globalToolRegistry.get('gha_get_run_logs')!({
+        owner: 'o',
+        repo: 'r',
+        runId: 78,
+      });
       expect(result.isError).toBeFalsy();
     });
   });

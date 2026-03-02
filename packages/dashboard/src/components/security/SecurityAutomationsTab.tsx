@@ -701,7 +701,9 @@ function AutomationsWorkflowsView() {
   );
 }
 
-export function AutomationsSecurityTab({ allowWorkflows = false }: { allowWorkflows?: boolean } = {}) {
+export function AutomationsSecurityTab({
+  allowWorkflows = false,
+}: { allowWorkflows?: boolean } = {}) {
   const [subview, setSubview] = useState<AutomationsSubview>('heartbeats');
 
   const visibleViews: AutomationsSubview[] = allowWorkflows

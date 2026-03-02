@@ -11,4 +11,7 @@ export { SwarmStorage } from './swarm-storage.js';
 export { SwarmManager, type SwarmManagerDeps } from './swarm-manager.js';
 export { BUILTIN_SWARM_TEMPLATES } from './swarm-templates.js';
 export { registerSwarmRoutes } from './swarm-routes.js';
-export { registerProfileSkillsRoutes, type ProfileSkillsRoutesOpts } from './profile-skills-routes.js';
+export {
+  registerProfileSkillsRoutes,
+  type ProfileSkillsRoutesOpts,
+} from './profile-skills-routes.js';

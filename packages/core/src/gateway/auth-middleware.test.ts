@@ -690,7 +690,11 @@ describe('Auth Middleware', () => {
         sentCode: () => _code,
         code: (c: number) => {
           _code = c;
-          return { send: (_body: unknown) => { _sent = true; } };
+          return {
+            send: (_body: unknown) => {
+              _sent = true;
+            },
+          };
         },
       };
     }
@@ -725,8 +729,12 @@ describe('Auth Middleware', () => {
 
     it('falls through when mTLS cert is authorized but has no subject.CN', async () => {
       const fakeAuth = {
-        verifyToken: async () => { throw new Error('no token'); },
-        verifyApiKey: async () => { throw new Error('no key'); },
+        verifyToken: async () => {
+          throw new Error('no token');
+        },
+        verifyApiKey: async () => {
+          throw new Error('no key');
+        },
       } as unknown as typeof authService;
 
       const hook = createAuthHook({ authService: fakeAuth, logger: noopLogger() });
@@ -751,7 +759,14 @@ describe('Auth Middleware', () => {
         routeOptions: { url: '/api/v1/metrics' },
         url: '/api/v1/metrics',
         headers: {},
-        raw: { socket: { authorized: true, getPeerCertificate: () => { throw new Error('cert error'); } } },
+        raw: {
+          socket: {
+            authorized: true,
+            getPeerCertificate: () => {
+              throw new Error('cert error');
+            },
+          },
+        },
       };
       const reply = makeReply();
       await hook(req, reply as any);
@@ -762,8 +777,12 @@ describe('Auth Middleware', () => {
 
     it('returns 401 when Bearer token throws generic (non-AuthError)', async () => {
       const fakeAuth = {
-        verifyToken: async () => { throw new Error('unexpected internal error'); },
-        verifyApiKey: async () => { throw new Error('no key'); },
+        verifyToken: async () => {
+          throw new Error('unexpected internal error');
+        },
+        verifyApiKey: async () => {
+          throw new Error('no key');
+        },
       } as unknown as typeof authService;
 
       const hook = createAuthHook({ authService: fakeAuth, logger: noopLogger() });
@@ -782,8 +801,12 @@ describe('Auth Middleware', () => {
 
     it('returns 401 when API key throws generic (non-AuthError)', async () => {
       const fakeAuth = {
-        verifyToken: async () => { throw new Error('no token'); },
-        verifyApiKey: async () => { throw new Error('unexpected key error'); },
+        verifyToken: async () => {
+          throw new Error('no token');
+        },
+        verifyApiKey: async () => {
+          throw new Error('unexpected key error');
+        },
       } as unknown as typeof authService;
 
       const hook = createAuthHook({ authService: fakeAuth, logger: noopLogger() });

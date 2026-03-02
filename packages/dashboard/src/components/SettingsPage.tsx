@@ -515,14 +515,20 @@ function LicenseCard() {
     <div className="card">
       <div className="p-4 border-b flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <BadgeCheck className={`w-5 h-5 ${isEnterprise ? 'text-primary' : 'text-muted-foreground'}`} />
+          <BadgeCheck
+            className={`w-5 h-5 ${isEnterprise ? 'text-primary' : 'text-muted-foreground'}`}
+          />
           <h3 className="font-medium">License</h3>
-          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${isEnterprise ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
-            {isLoading ? '…' : (isEnterprise ? 'Enterprise' : 'Community')}
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${isEnterprise ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
+          >
+            {isLoading ? '…' : isEnterprise ? 'Enterprise' : 'Community'}
           </span>
         </div>
         <button
-          onClick={() => setShowInput((v) => !v)}
+          onClick={() => {
+            setShowInput((v) => !v);
+          }}
           className="text-xs text-muted-foreground hover:text-foreground underline"
         >
           {showInput ? 'Cancel' : 'Set license key'}
@@ -556,7 +562,10 @@ function LicenseCard() {
             {isEnterprise && license && license.features.length > 0 && (
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {license.features.map((f) => (
-                  <span key={f} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-success/10 text-success font-medium">
+                  <span
+                    key={f}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-success/10 text-success font-medium"
+                  >
                     <Check className="w-3 h-3" />
                     {FEATURE_LABELS[f] ?? f}
                   </span>
@@ -566,7 +575,8 @@ function LicenseCard() {
 
             {!isEnterprise && (
               <p className="text-sm text-muted-foreground">
-                Running on the community tier. Enterprise features (Adaptive Learning, SSO/SAML, Multi-Tenancy, CI/CD, Advanced Observability) require a license key.
+                Running on the community tier. Enterprise features (Adaptive Learning, SSO/SAML,
+                Multi-Tenancy, CI/CD, Advanced Observability) require a license key.
               </p>
             )}
 
@@ -582,11 +592,15 @@ function LicenseCard() {
               type="password"
               placeholder="Paste license key…"
               value={keyInput}
-              onChange={(e) => setKeyInput(e.target.value)}
+              onChange={(e) => {
+                setKeyInput(e.target.value);
+              }}
               className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
             />
             <button
-              onClick={() => setKeyMutation.mutate(keyInput)}
+              onClick={() => {
+                setKeyMutation.mutate(keyInput);
+              }}
               disabled={!keyInput.trim() || setKeyMutation.isPending}
               className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
@@ -596,7 +610,9 @@ function LicenseCard() {
         )}
         {setKeyMutation.isError && (
           <p className="text-xs text-destructive">
-            {setKeyMutation.error instanceof Error ? setKeyMutation.error.message : 'Failed to set key'}
+            {setKeyMutation.error instanceof Error
+              ? setKeyMutation.error.message
+              : 'Failed to set key'}
           </p>
         )}
       </div>

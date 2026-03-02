@@ -267,9 +267,7 @@ describe('intent-tools', () => {
     it('calls GET /api/v1/intent/enforcement-log with filters', async () => {
       const client = makeMockClient({
         get: vi.fn().mockResolvedValue({
-          entries: [
-            { id: 'e1', eventType: 'boundary_violated', rule: 'deny:api-keys' },
-          ],
+          entries: [{ id: 'e1', eventType: 'boundary_violated', rule: 'deny:api-keys' }],
         }),
       });
       const server = new McpServer({ name: 'test', version: '1.0.0' });

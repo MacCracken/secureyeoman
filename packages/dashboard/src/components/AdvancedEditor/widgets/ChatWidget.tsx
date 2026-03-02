@@ -15,7 +15,7 @@ export function ChatWidget() {
 
   const handleSend = () => {
     if (!input.trim() || isPending) return;
-    void sendMessage(input.trim());
+    sendMessage(input.trim());
     setInput('');
   };
 
@@ -47,7 +47,9 @@ export function ChatWidget() {
           className="flex-1 text-xs rounded border px-2 py-1 bg-background"
           placeholder="Ask anything..."
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            setInput(e.target.value);
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();

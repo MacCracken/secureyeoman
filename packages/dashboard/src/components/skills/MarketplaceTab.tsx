@@ -19,7 +19,10 @@ import {
   type ContentType,
 } from './shared';
 
-export function MarketplaceTab({ workflowsEnabled = false, subAgentsEnabled = false }: { workflowsEnabled?: boolean; subAgentsEnabled?: boolean } = {}) {
+export function MarketplaceTab({
+  workflowsEnabled = false,
+  subAgentsEnabled = false,
+}: { workflowsEnabled?: boolean; subAgentsEnabled?: boolean } = {}) {
   const queryClient = useQueryClient();
   const hiddenTypes: ContentType[] = [
     ...(!workflowsEnabled ? ['workflows' as const] : []),
@@ -154,81 +157,97 @@ export function MarketplaceTab({ workflowsEnabled = false, subAgentsEnabled = fa
       )}
       <div className="space-y-6">
         {/* Type selector */}
-        <ContentTypeSelector value={contentType} onChange={(v) => { setContentType(v); }} hiddenTypes={hiddenTypes} />
+        <ContentTypeSelector
+          value={contentType}
+          onChange={(v) => {
+            setContentType(v);
+          }}
+          hiddenTypes={hiddenTypes}
+        />
 
         {/* Workflows / Swarms passthrough */}
         {contentType === 'workflows' && (
-          <ContentSuspense><LazyWorkflowsTab source="builtin" /></ContentSuspense>
+          <ContentSuspense>
+            <LazyWorkflowsTab source="builtin" />
+          </ContentSuspense>
         )}
         {contentType === 'swarms' && (
-          <ContentSuspense><LazySwarmTemplatesTab /></ContentSuspense>
+          <ContentSuspense>
+            <LazySwarmTemplatesTab />
+          </ContentSuspense>
         )}
 
         {/* Skills toolbar + grid */}
-        {contentType === 'skills' && <>
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="relative flex-1 max-w-2xl">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-              placeholder="Search skills…"
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-              }}
-            />
-          </div>
-          <PersonalitySelector
-            personalities={personalities}
-            value={selectedPersonalityId}
-            onChange={setSelectedPersonalityId}
-          />
-        </div>
+        {contentType === 'skills' && (
+          <>
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="relative flex-1 max-w-2xl">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  placeholder="Search skills…"
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                  }}
+                />
+              </div>
+              <PersonalitySelector
+                personalities={personalities}
+                value={selectedPersonalityId}
+                onChange={setSelectedPersonalityId}
+              />
+            </div>
 
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : allSkills.length === 0 ? (
-          <div className="card p-12 text-center">
-            <Store className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">
-              {query ? 'No skills found' : 'Marketplace is empty'}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {/* YEOMAN Built-ins */}
-            {builtinSkills.length > 0 && (
-              <section>
-                <div className="flex items-center gap-2 mb-4">
-                  <Shield className="w-4 h-4 text-primary" />
-                  <h3 className="text-sm font-semibold text-foreground">YEOMAN Skills</h3>
-                  <span className="text-xs text-muted-foreground">({builtinSkills.length})</span>
-                </div>
-                {renderGrid(builtinSkills, () => (
-                  <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                    <Shield className="w-2.5 h-2.5" />
-                    YEOMAN
-                  </span>
-                ))}
-              </section>
-            )}
+            {isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : allSkills.length === 0 ? (
+              <div className="card p-12 text-center">
+                <Store className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <p className="text-muted-foreground">
+                  {query ? 'No skills found' : 'Marketplace is empty'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {/* YEOMAN Built-ins */}
+                {builtinSkills.length > 0 && (
+                  <section>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Shield className="w-4 h-4 text-primary" />
+                      <h3 className="text-sm font-semibold text-foreground">YEOMAN Skills</h3>
+                      <span className="text-xs text-muted-foreground">
+                        ({builtinSkills.length})
+                      </span>
+                    </div>
+                    {renderGrid(builtinSkills, () => (
+                      <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                        <Shield className="w-2.5 h-2.5" />
+                        YEOMAN
+                      </span>
+                    ))}
+                  </section>
+                )}
 
-            {/* Published */}
-            {publishedSkills.length > 0 && (
-              <section>
-                <div className="flex items-center gap-2 mb-4">
-                  <Store className="w-4 h-4 text-muted-foreground" />
-                  <h3 className="text-sm font-semibold text-foreground">Published</h3>
-                  <span className="text-xs text-muted-foreground">({publishedSkills.length})</span>
-                </div>
-                {renderGrid(publishedSkills)}
-              </section>
+                {/* Published */}
+                {publishedSkills.length > 0 && (
+                  <section>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Store className="w-4 h-4 text-muted-foreground" />
+                      <h3 className="text-sm font-semibold text-foreground">Published</h3>
+                      <span className="text-xs text-muted-foreground">
+                        ({publishedSkills.length})
+                      </span>
+                    </div>
+                    {renderGrid(publishedSkills)}
+                  </section>
+                )}
+              </div>
             )}
-          </div>
+          </>
         )}
-        </>}
       </div>
     </>
   );

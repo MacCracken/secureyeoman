@@ -57,7 +57,10 @@ export class MarketplaceManager {
     this.communityGitUrl = deps.communityGitUrl;
   }
 
-  setDelegationManagers(managers: { workflowManager?: WorkflowManager; swarmManager?: SwarmManager }): void {
+  setDelegationManagers(managers: {
+    workflowManager?: WorkflowManager;
+    swarmManager?: SwarmManager;
+  }): void {
     if (managers.workflowManager) this.workflowManager = managers.workflowManager;
     if (managers.swarmManager) this.swarmManager = managers.swarmManager;
   }
@@ -410,7 +413,9 @@ export class MarketplaceManager {
 
             const workflowName = data.name;
             // Look up existing community workflow by name
-            const { definitions: allDefs } = await this.workflowManager.listDefinitions({ limit: 1000 });
+            const { definitions: allDefs } = await this.workflowManager.listDefinitions({
+              limit: 1000,
+            });
             const existing = allDefs.find(
               (d) => d.name === workflowName && (d as any).createdBy === 'community'
             );
@@ -433,7 +438,9 @@ export class MarketplaceManager {
                 isEnabled: true,
                 version: 1,
                 createdBy: 'community',
-                autonomyLevel: (typeof data.autonomyLevel === 'string' ? data.autonomyLevel : 'L2') as any,
+                autonomyLevel: (typeof data.autonomyLevel === 'string'
+                  ? data.autonomyLevel
+                  : 'L2') as any,
               } as any);
               result.workflowsAdded++;
             }
@@ -446,7 +453,9 @@ export class MarketplaceManager {
         }
 
         // Prune stale community workflows
-        const { definitions: allDefs } = await this.workflowManager.listDefinitions({ limit: 1000 });
+        const { definitions: allDefs } = await this.workflowManager.listDefinitions({
+          limit: 1000,
+        });
         for (const stale of allDefs) {
           if ((stale as any).createdBy === 'community' && !syncedWorkflowNames.has(stale.name)) {
             await this.workflowManager.deleteDefinition(stale.id);
@@ -479,7 +488,7 @@ export class MarketplaceManager {
             }
 
             const swarmName = data.name;
-            const roles = (data.roles as Array<Record<string, unknown>>).map((r) => ({
+            const roles = (data.roles as Record<string, unknown>[]).map((r) => ({
               role: String(r.role ?? ''),
               profileName: String(r.profileName ?? ''),
               description: typeof r.description === 'string' ? r.description : '',
@@ -487,9 +496,7 @@ export class MarketplaceManager {
 
             // Try to find existing community template by name
             const { templates } = await this.swarmManager.listTemplates({ limit: 1000 });
-            const existing = templates.find(
-              (t) => t.name === swarmName && !(t.isBuiltin)
-            );
+            const existing = templates.find((t) => t.name === swarmName && !t.isBuiltin);
 
             if (existing) {
               await this.swarmManager.updateTemplate(existing.id, {

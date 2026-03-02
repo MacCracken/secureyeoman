@@ -39,9 +39,7 @@ describe('ProviderKeysSettings', () => {
     mockFetchSecretKeys.mockResolvedValue({ keys: [] });
     renderComponent();
     expect(await screen.findByText('AI Provider Keys')).toBeInTheDocument();
-    expect(
-      screen.getByText(/Configure API keys for AI model providers/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Configure API keys for AI model providers/)).toBeInTheDocument();
   });
 
   it('shows the provider dropdown', async () => {
@@ -155,10 +153,7 @@ describe('ProviderKeysSettings', () => {
     fireEvent.click(screen.getByText('Save Key'));
 
     await waitFor(() => {
-      expect(mockSetSecret).toHaveBeenCalledWith(
-        'ANTHROPIC_API_KEY',
-        'sk-ant-1234567890abcdef'
-      );
+      expect(mockSetSecret).toHaveBeenCalledWith('ANTHROPIC_API_KEY', 'sk-ant-1234567890abcdef');
     });
   });
 

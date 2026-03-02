@@ -1770,13 +1770,17 @@ export class GatewayServer {
         abuseDetectionEnabled: config.security.abuseDetection?.enabled,
         contentGuardrailsEnabled: config.security.contentGuardrails?.enabled ?? false,
         contentGuardrailsPiiMode: config.security.contentGuardrails?.piiMode ?? 'disabled',
-        contentGuardrailsToxicityEnabled: config.security.contentGuardrails?.toxicityEnabled ?? false,
+        contentGuardrailsToxicityEnabled:
+          config.security.contentGuardrails?.toxicityEnabled ?? false,
         contentGuardrailsToxicityMode: config.security.contentGuardrails?.toxicityMode ?? 'warn',
-        contentGuardrailsToxicityClassifierUrl: config.security.contentGuardrails?.toxicityClassifierUrl,
-        contentGuardrailsToxicityThreshold: config.security.contentGuardrails?.toxicityThreshold ?? 0.7,
+        contentGuardrailsToxicityClassifierUrl:
+          config.security.contentGuardrails?.toxicityClassifierUrl,
+        contentGuardrailsToxicityThreshold:
+          config.security.contentGuardrails?.toxicityThreshold ?? 0.7,
         contentGuardrailsBlockList: config.security.contentGuardrails?.blockList ?? [],
         contentGuardrailsBlockedTopics: config.security.contentGuardrails?.blockedTopics ?? [],
-        contentGuardrailsGroundingEnabled: config.security.contentGuardrails?.groundingEnabled ?? false,
+        contentGuardrailsGroundingEnabled:
+          config.security.contentGuardrails?.groundingEnabled ?? false,
         contentGuardrailsGroundingMode: config.security.contentGuardrails?.groundingMode ?? 'flag',
       };
     });
@@ -2030,14 +2034,20 @@ export class GatewayServer {
             abuseDetectionEnabled: config.security.abuseDetection?.enabled,
             contentGuardrailsEnabled: config.security.contentGuardrails?.enabled ?? false,
             contentGuardrailsPiiMode: config.security.contentGuardrails?.piiMode ?? 'disabled',
-            contentGuardrailsToxicityEnabled: config.security.contentGuardrails?.toxicityEnabled ?? false,
-            contentGuardrailsToxicityMode: config.security.contentGuardrails?.toxicityMode ?? 'warn',
-            contentGuardrailsToxicityClassifierUrl: config.security.contentGuardrails?.toxicityClassifierUrl,
-            contentGuardrailsToxicityThreshold: config.security.contentGuardrails?.toxicityThreshold ?? 0.7,
+            contentGuardrailsToxicityEnabled:
+              config.security.contentGuardrails?.toxicityEnabled ?? false,
+            contentGuardrailsToxicityMode:
+              config.security.contentGuardrails?.toxicityMode ?? 'warn',
+            contentGuardrailsToxicityClassifierUrl:
+              config.security.contentGuardrails?.toxicityClassifierUrl,
+            contentGuardrailsToxicityThreshold:
+              config.security.contentGuardrails?.toxicityThreshold ?? 0.7,
             contentGuardrailsBlockList: config.security.contentGuardrails?.blockList ?? [],
             contentGuardrailsBlockedTopics: config.security.contentGuardrails?.blockedTopics ?? [],
-            contentGuardrailsGroundingEnabled: config.security.contentGuardrails?.groundingEnabled ?? false,
-            contentGuardrailsGroundingMode: config.security.contentGuardrails?.groundingMode ?? 'flag',
+            contentGuardrailsGroundingEnabled:
+              config.security.contentGuardrails?.groundingEnabled ?? false,
+            contentGuardrailsGroundingMode:
+              config.security.contentGuardrails?.groundingMode ?? 'flag',
           };
         } catch (err) {
           this.getLogger().error('Failed to update security policy', {

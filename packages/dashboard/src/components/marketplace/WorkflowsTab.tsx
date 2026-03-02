@@ -4,12 +4,17 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Download, Upload, GitBranch, Shield, Loader2, AlertTriangle, CheckCircle, Search } from 'lucide-react';
 import {
-  fetchCommunityWorkflows,
-  exportWorkflow,
-  importWorkflow,
-} from '../../api/client';
+  Download,
+  Upload,
+  GitBranch,
+  Shield,
+  Loader2,
+  AlertTriangle,
+  CheckCircle,
+  Search,
+} from 'lucide-react';
+import { fetchCommunityWorkflows, exportWorkflow, importWorkflow } from '../../api/client';
 import type { WorkflowDefinition, CompatibilityCheckResult } from '../../api/client';
 
 const AUTONOMY_COLORS: Record<string, string> = {
@@ -40,7 +45,10 @@ function CompatibilityBadges({ gaps }: { gaps: CompatibilityCheckResult['gaps'] 
   );
 }
 
-export function WorkflowsTab({ source, query: externalQuery }: { source?: string; query?: string } = {}) {
+export function WorkflowsTab({
+  source,
+  query: externalQuery,
+}: { source?: string; query?: string } = {}) {
   const [toast, setToast] = useState<string | null>(null);
   const [internalQuery, setInternalQuery] = useState('');
   // When query is controlled externally (community tab), skip the internal search bar
@@ -62,11 +70,15 @@ export function WorkflowsTab({ source, query: externalQuery }: { source?: string
         ? 'Workflow imported successfully'
         : `Imported with warnings: ${Object.values(compatibility.gaps).flat().join(', ')}`;
       setToast(msg);
-      setTimeout(() => setToast(null), 4000);
+      setTimeout(() => {
+        setToast(null);
+      }, 4000);
     },
     onError: (err) => {
       setToast(err instanceof Error ? err.message : 'Import failed');
-      setTimeout(() => setToast(null), 4000);
+      setTimeout(() => {
+        setToast(null);
+      }, 4000);
     },
   });
 
@@ -93,8 +105,7 @@ export function WorkflowsTab({ source, query: externalQuery }: { source?: string
     if (!query) return true;
     const q = query.toLowerCase();
     return (
-      wf.name.toLowerCase().includes(q) ||
-      ((wf as any).description ?? '').toLowerCase().includes(q)
+      wf.name.toLowerCase().includes(q) || ((wf as any).description ?? '').toLowerCase().includes(q)
     );
   });
 
@@ -112,9 +123,13 @@ export function WorkflowsTab({ source, query: externalQuery }: { source?: string
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-            placeholder={source === 'community' ? 'Search community workflows…' : 'Search workflows…'}
+            placeholder={
+              source === 'community' ? 'Search community workflows…' : 'Search workflows…'
+            }
             value={internalQuery}
-            onChange={(e) => setInternalQuery(e.target.value)}
+            onChange={(e) => {
+              setInternalQuery(e.target.value);
+            }}
           />
         </div>
       )}
@@ -153,51 +168,55 @@ export function WorkflowsTab({ source, query: externalQuery }: { source?: string
             <span className="text-xs text-muted-foreground">({workflows.length})</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {workflows.map((wf: WorkflowDefinition) => (
-            <div key={wf.id} className="card p-4 flex flex-col">
-              <div className="flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="font-medium text-sm truncate">{wf.name}</h3>
-                  {wf.autonomyLevel && (
-                    <span
-                      className={`text-xs font-mono px-1.5 py-0.5 rounded border ${AUTONOMY_COLORS[wf.autonomyLevel] ?? ''}`}
-                    >
-                      {wf.autonomyLevel}
-                    </span>
-                  )}
+            {workflows.map((wf: WorkflowDefinition) => (
+              <div key={wf.id} className="card p-4 flex flex-col">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="font-medium text-sm truncate">{wf.name}</h3>
+                    {wf.autonomyLevel && (
+                      <span
+                        className={`text-xs font-mono px-1.5 py-0.5 rounded border ${AUTONOMY_COLORS[wf.autonomyLevel] ?? ''}`}
+                      >
+                        {wf.autonomyLevel}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                    {(wf as any).description || 'No description'}
+                  </p>
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    {Array.isArray(wf.steps) && <span>{wf.steps.length} steps</span>}
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                  {(wf as any).description || 'No description'}
-                </p>
-                <div className="mt-2 text-xs text-muted-foreground">
-                  {Array.isArray(wf.steps) && <span>{wf.steps.length} steps</span>}
+                <div className="mt-3 pt-3 border-t border-border flex gap-2">
+                  <button
+                    className="btn btn-ghost btn-sm flex-1 flex items-center gap-1 justify-center"
+                    onClick={() => {
+                      exportMut.mutate(wf.id);
+                    }}
+                    disabled={exportMut.isPending}
+                    title="Export as JSON"
+                  >
+                    <Upload className="w-3.5 h-3.5" /> Export
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm flex-1 flex items-center gap-1 justify-center"
+                    onClick={() => {
+                      importMut.mutate(wf);
+                    }}
+                    disabled={importMut.isPending}
+                    title="Install workflow"
+                  >
+                    {importMut.isPending ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5" />
+                    )}
+                    Install
+                  </button>
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-border flex gap-2">
-                <button
-                  className="btn btn-ghost btn-sm flex-1 flex items-center gap-1 justify-center"
-                  onClick={() => exportMut.mutate(wf.id)}
-                  disabled={exportMut.isPending}
-                  title="Export as JSON"
-                >
-                  <Upload className="w-3.5 h-3.5" /> Export
-                </button>
-                <button
-                  className="btn btn-ghost btn-sm flex-1 flex items-center gap-1 justify-center"
-                  onClick={() => importMut.mutate(wf)}
-                  disabled={importMut.isPending}
-                  title="Install workflow"
-                >
-                  {importMut.isPending ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Download className="w-3.5 h-3.5" />
-                  )}
-                  Install
-                </button>
-              </div>
-            </div>
-          ))}
+            ))}
           </div>
         </div>
       )}

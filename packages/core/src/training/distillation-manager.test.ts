@@ -471,7 +471,8 @@ describe('DistillationManager — Phase 92 extensions', () => {
       pool.query = vi.fn(async (sql: string) => {
         sqlCalls.push(sql);
         qc++;
-        if (qc === 1) return { rows: [makeJobRow({ priority_mode: 'success-first' })], rowCount: 1 };
+        if (qc === 1)
+          return { rows: [makeJobRow({ priority_mode: 'success-first' })], rowCount: 1 };
         if (qc === 2) return { rows: [], rowCount: 1 };
         if (qc === 3) return { rows: [], rowCount: 0 };
         return { rows: [], rowCount: 1 };

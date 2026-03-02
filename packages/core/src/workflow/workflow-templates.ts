@@ -29,12 +29,12 @@ function transformStep(base: StepBase, outputTemplate: string): WorkflowStep {
   return { type: 'transform', config: { outputTemplate }, ...base } as unknown as WorkflowStep;
 }
 
-function resourceStep(
-  base: StepBase,
-  resourceType: string,
-  dataTemplate: string
-): WorkflowStep {
-  return { type: 'resource', config: { resourceType, dataTemplate }, ...base } as unknown as WorkflowStep;
+function resourceStep(base: StepBase, resourceType: string, dataTemplate: string): WorkflowStep {
+  return {
+    type: 'resource',
+    config: { resourceType, dataTemplate },
+    ...base,
+  } as unknown as WorkflowStep;
 }
 
 function webhookStep(
@@ -43,7 +43,11 @@ function webhookStep(
   bodyTemplate: string,
   method = 'POST'
 ): WorkflowStep {
-  return { type: 'webhook', config: { url, method, bodyTemplate }, ...base } as unknown as WorkflowStep;
+  return {
+    type: 'webhook',
+    config: { url, method, bodyTemplate },
+    ...base,
+  } as unknown as WorkflowStep;
 }
 
 function swarmStep(
@@ -69,21 +73,45 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
       'Sequential pipeline: researcher gathers info, analyst synthesises, transform formats the report, then saves to memory.',
     steps: [
       agentStep(
-        { id: 'researcher', name: 'Researcher', description: 'Gather relevant information on the topic', dependsOn: [], onError: 'fail' },
+        {
+          id: 'researcher',
+          name: 'Researcher',
+          description: 'Gather relevant information on the topic',
+          dependsOn: [],
+          onError: 'fail',
+        },
         'researcher',
         'Research the following topic thoroughly: {{input.topic}}'
       ),
       agentStep(
-        { id: 'analyst', name: 'Analyst', description: 'Analyse and synthesise the research findings', dependsOn: ['researcher'], onError: 'fail' },
+        {
+          id: 'analyst',
+          name: 'Analyst',
+          description: 'Analyse and synthesise the research findings',
+          dependsOn: ['researcher'],
+          onError: 'fail',
+        },
         'analyst',
         'Analyse and synthesise the following research findings into a structured report:\n\n{{steps.researcher.output}}'
       ),
       transformStep(
-        { id: 'format', name: 'Format Report', description: 'Format the analysed output as a markdown report', dependsOn: ['analyst'], onError: 'continue' },
+        {
+          id: 'format',
+          name: 'Format Report',
+          description: 'Format the analysed output as a markdown report',
+          dependsOn: ['analyst'],
+          onError: 'continue',
+        },
         '# Research Report\n\n**Topic**: {{input.topic}}\n\n{{steps.analyst.output}}'
       ),
       resourceStep(
-        { id: 'save', name: 'Save to Memory', description: 'Persist the report as a memory entry', dependsOn: ['format'], onError: 'continue' },
+        {
+          id: 'save',
+          name: 'Save to Memory',
+          description: 'Persist the report as a memory entry',
+          dependsOn: ['format'],
+          onError: 'continue',
+        },
         'memory',
         '{{steps.format.output}}'
       ),
@@ -107,7 +135,13 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
       'Runs the code-review swarm, checks the result, and notifies a webhook with pass/fail.',
     steps: [
       swarmStep(
-        { id: 'review', name: 'Code Review Swarm', description: 'Execute the built-in code-review swarm', dependsOn: [], onError: 'fail' },
+        {
+          id: 'review',
+          name: 'Code Review Swarm',
+          description: 'Execute the built-in code-review swarm',
+          dependsOn: [],
+          onError: 'fail',
+        },
         'code-review',
         '{{input.code}}',
         'PR: {{input.prTitle}}'
@@ -127,12 +161,24 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         onError: 'continue' as const,
       },
       webhookStep(
-        { id: 'notify-pass', name: 'Notify Pass', description: 'Send pass notification to webhook', dependsOn: ['check'], onError: 'continue' },
+        {
+          id: 'notify-pass',
+          name: 'Notify Pass',
+          description: 'Send pass notification to webhook',
+          dependsOn: ['check'],
+          onError: 'continue',
+        },
         '{{input.webhookUrl}}',
         '{"status":"passed","pr":"{{input.prTitle}}","review":"{{steps.review.output}}"}'
       ),
       webhookStep(
-        { id: 'notify-fail', name: 'Notify Fail', description: 'Send fail notification to webhook', dependsOn: ['check'], onError: 'continue' },
+        {
+          id: 'notify-fail',
+          name: 'Notify Fail',
+          description: 'Send fail notification to webhook',
+          dependsOn: ['check'],
+          onError: 'continue',
+        },
         '{{input.webhookUrl}}',
         '{"status":"failed","pr":"{{input.prTitle}}","review":"{{steps.review.output}}"}'
       ),
@@ -679,7 +725,8 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         config: {
           url: '{{input.webhookUrl}}',
           method: 'POST',
-          bodyTemplate: '{"digest":"{{steps.summarise.output}}","repo":"{{input.owner}}/{{input.repo}}"}',
+          bodyTemplate:
+            '{"digest":"{{steps.summarise.output}}","repo":"{{input.owner}}/{{input.repo}}"}',
         },
         dependsOn: ['summarise'],
         onError: 'continue',

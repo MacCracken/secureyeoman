@@ -83,7 +83,9 @@ vi.mock('../api/client', () => ({
   fetchExecutionConfig: vi.fn(),
   fetchSecurityPolicy: vi.fn(),
   addMemory: vi.fn().mockResolvedValue({}),
-  fetchModelInfo: vi.fn().mockResolvedValue({ current: { model: 'claude-3-5-sonnet', provider: 'anthropic' } }),
+  fetchModelInfo: vi
+    .fn()
+    .mockResolvedValue({ current: { model: 'claude-3-5-sonnet', provider: 'anthropic' } }),
   switchModel: vi.fn().mockResolvedValue({}),
 }));
 
@@ -172,7 +174,9 @@ describe('EditorPage', () => {
     vi.resetAllMocks();
     (api.fetchPersonalities as ReturnType<typeof vi.fn>).mockResolvedValue({ personalities: [] });
     mockFetchExecutionConfig.mockResolvedValue({ config: { enabled: true } });
-    mockFetchModelInfo.mockResolvedValue({ current: { model: 'claude-3-5-sonnet', provider: 'anthropic' } } as never);
+    mockFetchModelInfo.mockResolvedValue({
+      current: { model: 'claude-3-5-sonnet', provider: 'anthropic' },
+    } as never);
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,

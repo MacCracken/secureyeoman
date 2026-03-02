@@ -2525,13 +2525,15 @@ function McpTab({
                 if (t.name.startsWith('gmail_') && !featureConfig?.exposeGmail) return false;
                 if (t.name.startsWith('twitter_') && !featureConfig?.exposeTwitter) return false;
                 if (t.name.startsWith('github_') && !featureConfig?.exposeGithub) return false;
-                if (t.name.startsWith('intent_') && !featureConfig?.exposeOrgIntentTools) return false;
+                if (t.name.startsWith('intent_') && !featureConfig?.exposeOrgIntentTools)
+                  return false;
                 if (t.name.startsWith('kb_') && !featureConfig?.exposeKnowledgeBase) return false;
                 if (t.name.startsWith('docker_') && !featureConfig?.exposeDockerTools) return false;
                 if (t.name.startsWith('gha_') && !featureConfig?.exposeGithubActions) return false;
                 if (t.name.startsWith('jenkins_') && !featureConfig?.exposeJenkins) return false;
                 if (t.name.startsWith('gitlab_') && !featureConfig?.exposeGitlabCi) return false;
-                if (t.name.startsWith('northflank_') && !featureConfig?.exposeNorthflank) return false;
+                if (t.name.startsWith('northflank_') && !featureConfig?.exposeNorthflank)
+                  return false;
                 return true;
               }).length
           }

@@ -28,7 +28,7 @@ function ghaHeaders(config: McpServiceConfig): Record<string, string> {
     Accept: 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28',
   };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
   return headers;
 }
 
@@ -179,9 +179,7 @@ export function registerGithubActionsTools(
         ).then((r) => ({ ...r, st: r.status }));
         if (!ok) {
           return {
-            content: [
-              { type: 'text', text: `GitHub API error ${st}: ${JSON.stringify(body)}` },
-            ],
+            content: [{ type: 'text', text: `GitHub API error ${st}: ${JSON.stringify(body)}` }],
             isError: true,
           };
         }

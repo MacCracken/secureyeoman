@@ -13,13 +13,21 @@ vi.mock('node:child_process', () => ({
 vi.mock('../logging/logger.js', () => ({
   getLogger: vi.fn().mockReturnValue({
     child: vi.fn().mockReturnValue({
-      info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-      debug: vi.fn(), trace: vi.fn(), fatal: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn(),
+      trace: vi.fn(),
+      fatal: vi.fn(),
     }),
   }),
   createNoopLogger: vi.fn().mockReturnValue({
-    info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-    debug: vi.fn(), trace: vi.fn(), fatal: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    trace: vi.fn(),
+    fatal: vi.fn(),
     child: vi.fn().mockReturnThis(),
   }),
 }));
@@ -67,9 +75,7 @@ describe('LinuxSandbox', () => {
     });
 
     it('detects landlock via /proc/sys/kernel/landlock_restrict_self', () => {
-      mockExistsSync.mockImplementation((p: any) =>
-        String(p).includes('landlock_restrict_self')
-      );
+      mockExistsSync.mockImplementation((p: any) => String(p).includes('landlock_restrict_self'));
       const sandbox = new LinuxSandbox();
       const caps = sandbox.getCapabilities();
       expect(caps.landlock).toBe(true);
@@ -93,15 +99,15 @@ describe('LinuxSandbox', () => {
 
     it('handles readFileSync throwing (no /proc)', () => {
       mockExistsSync.mockReturnValue(false);
-      mockReadFileSync.mockImplementation(() => { throw new Error('no /proc'); });
+      mockReadFileSync.mockImplementation(() => {
+        throw new Error('no /proc');
+      });
       const sandbox = new LinuxSandbox();
       expect(() => sandbox.getCapabilities()).not.toThrow();
     });
 
     it('detects user namespaces via /proc/self/ns/user', () => {
-      mockExistsSync.mockImplementation((p: any) =>
-        String(p).includes('/proc/self/ns/user')
-      );
+      mockExistsSync.mockImplementation((p: any) => String(p).includes('/proc/self/ns/user'));
       const sandbox = new LinuxSandbox();
       const caps = sandbox.getCapabilities();
       expect(caps.namespaces).toBe(true);
@@ -189,7 +195,9 @@ describe('LinuxSandbox', () => {
 
     it('wraps non-Error throws', async () => {
       const sandbox = new LinuxSandbox();
-      const result = await sandbox.run(async () => { throw 'string error'; });
+      const result = await sandbox.run(async () => {
+        throw 'string error';
+      });
       expect(result.success).toBe(false);
       expect(result.error).toBeInstanceOf(Error);
     });

@@ -807,7 +807,7 @@ describe('MetricsPage — Mission Control customization', () => {
     fireEvent.click(screen.getByRole('button', { name: /customize/i }));
     const heading = await screen.findByText('Customize Dashboard');
     // Scope to the catalogue panel itself to avoid duplicate matches from the grid
-    const panel = heading.closest('div.fixed') as HTMLElement;
+    const panel = heading.closest('div.fixed')! as HTMLElement;
     const expectedLabels = [
       'Key Metrics Bar',
       'Resource Monitoring',

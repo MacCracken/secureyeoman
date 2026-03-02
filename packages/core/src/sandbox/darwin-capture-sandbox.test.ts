@@ -10,13 +10,21 @@ vi.mock('node:os', () => ({
 vi.mock('../logging/logger.js', () => ({
   getLogger: vi.fn().mockReturnValue({
     child: vi.fn().mockReturnValue({
-      info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-      debug: vi.fn(), trace: vi.fn(), fatal: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn(),
+      trace: vi.fn(),
+      fatal: vi.fn(),
     }),
   }),
   createNoopLogger: vi.fn().mockReturnValue({
-    info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-    debug: vi.fn(), trace: vi.fn(), fatal: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    trace: vi.fn(),
+    fatal: vi.fn(),
     child: vi.fn().mockReturnThis(),
   }),
 }));
@@ -120,14 +128,18 @@ describe('DarwinCaptureSandbox', () => {
 
     it('returns failure when function throws', async () => {
       const sandbox = new DarwinCaptureSandbox();
-      const result = await sandbox.run(async () => { throw new Error('capture error'); });
+      const result = await sandbox.run(async () => {
+        throw new Error('capture error');
+      });
       expect(result.success).toBe(false);
       expect(result.error!.message).toBe('capture error');
     });
 
     it('wraps non-Error throws', async () => {
       const sandbox = new DarwinCaptureSandbox();
-      const result = await sandbox.run(async () => { throw 42; });
+      const result = await sandbox.run(async () => {
+        throw 42;
+      });
       expect(result.success).toBe(false);
       expect(result.error).toBeInstanceOf(Error);
     });
@@ -135,7 +147,12 @@ describe('DarwinCaptureSandbox', () => {
     it('resets violations at start of each run', async () => {
       const sandbox = new DarwinCaptureSandbox();
       await sandbox.initialize();
-      sandbox.recordViolation({ type: 'filesystem', description: 'old', timestamp: Date.now(), severity: 'low' });
+      sandbox.recordViolation({
+        type: 'filesystem',
+        description: 'old',
+        timestamp: Date.now(),
+        severity: 'low',
+      });
       const result = await sandbox.run(async () => 'ok');
       expect(result.violations).toEqual([]);
     });
@@ -279,13 +296,23 @@ describe('DarwinCaptureSandbox', () => {
   describe('violations', () => {
     it('recordViolation adds to violations list', () => {
       const sandbox = new DarwinCaptureSandbox();
-      sandbox.recordViolation({ type: 'syscall', description: 'blocked syscall', timestamp: Date.now(), severity: 'high' });
+      sandbox.recordViolation({
+        type: 'syscall',
+        description: 'blocked syscall',
+        timestamp: Date.now(),
+        severity: 'high',
+      });
       expect(sandbox.getViolations()).toHaveLength(1);
     });
 
     it('clearViolations empties the list', () => {
       const sandbox = new DarwinCaptureSandbox();
-      sandbox.recordViolation({ type: 'syscall', description: 'blocked', timestamp: Date.now(), severity: 'high' });
+      sandbox.recordViolation({
+        type: 'syscall',
+        description: 'blocked',
+        timestamp: Date.now(),
+        severity: 'high',
+      });
       sandbox.clearViolations();
       expect(sandbox.getViolations()).toHaveLength(0);
     });

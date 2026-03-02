@@ -1462,7 +1462,9 @@ function BrainSection({
               return (
                 <button
                   key={mode}
-                  onClick={() => { onKnowledgeModeChange(mode); }}
+                  onClick={() => {
+                    onKnowledgeModeChange(mode);
+                  }}
                   title={descs[mode]}
                   className={`px-2 py-1.5 rounded text-xs font-medium border transition-colors text-center ${
                     knowledgeMode === mode
@@ -1476,9 +1478,12 @@ function BrainSection({
             })}
           </div>
           <p className="text-xs text-muted-foreground italic">
-            {knowledgeMode === 'rag' && 'Retrieves the most relevant snippets. Works at any corpus size.'}
-            {knowledgeMode === 'notebook' && 'Loads all documents into the context window. Requires a large-context model (Claude ≥200K, Gemini ≥1M recommended).'}
-            {knowledgeMode === 'hybrid' && 'Loads the full corpus when it fits in 65% of the context window, otherwise falls back to RAG automatically.'}
+            {knowledgeMode === 'rag' &&
+              'Retrieves the most relevant snippets. Works at any corpus size.'}
+            {knowledgeMode === 'notebook' &&
+              'Loads all documents into the context window. Requires a large-context model (Claude ≥200K, Gemini ≥1M recommended).'}
+            {knowledgeMode === 'hybrid' &&
+              'Loads the full corpus when it fits in 65% of the context window, otherwise falls back to RAG automatically.'}
           </p>
           {(knowledgeMode === 'notebook' || knowledgeMode === 'hybrid') && (
             <div className="space-y-1 pt-1 border-t border-border">
@@ -1488,7 +1493,9 @@ function BrainSection({
                   <input
                     type="checkbox"
                     checked={notebookTokenBudget !== null}
-                    onChange={(e) => { onNotebookTokenBudgetChange(e.target.checked ? 50000 : null); }}
+                    onChange={(e) => {
+                      onNotebookTokenBudgetChange(e.target.checked ? 50000 : null);
+                    }}
                     className="sr-only peer"
                   />
                   <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-primary after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
@@ -1505,7 +1512,9 @@ function BrainSection({
                     max={900000}
                     step={10000}
                     value={notebookTokenBudget}
-                    onChange={(e) => { onNotebookTokenBudgetChange(Number(e.target.value)); }}
+                    onChange={(e) => {
+                      onNotebookTokenBudgetChange(Number(e.target.value));
+                    }}
                     className="w-full"
                   />
                 </div>
@@ -4161,7 +4170,10 @@ function HeartSection() {
 
 // ── Main PersonalityEditor ──────────────────────────────────────
 
-export function PersonalityEditor({ initialEditingId, onBack }: { initialEditingId?: string; onBack?: () => void } = {}) {
+export function PersonalityEditor({
+  initialEditingId,
+  onBack,
+}: { initialEditingId?: string; onBack?: () => void } = {}) {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [editing, setEditing] = useState<string | null>(initialEditingId === 'new' ? 'new' : null);
@@ -4592,7 +4604,7 @@ export function PersonalityEditor({ initialEditingId, onBack }: { initialEditing
     setMaxPromptTokens(body.maxPromptTokens ?? null);
     setOmnipresentMind(body.omnipresentMind ?? false);
     setStrictSystemPromptConfidentiality(body.strictSystemPromptConfidentiality);
-    setKnowledgeMode((body.knowledgeMode as 'rag' | 'notebook' | 'hybrid') ?? 'rag');
+    setKnowledgeMode(body.knowledgeMode! ?? 'rag');
     setNotebookTokenBudget(body.notebookTokenBudget ?? null);
     setSetActiveOnSave(false);
     setEditing(p.id);
@@ -4611,7 +4623,7 @@ export function PersonalityEditor({ initialEditingId, onBack }: { initialEditing
       startEdit(target);
       initialEditApplied.current = true;
     }
-  }, [initialEditingId, personalities]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [initialEditingId, personalities]);
 
   const startCreate = () => {
     const body = {
@@ -4805,21 +4817,23 @@ export function PersonalityEditor({ initialEditingId, onBack }: { initialEditing
       />
 
       {/* Header — hidden in dedicated edit route */}
-      {!initialEditingId && <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Personalities</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Define the agents that power your assistant
-          </p>
+      {!initialEditingId && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Personalities</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Define the agents that power your assistant
+            </p>
+          </div>
+          <button
+            onClick={startCreate}
+            className="btn btn-ghost flex items-center justify-center gap-1 text-sm sm:text-base"
+          >
+            <Plus className="w-4 h-4" /> <span className="sm:hidden">New</span>
+            <span className="hidden sm:inline">New Personality</span>
+          </button>
         </div>
-        <button
-          onClick={startCreate}
-          className="btn btn-ghost flex items-center justify-center gap-1 text-sm sm:text-base"
-        >
-          <Plus className="w-4 h-4" /> <span className="sm:hidden">New</span>
-          <span className="hidden sm:inline">New Personality</span>
-        </button>
-      </div>}
+      )}
 
       {activateError && (
         <div className="card p-3 border-destructive bg-destructive/10 text-destructive text-sm flex items-center justify-between">
@@ -5132,269 +5146,271 @@ export function PersonalityEditor({ initialEditingId, onBack }: { initialEditing
       )}
 
       {/* Personality List — hidden when in dedicated edit route */}
-      {!initialEditingId && <div className="space-y-3">
-        {personalities.map((p) => (
-          <div key={p.id}>
-            <div
-              className={`card overflow-hidden ${p.isDefault ? 'border-primary ring-1 ring-primary/20' : ''} hover:shadow-md transition-shadow`}
-            >
-              <div className="flex">
-                {/* Full-height avatar panel */}
-                <div
-                  className={`relative flex-shrink-0 w-20 sm:w-24 self-stretch ${p.isDefault ? 'bg-primary/10' : 'bg-muted'}`}
-                >
-                  {p.avatarUrl ? (
-                    <img
-                      src={resolveAvatarSrc(p.avatarUrl, p.updatedAt)!}
-                      alt={p.name}
-                      className="absolute inset-0 w-full h-full object-cover object-center scale-125"
-                      style={{ maxWidth: 'none', maxHeight: 'none' }}
-                    />
-                  ) : (
-                    <div
-                      className={`absolute inset-0 flex items-center justify-center ${p.isDefault ? 'text-primary' : 'text-muted-foreground'}`}
-                    >
-                      <Bot className="w-8 h-8 sm:w-10 sm:h-10" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Content panel */}
-                <div className="flex-1 min-w-0 p-3 sm:p-4 flex flex-col gap-2">
-                  {/* Header with name and actions */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <h3 className="font-medium text-sm sm:text-base truncate">{p.name}</h3>
-                        {p.isArchetype && (
-                          <span
-                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground"
-                            title="System preset — cannot be deleted"
-                          >
-                            Preset
-                          </span>
-                        )}
-                        {p.isActive && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400">
-                            Active
-                          </span>
-                        )}
-                        {p.isDefault && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
-                            <Star className="w-2.5 h-2.5 fill-current" /> Default
-                          </span>
-                        )}
-                        {p.isWithinActiveHours && (
-                          <span
-                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400"
-                            title="Within active hours"
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
-                            Online
-                          </span>
-                        )}
+      {!initialEditingId && (
+        <div className="space-y-3">
+          {personalities.map((p) => (
+            <div key={p.id}>
+              <div
+                className={`card overflow-hidden ${p.isDefault ? 'border-primary ring-1 ring-primary/20' : ''} hover:shadow-md transition-shadow`}
+              >
+                <div className="flex">
+                  {/* Full-height avatar panel */}
+                  <div
+                    className={`relative flex-shrink-0 w-20 sm:w-24 self-stretch ${p.isDefault ? 'bg-primary/10' : 'bg-muted'}`}
+                  >
+                    {p.avatarUrl ? (
+                      <img
+                        src={resolveAvatarSrc(p.avatarUrl, p.updatedAt)!}
+                        alt={p.name}
+                        className="absolute inset-0 w-full h-full object-cover object-center scale-125"
+                        style={{ maxWidth: 'none', maxHeight: 'none' }}
+                      />
+                    ) : (
+                      <div
+                        className={`absolute inset-0 flex items-center justify-center ${p.isDefault ? 'text-primary' : 'text-muted-foreground'}`}
+                      >
+                        <Bot className="w-8 h-8 sm:w-10 sm:h-10" />
                       </div>
-                      <p className="text-xs text-muted-foreground hidden sm:block">
-                        {formatDate(p.createdAt)}
-                      </p>
-                    </div>
+                    )}
+                  </div>
 
-                    {/* Actions - always visible */}
-                    <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
-                      {/* Set as default */}
-                      {p.isDefault ? (
-                        <span className="p-1.5 sm:p-2 text-primary" title="Default personality">
-                          <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            setDefaultMut.mutate(p.id);
-                          }}
-                          disabled={setDefaultMut.isPending}
-                          className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-primary rounded-lg"
-                          title={`Set ${p.name} as default`}
-                          aria-label={`Set ${p.name} as default personality`}
-                        >
-                          <Star className="w-4 h-4 sm:w-5 sm:h-5" />
-                        </button>
-                      )}
-                      {/* Enable / disable */}
-                      {p.isActive ? (
-                        p.isDefault ? (
-                          <span
-                            className="p-1.5 sm:p-2 text-green-500"
-                            title="Active — default personality is always on"
-                          >
-                            <Power className="w-4 h-4 sm:w-5 sm:h-5" />
+                  {/* Content panel */}
+                  <div className="flex-1 min-w-0 p-3 sm:p-4 flex flex-col gap-2">
+                    {/* Header with name and actions */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h3 className="font-medium text-sm sm:text-base truncate">{p.name}</h3>
+                          {p.isArchetype && (
+                            <span
+                              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground"
+                              title="System preset — cannot be deleted"
+                            >
+                              Preset
+                            </span>
+                          )}
+                          {p.isActive && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400">
+                              Active
+                            </span>
+                          )}
+                          {p.isDefault && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
+                              <Star className="w-2.5 h-2.5 fill-current" /> Default
+                            </span>
+                          )}
+                          {p.isWithinActiveHours && (
+                            <span
+                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400"
+                              title="Within active hours"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
+                              Online
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground hidden sm:block">
+                          {formatDate(p.createdAt)}
+                        </p>
+                      </div>
+
+                      {/* Actions - always visible */}
+                      <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+                        {/* Set as default */}
+                        {p.isDefault ? (
+                          <span className="p-1.5 sm:p-2 text-primary" title="Default personality">
+                            <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
                           </span>
                         ) : (
                           <button
                             onClick={() => {
-                              disableMut.mutate(p.id);
+                              setDefaultMut.mutate(p.id);
                             }}
-                            disabled={disableMut.isPending}
-                            className="btn-ghost p-1.5 sm:p-2 text-green-500 hover:text-muted-foreground rounded-lg"
-                            title={`Disable ${p.name}`}
-                            aria-label={`Disable personality ${p.name}`}
+                            disabled={setDefaultMut.isPending}
+                            className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-primary rounded-lg"
+                            title={`Set ${p.name} as default`}
+                            aria-label={`Set ${p.name} as default personality`}
+                          >
+                            <Star className="w-4 h-4 sm:w-5 sm:h-5" />
+                          </button>
+                        )}
+                        {/* Enable / disable */}
+                        {p.isActive ? (
+                          p.isDefault ? (
+                            <span
+                              className="p-1.5 sm:p-2 text-green-500"
+                              title="Active — default personality is always on"
+                            >
+                              <Power className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                disableMut.mutate(p.id);
+                              }}
+                              disabled={disableMut.isPending}
+                              className="btn-ghost p-1.5 sm:p-2 text-green-500 hover:text-muted-foreground rounded-lg"
+                              title={`Disable ${p.name}`}
+                              aria-label={`Disable personality ${p.name}`}
+                            >
+                              <Power className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </button>
+                          )
+                        ) : (
+                          <button
+                            onClick={() => {
+                              enableMut.mutate(p.id);
+                            }}
+                            disabled={enableMut.isPending}
+                            className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-green-500 rounded-lg"
+                            title={`Enable ${p.name}`}
+                            aria-label={`Enable personality ${p.name}`}
                           >
                             <Power className="w-4 h-4 sm:w-5 sm:h-5" />
                           </button>
-                        )
-                      ) : (
+                        )}
                         <button
                           onClick={() => {
-                            enableMut.mutate(p.id);
+                            startEdit(p);
                           }}
-                          disabled={enableMut.isPending}
-                          className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-green-500 rounded-lg"
-                          title={`Enable ${p.name}`}
-                          aria-label={`Enable personality ${p.name}`}
+                          className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-foreground rounded-lg"
+                          title={`Edit ${p.name}`}
+                          aria-label={`Edit personality ${p.name}`}
                         >
-                          <Power className="w-4 h-4 sm:w-5 sm:h-5" />
+                          <Edit2 className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          startEdit(p);
-                        }}
-                        className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-foreground rounded-lg"
-                        title={`Edit ${p.name}`}
-                        aria-label={`Edit personality ${p.name}`}
-                      >
-                        <Edit2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (p.isArchetype) {
-                            setDeleteLockedMsg(
-                              `"${p.name}" is a system preset and cannot be deleted.`
-                            );
-                          } else {
-                            const mode = p.body?.resourcePolicy?.deletionMode ?? 'auto';
-                            if (mode === 'manual') {
+                        <button
+                          onClick={() => {
+                            if (p.isArchetype) {
                               setDeleteLockedMsg(
-                                `"${p.name}" has deletion locked (Manual mode). Change the deletion mode in Body → Resources to delete it.`
+                                `"${p.name}" is a system preset and cannot be deleted.`
                               );
                             } else {
-                              setDeleteTarget(p);
+                              const mode = p.body?.resourcePolicy?.deletionMode ?? 'auto';
+                              if (mode === 'manual') {
+                                setDeleteLockedMsg(
+                                  `"${p.name}" has deletion locked (Manual mode). Change the deletion mode in Body → Resources to delete it.`
+                                );
+                              } else {
+                                setDeleteTarget(p);
+                              }
                             }
+                          }}
+                          disabled={p.isDefault || p.isArchetype || deleteMut.isPending}
+                          className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-destructive disabled:opacity-30 rounded-lg"
+                          title={
+                            p.isArchetype
+                              ? 'System preset — cannot be deleted'
+                              : p.isDefault
+                                ? 'Switch to another personality before deleting'
+                                : p.body?.resourcePolicy?.deletionMode === 'manual'
+                                  ? 'Deletion locked — change mode in Body → Resources'
+                                  : `Delete ${p.name}`
                           }
-                        }}
-                        disabled={p.isDefault || p.isArchetype || deleteMut.isPending}
-                        className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-destructive disabled:opacity-30 rounded-lg"
-                        title={
-                          p.isArchetype
-                            ? 'System preset — cannot be deleted'
-                            : p.isDefault
-                              ? 'Switch to another personality before deleting'
-                              : p.body?.resourcePolicy?.deletionMode === 'manual'
-                                ? 'Deletion locked — change mode in Body → Resources'
-                                : `Delete ${p.name}`
-                        }
-                        aria-label={
-                          p.isArchetype
-                            ? 'Cannot delete system preset'
-                            : p.isDefault
-                              ? 'Cannot delete default personality — switch first'
-                              : `Delete personality ${p.name}`
-                        }
-                      >
-                        <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </button>
+                          aria-label={
+                            p.isArchetype
+                              ? 'Cannot delete system preset'
+                              : p.isDefault
+                                ? 'Cannot delete default personality — switch first'
+                                : `Delete personality ${p.name}`
+                          }
+                        >
+                          <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    {p.description && (
+                      <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                        {p.description}
+                      </p>
+                    )}
+
+                    {/* Tags row */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {Object.entries(p.traits)
+                        .slice(0, 2)
+                        .map(([k, v]) => (
+                          <span
+                            key={k}
+                            className="text-[10px] sm:text-xs bg-muted px-2 py-0.5 rounded-full"
+                          >
+                            {k}: {v}
+                          </span>
+                        ))}
+                      {Object.keys(p.traits).length > 2 && (
+                        <span className="text-[10px] text-muted-foreground">
+                          +{Object.keys(p.traits).length - 2}
+                        </span>
+                      )}
+                      {p.sex !== 'unspecified' && (
+                        <span className="text-[10px] sm:text-xs bg-muted px-2 py-0.5 rounded-full capitalize">
+                          {p.sex}
+                        </span>
+                      )}
+                      {p.defaultModel && (
+                        <span className="text-[10px] sm:text-xs bg-muted/50 px-2 py-0.5 rounded-full text-muted-foreground ml-auto">
+                          {p.defaultModel.provider}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Mobile-only created date */}
+                    <p className="text-[10px] text-muted-foreground sm:hidden">
+                      Created {formatDate(p.createdAt)}
+                    </p>
+
+                    {/* Preview button */}
+                    <button
+                      onClick={() => {
+                        setPreviewId(previewId === p.id ? null : p.id);
+                      }}
+                      className={`text-xs flex items-center justify-center gap-1 py-1.5 px-2 rounded border transition-colors ${
+                        previewId === p.id
+                          ? 'border-primary bg-primary/5 text-primary'
+                          : 'border-muted hover:border-muted-foreground/30 text-muted-foreground'
+                      }`}
+                    >
+                      <Eye className="w-3 h-3" />
+                      {previewId === p.id ? 'Hide Preview' : 'Preview Prompt'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Per-personality Prompt Preview */}
+              {previewId === p.id && preview && (
+                <div className="card p-3 sm:p-4 mt-2 border-muted bg-muted/30">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2">
+                    <h3 className="font-medium text-sm">System Prompt Preview</h3>
+                    <div className="flex gap-2 sm:gap-3 text-xs text-muted-foreground flex-wrap">
+                      <span>{preview.charCount.toLocaleString()} chars</span>
+                      <span>~{preview.estimatedTokens.toLocaleString()} tokens</span>
+                      {preview.tools.length > 0 && <span>{preview.tools.length} tools</span>}
                     </div>
                   </div>
-
-                  {/* Description */}
-                  {p.description && (
-                    <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-                      {p.description}
-                    </p>
-                  )}
-
-                  {/* Tags row */}
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {Object.entries(p.traits)
-                      .slice(0, 2)
-                      .map(([k, v]) => (
-                        <span
-                          key={k}
-                          className="text-[10px] sm:text-xs bg-muted px-2 py-0.5 rounded-full"
-                        >
-                          {k}: {v}
-                        </span>
-                      ))}
-                    {Object.keys(p.traits).length > 2 && (
-                      <span className="text-[10px] text-muted-foreground">
-                        +{Object.keys(p.traits).length - 2}
-                      </span>
-                    )}
-                    {p.sex !== 'unspecified' && (
-                      <span className="text-[10px] sm:text-xs bg-muted px-2 py-0.5 rounded-full capitalize">
-                        {p.sex}
-                      </span>
-                    )}
-                    {p.defaultModel && (
-                      <span className="text-[10px] sm:text-xs bg-muted/50 px-2 py-0.5 rounded-full text-muted-foreground ml-auto">
-                        {p.defaultModel.provider}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Mobile-only created date */}
-                  <p className="text-[10px] text-muted-foreground sm:hidden">
-                    Created {formatDate(p.createdAt)}
-                  </p>
-
-                  {/* Preview button */}
-                  <button
-                    onClick={() => {
-                      setPreviewId(previewId === p.id ? null : p.id);
-                    }}
-                    className={`text-xs flex items-center justify-center gap-1 py-1.5 px-2 rounded border transition-colors ${
-                      previewId === p.id
-                        ? 'border-primary bg-primary/5 text-primary'
-                        : 'border-muted hover:border-muted-foreground/30 text-muted-foreground'
-                    }`}
-                  >
-                    <Eye className="w-3 h-3" />
-                    {previewId === p.id ? 'Hide Preview' : 'Preview Prompt'}
-                  </button>
+                  <pre className="text-[10px] sm:text-xs bg-background p-2 sm:p-3 rounded border overflow-auto max-h-40 sm:max-h-64 whitespace-pre-wrap font-mono">
+                    {preview.prompt}
+                  </pre>
                 </div>
+              )}
+            </div>
+          ))}
+
+          {!isLoading && personalities.length === 0 && (
+            <div className="col-span-full">
+              <div className="text-center py-12 px-4 bg-muted/30 rounded-lg border border-dashed">
+                <User className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+                <p className="text-muted-foreground mb-2">No personalities yet</p>
+                <p className="text-sm text-muted-foreground/70">
+                  Create your first personality to get started
+                </p>
               </div>
             </div>
-
-            {/* Per-personality Prompt Preview */}
-            {previewId === p.id && preview && (
-              <div className="card p-3 sm:p-4 mt-2 border-muted bg-muted/30">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2">
-                  <h3 className="font-medium text-sm">System Prompt Preview</h3>
-                  <div className="flex gap-2 sm:gap-3 text-xs text-muted-foreground flex-wrap">
-                    <span>{preview.charCount.toLocaleString()} chars</span>
-                    <span>~{preview.estimatedTokens.toLocaleString()} tokens</span>
-                    {preview.tools.length > 0 && <span>{preview.tools.length} tools</span>}
-                  </div>
-                </div>
-                <pre className="text-[10px] sm:text-xs bg-background p-2 sm:p-3 rounded border overflow-auto max-h-40 sm:max-h-64 whitespace-pre-wrap font-mono">
-                  {preview.prompt}
-                </pre>
-              </div>
-            )}
-          </div>
-        ))}
-
-        {!isLoading && personalities.length === 0 && (
-          <div className="col-span-full">
-            <div className="text-center py-12 px-4 bg-muted/30 rounded-lg border border-dashed">
-              <User className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
-              <p className="text-muted-foreground mb-2">No personalities yet</p>
-              <p className="text-sm text-muted-foreground/70">
-                Create your first personality to get started
-              </p>
-            </div>
-          </div>
-        )}
-      </div>}
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -5475,14 +5491,20 @@ export function PersonalityView() {
     }
   }, [deleteTarget, deleteMut]);
 
-  void activateMut; void activatingId;
+  void activateMut;
+  void activatingId;
 
   return (
     <div className="space-y-6 overflow-x-hidden">
       {deleteLockedMsg && (
         <div className="card p-3 border-warning bg-warning/10 text-warning-foreground text-sm flex items-center justify-between">
           <span>{deleteLockedMsg}</span>
-          <button onClick={() => setDeleteLockedMsg(null)} className="btn-ghost p-1 ml-2">
+          <button
+            onClick={() => {
+              setDeleteLockedMsg(null);
+            }}
+            className="btn-ghost p-1 ml-2"
+          >
             <X className="w-3 h-3" />
           </button>
         </div>
@@ -5495,7 +5517,9 @@ export function PersonalityView() {
         confirmLabel="Delete"
         destructive
         onConfirm={handleConfirmDelete}
-        onCancel={() => setDeleteTarget(null)}
+        onCancel={() => {
+          setDeleteTarget(null);
+        }}
       />
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -5518,7 +5542,12 @@ export function PersonalityView() {
       {activateError && (
         <div className="card p-3 border-destructive bg-destructive/10 text-destructive text-sm flex items-center justify-between">
           <span>{activateError}</span>
-          <button onClick={() => setActivateError(null)} className="btn-ghost p-1">
+          <button
+            onClick={() => {
+              setActivateError(null);
+            }}
+            className="btn-ghost p-1"
+          >
             <X className="w-3 h-3" />
           </button>
         </div>
@@ -5597,7 +5626,9 @@ export function PersonalityView() {
                         </span>
                       ) : (
                         <button
-                          onClick={() => setDefaultMut.mutate(p.id)}
+                          onClick={() => {
+                            setDefaultMut.mutate(p.id);
+                          }}
                           disabled={setDefaultMut.isPending}
                           className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-primary rounded-lg"
                           title={`Set ${p.name} as default`}
@@ -5607,12 +5638,17 @@ export function PersonalityView() {
                       )}
                       {p.isActive ? (
                         p.isDefault ? (
-                          <span className="p-1.5 sm:p-2 text-green-500" title="Active — default personality is always on">
+                          <span
+                            className="p-1.5 sm:p-2 text-green-500"
+                            title="Active — default personality is always on"
+                          >
                             <Power className="w-4 h-4 sm:w-5 sm:h-5" />
                           </span>
                         ) : (
                           <button
-                            onClick={() => disableMut.mutate(p.id)}
+                            onClick={() => {
+                              disableMut.mutate(p.id);
+                            }}
                             disabled={disableMut.isPending}
                             className="btn-ghost p-1.5 sm:p-2 text-green-500 hover:text-muted-foreground rounded-lg"
                             title={`Disable ${p.name}`}
@@ -5622,7 +5658,9 @@ export function PersonalityView() {
                         )
                       ) : (
                         <button
-                          onClick={() => enableMut.mutate(p.id)}
+                          onClick={() => {
+                            enableMut.mutate(p.id);
+                          }}
                           disabled={enableMut.isPending}
                           className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-green-500 rounded-lg"
                           title={`Enable ${p.name}`}
@@ -5640,11 +5678,15 @@ export function PersonalityView() {
                       <button
                         onClick={() => {
                           if (p.isArchetype) {
-                            setDeleteLockedMsg(`"${p.name}" is a system preset and cannot be deleted.`);
+                            setDeleteLockedMsg(
+                              `"${p.name}" is a system preset and cannot be deleted.`
+                            );
                           } else {
                             const mode = p.body?.resourcePolicy?.deletionMode ?? 'auto';
                             if (mode === 'manual') {
-                              setDeleteLockedMsg(`"${p.name}" has deletion locked (Manual mode). Change the deletion mode in Body → Resources to delete it.`);
+                              setDeleteLockedMsg(
+                                `"${p.name}" has deletion locked (Manual mode). Change the deletion mode in Body → Resources to delete it.`
+                              );
                             } else {
                               setDeleteTarget(p);
                             }
@@ -5672,11 +5714,16 @@ export function PersonalityView() {
                   )}
 
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    {Object.entries(p.traits).slice(0, 2).map(([k, v]) => (
-                      <span key={k} className="text-[10px] sm:text-xs bg-muted px-2 py-0.5 rounded-full">
-                        {k}: {v}
-                      </span>
-                    ))}
+                    {Object.entries(p.traits)
+                      .slice(0, 2)
+                      .map(([k, v]) => (
+                        <span
+                          key={k}
+                          className="text-[10px] sm:text-xs bg-muted px-2 py-0.5 rounded-full"
+                        >
+                          {k}: {v}
+                        </span>
+                      ))}
                     {Object.keys(p.traits).length > 2 && (
                       <span className="text-[10px] text-muted-foreground">
                         +{Object.keys(p.traits).length - 2}
@@ -5699,7 +5746,9 @@ export function PersonalityView() {
                   </p>
 
                   <button
-                    onClick={() => setPreviewId(previewId === p.id ? null : p.id)}
+                    onClick={() => {
+                      setPreviewId(previewId === p.id ? null : p.id);
+                    }}
                     className={`text-xs flex items-center justify-center gap-1 py-1.5 px-2 rounded border transition-colors ${
                       previewId === p.id
                         ? 'border-primary bg-primary/5 text-primary'

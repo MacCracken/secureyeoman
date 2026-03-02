@@ -187,11 +187,15 @@ describe('POST /api/v1/training/computer-use/episodes', () => {
     await app.inject({
       method: 'POST',
       url: '/api/v1/training/computer-use/episodes',
-      payload: { sessionId: 's', skillName: 'click', actionType: 'click', reward: 0.8, done: false },
+      payload: {
+        sessionId: 's',
+        skillName: 'click',
+        actionType: 'click',
+        reward: 0.8,
+        done: false,
+      },
     });
-    expect(mockStream.broadcast).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'reward' })
-    );
+    expect(mockStream.broadcast).toHaveBeenCalledWith(expect.objectContaining({ type: 'reward' }));
   });
 });
 

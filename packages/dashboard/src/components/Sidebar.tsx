@@ -149,8 +149,7 @@ export function Sidebar({
   });
 
   const noModelsAvailable =
-    modelInfoData !== undefined &&
-    Object.keys(modelInfoData.available ?? {}).length === 0;
+    modelInfoData !== undefined && Object.keys(modelInfoData.available ?? {}).length === 0;
 
   const subAgentsAllowed = securityPolicy?.allowSubAgents ?? false;
   const a2aAllowed = securityPolicy?.allowA2A ?? false;
@@ -177,11 +176,20 @@ export function Sidebar({
     }
     // Insert Automation after Security (index 2) when workflows are enabled
     if (workflowsAllowed)
-      top.splice(2, 0, { to: '/automation', label: 'Automation', icon: <Layers className="w-5 h-5" /> });
+      top.splice(2, 0, {
+        to: '/automation',
+        label: 'Automation',
+        icon: <Layers className="w-5 h-5" />,
+      });
     // Insert Editor after Chat when allowed
     const chatIdx = top.findIndex((i) => i.to === '/chat');
     if (codeEditorAllowed)
-      top.splice(chatIdx + 1, 0, { to: '/editor', label: 'Editor', icon: <Code className="w-5 h-5" />, disabled: noModelsAvailable });
+      top.splice(chatIdx + 1, 0, {
+        to: '/editor',
+        label: 'Editor',
+        icon: <Code className="w-5 h-5" />,
+        disabled: noModelsAvailable,
+      });
     if (orgIntentAllowed)
       top.push({ to: '/intent', label: 'Intent', icon: <Target className="w-5 h-5" /> });
     if (proactiveEnabled)
@@ -189,7 +197,14 @@ export function Sidebar({
     if (hasAgents)
       top.push({ to: '/agents', label: 'Agents', icon: <Users className="w-5 h-5" /> });
     return top;
-  }, [hasAgents, proactiveEnabled, codeEditorAllowed, orgIntentAllowed, workflowsAllowed, noModelsAvailable]);
+  }, [
+    hasAgents,
+    proactiveEnabled,
+    codeEditorAllowed,
+    orgIntentAllowed,
+    workflowsAllowed,
+    noModelsAvailable,
+  ]);
 
   useEffect(() => {
     setMobileOpen(false);

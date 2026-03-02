@@ -138,7 +138,9 @@ async function runSet(
 
     const d = res.data as Record<string, unknown>;
     const c = colorContext(ctx.stdout);
-    ctx.stdout.write(`${c.green('✓')} License key accepted — tier: ${c.green(String(d.tier))}, org: ${String(d.organization ?? '—')}\n`);
+    ctx.stdout.write(
+      `${c.green('✓')} License key accepted — tier: ${c.green(String(d.tier))}, org: ${String(d.organization ?? '—')}\n`
+    );
     return 0;
   } catch (err) {
     ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);

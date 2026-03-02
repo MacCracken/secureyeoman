@@ -1,8 +1,20 @@
 import { memo, useState, useCallback } from 'react';
 import { NodeProps, NodeResizer } from 'reactflow';
 import {
-  Terminal, Code2, Pin, Globe2, Brain, Columns, GitBranch,
-  GitMerge, Activity, LayoutDashboard, MessageSquare, X, Minus, Maximize2,
+  Terminal,
+  Code2,
+  Pin,
+  Globe2,
+  Brain,
+  Columns,
+  GitBranch,
+  GitMerge,
+  Activity,
+  LayoutDashboard,
+  MessageSquare,
+  X,
+  Minus,
+  Maximize2,
 } from 'lucide-react';
 import type { CanvasWidgetType } from './canvas-registry';
 import { TerminalWidget } from './widgets/TerminalWidget';
@@ -59,21 +71,20 @@ function WidgetContent({ data, nodeId }: { data: CanvasWidgetData; nodeId: strin
   const { widgetType, config } = data;
 
   const onFreezeOutput = data.onFreezeOutput
-    ? (cmd: string, out: string, code: number) => data.onFreezeOutput!(nodeId, cmd, out, code)
+    ? (cmd: string, out: string, code: number) => {
+        data.onFreezeOutput!(nodeId, cmd, out, code);
+      }
     : undefined;
 
   const onConfigChange = data.onConfigChange
-    ? (cfg: CanvasWidgetConfig) => data.onConfigChange!(nodeId, cfg)
+    ? (cfg: CanvasWidgetConfig) => {
+        data.onConfigChange!(nodeId, cfg);
+      }
     : undefined;
 
   switch (widgetType) {
     case 'terminal':
-      return (
-        <TerminalWidget
-          worktreeId={config.worktreeId}
-          onFreezeOutput={onFreezeOutput}
-        />
-      );
+      return <TerminalWidget worktreeId={config.worktreeId} onFreezeOutput={onFreezeOutput} />;
     case 'editor':
       return (
         <EditorWidget
@@ -142,14 +153,23 @@ export const CanvasWidget = memo(function CanvasWidget({
           autoFocus
           className="flex-1 text-xs font-medium bg-transparent border-b border-primary outline-none min-w-0"
           value={titleInput}
-          onChange={(e) => setTitleInput(e.target.value)}
-          onBlur={() => { setEditingTitle(false); }}
-          onKeyDown={(e) => { if (e.key === 'Enter') setEditingTitle(false); }}
+          onChange={(e) => {
+            setTitleInput(e.target.value);
+          }}
+          onBlur={() => {
+            setEditingTitle(false);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') setEditingTitle(false);
+          }}
         />
       ) : (
         <span
           className="flex-1 text-xs font-medium truncate"
-          onDoubleClick={(e) => { e.stopPropagation(); setEditingTitle(true); }}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            setEditingTitle(true);
+          }}
         >
           {titleInput}
         </span>

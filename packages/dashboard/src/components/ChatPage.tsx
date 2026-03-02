@@ -416,7 +416,11 @@ const ChatInputArea = memo(function ChatInputArea({
             onTyping();
           }}
           onKeyDown={handleKeyDown}
-          placeholder={disabled ? 'No AI provider keys configured. Add one in Administration > Secrets.' : `Message ${personalityName ?? 'the assistant'}...`}
+          placeholder={
+            disabled
+              ? 'No AI provider keys configured. Add one in Administration > Secrets.'
+              : `Message ${personalityName ?? 'the assistant'}...`
+          }
           disabled={isPending || disabled}
           rows={3}
           className="flex-1 resize-none rounded-lg border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 min-h-[80px] max-h-[200px]"
@@ -550,8 +554,7 @@ export function ChatPage() {
     : null;
 
   const noModelsAvailable =
-    modelInfoData !== undefined &&
-    Object.keys(modelInfoData.available ?? {}).length === 0;
+    modelInfoData !== undefined && Object.keys(modelInfoData.available ?? {}).length === 0;
 
   const personalityCapabilities = personality?.body?.capabilities ?? [];
   const hasVision = personalityCapabilities.includes('vision');

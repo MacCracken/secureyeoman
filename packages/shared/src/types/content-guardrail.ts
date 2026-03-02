@@ -42,7 +42,9 @@ export const ContentGuardrailPersonalityConfigSchema = z.object({
   piiMode: z.enum(['disabled', 'detect_only', 'redact']).optional(),
 });
 
-export type ContentGuardrailPersonalityConfig = z.infer<typeof ContentGuardrailPersonalityConfigSchema>;
+export type ContentGuardrailPersonalityConfig = z.infer<
+  typeof ContentGuardrailPersonalityConfigSchema
+>;
 
 // ── Result types ──────────────────────────────────────────────────────
 

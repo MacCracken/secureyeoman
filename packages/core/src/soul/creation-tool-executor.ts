@@ -72,7 +72,9 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
       name: normalizeSkillName(str(args.name)),
       description: typeof args.description === 'string' ? args.description : '',
       instructions: typeof args.instructions === 'string' ? args.instructions : '',
-      triggerPatterns: Array.isArray(args.triggerPatterns) ? (args.triggerPatterns as string[]) : [],
+      triggerPatterns: Array.isArray(args.triggerPatterns)
+        ? (args.triggerPatterns as string[])
+        : [],
       tools: [],
       useWhen: '',
       doNotUseWhen: '',

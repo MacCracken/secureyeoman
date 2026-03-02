@@ -330,7 +330,12 @@ export class DistillationManager {
 
   // ── Private helpers ────────────────────────────────────────────────────────
 
-  private _formatLine(format: ExportFormat, userContent: string, response: string, meta?: Record<string, unknown>): string {
+  private _formatLine(
+    format: ExportFormat,
+    userContent: string,
+    response: string,
+    meta?: Record<string, unknown>
+  ): string {
     if (format === 'sharegpt') {
       return (
         JSON.stringify({

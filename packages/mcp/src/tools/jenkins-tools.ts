@@ -23,7 +23,7 @@ function basicAuth(config: McpServiceConfig): string | undefined {
 function jenkinsHeaders(config: McpServiceConfig): Record<string, string> {
   const headers: Record<string, string> = {};
   const auth = basicAuth(config);
-  if (auth) headers['Authorization'] = auth;
+  if (auth) headers.Authorization = auth;
   return headers;
 }
 
@@ -96,7 +96,10 @@ export function registerJenkinsTools(
     'jenkins_trigger_build',
     'Trigger a Jenkins job build, optionally with parameters',
     {
-      jobName: z.string().min(1).describe('Jenkins job name (URL-encoded if nested, e.g. folder%2Fjob)'),
+      jobName: z
+        .string()
+        .min(1)
+        .describe('Jenkins job name (URL-encoded if nested, e.g. folder%2Fjob)'),
       parameters: z
         .record(z.string())
         .default({})
@@ -105,12 +108,8 @@ export function registerJenkinsTools(
     wrapToolHandler('jenkins_trigger_build', middleware, async ({ jobName, parameters }) => {
       if (!config.exposeJenkins) return disabled();
       const hasParams = Object.keys(parameters).length > 0;
-      const endpoint = hasParams
-        ? `/job/${jobName}/buildWithParameters`
-        : `/job/${jobName}/build`;
-      const body = hasParams
-        ? new URLSearchParams(parameters).toString()
-        : undefined;
+      const endpoint = hasParams ? `/job/${jobName}/buildWithParameters` : `/job/${jobName}/build`;
+      const body = hasParams ? new URLSearchParams(parameters).toString() : undefined;
       const headers: Record<string, string> = {};
       if (hasParams) headers['Content-Type'] = 'application/x-www-form-urlencoded';
       const res = await jenkinsFetch(config, endpoint, {
@@ -210,14 +209,15 @@ export function registerJenkinsTools(
     'jenkins_queue_item',
     'Get the status of a Jenkins queue item (to find the build number after triggering)',
     {
-      itemId: z.number().int().positive().describe('Queue item ID from the Location header after triggering a build'),
+      itemId: z
+        .number()
+        .int()
+        .positive()
+        .describe('Queue item ID from the Location header after triggering a build'),
     },
     wrapToolHandler('jenkins_queue_item', middleware, async ({ itemId }) => {
       if (!config.exposeJenkins) return disabled();
-      const { ok, status, body } = await jenkinsFetch(
-        config,
-        `/queue/item/${itemId}/api/json`
-      );
+      const { ok, status, body } = await jenkinsFetch(config, `/queue/item/${itemId}/api/json`);
       if (!ok) {
         return {
           content: [{ type: 'text', text: `Jenkins API error ${status}: ${JSON.stringify(body)}` }],

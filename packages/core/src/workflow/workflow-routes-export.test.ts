@@ -15,7 +15,11 @@ const DEFINITION = {
   name: 'Exported Workflow',
   description: 'A workflow for export tests',
   steps: [
-    { id: 'step-1', type: 'agent', config: { toolName: 'github_list_issues', prompt: 'Check github issues' } },
+    {
+      id: 'step-1',
+      type: 'agent',
+      config: { toolName: 'github_list_issues', prompt: 'Check github issues' },
+    },
   ],
   edges: [],
   triggers: [{ type: 'manual', config: {} }],

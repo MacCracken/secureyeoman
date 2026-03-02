@@ -119,7 +119,7 @@ export class LicenseManager {
 
   /** Returns true only when a valid enterprise key grants the requested feature. */
   hasFeature(feature: EnterpriseFeature): boolean {
-    if (!this.claims || this.claims.tier !== 'enterprise') return false;
+    if (this.claims?.tier !== 'enterprise') return false;
     return this.claims.features.includes(feature);
   }
 

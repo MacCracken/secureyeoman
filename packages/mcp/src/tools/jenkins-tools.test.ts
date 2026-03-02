@@ -198,7 +198,7 @@ describe('jenkins-tools', () => {
         jobName: 'my-job',
         parameters: { ENV: 'prod' },
       });
-      const url = (mockFetch.mock.calls[0] as string[])[0] as string;
+      const url = (mockFetch.mock.calls[0] as string[])[0]!;
       expect(url).toContain('buildWithParameters');
     });
   });

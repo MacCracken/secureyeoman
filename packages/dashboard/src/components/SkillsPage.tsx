@@ -116,9 +116,19 @@ export function SkillsPage() {
       </div>
 
       {activeTab === 'my-skills' && <PersonalTab />}
-      {activeTab === 'marketplace' && <MarketplaceTab workflowsEnabled={workflowsEnabled} subAgentsEnabled={subAgentsEnabled} />}
-      {activeTab === 'community' && communityEnabled && <CommunityTab workflowsEnabled={workflowsEnabled} subAgentsEnabled={subAgentsEnabled} />}
-      {activeTab === 'installed' && <InstalledTab onNavigateTab={setActiveTab} workflowsEnabled={workflowsEnabled} subAgentsEnabled={subAgentsEnabled} />}
+      {activeTab === 'marketplace' && (
+        <MarketplaceTab workflowsEnabled={workflowsEnabled} subAgentsEnabled={subAgentsEnabled} />
+      )}
+      {activeTab === 'community' && communityEnabled && (
+        <CommunityTab workflowsEnabled={workflowsEnabled} subAgentsEnabled={subAgentsEnabled} />
+      )}
+      {activeTab === 'installed' && (
+        <InstalledTab
+          onNavigateTab={setActiveTab}
+          workflowsEnabled={workflowsEnabled}
+          subAgentsEnabled={subAgentsEnabled}
+        />
+      )}
     </div>
   );
 }

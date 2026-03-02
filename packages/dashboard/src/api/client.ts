@@ -1085,10 +1085,9 @@ export async function fetchComputerUseStats(): Promise<{
 }
 
 export async function deleteComputerUseEpisode(id: string): Promise<void> {
-  await request<undefined>(
-    `/training/computer-use/episodes/${encodeURIComponent(id)}`,
-    { method: 'DELETE' }
-  );
+  await request<undefined>(`/training/computer-use/episodes/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
 }
 
 // ─── AI Health ────────────────────────────────────────────────────
@@ -4692,9 +4691,12 @@ export async function addProfileSkill(profileId: string, skillId: string): Promi
 }
 
 export async function removeProfileSkill(profileId: string, skillId: string): Promise<void> {
-  await request(`/agents/profiles/${encodeURIComponent(profileId)}/skills/${encodeURIComponent(skillId)}`, {
-    method: 'DELETE',
-  });
+  await request(
+    `/agents/profiles/${encodeURIComponent(profileId)}/skills/${encodeURIComponent(skillId)}`,
+    {
+      method: 'DELETE',
+    }
+  );
 }
 
 // ─── Canvas Workspace API ────────────────────────────────────────

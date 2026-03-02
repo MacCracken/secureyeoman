@@ -33,7 +33,7 @@ export const WorkflowStepTypeSchema = z.enum([
   'human_approval',
   // CI/CD step types (Phase 90)
   'ci_trigger', // fire a CI/CD job, returns { runId, url, status: 'queued' }
-  'ci_wait',    // poll until job done, returns { status, conclusion, logs_url, durationMs }
+  'ci_wait', // poll until job done, returns { status, conclusion, logs_url, durationMs }
 ]);
 export type WorkflowStepType = z.infer<typeof WorkflowStepTypeSchema>;
 

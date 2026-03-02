@@ -165,7 +165,10 @@ describe('northflank-tools', () => {
       mockFetchOk({ data: { id: 'build1', status: 'RUNNING' } });
       const { globalToolRegistry } = await import('./tool-utils.js');
       const result = await globalToolRegistry.get('northflank_trigger_build')!({
-        projectId: 'p1', serviceId: 'api', branch: 'main', sha: '',
+        projectId: 'p1',
+        serviceId: 'api',
+        branch: 'main',
+        sha: '',
       });
       expect(result.isError).toBeFalsy();
       expect((result.content[0] as { text: string }).text).toContain('build1');
@@ -179,7 +182,9 @@ describe('northflank-tools', () => {
       mockFetchOk({ data: { id: 'build1', status: 'SUCCEEDED' } });
       const { globalToolRegistry } = await import('./tool-utils.js');
       const result = await globalToolRegistry.get('northflank_get_build')!({
-        projectId: 'p1', serviceId: 'api', buildId: 'build1',
+        projectId: 'p1',
+        serviceId: 'api',
+        buildId: 'build1',
       });
       expect(result.isError).toBeFalsy();
       expect((result.content[0] as { text: string }).text).toContain('SUCCEEDED');
@@ -192,7 +197,9 @@ describe('northflank-tools', () => {
       registerNorthflankTools(server, baseConfig(), noopMiddleware());
       mockFetchOk({ data: { deployments: [{ id: 'dep1' }] } });
       const { globalToolRegistry } = await import('./tool-utils.js');
-      const result = await globalToolRegistry.get('northflank_list_deployments')!({ projectId: 'p1' });
+      const result = await globalToolRegistry.get('northflank_list_deployments')!({
+        projectId: 'p1',
+      });
       expect(result.isError).toBeFalsy();
       expect((result.content[0] as { text: string }).text).toContain('dep1');
     });
@@ -205,7 +212,9 @@ describe('northflank-tools', () => {
       mockFetchOk({ data: { status: 'DEPLOYING' } });
       const { globalToolRegistry } = await import('./tool-utils.js');
       const result = await globalToolRegistry.get('northflank_trigger_deployment')!({
-        projectId: 'p1', deploymentId: 'dep1', imageTag: 'v1.2.0',
+        projectId: 'p1',
+        deploymentId: 'dep1',
+        imageTag: 'v1.2.0',
       });
       expect(result.isError).toBeFalsy();
       expect((result.content[0] as { text: string }).text).toContain('DEPLOYING');

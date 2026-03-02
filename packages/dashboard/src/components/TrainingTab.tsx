@@ -1213,7 +1213,9 @@ function LiveTab() {
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-medium">Conversation Quality Coverage</h3>
           <button
-            onClick={() => scoreMut.mutate()}
+            onClick={() => {
+              scoreMut.mutate();
+            }}
             disabled={scoreMut.isPending}
             className="btn btn-ghost text-xs flex items-center gap-1"
           >
@@ -1271,7 +1273,9 @@ function ComputerUseTab() {
   const { data: episodes = [], isLoading: epsLoading } = useQuery({
     queryKey: ['cu-episodes', selectedSession],
     queryFn: () =>
-      fetchComputerUseEpisodes(selectedSession ? { sessionId: selectedSession, limit: 50 } : { limit: 50 }),
+      fetchComputerUseEpisodes(
+        selectedSession ? { sessionId: selectedSession, limit: 50 } : { limit: 50 }
+      ),
     staleTime: 30_000,
   });
 
@@ -1336,7 +1340,9 @@ function ComputerUseTab() {
                   <tr
                     key={s.skillName}
                     className="border-t cursor-pointer hover:bg-muted/30"
-                    onClick={() => setSelectedSession('')}
+                    onClick={() => {
+                      setSelectedSession('');
+                    }}
                   >
                     <td className="px-3 py-2 font-mono text-xs">{s.skillName}</td>
                     <td className="px-3 py-2 text-right">{s.episodeCount}</td>
@@ -1357,7 +1363,9 @@ function ComputerUseTab() {
           <input
             type="text"
             value={selectedSession}
-            onChange={(e) => setSelectedSession(e.target.value)}
+            onChange={(e) => {
+              setSelectedSession(e.target.value);
+            }}
             placeholder="Session ID…"
             className="px-2 py-1 text-xs border rounded bg-background flex-1 max-w-xs"
           />
@@ -1376,10 +1384,14 @@ function ComputerUseTab() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs font-mono bg-muted px-1 rounded">{ep.actionType}</span>
-                    <span className="text-xs text-muted-foreground truncate">{ep.actionTarget}</span>
+                    <span className="text-xs text-muted-foreground truncate">
+                      {ep.actionTarget}
+                    </span>
                   </div>
                   {ep.actionValue && (
-                    <div className="text-xs text-muted-foreground mt-0.5 truncate">{ep.actionValue}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                      {ep.actionValue}
+                    </div>
                   )}
                   <div className="flex items-center gap-2 mt-1">
                     <span
@@ -1387,8 +1399,8 @@ function ComputerUseTab() {
                         ep.reward > 0
                           ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                           : ep.reward < 0
-                          ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                          : 'bg-muted text-muted-foreground'
+                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                            : 'bg-muted text-muted-foreground'
                       }`}
                     >
                       r={ep.reward.toFixed(2)}
@@ -1402,7 +1414,9 @@ function ComputerUseTab() {
                   </div>
                 </div>
                 <button
-                  onClick={() => deleteMut.mutate(ep.id)}
+                  onClick={() => {
+                    deleteMut.mutate(ep.id);
+                  }}
                   disabled={deleteMut.isPending}
                   className="text-muted-foreground hover:text-destructive p-1"
                   title="Delete episode"

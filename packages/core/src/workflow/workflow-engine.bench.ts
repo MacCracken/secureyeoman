@@ -142,7 +142,10 @@ describe('WorkflowEngine.topologicalSort', () => {
 
 describe('WorkflowEngine.resolveTemplate', () => {
   bench('no placeholders', () => {
-    engine.resolveTemplate('Hello, this is a static string with no interpolation needed.', CTX_SIMPLE);
+    engine.resolveTemplate(
+      'Hello, this is a static string with no interpolation needed.',
+      CTX_SIMPLE
+    );
   });
 
   bench('single shallow placeholder', () => {

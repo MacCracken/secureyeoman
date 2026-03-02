@@ -264,7 +264,12 @@ export function registerGithubApiTools(
     },
     method: 'post',
     buildPath: (args) => `/api/v1/github/repos/${args.owner}/${args.repo}/issues`,
-    buildBody: (args) => ({ title: args.title, body: args.body, labels: args.labels, assignees: args.assignees }),
+    buildBody: (args) => ({
+      title: args.title,
+      body: args.body,
+      labels: args.labels,
+      assignees: args.assignees,
+    }),
   });
 
   // ── github_create_pr ─────────────────────────────────────────
@@ -283,7 +288,13 @@ export function registerGithubApiTools(
     },
     method: 'post',
     buildPath: (args) => `/api/v1/github/repos/${args.owner}/${args.repo}/pulls`,
-    buildBody: (args) => ({ title: args.title, head: args.head, base: args.base, body: args.body, draft: args.draft }),
+    buildBody: (args) => ({
+      title: args.title,
+      head: args.head,
+      base: args.base,
+      body: args.body,
+      draft: args.draft,
+    }),
   });
 
   // ── github_comment ───────────────────────────────────────────
@@ -298,7 +309,8 @@ export function registerGithubApiTools(
       body: z.string().describe('Comment text in Markdown'),
     },
     method: 'post',
-    buildPath: (args) => `/api/v1/github/repos/${args.owner}/${args.repo}/issues/${args.number}/comments`,
+    buildPath: (args) =>
+      `/api/v1/github/repos/${args.owner}/${args.repo}/issues/${args.number}/comments`,
     buildBody: (args) => ({ body: args.body }),
   });
 
@@ -320,9 +332,7 @@ export function registerGithubApiTools(
       'In "draft" mode returns a preview without adding. Blocked in "suggest" mode. ' +
       'Requires the account to be reconnected with the admin:public_key scope.',
     inputSchema: {
-      title: z
-        .string()
-        .describe('A label for the key (e.g. "Work laptop" or "MacBook Pro 2024")'),
+      title: z.string().describe('A label for the key (e.g. "Work laptop" or "MacBook Pro 2024")'),
       key: z
         .string()
         .describe('The full SSH public key string (starts with "ssh-ed25519", "ssh-rsa", etc.)'),
@@ -381,7 +391,7 @@ export function registerGithubApiTools(
       const reg = (await client.post('/api/v1/github/ssh-keys', {
         title: args.title,
         key: publicKey,
-      })) as { preview?: boolean; id?: number };
+      })) as Record<string, unknown>;
 
       // Handle draft-mode preview (core returns { preview: true, ... })
       if (reg.preview) {
@@ -404,7 +414,7 @@ export function registerGithubApiTools(
         };
       }
 
-      const githubKeyId = reg.id as number;
+      const githubKeyId = reg.id!;
       const sshDir = `${homedir()}/.ssh`;
       const keyPath = `${sshDir}/yeoman_github_ed25519`;
       const configPath = `${sshDir}/config`;
@@ -529,7 +539,7 @@ export function registerGithubApiTools(
       const reg = (await client.post('/api/v1/github/ssh-keys', {
         title: args.title,
         key: publicKey,
-      })) as { preview?: boolean; id?: number };
+      })) as Record<string, unknown>;
 
       if (reg.preview) {
         return {
@@ -546,7 +556,7 @@ export function registerGithubApiTools(
         };
       }
 
-      const newKeyId = reg.id as number;
+      const newKeyId = reg.id!;
 
       // Revoke old key
       let revokeNote =

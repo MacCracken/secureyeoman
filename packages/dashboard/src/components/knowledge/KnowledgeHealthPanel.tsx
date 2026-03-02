@@ -111,9 +111,13 @@ export function KnowledgeHealthPanel() {
                       const fits = estimatedTokens <= budget;
                       return (
                         <div key={m.name} className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full shrink-0 ${fits ? 'bg-green-500' : 'bg-red-400'}`} />
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 ${fits ? 'bg-green-500' : 'bg-red-400'}`}
+                          />
                           <span className="text-xs text-muted-foreground flex-1">{m.name}</span>
-                          <span className={`text-xs font-medium ${fits ? 'text-green-600' : 'text-red-500'}`}>
+                          <span
+                            className={`text-xs font-medium ${fits ? 'text-green-600' : 'text-red-500'}`}
+                          >
                             {fits ? 'fits' : 'exceeds'} ({(budget / 1000).toFixed(0)}K budget)
                           </span>
                         </div>

@@ -9,9 +9,15 @@ import type { CanvasLayout } from './canvas-layout';
 const store: Record<string, string> = {};
 const localStorageMock = {
   getItem: vi.fn((key: string) => store[key] ?? null),
-  setItem: vi.fn((key: string, value: string) => { store[key] = value; }),
-  removeItem: vi.fn((key: string) => { delete store[key]; }),
-  clear: vi.fn(() => { Object.keys(store).forEach((k) => delete store[k]); }),
+  setItem: vi.fn((key: string, value: string) => {
+    store[key] = value;
+  }),
+  removeItem: vi.fn((key: string) => {
+    delete store[key];
+  }),
+  clear: vi.fn(() => {
+    Object.keys(store).forEach((k) => delete store[k]);
+  }),
 };
 Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true });
 
@@ -81,7 +87,10 @@ describe('saveCanvasLayout + loadCanvasLayout', () => {
   });
 
   it('returns default when stored layout has wrong version', () => {
-    localStorage.setItem('canvas:workspace', JSON.stringify({ version: 99, nodes: [], viewport: {} }));
+    localStorage.setItem(
+      'canvas:workspace',
+      JSON.stringify({ version: 99, nodes: [], viewport: {} })
+    );
     const layout = loadCanvasLayout();
     expect(layout).toEqual(defaultCanvasLayout());
   });
@@ -98,7 +107,9 @@ describe('saveCanvasLayout + loadCanvasLayout', () => {
   });
 
   it('silently ignores localStorage errors during save', () => {
-    localStorageMock.setItem.mockImplementationOnce(() => { throw new Error('QuotaExceededError'); });
+    localStorageMock.setItem.mockImplementationOnce(() => {
+      throw new Error('QuotaExceededError');
+    });
     expect(() => saveCanvasLayout(defaultCanvasLayout())).not.toThrow();
   });
 

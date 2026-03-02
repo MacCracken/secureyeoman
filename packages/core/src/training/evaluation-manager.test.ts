@@ -5,7 +5,14 @@
  * No disk I/O or external model calls.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { EvaluationManager, parseToolCall, computeToolNameAccuracy, computeToolArgMatch, cosineSimilarity, computeSemanticSimilarity } from './evaluation-manager.js';
+import {
+  EvaluationManager,
+  parseToolCall,
+  computeToolNameAccuracy,
+  computeToolArgMatch,
+  cosineSimilarity,
+  computeSemanticSimilarity,
+} from './evaluation-manager.js';
 import type { SecureLogger } from '../logging/logger.js';
 
 function makeLogger(): SecureLogger {
@@ -318,7 +325,10 @@ describe('EvaluationManager — Phase 92 factored metrics', () => {
 
   beforeEach(() => {
     logger = {
-      info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn(),
       child: vi.fn().mockReturnThis(),
     } as unknown as SecureLogger;
   });

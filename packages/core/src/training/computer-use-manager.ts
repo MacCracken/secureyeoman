@@ -210,23 +210,21 @@ export class ComputerUseManager {
 
       for (const row of rows) {
         const ep = rowToEpisode(row);
-        yield (
-          JSON.stringify({
-            format,
-            id: ep.id,
-            session_id: ep.sessionId,
-            skill_name: ep.skillName,
-            state: ep.stateEncoding,
-            action: {
-              type: ep.actionType,
-              target: ep.actionTarget,
-              value: ep.actionValue,
-            },
-            reward: ep.reward,
-            done: ep.done,
-            created_at: ep.createdAt,
-          }) + '\n'
-        );
+        yield JSON.stringify({
+          format,
+          id: ep.id,
+          session_id: ep.sessionId,
+          skill_name: ep.skillName,
+          state: ep.stateEncoding,
+          action: {
+            type: ep.actionType,
+            target: ep.actionTarget,
+            value: ep.actionValue,
+          },
+          reward: ep.reward,
+          done: ep.done,
+          created_at: ep.createdAt,
+        }) + '\n';
       }
 
       offset += rows.length;

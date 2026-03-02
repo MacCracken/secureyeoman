@@ -977,11 +977,17 @@ function ProfileSkillsSection({ profileId }: { profileId: string }) {
     <div className="mt-2 border-t border-border pt-2">
       <button
         className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
-        onClick={() => setExpanded((e) => !e)}
+        onClick={() => {
+          setExpanded((e) => !e);
+        }}
       >
         <BookOpen className="w-3 h-3" />
         Skills ({installedSkills.length})
-        {expanded ? <ChevronDown className="w-3 h-3 ml-auto" /> : <ChevronRight className="w-3 h-3 ml-auto" />}
+        {expanded ? (
+          <ChevronDown className="w-3 h-3 ml-auto" />
+        ) : (
+          <ChevronRight className="w-3 h-3 ml-auto" />
+        )}
       </button>
 
       {expanded && (
@@ -996,7 +1002,9 @@ function ProfileSkillsSection({ profileId }: { profileId: string }) {
                 <span className="text-xs">{skill.name}</span>
                 <button
                   className="p-0.5 text-muted-foreground hover:text-destructive"
-                  onClick={() => removeMut.mutate(skill.id)}
+                  onClick={() => {
+                    removeMut.mutate(skill.id);
+                  }}
                   disabled={removeMut.isPending}
                   title="Remove skill"
                 >
@@ -1015,7 +1023,9 @@ function ProfileSkillsSection({ profileId }: { profileId: string }) {
                   <button
                     key={s.id}
                     className="block text-xs text-left w-full hover:bg-muted px-1.5 py-0.5 rounded"
-                    onClick={() => addMut.mutate(s.id)}
+                    onClick={() => {
+                      addMut.mutate(s.id);
+                    }}
                     disabled={addMut.isPending}
                   >
                     {s.name}
@@ -1024,7 +1034,9 @@ function ProfileSkillsSection({ profileId }: { profileId: string }) {
               )}
               <button
                 className="text-xs text-muted-foreground hover:text-foreground"
-                onClick={() => setShowAdd(false)}
+                onClick={() => {
+                  setShowAdd(false);
+                }}
               >
                 Cancel
               </button>
@@ -1032,7 +1044,9 @@ function ProfileSkillsSection({ profileId }: { profileId: string }) {
           ) : (
             <button
               className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mt-1"
-              onClick={() => setShowAdd(true)}
+              onClick={() => {
+                setShowAdd(true);
+              }}
             >
               <Plus className="w-3 h-3" /> Add skill
             </button>

@@ -12,8 +12,8 @@ import { sendError } from '../utils/errors.js';
 const execFileAsync = promisify(execFile);
 
 export interface WorktreeInfo {
-  id: string;       // name of the worktree (= branch name)
-  path: string;     // absolute path
+  id: string; // name of the worktree (= branch name)
+  path: string; // absolute path
   branch: string;
   createdAt: string; // ISO string
 }
@@ -29,14 +29,20 @@ export function registerWorktreeRoutes(app: FastifyInstance): void {
       const name = request.body.name ?? `worktree-${Date.now()}`;
       // sanitize name: only alphanum, dash, underscore
       if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
-        return sendError(reply, 400, 'Invalid worktree name: use alphanumeric, dash, underscore only');
+        return sendError(
+          reply,
+          400,
+          'Invalid worktree name: use alphanumeric, dash, underscore only'
+        );
       }
       const worktreePath = join(WORKTREES_DIR, name);
       if (!existsSync(WORKTREES_DIR)) {
         mkdirSync(WORKTREES_DIR, { recursive: true });
       }
       try {
-        await execFileAsync('git', ['worktree', 'add', worktreePath, '-b', name], { cwd: process.cwd() });
+        await execFileAsync('git', ['worktree', 'add', worktreePath, '-b', name], {
+          cwd: process.cwd(),
+        });
         logger.info('Created worktree', { name, path: worktreePath });
         const info: WorktreeInfo = {
           id: name,
@@ -56,7 +62,9 @@ export function registerWorktreeRoutes(app: FastifyInstance): void {
   // GET /api/v1/terminal/worktrees — list all worktrees
   app.get('/api/v1/terminal/worktrees', async (_request, _reply) => {
     try {
-      const { stdout } = await execFileAsync('git', ['worktree', 'list', '--porcelain'], { cwd: process.cwd() });
+      const { stdout } = await execFileAsync('git', ['worktree', 'list', '--porcelain'], {
+        cwd: process.cwd(),
+      });
       const worktrees: WorktreeInfo[] = [];
       const blocks = stdout.trim().split(/\n\n/);
       for (const block of blocks) {
@@ -67,8 +75,8 @@ export function registerWorktreeRoutes(app: FastifyInstance): void {
           if (spaceIdx === -1) continue;
           lines[line.slice(0, spaceIdx)] = line.slice(spaceIdx + 1);
         }
-        const worktreePath = lines['worktree'];
-        const branch = (lines['branch'] ?? '').replace('refs/heads/', '');
+        const worktreePath = lines.worktree;
+        const branch = (lines.branch ?? '').replace('refs/heads/', '');
         if (!worktreePath) continue;
         // Only include worktrees under our .worktrees/ dir
         if (!worktreePath.startsWith(WORKTREES_DIR)) continue;
@@ -98,7 +106,9 @@ export function registerWorktreeRoutes(app: FastifyInstance): void {
       }
       const worktreePath = join(WORKTREES_DIR, id);
       try {
-        await execFileAsync('git', ['worktree', 'remove', worktreePath, '--force'], { cwd: process.cwd() });
+        await execFileAsync('git', ['worktree', 'remove', worktreePath, '--force'], {
+          cwd: process.cwd(),
+        });
         // Also delete the branch
         try {
           await execFileAsync('git', ['branch', '-D', id], { cwd: process.cwd() });

@@ -1,15 +1,5 @@
 import React, { lazy, Suspense, useEffect } from 'react';
-import {
-  Loader2,
-  Eye,
-  Download,
-  Trash2,
-  Globe,
-  Shield,
-  GitBranch,
-  X,
-  User,
-} from 'lucide-react';
+import { Loader2, Eye, Download, Trash2, Globe, Shield, GitBranch, X, User } from 'lucide-react';
 import {
   installMarketplaceSkill,
   uninstallMarketplaceSkill,
@@ -52,7 +42,9 @@ export function ContentTypeSelector({
       {visible.map((t) => (
         <button
           key={t.value}
-          onClick={() => onChange(t.value)}
+          onClick={() => {
+            onChange(t.value);
+          }}
           className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
             value === t.value
               ? 'bg-background text-foreground shadow-sm'

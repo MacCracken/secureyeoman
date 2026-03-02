@@ -132,7 +132,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
         return sendError(reply, 503, 'Conversation storage not available');
       }
 
-      const format: ExportFormat = (body.format as ExportFormat) ?? 'sharegpt';
+      const format: ExportFormat = body.format! ?? 'sharegpt';
       const from = body.from;
       const to = body.to;
       const personalityIds = body.personalityIds;
@@ -650,10 +650,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
    */
   app.get(
     '/api/v1/training/quality',
-    async (
-      request: FastifyRequest<{ Querystring: { limit?: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Querystring: { limit?: string } }>, reply: FastifyReply) => {
       const scorer = secureYeoman.getConversationQualityScorer();
       if (!scorer) return sendError(reply, 503, 'Quality scorer not available');
 
@@ -684,16 +681,19 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
    * POST /api/v1/training/quality/score
    * Manually trigger a scoring run for unscored conversations.
    */
-  app.post('/api/v1/training/quality/score', async (_request: FastifyRequest, reply: FastifyReply) => {
-    const scorer = secureYeoman.getConversationQualityScorer();
-    if (!scorer) return sendError(reply, 503, 'Quality scorer not available');
+  app.post(
+    '/api/v1/training/quality/score',
+    async (_request: FastifyRequest, reply: FastifyReply) => {
+      const scorer = secureYeoman.getConversationQualityScorer();
+      if (!scorer) return sendError(reply, 503, 'Quality scorer not available');
 
-    const pool = secureYeoman.getPool?.();
-    if (!pool) return sendError(reply, 503, 'Database pool not available');
+      const pool = secureYeoman.getPool?.();
+      if (!pool) return sendError(reply, 503, 'Database pool not available');
 
-    const scored = await scorer.scoreNewConversations(pool);
-    return { scored };
-  });
+      const scored = await scorer.scoreNewConversations(pool);
+      return { scored };
+    }
+  );
 
   // ── Phase 92: Computer-use episode endpoints ───────────────────────────────
 
