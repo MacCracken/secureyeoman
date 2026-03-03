@@ -2,7 +2,7 @@
 
 Most AI assistants work for the platform that hosts them. SecureYeoman works for you — self-hosted, enterprise-hardened, and answerable only to you. Your data doesn't have to train their models. Your conversations and data don't have to be their product.
 
-**v2026.3.2** | 12,408 Tests | AGPL-3.0 License | 200+ MCP Tools | 30 CLI Commands
+**v2026.3.2** | 13,097 Tests | AGPL-3.0 License | 200+ MCP Tools | 35 CLI Commands
 
 ---
 
@@ -70,9 +70,9 @@ Vector semantic search (FAISS/Qdrant/ChromaDB) fused with tsvector full-text sea
 
 ### 7. Developer Experience
 
-30-command CLI with shell completions and `--json` scripting output. Full-screen TUI (`secureyeoman tui`). Rich lifecycle hook system with observe/transform/veto semantics. Sandboxed code execution (Python, Node.js, shell). Desktop control — screen capture, keyboard/mouse, clipboard — gated by explicit consent and audit trail.
+35-command CLI with shell completions and `--json` scripting output. Full-screen TUI (`secureyeoman tui`). Rich lifecycle hook system with observe/transform/veto semantics. Sandboxed code execution (Python, Node.js, shell). Desktop control — screen capture, keyboard/mouse, clipboard — gated by explicit consent and audit trail.
 
-- 30 CLI commands + full-screen TUI
+- 35 CLI commands + full-screen TUI
 - Rich lifecycle hooks
 - Sandboxed code execution
 - Desktop control (consent-gated)
@@ -158,7 +158,7 @@ cd secureyeoman && npm install && npm run build
 ## Community
 
 - **License**: AGPL-3.0
-- **Tests**: 12,408
+- **Tests**: 13,097
 - **GitHub**: [github.com/MacCracken/secureyeoman](https://github.com/MacCracken/secureyeoman)
 - **Discussions**: [GitHub Discussions](https://github.com/MacCracken/secureyeoman/discussions)
 

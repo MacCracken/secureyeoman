@@ -102,4 +102,4 @@ The choice is no longer between AI Productivity and Corporate Security. SecureYe
 
 ---
 
-SecureYeoman v2026.3.2 | 12,408 tests | 151 ADRs | AGPL-3.0 + Commercial License
+SecureYeoman v2026.3.2 | 13,097 tests | 153 ADRs | AGPL-3.0 + Commercial License
