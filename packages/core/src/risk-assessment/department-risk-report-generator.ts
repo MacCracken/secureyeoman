@@ -299,7 +299,7 @@ ${heatmap.length > 0
 
     for (const cell of cells) {
       departments.set(cell.departmentId, cell.departmentName);
-      domains.set(cell.domain);
+      domains.add(cell.domain);
       cellMap.set(`${cell.departmentId}:${cell.domain}`, cell);
     }
 

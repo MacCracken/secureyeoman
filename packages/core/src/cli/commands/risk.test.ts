@@ -253,4 +253,37 @@ describe('risk command', () => {
     expect(riskCommand.name).toBe('risk');
     expect(riskCommand.aliases).toContain('rsk');
   });
+
+  // ── Report subcommand (Phase 111-D) ────────────────────────
+
+  it('report requires target argument', async () => {
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await riskCommand.run({ argv: ['report'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Usage');
+  });
+
+  it('report executive outputs content', async () => {
+    mockFetch('# Executive Risk Summary\n\nDepartments: 3');
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await riskCommand.run({ argv: ['report', 'executive', '--format', 'md'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('Executive Risk Summary');
+  });
+
+  it('report department outputs JSON', async () => {
+    mockFetch({ department: { id: 'd1', name: 'Eng' }, trend: [] });
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await riskCommand.run({ argv: ['report', 'd1'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('Eng');
+  });
+
+  it('report handles API failure', async () => {
+    mockFetch({ error: 'not found' }, 404);
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await riskCommand.run({ argv: ['report', 'nonexistent'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Failed');
+  });
 });

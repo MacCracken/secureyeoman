@@ -353,3 +353,52 @@ async function runSummary(
   ctx.stdout.write('\n');
   return 0;
 }
+
+// ── Report ──────────────────────────────────────────────────
+
+async function runReport(
+  ctx: CommandContext,
+  baseUrl: string,
+  token: string | undefined,
+  args: string[]
+): Promise<number> {
+  const fmtResult = extractFlag(args, 'format');
+  args = fmtResult.rest;
+  const format = fmtResult.value ?? 'json';
+
+  const outputResult = extractFlag(args, 'output');
+  args = outputResult.rest;
+  const outputFile = outputResult.value;
+
+  const target = args[0];
+  if (!target) {
+    ctx.stderr.write('Usage: risk report <dept-id|executive|register> [--format md|html|csv|json] [--output file]\n');
+    return 1;
+  }
+
+  let url: string;
+  if (target === 'executive') {
+    url = `/api/v1/risk/reports/executive?format=${encodeURIComponent(format)}`;
+  } else if (target === 'register') {
+    url = `/api/v1/risk/reports/register?format=${encodeURIComponent(format)}`;
+  } else {
+    url = `/api/v1/risk/reports/department/${encodeURIComponent(target)}?format=${encodeURIComponent(format)}`;
+  }
+
+  const res = await apiCall(baseUrl, url, { token });
+  if (!res?.ok) {
+    ctx.stderr.write(`Failed to generate report\n`);
+    return 1;
+  }
+
+  const content = typeof res.data === 'string' ? res.data : JSON.stringify(res.data, null, 2);
+
+  if (outputFile) {
+    const { writeFileSync } = await import('node:fs');
+    writeFileSync(outputFile, content, 'utf-8');
+    ctx.stdout.write(`Report written to ${outputFile}\n`);
+  } else {
+    ctx.stdout.write(content + '\n');
+  }
+  return 0;
+}

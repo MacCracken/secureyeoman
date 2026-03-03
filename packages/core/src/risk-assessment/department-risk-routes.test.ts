@@ -299,4 +299,68 @@ describe('DepartmentRiskRoutes', () => {
       expect(JSON.parse(res.payload).summary.totalDepartments).toBe(3);
     });
   });
+
+  // ── Reports (Phase 111-D) ─────────────────────────────────
+
+  describe('GET /api/v1/risk/reports/department/:id', () => {
+    it('returns JSON department report by default', async () => {
+      (mgr.getDepartmentScorecard as any).mockResolvedValue({
+        department: { id: 'd1', name: 'Eng' },
+        latestScore: { overallScore: 50, domainScores: {}, appetiteBreaches: [] },
+        openRisks: 2, overdueRisks: 0, criticalRisks: 0,
+        appetiteBreaches: [], topRisks: [],
+      });
+      (mgr.getTrend as any).mockResolvedValue([]);
+      const res = await app.inject({ method: 'GET', url: '/api/v1/risk/reports/department/d1' });
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['content-type']).toContain('application/json');
+    });
+
+    it('returns HTML when format=html', async () => {
+      (mgr.getDepartmentScorecard as any).mockResolvedValue({
+        department: { id: 'd1', name: 'Eng' },
+        latestScore: { overallScore: 50, domainScores: {}, appetiteBreaches: [] },
+        openRisks: 2, overdueRisks: 0, criticalRisks: 0,
+        appetiteBreaches: [], topRisks: [],
+      });
+      (mgr.getTrend as any).mockResolvedValue([]);
+      const res = await app.inject({ method: 'GET', url: '/api/v1/risk/reports/department/d1?format=html' });
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['content-type']).toContain('text/html');
+      expect(res.payload).toContain('<!DOCTYPE html>');
+    });
+
+    it('returns 404 when department not found', async () => {
+      (mgr.getDepartmentScorecard as any).mockRejectedValue(new Error('Department x not found'));
+      const res = await app.inject({ method: 'GET', url: '/api/v1/risk/reports/department/x' });
+      expect(res.statusCode).toBe(404);
+    });
+  });
+
+  describe('GET /api/v1/risk/reports/executive', () => {
+    it('returns executive summary report as JSON', async () => {
+      (mgr.getExecutiveSummary as any).mockResolvedValue({ totalDepartments: 2, totalOpenRisks: 5, totalOverdueRisks: 1, totalCriticalRisks: 0, appetiteBreaches: 0, averageScore: 30, departments: [] });
+      (mgr.getHeatmap as any).mockResolvedValue([]);
+      const res = await app.inject({ method: 'GET', url: '/api/v1/risk/reports/executive' });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('rejects csv format', async () => {
+      const res = await app.inject({ method: 'GET', url: '/api/v1/risk/reports/executive?format=csv' });
+      expect(res.statusCode).toBe(400);
+    });
+  });
+
+  describe('GET /api/v1/risk/reports/register', () => {
+    it('returns register report as CSV', async () => {
+      (mgr.listRegisterEntries as any).mockResolvedValue({
+        items: [{ id: 'r1', departmentId: 'd1', title: 'Test', category: 'security', severity: 'high', likelihood: 4, impact: 5, riskScore: 20, status: 'open', owner: null, dueDate: null, source: null, createdAt: Date.now(), updatedAt: Date.now(), mitigations: [], evidenceRefs: [] }],
+        total: 1,
+      });
+      const res = await app.inject({ method: 'GET', url: '/api/v1/risk/reports/register?format=csv' });
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['content-type']).toContain('text/csv');
+      expect(res.payload).toContain('id,department_id');
+    });
+  });
 });

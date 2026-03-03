@@ -267,5 +267,40 @@ describe('DepartmentRiskManager', () => {
       expect(summary.averageScore).toBe(50);
       expect(summary.departments).toHaveLength(2);
     });
+
+    it('returns cached result within 30s TTL', async () => {
+      (storage.listDepartments as any).mockResolvedValue({ items: [{ id: 'd1', name: 'A' }], total: 1 });
+      (storage.getLatestScores as any).mockResolvedValue([]);
+      (storage.getRegisterStats as any).mockResolvedValue({ open: 0, overdue: 0, critical: 0 });
+
+      const result1 = await mgr.getExecutiveSummary();
+      const result2 = await mgr.getExecutiveSummary();
+
+      // Second call should return cached result (storage called only once)
+      expect(storage.listDepartments).toHaveBeenCalledTimes(1);
+      expect(result1).toEqual(result2);
+    });
+
+    it('refreshes cache after TTL expires', async () => {
+      (storage.listDepartments as any).mockResolvedValue({ items: [{ id: 'd1', name: 'A' }], total: 1 });
+      (storage.getLatestScores as any).mockResolvedValue([]);
+      (storage.getRegisterStats as any).mockResolvedValue({ open: 0, overdue: 0, critical: 0 });
+
+      await mgr.getExecutiveSummary();
+
+      // Simulate cache expiry by manipulating internal state
+      (mgr as any)._summaryCacheAt = Date.now() - 31_000;
+
+      await mgr.getExecutiveSummary();
+      expect(storage.listDepartments).toHaveBeenCalledTimes(2);
+    });
+
+    it('returns fresh data for different tenantId arguments', async () => {
+      (storage.listDepartments as any).mockResolvedValue({ items: [], total: 0 });
+      (storage.getLatestScores as any).mockResolvedValue([]);
+
+      const result = await mgr.getExecutiveSummary();
+      expect(result.totalDepartments).toBe(0);
+    });
   });
 });

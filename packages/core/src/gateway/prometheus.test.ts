@@ -196,4 +196,26 @@ describe('Prometheus Metrics', () => {
     const output = formatPrometheusMetrics({});
     expect(output).toContain('process_rss_bytes');
   });
+
+  // Phase 111 — Departmental risk gauges
+  it('formats departmental risk metrics', () => {
+    const metrics: Partial<MetricsSnapshot> = {
+      departmentalRisk: {
+        departmentCount: 5,
+        openRegisterEntries: 12,
+        overdueEntries: 3,
+        appetiteBreaches: 2,
+      },
+    };
+    const output = formatPrometheusMetrics(metrics);
+    expect(output).toContain('secureyeoman_risk_department_count 5');
+    expect(output).toContain('secureyeoman_risk_register_open 12');
+    expect(output).toContain('secureyeoman_risk_register_overdue 3');
+    expect(output).toContain('secureyeoman_risk_appetite_breaches 2');
+  });
+
+  it('omits departmental risk section when not provided', () => {
+    const output = formatPrometheusMetrics({});
+    expect(output).not.toContain('secureyeoman_risk_department_count');
+  });
 });

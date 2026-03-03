@@ -1629,3 +1629,96 @@ describe('Phase 54 — checkOutputCompliance', () => {
     uploadSpy.mockRestore();
   });
 });
+
+// ── Phase 111-C: logEnforcement → auto-register-entry ─────────────────────────
+
+describe('logEnforcement auto-register-entry (Phase 111-C)', () => {
+  it('creates register entry for boundary_violated with departmentId', async () => {
+    const logSpy = vi.fn().mockResolvedValue(undefined);
+    const createEntry = vi.fn().mockResolvedValue({ id: 'entry-1' });
+    const mgr = new IntentManager({
+      storage: makeStorage({ logEnforcement: logSpy }),
+      opaClient: null,
+      getDepartmentRiskManager: () => ({ createRegisterEntry: createEntry }),
+    });
+
+    await mgr.logEnforcement({
+      eventType: 'boundary_violated',
+      details: 'Max tokens exceeded',
+      metadata: { departmentId: 'd1' },
+    } as any);
+
+    expect(logSpy).toHaveBeenCalled();
+    // Give fire-and-forget time to execute
+    await new Promise((r) => setTimeout(r, 10));
+    expect(createEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        departmentId: 'd1',
+        category: 'compliance',
+        source: 'audit',
+      }),
+    );
+  });
+
+  it('creates register entry for policy_block with departmentId', async () => {
+    const logSpy = vi.fn().mockResolvedValue(undefined);
+    const createEntry = vi.fn().mockResolvedValue({ id: 'entry-2' });
+    const mgr = new IntentManager({
+      storage: makeStorage({ logEnforcement: logSpy }),
+      opaClient: null,
+      getDepartmentRiskManager: () => ({ createRegisterEntry: createEntry }),
+    });
+
+    await mgr.logEnforcement({
+      eventType: 'policy_block',
+      details: 'Rate limit violation',
+      metadata: { departmentId: 'd2' },
+    } as any);
+
+    await new Promise((r) => setTimeout(r, 10));
+    expect(createEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        departmentId: 'd2',
+        title: expect.stringContaining('policy_block'),
+      }),
+    );
+  });
+
+  it('does not create entry when eventType is not boundary_violated or policy_block', async () => {
+    const logSpy = vi.fn().mockResolvedValue(undefined);
+    const createEntry = vi.fn();
+    const mgr = new IntentManager({
+      storage: makeStorage({ logEnforcement: logSpy }),
+      opaClient: null,
+      getDepartmentRiskManager: () => ({ createRegisterEntry: createEntry }),
+    });
+
+    await mgr.logEnforcement({
+      eventType: 'intent_signal_degraded',
+      details: 'Signal degradation',
+      metadata: { departmentId: 'd1' },
+    } as any);
+
+    await new Promise((r) => setTimeout(r, 10));
+    expect(createEntry).not.toHaveBeenCalled();
+  });
+
+  it('does not create entry when departmentId is missing from metadata', async () => {
+    const logSpy = vi.fn().mockResolvedValue(undefined);
+    const createEntry = vi.fn();
+    const mgr = new IntentManager({
+      storage: makeStorage({ logEnforcement: logSpy }),
+      opaClient: null,
+      getDepartmentRiskManager: () => ({ createRegisterEntry: createEntry }),
+    });
+
+    await mgr.logEnforcement({
+      eventType: 'boundary_violated',
+      details: 'Max tokens exceeded',
+      metadata: {},
+    } as any);
+
+    await new Promise((r) => setTimeout(r, 10));
+    expect(createEntry).not.toHaveBeenCalled();
+  });
+});

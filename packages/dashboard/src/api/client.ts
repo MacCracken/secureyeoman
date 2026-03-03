@@ -4692,6 +4692,42 @@ export async function fetchRiskSummary(): Promise<any> {
   return request<any>('/risk/summary');
 }
 
+// Phase 111-D: Report endpoints
+export async function fetchDepartmentReport(departmentId: string, format = 'json'): Promise<any> {
+  return request<any>(`/risk/reports/department/${encodeURIComponent(departmentId)}?format=${format}`);
+}
+
+export async function fetchExecutiveReport(format = 'json'): Promise<any> {
+  return request<any>(`/risk/reports/executive?format=${format}`);
+}
+
+export async function fetchRegisterReport(params: {
+  format?: string;
+  departmentId?: string;
+  status?: string;
+  category?: string;
+} = {}): Promise<any> {
+  const qs = new URLSearchParams();
+  if (params.format) qs.set('format', params.format);
+  if (params.departmentId) qs.set('departmentId', params.departmentId);
+  if (params.status) qs.set('status', params.status);
+  if (params.category) qs.set('category', params.category);
+  return request<any>(`/risk/reports/register?${qs.toString()}`);
+}
+
+// Phase 111-F: Additional register/department endpoints
+export async function updateRegisterEntry(id: string, data: Record<string, unknown>): Promise<any> {
+  return request<any>(`/risk/register/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+
+export async function deleteRegisterEntry(id: string): Promise<any> {
+  return request<any>(`/risk/register/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+export async function snapshotDepartment(id: string): Promise<any> {
+  return request<any>(`/risk/departments/${encodeURIComponent(id)}/snapshot`, { method: 'POST' });
+}
+
 // ── Tenants ────────────────────────────────────────────────────────
 
 export async function fetchTenants(

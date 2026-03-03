@@ -5,7 +5,7 @@
  * Sections: Overview, Assessments, Findings, External Feeds.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, lazy, Suspense } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Shield,
@@ -23,6 +23,7 @@ import {
   Info,
   Database,
   Upload,
+  Edit2,
   Loader2,
   TrendingUp,
   Building,
@@ -43,6 +44,13 @@ import {
   fetchDepartmentScorecard,
   fetchHeatmap,
   fetchRiskSummary,
+  fetchRegisterEntries,
+  createDepartment,
+  updateDepartment,
+  createRegisterEntry,
+  updateRegisterEntry,
+  deleteRegisterEntry,
+  snapshotDepartment,
 } from '../api/client';
 import type {
   RiskAssessment,
@@ -55,6 +63,17 @@ import type {
   ExternalFeedCategory,
   ExternalFeedSourceType,
 } from '../types';
+
+// Phase 111-F: Lazy-loaded departmental risk components
+const AppetiteRadarChart = lazy(() => import('./risk/AppetiteRadarChart').then((m) => ({ default: m.AppetiteRadarChart ?? m.default })));
+const MitigationPlansPanel = lazy(() => import('./risk/MitigationPlansPanel').then((m) => ({ default: m.MitigationPlansPanel ?? m.default })));
+const ObjectivesEditor = lazy(() => import('./risk/ObjectivesEditor').then((m) => ({ default: m.ObjectivesEditor ?? m.default })));
+const DepartmentScorecardPanel = lazy(() => import('./risk/DepartmentScorecardPanel').then((m) => ({ default: m.DepartmentScorecardPanel ?? m.default })));
+const RiskRegisterTable = lazy(() => import('./risk/RiskRegisterTable').then((m) => ({ default: m.RiskRegisterTable ?? m.default })));
+const RiskTrendChart = lazy(() => import('./risk/RiskTrendChart').then((m) => ({ default: m.RiskTrendChart ?? m.default })));
+const EnhancedHeatmap = lazy(() => import('./risk/EnhancedHeatmap').then((m) => ({ default: m.EnhancedHeatmap ?? m.default })));
+const ExecutiveSummaryPanel = lazy(() => import('./risk/ExecutiveSummaryPanel').then((m) => ({ default: m.ExecutiveSummaryPanel ?? m.default })));
+const DepartmentFormModal = lazy(() => import('./risk/DepartmentFormModal').then((m) => ({ default: m.DepartmentFormModal ?? m.default })));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -847,8 +866,11 @@ const ALL_DOMAINS: RiskDomain[] = [
 type DeptView = 'intent' | 'risk';
 
 function DepartmentsSection() {
+  const qc = useQueryClient();
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
   const [view, setView] = useState<DeptView>('risk');
+  const [showDeptModal, setShowDeptModal] = useState(false);
+  const [editingDept, setEditingDept] = useState<any>(null);
 
   const { data: deptsData, isLoading: deptsLoading } = useQuery({
     queryKey: ['risk-departments'],
@@ -874,48 +896,115 @@ function DepartmentsSection() {
     refetchInterval: 30_000,
   });
 
+  const { data: registerData } = useQuery({
+    queryKey: ['risk-register', selectedDept],
+    queryFn: () => (selectedDept ? fetchRegisterEntries({ departmentId: selectedDept, limit: 100 }) : null),
+    enabled: !!selectedDept,
+  });
+
   const departments = deptsData?.items ?? [];
-  const scorecard = (scorecardData as any)?.scorecard;
+  const scorecard = (scorecardData as any)?.scorecard ?? scorecardData;
   const heatmap = (heatmapData as any)?.cells ?? [];
-  const summary = (summaryData as any)?.summary;
+  const summary = (summaryData as any)?.summary ?? summaryData;
+  const registerEntries = (registerData as any)?.items ?? [];
+
+  const invalidateAll = () => {
+    void qc.invalidateQueries({ queryKey: ['risk-departments'] });
+    void qc.invalidateQueries({ queryKey: ['risk-department-scorecard'] });
+    void qc.invalidateQueries({ queryKey: ['risk-heatmap'] });
+    void qc.invalidateQueries({ queryKey: ['risk-summary'] });
+    void qc.invalidateQueries({ queryKey: ['risk-register'] });
+  };
+
+  const handleDeptSubmit = async (data: any) => {
+    if (editingDept?.id) {
+      await updateDepartment(editingDept.id, data);
+    } else {
+      await createDepartment(data);
+    }
+    setShowDeptModal(false);
+    setEditingDept(null);
+    invalidateAll();
+  };
+
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    await updateRegisterEntry(id, { status: newStatus });
+    invalidateAll();
+  };
+
+  const handleDeleteEntry = async (id: string) => {
+    await deleteRegisterEntry(id);
+    invalidateAll();
+  };
+
+  const handleAddEntry = () => {
+    // Open a simple register entry creation form — placeholder
+    const title = prompt('Risk title:');
+    if (!title || !selectedDept) return;
+    createRegisterEntry({
+      departmentId: selectedDept,
+      title,
+      category: 'operational',
+      severity: 'medium',
+      likelihood: 3,
+      impact: 3,
+    }).then(() => invalidateAll());
+  };
+
+  const handleAppetiteChange = async (appetite: any) => {
+    if (!selectedDept) return;
+    await updateDepartment(selectedDept, { riskAppetite: appetite });
+    invalidateAll();
+  };
+
+  const handleObjectivesChange = async (objectives: any[]) => {
+    if (!selectedDept) return;
+    await updateDepartment(selectedDept, { objectives });
+    invalidateAll();
+  };
 
   return (
     <div className="space-y-4">
-      {/* Summary strip */}
+      {/* Executive Summary Panel */}
       {summary && (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          {[
-            { label: 'Departments', value: summary.totalDepartments },
-            { label: 'Open Risks', value: summary.totalOpenRisks },
-            { label: 'Overdue', value: summary.totalOverdueRisks },
-            { label: 'Critical', value: summary.totalCriticalRisks },
-            { label: 'Breaches', value: summary.appetiteBreaches },
-          ].map((s) => (
-            <div key={s.label} className="bg-base-100 border border-border rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold">{s.value}</div>
-              <div className="text-xs text-muted-foreground">{s.label}</div>
-            </div>
-          ))}
-        </div>
+        <Suspense fallback={<Loader2 className="w-5 h-5 animate-spin" />}>
+          <ExecutiveSummaryPanel summary={summary} />
+        </Suspense>
       )}
 
       <div className="flex gap-4">
         {/* Department list */}
         <div className="w-64 space-y-2 shrink-0">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Departments</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Departments</h3>
+            <button
+              className="text-xs px-2 py-1 bg-primary text-primary-content rounded hover:opacity-90"
+              onClick={() => { setEditingDept(null); setShowDeptModal(true); }}
+            >
+              <Plus className="w-3 h-3 inline -mt-0.5" /> New
+            </button>
+          </div>
           {deptsLoading && <Loader2 className="w-4 h-4 animate-spin" />}
           {departments.map((d: any) => (
-            <button
-              key={d.id}
-              className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                selectedDept === d.id
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'hover:bg-base-200 text-foreground'
-              }`}
-              onClick={() => setSelectedDept(d.id)}
-            >
-              {d.name}
-            </button>
+            <div key={d.id} className="flex items-center gap-1">
+              <button
+                className={`flex-1 text-left px-3 py-2 rounded text-sm transition-colors ${
+                  selectedDept === d.id
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'hover:bg-base-200 text-foreground'
+                }`}
+                onClick={() => setSelectedDept(d.id)}
+              >
+                {d.name}
+              </button>
+              <button
+                className="p-1 text-muted-foreground hover:text-foreground"
+                onClick={() => { setEditingDept(d); setShowDeptModal(true); }}
+                title="Edit"
+              >
+                <Edit2 className="w-3 h-3" />
+              </button>
+            </div>
           ))}
           {!deptsLoading && departments.length === 0 && (
             <p className="text-xs text-muted-foreground">No departments configured.</p>
@@ -933,8 +1022,8 @@ function DepartmentsSection() {
 
           {selectedDept && (
             <div className="space-y-4">
-              {/* View toggle */}
-              <div className="flex gap-2">
+              {/* View toggle + snapshot button */}
+              <div className="flex items-center gap-2">
                 <button
                   className={`px-3 py-1 text-sm rounded ${view === 'intent' ? 'bg-primary text-primary-content' : 'bg-base-200'}`}
                   onClick={() => setView('intent')}
@@ -947,134 +1036,90 @@ function DepartmentsSection() {
                 >
                   Risk
                 </button>
+                <button
+                  className="ml-auto text-xs px-2 py-1 border border-border rounded hover:bg-base-200"
+                  onClick={() => { snapshotDepartment(selectedDept).then(() => invalidateAll()); }}
+                >
+                  <RefreshCw className="w-3 h-3 inline -mt-0.5 mr-1" />Snapshot
+                </button>
               </div>
 
               {scorecardLoading && <Loader2 className="w-5 h-5 animate-spin" />}
 
+              {/* Intent view */}
               {scorecard && view === 'intent' && (
-                <div className="space-y-3">
-                  <h3 className="text-lg font-semibold">{scorecard.department.name}</h3>
-                  {scorecard.department.mission && (
-                    <div>
-                      <span className="text-xs font-medium text-muted-foreground uppercase">Mission</span>
-                      <p className="text-sm mt-1">{scorecard.department.mission}</p>
-                    </div>
-                  )}
-                  {scorecard.department.objectives?.length > 0 && (
-                    <div>
-                      <span className="text-xs font-medium text-muted-foreground uppercase">Objectives</span>
-                      <ul className="list-disc list-inside text-sm mt-1 space-y-1">
-                        {scorecard.department.objectives.map((o: any, i: number) => (
-                          <li key={i}>{o.title}{o.priority !== 'medium' ? ` (${o.priority})` : ''}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {scorecard.department.complianceTargets?.length > 0 && (
-                    <div>
-                      <span className="text-xs font-medium text-muted-foreground uppercase">Compliance Targets</span>
-                      <div className="mt-1 space-y-1">
-                        {scorecard.department.complianceTargets.map((t: any, i: number) => (
-                          <div key={i} className="flex items-center gap-2 text-sm">
-                            <span className="font-medium">{t.framework}</span>
-                            <span className={`text-xs px-1.5 py-0.5 rounded ${
-                              t.status === 'compliant' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                            }`}>{t.status}</span>
-                          </div>
-                        ))}
+                <Suspense fallback={<Loader2 className="w-5 h-5 animate-spin" />}>
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">{scorecard.department?.name}</h3>
+                    {scorecard.department?.mission && (
+                      <div>
+                        <span className="text-xs font-medium text-muted-foreground uppercase">Mission</span>
+                        <p className="text-sm mt-1">{scorecard.department.mission}</p>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+
+                    <AppetiteRadarChart
+                      department={scorecard.department}
+                      latestScore={scorecard.latestScore}
+                      onAppetiteChange={handleAppetiteChange}
+                    />
+
+                    <ObjectivesEditor
+                      objectives={scorecard.department?.objectives ?? []}
+                      onChange={handleObjectivesChange}
+                    />
+
+                    <MitigationPlansPanel
+                      mitigations={scorecard.topRisks?.flatMap((r: any) => r.mitigations ?? []) ?? []}
+                    />
+                  </div>
+                </Suspense>
               )}
 
+              {/* Risk view */}
               {scorecard && view === 'risk' && (
-                <div className="space-y-3">
-                  <h3 className="text-lg font-semibold">{scorecard.department.name}</h3>
-                  <div className="grid grid-cols-4 gap-3">
-                    <div className="bg-base-100 border border-border rounded p-2 text-center">
-                      <div className="text-xl font-bold">{scorecard.latestScore?.overallScore?.toFixed(1) ?? '—'}</div>
-                      <div className="text-xs text-muted-foreground">Score</div>
-                    </div>
-                    <div className="bg-base-100 border border-border rounded p-2 text-center">
-                      <div className="text-xl font-bold">{scorecard.openRisks}</div>
-                      <div className="text-xs text-muted-foreground">Open</div>
-                    </div>
-                    <div className="bg-base-100 border border-border rounded p-2 text-center">
-                      <div className="text-xl font-bold">{scorecard.overdueRisks}</div>
-                      <div className="text-xs text-muted-foreground">Overdue</div>
-                    </div>
-                    <div className="bg-base-100 border border-border rounded p-2 text-center">
-                      <div className="text-xl font-bold text-red-600">{scorecard.criticalRisks}</div>
-                      <div className="text-xs text-muted-foreground">Critical</div>
-                    </div>
+                <Suspense fallback={<Loader2 className="w-5 h-5 animate-spin" />}>
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">{scorecard.department?.name}</h3>
+
+                    <DepartmentScorecardPanel scorecard={scorecard} />
+
+                    <RiskTrendChart departmentId={selectedDept} />
+
+                    <RiskRegisterTable
+                      entries={registerEntries}
+                      onStatusChange={handleStatusChange}
+                      onDelete={handleDeleteEntry}
+                      onAdd={handleAddEntry}
+                    />
                   </div>
-
-                  {scorecard.appetiteBreaches?.length > 0 && (
-                    <div className="bg-red-50 border border-red-200 rounded p-3">
-                      <div className="text-sm font-medium text-red-700 mb-1">Appetite Breaches</div>
-                      {scorecard.appetiteBreaches.map((b: any, i: number) => (
-                        <div key={i} className="text-xs text-red-600">
-                          {b.domain}: {b.score.toFixed(1)} (threshold: {b.threshold})
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {scorecard.topRisks?.length > 0 && (
-                    <div>
-                      <span className="text-xs font-medium text-muted-foreground uppercase">Top Risks</span>
-                      <div className="mt-1 space-y-1">
-                        {scorecard.topRisks.map((r: any) => (
-                          <div key={r.id} className="flex items-center gap-2 text-sm bg-base-100 border border-border rounded px-3 py-1.5">
-                            <LevelBadge level={r.severity} />
-                            <span className="flex-1 truncate">{r.title}</span>
-                            <span className="text-xs text-muted-foreground">score={r.riskScore}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                </Suspense>
               )}
             </div>
           )}
         </div>
       </div>
 
-      {/* Heatmap */}
+      {/* Enhanced Heatmap */}
       {heatmap.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Risk Heatmap</h3>
-          <div className="overflow-x-auto">
-            <table className="text-xs w-full">
-              <thead>
-                <tr>
-                  <th className="text-left py-1 px-2">Department</th>
-                  <th className="text-left py-1 px-2">Domain</th>
-                  <th className="text-right py-1 px-2">Score</th>
-                  <th className="text-right py-1 px-2">Threshold</th>
-                  <th className="text-center py-1 px-2">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {heatmap.map((cell: any, i: number) => (
-                  <tr key={i} className={cell.breached ? 'bg-red-50' : ''}>
-                    <td className="py-1 px-2">{cell.departmentName}</td>
-                    <td className="py-1 px-2">{cell.domain}</td>
-                    <td className="py-1 px-2 text-right">{cell.score.toFixed(1)}</td>
-                    <td className="py-1 px-2 text-right">{cell.threshold}</td>
-                    <td className="py-1 px-2 text-center">
-                      {cell.breached
-                        ? <ShieldAlert className="w-3 h-3 text-red-600 inline" />
-                        : <ShieldCheck className="w-3 h-3 text-green-600 inline" />}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <Suspense fallback={<Loader2 className="w-5 h-5 animate-spin" />}>
+          <EnhancedHeatmap
+            cells={heatmap}
+            onCellClick={(cell: any) => setSelectedDept(cell.departmentId)}
+          />
+        </Suspense>
+      )}
+
+      {/* Department Form Modal */}
+      {showDeptModal && (
+        <Suspense fallback={null}>
+          <DepartmentFormModal
+            open={showDeptModal}
+            onClose={() => { setShowDeptModal(false); setEditingDept(null); }}
+            onSubmit={handleDeptSubmit}
+            department={editingDept}
+          />
+        </Suspense>
       )}
     </div>
   );
