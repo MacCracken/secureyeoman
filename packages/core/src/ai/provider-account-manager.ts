@@ -53,7 +53,7 @@ export class ProviderAccountManager {
       provider: input.provider,
       label: input.label,
       secretName,
-      isDefault: input.isDefault,
+      isDefault: input.isDefault ?? false,
       baseUrl: input.baseUrl,
       tenantId: input.tenantId,
       createdBy: input.createdBy,

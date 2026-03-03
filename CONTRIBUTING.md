@@ -67,8 +67,8 @@ When running via Docker Compose (`--profile dev`), the core container bakes the 
 
 ```bash
 # Rebuild the core image (bypasses Docker layer cache) and restart
-docker compose --profile dev build --no-cache core
-docker compose --profile dev up -d core
+docker compose --env-file .env.dev --profile dev build --no-cache core
+docker compose --env-file .env.dev --profile dev up -d core
 ```
 
 > The `--no-cache` flag is required because Docker's content-based cache can serve stale layers when only `.ts` source files change inside `packages/`.

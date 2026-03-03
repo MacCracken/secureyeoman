@@ -1001,7 +1001,6 @@ function DepartmentsSection() {
       likelihood: data.likelihood,
       impact: data.impact,
       owner: data.owner,
-      dueDate: data.dueDate,
       description: data.description,
     }).then(() => {
       setShowEntryModal(false);

@@ -87,7 +87,7 @@ export function registerProviderAccountRoutes(
     async (
       request: FastifyRequest<{
         Params: { id: string };
-        Body: { label?: string; baseUrl?: string | null; status?: string };
+        Body: { label?: string; baseUrl?: string | null; status?: 'active' | 'disabled' | 'invalid' | 'rate_limited' };
       }>,
       reply: FastifyReply
     ) => {

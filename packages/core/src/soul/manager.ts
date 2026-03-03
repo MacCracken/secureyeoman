@@ -379,7 +379,7 @@ export class SoulManager {
     const result = await this.storage.updatePersonality(id, data);
     // Fire-and-forget version recording
     this.personalityVersionManager?.recordVersion(id).catch((err) => {
-      this.deps.logger.error({ err }, 'Failed to record personality version');
+      this.deps.logger.error('Failed to record personality version', { err });
     });
     return result;
   }
@@ -1346,7 +1346,7 @@ export class SoulManager {
       skillNames = skills.map((s) => s.name);
 
       const stats = await this.brain.getStats(personalityId);
-      memoryEntries = stats.memoryCount ?? 0;
+      memoryEntries = stats.memories?.total ?? 0;
 
       if (options?.includeMemory) {
         const memories = await this.brain.recall({ search: '*', personalityId, limit: 20 });
@@ -1354,7 +1354,9 @@ export class SoulManager {
       }
     }
 
-    const integrations = personality.body?.integrationAccess ?? [];
+    const integrations = (personality.body?.integrationAccess ?? []).map((ia) =>
+      typeof ia === 'string' ? ia : ia.id
+    );
     let strategyName: string | null = null;
     const strategyId = personality.body?.defaultStrategyId;
     if (strategyId && this.strategyStorage) {

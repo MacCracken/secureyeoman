@@ -25,7 +25,7 @@ Phase 50 wires four previously-stubbed governance features:
 Run the `opa` Docker Compose profile alongside `core`:
 
 ```bash
-docker compose --profile opa --profile dev up -d
+docker compose --env-file .env.dev --profile opa --profile dev up -d
 ```
 
 Then set `OPA_ADDR=http://opa:8181` in your `.env.dev`:
@@ -37,7 +37,7 @@ OPA_ADDR=http://opa:8181
 Or for `full` profile (all services including OPA):
 
 ```bash
-docker compose --profile full up -d
+docker compose --env-file .env --profile full up -d
 ```
 
 ### Security: Disabled Builtins

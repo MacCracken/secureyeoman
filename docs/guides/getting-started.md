@@ -368,7 +368,7 @@ npm run dev:mcp
 **Docker:**
 
 ```bash
-docker compose --profile mcp up
+docker compose --env-file .env --profile mcp up
 ```
 
 ### 3. Verify

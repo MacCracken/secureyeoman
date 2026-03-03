@@ -984,10 +984,10 @@ npm run dev:mcp
 
 ```bash
 # Start core + MCP
-docker compose --profile mcp up
+docker compose --env-file .env --profile mcp up
 
 # Or start everything (core + dashboard + MCP)
-docker compose --profile full up
+docker compose --env-file .env --profile full up
 ```
 
 > In Docker, `MCP_CORE_URL` is automatically set to `http://core:18789` via the compose file. Do not override it in `.env` when using Docker.

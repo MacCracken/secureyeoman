@@ -150,13 +150,13 @@ Two Dockerfiles are provided:
 
 ```bash
 # Core + PostgreSQL (dashboard served by core on port 18789)
-docker compose up -d
+docker compose --env-file .env up -d
 
 # Include MCP service
-docker compose --profile mcp up -d
+docker compose --env-file .env --profile mcp up -d
 
 # Dashboard hot-reload dev server (frontend development)
-docker compose --profile dev up -d
+docker compose --env-file .env.dev --profile dev up -d
 ```
 
 Services:

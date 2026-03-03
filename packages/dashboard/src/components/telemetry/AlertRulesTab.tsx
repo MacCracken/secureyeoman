@@ -72,7 +72,7 @@ interface RuleTemplate {
   description: string;
   metricPath: string;
   operator: AlertRule['operator'];
-  threshold: number;
+  threshold: number | string;
   cooldownSeconds: number;
 }
 

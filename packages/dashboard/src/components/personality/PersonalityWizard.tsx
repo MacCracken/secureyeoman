@@ -88,7 +88,6 @@ export function PersonalityWizard({ onComplete, onCancel }: PersonalityWizardPro
       includeArchetypes: true,
       injectDateTime: false,
       empathyResonance: false,
-      avatarUrl: null,
     });
   };
 

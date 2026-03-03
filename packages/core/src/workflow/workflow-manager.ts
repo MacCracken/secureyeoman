@@ -105,7 +105,7 @@ export class WorkflowManager {
     if (result) {
       // Fire-and-forget version recording
       this.workflowVersionManager?.recordVersion(id).catch((err) => {
-        this.logger.error({ err }, 'Failed to record workflow version');
+        this.logger.error('Failed to record workflow version', { err });
       });
     }
     return result;
