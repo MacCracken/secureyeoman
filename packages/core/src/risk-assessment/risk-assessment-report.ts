@@ -8,7 +8,7 @@ import type { RiskAssessment, RiskFinding } from '@secureyeoman/shared';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function escapeHtml(str: string): string {
+export function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -17,7 +17,7 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#39;');
 }
 
-function escapeCsv(value: unknown): string {
+export function escapeCsv(value: unknown): string {
   const str = value == null ? '' : String(value);
   if (str.includes(',') || str.includes('"') || str.includes('\n')) {
     return `"${str.replace(/"/g, '""')}"`;
@@ -25,7 +25,7 @@ function escapeCsv(value: unknown): string {
   return str;
 }
 
-function riskLevelColor(level: string): string {
+export function riskLevelColor(level: string): string {
   switch (level) {
     case 'critical':
       return '#dc2626';
@@ -40,7 +40,7 @@ function riskLevelColor(level: string): string {
   }
 }
 
-function riskLevelBg(level: string): string {
+export function riskLevelBg(level: string): string {
   switch (level) {
     case 'critical':
       return '#fef2f2';
@@ -55,7 +55,7 @@ function riskLevelBg(level: string): string {
   }
 }
 
-function scoreBar(score: number): string {
+export function scoreBar(score: number): string {
   const color =
     score >= 75 ? '#dc2626' : score >= 50 ? '#ea580c' : score >= 25 ? '#d97706' : '#16a34a';
   return `<div style="background:#e5e7eb;border-radius:4px;height:8px;width:100%;margin-top:4px">
@@ -63,7 +63,7 @@ function scoreBar(score: number): string {
   </div>`;
 }
 
-function formatTimestamp(ts?: number): string {
+export function formatTimestamp(ts?: number): string {
   if (!ts) return 'N/A';
   return new Date(ts).toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
 }
@@ -269,13 +269,13 @@ ${
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function scoreToLevel(score: number): string {
+export function scoreToLevel(score: number): string {
   if (score >= 75) return 'critical';
   if (score >= 50) return 'high';
   if (score >= 25) return 'medium';
   return 'low';
 }
 
-function capitalize(str: string): string {
+export function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }

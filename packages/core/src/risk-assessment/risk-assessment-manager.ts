@@ -30,6 +30,7 @@ export interface RiskAssessmentManagerDeps {
   pool: pg.Pool;
   auditChain?: AuditChain | null;
   tlsManager?: TlsManager | null;
+  getDepartmentRiskManager?: () => { snapshotDepartmentScore: (departmentId: string, assessmentId?: string) => Promise<any> } | null;
 }
 
 interface DomainResult {
@@ -77,6 +78,7 @@ export class RiskAssessmentManager {
   private readonly auditChain: AuditChain | null;
   private readonly tlsManager: TlsManager | null;
   private readonly reportGen: RiskReportGenerator;
+  private readonly getDepartmentRiskManager: RiskAssessmentManagerDeps['getDepartmentRiskManager'];
 
   constructor(deps: RiskAssessmentManagerDeps) {
     this.storage = deps.storage;
@@ -84,6 +86,7 @@ export class RiskAssessmentManager {
     this.auditChain = deps.auditChain ?? null;
     this.tlsManager = deps.tlsManager ?? null;
     this.reportGen = new RiskReportGenerator();
+    this.getDepartmentRiskManager = deps.getDepartmentRiskManager;
   }
 
   // ── Core ─────────────────────────────────────────────────────────────────────
@@ -176,7 +179,19 @@ export class RiskAssessmentManager {
         reportCsv: this.reportGen.generateCsv(partialAssessment),
       };
 
-      return await this.storage.saveResults(assessment.id, results);
+      const saved = await this.storage.saveResults(assessment.id, results);
+
+      // Phase 111-C: Snapshot department score on assessment completion
+      if (opts.departmentId && this.getDepartmentRiskManager) {
+        const drm = this.getDepartmentRiskManager();
+        if (drm) {
+          drm.snapshotDepartmentScore(opts.departmentId, assessment.id).catch(() => {
+            // fire-and-forget — logged by DepartmentRiskManager
+          });
+        }
+      }
+
+      return saved;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       await this.storage.updateStatus(assessment.id, 'failed', msg);

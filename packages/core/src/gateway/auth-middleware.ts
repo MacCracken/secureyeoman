@@ -988,6 +988,16 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/risk/summary': {
     GET: { resource: 'risk', action: 'read' },
   },
+  // Department risk reports (Phase 111-D)
+  '/api/v1/risk/reports/department/:id': {
+    GET: { resource: 'risk', action: 'read' },
+  },
+  '/api/v1/risk/reports/executive': {
+    GET: { resource: 'risk', action: 'read' },
+  },
+  '/api/v1/risk/reports/register': {
+    GET: { resource: 'risk', action: 'read' },
+  },
 };
 
 const PUBLIC_ROUTES = new Set([

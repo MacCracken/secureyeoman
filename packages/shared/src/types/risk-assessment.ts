@@ -64,6 +64,7 @@ export const RiskAssessmentSchema = z.object({
   findings: z.array(RiskFindingSchema).optional(),
   findingsCount: z.number().int().default(0),
   options: z.record(z.unknown()).optional(),
+  departmentId: z.string().optional(),
   createdBy: z.string().optional(),
   createdAt: z.number().int(),
   completedAt: z.number().int().optional(),
@@ -78,6 +79,7 @@ export const CreateRiskAssessmentSchema = z.object({
     .default(['security', 'autonomy', 'governance', 'infrastructure', 'external']),
   windowDays: z.number().int().min(1).max(365).default(7),
   options: z.record(z.unknown()).optional(),
+  departmentId: z.string().optional(),
 });
 export type CreateRiskAssessment = z.infer<typeof CreateRiskAssessmentSchema>;
 

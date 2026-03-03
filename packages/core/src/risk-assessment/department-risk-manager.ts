@@ -41,6 +41,11 @@ export class DepartmentRiskManager {
   private readonly getAlertManager: () => AlertManager | null;
   private readonly logger = getLogger().child({ component: 'DepartmentRiskManager' });
 
+  // 30s cache for getExecutiveSummary() to avoid per-5s DB queries from metrics pipeline
+  private _summaryCache: Awaited<ReturnType<DepartmentRiskManager['getExecutiveSummary']>> | null = null;
+  private _summaryCacheAt = 0;
+  private static readonly SUMMARY_CACHE_TTL_MS = 30_000;
+
   constructor(deps: DepartmentRiskManagerDeps) {
     this.storage = deps.storage;
     this.pool = deps.pool;
@@ -316,6 +321,12 @@ export class DepartmentRiskManager {
       breached: boolean;
     }>;
   }> {
+    // Return cached result if within TTL (avoids per-5s DB queries from metrics pipeline)
+    const now = Date.now();
+    if (this._summaryCache && now - this._summaryCacheAt < DepartmentRiskManager.SUMMARY_CACHE_TTL_MS) {
+      return this._summaryCache;
+    }
+
     const { items: departments } = await this.storage.listDepartments({ tenantId, limit: 1000 });
     const latestScores = await this.storage.getLatestScores(tenantId);
     const scoreMap = new Map(latestScores.map((s) => [s.departmentId, s]));
@@ -359,7 +370,7 @@ export class DepartmentRiskManager {
       });
     }
 
-    return {
+    const result = {
       totalDepartments: departments.length,
       totalOpenRisks,
       totalOverdueRisks,
@@ -368,5 +379,9 @@ export class DepartmentRiskManager {
       averageScore: scoredCount > 0 ? totalScore / scoredCount : 0,
       departments: deptSummaries,
     };
+
+    this._summaryCache = result;
+    this._summaryCacheAt = Date.now();
+    return result;
   }
 }

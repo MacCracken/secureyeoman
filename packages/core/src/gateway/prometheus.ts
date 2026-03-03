@@ -109,6 +109,26 @@ export function formatPrometheusMetrics(metrics: Partial<MetricsSnapshot>): stri
     lines.push(`friday_audit_chain_valid ${s.auditChainValid ? 1 : 0}`);
   }
 
+  // ── Departmental Risk Metrics (Phase 111) ───────────────
+  if (metrics.departmentalRisk) {
+    const dr = metrics.departmentalRisk;
+    lines.push('# HELP secureyeoman_risk_department_count Number of registered departments');
+    lines.push('# TYPE secureyeoman_risk_department_count gauge');
+    lines.push(`secureyeoman_risk_department_count ${dr.departmentCount}`);
+
+    lines.push('# HELP secureyeoman_risk_register_open Open risk register entries');
+    lines.push('# TYPE secureyeoman_risk_register_open gauge');
+    lines.push(`secureyeoman_risk_register_open ${dr.openRegisterEntries}`);
+
+    lines.push('# HELP secureyeoman_risk_register_overdue Overdue risk register entries');
+    lines.push('# TYPE secureyeoman_risk_register_overdue gauge');
+    lines.push(`secureyeoman_risk_register_overdue ${dr.overdueEntries}`);
+
+    lines.push('# HELP secureyeoman_risk_appetite_breaches Departments with appetite breaches');
+    lines.push('# TYPE secureyeoman_risk_appetite_breaches gauge');
+    lines.push(`secureyeoman_risk_appetite_breaches ${dr.appetiteBreaches}`);
+  }
+
   // ── Process Metrics ──────────────────────────────────────
   const mem = process.memoryUsage();
   lines.push('# HELP process_heap_bytes Node.js heap usage in bytes');

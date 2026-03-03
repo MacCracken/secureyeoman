@@ -6,6 +6,7 @@
 
 import type { FastifyInstance } from 'fastify';
 import type { DepartmentRiskManager } from './department-risk-manager.js';
+import { DepartmentRiskReportGenerator, type ReportFormat } from './department-risk-report-generator.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import {
   DepartmentCreateSchema,
@@ -291,6 +292,69 @@ export function registerDepartmentRiskRoutes(
     try {
       const summary = await mgr.getExecutiveSummary();
       return reply.send({ summary });
+    } catch (err) {
+      return sendError(reply, 500, toErrorMessage(err));
+    }
+  });
+
+  // ── Reports (Phase 111-D) ─────────────────────────────────
+
+  const reportGen = new DepartmentRiskReportGenerator({ departmentRiskManager: mgr });
+
+  const CONTENT_TYPES: Record<string, string> = {
+    json: 'application/json',
+    html: 'text/html',
+    md: 'text/markdown',
+    csv: 'text/csv',
+  };
+
+  function parseFormat(query: Record<string, unknown>): ReportFormat {
+    const fmt = String(query.format ?? 'json');
+    if (['json', 'html', 'md', 'csv'].includes(fmt)) return fmt as ReportFormat;
+    return 'json';
+  }
+
+  // GET /api/v1/risk/reports/department/:id
+  app.get('/api/v1/risk/reports/department/:id', async (req, reply) => {
+    try {
+      const { id } = req.params as { id: string };
+      const format = parseFormat(req.query as Record<string, unknown>);
+      const content = await reportGen.generateDepartmentScorecard(id, format);
+      return reply.type(CONTENT_TYPES[format] ?? 'application/json').send(content);
+    } catch (err) {
+      const msg = toErrorMessage(err);
+      if (msg.includes('not found')) return sendError(reply, 404, msg);
+      return sendError(reply, 500, msg);
+    }
+  });
+
+  // GET /api/v1/risk/reports/executive
+  app.get('/api/v1/risk/reports/executive', async (req, reply) => {
+    try {
+      const format = parseFormat(req.query as Record<string, unknown>);
+      if (format === 'csv') return sendError(reply, 400, 'CSV format not supported for executive summary');
+      const content = await reportGen.generateExecutiveSummary(format);
+      return reply.type(CONTENT_TYPES[format] ?? 'application/json').send(content);
+    } catch (err) {
+      return sendError(reply, 500, toErrorMessage(err));
+    }
+  });
+
+  // GET /api/v1/risk/reports/register
+  app.get('/api/v1/risk/reports/register', async (req, reply) => {
+    try {
+      const query = req.query as Record<string, unknown>;
+      const format = parseFormat(query);
+      if (format !== 'json' && format !== 'csv') {
+        return sendError(reply, 400, 'Register report only supports json and csv formats');
+      }
+      const filters = {
+        departmentId: query.departmentId as string | undefined,
+        status: query.status as string | undefined,
+        category: query.category as string | undefined,
+      };
+      const content = await reportGen.generateRegisterReport(filters, format);
+      return reply.type(CONTENT_TYPES[format] ?? 'application/json').send(content);
     } catch (err) {
       return sendError(reply, 500, toErrorMessage(err));
     }

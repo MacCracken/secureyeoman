@@ -446,6 +446,7 @@ export class SecureYeoman {
         this.intentManager = new IntentManager({
           storage: this.intentStorage,
           signalRefreshIntervalMs: this.config.intent?.signalRefreshIntervalMs,
+          getDepartmentRiskManager: () => this.departmentRiskManager,
         });
         await this.intentManager.initialize();
         this.logger.debug('IntentManager initialized');
@@ -1421,6 +1422,7 @@ export class SecureYeoman {
             pool,
             auditChain: this.auditChain,
             tlsManager: this.tlsManager,
+            getDepartmentRiskManager: () => this.departmentRiskManager,
           });
           this.logger.debug('RiskAssessmentManager initialized');
 
@@ -1845,6 +1847,22 @@ export class SecureYeoman {
         auditChainValid: auditStats.chainValid,
         lastAuditVerification: auditStats.lastVerification,
       },
+      // Departmental risk metrics (Phase 111) — non-fatal; omitted when unavailable
+      ...(this.departmentRiskManager ? await (async () => {
+        try {
+          const summary = await this.departmentRiskManager!.getExecutiveSummary();
+          return {
+            departmentalRisk: {
+              departmentCount: summary.totalDepartments,
+              openRegisterEntries: summary.totalOpenRisks,
+              overdueEntries: summary.totalOverdueRisks,
+              appetiteBreaches: summary.appetiteBreaches,
+            },
+          };
+        } catch {
+          return {};
+        }
+      })() : {}),
     };
   }
 

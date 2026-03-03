@@ -35,6 +35,7 @@ interface AssessmentRow {
   report_markdown: string | null;
   report_csv: string | null;
   options: unknown;
+  department_id: string | null;
   created_by: string | null;
   created_at: string | number;
   completed_at: string | number | null;
@@ -90,6 +91,7 @@ function rowToAssessment(row: AssessmentRow): RiskAssessment {
     findingsCount:
       typeof row.findings_count === 'string' ? Number(row.findings_count) : row.findings_count,
     options: (row.options as Record<string, unknown>) ?? undefined,
+    departmentId: row.department_id ?? undefined,
     createdBy: row.created_by ?? undefined,
     createdAt: typeof row.created_at === 'string' ? Number(row.created_at) : row.created_at,
     completedAt:
@@ -183,8 +185,8 @@ export class RiskAssessmentStorage extends PgBaseStorage {
     const now = Date.now();
     const row = await this.queryOne<AssessmentRow>(
       `INSERT INTO risk.assessments
-         (id, name, status, assessment_types, window_days, findings_count, options, created_by, created_at)
-       VALUES ($1, $2, 'pending', $3::jsonb, $4, 0, $5::jsonb, $6, $7)
+         (id, name, status, assessment_types, window_days, findings_count, options, department_id, created_by, created_at)
+       VALUES ($1, $2, 'pending', $3::jsonb, $4, 0, $5::jsonb, $6, $7, $8)
        RETURNING *`,
       [
         id,
@@ -200,6 +202,7 @@ export class RiskAssessmentStorage extends PgBaseStorage {
         ),
         opts.windowDays ?? 7,
         JSON.stringify(opts.options ?? {}),
+        opts.departmentId ?? null,
         createdBy ?? null,
         now,
       ]

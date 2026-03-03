@@ -26,6 +26,7 @@ Subcommands:
   register delete <id>       Delete a register entry
   heatmap                    Display risk heatmap
   summary                    Executive risk summary
+  report <id|executive|register>  Generate reports (--format md|html|csv|json, --output <file>)
 
 Options:
   --url <url>       Server URL (default: http://127.0.0.1:3000)
@@ -68,6 +69,8 @@ export const riskCommand: Command = {
           return await runHeatmap(ctx, baseUrl, token, jsonOutput);
         case 'summary':
           return await runSummary(ctx, baseUrl, token, jsonOutput);
+        case 'report':
+          return await runReport(ctx, baseUrl, token, args);
         default:
           ctx.stderr.write(`Unknown subcommand: ${sub}\n${USAGE}\n`);
           return 1;

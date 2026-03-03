@@ -98,6 +98,16 @@ export const SecurityMetricsSchema = z.object({
 
 export type SecurityMetrics = z.infer<typeof SecurityMetricsSchema>;
 
+// Departmental risk metrics (Phase 111)
+export const DepartmentalRiskMetricsSchema = z.object({
+  departmentCount: z.number().int().nonnegative(),
+  openRegisterEntries: z.number().int().nonnegative(),
+  overdueEntries: z.number().int().nonnegative(),
+  appetiteBreaches: z.number().int().nonnegative(),
+});
+
+export type DepartmentalRiskMetrics = z.infer<typeof DepartmentalRiskMetricsSchema>;
+
 // Combined metrics snapshot
 export const MetricsSnapshotSchema = z.object({
   timestamp: z.number().int().positive(),
@@ -106,6 +116,8 @@ export const MetricsSnapshotSchema = z.object({
   security: SecurityMetricsSchema,
   /** Active span trace ID, populated when OTel SDK is initialized. */
   traceId: z.string().optional(),
+  /** Departmental risk register summary (Phase 111). */
+  departmentalRisk: DepartmentalRiskMetricsSchema.optional(),
 });
 
 export type MetricsSnapshot = z.infer<typeof MetricsSnapshotSchema>;
