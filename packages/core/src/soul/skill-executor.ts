@@ -56,6 +56,16 @@ export class SkillExecutor {
     }
 
     try {
+      // Try code action first (deterministic preference — future sandbox runtime)
+      if (action.code) {
+        return {
+          success: false,
+          error: 'Code actions require a sandbox runtime',
+          durationMs: Date.now() - startTime,
+        };
+      }
+
+      // Then HTTP action
       if (action.type === 'http' && action.http) {
         return this.executeHttpAction(action, startTime);
       }

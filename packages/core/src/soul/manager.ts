@@ -43,6 +43,16 @@ import type {
 } from './types.js';
 import { applySkillTrustFilter } from './skill-trust.js';
 import { getCreationTools } from './creation-tools.js';
+import { PersonalityMarkdownSerializer } from './personality-serializer.js';
+
+export interface DistillationMetadata {
+  activeSkills: { count: number; names: string[] };
+  memoryEntries: number;
+  connectedIntegrations: string[];
+  appliedStrategy: string | null;
+  modelConfig: { provider: string; model: string } | null;
+  composedAt: string;
+}
 
 /**
  * Returns true when the current wall-clock time falls within the personality's
@@ -1298,6 +1308,96 @@ export class SoulManager {
 
   getSpirit(): SpiritManager | null {
     return this.spirit;
+  }
+
+  // ── Personality Distillation ──────────────────────────────────
+
+  async distillPersonality(
+    personalityId: string,
+    options?: { includeMemory?: boolean }
+  ): Promise<{ markdown: string; metadata: DistillationMetadata }> {
+    const personality = await this.storage.getPersonality(personalityId);
+    if (!personality) {
+      throw new Error(`Personality not found: ${personalityId}`);
+    }
+
+    const composedPrompt = await this.composeSoulPrompt(undefined, personalityId);
+
+    // Gather metadata
+    let skillNames: string[] = [];
+    let memoryEntries = 0;
+    let memoryContent: string[] = [];
+
+    if (this.brain) {
+      const skills = await this.brain.getActiveSkills(personalityId);
+      skillNames = skills.map((s) => s.name);
+
+      const stats = await this.brain.getStats(personalityId);
+      memoryEntries = stats.memoryCount ?? 0;
+
+      if (options?.includeMemory) {
+        const memories = await this.brain.recall({ search: '*', personalityId, limit: 20 });
+        memoryContent = memories.map((m) => `- [${m.type}] ${m.content}`);
+      }
+    }
+
+    const integrations = personality.body?.integrationAccess ?? [];
+    let strategyName: string | null = null;
+    const strategyId = personality.body?.defaultStrategyId;
+    if (strategyId && this.strategyStorage) {
+      try {
+        const strategy = await this.strategyStorage.getStrategy(strategyId);
+        strategyName = strategy?.name ?? null;
+      } catch {
+        // Strategy not found
+      }
+    }
+
+    const modelConfig = personality.defaultModel ?? null;
+
+    const metadata: DistillationMetadata = {
+      activeSkills: { count: skillNames.length, names: skillNames },
+      memoryEntries,
+      connectedIntegrations: integrations,
+      appliedStrategy: strategyName,
+      modelConfig,
+      composedAt: new Date().toISOString(),
+    };
+
+    // Build markdown
+    const serializer = new PersonalityMarkdownSerializer();
+    const configMarkdown = serializer.toMarkdown(personality);
+
+    const parts: string[] = [configMarkdown.trimEnd()];
+
+    parts.push('');
+    parts.push('# Runtime Prompt');
+    parts.push('');
+    parts.push(composedPrompt);
+    parts.push('');
+
+    parts.push('# Runtime Context');
+    parts.push('');
+    parts.push(`- **Active Skills**: ${skillNames.length > 0 ? skillNames.join(', ') : 'none'}`);
+    parts.push(`- **Memory Entries**: ${memoryEntries}`);
+    parts.push(
+      `- **Connected Integrations**: ${integrations.length > 0 ? integrations.join(', ') : 'none'}`
+    );
+    parts.push(`- **Reasoning Strategy**: ${strategyName ?? 'none'}`);
+    parts.push(
+      `- **Model**: ${modelConfig ? `${modelConfig.provider}/${modelConfig.model}` : 'default'}`
+    );
+
+    if (options?.includeMemory && memoryContent.length > 0) {
+      parts.push('');
+      parts.push('## Memory Snapshot');
+      parts.push('');
+      parts.push(...memoryContent);
+    }
+
+    parts.push('');
+
+    return { markdown: parts.join('\n'), metadata };
   }
 
   // ── Cleanup ─────────────────────────────────────────────────

@@ -72,6 +72,18 @@ function makeMockManager(overrides?: Partial<SoulManager>): SoulManager {
     setDefaultPersonality: vi.fn().mockResolvedValue(undefined),
     clearDefaultPersonality: vi.fn().mockResolvedValue(undefined),
     getEnabledPersonalities: vi.fn().mockResolvedValue([PERSONALITY]),
+    getPersonality: vi.fn().mockResolvedValue(PERSONALITY),
+    distillPersonality: vi.fn().mockResolvedValue({
+      markdown: '# Distilled\nHello',
+      metadata: {
+        activeSkills: { count: 1, names: ['Search'] },
+        memoryEntries: 5,
+        connectedIntegrations: [],
+        appliedStrategy: null,
+        modelConfig: null,
+        composedAt: '2026-03-02T00:00:00.000Z',
+      },
+    }),
     ...overrides,
   } as unknown as SoulManager;
 }
@@ -926,5 +938,70 @@ describe('PATCH /api/v1/soul/config', () => {
     });
     expect(res.statusCode).toBe(400);
     expect(res.json().message).toContain('Invalid maxSkills');
+  });
+});
+
+// ── Personality Distillation (Phase 107-E) ──────────────────────
+
+describe('GET /api/v1/soul/personalities/:id/distill', () => {
+  it('returns markdown and metadata', async () => {
+    const app = buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/soul/personalities/pers-1/distill',
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.markdown).toContain('# Distilled');
+    expect(body.metadata.activeSkills.count).toBe(1);
+  });
+
+  it('passes includeMemory query param', async () => {
+    const distillMock = vi.fn().mockResolvedValue({
+      markdown: '# Distilled',
+      metadata: { activeSkills: { count: 0, names: [] }, memoryEntries: 0, connectedIntegrations: [], appliedStrategy: null, modelConfig: null, composedAt: '2026-03-02T00:00:00.000Z' },
+    });
+    const app = buildApp({ distillPersonality: distillMock });
+    await app.inject({
+      method: 'GET',
+      url: '/api/v1/soul/personalities/pers-1/distill?includeMemory=true',
+    });
+    expect(distillMock).toHaveBeenCalledWith('pers-1', { includeMemory: true });
+  });
+
+  it('returns 404 for unknown personality', async () => {
+    const app = buildApp({
+      getPersonality: vi.fn().mockResolvedValue(null),
+    });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/soul/personalities/nope/distill',
+    });
+    expect(res.statusCode).toBe(404);
+  });
+});
+
+describe('GET /api/v1/soul/personalities/:id/distill/diff', () => {
+  it('returns diff string', async () => {
+    const app = buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/soul/personalities/pers-1/distill/diff',
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(typeof body.diff).toBe('string');
+    expect(typeof body.hasChanges).toBe('boolean');
+  });
+
+  it('returns 404 for unknown personality', async () => {
+    const app = buildApp({
+      getPersonality: vi.fn().mockResolvedValue(null),
+    });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/soul/personalities/nope/distill/diff',
+    });
+    expect(res.statusCode).toBe(404);
   });
 });

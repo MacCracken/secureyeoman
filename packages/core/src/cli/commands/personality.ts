@@ -24,10 +24,15 @@ Subcommands:
   list                        List all personalities
   export <name>               Export personality (--format md|json, --output file)
   import <file>               Import personality from .md or .json file
+  create                      Create a new personality (--wizard for guided flow)
+  distill <name>              Distill personality to portable markdown
 
 Options:
   --format <md|json>  Export format (default: md)
   --output <file>     Write export to file instead of stdout
+  --include-memory    Include memory snapshot in distillation
+  --diff              Show diff between export and distilled output
+  --wizard            Run interactive creation wizard
   --url <url>         Server URL (default: http://127.0.0.1:3000)
   --token <token>     Auth token
   --json              Output raw JSON
@@ -67,6 +72,11 @@ export const personalityCommand: Command = {
         case 'import':
         case 'imp':
           return await runImport(ctx, baseUrl, token, jsonOutput, args);
+        case 'create':
+          return await runCreate(ctx, baseUrl, token, jsonOutput, args);
+        case 'distill':
+        case 'dist':
+          return await runDistill(ctx, baseUrl, token, jsonOutput, args);
         default:
           ctx.stderr.write(`Unknown subcommand: ${sub}\n${USAGE}\n`);
           return 1;
@@ -231,4 +241,196 @@ async function runImport(
     }
   }
   return 0;
+}
+
+// ── Distill ──────────────────────────────────────────────────────
+
+async function runDistill(
+  ctx: CommandContext,
+  baseUrl: string,
+  token: string | undefined,
+  jsonOutput: boolean,
+  args: string[]
+): Promise<number> {
+  let argv = args;
+
+  const includeMemResult = extractBoolFlag(argv, 'include-memory');
+  const includeMemory = includeMemResult.value;
+  argv = includeMemResult.rest;
+
+  const diffResult = extractBoolFlag(argv, 'diff');
+  const showDiff = diffResult.value;
+  argv = diffResult.rest;
+
+  const outputResult = extractFlag(argv, 'output', 'o');
+  const outputFile = outputResult.value;
+  argv = outputResult.rest;
+
+  const name = argv[0];
+  if (!name) {
+    ctx.stderr.write(
+      'Usage: secureyeoman personality distill <name> [--include-memory] [--output file] [--diff]\n'
+    );
+    return 1;
+  }
+
+  // Find personality by name
+  const listRes = await apiCall(baseUrl, '/api/v1/soul/personalities', { token });
+  const { personalities } = listRes.data as { personalities: { id: string; name: string }[] };
+  const match = personalities.find((p) => p.name.toLowerCase() === name.toLowerCase());
+  if (!match) {
+    ctx.stderr.write(`Personality not found: ${name}\n`);
+    return 1;
+  }
+
+  if (showDiff) {
+    const url = `/api/v1/soul/personalities/${match.id}/distill/diff`;
+    const res = await apiCall(baseUrl, url, { token });
+    const diffData = res.data as { diff: string; hasChanges: boolean };
+    if (jsonOutput) {
+      ctx.stdout.write(JSON.stringify(diffData, null, 2) + '\n');
+    } else if (diffData.hasChanges) {
+      ctx.stdout.write(diffData.diff + '\n');
+    } else {
+      ctx.stdout.write('No differences found.\n');
+    }
+    return 0;
+  }
+
+  const qs = includeMemory ? '?includeMemory=true' : '';
+  const url = `/api/v1/soul/personalities/${match.id}/distill${qs}`;
+  const res = await apiCall(baseUrl, url, { token });
+  const result = res.data as { markdown: string; metadata: Record<string, unknown> };
+
+  if (jsonOutput) {
+    ctx.stdout.write(JSON.stringify(result, null, 2) + '\n');
+    return 0;
+  }
+
+  if (outputFile) {
+    writeFileSync(outputFile, result.markdown, 'utf-8');
+    ctx.stdout.write(`Distilled personality written to ${outputFile}\n`);
+  } else {
+    ctx.stdout.write(result.markdown);
+  }
+  return 0;
+}
+
+// ── Create ───────────────────────────────────────────────────────
+
+async function runCreate(
+  ctx: CommandContext,
+  baseUrl: string,
+  token: string | undefined,
+  jsonOutput: boolean,
+  args: string[]
+): Promise<number> {
+  let argv = args;
+
+  const wizardResult = extractBoolFlag(argv, 'wizard');
+  const useWizard = wizardResult.value;
+  argv = wizardResult.rest;
+
+  if (!useWizard) {
+    ctx.stderr.write('Usage: secureyeoman personality create --wizard\n');
+    ctx.stderr.write('  The --wizard flag enables the interactive creation flow.\n');
+    return 1;
+  }
+
+  // Interactive wizard using process.stdin
+  const readline = await import('node:readline');
+  const rl = readline.createInterface({ input: process.stdin, output: ctx.stdout as NodeJS.WriteStream });
+
+  const ask = (prompt: string): Promise<string> =>
+    new Promise((resolve) => rl.question(prompt, resolve));
+
+  const askChoice = async (prompt: string, choices: string[]): Promise<string> => {
+    const choiceStr = choices.map((c, i) => `  ${i + 1}. ${c}`).join('\n');
+    ctx.stdout.write(`${prompt}\n${choiceStr}\n`);
+    const answer = await ask('Choice (number or text): ');
+    const idx = parseInt(answer, 10) - 1;
+    if (idx >= 0 && idx < choices.length) return choices[idx]!;
+    return answer.trim() || choices[0]!;
+  };
+
+  try {
+    const c = colorContext(ctx.stdout);
+    ctx.stdout.write(c.bold('\nPersonality Creation Wizard\n'));
+    ctx.stdout.write('─'.repeat(40) + '\n\n');
+
+    // 1. Name
+    const name = await ask('What is this personality\'s name? ');
+    if (!name.trim()) {
+      ctx.stderr.write('Name is required.\n');
+      return 1;
+    }
+
+    // 2. System prompt
+    const systemPrompt = await ask('Describe this personality\'s mission (system prompt): ');
+
+    // 3. Topics
+    const topicsRaw = await ask('What topics should it focus on? (comma-separated or blank): ');
+    const description = topicsRaw.trim() || `${name.trim()} personality`;
+
+    // 4. Tone and style
+    const formality = await askChoice('What tone and communication style?', [
+      'casual',
+      'balanced',
+      'formal',
+    ]);
+    const humor = await askChoice('Humor level?', ['none', 'subtle', 'witty']);
+    const verbosity = await askChoice('Verbosity?', ['concise', 'balanced', 'detailed']);
+
+    // 5. Reasoning
+    const reasoning = await askChoice('What reasoning style should it use?', [
+      'analytical',
+      'creative',
+      'balanced',
+    ]);
+
+    // 6. Constraints
+    const constraints = await ask('Any constraints or guardrails? (free text, blank to skip): ');
+
+    rl.close();
+
+    // Build personality
+    const fullPrompt = constraints.trim()
+      ? `${systemPrompt.trim()}\n\nConstraints:\n${constraints.trim()}`
+      : systemPrompt.trim();
+
+    const body = {
+      name: name.trim(),
+      description,
+      systemPrompt: fullPrompt,
+      traits: { formality, humor, verbosity, reasoning },
+      sex: 'unspecified',
+      voice: '',
+      preferredLanguage: '',
+      defaultModel: null,
+      modelFallbacks: [],
+      includeArchetypes: true,
+      injectDateTime: false,
+      empathyResonance: false,
+      avatarUrl: null,
+    };
+
+    const res = await apiCall(baseUrl, '/api/v1/soul/personalities', {
+      method: 'POST',
+      body,
+      token,
+    });
+
+    const personality = (res.data as { personality: { name: string; id: string } }).personality;
+
+    if (jsonOutput) {
+      ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
+    } else {
+      ctx.stdout.write('\n' + c.bold(`Created personality: ${personality.name}`) + '\n');
+      ctx.stdout.write(`  ID: ${personality.id}\n`);
+      ctx.stdout.write(`  Traits: ${formality}, ${humor}, ${verbosity}, ${reasoning}\n`);
+    }
+    return 0;
+  } finally {
+    rl.close();
+  }
 }

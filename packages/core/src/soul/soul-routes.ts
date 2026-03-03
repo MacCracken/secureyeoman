@@ -27,6 +27,7 @@ import type { HeartbeatManager } from '../body/heartbeat.js';
 import type { InputValidator } from '../security/input-validator.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import { PersonalityMarkdownSerializer } from './personality-serializer.js';
+import { computeUnifiedDiff } from './diff-utils.js';
 
 export interface SoulRoutesOptions {
   soulManager: SoulManager;
@@ -361,6 +362,57 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         return await reply.code(201).send({ personality, warnings });
       } catch (e) {
         return sendError(reply, 400, toErrorMessage(e));
+      }
+    }
+  );
+
+  // ── Personality Distillation (Phase 107-E) ───────────────────
+
+  app.get(
+    '/api/v1/soul/personalities/:id/distill',
+    async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Querystring: { includeMemory?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const personality = await soulManager.getPersonality(request.params.id);
+      if (!personality) return sendError(reply, 404, 'Personality not found');
+
+      try {
+        const includeMemory = request.query.includeMemory === 'true';
+        const result = await soulManager.distillPersonality(request.params.id, { includeMemory });
+
+        const accept = request.headers.accept ?? '';
+        if (accept.includes('text/markdown')) {
+          return reply
+            .header('Content-Type', 'text/markdown; charset=utf-8')
+            .send(result.markdown);
+        }
+        return result;
+      } catch (e) {
+        return sendError(reply, 500, toErrorMessage(e));
+      }
+    }
+  );
+
+  app.get(
+    '/api/v1/soul/personalities/:id/distill/diff',
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply
+    ) => {
+      const personality = await soulManager.getPersonality(request.params.id);
+      if (!personality) return sendError(reply, 404, 'Personality not found');
+
+      try {
+        const distilled = await soulManager.distillPersonality(request.params.id);
+        const exportMd = personalitySerializer.toMarkdown(personality);
+        const diff = computeUnifiedDiff(exportMd, distilled.markdown, 'export', 'distilled');
+        return { diff, hasChanges: diff.length > 0 };
+      } catch (e) {
+        return sendError(reply, 500, toErrorMessage(e));
       }
     }
   );

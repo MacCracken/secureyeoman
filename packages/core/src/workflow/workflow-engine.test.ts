@@ -17,6 +17,11 @@ import type {
 } from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
 
+const mockExecFileSync = vi.fn();
+vi.mock('node:child_process', () => ({
+  execFileSync: (...args: unknown[]) => mockExecFileSync(...args),
+}));
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 let _srCounter = 0;
@@ -2258,5 +2263,121 @@ describe('WorkflowEngine.validateWorkflowConditions (Phase 105)', () => {
     ] as any[];
     const errors = WorkflowEngine.validateWorkflowConditions(steps);
     expect(errors).toEqual([]);
+  });
+});
+
+// ── Deterministic Step Dispatch (Phase 107-A) ─────────────────────────────────
+
+describe('WorkflowEngine deterministic dispatch', () => {
+  beforeEach(() => {
+    _srCounter = 0;
+    mockExecFileSync.mockReset();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('deterministic=true with command succeeds — returns stdout, skips agent', async () => {
+    mockExecFileSync.mockReturnValue('deterministic-output\n');
+    const engine = makeEngine();
+    const step = makeStep({
+      id: 'det1',
+      type: 'agent',
+      config: { deterministic: true, command: 'echo hello' },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(mockExecFileSync).toHaveBeenCalledWith('echo', ['hello'], expect.objectContaining({
+      timeout: 30000,
+      encoding: 'utf-8',
+    }));
+  });
+
+  it('deterministic=true with command fails — falls through to agent dispatch', async () => {
+    mockExecFileSync.mockImplementation(() => { throw new Error('command not found'); });
+    const mockDelegate = vi.fn().mockResolvedValue({ result: 'agent-result' });
+    const engine = makeEngine({
+      subAgentManager: { delegate: mockDelegate },
+    });
+    const step = makeStep({
+      id: 'det2',
+      type: 'agent',
+      config: {
+        deterministic: true,
+        command: 'bad-cmd',
+        profile: 'default',
+        taskTemplate: 'do something',
+      },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(mockDelegate).toHaveBeenCalled();
+  });
+
+  it('deterministic=true without command or function — normal dispatch', async () => {
+    const mockDelegate = vi.fn().mockResolvedValue({ result: 'normal-result' });
+    const engine = makeEngine({
+      subAgentManager: { delegate: mockDelegate },
+    });
+    const step = makeStep({
+      id: 'det3',
+      type: 'agent',
+      config: { deterministic: true, profile: 'default', taskTemplate: 'task' },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(mockExecFileSync).not.toHaveBeenCalled();
+    expect(mockDelegate).toHaveBeenCalled();
+  });
+
+  it('deterministic flag absent — normal dispatch (backwards compat)', async () => {
+    const mockDelegate = vi.fn().mockResolvedValue({ result: 'ok' });
+    const engine = makeEngine({
+      subAgentManager: { delegate: mockDelegate },
+    });
+    const step = makeStep({
+      id: 'det4',
+      type: 'agent',
+      config: { profile: 'default', taskTemplate: 'task' },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(mockExecFileSync).not.toHaveBeenCalled();
+    expect(mockDelegate).toHaveBeenCalled();
+  });
+
+  it('deterministic=true with custom timeoutMs passes to execFileSync', async () => {
+    mockExecFileSync.mockReturnValue('output');
+    const engine = makeEngine();
+    const step = makeStep({
+      id: 'det5',
+      type: 'agent',
+      config: { deterministic: true, command: 'ls -la', timeoutMs: 5000 },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(mockExecFileSync).toHaveBeenCalledWith('ls', ['-la'], expect.objectContaining({
+      timeout: 5000,
+    }));
+  });
+
+  it('deterministic=true with command that has no args', async () => {
+    mockExecFileSync.mockReturnValue('whoami-output');
+    const engine = makeEngine();
+    const step = makeStep({
+      id: 'det6',
+      type: 'agent',
+      config: { deterministic: true, command: 'whoami' },
+    });
+    const def = makeDefinition([step]);
+    const run = makeRun();
+    await engine.execute(run, def);
+    expect(mockExecFileSync).toHaveBeenCalledWith('whoami', [], expect.any(Object));
   });
 });

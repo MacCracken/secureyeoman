@@ -671,21 +671,21 @@ describe('BrainManager', () => {
       expect(storage.createKnowledge).not.toHaveBeenCalled();
     });
 
-    it('creates 3 global entries and 1 self-identity per personality when all missing', async () => {
+    it('creates 3 global entries, 1 self-identity, and 1 personality-context per personality when all missing', async () => {
       const { manager, storage } = makeManager({ queryKnowledge: vi.fn().mockResolvedValue([]) });
       await manager.seedBaseKnowledge([{ id: 'p1', name: 'FRIDAY' }]);
-      // 3 generic global entries + 1 self-identity for FRIDAY
-      expect(storage.createKnowledge).toHaveBeenCalledTimes(4);
+      // 3 generic global entries + 1 self-identity + 1 personality-context for FRIDAY
+      expect(storage.createKnowledge).toHaveBeenCalledTimes(5);
     });
 
-    it('creates self-identity for each personality independently', async () => {
+    it('creates self-identity and personality-context for each personality independently', async () => {
       const { manager, storage } = makeManager({ queryKnowledge: vi.fn().mockResolvedValue([]) });
       await manager.seedBaseKnowledge([
         { id: 'p1', name: 'FRIDAY' },
         { id: 'p2', name: 'T.Ron' },
       ]);
-      // 3 generic + 2 self-identity
-      expect(storage.createKnowledge).toHaveBeenCalledTimes(5);
+      // 3 generic + 2 self-identity + 2 personality-context
+      expect(storage.createKnowledge).toHaveBeenCalledTimes(7);
     });
 
     it('skips global entry that already exists for that topic', async () => {
@@ -709,11 +709,14 @@ describe('BrainManager', () => {
     it('skips self-identity if personality already has one scoped', async () => {
       const scopedFriday = { ...KNOWLEDGE, topic: 'self-identity', personalityId: 'p1' };
       const { manager, storage } = makeManager({
-        queryKnowledge: vi.fn().mockResolvedValue([scopedFriday]),
+        queryKnowledge: vi.fn().mockImplementation(async (q: { topic?: string }) => {
+          if (q?.topic === 'self-identity') return [scopedFriday];
+          return [];
+        }),
       });
       await manager.seedBaseKnowledge([{ id: 'p1', name: 'FRIDAY' }]);
-      // 3 generic + 0 self-identity (already exists for p1)
-      expect(storage.createKnowledge).toHaveBeenCalledTimes(3);
+      // 3 generic + 0 self-identity (already exists for p1) + 1 personality-context
+      expect(storage.createKnowledge).toHaveBeenCalledTimes(4);
     });
 
     it('deletes legacy global self-identity when personalities are provided', async () => {
@@ -732,6 +735,34 @@ describe('BrainManager', () => {
       });
       await manager.seedBaseKnowledge([]);
       expect(storage.deleteKnowledge).not.toHaveBeenCalled();
+    });
+
+    it('seeds personality-context entry per personality', async () => {
+      const { manager, storage } = makeManager({ queryKnowledge: vi.fn().mockResolvedValue([]) });
+      await manager.seedBaseKnowledge([{ id: 'p1', name: 'FRIDAY' }]);
+      expect(storage.createKnowledge).toHaveBeenCalledWith(
+        expect.objectContaining({
+          topic: 'personality-context',
+          source: 'base-knowledge',
+          content: expect.stringContaining('FRIDAY'),
+        }),
+        'p1'
+      );
+    });
+
+    it('idempotent — does not duplicate personality-context on second call', async () => {
+      const existingCtx = { ...KNOWLEDGE, topic: 'personality-context', personalityId: 'p1' };
+      const { manager, storage } = makeManager({
+        queryKnowledge: vi.fn().mockImplementation(async (q: { topic?: string }) => {
+          if (q?.topic === 'personality-context') return [existingCtx];
+          return [];
+        }),
+      });
+      await manager.seedBaseKnowledge([{ id: 'p1', name: 'FRIDAY' }]);
+      // Should NOT create a personality-context entry since one already exists
+      const calls = storage.createKnowledge.mock.calls;
+      const contextCalls = calls.filter((c: any) => c[0]?.topic === 'personality-context');
+      expect(contextCalls).toHaveLength(0);
     });
   });
 

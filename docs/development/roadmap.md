@@ -41,10 +41,10 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | 106 | License-Gated Feature Reveal | P1 — commercial | 🔄 In Progress (context ✅, card ✅, CLI guard ✅, route guards + feature lock UX remaining) |
-| 107 | Reasoning Strategies, Security Templates & Portable Personalities | P2 — capability + distribution | 🔄 In Progress (A ✅, B ✅, C ✅, D partial, E + F remaining) |
+| 107 | Reasoning Strategies, Security Templates & Portable Personalities | P2 — capability + distribution | 🔄 In Progress (A–E ✅, F remaining) |
 | 109 | Editor Improvements (Auto-Claude Style) | P3 — power user UX | 🔄 In Progress (unification ✅, IDE features + canvas improvements planned) |
 | 110 | Inline Citations & Grounding | P3 — trust layer | Planned |
-| 111 | Departmental Risk Register & Risk Posture Tracking | P2 — risk governance | 🔄 In Progress (A ✅, B ✅, E ✅, C partial, D + F remaining) |
+| 111 | Departmental Risk Register & Risk Posture Tracking | P2 — risk governance | 🔄 In Progress (A–B, E ✅, C partial, D + F remaining) |
 | 112 | Multi-Account AI Provider Keys & Per-Account Cost Tracking | P2 — cost governance | Planned |
 | Future | Workflow Versioning, LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Infrastructure | Future / Demand-Gated | — |
 
@@ -69,32 +69,7 @@ Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi
 
 *Previously Phase 102. Renumbered for sequential ordering. Includes "base knowledge generic entries per-personality review" from Phase XX.*
 
-### 107-A Remaining Items
-
-*107-A (Reasoning Strategies Layer) and 107-C (CLI Enhancements) are complete — see Changelog [2026.3.2]. The items below were scoped under 107-A but not yet implemented.*
-
-- [ ] **Deterministic routing preference** — Encode a "Code → CLI → Prompt → Skill" dispatch hierarchy in `SkillExecutor` and `WorkflowEngine`, inspired by [PAI](https://github.com/danielmiessler/Personal_AI_Infrastructure)'s principle that deterministic code paths should be preferred over LLM-routed paths when both can solve the task. When a workflow step or skill action can be resolved by a direct function call or shell command with known output, prefer that over sending the task to the LLM. Concretely: `WorkflowEngine` step dispatch checks for a `deterministic` flag on step config; when set, the step runs its `command` or `function` directly and only falls through to AI routing on failure. Skill routing order: code action → HTTP action → AI-assisted action. Reduces token cost and latency for routine operations.
-- [ ] **Base knowledge per-personality review** — `hierarchy`, `purpose`, and `interaction` are currently seeded globally. These may need per-personality variants. Low urgency.
-
-### 107-B: Security Prompt Templates ✅
-
-*Complete — see Changelog [2026.3.2]. 7 security skills, 2 workflow templates, 7 community security pattern directories.*
-
-### 107-D: Portable Personality Format — Markdown Injection Model
-
-*Core serializer, export/import routes, CLI, marketplace transport, and community themes complete — see Changelog [2026.3.2]. Remaining item below.*
-
-- [ ] **TELOS-style guided personality creation** — Structured onboarding wizard for creating personalities from natural language, inspired by [PAI](https://github.com/danielmiessler/Personal_AI_Infrastructure)'s TELOS goal framework. Instead of filling raw schema fields, the user answers 5–8 guided questions: "What is this personality's mission?", "What topics should it focus on?", "What tools does it need?", "What reasoning style should it use?", "What tone and communication style?", "What constraints or guardrails?". Answers are parsed into a `PersonalityCreate` object and previewed as a rendered markdown personality card before confirmation. Accessible from: (1) "Create with Wizard" button on Personalities list page, (2) `secureyeoman personality create --wizard` CLI flag. The wizard is an alternative to direct JSON/markdown creation — both paths produce the same native personality object.
-
-### 107-E: Personality Core Distillation to Markdown
-
-*Automated extraction of a personality's effective runtime state — not just its config, but the composed prompt including injected skills, memory context, active integrations, and strategy — into a single portable markdown document. This is the "distilled" view: what the AI actually sees.*
-
-- [ ] **`distillPersonality()` method** — `SoulManager` method that calls `composeSystemPrompt()` with all active skills, memory snippets, integration contexts, and strategy prefix, then wraps the result in the portable markdown format from 107-D. The distilled document includes a `# Runtime Context` section listing: active skills (count + names), memory entries (count), connected integrations, applied strategy, and model configuration.
-- [ ] **Distillation route** — `GET /api/v1/soul/personalities/:id/distill` returns the distilled markdown. Accepts `?includeMemory=true` to embed the personality's top-k memory entries (default: metadata only, not full content — avoids leaking sensitive learned data).
-- [ ] **Distillation diff** — `GET /api/v1/soul/personalities/:id/distill/diff` compares the current distilled state against the last exported/tagged version. Returns a unified diff. Useful for understanding "what changed in what the AI sees" vs. "what changed in the config."
-- [ ] **CLI distill** — `secureyeoman personality distill <name> [--include-memory] [--output file]`. Outputs the full composed prompt as a readable markdown document.
-- [ ] **Transport use case** — Distilled personalities can be imported on another SecureYeoman instance. Skills and integrations referenced in the distilled doc that aren't available locally are listed as warnings. The system prompt is imported as-is; skills are matched by name/slug when available.
+*107-A (Reasoning Strategies + Deterministic Routing + Per-Personality Base Knowledge), 107-B (Security Prompt Templates), 107-C (CLI Enhancements), 107-D (Portable Personality Format + TELOS Wizard), and 107-E (Personality Core Distillation) are complete — see Changelog [2026.3.2] and [2026.3.3].*
 
 ### 107-F: ATHI Threat Governance Framework
 
@@ -157,13 +132,7 @@ Departments are first-class organizational units — they define **who owns what
 
 Six sub-phases: data model → shared types & backend → integration → reports & outputs → CLI → dashboard.
 
-### 111-A: Data Model ✅
-
-*Complete — migration `003_departmental_risk.sql` with 3 new tables + 2 ALTER statements. See Changelog [2026.3.2].*
-
-### 111-B: Shared Types & Backend ✅
-
-*Complete — 19 Zod schemas, storage, manager, ~22 route endpoints, wiring. See Changelog [2026.3.2].*
+*111-A (Data Model), 111-B (Shared Types & Backend), and 111-E (CLI) are complete — see Changelog [2026.3.2].*
 
 ### 111-C: Integration
 
@@ -194,10 +163,6 @@ Six sub-phases: data model → shared types & backend → integration → report
   - `generateHeatmapHtml(heatmapData)` — Self-contained HTML document with a department × domain risk matrix. Cells colored green/yellow/orange/red based on score thresholds. Appetite threshold lines overlaid. Suitable for embedding in emails or exporting as a standalone artifact.
   - **Inputs**: department IDs, filters, format selection, heatmap data from manager.
   - **Outputs**: JSON (structured data for API consumers), HTML (standalone reports for email/embedding), Markdown (for documentation/wiki), CSV (GRC-tool import — ISO 27001/NIST compatible columns).
-
-### 111-E: CLI ✅
-
-*Complete — `secureyeoman risk` (alias `rsk`) with departments/register/heatmap/summary/report subcommands. See Changelog [2026.3.2].*
 
 ### 111-F: Dashboard 🔄
 

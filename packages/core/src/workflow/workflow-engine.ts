@@ -26,6 +26,7 @@ import type { PipelineLineageStorage } from '../training/pipeline-lineage.js';
 import type { DistillationManager } from '../training/distillation-manager.js';
 import type { FinetuneManager } from '../training/finetune-manager.js';
 import type { WorkflowDefinition, WorkflowRun, WorkflowStep } from '@secureyeoman/shared';
+import { execFileSync } from 'node:child_process';
 import { assertPublicUrl } from '../utils/ssrf-guard.js';
 import type { AlertManager } from '../telemetry/alert-manager.js';
 import { emitJobCompletion } from '../telemetry/job-completion-events.js';
@@ -404,6 +405,29 @@ export class WorkflowEngine {
 
     switch (step.type) {
       case 'agent': {
+        // Deterministic dispatch: if step.config.deterministic is true and a command
+        // is specified, execute it directly and skip AI routing on success.
+        if (cfg.deterministic && cfg.command) {
+          try {
+            const cmdStr = String(cfg.command);
+            const parts = cmdStr.split(/\s+/).filter(Boolean);
+            const timeoutMs = Number(cfg.timeoutMs ?? 30000);
+            const stdout = execFileSync(parts[0]!, parts.slice(1), {
+              timeout: timeoutMs,
+              encoding: 'utf-8',
+              maxBuffer: 10 * 1024 * 1024,
+            });
+            return stdout;
+          } catch (err) {
+            this.logger.warn('Deterministic command failed, falling through to agent dispatch', {
+              stepId: step.id,
+              command: String(cfg.command),
+              error: err instanceof Error ? err.message : String(err),
+            });
+            // Fall through to normal agent dispatch
+          }
+        }
+
         if (!this.subAgentManager) {
           throw new Error('SubAgentManager not available for agent step');
         }

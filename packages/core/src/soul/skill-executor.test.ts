@@ -32,22 +32,59 @@ describe('SkillExecutor', () => {
       expect(result.durationMs).toBeGreaterThanOrEqual(0);
     });
 
-    it('returns error for code action type (not implemented)', async () => {
+    it('returns sandbox-required error for code action with code config', async () => {
       const executor = new SkillExecutor();
       const skill = makeSkill([
         { id: 'a1', type: 'code', code: { language: 'javascript', source: 'return 42;' } } as never,
       ]);
       const result = await executor.executeAction(skill, 'a1', CTX);
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Action has no valid configuration');
+      expect(result.error).toBe('Code actions require a sandbox runtime');
     });
 
-    it('returns error for code action with missing code config', async () => {
+    it('returns fallback error for code action without code config', async () => {
       const executor = new SkillExecutor();
       const skill = makeSkill([{ id: 'a1', type: 'code' } as never]);
       const result = await executor.executeAction(skill, 'a1', CTX);
       expect(result.success).toBe(false);
       expect(result.error).toBe('Action has no valid configuration');
+    });
+
+    it('code config is tried before HTTP — code wins when both present', async () => {
+      const executor = new SkillExecutor();
+      const skill = makeSkill([
+        {
+          id: 'a1',
+          type: 'http',
+          code: { language: 'javascript', source: 'return 1;' },
+          http: { url: 'https://api.example.com/', method: 'GET', headers: {} },
+        } as never,
+      ]);
+      const result = await executor.executeAction(skill, 'a1', CTX);
+      // Code is tried first and returns sandbox error
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Code actions require a sandbox runtime');
+    });
+
+    it('HTTP fallback works when code config is absent', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'text/plain' },
+        text: async () => 'OK',
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const executor = new SkillExecutor({ timeoutMs: 5000, memoryLimitMb: 128 });
+      const skill = makeSkill([
+        {
+          id: 'a1',
+          type: 'http',
+          http: { url: 'https://api.example.com/', method: 'GET', headers: {} },
+        } as never,
+      ]);
+      const result = await executor.executeAction(skill, 'a1', CTX);
+      expect(result.success).toBe(true);
     });
 
     it('returns error for http action blocked by domain allowlist', async () => {

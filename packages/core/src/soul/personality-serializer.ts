@@ -256,12 +256,14 @@ export class PersonalityMarkdownSerializer {
       modelFallbacks.push({ provider: fbMatch[1]!.trim(), model: fbMatch[2]!.trim() });
     }
 
-    // Warn on unknown sections
+    // Warn on unknown sections (distilled docs include Runtime sections — skip gracefully)
     const knownSections = new Set([
       'identity & purpose',
       'traits',
       'configuration',
       'model fallbacks',
+      'runtime prompt',
+      'runtime context',
     ]);
     for (const sectionName of Object.keys(sections)) {
       if (!knownSections.has(sectionName)) {
@@ -362,8 +364,9 @@ function computeBodyDiff(body?: BodyConfig): string | null {
   }
 
   // Capabilities
-  if (JSON.stringify(body.capabilities) !== JSON.stringify(defaults.capabilities)) {
-    diffLines.push(`capabilities: [${body.capabilities.join(', ')}]`);
+  const caps = body.capabilities ?? [];
+  if (JSON.stringify(caps) !== JSON.stringify(defaults.capabilities)) {
+    diffLines.push(`capabilities: [${caps.join(', ')}]`);
   }
 
   // MCP features (only non-default ones)

@@ -740,6 +740,27 @@ export class BrainManager {
       for (const legacy of globalSelfIdentity) {
         await this.storage.deleteKnowledge(legacy.id);
       }
+
+      // 3. personality-context: per-personality entry bridging global base knowledge with personality identity
+      const allPersonalityContext = await this.storage.queryKnowledge({
+        topic: 'personality-context',
+      });
+      for (const personality of personalities) {
+        const hasContextEntry = allPersonalityContext.some(
+          (k) => k.personalityId === personality.id
+        );
+        if (!hasContextEntry) {
+          await this.storage.createKnowledge(
+            {
+              topic: 'personality-context',
+              content: `As ${personality.name}, I interpret the hierarchy, purpose, and interaction patterns through my own lens and personality traits.`,
+              source: 'base-knowledge',
+              confidence: 1.0,
+            },
+            personality.id
+          );
+        }
+      }
     }
 
     this.deps.logger.debug('Base knowledge seeded');

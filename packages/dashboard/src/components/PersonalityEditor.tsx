@@ -1,6 +1,10 @@
-import { useState, useCallback, useEffect, useRef, Fragment } from 'react';
+import { useState, useCallback, useEffect, useRef, Fragment, lazy, Suspense } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
+
+const PersonalityWizard = lazy(() =>
+  import('./personality/PersonalityWizard').then((m) => ({ default: m.PersonalityWizard }))
+);
 import {
   Bot,
   User,
@@ -36,6 +40,7 @@ import {
   Box,
   Download,
   Upload,
+  Sparkles,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -4187,6 +4192,7 @@ export function PersonalityEditor({
   const [activatingId, setActivatingId] = useState<string | null>(null);
   const [activateError, setActivateError] = useState<string | null>(null);
   const [setActiveOnSave, setSetActiveOnSave] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
   const [form, setForm] = useState<PersonalityCreate>({
     name: '',
     description: '',
@@ -4853,6 +4859,13 @@ export function PersonalityEditor({
               <span className="hidden sm:inline">Import</span>
             </button>
             <button
+              onClick={() => setShowWizard(true)}
+              className="btn btn-ghost flex items-center justify-center gap-1 text-sm sm:text-base"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">Wizard</span>
+            </button>
+            <button
               onClick={startCreate}
               className="btn btn-ghost flex items-center justify-center gap-1 text-sm sm:text-base"
             >
@@ -4860,6 +4873,17 @@ export function PersonalityEditor({
               <span className="hidden sm:inline">New Personality</span>
             </button>
           </div>
+        </div>
+      )}
+
+      {showWizard && (
+        <div className="card p-6 mb-4">
+          <Suspense fallback={<div className="text-center py-8 text-muted-foreground">Loading wizard...</div>}>
+            <PersonalityWizard
+              onComplete={() => setShowWizard(false)}
+              onCancel={() => setShowWizard(false)}
+            />
+          </Suspense>
         </div>
       )}
 

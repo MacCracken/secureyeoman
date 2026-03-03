@@ -1916,4 +1916,111 @@ describe('SoulManager', () => {
       expect(storage.deletePersonality).toHaveBeenCalledWith('p-1');
     });
   });
+
+  // ── distillPersonality (Phase 107-E) ───────────────────────────
+
+  describe('distillPersonality', () => {
+    it('returns markdown with Runtime Prompt section', async () => {
+      const brain = {
+        getActiveSkills: vi.fn().mockResolvedValue([]),
+        getStats: vi.fn().mockResolvedValue({ memoryCount: 5 }),
+        recall: vi.fn().mockResolvedValue([]),
+      };
+      const { manager } = makeManager({}, {}, brain);
+      const result = await manager.distillPersonality('p-1');
+      expect(result.markdown).toContain('# Runtime Prompt');
+      expect(result.markdown).toContain('# Runtime Context');
+      expect(result.metadata.memoryEntries).toBe(5);
+      expect(result.metadata.activeSkills.count).toBe(0);
+    });
+
+    it('includes memory content when includeMemory is true', async () => {
+      const brain = {
+        getActiveSkills: vi.fn().mockResolvedValue([]),
+        getStats: vi.fn().mockResolvedValue({ memoryCount: 2 }),
+        recall: vi.fn().mockResolvedValue([
+          { id: 'm1', type: 'semantic', content: 'Memory 1' },
+          { id: 'm2', type: 'episodic', content: 'Memory 2' },
+        ]),
+      };
+      const { manager } = makeManager({}, {}, brain);
+      const result = await manager.distillPersonality('p-1', { includeMemory: true });
+      expect(result.markdown).toContain('## Memory Snapshot');
+      expect(result.markdown).toContain('Memory 1');
+      expect(result.markdown).toContain('Memory 2');
+    });
+
+    it('metadata includes skill names', async () => {
+      const brain = {
+        getActiveSkills: vi.fn().mockResolvedValue([
+          { name: 'SkillA' },
+          { name: 'SkillB' },
+        ]),
+        getStats: vi.fn().mockResolvedValue({ memoryCount: 0 }),
+        recall: vi.fn().mockResolvedValue([]),
+      };
+      const { manager } = makeManager({}, {}, brain);
+      const result = await manager.distillPersonality('p-1');
+      expect(result.metadata.activeSkills.count).toBe(2);
+      expect(result.metadata.activeSkills.names).toEqual(['SkillA', 'SkillB']);
+    });
+
+    it('throws for nonexistent personality', async () => {
+      const { manager } = makeManager({
+        getPersonality: vi.fn().mockResolvedValue(null),
+      });
+      await expect(manager.distillPersonality('no-such-id')).rejects.toThrow(
+        'Personality not found'
+      );
+    });
+
+    it('metadata includes strategy name when set', async () => {
+      const personalityWithStrategy = {
+        ...PERSONALITY,
+        body: { ...PERSONALITY.body, defaultStrategyId: 'strat-1' },
+      };
+      const brain = {
+        getActiveSkills: vi.fn().mockResolvedValue([]),
+        getStats: vi.fn().mockResolvedValue({ memoryCount: 0 }),
+        recall: vi.fn().mockResolvedValue([]),
+      };
+      const { manager } = makeManager(
+        { getPersonality: vi.fn().mockResolvedValue(personalityWithStrategy) },
+        {},
+        brain
+      );
+      // Wire strategy storage
+      manager.setStrategyStorage({
+        getStrategy: vi.fn().mockResolvedValue({ name: 'Chain of Thought' }),
+      } as any);
+      const result = await manager.distillPersonality('p-1');
+      expect(result.metadata.appliedStrategy).toBe('Chain of Thought');
+    });
+
+    it('works without brain manager', async () => {
+      const { manager } = makeManager();
+      const result = await manager.distillPersonality('p-1');
+      expect(result.markdown).toContain('# Runtime Prompt');
+      expect(result.metadata.activeSkills.count).toBe(0);
+      expect(result.metadata.memoryEntries).toBe(0);
+    });
+
+    it('metadata model config is null when no default model', async () => {
+      const { manager } = makeManager();
+      const result = await manager.distillPersonality('p-1');
+      expect(result.metadata.modelConfig).toBeNull();
+    });
+
+    it('metadata model config includes provider and model when set', async () => {
+      const personalityWithModel = {
+        ...PERSONALITY,
+        defaultModel: { provider: 'ollama', model: 'llama3' },
+      };
+      const { manager } = makeManager({
+        getPersonality: vi.fn().mockResolvedValue(personalityWithModel),
+      });
+      const result = await manager.distillPersonality('p-1');
+      expect(result.metadata.modelConfig).toEqual({ provider: 'ollama', model: 'llama3' });
+    });
+  });
 });

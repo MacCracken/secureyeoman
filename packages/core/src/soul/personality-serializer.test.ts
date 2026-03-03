@@ -318,4 +318,72 @@ describe('PersonalityMarkdownSerializer', () => {
       expect(data.systemPrompt).toBe('');
     });
   });
+
+  // ── Distilled document import (Phase 107-E) ────────────────────
+
+  describe('fromMarkdown with distilled sections', () => {
+    it('ignores Runtime Prompt section without error', () => {
+      const md = `---
+name: "Test"
+---
+
+# Identity & Purpose
+
+You are Test.
+
+# Runtime Prompt
+
+This is the full composed prompt.
+
+# Runtime Context
+
+- **Active Skills**: none
+- **Memory Entries**: 0
+`;
+      const { data, warnings } = serializer.fromMarkdown(md);
+      expect(data.name).toBe('Test');
+      expect(data.systemPrompt).toBe('You are Test.');
+      // Runtime sections should not generate warnings
+      const unknownWarnings = warnings.filter((w) => w.includes('Unknown section'));
+      expect(unknownWarnings).toHaveLength(0);
+    });
+
+    it('round-trip: config portion survives distill → import', () => {
+      const original = makePersonality({
+        name: 'RoundTrip',
+        systemPrompt: 'You are RoundTrip.',
+        traits: { formality: 'formal', humor: 'witty' },
+      });
+      const md = serializer.toMarkdown(original);
+      // Simulate distillation by appending runtime sections
+      const distilled = md + '\n# Runtime Prompt\n\nFull prompt here.\n\n# Runtime Context\n\n- stuff\n';
+      const { data } = serializer.fromMarkdown(distilled);
+      expect(data.name).toBe('RoundTrip');
+      expect(data.systemPrompt).toBe('You are RoundTrip.');
+      expect(data.traits.formality).toBe('formal');
+      expect(data.traits.humor).toBe('witty');
+    });
+
+    it('warns on truly unknown sections but not runtime sections', () => {
+      const md = `---
+name: "Test"
+---
+
+# Identity & Purpose
+
+Hello.
+
+# Runtime Prompt
+
+Composed.
+
+# Custom Unknown Section
+
+Whatever.
+`;
+      const { warnings } = serializer.fromMarkdown(md);
+      expect(warnings.some((w) => w.toLowerCase().includes('custom unknown section'))).toBe(true);
+      expect(warnings.some((w) => w.includes('Runtime Prompt'))).toBe(false);
+    });
+  });
 });

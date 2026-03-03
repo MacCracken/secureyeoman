@@ -4,6 +4,35 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ---
 
+## [2026.3.3] — 2026-03-02
+
+### Phase 107-A (remaining): Deterministic Routing & Per-Personality Base Knowledge
+
+- **WorkflowEngine deterministic dispatch** (`packages/core/src/workflow/workflow-engine.ts`): `agent` step type now checks for `step.config.deterministic: true` with `step.config.command`. When set, executes the command via `execFileSync` (no shell, hardened) with configurable timeout (`step.config.timeoutMs`, default 30s). On success, returns stdout as step result — skips AI routing entirely. On failure, logs warning and falls through to normal agent dispatch. Reduces token cost and latency for routine operations.
+- **SkillExecutor routing order** (`packages/core/src/soul/skill-executor.ts`): Action dispatch now follows deterministic preference: code action → HTTP action → fallback. Code actions return `'Code actions require a sandbox runtime'` (future sandbox work). Establishes the routing hierarchy so when code execution lands, it's automatically preferred over HTTP.
+- **Per-personality base knowledge** (`packages/core/src/brain/manager.ts`): `seedBaseKnowledge()` now seeds a `personality-context` knowledge entry per personality that bridges global base knowledge (hierarchy, purpose, interaction) with each personality's unique identity and traits. Idempotent — skips personalities that already have a context entry.
+- **Auth middleware**: 2 new route entries for distillation endpoints (`soul:read`).
+- **Tests**: ~15 new — workflow-engine deterministic dispatch (6), skill-executor routing order (3), brain manager personality-context seeding (2), plus updated existing test counts.
+
+### Phase 107-D (remaining): TELOS-Style Personality Creation Wizard
+
+- **CLI wizard** (`packages/core/src/cli/commands/personality.ts`): `secureyeoman personality create --wizard` — interactive 6-question flow using readline: name, system prompt, topics/description, tone (formality/humor/verbosity selectors), reasoning style, constraints/guardrails. Builds `PersonalityCreate` object and POSTs to `/api/v1/soul/personalities`. Prints the created personality as a rendered card with traits and model info.
+- **Dashboard wizard** (`packages/dashboard/src/components/personality/PersonalityWizard.tsx`): Multi-step wizard component with 6 steps (Mission → Topics → Tone & Style → Reasoning → Constraints → Review). Progress bar with step labels, trait selector buttons (formality, humor, verbosity, reasoning), Skip button on optional steps, validation (name required), review summary before creation. Uses `useMutation` with `createPersonality()`. Lazy-loaded from `PersonalityEditor.tsx` via `React.lazy()`.
+- **PersonalityEditor integration**: "Wizard" button (Sparkles icon) added to personality list header alongside existing "New Personality" button. Opens wizard in a Suspense wrapper.
+- **Tests**: ~12 new — `PersonalityWizard.test.tsx` (7: renders first step, name validation, forward/back navigation, skip button, review summary, create mutation, cancel callback), `personality.test.ts` (5: create without --wizard, help includes create/distill, distill calls API, distill --diff, distill --include-memory).
+
+### Phase 107-E: Personality Core Distillation
+
+- **`distillPersonality()` method** (`packages/core/src/soul/manager.ts`): Extracts a personality's effective runtime state into a portable markdown document. Fetches personality config, composes the full runtime prompt via `composeSoulPrompt()`, gathers metadata (active skills, memory entries, connected integrations, applied strategy, model config), and wraps in markdown format with `# Runtime Prompt` and `# Runtime Context` sections. `includeMemory` option embeds top-20 memory entries.
+- **`DistillationMetadata` interface**: `activeSkills: { count, names[] }`, `memoryEntries`, `connectedIntegrations[]`, `appliedStrategy`, `modelConfig`, `composedAt`.
+- **Distillation routes** (`packages/core/src/soul/soul-routes.ts`): `GET /api/v1/soul/personalities/:id/distill` — returns `{ markdown, metadata }` (or raw markdown with `Accept: text/markdown`). `GET /api/v1/soul/personalities/:id/distill/diff` — compares export markdown vs distilled markdown, returns unified diff.
+- **Unified diff utility** (`packages/core/src/soul/diff-utils.ts`): LCS-based `computeUnifiedDiff(a, b, labelA?, labelB?)` — no external dependencies. Produces standard unified diff format with `@@ @@` hunks.
+- **CLI distill** (`packages/core/src/cli/commands/personality.ts`): `secureyeoman personality distill <name>` with `--include-memory`, `--output <file>`, `--diff` flags. Resolves personality by name, calls distillation API.
+- **Transport import** (`packages/core/src/soul/personality-serializer.ts`): `fromMarkdown()` now recognizes and gracefully skips `# Runtime Prompt` and `# Runtime Context` sections — distilled documents can be imported directly. Only truly unknown sections generate warnings.
+- **Tests**: ~25 new — `diff-utils.test.ts` (5: identical/added/removed/mixed/empty), `manager.test.ts` (7: distill method with various options), `soul-routes.test.ts` (5: distill/diff endpoints, 404s), `personality-serializer.test.ts` (3: distilled section handling), `personality.test.ts` (5: CLI distill subcommands).
+
+---
+
 ## [2026.3.2] — 2026-03-02
 
 ### Phase 107-D: Portable Personality Format & Community Theme Sync
