@@ -51,6 +51,7 @@
 | 112 | Multi-Account AI Provider Keys & Per-Account Cost Tracking | P2 — cost governance | Planned |
 | 113 | Sandbox Artifact Scanning & Externalization Gate | P1 — security boundary | Planned |
 | 114 | Excalidraw Diagramming — MCP Tools & Marketplace Skill | P3 — capability + visualization | Planned |
+| 115 | Memory Audits, Compression & Reorganization | P2 — memory quality + governance | Planned |
 | Future | LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Infrastructure | Future / Demand-Gated | — |
 
 ---
