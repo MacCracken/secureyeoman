@@ -44,14 +44,11 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | 106 | License-Gated Feature Reveal | P1 — commercial | 🔄 In Progress (context ✅, card ✅, CLI guard ✅, route guards + feature lock UX remaining) |
-| 107 | Reasoning Strategies, Security Templates & Portable Personalities | P2 — capability + distribution | ✅ Complete — see Changelog [2026.3.2] and [2026.3.3] |
 | 109 | Editor Improvements (Auto-Claude Style) | P3 — power user UX | 🔄 In Progress (unification ✅, IDE features + canvas improvements planned) |
-| 110 | Inline Citations & Grounding | P3 — trust layer | ✅ Complete — see Changelog [2026.3.3] |
-| 111 | Departmental Risk Register & Risk Posture Tracking | P2 — risk governance | ✅ Complete — see Changelog [2026.3.2] and [2026.3.3] |
 | 112 | Multi-Account AI Provider Keys & Per-Account Cost Tracking | P2 — cost governance | Planned |
-| 113 | Sandbox Artifact Scanning & Externalization Gate | P1 — security boundary | Planned |
-| 114 | Excalidraw Diagramming — MCP Tools & Marketplace Skill | P3 — capability + visualization | Planned |
-| 115 | Memory Audits, Compression & Reorganization | P2 — memory quality + governance | Planned |
+| 116 | Sandbox Artifact Scanning & Externalization Gate | P1 — security boundary | Planned |
+| 117 | Excalidraw Diagramming — MCP Tools & Marketplace Skill | P3 — capability + visualization | Planned |
+| 118 | Memory Audits, Compression & Reorganization | P2 — memory quality + governance | Planned |
 | Future | LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Infrastructure | Future / Demand-Gated | — |
 
 ---
@@ -66,12 +63,6 @@ Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi
 
 - [ ] **Gateway route guards** — Add `requiresLicense(feature: EnterpriseFeature)` hook to the routes that serve enterprise functionality (training advanced modes, SAML endpoints, RLS multi-tenant API, CI/CD webhook, alert rules). Returns `402 Payment Required` with `{ error: 'enterprise_license_required', feature: '<name>' }` for community-tier callers. `LicenseManager` singleton accessed via `secureYeoman.getLicenseManager()` inside route plugins.
 - [ ] **Feature lock UX** — Components for guarded features (Training advanced modes, SSO config, Multi-tenancy settings, CI/CD platforms, Alert Rules) wrap in a `<FeatureLock feature="adaptive_learning">` guard component. Community-tier users see the feature greyed out with a lock icon and an "Upgrade to Enterprise" prompt linking to `docs/guides/licensing.md` rather than a blank 403.
-
----
-
-## Phase 107: Reasoning Strategies, Security Templates & Portable Personalities
-
-*Complete — see Changelog [2026.3.2] and [2026.3.3]. ADRs 181–186.*
 
 ---
 
@@ -93,18 +84,6 @@ Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi
 - [ ] **Canvas keyboard shortcuts** — `Cmd/Ctrl+1..9` to focus widget by position order. `Cmd/Ctrl+W` to close focused widget. `Cmd/Ctrl+N` to open widget catalog. `Cmd/Ctrl+S` to force-save layout. `Escape` to exit fullscreen. Implemented via a `useCanvasShortcuts` hook attached to the canvas container.
 - [ ] **Multiple saved layouts & export** — Replace single `canvas:workspace` localStorage key with a named-layout system. `canvas:layouts` stores `{ [name]: CanvasLayout }`. Layout switcher dropdown in the canvas toolbar. Export layout as JSON; import from file. Presets: "Dev" (terminal + editor + git), "Ops" (CI/CD + pipeline + training live), "Chat" (chat + agent world + task kanban).
 - [ ] **Mission card embedding** — Extract the mission card renderer from `MissionControlPage` into a reusable `<MissionCardEmbed cardId={id} />` component. Wire it into `MissionCardNode` widget (currently a placeholder). Card shows objective, progress, and linked tasks.
-
----
-
-## Phase 110: Inline Citations & Grounding
-
-*Complete — see Changelog [2026.3.3]. ADR 190.*
-
----
-
-## Phase 111: Departmental Risk Register & Risk Posture Tracking
-
-*Complete — see Changelog [2026.3.2] and [2026.3.3]. ADR 185.*
 
 ---
 
@@ -188,13 +167,13 @@ Four sub-phases: data model & backend → key validation & account discovery →
 
 ---
 
-## Phase 113: Sandbox Artifact Scanning & Externalization Gate
+## Phase 116: Sandbox Artifact Scanning & Externalization Gate
 
 **Priority**: P1 — Security boundary. The sandbox isolates execution (Landlock, seccomp, `sandbox-exec`) but currently returns results to the caller unchecked. Any artifact produced inside the sandbox — code, data, files, serialized objects — can flow out without review. This phase adds a mandatory scanning and approval gate: nothing leaves the sandbox without being inspected for malicious intent, injection payloads, embedded secrets, or policy violations.
 
 Four sub-phases: scanning engine → externalization gate & policy → malicious intent guards & active defense → dashboard & audit.
 
-### 113-A: Artifact Scanning Engine
+### 116-A: Artifact Scanning Engine
 
 *Core scanning capabilities. Each scanner is a pluggable module behind a common `ArtifactScanner` interface.*
 
@@ -204,7 +183,7 @@ Four sub-phases: scanning engine → externalization gate & policy → malicious
 - [ ] **Binary & data scanner** — `packages/core/src/sandbox/scanning/data-scanner.ts`. Scans non-code artifacts (JSON, CSV, serialized objects, binary files). Detection: (1) **Polyglot files** — files that are valid in multiple formats (e.g., a JPEG that is also valid JavaScript), detected via magic byte analysis + content structure mismatch; (2) **Embedded executables** — ELF/PE/Mach-O headers inside data files; (3) **Serialization attacks** — unsafe deserialization markers (Python pickle opcodes, Java `ObjectInputStream` patterns, PHP `unserialize` with class instantiation); (4) **Oversized payloads** — artifacts exceeding configured size limits (default: 10MB per artifact, 50MB total per sandbox run); (5) **JSONL/CSV injection** — formula injection (`=CMD|`, `+cmd|`) in data exports destined for spreadsheet consumption.
 - [ ] **Composite scanner pipeline** — `packages/core/src/sandbox/scanning/scanner-pipeline.ts`. `ScannerPipeline` runs all registered scanners in parallel against an artifact. Aggregates results: overall verdict is the worst severity across all scanners. Short-circuits on first `critical` finding if `failFast: true` (configurable). Returns composite `ScanReport`: `{ artifactId, overallVerdict, scanResults: ScanResult[], duration, policyDecision: 'allow' | 'quarantine' | 'block' }`.
 
-### 113-B: Externalization Gate & Policy
+### 116-B: Externalization Gate & Policy
 
 *The enforcement layer. Wraps `SandboxResult` to ensure nothing exits without scanning. Configurable policy determines what happens on findings.*
 
@@ -214,7 +193,7 @@ Four sub-phases: scanning engine → externalization gate & policy → malicious
 - [ ] **Wiring into existing sandbox paths** — Integrate the gate into: (1) `SandboxManager.run()` — wraps all generic sandbox executions; (2) `EvaluationManager.sandboxFn` — tool execution correctness checks; (3) Training export routes (`exportEpisodes`, `exportAsDpo`) — scan JSONL output before streaming to client; (4) Workflow engine `ci_trigger`/`ci_wait` steps — scan any artifacts passed to external CI systems; (5) `ComputerUseManager.exportEpisodes` — scan recorded episodes before download. Each integration point calls `gate.inspect(artifacts)` and respects the policy verdict.
 - [ ] **Alert integration** — On `critical` findings, emit an alert via `AlertManager` with synthetic snapshot: `{ sandbox: { artifact_blocked: { artifactType, scannerName, finding, sandboxId } } }`. On `quarantine`, emit `{ sandbox: { artifact_quarantined: { ... } } }`. Allows ntfy/Slack/PagerDuty notification of sandbox security events.
 
-### 113-C: Malicious Intent Guards & Active Defense
+### 116-C: Malicious Intent Guards & Active Defense
 
 *Beyond static scanning — behavioral analysis, threat scoring, and escalating responses when artifacts appear intentionally malicious rather than accidentally unsafe.*
 
@@ -226,7 +205,7 @@ Four sub-phases: scanning engine → externalization gate & policy → malicious
 - [ ] **Repeat offender tracking** — `packages/core/src/sandbox/scanning/offender-tracker.ts`. Tracks malicious artifact submissions per user and per personality over a rolling window (default: 7 days). Metrics: total submissions, malicious count, quarantine count, block count, highest intent score. When a user/personality exceeds configurable thresholds (e.g., 3 blocks in 7 days), automatically escalate their default response tier — a user who normally gets `quarantine` at 0.5 intent score now gets `block & alert`. Persistent — tracked in the `sandbox.scan_history` table with an aggregate view. Decay: counts reduce over time if behavior improves (configurable decay rate). Dashboard: "repeat offender" badge on the quarantine dashboard and user profile.
 - [ ] **Alert templates for sandbox threats** — Extend the existing `RULE_TEMPLATES` in `AlertRulesTab` with sandbox-specific templates: "Malicious artifact detected" (triggers on `sandbox.artifact_blocked` where `intentScore ≥ 0.7`), "Sandbox escape attempt" (triggers on `exploitation` kill chain stage), "Data exfiltration attempt" (triggers on `exfiltration` stage), "Repeat sandbox abuse" (triggers on repeat offender threshold breach), "Sandbox quarantine backlog" (triggers when quarantined artifact count exceeds threshold, ensuring quarantine queue doesn't go unreviewed). Templates pre-configure channel, severity, and cooldown for one-click setup.
 
-### 113-D: Dashboard, CLI & Audit
+### 116-D: Dashboard, CLI & Audit
 
 *Visibility into what the sandbox produces and what was blocked.*
 
@@ -239,13 +218,13 @@ Four sub-phases: scanning engine → externalization gate & policy → malicious
 
 ---
 
-## Phase 114: Excalidraw Diagramming — MCP Tools & Marketplace Skill
+## Phase 117: Excalidraw Diagramming — MCP Tools & Marketplace Skill
 
 **Priority**: P3 — Capability + visualization. AI-generated diagrams are a high-value output for architecture reviews, threat models, system design, and documentation. This phase adds first-class Excalidraw support: MCP tools for programmatic diagram creation/rendering, and a marketplace skill that teaches the AI to generate professional diagrams from natural language. Inspired by [excalidraw-diagram-skill](https://github.com/coleam00/excalidraw-diagram-skill) — improved with broader diagram type coverage, a richer element template library, MCP tool integration, workflow step support, and tighter integration with existing YEOMAN features (knowledge base, canvas workspace, export pipeline).
 
 Two sub-phases: MCP tools → marketplace skill & workflow integration.
 
-### 114-A: Excalidraw MCP Tools
+### 117-A: Excalidraw MCP Tools
 
 *New tool group in `packages/mcp/src/tools/excalidraw-tools.ts`. Follows `wrapToolHandler()` pattern. Feature-gated via `exposeExcalidraw: boolean` in `McpServiceConfigSchema` + `exposeDiagramming: boolean` in `McpFeaturesSchema` (per-personality gate).*
 
@@ -257,7 +236,7 @@ Two sub-phases: MCP tools → marketplace skill & workflow integration.
 - [ ] **`excalidraw_templates`** — List available element templates and color palettes. Input: `{ category?: string }`. Returns pre-built component groups: cloud provider icons (AWS/GCP/Azure as grouped shapes), database cylinders, server racks, user/actor icons, lock/shield security icons, container/pod shapes, queue/topic shapes, load balancer shapes. Templates are defined in `packages/mcp/src/tools/excalidraw-templates.ts` as reusable `ExcalidrawElementSpec[]` groups with relative positioning — the AI places them by specifying an anchor point.
 - [ ] **Manifest & registration** — Add 6 tools to `manifest.ts` (`excalidraw_create`, `excalidraw_from_description`, `excalidraw_render`, `excalidraw_validate`, `excalidraw_modify`, `excalidraw_templates`). Register in `tools/index.ts` via `registerExcalidrawTools()`. Feature flag: `exposeExcalidraw` in MCP config (default: `true`).
 
-### 114-B: Marketplace Skill & Workflow Integration
+### 117-B: Marketplace Skill & Workflow Integration
 
 *A marketplace skill that teaches the AI to generate professional Excalidraw diagrams, plus workflow step support for automated diagram generation.*
 
@@ -279,6 +258,66 @@ Two sub-phases: MCP tools → marketplace skill & workflow integration.
   - `threat-model-with-dfd` — agent (STRIDE analysis via `stride-threat-model` skill) → `diagram_generation` (threat_model type, description from STRIDE output) → transform (combine written threat model + DFD diagram) → `human_approval` (24h timeout) → resource (save to knowledge base). `autonomyLevel: 'L3'`.
 - [ ] **Canvas workspace integration** — The existing canvas workspace (`/editor/advanced`) gains an Excalidraw widget type. When the AI generates an Excalidraw scene via MCP tools, the canvas can display it as an interactive embedded Excalidraw editor (using the `@excalidraw/excalidraw` React component). Users can manually refine AI-generated diagrams. Widget persists the scene JSON in `canvas:workspace` layout storage. Bi-directional: manual edits are saved; the AI can read the current scene state via `excalidraw_modify` for further AI-assisted refinement.
 - [ ] **Knowledge base integration** — Excalidraw scenes can be stored as knowledge base documents (`brain.documents` with `format: 'excalidraw'`). The `DocumentManager.ingestBuffer()` path extracts text labels from the scene JSON for vector embedding — making diagrams searchable by their content. When recalled during RAG, the diagram is returned as both the scene JSON (for rendering) and a text summary of its elements.
+
+---
+
+## Phase 118: Memory Audits, Compression & Reorganization
+
+**Priority**: P2 — Memory quality + governance. Today's memory lifecycle is reactive: importance decays on a timer, expired episodic memories are pruned, and consolidation deduplicates near-identical entries. But there is no scheduled, comprehensive audit of memory quality — no compression of aging memories into denser summaries, no hierarchical reorganization, no user-visible report of what the system is doing with accumulated knowledge. This phase adds user-configurable memory audits on daily/weekly/monthly schedules, hierarchical memory compression inspired by [R³Mem](https://arxiv.org/abs/2502.15957), and adaptive reorganization informed by [Memory-R1](https://arxiv.org/abs/2508.19828)'s learned memory operations.
+
+Builds on existing infrastructure: `BrainManager.runMaintenance()` (decay + prune), `ConsolidationManager` (dedup + LLM-driven merge), `brain.meta` (persistent state), and the cron scheduling already used by consolidation.
+
+Four sub-phases: audit scheduler & policy → memory compression → memory reorganization → dashboard & reporting.
+
+### 118-A: Audit Scheduler & Policy
+
+*User-configurable schedules with per-personality overrides. The audit engine orchestrates compression, reorganization, and maintenance in a single coordinated pass.*
+
+- [ ] **`MemoryAuditScheduler`** — `packages/core/src/brain/audit/scheduler.ts`. Manages three independent cron schedules: `daily` (default: `0 3 * * *` — 3 AM), `weekly` (default: `0 4 * * 0` — Sunday 4 AM), `monthly` (default: `0 5 1 * *` — 1st of month 5 AM). Each schedule triggers a different audit scope: daily runs compression + light reorganization on memories accessed/created in the last 24 hours; weekly runs full reorganization + knowledge graph analysis across all memories; monthly runs deep compression + archival + aggregate health report. Schedules are stored in `brain.meta` (keys: `audit:schedule:daily`, `audit:schedule:weekly`, `audit:schedule:monthly`) and configurable via API and dashboard. Per-personality schedule overrides: a personality can opt into more or less frequent audits (e.g., a high-traffic personality might run daily compression twice, while an archival personality skips daily entirely). `start()` / `stop()` lifecycle. Concurrency guard: only one audit runs at a time per tenant (lock via `brain.meta` key `audit:lock`).
+- [ ] **`MemoryAuditPolicy`** — `packages/core/src/brain/audit/policy.ts`. Configurable per security policy (`packages/shared/src/types/security.ts`). Fields: `memoryAudits: { enabled: boolean, dailySchedule: string, weeklySchedule: string, monthlySchedule: string, compressionEnabled: boolean, reorganizationEnabled: boolean, archivalEnabled: boolean, archivalAgeDays: number, compressionThreshold: number, maxMemoriesPerPersonality: number, retainOriginals: boolean, requireApproval: boolean }`. `retainOriginals: boolean` — when true, compressed/merged memories keep a snapshot of the original content in an archive table before transformation (reversibility). `requireApproval: boolean` — when true, audit results are staged as a proposal that a user must approve before changes are applied (important for high-trust environments where automatic memory mutation is unacceptable).
+- [ ] **`MemoryAuditEngine`** — `packages/core/src/brain/audit/engine.ts`. Orchestrates a single audit pass. Input: scope (`daily` | `weekly` | `monthly`), personality filter (all or specific). Pipeline: (1) **Snapshot** — capture memory/knowledge counts, importance distribution, age distribution, type breakdown as pre-audit baseline; (2) **Compression pass** — delegate to `MemoryCompressor`; (3) **Reorganization pass** — delegate to `MemoryReorganizer`; (4) **Maintenance pass** — run existing `BrainManager.runMaintenance()` (decay + prune); (5) **Post-audit snapshot** — capture same metrics; (6) **Diff report** — compare pre/post snapshots; (7) **Persist** — store audit report in `brain.audit_reports` table. Returns `MemoryAuditReport`.
+- [ ] **`brain.audit_reports` table** — Migration. Columns: `id` (UUID), `tenant_id`, `personality_id` (nullable — null for global audits), `scope` (daily/weekly/monthly), `started_at`, `completed_at`, `pre_snapshot` (JSONB — counts, distributions), `post_snapshot` (JSONB), `compression_summary` (JSONB — memories compressed, bytes saved, summaries generated), `reorganization_summary` (JSONB — merges, promotions, demotions, topic restructures), `maintenance_summary` (JSONB — decayed, pruned, synced), `status` (completed/failed/pending_approval), `approved_by` (nullable), `approved_at` (nullable), `error` (text, nullable). Indexed on `personality_id` + `scope` + `started_at DESC`.
+- [ ] **`brain.memory_archive` table** — Migration. Stores original memory content before compression/reorganization transforms it. Columns: `id` (UUID), `original_memory_id` (text — the `brain.memories.id` that was transformed), `original_content` (text), `original_importance` (float), `original_context` (JSONB), `transform_type` (compressed/merged/reorganized/promoted/demoted), `audit_report_id` (UUID FK), `archived_at` (TIMESTAMPTZ), `tenant_id`. Indexed on `original_memory_id`. Enables reversibility — if a compression or merge produces a bad result, the original can be restored. Retention: configurable (default: 90 days), cleaned up during monthly audits.
+
+### 118-B: Memory Compression
+
+*Condense aging or low-access memories into denser representations without losing essential information. Inspired by R³Mem's hierarchical compression — multiple memories about the same topic compress into a single, richer summary.*
+
+- [ ] **`MemoryCompressor`** — `packages/core/src/brain/audit/compressor.ts`. Two compression strategies:
+  - **Temporal compression** (daily scope) — Groups episodic memories from the same time window (e.g., same day, same conversation) that share overlapping context. Compresses N related episodic memories into a single semantic memory that summarizes the episode. Example: 5 memories from a debugging session ("user reported login error", "checked auth middleware", "found token expiry bug", "applied fix", "user confirmed working") → 1 semantic memory: "Resolved login authentication failure caused by token expiry validation bug in auth middleware — user-reported, debugged, and confirmed fixed." Original importance: max of group. Source: `compression:audit:<reportId>`. Archives originals if `retainOriginals` enabled.
+  - **Thematic compression** (weekly/monthly scope) — Groups semantic and procedural memories by topic similarity (embedding cosine > `compressionThreshold`, default: 0.75). For each cluster, generates a summary using the AI provider (or falls back to concatenation + truncation if no AI available). Hierarchical: first pass merges pairs, second pass merges the merged results — producing progressively denser knowledge. Preserves the highest-confidence and most-accessed memory as the "anchor" and weaves in details from satellites. Tracks provenance: compressed memory's `context` includes `{ compressedFrom: string[], compressionLevel: number }`.
+- [ ] **Compression metrics** — Each compression records: `memoriesInput` (count before), `memoriesOutput` (count after), `bytesInput` (total content bytes before), `bytesOutput` (after), `compressionRatio` (input/output), `topicsAffected` (unique topics touched), `personalitiesAffected`. Aggregated in the audit report. Target: daily compression should reduce episodic memory count by 30–50% for memories older than 7 days while preserving recall quality (measured by post-compression semantic search hit rate on a sample of recent queries).
+- [ ] **Compression quality guard** — Before applying a compression, run a quality check: embed the compressed summary, then search for the original memories' key terms. If recall drops below a configurable threshold (default: 80% of original terms recoverable), reject the compression and flag for manual review. This prevents lossy compressions that destroy important details. Failed compressions are logged in the audit report with the quality score and the terms that were lost.
+
+### 118-C: Memory Reorganization
+
+*Restructure the memory and knowledge graph for better retrieval quality. Inspired by Memory-R1's learned ADD/UPDATE/DELETE/NOOP decisions — but initially implemented as rule-based with LLM-assisted decisions for complex cases.*
+
+- [ ] **`MemoryReorganizer`** — `packages/core/src/brain/audit/reorganizer.ts`. Five reorganization operations:
+  - **Promote** — Episodic memories that have been accessed frequently (>5 accesses) and have survived multiple maintenance cycles get promoted to semantic type. Their content is rewritten to be context-independent (removing temporal references like "today", "just now"). Promotion preserves the original `createdAt` but updates the type and resets `expiresAt` to null (semantic memories don't expire).
+  - **Demote** — Semantic memories that haven't been accessed in >30 days and have importance below 0.2 are demoted to episodic with a short expiration (7 days). This is a soft-delete path: the memory gets one more week to prove its worth before natural pruning removes it. Reversible via the archive table.
+  - **Topic merge** — Knowledge entries with near-duplicate topics (edit distance < 3 or embedding cosine > 0.9) are merged. The higher-confidence entry absorbs the other's content. `supersedes` field is set for provenance tracking. Example: "kubernetes deployment" + "k8s deployment" → single entry with combined content.
+  - **Topic split** — Knowledge entries that are excessively long (>2000 chars) or cover multiple distinct subtopics (detected via paragraph-level embedding clustering) are split into focused entries. Each child entry inherits the parent's confidence and personality scope. Source: `reorganization:split:<parentId>`.
+  - **Importance recalibration** — Across all memories for a personality, normalize importance scores to a healthy distribution. Detects importance inflation (too many high-importance memories, diluting the signal) and deflation (too many low-importance, triggering excessive pruning). Target distribution: ~10% above 0.8, ~60% between 0.3–0.8, ~30% below 0.3. Recalibration uses rank-based adjustment, not absolute scaling — relative ordering is preserved, only the spread changes.
+- [ ] **LLM-assisted reorganization** (weekly/monthly only) — For cases where rule-based heuristics are insufficient, the reorganizer delegates to the AI provider. Prompt: given a cluster of related memories + knowledge entries, decide which should be merged, split, promoted, demoted, or left alone. Uses the same `ConsolidationManager` LLM integration pattern (prompt → structured response → executor applies actions). Falls back to rule-based decisions if AI unavailable.
+- [ ] **Knowledge graph coherence check** — During monthly audits, analyze the `supersedes` chains in `brain.knowledge` for: (1) **Orphaned chains** — entries that supersede a deleted entry (broken provenance); (2) **Circular supersession** — A supersedes B supersedes A (data integrity bug); (3) **Stale confidence** — entries whose confidence hasn't been updated in >60 days despite being accessed (suggests the confidence score is no longer reflecting reality). Findings are surfaced in the audit report. Auto-fix for orphans and circulars; confidence recalculation suggested (not auto-applied) for stale entries.
+
+### 118-D: Dashboard, CLI & Reporting
+
+*User visibility into memory health, audit history, and the ability to configure and review audits.*
+
+- [ ] **Memory audit dashboard** — New "Memory Health" sub-tab in the Brain/Knowledge section (or VectorMemoryExplorerPage). Components:
+  - **Audit history table** — List of past audit reports: scope, date, personality, status (completed/pending_approval/failed), compression ratio, memories before/after, duration. Click to expand full report with pre/post snapshots and action-by-action breakdown.
+  - **Memory age distribution chart** — Recharts histogram showing memory count by age bucket (last 24h, 1–7 days, 7–30 days, 30–90 days, 90+ days). Split by type (episodic/semantic/procedural/preference). Highlights where compression would have the most impact.
+  - **Compression savings tracker** — Running total of memories compressed and bytes saved over time. Line chart showing compression ratio trend per audit cycle.
+  - **Importance distribution chart** — Histogram of current importance scores across all memories. Highlights inflation/deflation zones. Shows recalibration impact when available.
+  - **Health score** — Composite score (0–100) based on: memory count vs. max limit utilization, importance distribution health, average memory age, recall quality (if test queries are configured), compression ratio trend. Displayed as a gauge widget.
+  - **Pending approvals** — When `requireApproval: true`, shows staged audit proposals with diff preview (what will be compressed/merged/promoted/demoted). Approve or reject per-action or bulk. Approved audits are applied; rejected actions are logged and excluded.
+- [ ] **Schedule configuration UI** — In Settings or the Memory Health tab. Three cron fields (daily/weekly/monthly) with human-readable preview ("Every day at 3:00 AM"). Per-personality override toggles. Enable/disable compression and reorganization independently. `retainOriginals` toggle with storage cost estimate. `requireApproval` toggle.
+- [ ] **CLI commands** — `secureyeoman memory` (alias: `mem`). New subcommands (extending any existing brain/memory CLI): `memory audit run [--scope daily|weekly|monthly] [--personality <name>] [--dry-run]` (trigger manual audit), `memory audit history [--limit N] [--personality <name>]` (list past reports), `memory audit show <reportId>` (detail view), `memory audit approve <reportId>` (approve pending), `memory schedule show` (current schedules), `memory schedule set <scope> <cron>` (update schedule), `memory stats [--personality <name>]` (current memory health snapshot — counts, importance distribution, age distribution, compression ratio).
+- [ ] **API endpoints** — `POST /api/v1/brain/audit/run` (trigger), `GET /api/v1/brain/audit/reports` (list), `GET /api/v1/brain/audit/reports/:id` (detail), `POST /api/v1/brain/audit/reports/:id/approve` (approve pending), `GET /api/v1/brain/audit/schedule` (current schedules), `PUT /api/v1/brain/audit/schedule` (update), `GET /api/v1/brain/audit/health` (composite health score + current metrics). Auth: `brain:read` for GET, `brain:write` for POST/PUT.
+- [ ] **Alert integration** — Audit events emitted to `AlertManager`: `{ brain: { audit_completed: { scope, personalityId, memoriesBefore, memoriesAfter, compressionRatio } } }`, `{ brain: { audit_failed: { scope, error } } }`, `{ brain: { memory_health_degraded: { healthScore, threshold } } }` (when health score drops below configurable threshold, default: 50). Alert templates: "Memory audit completed", "Memory audit failed", "Memory health degraded".
+- [ ] **Wiring** — `secureyeoman.ts`: `memoryAuditScheduler` field, initialized after brain manager + consolidation manager are ready. `getMemoryAuditScheduler()` getter. Scheduler started in `initialize()`, stopped in `shutdown()`. `server.ts`: register audit routes. `auth-middleware.ts`: routes under `brain:read`/`brain:write`.
 
 ---
 
