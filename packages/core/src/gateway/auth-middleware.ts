@@ -1043,6 +1043,12 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/security/athi/summary': {
     GET: { resource: 'security_athi', action: 'read' },
   },
+  '/api/v1/security/athi/scenarios/*/link-events': {
+    POST: { resource: 'security_athi', action: 'write' },
+  },
+  '/api/v1/security/athi/scenarios/by-technique/*': {
+    GET: { resource: 'security_athi', action: 'read' },
+  },
   // Workflow versioning (Phase 114)
   '/api/v1/workflows/:id/versions': {
     GET: { resource: 'workflows', action: 'read' },

@@ -5707,6 +5707,25 @@ export async function fetchAthiSummary(): Promise<{ summary: any }> {
   return request<{ summary: any }>('/security/athi/summary');
 }
 
+export async function fetchAthiScenariosByTechnique(
+  technique: string
+): Promise<{ scenarios: any[] }> {
+  return request<{ scenarios: any[] }>(
+    `/security/athi/scenarios/by-technique/${encodeURIComponent(technique)}`
+  );
+}
+
+export async function linkEventsToAthiScenario(
+  scenarioId: string,
+  eventIds: string[]
+): Promise<any> {
+  const res = await request<{ scenario: any }>(
+    `/security/athi/scenarios/${encodeURIComponent(scenarioId)}/link-events`,
+    { method: 'POST', body: JSON.stringify({ eventIds }) }
+  );
+  return res.scenario;
+}
+
 // ── Personality Versioning (Phase 114) ──────────────────────────────────────
 
 export async function fetchPersonalityVersions(

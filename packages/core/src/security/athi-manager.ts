@@ -113,6 +113,20 @@ export class AthiManager {
 
   // ── Analytics ─────────────────────────────────────────────────
 
+  async findScenariosForTechnique(technique: string): Promise<AthiScenario[]> {
+    return this.storage.findByTechnique(technique);
+  }
+
+  async getScenariosWithLinkedEvents(): Promise<AthiScenario[]> {
+    return this.storage.getScenariosWithLinkedEvents();
+  }
+
+  async linkEvents(id: string, eventIds: string[]): Promise<AthiScenario | null> {
+    const result = await this.storage.linkEvents(id, eventIds);
+    if (result) this._summaryCache = null;
+    return result;
+  }
+
   async getRiskMatrix(orgId?: string): Promise<AthiRiskMatrixCell[]> {
     return this.storage.getRiskMatrix(orgId);
   }

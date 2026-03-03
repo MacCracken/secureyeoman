@@ -147,6 +147,36 @@ const RULE_TEMPLATES: RuleTemplate[] = [
     threshold: 100,
     cooldownSeconds: 300,
   },
+  {
+    label: 'ATHI High Risk Detected',
+    category: 'Security',
+    name: 'ATHI High Risk Detected',
+    description: 'Fires when an ATHI threat scenario has a risk score of 20 or higher',
+    metricPath: 'security.athi_threat.risk_score',
+    operator: 'gte',
+    threshold: 20,
+    cooldownSeconds: 600,
+  },
+  {
+    label: 'ATHI Nation-State Threat',
+    category: 'Security',
+    name: 'ATHI Nation-State Threat',
+    description: 'Fires when a nation-state actor is identified in an ATHI scenario',
+    metricPath: 'security.athi_threat.actor',
+    operator: 'eq',
+    threshold: 'nation_state',
+    cooldownSeconds: 600,
+  },
+  {
+    label: 'ATHI Unmitigated Critical',
+    category: 'Security',
+    name: 'ATHI Unmitigated Critical',
+    description: 'Fires when a critical ATHI scenario remains in identified status without mitigations',
+    metricPath: 'security.athi_threat.status',
+    operator: 'eq',
+    threshold: 'identified',
+    cooldownSeconds: 3600,
+  },
 ];
 
 // ── Create/Edit Form ────────────────────────────────────────────────────────

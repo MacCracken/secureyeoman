@@ -31,6 +31,7 @@ const SAMPLE_SCENARIO = {
   severity: 5,
   riskScore: 20,
   mitigations: [{ description: 'Input validation', status: 'implemented' as const }],
+  linkedEventIds: [] as string[],
   status: 'identified' as const,
   createdBy: 'user-1',
   createdAt: 1000,
@@ -246,6 +247,46 @@ describe('AthiManager', () => {
       expect(first).toBe(second);
       // Storage methods called once for the first call, not again for the second
       expect(storage.getStatusCounts).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('findScenariosForTechnique', () => {
+    it('delegates to storage.findByTechnique', async () => {
+      vi.spyOn(storage, 'findByTechnique').mockResolvedValue([SAMPLE_SCENARIO]);
+
+      const result = await manager.findScenariosForTechnique('prompt_injection');
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('athi-1');
+      expect(storage.findByTechnique).toHaveBeenCalledWith('prompt_injection');
+    });
+  });
+
+  describe('getScenariosWithLinkedEvents', () => {
+    it('delegates to storage.getScenariosWithLinkedEvents', async () => {
+      const linked = { ...SAMPLE_SCENARIO, linkedEventIds: ['evt-1'] };
+      vi.spyOn(storage, 'getScenariosWithLinkedEvents').mockResolvedValue([linked]);
+
+      const result = await manager.getScenariosWithLinkedEvents();
+      expect(result).toHaveLength(1);
+      expect(result[0].linkedEventIds).toEqual(['evt-1']);
+    });
+  });
+
+  describe('linkEvents', () => {
+    it('delegates to storage.linkEvents and invalidates cache', async () => {
+      const linked = { ...SAMPLE_SCENARIO, linkedEventIds: ['evt-1', 'evt-2'] };
+      vi.spyOn(storage, 'linkEvents').mockResolvedValue(linked);
+
+      const result = await manager.linkEvents('athi-1', ['evt-2']);
+      expect(result?.linkedEventIds).toEqual(['evt-1', 'evt-2']);
+      expect(storage.linkEvents).toHaveBeenCalledWith('athi-1', ['evt-2']);
+    });
+
+    it('returns null when scenario not found', async () => {
+      vi.spyOn(storage, 'linkEvents').mockResolvedValue(null);
+
+      const result = await manager.linkEvents('missing', ['evt-1']);
+      expect(result).toBeNull();
     });
   });
 });

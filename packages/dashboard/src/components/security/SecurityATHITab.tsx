@@ -17,6 +17,7 @@ import {
   Shield,
   AlertTriangle,
   Loader2,
+  Link2,
 } from 'lucide-react';
 import {
   fetchAthiScenarios,
@@ -25,6 +26,7 @@ import {
   createAthiScenario,
   updateAthiScenario,
   deleteAthiScenario,
+  linkEventsToAthiScenario,
 } from '../../api/client';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -451,6 +453,12 @@ export function ATHITab() {
     onSuccess: invalidate,
   });
 
+  const linkEventsMut = useMutation({
+    mutationFn: ({ id, eventIds }: { id: string; eventIds: string[] }) =>
+      linkEventsToAthiScenario(id, eventIds),
+    onSuccess: invalidate,
+  });
+
   const scenarios = scenariosData?.items ?? [];
   const matrix = matrixData?.matrix ?? [];
   const summary = summaryData?.summary;
@@ -594,6 +602,7 @@ export function ATHITab() {
                   <th className="text-left py-2 px-2 font-medium">Techniques</th>
                   <th className="text-center py-2 px-2 font-medium">Score</th>
                   <th className="text-center py-2 px-2 font-medium">Status</th>
+                  <th className="text-center py-2 px-2 font-medium">Linked</th>
                   <th className="text-right py-2 px-2 font-medium">Actions</th>
                 </tr>
               </thead>
@@ -620,6 +629,20 @@ export function ATHITab() {
                       <span className={`px-2 py-0.5 rounded text-xs ${STATUS_COLORS[s.status] ?? ''}`}>
                         {formatLabel(s.status)}
                       </span>
+                    </td>
+                    <td className="py-2 px-2 text-center">
+                      {(s.linkedEventIds?.length ?? 0) > 0 ? (
+                        <span
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded"
+                          title={`Linked to ${s.linkedEventIds.length} event(s): ${s.linkedEventIds.join(', ')}`}
+                          data-testid="linked-events-badge"
+                        >
+                          <Link2 className="w-3 h-3" />
+                          {s.linkedEventIds.length}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
                     </td>
                     <td className="py-2 px-2 text-right">
                       <div className="flex items-center justify-end gap-1">

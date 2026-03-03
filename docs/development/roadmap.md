@@ -76,10 +76,7 @@ Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi
 
 ### 107-F: ATHI Threat Governance Framework — Extension Items
 
-*Core ATHI framework complete — see Changelog [2026.3.3]. Two extension items remain.*
-
-- [ ] **AI-assisted scenario generation** — Skill/workflow template: given an organization description and its AI usage patterns, generate candidate ATHI threat scenarios. Uses the malware analysis and threat modeling security templates from 107-B as building blocks. Output reviewed by human before persisting.
-- [ ] **Integration with existing security features** — ATHI scenarios can reference audit events (link scenario → observed events). Security Events tab cross-references ATHI scenarios when displaying events that match a known technique pattern. Alert rules can trigger on ATHI-mapped event patterns.
+*Core ATHI framework and all extension items complete — see Changelog [2026.3.3]. ADR 186.*
 
 ---
 
@@ -129,79 +126,9 @@ Departments are first-class organizational units — they define **who owns what
 
 Six sub-phases: data model → shared types & backend → integration → reports & outputs → CLI → dashboard.
 
-*111-A (Data Model), 111-B (Shared Types & Backend), and 111-E (CLI) are complete — see Changelog [2026.3.2]. 111-C partial — departmentId wiring on assessments and findings complete (see Changelog [2026.3.3]).*
+*111-A through 111-F complete — see Changelog [2026.3.2] and [2026.3.3].*
 
-### 111-C: Integration
-
-*Connects departmental risk to existing subsystems: alerts, metrics, enforcement log, and assessments.*
-
-*Alert integration (appetite breach → AlertManager) complete — see Changelog [2026.3.2]. `departmentId` on assessments and findings complete — see Changelog [2026.3.3]. Remaining items below.*
-
-- [ ] **MetricsSnapshot extension** — Add `departmentalRisk?: { departmentCount: number, openRegisterEntries: number, overdueEntries: number, appetiteBreaches: number }` to `MetricsSnapshot` in shared types. Populated during the 5-second metrics broadcast cycle by querying `DepartmentRiskManager.getRegisterStats()` (cached, refreshed every 30s). Surfaces in Prometheus `/metrics` endpoint and Grafana dashboards.
-  - **Inputs**: periodic metrics collection from department risk manager.
-  - **Outputs**: Prometheus gauges (`secureyeoman_risk_departments_total`, `secureyeoman_risk_register_open`, `secureyeoman_risk_register_overdue`, `secureyeoman_risk_appetite_breaches`), Grafana panels.
-
-- [ ] **Enforcement log attribution** — When the enforcement engine logs a boundary violation or policy breach (existing `security.enforcement_log`), check if the triggering personality or user is associated with a department (via team membership). If so, auto-create a `risk.register_entries` row with `source: 'enforcement'`, `source_ref: enforcement_log_id`, `category` mapped from the violation type, `severity` mapped from enforcement severity. Deduplication: if an open register entry with the same `source_ref` already exists, skip. This turns enforcement events into trackable risks with owners and mitigations.
-  - **Inputs**: enforcement log events with personality/user context.
-  - **Outputs**: auto-created register entries attributed to the responsible department; links enforcement → risk register for audit trail.
-
-### 111-D: Reports & Outputs
-
-*`DepartmentRiskReportGenerator` — produces formatted reports from manager data. Consumed by routes (111-B) and CLI (111-E).*
-
-- [ ] **`DepartmentRiskReportGenerator`** — `packages/core/src/risk/department-risk-report-generator.ts`. Stateless class, takes `DepartmentRiskManager` as dependency. Methods:
-  - `generateDepartmentScorecard(departmentId, format: 'json'|'html'|'md'|'csv')` — Single department report: current scores by domain, appetite compliance status (pass/breach per domain), open/overdue register entry summary, top 5 highest-risk entries, 90-day trend sparkline data, mitigation completion rate.
-  - `generateExecutiveSummary(format: 'json'|'html'|'md')` — Cross-department summary: highest-risk department, most-improved (largest score decrease over 30 days), most-deteriorated, system-wide appetite compliance percentage, total open/overdue register entries, risk distribution by category (pie chart data).
-  - `generateRegisterReport(filters, format: 'json'|'csv')` — Filtered register export: all open entries, optionally filtered by department/category/severity/owner. CSV format is GRC-tool compatible (columns: ID, Department, Title, Category, Severity, Likelihood, Impact, Risk Score, Owner, Status, Due Date, Mitigations, Created, Updated).
-  - `generateHeatmapHtml(heatmapData)` — Self-contained HTML document with a department × domain risk matrix. Cells colored green/yellow/orange/red based on score thresholds. Appetite threshold lines overlaid. Suitable for embedding in emails or exporting as a standalone artifact.
-  - **Inputs**: department IDs, filters, format selection, heatmap data from manager.
-  - **Outputs**: JSON (structured data for API consumers), HTML (standalone reports for email/embedding), Markdown (for documentation/wiki), CSV (GRC-tool import — ISO 27001/NIST compatible columns).
-
-### 111-F: Dashboard 🔄
-
-*New "Departments" sub-tab in the existing `RiskAssessmentTab`. Department selector dropdown at the top; below it, two distinct view tabs — **Intent** and **Risk** — so stakeholders can reason about goals independently from threats. Lazy-loaded components. Basic DepartmentsSection with Intent/Risk toggle, scorecard, heatmap, and API functions done (see Changelog [2026.3.2]). Register entry creation modal done (see Changelog [2026.3.3]). Detailed panel items below remain open.*
-
-#### Intent View — "What does this department aim to achieve?"
-
-- [ ] **Mission & objectives panel** — Displays the department's mission statement (editable rich text), objectives list (title, description, target date, status badge — active/achieved/deferred), and compliance targets (framework name, scope, target date). "Edit" button opens inline editing. Objectives can be reordered by drag-and-drop.
-  - **Inputs**: `GET /api/v1/risk/departments/:id/intent` API response.
-  - **Outputs**: rendered mission statement, objectives progress list, compliance target checklist.
-
-- [ ] **Appetite strategy panel** — Visual representation of the department's risk appetite thresholds: 5-domain radar chart (one axis per domain, 0–100) with the appetite boundary drawn as a filled polygon and the current score overlaid as a second polygon. At a glance: "where are we willing to accept risk, and where are we today?" Appetite thresholds editable via sliders (same as department form modal). Preset buttons: Conservative (30), Moderate (50), Aggressive (70).
-  - **Inputs**: department risk appetite from `GET /api/v1/risk/departments/:id`, current scores from scorecard.
-  - **Outputs**: radar chart comparing appetite vs. current exposure; inline appetite editing.
-
-- [ ] **Mitigation plans panel** — Aggregated view of all in-progress mitigations across the department's register entries. Grouped by status (planned → in progress → implemented → verified). Progress bar showing mitigation completion rate. Overdue mitigations highlighted. Links back to the originating register entry in the Risk view.
-  - **Inputs**: mitigation data extracted from `GET /api/v1/risk/departments/:id/register?status=open,mitigating`.
-  - **Outputs**: mitigation progress dashboard with status grouping, completion rate, and overdue highlighting.
-
-#### Risk View — "What is this department's current exposure?"
-
-- [ ] **Department scorecard panel** — Shows the selected department's current scores by domain (bar chart), appetite thresholds overlaid as reference lines, open/overdue register entry counts, and a 90-day trend sparkline. Appetite breaches highlighted in red.
-  - **Inputs**: `GET /api/v1/risk/departments/:id/scorecard` API response.
-  - **Outputs**: visual scorecard with score gauges, appetite threshold indicators, and trend sparkline.
-
-- [ ] **Risk register panel** — Sortable/filterable table of register entries for the selected department. Columns: Title, Category, Severity, Risk Score (likelihood × impact), Owner, Status, Due Date, Mitigations (count + progress bar). Click to expand: full description, mitigation details, evidence links. Inline status update (dropdown). "Add Risk" button opens a form modal.
-  - **Inputs**: `GET /api/v1/risk/departments/:id/register` with filter query params.
-  - **Outputs**: interactive register table with inline editing, filtering, sorting, and drill-down.
-
-- [ ] **Trend chart** — Recharts `LineChart` showing score history over time for one or more departments. Multi-department comparison mode: select up to 5 departments to overlay. Toggleable domain breakdown (show individual domain scores vs. composite only). Time range selector: 30d / 90d / 180d / 1y.
-  - **Inputs**: `GET /api/v1/risk/trend?departmentId=&days=` API response (one or more series).
-  - **Outputs**: multi-series line chart with domain breakdown toggle and time range controls.
-
-#### Cross-Department Views (shared across both perspectives)
-
-- [ ] **Heatmap grid** — Cross-department overview: rows = departments, columns = 5 risk domains, cells = score (colored green/yellow/orange/red). Cells exceeding appetite threshold get a warning icon overlay. Click a cell to navigate to that department's Risk view. Responsive: collapses to a card-per-department layout on narrow screens.
-  - **Inputs**: `GET /api/v1/risk/heatmap` API response.
-  - **Outputs**: interactive color-coded matrix with appetite breach indicators and navigation.
-
-- [ ] **Executive summary panel** — Rendered markdown/HTML of the executive summary. Key metrics cards at top: highest-risk department (with score), most-improved (with delta), appetite compliance % (gauge), total open risks, total overdue risks. Suitable for screenshot or PDF export. "Export" dropdown: Markdown, HTML, CSV (register only).
-  - **Inputs**: `GET /api/v1/risk/summary` API response.
-  - **Outputs**: executive summary display with key metric cards, formatted narrative, and export options.
-
-- [ ] **Department form modal** — Create/edit department modal. Two sections: **Organization** (name, description, mission, objectives, parent department via searchable dropdown, linked team via dropdown) and **Risk Governance** (risk appetite sliders per domain 0–100 with preset buttons: Conservative = 30, Moderate = 50, Aggressive = 70; compliance targets). Validation: name required, appetite values in range.
-  - **Inputs**: user form input, department tree and team list for selectors.
-  - **Outputs**: `POST /PUT /api/v1/risk/departments` API calls, optimistic UI update.
+*111-C: MetricsSnapshot + Prometheus gauges already populated; enforcement log attribution wired in IntentManager (auto-creates register entries on boundary_violated/policy_block with departmentId). 111-D: DepartmentRiskReportGenerator done. 111-F: All 10 dashboard panel components built and integrated in RiskAssessmentTab.*
 
 ---
 

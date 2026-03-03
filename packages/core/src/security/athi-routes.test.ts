@@ -18,6 +18,7 @@ const SAMPLE = {
   severity: 5,
   riskScore: 20,
   mitigations: [],
+  linkedEventIds: [],
   status: 'identified',
   createdAt: 1000,
   updatedAt: 1000,
@@ -33,6 +34,9 @@ function makeMockManager(): AthiManager {
     getRiskMatrix: vi.fn(),
     getTopRisks: vi.fn(),
     generateExecutiveSummary: vi.fn(),
+    linkEvents: vi.fn(),
+    findScenariosForTechnique: vi.fn(),
+    getScenariosWithLinkedEvents: vi.fn(),
   } as unknown as AthiManager;
 }
 
@@ -308,6 +312,65 @@ describe('AthiRoutes', () => {
       const body = JSON.parse(res.body);
       expect(body.summary.totalScenarios).toBe(10);
       expect(body.summary.mitigationCoverage).toBe(60);
+    });
+  });
+
+  // ── POST /api/v1/security/athi/scenarios/:id/link-events ──────
+
+  describe('POST /api/v1/security/athi/scenarios/:id/link-events', () => {
+    it('links events and returns updated scenario', async () => {
+      const linked = { ...SAMPLE, linkedEventIds: ['evt-1', 'evt-2'] };
+      (mgr.linkEvents as ReturnType<typeof vi.fn>).mockResolvedValue(linked);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/security/athi/scenarios/athi-1/link-events',
+        payload: { eventIds: ['evt-1', 'evt-2'] },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.scenario.linkedEventIds).toEqual(['evt-1', 'evt-2']);
+    });
+
+    it('returns 400 for empty eventIds', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/security/athi/scenarios/athi-1/link-events',
+        payload: { eventIds: [] },
+      });
+
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 404 when scenario not found', async () => {
+      (mgr.linkEvents as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/security/athi/scenarios/missing/link-events',
+        payload: { eventIds: ['evt-1'] },
+      });
+
+      expect(res.statusCode).toBe(404);
+    });
+  });
+
+  // ── GET /api/v1/security/athi/scenarios/by-technique/:technique ──
+
+  describe('GET /api/v1/security/athi/scenarios/by-technique/:technique', () => {
+    it('returns scenarios matching a technique', async () => {
+      (mgr.findScenariosForTechnique as ReturnType<typeof vi.fn>).mockResolvedValue([SAMPLE]);
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/security/athi/scenarios/by-technique/prompt_injection',
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.scenarios).toHaveLength(1);
+      expect(body.scenarios[0].id).toBe('athi-1');
     });
   });
 });

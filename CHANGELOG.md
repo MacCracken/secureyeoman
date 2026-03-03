@@ -65,12 +65,31 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Dashboard tab** (`packages/dashboard/src/components/security/SecurityATHITab.tsx`): `ATHITab` component with summary strip (total scenarios, avg risk score, mitigation coverage gauge, status badges), actor×technique risk matrix table (color-coded by avgRiskScore), filterable scenario table (actor/status dropdowns), create/edit modal (multi-select checkboxes for techniques/harms/impacts, dynamic mitigations list). Integrated into `SecurityPage.tsx` as lazy-loaded tab (Target icon).
 - **Tests**: ~80 new — `athi-store.test.ts` (18: storage CRUD + aggregates), `athi-manager.test.ts` (13: business logic + caching + alerts), `athi-routes.test.ts` (16: Fastify injection, all endpoints + validation), `athi.test.ts` (15: CLI subcommands + flags), `SecurityATHITab.test.tsx` (9: renders, interactions, filters).
 
-### Phase 111 Gap Fixes (111-C + 111-F)
+### Phase 107-F Extensions: ATHI Scenario Generation & Security Events Integration
+
+- **ATHI Scenario Generator skill** (`packages/core/src/marketplace/skills/athi-scenario-generator.ts`): New `CatalogSkill` (19th builtin) that generates AI-specific threat scenarios using the ATHI taxonomy. Takes organization description and AI usage patterns as input, produces structured JSON array of `AthiScenarioCreate` objects. `category: 'security'`, `autonomyLevel: 'L2'`, `routing: 'fuzzy'`. Anti-hallucination guardrail requires scenarios to reference specific organizational context. Registered in `skills/index.ts` and `BUILTIN_SKILLS` array.
+- **`athi-scenario-generation` workflow template** (`packages/core/src/workflow/workflow-templates.ts`): 3-step template — agent (generate scenarios) → human_approval (48h timeout) → resource (save to knowledge base). `autonomyLevel: 'L3'`, manual trigger. Appended to `BUILTIN_WORKFLOW_TEMPLATES`.
+- **`linkedEventIds` on ATHI scenarios**: New `linked_event_ids text[]` column in `security.athi_scenarios` table. `AthiScenarioSchema`, `AthiScenarioCreateSchema`, and `AthiScenarioUpdateSchema` gain `linkedEventIds: z.array(z.string()).default([])`. Storage updated: INSERT/UPDATE/SELECT include the field. New storage methods: `linkEvents()` (deduped array append), `findByTechnique()` (JSONB containment query), `getScenariosWithLinkedEvents()`.
+- **New ATHI routes**: `POST /api/v1/security/athi/scenarios/:id/link-events` (appends event IDs, deduped), `GET /api/v1/security/athi/scenarios/by-technique/:technique` (cross-reference query). Auth: `security_athi:write` and `security_athi:read`.
+- **New ATHI manager methods**: `findScenariosForTechnique(technique)`, `getScenariosWithLinkedEvents()`, `linkEvents(id, eventIds)`.
+- **Dashboard cross-referencing**: SecurityATHITab gains "Linked" column showing linked event count with badge. SecurityEvents shows purple "ATHI" technique badge on events whose `event_type` maps to an ATHI technique (`injection_attempt → prompt_injection`, `anomaly → adversarial_input`, `permission_denied → privilege_escalation`). Badge links to ATHI tab. New API functions: `fetchAthiScenariosByTechnique()`, `linkEventsToAthiScenario()`.
+- **ATHI alert rule templates**: 3 new entries in `RULE_TEMPLATES` — "ATHI High Risk Detected" (risk_score ≥ 20), "ATHI Nation-State Threat" (actor = nation_state), "ATHI Unmitigated Critical" (status = identified).
+
+### Phase 111 Wrap-Up (111-C + 111-F)
 
 - **Assessment `departmentId`** (`packages/core/src/risk-assessment/risk-assessment-routes.ts`): `POST /api/v1/risk/assessments` now accepts optional `departmentId` in body, passed through to `mgr.runAssessment()`.
 - **Findings `departmentId`** wired through full stack: `ExternalFindingSchema` + `CreateExternalFindingSchema` (`packages/shared/src/types/risk-assessment.ts`), `FindingRow.department_id` + `rowToFinding()` + `createFinding()` INSERT (`risk-assessment-storage.ts`), `POST /api/v1/risk/findings` route accepts `departmentId` (`risk-assessment-routes.ts`).
 - **Register entry modal** (`packages/dashboard/src/components/risk/RegisterEntryFormModal.tsx`): Replaces `window.prompt()` placeholder in `RiskAssessmentTab.tsx`. Full form with title, category (dropdown), severity (dropdown), likelihood (1–5), impact (1–5), owner, due date, description. Computed risk score with color coding. Lazy-loaded with Suspense.
+- **111-C enforcement log attribution**: Already wired in `IntentManager.logEnforcement()` — auto-creates `risk.register_entries` on `boundary_violated` / `policy_block` events with `metadata.departmentId`. Fire-and-forget with error swallowing. `getDepartmentRiskManager` lazy getter passed from `secureyeoman.ts`.
+- **111-F dashboard verified complete**: All 10 risk dashboard panel components built and integrated in `RiskAssessmentTab.tsx` via `React.lazy()` + `<Suspense>`: AppetiteRadarChart, DepartmentFormModal, DepartmentScorecardPanel, EnhancedHeatmap, ExecutiveSummaryPanel, MitigationPlansPanel, ObjectivesEditor, RegisterEntryFormModal, RiskRegisterTable, RiskTrendChart. Phase 111 marked complete in roadmap.
 - **Tests**: 2 new in `risk-assessment-routes.test.ts` (POST assessment with departmentId, POST finding with departmentId).
+
+### ADRs
+
+- **ADR 186**: ATHI Threat Governance Framework (Phase 107-F) — AI-specific threat taxonomy, scenario management, risk matrix, alert integration.
+- **ADR 187**: Workflow & Personality Versioning (Phase 114) — immutable snapshots, date-based tags, LCS diff, drift detection, rollback.
+- **ADR 188**: Directory-Based Community Content (Phase 113) — metadata.json + per-step/role markdown files alongside JSON.
+- **ADR 189**: Personality Core Distillation (Phase 107-E) — runtime config extraction to portable markdown, unified diff comparison.
 
 ---
 

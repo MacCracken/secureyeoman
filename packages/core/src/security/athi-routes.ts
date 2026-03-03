@@ -99,6 +99,35 @@ export function registerAthiRoutes(app: FastifyInstance, opts: AthiRoutesOptions
     }
   });
 
+  // ── POST /api/v1/security/athi/scenarios/:id/link-events ─────────────────
+
+  app.post('/api/v1/security/athi/scenarios/:id/link-events', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    try {
+      const body = req.body as { eventIds?: string[] };
+      if (!Array.isArray(body?.eventIds) || body.eventIds.length === 0) {
+        return sendError(reply, 400, 'eventIds must be a non-empty array of strings');
+      }
+      const scenario = await mgr.linkEvents(id, body.eventIds);
+      if (!scenario) return sendError(reply, 404, 'Scenario not found');
+      return reply.send({ scenario });
+    } catch (err) {
+      return sendError(reply, 500, toErrorMessage(err));
+    }
+  });
+
+  // ── GET /api/v1/security/athi/scenarios/by-technique/:technique ────────
+
+  app.get('/api/v1/security/athi/scenarios/by-technique/:technique', async (req, reply) => {
+    const { technique } = req.params as { technique: string };
+    try {
+      const scenarios = await mgr.findScenariosForTechnique(technique);
+      return reply.send({ scenarios });
+    } catch (err) {
+      return sendError(reply, 500, toErrorMessage(err));
+    }
+  });
+
   // ── GET /api/v1/security/athi/matrix ─────────────────────────────────────
 
   app.get('/api/v1/security/athi/matrix', async (req, reply) => {

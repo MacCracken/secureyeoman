@@ -910,4 +910,59 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
     createdBy: 'system',
     autonomyLevel: 'L3' as const,
   },
+
+  {
+    name: 'athi-scenario-generation',
+    description:
+      'Generate ATHI threat scenarios from an organization profile and AI usage patterns. Runs AI analysis, routes to human approval, and saves approved scenarios to the knowledge base.',
+    steps: [
+      agentStep(
+        {
+          id: 'generate-scenarios',
+          name: 'Generate ATHI Scenarios',
+          description:
+            'Analyze the organization and AI usage patterns to generate ATHI threat scenarios',
+          dependsOn: [],
+          onError: 'fail',
+        },
+        'security-analyst',
+        'Analyze the following organization using the ATHI (Actors, Techniques, Harms, Impacts) threat taxonomy.\n\nOrganization: {{input.orgDescription}}\n\nAI Usage Patterns: {{input.aiUsagePatterns}}\n\n{{#if input.existingScenarioCount}}Note: The organization already has {{input.existingScenarioCount}} existing scenarios. Focus on gaps and emerging threats.{{/if}}\n\nGenerate a comprehensive set of ATHI threat scenarios. For each plausible actor–technique combination, produce a scenario with title, description, actor, techniques, harms, impacts, likelihood (1–5), severity (1–5), and suggested mitigations. Output as a JSON array of AthiScenarioCreate objects.',
+        '{{input.additionalContext}}'
+      ),
+      {
+        id: 'approval',
+        type: 'human_approval',
+        name: 'Scenario Review Gate',
+        description:
+          'A human reviewer must approve the generated scenarios before they are persisted',
+        config: {
+          prompt:
+            'Please review the AI-generated ATHI threat scenarios below. Approve to save them to the knowledge base, or reject to discard.\n\n{{steps.generate-scenarios.output}}',
+          timeoutMs: 172_800_000, // 48h
+        },
+        dependsOn: ['generate-scenarios'],
+        onError: 'fail',
+      } as unknown as WorkflowStep,
+      resourceStep(
+        {
+          id: 'save-scenarios',
+          name: 'Save Approved Scenarios',
+          description: 'Save the human-approved ATHI scenarios to the knowledge base',
+          dependsOn: ['approval'],
+          onError: 'continue',
+        },
+        'knowledge',
+        '{"title":"ATHI Threat Scenarios — {{input.orgDescription}}","content":"{{steps.generate-scenarios.output}}","tags":["athi","threat-scenarios","ai-security","approved"]}'
+      ),
+    ],
+    edges: [
+      { source: 'generate-scenarios', target: 'approval' },
+      { source: 'approval', target: 'save-scenarios' },
+    ],
+    triggers: [{ type: 'manual', config: {} }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L3' as const,
+  },
 ];

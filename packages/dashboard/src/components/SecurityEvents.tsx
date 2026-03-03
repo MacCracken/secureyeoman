@@ -45,6 +45,13 @@ const SEVERITY_COLORS: Record<string, string> = {
   critical: 'border-l-destructive bg-destructive/5',
 };
 
+// ATHI technique mapping: event_type → ATHI technique name
+const ATHI_TECHNIQUE_MAP: Record<string, string> = {
+  injection_attempt: 'prompt_injection',
+  anomaly: 'adversarial_input',
+  permission_denied: 'privilege_escalation',
+};
+
 const ACK_STORAGE_KEY = 'friday_acknowledged_events';
 
 function loadAcknowledged(): Set<string> {
@@ -313,6 +320,17 @@ function EventRow({ event, isAcknowledged, onAcknowledge, onInvestigate }: Event
             )}
             {event.ipAddress && (
               <p className="text-xs text-muted-foreground">IP: {event.ipAddress}</p>
+            )}
+            {ATHI_TECHNIQUE_MAP[event.type] && (
+              <Link
+                to="/security?tab=athi"
+                className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors"
+                title={`Related ATHI technique: ${ATHI_TECHNIQUE_MAP[event.type]}`}
+                data-testid="athi-technique-badge"
+              >
+                <Shield className="w-3 h-3" />
+                ATHI: {ATHI_TECHNIQUE_MAP[event.type].replace(/_/g, ' ')}
+              </Link>
             )}
           </div>
         </div>

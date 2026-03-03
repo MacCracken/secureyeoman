@@ -84,6 +84,7 @@ export const AthiScenarioSchema = z.object({
   severity: z.number().int().min(1).max(5),
   riskScore: z.number().int().min(1).max(25),
   mitigations: z.array(AthiMitigationSchema),
+  linkedEventIds: z.array(z.string()).default([]),
   status: AthiScenarioStatusSchema,
   createdBy: z.string().optional(),
   createdAt: z.number().int(),
@@ -103,6 +104,7 @@ export const AthiScenarioCreateSchema = z.object({
   likelihood: z.number().int().min(1).max(5),
   severity: z.number().int().min(1).max(5),
   mitigations: z.array(AthiMitigationSchema).default([]),
+  linkedEventIds: z.array(z.string()).default([]),
   status: AthiScenarioStatusSchema.default('identified'),
 });
 export type AthiScenarioCreate = z.infer<typeof AthiScenarioCreateSchema>;
@@ -117,6 +119,7 @@ export const AthiScenarioUpdateSchema = z.object({
   likelihood: z.number().int().min(1).max(5).optional(),
   severity: z.number().int().min(1).max(5).optional(),
   mitigations: z.array(AthiMitigationSchema).optional(),
+  linkedEventIds: z.array(z.string()).optional(),
   status: AthiScenarioStatusSchema.optional(),
 });
 export type AthiScenarioUpdate = z.infer<typeof AthiScenarioUpdateSchema>;

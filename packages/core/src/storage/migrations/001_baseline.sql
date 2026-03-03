@@ -4956,6 +4956,7 @@ CREATE TABLE IF NOT EXISTS security.athi_scenarios (
   severity smallint NOT NULL CHECK (severity BETWEEN 1 AND 5),
   risk_score smallint GENERATED ALWAYS AS (likelihood * severity) STORED,
   mitigations jsonb NOT NULL DEFAULT '[]',
+  linked_event_ids text[] NOT NULL DEFAULT '{}',
   status varchar(20) NOT NULL DEFAULT 'identified'
     CHECK (status IN ('identified','assessed','mitigated','accepted','monitoring')),
   created_by text,

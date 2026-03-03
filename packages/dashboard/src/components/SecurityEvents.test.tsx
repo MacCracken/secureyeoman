@@ -155,4 +155,15 @@ describe('SecurityEvents', () => {
     const zeros = screen.getAllByText('0');
     expect(zeros.length).toBeGreaterThanOrEqual(4);
   });
+
+  it('shows ATHI technique badge on injection_attempt events', async () => {
+    const events = createSecurityEventList();
+    mockFetchSecurityEvents.mockResolvedValue({ events, total: events.length });
+    renderComponent();
+
+    // evt-004 is type: 'injection_attempt' which maps to ATHI prompt_injection
+    const badge = await screen.findByTestId('athi-technique-badge');
+    expect(badge).toBeInTheDocument();
+    expect(badge.textContent).toContain('prompt injection');
+  });
 });

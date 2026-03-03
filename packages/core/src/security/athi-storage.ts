@@ -29,6 +29,7 @@ interface AthiScenarioRow {
   severity: number | string;
   risk_score: number | string;
   mitigations: unknown;
+  linked_event_ids: string[] | null;
   status: string;
   created_by: string | null;
   created_at: string | number;
@@ -51,6 +52,7 @@ function rowToScenario(row: AthiScenarioRow): AthiScenario {
     severity: typeof row.severity === 'string' ? Number(row.severity) : row.severity,
     riskScore: typeof row.risk_score === 'string' ? Number(row.risk_score) : row.risk_score,
     mitigations: (row.mitigations as AthiScenario['mitigations']) ?? [],
+    linkedEventIds: row.linked_event_ids ?? [],
     status: row.status as AthiScenario['status'],
     createdBy: row.created_by ?? undefined,
     createdAt: typeof row.created_at === 'string' ? Number(row.created_at) : row.created_at,
@@ -71,9 +73,9 @@ export class AthiStorage extends PgBaseStorage {
     const row = await this.queryOne<AthiScenarioRow>(
       `INSERT INTO security.athi_scenarios
          (id, org_id, title, description, actor, techniques, harms, impacts,
-          likelihood, severity, mitigations, status, created_by, created_at, updated_at)
+          likelihood, severity, mitigations, linked_event_ids, status, created_by, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::jsonb,
-               $9, $10, $11::jsonb, $12, $13, $14, $14)
+               $9, $10, $11::jsonb, $12, $13, $14, $15, $15)
        RETURNING *`,
       [
         id,
@@ -87,6 +89,7 @@ export class AthiStorage extends PgBaseStorage {
         data.likelihood,
         data.severity,
         JSON.stringify(data.mitigations ?? []),
+        data.linkedEventIds ?? [],
         data.status ?? 'identified',
         createdBy ?? null,
         now,
@@ -143,6 +146,10 @@ export class AthiStorage extends PgBaseStorage {
     if (data.mitigations !== undefined) {
       sets.push(`mitigations = $${idx++}::jsonb`);
       params.push(JSON.stringify(data.mitigations));
+    }
+    if (data.linkedEventIds !== undefined) {
+      sets.push(`linked_event_ids = $${idx++}`);
+      params.push(data.linkedEventIds);
     }
     if (data.status !== undefined) {
       sets.push(`status = $${idx++}`);
@@ -286,6 +293,39 @@ export class AthiStorage extends PgBaseStorage {
       result[row.status] = Number(row.count);
     }
     return result;
+  }
+
+  async linkEvents(id: string, eventIds: string[]): Promise<AthiScenario | null> {
+    const row = await this.queryOne<AthiScenarioRow>(
+      `UPDATE security.athi_scenarios
+       SET linked_event_ids = (
+         SELECT array_agg(DISTINCT e) FROM unnest(linked_event_ids || $2::text[]) AS e
+       ),
+       updated_at = $3
+       WHERE id = $1
+       RETURNING *`,
+      [id, eventIds, Date.now()]
+    );
+    return row ? rowToScenario(row) : null;
+  }
+
+  async findByTechnique(technique: string): Promise<AthiScenario[]> {
+    const rows = await this.queryMany<AthiScenarioRow>(
+      `SELECT * FROM security.athi_scenarios
+       WHERE techniques @> $1::jsonb
+       ORDER BY risk_score DESC, created_at DESC`,
+      [JSON.stringify([technique])]
+    );
+    return rows.map(rowToScenario);
+  }
+
+  async getScenariosWithLinkedEvents(): Promise<AthiScenario[]> {
+    const rows = await this.queryMany<AthiScenarioRow>(
+      `SELECT * FROM security.athi_scenarios
+       WHERE array_length(linked_event_ids, 1) > 0
+       ORDER BY updated_at DESC`
+    );
+    return rows.map(rowToScenario);
   }
 
   async getActorCounts(orgId?: string): Promise<Record<string, number>> {

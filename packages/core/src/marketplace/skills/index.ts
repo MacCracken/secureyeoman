@@ -21,3 +21,4 @@ export { emailHeaderForensicsSkill } from './email-header-forensics.js';
 export { ttrcAnalysisSkill } from './ttrc-analysis.js';
 export { securityArchitectureReviewSkill } from './security-architecture-review.js';
 export { securityLogAnalysisSkill } from './security-log-analysis.js';
+export { athiScenarioGeneratorSkill } from './athi-scenario-generator.js';

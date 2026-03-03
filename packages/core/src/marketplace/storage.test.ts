@@ -50,6 +50,11 @@ vi.mock('./skills/index.js', () => ({
     author: 'YEOMAN',
     version: '2026.3.2',
   },
+  athiScenarioGeneratorSkill: {
+    name: 'ATHI Scenario Generator',
+    author: 'YEOMAN',
+    version: '2026.3.3',
+  },
 }));
 
 // ─── Test Data ────────────────────────────────────────────────
@@ -389,11 +394,11 @@ describe('MarketplaceStorage', () => {
       );
       expect(batchSelect).toBeDefined();
 
-      // Should have INSERT calls for each of the 18 skills (11 original + 7 security)
+      // Should have INSERT calls for each of the 19 skills (11 original + 7 security + 1 ATHI generator)
       const insertCalls = mockQuery.mock.calls.filter(
         (c: any[]) => typeof c[0] === 'string' && c[0].includes('INSERT INTO marketplace.skills')
       );
-      expect(insertCalls).toHaveLength(18);
+      expect(insertCalls).toHaveLength(19);
     });
 
     it('uses batch SELECT for existing builtins check', async () => {

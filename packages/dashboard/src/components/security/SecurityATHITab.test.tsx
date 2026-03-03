@@ -16,6 +16,8 @@ vi.mock('../../api/client', () => ({
   fetchAthiMatrix: vi.fn(),
   fetchAthiTopRisks: vi.fn(),
   fetchAthiSummary: vi.fn(),
+  linkEventsToAthiScenario: vi.fn(),
+  fetchAthiScenariosByTechnique: vi.fn(),
 }));
 
 import * as api from '../../api/client';
@@ -199,6 +201,65 @@ describe('SecurityATHITab', () => {
     await waitFor(() => {
       const identified = screen.getByText(/Identified: 1/);
       expect(identified).toBeInTheDocument();
+    });
+  });
+
+  it('shows linked events badge when scenario has linkedEventIds', async () => {
+    mockFetchScenarios.mockResolvedValue({
+      items: [
+        {
+          id: 'athi-1',
+          title: 'Linked Scenario',
+          actor: 'cybercriminal',
+          techniques: ['prompt_injection'],
+          harms: ['data_breach'],
+          impacts: ['regulatory_penalty'],
+          likelihood: 4,
+          severity: 5,
+          riskScore: 20,
+          mitigations: [],
+          linkedEventIds: ['evt-1', 'evt-2'],
+          status: 'identified',
+        },
+      ],
+      total: 1,
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      const badge = screen.getByTestId('linked-events-badge');
+      expect(badge).toBeInTheDocument();
+      expect(badge.textContent).toContain('2');
+    });
+  });
+
+  it('shows dash when scenario has no linked events', async () => {
+    mockFetchScenarios.mockResolvedValue({
+      items: [
+        {
+          id: 'athi-2',
+          title: 'Unlinked Scenario',
+          actor: 'insider',
+          techniques: ['data_poisoning'],
+          harms: ['misinformation'],
+          impacts: ['ip_theft'],
+          likelihood: 2,
+          severity: 3,
+          riskScore: 6,
+          mitigations: [],
+          linkedEventIds: [],
+          status: 'assessed',
+        },
+      ],
+      total: 1,
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('Unlinked Scenario')).toBeInTheDocument();
+      expect(screen.queryByTestId('linked-events-badge')).not.toBeInTheDocument();
     });
   });
 });

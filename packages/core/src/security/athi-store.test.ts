@@ -22,6 +22,7 @@ const SAMPLE_ROW = {
   severity: 5,
   risk_score: 20,
   mitigations: [{ description: 'Input validation', status: 'implemented' }],
+  linked_event_ids: [],
   status: 'identified',
   created_by: 'user-1',
   created_at: 1000,
@@ -244,6 +245,90 @@ describe('AthiStorage', () => {
       const counts = await storage.getActorCounts();
       expect(counts.cybercriminal).toBe(4);
       expect(counts.insider).toBe(2);
+    });
+  });
+
+  describe('linkEvents', () => {
+    it('appends event IDs (deduped) and returns updated scenario', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...SAMPLE_ROW, linked_event_ids: ['evt-1', 'evt-2'] }],
+      });
+
+      const result = await storage.linkEvents('athi-1', ['evt-2', 'evt-3']);
+      expect(result?.linkedEventIds).toEqual(['evt-1', 'evt-2']);
+      expect(mockQuery.mock.calls[0][0]).toContain('unnest');
+      expect(mockQuery.mock.calls[0][0]).toContain('DISTINCT');
+    });
+
+    it('returns null when scenario not found', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [] });
+      const result = await storage.linkEvents('missing', ['evt-1']);
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findByTechnique', () => {
+    it('returns scenarios containing the technique', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [SAMPLE_ROW] });
+
+      const result = await storage.findByTechnique('prompt_injection');
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('athi-1');
+      expect(mockQuery.mock.calls[0][0]).toContain('@>');
+    });
+  });
+
+  describe('getScenariosWithLinkedEvents', () => {
+    it('returns only scenarios with non-empty linkedEventIds', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...SAMPLE_ROW, linked_event_ids: ['evt-1'] }],
+      });
+
+      const result = await storage.getScenariosWithLinkedEvents();
+      expect(result).toHaveLength(1);
+      expect(mockQuery.mock.calls[0][0]).toContain('array_length');
+    });
+  });
+
+  describe('linkedEventIds in CRUD', () => {
+    it('includes linked_event_ids in create', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...SAMPLE_ROW, linked_event_ids: ['evt-1'] }],
+      });
+
+      const result = await storage.createScenario(
+        {
+          title: 'Test',
+          actor: 'insider',
+          techniques: ['data_poisoning'],
+          harms: ['misinformation'],
+          impacts: ['ip_theft'],
+          likelihood: 2,
+          severity: 3,
+          linkedEventIds: ['evt-1'],
+        },
+        'user-1'
+      );
+      expect(result.linkedEventIds).toEqual(['evt-1']);
+      expect(mockQuery.mock.calls[0][0]).toContain('linked_event_ids');
+    });
+
+    it('maps linked_event_ids in row converter', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...SAMPLE_ROW, linked_event_ids: ['a', 'b'] }],
+      });
+
+      const scenario = await storage.getScenario('athi-1');
+      expect(scenario?.linkedEventIds).toEqual(['a', 'b']);
+    });
+
+    it('defaults linkedEventIds to empty array when null', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...SAMPLE_ROW, linked_event_ids: null }],
+      });
+
+      const scenario = await storage.getScenario('athi-1');
+      expect(scenario?.linkedEventIds).toEqual([]);
     });
   });
 });
