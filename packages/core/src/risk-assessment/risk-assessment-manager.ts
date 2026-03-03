@@ -418,14 +418,14 @@ export class RiskAssessmentManager {
     // Check for any completed audit runs for L3+ items
     try {
       const auditResult = await this.pool.query<{ count: string }>(
-        `SELECT COUNT(*) AS count FROM autonomy.audit_runs WHERE status = 'completed'`
+        `SELECT COUNT(*) AS count FROM autonomy_audit_runs WHERE status = 'completed'`
       );
       noAudit = Number(auditResult.rows[0]?.count ?? 0) === 0;
 
       if (!noAudit) {
         // Get incomplete checklist items in latest audit run
         const latestRun = await this.pool.query<{ items: unknown }>(
-          `SELECT items FROM autonomy.audit_runs WHERE status = 'completed' ORDER BY created_at DESC LIMIT 1`
+          `SELECT items FROM autonomy_audit_runs WHERE status = 'completed' ORDER BY created_at DESC LIMIT 1`
         );
         if (latestRun.rows[0]?.items) {
           const items = latestRun.rows[0].items as { status: string }[];
@@ -509,7 +509,7 @@ export class RiskAssessmentManager {
     try {
       const logResult = await this.pool.query<{ event_type: string; cnt: string }>(
         `SELECT event_type, COUNT(*) AS cnt
-         FROM intent.enforcement_log
+         FROM intent_enforcement_log
          WHERE created_at >= $1
            AND event_type IN ('boundary_violated', 'policy_block')
          GROUP BY event_type`,
@@ -527,7 +527,7 @@ export class RiskAssessmentManager {
 
     try {
       const intentResult = await this.pool.query<{ count: string }>(
-        `SELECT COUNT(*) AS count FROM intent.org_intents WHERE is_active = TRUE`
+        `SELECT COUNT(*) AS count FROM org_intents WHERE is_active = TRUE`
       );
       noIntent = Number(intentResult.rows[0]?.count ?? 0) === 0;
     } catch {

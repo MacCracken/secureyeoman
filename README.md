@@ -5,7 +5,7 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSE.commercial)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: 12408](https://img.shields.io/badge/Tests-12408-brightgreen.svg)]()
+[![Tests: 13097](https://img.shields.io/badge/Tests-13097-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%20LTS-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
@@ -139,7 +139,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Sec
 | API Gateway | Expose personalities as endpoints with per-key RPM/TPD rate limits, usage analytics (p50/p95), CSV export |
 | Deployment | Single binary (~80 MB), Docker (~80 MB), Kubernetes Helm chart; Linux x64/arm64, macOS arm64, Windows x64 |
 | Native clients | Tauri v2 desktop + Capacitor v6 mobile (shared dashboard frontend) |
-| CLI | 30 commands, full-screen TUI, agent world ASCII map, shell completions, `--json` scripting output |
+| CLI | 35 commands, full-screen TUI, agent world ASCII map, shell completions, `--json` scripting output |
 | Extensions | Rich lifecycle hook system, TypeScript plugin modules, hot-reload support |
 | Backup & DR | `pg_dump`/`pg_restore`, download API, restore confirmation, scheduling |
 
@@ -208,7 +208,7 @@ TOKEN=$(curl -s -X POST http://localhost:18789/api/v1/auth/login \
   -d '{"password":"your-admin-password"}' | jq -r '.accessToken')
 
 curl http://localhost:18789/health
-# → {"status":"ok","version":"2026.3.1","uptime":12345,"networkMode":"local",...}
+# → {"status":"ok","version":"2026.3.2","uptime":12345,"networkMode":"local",...}
 
 curl http://localhost:18789/api/v1/audit?limit=50 -H "Authorization: Bearer $TOKEN"
 ```
@@ -276,12 +276,12 @@ Or connect via HTTP: `http://localhost:3001/mcp` (when running with `--profile m
 | Topic | Link |
 |-------|------|
 | Architecture | [Architecture Overview](docs/development/architecture.md) |
-| ADRs | [151 Architecture Decision Records](docs/adr/) |
+| ADRs | [153 Architecture Decision Records](docs/adr/) |
 | Roadmap | [Development Roadmap](docs/development/roadmap.md) |
 | Contributing | [Contributing Guide](CONTRIBUTING.md) |
 | Changelog | [CHANGELOG.md](CHANGELOG.md) |
 
-See [`docs/guides/`](docs/guides/) for all 58 guides, including integrations, CI/CD, knowledge base, security testing, content guardrails, and more.
+See [`docs/guides/`](docs/guides/) for all 59 guides, including integrations, CI/CD, knowledge base, security testing, content guardrails, and more.
 
 ---
 

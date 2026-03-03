@@ -828,6 +828,37 @@ CREATE TABLE brain.skills (
 );
 
 --
+-- Name: document_chunks; Type: TABLE; Schema: brain; Owner: secureyeoman
+--
+
+CREATE TABLE brain.document_chunks (
+    id text NOT NULL,
+    source_id text NOT NULL,
+    source_table text NOT NULL,
+    chunk_index integer NOT NULL,
+    content text NOT NULL,
+    embedding public.vector(384),
+    search_vec tsvector,
+    created_at bigint NOT NULL
+);
+
+--
+-- Name: update_chunk_fts(); Type: FUNCTION; Schema: brain; Owner: secureyeoman
+--
+
+CREATE OR REPLACE FUNCTION brain.update_chunk_fts() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  NEW.search_vec := to_tsvector('english', NEW.content);
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_chunk_fts BEFORE INSERT OR UPDATE OF content ON brain.document_chunks
+    FOR EACH ROW EXECUTE FUNCTION brain.update_chunk_fts();
+
+--
 -- Name: sessions; Type: TABLE; Schema: browser; Owner: secureyeoman
 --
 
@@ -876,7 +907,8 @@ CREATE TABLE chat.conversations (
     tenant_id text DEFAULT 'default'::text NOT NULL,
     parent_conversation_id text,
     fork_message_index integer,
-    branch_label text
+    branch_label text,
+    strategy_id text
 );
 
 --
@@ -1053,11 +1085,11 @@ CREATE TABLE experiment.experiments (
 -- Name: extensions; Type: TABLE; Schema: extensions; Owner: secureyeoman
 --
 
-CREATE TABLE extensions.extensions (
+CREATE TABLE extensions.manifests (
     id text NOT NULL,
     name text NOT NULL,
     version text DEFAULT '1.0.0'::text NOT NULL,
-    manifest jsonb DEFAULT '{}'::jsonb NOT NULL,
+    hooks jsonb DEFAULT '{}'::jsonb NOT NULL,
     enabled boolean DEFAULT true NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -1614,6 +1646,7 @@ CREATE TABLE risk.assessments (
     report_csv text,
     options jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_by text,
+    department_id text,
     created_at bigint NOT NULL,
     completed_at bigint,
     error text
@@ -1655,9 +1688,83 @@ CREATE TABLE risk.external_findings (
     status text DEFAULT 'open'::text NOT NULL,
     acknowledged_by text,
     acknowledged_at bigint,
+    department_id text,
     resolved_at bigint,
     source_date bigint,
     imported_at bigint NOT NULL
+);
+
+--
+-- Name: departments; Type: TABLE; Schema: risk; Owner: secureyeoman
+--
+
+CREATE TABLE risk.departments (
+    id text NOT NULL,
+    name varchar(200) NOT NULL,
+    description text,
+    mission text,
+    objectives jsonb DEFAULT '[]'::jsonb,
+    parent_id text,
+    team_id text,
+    risk_appetite jsonb DEFAULT '{"security":50,"operational":50,"financial":50,"compliance":50,"reputational":50}'::jsonb,
+    compliance_targets jsonb DEFAULT '[]'::jsonb,
+    metadata jsonb DEFAULT '{}'::jsonb,
+    tenant_id text,
+    created_at bigint NOT NULL DEFAULT (extract(epoch from now()) * 1000)::bigint,
+    updated_at bigint NOT NULL DEFAULT (extract(epoch from now()) * 1000)::bigint
+);
+
+--
+-- Name: register_entries; Type: TABLE; Schema: risk; Owner: secureyeoman
+--
+
+CREATE TABLE risk.register_entries (
+    id text NOT NULL,
+    department_id text NOT NULL,
+    title varchar(300) NOT NULL,
+    description text,
+    category varchar(50) NOT NULL CHECK (category IN (
+        'security', 'operational', 'financial', 'compliance', 'reputational',
+        'strategic', 'technology', 'third_party', 'environmental', 'other'
+    )),
+    severity varchar(20) NOT NULL CHECK (severity IN ('critical', 'high', 'medium', 'low', 'info')),
+    likelihood int NOT NULL CHECK (likelihood BETWEEN 1 AND 5),
+    impact int NOT NULL CHECK (impact BETWEEN 1 AND 5),
+    risk_score int GENERATED ALWAYS AS (likelihood * impact) STORED,
+    owner varchar(200),
+    mitigations jsonb DEFAULT '[]'::jsonb,
+    status varchar(20) NOT NULL DEFAULT 'open' CHECK (status IN (
+        'open', 'in_progress', 'mitigated', 'accepted', 'closed', 'transferred'
+    )),
+    due_date timestamptz,
+    source varchar(50) CHECK (source IN (
+        'manual', 'assessment', 'scan', 'audit', 'incident', 'external_feed', 'workflow'
+    )),
+    source_ref text,
+    evidence_refs jsonb DEFAULT '[]'::jsonb,
+    tenant_id text,
+    created_by text,
+    created_at bigint NOT NULL DEFAULT (extract(epoch from now()) * 1000)::bigint,
+    updated_at bigint NOT NULL DEFAULT (extract(epoch from now()) * 1000)::bigint,
+    closed_at bigint
+);
+
+--
+-- Name: department_scores; Type: TABLE; Schema: risk; Owner: secureyeoman
+--
+
+CREATE TABLE risk.department_scores (
+    id text NOT NULL,
+    department_id text NOT NULL,
+    scored_at timestamptz NOT NULL DEFAULT now(),
+    overall_score numeric(5,2),
+    domain_scores jsonb DEFAULT '{}'::jsonb,
+    open_risks int DEFAULT 0,
+    overdue_risks int DEFAULT 0,
+    appetite_breaches jsonb DEFAULT '[]'::jsonb,
+    assessment_id text,
+    tenant_id text,
+    created_at bigint NOT NULL DEFAULT (extract(epoch from now()) * 1000)::bigint
 );
 
 --
@@ -1799,6 +1906,25 @@ CREATE TABLE soul.skills (
     invoked_count integer DEFAULT 0 NOT NULL,
     autonomy_level character varying(2) DEFAULT 'L1'::character varying NOT NULL,
     emergency_stop_procedure text
+);
+
+--
+-- Name: reasoning_strategies; Type: TABLE; Schema: soul; Owner: secureyeoman
+--
+
+CREATE TABLE soul.reasoning_strategies (
+    id text NOT NULL,
+    name text NOT NULL,
+    slug text NOT NULL,
+    description text DEFAULT '' NOT NULL,
+    prompt_prefix text NOT NULL,
+    category text NOT NULL CHECK (category IN (
+        'chain_of_thought','tree_of_thought','reflexion','self_refine',
+        'self_consistent','chain_of_density','argument_of_thought','standard'
+    )),
+    is_builtin boolean DEFAULT false NOT NULL,
+    created_at bigint NOT NULL,
+    updated_at bigint NOT NULL
 );
 
 --
@@ -2613,6 +2739,13 @@ ALTER TABLE ONLY brain.skills
     ADD CONSTRAINT skills_pkey PRIMARY KEY (id);
 
 --
+-- Name: document_chunks document_chunks_pkey; Type: CONSTRAINT; Schema: brain; Owner: secureyeoman
+--
+
+ALTER TABLE ONLY brain.document_chunks
+    ADD CONSTRAINT document_chunks_pkey PRIMARY KEY (id);
+
+--
 -- Name: sessions sessions_pkey; Type: CONSTRAINT; Schema: browser; Owner: secureyeoman
 --
 
@@ -2707,7 +2840,7 @@ ALTER TABLE ONLY experiment.experiments
 -- Name: extensions extensions_pkey; Type: CONSTRAINT; Schema: extensions; Owner: secureyeoman
 --
 
-ALTER TABLE ONLY extensions.extensions
+ALTER TABLE ONLY extensions.manifests
     ADD CONSTRAINT extensions_pkey PRIMARY KEY (id);
 
 --
@@ -2958,6 +3091,30 @@ ALTER TABLE ONLY risk.external_findings
     ADD CONSTRAINT external_findings_pkey PRIMARY KEY (id);
 
 --
+-- Name: departments departments_pkey; Type: CONSTRAINT; Schema: risk; Owner: secureyeoman
+--
+
+ALTER TABLE ONLY risk.departments
+    ADD CONSTRAINT departments_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY risk.departments
+    ADD CONSTRAINT departments_name_tenant_unique UNIQUE (name, tenant_id);
+
+--
+-- Name: register_entries register_entries_pkey; Type: CONSTRAINT; Schema: risk; Owner: secureyeoman
+--
+
+ALTER TABLE ONLY risk.register_entries
+    ADD CONSTRAINT register_entries_pkey PRIMARY KEY (id);
+
+--
+-- Name: department_scores department_scores_pkey; Type: CONSTRAINT; Schema: risk; Owner: secureyeoman
+--
+
+ALTER TABLE ONLY risk.department_scores
+    ADD CONSTRAINT department_scores_pkey PRIMARY KEY (id);
+
+--
 -- Name: previous_values previous_values_pkey; Type: CONSTRAINT; Schema: rotation; Owner: secureyeoman
 --
 
@@ -3019,6 +3176,16 @@ ALTER TABLE ONLY soul.skills
 
 ALTER TABLE ONLY soul.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+--
+-- Name: reasoning_strategies reasoning_strategies_pkey; Type: CONSTRAINT; Schema: soul; Owner: secureyeoman
+--
+
+ALTER TABLE ONLY soul.reasoning_strategies
+    ADD CONSTRAINT reasoning_strategies_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY soul.reasoning_strategies
+    ADD CONSTRAINT reasoning_strategies_slug_unique UNIQUE (slug);
 
 --
 -- Name: inspirations inspirations_pkey; Type: CONSTRAINT; Schema: spirit; Owner: secureyeoman
@@ -3619,6 +3786,24 @@ CREATE INDEX idx_memories_type ON brain.memories USING btree (type);
 CREATE INDEX idx_memories_type_importance ON brain.memories USING btree (type, importance DESC);
 
 --
+-- Name: idx_document_chunks_source; Type: INDEX; Schema: brain; Owner: secureyeoman
+--
+
+CREATE INDEX idx_document_chunks_source ON brain.document_chunks USING btree (source_id);
+
+--
+-- Name: idx_document_chunks_fts; Type: INDEX; Schema: brain; Owner: secureyeoman
+--
+
+CREATE INDEX idx_document_chunks_fts ON brain.document_chunks USING gin (search_vec);
+
+--
+-- Name: idx_document_chunks_embedding; Type: INDEX; Schema: brain; Owner: secureyeoman
+--
+
+CREATE INDEX idx_document_chunks_embedding ON brain.document_chunks USING hnsw (embedding public.vector_cosine_ops);
+
+--
 -- Name: idx_browser_sessions_created; Type: INDEX; Schema: browser; Owner: secureyeoman
 --
 
@@ -3659,6 +3844,12 @@ CREATE INDEX idx_conversations_parent ON chat.conversations USING btree (parent_
 --
 
 CREATE INDEX idx_conversations_updated ON chat.conversations USING btree (updated_at DESC);
+
+--
+-- Name: idx_conversations_strategy; Type: INDEX; Schema: chat; Owner: secureyeoman
+--
+
+CREATE INDEX idx_conversations_strategy ON chat.conversations USING btree (strategy_id);
 
 --
 -- Name: idx_messages_conversation; Type: INDEX; Schema: chat; Owner: secureyeoman
@@ -3712,7 +3903,7 @@ CREATE INDEX idx_exec_sessions_status ON execution.sessions USING btree (status)
 -- Name: idx_extensions_name; Type: INDEX; Schema: extensions; Owner: secureyeoman
 --
 
-CREATE INDEX idx_extensions_name ON extensions.extensions USING btree (name);
+CREATE INDEX idx_extensions_name ON extensions.manifests USING btree (name);
 
 --
 -- Name: idx_hooks_extension; Type: INDEX; Schema: extensions; Owner: secureyeoman
@@ -3961,6 +4152,84 @@ CREATE INDEX idx_risk_assessments_created_at ON risk.assessments USING btree (cr
 CREATE INDEX idx_risk_assessments_status ON risk.assessments USING btree (status);
 
 --
+-- Name: idx_assessments_department_id; Type: INDEX; Schema: risk; Owner: secureyeoman
+--
+
+CREATE INDEX idx_assessments_department_id ON risk.assessments USING btree (department_id);
+
+--
+-- Name: idx_external_findings_department_id; Type: INDEX; Schema: risk; Owner: secureyeoman
+--
+
+CREATE INDEX idx_external_findings_department_id ON risk.external_findings USING btree (department_id);
+
+--
+-- Name: idx_departments_parent_id; Type: INDEX; Schema: risk; Owner: secureyeoman
+--
+
+CREATE INDEX idx_departments_parent_id ON risk.departments USING btree (parent_id);
+
+--
+-- Name: idx_departments_tenant_id; Type: INDEX; Schema: risk; Owner: secureyeoman
+--
+
+CREATE INDEX idx_departments_tenant_id ON risk.departments USING btree (tenant_id);
+
+--
+-- Name: idx_departments_team_id; Type: INDEX; Schema: risk; Owner: secureyeoman
+--
+
+CREATE INDEX idx_departments_team_id ON risk.departments USING btree (team_id);
+
+--
+-- Name: idx_register_entries_department_id; Type: INDEX; Schema: risk; Owner: secureyeoman
+--
+
+CREATE INDEX idx_register_entries_department_id ON risk.register_entries USING btree (department_id);
+
+--
+-- Name: idx_register_entries_status; Type: INDEX; Schema: risk; Owner: secureyeoman
+--
+
+CREATE INDEX idx_register_entries_status ON risk.register_entries USING btree (status);
+
+--
+-- Name: idx_register_entries_category; Type: INDEX; Schema: risk; Owner: secureyeoman
+--
+
+CREATE INDEX idx_register_entries_category ON risk.register_entries USING btree (category);
+
+--
+-- Name: idx_register_entries_risk_score; Type: INDEX; Schema: risk; Owner: secureyeoman
+--
+
+CREATE INDEX idx_register_entries_risk_score ON risk.register_entries USING btree (risk_score DESC);
+
+--
+-- Name: idx_register_entries_due_date; Type: INDEX; Schema: risk; Owner: secureyeoman
+--
+
+CREATE INDEX idx_register_entries_due_date ON risk.register_entries USING btree (due_date);
+
+--
+-- Name: idx_register_entries_tenant_id; Type: INDEX; Schema: risk; Owner: secureyeoman
+--
+
+CREATE INDEX idx_register_entries_tenant_id ON risk.register_entries USING btree (tenant_id);
+
+--
+-- Name: idx_department_scores_dept_scored; Type: INDEX; Schema: risk; Owner: secureyeoman
+--
+
+CREATE INDEX idx_department_scores_dept_scored ON risk.department_scores USING btree (department_id, scored_at DESC);
+
+--
+-- Name: idx_department_scores_tenant_id; Type: INDEX; Schema: risk; Owner: secureyeoman
+--
+
+CREATE INDEX idx_department_scores_tenant_id ON risk.department_scores USING btree (tenant_id);
+
+--
 -- Name: idx_soul_personalities_tenant; Type: INDEX; Schema: soul; Owner: secureyeoman
 --
 
@@ -3983,6 +4252,18 @@ CREATE INDEX idx_soul_skills_personality ON soul.skills USING btree (personality
 --
 
 CREATE INDEX pending_approvals_personality_status ON soul.pending_approvals USING btree (personality_id, status);
+
+--
+-- Name: idx_reasoning_strategies_category; Type: INDEX; Schema: soul; Owner: secureyeoman
+--
+
+CREATE INDEX idx_reasoning_strategies_category ON soul.reasoning_strategies USING btree (category);
+
+--
+-- Name: idx_reasoning_strategies_slug; Type: INDEX; Schema: soul; Owner: secureyeoman
+--
+
+CREATE INDEX idx_reasoning_strategies_slug ON soul.reasoning_strategies USING btree (slug);
 
 --
 -- Name: idx_inspirations_personality; Type: INDEX; Schema: spirit; Owner: secureyeoman
@@ -4436,7 +4717,7 @@ ALTER TABLE ONLY execution.history
 --
 
 ALTER TABLE ONLY extensions.hooks
-    ADD CONSTRAINT hooks_extension_id_fkey FOREIGN KEY (extension_id) REFERENCES extensions.extensions(id) ON DELETE CASCADE;
+    ADD CONSTRAINT hooks_extension_id_fkey FOREIGN KEY (extension_id) REFERENCES extensions.manifests(id) ON DELETE CASCADE;
 
 --
 -- Name: sync_log sync_log_peer_id_fkey; Type: FK CONSTRAINT; Schema: federation; Owner: secureyeoman
@@ -4486,6 +4767,41 @@ ALTER TABLE ONLY mcp.server_tools
 
 ALTER TABLE ONLY risk.external_findings
     ADD CONSTRAINT external_findings_feed_id_fkey FOREIGN KEY (feed_id) REFERENCES risk.external_feeds(id) ON DELETE CASCADE;
+
+--
+-- Name: departments departments_parent_id_fkey; Type: FK CONSTRAINT; Schema: risk; Owner: secureyeoman
+--
+
+ALTER TABLE ONLY risk.departments
+    ADD CONSTRAINT departments_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES risk.departments(id) ON DELETE SET NULL;
+
+--
+-- Name: register_entries register_entries_department_id_fkey; Type: FK CONSTRAINT; Schema: risk; Owner: secureyeoman
+--
+
+ALTER TABLE ONLY risk.register_entries
+    ADD CONSTRAINT register_entries_department_id_fkey FOREIGN KEY (department_id) REFERENCES risk.departments(id) ON DELETE CASCADE;
+
+--
+-- Name: department_scores department_scores_department_id_fkey; Type: FK CONSTRAINT; Schema: risk; Owner: secureyeoman
+--
+
+ALTER TABLE ONLY risk.department_scores
+    ADD CONSTRAINT department_scores_department_id_fkey FOREIGN KEY (department_id) REFERENCES risk.departments(id) ON DELETE CASCADE;
+
+--
+-- Name: assessments assessments_department_id_fkey; Type: FK CONSTRAINT; Schema: risk; Owner: secureyeoman
+--
+
+ALTER TABLE ONLY risk.assessments
+    ADD CONSTRAINT assessments_department_id_fkey FOREIGN KEY (department_id) REFERENCES risk.departments(id) ON DELETE SET NULL;
+
+--
+-- Name: external_findings external_findings_department_id_fkey; Type: FK CONSTRAINT; Schema: risk; Owner: secureyeoman
+--
+
+ALTER TABLE ONLY risk.external_findings
+    ADD CONSTRAINT external_findings_department_id_fkey FOREIGN KEY (department_id) REFERENCES risk.departments(id) ON DELETE SET NULL;
 
 --
 -- Name: personalities personalities_tenant_id_fkey; Type: FK CONSTRAINT; Schema: soul; Owner: secureyeoman
