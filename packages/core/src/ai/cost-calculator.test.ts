@@ -46,6 +46,20 @@ describe('CostCalculator', () => {
     expect(cost).toBeCloseTo(0.003, 4);
   });
 
+  it('should calculate OpenAI o3 cost', () => {
+    // o3: $10/1M input, $40/1M output
+    const cost = calc.calculate('openai', 'o3', usage(1000, 500));
+    // (1000/1M)*10 + (500/1M)*40 = 0.01 + 0.02 = 0.03
+    expect(cost).toBeCloseTo(0.03, 4);
+  });
+
+  it('should calculate Gemini 2.0 Flash Lite cost', () => {
+    // gemini-2.0-flash-lite: $0.075/1M input, $0.3/1M output
+    const cost = calc.calculate('gemini', 'gemini-2.0-flash-lite', usage(10000, 5000));
+    // (10000/1M)*0.075 + (5000/1M)*0.3 = 0.00075 + 0.0015 = 0.00225
+    expect(cost).toBeCloseTo(0.00225, 5);
+  });
+
   it('should return $0 for Ollama (local)', () => {
     const cost = calc.calculate('ollama', 'llama3', usage(50000, 10000));
     expect(cost).toBe(0);

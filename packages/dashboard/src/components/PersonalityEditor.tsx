@@ -1184,6 +1184,12 @@ function BrainSection({
   onActiveHoursChange,
   thinkingConfig,
   onThinkingConfigChange,
+  reasoningConfig,
+  onReasoningConfigChange,
+  contextOverflowStrategy,
+  onContextOverflowStrategyChange,
+  costBudget,
+  onCostBudgetChange,
   maxPromptTokens,
   onMaxPromptTokensChange,
   globalMaxPromptTokens,
@@ -1223,6 +1229,12 @@ function BrainSection({
   }) => void;
   thinkingConfig: { enabled: boolean; budgetTokens: number };
   onThinkingConfigChange: (config: { enabled: boolean; budgetTokens: number }) => void;
+  reasoningConfig: { enabled: boolean; effort: 'low' | 'medium' | 'high' };
+  onReasoningConfigChange: (config: { enabled: boolean; effort: 'low' | 'medium' | 'high' }) => void;
+  contextOverflowStrategy: 'summarise' | 'truncate' | 'error';
+  onContextOverflowStrategyChange: (v: 'summarise' | 'truncate' | 'error') => void;
+  costBudget: { dailyUsd?: number; monthlyUsd?: number };
+  onCostBudgetChange: (v: { dailyUsd?: number; monthlyUsd?: number }) => void;
   maxPromptTokens: number | null;
   onMaxPromptTokensChange: (value: number | null) => void;
   globalMaxPromptTokens: number;
@@ -1765,6 +1777,115 @@ function BrainSection({
                 </div>
               </div>
             )}
+          </div>
+        </CollapsibleSection>
+        <CollapsibleSection title="Reasoning Effort" defaultOpen={false}>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Controls OpenAI reasoning effort for o-series models (o1, o3). Higher effort uses more
+              tokens but produces more thorough reasoning.
+            </p>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm">Enable reasoning effort</span>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={reasoningConfig.enabled}
+                  onChange={(e) => {
+                    onReasoningConfigChange({ ...reasoningConfig, enabled: e.target.checked });
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+              </label>
+            </div>
+            {reasoningConfig.enabled && (
+              <div className="flex gap-2">
+                {(['low', 'medium', 'high'] as const).map((level) => (
+                  <button
+                    key={level}
+                    onClick={() => {
+                      onReasoningConfigChange({ ...reasoningConfig, effort: level });
+                    }}
+                    className={`px-3 py-1 text-xs rounded border transition-colors ${
+                      reasoningConfig.effort === level
+                        ? 'bg-primary text-white border-primary'
+                        : 'bg-background border-border hover:bg-muted/50'
+                    }`}
+                  >
+                    {level.charAt(0).toUpperCase() + level.slice(1)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </CollapsibleSection>
+        <CollapsibleSection title="Context Overflow" defaultOpen={false}>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Strategy when conversation exceeds the model&apos;s context window.
+            </p>
+            <div className="flex gap-2">
+              {([
+                { value: 'summarise' as const, label: 'Summarise', desc: 'Compact older messages' },
+                { value: 'truncate' as const, label: 'Truncate', desc: 'Drop oldest messages' },
+                { value: 'error' as const, label: 'Error', desc: 'Reject the request' },
+              ]).map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => {
+                    onContextOverflowStrategyChange(opt.value);
+                  }}
+                  title={opt.desc}
+                  className={`px-3 py-1 text-xs rounded border transition-colors ${
+                    contextOverflowStrategy === opt.value
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-background border-border hover:bg-muted/50'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </CollapsibleSection>
+        <CollapsibleSection title="Cost Budget" defaultOpen={false}>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Limit AI spending for this personality. Requests are blocked when the budget is exceeded.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Daily limit (USD)</label>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={costBudget.dailyUsd ?? ''}
+                  onChange={(e) => {
+                    const v = e.target.value ? Number(e.target.value) : undefined;
+                    onCostBudgetChange({ ...costBudget, dailyUsd: v && v > 0 ? v : undefined });
+                  }}
+                  placeholder="No limit"
+                  className="w-full px-2 py-1 text-sm border rounded bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Monthly limit (USD)</label>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.1}
+                  value={costBudget.monthlyUsd ?? ''}
+                  onChange={(e) => {
+                    const v = e.target.value ? Number(e.target.value) : undefined;
+                    onCostBudgetChange({ ...costBudget, monthlyUsd: v && v > 0 ? v : undefined });
+                  }}
+                  placeholder="No limit"
+                  className="w-full px-2 py-1 text-sm border rounded bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+            </div>
           </div>
         </CollapsibleSection>
         <CollapsibleSection title="Prompt Budget" defaultOpen={false}>
@@ -4342,6 +4463,9 @@ export function PersonalityEditor({
   });
 
   const [thinkingConfig, setThinkingConfig] = useState({ enabled: false, budgetTokens: 10000 });
+  const [reasoningConfig, setReasoningConfig] = useState({ enabled: false, effort: 'medium' as 'low' | 'medium' | 'high' });
+  const [contextOverflowStrategy, setContextOverflowStrategy] = useState<'summarise' | 'truncate' | 'error'>('summarise');
+  const [costBudget, setCostBudget] = useState<{ dailyUsd?: number; monthlyUsd?: number }>({});
   const [maxPromptTokens, setMaxPromptTokens] = useState<number | null>(null);
   const [omnipresentMind, setOmnipresentMind] = useState(false);
   const [strictSystemPromptConfidentiality, setStrictSystemPromptConfidentiality] = useState<
@@ -4615,6 +4739,15 @@ export function PersonalityEditor({
       enabled: body.thinkingConfig?.enabled ?? false,
       budgetTokens: body.thinkingConfig?.budgetTokens ?? 10000,
     });
+    setReasoningConfig({
+      enabled: body.reasoningConfig?.enabled ?? false,
+      effort: body.reasoningConfig?.effort ?? 'medium',
+    });
+    setContextOverflowStrategy(body.contextOverflowStrategy ?? 'summarise');
+    setCostBudget({
+      dailyUsd: body.costBudget?.dailyUsd,
+      monthlyUsd: body.costBudget?.monthlyUsd,
+    });
     setMaxPromptTokens(body.maxPromptTokens ?? null);
     setOmnipresentMind(body.omnipresentMind ?? false);
     setStrictSystemPromptConfidentiality(body.strictSystemPromptConfidentiality);
@@ -4742,6 +4875,9 @@ export function PersonalityEditor({
       timezone: 'UTC',
     });
     setThinkingConfig({ enabled: false, budgetTokens: 10000 });
+    setReasoningConfig({ enabled: false, effort: 'medium' });
+    setContextOverflowStrategy('summarise');
+    setCostBudget({});
     setMaxPromptTokens(null);
     setOmnipresentMind(false);
     setStrictSystemPromptConfidentiality(undefined);
@@ -4773,6 +4909,9 @@ export function PersonalityEditor({
         proactiveConfig,
         activeHours,
         thinkingConfig,
+        ...(reasoningConfig.enabled ? { reasoningConfig } : {}),
+        contextOverflowStrategy,
+        ...(costBudget.dailyUsd || costBudget.monthlyUsd ? { costBudget } : {}),
         ...(maxPromptTokens !== null ? { maxPromptTokens } : {}),
         omnipresentMind,
         ...(strictSystemPromptConfidentiality !== undefined
@@ -5117,6 +5256,12 @@ export function PersonalityEditor({
             onActiveHoursChange={setActiveHours}
             thinkingConfig={thinkingConfig}
             onThinkingConfigChange={setThinkingConfig}
+            reasoningConfig={reasoningConfig}
+            onReasoningConfigChange={setReasoningConfig}
+            contextOverflowStrategy={contextOverflowStrategy}
+            onContextOverflowStrategyChange={setContextOverflowStrategy}
+            costBudget={costBudget}
+            onCostBudgetChange={setCostBudget}
             maxPromptTokens={maxPromptTokens}
             onMaxPromptTokensChange={setMaxPromptTokens}
             globalMaxPromptTokens={soulConfig?.maxPromptTokens ?? 16000}

@@ -358,6 +358,58 @@ describe('OpenAIProvider', () => {
     });
   });
 
+  describe('reasoning effort (o3)', () => {
+    it('passes reasoning_effort when set on a reasoning model', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: 'ok' }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
+      });
+      const o3Provider = new OpenAIProvider({
+        ...makeConfig(),
+        model: { ...makeConfig().model, model: 'o3' },
+      });
+      const request: AIRequest = {
+        messages: [{ role: 'user', content: 'Hello' }],
+        stream: false,
+        reasoningEffort: 'high',
+      };
+      await o3Provider.chat(request);
+      const callArgs = mockCreate.mock.calls[0][0];
+      expect(callArgs.reasoning_effort).toBe('high');
+    });
+
+    it('omits reasoning_effort when not set', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: 'ok' }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
+      });
+      const o3Provider = new OpenAIProvider({
+        ...makeConfig(),
+        model: { ...makeConfig().model, model: 'o3' },
+      });
+      await o3Provider.chat(simpleRequest);
+      const callArgs = mockCreate.mock.calls[0][0];
+      expect(callArgs.reasoning_effort).toBeUndefined();
+    });
+
+    it('omits temperature for reasoning models', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: 'ok' }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
+      });
+      const o3Provider = new OpenAIProvider({
+        ...makeConfig(),
+        model: { ...makeConfig().model, model: 'o3' },
+      });
+      await o3Provider.chat(simpleRequest);
+      const callArgs = mockCreate.mock.calls[0][0];
+      expect(callArgs.temperature).toBeUndefined();
+    });
+  });
+
   describe('fetchAvailableModels', () => {
     beforeEach(() => {
       vi.stubGlobal('fetch', mockFetch);

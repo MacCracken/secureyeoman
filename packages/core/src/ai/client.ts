@@ -47,6 +47,7 @@ import type { SecureLogger } from '../logging/logger.js';
 import { getSecret } from '../config/loader.js';
 import type { RetryConfig } from './retry-manager.js';
 import type { SoulManager } from '../soul/manager.js';
+import type { ProviderHealthTracker } from './provider-health.js';
 
 export interface AIClientConfig {
   model: ModelConfig;
@@ -78,6 +79,8 @@ export interface AIClientDeps {
   providerAccountManager?: import('./provider-account-manager.js').ProviderAccountManager;
   /** Explicit provider account ID to use for key resolution. */
   accountId?: string;
+  /** Provider health tracker for recording request outcomes (Phase 119). */
+  healthTracker?: ProviderHealthTracker;
 }
 
 const LOCAL_PROVIDERS = new Set(['ollama', 'lmstudio', 'localai']);
@@ -96,6 +99,7 @@ export class AIClient {
   private readonly responseCache: ResponseCache | null;
   private soulManager: SoulManager | null;
   private readonly providerAccountManager: import('./provider-account-manager.js').ProviderAccountManager | null;
+  private readonly healthTracker: ProviderHealthTracker | null;
   private resolvedAccountId: string | null = null;
   private initPromise: Promise<void> | null = null;
 
@@ -111,6 +115,7 @@ export class AIClient {
     this.retryConfig = config.retryConfig;
     this.soulManager = deps.soulManager ?? null;
     this.providerAccountManager = deps.providerAccountManager ?? null;
+    this.healthTracker = deps.healthTracker ?? null;
     this.resolvedAccountId = deps.accountId ?? null;
     this.provider = this.createProvider(config);
     this.responseCache =
@@ -397,6 +402,10 @@ export class AIClient {
     return this.costCalculator;
   }
 
+  getHealthTracker(): ProviderHealthTracker | null {
+    return this.healthTracker;
+  }
+
   /**
    * Get response cache hit/miss statistics.
    * Returns null when the cache is not enabled for this client.
@@ -516,6 +525,7 @@ export class AIClient {
       const response = await provider.chat(request);
       const elapsed = Date.now() - startTime;
 
+      this.healthTracker?.recordRequest(providerName, true, elapsed);
       await this.trackUsage(response, elapsed);
 
       await this.auditRecord('ai_response', {
@@ -530,13 +540,15 @@ export class AIClient {
 
       return response;
     } catch (error) {
+      const elapsed = Date.now() - startTime;
+      this.healthTracker?.recordRequest(providerName, false, elapsed);
       this.usageTracker.recordError(providerName, request.model ?? 'default');
-      this.usageTracker.recordLatency(Date.now() - startTime);
+      this.usageTracker.recordLatency(elapsed);
 
       await this.auditRecord('ai_error', {
         provider: providerName,
         error: error instanceof Error ? error.message : 'Unknown error',
-        latencyMs: Date.now() - startTime,
+        latencyMs: elapsed,
       });
 
       throw error;

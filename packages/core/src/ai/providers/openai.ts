@@ -66,21 +66,46 @@ export class OpenAIProvider extends BaseProvider {
     }
   }
 
+  private isReasoningModel(model: string): boolean {
+    return /^o[13](-mini)?$/.test(model);
+  }
+
+  private buildParams(
+    model: string,
+    messages: OpenAI.ChatCompletionMessageParam[],
+    request: AIRequest,
+    streaming: boolean
+  ): Record<string, unknown> {
+    const reasoning = this.isReasoningModel(model);
+    const params: Record<string, unknown> = {
+      model,
+      messages,
+      max_tokens: this.resolveMaxTokens(request),
+      ...(request.tools?.length ? { tools: this.mapTools(request.tools) } : {}),
+      ...(request.stopSequences?.length ? { stop: request.stopSequences } : {}),
+    };
+    if (!reasoning) {
+      params.temperature = this.resolveTemperature(request);
+    }
+    if (reasoning && request.reasoningEffort) {
+      params.reasoning_effort = request.reasoningEffort;
+    }
+    if (streaming) {
+      params.stream = true;
+      params.stream_options = { include_usage: true };
+    }
+    return params;
+  }
+
   protected async doChat(request: AIRequest): Promise<AIResponse> {
     try {
       const model = this.resolveModel(request);
       const messages = this.mapMessages(request.messages);
+      const params = this.buildParams(model, messages, request, false);
 
-      const params: OpenAI.ChatCompletionCreateParams = {
-        model,
-        messages,
-        max_tokens: this.resolveMaxTokens(request),
-        temperature: this.resolveTemperature(request),
-        ...(request.tools?.length ? { tools: this.mapTools(request.tools) } : {}),
-        ...(request.stopSequences?.length ? { stop: request.stopSequences } : {}),
-      };
-
-      const response = await this.client.chat.completions.create(params);
+      const response = await this.client.chat.completions.create(
+        params as OpenAI.ChatCompletionCreateParams
+      );
       return this.mapResponse(response, model);
     } catch (error) {
       throw this.mapError(error);
@@ -90,17 +115,7 @@ export class OpenAIProvider extends BaseProvider {
   async *chatStream(request: AIRequest): AsyncGenerator<AIStreamChunk, void, unknown> {
     const model = this.resolveModel(request);
     const messages = this.mapMessages(request.messages);
-
-    const params: OpenAI.ChatCompletionCreateParams = {
-      model,
-      messages,
-      max_tokens: this.resolveMaxTokens(request),
-      temperature: this.resolveTemperature(request),
-      stream: true,
-      stream_options: { include_usage: true },
-      ...(request.tools?.length ? { tools: this.mapTools(request.tools) } : {}),
-      ...(request.stopSequences?.length ? { stop: request.stopSequences } : {}),
-    };
+    const params = this.buildParams(model, messages, request, true);
 
     try {
       const stream = await this.client.chat.completions.create(params);

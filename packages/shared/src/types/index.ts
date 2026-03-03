@@ -201,6 +201,8 @@ export {
   CreationConfigSchema,
   ProactivePersonalityConfigSchema,
   ThinkingPersonalityConfigSchema,
+  ReasoningPersonalityConfigSchema,
+  CostBudgetSchema,
   MessageTypeSchema,
   CommsConfigSchema,
   type UserRelationship,
@@ -242,6 +244,8 @@ export {
   type CreationConfig,
   type ProactivePersonalityConfig,
   type ThinkingPersonalityConfig,
+  type ReasoningPersonalityConfig,
+  type CostBudget,
   type MessageType,
   type CommsConfig,
   // Reasoning Strategies (Phase 107-A)

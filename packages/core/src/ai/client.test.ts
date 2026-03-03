@@ -1503,4 +1503,50 @@ describe('AIClient', () => {
       expect(client.getUsageTracker()).toBe(externalTracker);
     });
   });
+
+  // ─── Provider Health Tracking (Phase 119) ────────────────────────────
+
+  describe('health tracking', () => {
+    it('records success to health tracker', async () => {
+      const { ProviderHealthTracker } = await import('./provider-health.js');
+      const healthTracker = new ProviderHealthTracker();
+      const client = new AIClient(
+        { model: makeModelConfig('anthropic') },
+        { healthTracker }
+      );
+      const provider = (client as any).provider;
+      provider.chat.mockResolvedValue(mockResponse);
+
+      await client.chat(mockRequest);
+      const health = healthTracker.getHealth('anthropic');
+      expect(health.totalRequests).toBe(1);
+      expect(health.errorRate).toBe(0);
+    });
+
+    it('records failure to health tracker', async () => {
+      const { ProviderHealthTracker } = await import('./provider-health.js');
+      const healthTracker = new ProviderHealthTracker();
+      const client = new AIClient(
+        { model: makeModelConfig('anthropic') },
+        { healthTracker }
+      );
+      const provider = (client as any).provider;
+      provider.chat.mockRejectedValue(new AuthenticationError('anthropic'));
+
+      await expect(client.chat(mockRequest)).rejects.toThrow();
+      const health = healthTracker.getHealth('anthropic');
+      expect(health.totalRequests).toBe(1);
+      expect(health.errorRate).toBe(1);
+    });
+
+    it('works without health tracker', async () => {
+      const client = new AIClient({ model: makeModelConfig('anthropic') });
+      const provider = (client as any).provider;
+      provider.chat.mockResolvedValue(mockResponse);
+
+      const response = await client.chat(mockRequest);
+      expect(response.content).toBe('Hello world');
+      expect(client.getHealthTracker()).toBeNull();
+    });
+  });
 });

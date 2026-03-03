@@ -27,6 +27,14 @@ describe('getContextWindowSize()', () => {
   it('returns default for unknown model', () => {
     expect(getContextWindowSize('unknown-model-xyz')).toBe(8_192);
   });
+
+  it('returns 200k for o3', () => {
+    expect(getContextWindowSize('o3')).toBe(200_000);
+  });
+
+  it('returns 1M for gemini-2.0-flash-lite', () => {
+    expect(getContextWindowSize('gemini-2.0-flash-lite')).toBe(1_000_000);
+  });
 });
 
 // ── ContextCompactor ──────────────────────────────────────────────────────────

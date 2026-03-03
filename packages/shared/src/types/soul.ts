@@ -162,6 +162,24 @@ export const ThinkingPersonalityConfigSchema = z
 
 export type ThinkingPersonalityConfig = z.infer<typeof ThinkingPersonalityConfigSchema>;
 
+export const ReasoningPersonalityConfigSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    effort: z.enum(['low', 'medium', 'high']).default('medium'),
+  })
+  .optional();
+
+export type ReasoningPersonalityConfig = z.infer<typeof ReasoningPersonalityConfigSchema>;
+
+export const CostBudgetSchema = z
+  .object({
+    dailyUsd: z.number().positive().optional(),
+    monthlyUsd: z.number().positive().optional(),
+  })
+  .optional();
+
+export type CostBudget = z.infer<typeof CostBudgetSchema>;
+
 export const ResourcePolicySchema = z
   .object({
     deletionMode: z.enum(['auto', 'request', 'manual']).default('auto'),
@@ -222,6 +240,7 @@ export const BodyConfigSchema = z
     proactiveConfig: ProactivePersonalityConfigSchema.default({}),
     activeHours: PersonalityActiveHoursSchema.default({}),
     thinkingConfig: ThinkingPersonalityConfigSchema,
+    reasoningConfig: ReasoningPersonalityConfigSchema,
     resourcePolicy: ResourcePolicySchema.optional(),
     /**
      * Per-personality prompt token budget override.
@@ -279,6 +298,8 @@ export const BodyConfigSchema = z
     groundednessMode: z
       .enum(['off', 'annotate_only', 'block_unverified', 'strip_unverified'])
       .default('off'),
+    contextOverflowStrategy: z.enum(['summarise', 'truncate', 'error']).default('summarise'),
+    costBudget: CostBudgetSchema,
   })
   .default({});
 

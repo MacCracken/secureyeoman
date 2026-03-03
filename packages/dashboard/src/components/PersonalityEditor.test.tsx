@@ -755,4 +755,61 @@ describe('PersonalityEditor — Organizational Intent toggle', () => {
       screen.getByText('Allow this personality to read live org intent signals')
     ).toBeInTheDocument();
   });
+
+  // ── Phase 119: New Brain Section Controls ─────────────────────
+
+  it('shows reasoning effort presets in Brain section', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    const brainHeader = await screen.findByText('Brain - Intellect');
+    await user.click(brainHeader);
+
+    const reasoningHeader = await screen.findByText('Reasoning Effort');
+    await user.click(reasoningHeader);
+
+    expect(screen.getByText(/Controls OpenAI reasoning effort/)).toBeInTheDocument();
+    expect(screen.getByText('Enable reasoning effort')).toBeInTheDocument();
+  });
+
+  it('shows cost budget inputs in Brain section', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    const brainHeader = await screen.findByText('Brain - Intellect');
+    await user.click(brainHeader);
+
+    const costHeader = await screen.findByText('Cost Budget');
+    await user.click(costHeader);
+
+    expect(screen.getByText('Daily limit (USD)')).toBeInTheDocument();
+    expect(screen.getByText('Monthly limit (USD)')).toBeInTheDocument();
+  });
+
+  it('shows context overflow strategy selector in Brain section', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    const brainHeader = await screen.findByText('Brain - Intellect');
+    await user.click(brainHeader);
+
+    const overflowHeader = await screen.findByText('Context Overflow');
+    await user.click(overflowHeader);
+
+    expect(screen.getByText('Summarise')).toBeInTheDocument();
+    expect(screen.getByText('Truncate')).toBeInTheDocument();
+    expect(screen.getByText('Error')).toBeInTheDocument();
+  });
 });

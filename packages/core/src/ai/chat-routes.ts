@@ -1136,35 +1136,67 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         });
       }
 
+      // ── Cost budget check (Phase 119) ─────────────────────────────────
+      const costBudget = personality?.body?.costBudget;
+      if (costBudget && personality) {
+        const budgetChecker = secureYeoman.getCostBudgetChecker?.();
+        if (budgetChecker) {
+          const budgetResult = await budgetChecker.checkBudget(personality.id, costBudget);
+          if (!budgetResult.allowed) {
+            return reply.code(429).send({
+              error: 'Cost budget exceeded',
+              message: `${budgetResult.blockedBy} cost budget exceeded for this personality.`,
+              statusCode: 429,
+            });
+          }
+        }
+      }
+
       // Proactive context compaction — summarise older turns before the API
       // call when token usage approaches the model's context-window limit.
-      // This prevents "context length exceeded" failures and avoids wasting a
-      // full API round-trip on a doomed request.
       const currentModel = personality?.defaultModel?.model ?? 'unknown';
+      const overflowStrategy = personality?.body?.contextOverflowStrategy ?? 'summarise';
       if (compactor.needsCompaction(messages, currentModel)) {
-        try {
-          const compactionResult = await compactor.compact(
-            messages,
-            currentModel,
-            async (prompt) => {
-              const summaryReq: AIRequest = {
-                messages: [{ role: 'user', content: prompt }],
-                stream: false,
-              };
-              const summaryResp = await aiClient.chat(summaryReq, { source: 'context_compaction' });
-              return summaryResp.content;
-            }
-          );
-          if (compactionResult.compacted) {
-            messages.length = 0;
-            messages.push(...compactionResult.messages);
-          }
-        } catch (compactErr) {
-          // Compaction is best-effort — proceed with original messages on failure
-          const logger = getLogger().child({ component: 'chat-routes' });
-          logger.warn('Context compaction failed, proceeding with uncompacted context', {
-            error: String(compactErr),
+        if (overflowStrategy === 'error') {
+          return reply.code(413).send({
+            error: 'Context overflow',
+            message: 'Message history exceeds model context window.',
+            statusCode: 413,
           });
+        } else if (overflowStrategy === 'truncate') {
+          // Drop oldest non-system messages until under 80% threshold
+          const nonSystem = messages.filter((m) => m.role !== 'system');
+          const system = messages.filter((m) => m.role === 'system');
+          while (nonSystem.length > 2 && compactor.needsCompaction([...system, ...nonSystem], currentModel)) {
+            nonSystem.shift();
+          }
+          messages.length = 0;
+          messages.push(...system, ...nonSystem);
+        } else {
+          // 'summarise' — default
+          try {
+            const compactionResult = await compactor.compact(
+              messages,
+              currentModel,
+              async (prompt) => {
+                const summaryReq: AIRequest = {
+                  messages: [{ role: 'user', content: prompt }],
+                  stream: false,
+                };
+                const summaryResp = await aiClient.chat(summaryReq, { source: 'context_compaction' });
+                return summaryResp.content;
+              }
+            );
+            if (compactionResult.compacted) {
+              messages.length = 0;
+              messages.push(...compactionResult.messages);
+            }
+          } catch (compactErr) {
+            const logger = getLogger().child({ component: 'chat-routes' });
+            logger.warn('Context compaction failed, proceeding with uncompacted context', {
+              error: String(compactErr),
+            });
+          }
         }
       }
 
@@ -1173,11 +1205,17 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         ? (personality.body.thinkingConfig.budgetTokens ?? 10000)
         : undefined;
 
+      // Reasoning effort (Phase 119 — OpenAI o3 reasoning_effort)
+      const reasoningEffort = personality?.body?.reasoningConfig?.enabled
+        ? personality.body.reasoningConfig.effort
+        : undefined;
+
       const aiRequest: AIRequest = {
         messages,
         stream: false,
         ...(tools.length > 0 ? { tools } : {}),
         ...(thinkingBudgetTokens ? { thinkingBudgetTokens } : {}),
+        ...(reasoningEffort ? { reasoningEffort } : {}),
       };
 
       // A/B test model override (Phase 98)
@@ -2074,33 +2112,70 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           });
         }
 
-        // Compaction
-        const currentModel = personality?.defaultModel?.model ?? 'unknown';
-        if (compactor.needsCompaction(messages, currentModel)) {
-          try {
-            const compactionResult = await compactor.compact(
-              messages,
-              currentModel,
-              async (prompt) => {
-                const summaryResp = await aiClient.chat(
-                  { messages: [{ role: 'user', content: prompt }], stream: false },
-                  { source: 'context_compaction' }
-                );
-                return summaryResp.content;
-              }
-            );
-            if (compactionResult.compacted) {
-              messages.length = 0;
-              messages.push(...compactionResult.messages);
+        // ── Cost budget check (streaming, Phase 119) ──────────────
+        const streamCostBudget = personality?.body?.costBudget;
+        if (streamCostBudget && personality) {
+          const budgetChecker = secureYeoman.getCostBudgetChecker?.();
+          if (budgetChecker) {
+            const budgetResult = await budgetChecker.checkBudget(personality.id, streamCostBudget);
+            if (!budgetResult.allowed) {
+              emit({
+                type: 'error',
+                message: `${budgetResult.blockedBy} cost budget exceeded for this personality.`,
+              });
+              reply.raw.end();
+              return;
             }
-          } catch {
-            /* best-effort */
+          }
+        }
+
+        // Compaction — with strategy awareness (Phase 119)
+        const currentModel = personality?.defaultModel?.model ?? 'unknown';
+        const streamOverflowStrategy = personality?.body?.contextOverflowStrategy ?? 'summarise';
+        if (compactor.needsCompaction(messages, currentModel)) {
+          if (streamOverflowStrategy === 'error') {
+            emit({ type: 'error', message: 'Message history exceeds model context window.' });
+            reply.raw.end();
+            return;
+          } else if (streamOverflowStrategy === 'truncate') {
+            const nonSystem = messages.filter((m) => m.role !== 'system');
+            const system = messages.filter((m) => m.role === 'system');
+            while (nonSystem.length > 2 && compactor.needsCompaction([...system, ...nonSystem], currentModel)) {
+              nonSystem.shift();
+            }
+            messages.length = 0;
+            messages.push(...system, ...nonSystem);
+          } else {
+            try {
+              const compactionResult = await compactor.compact(
+                messages,
+                currentModel,
+                async (prompt) => {
+                  const summaryResp = await aiClient.chat(
+                    { messages: [{ role: 'user', content: prompt }], stream: false },
+                    { source: 'context_compaction' }
+                  );
+                  return summaryResp.content;
+                }
+              );
+              if (compactionResult.compacted) {
+                messages.length = 0;
+                messages.push(...compactionResult.messages);
+              }
+            } catch {
+              /* best-effort */
+            }
           }
         }
 
         // Thinking config
         const streamThinkingBudget = personality?.body?.thinkingConfig?.enabled
           ? (personality.body.thinkingConfig.budgetTokens ?? 10000)
+          : undefined;
+
+        // Reasoning effort (Phase 119)
+        const streamReasoningEffort = personality?.body?.reasoningConfig?.enabled
+          ? personality.body.reasoningConfig.effort
           : undefined;
 
         const personalityFallbacks = personality?.modelFallbacks?.length
@@ -2113,6 +2188,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           stream: true,
           ...(tools.length > 0 ? { tools } : {}),
           ...(streamThinkingBudget ? { thinkingBudgetTokens: streamThinkingBudget } : {}),
+          ...(streamReasoningEffort ? { reasoningEffort: streamReasoningEffort } : {}),
         };
 
         // A/B test model override (Phase 98)

@@ -334,6 +334,22 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
   // Local providers (ollama, lmstudio, localai) are pinged via HTTP.
   // Cloud providers return 'configured' / 'missing_key' status without a live ping.
 
+  // ── Provider Health Dashboard (Phase 119) ──────────────────────────
+  // Returns per-provider health metrics from the ring-buffer tracker.
+
+  app.get('/api/v1/model/health', async (_request, reply: FastifyReply) => {
+    try {
+      const healthTracker = secureYeoman.getProviderHealthTracker?.();
+      if (!healthTracker) {
+        return sendError(reply, 503, 'Provider health tracker not available');
+      }
+      return healthTracker.getAllHealth();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return sendError(reply, 500, message);
+    }
+  });
+
   app.get('/api/v1/ai/health', async (_request, reply: FastifyReply) => {
     try {
       const config = secureYeoman.getConfig();

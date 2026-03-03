@@ -153,6 +153,8 @@ import { DepartmentRiskStorage } from './risk-assessment/department-risk-storage
 import { DepartmentRiskManager } from './risk-assessment/department-risk-manager.js';
 import { ProviderAccountStorage } from './ai/provider-account-storage.js';
 import { ProviderAccountManager } from './ai/provider-account-manager.js';
+import { ProviderHealthTracker } from './ai/provider-health.js';
+import { CostBudgetChecker } from './ai/cost-budget-checker.js';
 import { ProviderKeyValidator } from './ai/provider-key-validator.js';
 import { AthiStorage } from './security/athi-storage.js';
 import { AthiManager } from './security/athi-manager.js';
@@ -354,6 +356,8 @@ export class SecureYeoman {
   private licenseManager: LicenseManager = new LicenseManager();
   private providerAccountStorage: ProviderAccountStorage | null = null;
   private providerAccountManager: ProviderAccountManager | null = null;
+  private providerHealthTracker: ProviderHealthTracker = new ProviderHealthTracker();
+  private costBudgetChecker: CostBudgetChecker | null = null;
   private strategyStorage: StrategyStorage | null = null;
   private modelDefaultSet = false;
   private initialized = false;
@@ -688,8 +692,17 @@ export class SecureYeoman {
             logger: this.logger.child({ component: 'AIClient' }),
             usageStorage,
             providerAccountManager: this.providerAccountManager ?? undefined,
+            healthTracker: this.providerHealthTracker,
           }
         );
+
+        // Cost budget checker (Phase 119)
+        if (this.providerAccountStorage) {
+          this.costBudgetChecker = new CostBudgetChecker(
+            this.providerAccountStorage,
+            () => this.alertManager
+          );
+        }
 
         // Fire usage history init in the background — non-blocking so startup
         // stays fast, but ensures the tracker is seeded well before the first
@@ -2580,6 +2593,14 @@ export class SecureYeoman {
   getProviderAccountManager(): ProviderAccountManager | null {
     this.ensureInitialized();
     return this.providerAccountManager;
+  }
+
+  getProviderHealthTracker(): ProviderHealthTracker {
+    return this.providerHealthTracker;
+  }
+
+  getCostBudgetChecker(): CostBudgetChecker | null {
+    return this.costBudgetChecker;
   }
 
   getAthiManager(): AthiManager | null {

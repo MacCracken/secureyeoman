@@ -6,6 +6,22 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.3] — 2026-03-03
 
+### Phase 119: LLM Provider Improvements
+
+- **Model registry updates**: Added OpenAI `o3` (200K context, $10/$40 per 1M tokens) and Gemini `gemini-2.0-flash-lite` (1M context, $0.075/$0.30 per 1M tokens) to `cost-calculator.ts`, `context-compactor.ts`, and `MODEL_PROVIDER_MAP`.
+- **OpenAI reasoning effort**: `isReasoningModel()` helper detects o-series models. `buildParams()` refactor in `OpenAIProvider` conditionally omits `temperature` for reasoning models and passes `reasoning_effort` from `AIRequest.reasoningEffort`. Shared types: `reasoningEffort` field on `AIRequestSchema`.
+- **Provider health tracker** (`packages/core/src/ai/provider-health.ts`): `ProviderHealthTracker` class with per-provider ring buffer (100 entries). `recordRequest(provider, success, latencyMs)`, `getHealth(provider)` → `{ errorRate, p95LatencyMs, status, consecutiveFailures, totalRequests }`. Status thresholds: healthy (<5%), degraded (5–20%), unhealthy (≥20%). `getProviderRanking()` sorted by health. Integrated into `AIClient` — records success/failure with latency after each request.
+- **Cost budget checker** (`packages/core/src/ai/cost-budget-checker.ts`): `CostBudgetChecker` class with 30s in-memory cache per personality. `checkBudget(personalityId, budget)` → `{ allowed, dailyUsed, monthlyUsed, dailyPct, monthlyPct, blockedBy? }`. Emits alert via `AlertManager` at 80% usage; blocks requests at 100%. Graceful degradation on storage errors.
+- **Provider account storage**: `getPersonalityCostTotal(personalityId, fromMs, toMs)` method for querying per-personality cost totals from `ai.account_cost_records`.
+- **Chat routes wiring**: Non-streaming and streaming paths updated with (1) cost budget check (429 on exceed), (2) context overflow strategy switch (`summarise`/`truncate`/`error`), (3) reasoning effort injection from personality config.
+- **Shared types** (`soul.ts`): `ReasoningPersonalityConfigSchema` (`enabled`, `effort`), `CostBudgetSchema` (`dailyUsd`, `monthlyUsd`). `BodyConfigSchema` extended with `reasoningConfig`, `contextOverflowStrategy`, `costBudget`.
+- **Health endpoint**: `GET /api/v1/model/health` returns `healthTracker.getAllHealth()` or 503. Route permission: `model:read`.
+- **SecureYeoman wiring**: `providerHealthTracker` and `costBudgetChecker` fields, initialization, and getters. Health tracker passed to `AIClient` constructor.
+- **Dashboard**: `fetchProviderHealth()` API function. `ModelWidget` shows green/amber/red health dots next to provider names with tooltip (error rate + p95). `PersonalityEditor` BrainSection: Reasoning Effort toggle + Low/Medium/High presets, Context Overflow Strategy selector (Summarise/Truncate/Error), Cost Budget daily/monthly USD inputs.
+- **Local model refresh**: `CACHE_TTL_MS` reduced from 10 minutes to 60 seconds for faster Ollama model list updates.
+- **Tests**: ~50 new — `provider-health.test.ts` (17), `cost-budget-checker.test.ts` (12), `openai.test.ts` (+3), `client.test.ts` (+3), `chat-routes.test.ts` (+6), `model-routes.test.ts` (+2), `cost-calculator.test.ts` (+2), `context-compactor.test.ts` (+2), `PersonalityEditor.test.tsx` (+3), `ModelWidget.test.tsx` (+1).
+- **ADR 193** (`docs/adr/193-llm-provider-improvements.md`). **Guide** (`docs/guides/llm-provider-improvements.md`).
+
 ### Council of AIs — Multi-Round Group Deliberation Engine
 
 - **Shared types** (`packages/shared/src/types/council.ts`): `CouncilTemplate`, `CouncilMemberConfig`, `CouncilPosition`, `CouncilRun`, `CouncilRunParams` Zod schemas. Deliberation strategies: `rounds`, `until_consensus`, `single_pass`. Voting strategies: `facilitator_judgment`, `majority`, `unanimous`, `weighted`. Exported from `types/index.ts`.

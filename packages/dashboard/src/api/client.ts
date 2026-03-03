@@ -1622,6 +1622,24 @@ export async function deleteOllamaModel(model: string): Promise<void> {
   await request(`/model/ollama/${encodedName}`, { method: 'DELETE' });
 }
 
+// ─── Provider Health (Phase 119) ──────────────────────────────
+
+export interface ProviderHealthEntry {
+  errorRate: number;
+  p95LatencyMs: number;
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  consecutiveFailures: number;
+  totalRequests: number;
+}
+
+export async function fetchProviderHealth(): Promise<Record<string, ProviderHealthEntry>> {
+  try {
+    return await request<Record<string, ProviderHealthEntry>>('/model/health');
+  } catch {
+    return {};
+  }
+}
+
 // ─── Model Default (persistent) ───────────────────────────────
 
 export interface ModelDefaultResponse {

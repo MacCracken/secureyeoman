@@ -109,6 +109,7 @@ export const AIRequestSchema = z.object({
   stopSequences: z.array(z.string()).optional(),
   model: z.string().optional(),
   thinkingBudgetTokens: z.number().int().min(1024).optional(),
+  reasoningEffort: z.enum(['low', 'medium', 'high']).optional(),
 });
 
 export type AIRequest = z.infer<typeof AIRequestSchema>;

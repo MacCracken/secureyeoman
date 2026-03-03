@@ -54,9 +54,11 @@ const CONTEXT_WINDOW: Record<string, number> = {
   o1: 200_000,
   'o1-mini': 128_000,
   'o3-mini': 200_000,
+  o3: 200_000,
   'gpt-5.2': 128_000,
   // Google
   'gemini-2.0-flash': 1_000_000,
+  'gemini-2.0-flash-lite': 1_000_000,
   'gemini-3-flash': 1_000_000,
   // xAI / Grok
   'grok-3': 131_072,

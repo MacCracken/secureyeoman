@@ -13,12 +13,14 @@ vi.mock('../api/client', () => ({
   patchModelConfig: vi.fn(),
   fetchOllamaPull: vi.fn().mockReturnValue((async function* () {})()),
   deleteOllamaModel: vi.fn(),
+  fetchProviderHealth: vi.fn(),
 }));
 
 import * as api from '../api/client';
 
 const mockFetchModelInfo = vi.mocked(api.fetchModelInfo);
 const mockSwitchModel = vi.mocked(api.switchModel);
+const mockFetchProviderHealth = vi.mocked(api.fetchProviderHealth);
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -49,6 +51,7 @@ describe('ModelWidget', () => {
     vi.resetAllMocks();
     mockFetchModelInfo.mockResolvedValue(createModelInfoResponse());
     mockSwitchModel.mockResolvedValue({ success: true, model: 'openai/gpt-4o' });
+    mockFetchProviderHealth.mockResolvedValue({});
   });
 
   it('renders current model info', async () => {
@@ -220,6 +223,42 @@ describe('ModelWidget', () => {
     await user.click(providerButton);
     await waitFor(() => {
       expect(screen.getByText('claude-opus-4-20250514')).toBeInTheDocument();
+    });
+  });
+
+  // ── Provider Health Indicators (Phase 119) ─────────────────────
+
+  it('renders health indicator dots next to providers', async () => {
+    mockFetchProviderHealth.mockResolvedValue({
+      anthropic: {
+        errorRate: 0.02,
+        p95LatencyMs: 450,
+        status: 'healthy',
+        consecutiveFailures: 0,
+        totalRequests: 100,
+      },
+      openai: {
+        errorRate: 0.15,
+        p95LatencyMs: 1200,
+        status: 'degraded',
+        consecutiveFailures: 2,
+        totalRequests: 80,
+      },
+    });
+
+    renderComponent();
+
+    await waitFor(() => {
+      const elements = screen.getAllByText(/Anthropic/);
+      expect(elements.length).toBeGreaterThanOrEqual(1);
+    });
+
+    // Health dots should be rendered with appropriate tooltip titles
+    await waitFor(() => {
+      const healthyDot = document.querySelector('.bg-green-500');
+      expect(healthyDot).toBeInTheDocument();
+      const degradedDot = document.querySelector('.bg-amber-500');
+      expect(degradedDot).toBeInTheDocument();
     });
   });
 });

@@ -283,6 +283,9 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/model/cost-recommendations': {
     GET: { resource: 'model', action: 'read' },
   },
+  '/api/v1/model/health': {
+    GET: { resource: 'model', action: 'read' },
+  },
   // MCP routes
   '/api/v1/mcp/servers': {
     GET: { resource: 'mcp', action: 'read' },

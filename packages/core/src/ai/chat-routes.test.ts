@@ -125,6 +125,7 @@ function createMockSecureYeoman(
     getMcpStorage: vi.fn().mockReturnValue(overrides.mcpStorage ?? null),
     getUsageAnomalyDetector: vi.fn().mockReturnValue(null),
     getAbTestManager: vi.fn().mockReturnValue(null),
+    getCostBudgetChecker: vi.fn().mockReturnValue(null),
     getConversationStorage:
       overrides.hasConversationStorage === false
         ? vi.fn().mockReturnValue(null)
@@ -5521,5 +5522,250 @@ describe('Chat Routes — streaming history filtering', () => {
     expect(res.statusCode).toBe(200);
     const events = parseSSE(res.body);
     expect(events.find((e) => e.type === 'done')).toBeDefined();
+  });
+});
+
+// ── Phase 119: LLM Provider Improvements Tests ──────────────────────────────
+
+describe('Phase 119 — Reasoning Effort', () => {
+  let app: ReturnType<typeof Fastify>;
+
+  beforeEach(() => {
+    app = Fastify();
+  });
+
+  it('passes reasoningEffort to AI request when personality has reasoning config', async () => {
+    const mockAiClient = {
+      chat: vi.fn().mockResolvedValue({
+        id: 'resp-1',
+        content: 'OK',
+        toolCalls: [],
+        usage: { inputTokens: 10, outputTokens: 5, cachedTokens: 0, totalTokens: 15 },
+        stopReason: 'end_turn',
+        model: 'o3',
+        provider: 'openai',
+      }),
+    };
+    const mockSoulManager = {
+      composeSoulPrompt: vi.fn().mockReturnValue('System'),
+      getActiveTools: vi.fn().mockReturnValue([]),
+      getPersonality: vi.fn().mockReturnValue(null),
+      getActivePersonality: vi.fn().mockReturnValue({
+        id: 'p1',
+        name: 'Test',
+        defaultModel: { provider: 'openai', model: 'o3' },
+        body: {
+          enabled: true,
+          reasoningConfig: { enabled: true, effort: 'high' },
+        },
+      }),
+      getSkill: vi.fn().mockResolvedValue(null),
+    };
+    const { mock } = createMockSecureYeoman({
+      aiClient: mockAiClient,
+      soulManager: mockSoulManager,
+    });
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    await app.inject({ method: 'POST', url: '/api/v1/chat', payload: { message: 'Hello' } });
+    const callArg = mockAiClient.chat.mock.calls[0][0];
+    expect(callArg.reasoningEffort).toBe('high');
+  });
+});
+
+describe('Phase 119 — Context Overflow Strategy', () => {
+  let app: ReturnType<typeof Fastify>;
+
+  beforeEach(() => {
+    app = Fastify();
+  });
+
+  it('returns 413 when overflow strategy is error', async () => {
+    const mockSoulManager = {
+      composeSoulPrompt: vi.fn().mockReturnValue('S'.repeat(20000)),
+      getActiveTools: vi.fn().mockReturnValue([]),
+      getPersonality: vi.fn().mockReturnValue(null),
+      getActivePersonality: vi.fn().mockReturnValue({
+        id: 'p1',
+        name: 'Test',
+        defaultModel: { provider: 'anthropic', model: 'unknown-model-xyz' },
+        body: {
+          enabled: false,
+          contextOverflowStrategy: 'error',
+        },
+      }),
+      getSkill: vi.fn().mockResolvedValue(null),
+    };
+    const { mock } = createMockSecureYeoman({ soulManager: mockSoulManager });
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    // unknown-model-xyz has 8192 context window, large system prompt exceeds 80%
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat',
+      payload: { message: 'Hello', history: Array.from({ length: 200 }, () => ({ role: 'user', content: 'A'.repeat(500) })) },
+    });
+    expect(res.statusCode).toBe(413);
+    const body = JSON.parse(res.payload);
+    expect(body.error).toBe('Context overflow');
+  });
+
+  it('truncates messages when overflow strategy is truncate', async () => {
+    const mockAiClient = {
+      chat: vi.fn().mockResolvedValue({
+        id: 'resp-1',
+        content: 'OK',
+        toolCalls: [],
+        usage: { inputTokens: 10, outputTokens: 5, cachedTokens: 0, totalTokens: 15 },
+        stopReason: 'end_turn',
+        model: 'unknown-model-xyz',
+        provider: 'anthropic',
+      }),
+    };
+    const mockSoulManager = {
+      composeSoulPrompt: vi.fn().mockReturnValue('System'),
+      getActiveTools: vi.fn().mockReturnValue([]),
+      getPersonality: vi.fn().mockReturnValue(null),
+      getActivePersonality: vi.fn().mockReturnValue({
+        id: 'p1',
+        name: 'Test',
+        defaultModel: { provider: 'anthropic', model: 'unknown-model-xyz' },
+        body: {
+          enabled: false,
+          contextOverflowStrategy: 'truncate',
+        },
+      }),
+      getSkill: vi.fn().mockResolvedValue(null),
+    };
+    const { mock } = createMockSecureYeoman({
+      aiClient: mockAiClient,
+      soulManager: mockSoulManager,
+    });
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat',
+      payload: { message: 'Latest', history: Array.from({ length: 200 }, (_, i) => ({ role: 'user', content: `msg${i} ${'X'.repeat(500)}` })) },
+    });
+    // Should succeed (200) with truncated context
+    expect(res.statusCode).toBe(200);
+    // The AI client should have been called with fewer messages than 201
+    const callArg = mockAiClient.chat.mock.calls[0]?.[0];
+    expect(callArg.messages.length).toBeLessThan(202);
+  });
+});
+
+describe('Phase 119 — Cost Budget', () => {
+  let app: ReturnType<typeof Fastify>;
+
+  beforeEach(() => {
+    app = Fastify();
+  });
+
+  it('returns 429 when cost budget exceeded', async () => {
+    const mockSoulManager = {
+      composeSoulPrompt: vi.fn().mockReturnValue('System'),
+      getActiveTools: vi.fn().mockReturnValue([]),
+      getPersonality: vi.fn().mockReturnValue(null),
+      getActivePersonality: vi.fn().mockReturnValue({
+        id: 'p1',
+        name: 'Test',
+        defaultModel: { provider: 'openai', model: 'gpt-4o' },
+        body: {
+          enabled: false,
+          costBudget: { dailyUsd: 10 },
+        },
+      }),
+      getSkill: vi.fn().mockResolvedValue(null),
+    };
+    const mockBudgetChecker = {
+      checkBudget: vi.fn().mockResolvedValue({
+        allowed: false,
+        dailyUsed: 12,
+        monthlyUsed: 40,
+        dailyPct: 1.2,
+        monthlyPct: 0.4,
+        blockedBy: 'daily',
+      }),
+    };
+    const { mock } = createMockSecureYeoman({ soulManager: mockSoulManager });
+    (mock as any).getCostBudgetChecker = vi.fn().mockReturnValue(mockBudgetChecker);
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat',
+      payload: { message: 'Hello' },
+    });
+    expect(res.statusCode).toBe(429);
+    const body = JSON.parse(res.payload);
+    expect(body.message).toContain('daily');
+  });
+
+  it('allows request when cost budget is under limit', async () => {
+    const mockSoulManager = {
+      composeSoulPrompt: vi.fn().mockReturnValue('System'),
+      getActiveTools: vi.fn().mockReturnValue([]),
+      getPersonality: vi.fn().mockReturnValue(null),
+      getActivePersonality: vi.fn().mockReturnValue({
+        id: 'p1',
+        name: 'Test',
+        defaultModel: { provider: 'openai', model: 'gpt-4o' },
+        body: {
+          enabled: false,
+          costBudget: { dailyUsd: 100 },
+        },
+      }),
+      getSkill: vi.fn().mockResolvedValue(null),
+    };
+    const mockBudgetChecker = {
+      checkBudget: vi.fn().mockResolvedValue({
+        allowed: true,
+        dailyUsed: 5,
+        monthlyUsed: 20,
+        dailyPct: 0.05,
+        monthlyPct: 0.02,
+      }),
+    };
+    const { mock } = createMockSecureYeoman({ soulManager: mockSoulManager });
+    (mock as any).getCostBudgetChecker = vi.fn().mockReturnValue(mockBudgetChecker);
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat',
+      payload: { message: 'Hello' },
+    });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('gracefully proceeds when budget checker is null', async () => {
+    const mockSoulManager = {
+      composeSoulPrompt: vi.fn().mockReturnValue('System'),
+      getActiveTools: vi.fn().mockReturnValue([]),
+      getPersonality: vi.fn().mockReturnValue(null),
+      getActivePersonality: vi.fn().mockReturnValue({
+        id: 'p1',
+        name: 'Test',
+        defaultModel: { provider: 'openai', model: 'gpt-4o' },
+        body: {
+          enabled: false,
+          costBudget: { dailyUsd: 10 },
+        },
+      }),
+      getSkill: vi.fn().mockResolvedValue(null),
+    };
+    const { mock } = createMockSecureYeoman({ soulManager: mockSoulManager });
+    // getCostBudgetChecker returns null — default in mock
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat',
+      payload: { message: 'Hello' },
+    });
+    // Should proceed normally since checker is null
+    expect(res.statusCode).toBe(200);
   });
 });

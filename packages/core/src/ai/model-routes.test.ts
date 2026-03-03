@@ -954,4 +954,45 @@ describe('Model Routes', () => {
     const body = JSON.parse(res.payload);
     expect(body.modelSize).toBe(4700000000);
   });
+
+  // ── GET /api/v1/model/health (Phase 119) ────────────────────────────────
+
+  it('GET /api/v1/model/health returns provider health data', async () => {
+    const mockTracker = {
+      getAllHealth: vi.fn().mockReturnValue({
+        anthropic: {
+          errorRate: 0.02,
+          p95LatencyMs: 800,
+          status: 'healthy',
+          consecutiveFailures: 0,
+          totalRequests: 50,
+        },
+        openai: {
+          errorRate: 0.1,
+          p95LatencyMs: 1200,
+          status: 'degraded',
+          consecutiveFailures: 1,
+          totalRequests: 30,
+        },
+      }),
+    };
+    const mock = createMockSecureYeoman();
+    (mock as any).getProviderHealthTracker = vi.fn().mockReturnValue(mockTracker);
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/model/health' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.anthropic.status).toBe('healthy');
+    expect(body.openai.status).toBe('degraded');
+  });
+
+  it('GET /api/v1/model/health returns 503 when tracker unavailable', async () => {
+    const mock = createMockSecureYeoman();
+    (mock as any).getProviderHealthTracker = vi.fn().mockReturnValue(null);
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/model/health' });
+    expect(res.statusCode).toBe(503);
+  });
 });

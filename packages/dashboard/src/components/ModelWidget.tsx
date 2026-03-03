@@ -7,7 +7,9 @@ import {
   patchModelConfig,
   fetchOllamaPull,
   deleteOllamaModel,
+  fetchProviderHealth,
 } from '../api/client';
+import type { ProviderHealthEntry } from '../api/client';
 import type { ModelInfo } from '../types';
 
 const LOCAL_PROVIDER_KEYS = new Set(['ollama', 'lmstudio', 'localai']);
@@ -42,6 +44,12 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
   const { data, isLoading } = useQuery({
     queryKey: ['model-info'],
     queryFn: fetchModelInfo,
+  });
+
+  const { data: healthData } = useQuery({
+    queryKey: ['provider-health'],
+    queryFn: fetchProviderHealth,
+    refetchInterval: 30_000,
   });
 
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
@@ -223,6 +231,18 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
                 <ChevronRight className="w-3 h-3" />
               )}
               {PROVIDER_LABELS[provider] ?? provider}
+              {healthData?.[provider] && (
+                <span
+                  title={`${healthData[provider].status} — ${(healthData[provider].errorRate * 100).toFixed(1)}% errors, p95 ${healthData[provider].p95LatencyMs}ms`}
+                  className={`inline-block w-2 h-2 rounded-full ${
+                    healthData[provider].status === 'healthy'
+                      ? 'bg-green-500'
+                      : healthData[provider].status === 'degraded'
+                        ? 'bg-amber-500'
+                        : 'bg-red-500'
+                  }`}
+                />
+              )}
               <span className="text-xs text-muted-foreground ml-auto">{models.length} models</span>
             </button>
 

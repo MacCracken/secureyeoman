@@ -41,9 +41,11 @@ const PRICING: Record<string, ModelPricing> = {
   o1: { inputPer1M: 15, outputPer1M: 60 },
   'o1-mini': { inputPer1M: 3, outputPer1M: 12 },
   'o3-mini': { inputPer1M: 1.1, outputPer1M: 4.4 },
+  o3: { inputPer1M: 10, outputPer1M: 40 },
 
   // Google Gemini (static fallback — dynamic models fetched via getAvailableModelsAsync)
   'gemini-2.0-flash': { inputPer1M: 0.1, outputPer1M: 0.4 },
+  'gemini-2.0-flash-lite': { inputPer1M: 0.075, outputPer1M: 0.3 },
 
   // OpenCode Zen
   'gpt-5.2': { inputPer1M: 1.75, outputPer1M: 14 },
@@ -112,7 +114,9 @@ const MODEL_PROVIDER_MAP: Record<string, string> = {
   o1: 'openai',
   'o1-mini': 'openai',
   'o3-mini': 'openai',
+  o3: 'openai',
   'gemini-2.0-flash': 'gemini',
+  'gemini-2.0-flash-lite': 'gemini',
   'gpt-5.2': 'opencode',
   'claude-sonnet-4-5': 'opencode',
   'claude-haiku-4-5': 'opencode',
@@ -208,7 +212,7 @@ export function getAvailableModels(onlyAvailable = false): Record<string, Availa
 // ── Dynamic model discovery (cached) ─────────────────────────────────
 
 let _dynamicCache: { result: Record<string, AvailableModel[]>; ts: number } | null = null;
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds — faster refresh for local model discovery
 
 /**
  * Returns models grouped by provider, dynamically fetching models
