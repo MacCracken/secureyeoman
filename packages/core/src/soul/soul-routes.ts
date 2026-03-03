@@ -28,6 +28,7 @@ import type { InputValidator } from '../security/input-validator.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import { PersonalityMarkdownSerializer } from './personality-serializer.js';
 import { computeUnifiedDiff } from './diff-utils.js';
+import type { PersonalityVersionManager } from './personality-version-manager.js';
 
 export interface SoulRoutesOptions {
   soulManager: SoulManager;
@@ -37,6 +38,7 @@ export interface SoulRoutesOptions {
   validator?: InputValidator;
   auditChain?: AuditChain;
   dataDir?: string;
+  personalityVersionManager?: PersonalityVersionManager | null;
 }
 
 /**
@@ -87,6 +89,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     validator,
     auditChain,
     dataDir,
+    personalityVersionManager,
   } = opts;
 
   function withActiveHours(p: Personality): Personality & { isWithinActiveHours: boolean } {
@@ -411,6 +414,121 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         const exportMd = personalitySerializer.toMarkdown(personality);
         const diff = computeUnifiedDiff(exportMd, distilled.markdown, 'export', 'distilled');
         return { diff, hasChanges: diff.length > 0 };
+      } catch (e) {
+        return sendError(reply, 500, toErrorMessage(e));
+      }
+    }
+  );
+
+  // ── Personality Versioning (Phase 114) ──────────────────────
+
+  app.get(
+    '/api/v1/soul/personalities/:id/versions',
+    async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Querystring: { limit?: string; offset?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      if (!personalityVersionManager) return sendError(reply, 501, 'Versioning not available');
+      try {
+        const limit = request.query.limit ? Number(request.query.limit) : 50;
+        const offset = request.query.offset ? Number(request.query.offset) : 0;
+        return await personalityVersionManager.listVersions(request.params.id, { limit, offset });
+      } catch (e) {
+        return sendError(reply, 500, toErrorMessage(e));
+      }
+    }
+  );
+
+  app.get(
+    '/api/v1/soul/personalities/:id/versions/:idOrTag',
+    async (
+      request: FastifyRequest<{ Params: { id: string; idOrTag: string } }>,
+      reply: FastifyReply
+    ) => {
+      if (!personalityVersionManager) return sendError(reply, 501, 'Versioning not available');
+      try {
+        const version = await personalityVersionManager.getVersion(
+          request.params.id,
+          request.params.idOrTag
+        );
+        if (!version) return sendError(reply, 404, 'Version not found');
+        return version;
+      } catch (e) {
+        return sendError(reply, 500, toErrorMessage(e));
+      }
+    }
+  );
+
+  app.post(
+    '/api/v1/soul/personalities/:id/versions/tag',
+    async (
+      request: FastifyRequest<{ Params: { id: string }; Body: { tag?: string } }>,
+      reply: FastifyReply
+    ) => {
+      if (!personalityVersionManager) return sendError(reply, 501, 'Versioning not available');
+      try {
+        const tag = (request.body as any)?.tag;
+        const version = await personalityVersionManager.tagRelease(
+          request.params.id,
+          tag || undefined
+        );
+        return await reply.code(201).send(version);
+      } catch (e) {
+        return sendError(reply, 400, toErrorMessage(e));
+      }
+    }
+  );
+
+  app.post(
+    '/api/v1/soul/personalities/:id/versions/:vId/rollback',
+    async (
+      request: FastifyRequest<{ Params: { id: string; vId: string } }>,
+      reply: FastifyReply
+    ) => {
+      if (!personalityVersionManager) return sendError(reply, 501, 'Versioning not available');
+      try {
+        const version = await personalityVersionManager.rollback(
+          request.params.id,
+          request.params.vId
+        );
+        return version;
+      } catch (e) {
+        return sendError(reply, 400, toErrorMessage(e));
+      }
+    }
+  );
+
+  app.get(
+    '/api/v1/soul/personalities/:id/drift',
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply
+    ) => {
+      if (!personalityVersionManager) return sendError(reply, 501, 'Versioning not available');
+      try {
+        return await personalityVersionManager.getDrift(request.params.id);
+      } catch (e) {
+        return sendError(reply, 500, toErrorMessage(e));
+      }
+    }
+  );
+
+  app.get(
+    '/api/v1/soul/personalities/:id/versions/:a/diff/:b',
+    async (
+      request: FastifyRequest<{ Params: { id: string; a: string; b: string } }>,
+      reply: FastifyReply
+    ) => {
+      if (!personalityVersionManager) return sendError(reply, 501, 'Versioning not available');
+      try {
+        const diff = await personalityVersionManager.diffVersions(
+          request.params.a,
+          request.params.b
+        );
+        return { diff };
       } catch (e) {
         return sendError(reply, 500, toErrorMessage(e));
       }

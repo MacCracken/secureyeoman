@@ -8,6 +8,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { WorkflowManager } from './workflow-manager.js';
+import type { WorkflowVersionManager } from './workflow-version-manager.js';
 import { sendError } from '../utils/errors.js';
 import type { WorkflowExport } from '@secureyeoman/shared';
 
@@ -34,9 +35,9 @@ const INTEGRATION_KEYWORDS = [
 
 export function registerWorkflowRoutes(
   app: FastifyInstance,
-  opts: { workflowManager: WorkflowManager }
+  opts: { workflowManager: WorkflowManager; workflowVersionManager?: WorkflowVersionManager | null }
 ): void {
-  const { workflowManager } = opts;
+  const { workflowManager, workflowVersionManager } = opts;
 
   // ── Run detail (registered before /:id to avoid collision) ───
 
@@ -191,6 +192,146 @@ export function registerWorkflowRoutes(
         return reply.code(201).send({ definition, compatibility });
       } catch (err) {
         return sendError(reply, 400, err instanceof Error ? err.message : 'Import failed');
+      }
+    }
+  );
+
+  // ── Workflow Versioning (Phase 114) ──────────────────────────
+
+  app.get(
+    '/api/v1/workflows/:id/versions',
+    async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Querystring: { limit?: string; offset?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      if (!workflowVersionManager) return sendError(reply, 501, 'Versioning not available');
+      try {
+        const limit = request.query.limit ? Number(request.query.limit) : 50;
+        const offset = request.query.offset ? Number(request.query.offset) : 0;
+        return await workflowVersionManager.listVersions(request.params.id, { limit, offset });
+      } catch (e) {
+        return sendError(reply, 500, e instanceof Error ? e.message : String(e));
+      }
+    }
+  );
+
+  app.get(
+    '/api/v1/workflows/:id/versions/:idOrTag',
+    async (
+      request: FastifyRequest<{ Params: { id: string; idOrTag: string } }>,
+      reply: FastifyReply
+    ) => {
+      if (!workflowVersionManager) return sendError(reply, 501, 'Versioning not available');
+      try {
+        const version = await workflowVersionManager.getVersion(
+          request.params.id,
+          request.params.idOrTag
+        );
+        if (!version) return sendError(reply, 404, 'Version not found');
+        return version;
+      } catch (e) {
+        return sendError(reply, 500, e instanceof Error ? e.message : String(e));
+      }
+    }
+  );
+
+  app.post(
+    '/api/v1/workflows/:id/versions/tag',
+    async (
+      request: FastifyRequest<{ Params: { id: string }; Body: { tag?: string } }>,
+      reply: FastifyReply
+    ) => {
+      if (!workflowVersionManager) return sendError(reply, 501, 'Versioning not available');
+      try {
+        const tag = (request.body as any)?.tag;
+        const version = await workflowVersionManager.tagRelease(
+          request.params.id,
+          tag || undefined
+        );
+        return await reply.code(201).send(version);
+      } catch (e) {
+        return sendError(reply, 400, e instanceof Error ? e.message : String(e));
+      }
+    }
+  );
+
+  app.post(
+    '/api/v1/workflows/:id/versions/:vId/rollback',
+    async (
+      request: FastifyRequest<{ Params: { id: string; vId: string } }>,
+      reply: FastifyReply
+    ) => {
+      if (!workflowVersionManager) return sendError(reply, 501, 'Versioning not available');
+      try {
+        const version = await workflowVersionManager.rollback(
+          request.params.id,
+          request.params.vId
+        );
+        return version;
+      } catch (e) {
+        return sendError(reply, 400, e instanceof Error ? e.message : String(e));
+      }
+    }
+  );
+
+  app.get(
+    '/api/v1/workflows/:id/drift',
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply
+    ) => {
+      if (!workflowVersionManager) return sendError(reply, 501, 'Versioning not available');
+      try {
+        return await workflowVersionManager.getDrift(request.params.id);
+      } catch (e) {
+        return sendError(reply, 500, e instanceof Error ? e.message : String(e));
+      }
+    }
+  );
+
+  app.get(
+    '/api/v1/workflows/:id/versions/:a/diff/:b',
+    async (
+      request: FastifyRequest<{ Params: { id: string; a: string; b: string } }>,
+      reply: FastifyReply
+    ) => {
+      if (!workflowVersionManager) return sendError(reply, 501, 'Versioning not available');
+      try {
+        const diff = await workflowVersionManager.diffVersions(
+          request.params.a,
+          request.params.b
+        );
+        return { diff };
+      } catch (e) {
+        return sendError(reply, 500, e instanceof Error ? e.message : String(e));
+      }
+    }
+  );
+
+  app.get(
+    '/api/v1/workflows/:id/versions/:vId/export',
+    async (
+      request: FastifyRequest<{ Params: { id: string; vId: string } }>,
+      reply: FastifyReply
+    ) => {
+      if (!workflowVersionManager) return sendError(reply, 501, 'Versioning not available');
+      try {
+        const version = await workflowVersionManager.getVersion(
+          request.params.id,
+          request.params.vId
+        );
+        if (!version) return sendError(reply, 404, 'Version not found');
+        return {
+          exportedAt: Date.now(),
+          requires: {},
+          workflow: version.snapshot,
+          versionTag: version.versionTag,
+        };
+      } catch (e) {
+        return sendError(reply, 500, e instanceof Error ? e.message : String(e));
       }
     }
   );

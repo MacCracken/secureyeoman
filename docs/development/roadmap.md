@@ -4,6 +4,9 @@
 
 ---
 
+- [ ] ideas: Board of Directors, Council of AI's
+- [ ] enterprise department per - what other business units can we provide tools for, additonal skills/worksflows/swarms/security, legal, business risks are already covers as will as intents; where else can we improve
+
 ## Phase XX: QA & Manual Testing (Ongoing)
 
 **Priority**: P0 — Ongoing. Continuous verification of features that lack automated integration coverage. Items move to Changelog when confirmed working; new regressions are added here as discovered.
@@ -46,7 +49,9 @@
 | 110 | Inline Citations & Grounding | P3 — trust layer | Planned |
 | 111 | Departmental Risk Register & Risk Posture Tracking | P2 — risk governance | 🔄 In Progress (A–B, E ✅, C partial, D + F remaining) |
 | 112 | Multi-Account AI Provider Keys & Per-Account Cost Tracking | P2 — cost governance | Planned |
-| Future | Workflow Versioning, LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Infrastructure | Future / Demand-Gated | — |
+| 113 | Directory-Based Workflows & Swarm Templates | P3 — community content | ✅ Complete |
+| 114 | Workflow & Personality Versioning | P2 — operational safety | ✅ Complete |
+| Future | LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Infrastructure | Future / Demand-Gated | — |
 
 ---
 
@@ -69,19 +74,19 @@ Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi
 
 *Previously Phase 102. Renumbered for sequential ordering. Includes "base knowledge generic entries per-personality review" from Phase XX.*
 
-*107-A (Reasoning Strategies + Deterministic Routing + Per-Personality Base Knowledge), 107-B (Security Prompt Templates), 107-C (CLI Enhancements), 107-D (Portable Personality Format + TELOS Wizard), and 107-E (Personality Core Distillation) are complete — see Changelog [2026.3.2] and [2026.3.3].*
+*107-A through 107-F complete — see Changelog [2026.3.2] and [2026.3.3].*
 
-### 107-F: ATHI Threat Governance Framework
+### 107-F: ATHI Threat Governance Framework ✅
 
 *Actors/Techniques/Harms/Impacts taxonomy for AI threat modeling, adapted from Daniel Miessler's ATHI framework. Positioned as an organizational governance tool — extends SecureYeoman's existing security audit capabilities with an AI-specific threat lens communicable to non-technical stakeholders.*
 
-- [ ] **ATHI schema** — `packages/shared/src/types/security.ts`: `AthiActor` (nation_state, cybercriminal, insider, hacktivist, competitor, automated_agent), `AthiTechnique` (prompt_injection, data_poisoning, model_theft, supply_chain, social_engineering, adversarial_input, privilege_escalation), `AthiHarm` (data_breach, misinformation, service_disruption, privacy_violation, financial_loss, reputational_damage, safety_risk), `AthiImpact` (regulatory_penalty, operational_downtime, customer_trust_loss, ip_theft, legal_liability). `AthiThreatScenario`: `{ actor, techniques[], harms[], impacts[], likelihood, severity, mitigations[], status }`.
-- [ ] **ATHI storage & migration** — `security.athi_scenarios` table. Fields: id, org_id (nullable, for multi-tenancy), title, description, actor, techniques (JSONB), harms (JSONB), impacts (JSONB), likelihood (1-5), severity (1-5), risk_score (computed: likelihood × severity), mitigations (JSONB), status (identified | assessed | mitigated | accepted | monitoring), created_by, created_at, updated_at.
-- [ ] **ATHI manager** — `packages/core/src/security/athi-manager.ts`. CRUD + `getRiskMatrix()` (actor × technique heat map), `getTopRisks(limit)`, `getMitigationCoverage()` (% of scenarios with at least one mitigation), `generateExecutiveSummary()` (non-technical narrative for board-level reporting).
-- [ ] **ATHI routes** — `GET/POST/PUT/DELETE /api/v1/security/athi/scenarios`. `GET /api/v1/security/athi/matrix` (risk heat map data). `GET /api/v1/security/athi/summary` (executive narrative). Auth: `security:read`/`security:write`.
+- [x] **ATHI schema** — `packages/shared/src/types/athi.ts`: `AthiActor` (6 values), `AthiTechnique` (7), `AthiHarm` (7), `AthiImpact` (5). Full `AthiScenarioSchema` with create/update/matrix/summary types.
+- [x] **ATHI storage & migration** — `security.athi_scenarios` table with generated `risk_score` column (likelihood × severity). 4 indexes.
+- [x] **ATHI manager** — CRUD + `getRiskMatrix()`, `getTopRisks()`, `getMitigationCoverage()`, `generateExecutiveSummary()` (30s cache). Fire-and-forget alert on high-risk creation (score ≥ 20).
+- [x] **ATHI routes** — 8 endpoints at `/api/v1/security/athi/`. Auth: `security_athi:read`/`security_athi:write`.
+- [x] **Dashboard: ATHI tab** — SecurityPage sub-tab with summary strip, actor×technique risk matrix, filterable scenario table, create/edit modal with multi-select for techniques/harms/impacts.
+- [x] **CLI: `secureyeoman athi`** — Subcommands: `list`, `show`, `create`, `matrix`, `summary`. Alias: `threat`.
 - [ ] **AI-assisted scenario generation** — Skill/workflow template: given an organization description and its AI usage patterns, generate candidate ATHI threat scenarios. Uses the malware analysis and threat modeling security templates from 107-B as building blocks. Output reviewed by human before persisting.
-- [ ] **Dashboard: ATHI tab** — New sub-tab in SecurityPage. Risk matrix visualization (likelihood × severity heat map). Scenario list with filters by actor/technique/status. Executive summary export (PDF/markdown). Mitigation coverage gauge.
-- [ ] **CLI: `secureyeoman athi`** — Subcommands: `list`, `show <id>`, `create`, `matrix`, `summary`. `--format json|table|markdown` output modes.
 - [ ] **Integration with existing security features** — ATHI scenarios can reference audit events (link scenario → observed events). Security Events tab cross-references ATHI scenarios when displaying events that match a known technique pattern. Alert rules can trigger on ATHI-mapped event patterns.
 
 ---
@@ -132,13 +137,13 @@ Departments are first-class organizational units — they define **who owns what
 
 Six sub-phases: data model → shared types & backend → integration → reports & outputs → CLI → dashboard.
 
-*111-A (Data Model), 111-B (Shared Types & Backend), and 111-E (CLI) are complete — see Changelog [2026.3.2].*
+*111-A (Data Model), 111-B (Shared Types & Backend), and 111-E (CLI) are complete — see Changelog [2026.3.2]. 111-C partial — departmentId wiring on assessments and findings complete (see Changelog [2026.3.3]).*
 
 ### 111-C: Integration
 
 *Connects departmental risk to existing subsystems: alerts, metrics, enforcement log, and assessments.*
 
-*Alert integration (appetite breach → AlertManager) complete — see Changelog [2026.3.2]. Remaining items below.*
+*Alert integration (appetite breach → AlertManager) complete — see Changelog [2026.3.2]. `departmentId` on assessments and findings complete — see Changelog [2026.3.3]. Remaining items below.*
 
 - [ ] **MetricsSnapshot extension** — Add `departmentalRisk?: { departmentCount: number, openRegisterEntries: number, overdueEntries: number, appetiteBreaches: number }` to `MetricsSnapshot` in shared types. Populated during the 5-second metrics broadcast cycle by querying `DepartmentRiskManager.getRegisterStats()` (cached, refreshed every 30s). Surfaces in Prometheus `/metrics` endpoint and Grafana dashboards.
   - **Inputs**: periodic metrics collection from department risk manager.
@@ -148,9 +153,7 @@ Six sub-phases: data model → shared types & backend → integration → report
   - **Inputs**: enforcement log events with personality/user context.
   - **Outputs**: auto-created register entries attributed to the responsible department; links enforcement → risk register for audit trail.
 
-- [ ] **Backward-compatible `department_id` on assessments** — The existing `POST /api/v1/risk/assessments` route accepts an optional `department_id` in the request body. When provided, the assessment is scoped to that department and on completion triggers `snapshotDepartmentScore`. Existing assessments without `department_id` continue to work as system-wide assessments. The risk assessment engine's scoring logic is unchanged — only attribution is added.
-  - **Inputs**: optional `department_id` on assessment creation.
-  - **Outputs**: department-scoped assessments, automatic score snapshots on completion.
+- [x] **Backward-compatible `department_id` on assessments and findings** — `POST /api/v1/risk/assessments` and `POST /api/v1/risk/findings` accept optional `departmentId`. Wired through storage (`FindingRow.department_id`, `rowToFinding()`, `createFinding()` INSERT) and shared types (`ExternalFindingSchema`, `CreateExternalFindingSchema`).
 
 ### 111-D: Reports & Outputs
 
@@ -166,7 +169,7 @@ Six sub-phases: data model → shared types & backend → integration → report
 
 ### 111-F: Dashboard 🔄
 
-*New "Departments" sub-tab in the existing `RiskAssessmentTab`. Department selector dropdown at the top; below it, two distinct view tabs — **Intent** and **Risk** — so stakeholders can reason about goals independently from threats. Lazy-loaded components. Basic DepartmentsSection with Intent/Risk toggle, scorecard, heatmap, and API functions done (see Changelog [2026.3.2]). Detailed panel items below remain open.*
+*New "Departments" sub-tab in the existing `RiskAssessmentTab`. Department selector dropdown at the top; below it, two distinct view tabs — **Intent** and **Risk** — so stakeholders can reason about goals independently from threats. Lazy-loaded components. Basic DepartmentsSection with Intent/Risk toggle, scorecard, heatmap, and API functions done (see Changelog [2026.3.2]). Register entry creation modal done (see Changelog [2026.3.3]). Detailed panel items below remain open.*
 
 #### Intent View — "What does this department aim to achieve?"
 

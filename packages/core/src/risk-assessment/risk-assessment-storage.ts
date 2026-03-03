@@ -72,6 +72,7 @@ interface FindingRow {
   acknowledged_at: string | number | null;
   resolved_at: string | number | null;
   source_date: string | number | null;
+  department_id: string | null;
   imported_at: string | number;
 }
 
@@ -157,6 +158,7 @@ function rowToFinding(row: FindingRow): ExternalFinding {
           ? Number(row.source_date)
           : row.source_date
         : undefined,
+    departmentId: row.department_id ?? undefined,
     importedAt: typeof row.imported_at === 'string' ? Number(row.imported_at) : row.imported_at,
   };
 }
@@ -362,8 +364,8 @@ export class RiskAssessmentStorage extends PgBaseStorage {
     const row = await this.queryOne<FindingRow>(
       `INSERT INTO risk.external_findings
          (id, feed_id, source_ref, category, severity, title, description,
-          affected_resource, recommendation, evidence, status, source_date, imported_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, 'open', $11, $12)
+          affected_resource, recommendation, evidence, status, source_date, department_id, imported_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, 'open', $11, $12, $13)
        RETURNING *`,
       [
         id,
@@ -377,6 +379,7 @@ export class RiskAssessmentStorage extends PgBaseStorage {
         finding.recommendation ?? null,
         finding.evidence ? JSON.stringify(finding.evidence) : null,
         finding.sourceDate ?? null,
+        finding.departmentId ?? null,
         now,
       ]
     );

@@ -39,6 +39,13 @@ vi.mock('../api/client', () => ({
   fetchWorkflowRuns: vi.fn(),
   fetchMcpConfig: vi.fn(),
   patchMcpConfig: vi.fn(),
+  fetchAthiScenarios: vi.fn(),
+  createAthiScenario: vi.fn(),
+  updateAthiScenario: vi.fn(),
+  deleteAthiScenario: vi.fn(),
+  fetchAthiMatrix: vi.fn(),
+  fetchAthiTopRisks: vi.fn(),
+  fetchAthiSummary: vi.fn(),
 }));
 
 import * as api from '../api/client';

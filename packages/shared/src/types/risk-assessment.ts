@@ -128,6 +128,7 @@ export const ExternalFindingSchema = z.object({
   acknowledgedAt: z.number().int().optional(),
   resolvedAt: z.number().int().optional(),
   sourceDate: z.number().int().optional(),
+  departmentId: z.string().optional(),
   importedAt: z.number().int(),
 });
 export type ExternalFinding = z.infer<typeof ExternalFindingSchema>;
@@ -143,5 +144,6 @@ export const CreateExternalFindingSchema = z.object({
   recommendation: z.string().optional(),
   evidence: z.record(z.unknown()).optional(),
   sourceDate: z.number().int().optional(),
+  departmentId: z.string().optional(),
 });
 export type CreateExternalFinding = z.infer<typeof CreateExternalFindingSchema>;

@@ -26,6 +26,7 @@ import type {
   WorkflowStepRun,
 } from '@secureyeoman/shared';
 import type { AlertManager } from '../telemetry/alert-manager.js';
+import type { WorkflowVersionManager } from './workflow-version-manager.js';
 
 export interface WorkflowManagerDeps {
   storage: WorkflowStorage;
@@ -42,16 +43,20 @@ export interface WorkflowManagerDeps {
   lineageStorage?: PipelineLineageStorage | null;
   // Alert pipeline (Phase 104)
   alertManager?: AlertManager | null;
+  // Versioning (Phase 114)
+  workflowVersionManager?: WorkflowVersionManager | null;
 }
 
 export class WorkflowManager {
   private readonly storage: WorkflowStorage;
   private readonly engine: WorkflowEngine;
   private readonly logger: SecureLogger;
+  private readonly workflowVersionManager: WorkflowVersionManager | null;
 
   constructor(deps: WorkflowManagerDeps) {
     this.storage = deps.storage;
     this.logger = deps.logger;
+    this.workflowVersionManager = deps.workflowVersionManager ?? null;
     this.engine = new WorkflowEngine({
       storage: deps.storage,
       subAgentManager: deps.subAgentManager,
@@ -96,7 +101,14 @@ export class WorkflowManager {
     id: string,
     data: WorkflowDefinitionUpdate
   ): Promise<WorkflowDefinition | null> {
-    return this.storage.updateDefinition(id, data);
+    const result = await this.storage.updateDefinition(id, data);
+    if (result) {
+      // Fire-and-forget version recording
+      this.workflowVersionManager?.recordVersion(id).catch((err) => {
+        this.logger.error({ err }, 'Failed to record workflow version');
+      });
+    }
+    return result;
   }
 
   async deleteDefinition(id: string): Promise<boolean> {

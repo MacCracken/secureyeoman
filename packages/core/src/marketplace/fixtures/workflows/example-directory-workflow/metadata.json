@@ -1,0 +1,40 @@
+{
+  "name": "Security Incident Triage",
+  "description": "Automated security incident triage workflow",
+  "version": "1.0.0",
+  "author": "YEOMAN",
+  "category": "security",
+  "tags": ["security", "incident-response", "triage"],
+  "autonomyLevel": "L2",
+  "steps": [
+    {
+      "id": "analyze",
+      "type": "agent",
+      "config": {
+        "prompt": "Analyze the incoming security alert"
+      }
+    },
+    {
+      "id": "classify",
+      "type": "transform",
+      "config": {
+        "expression": "input.severity"
+      }
+    },
+    {
+      "id": "respond",
+      "type": "agent",
+      "config": {
+        "prompt": "Draft a response plan"
+      }
+    }
+  ],
+  "edges": [
+    { "from": "analyze", "to": "classify" },
+    { "from": "classify", "to": "respond" }
+  ],
+  "requires": {
+    "integrations": ["slack"],
+    "tools": ["kb_search"]
+  }
+}

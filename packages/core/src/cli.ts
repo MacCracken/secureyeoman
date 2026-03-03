@@ -300,6 +300,14 @@ router.registerLazy({
 });
 
 router.registerLazy({
+  name: 'athi',
+  aliases: ['threat'],
+  description: 'ATHI threat governance framework',
+  usage: 'secureyeoman athi <list|show|create|matrix|summary> [options]',
+  loader: () => import('./cli/commands/athi.js').then((m) => m.athiCommand),
+});
+
+router.registerLazy({
   name: 'personality',
   aliases: ['pers'],
   description: 'Export and import portable personality files',

@@ -1,0 +1,28 @@
+{
+  "name": "Threat Hunt Team",
+  "description": "Coordinated threat hunting swarm",
+  "version": "1.0.0",
+  "author": "YEOMAN",
+  "strategy": "hierarchical",
+  "roles": [
+    {
+      "role": "coordinator",
+      "profileName": "security-lead",
+      "description": "Coordinates the threat hunt and synthesizes findings"
+    },
+    {
+      "role": "network-analyst",
+      "profileName": "network-specialist",
+      "description": "Analyzes network traffic patterns and anomalies"
+    },
+    {
+      "role": "endpoint-analyst",
+      "profileName": "endpoint-specialist",
+      "description": "Investigates endpoint telemetry and artifacts"
+    }
+  ],
+  "coordinatorProfile": "security-lead",
+  "requires": {
+    "profileRoles": ["security-lead", "network-specialist", "endpoint-specialist"]
+  }
+}

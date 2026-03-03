@@ -471,6 +471,87 @@ export class MarketplaceManager {
           }
         }
 
+        // ── Directory-based workflow sync (Phase 113) ──────────────────────
+        const workflowDirEntries = this.findDirectoryEntries(workflowsDir);
+        for (const dirPath of workflowDirEntries) {
+          try {
+            const metadataPath = path.join(dirPath, 'metadata.json');
+            const raw = fs.readFileSync(metadataPath, 'utf-8');
+            const data = JSON.parse(raw) as Record<string, unknown>;
+
+            if (!data.name || typeof data.name !== 'string') {
+              result.errors.push(`Skipped workflow dir ${dirPath}: missing required field "name"`);
+              result.skipped++;
+              continue;
+            }
+            if (!Array.isArray(data.steps)) {
+              result.errors.push(`Skipped workflow dir ${dirPath}: missing required field "steps"`);
+              result.skipped++;
+              continue;
+            }
+            if (syncedWorkflowNames.has(data.name)) {
+              this.logger.warn(`Skipped directory workflow "${data.name}" — already synced from JSON`);
+              continue;
+            }
+
+            // Read README.md as description fallback
+            const readmeContent = this.readOptionalMd(path.join(dirPath, 'README.md'));
+            const description = typeof data.description === 'string'
+              ? data.description
+              : readmeContent ?? '';
+
+            // Inject step prompts from steps/ markdown files
+            const steps = (data.steps as Array<Record<string, unknown>>).map((step) => {
+              const stepId = String(step.id ?? '');
+              const stepMdPath = path.join(dirPath, 'steps', `${stepId}.md`);
+              const stepPrompt = this.readOptionalMd(stepMdPath);
+              if (stepPrompt !== null) {
+                const config = (step.config ?? {}) as Record<string, unknown>;
+                return { ...step, config: { ...config, prompt: stepPrompt } };
+              }
+              return step;
+            });
+
+            const workflowName = data.name;
+            const { definitions: allDefs2 } = await this.workflowManager.listDefinitions({
+              limit: 1000,
+            });
+            const existing = allDefs2.find(
+              (d) => d.name === workflowName && (d as any).createdBy === 'community'
+            );
+
+            if (existing) {
+              await this.workflowManager.updateDefinition(existing.id, {
+                description,
+                steps: steps as any,
+                edges: Array.isArray(data.edges) ? (data.edges as any) : [],
+                triggers: Array.isArray(data.triggers) ? (data.triggers as any) : [],
+              });
+              result.workflowsUpdated++;
+            } else {
+              await this.workflowManager.createDefinition({
+                name: workflowName,
+                description,
+                steps: steps as any,
+                edges: Array.isArray(data.edges) ? (data.edges as any) : [],
+                triggers: Array.isArray(data.triggers) ? (data.triggers as any) : [],
+                isEnabled: true,
+                version: 1,
+                createdBy: 'community',
+                autonomyLevel: (typeof data.autonomyLevel === 'string'
+                  ? data.autonomyLevel
+                  : 'L2') as any,
+              } as any);
+              result.workflowsAdded++;
+            }
+            syncedWorkflowNames.add(workflowName);
+          } catch (err) {
+            result.errors.push(
+              `Error processing workflow dir ${dirPath}: ${err instanceof Error ? err.message : String(err)}`
+            );
+          }
+        }
+
         // Prune stale community workflows
         const { definitions: allDefs } = await this.workflowManager.listDefinitions({
           limit: 1000,
@@ -538,6 +619,77 @@ export class MarketplaceManager {
           } catch (err) {
             result.errors.push(
               `Error processing swarm ${filePath}: ${err instanceof Error ? err.message : String(err)}`
+            );
+          }
+        }
+
+        // ── Directory-based swarm sync (Phase 113) ─────────────────────────
+        const swarmDirEntries = this.findDirectoryEntries(swarmsDir);
+        for (const dirPath of swarmDirEntries) {
+          try {
+            const metadataPath = path.join(dirPath, 'metadata.json');
+            const raw = fs.readFileSync(metadataPath, 'utf-8');
+            const data = JSON.parse(raw) as Record<string, unknown>;
+
+            if (!data.name || typeof data.name !== 'string') {
+              result.errors.push(`Skipped swarm dir ${dirPath}: missing required field "name"`);
+              result.skipped++;
+              continue;
+            }
+            if (!Array.isArray(data.roles) || (data.roles as unknown[]).length === 0) {
+              result.errors.push(`Skipped swarm dir ${dirPath}: missing required field "roles"`);
+              result.skipped++;
+              continue;
+            }
+            if (syncedSwarmNames.has(data.name)) {
+              this.logger.warn(`Skipped directory swarm "${data.name}" — already synced from JSON`);
+              continue;
+            }
+
+            // Read README.md as description fallback
+            const readmeContent = this.readOptionalMd(path.join(dirPath, 'README.md'));
+            const description = typeof data.description === 'string'
+              ? data.description
+              : readmeContent ?? '';
+
+            // Inject role prompts from roles/ markdown files
+            const swarmName = data.name;
+            const roles = (data.roles as Record<string, unknown>[]).map((r) => {
+              const roleName = String(r.role ?? '');
+              const roleMdPath = path.join(dirPath, 'roles', `${roleName}.md`);
+              const rolePrompt = this.readOptionalMd(roleMdPath);
+              return {
+                role: roleName,
+                profileName: String(r.profileName ?? ''),
+                description: typeof r.description === 'string' ? r.description : '',
+                ...(rolePrompt !== null ? { systemPromptOverride: rolePrompt } : {}),
+              };
+            });
+
+            const { templates } = await this.swarmManager.listTemplates({ limit: 1000 });
+            const existing = templates.find((t) => t.name === swarmName && !t.isBuiltin);
+
+            if (existing) {
+              await this.swarmManager.updateTemplate(existing.id, {
+                description,
+                strategy: (typeof data.strategy === 'string' ? data.strategy : 'sequential') as any,
+                roles,
+              });
+              result.swarmsUpdated++;
+            } else {
+              await this.swarmManager.createTemplate({
+                name: swarmName,
+                description,
+                strategy: (typeof data.strategy === 'string' ? data.strategy : 'sequential') as any,
+                roles,
+                coordinatorProfile: (data.coordinatorProfile as string | null) ?? null,
+              });
+              result.swarmsAdded++;
+            }
+            syncedSwarmNames.add(swarmName);
+          } catch (err) {
+            result.errors.push(
+              `Error processing swarm dir ${dirPath}: ${err instanceof Error ? err.message : String(err)}`
             );
           }
         }
@@ -825,7 +977,11 @@ export class MarketplaceManager {
       for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
         const fullPath = path.join(dir, entry.name);
         if (entry.isDirectory()) {
-          results.push(...this.findJsonFiles(fullPath));
+          // Skip directories that contain metadata.json — those are directory-based entries
+          const metadataPath = path.join(fullPath, 'metadata.json');
+          if (!fs.existsSync(metadataPath)) {
+            results.push(...this.findJsonFiles(fullPath));
+          }
         } else if (entry.isFile() && entry.name.endsWith('.json')) {
           results.push(fullPath);
         }
@@ -851,5 +1007,36 @@ export class MarketplaceManager {
       // Non-readable directory — skip silently
     }
     return results;
+  }
+
+  /**
+   * Find subdirectories containing metadata.json (directory-based entries).
+   */
+  findDirectoryEntries(dir: string): string[] {
+    const results: string[] = [];
+    try {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (entry.isDirectory()) {
+          const metadataPath = path.join(dir, entry.name, 'metadata.json');
+          if (fs.existsSync(metadataPath)) {
+            results.push(path.join(dir, entry.name));
+          }
+        }
+      }
+    } catch {
+      // Non-readable directory — skip silently
+    }
+    return results;
+  }
+
+  /**
+   * Read a markdown file, returning its content or null if it doesn't exist.
+   */
+  readOptionalMd(filePath: string): string | null {
+    try {
+      return fs.readFileSync(filePath, 'utf-8');
+    } catch {
+      return null;
+    }
   }
 }

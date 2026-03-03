@@ -4938,3 +4938,69 @@ CREATE TABLE IF NOT EXISTS capture.recordings (
 );
 
 CREATE INDEX IF NOT EXISTS idx_recordings_status ON capture.recordings (status) WHERE status = 'active';
+
+-- ===========================================================================
+-- Phase 107-F: ATHI Threat Governance — security.athi_scenarios
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS security.athi_scenarios (
+  id text PRIMARY KEY,
+  org_id text,
+  title varchar(300) NOT NULL,
+  description text,
+  actor varchar(50) NOT NULL,
+  techniques jsonb NOT NULL DEFAULT '[]',
+  harms jsonb NOT NULL DEFAULT '[]',
+  impacts jsonb NOT NULL DEFAULT '[]',
+  likelihood smallint NOT NULL CHECK (likelihood BETWEEN 1 AND 5),
+  severity smallint NOT NULL CHECK (severity BETWEEN 1 AND 5),
+  risk_score smallint GENERATED ALWAYS AS (likelihood * severity) STORED,
+  mitigations jsonb NOT NULL DEFAULT '[]',
+  status varchar(20) NOT NULL DEFAULT 'identified'
+    CHECK (status IN ('identified','assessed','mitigated','accepted','monitoring')),
+  created_by text,
+  created_at bigint NOT NULL,
+  updated_at bigint NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_athi_scenarios_actor ON security.athi_scenarios (actor);
+CREATE INDEX IF NOT EXISTS idx_athi_scenarios_status ON security.athi_scenarios (status);
+CREATE INDEX IF NOT EXISTS idx_athi_scenarios_risk_score ON security.athi_scenarios (risk_score DESC);
+CREATE INDEX IF NOT EXISTS idx_athi_scenarios_org_id ON security.athi_scenarios (org_id);
+
+-- ===========================================================================
+-- Phase 114: Versioning — personality + workflow version history
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS soul.personality_versions (
+  id text PRIMARY KEY,
+  personality_id text NOT NULL REFERENCES soul.personalities(id) ON DELETE CASCADE,
+  version_tag text,
+  snapshot jsonb NOT NULL,
+  snapshot_md text NOT NULL,
+  diff_summary text,
+  changed_fields text[] NOT NULL DEFAULT '{}',
+  author text NOT NULL DEFAULT 'system',
+  created_at bigint NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_personality_versions_pid_created
+  ON soul.personality_versions (personality_id, created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_personality_versions_pid_tag
+  ON soul.personality_versions (personality_id, version_tag) WHERE version_tag IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS workflow.versions (
+  id text PRIMARY KEY,
+  workflow_id uuid NOT NULL REFERENCES workflow.definitions(id) ON DELETE CASCADE,
+  version_tag text,
+  snapshot jsonb NOT NULL,
+  diff_summary text,
+  changed_fields text[] NOT NULL DEFAULT '{}',
+  author text NOT NULL DEFAULT 'system',
+  created_at bigint NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_workflow_versions_wid_created
+  ON workflow.versions (workflow_id, created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_workflow_versions_wid_tag
+  ON workflow.versions (workflow_id, version_tag) WHERE version_tag IS NOT NULL;

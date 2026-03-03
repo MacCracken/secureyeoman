@@ -4,7 +4,28 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ---
 
-## [2026.3.3] — 2026-03-02
+## [2026.3.3] — 2026-03-03
+
+### Phase 113: Directory-Based Workflows & Swarm Templates
+
+- **Shared types** (`packages/shared/src/types/shareables.ts`): `WorkflowDirectoryMetadata` and `SwarmTemplateDirectoryMetadata` interfaces for directory-based community content. Steps/roles can have their prompts overridden by per-step/role markdown files.
+- **Marketplace directory sync** (`packages/core/src/marketplace/manager.ts`): `syncFromCommunity()` now scans `workflows/` and `swarms/` for subdirectories containing `metadata.json`. Reads `README.md` as description fallback, injects step prompts from `steps/*.md` and role prompts from `roles/*.md` as `systemPromptOverride`. Both JSON and directory formats coexist; duplicate names are logged and skipped. `findJsonFiles()` updated to skip directories containing `metadata.json` to prevent double-processing.
+- **Community repo examples**: 2 example directory structures added as fixtures — `workflows/example-directory-workflow/` (metadata.json + README.md + steps/analyze.md) and `swarms/example-directory-swarm/` (metadata.json + README.md + roles/coordinator.md).
+- **Tests**: 30 new in `marketplace-directory-sync.test.ts` — helpers (4), workflow dir sync (8), swarm dir sync (8), mixed mode (4), error handling (6).
+
+### Phase 114: Workflow & Personality Versioning
+
+- **Shared types** (`packages/shared/src/types/versioning.ts`): `VersionTagSchema` (YYYY.M.D date-based with optional `-N` suffix), `PersonalityVersionSchema`, `WorkflowVersionSchema`, `DriftSummarySchema`. Exported from `types/index.ts`.
+- **SQL migration** (`packages/core/src/storage/migrations/001_baseline.sql`): `soul.personality_versions` table (snapshot jsonb + snapshot_md text) and `workflow.versions` table. Both with `ON DELETE CASCADE` FK, `(entity_id, created_at DESC)` index, and unique partial index on `(entity_id, version_tag) WHERE version_tag IS NOT NULL`.
+- **Version storage** (`packages/core/src/soul/personality-version-storage.ts`, `packages/core/src/workflow/workflow-version-storage.ts`): `PgBaseStorage` extensions with createVersion, listVersions (paginated), getVersion, getVersionByTag, getLatestVersion, getLatestTaggedVersion, tagVersion, generateNextTag (YYYY.M.D with auto-increment suffix), deleteVersions.
+- **Version managers** (`packages/core/src/soul/personality-version-manager.ts`, `packages/core/src/workflow/workflow-version-manager.ts`): Business logic for `recordVersion` (serialize personality to markdown / workflow to JSON, diff against previous, detect changed fields), `tagRelease` (auto-generate date tag), `diffVersions` (unified diff via `computeUnifiedDiff()`), `rollback` (restore from snapshot + record new version), `getDrift` (compare current vs last tagged release, surface uncommitted changes).
+- **Integration** (`packages/core/src/soul/manager.ts`, `packages/core/src/workflow/workflow-manager.ts`): Fire-and-forget `recordVersion()` on every `updatePersonality()` / `updateDefinition()`.
+- **Routes** (`soul-routes.ts`, `workflow-routes.ts`): 6 personality + 7 workflow versioning endpoints — list versions, get by ID/tag, tag release, rollback, drift detection, diff, export-by-version. Auth middleware: 13 new `ROUTE_PERMISSIONS` entries (`soul:read`/`soul:write`, `workflows:read`/`workflows:write`).
+- **Wiring** (`secureyeoman.ts`): Version storage + managers instantiated and wired. Getters: `getPersonalityVersionManager()`, `getWorkflowVersionManager()`.
+- **CLI** (`personality.ts`): 5 version subcommands — `history`, `tag`, `rollback`, `drift`, `diff`. `resolvePersonalityId()` helper for name→ID lookup. (`crew.ts`): 4 workflow version subcommands — `wf:versions`, `wf:tag`, `wf:rollback`, `wf:drift`.
+- **Dashboard API** (`client.ts`): 12 new functions (6 personality + 6 workflow version operations).
+- **Dashboard components**: `PersonalityVersionHistory.tsx` — version list with tag badges, click-to-preview markdown, unified diff viewer (color-coded), rollback with confirm, tag release, drift badge. Integrated as collapsible section in `PersonalityEditor.tsx`. `WorkflowVersionHistory.tsx` — same pattern with JSON snapshot display. Integrated as bottom drawer in `WorkflowBuilder.tsx` with History toggle button.
+- **Tests**: 117 new across 8 files — `personality-version-store.test.ts` (16), `personality-version-mgr.test.ts` (23), `workflow-version-store.test.ts` (13), `workflow-version-mgr.test.ts` (22), `personality-version-routes.test.ts` (13), `workflow-version-routes.test.ts` (16), `PersonalityVersionHistory.test.tsx` (8), `WorkflowVersionHistory.test.tsx` (6).
 
 ### Phase 107-A (remaining): Deterministic Routing & Per-Personality Base Knowledge
 
@@ -30,6 +51,26 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **CLI distill** (`packages/core/src/cli/commands/personality.ts`): `secureyeoman personality distill <name>` with `--include-memory`, `--output <file>`, `--diff` flags. Resolves personality by name, calls distillation API.
 - **Transport import** (`packages/core/src/soul/personality-serializer.ts`): `fromMarkdown()` now recognizes and gracefully skips `# Runtime Prompt` and `# Runtime Context` sections — distilled documents can be imported directly. Only truly unknown sections generate warnings.
 - **Tests**: ~25 new — `diff-utils.test.ts` (5: identical/added/removed/mixed/empty), `manager.test.ts` (7: distill method with various options), `soul-routes.test.ts` (5: distill/diff endpoints, 404s), `personality-serializer.test.ts` (3: distilled section handling), `personality.test.ts` (5: CLI distill subcommands).
+
+### Phase 107-F: ATHI Threat Governance Framework
+
+- **Shared types** (`packages/shared/src/types/athi.ts`): Zod schemas for the ATHI taxonomy — `AthiActorSchema` (6 actor types), `AthiTechniqueSchema` (7 techniques), `AthiHarmSchema` (7 harms), `AthiImpactSchema` (5 impacts), `AthiScenarioStatusSchema` (5 statuses). Full `AthiScenarioSchema` with id, orgId, title, description, actor, techniques[], harms[], impacts[], likelihood (1–5), severity (1–5), riskScore (computed), mitigations[], status, timestamps. Create/Update/RiskMatrixCell/ExecutiveSummary schemas. Exported from `types/index.ts`.
+- **SQL migration** (`packages/core/src/storage/migrations/001_baseline.sql`): `security.athi_scenarios` table with `risk_score` as `GENERATED ALWAYS AS (likelihood * severity) STORED`. 4 indexes (actor, status, risk_score DESC, org_id).
+- **`AthiStorage`** (`packages/core/src/security/athi-storage.ts`): Extends `PgBaseStorage`. CRUD operations, `listScenarios()` with pagination + actor/status/orgId filters, `getRiskMatrix()` (GROUP BY actor × technique with `jsonb_array_elements_text` aggregation), `getTopRisks()`, `getStatusCounts()`, `getActorCounts()`. Dynamic SET builder for updates. Uses `uuidv7()` IDs, `JSON.stringify()` for JSONB arrays.
+- **`AthiManager`** (`packages/core/src/security/athi-manager.ts`): CRUD passthrough with cache invalidation on writes. `getRiskMatrix()`, `getTopRisks()` (default limit 10), `getMitigationCoverage()` (% scenarios with ≥1 implemented/verified mitigation), `generateExecutiveSummary()` (30s cache, aggregates from storage). Fire-and-forget alert via `getAlertManager()` on high-risk scenario creation (riskScore ≥ 20).
+- **Routes** (`packages/core/src/security/athi-routes.ts`): 8 Fastify endpoints — `POST/GET /api/v1/security/athi/scenarios`, `GET/PUT/DELETE .../scenarios/:id`, `GET .../matrix`, `GET .../top-risks`, `GET .../summary`. Zod validation on POST/PUT bodies. Auth: `security_athi:read`/`security_athi:write` (5 entries in `auth-middleware.ts`).
+- **Wiring** (`secureyeoman.ts`): `AthiStorage` + `AthiManager` fields, initialized after pool. `getAthiManager()` getter. Routes registered in `server.ts`.
+- **CLI** (`packages/core/src/cli/commands/athi.ts`): `secureyeoman athi` (alias: `threat`). Subcommands: `list` (filterable by `--actor`, `--status`), `show <id>`, `create` (with `--title`, `--actor`, `--techniques`, `--harms`, `--impacts`, `--likelihood`, `--severity`), `matrix`, `summary`. `--json` output mode. Registered in `cli.ts`.
+- **Dashboard API** (`packages/dashboard/src/api/client.ts`): 7 functions — `fetchAthiScenarios`, `createAthiScenario`, `updateAthiScenario`, `deleteAthiScenario`, `fetchAthiMatrix`, `fetchAthiTopRisks`, `fetchAthiSummary`.
+- **Dashboard tab** (`packages/dashboard/src/components/security/SecurityATHITab.tsx`): `ATHITab` component with summary strip (total scenarios, avg risk score, mitigation coverage gauge, status badges), actor×technique risk matrix table (color-coded by avgRiskScore), filterable scenario table (actor/status dropdowns), create/edit modal (multi-select checkboxes for techniques/harms/impacts, dynamic mitigations list). Integrated into `SecurityPage.tsx` as lazy-loaded tab (Target icon).
+- **Tests**: ~80 new — `athi-store.test.ts` (18: storage CRUD + aggregates), `athi-manager.test.ts` (13: business logic + caching + alerts), `athi-routes.test.ts` (16: Fastify injection, all endpoints + validation), `athi.test.ts` (15: CLI subcommands + flags), `SecurityATHITab.test.tsx` (9: renders, interactions, filters).
+
+### Phase 111 Gap Fixes (111-C + 111-F)
+
+- **Assessment `departmentId`** (`packages/core/src/risk-assessment/risk-assessment-routes.ts`): `POST /api/v1/risk/assessments` now accepts optional `departmentId` in body, passed through to `mgr.runAssessment()`.
+- **Findings `departmentId`** wired through full stack: `ExternalFindingSchema` + `CreateExternalFindingSchema` (`packages/shared/src/types/risk-assessment.ts`), `FindingRow.department_id` + `rowToFinding()` + `createFinding()` INSERT (`risk-assessment-storage.ts`), `POST /api/v1/risk/findings` route accepts `departmentId` (`risk-assessment-routes.ts`).
+- **Register entry modal** (`packages/dashboard/src/components/risk/RegisterEntryFormModal.tsx`): Replaces `window.prompt()` placeholder in `RiskAssessmentTab.tsx`. Full form with title, category (dropdown), severity (dropdown), likelihood (1–5), impact (1–5), owner, due date, description. Computed risk score with color coding. Lazy-loaded with Suspense.
+- **Tests**: 2 new in `risk-assessment-routes.test.ts` (POST assessment with departmentId, POST finding with departmentId).
 
 ---
 

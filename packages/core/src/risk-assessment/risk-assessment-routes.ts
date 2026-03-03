@@ -36,6 +36,7 @@ export function registerRiskAssessmentRoutes(
       assessmentTypes?: string[];
       windowDays?: number;
       options?: Record<string, unknown>;
+      departmentId?: string;
     };
 
     if (!body?.name) {
@@ -57,6 +58,7 @@ export function registerRiskAssessmentRoutes(
           ],
           windowDays: body.windowDays ?? 7,
           options: body.options,
+          departmentId: body.departmentId,
         },
         createdBy
       );
@@ -240,6 +242,7 @@ export function registerRiskAssessmentRoutes(
       recommendation?: string;
       evidence?: Record<string, unknown>;
       sourceDate?: number;
+      departmentId?: string;
     };
 
     if (!body?.category) return sendError(reply, 400, 'category is required');
@@ -258,6 +261,7 @@ export function registerRiskAssessmentRoutes(
         recommendation: body.recommendation,
         evidence: body.evidence,
         sourceDate: body.sourceDate,
+        departmentId: body.departmentId,
       });
       return reply.code(201).send({ finding });
     } catch (err) {

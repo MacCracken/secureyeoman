@@ -125,6 +125,11 @@ import { TeamStorage } from './agents/team-storage.js';
 import { TeamManager } from './agents/team-manager.js';
 import { WorkflowStorage } from './workflow/workflow-storage.js';
 import { WorkflowManager } from './workflow/workflow-manager.js';
+import { PersonalityVersionStorage } from './soul/personality-version-storage.js';
+import { PersonalityVersionManager } from './soul/personality-version-manager.js';
+import { WorkflowVersionStorage } from './workflow/workflow-version-storage.js';
+import { WorkflowVersionManager } from './workflow/workflow-version-manager.js';
+import { PersonalityMarkdownSerializer } from './soul/personality-serializer.js';
 import { ExtensionStorage } from './extensions/storage.js';
 import { ExtensionManager } from './extensions/manager.js';
 import { ExecutionStorage } from './execution/storage.js';
@@ -144,6 +149,8 @@ import { RiskAssessmentStorage } from './risk-assessment/risk-assessment-storage
 import { RiskAssessmentManager } from './risk-assessment/risk-assessment-manager.js';
 import { DepartmentRiskStorage } from './risk-assessment/department-risk-storage.js';
 import { DepartmentRiskManager } from './risk-assessment/department-risk-manager.js';
+import { AthiStorage } from './security/athi-storage.js';
+import { AthiManager } from './security/athi-manager.js';
 import { BackupStorage } from './backup/backup-storage.js';
 import { BackupManager } from './backup/backup-manager.js';
 import { TenantStorage } from './tenants/tenant-storage.js';
@@ -274,6 +281,10 @@ export class SecureYeoman {
   private teamManager: TeamManager | null = null;
   private workflowStorage: WorkflowStorage | null = null;
   private workflowManager: WorkflowManager | null = null;
+  private personalityVersionStorage: PersonalityVersionStorage | null = null;
+  private personalityVersionManager: PersonalityVersionManager | null = null;
+  private workflowVersionStorage: WorkflowVersionStorage | null = null;
+  private workflowVersionManager: WorkflowVersionManager | null = null;
   private extensionStorage: ExtensionStorage | null = null;
   private extensionManager: ExtensionManager | null = null;
   private executionStorage: ExecutionStorage | null = null;
@@ -294,6 +305,8 @@ export class SecureYeoman {
   private riskScheduleTimer: ReturnType<typeof setInterval> | null = null;
   private departmentRiskStorage: DepartmentRiskStorage | null = null;
   private departmentRiskManager: DepartmentRiskManager | null = null;
+  private athiStorage: AthiStorage | null = null;
+  private athiManager: AthiManager | null = null;
   private proactiveManager: import('./proactive/manager.js').ProactiveManager | null = null;
   private multimodalManager: import('./multimodal/manager.js').MultimodalManager | null = null;
   private browserSessionStorage: import('./browser/storage.js').BrowserSessionStorage | null = null;
@@ -470,6 +483,10 @@ export class SecureYeoman {
       // Step 2.11: Initialize DepartmentRiskStorage
       this.departmentRiskStorage = new DepartmentRiskStorage();
       this.logger.debug('DepartmentRiskStorage initialized');
+
+      // Step 2.12: Initialize AthiStorage (Phase 107-F)
+      this.athiStorage = new AthiStorage();
+      this.logger.debug('AthiStorage initialized');
 
       // Step 3: Validate secrets are available
       validateSecrets(this.config);
@@ -792,6 +809,16 @@ export class SecureYeoman {
       }
 
       this.logger.debug('Soul manager initialized');
+
+      // Step 5.7b2: Personality version tracking (Phase 114)
+      this.personalityVersionStorage = new PersonalityVersionStorage();
+      this.personalityVersionManager = new PersonalityVersionManager({
+        versionStorage: this.personalityVersionStorage,
+        soulStorage: this.soulStorage,
+        serializer: new PersonalityMarkdownSerializer(),
+      });
+      this.soulManager.setPersonalityVersionManager(this.personalityVersionManager);
+      this.logger.debug('Personality version manager initialized');
 
       // Wire SoulManager into AIClient for personality_id tracking
       if (this.aiClient && this.soulManager) {
@@ -1460,6 +1487,24 @@ export class SecureYeoman {
           this.logger.debug('DepartmentRiskManager initialized');
         } catch (error) {
           this.logger.warn('DepartmentRiskManager initialization failed (non-fatal)', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+
+      // Step 6e.3: Initialize AthiManager (Phase 107-F)
+      if (this.athiStorage) {
+        try {
+          const pool = getPool();
+          this.athiManager = new AthiManager({
+            storage: this.athiStorage,
+            pool,
+            auditChain: this.auditChain,
+            getAlertManager: () => this.alertManager,
+          });
+          this.logger.debug('AthiManager initialized');
+        } catch (error) {
+          this.logger.warn('AthiManager initialization failed (non-fatal)', {
             error: error instanceof Error ? error.message : 'Unknown error',
           });
         }
@@ -2381,6 +2426,16 @@ export class SecureYeoman {
     return this.workflowManager;
   }
 
+  getPersonalityVersionManager(): PersonalityVersionManager | null {
+    this.ensureInitialized();
+    return this.personalityVersionManager;
+  }
+
+  getWorkflowVersionManager(): WorkflowVersionManager | null {
+    this.ensureInitialized();
+    return this.workflowVersionManager;
+  }
+
   /**
    * Get the extension manager instance (may be null if extensions are disabled)
    */
@@ -2470,6 +2525,11 @@ export class SecureYeoman {
   getDepartmentRiskManager(): DepartmentRiskManager | null {
     this.ensureInitialized();
     return this.departmentRiskManager;
+  }
+
+  getAthiManager(): AthiManager | null {
+    this.ensureInitialized();
+    return this.athiManager;
   }
 
   getMultimodalManager(): import('./multimodal/manager.js').MultimodalManager | null {
@@ -3059,6 +3119,14 @@ export class SecureYeoman {
           this.workflowStorage = new WorkflowStorage();
         }
         const subMgr2 = this.subAgentManager;
+
+        // Workflow version tracking (Phase 114)
+        this.workflowVersionStorage = new WorkflowVersionStorage();
+        this.workflowVersionManager = new WorkflowVersionManager({
+          versionStorage: this.workflowVersionStorage,
+          workflowStorage: this.workflowStorage,
+        });
+
         this.workflowManager = new WorkflowManager({
           storage: this.workflowStorage,
           subAgentManager: subMgr2,
@@ -3071,6 +3139,7 @@ export class SecureYeoman {
           approvalManager: this.pipelineApprovalManager,
           lineageStorage: this.pipelineLineageStorage,
           alertManager: this.alertManager,
+          workflowVersionManager: this.workflowVersionManager,
         });
         await this.workflowManager.initialize();
         this.logger!.debug('Workflow manager initialized');

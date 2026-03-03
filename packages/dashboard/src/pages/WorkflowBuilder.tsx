@@ -4,7 +4,7 @@
  * Layout: left step-type palette | center ReactFlow canvas | right config panel.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import ReactFlow, {
@@ -35,6 +35,7 @@ import {
   Users,
   Cpu,
   X,
+  History,
 } from 'lucide-react';
 import {
   fetchWorkflow,
@@ -45,6 +46,10 @@ import {
   type WorkflowStep,
   type WorkflowEdge,
 } from '../api/client';
+
+const WorkflowVersionHistory = lazy(
+  () => import('../components/workflow/WorkflowVersionHistory')
+);
 
 // ── Step type metadata ────────────────────────────────────────────────
 
@@ -164,6 +169,7 @@ export function WorkflowBuilder() {
   const [isEnabled, setIsEnabled] = useState(true);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -301,6 +307,17 @@ export function WorkflowBuilder() {
         </label>
         <div className="flex items-center gap-2 ml-auto">
           {toast && <span className="text-xs text-muted-foreground">{toast}</span>}
+          {!isNew && (
+            <button
+              onClick={() => { setShowHistory((v) => !v); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm font-medium transition-colors ${
+                showHistory ? 'bg-muted border-primary' : 'hover:bg-muted/50'
+              }`}
+            >
+              <History className="w-3.5 h-3.5" />
+              History
+            </button>
+          )}
           <button
             onClick={() => {
               saveMutation.mutate();
@@ -501,6 +518,15 @@ export function WorkflowBuilder() {
           </div>
         )}
       </div>
+
+      {/* Version history drawer */}
+      {showHistory && id && (
+        <div className="border-t bg-card shrink-0 overflow-y-auto max-h-[40vh] p-4">
+          <Suspense fallback={<div className="text-sm text-muted-foreground">Loading history...</div>}>
+            <WorkflowVersionHistory workflowId={id} />
+          </Suspense>
+        </div>
+      )}
     </div>
   );
 }

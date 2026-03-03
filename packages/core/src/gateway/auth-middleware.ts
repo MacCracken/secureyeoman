@@ -79,6 +79,25 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/soul/personalities/:id/distill/diff': {
     GET: { resource: 'soul', action: 'read' },
   },
+  // Personality versioning (Phase 114)
+  '/api/v1/soul/personalities/:id/versions': {
+    GET: { resource: 'soul', action: 'read' },
+  },
+  '/api/v1/soul/personalities/:id/versions/tag': {
+    POST: { resource: 'soul', action: 'write' },
+  },
+  '/api/v1/soul/personalities/:id/versions/:idOrTag': {
+    GET: { resource: 'soul', action: 'read' },
+  },
+  '/api/v1/soul/personalities/:id/versions/:vId/rollback': {
+    POST: { resource: 'soul', action: 'write' },
+  },
+  '/api/v1/soul/personalities/:id/drift': {
+    GET: { resource: 'soul', action: 'read' },
+  },
+  '/api/v1/soul/personalities/:id/versions/:a/diff/:b': {
+    GET: { resource: 'soul', action: 'read' },
+  },
   '/api/v1/soul/personalities/import': {
     POST: { resource: 'soul', action: 'write' },
   },
@@ -1003,6 +1022,48 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   },
   '/api/v1/risk/reports/register': {
     GET: { resource: 'risk', action: 'read' },
+  },
+
+  // ATHI Threat Governance routes (Phase 107-F)
+  '/api/v1/security/athi/scenarios': {
+    GET: { resource: 'security_athi', action: 'read' },
+    POST: { resource: 'security_athi', action: 'write' },
+  },
+  '/api/v1/security/athi/scenarios/:id': {
+    GET: { resource: 'security_athi', action: 'read' },
+    PUT: { resource: 'security_athi', action: 'write' },
+    DELETE: { resource: 'security_athi', action: 'write' },
+  },
+  '/api/v1/security/athi/matrix': {
+    GET: { resource: 'security_athi', action: 'read' },
+  },
+  '/api/v1/security/athi/top-risks': {
+    GET: { resource: 'security_athi', action: 'read' },
+  },
+  '/api/v1/security/athi/summary': {
+    GET: { resource: 'security_athi', action: 'read' },
+  },
+  // Workflow versioning (Phase 114)
+  '/api/v1/workflows/:id/versions': {
+    GET: { resource: 'workflows', action: 'read' },
+  },
+  '/api/v1/workflows/:id/versions/tag': {
+    POST: { resource: 'workflows', action: 'write' },
+  },
+  '/api/v1/workflows/:id/versions/:idOrTag': {
+    GET: { resource: 'workflows', action: 'read' },
+  },
+  '/api/v1/workflows/:id/versions/:vId/rollback': {
+    POST: { resource: 'workflows', action: 'write' },
+  },
+  '/api/v1/workflows/:id/drift': {
+    GET: { resource: 'workflows', action: 'read' },
+  },
+  '/api/v1/workflows/:id/versions/:a/diff/:b': {
+    GET: { resource: 'workflows', action: 'read' },
+  },
+  '/api/v1/workflows/:id/versions/:vId/export': {
+    GET: { resource: 'workflows', action: 'read' },
   },
 };
 

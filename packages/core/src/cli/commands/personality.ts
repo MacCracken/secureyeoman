@@ -26,6 +26,11 @@ Subcommands:
   import <file>               Import personality from .md or .json file
   create                      Create a new personality (--wizard for guided flow)
   distill <name>              Distill personality to portable markdown
+  history <name>              List version history
+  tag <name> [tag]            Tag a release (auto-generates tag if omitted)
+  rollback <name> <versionId> Rollback to a previous version
+  drift <name>                Show uncommitted changes since last tag
+  diff <name> <vA> <vB>       Diff two versions
 
 Options:
   --format <md|json>  Export format (default: md)
@@ -77,6 +82,16 @@ export const personalityCommand: Command = {
         case 'distill':
         case 'dist':
           return await runDistill(ctx, baseUrl, token, jsonOutput, args);
+        case 'history':
+          return await runHistory(ctx, baseUrl, token, jsonOutput, args);
+        case 'tag':
+          return await runTag(ctx, baseUrl, token, jsonOutput, args);
+        case 'rollback':
+          return await runRollback(ctx, baseUrl, token, jsonOutput, args);
+        case 'drift':
+          return await runDrift(ctx, baseUrl, token, jsonOutput, args);
+        case 'diff':
+          return await runDiff(ctx, baseUrl, token, jsonOutput, args);
         default:
           ctx.stderr.write(`Unknown subcommand: ${sub}\n${USAGE}\n`);
           return 1;
@@ -433,4 +448,218 @@ async function runCreate(
   } finally {
     rl.close();
   }
+}
+
+// ── Version helpers ───────────────────────────────────────────
+
+async function resolvePersonalityId(
+  baseUrl: string,
+  token: string | undefined,
+  name: string
+): Promise<string | null> {
+  const listRes = await apiCall(baseUrl, '/api/v1/soul/personalities', { token });
+  const { personalities } = listRes.data as { personalities: { id: string; name: string }[] };
+  const match = personalities.find((p) => p.name.toLowerCase() === name.toLowerCase());
+  return match?.id ?? null;
+}
+
+// ── History ───────────────────────────────────────────────────
+
+async function runHistory(
+  ctx: CommandContext,
+  baseUrl: string,
+  token: string | undefined,
+  jsonOutput: boolean,
+  args: string[]
+): Promise<number> {
+  const name = args[0];
+  if (!name) {
+    ctx.stderr.write('Usage: secureyeoman personality history <name>\n');
+    return 1;
+  }
+
+  const id = await resolvePersonalityId(baseUrl, token, name);
+  if (!id) { ctx.stderr.write(`Personality not found: ${name}\n`); return 1; }
+
+  const res = await apiCall(baseUrl, `/api/v1/soul/personalities/${id}/versions`, { token });
+  const { versions, total } = res.data as {
+    versions: { id: string; versionTag: string | null; changedFields: string[]; author: string; createdAt: number }[];
+    total: number;
+  };
+
+  if (jsonOutput) {
+    ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
+    return 0;
+  }
+
+  const c = colorContext(ctx.stdout);
+  ctx.stdout.write(c.bold(`Version history for ${name}`) + ` (${total} versions)\n\n`);
+  for (const v of versions) {
+    const tag = v.versionTag ? c.green(v.versionTag) : c.dim('untagged');
+    const date = new Date(v.createdAt).toISOString().slice(0, 19);
+    const fields = v.changedFields.length > 0 ? ` [${v.changedFields.join(', ')}]` : '';
+    ctx.stdout.write(`  ${tag}  ${c.dim(date)}  ${v.author}${fields}  ${c.dim(v.id.slice(0, 8))}\n`);
+  }
+  return 0;
+}
+
+// ── Tag ───────────────────────────────────────────────────────
+
+async function runTag(
+  ctx: CommandContext,
+  baseUrl: string,
+  token: string | undefined,
+  jsonOutput: boolean,
+  args: string[]
+): Promise<number> {
+  const name = args[0];
+  if (!name) {
+    ctx.stderr.write('Usage: secureyeoman personality tag <name> [tag]\n');
+    return 1;
+  }
+
+  const id = await resolvePersonalityId(baseUrl, token, name);
+  if (!id) { ctx.stderr.write(`Personality not found: ${name}\n`); return 1; }
+
+  const body: Record<string, unknown> = {};
+  if (args[1]) body.tag = args[1];
+
+  const res = await apiCall(baseUrl, `/api/v1/soul/personalities/${id}/versions/tag`, {
+    method: 'POST',
+    body,
+    token,
+  });
+
+  if (jsonOutput) {
+    ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
+    return 0;
+  }
+
+  const version = res.data as { versionTag: string; id: string };
+  const c = colorContext(ctx.stdout);
+  ctx.stdout.write(c.bold(`Tagged release: ${version.versionTag}`) + ` (${version.id.slice(0, 8)})\n`);
+  return 0;
+}
+
+// ── Rollback ──────────────────────────────────────────────────
+
+async function runRollback(
+  ctx: CommandContext,
+  baseUrl: string,
+  token: string | undefined,
+  jsonOutput: boolean,
+  args: string[]
+): Promise<number> {
+  const [name, versionId] = args;
+  if (!name || !versionId) {
+    ctx.stderr.write('Usage: secureyeoman personality rollback <name> <versionId>\n');
+    return 1;
+  }
+
+  const id = await resolvePersonalityId(baseUrl, token, name);
+  if (!id) { ctx.stderr.write(`Personality not found: ${name}\n`); return 1; }
+
+  const res = await apiCall(
+    baseUrl,
+    `/api/v1/soul/personalities/${id}/versions/${versionId}/rollback`,
+    { method: 'POST', token }
+  );
+
+  if (jsonOutput) {
+    ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
+    return 0;
+  }
+
+  const c = colorContext(ctx.stdout);
+  ctx.stdout.write(c.bold('Rollback complete.') + ' New version recorded.\n');
+  return 0;
+}
+
+// ── Drift ─────────────────────────────────────────────────────
+
+async function runDrift(
+  ctx: CommandContext,
+  baseUrl: string,
+  token: string | undefined,
+  jsonOutput: boolean,
+  args: string[]
+): Promise<number> {
+  const name = args[0];
+  if (!name) {
+    ctx.stderr.write('Usage: secureyeoman personality drift <name>\n');
+    return 1;
+  }
+
+  const id = await resolvePersonalityId(baseUrl, token, name);
+  if (!id) { ctx.stderr.write(`Personality not found: ${name}\n`); return 1; }
+
+  const res = await apiCall(baseUrl, `/api/v1/soul/personalities/${id}/drift`, { token });
+
+  if (jsonOutput) {
+    ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
+    return 0;
+  }
+
+  const drift = res.data as {
+    lastTaggedVersion: string | null;
+    uncommittedChanges: number;
+    changedFields: string[];
+    diffSummary: string;
+  };
+  const c = colorContext(ctx.stdout);
+
+  if (!drift.lastTaggedVersion) {
+    ctx.stdout.write('No tagged releases yet.\n');
+    return 0;
+  }
+
+  ctx.stdout.write(c.bold(`Last tagged: ${drift.lastTaggedVersion}\n`));
+  if (drift.uncommittedChanges === 0) {
+    ctx.stdout.write(c.green('No drift detected.\n'));
+  } else {
+    ctx.stdout.write(c.yellow(`${drift.uncommittedChanges} uncommitted change(s)`) + '\n');
+    ctx.stdout.write(`Changed fields: ${drift.changedFields.join(', ')}\n`);
+    if (drift.diffSummary) {
+      ctx.stdout.write('\n' + drift.diffSummary + '\n');
+    }
+  }
+  return 0;
+}
+
+// ── Diff ──────────────────────────────────────────────────────
+
+async function runDiff(
+  ctx: CommandContext,
+  baseUrl: string,
+  token: string | undefined,
+  jsonOutput: boolean,
+  args: string[]
+): Promise<number> {
+  const [name, vA, vB] = args;
+  if (!name || !vA || !vB) {
+    ctx.stderr.write('Usage: secureyeoman personality diff <name> <versionA> <versionB>\n');
+    return 1;
+  }
+
+  const id = await resolvePersonalityId(baseUrl, token, name);
+  if (!id) { ctx.stderr.write(`Personality not found: ${name}\n`); return 1; }
+
+  const res = await apiCall(
+    baseUrl,
+    `/api/v1/soul/personalities/${id}/versions/${vA}/diff/${vB}`,
+    { token }
+  );
+
+  if (jsonOutput) {
+    ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
+    return 0;
+  }
+
+  const { diff } = res.data as { diff: string };
+  if (!diff) {
+    ctx.stdout.write('No differences.\n');
+  } else {
+    ctx.stdout.write(diff + '\n');
+  }
+  return 0;
 }

@@ -26,6 +26,7 @@ import type { SpiritManager } from '../spirit/manager.js';
 import type { HeartbeatManager } from '../body/heartbeat.js';
 import { HeartManager } from '../body/heart.js';
 import type { StrategyStorage } from './strategy-storage.js';
+import type { PersonalityVersionManager } from './personality-version-manager.js';
 import type {
   Personality,
   PersonalityCreate,
@@ -144,6 +145,11 @@ export class SoulManager {
   private intentManager: IntentManager | null = null;
   private integrationManager: IntegrationManager | null = null;
   private strategyStorage: StrategyStorage | null = null;
+  private personalityVersionManager: PersonalityVersionManager | null = null;
+
+  setPersonalityVersionManager(manager: PersonalityVersionManager): void {
+    this.personalityVersionManager = manager;
+  }
 
   setStrategyStorage(storage: StrategyStorage): void {
     this.strategyStorage = storage;
@@ -368,7 +374,12 @@ export class SoulManager {
   }
 
   async updatePersonality(id: string, data: PersonalityUpdate): Promise<Personality> {
-    return this.storage.updatePersonality(id, data);
+    const result = await this.storage.updatePersonality(id, data);
+    // Fire-and-forget version recording
+    this.personalityVersionManager?.recordVersion(id).catch((err) => {
+      this.deps.logger.error({ err }, 'Failed to record personality version');
+    });
+    return result;
   }
 
   async deletePersonality(id: string): Promise<void> {

@@ -5,6 +5,10 @@ import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 const PersonalityWizard = lazy(() =>
   import('./personality/PersonalityWizard').then((m) => ({ default: m.PersonalityWizard }))
 );
+
+const PersonalityVersionHistory = lazy(() =>
+  import('./personality/PersonalityVersionHistory')
+);
 import {
   Bot,
   User,
@@ -5174,6 +5178,15 @@ export function PersonalityEditor({
 
           {/* Heart Section */}
           <HeartSection />
+
+          {/* Version History (Phase 114) */}
+          {editing && editing !== 'new' && (
+            <CollapsibleSection title="Version History" defaultOpen={false}>
+              <Suspense fallback={<div className="p-4 text-gray-500">Loading...</div>}>
+                <PersonalityVersionHistory personalityId={editing} />
+              </Suspense>
+            </CollapsibleSection>
+          )}
 
           <div className="flex gap-2 justify-end">
             <button

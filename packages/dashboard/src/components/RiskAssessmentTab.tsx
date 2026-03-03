@@ -108,6 +108,11 @@ const DepartmentFormModal = lazy(() =>
     default: m.DepartmentFormModal ?? (m as any).default,
   }))
 );
+const RegisterEntryFormModal = lazy(() =>
+  import('./risk/RegisterEntryFormModal').then((m) => ({
+    default: m.RegisterEntryFormModal ?? (m as any).default,
+  }))
+);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -905,6 +910,7 @@ function DepartmentsSection() {
   const [view, setView] = useState<DeptView>('risk');
   const [showDeptModal, setShowDeptModal] = useState(false);
   const [editingDept, setEditingDept] = useState<any>(null);
+  const [showEntryModal, setShowEntryModal] = useState(false);
 
   const { data: deptsData, isLoading: deptsLoading } = useQuery({
     queryKey: ['risk-departments'],
@@ -973,17 +979,32 @@ function DepartmentsSection() {
   };
 
   const handleAddEntry = () => {
-    // Open a simple register entry creation form — placeholder
-    const title = prompt('Risk title:');
-    if (!title || !selectedDept) return;
+    setShowEntryModal(true);
+  };
+
+  const handleEntrySubmit = (data: {
+    title: string;
+    category: string;
+    severity: string;
+    likelihood: number;
+    impact: number;
+    owner?: string;
+    dueDate?: string;
+    description?: string;
+  }) => {
+    if (!selectedDept) return;
     createRegisterEntry({
       departmentId: selectedDept,
-      title,
-      category: 'operational',
-      severity: 'medium',
-      likelihood: 3,
-      impact: 3,
+      title: data.title,
+      category: data.category as any,
+      severity: data.severity as any,
+      likelihood: data.likelihood,
+      impact: data.impact,
+      owner: data.owner,
+      dueDate: data.dueDate,
+      description: data.description,
     }).then(() => {
+      setShowEntryModal(false);
       invalidateAll();
     });
   };
@@ -1183,6 +1204,17 @@ function DepartmentsSection() {
             }}
             onSubmit={handleDeptSubmit}
             department={editingDept}
+          />
+        </Suspense>
+      )}
+
+      {/* Register Entry Form Modal */}
+      {showEntryModal && (
+        <Suspense fallback={null}>
+          <RegisterEntryFormModal
+            open={showEntryModal}
+            onClose={() => setShowEntryModal(false)}
+            onSubmit={handleEntrySubmit}
           />
         </Suspense>
       )}

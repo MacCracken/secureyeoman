@@ -12,6 +12,7 @@ import {
   Crosshair,
   Loader2,
   Camera,
+  Target,
 } from 'lucide-react';
 import {
   fetchSecurityEvents,
@@ -47,6 +48,9 @@ const NodeDetailsTab = lazy(() =>
   import('./security/SecurityNodesTab').then((m) => ({ default: m.NodeDetailsTab }))
 );
 const CaptureTab = lazy(() => import('./capture/CaptureTab'));
+const ATHITab = lazy(() =>
+  import('./security/SecurityATHITab').then((m) => ({ default: m.ATHITab }))
+);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -60,7 +64,8 @@ type TabType =
   | 'autonomy'
   | 'risk'
   | 'scope'
-  | 'capture';
+  | 'capture'
+  | 'athi';
 
 // ─── Shared localStorage helpers ─────────────────────────────────────────────
 
@@ -119,6 +124,7 @@ export function SecurityPage() {
     if (tabParam === 'autonomy') return 'autonomy';
     if (tabParam === 'risk') return 'risk';
     if (tabParam === 'scope') return 'scope';
+    if (tabParam === 'athi') return 'athi';
     return 'overview';
   };
 
@@ -342,6 +348,19 @@ export function SecurityPage() {
         </button>
         <button
           onClick={() => {
+            setActiveTab('athi');
+          }}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'athi'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Target className="w-4 h-4" />
+          ATHI
+        </button>
+        <button
+          onClick={() => {
             setActiveTab('capture');
           }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
@@ -416,6 +435,12 @@ export function SecurityPage() {
       {activeTab === 'risk' && <RiskAssessmentTab />}
 
       {activeTab === 'scope' && <ScopeManifestTab />}
+
+      {activeTab === 'athi' && (
+        <Suspense fallback={<TabSkeleton />}>
+          <ATHITab />
+        </Suspense>
+      )}
 
       {activeTab === 'capture' && (
         <Suspense fallback={<TabSkeleton />}>

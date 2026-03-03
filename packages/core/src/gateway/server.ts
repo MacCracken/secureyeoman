@@ -81,6 +81,7 @@ import { registerNotificationRoutes } from '../notifications/notification-routes
 import { registerUserNotificationPrefsRoutes } from '../notifications/user-notification-prefs-routes.js';
 import { registerRiskAssessmentRoutes } from '../risk-assessment/risk-assessment-routes.js';
 import { registerDepartmentRiskRoutes } from '../risk-assessment/department-risk-routes.js';
+import { registerAthiRoutes } from '../security/athi-routes.js';
 import { registerAuditExportRoutes } from '../logging/audit-export-routes.js';
 import { SQLiteAuditStorage } from '../logging/sqlite-storage.js';
 import { registerBackupRoutes } from '../backup/backup-routes.js';
@@ -523,6 +524,7 @@ export class GatewayServer {
         validator: soulValidator,
         auditChain: soulAuditChain,
         dataDir: soulDataDir,
+        personalityVersionManager: this.secureYeoman.getPersonalityVersionManager(),
       });
     } catch {
       // Soul manager may not be available — skip routes
@@ -822,7 +824,10 @@ export class GatewayServer {
     try {
       const workflowManager = this.secureYeoman.getWorkflowManager();
       if (workflowManager) {
-        registerWorkflowRoutes(this.app, { workflowManager });
+        registerWorkflowRoutes(this.app, {
+          workflowManager,
+          workflowVersionManager: this.secureYeoman.getWorkflowVersionManager(),
+        });
         this.getLogger().info('Workflow routes registered');
 
         // CI/CD inbound webhook normalizer (Phase 90) — public endpoint with HMAC gate
@@ -937,6 +942,19 @@ export class GatewayServer {
       }
     } catch (err) {
       this.getLogger().debug('Department risk register routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // ATHI Threat Governance routes (Phase 107-F)
+    try {
+      const athiManager = this.secureYeoman.getAthiManager();
+      if (athiManager) {
+        registerAthiRoutes(this.app, { athiManager });
+        this.getLogger().info('ATHI threat governance routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('ATHI routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }

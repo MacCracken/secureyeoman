@@ -44,3 +44,47 @@ export interface SwarmTemplateExport {
   requires: SwarmTemplateRequires;
   template: SwarmTemplate;
 }
+
+// ─── Directory-based metadata (Phase 113) ──────────────────────────────────
+
+/**
+ * metadata.json shape for a directory-based workflow.
+ * Step prompts can be overridden by per-step markdown files in `steps/`.
+ */
+export interface WorkflowDirectoryMetadata {
+  name: string;
+  description?: string;
+  version?: string;
+  author?: string;
+  category?: string;
+  tags?: string[];
+  steps: Array<{
+    id: string;
+    type: string;
+    config: Record<string, unknown>;
+  }>;
+  edges?: Array<{ from: string; to: string; condition?: string }>;
+  triggers?: Array<Record<string, unknown>>;
+  autonomyLevel?: string;
+  requires?: WorkflowShareableRequires;
+}
+
+/**
+ * metadata.json shape for a directory-based swarm template.
+ * Role system prompts can be overridden by per-role markdown files in `roles/`.
+ */
+export interface SwarmTemplateDirectoryMetadata {
+  name: string;
+  description?: string;
+  version?: string;
+  author?: string;
+  strategy?: string;
+  roles: Array<{
+    role: string;
+    profileName: string;
+    description?: string;
+    systemPromptOverride?: string;
+  }>;
+  coordinatorProfile?: string | null;
+  requires?: SwarmTemplateRequires;
+}

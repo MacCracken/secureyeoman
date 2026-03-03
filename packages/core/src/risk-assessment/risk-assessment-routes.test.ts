@@ -142,6 +142,19 @@ describe('POST /api/v1/risk/assessments', () => {
     });
     expect(res.statusCode).toBe(500);
   });
+
+  it('passes departmentId to manager when provided', async () => {
+    const { app, mgr } = buildApp();
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/risk/assessments',
+      payload: { name: 'Dept Assessment', departmentId: 'dept-123' },
+    });
+    expect(mgr.runAssessment).toHaveBeenCalledWith(
+      expect.objectContaining({ departmentId: 'dept-123' }),
+      undefined
+    );
+  });
 });
 
 // ─── GET /api/v1/risk/assessments ────────────────────────────────────────────
@@ -397,6 +410,23 @@ describe('POST /api/v1/risk/findings', () => {
       payload: { category: 'cyber', severity: 'high' }, // missing title
     });
     expect(res.statusCode).toBe(400);
+  });
+
+  it('passes departmentId to manager when provided', async () => {
+    const { app, mgr } = buildApp();
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/risk/findings',
+      payload: {
+        category: 'cyber',
+        severity: 'high',
+        title: 'Finding with dept',
+        departmentId: 'dept-456',
+      },
+    });
+    expect(mgr.createFinding).toHaveBeenCalledWith(
+      expect.objectContaining({ departmentId: 'dept-456' })
+    );
   });
 });
 

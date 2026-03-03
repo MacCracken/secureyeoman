@@ -5639,3 +5639,182 @@ export async function updateStrategy(
 export async function deleteStrategy(id: string): Promise<void> {
   return request(`/soul/strategies/${id}`, { method: 'DELETE' });
 }
+
+// ── ATHI Threat Governance (Phase 107-F) ────────────────────────────
+
+export async function fetchAthiScenarios(params?: {
+  actor?: string;
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ items: any[]; total: number }> {
+  const q = new URLSearchParams();
+  if (params?.actor) q.set('actor', params.actor);
+  if (params?.status) q.set('status', params.status);
+  if (params?.limit != null) q.set('limit', String(params.limit));
+  if (params?.offset != null) q.set('offset', String(params.offset));
+  const qs = q.toString();
+  return request<{ items: any[]; total: number }>(
+    `/security/athi/scenarios${qs ? `?${qs}` : ''}`
+  );
+}
+
+export async function createAthiScenario(data: {
+  title: string;
+  actor: string;
+  techniques: string[];
+  harms: string[];
+  impacts: string[];
+  likelihood: number;
+  severity: number;
+  mitigations?: { description: string; status?: string; owner?: string; effectiveness?: number }[];
+  status?: string;
+  description?: string;
+}): Promise<any> {
+  const res = await request<{ scenario: any }>('/security/athi/scenarios', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return res.scenario;
+}
+
+export async function updateAthiScenario(
+  id: string,
+  data: Record<string, unknown>
+): Promise<any> {
+  const res = await request<{ scenario: any }>(
+    `/security/athi/scenarios/${encodeURIComponent(id)}`,
+    { method: 'PUT', body: JSON.stringify(data) }
+  );
+  return res.scenario;
+}
+
+export async function deleteAthiScenario(id: string): Promise<void> {
+  await request(`/security/athi/scenarios/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function fetchAthiMatrix(): Promise<{ matrix: any[] }> {
+  return request<{ matrix: any[] }>('/security/athi/matrix');
+}
+
+export async function fetchAthiTopRisks(limit = 10): Promise<{ topRisks: any[] }> {
+  return request<{ topRisks: any[] }>(`/security/athi/top-risks?limit=${limit}`);
+}
+
+export async function fetchAthiSummary(): Promise<{ summary: any }> {
+  return request<{ summary: any }>('/security/athi/summary');
+}
+
+// ── Personality Versioning (Phase 114) ──────────────────────────────────────
+
+export async function fetchPersonalityVersions(
+  personalityId: string,
+  opts?: { limit?: number; offset?: number }
+): Promise<{ versions: any[]; total: number }> {
+  const params = new URLSearchParams();
+  if (opts?.limit) params.set('limit', String(opts.limit));
+  if (opts?.offset) params.set('offset', String(opts.offset));
+  const qs = params.toString() ? `?${params}` : '';
+  return request<{ versions: any[]; total: number }>(
+    `/soul/personalities/${personalityId}/versions${qs}`
+  );
+}
+
+export async function fetchPersonalityVersion(
+  personalityId: string,
+  idOrTag: string
+): Promise<any> {
+  return request<any>(`/soul/personalities/${personalityId}/versions/${idOrTag}`);
+}
+
+export async function tagPersonalityRelease(
+  personalityId: string,
+  tag?: string
+): Promise<any> {
+  return request<any>(`/soul/personalities/${personalityId}/versions/tag`, {
+    method: 'POST',
+    body: JSON.stringify(tag ? { tag } : {}),
+  });
+}
+
+export async function rollbackPersonality(
+  personalityId: string,
+  versionId: string
+): Promise<any> {
+  return request<any>(
+    `/soul/personalities/${personalityId}/versions/${versionId}/rollback`,
+    { method: 'POST' }
+  );
+}
+
+export async function fetchPersonalityDrift(personalityId: string): Promise<any> {
+  return request<any>(`/soul/personalities/${personalityId}/drift`);
+}
+
+export async function fetchPersonalityVersionDiff(
+  personalityId: string,
+  versionA: string,
+  versionB: string
+): Promise<{ diff: string }> {
+  return request<{ diff: string }>(
+    `/soul/personalities/${personalityId}/versions/${versionA}/diff/${versionB}`
+  );
+}
+
+// ── Workflow Versioning (Phase 114) ─────────────────────────────────────────
+
+export async function fetchWorkflowVersions(
+  workflowId: string,
+  opts?: { limit?: number; offset?: number }
+): Promise<{ versions: any[]; total: number }> {
+  const params = new URLSearchParams();
+  if (opts?.limit) params.set('limit', String(opts.limit));
+  if (opts?.offset) params.set('offset', String(opts.offset));
+  const qs = params.toString() ? `?${params}` : '';
+  return request<{ versions: any[]; total: number }>(
+    `/workflows/${workflowId}/versions${qs}`
+  );
+}
+
+export async function fetchWorkflowVersion(
+  workflowId: string,
+  idOrTag: string
+): Promise<any> {
+  return request<any>(`/workflows/${workflowId}/versions/${idOrTag}`);
+}
+
+export async function tagWorkflowRelease(
+  workflowId: string,
+  tag?: string
+): Promise<any> {
+  return request<any>(`/workflows/${workflowId}/versions/tag`, {
+    method: 'POST',
+    body: JSON.stringify(tag ? { tag } : {}),
+  });
+}
+
+export async function rollbackWorkflow(
+  workflowId: string,
+  versionId: string
+): Promise<any> {
+  return request<any>(
+    `/workflows/${workflowId}/versions/${versionId}/rollback`,
+    { method: 'POST' }
+  );
+}
+
+export async function fetchWorkflowDrift(workflowId: string): Promise<any> {
+  return request<any>(`/workflows/${workflowId}/drift`);
+}
+
+export async function fetchWorkflowVersionDiff(
+  workflowId: string,
+  versionA: string,
+  versionB: string
+): Promise<{ diff: string }> {
+  return request<{ diff: string }>(
+    `/workflows/${workflowId}/versions/${versionA}/diff/${versionB}`
+  );
+}

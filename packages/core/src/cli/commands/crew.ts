@@ -34,6 +34,10 @@ Subcommands:
   export <id>           Print team as YAML (--out <file> to save)
   run <id> <task>       Run a team on a task and wait for result
   runs [teamId]         List recent team runs
+  wf:versions <id>      List workflow version history
+  wf:tag <id> [tag]     Tag a workflow release
+  wf:rollback <id> <vId> Rollback workflow to a version
+  wf:drift <id>         Show workflow drift since last tag
 
 Options:
   --url <url>           Server URL (default: http://127.0.0.1:3000)
@@ -400,6 +404,83 @@ export const crewCommand: Command = {
               ['ID', 'TEAM', 'STATUS', 'TASK', 'CREATED']
             ) + '\n'
           );
+          return 0;
+        }
+
+        // ── Workflow version subcommands (Phase 114) ──────────────────
+
+        case 'wf:versions': {
+          const wfId = argv[1];
+          if (!wfId) { ctx.stderr.write('Usage: secureyeoman crew wf:versions <workflowId>\n'); return 1; }
+          const res = await apiCall(baseUrl, `/api/v1/workflows/${wfId}/versions`, { token });
+          if (!res.ok) { ctx.stderr.write(`Error: ${JSON.stringify(res.data)}\n`); return 1; }
+          if (jsonOutput) { ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n'); return 0; }
+          const { versions, total } = res.data as {
+            versions: { id: string; versionTag: string | null; changedFields: string[]; author: string; createdAt: number }[];
+            total: number;
+          };
+          ctx.stdout.write(bold(`Workflow versions`) + ` (${total})\n\n`);
+          for (const v of versions) {
+            const tag = v.versionTag ? green(v.versionTag) : dim('untagged');
+            const date = new Date(v.createdAt).toISOString().slice(0, 19);
+            const fields = v.changedFields.length > 0 ? ` [${v.changedFields.join(', ')}]` : '';
+            ctx.stdout.write(`  ${tag}  ${dim(date)}  ${v.author}${fields}  ${dim(v.id.slice(0, 8))}\n`);
+          }
+          return 0;
+        }
+
+        case 'wf:tag': {
+          const wfId = argv[1];
+          if (!wfId) { ctx.stderr.write('Usage: secureyeoman crew wf:tag <workflowId> [tag]\n'); return 1; }
+          const body: Record<string, unknown> = {};
+          if (argv[2]) body.tag = argv[2];
+          const res = await apiCall(baseUrl, `/api/v1/workflows/${wfId}/versions/tag`, {
+            method: 'POST', body, token,
+          });
+          if (!res.ok) { ctx.stderr.write(`Error: ${JSON.stringify(res.data)}\n`); return 1; }
+          if (jsonOutput) { ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n'); return 0; }
+          const version = res.data as { versionTag: string; id: string };
+          ctx.stdout.write(bold(`Tagged: ${version.versionTag}`) + ` (${version.id.slice(0, 8)})\n`);
+          return 0;
+        }
+
+        case 'wf:rollback': {
+          const wfId = argv[1];
+          const vId = argv[2];
+          if (!wfId || !vId) { ctx.stderr.write('Usage: secureyeoman crew wf:rollback <workflowId> <versionId>\n'); return 1; }
+          const res = await apiCall(baseUrl, `/api/v1/workflows/${wfId}/versions/${vId}/rollback`, {
+            method: 'POST', token,
+          });
+          if (!res.ok) { ctx.stderr.write(`Error: ${JSON.stringify(res.data)}\n`); return 1; }
+          if (jsonOutput) { ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n'); return 0; }
+          ctx.stdout.write(bold('Rollback complete.') + ' New version recorded.\n');
+          return 0;
+        }
+
+        case 'wf:drift': {
+          const wfId = argv[1];
+          if (!wfId) { ctx.stderr.write('Usage: secureyeoman crew wf:drift <workflowId>\n'); return 1; }
+          const res = await apiCall(baseUrl, `/api/v1/workflows/${wfId}/drift`, { token });
+          if (!res.ok) { ctx.stderr.write(`Error: ${JSON.stringify(res.data)}\n`); return 1; }
+          if (jsonOutput) { ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n'); return 0; }
+          const drift = res.data as {
+            lastTaggedVersion: string | null;
+            uncommittedChanges: number;
+            changedFields: string[];
+            diffSummary: string;
+          };
+          if (!drift.lastTaggedVersion) {
+            ctx.stdout.write('No tagged releases yet.\n');
+            return 0;
+          }
+          ctx.stdout.write(bold(`Last tagged: ${drift.lastTaggedVersion}`) + '\n');
+          if (drift.uncommittedChanges === 0) {
+            ctx.stdout.write(green('No drift detected.') + '\n');
+          } else {
+            ctx.stdout.write(`${drift.uncommittedChanges} uncommitted change(s)\n`);
+            ctx.stdout.write(`Changed: ${drift.changedFields.join(', ')}\n`);
+            if (drift.diffSummary) ctx.stdout.write('\n' + drift.diffSummary + '\n');
+          }
           return 0;
         }
 

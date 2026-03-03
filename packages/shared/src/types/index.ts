@@ -684,13 +684,15 @@ export type {
   SideBySideRating,
 } from './lifecycle.js';
 
-// Shareables types (Phase 89)
+// Shareables types (Phase 89 + Phase 113)
 export type {
   WorkflowShareableRequires,
   SwarmTemplateRequires,
   CompatibilityCheckResult,
   WorkflowExport,
   SwarmTemplateExport,
+  WorkflowDirectoryMetadata,
+  SwarmTemplateDirectoryMetadata,
 } from './shareables.js';
 
 export {
@@ -744,6 +746,44 @@ export type {
   CaptureConsentRequest,
   CaptureConsentConfig,
 } from './capture.js';
+
+// ATHI Threat Governance types (Phase 107-F)
+export {
+  AthiActorSchema,
+  AthiTechniqueSchema,
+  AthiHarmSchema,
+  AthiImpactSchema,
+  AthiScenarioStatusSchema,
+  AthiMitigationSchema,
+  AthiScenarioSchema,
+  AthiScenarioCreateSchema,
+  AthiScenarioUpdateSchema,
+  AthiRiskMatrixCellSchema,
+  AthiExecutiveSummarySchema,
+  type AthiActor,
+  type AthiTechnique,
+  type AthiHarm,
+  type AthiImpact,
+  type AthiScenarioStatus,
+  type AthiMitigation,
+  type AthiScenario,
+  type AthiScenarioCreate,
+  type AthiScenarioUpdate,
+  type AthiRiskMatrixCell,
+  type AthiExecutiveSummary,
+} from './athi.js';
+
+// Versioning types (Phase 114)
+export {
+  VersionTagSchema,
+  PersonalityVersionSchema,
+  WorkflowVersionSchema,
+  DriftSummarySchema,
+  type VersionTag,
+  type PersonalityVersion,
+  type WorkflowVersion,
+  type DriftSummary,
+} from './versioning.js';
 
 // Departmental Risk Register types (Phase 111)
 export {
