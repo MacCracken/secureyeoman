@@ -123,6 +123,8 @@ import { SwarmStorage } from './agents/swarm-storage.js';
 import { SwarmManager } from './agents/swarm-manager.js';
 import { TeamStorage } from './agents/team-storage.js';
 import { TeamManager } from './agents/team-manager.js';
+import { CouncilStorage } from './agents/council-storage.js';
+import { CouncilManager } from './agents/council-manager.js';
 import { WorkflowStorage } from './workflow/workflow-storage.js';
 import { WorkflowManager } from './workflow/workflow-manager.js';
 import { PersonalityVersionStorage } from './soul/personality-version-storage.js';
@@ -282,6 +284,8 @@ export class SecureYeoman {
   private swarmManager: SwarmManager | null = null;
   private teamStorage: TeamStorage | null = null;
   private teamManager: TeamManager | null = null;
+  private councilStorage: CouncilStorage | null = null;
+  private councilManager: CouncilManager | null = null;
   private workflowStorage: WorkflowStorage | null = null;
   private workflowManager: WorkflowManager | null = null;
   private personalityVersionStorage: PersonalityVersionStorage | null = null;
@@ -2457,6 +2461,14 @@ export class SecureYeoman {
   }
 
   /**
+   * Get the council manager instance (may be null if not initialized)
+   */
+  getCouncilManager(): CouncilManager | null {
+    this.ensureInitialized();
+    return this.councilManager;
+  }
+
+  /**
    * Get the workflow manager instance (may be null if not initialized)
    */
   getWorkflowManager(): WorkflowManager | null {
@@ -3158,6 +3170,32 @@ export class SecureYeoman {
         });
       }
 
+      // Council manager (requires subAgentManager)
+      try {
+        if (!this.councilStorage) {
+          this.councilStorage = new CouncilStorage();
+        }
+        const subMgrCouncil = this.subAgentManager;
+        this.councilManager = new CouncilManager({
+          storage: this.councilStorage,
+          subAgentManager: subMgrCouncil,
+          aiClientConfig: {
+            model: this.config!.model,
+          },
+          aiClientDeps: {
+            auditChain: this.auditChain ?? undefined,
+            logger: this.logger!.child({ component: 'CouncilManagerAI' }),
+          },
+          logger: this.logger!.child({ component: 'CouncilManager' }),
+        });
+        await this.councilManager.initialize();
+        this.logger!.debug('Council manager initialized');
+      } catch (councilError) {
+        this.logger!.warn('Council manager initialization failed (non-fatal)', {
+          error: councilError instanceof Error ? councilError.message : 'Unknown error',
+        });
+      }
+
       // Workflow manager (requires subAgentManager + swarmManager)
       try {
         if (!this.workflowStorage) {
@@ -3185,14 +3223,16 @@ export class SecureYeoman {
           lineageStorage: this.pipelineLineageStorage,
           alertManager: this.alertManager,
           workflowVersionManager: this.workflowVersionManager,
+          councilManager: this.councilManager,
         });
         await this.workflowManager.initialize();
         this.logger!.debug('Workflow manager initialized');
 
-        // Wire workflow + swarm managers into marketplace so community sync works
+        // Wire workflow + swarm + council managers into marketplace so community sync works
         this.marketplaceManager?.setDelegationManagers({
           workflowManager: this.workflowManager,
           swarmManager: this.swarmManager ?? undefined,
+          councilManager: this.councilManager ?? undefined,
           soulManager: this.soulManager ?? undefined,
         });
       } catch (workflowError) {
@@ -3833,6 +3873,11 @@ export class SecureYeoman {
       this.teamStorage.close();
       this.teamStorage = null;
       this.teamManager = null;
+    }
+    if (this.councilStorage) {
+      this.councilStorage.close();
+      this.councilStorage = null;
+      this.councilManager = null;
     }
     if (this.workflowStorage) {
       this.workflowStorage.close();

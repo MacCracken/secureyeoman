@@ -29,6 +29,7 @@ import type { WorkflowDefinition, WorkflowRun, WorkflowStep } from '@secureyeoma
 import { execFileSync } from 'node:child_process';
 import { assertPublicUrl } from '../utils/ssrf-guard.js';
 import type { AlertManager } from '../telemetry/alert-manager.js';
+import type { CouncilManager } from '../agents/council-manager.js';
 import { emitJobCompletion } from '../telemetry/job-completion-events.js';
 
 const _outputSchemaValidator = new OutputSchemaValidator();
@@ -80,6 +81,8 @@ export interface WorkflowEngineDeps {
   cicdConfig?: CicdEngineConfig | null;
   // Alert pipeline (Phase 104)
   alertManager?: AlertManager | null;
+  // Council of AIs
+  councilManager?: CouncilManager | null;
 }
 
 export class WorkflowEngine {
@@ -102,6 +105,8 @@ export class WorkflowEngine {
   private readonly cicdConfig: CicdEngineConfig | null;
   // Alert pipeline (Phase 104)
   private readonly alertManager: AlertManager | null;
+  // Council of AIs
+  private readonly councilManager: CouncilManager | null;
 
   constructor(deps: WorkflowEngineDeps) {
     this.storage = deps.storage;
@@ -117,6 +122,7 @@ export class WorkflowEngine {
     this.lineageStorage = deps.lineageStorage ?? null;
     this.cicdConfig = deps.cicdConfig ?? null;
     this.alertManager = deps.alertManager ?? null;
+    this.councilManager = deps.councilManager ?? null;
   }
 
   // ── Public API ────────────────────────────────────────────────
@@ -542,6 +548,28 @@ export class WorkflowEngine {
           initiatedBy: 'workflow',
         });
         return swarmResult.result ?? null;
+      }
+
+      case 'council': {
+        if (!this.councilManager) {
+          throw new Error('CouncilManager not available for council step');
+        }
+        const councilTemplateId = String(cfg.templateId ?? '');
+        const councilTopic = this.resolveTemplate(String(cfg.topicTemplate ?? ''), ctx);
+        const councilContext = cfg.contextTemplate
+          ? this.resolveTemplate(String(cfg.contextTemplate), ctx)
+          : undefined;
+        const councilBudget = cfg.tokenBudget ? Number(cfg.tokenBudget) : undefined;
+        const councilMaxRounds = cfg.maxRounds ? Number(cfg.maxRounds) : undefined;
+        const councilResult = await this.councilManager.convene({
+          templateId: councilTemplateId,
+          topic: councilTopic,
+          context: councilContext,
+          tokenBudget: councilBudget,
+          maxRounds: councilMaxRounds,
+          initiatedBy: 'workflow',
+        });
+        return councilResult.decision ?? null;
       }
 
       // ── ML Pipeline step types (Phase 73) ────────────────────────

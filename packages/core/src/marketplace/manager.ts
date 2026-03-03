@@ -10,6 +10,7 @@ import type { SecureLogger } from '../logging/logger.js';
 import type { BrainManager } from '../brain/manager.js';
 import type { WorkflowManager } from '../workflow/workflow-manager.js';
 import type { SwarmManager } from '../agents/swarm-manager.js';
+import type { CouncilManager } from '../agents/council-manager.js';
 import type { SoulManager } from '../soul/manager.js';
 import { MarketplaceStorage } from './storage.js';
 import { gitCloneOrPull } from './git-fetch.js';
@@ -20,6 +21,7 @@ export interface MarketplaceManagerDeps {
   brainManager?: BrainManager;
   workflowManager?: WorkflowManager;
   swarmManager?: SwarmManager;
+  councilManager?: CouncilManager;
   soulManager?: SoulManager;
   communityRepoPath?: string;
   allowCommunityGitFetch?: boolean;
@@ -36,6 +38,8 @@ export interface CommunitySyncResult {
   workflowsUpdated: number;
   swarmsAdded: number;
   swarmsUpdated: number;
+  councilsAdded: number;
+  councilsUpdated: number;
   securityTemplatesAdded: number;
   securityTemplatesUpdated: number;
   personalitiesAdded: number;
@@ -50,6 +54,7 @@ export class MarketplaceManager {
   private brainManager?: BrainManager;
   private workflowManager?: WorkflowManager;
   private swarmManager?: SwarmManager;
+  private councilManager?: CouncilManager;
   private soulManager?: SoulManager;
   private communityRepoPath?: string;
   private allowCommunityGitFetch: boolean;
@@ -62,6 +67,7 @@ export class MarketplaceManager {
     this.brainManager = deps.brainManager;
     this.workflowManager = deps.workflowManager;
     this.swarmManager = deps.swarmManager;
+    this.councilManager = deps.councilManager;
     this.soulManager = deps.soulManager;
     this.communityRepoPath = deps.communityRepoPath;
     this.allowCommunityGitFetch = deps.allowCommunityGitFetch ?? false;
@@ -71,10 +77,12 @@ export class MarketplaceManager {
   setDelegationManagers(managers: {
     workflowManager?: WorkflowManager;
     swarmManager?: SwarmManager;
+    councilManager?: CouncilManager;
     soulManager?: SoulManager;
   }): void {
     if (managers.workflowManager) this.workflowManager = managers.workflowManager;
     if (managers.swarmManager) this.swarmManager = managers.swarmManager;
+    if (managers.councilManager) this.councilManager = managers.councilManager;
     if (managers.soulManager) this.soulManager = managers.soulManager;
   }
 
@@ -284,6 +292,8 @@ export class MarketplaceManager {
       workflowsUpdated: 0,
       swarmsAdded: 0,
       swarmsUpdated: 0,
+      councilsAdded: 0,
+      councilsUpdated: 0,
       securityTemplatesAdded: 0,
       securityTemplatesUpdated: 0,
       personalitiesAdded: 0,
@@ -696,6 +706,90 @@ export class MarketplaceManager {
       }
     }
 
+    // ── Sync community council templates ──────────────────────────────────
+    if (this.councilManager) {
+      const councilsDir = path.join(repoPath, 'councils');
+      if (fs.existsSync(councilsDir)) {
+        const councilFiles = this.findJsonFiles(councilsDir);
+        const syncedCouncilNames = new Set<string>();
+
+        for (const filePath of councilFiles) {
+          try {
+            const raw = fs.readFileSync(filePath, 'utf-8');
+            const data = JSON.parse(raw) as Record<string, unknown>;
+
+            if (!data.name || typeof data.name !== 'string') {
+              result.errors.push(`Skipped council ${filePath}: missing required field "name"`);
+              result.skipped++;
+              continue;
+            }
+            if (!Array.isArray(data.members) || (data.members as unknown[]).length === 0) {
+              result.errors.push(
+                `Skipped council ${filePath}: missing required field "members"`
+              );
+              result.skipped++;
+              continue;
+            }
+            if (!data.facilitatorProfile || typeof data.facilitatorProfile !== 'string') {
+              result.errors.push(
+                `Skipped council ${filePath}: missing required field "facilitatorProfile"`
+              );
+              result.skipped++;
+              continue;
+            }
+
+            const councilName = data.name;
+            const members = (data.members as Record<string, unknown>[]).map((m) => ({
+              role: String(m.role ?? ''),
+              profileName: String(m.profileName ?? ''),
+              description: typeof m.description === 'string' ? m.description : '',
+              weight: typeof m.weight === 'number' ? m.weight : 1,
+              perspective: typeof m.perspective === 'string' ? m.perspective : undefined,
+            }));
+
+            const { templates } = await this.councilManager.listTemplates({ limit: 1000 });
+            const existing = templates.find((t) => t.name === councilName && !t.isBuiltin);
+
+            if (existing) {
+              await this.councilManager.updateTemplate(existing.id, {
+                description: typeof data.description === 'string' ? data.description : undefined,
+                members,
+                facilitatorProfile: data.facilitatorProfile as string,
+                deliberationStrategy: (typeof data.deliberationStrategy === 'string'
+                  ? data.deliberationStrategy
+                  : 'rounds') as any,
+                maxRounds: typeof data.maxRounds === 'number' ? data.maxRounds : 3,
+                votingStrategy: (typeof data.votingStrategy === 'string'
+                  ? data.votingStrategy
+                  : 'facilitator_judgment') as any,
+              });
+              result.councilsUpdated++;
+            } else {
+              await this.councilManager.createTemplate({
+                name: councilName,
+                description: typeof data.description === 'string' ? data.description : '',
+                members,
+                facilitatorProfile: data.facilitatorProfile as string,
+                deliberationStrategy: (typeof data.deliberationStrategy === 'string'
+                  ? data.deliberationStrategy
+                  : 'rounds') as any,
+                maxRounds: typeof data.maxRounds === 'number' ? data.maxRounds : 3,
+                votingStrategy: (typeof data.votingStrategy === 'string'
+                  ? data.votingStrategy
+                  : 'facilitator_judgment') as any,
+              });
+              result.councilsAdded++;
+            }
+            syncedCouncilNames.add(councilName);
+          } catch (err) {
+            result.errors.push(
+              `Error processing council ${filePath}: ${err instanceof Error ? err.message : String(err)}`
+            );
+          }
+        }
+      }
+    }
+
     // ── Sync community security templates ──────────────────────────────────
     const securityTemplatesDir = path.join(repoPath, 'security-templates');
     if (fs.existsSync(securityTemplatesDir)) {
@@ -944,6 +1038,8 @@ export class MarketplaceManager {
       workflowsUpdated: result.workflowsUpdated,
       swarmsAdded: result.swarmsAdded,
       swarmsUpdated: result.swarmsUpdated,
+      councilsAdded: result.councilsAdded,
+      councilsUpdated: result.councilsUpdated,
       securityTemplatesAdded: result.securityTemplatesAdded,
       securityTemplatesUpdated: result.securityTemplatesUpdated,
       personalitiesAdded: result.personalitiesAdded,

@@ -26,6 +26,7 @@ import type {
   WorkflowStepRun,
 } from '@secureyeoman/shared';
 import type { AlertManager } from '../telemetry/alert-manager.js';
+import type { CouncilManager } from '../agents/council-manager.js';
 import type { WorkflowVersionManager } from './workflow-version-manager.js';
 
 export interface WorkflowManagerDeps {
@@ -45,6 +46,8 @@ export interface WorkflowManagerDeps {
   alertManager?: AlertManager | null;
   // Versioning (Phase 114)
   workflowVersionManager?: WorkflowVersionManager | null;
+  // Council of AIs
+  councilManager?: CouncilManager | null;
 }
 
 export class WorkflowManager {
@@ -70,6 +73,7 @@ export class WorkflowManager {
       approvalManager: deps.approvalManager,
       lineageStorage: deps.lineageStorage,
       alertManager: deps.alertManager,
+      councilManager: deps.councilManager,
     });
   }
 

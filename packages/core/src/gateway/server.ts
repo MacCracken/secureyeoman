@@ -63,6 +63,7 @@ import { registerAgentRoutes } from '../agents/agent-routes.js';
 import { registerSwarmRoutes } from '../agents/swarm-routes.js';
 import { registerProfileSkillsRoutes } from '../agents/profile-skills-routes.js';
 import { registerTeamRoutes } from '../agents/team-routes.js';
+import { registerCouncilRoutes } from '../agents/council-routes.js';
 import { registerWorkflowRoutes } from '../workflow/workflow-routes.js';
 import { registerExtensionRoutes } from '../extensions/extension-routes.js';
 import { registerExecutionRoutes } from '../execution/execution-routes.js';
@@ -818,6 +819,19 @@ export class GatewayServer {
       }
     } catch (err) {
       this.getLogger().debug('Team routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Council routes
+    try {
+      const councilManager = this.secureYeoman.getCouncilManager();
+      if (councilManager) {
+        registerCouncilRoutes(this.app, { councilManager });
+        this.getLogger().info('Council routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Council routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }

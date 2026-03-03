@@ -388,6 +388,28 @@ export {
   type SwarmRunParams,
 } from './swarm.js';
 
+// Council types
+export {
+  CouncilDeliberationStrategySchema,
+  CouncilVotingStrategySchema,
+  CouncilStatusSchema,
+  CouncilMemberConfigSchema,
+  CouncilTemplateSchema,
+  CouncilTemplateCreateSchema,
+  CouncilPositionSchema,
+  CouncilRunSchema,
+  CouncilRunParamsSchema,
+  type CouncilDeliberationStrategy,
+  type CouncilVotingStrategy,
+  type CouncilStatus,
+  type CouncilMemberConfig,
+  type CouncilTemplate,
+  type CouncilTemplateCreate,
+  type CouncilPosition,
+  type CouncilRun,
+  type CouncilRunParams,
+} from './council.js';
+
 // Delegation types
 export {
   AgentProfileSchema,

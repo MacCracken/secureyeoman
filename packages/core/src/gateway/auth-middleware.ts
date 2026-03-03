@@ -538,6 +538,26 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   },
   '/api/v1/agents/swarms/:id': { GET: { resource: 'agents', action: 'read' } },
   '/api/v1/agents/swarms/:id/cancel': { POST: { resource: 'agents', action: 'write' } },
+  // Councils
+  '/api/v1/agents/councils/catalog': { GET: { resource: 'agents', action: 'read' } },
+  '/api/v1/agents/councils/catalog/:name/install': {
+    POST: { resource: 'agents', action: 'write' },
+  },
+  '/api/v1/agents/councils/templates': {
+    GET: { resource: 'agents', action: 'read' },
+    POST: { resource: 'agents', action: 'write' },
+  },
+  '/api/v1/agents/councils/templates/:id': {
+    GET: { resource: 'agents', action: 'read' },
+    PUT: { resource: 'agents', action: 'write' },
+    DELETE: { resource: 'agents', action: 'write' },
+  },
+  '/api/v1/agents/councils': {
+    POST: { resource: 'agents', action: 'write' },
+  },
+  '/api/v1/agents/councils/runs': { GET: { resource: 'agents', action: 'read' } },
+  '/api/v1/agents/councils/runs/:id': { GET: { resource: 'agents', action: 'read' } },
+  '/api/v1/agents/councils/runs/:id/cancel': { POST: { resource: 'agents', action: 'write' } },
   // Proactive
   '/api/v1/proactive/triggers': {
     GET: { resource: 'proactive', action: 'read' },

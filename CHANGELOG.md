@@ -6,6 +6,21 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.3] — 2026-03-03
 
+### Council of AIs — Multi-Round Group Deliberation Engine
+
+- **Shared types** (`packages/shared/src/types/council.ts`): `CouncilTemplate`, `CouncilMemberConfig`, `CouncilPosition`, `CouncilRun`, `CouncilRunParams` Zod schemas. Deliberation strategies: `rounds`, `until_consensus`, `single_pass`. Voting strategies: `facilitator_judgment`, `majority`, `unanimous`, `weighted`. Exported from `types/index.ts`.
+- **Workflow step type**: `'council'` added to `WorkflowStepTypeSchema` enum in `workflow.ts`.
+- **SQL migration** (`004_councils.sql`): `agents.council_templates` (UNIQUE name, JSONB members), `agents.council_runs` (FK to templates, deliberation state, decision/consensus/dissents/reasoning/confidence), `agents.council_positions` (per-member per-round, confidence, keyPoints, agreements, disagreements). Index on `(council_run_id, round)`.
+- **CouncilStorage** (`packages/core/src/agents/council-storage.ts`): Extends `PgBaseStorage`. Template CRUD + `getTemplateByName()`. Run CRUD with dynamic UPDATE builder. Position create/query by run/round.
+- **Council catalog** (`packages/core/src/agents/council-catalog.ts`): 2 bundled templates — `Board of Directors` (4 members: CFO/CTO/CISO/Strategy, `until_consensus`, 3 rounds) and `Architecture Review Board` (3 members: Backend/Security/Infrastructure, `rounds`, 2 rounds). **Not auto-installed** — council_templates table starts empty; users browse catalog and install explicitly.
+- **CouncilManager** (`packages/core/src/agents/council-manager.ts`): `convene(params)` — main entry point. Round loop: parallel `SubAgentManager.delegate()` to all members per round, structured JSON response parsing with free-text fallback, position storage. `until_consensus` strategy: facilitator LLM convergence check after each round, early exit on convergence. Synthesis: facilitator LLM receives full deliberation history, produces `{ decision, consensus, dissents, reasoning, confidence }`. Token budget division: `budget / (members * maxRounds + 2)` per call. Catalog browse + install API.
+- **Council routes** (`packages/core/src/agents/council-routes.ts`): 12 endpoints — `GET/POST catalog`, `GET/POST/PUT/DELETE templates`, `POST convene`, `GET/POST runs`. Auth: `agents:read`/`agents:write` in `auth-middleware.ts`.
+- **Workflow integration** (`packages/core/src/workflow/workflow-engine.ts`): `case 'council'` step dispatch (~15 lines). `councilManager` added to `WorkflowEngineDeps` and `WorkflowManagerDeps`. Supports `topicTemplate`, `contextTemplate`, `tokenBudget`, `maxRounds` config.
+- **Wiring** (`secureyeoman.ts`): `councilStorage` + `councilManager` fields, `getCouncilManager()` getter, initialization after teamManager in `bootDelegationChain()`, shutdown cleanup. Passes to WorkflowManager deps and marketplace `setDelegationManagers()`.
+- **Marketplace sync** (`packages/core/src/marketplace/manager.ts`): `councilManager` in deps and `setDelegationManagers()`. `syncFromCommunity()` extended for `councils/` directory (JSON validation: name, members[], facilitatorProfile required). `councilsAdded`/`councilsUpdated` in `CommunitySyncResult`.
+- **Community repo**: `schema/council-template.schema.json` (JSON Schema for community council templates). `councils/incident-response-council.json` (single_pass, 3 members: Analyst/Responder/Comms). `councils/risk-committee.json` (until_consensus, weighted voting, 3 members with weight 2/1/1).
+- **Tests**: 62 new across 3 files — `council-store.test.ts` (19), `council-manager.test.ts` (22), `council-routes.test.ts` (21). All passing.
+
 ### Phase 106: License-Gated Feature Reveal
 
 - **LicenseManager** (`packages/core/src/licensing/license-manager.ts`): `enforcementEnabled` flag (reads `SECUREYEOMAN_LICENSE_ENFORCEMENT`, default `false`). New methods: `isEnforcementEnabled()`, `isFeatureAllowed(feature)`. `toStatusObject()` includes `enforcementEnabled`.

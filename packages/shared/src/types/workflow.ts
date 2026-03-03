@@ -25,6 +25,7 @@ export const WorkflowStepTypeSchema = z.enum([
   'webhook',
   'subworkflow',
   'swarm',
+  'council',
   // ML Pipeline step types (Phase 73)
   'data_curation',
   'training_job',
