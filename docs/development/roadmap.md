@@ -52,10 +52,8 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | 109 | Editor Improvements | P3 — power user UX | 🔄 In Progress |
-| 116 | Sandbox Artifact Scanning & Externalization Gate | P1 — security boundary | ✅ Done |
 | 117 | Excalidraw Diagramming — MCP Tools & Marketplace Skill | P3 — capability + visualization | Planned |
 | 118 | Memory Audits, Compression & Reorganization | P2 — memory quality + governance | Planned |
-| 119 | LLM Providers Improvements | P3 — provider improvements | Done |
 | 120 | Canvas Editor Improvements | P3 — canvas improvements | Planned |
 | — | Engineering Backlog | Ongoing | Pick-up opportunistically |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
@@ -70,47 +68,6 @@
 *Previously Phase 100. Renumbered for sequential ordering. Includes "settings page split" from Phase XX.*
 
 **Remaining IDE features** — Auto-Claude–style patterns (plan display, step-by-step approval, AI commit messages, context badges), multi-file editing (tabs, split panes), project explorer, integrated Git, command palette, inline AI completion (Copilot-style), multi-file search & replace, collaborative editing (Yjs CRDT), keybindings editor, layout persistence, responsive/mobile layout, training integration (export/annotation), and plugin/extension system.
-
----
-
-## Phase 116: Sandbox Artifact Scanning & Externalization Gate ✅
-
-**Priority**: P1 — Security boundary. Completed 2026-03-03. See ADR 194, CHANGELOG, and `docs/guides/sandbox-artifact-scanning.md`.
-
-### 116-A: Artifact Scanning Engine ✅
-
-- [x] **`ArtifactScanner` interface** — `packages/core/src/sandbox/scanning/types.ts`
-- [x] **Code review scanner** — `code-scanner.ts` (24 patterns, 8 categories)
-- [x] **Secrets scanner** — `secrets-scanner.ts` (18 patterns, redaction mode)
-- [x] **Binary & data scanner** — `data-scanner.ts` (magic bytes, polyglot, serialization, formula injection)
-- [x] **Composite scanner pipeline** — `scanner-pipeline.ts` (`Promise.allSettled`, failFast, verdict calculation)
-
-### 116-B: Externalization Gate & Policy ✅
-
-- [x] **`ExternalizationGate`** — `externalization-gate.ts` (pass/redact/quarantine/block)
-- [x] **`ExternalizationPolicy`** — Zod schema in `packages/shared/src/types/sandbox-scanning.ts`
-- [x] **Quarantine storage** — `quarantine-storage.ts` (file-based, CRUD, approve/release)
-- [x] **Wiring into existing sandbox paths** — `secureyeoman.ts` init + getters
-- [x] **Alert integration** — AlertManager fire on quarantine/block
-
-### 116-C: Malicious Intent Guards & Active Defense ✅
-
-- [x] **Threat intent classifier** — `threat-classifier.ts` (intent scoring 0.0–1.0, co-occurrence amplification)
-- [x] **Kill chain mapping** — 7 stages in threat patterns
-- [x] **Behavioral pattern database** — `threat-patterns.ts` (17 patterns, 7 categories)
-- [x] **Sandbox runtime guards** — `runtime-guard.ts` (network, filesystem, process, time)
-- [x] **Escalating response system** — `escalation.ts` (4-tier: log/alert/suspend/revoke)
-- [x] **Repeat offender tracking** — `offender-tracker.ts` (rolling window, decay, auto-escalation)
-- [x] **Alert templates for sandbox threats** — 5 templates in `AlertRulesTab.tsx`
-
-### 116-D: Dashboard, CLI & Audit ✅
-
-- [x] **Scan history table** — `005_sandbox_scanning.sql` migration
-- [x] **Quarantine dashboard** — `SecuritySandboxTab.tsx` in Security page
-- [x] **Scan analytics** — Stats cards, paginated scans table
-- [x] **Threat intelligence panel** — Pattern categories, kill chain stages
-- [x] **CLI commands** — `sandbox.ts` (scan, quarantine, policy, threats, stats)
-- [x] **Audit chain integration** — 6 event types, full ThreatAssessment in metadata
 
 ---
 
