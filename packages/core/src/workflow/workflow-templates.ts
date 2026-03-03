@@ -867,8 +867,7 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         {
           id: 'arch-review',
           name: '8-Domain Architecture Review',
-          description:
-            'Perform a comprehensive security architecture review across all 8 domains',
+          description: 'Perform a comprehensive security architecture review across all 8 domains',
           dependsOn: [],
           onError: 'fail',
         },

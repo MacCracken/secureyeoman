@@ -34,10 +34,22 @@ vi.mock('./skills/index.js', () => ({
   strideThreatModelSkill: { name: 'STRIDE Threat Model', author: 'YEOMAN', version: '2026.3.2' },
   sigmaRuleGeneratorSkill: { name: 'SIGMA Rule Generator', author: 'YEOMAN', version: '2026.3.2' },
   malwareAnalysisSkill: { name: 'Malware Analysis', author: 'YEOMAN', version: '2026.3.2' },
-  emailHeaderForensicsSkill: { name: 'Email Header Forensics', author: 'YEOMAN', version: '2026.3.2' },
+  emailHeaderForensicsSkill: {
+    name: 'Email Header Forensics',
+    author: 'YEOMAN',
+    version: '2026.3.2',
+  },
   ttrcAnalysisSkill: { name: 'TTRC Analysis', author: 'YEOMAN', version: '2026.3.2' },
-  securityArchitectureReviewSkill: { name: 'Security Architecture Review', author: 'YEOMAN', version: '2026.3.2' },
-  securityLogAnalysisSkill: { name: 'Security Log Analysis', author: 'YEOMAN', version: '2026.3.2' },
+  securityArchitectureReviewSkill: {
+    name: 'Security Architecture Review',
+    author: 'YEOMAN',
+    version: '2026.3.2',
+  },
+  securityLogAnalysisSkill: {
+    name: 'Security Log Analysis',
+    author: 'YEOMAN',
+    version: '2026.3.2',
+  },
 }));
 
 // ─── Test Data ────────────────────────────────────────────────

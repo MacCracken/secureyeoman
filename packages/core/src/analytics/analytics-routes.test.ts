@@ -46,7 +46,15 @@ describe('Analytics Routes', () => {
   describe('GET /api/v1/analytics/sentiment/:conversationId', () => {
     it('returns sentiments for a conversation', async () => {
       mockAnalyticsStorage.getSentimentsByConversation.mockResolvedValueOnce([
-        { id: '1', conversation_id: 'c1', message_id: 'm1', personality_id: 'p1', sentiment: 'positive', score: 0.8, analyzed_at: '2026-01-01' },
+        {
+          id: '1',
+          conversation_id: 'c1',
+          message_id: 'm1',
+          personality_id: 'p1',
+          sentiment: 'positive',
+          score: 0.8,
+          analyzed_at: '2026-01-01',
+        },
       ]);
       const res = await app.inject({ method: 'GET', url: '/api/v1/analytics/sentiment/c1' });
       expect(res.statusCode).toBe(200);
@@ -108,7 +116,10 @@ describe('Analytics Routes', () => {
         toolCallSuccessRate: 0.8,
         totalConversations: 50,
       });
-      const res = await app.inject({ method: 'GET', url: '/api/v1/analytics/engagement?periodDays=14' });
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/analytics/engagement?periodDays=14',
+      });
       expect(res.statusCode).toBe(200);
     });
   });
@@ -153,7 +164,15 @@ describe('Analytics Routes', () => {
   describe('GET /api/v1/analytics/entities/:conversationId', () => {
     it('returns entities for a conversation', async () => {
       mockAnalyticsStorage.getEntitiesByConversation.mockResolvedValueOnce([
-        { id: 'e1', conversation_id: 'c1', personality_id: 'p1', entity_type: 'person', entity_value: 'Alice', mention_count: 3, first_seen_at: '2026-01-01' },
+        {
+          id: 'e1',
+          conversation_id: 'c1',
+          personality_id: 'p1',
+          entity_type: 'person',
+          entity_value: 'Alice',
+          mention_count: 3,
+          first_seen_at: '2026-01-01',
+        },
       ]);
       const res = await app.inject({ method: 'GET', url: '/api/v1/analytics/entities/c1' });
       expect(res.statusCode).toBe(200);
@@ -195,7 +214,15 @@ describe('Analytics Routes', () => {
   describe('GET /api/v1/analytics/phrases/:personalityId', () => {
     it('returns key phrases', async () => {
       mockAnalyticsStorage.getKeyPhrases.mockResolvedValueOnce([
-        { id: 'kp1', personality_id: 'p1', phrase: 'AI safety', frequency: 12, window_start: '2026-01-01', window_end: '2026-01-31', updated_at: '2026-01-15' },
+        {
+          id: 'kp1',
+          personality_id: 'p1',
+          phrase: 'AI safety',
+          frequency: 12,
+          window_start: '2026-01-01',
+          window_end: '2026-01-31',
+          updated_at: '2026-01-15',
+        },
       ]);
       const res = await app.inject({ method: 'GET', url: '/api/v1/analytics/phrases/p1?limit=25' });
       expect(res.statusCode).toBe(200);
@@ -210,7 +237,15 @@ describe('Analytics Routes', () => {
     it('returns anomalies with total', async () => {
       mockAnalyticsStorage.getAnomalies.mockResolvedValueOnce({
         anomalies: [
-          { id: 'a1', anomaly_type: 'message_rate_spike', personality_id: 'p1', user_id: 'u1', severity: 'high', details: {}, detected_at: '2026-01-01' },
+          {
+            id: 'a1',
+            anomaly_type: 'message_rate_spike',
+            personality_id: 'p1',
+            user_id: 'u1',
+            severity: 'high',
+            details: {},
+            detected_at: '2026-01-01',
+          },
         ],
         total: 1,
       });

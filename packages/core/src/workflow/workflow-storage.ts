@@ -161,9 +161,7 @@ export class WorkflowStorage extends PgBaseStorage {
     if (data.steps?.length) {
       const conditionErrors = WorkflowEngine.validateWorkflowConditions(data.steps);
       if (conditionErrors.length > 0) {
-        const details = conditionErrors
-          .map((e) => `step "${e.stepId}": ${e.error}`)
-          .join('; ');
+        const details = conditionErrors.map((e) => `step "${e.stepId}": ${e.error}`).join('; ');
         throw Object.assign(new Error(`Invalid condition expression(s): ${details}`), {
           statusCode: 400,
           conditionErrors,
@@ -235,9 +233,7 @@ export class WorkflowStorage extends PgBaseStorage {
     if (data.steps?.length) {
       const conditionErrors = WorkflowEngine.validateWorkflowConditions(data.steps);
       if (conditionErrors.length > 0) {
-        const details = conditionErrors
-          .map((e) => `step "${e.stepId}": ${e.error}`)
-          .join('; ');
+        const details = conditionErrors.map((e) => `step "${e.stepId}": ${e.error}`).join('; ');
         throw Object.assign(new Error(`Invalid condition expression(s): ${details}`), {
           statusCode: 400,
           conditionErrors,

@@ -515,8 +515,7 @@ function LicenseCard() {
   });
 
   const daysUntilExpiry = getDaysUntilExpiry(license?.expiresAt ?? null);
-  const showExpiryBanner =
-    isEnterprise && daysUntilExpiry !== null && daysUntilExpiry <= 30;
+  const showExpiryBanner = isEnterprise && daysUntilExpiry !== null && daysUntilExpiry <= 30;
 
   return (
     <div className="card">
@@ -551,13 +550,13 @@ function LicenseCard() {
             {showExpiryBanner && (
               <div
                 className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium ${
-                  daysUntilExpiry! <= 7
+                  daysUntilExpiry <= 7
                     ? 'bg-destructive/10 text-destructive'
                     : 'bg-warning/10 text-warning'
                 }`}
               >
                 <AlertTriangle className="w-4 h-4 shrink-0" />
-                {daysUntilExpiry! <= 0
+                {daysUntilExpiry <= 0
                   ? 'License has expired. Enterprise features are disabled.'
                   : `License expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'}. Contact your administrator to renew.`}
               </div>
@@ -590,16 +589,10 @@ function LicenseCard() {
                   <span
                     key={f}
                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                      available
-                        ? 'bg-success/10 text-success'
-                        : 'bg-muted text-muted-foreground'
+                      available ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'
                     }`}
                   >
-                    {available ? (
-                      <Check className="w-3 h-3" />
-                    ) : (
-                      <Lock className="w-3 h-3" />
-                    )}
+                    {available ? <Check className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
                     {FEATURE_LABELS[f] ?? f}
                   </span>
                 );
@@ -1146,7 +1139,9 @@ function StrategyManagementCard() {
           Reasoning Strategies
         </h3>
         <button
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            setShowForm((v) => !v);
+          }}
           className="btn btn-ghost btn-sm text-xs flex items-center gap-1"
         >
           <Plus className="w-3 h-3" />
@@ -1159,18 +1154,24 @@ function StrategyManagementCard() {
           <input
             placeholder="Name"
             value={formName}
-            onChange={(e) => setFormName(e.target.value)}
+            onChange={(e) => {
+              setFormName(e.target.value);
+            }}
             className="w-full px-2 py-1.5 text-sm rounded border bg-background"
           />
           <input
             placeholder="slug-like-this"
             value={formSlug}
-            onChange={(e) => setFormSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+            onChange={(e) => {
+              setFormSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''));
+            }}
             className="w-full px-2 py-1.5 text-sm rounded border bg-background font-mono"
           />
           <select
             value={formCategory}
-            onChange={(e) => setFormCategory(e.target.value)}
+            onChange={(e) => {
+              setFormCategory(e.target.value);
+            }}
             className="w-full px-2 py-1.5 text-sm rounded border bg-background"
           >
             {STRATEGY_CATEGORIES.map((c) => (
@@ -1182,33 +1183,39 @@ function StrategyManagementCard() {
           <input
             placeholder="Description (optional)"
             value={formDescription}
-            onChange={(e) => setFormDescription(e.target.value)}
+            onChange={(e) => {
+              setFormDescription(e.target.value);
+            }}
             className="w-full px-2 py-1.5 text-sm rounded border bg-background"
           />
           <textarea
             placeholder="Prompt prefix..."
             value={formPrefix}
-            onChange={(e) => setFormPrefix(e.target.value)}
+            onChange={(e) => {
+              setFormPrefix(e.target.value);
+            }}
             rows={3}
             className="w-full px-2 py-1.5 text-sm rounded border bg-background resize-y"
           />
           <div className="flex justify-end gap-2">
             <button
-              onClick={() => setShowForm(false)}
+              onClick={() => {
+                setShowForm(false);
+              }}
               className="btn btn-ghost btn-sm text-xs"
             >
               Cancel
             </button>
             <button
-              onClick={() =>
+              onClick={() => {
                 createMutation.mutate({
                   name: formName,
                   slug: formSlug,
                   category: formCategory,
                   description: formDescription,
                   promptPrefix: formPrefix,
-                })
-              }
+                });
+              }}
               disabled={!formName || !formSlug || !formPrefix || createMutation.isPending}
               className="btn btn-ghost btn-sm text-xs"
             >
@@ -1242,7 +1249,9 @@ function StrategyManagementCard() {
             </div>
             {!s.isBuiltin && (
               <button
-                onClick={() => deleteMutation.mutate(s.id)}
+                onClick={() => {
+                  deleteMutation.mutate(s.id);
+                }}
                 disabled={deleteMutation.isPending}
                 className="btn btn-ghost btn-sm p-1 text-muted-foreground hover:text-destructive"
                 title="Delete strategy"

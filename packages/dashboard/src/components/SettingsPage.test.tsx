@@ -331,7 +331,7 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Advanced Observability')).toBeInTheDocument();
     // Community tier message
     expect(
-      screen.getByText(/Enter a license key to unlock enterprise features/),
+      screen.getByText(/Enter a license key to unlock enterprise features/)
     ).toBeInTheDocument();
   });
 
@@ -372,9 +372,7 @@ describe('SettingsPage', () => {
       error: null,
     });
     renderComponent();
-    expect(
-      await screen.findByText(/License expires in 15 days/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/License expires in 15 days/)).toBeInTheDocument();
   });
 
   it('shows urgent expiry banner when license expires within 7 days', async () => {
@@ -390,9 +388,7 @@ describe('SettingsPage', () => {
       error: null,
     });
     renderComponent();
-    expect(
-      await screen.findByText(/License expires in 3 days/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/License expires in 3 days/)).toBeInTheDocument();
   });
 
   it('shows expired banner when license has expired', async () => {
@@ -408,9 +404,7 @@ describe('SettingsPage', () => {
       error: null,
     });
     renderComponent();
-    expect(
-      await screen.findByText(/License has expired/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/License has expired/)).toBeInTheDocument();
   });
 
   it('does not show expiry banner when license expires in more than 30 days', async () => {

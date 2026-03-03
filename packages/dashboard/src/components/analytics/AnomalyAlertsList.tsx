@@ -14,7 +14,12 @@ const SEVERITY_COLORS: Record<string, string> = {
   low: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
 };
 
-const ANOMALY_TYPES = ['all', 'message_rate_spike', 'off_hours_activity', 'credential_stuffing'] as const;
+const ANOMALY_TYPES = [
+  'all',
+  'message_rate_spike',
+  'off_hours_activity',
+  'credential_stuffing',
+] as const;
 
 function timeAgo(isoString: string): string {
   const diff = Date.now() - new Date(isoString).getTime();
@@ -30,10 +35,11 @@ export function AnomalyAlertsList() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['anomalies', typeFilter],
-    queryFn: () => fetchAnomalies({
-      limit: 50,
-      anomalyType: typeFilter === 'all' ? undefined : typeFilter,
-    }),
+    queryFn: () =>
+      fetchAnomalies({
+        limit: 50,
+        anomalyType: typeFilter === 'all' ? undefined : typeFilter,
+      }),
     refetchInterval: 30_000,
   });
 
@@ -45,7 +51,9 @@ export function AnomalyAlertsList() {
         {ANOMALY_TYPES.map((type) => (
           <button
             key={type}
-            onClick={() => setTypeFilter(type)}
+            onClick={() => {
+              setTypeFilter(type);
+            }}
             className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
               typeFilter === type
                 ? 'bg-primary text-primary-foreground'
@@ -70,12 +78,19 @@ export function AnomalyAlertsList() {
       ) : (
         <div className="space-y-1.5">
           {anomalies.map((a: UsageAnomalyItem) => (
-            <div key={a.id} className="flex items-center gap-2 p-2 rounded-md border bg-card/50 text-sm">
-              <span className={`px-1.5 py-0.5 text-xs rounded border ${SEVERITY_COLORS[a.severity] ?? SEVERITY_COLORS.low}`}>
+            <div
+              key={a.id}
+              className="flex items-center gap-2 p-2 rounded-md border bg-card/50 text-sm"
+            >
+              <span
+                className={`px-1.5 py-0.5 text-xs rounded border ${SEVERITY_COLORS[a.severity] ?? SEVERITY_COLORS.low}`}
+              >
                 {a.severity}
               </span>
               <span className="font-medium">{a.anomalyType.replace(/_/g, ' ')}</span>
-              {a.userId && <span className="text-muted-foreground text-xs">user: {a.userId.slice(0, 8)}</span>}
+              {a.userId && (
+                <span className="text-muted-foreground text-xs">user: {a.userId.slice(0, 8)}</span>
+              )}
               <span className="text-muted-foreground text-xs ml-auto">{timeAgo(a.detectedAt)}</span>
             </div>
           ))}

@@ -114,7 +114,9 @@ export class AnalyticsStorage {
   async getSentimentTrend(
     personalityId: string,
     days: number
-  ): Promise<{ date: string; positive: number; neutral: number; negative: number; avg_score: number }[]> {
+  ): Promise<
+    { date: string; positive: number; neutral: number; negative: number; avg_score: number }[]
+  > {
     const { rows } = await this.pool.query<{
       date: string;
       positive: string;
@@ -277,7 +279,9 @@ export class AnalyticsStorage {
   async getTopEntities(
     personalityId: string,
     limit: number
-  ): Promise<{ entityType: string; entityValue: string; totalMentions: number; conversationCount: number }[]> {
+  ): Promise<
+    { entityType: string; entityValue: string; totalMentions: number; conversationCount: number }[]
+  > {
     const { rows } = await this.pool.query<{
       entity_type: string;
       entity_value: string;
@@ -334,10 +338,7 @@ export class AnalyticsStorage {
     );
   }
 
-  async getKeyPhrases(
-    personalityId: string,
-    limit: number
-  ): Promise<KeyPhraseRow[]> {
+  async getKeyPhrases(personalityId: string, limit: number): Promise<KeyPhraseRow[]> {
     const { rows } = await this.pool.query<KeyPhraseRow>(
       `SELECT * FROM analytics.key_phrases
        WHERE personality_id = $1

@@ -74,9 +74,9 @@ describe('ScreenRecordingManager', () => {
     await manager.startRecording('user-2', defaultConfig);
     await manager.startRecording('user-3', defaultConfig);
 
-    await expect(
-      manager.startRecording('user-4', defaultConfig)
-    ).rejects.toThrow('Maximum active recording sessions reached');
+    await expect(manager.startRecording('user-4', defaultConfig)).rejects.toThrow(
+      'Maximum active recording sessions reached'
+    );
 
     expect(manager.getActiveRecordings()).toHaveLength(3);
   });

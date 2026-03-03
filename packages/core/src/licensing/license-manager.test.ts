@@ -49,7 +49,7 @@ function validClaims(overrides: Partial<LicenseClaims> = {}): Partial<LicenseCla
  * Patches the embedded public key constant for a single test.
  * We monkey-patch the module's validate method to use our test key.
  */
-function withTestKey<T>(fn: (mgr: LicenseManager) => T, licenseKey: string): LicenseManager {
+function withTestKey(fn: (mgr: LicenseManager) => unknown, licenseKey: string): LicenseManager {
   // We need to bypass the embedded key — use a subclass that overrides validate
   const testPublicKeyPem = publicKeyPem;
 

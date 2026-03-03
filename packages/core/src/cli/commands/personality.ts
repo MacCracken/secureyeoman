@@ -9,7 +9,13 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import type { Command, CommandContext } from '../router.js';
-import { extractBoolFlag, extractCommonFlags, extractFlag, apiCall, colorContext } from '../utils.js';
+import {
+  extractBoolFlag,
+  extractCommonFlags,
+  extractFlag,
+  apiCall,
+  colorContext,
+} from '../utils.js';
 
 const USAGE = `
 Usage: secureyeoman personality <subcommand> [options]
@@ -77,18 +83,18 @@ export const personalityCommand: Command = {
 async function runList(
   ctx: CommandContext,
   baseUrl: string,
-  token: string,
+  token: string | undefined,
   jsonOutput: boolean
 ): Promise<number> {
   const res = await apiCall(baseUrl, '/api/v1/soul/personalities', { token });
   const { personalities, total } = res.data as {
-    personalities: Array<{
+    personalities: {
       id: string;
       name: string;
       description: string;
       isActive: boolean;
       isDefault: boolean;
-    }>;
+    }[];
     total: number;
   };
 
@@ -117,7 +123,7 @@ async function runList(
 async function runExport(
   ctx: CommandContext,
   baseUrl: string,
-  token: string,
+  token: string | undefined,
   _jsonOutput: boolean,
   args: string[]
 ): Promise<number> {
@@ -133,18 +139,18 @@ async function runExport(
 
   const name = argv[0];
   if (!name) {
-    ctx.stderr.write('Usage: secureyeoman personality export <name> [--format md|json] [--output file]\n');
+    ctx.stderr.write(
+      'Usage: secureyeoman personality export <name> [--format md|json] [--output file]\n'
+    );
     return 1;
   }
 
   // Find personality by name
   const listRes = await apiCall(baseUrl, '/api/v1/soul/personalities', { token });
   const { personalities } = listRes.data as {
-    personalities: Array<{ id: string; name: string }>;
+    personalities: { id: string; name: string }[];
   };
-  const match = personalities.find(
-    (p) => p.name.toLowerCase() === name.toLowerCase()
-  );
+  const match = personalities.find((p) => p.name.toLowerCase() === name.toLowerCase());
   if (!match) {
     ctx.stderr.write(`Personality not found: ${name}\n`);
     return 1;
@@ -170,7 +176,7 @@ async function runExport(
 async function runImport(
   ctx: CommandContext,
   baseUrl: string,
-  token: string,
+  token: string | undefined,
   jsonOutput: boolean,
   args: string[]
 ): Promise<number> {
@@ -187,7 +193,11 @@ async function runImport(
   // This avoids multipart complexity in the CLI
   if (isJson) {
     const data = JSON.parse(content);
-    const res = await apiCall(baseUrl, '/api/v1/soul/personalities', { method: 'POST', body: data, token });
+    const res = await apiCall(baseUrl, '/api/v1/soul/personalities', {
+      method: 'POST',
+      body: data,
+      token,
+    });
     if (jsonOutput) {
       ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
     } else {
@@ -202,7 +212,11 @@ async function runImport(
   const serializer = new PersonalityMarkdownSerializer();
   const { data, warnings } = serializer.fromMarkdown(content);
 
-  const res = await apiCall(baseUrl, '/api/v1/soul/personalities', { method: 'POST', body: data, token });
+  const res = await apiCall(baseUrl, '/api/v1/soul/personalities', {
+    method: 'POST',
+    body: data,
+    token,
+  });
 
   if (jsonOutput) {
     ctx.stdout.write(JSON.stringify({ ...(res.data as object), warnings }, null, 2) + '\n');

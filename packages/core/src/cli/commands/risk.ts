@@ -9,7 +9,13 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractBoolFlag, extractCommonFlags, extractFlag, apiCall, colorContext } from '../utils.js';
+import {
+  extractBoolFlag,
+  extractCommonFlags,
+  extractFlag,
+  apiCall,
+  colorContext,
+} from '../utils.js';
 
 const USAGE = `
 Usage: secureyeoman risk <subcommand> [options]
@@ -95,8 +101,14 @@ async function runDepartments(
 
   if (action === 'list') {
     const res = await apiCall(baseUrl, '/api/v1/risk/departments', { token });
-    if (!res?.ok) { ctx.stderr.write('Failed to fetch departments\n'); return 1; }
-    if (jsonOutput) { ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n'); return 0; }
+    if (!res?.ok) {
+      ctx.stderr.write('Failed to fetch departments\n');
+      return 1;
+    }
+    if (jsonOutput) {
+      ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
+      return 0;
+    }
 
     const c = colorContext(ctx.stdout);
     const items = (res.data as any)?.items ?? [];
@@ -106,7 +118,9 @@ async function runDepartments(
     }
     ctx.stdout.write(`\n  ${c.bold('Departments')} (${items.length})\n\n`);
     for (const d of items) {
-      ctx.stdout.write(`  ${c.cyan(d.id.slice(0, 8))}  ${d.name}${d.parentId ? c.dim(` (child of ${d.parentId.slice(0, 8)})`) : ''}\n`);
+      ctx.stdout.write(
+        `  ${c.cyan(d.id.slice(0, 8))}  ${d.name}${d.parentId ? c.dim(` (child of ${d.parentId.slice(0, 8)})`) : ''}\n`
+      );
     }
     ctx.stdout.write('\n');
     return 0;
@@ -114,16 +128,32 @@ async function runDepartments(
 
   if (action === 'show') {
     const id = args[1];
-    if (!id) { ctx.stderr.write('Usage: secureyeoman risk departments show <id>\n'); return 1; }
-    const res = await apiCall(baseUrl, `/api/v1/risk/departments/${encodeURIComponent(id)}/scorecard`, { token });
-    if (!res?.ok) { ctx.stderr.write('Department not found\n'); return 1; }
-    if (jsonOutput) { ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n'); return 0; }
+    if (!id) {
+      ctx.stderr.write('Usage: secureyeoman risk departments show <id>\n');
+      return 1;
+    }
+    const res = await apiCall(
+      baseUrl,
+      `/api/v1/risk/departments/${encodeURIComponent(id)}/scorecard`,
+      { token }
+    );
+    if (!res?.ok) {
+      ctx.stderr.write('Department not found\n');
+      return 1;
+    }
+    if (jsonOutput) {
+      ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
+      return 0;
+    }
 
     const sc = (res.data as any)?.scorecard;
     const c = colorContext(ctx.stdout);
     ctx.stdout.write(`\n  ${c.bold(sc.department.name)}\n`);
-    if (sc.department.mission) ctx.stdout.write(`  ${c.dim('Mission:')} ${sc.department.mission}\n`);
-    ctx.stdout.write(`  ${c.dim('Open risks:')} ${sc.openRisks}  ${c.dim('Overdue:')} ${sc.overdueRisks}  ${c.dim('Critical:')} ${sc.criticalRisks}\n`);
+    if (sc.department.mission)
+      ctx.stdout.write(`  ${c.dim('Mission:')} ${sc.department.mission}\n`);
+    ctx.stdout.write(
+      `  ${c.dim('Open risks:')} ${sc.openRisks}  ${c.dim('Overdue:')} ${sc.overdueRisks}  ${c.dim('Critical:')} ${sc.criticalRisks}\n`
+    );
     if (sc.latestScore) {
       ctx.stdout.write(`  ${c.dim('Overall score:')} ${sc.latestScore.overallScore.toFixed(1)}\n`);
     }
@@ -142,7 +172,10 @@ async function runDepartments(
     rest = descFlag.rest;
     const missionFlag = extractFlag(rest, 'mission', 'm');
 
-    if (!nameFlag.value) { ctx.stderr.write('--name is required\n'); return 1; }
+    if (!nameFlag.value) {
+      ctx.stderr.write('--name is required\n');
+      return 1;
+    }
 
     const res = await apiCall(baseUrl, '/api/v1/risk/departments', {
       method: 'POST',
@@ -153,8 +186,14 @@ async function runDepartments(
         mission: missionFlag.value,
       },
     });
-    if (!res?.ok) { ctx.stderr.write(`Failed to create department: ${JSON.stringify((res as any)?.data)}\n`); return 1; }
-    if (jsonOutput) { ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n'); return 0; }
+    if (!res?.ok) {
+      ctx.stderr.write(`Failed to create department: ${JSON.stringify((res as any)?.data)}\n`);
+      return 1;
+    }
+    if (jsonOutput) {
+      ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
+      return 0;
+    }
     const dept = (res.data as any)?.department;
     ctx.stdout.write(`  Created department ${dept.id.slice(0, 8)} — ${dept.name}\n`);
     return 0;
@@ -162,12 +201,21 @@ async function runDepartments(
 
   if (action === 'delete') {
     const id = args[1];
-    if (!id) { ctx.stderr.write('Usage: secureyeoman risk departments delete <id>\n'); return 1; }
-    let rest = args.slice(2);
+    if (!id) {
+      ctx.stderr.write('Usage: secureyeoman risk departments delete <id>\n');
+      return 1;
+    }
+    const rest = args.slice(2);
     const forceFlag = extractBoolFlag(rest, 'force', 'f');
     const qs = forceFlag.value ? '?force=true' : '';
-    const res = await apiCall(baseUrl, `/api/v1/risk/departments/${encodeURIComponent(id)}${qs}`, { method: 'DELETE', token });
-    if (!res?.ok) { ctx.stderr.write(`Failed to delete department: ${JSON.stringify((res as any)?.data)}\n`); return 1; }
+    const res = await apiCall(baseUrl, `/api/v1/risk/departments/${encodeURIComponent(id)}${qs}`, {
+      method: 'DELETE',
+      token,
+    });
+    if (!res?.ok) {
+      ctx.stderr.write(`Failed to delete department: ${JSON.stringify((res as any)?.data)}\n`);
+      return 1;
+    }
     ctx.stdout.write(`  Deleted department ${id.slice(0, 8)}\n`);
     return 0;
   }
@@ -202,17 +250,29 @@ async function runRegister(
     const qs = params.toString();
 
     const res = await apiCall(baseUrl, `/api/v1/risk/register${qs ? `?${qs}` : ''}`, { token });
-    if (!res?.ok) { ctx.stderr.write('Failed to fetch register entries\n'); return 1; }
-    if (jsonOutput) { ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n'); return 0; }
+    if (!res?.ok) {
+      ctx.stderr.write('Failed to fetch register entries\n');
+      return 1;
+    }
+    if (jsonOutput) {
+      ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
+      return 0;
+    }
 
     const c = colorContext(ctx.stdout);
     const items = (res.data as any)?.items ?? [];
-    if (items.length === 0) { ctx.stdout.write('  No register entries found.\n'); return 0; }
+    if (items.length === 0) {
+      ctx.stdout.write('  No register entries found.\n');
+      return 0;
+    }
 
     ctx.stdout.write(`\n  ${c.bold('Risk Register')} (${items.length})\n\n`);
     for (const e of items) {
-      const severityColor = e.severity === 'critical' ? c.red : e.severity === 'high' ? c.yellow : c.dim;
-      ctx.stdout.write(`  ${c.cyan(e.id.slice(0, 8))}  ${severityColor(`[${e.severity}]`)}  ${e.title}  ${c.dim(`(${e.status}, score=${e.riskScore})`)}\n`);
+      const severityColor =
+        e.severity === 'critical' ? c.red : e.severity === 'high' ? c.yellow : c.dim;
+      ctx.stdout.write(
+        `  ${c.cyan(e.id.slice(0, 8))}  ${severityColor(`[${e.severity}]`)}  ${e.title}  ${c.dim(`(${e.status}, score=${e.riskScore})`)}\n`
+      );
     }
     ctx.stdout.write('\n');
     return 0;
@@ -220,16 +280,31 @@ async function runRegister(
 
   if (action === 'show') {
     const id = args[1];
-    if (!id) { ctx.stderr.write('Usage: secureyeoman risk register show <id>\n'); return 1; }
-    const res = await apiCall(baseUrl, `/api/v1/risk/register/${encodeURIComponent(id)}`, { token });
-    if (!res?.ok) { ctx.stderr.write('Register entry not found\n'); return 1; }
-    if (jsonOutput) { ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n'); return 0; }
+    if (!id) {
+      ctx.stderr.write('Usage: secureyeoman risk register show <id>\n');
+      return 1;
+    }
+    const res = await apiCall(baseUrl, `/api/v1/risk/register/${encodeURIComponent(id)}`, {
+      token,
+    });
+    if (!res?.ok) {
+      ctx.stderr.write('Register entry not found\n');
+      return 1;
+    }
+    if (jsonOutput) {
+      ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
+      return 0;
+    }
 
     const e = (res.data as any)?.entry;
     const c = colorContext(ctx.stdout);
     ctx.stdout.write(`\n  ${c.bold(e.title)}\n`);
-    ctx.stdout.write(`  ${c.dim('Category:')} ${e.category}  ${c.dim('Severity:')} ${e.severity}\n`);
-    ctx.stdout.write(`  ${c.dim('Likelihood:')} ${e.likelihood}  ${c.dim('Impact:')} ${e.impact}  ${c.dim('Score:')} ${e.riskScore}\n`);
+    ctx.stdout.write(
+      `  ${c.dim('Category:')} ${e.category}  ${c.dim('Severity:')} ${e.severity}\n`
+    );
+    ctx.stdout.write(
+      `  ${c.dim('Likelihood:')} ${e.likelihood}  ${c.dim('Impact:')} ${e.impact}  ${c.dim('Score:')} ${e.riskScore}\n`
+    );
     ctx.stdout.write(`  ${c.dim('Status:')} ${e.status}  ${c.dim('Owner:')} ${e.owner ?? '—'}\n`);
     if (e.description) ctx.stdout.write(`  ${c.dim('Description:')} ${e.description}\n`);
     ctx.stdout.write('\n');
@@ -250,8 +325,17 @@ async function runRegister(
     rest = likFlag.rest;
     const impFlag = extractFlag(rest, 'impact', 'i');
 
-    if (!deptFlag.value || !titleFlag.value || !catFlag.value || !sevFlag.value || !likFlag.value || !impFlag.value) {
-      ctx.stderr.write('Required: --department, --title, --category, --severity, --likelihood, --impact\n');
+    if (
+      !deptFlag.value ||
+      !titleFlag.value ||
+      !catFlag.value ||
+      !sevFlag.value ||
+      !likFlag.value ||
+      !impFlag.value
+    ) {
+      ctx.stderr.write(
+        'Required: --department, --title, --category, --severity, --likelihood, --impact\n'
+      );
       return 1;
     }
 
@@ -267,27 +351,53 @@ async function runRegister(
         impact: Number(impFlag.value),
       },
     });
-    if (!res?.ok) { ctx.stderr.write(`Failed to create entry: ${JSON.stringify((res as any)?.data)}\n`); return 1; }
-    if (jsonOutput) { ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n'); return 0; }
+    if (!res?.ok) {
+      ctx.stderr.write(`Failed to create entry: ${JSON.stringify((res as any)?.data)}\n`);
+      return 1;
+    }
+    if (jsonOutput) {
+      ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
+      return 0;
+    }
     const entry = (res.data as any)?.entry;
-    ctx.stdout.write(`  Created entry ${entry.id.slice(0, 8)} — ${entry.title} (score=${entry.riskScore})\n`);
+    ctx.stdout.write(
+      `  Created entry ${entry.id.slice(0, 8)} — ${entry.title} (score=${entry.riskScore})\n`
+    );
     return 0;
   }
 
   if (action === 'close') {
     const id = args[1];
-    if (!id) { ctx.stderr.write('Usage: secureyeoman risk register close <id>\n'); return 1; }
-    const res = await apiCall(baseUrl, `/api/v1/risk/register/${encodeURIComponent(id)}/close`, { method: 'PATCH', token });
-    if (!res?.ok) { ctx.stderr.write('Failed to close entry\n'); return 1; }
+    if (!id) {
+      ctx.stderr.write('Usage: secureyeoman risk register close <id>\n');
+      return 1;
+    }
+    const res = await apiCall(baseUrl, `/api/v1/risk/register/${encodeURIComponent(id)}/close`, {
+      method: 'PATCH',
+      token,
+    });
+    if (!res?.ok) {
+      ctx.stderr.write('Failed to close entry\n');
+      return 1;
+    }
     ctx.stdout.write(`  Closed entry ${id.slice(0, 8)}\n`);
     return 0;
   }
 
   if (action === 'delete') {
     const id = args[1];
-    if (!id) { ctx.stderr.write('Usage: secureyeoman risk register delete <id>\n'); return 1; }
-    const res = await apiCall(baseUrl, `/api/v1/risk/register/${encodeURIComponent(id)}`, { method: 'DELETE', token });
-    if (!res?.ok) { ctx.stderr.write('Failed to delete entry\n'); return 1; }
+    if (!id) {
+      ctx.stderr.write('Usage: secureyeoman risk register delete <id>\n');
+      return 1;
+    }
+    const res = await apiCall(baseUrl, `/api/v1/risk/register/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      token,
+    });
+    if (!res?.ok) {
+      ctx.stderr.write('Failed to delete entry\n');
+      return 1;
+    }
     ctx.stdout.write(`  Deleted entry ${id.slice(0, 8)}\n`);
     return 0;
   }
@@ -305,17 +415,28 @@ async function runHeatmap(
   jsonOutput: boolean
 ): Promise<number> {
   const res = await apiCall(baseUrl, '/api/v1/risk/heatmap', { token });
-  if (!res?.ok) { ctx.stderr.write('Failed to fetch heatmap\n'); return 1; }
-  if (jsonOutput) { ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n'); return 0; }
+  if (!res?.ok) {
+    ctx.stderr.write('Failed to fetch heatmap\n');
+    return 1;
+  }
+  if (jsonOutput) {
+    ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
+    return 0;
+  }
 
   const c = colorContext(ctx.stdout);
   const cells = (res.data as any)?.cells ?? [];
-  if (cells.length === 0) { ctx.stdout.write('  No heatmap data available.\n'); return 0; }
+  if (cells.length === 0) {
+    ctx.stdout.write('  No heatmap data available.\n');
+    return 0;
+  }
 
   ctx.stdout.write(`\n  ${c.bold('Risk Heatmap')}\n\n`);
   for (const cell of cells) {
     const indicator = cell.breached ? c.red('!') : c.green(' ');
-    ctx.stdout.write(`  ${indicator} ${cell.departmentName.padEnd(20)} ${cell.domain.padEnd(15)} ${String(cell.score.toFixed(1)).padStart(6)} / ${cell.threshold}\n`);
+    ctx.stdout.write(
+      `  ${indicator} ${cell.departmentName.padEnd(20)} ${cell.domain.padEnd(15)} ${String(cell.score.toFixed(1)).padStart(6)} / ${cell.threshold}\n`
+    );
   }
   ctx.stdout.write('\n');
   return 0;
@@ -330,8 +451,14 @@ async function runSummary(
   jsonOutput: boolean
 ): Promise<number> {
   const res = await apiCall(baseUrl, '/api/v1/risk/summary', { token });
-  if (!res?.ok) { ctx.stderr.write('Failed to fetch summary\n'); return 1; }
-  if (jsonOutput) { ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n'); return 0; }
+  if (!res?.ok) {
+    ctx.stderr.write('Failed to fetch summary\n');
+    return 1;
+  }
+  if (jsonOutput) {
+    ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
+    return 0;
+  }
 
   const c = colorContext(ctx.stdout);
   const s = (res.data as any)?.summary;
@@ -347,7 +474,9 @@ async function runSummary(
     ctx.stdout.write(`\n  ${c.bold('Per Department')}\n\n`);
     for (const d of s.departments) {
       const flag = d.breached ? c.red(' BREACH') : '';
-      ctx.stdout.write(`  ${d.name.padEnd(25)} score=${String(d.overallScore.toFixed(1)).padStart(5)}  open=${String(d.openRisks).padStart(3)}${flag}\n`);
+      ctx.stdout.write(
+        `  ${d.name.padEnd(25)} score=${String(d.overallScore.toFixed(1)).padStart(5)}  open=${String(d.openRisks).padStart(3)}${flag}\n`
+      );
     }
   }
   ctx.stdout.write('\n');
@@ -372,7 +501,9 @@ async function runReport(
 
   const target = args[0];
   if (!target) {
-    ctx.stderr.write('Usage: risk report <dept-id|executive|register> [--format md|html|csv|json] [--output file]\n');
+    ctx.stderr.write(
+      'Usage: risk report <dept-id|executive|register> [--format md|html|csv|json] [--output file]\n'
+    );
     return 1;
   }
 

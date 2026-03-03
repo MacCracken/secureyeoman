@@ -59,18 +59,14 @@ describe('EntityExtractor', () => {
 
     it('returns empty arrays on parse failure', async () => {
       mockAiClient.chat.mockResolvedValueOnce({ content: 'Not JSON' });
-      const result = await extractor.extractFromMessages([
-        { role: 'user', content: 'test' },
-      ]);
+      const result = await extractor.extractFromMessages([{ role: 'user', content: 'test' }]);
       expect(result.entities).toEqual([]);
       expect(result.keyPhrases).toEqual([]);
     });
 
     it('handles malformed JSON with missing arrays', async () => {
       mockAiClient.chat.mockResolvedValueOnce({ content: '{"entities": "bad"}' });
-      const result = await extractor.extractFromMessages([
-        { role: 'user', content: 'test' },
-      ]);
+      const result = await extractor.extractFromMessages([{ role: 'user', content: 'test' }]);
       expect(result.entities).toEqual([]);
     });
 

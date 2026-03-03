@@ -14,7 +14,8 @@ let storage: StrategyStorage;
 beforeAll(async () => {
   initPool({
     connectionString:
-      process.env.TEST_DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/secureyeoman_test',
+      process.env.TEST_DATABASE_URL ??
+      'postgresql://postgres:postgres@localhost:5432/secureyeoman_test',
     max: 2,
   });
 
@@ -185,9 +186,7 @@ describe('updateStrategy', () => {
   it('rejects update of built-in strategies', async () => {
     await storage.seedBuiltinStrategies();
     const cot = await storage.getStrategyBySlug('chain-of-thought');
-    await expect(storage.updateStrategy(cot!.id, { name: 'Hacked' })).rejects.toThrow(
-      'built-in'
-    );
+    await expect(storage.updateStrategy(cot!.id, { name: 'Hacked' })).rejects.toThrow('built-in');
   });
 
   it('returns null for missing ID', async () => {

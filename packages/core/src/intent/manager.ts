@@ -49,7 +49,9 @@ export interface IntentManagerDeps {
    * for boundary_violated / policy_block with a departmentId in metadata will
    * auto-create risk register entries. (Phase 111-C)
    */
-  getDepartmentRiskManager?: () => { createRegisterEntry: (data: any, createdBy?: string, tenantId?: string) => Promise<any> } | null;
+  getDepartmentRiskManager?: () => {
+    createRegisterEntry: (data: any, createdBy?: string, tenantId?: string) => Promise<any>;
+  } | null;
 }
 
 // ─── Signal cache ─────────────────────────────────────────────────────────────
@@ -755,18 +757,20 @@ allow := false if count(deny) > 0
     ) {
       const drm = this.getDepartmentRiskManager();
       if (drm) {
-        drm.createRegisterEntry({
-          departmentId: entry.metadata.departmentId as string,
-          title: `[Auto] ${entry.eventType}: ${entry.details ?? 'Policy violation detected'}`,
-          category: 'compliance',
-          severity: 'medium',
-          likelihood: 3,
-          impact: 3,
-          source: 'audit',
-          sourceRef: entry.id ?? undefined,
-        }).catch(() => {
-          // fire-and-forget — logged by DepartmentRiskManager
-        });
+        drm
+          .createRegisterEntry({
+            departmentId: entry.metadata.departmentId as string,
+            title: `[Auto] ${entry.eventType}: ${entry.rationale ?? 'Policy violation detected'}`,
+            category: 'compliance',
+            severity: 'medium',
+            likelihood: 3,
+            impact: 3,
+            source: 'audit',
+            sourceRef: entry.id ?? undefined,
+          })
+          .catch(() => {
+            // fire-and-forget — logged by DepartmentRiskManager
+          });
       }
     }
   }

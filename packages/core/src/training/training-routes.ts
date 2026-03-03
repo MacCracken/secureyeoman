@@ -20,7 +20,12 @@ import type { AIMessage } from '@secureyeoman/shared';
 import { trainingStream } from './training-stream.js';
 import type { ListEpisodesOptions } from './computer-use-manager.js';
 import type { EvalDatasetCreate } from '@secureyeoman/shared';
-import type { PreferencePairCreate, CurationRules, TrainingExperimentCreate, SideBySideRating } from '@secureyeoman/shared';
+import type {
+  PreferencePairCreate,
+  CurationRules,
+  TrainingExperimentCreate,
+  SideBySideRating,
+} from '@secureyeoman/shared';
 
 export interface TrainingRoutesOptions {
   secureYeoman: SecureYeoman;
@@ -134,7 +139,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
         return sendError(reply, 503, 'Conversation storage not available');
       }
 
-      const format: ExportFormat = body.format! ?? 'sharegpt';
+      const format: ExportFormat = body.format ?? 'sharegpt';
       const from = body.from;
       const to = body.to;
       const personalityIds = body.personalityIds;
@@ -1094,7 +1099,11 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
         },
       });
 
-      return { passed: result.passed, summary: result.summary, failedDimensions: result.failedDimensions };
+      return {
+        passed: result.passed,
+        summary: result.summary,
+        failedDimensions: result.failedDimensions,
+      };
     }
   );
 
@@ -1287,7 +1296,13 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       if (!manager) return sendError(reply, 503, 'Experiment registry not available');
 
       const experiments = await manager.listExperiments({
-        status: request.query.status as 'draft' | 'running' | 'completed' | 'failed' | 'archived' | undefined,
+        status: request.query.status as
+          | 'draft'
+          | 'running'
+          | 'completed'
+          | 'failed'
+          | 'archived'
+          | undefined,
         limit: request.query.limit ? parseInt(request.query.limit, 10) : undefined,
       });
       return { experiments };
@@ -1321,7 +1336,13 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       const body = request.body ?? {};
       const experiment = await manager.updateExperiment(request.params.id, {
         ...body,
-        status: body.status as 'draft' | 'running' | 'completed' | 'failed' | 'archived' | undefined,
+        status: body.status as
+          | 'draft'
+          | 'running'
+          | 'completed'
+          | 'failed'
+          | 'archived'
+          | undefined,
       });
       if (!experiment) return sendError(reply, 404, 'Experiment not found');
       return experiment;
@@ -1388,10 +1409,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
 
   app.post(
     '/api/v1/training/deploy/rollback',
-    async (
-      request: FastifyRequest<{ Body: { personalityId: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: { personalityId: string } }>, reply: FastifyReply) => {
       const manager = secureYeoman.getModelVersionManager();
       if (!manager) return sendError(reply, 503, 'Model version manager not available');
 

@@ -46,7 +46,9 @@ export default function CaptureTab() {
   useEffect(() => {
     refresh();
     const interval = setInterval(refresh, 5000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
   }, [refresh]);
 
   const handleGrant = async (id: string) => {
@@ -199,7 +201,9 @@ export default function CaptureTab() {
             consent={selectedConsent}
             onGrant={handleGrant}
             onDeny={handleDeny}
-            onClose={() => setSelectedConsent(null)}
+            onClose={() => {
+              setSelectedConsent(null);
+            }}
           />
         </Suspense>
       )}

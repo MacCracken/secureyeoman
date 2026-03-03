@@ -460,9 +460,7 @@ export class ConversationStorage extends PgBaseStorage {
   }
 
   async getBranchTree(rootId: string): Promise<BranchTreeNode> {
-    const rows = await this.queryMany<
-      ConversationRow & { quality_score: number | null }
-    >(
+    const rows = await this.queryMany<ConversationRow & { quality_score: number | null }>(
       `WITH RECURSIVE tree AS (
         SELECT c.*, cq.quality_score
         FROM chat.conversations c
@@ -556,18 +554,16 @@ export class ConversationStorage extends PgBaseStorage {
       ]
     );
 
-    const row = await this.queryOne<ReplayJobRow>(
-      'SELECT * FROM chat.replay_jobs WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne<ReplayJobRow>('SELECT * FROM chat.replay_jobs WHERE id = $1', [
+      id,
+    ]);
     return rowToReplayJob(row!);
   }
 
   async getReplayJob(id: string): Promise<ReplayJob | null> {
-    const row = await this.queryOne<ReplayJobRow>(
-      'SELECT * FROM chat.replay_jobs WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne<ReplayJobRow>('SELECT * FROM chat.replay_jobs WHERE id = $1', [
+      id,
+    ]);
     return row ? rowToReplayJob(row) : null;
   }
 
@@ -601,10 +597,7 @@ export class ConversationStorage extends PgBaseStorage {
       values.push(data.errorMessage);
     }
 
-    await this.execute(
-      `UPDATE chat.replay_jobs SET ${sets.join(', ')} WHERE id = $1`,
-      values
-    );
+    await this.execute(`UPDATE chat.replay_jobs SET ${sets.join(', ')} WHERE id = $1`, values);
   }
 
   async listReplayJobs(): Promise<ReplayJob[]> {

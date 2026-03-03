@@ -38,7 +38,8 @@ const CLEAN_100 = 'The quick brown fox jumps over the lazy dog. '.repeat(2).slic
 const CLEAN_1000 = CLEAN_100.repeat(10);
 const CLEAN_5000 = CLEAN_100.repeat(50);
 
-const PII_TEXT = 'Contact alice@example.com or call 555-123-4567. SSN: 123-45-6789. Card: 4111-1111-1111-1111.';
+const PII_TEXT =
+  'Contact alice@example.com or call 555-123-4567. SSN: 123-45-6789. Card: 4111-1111-1111-1111.';
 const PII_LONG = PII_TEXT.repeat(10);
 
 const BLOCK_HIT = 'This contains a forbidden word and a secret key value.';

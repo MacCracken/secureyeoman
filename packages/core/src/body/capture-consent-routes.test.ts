@@ -18,9 +18,15 @@ function makeMockManager() {
     requestConsent: vi.fn().mockResolvedValue(FAKE_CONSENT),
     getPendingConsents: vi.fn().mockResolvedValue([FAKE_CONSENT]),
     getConsent: vi.fn().mockResolvedValue(FAKE_CONSENT),
-    grantConsent: vi.fn().mockResolvedValue({ success: true, consent: { ...FAKE_CONSENT, status: 'granted' } }),
-    denyConsent: vi.fn().mockResolvedValue({ success: true, consent: { ...FAKE_CONSENT, status: 'denied' } }),
-    revokeConsent: vi.fn().mockResolvedValue({ success: true, consent: { ...FAKE_CONSENT, status: 'revoked' } }),
+    grantConsent: vi
+      .fn()
+      .mockResolvedValue({ success: true, consent: { ...FAKE_CONSENT, status: 'granted' } }),
+    denyConsent: vi
+      .fn()
+      .mockResolvedValue({ success: true, consent: { ...FAKE_CONSENT, status: 'denied' } }),
+    revokeConsent: vi
+      .fn()
+      .mockResolvedValue({ success: true, consent: { ...FAKE_CONSENT, status: 'revoked' } }),
   };
 }
 
@@ -109,11 +115,11 @@ describe('capture-consent-routes', () => {
       expect(res.statusCode).toBe(201);
       expect(res.json().id).toBe('consent-001');
       expect(manager!.requestConsent).toHaveBeenCalledWith(
-        'anonymous',     // userId (falls through to authUser default)
-        'anonymous',     // requestedBy (authUser)
+        'anonymous', // userId (falls through to authUser default)
+        'anonymous', // requestedBy (authUser)
         { resource: 'screen', duration: 120, quality: 'medium', purpose: 'demo recording' },
         expect.stringContaining('session-'),
-        undefined,       // timeoutMs
+        undefined // timeoutMs
       );
     });
 
@@ -164,7 +170,7 @@ describe('capture-consent-routes', () => {
         'anonymous',
         expect.objectContaining({ resource: 'screen' }),
         expect.any(String),
-        30000,
+        30000
       );
     });
 
@@ -180,7 +186,7 @@ describe('capture-consent-routes', () => {
         'anonymous',
         { resource: 'screen', duration: 60, quality: 'medium', purpose: 'test' },
         expect.any(String),
-        undefined,
+        undefined
       );
     });
   });
@@ -282,7 +288,11 @@ describe('capture-consent-routes', () => {
       });
       expect(res.statusCode).toBe(200);
       expect(res.json().status).toBe('denied');
-      expect(manager!.denyConsent).toHaveBeenCalledWith('consent-001', 'anonymous', 'Not authorized');
+      expect(manager!.denyConsent).toHaveBeenCalledWith(
+        'consent-001',
+        'anonymous',
+        'Not authorized'
+      );
     });
 
     it('uses default reason when not provided', async () => {
@@ -297,7 +307,10 @@ describe('capture-consent-routes', () => {
 
     it('returns 400 when deny fails', async () => {
       const manager = makeMockManager();
-      manager.denyConsent.mockResolvedValue({ success: false, error: 'Consent is granted, not pending' });
+      manager.denyConsent.mockResolvedValue({
+        success: false,
+        error: 'Consent is granted, not pending',
+      });
       const { app } = buildApp(manager);
       const res = await app.inject({
         method: 'POST',
@@ -326,7 +339,10 @@ describe('capture-consent-routes', () => {
 
     it('returns 400 when revoke fails', async () => {
       const manager = makeMockManager();
-      manager.revokeConsent.mockResolvedValue({ success: false, error: 'Revocation is not allowed' });
+      manager.revokeConsent.mockResolvedValue({
+        success: false,
+        error: 'Revocation is not allowed',
+      });
       const { app } = buildApp(manager);
       const res = await app.inject({
         method: 'POST',

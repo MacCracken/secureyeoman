@@ -207,7 +207,9 @@ describe('createLogger transport branches', () => {
   it('creates logger with file transport', () => {
     const config = {
       ...minimalConfig,
-      output: [{ type: 'file' as const, path: '/tmp/test-secureyeoman.log', format: 'json' as const }],
+      output: [
+        { type: 'file' as const, path: '/tmp/test-secureyeoman.log', format: 'json' as const },
+      ],
     };
     const logger = createLogger(config);
     expect(logger).toBeDefined();
@@ -308,7 +310,9 @@ describe('createLogger — transport branch: single target returns single transp
   it('single file target returns single transport', () => {
     const config = {
       ...minimalConfig,
-      output: [{ type: 'file' as const, path: '/tmp/test-single-file.log', format: 'json' as const }],
+      output: [
+        { type: 'file' as const, path: '/tmp/test-single-file.log', format: 'json' as const },
+      ],
     };
     const logger = createLogger(config);
     expect(logger).toBeDefined();
@@ -359,7 +363,9 @@ describe('createLogger — ECS formatter branches execute at log time', () => {
     // Exercise all log levels to hit the ECS level/bindings/log formatters
     expect(() => logger.trace('ecs trace')).not.toThrow();
     expect(() => logger.debug('ecs debug')).not.toThrow();
-    expect(() => logger.info('ecs info', { component: 'test', correlationId: 'c-1' })).not.toThrow();
+    expect(() =>
+      logger.info('ecs info', { component: 'test', correlationId: 'c-1' })
+    ).not.toThrow();
     expect(() => logger.warn('ecs warn')).not.toThrow();
     expect(() => logger.error('ecs error')).not.toThrow();
     expect(() => logger.fatal('ecs fatal')).not.toThrow();

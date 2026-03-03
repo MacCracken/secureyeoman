@@ -1028,7 +1028,11 @@ export type ReasoningStrategyCategory = z.infer<typeof ReasoningStrategyCategory
 export const ReasoningStrategySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1).max(200),
-  slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
+  slug: z
+    .string()
+    .min(1)
+    .max(100)
+    .regex(/^[a-z0-9-]+$/),
   description: z.string().max(2000).default(''),
   promptPrefix: z.string().max(4000),
   category: ReasoningStrategyCategorySchema,

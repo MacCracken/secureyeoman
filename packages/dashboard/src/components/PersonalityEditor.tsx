@@ -4608,7 +4608,7 @@ export function PersonalityEditor({
     setMaxPromptTokens(body.maxPromptTokens ?? null);
     setOmnipresentMind(body.omnipresentMind ?? false);
     setStrictSystemPromptConfidentiality(body.strictSystemPromptConfidentiality);
-    setKnowledgeMode(body.knowledgeMode! ?? 'rag');
+    setKnowledgeMode(body.knowledgeMode ?? 'rag');
     setNotebookTokenBudget(body.notebookTokenBudget ?? null);
     setSetActiveOnSave(false);
     setEditing(p.id);
@@ -4842,7 +4842,9 @@ export function PersonalityEditor({
                   try {
                     await importPersonality(file);
                     void queryClient.invalidateQueries({ queryKey: ['personalities'] });
-                  } catch { /* toast handled by query invalidation */ }
+                  } catch {
+                    /* toast handled by query invalidation */
+                  }
                 };
                 input.click();
               }}
@@ -5305,7 +5307,9 @@ export function PersonalityEditor({
                               a.download = `${p.name}.md`;
                               a.click();
                               URL.revokeObjectURL(url);
-                            } catch { /* ignore */ }
+                            } catch {
+                              /* ignore */
+                            }
                           }}
                           className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-foreground rounded-lg"
                           title={`Export ${p.name}`}

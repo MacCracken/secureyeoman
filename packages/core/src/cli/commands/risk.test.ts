@@ -148,13 +148,15 @@ describe('risk command', () => {
 
   it('lists register entries', async () => {
     mockFetch({
-      items: [{
-        id: 'entry-12345678',
-        title: 'SQL Injection',
-        severity: 'critical',
-        status: 'open',
-        riskScore: 20,
-      }],
+      items: [
+        {
+          id: 'entry-12345678',
+          title: 'SQL Injection',
+          severity: 'critical',
+          status: 'open',
+          riskScore: 20,
+        },
+      ],
       total: 1,
     });
     const { stdout, stderr, getStdout } = createStreams();
@@ -180,13 +182,15 @@ describe('risk command', () => {
 
   it('displays heatmap', async () => {
     mockFetch({
-      cells: [{
-        departmentName: 'Engineering',
-        domain: 'security',
-        score: 60,
-        threshold: 50,
-        breached: true,
-      }],
+      cells: [
+        {
+          departmentName: 'Engineering',
+          domain: 'security',
+          score: 60,
+          threshold: 50,
+          breached: true,
+        },
+      ],
     });
     const { stdout, stderr, getStdout } = createStreams();
     const code = await riskCommand.run({ argv: ['heatmap'], stdout, stderr });
@@ -266,7 +270,11 @@ describe('risk command', () => {
   it('report executive outputs content', async () => {
     mockFetch('# Executive Risk Summary\n\nDepartments: 3');
     const { stdout, stderr, getStdout } = createStreams();
-    const code = await riskCommand.run({ argv: ['report', 'executive', '--format', 'md'], stdout, stderr });
+    const code = await riskCommand.run({
+      argv: ['report', 'executive', '--format', 'md'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(0);
     expect(getStdout()).toContain('Executive Risk Summary');
   });

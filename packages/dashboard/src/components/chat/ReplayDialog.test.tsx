@@ -15,12 +15,7 @@ function renderDialog(props?: Partial<Parameters<typeof ReplayDialog>[0]>) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <ReplayDialog
-        conversationId="conv-1"
-        open={true}
-        onClose={vi.fn()}
-        {...props}
-      />
+      <ReplayDialog conversationId="conv-1" open={true} onClose={vi.fn()} {...props} />
     </QueryClientProvider>
   );
 }

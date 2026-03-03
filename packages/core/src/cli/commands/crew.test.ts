@@ -561,7 +561,13 @@ describe('crew runs — various branches', () => {
         status: 200,
         data: {
           runs: [
-            { id: 'r-1', teamName: 'Team A', status: 'completed', task: 'task1', createdAt: Date.now() },
+            {
+              id: 'r-1',
+              teamName: 'Team A',
+              status: 'completed',
+              task: 'task1',
+              createdAt: Date.now(),
+            },
           ],
         },
       },
@@ -579,7 +585,13 @@ describe('crew runs — various branches', () => {
         status: 200,
         data: {
           runs: [
-            { id: 'r-1', teamName: 'Team A', status: 'completed', task: 'task1', createdAt: Date.now() },
+            {
+              id: 'r-1',
+              teamName: 'Team A',
+              status: 'completed',
+              task: 'task1',
+              createdAt: Date.now(),
+            },
           ],
         },
       },
@@ -612,7 +624,15 @@ describe('crew runs — various branches', () => {
         ok: true,
         status: 200,
         data: {
-          runs: [{ id: 'r-1', teamName: 'Team 1', status: 'completed', task: 'task1', createdAt: Date.now() }],
+          runs: [
+            {
+              id: 'r-1',
+              teamName: 'Team 1',
+              status: 'completed',
+              task: 'task1',
+              createdAt: Date.now(),
+            },
+          ],
         },
       },
       // Third call: runs for team-2
@@ -620,7 +640,15 @@ describe('crew runs — various branches', () => {
         ok: true,
         status: 200,
         data: {
-          runs: [{ id: 'r-2', teamName: 'Team 2', status: 'pending', task: 'task2', createdAt: Date.now() }],
+          runs: [
+            {
+              id: 'r-2',
+              teamName: 'Team 2',
+              status: 'pending',
+              task: 'task2',
+              createdAt: Date.now(),
+            },
+          ],
         },
       },
     ]);

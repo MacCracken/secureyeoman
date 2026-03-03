@@ -42,7 +42,8 @@ export class DepartmentRiskManager {
   private readonly logger = getLogger().child({ component: 'DepartmentRiskManager' });
 
   // 30s cache for getExecutiveSummary() to avoid per-5s DB queries from metrics pipeline
-  private _summaryCache: Awaited<ReturnType<DepartmentRiskManager['getExecutiveSummary']>> | null = null;
+  private _summaryCache: Awaited<ReturnType<DepartmentRiskManager['getExecutiveSummary']>> | null =
+    null;
   private _summaryCacheAt = 0;
   private static readonly SUMMARY_CACHE_TTL_MS = 30_000;
 
@@ -136,7 +137,10 @@ export class DepartmentRiskManager {
 
   // ── Scoring ──────────────────────────────────────────────────
 
-  async snapshotDepartmentScore(departmentId: string, assessmentId?: string): Promise<DepartmentScore> {
+  async snapshotDepartmentScore(
+    departmentId: string,
+    assessmentId?: string
+  ): Promise<DepartmentScore> {
     const dept = await this.storage.getDepartment(departmentId);
     if (!dept) throw new Error(`Department ${departmentId} not found`);
 
@@ -153,24 +157,27 @@ export class DepartmentRiskManager {
     for (const entry of entries.items) {
       if (['closed', 'mitigated', 'accepted', 'transferred'].includes(entry.status)) continue;
       const domain = entry.category;
-      domainScores[domain] = (domainScores[domain] ?? 0) + (entry.riskScore ?? entry.likelihood * entry.impact);
+      domainScores[domain] =
+        (domainScores[domain] ?? 0) + (entry.riskScore ?? entry.likelihood * entry.impact);
       domainCounts[domain] = (domainCounts[domain] ?? 0) + 1;
     }
 
     // Normalize domain scores to 0-100 scale (max single risk = 25)
     for (const domain of Object.keys(domainScores)) {
-      domainScores[domain] = Math.min(100, (domainScores[domain] / Math.max(domainCounts[domain], 1)) * 4);
+      domainScores[domain] = Math.min(
+        100,
+        ((domainScores[domain] ?? 0) / Math.max(domainCounts[domain] ?? 1, 1)) * 4
+      );
     }
 
     // Overall score is average of domain scores
     const domainValues = Object.values(domainScores);
-    const overallScore = domainValues.length > 0
-      ? domainValues.reduce((a, b) => a + b, 0) / domainValues.length
-      : 0;
+    const overallScore =
+      domainValues.length > 0 ? domainValues.reduce((a, b) => a + b, 0) / domainValues.length : 0;
 
     // Check appetite breaches
     const appetite = dept.riskAppetite;
-    const appetiteBreaches: Array<{ domain: string; score: number; threshold: number }> = [];
+    const appetiteBreaches: { domain: string; score: number; threshold: number }[] = [];
 
     for (const [domain, score] of Object.entries(domainScores)) {
       const threshold = (appetite as Record<string, number>)[domain];
@@ -246,7 +253,7 @@ export class DepartmentRiskManager {
       departmentId,
       limit: 1,
     });
-    const latestScore = latestScores.length > 0 ? latestScores[0] : null;
+    const latestScore = latestScores.length > 0 ? (latestScores[0] ?? null) : null;
 
     const topRisks = await this.storage.listRegisterEntries({
       departmentId,
@@ -313,17 +320,20 @@ export class DepartmentRiskManager {
     totalCriticalRisks: number;
     appetiteBreaches: number;
     averageScore: number;
-    departments: Array<{
+    departments: {
       id: string;
       name: string;
       overallScore: number;
       openRisks: number;
       breached: boolean;
-    }>;
+    }[];
   }> {
     // Return cached result if within TTL (avoids per-5s DB queries from metrics pipeline)
     const now = Date.now();
-    if (this._summaryCache && now - this._summaryCacheAt < DepartmentRiskManager.SUMMARY_CACHE_TTL_MS) {
+    if (
+      this._summaryCache &&
+      now - this._summaryCacheAt < DepartmentRiskManager.SUMMARY_CACHE_TTL_MS
+    ) {
       return this._summaryCache;
     }
 
@@ -338,13 +348,13 @@ export class DepartmentRiskManager {
     let totalScore = 0;
     let scoredCount = 0;
 
-    const deptSummaries: Array<{
+    const deptSummaries: {
       id: string;
       name: string;
       overallScore: number;
       openRisks: number;
       breached: boolean;
-    }> = [];
+    }[] = [];
 
     for (const dept of departments) {
       const score = scoreMap.get(dept.id);

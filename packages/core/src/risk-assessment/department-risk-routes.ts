@@ -6,7 +6,10 @@
 
 import type { FastifyInstance } from 'fastify';
 import type { DepartmentRiskManager } from './department-risk-manager.js';
-import { DepartmentRiskReportGenerator, type ReportFormat } from './department-risk-report-generator.js';
+import {
+  DepartmentRiskReportGenerator,
+  type ReportFormat,
+} from './department-risk-report-generator.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
 import {
   DepartmentCreateSchema,
@@ -332,7 +335,8 @@ export function registerDepartmentRiskRoutes(
   app.get('/api/v1/risk/reports/executive', async (req, reply) => {
     try {
       const format = parseFormat(req.query as Record<string, unknown>);
-      if (format === 'csv') return sendError(reply, 400, 'CSV format not supported for executive summary');
+      if (format === 'csv')
+        return sendError(reply, 400, 'CSV format not supported for executive summary');
       const content = await reportGen.generateExecutiveSummary(format);
       return reply.type(CONTENT_TYPES[format] ?? 'application/json').send(content);
     } catch (err) {

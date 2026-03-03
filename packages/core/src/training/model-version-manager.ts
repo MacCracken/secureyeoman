@@ -35,7 +35,7 @@ export class ModelVersionManager {
     const previousModel = personality?.defaultModel
       ? typeof personality.defaultModel === 'string'
         ? personality.defaultModel
-        : (personality.defaultModel as Record<string, unknown>).model as string
+        : ((personality.defaultModel as Record<string, unknown>).model as string)
       : null;
 
     // Optionally create Ollama alias
@@ -50,10 +50,12 @@ export class ModelVersionManager {
           }),
         });
         if (!response.ok) {
-          logger.warn('Ollama copy returned non-200: ' + response.status);
+          logger.warn(`Ollama copy returned non-200: ${response.status}`);
         }
       } catch (err) {
-        logger.warn('Ollama copy failed (non-fatal): ' + (err instanceof Error ? err.message : String(err)));
+        logger.warn(
+          'Ollama copy failed (non-fatal): ' + (err instanceof Error ? err.message : String(err))
+        );
       }
     }
 

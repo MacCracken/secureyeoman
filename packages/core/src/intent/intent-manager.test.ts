@@ -1656,7 +1656,7 @@ describe('logEnforcement auto-register-entry (Phase 111-C)', () => {
         departmentId: 'd1',
         category: 'compliance',
         source: 'audit',
-      }),
+      })
     );
   });
 
@@ -1680,7 +1680,7 @@ describe('logEnforcement auto-register-entry (Phase 111-C)', () => {
       expect.objectContaining({
         departmentId: 'd2',
         title: expect.stringContaining('policy_block'),
-      }),
+      })
     );
   });
 

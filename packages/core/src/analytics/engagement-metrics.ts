@@ -21,9 +21,7 @@ export class EngagementMetricsService {
   constructor(private readonly pool: Pool) {}
 
   async getMetrics(personalityId: string | null, periodDays: number): Promise<EngagementResult> {
-    const personalityFilter = personalityId
-      ? `AND c.personality_id = $2`
-      : '';
+    const personalityFilter = personalityId ? `AND c.personality_id = $2` : '';
     const params: unknown[] = [periodDays];
     if (personalityId) params.push(personalityId);
 

@@ -506,10 +506,7 @@ describe('multimodal command', () => {
   // ── catch branch — network error ──────────────────────────────────────────
 
   it('should catch network errors and return 1', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockRejectedValue(new Error('Network error'))
-    );
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
 
     const { stdout, stderr, getStderr } = createStreams();
     const code = await multimodalCommand.run({ argv: ['config'], stdout, stderr });
@@ -518,10 +515,7 @@ describe('multimodal command', () => {
   });
 
   it('should catch non-Error throws and return 1', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockRejectedValue('string error')
-    );
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue('string error'));
 
     const { stdout, stderr, getStderr } = createStreams();
     const code = await multimodalCommand.run({ argv: ['config'], stdout, stderr });

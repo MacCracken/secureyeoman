@@ -4,15 +4,7 @@
  */
 
 import { useState, useMemo, useCallback, Fragment } from 'react';
-import {
-  ChevronDown,
-  ChevronUp,
-  Plus,
-  Trash2,
-  AlertTriangle,
-  Clock,
-  User,
-} from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Trash2, AlertTriangle, Clock, User } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -44,7 +36,16 @@ interface RegisterEntry {
   updatedAt: number;
 }
 
-type SortField = 'title' | 'category' | 'severity' | 'likelihood' | 'impact' | 'riskScore' | 'status' | 'owner' | 'dueDate';
+type SortField =
+  | 'title'
+  | 'category'
+  | 'severity'
+  | 'likelihood'
+  | 'impact'
+  | 'riskScore'
+  | 'status'
+  | 'owner'
+  | 'dueDate';
 type SortDir = 'asc' | 'desc';
 
 interface RiskRegisterTableProps {
@@ -57,7 +58,18 @@ interface RiskRegisterTableProps {
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const STATUSES = ['open', 'in_progress', 'mitigated', 'accepted', 'closed', 'transferred'] as const;
-const CATEGORIES = ['security', 'operational', 'financial', 'compliance', 'reputational', 'strategic', 'technology', 'third_party', 'environmental', 'other'] as const;
+const CATEGORIES = [
+  'security',
+  'operational',
+  'financial',
+  'compliance',
+  'reputational',
+  'strategic',
+  'technology',
+  'third_party',
+  'environmental',
+  'other',
+] as const;
 const SEVERITIES = ['critical', 'high', 'medium', 'low', 'info'] as const;
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -169,11 +181,14 @@ function SortHeader({
   return (
     <th
       className="py-2 px-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer select-none hover:text-foreground transition-colors"
-      onClick={() => onSort(field)}
+      onClick={() => {
+        onSort(field);
+      }}
     >
       <div className="flex items-center gap-1">
         {label}
-        {active && (dir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+        {active &&
+          (dir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
       </div>
     </th>
   );
@@ -181,7 +196,12 @@ function SortHeader({
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function RiskRegisterTable({ entries, onStatusChange, onDelete, onAdd }: RiskRegisterTableProps) {
+export function RiskRegisterTable({
+  entries,
+  onStatusChange,
+  onDelete,
+  onAdd,
+}: RiskRegisterTableProps) {
   const [sortField, setSortField] = useState<SortField>('riskScore');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -198,7 +218,7 @@ export function RiskRegisterTable({ entries, onStatusChange, onDelete, onAdd }: 
         setSortDir('asc');
       }
     },
-    [sortField],
+    [sortField]
   );
 
   const toggleExpand = useCallback((id: string) => {
@@ -220,7 +240,7 @@ export function RiskRegisterTable({ entries, onStatusChange, onDelete, onAdd }: 
 
   const sorted = useMemo(
     () => [...filtered].sort((a, b) => compareField(a, b, sortField, sortDir)),
-    [filtered, sortField, sortDir],
+    [filtered, sortField, sortDir]
   );
 
   return (
@@ -230,7 +250,9 @@ export function RiskRegisterTable({ entries, onStatusChange, onDelete, onAdd }: 
         <select
           className="text-sm border border-border rounded px-2 py-1.5 bg-background text-foreground"
           value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
+          onChange={(e) => {
+            setFilterStatus(e.target.value);
+          }}
           aria-label="Filter by status"
         >
           <option value="">All Statuses</option>
@@ -244,7 +266,9 @@ export function RiskRegisterTable({ entries, onStatusChange, onDelete, onAdd }: 
         <select
           className="text-sm border border-border rounded px-2 py-1.5 bg-background text-foreground"
           value={filterCategory}
-          onChange={(e) => setFilterCategory(e.target.value)}
+          onChange={(e) => {
+            setFilterCategory(e.target.value);
+          }}
           aria-label="Filter by category"
         >
           <option value="">All Categories</option>
@@ -258,7 +282,9 @@ export function RiskRegisterTable({ entries, onStatusChange, onDelete, onAdd }: 
         <select
           className="text-sm border border-border rounded px-2 py-1.5 bg-background text-foreground"
           value={filterSeverity}
-          onChange={(e) => setFilterSeverity(e.target.value)}
+          onChange={(e) => {
+            setFilterSeverity(e.target.value);
+          }}
           aria-label="Filter by severity"
         >
           <option value="">All Severities</option>
@@ -290,27 +316,86 @@ export function RiskRegisterTable({ entries, onStatusChange, onDelete, onAdd }: 
           <thead className="bg-muted/50">
             <tr>
               <th className="w-8" />
-              <SortHeader label="Title" field="title" current={sortField} dir={sortDir} onSort={handleSort} />
-              <SortHeader label="Category" field="category" current={sortField} dir={sortDir} onSort={handleSort} />
-              <SortHeader label="Severity" field="severity" current={sortField} dir={sortDir} onSort={handleSort} />
-              <SortHeader label="Likelihood" field="likelihood" current={sortField} dir={sortDir} onSort={handleSort} />
-              <SortHeader label="Impact" field="impact" current={sortField} dir={sortDir} onSort={handleSort} />
-              <SortHeader label="Score" field="riskScore" current={sortField} dir={sortDir} onSort={handleSort} />
-              <SortHeader label="Status" field="status" current={sortField} dir={sortDir} onSort={handleSort} />
-              <SortHeader label="Owner" field="owner" current={sortField} dir={sortDir} onSort={handleSort} />
-              <SortHeader label="Due Date" field="dueDate" current={sortField} dir={sortDir} onSort={handleSort} />
+              <SortHeader
+                label="Title"
+                field="title"
+                current={sortField}
+                dir={sortDir}
+                onSort={handleSort}
+              />
+              <SortHeader
+                label="Category"
+                field="category"
+                current={sortField}
+                dir={sortDir}
+                onSort={handleSort}
+              />
+              <SortHeader
+                label="Severity"
+                field="severity"
+                current={sortField}
+                dir={sortDir}
+                onSort={handleSort}
+              />
+              <SortHeader
+                label="Likelihood"
+                field="likelihood"
+                current={sortField}
+                dir={sortDir}
+                onSort={handleSort}
+              />
+              <SortHeader
+                label="Impact"
+                field="impact"
+                current={sortField}
+                dir={sortDir}
+                onSort={handleSort}
+              />
+              <SortHeader
+                label="Score"
+                field="riskScore"
+                current={sortField}
+                dir={sortDir}
+                onSort={handleSort}
+              />
+              <SortHeader
+                label="Status"
+                field="status"
+                current={sortField}
+                dir={sortDir}
+                onSort={handleSort}
+              />
+              <SortHeader
+                label="Owner"
+                field="owner"
+                current={sortField}
+                dir={sortDir}
+                onSort={handleSort}
+              />
+              <SortHeader
+                label="Due Date"
+                field="dueDate"
+                current={sortField}
+                dir={sortDir}
+                onSort={handleSort}
+              />
               <th className="w-10" />
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {sorted.map((entry) => {
               const expanded = expandedIds.has(entry.id);
-              const overdue = isOverdue(entry.dueDate) && entry.status !== 'closed' && entry.status !== 'mitigated';
+              const overdue =
+                isOverdue(entry.dueDate) &&
+                entry.status !== 'closed' &&
+                entry.status !== 'mitigated';
               return (
                 <Fragment key={entry.id}>
                   <tr
                     className="hover:bg-muted/30 transition-colors cursor-pointer"
-                    onClick={() => toggleExpand(entry.id)}
+                    onClick={() => {
+                      toggleExpand(entry.id);
+                    }}
                   >
                     <td className="pl-3 py-2">
                       {expanded ? (
@@ -320,18 +405,29 @@ export function RiskRegisterTable({ entries, onStatusChange, onDelete, onAdd }: 
                       )}
                     </td>
                     <td className="py-2 px-3 font-medium max-w-[200px] truncate">{entry.title}</td>
-                    <td className="py-2 px-3 text-muted-foreground">{formatLabel(entry.category)}</td>
+                    <td className="py-2 px-3 text-muted-foreground">
+                      {formatLabel(entry.category)}
+                    </td>
                     <td className="py-2 px-3">
                       <SeverityBadge severity={entry.severity} />
                     </td>
                     <td className="py-2 px-3 text-center">{entry.likelihood}</td>
                     <td className="py-2 px-3 text-center">{entry.impact}</td>
-                    <td className="py-2 px-3 text-center font-semibold">{entry.riskScore ?? '--'}</td>
-                    <td className="py-2 px-3" onClick={(e) => e.stopPropagation()}>
+                    <td className="py-2 px-3 text-center font-semibold">
+                      {entry.riskScore ?? '--'}
+                    </td>
+                    <td
+                      className="py-2 px-3"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                    >
                       <select
                         className="text-xs border border-border rounded px-1.5 py-1 bg-background text-foreground"
                         value={entry.status}
-                        onChange={(e) => onStatusChange(entry.id, e.target.value)}
+                        onChange={(e) => {
+                          onStatusChange(entry.id, e.target.value);
+                        }}
                         aria-label={`Status for ${entry.title}`}
                       >
                         {STATUSES.map((s) => (
@@ -352,15 +448,24 @@ export function RiskRegisterTable({ entries, onStatusChange, onDelete, onAdd }: 
                       )}
                     </td>
                     <td className="py-2 px-3">
-                      <span className={overdue ? 'text-red-600 font-medium' : 'text-muted-foreground'}>
+                      <span
+                        className={overdue ? 'text-red-600 font-medium' : 'text-muted-foreground'}
+                      >
                         {overdue && <Clock className="w-3 h-3 inline mr-1" />}
                         {formatDate(entry.dueDate)}
                       </span>
                     </td>
-                    <td className="py-2 px-3" onClick={(e) => e.stopPropagation()}>
+                    <td
+                      className="py-2 px-3"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                    >
                       <button
                         className="text-muted-foreground hover:text-red-600 transition-colors"
-                        onClick={() => onDelete(entry.id)}
+                        onClick={() => {
+                          onDelete(entry.id);
+                        }}
                         title="Delete entry"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -379,7 +484,9 @@ export function RiskRegisterTable({ entries, onStatusChange, onDelete, onAdd }: 
                               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                 Description
                               </span>
-                              <p className="text-sm mt-1 whitespace-pre-wrap">{entry.description}</p>
+                              <p className="text-sm mt-1 whitespace-pre-wrap">
+                                {entry.description}
+                              </p>
                             </div>
                           )}
 
@@ -397,7 +504,8 @@ export function RiskRegisterTable({ entries, onStatusChange, onDelete, onAdd }: 
                                   >
                                     <span
                                       className={`shrink-0 px-2 py-0.5 rounded text-xs font-medium ${
-                                        MITIGATION_STATUS_COLORS[m.status] ?? 'bg-gray-100 text-gray-600'
+                                        MITIGATION_STATUS_COLORS[m.status] ??
+                                        'bg-gray-100 text-gray-600'
                                       }`}
                                     >
                                       {formatLabel(m.status)}
@@ -407,7 +515,9 @@ export function RiskRegisterTable({ entries, onStatusChange, onDelete, onAdd }: 
                                       <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
                                         {m.owner && <span>Owner: {m.owner}</span>}
                                         {m.dueDate && <span>Due: {formatDate(m.dueDate)}</span>}
-                                        {m.effectiveness && <span>Effectiveness: {m.effectiveness}</span>}
+                                        {m.effectiveness && (
+                                          <span>Effectiveness: {m.effectiveness}</span>
+                                        )}
                                       </div>
                                     </div>
                                   </div>
@@ -450,4 +560,3 @@ export function RiskRegisterTable({ entries, onStatusChange, onDelete, onAdd }: 
     </div>
   );
 }
-

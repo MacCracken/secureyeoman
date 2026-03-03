@@ -1648,7 +1648,7 @@ describe('SoulManager', () => {
         {
           getActivePersonality: vi.fn().mockResolvedValue(personality),
         },
-        {},
+        {}
       );
       // Set security config via deps
       (manager as any).deps.securityConfig = {
@@ -1791,7 +1791,12 @@ describe('SoulManager', () => {
       });
       manager.setStrategyStorage(mockStrategyStorage as any);
 
-      const prompt = await manager.composeSoulPrompt(undefined, undefined, undefined, 'strat-explicit');
+      const prompt = await manager.composeSoulPrompt(
+        undefined,
+        undefined,
+        undefined,
+        'strat-explicit'
+      );
       expect(mockStrategyStorage.getStrategy).toHaveBeenCalledWith('strat-explicit');
       expect(prompt).toContain('Tree of Thought');
     });
@@ -1803,7 +1808,12 @@ describe('SoulManager', () => {
       const { manager } = makeManager();
       manager.setStrategyStorage(mockStrategyStorage as any);
 
-      const prompt = await manager.composeSoulPrompt(undefined, undefined, undefined, 'nonexistent');
+      const prompt = await manager.composeSoulPrompt(
+        undefined,
+        undefined,
+        undefined,
+        'nonexistent'
+      );
       expect(prompt).not.toContain('Reasoning Strategy');
     });
 
@@ -1852,7 +1862,16 @@ describe('SoulManager', () => {
       const { isPersonalityWithinActiveHours } = await import('./manager.js');
       const p = {
         ...PERSONALITY,
-        body: { ...PERSONALITY.body, activeHours: { enabled: false, start: '09:00', end: '17:00', daysOfWeek: ['mon'], timezone: 'UTC' } },
+        body: {
+          ...PERSONALITY.body,
+          activeHours: {
+            enabled: false,
+            start: '09:00',
+            end: '17:00',
+            daysOfWeek: ['mon'],
+            timezone: 'UTC',
+          },
+        },
       } as any;
       expect(isPersonalityWithinActiveHours(p)).toBe(false);
     });

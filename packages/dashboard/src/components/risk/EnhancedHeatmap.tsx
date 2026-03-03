@@ -106,7 +106,10 @@ export function EnhancedHeatmap({ cells, onCellClick }: EnhancedHeatmapProps) {
           <tbody>
             {departments.map((dept) => (
               <tr key={dept.id}>
-                <td className="py-1 px-3 text-sm font-medium truncate max-w-[180px]" title={dept.name}>
+                <td
+                  className="py-1 px-3 text-sm font-medium truncate max-w-[180px]"
+                  title={dept.name}
+                >
                   {dept.name}
                 </td>
                 {domains.map((domain) => {
@@ -128,7 +131,9 @@ export function EnhancedHeatmap({ cells, onCellClick }: EnhancedHeatmapProps) {
                       <button
                         type="button"
                         className={`relative w-full h-10 rounded flex items-center justify-center text-xs font-semibold transition-all ${bgColor} ${textColor} ${
-                          clickable ? 'cursor-pointer hover:opacity-80 hover:ring-2 hover:ring-offset-1 hover:ring-primary' : 'cursor-default'
+                          clickable
+                            ? 'cursor-pointer hover:opacity-80 hover:ring-2 hover:ring-offset-1 hover:ring-primary'
+                            : 'cursor-default'
                         } ${cell.breached ? 'ring-2 ring-red-600 ring-offset-1' : ''}`}
                         onClick={() => onCellClick?.(cell)}
                         title={`${dept.name} / ${capitalize(domain)}: ${cell.score.toFixed(1)} (threshold: ${cell.threshold})${cell.breached ? ' - BREACHED' : ''}`}

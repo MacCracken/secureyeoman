@@ -90,7 +90,9 @@ function DatasetSection() {
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">Eval Datasets</h3>
         <button
-          onClick={() => setShowCreate(!showCreate)}
+          onClick={() => {
+            setShowCreate(!showCreate);
+          }}
           className="flex items-center gap-1 text-xs text-primary hover:underline"
         >
           <Plus className="w-3 h-3" /> New Dataset
@@ -103,13 +105,17 @@ function DatasetSection() {
             type="text"
             placeholder="Dataset name"
             value={newName}
-            onChange={(e) => setNewName(e.target.value)}
+            onChange={(e) => {
+              setNewName(e.target.value);
+            }}
             className="w-full px-2 py-1 text-sm border rounded bg-background"
           />
           <textarea
             placeholder='Samples JSON: [{"prompt":"...","gold":"..."},...]'
             value={newSamples}
-            onChange={(e) => setNewSamples(e.target.value)}
+            onChange={(e) => {
+              setNewSamples(e.target.value);
+            }}
             className="w-full px-2 py-1 text-sm border rounded bg-background h-24 font-mono"
           />
           <div className="flex gap-2">
@@ -121,7 +127,9 @@ function DatasetSection() {
               {createMutation.isPending ? 'Creating...' : 'Create'}
             </button>
             <button
-              onClick={() => setShowCreate(false)}
+              onClick={() => {
+                setShowCreate(false);
+              }}
               className="px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
             >
               Cancel
@@ -136,7 +144,7 @@ function DatasetSection() {
         </div>
       )}
 
-      {datasets && datasets.length === 0 && (
+      {datasets?.length === 0 && (
         <p className="text-sm text-muted-foreground">No eval datasets yet.</p>
       )}
 
@@ -149,7 +157,9 @@ function DatasetSection() {
             </div>
           </div>
           <button
-            onClick={() => deleteMutation.mutate(ds.id)}
+            onClick={() => {
+              deleteMutation.mutate(ds.id);
+            }}
             className="text-destructive hover:text-destructive/80"
             title="Delete dataset"
           >
@@ -209,7 +219,9 @@ function PointwiseEvalSection() {
           <label className="text-xs text-muted-foreground">Dataset</label>
           <select
             value={selectedDataset}
-            onChange={(e) => setSelectedDataset(e.target.value)}
+            onChange={(e) => {
+              setSelectedDataset(e.target.value);
+            }}
             className="w-full px-2 py-1 text-sm border rounded bg-background"
           >
             <option value="">Select dataset...</option>
@@ -226,7 +238,9 @@ function PointwiseEvalSection() {
             type="text"
             placeholder="e.g. llama3:8b"
             value={modelName}
-            onChange={(e) => setModelName(e.target.value)}
+            onChange={(e) => {
+              setModelName(e.target.value);
+            }}
             className="w-full px-2 py-1 text-sm border rounded bg-background"
           />
         </div>
@@ -246,7 +260,7 @@ function PointwiseEvalSection() {
 
       {evalMutation.isError && (
         <div className="flex items-center gap-1 text-xs text-destructive">
-          <AlertCircle className="w-3 h-3" /> {(evalMutation.error as Error).message}
+          <AlertCircle className="w-3 h-3" /> {evalMutation.error.message}
         </div>
       )}
 
@@ -351,7 +365,9 @@ function PairwiseSection() {
           <label className="text-xs text-muted-foreground">Dataset</label>
           <select
             value={selectedDataset}
-            onChange={(e) => setSelectedDataset(e.target.value)}
+            onChange={(e) => {
+              setSelectedDataset(e.target.value);
+            }}
             className="w-full px-2 py-1 text-sm border rounded bg-background"
           >
             <option value="">Select...</option>
@@ -368,7 +384,9 @@ function PairwiseSection() {
             type="text"
             placeholder="e.g. llama3:8b"
             value={modelA}
-            onChange={(e) => setModelA(e.target.value)}
+            onChange={(e) => {
+              setModelA(e.target.value);
+            }}
             className="w-full px-2 py-1 text-sm border rounded bg-background"
           />
         </div>
@@ -378,7 +396,9 @@ function PairwiseSection() {
             type="text"
             placeholder="e.g. mistral:7b"
             value={modelB}
-            onChange={(e) => setModelB(e.target.value)}
+            onChange={(e) => {
+              setModelB(e.target.value);
+            }}
             className="w-full px-2 py-1 text-sm border rounded bg-background"
           />
         </div>
@@ -424,7 +444,10 @@ function PairwiseSection() {
       )}
 
       {comparisons?.map((c: PairwiseComparisonSummary) => (
-        <div key={c.comparisonId} className="flex items-center gap-3 text-xs border rounded px-3 py-2">
+        <div
+          key={c.comparisonId}
+          className="flex items-center gap-3 text-xs border rounded px-3 py-2"
+        >
           <span className="font-mono">{c.modelA}</span>
           <span className="text-green-600 font-semibold">{c.winsA}W</span>
           <span className="text-muted-foreground">{c.ties}T</span>
@@ -460,7 +483,9 @@ function AutoEvalSection() {
             max="5"
             step="0.1"
             value={groundednessThreshold}
-            onChange={(e) => setGroundednessThreshold(e.target.value)}
+            onChange={(e) => {
+              setGroundednessThreshold(e.target.value);
+            }}
             className="w-full px-2 py-1 text-sm border rounded bg-background"
           />
         </div>
@@ -472,7 +497,9 @@ function AutoEvalSection() {
             max="5"
             step="0.1"
             value={coherenceThreshold}
-            onChange={(e) => setCoherenceThreshold(e.target.value)}
+            onChange={(e) => {
+              setCoherenceThreshold(e.target.value);
+            }}
             className="w-full px-2 py-1 text-sm border rounded bg-background"
           />
         </div>

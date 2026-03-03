@@ -250,62 +250,62 @@ export class DistillationManager {
         const messagesByConv = await this._batchFetchMessages(batchIds);
 
         for (const convId of batchIds) {
-        if (samplesWritten >= job.maxSamples) break outer;
+          if (samplesWritten >= job.maxSamples) break outer;
 
-        const messages = messagesByConv.get(convId) ?? [];
-        if (messages.length < 2) continue;
+          const messages = messagesByConv.get(convId) ?? [];
+          if (messages.length < 2) continue;
 
-        // Find user→assistant pairs
-        for (let i = 0; i < messages.length - 1; i++) {
-          if (samplesWritten >= job.maxSamples) break;
-          const msg = messages[i]!;
-          if (msg.role !== 'user') continue;
+          // Find user→assistant pairs
+          for (let i = 0; i < messages.length - 1; i++) {
+            if (samplesWritten >= job.maxSamples) break;
+            const msg = messages[i]!;
+            if (msg.role !== 'user') continue;
 
-          const userContent = msg.content;
-          if (!userContent.trim()) continue;
+            const userContent = msg.content;
+            if (!userContent.trim()) continue;
 
-          // Get the gold assistant response for agreement metric
-          const nextMsg = messages[i + 1];
-          const goldResponse = nextMsg?.role === 'assistant' ? nextMsg.content : '';
+            // Get the gold assistant response for agreement metric
+            const nextMsg = messages[i + 1];
+            const goldResponse = nextMsg?.role === 'assistant' ? nextMsg.content : '';
 
-          // Call teacher LLM
-          let teacherResponse: string;
-          try {
-            const resp = await teacherClient.chat({
-              messages: [{ role: 'user', content: userContent }],
-            });
-            teacherResponse = resp.content;
-          } catch (err) {
-            this.logger.warn('Teacher LLM call failed', {
-              jobId,
-              error: err instanceof Error ? err.message : 'unknown',
-            });
-            continue;
+            // Call teacher LLM
+            let teacherResponse: string;
+            try {
+              const resp = await teacherClient.chat({
+                messages: [{ role: 'user', content: userContent }],
+              });
+              teacherResponse = resp.content;
+            } catch (err) {
+              this.logger.warn('Teacher LLM call failed', {
+                jobId,
+                error: err instanceof Error ? err.message : 'unknown',
+              });
+              continue;
+            }
+
+            // Accumulate agreement (char Jaccard) for stream events
+            if (goldResponse) {
+              totalSimilarity += charJaccard(teacherResponse, goldResponse);
+            }
+
+            // Write to JSONL
+            const line = this._formatLine(job.exportFormat, userContent, teacherResponse);
+            appendFileSync(job.outputPath, line, 'utf-8');
+            samplesWritten++;
+
+            // Emit stream events every 10 samples
+            if (samplesWritten % 10 === 0) {
+              await this.pool.query(
+                `UPDATE training.distillation_jobs SET samples_generated=$1 WHERE id=$2`,
+                [samplesWritten, jobId]
+              );
+              const elapsedMin = (Date.now() - batchStart) / 60_000;
+              const throughput = elapsedMin > 0 ? samplesWritten / elapsedMin : 0;
+              trainingStream.broadcast({ type: 'throughput', value: throughput, ts: Date.now() });
+              const avgAgreement = samplesWritten > 0 ? totalSimilarity / samplesWritten : 0;
+              trainingStream.broadcast({ type: 'agreement', value: avgAgreement, ts: Date.now() });
+            }
           }
-
-          // Accumulate agreement (char Jaccard) for stream events
-          if (goldResponse) {
-            totalSimilarity += charJaccard(teacherResponse, goldResponse);
-          }
-
-          // Write to JSONL
-          const line = this._formatLine(job.exportFormat, userContent, teacherResponse);
-          appendFileSync(job.outputPath, line, 'utf-8');
-          samplesWritten++;
-
-          // Emit stream events every 10 samples
-          if (samplesWritten % 10 === 0) {
-            await this.pool.query(
-              `UPDATE training.distillation_jobs SET samples_generated=$1 WHERE id=$2`,
-              [samplesWritten, jobId]
-            );
-            const elapsedMin = (Date.now() - batchStart) / 60_000;
-            const throughput = elapsedMin > 0 ? samplesWritten / elapsedMin : 0;
-            trainingStream.broadcast({ type: 'throughput', value: throughput, ts: Date.now() });
-            const avgAgreement = samplesWritten > 0 ? totalSimilarity / samplesWritten : 0;
-            trainingStream.broadcast({ type: 'agreement', value: avgAgreement, ts: Date.now() });
-          }
-        }
         } // end for (const convId of batchIds)
       } // end outer: for (let batchIdx)
 
@@ -327,12 +327,16 @@ export class DistillationManager {
       );
       this.logger.info('Distillation job complete', { jobId, samplesWritten, counterfactualCount });
 
-      void emitJobCompletion(this.getAlertManager?.() ?? null, {
-        jobType: 'distillation',
-        status: 'completed',
-        jobId,
-        metrics: { samplesGenerated: samplesWritten, counterfactualCount },
-      }, this.logger);
+      emitJobCompletion(
+        this.getAlertManager?.() ?? null,
+        {
+          jobType: 'distillation',
+          status: 'completed',
+          jobId,
+          metrics: { samplesGenerated: samplesWritten, counterfactualCount },
+        },
+        this.logger
+      );
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       await this.pool.query(
@@ -343,11 +347,15 @@ export class DistillationManager {
       );
       this.logger.error('Distillation job failed', { jobId, error: msg });
 
-      void emitJobCompletion(this.getAlertManager?.() ?? null, {
-        jobType: 'distillation',
-        status: 'failed',
-        jobId,
-      }, this.logger);
+      emitJobCompletion(
+        this.getAlertManager?.() ?? null,
+        {
+          jobType: 'distillation',
+          status: 'failed',
+          jobId,
+        },
+        this.logger
+      );
     } finally {
       this.runningJobs.delete(jobId);
     }

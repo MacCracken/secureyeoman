@@ -2174,7 +2174,10 @@ describe('MultimodalManager — OpenAI TTS default path', () => {
     process.env.OPENAI_API_KEY = 'sk-test-key-for-unit-test';
 
     const audioBytes = Buffer.from('fake-tts-audio');
-    const ab = audioBytes.buffer.slice(audioBytes.byteOffset, audioBytes.byteOffset + audioBytes.byteLength);
+    const ab = audioBytes.buffer.slice(
+      audioBytes.byteOffset,
+      audioBytes.byteOffset + audioBytes.byteLength
+    );
 
     vi.stubGlobal(
       'fetch',

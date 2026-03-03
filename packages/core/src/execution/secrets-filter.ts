@@ -36,9 +36,7 @@ export function createSecretsFilter(additionalPatterns: string[] = []): (line: s
   // Cap secrets to prevent ReDoS with very large alternation regexes
   const MAX_SECRETS = 200;
   const MAX_SECRET_LENGTH = 500;
-  const capped = secretValues
-    .slice(0, MAX_SECRETS)
-    .filter((v) => v.length <= MAX_SECRET_LENGTH);
+  const capped = secretValues.slice(0, MAX_SECRETS).filter((v) => v.length <= MAX_SECRET_LENGTH);
 
   // Build a single regex from all secret values if any exist
   let secretsRegex: RegExp | null = null;

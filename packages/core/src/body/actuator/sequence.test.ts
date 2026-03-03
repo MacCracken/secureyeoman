@@ -138,9 +138,9 @@ describe('executeSequence', () => {
   // ── Phase 105: Supplementary branch coverage ───────────────────────────────
 
   it('throws on unknown action type', async () => {
-    await expect(
-      executeSequence([{ action: { type: 'unknown_action' } as any }])
-    ).rejects.toThrow(/unknown action type/i);
+    await expect(executeSequence([{ action: { type: 'unknown_action' } as any }])).rejects.toThrow(
+      /unknown action type/i
+    );
   });
 
   it('skips delayAfterMs when it is 0', async () => {

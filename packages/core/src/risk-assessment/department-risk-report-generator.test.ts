@@ -19,7 +19,21 @@ function makeMockManager() {
       criticalRisks: 2,
       appetiteBreaches: [{ domain: 'security', score: 60, threshold: 50 }],
       topRisks: [
-        { id: 'r1', title: 'SQL Injection', severity: 'high', likelihood: 4, impact: 5, riskScore: 20, departmentId: 'd1', category: 'security', status: 'open', mitigations: [], evidenceRefs: [], createdAt: Date.now(), updatedAt: Date.now() },
+        {
+          id: 'r1',
+          title: 'SQL Injection',
+          severity: 'high',
+          likelihood: 4,
+          impact: 5,
+          riskScore: 20,
+          departmentId: 'd1',
+          category: 'security',
+          status: 'open',
+          mitigations: [],
+          evidenceRefs: [],
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
       ],
     }),
     getTrend: vi.fn().mockResolvedValue([
@@ -40,14 +54,69 @@ function makeMockManager() {
       ],
     }),
     getHeatmap: vi.fn().mockResolvedValue([
-      { departmentId: 'd1', departmentName: 'Engineering', domain: 'security', score: 60, threshold: 50, breached: true },
-      { departmentId: 'd1', departmentName: 'Engineering', domain: 'operational', score: 30, threshold: 50, breached: false },
-      { departmentId: 'd2', departmentName: 'Finance', domain: 'security', score: 25, threshold: 50, breached: false },
+      {
+        departmentId: 'd1',
+        departmentName: 'Engineering',
+        domain: 'security',
+        score: 60,
+        threshold: 50,
+        breached: true,
+      },
+      {
+        departmentId: 'd1',
+        departmentName: 'Engineering',
+        domain: 'operational',
+        score: 30,
+        threshold: 50,
+        breached: false,
+      },
+      {
+        departmentId: 'd2',
+        departmentName: 'Finance',
+        domain: 'security',
+        score: 25,
+        threshold: 50,
+        breached: false,
+      },
     ]),
     listRegisterEntries: vi.fn().mockResolvedValue({
       items: [
-        { id: 'r1', departmentId: 'd1', title: 'SQL Injection', category: 'security', severity: 'high', likelihood: 4, impact: 5, riskScore: 20, status: 'open', owner: 'alice', dueDate: '2026-04-01', source: 'scan', createdAt: Date.now(), updatedAt: Date.now(), mitigations: [], evidenceRefs: [] },
-        { id: 'r2', departmentId: 'd1', title: 'Weak auth', category: 'compliance', severity: 'medium', likelihood: 3, impact: 3, riskScore: 9, status: 'in_progress', owner: 'bob', dueDate: null, source: null, createdAt: Date.now(), updatedAt: Date.now(), mitigations: [], evidenceRefs: [] },
+        {
+          id: 'r1',
+          departmentId: 'd1',
+          title: 'SQL Injection',
+          category: 'security',
+          severity: 'high',
+          likelihood: 4,
+          impact: 5,
+          riskScore: 20,
+          status: 'open',
+          owner: 'alice',
+          dueDate: '2026-04-01',
+          source: 'scan',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          mitigations: [],
+          evidenceRefs: [],
+        },
+        {
+          id: 'r2',
+          departmentId: 'd1',
+          title: 'Weak auth',
+          category: 'compliance',
+          severity: 'medium',
+          likelihood: 3,
+          impact: 3,
+          riskScore: 9,
+          status: 'in_progress',
+          owner: 'bob',
+          dueDate: null,
+          source: null,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          mitigations: [],
+          evidenceRefs: [],
+        },
       ],
       total: 2,
     }),
@@ -181,9 +250,30 @@ describe('DepartmentRiskReportGenerator', () => {
   describe('generateHeatmapHtml', () => {
     it('renders dept x domain grid', () => {
       const cells = [
-        { departmentId: 'd1', departmentName: 'Eng', domain: 'security', score: 60, threshold: 50, breached: true },
-        { departmentId: 'd1', departmentName: 'Eng', domain: 'ops', score: 20, threshold: 50, breached: false },
-        { departmentId: 'd2', departmentName: 'Finance', domain: 'security', score: 25, threshold: 50, breached: false },
+        {
+          departmentId: 'd1',
+          departmentName: 'Eng',
+          domain: 'security',
+          score: 60,
+          threshold: 50,
+          breached: true,
+        },
+        {
+          departmentId: 'd1',
+          departmentName: 'Eng',
+          domain: 'ops',
+          score: 20,
+          threshold: 50,
+          breached: false,
+        },
+        {
+          departmentId: 'd2',
+          departmentName: 'Finance',
+          domain: 'security',
+          score: 25,
+          threshold: 50,
+          breached: false,
+        },
       ];
       const html = gen.generateHeatmapHtml(cells);
       expect(html).toContain('Risk Heatmap');
@@ -194,7 +284,14 @@ describe('DepartmentRiskReportGenerator', () => {
 
     it('shows breach indicator', () => {
       const cells = [
-        { departmentId: 'd1', departmentName: 'Eng', domain: 'security', score: 80, threshold: 50, breached: true },
+        {
+          departmentId: 'd1',
+          departmentName: 'Eng',
+          domain: 'security',
+          score: 80,
+          threshold: 50,
+          breached: true,
+        },
       ];
       const html = gen.generateHeatmapHtml(cells);
       expect(html).toContain('⚠');

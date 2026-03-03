@@ -451,9 +451,7 @@ describe('GitHub API Routes', () => {
     it('allows write when scopes include public_repo', async () => {
       const svc = {
         ...mockOAuthTokenService(),
-        listTokens: vi
-          .fn()
-          .mockResolvedValue([{ ...TOKEN_ROW, scopes: 'read:user public_repo' }]),
+        listTokens: vi.fn().mockResolvedValue([{ ...TOKEN_ROW, scopes: 'read:user public_repo' }]),
         getValidToken: vi.fn().mockResolvedValue('gh-access-token'),
       } as unknown as OAuthTokenService;
       const sm = mockSoulManager('auto');

@@ -59,7 +59,13 @@ const REPLAY_JOB = {
 const REPLAY_REPORT = {
   job: REPLAY_JOB,
   results: [],
-  summary: { sourceWins: 0, replayWins: 0, ties: 0, avgSourceQuality: null, avgReplayQuality: null },
+  summary: {
+    sourceWins: 0,
+    replayWins: 0,
+    ties: 0,
+    avgSourceQuality: null,
+    avgReplayQuality: null,
+  },
 };
 
 function makeMockManager(overrides?: Partial<BranchingManager>): BranchingManager {
@@ -67,7 +73,9 @@ function makeMockManager(overrides?: Partial<BranchingManager>): BranchingManage
     branchFromMessage: vi.fn().mockResolvedValue(CONVERSATION),
     getChildBranches: vi.fn().mockResolvedValue([CONVERSATION]),
     getBranchTree: vi.fn().mockResolvedValue(TREE_NODE),
-    replayConversation: vi.fn().mockResolvedValue({ replayConversationId: 'replay-1', replayJobId: 'job-1' }),
+    replayConversation: vi
+      .fn()
+      .mockResolvedValue({ replayConversationId: 'replay-1', replayJobId: 'job-1' }),
     replayBatch: vi.fn().mockResolvedValue(REPLAY_JOB),
     listReplayJobs: vi.fn().mockResolvedValue([REPLAY_JOB]),
     getReplayJob: vi.fn().mockResolvedValue(REPLAY_JOB),
@@ -139,7 +147,9 @@ describe('Branching Routes', () => {
 
     it('returns 404 when source not found', async () => {
       const { app } = buildApp({
-        branchFromMessage: vi.fn().mockRejectedValue(new Error('Source conversation not found: conv-x')),
+        branchFromMessage: vi
+          .fn()
+          .mockRejectedValue(new Error('Source conversation not found: conv-x')),
       });
       const res = await app.inject({
         method: 'POST',

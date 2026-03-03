@@ -281,7 +281,11 @@ describe('DistillationManager', () => {
         // Batch message fetch for distillation
         if (sql.includes('chat.messages') && sql.includes('ANY')) {
           return {
-            rows: messages.map((m) => ({ conversation_id: 'c1', role: m.role, content: m.content })),
+            rows: messages.map((m) => ({
+              conversation_id: 'c1',
+              role: m.role,
+              content: m.content,
+            })),
             rowCount: messages.length,
           };
         }
@@ -544,11 +548,11 @@ describe('DistillationManager — Phase 92 extensions', () => {
         if (qc === 3) {
           return {
             rows: [
-              { id: 'c1', message_count: 2 },   // stage 1 (<=4)
-              { id: 'c2', message_count: 8 },   // stage 2 (5-10)
-              { id: 'c3', message_count: 15 },  // stage 3 (11-20)
-              { id: 'c4', message_count: 30 },  // stage 4 (>20)
-              { id: 'c5', message_count: 3 },   // stage 1
+              { id: 'c1', message_count: 2 }, // stage 1 (<=4)
+              { id: 'c2', message_count: 8 }, // stage 2 (5-10)
+              { id: 'c3', message_count: 15 }, // stage 3 (11-20)
+              { id: 'c4', message_count: 30 }, // stage 4 (>20)
+              { id: 'c5', message_count: 3 }, // stage 1
             ],
             rowCount: 5,
           };
@@ -562,7 +566,7 @@ describe('DistillationManager — Phase 92 extensions', () => {
         }
         // Batch message fetch for conversations
         if (sql.includes('chat.messages') && sql.includes('ANY')) {
-          const convIds = args?.[0] as string[] ?? [];
+          const convIds = (args?.[0] as string[]) ?? [];
           const rows = convIds.flatMap((cid: string) => [
             { conversation_id: cid, role: 'user', content: 'Hello' },
             { conversation_id: cid, role: 'assistant', content: 'Hi' },
@@ -581,7 +585,8 @@ describe('DistillationManager — Phase 92 extensions', () => {
 
       // Verify batch message fetch was called (via pool.query with chat.messages)
       const batchCalls = (pool.query as any).mock.calls.filter(
-        (c: any[]) => typeof c[0] === 'string' && c[0].includes('chat.messages') && c[0].includes('ANY')
+        (c: any[]) =>
+          typeof c[0] === 'string' && c[0].includes('chat.messages') && c[0].includes('ANY')
       );
       expect(batchCalls.length).toBeGreaterThan(0);
     });
@@ -600,8 +605,7 @@ describe('DistillationManager — Phase 92 extensions', () => {
             rowCount: 1,
           };
         if (qc === 2) return { rows: [], rowCount: 1 };
-        if (qc === 3)
-          return { rows: [{ id: 'conv-1', message_count: 4 }], rowCount: 1 };
+        if (qc === 3) return { rows: [{ id: 'conv-1', message_count: 4 }], rowCount: 1 };
         // Batch message fetch
         if (sql.includes('chat.messages') && sql.includes('ANY')) {
           return {
@@ -628,7 +632,8 @@ describe('DistillationManager — Phase 92 extensions', () => {
 
       // Verify batch message fetch was used
       const batchCalls = (pool.query as any).mock.calls.filter(
-        (c: any[]) => typeof c[0] === 'string' && c[0].includes('chat.messages') && c[0].includes('ANY')
+        (c: any[]) =>
+          typeof c[0] === 'string' && c[0].includes('chat.messages') && c[0].includes('ANY')
       );
       expect(batchCalls.length).toBeGreaterThan(0);
     });
@@ -681,8 +686,8 @@ describe('DistillationManager — Phase 92 extensions', () => {
       expect(teacher.chat).toHaveBeenCalled();
       // At least one teacher call should include the system prompt for counterfactuals
       const calls = teacher.chat.mock.calls;
-      const hasSystemPrompt = calls.some(
-        (c: any) => c[0].messages.some((m: any) => m.role === 'system' && m.content.includes('ideal'))
+      const hasSystemPrompt = calls.some((c: any) =>
+        c[0].messages.some((m: any) => m.role === 'system' && m.content.includes('ideal'))
       );
       expect(hasSystemPrompt).toBe(true);
     });
@@ -729,8 +734,7 @@ describe('DistillationManager — Phase 92 extensions', () => {
       pool.query = vi.fn(async (sql: string) => {
         sqlCalls.push(sql);
         qc++;
-        if (qc === 1)
-          return { rows: [makeJobRow({ status: 'pending' })], rowCount: 1 };
+        if (qc === 1) return { rows: [makeJobRow({ status: 'pending' })], rowCount: 1 };
         if (qc === 2) return { rows: [], rowCount: 1 }; // UPDATE to running
         // Throw on the conv query
         if (qc === 3) throw new Error('Database connection lost');
@@ -768,7 +772,7 @@ describe('DistillationManager — Phase 92 extensions', () => {
           };
         // Batch message fetch
         if (sql.includes('chat.messages') && sql.includes('ANY')) {
-          const convIds = args?.[0] as string[] ?? [];
+          const convIds = (args?.[0] as string[]) ?? [];
           const rows = convIds.flatMap((cid: string) => [
             { conversation_id: cid, role: 'user', content: 'Hello' },
             { conversation_id: cid, role: 'assistant', content: 'Hi' },
@@ -801,10 +805,7 @@ describe('DistillationManager — Phase 92 extensions', () => {
         expect.objectContaining({ error: 'Rate limited' })
       );
       // Should still have completed (not thrown)
-      expect(logger.info).toHaveBeenCalledWith(
-        'Distillation job complete',
-        expect.any(Object)
-      );
+      expect(logger.info).toHaveBeenCalledWith('Distillation job complete', expect.any(Object));
     });
   });
 });

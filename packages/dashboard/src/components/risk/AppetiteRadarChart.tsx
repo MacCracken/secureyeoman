@@ -27,9 +27,7 @@ interface RiskAppetite {
   reputational: number;
 }
 
-interface DomainScores {
-  [domain: string]: number;
-}
+type DomainScores = Record<string, number>;
 
 interface AppetiteRadarChartProps {
   department: { riskAppetite: RiskAppetite };
@@ -146,7 +144,9 @@ export function AppetiteRadarChart({
             <button
               key={preset.label}
               className={`px-3 py-1 text-xs text-white rounded transition-colors ${preset.color}`}
-              onClick={() => onAppetiteChange(buildAppetite(preset.value))}
+              onClick={() => {
+                onAppetiteChange(buildAppetite(preset.value));
+              }}
             >
               {preset.label} ({preset.value})
             </button>

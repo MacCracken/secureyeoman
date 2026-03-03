@@ -53,7 +53,7 @@ function StatusBadge({ status }: { status: string }) {
       icon: <XCircle className="w-3 h-3" />,
     },
   };
-  const item = map[status] ?? map.draft!;
+  const item = map[status] ?? map.draft;
 
   return (
     <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded ${item.cls}`}>
@@ -111,11 +111,15 @@ export function ExperimentsTab() {
           type="text"
           placeholder="Experiment name..."
           value={newName}
-          onChange={(e) => setNewName(e.target.value)}
+          onChange={(e) => {
+            setNewName(e.target.value);
+          }}
           className="text-sm bg-muted border-0 rounded px-3 py-1.5 flex-1 max-w-xs"
         />
         <button
-          onClick={() => newName.trim() && createMutation.mutate(newName.trim())}
+          onClick={() => {
+            newName.trim() && createMutation.mutate(newName.trim());
+          }}
           disabled={!newName.trim() || createMutation.isPending}
           className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
         >
@@ -140,7 +144,9 @@ export function ExperimentsTab() {
               {experiments.map((exp) => (
                 <div
                   key={exp.id}
-                  onClick={() => setSelectedId(exp.id)}
+                  onClick={() => {
+                    setSelectedId(exp.id);
+                  }}
                   className={`border rounded p-2 cursor-pointer text-sm flex items-center justify-between ${
                     selectedId === exp.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'
                   }`}

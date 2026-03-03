@@ -625,9 +625,7 @@ describe('validateSecrets — fallback provider warnings (Phase 105)', () => {
       overrides: {
         model: {
           provider: 'ollama',
-          fallbacks: [
-            { provider: 'anthropic', model: 'claude-3', apiKeyEnv: 'TEST_FALLBACK_KEY' },
-          ],
+          fallbacks: [{ provider: 'anthropic', model: 'claude-3', apiKeyEnv: 'TEST_FALLBACK_KEY' }],
         },
       } as any,
     });
@@ -648,9 +646,7 @@ describe('validateSecrets — fallback provider warnings (Phase 105)', () => {
       overrides: {
         model: {
           provider: 'ollama',
-          fallbacks: [
-            { provider: 'ollama', model: 'llama3', apiKeyEnv: 'OLLAMA_KEY' },
-          ],
+          fallbacks: [{ provider: 'ollama', model: 'llama3', apiKeyEnv: 'OLLAMA_KEY' }],
         },
       } as any,
     });

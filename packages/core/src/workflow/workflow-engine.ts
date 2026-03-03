@@ -147,13 +147,17 @@ export class WorkflowEngine {
 
       this.logger.info('Workflow run completed', { runId: run.id });
 
-      void emitJobCompletion(this.alertManager, {
-        jobType: 'workflow',
-        status: 'completed',
-        jobId: run.id,
-        jobName: definition.name,
-        durationMs: Date.now() - startTime,
-      }, this.logger);
+      emitJobCompletion(
+        this.alertManager,
+        {
+          jobType: 'workflow',
+          status: 'completed',
+          jobId: run.id,
+          jobName: definition.name,
+          durationMs: Date.now() - startTime,
+        },
+        this.logger
+      );
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
       await this.storage.updateRun(run.id, {
@@ -163,13 +167,17 @@ export class WorkflowEngine {
       });
       this.logger.error('Workflow run failed', { runId: run.id, error });
 
-      void emitJobCompletion(this.alertManager, {
-        jobType: 'workflow',
-        status: 'failed',
-        jobId: run.id,
-        jobName: definition.name,
-        durationMs: Date.now() - startTime,
-      }, this.logger);
+      emitJobCompletion(
+        this.alertManager,
+        {
+          jobType: 'workflow',
+          status: 'failed',
+          jobId: run.id,
+          jobName: definition.name,
+          durationMs: Date.now() - startTime,
+        },
+        this.logger
+      );
     }
   }
 

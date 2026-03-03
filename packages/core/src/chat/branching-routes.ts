@@ -10,10 +10,7 @@ export interface BranchingRoutesOptions {
   branchingManager: BranchingManager;
 }
 
-export function registerBranchingRoutes(
-  app: FastifyInstance,
-  opts: BranchingRoutesOptions
-): void {
+export function registerBranchingRoutes(app: FastifyInstance, opts: BranchingRoutesOptions): void {
   const { branchingManager } = opts;
 
   // ── Branch from a specific message ───────────────────────────────────────
@@ -32,11 +29,10 @@ export function registerBranchingRoutes(
         return sendError(reply, 400, 'Valid messageIndex is required');
       }
       try {
-        const branch = await branchingManager.branchFromMessage(
-          request.params.id,
-          messageIndex,
-          { title, branchLabel }
-        );
+        const branch = await branchingManager.branchFromMessage(request.params.id, messageIndex, {
+          title,
+          branchLabel,
+        });
         return reply.code(201).send(branch);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -61,10 +57,7 @@ export function registerBranchingRoutes(
 
   app.get(
     '/api/v1/conversations/:id/tree',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const tree = await branchingManager.getBranchTree(request.params.id);
         return tree;
@@ -152,10 +145,7 @@ export function registerBranchingRoutes(
 
   app.get(
     '/api/v1/replay-jobs/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const job = await branchingManager.getReplayJob(request.params.id);
       if (!job) return sendError(reply, 404, 'Replay job not found');
       return job;
@@ -166,10 +156,7 @@ export function registerBranchingRoutes(
 
   app.get(
     '/api/v1/replay-jobs/:id/report',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const report = await branchingManager.getReplayReport(request.params.id);
         return report;

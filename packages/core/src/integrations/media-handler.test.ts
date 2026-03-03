@@ -191,10 +191,11 @@ describe('MediaHandler', () => {
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
         headers: new Map([['content-length', String(fileContent.length)]]),
-        arrayBuffer: async () => fileContent.buffer.slice(
-          fileContent.byteOffset,
-          fileContent.byteOffset + fileContent.byteLength
-        ),
+        arrayBuffer: async () =>
+          fileContent.buffer.slice(
+            fileContent.byteOffset,
+            fileContent.byteOffset + fileContent.byteLength
+          ),
       }) as any;
 
       const result = await handler.processAttachment({
@@ -242,10 +243,8 @@ describe('MediaHandler', () => {
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
         headers: new Map(),
-        arrayBuffer: async () => bigBuffer.buffer.slice(
-          bigBuffer.byteOffset,
-          bigBuffer.byteOffset + bigBuffer.byteLength
-        ),
+        arrayBuffer: async () =>
+          bigBuffer.buffer.slice(bigBuffer.byteOffset, bigBuffer.byteOffset + bigBuffer.byteLength),
       }) as any;
 
       await expect(

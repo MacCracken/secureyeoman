@@ -2188,10 +2188,7 @@ export async function fetchCommunityStatus(): Promise<{
 
 // ─── Personality Export/Import API (Phase 107-D) ──────────────────────
 
-export async function exportPersonality(
-  id: string,
-  format: 'md' | 'json' = 'md'
-): Promise<Blob> {
+export async function exportPersonality(id: string, format: 'md' | 'json' = 'md'): Promise<Blob> {
   const token = getAccessToken();
   const headers: Record<string, string> = {};
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -2444,9 +2441,7 @@ export async function branchFromMessage(
   });
 }
 
-export async function fetchBranches(
-  conversationId: string
-): Promise<{ branches: Conversation[] }> {
+export async function fetchBranches(conversationId: string): Promise<{ branches: Conversation[] }> {
   return request(`/conversations/${conversationId}/branches`);
 }
 
@@ -4603,7 +4598,8 @@ export async function fetchDepartments(params?: {
   offset?: number;
 }): Promise<{ items: any[]; total: number }> {
   const q = new URLSearchParams();
-  if (params?.parentId !== undefined) q.set('parentId', params.parentId === null ? 'null' : params.parentId);
+  if (params?.parentId !== undefined)
+    q.set('parentId', params.parentId === null ? 'null' : params.parentId);
   if (params?.limit != null) q.set('limit', String(params.limit));
   if (params?.offset != null) q.set('offset', String(params.offset));
   const qs = q.toString();
@@ -4624,18 +4620,17 @@ export async function createDepartment(data: {
 }
 
 export async function updateDepartment(id: string, data: Record<string, unknown>): Promise<any> {
-  const res = await request<{ department: any }>(
-    `/risk/departments/${encodeURIComponent(id)}`,
-    { method: 'PUT', body: JSON.stringify(data) }
-  );
+  const res = await request<{ department: any }>(`/risk/departments/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
   return res.department;
 }
 
 export async function deleteDepartment(id: string, force = false): Promise<void> {
-  await request(
-    `/risk/departments/${encodeURIComponent(id)}${force ? '?force=true' : ''}`,
-    { method: 'DELETE' }
-  );
+  await request(`/risk/departments/${encodeURIComponent(id)}${force ? '?force=true' : ''}`, {
+    method: 'DELETE',
+  });
 }
 
 export async function fetchDepartmentScorecard(id: string): Promise<any> {
@@ -4694,19 +4689,23 @@ export async function fetchRiskSummary(): Promise<any> {
 
 // Phase 111-D: Report endpoints
 export async function fetchDepartmentReport(departmentId: string, format = 'json'): Promise<any> {
-  return request<any>(`/risk/reports/department/${encodeURIComponent(departmentId)}?format=${format}`);
+  return request<any>(
+    `/risk/reports/department/${encodeURIComponent(departmentId)}?format=${format}`
+  );
 }
 
 export async function fetchExecutiveReport(format = 'json'): Promise<any> {
   return request<any>(`/risk/reports/executive?format=${format}`);
 }
 
-export async function fetchRegisterReport(params: {
-  format?: string;
-  departmentId?: string;
-  status?: string;
-  category?: string;
-} = {}): Promise<any> {
+export async function fetchRegisterReport(
+  params: {
+    format?: string;
+    departmentId?: string;
+    status?: string;
+    category?: string;
+  } = {}
+): Promise<any> {
   const qs = new URLSearchParams();
   if (params.format) qs.set('format', params.format);
   if (params.departmentId) qs.set('departmentId', params.departmentId);
@@ -4717,7 +4716,10 @@ export async function fetchRegisterReport(params: {
 
 // Phase 111-F: Additional register/department endpoints
 export async function updateRegisterEntry(id: string, data: Record<string, unknown>): Promise<any> {
-  return request<any>(`/risk/register/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(data) });
+  return request<any>(`/risk/register/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function deleteRegisterEntry(id: string): Promise<any> {
@@ -5193,46 +5195,46 @@ export interface UsageAnomalyItem {
 
 export async function fetchSentimentTrend(
   personalityId: string,
-  days: number = 30
+  days = 30
 ): Promise<SentimentTrendPoint[]> {
   return request(`/analytics/sentiment/trend/${encodeURIComponent(personalityId)}?days=${days}`);
 }
 
 export async function fetchEngagementMetrics(
   personalityId?: string,
-  periodDays: number = 30
+  periodDays = 30
 ): Promise<EngagementMetrics> {
   if (personalityId) {
-    return request(`/analytics/engagement/${encodeURIComponent(personalityId)}?periodDays=${periodDays}`);
+    return request(
+      `/analytics/engagement/${encodeURIComponent(personalityId)}?periodDays=${periodDays}`
+    );
   }
   return request(`/analytics/engagement?periodDays=${periodDays}`);
 }
 
-export async function fetchKeyPhrases(
-  personalityId: string,
-  limit: number = 50
-): Promise<KeyPhraseItem[]> {
+export async function fetchKeyPhrases(personalityId: string, limit = 50): Promise<KeyPhraseItem[]> {
   return request(`/analytics/phrases/${encodeURIComponent(personalityId)}?limit=${limit}`);
 }
 
 export async function fetchTopEntities(
   personalityId: string,
-  limit: number = 20
+  limit = 20
 ): Promise<TopEntityItem[]> {
   return request(`/analytics/entities/top/${encodeURIComponent(personalityId)}?limit=${limit}`);
 }
 
 export async function searchEntities(
   entity: string,
-  entityType: string = 'concept'
+  entityType = 'concept'
 ): Promise<{ conversationId: string; title: string | null; mentionCount: number }[]> {
   const qs = new URLSearchParams({ entity, entityType }).toString();
   return request(`/analytics/entities?${qs}`);
 }
 
-export async function fetchAnomalies(
-  opts?: { limit?: number; anomalyType?: string }
-): Promise<{ anomalies: UsageAnomalyItem[]; total: number }> {
+export async function fetchAnomalies(opts?: {
+  limit?: number;
+  anomalyType?: string;
+}): Promise<{ anomalies: UsageAnomalyItem[]; total: number }> {
   const qs = new URLSearchParams();
   if (opts?.limit) qs.set('limit', String(opts.limit));
   if (opts?.anomalyType) qs.set('anomalyType', opts.anomalyType);
@@ -5517,10 +5519,7 @@ export async function getAbTest(id: string): Promise<AbTestItem> {
   return request(`/training/ab-tests/${id}`);
 }
 
-export async function completeAbTest(
-  id: string,
-  winner: string
-): Promise<AbTestItem> {
+export async function completeAbTest(id: string, winner: string): Promise<AbTestItem> {
   return request(`/training/ab-tests/${id}/complete`, {
     method: 'POST',
     body: JSON.stringify({ winner }),
@@ -5531,9 +5530,7 @@ export async function cancelAbTest(id: string): Promise<AbTestItem> {
   return request(`/training/ab-tests/${id}/cancel`, { method: 'POST' });
 }
 
-export async function evaluateAbTest(
-  id: string
-): Promise<{
+export async function evaluateAbTest(id: string): Promise<{
   winner: string | null;
   avgQualityA: number | null;
   avgQualityB: number | null;

@@ -104,7 +104,9 @@ function ExportDropdown() {
       }
     }
     document.addEventListener('mousedown', handle);
-    return () => document.removeEventListener('mousedown', handle);
+    return () => {
+      document.removeEventListener('mousedown', handle);
+    };
   }, [open]);
 
   const handleExport = useCallback(async (format: string) => {
@@ -142,7 +144,9 @@ function ExportDropdown() {
     <div ref={dropRef} className="relative">
       <button
         className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-border rounded hover:bg-muted transition-colors disabled:opacity-50"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          setOpen((o) => !o);
+        }}
         disabled={exporting}
       >
         <Download className="w-4 h-4" />
@@ -262,7 +266,9 @@ export function ExecutiveSummaryPanel({ summary }: ExecutiveSummaryPanelProps) {
                   return (
                     <tr key={dept.id} className="hover:bg-muted/30 transition-colors">
                       <td className="py-2 px-3 font-medium">{dept.name}</td>
-                      <td className="py-2 px-3 text-right font-semibold">{dept.score.toFixed(1)}</td>
+                      <td className="py-2 px-3 text-right font-semibold">
+                        {dept.score.toFixed(1)}
+                      </td>
                       <td className="py-2 px-3 text-right">{dept.openRisks}</td>
                       <td className="py-2 px-3 text-right">
                         <span className={dept.criticalRisks > 0 ? 'text-red-600 font-medium' : ''}>
@@ -270,7 +276,9 @@ export function ExecutiveSummaryPanel({ summary }: ExecutiveSummaryPanelProps) {
                         </span>
                       </td>
                       <td className="py-2 px-3 text-right">
-                        <span className={dept.appetiteBreaches > 0 ? 'text-red-600 font-medium' : ''}>
+                        <span
+                          className={dept.appetiteBreaches > 0 ? 'text-red-600 font-medium' : ''}
+                        >
                           {dept.appetiteBreaches}
                         </span>
                       </td>

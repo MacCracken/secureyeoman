@@ -71,7 +71,13 @@ describe('DepartmentRiskManager', () => {
 
   describe('deleteDepartment', () => {
     it('rejects deletion with open entries unless force', async () => {
-      (storage.getRegisterStats as any).mockResolvedValue({ open: 3, overdue: 0, critical: 0, total: 5, avgRiskScore: 10 });
+      (storage.getRegisterStats as any).mockResolvedValue({
+        open: 3,
+        overdue: 0,
+        critical: 0,
+        total: 5,
+        avgRiskScore: 10,
+      });
       await expect(mgr.deleteDepartment('d1')).rejects.toThrow('open risk entries');
     });
 
@@ -83,7 +89,13 @@ describe('DepartmentRiskManager', () => {
     });
 
     it('allows deletion when no open entries', async () => {
-      (storage.getRegisterStats as any).mockResolvedValue({ open: 0, overdue: 0, critical: 0, total: 2, avgRiskScore: 5 });
+      (storage.getRegisterStats as any).mockResolvedValue({
+        open: 0,
+        overdue: 0,
+        critical: 0,
+        total: 2,
+        avgRiskScore: 5,
+      });
       (storage.deleteDepartment as any).mockResolvedValue(true);
       const result = await mgr.deleteDepartment('d1');
       expect(result).toBe(true);
@@ -145,9 +157,7 @@ describe('DepartmentRiskManager', () => {
       });
       (storage.getRegisterStats as any).mockResolvedValue({ open: 1, overdue: 0, critical: 0 });
       (storage.listRegisterEntries as any).mockResolvedValue({
-        items: [
-          { category: 'security', status: 'open', riskScore: 20, likelihood: 4, impact: 5 },
-        ],
+        items: [{ category: 'security', status: 'open', riskScore: 20, likelihood: 4, impact: 5 }],
         total: 1,
       });
       (storage.recordDepartmentScore as any).mockImplementation((data: any) => ({
@@ -175,12 +185,18 @@ describe('DepartmentRiskManager', () => {
       });
       // d1 succeeds
       (storage.getDepartment as any).mockResolvedValueOnce({
-        id: 'd1', name: 'A', riskAppetite: {},
+        id: 'd1',
+        name: 'A',
+        riskAppetite: {},
       });
       (storage.getRegisterStats as any).mockResolvedValueOnce({ open: 0, overdue: 0, critical: 0 });
       (storage.listRegisterEntries as any).mockResolvedValueOnce({ items: [], total: 0 });
       (storage.recordDepartmentScore as any).mockResolvedValueOnce({
-        id: 's1', departmentId: 'd1', overallScore: 0, scoredAt: '2026-03-02', createdAt: 1000,
+        id: 's1',
+        departmentId: 'd1',
+        overallScore: 0,
+        scoredAt: '2026-03-02',
+        createdAt: 1000,
       });
       // d2 fails
       (storage.getDepartment as any).mockResolvedValueOnce(null);
@@ -195,14 +211,24 @@ describe('DepartmentRiskManager', () => {
   describe('getDepartmentScorecard', () => {
     it('returns a scorecard with all fields', async () => {
       (storage.getDepartment as any).mockResolvedValue({
-        id: 'd1', name: 'Eng', riskAppetite: {},
+        id: 'd1',
+        name: 'Eng',
+        riskAppetite: {},
       });
       (storage.getRegisterStats as any).mockResolvedValue({
-        open: 3, overdue: 1, critical: 1, total: 5, avgRiskScore: 12,
+        open: 3,
+        overdue: 1,
+        critical: 1,
+        total: 5,
+        avgRiskScore: 12,
       });
-      (storage.listDepartmentScores as any).mockResolvedValue([{
-        id: 's1', overallScore: 42, appetiteBreaches: [],
-      }]);
+      (storage.listDepartmentScores as any).mockResolvedValue([
+        {
+          id: 's1',
+          overallScore: 42,
+          appetiteBreaches: [],
+        },
+      ]);
       (storage.listRegisterEntries as any).mockResolvedValue({
         items: [{ id: 'e1', title: 'Risk A', severity: 'high' }],
         total: 1,
@@ -225,11 +251,13 @@ describe('DepartmentRiskManager', () => {
 
   describe('getHeatmap', () => {
     it('generates heatmap cells from latest scores', async () => {
-      (storage.getLatestScores as any).mockResolvedValue([{
-        departmentId: 'd1',
-        domainScores: { security: 60, operational: 20 },
-        appetiteBreaches: [],
-      }]);
+      (storage.getLatestScores as any).mockResolvedValue([
+        {
+          departmentId: 'd1',
+          domainScores: { security: 60, operational: 20 },
+          appetiteBreaches: [],
+        },
+      ]);
       (storage.listDepartments as any).mockResolvedValue({
         items: [{ id: 'd1', name: 'Eng', riskAppetite: { security: 50, operational: 50 } }],
         total: 1,
@@ -247,12 +275,19 @@ describe('DepartmentRiskManager', () => {
   describe('getExecutiveSummary', () => {
     it('aggregates across all departments', async () => {
       (storage.listDepartments as any).mockResolvedValue({
-        items: [{ id: 'd1', name: 'A' }, { id: 'd2', name: 'B' }],
+        items: [
+          { id: 'd1', name: 'A' },
+          { id: 'd2', name: 'B' },
+        ],
         total: 2,
       });
       (storage.getLatestScores as any).mockResolvedValue([
         { departmentId: 'd1', overallScore: 40, appetiteBreaches: [] },
-        { departmentId: 'd2', overallScore: 60, appetiteBreaches: [{ domain: 'security', score: 60, threshold: 50 }] },
+        {
+          departmentId: 'd2',
+          overallScore: 60,
+          appetiteBreaches: [{ domain: 'security', score: 60, threshold: 50 }],
+        },
       ]);
       (storage.getRegisterStats as any)
         .mockResolvedValueOnce({ open: 3, overdue: 1, critical: 1 })
@@ -269,7 +304,10 @@ describe('DepartmentRiskManager', () => {
     });
 
     it('returns cached result within 30s TTL', async () => {
-      (storage.listDepartments as any).mockResolvedValue({ items: [{ id: 'd1', name: 'A' }], total: 1 });
+      (storage.listDepartments as any).mockResolvedValue({
+        items: [{ id: 'd1', name: 'A' }],
+        total: 1,
+      });
       (storage.getLatestScores as any).mockResolvedValue([]);
       (storage.getRegisterStats as any).mockResolvedValue({ open: 0, overdue: 0, critical: 0 });
 
@@ -282,7 +320,10 @@ describe('DepartmentRiskManager', () => {
     });
 
     it('refreshes cache after TTL expires', async () => {
-      (storage.listDepartments as any).mockResolvedValue({ items: [{ id: 'd1', name: 'A' }], total: 1 });
+      (storage.listDepartments as any).mockResolvedValue({
+        items: [{ id: 'd1', name: 'A' }],
+        total: 1,
+      });
       (storage.getLatestScores as any).mockResolvedValue([]);
       (storage.getRegisterStats as any).mockResolvedValue({ open: 0, overdue: 0, critical: 0 });
 

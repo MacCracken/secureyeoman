@@ -380,9 +380,7 @@ describe('IntegrationManager', () => {
       // Should not throw
       await expect(manager.stopIntegration('int-1')).resolves.not.toThrow();
 
-      expect(logger.error).toHaveBeenCalledWith(
-        expect.stringContaining('cleanup failed')
-      );
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('cleanup failed'));
       // Still removes from registry and marks disconnected
       expect(manager.isRunning('int-1')).toBe(false);
       expect(storage.updateStatus).toHaveBeenCalledWith('int-1', 'disconnected');
@@ -398,9 +396,7 @@ describe('IntegrationManager', () => {
 
       await manager.stopIntegration('int-1');
 
-      expect(logger.error).toHaveBeenCalledWith(
-        expect.stringContaining('string error')
-      );
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('string error'));
     });
   });
 
@@ -641,9 +637,7 @@ describe('IntegrationManager', () => {
       await manager.startAll();
 
       // First failed, second succeeded
-      expect(logger.error).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to auto-start')
-      );
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to auto-start'));
       expect(manager.isRunning('int-2')).toBe(true);
     });
   });
@@ -800,9 +794,11 @@ describe('IntegrationManager', () => {
       const storage = makeStorage();
       const logger = makeLogger();
       const oauthTokenService = {
-        listTokens: vi.fn().mockResolvedValue([
-          { id: 't1', provider: 'google', email: 'user@example.com', accessToken: 'secret' },
-        ]),
+        listTokens: vi
+          .fn()
+          .mockResolvedValue([
+            { id: 't1', provider: 'google', email: 'user@example.com', accessToken: 'secret' },
+          ]),
       };
       const deps = { logger: logger as any, onMessage: vi.fn(), oauthTokenService };
       const manager = new IntegrationManager(storage as any, deps as any);

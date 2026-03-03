@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BranchingManager } from './branching-manager.js';
-import type { ConversationStorage, Conversation, ConversationMessage } from './conversation-storage.js';
+import type {
+  ConversationStorage,
+  Conversation,
+  ConversationMessage,
+} from './conversation-storage.js';
 import type { BranchTreeNode, ReplayJob, ReplayResult } from '@secureyeoman/shared';
 import type { Pool } from 'pg';
 
@@ -94,17 +98,21 @@ function makeTreeNode(overrides?: Partial<BranchTreeNode>): BranchTreeNode {
 
 function makeMockStorage(overrides?: Record<string, unknown>): ConversationStorage {
   return {
-    branchFromMessage: vi.fn().mockResolvedValue(makeConversation({ id: 'branch-1', parentConversationId: 'conv-1' })),
+    branchFromMessage: vi
+      .fn()
+      .mockResolvedValue(makeConversation({ id: 'branch-1', parentConversationId: 'conv-1' })),
     getBranchTree: vi.fn().mockResolvedValue(makeTreeNode()),
     getChildBranches: vi.fn().mockResolvedValue([]),
     getRootConversation: vi.fn().mockResolvedValue(makeConversation()),
     getConversation: vi.fn().mockResolvedValue(makeConversation()),
-    getMessages: vi.fn().mockResolvedValue([
-      makeMessage({ id: 'msg-1', role: 'user', content: 'Hello' }),
-      makeMessage({ id: 'msg-2', role: 'assistant', content: 'Hi there' }),
-      makeMessage({ id: 'msg-3', role: 'user', content: 'How are you?' }),
-      makeMessage({ id: 'msg-4', role: 'assistant', content: 'I am well' }),
-    ]),
+    getMessages: vi
+      .fn()
+      .mockResolvedValue([
+        makeMessage({ id: 'msg-1', role: 'user', content: 'Hello' }),
+        makeMessage({ id: 'msg-2', role: 'assistant', content: 'Hi there' }),
+        makeMessage({ id: 'msg-3', role: 'user', content: 'How are you?' }),
+        makeMessage({ id: 'msg-4', role: 'assistant', content: 'I am well' }),
+      ]),
     createConversation: vi.fn().mockResolvedValue(makeConversation({ id: 'replay-conv' })),
     addMessage: vi.fn().mockResolvedValue(makeMessage()),
     createReplayJob: vi.fn().mockResolvedValue(makeReplayJob()),
@@ -165,15 +173,21 @@ describe('BranchingManager', () => {
 
     it('propagates storage errors', async () => {
       const { manager } = buildManager({
-        branchFromMessage: vi.fn().mockRejectedValue(new Error('Source conversation not found: conv-x')),
+        branchFromMessage: vi
+          .fn()
+          .mockRejectedValue(new Error('Source conversation not found: conv-x')),
       });
-      await expect(manager.branchFromMessage('conv-x', 0)).rejects.toThrow('Source conversation not found');
+      await expect(manager.branchFromMessage('conv-x', 0)).rejects.toThrow(
+        'Source conversation not found'
+      );
     });
 
     it('passes branch label', async () => {
       const { manager, storage } = buildManager();
       await manager.branchFromMessage('conv-1', 1, { branchLabel: 'experiment-a' });
-      expect(storage.branchFromMessage).toHaveBeenCalledWith('conv-1', 1, { branchLabel: 'experiment-a' });
+      expect(storage.branchFromMessage).toHaveBeenCalledWith('conv-1', 1, {
+        branchLabel: 'experiment-a',
+      });
     });
   });
 
@@ -251,9 +265,7 @@ describe('BranchingManager', () => {
 
     it('throws when no user messages exist', async () => {
       const { manager } = buildManager({
-        getMessages: vi.fn().mockResolvedValue([
-          makeMessage({ role: 'assistant', content: 'Hi' }),
-        ]),
+        getMessages: vi.fn().mockResolvedValue([makeMessage({ role: 'assistant', content: 'Hi' })]),
       });
       await expect(
         manager.replayConversation('conv-1', { model: 'gpt-4', provider: 'openai' })
@@ -354,9 +366,21 @@ describe('BranchingManager', () => {
 
     it('computes correct averages', async () => {
       const results = [
-        makeReplayResult({ sourceQualityScore: 0.6, replayQualityScore: 0.8, pairwiseWinner: 'replay' }),
-        makeReplayResult({ sourceQualityScore: 0.9, replayQualityScore: 0.7, pairwiseWinner: 'source' }),
-        makeReplayResult({ sourceQualityScore: 0.75, replayQualityScore: 0.76, pairwiseWinner: 'tie' }),
+        makeReplayResult({
+          sourceQualityScore: 0.6,
+          replayQualityScore: 0.8,
+          pairwiseWinner: 'replay',
+        }),
+        makeReplayResult({
+          sourceQualityScore: 0.9,
+          replayQualityScore: 0.7,
+          pairwiseWinner: 'source',
+        }),
+        makeReplayResult({
+          sourceQualityScore: 0.75,
+          replayQualityScore: 0.76,
+          pairwiseWinner: 'tie',
+        }),
       ];
       const { manager } = buildManager({
         getReplayResults: vi.fn().mockResolvedValue(results),
@@ -371,7 +395,11 @@ describe('BranchingManager', () => {
 
     it('handles null quality scores', async () => {
       const results = [
-        makeReplayResult({ sourceQualityScore: null, replayQualityScore: null, pairwiseWinner: null }),
+        makeReplayResult({
+          sourceQualityScore: null,
+          replayQualityScore: null,
+          pairwiseWinner: null,
+        }),
       ];
       const { manager } = buildManager({
         getReplayResults: vi.fn().mockResolvedValue(results),

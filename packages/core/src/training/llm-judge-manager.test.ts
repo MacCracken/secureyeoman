@@ -244,11 +244,7 @@ describe('LlmJudgeManager — Pointwise Eval', () => {
     const pool = makeMockPool();
     const multiSampleDataset = {
       ...SAMPLE_DATASET_ROW,
-      samples: [
-        { prompt: 'Q1' },
-        { prompt: 'Q2' },
-        { prompt: 'Q3' },
-      ],
+      samples: [{ prompt: 'Q1' }, { prompt: 'Q2' }, { prompt: 'Q3' }],
       sample_count: 3,
     };
     const scoreJson = JSON.stringify({
@@ -265,7 +261,17 @@ describe('LlmJudgeManager — Pointwise Eval', () => {
     // 3 insert calls
     for (let i = 0; i < 3; i++) {
       pool.query.mockResolvedValueOnce({
-        rows: [{ ...SAMPLE_SCORE_ROW, sample_index: i, groundedness: 3, coherence: 4, relevance: 3, fluency: 4, harmlessness: 5 }],
+        rows: [
+          {
+            ...SAMPLE_SCORE_ROW,
+            sample_index: i,
+            groundedness: 3,
+            coherence: 4,
+            relevance: 3,
+            fluency: 4,
+            harmlessness: 5,
+          },
+        ],
         rowCount: 1,
       });
     }
@@ -288,7 +294,11 @@ describe('LlmJudgeManager — Pointwise Eval', () => {
       sample_count: 10,
     };
     const scoreJson = JSON.stringify({
-      groundedness: 4, coherence: 4, relevance: 4, fluency: 4, harmlessness: 4,
+      groundedness: 4,
+      coherence: 4,
+      relevance: 4,
+      fluency: 4,
+      harmlessness: 4,
     });
     const aiClient = makeMockAiClient(scoreJson);
     const { manager } = makeManager({ pool: pool as any, aiClient: aiClient as any });
@@ -315,7 +325,11 @@ describe('LlmJudgeManager — Pointwise Eval', () => {
   it('uses custom judge prompt when provided', async () => {
     const pool = makeMockPool();
     const scoreJson = JSON.stringify({
-      groundedness: 4, coherence: 4, relevance: 4, fluency: 4, harmlessness: 4,
+      groundedness: 4,
+      coherence: 4,
+      relevance: 4,
+      fluency: 4,
+      harmlessness: 4,
     });
     const aiClient = makeMockAiClient(scoreJson);
     const { manager } = makeManager({ pool: pool as any, aiClient: aiClient as any });
@@ -337,7 +351,11 @@ describe('LlmJudgeManager — Pointwise Eval', () => {
   it('includes gold reference in judge prompt when available', async () => {
     const pool = makeMockPool();
     const scoreJson = JSON.stringify({
-      groundedness: 4, coherence: 4, relevance: 4, fluency: 4, harmlessness: 4,
+      groundedness: 4,
+      coherence: 4,
+      relevance: 4,
+      fluency: 4,
+      harmlessness: 4,
     });
     const aiClient = makeMockAiClient(scoreJson);
     const { manager } = makeManager({ pool: pool as any, aiClient: aiClient as any });
@@ -358,7 +376,11 @@ describe('LlmJudgeManager — Pointwise Eval', () => {
   it('passes finetuneJobId to score records', async () => {
     const pool = makeMockPool();
     const scoreJson = JSON.stringify({
-      groundedness: 4, coherence: 4, relevance: 4, fluency: 4, harmlessness: 4,
+      groundedness: 4,
+      coherence: 4,
+      relevance: 4,
+      fluency: 4,
+      harmlessness: 4,
     });
     const aiClient = makeMockAiClient(scoreJson);
     const { manager } = makeManager({ pool: pool as any, aiClient: aiClient as any });
@@ -513,10 +535,7 @@ describe('LlmJudgeManager — Pairwise Comparison', () => {
     });
 
     expect(summary.sampleCount).toBe(0);
-    expect(logger.warn).toHaveBeenCalledWith(
-      'Failed to parse pairwise result',
-      expect.any(Object)
-    );
+    expect(logger.warn).toHaveBeenCalledWith('Failed to parse pairwise result', expect.any(Object));
   });
 
   it('calls both model functions per sample', async () => {
@@ -600,11 +619,13 @@ describe('LlmJudgeManager — Auto-Eval Gate', () => {
 
     pool.query.mockResolvedValueOnce({ rows: [SAMPLE_DATASET_ROW], rowCount: 1 });
     pool.query.mockResolvedValueOnce({
-      rows: [{
-        ...SAMPLE_SCORE_ROW,
-        groundedness: scores.groundedness,
-        coherence: scores.coherence,
-      }],
+      rows: [
+        {
+          ...SAMPLE_SCORE_ROW,
+          groundedness: scores.groundedness,
+          coherence: scores.coherence,
+        },
+      ],
       rowCount: 1,
     });
 
@@ -776,18 +797,20 @@ describe('LlmJudgeManager — Query Helpers', () => {
   it('listEvalRuns aggregates scores by run', async () => {
     const { manager, pool } = makeManager();
     pool.query.mockResolvedValueOnce({
-      rows: [{
-        eval_run_id: 'r-1',
-        dataset_id: 'd-1',
-        model_name: 'llama3',
-        sample_count: 5,
-        avg_groundedness: 4.2,
-        avg_coherence: 3.8,
-        avg_relevance: 4.0,
-        avg_fluency: 4.5,
-        avg_harmlessness: 4.8,
-        scored_at: new Date(),
-      }],
+      rows: [
+        {
+          eval_run_id: 'r-1',
+          dataset_id: 'd-1',
+          model_name: 'llama3',
+          sample_count: 5,
+          avg_groundedness: 4.2,
+          avg_coherence: 3.8,
+          avg_relevance: 4.0,
+          avg_fluency: 4.5,
+          avg_harmlessness: 4.8,
+          scored_at: new Date(),
+        },
+      ],
       rowCount: 1,
     });
 
@@ -816,17 +839,19 @@ describe('LlmJudgeManager — Query Helpers', () => {
   it('listComparisons aggregates pairwise results', async () => {
     const { manager, pool } = makeManager();
     pool.query.mockResolvedValueOnce({
-      rows: [{
-        comparison_id: 'c-1',
-        dataset_id: 'd-1',
-        model_a: 'llama3',
-        model_b: 'mistral',
-        sample_count: 10,
-        wins_a: 6,
-        wins_b: 3,
-        ties: 1,
-        scored_at: new Date(),
-      }],
+      rows: [
+        {
+          comparison_id: 'c-1',
+          dataset_id: 'd-1',
+          model_a: 'llama3',
+          model_b: 'mistral',
+          sample_count: 10,
+          wins_a: 6,
+          wins_b: 3,
+          ties: 1,
+          scored_at: new Date(),
+        },
+      ],
       rowCount: 1,
     });
 

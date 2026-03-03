@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { aliasCommand, loadAliases, saveAliases, resolveAlias, getAliasesPath, type AliasMap } from './alias.js';
+import {
+  aliasCommand,
+  loadAliases,
+  saveAliases,
+  resolveAlias,
+  getAliasesPath,
+  type AliasMap,
+} from './alias.js';
 import type { CommandContext } from '../router.js';
 
 // ── Mock fs ─────────────────────────────────────────────────────────

@@ -104,7 +104,9 @@ describe('createSecretsFilter', () => {
     }
     // Should not throw — capped internally
     const filter = createSecretsFilter();
-    const result = filter('secret_value_0_abcdef and secret_value_199_abcdef and secret_value_249_abcdef');
+    const result = filter(
+      'secret_value_0_abcdef and secret_value_199_abcdef and secret_value_249_abcdef'
+    );
     // First 200 should be redacted (after sorting by length, first 200 by index)
     expect(result).toContain('[REDACTED]');
   });

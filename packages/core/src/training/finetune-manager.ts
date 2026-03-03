@@ -275,11 +275,15 @@ export class FinetuneManager {
           );
           this.logger.info('Finetune job completed', { jobId });
 
-          void emitJobCompletion(this.getAlertManager?.() ?? null, {
-            jobType: 'finetune',
-            status: 'completed',
-            jobId,
-          }, this.logger);
+          emitJobCompletion(
+            this.getAlertManager?.() ?? null,
+            {
+              jobType: 'finetune',
+              status: 'completed',
+              jobId,
+            },
+            this.logger
+          );
 
           if (this.onJobComplete) {
             const updatedJob = await this.getJob(jobId);
@@ -301,11 +305,15 @@ export class FinetuneManager {
           );
           this.logger.error('Finetune job failed', { jobId, exitCode });
 
-          void emitJobCompletion(this.getAlertManager?.() ?? null, {
-            jobType: 'finetune',
-            status: 'failed',
-            jobId,
-          }, this.logger);
+          emitJobCompletion(
+            this.getAlertManager?.() ?? null,
+            {
+              jobType: 'finetune',
+              status: 'failed',
+              jobId,
+            },
+            this.logger
+          );
         }
         resolve();
       });

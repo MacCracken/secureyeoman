@@ -49,7 +49,13 @@ afterEach(() => {
 
 const STRATEGY_LIST = {
   items: [
-    { id: 's-1', name: 'Chain of Thought', slug: 'chain-of-thought', category: 'chain_of_thought', isBuiltin: true },
+    {
+      id: 's-1',
+      name: 'Chain of Thought',
+      slug: 'chain-of-thought',
+      category: 'chain_of_thought',
+      isBuiltin: true,
+    },
     { id: 's-2', name: 'Reflexion', slug: 'reflexion', category: 'reflexion', isBuiltin: true },
     { id: 's-3', name: 'My Custom', slug: 'my-custom', category: 'standard', isBuiltin: false },
   ],
@@ -151,10 +157,14 @@ describe('strategy create', () => {
     const code = await strategyCommand.run({
       argv: [
         'create',
-        '--name', 'New Strat',
-        '--slug', 'new-strat',
-        '--category', 'reflexion',
-        '--prompt-prefix', 'Reflect on this.',
+        '--name',
+        'New Strat',
+        '--slug',
+        'new-strat',
+        '--category',
+        'reflexion',
+        '--prompt-prefix',
+        'Reflect on this.',
       ],
       stdout,
       stderr,

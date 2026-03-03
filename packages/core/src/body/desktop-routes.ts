@@ -182,12 +182,31 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
           }
         }
 
-        auditLog(auditLogger, 'capture.completed', 'capture.screen', 'screenshot', userId, roleId, true, sessionId);
+        auditLog(
+          auditLogger,
+          'capture.completed',
+          'capture.screen',
+          'screenshot',
+          userId,
+          roleId,
+          true,
+          sessionId
+        );
         bridgeRecord(bridge, sessionId, 'screenshot', target ?? 'display', targetId ?? 'primary');
 
         return { ...result, description };
       } catch (err) {
-        auditLog(auditLogger, 'capture.failed', 'capture.screen', 'screenshot', userId, roleId, false, sessionId, sanitizeError(err));
+        auditLog(
+          auditLogger,
+          'capture.failed',
+          'capture.screen',
+          'screenshot',
+          userId,
+          roleId,
+          false,
+          sessionId,
+          sanitizeError(err)
+        );
         return reply.code(500).send({ error: sanitizeError(err) });
       }
     }
@@ -267,12 +286,37 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
           }
         }
 
-        auditLog(auditLogger, 'capture.completed', 'capture.camera', 'camera_capture', userId, roleId, true, sessionId);
-        bridgeRecord(bridge, sessionId, 'camera_capture', 'camera', request.body?.deviceId ?? 'default');
+        auditLog(
+          auditLogger,
+          'capture.completed',
+          'capture.camera',
+          'camera_capture',
+          userId,
+          roleId,
+          true,
+          sessionId
+        );
+        bridgeRecord(
+          bridge,
+          sessionId,
+          'camera_capture',
+          'camera',
+          request.body?.deviceId ?? 'default'
+        );
 
         return { ...frame, description };
       } catch (err) {
-        auditLog(auditLogger, 'capture.failed', 'capture.camera', 'camera_capture', userId, roleId, false, sessionId, sanitizeError(err));
+        auditLog(
+          auditLogger,
+          'capture.failed',
+          'capture.camera',
+          'camera_capture',
+          userId,
+          roleId,
+          false,
+          sessionId,
+          sanitizeError(err)
+        );
         return reply.code(500).send({ error: sanitizeError(err) });
       }
     }
@@ -296,8 +340,23 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
       try {
         const { moveMouse } = await import('./actuator/input.js');
         await moveMouse(request.body.x, request.body.y);
-        auditLog(auditLogger, 'capture.completed', 'capture.screen', 'mouse_move', userId, roleId, true, 'actuator');
-        bridgeRecord(bridge, 'actuator', 'mouse_move', `${request.body.x},${request.body.y}`, 'move');
+        auditLog(
+          auditLogger,
+          'capture.completed',
+          'capture.screen',
+          'mouse_move',
+          userId,
+          roleId,
+          true,
+          'actuator'
+        );
+        bridgeRecord(
+          bridge,
+          'actuator',
+          'mouse_move',
+          `${request.body.x},${request.body.y}`,
+          'move'
+        );
         return { ok: true };
       } catch (err) {
         return reply.code(500).send({ error: sanitizeError(err) });
@@ -334,8 +393,23 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
         const { clickMouse } = await import('./actuator/input.js');
         const { x, y, button = 'left', double: dbl = false } = request.body ?? {};
         await clickMouse(x, y, button, dbl);
-        auditLog(auditLogger, 'capture.completed', 'capture.screen', 'mouse_click', userId, roleId, true, 'actuator');
-        bridgeRecord(bridge, 'actuator', 'mouse_click', `${x ?? 0},${y ?? 0}`, `${button}${dbl ? '_double' : ''}`);
+        auditLog(
+          auditLogger,
+          'capture.completed',
+          'capture.screen',
+          'mouse_click',
+          userId,
+          roleId,
+          true,
+          'actuator'
+        );
+        bridgeRecord(
+          bridge,
+          'actuator',
+          'mouse_click',
+          `${x ?? 0},${y ?? 0}`,
+          `${button}${dbl ? '_double' : ''}`
+        );
         return { ok: true };
       } catch (err) {
         return reply.code(500).send({ error: sanitizeError(err) });
@@ -361,8 +435,23 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
       try {
         const { scrollMouse } = await import('./actuator/input.js');
         await scrollMouse(request.body.dx, request.body.dy);
-        auditLog(auditLogger, 'capture.completed', 'capture.screen', 'mouse_scroll', userId, roleId, true, 'actuator');
-        bridgeRecord(bridge, 'actuator', 'mouse_scroll', `${request.body.dx},${request.body.dy}`, 'scroll');
+        auditLog(
+          auditLogger,
+          'capture.completed',
+          'capture.screen',
+          'mouse_scroll',
+          userId,
+          roleId,
+          true,
+          'actuator'
+        );
+        bridgeRecord(
+          bridge,
+          'actuator',
+          'mouse_scroll',
+          `${request.body.dx},${request.body.dy}`,
+          'scroll'
+        );
         return { ok: true };
       } catch (err) {
         return reply.code(500).send({ error: sanitizeError(err) });
@@ -391,8 +480,23 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
       try {
         const { typeText } = await import('./actuator/input.js');
         await typeText(request.body.text, request.body.delayMs ?? 0);
-        auditLog(auditLogger, 'capture.completed', 'capture.screen', 'keyboard_type', userId, roleId, true, 'actuator');
-        bridgeRecord(bridge, 'actuator', 'keyboard_type', 'keyboard', `${request.body.text.length} chars`);
+        auditLog(
+          auditLogger,
+          'capture.completed',
+          'capture.screen',
+          'keyboard_type',
+          userId,
+          roleId,
+          true,
+          'actuator'
+        );
+        bridgeRecord(
+          bridge,
+          'actuator',
+          'keyboard_type',
+          'keyboard',
+          `${request.body.text.length} chars`
+        );
         return { ok: true, charactersTyped: request.body.text.length };
       } catch (err) {
         return reply.code(500).send({ error: sanitizeError(err) });
@@ -425,8 +529,23 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
         } else {
           await pressKey(request.body.combo);
         }
-        auditLog(auditLogger, 'capture.completed', 'capture.screen', 'keyboard_key', userId, roleId, true, 'actuator');
-        bridgeRecord(bridge, 'actuator', 'keyboard_key', request.body.combo, request.body.release ? 'release' : 'press');
+        auditLog(
+          auditLogger,
+          'capture.completed',
+          'capture.screen',
+          'keyboard_key',
+          userId,
+          roleId,
+          true,
+          'actuator'
+        );
+        bridgeRecord(
+          bridge,
+          'actuator',
+          'keyboard_key',
+          request.body.combo,
+          request.body.release ? 'release' : 'press'
+        );
         return { ok: true, combo: request.body.combo };
       } catch (err) {
         return reply.code(500).send({ error: sanitizeError(err) });
@@ -452,7 +571,16 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
       try {
         const { focusWindow } = await import('./actuator/input.js');
         await focusWindow(request.body.windowId);
-        auditLog(auditLogger, 'capture.completed', 'capture.screen', 'window_focus', userId, roleId, true, 'actuator');
+        auditLog(
+          auditLogger,
+          'capture.completed',
+          'capture.screen',
+          'window_focus',
+          userId,
+          roleId,
+          true,
+          'actuator'
+        );
         bridgeRecord(bridge, 'actuator', 'window_focus', request.body.windowId, 'focus');
         return { ok: true };
       } catch (err) {
@@ -485,7 +613,16 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
         const { resizeWindow } = await import('./actuator/input.js');
         const { windowId, x, y, width, height } = request.body;
         await resizeWindow(windowId, { x, y, width, height });
-        auditLog(auditLogger, 'capture.completed', 'capture.screen', 'window_resize', userId, roleId, true, 'actuator');
+        auditLog(
+          auditLogger,
+          'capture.completed',
+          'capture.screen',
+          'window_resize',
+          userId,
+          roleId,
+          true,
+          'actuator'
+        );
         bridgeRecord(bridge, 'actuator', 'window_resize', windowId, `${width}x${height}+${x}+${y}`);
         return { ok: true };
       } catch (err) {
@@ -510,7 +647,16 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
     try {
       const { readClipboard } = await import('./actuator/clipboard.js');
       const text = await readClipboard();
-      auditLog(auditLogger, 'capture.accessed', 'capture.clipboard', 'clipboard_read', userId, roleId, true, 'clipboard');
+      auditLog(
+        auditLogger,
+        'capture.accessed',
+        'capture.clipboard',
+        'clipboard_read',
+        userId,
+        roleId,
+        true,
+        'clipboard'
+      );
       bridgeRecord(bridge, 'clipboard', 'clipboard_read', 'clipboard', 'read');
       return { text };
     } catch (err) {
@@ -541,7 +687,16 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
       try {
         const { writeClipboard } = await import('./actuator/clipboard.js');
         await writeClipboard(request.body.text);
-        auditLog(auditLogger, 'capture.completed', 'capture.clipboard', 'clipboard_write', userId, roleId, true, 'clipboard');
+        auditLog(
+          auditLogger,
+          'capture.completed',
+          'capture.clipboard',
+          'clipboard_write',
+          userId,
+          roleId,
+          true,
+          'clipboard'
+        );
         bridgeRecord(bridge, 'clipboard', 'clipboard_write', 'clipboard', 'write');
         return { ok: true };
       } catch (err) {
@@ -573,11 +728,36 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
         const result = await executeSequence(
           request.body.steps as Parameters<typeof executeSequence>[0]
         );
-        auditLog(auditLogger, 'capture.completed', 'capture.screen', 'input_sequence', userId, roleId, true, 'sequence');
-        bridgeRecord(bridge, 'sequence', 'input_sequence', 'multi', `${request.body.steps.length} steps`);
+        auditLog(
+          auditLogger,
+          'capture.completed',
+          'capture.screen',
+          'input_sequence',
+          userId,
+          roleId,
+          true,
+          'sequence'
+        );
+        bridgeRecord(
+          bridge,
+          'sequence',
+          'input_sequence',
+          'multi',
+          `${request.body.steps.length} steps`
+        );
         return result;
       } catch (err) {
-        auditLog(auditLogger, 'capture.failed', 'capture.screen', 'input_sequence', userId, roleId, false, 'sequence', sanitizeError(err));
+        auditLog(
+          auditLogger,
+          'capture.failed',
+          'capture.screen',
+          'input_sequence',
+          userId,
+          roleId,
+          false,
+          'sequence',
+          sanitizeError(err)
+        );
         return reply.code(500).send({ error: sanitizeError(err) });
       }
     }
@@ -632,10 +812,7 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
 
   app.post(
     '/api/v1/desktop/recording/stop',
-    async (
-      request: FastifyRequest<{ Body: { sessionId: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: { sessionId: string } }>, reply: FastifyReply) => {
       if (!getAllowDesktopControl()) {
         return sendError(reply, 403, 'Desktop Control is not enabled');
       }

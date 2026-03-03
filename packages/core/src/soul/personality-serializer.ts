@@ -43,7 +43,7 @@ interface PersonalityLike {
   systemPrompt?: string;
   traits?: Record<string, string>;
   defaultModel?: { provider: string; model: string } | null;
-  modelFallbacks?: Array<{ provider: string; model: string }>;
+  modelFallbacks?: { provider: string; model: string }[];
   sex?: string;
   voice?: string;
   preferredLanguage?: string;
@@ -143,7 +143,7 @@ export class PersonalityMarkdownSerializer {
     const warnings: string[] = [];
 
     // ── Split frontmatter from body ─────────────────────────
-    const fmMatch = md.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
+    const fmMatch = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/.exec(md);
     if (!fmMatch) {
       throw new Error('Invalid personality markdown: missing YAML frontmatter (--- delimiters)');
     }
@@ -186,7 +186,7 @@ export class PersonalityMarkdownSerializer {
     } else if (typeof fm.defaultModel === 'string') {
       const dmParsed = parseInlineObject(fm.defaultModel);
       if (dmParsed?.provider && dmParsed?.model) {
-        defaultModel = { provider: String(dmParsed.provider), model: String(dmParsed.model) };
+        defaultModel = { provider: dmParsed.provider, model: dmParsed.model };
       }
     }
 
@@ -198,7 +198,7 @@ export class PersonalityMarkdownSerializer {
 
     // Traits → Record<string, string>
     const traits: Record<string, string> = {};
-    const traitsSection = sections['traits'] ?? '';
+    const traitsSection = sections.traits ?? '';
     const traitLineRegex = /^-\s+\*\*([^*]+)\*\*:\s*(.+)$/gm;
     let traitMatch: RegExpExecArray | null;
     while ((traitMatch = traitLineRegex.exec(traitsSection)) !== null) {
@@ -217,18 +217,20 @@ export class PersonalityMarkdownSerializer {
     let injectDateTime = false;
     let empathyResonance = false;
 
-    const configSection = sections['configuration'] ?? '';
-    const yamlBlockMatch = configSection.match(/```(?:yaml)?\s*\n([\s\S]*?)```/);
+    const configSection = sections.configuration ?? '';
+    const yamlBlockMatch = /```(?:yaml)?\s*\n([\s\S]*?)```/.exec(configSection);
     if (yamlBlockMatch) {
       const configYaml = parseSimpleYaml(yamlBlockMatch[1]!);
       if (configYaml.includeArchetypes !== undefined) {
-        includeArchetypes = configYaml.includeArchetypes === true || configYaml.includeArchetypes === 'true';
+        includeArchetypes =
+          configYaml.includeArchetypes === true || configYaml.includeArchetypes === 'true';
       }
       if (configYaml.injectDateTime !== undefined) {
         injectDateTime = configYaml.injectDateTime === true || configYaml.injectDateTime === 'true';
       }
       if (configYaml.empathyResonance !== undefined) {
-        empathyResonance = configYaml.empathyResonance === true || configYaml.empathyResonance === 'true';
+        empathyResonance =
+          configYaml.empathyResonance === true || configYaml.empathyResonance === 'true';
       }
       // Apply remaining config as body overrides
       const bodyOverrides: Record<string, unknown> = {};
@@ -246,7 +248,7 @@ export class PersonalityMarkdownSerializer {
     }
 
     // Model Fallbacks
-    const modelFallbacks: Array<{ provider: string; model: string }> = [];
+    const modelFallbacks: { provider: string; model: string }[] = [];
     const fallbackSection = sections['model fallbacks'] ?? '';
     const fbLineRegex = /^-\s+(.+?)\/(.+)$/gm;
     let fbMatch: RegExpExecArray | null;
@@ -318,7 +320,7 @@ function parseSections(body: string): Record<string, string> {
   let currentLines: string[] = [];
 
   for (const line of lines) {
-    const headingMatch = line.match(/^#\s+(.+)$/);
+    const headingMatch = /^#\s+(.+)$/.exec(line);
     if (headingMatch) {
       if (currentHeading !== null) {
         sections[currentHeading] = currentLines.join('\n');
@@ -420,10 +422,13 @@ function parseSimpleYaml(raw: string): Record<string, unknown> {
     if (colonIdx === -1) continue;
 
     const key = trimmed.slice(0, colonIdx).trim();
-    let value: string = trimmed.slice(colonIdx + 1).trim();
+    const value: string = trimmed.slice(colonIdx + 1).trim();
 
     // Remove surrounding quotes and unescape
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
       result[key] = value.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\');
       continue;
     }
@@ -449,9 +454,18 @@ function parseSimpleYaml(raw: string): Record<string, unknown> {
     }
 
     // Booleans
-    if (value === 'true') { result[key] = true; continue; }
-    if (value === 'false') { result[key] = false; continue; }
-    if (value === 'null') { result[key] = null; continue; }
+    if (value === 'true') {
+      result[key] = true;
+      continue;
+    }
+    if (value === 'false') {
+      result[key] = false;
+      continue;
+    }
+    if (value === 'null') {
+      result[key] = null;
+      continue;
+    }
 
     // Numbers
     if (/^-?\d+(\.\d+)?$/.test(value)) {

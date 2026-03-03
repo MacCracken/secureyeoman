@@ -377,9 +377,15 @@ describe('GatewayServer', () => {
               allowAdvancedEditor: false,
               abuseDetection: { enabled: false },
               contentGuardrails: {
-                enabled: false, piiMode: 'disabled', toxicityEnabled: false,
-                toxicityMode: 'warn', toxicityThreshold: 0.7, blockList: [],
-                blockedTopics: [], groundingEnabled: false, groundingMode: 'flag',
+                enabled: false,
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                toxicityMode: 'warn',
+                toxicityThreshold: 0.7,
+                blockList: [],
+                blockedTopics: [],
+                groundingEnabled: false,
+                groundingMode: 'flag',
               },
               inputValidation: {},
             },
@@ -746,9 +752,15 @@ describe('GatewayServer', () => {
               allowAdvancedEditor: false,
               abuseDetection: { enabled: false },
               contentGuardrails: {
-                enabled: false, piiMode: 'disabled', toxicityEnabled: false,
-                toxicityMode: 'warn', toxicityThreshold: 0.7, blockList: [],
-                blockedTopics: [], groundingEnabled: false, groundingMode: 'flag',
+                enabled: false,
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                toxicityMode: 'warn',
+                toxicityThreshold: 0.7,
+                blockList: [],
+                blockedTopics: [],
+                groundingEnabled: false,
+                groundingMode: 'flag',
               },
               inputValidation: {},
             },
@@ -866,9 +878,15 @@ describe('GatewayServer', () => {
               allowAdvancedEditor: false,
               abuseDetection: { enabled: false },
               contentGuardrails: {
-                enabled: false, piiMode: 'disabled', toxicityEnabled: false,
-                toxicityMode: 'warn', toxicityThreshold: 0.7, blockList: [],
-                blockedTopics: [], groundingEnabled: false, groundingMode: 'flag',
+                enabled: false,
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                toxicityMode: 'warn',
+                toxicityThreshold: 0.7,
+                blockList: [],
+                blockedTopics: [],
+                groundingEnabled: false,
+                groundingMode: 'flag',
               },
               inputValidation: {},
             },
@@ -940,9 +958,15 @@ describe('GatewayServer', () => {
               allowAnomalyDetection: true,
               abuseDetection: { enabled: false },
               contentGuardrails: {
-                enabled: false, piiMode: 'disabled', toxicityEnabled: false,
-                toxicityMode: 'warn', toxicityThreshold: 0.7, blockList: [],
-                blockedTopics: [], groundingEnabled: false, groundingMode: 'flag',
+                enabled: false,
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                toxicityMode: 'warn',
+                toxicityThreshold: 0.7,
+                blockList: [],
+                blockedTopics: [],
+                groundingEnabled: false,
+                groundingMode: 'flag',
               },
               inputValidation: {},
             },
@@ -1149,7 +1173,14 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
               allowSubAgents: false,
               allowA2A: false,
@@ -1339,7 +1370,14 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
               allowSubAgents: false,
               allowA2A: false,
@@ -1423,7 +1461,14 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
               allowSubAgents: false,
               allowA2A: false,
@@ -1485,7 +1530,14 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
               allowSubAgents: false,
               allowA2A: false,
@@ -1546,7 +1598,14 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
               allowSubAgents: false,
               allowA2A: false,
@@ -1607,7 +1666,14 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
               allowSubAgents: false,
               allowA2A: false,
@@ -1691,7 +1757,14 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
               allowSubAgents: false,
               allowA2A: false,
@@ -1764,7 +1837,14 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
               allowSubAgents: false,
               allowA2A: false,
@@ -1807,9 +1887,7 @@ describe('GatewayServer', () => {
         config: createMinimalConfig({ port: sevPort }) as any,
         secureYeoman: createMockSecureYeoman({
           queryAuditLog: ({ level }: { level?: string[] }) => {
-            const filtered = level
-              ? entries.filter((e) => level.includes(e.level))
-              : entries;
+            const filtered = level ? entries.filter((e) => level.includes(e.level)) : entries;
             return Promise.resolve({
               entries: filtered,
               total: filtered.length,
@@ -1822,7 +1900,14 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
               allowSubAgents: false,
               allowA2A: false,
@@ -1858,14 +1943,20 @@ describe('GatewayServer', () => {
       const srv = new GatewayServer({
         config: createMinimalConfig({ port: mlPort7d }) as any,
         secureYeoman: createMockSecureYeoman({
-          queryAuditLog: () =>
-            Promise.resolve({ entries: [], total: 0, limit: 10000, offset: 0 }),
+          queryAuditLog: () => Promise.resolve({ entries: [], total: 0, limit: 10000, offset: 0 }),
           getConfig: () => ({
             core: { environment: 'development' },
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
               allowSubAgents: false,
               allowA2A: false,
@@ -1957,7 +2048,9 @@ describe('GatewayServer', () => {
         config: createMinimalConfig({ port }) as any,
         secureYeoman: createMockSecureYeoman({
           getState: () => ({ healthy: false, startedAt: Date.now() }),
-          getAuditChain: () => { throw new Error('unavailable'); },
+          getAuditChain: () => {
+            throw new Error('unavailable');
+          },
         }) as any,
       });
       await srv.start();
@@ -1981,7 +2074,9 @@ describe('GatewayServer', () => {
       const srv = new GatewayServer({
         config: createMinimalConfig({ port }) as any,
         secureYeoman: createMockSecureYeoman({
-          getAuditChain: () => { throw new Error('not available'); },
+          getAuditChain: () => {
+            throw new Error('not available');
+          },
           getIntentManager: () => null,
         }) as any,
       });
@@ -2003,7 +2098,9 @@ describe('GatewayServer', () => {
       const srv = new GatewayServer({
         config: createMinimalConfig({ port }) as any,
         secureYeoman: createMockSecureYeoman({
-          getIntentManager: () => { throw new Error('not available'); },
+          getIntentManager: () => {
+            throw new Error('not available');
+          },
         }) as any,
       });
       await srv.start();
@@ -2025,25 +2122,38 @@ describe('GatewayServer', () => {
       const srv = new GatewayServer({
         config: createMinimalConfig({ port }) as any,
         secureYeoman: createMockSecureYeoman({
-          queryAuditLog: () =>
-            Promise.resolve({ entries: [], total: 0, limit: 10000, offset: 0 }),
+          queryAuditLog: () => Promise.resolve({ entries: [], total: 0, limit: 10000, offset: 0 }),
           getConfig: () => ({
             core: { environment: 'development' },
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: false, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
             },
           }),
         }) as any,
       });
       await srv.start();
       try {
-        const res = await fetch(`http://127.0.0.1:${port}/api/v1/security/ml/summary?period=invalid`);
+        const res = await fetch(
+          `http://127.0.0.1:${port}/api/v1/security/ml/summary?period=invalid`
+        );
         const json = (await res.json()) as Record<string, unknown>;
         expect(json.period).toBe('7d');
       } finally {
@@ -2058,17 +2168,31 @@ describe('GatewayServer', () => {
       const srv = new GatewayServer({
         config: createMinimalConfig({ port }) as any,
         secureYeoman: createMockSecureYeoman({
-          queryAuditLog: () => { throw new Error('audit fail'); },
+          queryAuditLog: () => {
+            throw new Error('audit fail');
+          },
           getConfig: () => ({
             core: { environment: 'development' },
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: true, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: true,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
             },
           }),
         }) as any,
@@ -2084,7 +2208,6 @@ describe('GatewayServer', () => {
         await srv.stop();
       }
     });
-
   });
 
   describe('HSTS header — TLS enabled branch', () => {
@@ -2120,17 +2243,31 @@ describe('GatewayServer', () => {
           exportAuditLog: async () => [],
           getSecretsManager: () => null,
           getTlsManager: () => null,
-          resetUsageStat: async () => { throw new Error('reset failed'); },
+          resetUsageStat: async () => {
+            throw new Error('reset failed');
+          },
           getConfig: () => ({
             core: { environment: 'development' },
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: false, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
               abuseDetection: { enabled: false },
               inputValidation: {},
             },
@@ -2159,7 +2296,9 @@ describe('GatewayServer', () => {
         secureYeoman: createMockSecureYeoman({
           getAiUsageStats: () => null,
           getUsageStorage: () => null,
-          updateSecurityPolicy: () => { throw new Error('policy fail'); },
+          updateSecurityPolicy: () => {
+            throw new Error('policy fail');
+          },
           enforceAuditRetention: () => 0,
           exportAuditLog: async () => [],
           getSecretsManager: () => null,
@@ -2170,11 +2309,23 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: false, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
               abuseDetection: { enabled: false },
               inputValidation: {},
             },
@@ -2215,11 +2366,23 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: true, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: true,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
             },
           }),
         }) as any,
@@ -2255,11 +2418,23 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: true, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: true,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
             },
           }),
         }) as any,
@@ -2294,18 +2469,32 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: false, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
             },
           }),
         }) as any,
       });
       await srv.start();
       try {
-        const res = await fetch(`http://127.0.0.1:${port}/api/v1/security/events?type=auth_failure,rate_limit`);
+        const res = await fetch(
+          `http://127.0.0.1:${port}/api/v1/security/events?type=auth_failure,rate_limit`
+        );
         const json = (await res.json()) as { events: unknown[]; total: number };
         expect(json.events.length).toBe(2);
       } finally {
@@ -2339,11 +2528,23 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: false, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
               abuseDetection: { enabled: false },
               inputValidation: {},
             },
@@ -2369,7 +2570,9 @@ describe('GatewayServer', () => {
           getAiUsageStats: () => null,
           getUsageStorage: () => null,
           updateSecurityPolicy: () => {},
-          enforceAuditRetention: () => { throw new Error('retention fail'); },
+          enforceAuditRetention: () => {
+            throw new Error('retention fail');
+          },
           exportAuditLog: async () => [],
           getSecretsManager: () => null,
           getTlsManager: () => null,
@@ -2379,11 +2582,23 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: false, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
               abuseDetection: { enabled: false },
               inputValidation: {},
             },
@@ -2412,7 +2627,9 @@ describe('GatewayServer', () => {
       const srv = new GatewayServer({
         config: createMinimalConfig({ port }) as any,
         secureYeoman: createMockSecureYeoman({
-          getMetrics: () => { throw new Error('metrics exploded'); },
+          getMetrics: () => {
+            throw new Error('metrics exploded');
+          },
         }) as any,
       });
       await srv.start();
@@ -2431,7 +2648,9 @@ describe('GatewayServer', () => {
       const srv = new GatewayServer({
         config: createMinimalConfig({ port }) as any,
         secureYeoman: createMockSecureYeoman({
-          getMetrics: () => { throw new Error('metrics exploded'); },
+          getMetrics: () => {
+            throw new Error('metrics exploded');
+          },
         }) as any,
       });
       await srv.start();
@@ -2507,7 +2726,7 @@ describe('GatewayServer', () => {
         const json = (await res.json()) as Record<string, unknown>;
         expect(json.status).toBe('ok');
         expect(json).toHaveProperty('uptime');
-        expect((json.uptime as number)).toBeGreaterThan(0);
+        expect(json.uptime as number).toBeGreaterThan(0);
         const checks = json.checks as Record<string, boolean>;
         expect(checks.application).toBe(true);
         expect(checks.auditChain).toBe(true);
@@ -2526,7 +2745,9 @@ describe('GatewayServer', () => {
         config: createMinimalConfig({ port }) as any,
         secureYeoman: createMockSecureYeoman({
           getState: () => ({ healthy: false, startedAt: Date.now() }),
-          getAuditChain: () => { throw new Error('gone'); },
+          getAuditChain: () => {
+            throw new Error('gone');
+          },
         }) as any,
       });
       await srv.start();
@@ -2562,11 +2783,23 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: false, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
               abuseDetection: { enabled: false },
               inputValidation: {},
             },
@@ -2603,7 +2836,9 @@ describe('GatewayServer', () => {
           getUsageStorage: () => null,
           updateSecurityPolicy: () => {},
           enforceAuditRetention: () => 0,
-          exportAuditLog: async () => { throw new Error('export boom'); },
+          exportAuditLog: async () => {
+            throw new Error('export boom');
+          },
           getSecretsManager: () => null,
           getTlsManager: () => null,
           resetUsageStat: async () => {},
@@ -2612,11 +2847,23 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: false, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
               abuseDetection: { enabled: false },
               inputValidation: {},
             },
@@ -2641,7 +2888,9 @@ describe('GatewayServer', () => {
       const srv = new GatewayServer({
         config: createMinimalConfig({ port }) as any,
         secureYeoman: createMockSecureYeoman({
-          repairAuditChain: async () => { throw new Error('repair boom'); },
+          repairAuditChain: async () => {
+            throw new Error('repair boom');
+          },
         }) as any,
       });
       await srv.start();
@@ -2665,7 +2914,9 @@ describe('GatewayServer', () => {
       const srv = new GatewayServer({
         config: createMinimalConfig({ port }) as any,
         secureYeoman: createMockSecureYeoman({
-          queryAuditLog: () => { throw new Error('audit fail'); },
+          queryAuditLog: () => {
+            throw new Error('audit fail');
+          },
           getConfig: () => {
             callCount++;
             // First few calls are for setupRoutes (security policy etc.), let those work
@@ -2675,11 +2926,23 @@ describe('GatewayServer', () => {
                 security: {
                   promptGuard: { mode: 'disabled' },
                   responseGuard: { mode: 'disabled' },
-                  contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+                  contentGuardrails: {
+                    enabled: false,
+                    blockList: [],
+                    piiMode: 'disabled',
+                    toxicityEnabled: false,
+                    blockedTopics: [],
+                    groundingEnabled: false,
+                  },
                   llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-                  allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-                  allowDesktopControl: false, allowCamera: false,
-                  allowAnomalyDetection: false, allowCodeEditor: true, allowAdvancedEditor: false,
+                  allowSubAgents: false,
+                  allowA2A: false,
+                  allowMultimodal: false,
+                  allowDesktopControl: false,
+                  allowCamera: false,
+                  allowAnomalyDetection: false,
+                  allowCodeEditor: true,
+                  allowAdvancedEditor: false,
                   abuseDetection: { enabled: false },
                   inputValidation: {},
                 },
@@ -2732,10 +2995,12 @@ describe('GatewayServer', () => {
         // Subscribe first
         await new Promise<void>((resolve, reject) => {
           ws.on('open', () => {
-            ws.send(JSON.stringify({
-              type: 'subscribe',
-              payload: { channels: ['metrics', 'tasks'] },
-            }));
+            ws.send(
+              JSON.stringify({
+                type: 'subscribe',
+                payload: { channels: ['metrics', 'tasks'] },
+              })
+            );
           });
           ws.on('message', () => resolve());
           ws.on('error', reject);
@@ -2746,13 +3011,15 @@ describe('GatewayServer', () => {
         expect(srv.hasSubscribers('tasks')).toBe(true);
 
         // Unsubscribe from metrics
-        ws.send(JSON.stringify({
-          type: 'unsubscribe',
-          payload: { channels: ['metrics'] },
-        }));
+        ws.send(
+          JSON.stringify({
+            type: 'unsubscribe',
+            payload: { channels: ['metrics'] },
+          })
+        );
 
         // Give a moment for the message to process
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         expect(srv.hasSubscribers('metrics')).toBe(false);
         expect(srv.hasSubscribers('tasks')).toBe(true);
@@ -2800,7 +3067,7 @@ describe('GatewayServer', () => {
         });
 
         // Give a moment for processing
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         // Connection should still be open
         expect(ws.readyState).toBe(WebSocket.OPEN);
@@ -2831,10 +3098,12 @@ describe('GatewayServer', () => {
 
         const ack = await new Promise<{ payload: { subscribed: string[] } }>((resolve, reject) => {
           ws.on('open', () => {
-            ws.send(JSON.stringify({
-              type: 'subscribe',
-              payload: { channels: ['metrics'] },
-            }));
+            ws.send(
+              JSON.stringify({
+                type: 'subscribe',
+                payload: { channels: ['metrics'] },
+              })
+            );
           });
           ws.on('message', (data: Buffer) => resolve(JSON.parse(data.toString())));
           ws.on('error', reject);
@@ -2883,10 +3152,12 @@ describe('GatewayServer', () => {
         // Subscribe to metrics
         await new Promise<void>((resolve, reject) => {
           ws.on('open', () => {
-            ws.send(JSON.stringify({
-              type: 'subscribe',
-              payload: { channels: ['metrics'] },
-            }));
+            ws.send(
+              JSON.stringify({
+                type: 'subscribe',
+                payload: { channels: ['metrics'] },
+              })
+            );
           });
           ws.on('message', () => resolve());
           ws.on('error', reject);
@@ -2961,7 +3232,7 @@ describe('GatewayServer', () => {
         });
 
         // Wait for eviction to be processed
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
 
         // First client should have been closed
         const ws1Closed = await new Promise<boolean>((resolve) => {
@@ -3057,7 +3328,9 @@ describe('GatewayServer', () => {
       await srv.start();
 
       try {
-        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/collab/personality:00000000-0000-0000-0000-000000000001`);
+        const ws = new WebSocket(
+          `ws://127.0.0.1:${port}/ws/collab/personality:00000000-0000-0000-0000-000000000001`
+        );
 
         await new Promise<void>((resolve, reject) => {
           ws.on('open', () => resolve());
@@ -3088,7 +3361,9 @@ describe('GatewayServer', () => {
       await srv.start();
 
       try {
-        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/collab/skill:00000000-0000-0000-0000-000000000002`);
+        const ws = new WebSocket(
+          `ws://127.0.0.1:${port}/ws/collab/skill:00000000-0000-0000-0000-000000000002`
+        );
 
         await new Promise<void>((resolve, reject) => {
           ws.on('open', () => resolve());
@@ -3156,7 +3431,9 @@ describe('GatewayServer', () => {
           getSoulManager: () => ({
             getPersonality: async () => null,
             getSkill: async () => null,
-            getUser: async () => { throw new Error('no user store'); },
+            getUser: async () => {
+              throw new Error('no user store');
+            },
           }),
           getRBAC: () => ({
             checkPermission: () => ({ granted: true }),
@@ -3209,7 +3486,9 @@ describe('GatewayServer', () => {
 
       try {
         // Dev mode — no auth service, so collab handler assigns placeholder identity
-        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/collab/personality:00000000-0000-0000-0000-000000000001`);
+        const ws = new WebSocket(
+          `ws://127.0.0.1:${port}/ws/collab/personality:00000000-0000-0000-0000-000000000001`
+        );
 
         await new Promise<void>((resolve, reject) => {
           ws.on('open', () => resolve());
@@ -3250,15 +3529,26 @@ describe('GatewayServer', () => {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
               contentGuardrails: {
-                enabled: true, blockList: ['bad'], piiMode: 'detect_only',
-                toxicityEnabled: true, toxicityMode: 'block', toxicityThreshold: 0.5,
+                enabled: true,
+                blockList: ['bad'],
+                piiMode: 'detect_only',
+                toxicityEnabled: true,
+                toxicityMode: 'block',
+                toxicityThreshold: 0.5,
                 toxicityClassifierUrl: 'http://localhost:9999',
-                blockedTopics: ['drugs'], groundingEnabled: true, groundingMode: 'block',
+                blockedTopics: ['drugs'],
+                groundingEnabled: true,
+                groundingMode: 'block',
               },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: false, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
               abuseDetection: { enabled: false },
               inputValidation: { jailbreakThreshold: 0.8, jailbreakAction: 'warn' },
               strictSystemPromptConfidentiality: true,
@@ -3411,7 +3701,9 @@ describe('GatewayServer', () => {
       });
       await srv.start();
       try {
-        const res = await fetch(`http://127.0.0.1:${port}/api/v1/audit?userId=user-123&taskId=task-456`);
+        const res = await fetch(
+          `http://127.0.0.1:${port}/api/v1/audit?userId=user-123&taskId=task-456`
+        );
         expect(res.status).toBe(200);
         expect(capturedQuery.userId).toBe('user-123');
         expect(capturedQuery.taskId).toBe('task-456');
@@ -3438,7 +3730,9 @@ describe('GatewayServer', () => {
       await srv.start();
       try {
         // 'not-a-date' is NaN as number, and also invalid as Date
-        const res = await fetch(`http://127.0.0.1:${port}/api/v1/tasks?from=not-a-date&to=also-invalid`);
+        const res = await fetch(
+          `http://127.0.0.1:${port}/api/v1/tasks?from=not-a-date&to=also-invalid`
+        );
         expect(res.status).toBe(200);
       } finally {
         await srv.stop();
@@ -3454,7 +3748,9 @@ describe('GatewayServer', () => {
       const srv = new GatewayServer({
         config: createMinimalConfig({ port }) as any,
         secureYeoman: createMockSecureYeoman({
-          queryAuditLog: () => { throw new Error('audit query fail'); },
+          queryAuditLog: () => {
+            throw new Error('audit query fail');
+          },
         }) as any,
       });
       await srv.start();
@@ -3487,7 +3783,9 @@ describe('GatewayServer', () => {
       });
       await srv.start();
       try {
-        const res = await fetch(`http://127.0.0.1:${port}/api/v1/security/events?type=auth_failure,fake_event,rate_limit`);
+        const res = await fetch(
+          `http://127.0.0.1:${port}/api/v1/security/events?type=auth_failure,fake_event,rate_limit`
+        );
         expect(res.status).toBe(200);
         // fake_event should be filtered out
         expect(capturedEvent).toEqual(['auth_failure', 'rate_limit']);
@@ -3524,11 +3822,23 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: false, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
               abuseDetection: { enabled: false },
               inputValidation: {},
             },
@@ -3537,7 +3847,9 @@ describe('GatewayServer', () => {
       });
       await srv.start();
       try {
-        const res = await fetch(`http://127.0.0.1:${port}/api/v1/costs/history?from=not-a-number&to=also-nan`);
+        const res = await fetch(
+          `http://127.0.0.1:${port}/api/v1/costs/history?from=not-a-number&to=also-nan`
+        );
         expect(res.status).toBe(200);
         // NaN values should become undefined
         expect(capturedOpts.from).toBeUndefined();
@@ -3571,11 +3883,23 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: false, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
               abuseDetection: { enabled: false },
               inputValidation: {},
             },
@@ -3604,7 +3928,13 @@ describe('GatewayServer', () => {
             getStatus: () => ({
               enabled: true,
               technology: 'landlock',
-              capabilities: { landlock: true, seccomp: true, namespaces: false, rlimits: true, platform: 'linux' },
+              capabilities: {
+                landlock: true,
+                seccomp: true,
+                namespaces: false,
+                rlimits: true,
+                platform: 'linux',
+              },
               sandboxType: 'LinuxSandbox',
             }),
           }),
@@ -3730,7 +4060,9 @@ describe('GatewayServer', () => {
           getIntentManager: () => ({ someMethod: () => {} }),
           getAuditChain: () => ({ record: async () => {} }),
         }) as any,
-        authService: { validateToken: async () => ({ userId: 'u', role: 'admin', permissions: [] }) } as any,
+        authService: {
+          validateToken: async () => ({ userId: 'u', role: 'admin', permissions: [] }),
+        } as any,
       });
       await srv.start();
       try {
@@ -3755,18 +4087,29 @@ describe('GatewayServer', () => {
       const srv = new GatewayServer({
         config: createMinimalConfig({ port }) as any,
         secureYeoman: createMockSecureYeoman({
-          queryAuditLog: () =>
-            Promise.resolve({ entries: [], total: 0, limit: 10000, offset: 0 }),
+          queryAuditLog: () => Promise.resolve({ entries: [], total: 0, limit: 10000, offset: 0 }),
           getConfig: () => ({
             core: { environment: 'development' },
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: true, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: true,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
             },
           }),
         }) as any,
@@ -3865,7 +4208,7 @@ describe('GatewayServer', () => {
 
         // Send a ping — the server's pong handler should update lastPong
         ws.ping();
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         // Connection should still be healthy
         expect(ws.readyState).toBe(WebSocket.OPEN);
@@ -4062,7 +4405,9 @@ describe('GatewayServer', () => {
       await srv.start();
 
       try {
-        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/collab/personality:00000000-0000-0000-0000-000000000001`);
+        const ws = new WebSocket(
+          `ws://127.0.0.1:${port}/ws/collab/personality:00000000-0000-0000-0000-000000000001`
+        );
 
         await new Promise<void>((resolve, reject) => {
           ws.on('open', () => resolve());
@@ -4074,7 +4419,7 @@ describe('GatewayServer', () => {
         const binaryData = new Uint8Array([0, 1, 2, 3, 4]);
         ws.send(binaryData);
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         // Close the connection — triggers the close handler
         ws.close();
@@ -4159,7 +4504,9 @@ describe('GatewayServer', () => {
           // Federation
           getFederationManager: () => null,
           // Gateway
-          getAuthStorage: () => { throw new Error('no auth storage'); },
+          getAuthStorage: () => {
+            throw new Error('no auth storage');
+          },
           // Alert manager
           getAlertManager: () => null,
         }) as any,
@@ -4233,7 +4580,9 @@ describe('GatewayServer', () => {
         config: createMinimalConfig({ port }) as any,
         secureYeoman: createMockSecureYeoman({
           getSecretsManager: () => ({
-            keys: async () => { throw new Error('keys exploded'); },
+            keys: async () => {
+              throw new Error('keys exploded');
+            },
           }),
         }) as any,
       });
@@ -4286,7 +4635,10 @@ describe('GatewayServer', () => {
         }) as any,
         authService: {
           validateToken: async () => ({
-            userId: 'u', role: 'admin', permissions: [], authMethod: 'jwt' as const,
+            userId: 'u',
+            role: 'admin',
+            permissions: [],
+            authMethod: 'jwt' as const,
           }),
         } as any,
       });
@@ -4327,11 +4679,23 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: false, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
               abuseDetection: { enabled: false },
               inputValidation: {},
             },
@@ -4425,7 +4789,7 @@ describe('GatewayServer', () => {
         });
 
         // Allow time for server-side cleanup
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         expect(srv.getConnectedClients()).toBe(0);
       } finally {
@@ -4442,8 +4806,12 @@ describe('GatewayServer', () => {
       const srv = new GatewayServer({
         config: createMinimalConfig({ port }) as any,
         secureYeoman: createMockSecureYeoman({
-          getSsoManager: () => { throw new Error('SSO unavailable'); },
-          getSsoStorage: () => { throw new Error('SSO storage unavailable'); },
+          getSsoManager: () => {
+            throw new Error('SSO unavailable');
+          },
+          getSsoStorage: () => {
+            throw new Error('SSO storage unavailable');
+          },
         }) as any,
       });
       await srv.start();
@@ -4477,7 +4845,17 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'block' },
               responseGuard: { mode: 'warn' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, toxicityMode: 'warn', toxicityThreshold: 0.7, blockedTopics: [], groundingEnabled: false, groundingMode: 'flag' },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                toxicityMode: 'warn',
+                toxicityThreshold: 0.7,
+                blockedTopics: [],
+                groundingEnabled: false,
+                groundingMode: 'flag',
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
               allowSubAgents: true,
               allowA2A: true,
@@ -4593,7 +4971,9 @@ describe('GatewayServer', () => {
       });
       await srv.start();
       try {
-        const res = await fetch(`http://127.0.0.1:${port}/api/v1/audit?level=info,warn&event=config_change,secret_access`);
+        const res = await fetch(
+          `http://127.0.0.1:${port}/api/v1/audit?level=info,warn&event=config_change,secret_access`
+        );
         expect(res.status).toBe(200);
         expect(capturedQuery.level).toEqual(['info', 'warn']);
         expect(capturedQuery.event).toEqual(['config_change', 'secret_access']);
@@ -4653,11 +5033,23 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: false, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
               abuseDetection: { enabled: false },
               inputValidation: {},
             },
@@ -4697,7 +5089,9 @@ describe('GatewayServer', () => {
       });
       await srv.start();
       try {
-        const res = await fetch(`http://127.0.0.1:${port}/api/v1/tasks?status=running&type=analyze&limit=20&offset=5`);
+        const res = await fetch(
+          `http://127.0.0.1:${port}/api/v1/tasks?status=running&type=analyze&limit=20&offset=5`
+        );
         expect(res.status).toBe(200);
         expect(capturedOpts.status).toBe('running');
         expect(capturedOpts.type).toBe('analyze');
@@ -4731,7 +5125,9 @@ describe('GatewayServer', () => {
       await srv.start();
 
       try {
-        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/collab/personality:00000000-0000-0000-0000-000000000001`);
+        const ws = new WebSocket(
+          `ws://127.0.0.1:${port}/ws/collab/personality:00000000-0000-0000-0000-000000000001`
+        );
 
         await new Promise<void>((resolve, reject) => {
           ws.on('open', () => resolve());
@@ -4761,11 +5157,23 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: false, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
               abuseDetection: { enabled: false },
               inputValidation: {},
             },
@@ -4797,11 +5205,23 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: false, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
               abuseDetection: { enabled: false },
               inputValidation: {},
             },
@@ -4829,11 +5249,23 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: false, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
               abuseDetection: { enabled: false },
               inputValidation: {},
             },
@@ -4861,7 +5293,10 @@ describe('GatewayServer', () => {
       const dummyStorage = { dummy: true };
 
       const srv = new GatewayServer({
-        config: createMinimalConfig({ port, auth: { tokenSecret: 'test-secret-at-least-32-chars-long-for-require' } }) as any,
+        config: createMinimalConfig({
+          port,
+          auth: { tokenSecret: 'test-secret-at-least-32-chars-long-for-require' },
+        }) as any,
         secureYeoman: createMockSecureYeoman({
           // SSO
           getSsoManager: () => dummyManager,
@@ -4966,11 +5401,23 @@ describe('GatewayServer', () => {
             security: {
               promptGuard: { mode: 'disabled' },
               responseGuard: { mode: 'disabled' },
-              contentGuardrails: { enabled: false, blockList: [], piiMode: 'disabled', toxicityEnabled: false, blockedTopics: [], groundingEnabled: false },
+              contentGuardrails: {
+                enabled: false,
+                blockList: [],
+                piiMode: 'disabled',
+                toxicityEnabled: false,
+                blockedTopics: [],
+                groundingEnabled: false,
+              },
               llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
-              allowSubAgents: false, allowA2A: false, allowMultimodal: false,
-              allowDesktopControl: false, allowCamera: false,
-              allowAnomalyDetection: false, allowCodeEditor: true, allowAdvancedEditor: false,
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+              allowCodeEditor: true,
+              allowAdvancedEditor: false,
               abuseDetection: { enabled: false },
               inputValidation: {},
               allowWorkflows: false,
@@ -4980,7 +5427,10 @@ describe('GatewayServer', () => {
         }) as any,
         authService: {
           validateToken: async () => ({
-            userId: 'user1', role: 'admin', permissions: [], authMethod: 'jwt' as const,
+            userId: 'user1',
+            role: 'admin',
+            permissions: [],
+            authMethod: 'jwt' as const,
           }),
         } as any,
       });

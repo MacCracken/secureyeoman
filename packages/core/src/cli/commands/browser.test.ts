@@ -195,7 +195,11 @@ describe('browser command', () => {
     );
 
     const { stdout, stderr, getStdout } = createStreams();
-    const code = await browserCommand.run({ argv: ['session', 'session-1', '--json'], stdout, stderr });
+    const code = await browserCommand.run({
+      argv: ['session', 'session-1', '--json'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(0);
     const parsed = JSON.parse(getStdout());
     expect(parsed.id).toBe('session-1');
@@ -287,10 +291,7 @@ describe('browser command', () => {
   // ── network error (catch block) ─────────────────────────────────────
 
   it('should handle fetch throwing an Error', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockRejectedValue(new Error('Network error'))
-    );
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
 
     const { stdout, stderr, getStderr } = createStreams();
     const code = await browserCommand.run({ argv: [], stdout, stderr });
@@ -299,10 +300,7 @@ describe('browser command', () => {
   });
 
   it('should handle fetch throwing a non-Error value', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockRejectedValue('string error')
-    );
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue('string error'));
 
     const { stdout, stderr, getStderr } = createStreams();
     const code = await browserCommand.run({ argv: [], stdout, stderr });
@@ -342,7 +340,11 @@ describe('browser command', () => {
     );
 
     const { stdout, stderr } = createStreams();
-    const code = await browserCommand.run({ argv: ['--url', 'http://custom:9000', 'list'], stdout, stderr });
+    const code = await browserCommand.run({
+      argv: ['--url', 'http://custom:9000', 'list'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(0);
     const fetchMock = vi.mocked(fetch);
     expect(fetchMock.mock.calls[0][0]).toContain('http://custom:9000');

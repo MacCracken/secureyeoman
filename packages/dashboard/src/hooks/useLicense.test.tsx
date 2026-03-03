@@ -39,7 +39,7 @@ describe('useLicense', () => {
         wrapper: ({ children }: { children: ReactNode }) => (
           <QueryClientProvider client={qc}>{children}</QueryClientProvider>
         ),
-      }),
+      })
     ).toThrow('useLicense must be used within a LicenseProvider');
   });
 

@@ -608,10 +608,12 @@ describe('initCommand', () => {
     });
 
     it('prompts for ollama base URL when provider is ollama', async () => {
-      mockPromptChoice.mockImplementation((_rl: any, q: string, choices: string[], defIdx: number) => {
-        if (q.includes('AI provider')) return Promise.resolve('ollama');
-        return Promise.resolve(choices[defIdx]);
-      });
+      mockPromptChoice.mockImplementation(
+        (_rl: any, q: string, choices: string[], defIdx: number) => {
+          if (q.includes('AI provider')) return Promise.resolve('ollama');
+          return Promise.resolve(choices[defIdx]);
+        }
+      );
       mockExistsSync.mockReturnValue(false);
       const ctx = makeCtx([]);
       await initCommand.run(ctx as any);
@@ -623,10 +625,12 @@ describe('initCommand', () => {
     });
 
     it('prompts for API key when provider has apiKeyEnv', async () => {
-      mockPromptChoice.mockImplementation((_rl: any, q: string, choices: string[], defIdx: number) => {
-        if (q.includes('AI provider')) return Promise.resolve('openai');
-        return Promise.resolve(choices[defIdx]);
-      });
+      mockPromptChoice.mockImplementation(
+        (_rl: any, q: string, choices: string[], defIdx: number) => {
+          if (q.includes('AI provider')) return Promise.resolve('openai');
+          return Promise.resolve(choices[defIdx]);
+        }
+      );
       mockExistsSync.mockReturnValue(false);
       const ctx = makeCtx([]);
       await initCommand.run(ctx as any);
@@ -637,10 +641,12 @@ describe('initCommand', () => {
     });
 
     it('writes API key to .env when provided', async () => {
-      mockPromptChoice.mockImplementation((_rl: any, q: string, choices: string[], defIdx: number) => {
-        if (q.includes('AI provider')) return Promise.resolve('openai');
-        return Promise.resolve(choices[defIdx]);
-      });
+      mockPromptChoice.mockImplementation(
+        (_rl: any, q: string, choices: string[], defIdx: number) => {
+          if (q.includes('AI provider')) return Promise.resolve('openai');
+          return Promise.resolve(choices[defIdx]);
+        }
+      );
       mockPrompt.mockImplementation((_rl: any, q: string, def: string) => {
         if (q.includes('OPENAI_API_KEY')) return Promise.resolve('sk-test123');
         return Promise.resolve(def);
@@ -655,10 +661,12 @@ describe('initCommand', () => {
     });
 
     it('prompts for postgresql DATABASE_URL when postgresql is selected', async () => {
-      mockPromptChoice.mockImplementation((_rl: any, q: string, choices: string[], defIdx: number) => {
-        if (q.includes('Database backend')) return Promise.resolve('postgresql');
-        return Promise.resolve(choices[defIdx]);
-      });
+      mockPromptChoice.mockImplementation(
+        (_rl: any, q: string, choices: string[], defIdx: number) => {
+          if (q.includes('Database backend')) return Promise.resolve('postgresql');
+          return Promise.resolve(choices[defIdx]);
+        }
+      );
       mockExistsSync.mockReturnValue(false);
       const ctx = makeCtx([]);
       await initCommand.run(ctx as any);
@@ -669,10 +677,12 @@ describe('initCommand', () => {
     });
 
     it('writes DATABASE_URL to .env when postgresql is selected', async () => {
-      mockPromptChoice.mockImplementation((_rl: any, q: string, choices: string[], defIdx: number) => {
-        if (q.includes('Database backend')) return Promise.resolve('postgresql');
-        return Promise.resolve(choices[defIdx]);
-      });
+      mockPromptChoice.mockImplementation(
+        (_rl: any, q: string, choices: string[], defIdx: number) => {
+          if (q.includes('Database backend')) return Promise.resolve('postgresql');
+          return Promise.resolve(choices[defIdx]);
+        }
+      );
       mockPrompt.mockImplementation((_rl: any, q: string, def: string) => {
         if (q.includes('DATABASE_URL')) return Promise.resolve('postgresql://user:pass@db:5432/sy');
         return Promise.resolve(def);
@@ -772,10 +782,12 @@ describe('initCommand', () => {
     });
 
     it('writes ollama baseUrl in yaml when ollama is selected', async () => {
-      mockPromptChoice.mockImplementation((_rl: any, q: string, choices: string[], defIdx: number) => {
-        if (q.includes('AI provider')) return Promise.resolve('ollama');
-        return Promise.resolve(choices[defIdx]);
-      });
+      mockPromptChoice.mockImplementation(
+        (_rl: any, q: string, choices: string[], defIdx: number) => {
+          if (q.includes('AI provider')) return Promise.resolve('ollama');
+          return Promise.resolve(choices[defIdx]);
+        }
+      );
       mockExistsSync.mockReturnValue(false);
       const ctx = makeCtx([]);
       await initCommand.run(ctx as any);

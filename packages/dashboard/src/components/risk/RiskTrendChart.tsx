@@ -63,7 +63,7 @@ function formatDateTick(dateStr: string): string {
 function mergeTrendData(
   primary: TrendPoint[],
   primaryLabel: string,
-  comparisons: { label: string; data: TrendPoint[] }[],
+  comparisons: { label: string; data: TrendPoint[] }[]
 ): Record<string, unknown>[] {
   // Build a map of date -> merged row
   const dateMap = new Map<string, Record<string, unknown>>();
@@ -105,7 +105,7 @@ export function RiskTrendChart({ departmentId, compareDepartments = [] }: RiskTr
       queryKey: ['risk-trend', dept.id, days],
       queryFn: () => fetchRiskTrend(dept.id, days),
       enabled: !!dept.id,
-    }),
+    })
   );
 
   const isLoading = primaryQuery.isLoading || compQueries.some((q) => q.isLoading);
@@ -122,9 +122,10 @@ export function RiskTrendChart({ departmentId, compareDepartments = [] }: RiskTr
       }))
       .filter((c) => c.data.length > 0);
 
-    const merged = comparisons.length > 0
-      ? mergeTrendData(primaryData, primaryLabel, comparisons)
-      : primaryData.map((pt) => ({ date: pt.date, [primaryLabel]: pt.overallScore }));
+    const merged =
+      comparisons.length > 0
+        ? mergeTrendData(primaryData, primaryLabel, comparisons)
+        : primaryData.map((pt) => ({ date: pt.date, [primaryLabel]: pt.overallScore }));
 
     const keys = [primaryLabel, ...comparisons.map((c) => c.label)];
     return { chartData: merged, lineKeys: keys };
@@ -149,7 +150,9 @@ export function RiskTrendChart({ departmentId, compareDepartments = [] }: RiskTr
                   ? 'bg-primary text-primary-content font-medium'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
               }`}
-              onClick={() => setDays(range.days)}
+              onClick={() => {
+                setDays(range.days);
+              }}
             >
               {range.label}
             </button>
@@ -181,11 +184,7 @@ export function RiskTrendChart({ departmentId, compareDepartments = [] }: RiskTr
               tick={{ fontSize: 11 }}
               className="text-muted-foreground"
             />
-            <YAxis
-              tick={{ fontSize: 11 }}
-              className="text-muted-foreground"
-              domain={[0, 'auto']}
-            />
+            <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" domain={[0, 'auto']} />
             <Tooltip
               contentStyle={{
                 backgroundColor: 'hsl(var(--card))',
@@ -220,7 +219,7 @@ export function RiskTrendChart({ departmentId, compareDepartments = [] }: RiskTr
       {/* Error */}
       {primaryQuery.isError && (
         <div className="text-sm text-red-600">
-          Failed to load trend data. {(primaryQuery.error as Error)?.message}
+          Failed to load trend data. {primaryQuery.error?.message}
         </div>
       )}
     </div>

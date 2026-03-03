@@ -1706,7 +1706,10 @@ describe('WorkflowEngine.execute — ci_trigger (gitlab)', () => {
 
     expect(storage.updateRun).toHaveBeenCalledWith(
       'run-1',
-      expect.objectContaining({ status: 'failed', error: expect.stringContaining('GitLab pipeline trigger failed') })
+      expect.objectContaining({
+        status: 'failed',
+        error: expect.stringContaining('GitLab pipeline trigger failed'),
+      })
     );
   });
 });
@@ -1926,9 +1929,7 @@ describe('WorkflowEngine.execute — onError: fallback executes fallback step', 
     );
     // Backup step should also have run (createStepRun called for it)
     const createCalls = (storage.createStepRun as ReturnType<typeof vi.fn>).mock.calls;
-    const backupCreated = createCalls.some(
-      (c: unknown[]) => c[1] === 'backup'
-    );
+    const backupCreated = createCalls.some((c: unknown[]) => c[1] === 'backup');
     expect(backupCreated).toBe(true);
     // Workflow should complete
     expect(storage.updateRun).toHaveBeenCalledWith(
@@ -1968,9 +1969,7 @@ describe('WorkflowEngine.execute — outputSchemaMode: strict with onError: fall
     );
     // Recovery step created
     const createCalls = (storage.createStepRun as ReturnType<typeof vi.fn>).mock.calls;
-    const recoveryCreated = createCalls.some(
-      (c: unknown[]) => c[1] === 'recovery'
-    );
+    const recoveryCreated = createCalls.some((c: unknown[]) => c[1] === 'recovery');
     expect(recoveryCreated).toBe(true);
   });
 });
@@ -2090,10 +2089,7 @@ describe('WorkflowEngine — SSRF prevention in webhook step (Phase 103)', () =>
 
     await engine.execute(makeRun(), makeDefinition([step]));
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://hooks.example.com/wf',
-      expect.any(Object)
-    );
+    expect(mockFetch).toHaveBeenCalledWith('https://hooks.example.com/wf', expect.any(Object));
   });
 });
 
@@ -2225,7 +2221,14 @@ describe('WorkflowEngine.validateConditionExpression (Phase 105)', () => {
 describe('WorkflowEngine.validateWorkflowConditions (Phase 105)', () => {
   it('returns empty array for steps with valid conditions', () => {
     const steps = [
-      { id: 'a', condition: 'steps.b.output', type: 'agent', name: 'A', dependsOn: [], onError: 'fail' as const },
+      {
+        id: 'a',
+        condition: 'steps.b.output',
+        type: 'agent',
+        name: 'A',
+        dependsOn: [],
+        onError: 'fail' as const,
+      },
     ] as any[];
     const errors = WorkflowEngine.validateWorkflowConditions(steps);
     expect(errors).toEqual([]);
@@ -2233,7 +2236,14 @@ describe('WorkflowEngine.validateWorkflowConditions (Phase 105)', () => {
 
   it('returns errors for steps with invalid condition expressions', () => {
     const steps = [
-      { id: 'a', condition: 'invalid ===', type: 'agent', name: 'A', dependsOn: [], onError: 'fail' as const },
+      {
+        id: 'a',
+        condition: 'invalid ===',
+        type: 'agent',
+        name: 'A',
+        dependsOn: [],
+        onError: 'fail' as const,
+      },
       { id: 'b', type: 'agent', name: 'B', dependsOn: [], onError: 'fail' as const },
     ] as any[];
     const errors = WorkflowEngine.validateWorkflowConditions(steps);

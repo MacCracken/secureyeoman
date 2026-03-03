@@ -254,9 +254,9 @@ describe('RetryManager', () => {
     it('should not retry on non-retryable errors using default predicate', async () => {
       const fn = vi.fn().mockRejectedValue(new Error('invalid argument'));
 
-      await expect(withRetry(fn, { maxRetries: 3, baseDelayMs: 5, maxDelayMs: 20 })).rejects.toThrow(
-        'invalid argument'
-      );
+      await expect(
+        withRetry(fn, { maxRetries: 3, baseDelayMs: 5, maxDelayMs: 20 })
+      ).rejects.toThrow('invalid argument');
       expect(fn).toHaveBeenCalledTimes(1);
     });
 
@@ -293,10 +293,7 @@ describe('RetryManager', () => {
     });
 
     it('should use default config when no policy provided', async () => {
-      const fn = vi
-        .fn()
-        .mockRejectedValueOnce(new Error('ECONNREFUSED'))
-        .mockResolvedValue('ok');
+      const fn = vi.fn().mockRejectedValueOnce(new Error('ECONNREFUSED')).mockResolvedValue('ok');
 
       // This will use the slow default delays, but we need it for coverage.
       // We override just baseDelayMs to make the test fast
@@ -317,10 +314,7 @@ describe('RetryManager', () => {
       ];
 
       for (const msg of retryableMessages) {
-        const fn = vi
-          .fn()
-          .mockRejectedValueOnce(new Error(msg))
-          .mockResolvedValue('ok');
+        const fn = vi.fn().mockRejectedValueOnce(new Error(msg)).mockResolvedValue('ok');
 
         const result = await withRetry(fn, { baseDelayMs: 1, maxDelayMs: 5, maxRetries: 1 });
         expect(result).toBe('ok');
@@ -330,9 +324,9 @@ describe('RetryManager', () => {
     it('should respect maxRetries from policy', async () => {
       const fn = vi.fn().mockRejectedValue(new Error('503'));
 
-      await expect(
-        withRetry(fn, { maxRetries: 1, baseDelayMs: 1, maxDelayMs: 5 })
-      ).rejects.toThrow('503');
+      await expect(withRetry(fn, { maxRetries: 1, baseDelayMs: 1, maxDelayMs: 5 })).rejects.toThrow(
+        '503'
+      );
       expect(fn).toHaveBeenCalledTimes(2);
     });
   });

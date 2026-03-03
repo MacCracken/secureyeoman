@@ -49,7 +49,7 @@ function AbTestStatusBadge({ status }: { status: string }) {
       icon: <XCircle className="w-3 h-3" />,
     },
   };
-  const item = map[status] ?? map.running!;
+  const item = map[status] ?? map.running;
   return (
     <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded ${item.cls}`}>
       {item.icon} {status}
@@ -136,7 +136,9 @@ export function DeploymentTab() {
             type="text"
             placeholder="Personality ID..."
             value={personalityId}
-            onChange={(e) => setPersonalityId(e.target.value)}
+            onChange={(e) => {
+              setPersonalityId(e.target.value);
+            }}
             className="text-sm bg-muted border-0 rounded px-3 py-1.5 w-80"
           />
         </div>
@@ -145,11 +147,16 @@ export function DeploymentTab() {
             <Loader2 className="w-4 h-4 animate-spin" /> Loading...
           </div>
         ) : personalityId && versions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No deployed versions for this personality.</p>
+          <p className="text-sm text-muted-foreground">
+            No deployed versions for this personality.
+          </p>
         ) : (
           <div className="space-y-1">
             {versions.map((v) => (
-              <div key={v.id} className="border rounded p-2 flex items-center justify-between text-sm">
+              <div
+                key={v.id}
+                className="border rounded p-2 flex items-center justify-between text-sm"
+              >
                 <div>
                   <span className="font-mono text-xs">{v.modelName}</span>
                   <span className="text-xs text-muted-foreground ml-2">
@@ -176,18 +183,24 @@ export function DeploymentTab() {
             type="text"
             placeholder="Personality ID"
             value={deployPersonalityId}
-            onChange={(e) => setDeployPersonalityId(e.target.value)}
+            onChange={(e) => {
+              setDeployPersonalityId(e.target.value);
+            }}
             className="text-sm bg-muted border-0 rounded px-3 py-1.5 w-64"
           />
           <input
             type="text"
             placeholder="Model name (e.g. my-model:latest)"
             value={deployModelName}
-            onChange={(e) => setDeployModelName(e.target.value)}
+            onChange={(e) => {
+              setDeployModelName(e.target.value);
+            }}
             className="text-sm bg-muted border-0 rounded px-3 py-1.5 w-64"
           />
           <button
-            onClick={() => deployMutation.mutate()}
+            onClick={() => {
+              deployMutation.mutate();
+            }}
             disabled={!deployPersonalityId || !deployModelName || deployMutation.isPending}
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
           >
@@ -195,7 +208,9 @@ export function DeploymentTab() {
             {deployMutation.isPending ? 'Deploying...' : 'Deploy'}
           </button>
           <button
-            onClick={() => deployPersonalityId && rollbackMutation.mutate(deployPersonalityId)}
+            onClick={() => {
+              deployPersonalityId && rollbackMutation.mutate(deployPersonalityId);
+            }}
             disabled={!deployPersonalityId || rollbackMutation.isPending}
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 border rounded-md hover:bg-muted disabled:opacity-50"
           >
@@ -217,25 +232,33 @@ export function DeploymentTab() {
             <input
               placeholder="Name"
               value={abForm.name}
-              onChange={(e) => setAbForm({ ...abForm, name: e.target.value })}
+              onChange={(e) => {
+                setAbForm({ ...abForm, name: e.target.value });
+              }}
               className="text-xs bg-muted border-0 rounded px-2 py-1 w-40"
             />
             <input
               placeholder="Personality ID"
               value={abForm.personalityId}
-              onChange={(e) => setAbForm({ ...abForm, personalityId: e.target.value })}
+              onChange={(e) => {
+                setAbForm({ ...abForm, personalityId: e.target.value });
+              }}
               className="text-xs bg-muted border-0 rounded px-2 py-1 w-56"
             />
             <input
               placeholder="Model A"
               value={abForm.modelA}
-              onChange={(e) => setAbForm({ ...abForm, modelA: e.target.value })}
+              onChange={(e) => {
+                setAbForm({ ...abForm, modelA: e.target.value });
+              }}
               className="text-xs bg-muted border-0 rounded px-2 py-1 w-40"
             />
             <input
               placeholder="Model B"
               value={abForm.modelB}
-              onChange={(e) => setAbForm({ ...abForm, modelB: e.target.value })}
+              onChange={(e) => {
+                setAbForm({ ...abForm, modelB: e.target.value });
+              }}
               className="text-xs bg-muted border-0 rounded px-2 py-1 w-40"
             />
             <label className="text-xs text-muted-foreground">
@@ -245,14 +268,21 @@ export function DeploymentTab() {
                 min={1}
                 max={99}
                 value={abForm.trafficPctB}
-                onChange={(e) => setAbForm({ ...abForm, trafficPctB: Number(e.target.value) })}
+                onChange={(e) => {
+                  setAbForm({ ...abForm, trafficPctB: Number(e.target.value) });
+                }}
                 className="ml-1 w-20"
               />
             </label>
             <button
-              onClick={() => createTestMutation.mutate()}
+              onClick={() => {
+                createTestMutation.mutate();
+              }}
               disabled={
-                !abForm.name || !abForm.personalityId || !abForm.modelA || !abForm.modelB ||
+                !abForm.name ||
+                !abForm.personalityId ||
+                !abForm.modelA ||
+                !abForm.modelB ||
                 createTestMutation.isPending
               }
               className="flex items-center gap-1 text-xs px-2 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50"
@@ -310,25 +340,33 @@ export function DeploymentTab() {
                 {test.status === 'running' && (
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => evaluateMutation.mutate(test.id)}
+                      onClick={() => {
+                        evaluateMutation.mutate(test.id);
+                      }}
                       className="flex items-center gap-1 text-xs px-2 py-1 border rounded hover:bg-muted"
                     >
                       <BarChart3 className="w-3 h-3" /> Evaluate
                     </button>
                     <button
-                      onClick={() => completeMutation.mutate({ id: test.id, winner: 'a' })}
+                      onClick={() => {
+                        completeMutation.mutate({ id: test.id, winner: 'a' });
+                      }}
                       className="text-xs px-2 py-1 border rounded hover:bg-muted"
                     >
                       Promote A
                     </button>
                     <button
-                      onClick={() => completeMutation.mutate({ id: test.id, winner: 'b' })}
+                      onClick={() => {
+                        completeMutation.mutate({ id: test.id, winner: 'b' });
+                      }}
                       className="text-xs px-2 py-1 border rounded hover:bg-muted"
                     >
                       Promote B
                     </button>
                     <button
-                      onClick={() => cancelMutation.mutate(test.id)}
+                      onClick={() => {
+                        cancelMutation.mutate(test.id);
+                      }}
                       className="text-xs px-2 py-1 text-destructive border border-destructive/30 rounded hover:bg-destructive/10"
                     >
                       Cancel
@@ -339,8 +377,10 @@ export function DeploymentTab() {
                 {evaluateMutation.data && evaluateMutation.variables === test.id && (
                   <div className="text-xs bg-muted rounded p-2">
                     Evaluation: Winner={evaluateMutation.data.winner ?? 'undecided'} | A avg=
-                    {evaluateMutation.data.avgQualityA?.toFixed(3) ?? '—'} ({evaluateMutation.data.totalA}) | B avg=
-                    {evaluateMutation.data.avgQualityB?.toFixed(3) ?? '—'} ({evaluateMutation.data.totalB})
+                    {evaluateMutation.data.avgQualityA?.toFixed(3) ?? '—'} (
+                    {evaluateMutation.data.totalA}) | B avg=
+                    {evaluateMutation.data.avgQualityB?.toFixed(3) ?? '—'} (
+                    {evaluateMutation.data.totalB})
                   </div>
                 )}
               </div>

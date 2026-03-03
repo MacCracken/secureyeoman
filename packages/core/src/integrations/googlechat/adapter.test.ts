@@ -263,9 +263,7 @@ describe('GoogleChatIntegration', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await adapter.init(makeConfig(), makeDeps());
-      await expect(adapter.sendMessage('AAAA1234', 'Hello')).rejects.toThrow(
-        'Network unreachable'
-      );
+      await expect(adapter.sendMessage('AAAA1234', 'Hello')).rejects.toThrow('Network unreachable');
     });
 
     it('should include error details from failed API response', async () => {

@@ -22,24 +22,35 @@ describe('DepartmentRiskStorage', () => {
   describe('createDepartment', () => {
     it('inserts a department and returns it', async () => {
       mockQuery.mockResolvedValueOnce({
-        rows: [{
-          id: 'dept-1',
-          name: 'Engineering',
-          description: 'Engineering dept',
-          mission: null,
-          objectives: [],
-          parent_id: null,
-          team_id: null,
-          risk_appetite: { security: 50, operational: 50, financial: 50, compliance: 50, reputational: 50 },
-          compliance_targets: [],
-          metadata: {},
-          tenant_id: null,
-          created_at: 1000,
-          updated_at: 1000,
-        }],
+        rows: [
+          {
+            id: 'dept-1',
+            name: 'Engineering',
+            description: 'Engineering dept',
+            mission: null,
+            objectives: [],
+            parent_id: null,
+            team_id: null,
+            risk_appetite: {
+              security: 50,
+              operational: 50,
+              financial: 50,
+              compliance: 50,
+              reputational: 50,
+            },
+            compliance_targets: [],
+            metadata: {},
+            tenant_id: null,
+            created_at: 1000,
+            updated_at: 1000,
+          },
+        ],
       });
 
-      const dept = await storage.createDepartment({ name: 'Engineering', description: 'Engineering dept' });
+      const dept = await storage.createDepartment({
+        name: 'Engineering',
+        description: 'Engineering dept',
+      });
       expect(dept.name).toBe('Engineering');
       expect(dept.description).toBe('Engineering dept');
       expect(mockQuery).toHaveBeenCalledTimes(1);
@@ -50,21 +61,29 @@ describe('DepartmentRiskStorage', () => {
   describe('getDepartment', () => {
     it('returns department by id', async () => {
       mockQuery.mockResolvedValueOnce({
-        rows: [{
-          id: 'dept-1',
-          name: 'Engineering',
-          description: null,
-          mission: 'Build stuff',
-          objectives: [{ title: 'Ship fast', priority: 'high' }],
-          parent_id: null,
-          team_id: 'team-1',
-          risk_appetite: { security: 60, operational: 40, financial: 50, compliance: 50, reputational: 50 },
-          compliance_targets: [],
-          metadata: {},
-          tenant_id: null,
-          created_at: 1000,
-          updated_at: 2000,
-        }],
+        rows: [
+          {
+            id: 'dept-1',
+            name: 'Engineering',
+            description: null,
+            mission: 'Build stuff',
+            objectives: [{ title: 'Ship fast', priority: 'high' }],
+            parent_id: null,
+            team_id: 'team-1',
+            risk_appetite: {
+              security: 60,
+              operational: 40,
+              financial: 50,
+              compliance: 50,
+              reputational: 50,
+            },
+            compliance_targets: [],
+            metadata: {},
+            tenant_id: null,
+            created_at: 1000,
+            updated_at: 2000,
+          },
+        ],
       });
 
       const dept = await storage.getDepartment('dept-1');
@@ -85,21 +104,29 @@ describe('DepartmentRiskStorage', () => {
   describe('updateDepartment', () => {
     it('updates only provided fields', async () => {
       mockQuery.mockResolvedValueOnce({
-        rows: [{
-          id: 'dept-1',
-          name: 'New Name',
-          description: null,
-          mission: null,
-          objectives: [],
-          parent_id: null,
-          team_id: null,
-          risk_appetite: { security: 50, operational: 50, financial: 50, compliance: 50, reputational: 50 },
-          compliance_targets: [],
-          metadata: {},
-          tenant_id: null,
-          created_at: 1000,
-          updated_at: 3000,
-        }],
+        rows: [
+          {
+            id: 'dept-1',
+            name: 'New Name',
+            description: null,
+            mission: null,
+            objectives: [],
+            parent_id: null,
+            team_id: null,
+            risk_appetite: {
+              security: 50,
+              operational: 50,
+              financial: 50,
+              compliance: 50,
+              reputational: 50,
+            },
+            compliance_targets: [],
+            metadata: {},
+            tenant_id: null,
+            created_at: 1000,
+            updated_at: 3000,
+          },
+        ],
       });
 
       const dept = await storage.updateDepartment('dept-1', { name: 'New Name' });
@@ -111,21 +138,29 @@ describe('DepartmentRiskStorage', () => {
 
     it('returns existing department when no fields provided', async () => {
       mockQuery.mockResolvedValueOnce({
-        rows: [{
-          id: 'dept-1',
-          name: 'Engineering',
-          description: null,
-          mission: null,
-          objectives: [],
-          parent_id: null,
-          team_id: null,
-          risk_appetite: { security: 50, operational: 50, financial: 50, compliance: 50, reputational: 50 },
-          compliance_targets: [],
-          metadata: {},
-          tenant_id: null,
-          created_at: 1000,
-          updated_at: 1000,
-        }],
+        rows: [
+          {
+            id: 'dept-1',
+            name: 'Engineering',
+            description: null,
+            mission: null,
+            objectives: [],
+            parent_id: null,
+            team_id: null,
+            risk_appetite: {
+              security: 50,
+              operational: 50,
+              financial: 50,
+              compliance: 50,
+              reputational: 50,
+            },
+            compliance_targets: [],
+            metadata: {},
+            tenant_id: null,
+            created_at: 1000,
+            updated_at: 1000,
+          },
+        ],
       });
 
       await storage.updateDepartment('dept-1', {});
@@ -150,14 +185,40 @@ describe('DepartmentRiskStorage', () => {
 
   describe('listDepartments', () => {
     it('lists with pagination', async () => {
-      mockQuery
-        .mockResolvedValueOnce({ rows: [{ count: '2' }] })
-        .mockResolvedValueOnce({
-          rows: [
-            { id: 'd1', name: 'A', description: null, mission: null, objectives: [], parent_id: null, team_id: null, risk_appetite: {}, compliance_targets: [], metadata: {}, tenant_id: null, created_at: 1000, updated_at: 1000 },
-            { id: 'd2', name: 'B', description: null, mission: null, objectives: [], parent_id: null, team_id: null, risk_appetite: {}, compliance_targets: [], metadata: {}, tenant_id: null, created_at: 2000, updated_at: 2000 },
-          ],
-        });
+      mockQuery.mockResolvedValueOnce({ rows: [{ count: '2' }] }).mockResolvedValueOnce({
+        rows: [
+          {
+            id: 'd1',
+            name: 'A',
+            description: null,
+            mission: null,
+            objectives: [],
+            parent_id: null,
+            team_id: null,
+            risk_appetite: {},
+            compliance_targets: [],
+            metadata: {},
+            tenant_id: null,
+            created_at: 1000,
+            updated_at: 1000,
+          },
+          {
+            id: 'd2',
+            name: 'B',
+            description: null,
+            mission: null,
+            objectives: [],
+            parent_id: null,
+            team_id: null,
+            risk_appetite: {},
+            compliance_targets: [],
+            metadata: {},
+            tenant_id: null,
+            created_at: 2000,
+            updated_at: 2000,
+          },
+        ],
+      });
 
       const result = await storage.listDepartments({ limit: 10, offset: 0 });
       expect(result.total).toBe(2);
@@ -194,29 +255,31 @@ describe('DepartmentRiskStorage', () => {
   describe('createRegisterEntry', () => {
     it('inserts a register entry', async () => {
       mockQuery.mockResolvedValueOnce({
-        rows: [{
-          id: 'entry-1',
-          department_id: 'dept-1',
-          title: 'SQL Injection',
-          description: 'Found SQL injection',
-          category: 'security',
-          severity: 'critical',
-          likelihood: 4,
-          impact: 5,
-          risk_score: 20,
-          owner: 'alice',
-          mitigations: [],
-          status: 'open',
-          due_date: null,
-          source: 'scan',
-          source_ref: null,
-          evidence_refs: [],
-          tenant_id: null,
-          created_by: 'bob',
-          created_at: 1000,
-          updated_at: 1000,
-          closed_at: null,
-        }],
+        rows: [
+          {
+            id: 'entry-1',
+            department_id: 'dept-1',
+            title: 'SQL Injection',
+            description: 'Found SQL injection',
+            category: 'security',
+            severity: 'critical',
+            likelihood: 4,
+            impact: 5,
+            risk_score: 20,
+            owner: 'alice',
+            mitigations: [],
+            status: 'open',
+            due_date: null,
+            source: 'scan',
+            source_ref: null,
+            evidence_refs: [],
+            tenant_id: null,
+            created_by: 'bob',
+            created_at: 1000,
+            updated_at: 1000,
+            closed_at: null,
+          },
+        ],
       });
 
       const entry = await storage.createRegisterEntry(
@@ -277,19 +340,21 @@ describe('DepartmentRiskStorage', () => {
   describe('recordDepartmentScore', () => {
     it('inserts a score snapshot', async () => {
       mockQuery.mockResolvedValueOnce({
-        rows: [{
-          id: 'score-1',
-          department_id: 'dept-1',
-          scored_at: '2026-03-02T00:00:00Z',
-          overall_score: 42.5,
-          domain_scores: { security: 60, operational: 25 },
-          open_risks: 5,
-          overdue_risks: 1,
-          appetite_breaches: [{ domain: 'security', score: 60, threshold: 50 }],
-          assessment_id: null,
-          tenant_id: null,
-          created_at: 1000,
-        }],
+        rows: [
+          {
+            id: 'score-1',
+            department_id: 'dept-1',
+            scored_at: '2026-03-02T00:00:00Z',
+            overall_score: 42.5,
+            domain_scores: { security: 60, operational: 25 },
+            open_risks: 5,
+            overdue_risks: 1,
+            appetite_breaches: [{ domain: 'security', score: 60, threshold: 50 }],
+            assessment_id: null,
+            tenant_id: null,
+            created_at: 1000,
+          },
+        ],
       });
 
       const score = await storage.recordDepartmentScore({

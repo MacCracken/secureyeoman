@@ -710,7 +710,13 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
   const contentGuardrail = createContentGuardrail(
     secureYeoman.getConfig().security.contentGuardrails,
     {
-      brainManager: (() => { try { return secureYeoman.getBrainManager?.() ?? null; } catch { return null; } })(),
+      brainManager: (() => {
+        try {
+          return secureYeoman.getBrainManager?.() ?? null;
+        } catch {
+          return null;
+        }
+      })(),
       auditRecord: (p) =>
         void secureYeoman.getAuditChain().record({
           event: p.event,
@@ -852,7 +858,12 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
 
       let systemPrompt = memoryEnabled
         ? await soulManager.composeSoulPrompt(message, personalityId, { viewportHint }, strategyId)
-        : await soulManager.composeSoulPrompt(undefined, personalityId, { viewportHint }, strategyId);
+        : await soulManager.composeSoulPrompt(
+            undefined,
+            personalityId,
+            { viewportHint },
+            strategyId
+          );
 
       // Inject learned preferences into system prompt (best-effort)
       if (memoryEnabled && systemPrompt) {
@@ -1715,12 +1726,22 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           : { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] };
 
         let systemPrompt = memoryEnabled
-          ? await soulManager.composeSoulPrompt(message, personalityId, {
-              viewportHint: viewportHintS,
-            }, strategyIdS)
-          : await soulManager.composeSoulPrompt(undefined, personalityId, {
-              viewportHint: viewportHintS,
-            }, strategyIdS);
+          ? await soulManager.composeSoulPrompt(
+              message,
+              personalityId,
+              {
+                viewportHint: viewportHintS,
+              },
+              strategyIdS
+            )
+          : await soulManager.composeSoulPrompt(
+              undefined,
+              personalityId,
+              {
+                viewportHint: viewportHintS,
+              },
+              strategyIdS
+            );
 
         // Inject learned preferences into system prompt (best-effort)
         if (memoryEnabled && systemPrompt) {

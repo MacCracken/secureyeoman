@@ -202,10 +202,9 @@ export class LlmJudgeManager {
   }
 
   async deleteDataset(id: string): Promise<boolean> {
-    const { rowCount } = await this.pool.query(
-      `DELETE FROM training.eval_datasets WHERE id = $1`,
-      [id]
-    );
+    const { rowCount } = await this.pool.query(`DELETE FROM training.eval_datasets WHERE id = $1`, [
+      id,
+    ]);
     return (rowCount ?? 0) > 0;
   }
 
@@ -510,9 +509,7 @@ export class LlmJudgeManager {
   // ── Private helpers ───────────────────────────────────────────────────────
 
   /** Parse 5-dimension scores from judge response. */
-  _parseJudgeScores(
-    content: string
-  ): {
+  _parseJudgeScores(content: string): {
     groundedness: number;
     coherence: number;
     relevance: number;
@@ -522,7 +519,7 @@ export class LlmJudgeManager {
   } | null {
     try {
       // Extract JSON from possibly markdown-wrapped response
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      const jsonMatch = /\{[\s\S]*\}/.exec(content);
       if (!jsonMatch) return null;
 
       const parsed = JSON.parse(jsonMatch[0]);
@@ -549,7 +546,7 @@ export class LlmJudgeManager {
   /** Parse pairwise winner from judge response. */
   _parsePairwiseResult(content: string): { winner: 'a' | 'b' | 'tie'; reason: string } | null {
     try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      const jsonMatch = /\{[\s\S]*\}/.exec(content);
       if (!jsonMatch) return null;
 
       const parsed = JSON.parse(jsonMatch[0]);

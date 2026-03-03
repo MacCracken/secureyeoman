@@ -5,13 +5,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  TrendingUp,
-  BarChart3,
-  Hash,
-  Search,
-  AlertTriangle,
-} from 'lucide-react';
+import { TrendingUp, BarChart3, Hash, Search, AlertTriangle } from 'lucide-react';
 import {
   fetchSentimentTrend,
   fetchEngagementMetrics,
@@ -51,7 +45,10 @@ export default function AnalyticsTab() {
 
   const { data: sentimentData = [], isLoading: sentimentLoading } = useQuery({
     queryKey: ['sentimentTrend', selectedPersonalityId, days],
-    queryFn: () => (selectedPersonalityId ? fetchSentimentTrend(selectedPersonalityId, days) : Promise.resolve([])),
+    queryFn: () =>
+      selectedPersonalityId
+        ? fetchSentimentTrend(selectedPersonalityId, days)
+        : Promise.resolve([]),
     enabled: activeSubTab === 'sentiment' && !!selectedPersonalityId,
   });
 
@@ -63,7 +60,8 @@ export default function AnalyticsTab() {
 
   const { data: keyPhrases = [], isLoading: phrasesLoading } = useQuery({
     queryKey: ['keyPhrases', selectedPersonalityId],
-    queryFn: () => (selectedPersonalityId ? fetchKeyPhrases(selectedPersonalityId, 60) : Promise.resolve([])),
+    queryFn: () =>
+      selectedPersonalityId ? fetchKeyPhrases(selectedPersonalityId, 60) : Promise.resolve([]),
     enabled: activeSubTab === 'topics' && !!selectedPersonalityId,
   });
 
@@ -75,7 +73,9 @@ export default function AnalyticsTab() {
           {SUB_TABS.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveSubTab(tab.id)}
+              onClick={() => {
+                setActiveSubTab(tab.id);
+              }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                 activeSubTab === tab.id
                   ? 'bg-card shadow-sm text-foreground'
@@ -94,7 +94,9 @@ export default function AnalyticsTab() {
             {DAY_OPTIONS.map((d) => (
               <button
                 key={d}
-                onClick={() => setDays(d)}
+                onClick={() => {
+                  setDays(d);
+                }}
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                   days === d
                     ? 'bg-card shadow-sm text-foreground'

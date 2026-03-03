@@ -43,7 +43,9 @@ export function PersonalitiesTab() {
     },
     onSuccess: () => {
       setToast('Personality exported');
-      setTimeout(() => setToast(null), 3000);
+      setTimeout(() => {
+        setToast(null);
+      }, 3000);
     },
   });
 
@@ -56,11 +58,15 @@ export function PersonalitiesTab() {
       void queryClient.invalidateQueries({ queryKey: ['personalities'] });
       const warns = res.warnings?.length ? ` (${res.warnings.length} warnings)` : '';
       setToast(`Imported: ${res.personality.name}${warns}`);
-      setTimeout(() => setToast(null), 5000);
+      setTimeout(() => {
+        setToast(null);
+      }, 5000);
     },
     onError: (err: Error) => {
       setToast(`Import failed: ${err.message}`);
-      setTimeout(() => setToast(null), 5000);
+      setTimeout(() => {
+        setToast(null);
+      }, 5000);
     },
   });
 
@@ -90,7 +96,9 @@ export function PersonalitiesTab() {
             className="w-full bg-card border border-border rounded-lg pl-10 pr-3 py-2.5 text-sm"
             placeholder="Search community personalities..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+            }}
           />
         </div>
         <button
@@ -135,14 +143,16 @@ export function PersonalitiesTab() {
                 </p>
                 {Object.keys(p.traits ?? {}).length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
-                    {Object.keys(p.traits).slice(0, 4).map((trait) => (
-                      <span
-                        key={trait}
-                        className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground"
-                      >
-                        {trait}
-                      </span>
-                    ))}
+                    {Object.keys(p.traits)
+                      .slice(0, 4)
+                      .map((trait) => (
+                        <span
+                          key={trait}
+                          className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground"
+                        >
+                          {trait}
+                        </span>
+                      ))}
                     {Object.keys(p.traits).length > 4 && (
                       <span className="text-xs text-muted-foreground">
                         +{Object.keys(p.traits).length - 4}
@@ -154,7 +164,9 @@ export function PersonalitiesTab() {
               <div className="mt-3 pt-3 border-t border-border flex gap-2">
                 <button
                   className="btn btn-ghost flex items-center gap-2 flex-1 justify-center text-sm"
-                  onClick={() => exportMut.mutate(p)}
+                  onClick={() => {
+                    exportMut.mutate(p);
+                  }}
                   disabled={exportMut.isPending}
                 >
                   <Download className="w-4 h-4" />

@@ -34,7 +34,10 @@ export class DepartmentRiskReportGenerator {
 
   // ── Department Scorecard ───────────────────────────────────────────────────
 
-  async generateDepartmentScorecard(departmentId: string, format: ReportFormat = 'json'): Promise<string> {
+  async generateDepartmentScorecard(
+    departmentId: string,
+    format: ReportFormat = 'json'
+  ): Promise<string> {
     const scorecard = await this.drm.getDepartmentScorecard(departmentId);
     const trend = await this.drm.getTrend(departmentId, 90);
 
@@ -65,11 +68,17 @@ export class DepartmentRiskReportGenerator {
           : '';
 
         const breachRows = scorecard.appetiteBreaches
-          .map((b) => `<tr><td style="padding:8px 12px">${escapeHtml(b.domain)}</td><td style="padding:8px 12px">${b.score.toFixed(1)}</td><td style="padding:8px 12px">${b.threshold}</td></tr>`)
+          .map(
+            (b) =>
+              `<tr><td style="padding:8px 12px">${escapeHtml(b.domain)}</td><td style="padding:8px 12px">${b.score.toFixed(1)}</td><td style="padding:8px 12px">${b.threshold}</td></tr>`
+          )
           .join('\n');
 
         const riskRows = scorecard.topRisks
-          .map((r) => `<tr><td style="padding:8px 12px">${escapeHtml(r.title)}</td><td style="padding:8px 12px">${escapeHtml(r.severity)}</td><td style="padding:8px 12px">${r.riskScore ?? r.likelihood * r.impact}</td></tr>`)
+          .map(
+            (r) =>
+              `<tr><td style="padding:8px 12px">${escapeHtml(r.title)}</td><td style="padding:8px 12px">${escapeHtml(r.severity)}</td><td style="padding:8px 12px">${r.riskScore ?? r.likelihood * r.impact}</td></tr>`
+          )
           .join('\n');
 
         return `<!DOCTYPE html>
@@ -93,17 +102,32 @@ ${riskRows ? `<h2>Top Risks</h2><table><thead><tr><th>Title</th><th>Severity</th
 
         const domainTable = score
           ? Object.entries(score.domainScores)
-              .map(([d, s]) => `| ${capitalize(d)} | ${s.toFixed(1)} | ${capitalize(scoreToLevel(s))} |`)
+              .map(
+                ([d, s]) =>
+                  `| ${capitalize(d)} | ${s.toFixed(1)} | ${capitalize(scoreToLevel(s))} |`
+              )
               .join('\n')
           : '_No scores available._';
 
-        const breachList = scorecard.appetiteBreaches.length > 0
-          ? scorecard.appetiteBreaches.map((b) => `- **${capitalize(b.domain)}**: ${b.score.toFixed(1)} (threshold: ${b.threshold})`).join('\n')
-          : '_No breaches._';
+        const breachList =
+          scorecard.appetiteBreaches.length > 0
+            ? scorecard.appetiteBreaches
+                .map(
+                  (b) =>
+                    `- **${capitalize(b.domain)}**: ${b.score.toFixed(1)} (threshold: ${b.threshold})`
+                )
+                .join('\n')
+            : '_No breaches._';
 
-        const riskTable = scorecard.topRisks.length > 0
-          ? scorecard.topRisks.map((r) => `| ${r.title} | ${capitalize(r.severity)} | ${r.riskScore ?? r.likelihood * r.impact} |`).join('\n')
-          : '_No risks._';
+        const riskTable =
+          scorecard.topRisks.length > 0
+            ? scorecard.topRisks
+                .map(
+                  (r) =>
+                    `| ${r.title} | ${capitalize(r.severity)} | ${r.riskScore ?? r.likelihood * r.impact} |`
+                )
+                .join('\n')
+            : '_No risks._';
 
         return `# Department Scorecard: ${dept.name}
 
@@ -210,7 +234,10 @@ ${this.generateHeatmapHtml(heatmap)}
 
       case 'md': {
         const deptTable = summary.departments
-          .map((d) => `| ${d.name} | ${d.overallScore.toFixed(0)} | ${d.openRisks} | ${d.breached ? 'YES' : 'No'} |`)
+          .map(
+            (d) =>
+              `| ${d.name} | ${d.overallScore.toFixed(0)} | ${d.openRisks} | ${d.breached ? 'YES' : 'No'} |`
+          )
           .join('\n');
 
         return `# Executive Risk Summary
@@ -232,9 +259,16 @@ ${deptTable}
 
 ## Heatmap
 
-${heatmap.length > 0
-  ? heatmap.map((c) => `- **${c.departmentName}** / ${c.domain}: ${c.score.toFixed(1)} ${c.breached ? '(BREACHED)' : ''}`).join('\n')
-  : '_No heatmap data._'}
+${
+  heatmap.length > 0
+    ? heatmap
+        .map(
+          (c) =>
+            `- **${c.departmentName}** / ${c.domain}: ${c.score.toFixed(1)} ${c.breached ? '(BREACHED)' : ''}`
+        )
+        .join('\n')
+    : '_No heatmap data._'
+}
 `;
       }
 
@@ -259,7 +293,8 @@ ${heatmap.length > 0
         return JSON.stringify(items, null, 2);
 
       case 'csv': {
-        const headers = 'id,department_id,title,category,severity,likelihood,impact,risk_score,status,owner,due_date,source,created_at';
+        const headers =
+          'id,department_id,title,category,severity,likelihood,impact,risk_score,status,owner,due_date,source,created_at';
         const rows = items.map((e) =>
           [
             e.id,
@@ -306,7 +341,9 @@ ${heatmap.length > 0
     const domainList = [...domains].sort();
     const deptList = [...departments.entries()];
 
-    const headerCells = domainList.map((d) => `<th style="padding:8px 12px;text-transform:capitalize">${escapeHtml(d)}</th>`).join('');
+    const headerCells = domainList
+      .map((d) => `<th style="padding:8px 12px;text-transform:capitalize">${escapeHtml(d)}</th>`)
+      .join('');
 
     const bodyRows = deptList
       .map(([id, name]) => {

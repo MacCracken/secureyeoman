@@ -557,17 +557,16 @@ export class MarketplaceManager {
           const metadataPath = path.join(templatePath, 'metadata.json');
 
           if (!fs.existsSync(metadataPath)) {
-            result.errors.push(
-              `Skipped security template ${dir.name}: missing metadata.json`
-            );
+            result.errors.push(`Skipped security template ${dir.name}: missing metadata.json`);
             result.skipped++;
             continue;
           }
 
           try {
-            const metadata = JSON.parse(
-              fs.readFileSync(metadataPath, 'utf-8')
-            ) as Record<string, unknown>;
+            const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8')) as Record<
+              string,
+              unknown
+            >;
 
             if (!metadata.name || typeof metadata.name !== 'string') {
               result.errors.push(
@@ -580,19 +579,14 @@ export class MarketplaceManager {
             // Resolve filenames — metadata.files overrides defaults
             const files = metadata.files as Record<string, unknown> | undefined;
             const systemFile =
-              files && typeof files.system === 'string'
-                ? files.system
-                : 'system.md';
-            const userFile =
-              files && typeof files.user === 'string' ? files.user : 'user.md';
+              files && typeof files.system === 'string' ? files.system : 'system.md';
+            const userFile = files && typeof files.user === 'string' ? files.user : 'user.md';
 
             const systemPath = path.join(templatePath, systemFile);
             const userPath = path.join(templatePath, userFile);
 
             if (!fs.existsSync(systemPath)) {
-              result.errors.push(
-                `Skipped security template ${dir.name}: missing ${systemFile}`
-              );
+              result.errors.push(`Skipped security template ${dir.name}: missing ${systemFile}`);
               result.skipped++;
               continue;
             }
@@ -622,21 +616,15 @@ export class MarketplaceManager {
               };
             }
 
-            const tags = Array.isArray(metadata.tags)
-              ? (metadata.tags as string[])
-              : [];
+            const tags = Array.isArray(metadata.tags) ? (metadata.tags as string[]) : [];
             if (!tags.includes('security-template')) {
               tags.push('security-template');
             }
 
             const skillData: Partial<CatalogSkill> = {
               name: metadata.name,
-              description:
-                typeof metadata.description === 'string'
-                  ? metadata.description
-                  : '',
-              version:
-                typeof metadata.version === 'string' ? metadata.version : '1.0.0',
+              description: typeof metadata.description === 'string' ? metadata.description : '',
+              version: typeof metadata.version === 'string' ? metadata.version : '1.0.0',
               author: authorDisplay,
               authorInfo,
               category: 'security',
@@ -656,10 +644,7 @@ export class MarketplaceManager {
               source: 'community',
             };
 
-            const existing = await this.storage.findByNameAndSource(
-              skillData.name!,
-              'community'
-            );
+            const existing = await this.storage.findByNameAndSource(skillData.name!, 'community');
             if (existing) {
               await this.storage.updateSkill(existing.id, skillData);
               result.securityTemplatesUpdated++;
@@ -708,8 +693,7 @@ export class MarketplaceManager {
             // Check for existing community personality with same name
             const { personalities } = await this.soulManager.listPersonalities({ limit: 1000 });
             const existing = personalities.find(
-              (p) =>
-                p.name === data.name && p.description?.startsWith('[community]')
+              (p) => p.name === data.name && p.description?.startsWith('[community]')
             );
 
             if (existing) {

@@ -188,9 +188,7 @@ describe('memory command', () => {
   // ── memories ──────────────────────────────────────────────────────────
 
   it('should list memories', async () => {
-    mockFetch([
-      { id: 'mem-1', type: 'conversation', content: 'Hello world', importance: 0.8 },
-    ]);
+    mockFetch([{ id: 'mem-1', type: 'conversation', content: 'Hello world', importance: 0.8 }]);
 
     const { stdout, stderr, getStdout } = createStreams();
     const code = await memoryCommand.run({ argv: ['memories'], stdout, stderr });
@@ -397,10 +395,7 @@ describe('memory command', () => {
   // ── error handling ────────────────────────────────────────────────────
 
   it('catches thrown errors and returns 1', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockRejectedValue(new Error('Network failure'))
-    );
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network failure')));
     const { stdout, stderr, getStderr } = createStreams();
     const code = await memoryCommand.run({ argv: ['stats'], stdout, stderr });
     expect(code).toBe(1);
@@ -408,10 +403,7 @@ describe('memory command', () => {
   });
 
   it('catches non-Error thrown values', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockRejectedValue('string error')
-    );
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue('string error'));
     const { stdout, stderr, getStderr } = createStreams();
     const code = await memoryCommand.run({ argv: ['stats'], stdout, stderr });
     expect(code).toBe(1);

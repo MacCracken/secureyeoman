@@ -30,7 +30,9 @@ export interface RiskAssessmentManagerDeps {
   pool: pg.Pool;
   auditChain?: AuditChain | null;
   tlsManager?: TlsManager | null;
-  getDepartmentRiskManager?: () => { snapshotDepartmentScore: (departmentId: string, assessmentId?: string) => Promise<any> } | null;
+  getDepartmentRiskManager?: () => {
+    snapshotDepartmentScore: (departmentId: string, assessmentId?: string) => Promise<any>;
+  } | null;
 }
 
 interface DomainResult {

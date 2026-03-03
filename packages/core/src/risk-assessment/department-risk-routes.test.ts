@@ -137,7 +137,9 @@ describe('DepartmentRiskRoutes', () => {
     });
 
     it('returns 409 when open entries exist', async () => {
-      (mgr.deleteDepartment as any).mockRejectedValue(new Error('Cannot delete department with 3 open risk entries'));
+      (mgr.deleteDepartment as any).mockRejectedValue(
+        new Error('Cannot delete department with 3 open risk entries')
+      );
       const res = await app.inject({ method: 'DELETE', url: '/api/v1/risk/departments/d1' });
       expect(res.statusCode).toBe(409);
     });
@@ -199,7 +201,9 @@ describe('DepartmentRiskRoutes', () => {
   describe('POST /api/v1/risk/register', () => {
     it('creates a register entry (201)', async () => {
       (mgr.createRegisterEntry as any).mockResolvedValue({
-        id: 'e1', title: 'SQL Injection', riskScore: 20,
+        id: 'e1',
+        title: 'SQL Injection',
+        riskScore: 20,
       });
       const res = await app.inject({
         method: 'POST',
@@ -239,11 +243,13 @@ describe('DepartmentRiskRoutes', () => {
         method: 'GET',
         url: '/api/v1/risk/register?departmentId=d1&status=open&overdue=true',
       });
-      expect(mgr.listRegisterEntries).toHaveBeenCalledWith(expect.objectContaining({
-        departmentId: 'd1',
-        status: 'open',
-        overdue: true,
-      }));
+      expect(mgr.listRegisterEntries).toHaveBeenCalledWith(
+        expect.objectContaining({
+          departmentId: 'd1',
+          status: 'open',
+          overdue: true,
+        })
+      );
     });
   });
 
@@ -281,7 +287,9 @@ describe('DepartmentRiskRoutes', () => {
 
   describe('GET /api/v1/risk/heatmap', () => {
     it('returns heatmap cells', async () => {
-      (mgr.getHeatmap as any).mockResolvedValue([{ departmentId: 'd1', domain: 'security', score: 60, threshold: 50, breached: true }]);
+      (mgr.getHeatmap as any).mockResolvedValue([
+        { departmentId: 'd1', domain: 'security', score: 60, threshold: 50, breached: true },
+      ]);
       const res = await app.inject({ method: 'GET', url: '/api/v1/risk/heatmap' });
       expect(res.statusCode).toBe(200);
       expect(JSON.parse(res.payload).cells).toHaveLength(1);
@@ -307,8 +315,11 @@ describe('DepartmentRiskRoutes', () => {
       (mgr.getDepartmentScorecard as any).mockResolvedValue({
         department: { id: 'd1', name: 'Eng' },
         latestScore: { overallScore: 50, domainScores: {}, appetiteBreaches: [] },
-        openRisks: 2, overdueRisks: 0, criticalRisks: 0,
-        appetiteBreaches: [], topRisks: [],
+        openRisks: 2,
+        overdueRisks: 0,
+        criticalRisks: 0,
+        appetiteBreaches: [],
+        topRisks: [],
       });
       (mgr.getTrend as any).mockResolvedValue([]);
       const res = await app.inject({ method: 'GET', url: '/api/v1/risk/reports/department/d1' });
@@ -320,11 +331,17 @@ describe('DepartmentRiskRoutes', () => {
       (mgr.getDepartmentScorecard as any).mockResolvedValue({
         department: { id: 'd1', name: 'Eng' },
         latestScore: { overallScore: 50, domainScores: {}, appetiteBreaches: [] },
-        openRisks: 2, overdueRisks: 0, criticalRisks: 0,
-        appetiteBreaches: [], topRisks: [],
+        openRisks: 2,
+        overdueRisks: 0,
+        criticalRisks: 0,
+        appetiteBreaches: [],
+        topRisks: [],
       });
       (mgr.getTrend as any).mockResolvedValue([]);
-      const res = await app.inject({ method: 'GET', url: '/api/v1/risk/reports/department/d1?format=html' });
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/risk/reports/department/d1?format=html',
+      });
       expect(res.statusCode).toBe(200);
       expect(res.headers['content-type']).toContain('text/html');
       expect(res.payload).toContain('<!DOCTYPE html>');
@@ -339,14 +356,25 @@ describe('DepartmentRiskRoutes', () => {
 
   describe('GET /api/v1/risk/reports/executive', () => {
     it('returns executive summary report as JSON', async () => {
-      (mgr.getExecutiveSummary as any).mockResolvedValue({ totalDepartments: 2, totalOpenRisks: 5, totalOverdueRisks: 1, totalCriticalRisks: 0, appetiteBreaches: 0, averageScore: 30, departments: [] });
+      (mgr.getExecutiveSummary as any).mockResolvedValue({
+        totalDepartments: 2,
+        totalOpenRisks: 5,
+        totalOverdueRisks: 1,
+        totalCriticalRisks: 0,
+        appetiteBreaches: 0,
+        averageScore: 30,
+        departments: [],
+      });
       (mgr.getHeatmap as any).mockResolvedValue([]);
       const res = await app.inject({ method: 'GET', url: '/api/v1/risk/reports/executive' });
       expect(res.statusCode).toBe(200);
     });
 
     it('rejects csv format', async () => {
-      const res = await app.inject({ method: 'GET', url: '/api/v1/risk/reports/executive?format=csv' });
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/risk/reports/executive?format=csv',
+      });
       expect(res.statusCode).toBe(400);
     });
   });
@@ -354,10 +382,32 @@ describe('DepartmentRiskRoutes', () => {
   describe('GET /api/v1/risk/reports/register', () => {
     it('returns register report as CSV', async () => {
       (mgr.listRegisterEntries as any).mockResolvedValue({
-        items: [{ id: 'r1', departmentId: 'd1', title: 'Test', category: 'security', severity: 'high', likelihood: 4, impact: 5, riskScore: 20, status: 'open', owner: null, dueDate: null, source: null, createdAt: Date.now(), updatedAt: Date.now(), mitigations: [], evidenceRefs: [] }],
+        items: [
+          {
+            id: 'r1',
+            departmentId: 'd1',
+            title: 'Test',
+            category: 'security',
+            severity: 'high',
+            likelihood: 4,
+            impact: 5,
+            riskScore: 20,
+            status: 'open',
+            owner: null,
+            dueDate: null,
+            source: null,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            mitigations: [],
+            evidenceRefs: [],
+          },
+        ],
         total: 1,
       });
-      const res = await app.inject({ method: 'GET', url: '/api/v1/risk/reports/register?format=csv' });
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/risk/reports/register?format=csv',
+      });
       expect(res.statusCode).toBe(200);
       expect(res.headers['content-type']).toContain('text/csv');
       expect(res.payload).toContain('id,department_id');

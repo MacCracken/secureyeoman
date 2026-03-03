@@ -388,6 +388,7 @@ export function registerGithubApiTools(
       const { privateKey, publicKey } = generateSSHKeyPair(`secureyeoman:${args.title}`);
 
       // Register public key with GitHub (mode-enforced by core route)
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
       const reg = (await client.post('/api/v1/github/ssh-keys', {
         title: args.title,
         key: publicKey,
@@ -536,6 +537,7 @@ export function registerGithubApiTools(
       const { privateKey, publicKey } = generateSSHKeyPair(`secureyeoman:${args.title}`);
 
       // Register new key with GitHub
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
       const reg = (await client.post('/api/v1/github/ssh-keys', {
         title: args.title,
         key: publicKey,

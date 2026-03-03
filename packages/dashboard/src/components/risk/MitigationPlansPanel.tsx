@@ -4,13 +4,7 @@
  */
 
 import { useMemo } from 'react';
-import {
-  CheckCircle,
-  Clock,
-  AlertTriangle,
-  ShieldCheck,
-  ListChecks,
-} from 'lucide-react';
+import { CheckCircle, Clock, AlertTriangle, ShieldCheck, ListChecks } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -33,7 +27,10 @@ interface MitigationPlansPanelProps {
 
 const STATUS_ORDER: MitigationStatus[] = ['planned', 'in_progress', 'implemented', 'verified'];
 
-const STATUS_META: Record<MitigationStatus, { label: string; icon: React.ReactNode; color: string; badgeColor: string }> = {
+const STATUS_META: Record<
+  MitigationStatus,
+  { label: string; icon: React.ReactNode; color: string; badgeColor: string }
+> = {
   planned: {
     label: 'Planned',
     icon: <Clock className="w-4 h-4" />,
@@ -154,21 +151,17 @@ export function MitigationPlansPanel({ mitigations }: MitigationPlansPanelProps)
             <div className="space-y-1 pl-6">
               {items.map((item) => {
                 const overdue =
-                  isOverdue(item.dueDate) &&
-                  status !== 'implemented' &&
-                  status !== 'verified';
+                  isOverdue(item.dueDate) && status !== 'implemented' && status !== 'verified';
 
                 return (
                   <div
                     key={item.id}
                     className={`flex items-start gap-2 text-sm border rounded px-3 py-2 ${
-                      overdue
-                        ? 'border-red-300 bg-red-50'
-                        : 'border-border bg-base-100'
+                      overdue ? 'border-red-300 bg-red-50' : 'border-border bg-base-100'
                     }`}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className={`${overdue ? 'text-red-700' : 'text-foreground'}`}>
+                      <p className={overdue ? 'text-red-700' : 'text-foreground'}>
                         {item.description}
                       </p>
                       <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">

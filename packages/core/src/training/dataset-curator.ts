@@ -168,10 +168,14 @@ export class DatasetCuratorManager {
           (SELECT SUM(LENGTH(m.content)) / 4 FROM chat.messages m WHERE m.conversation_id = c.id),
           0
         ) AS token_estimate,
-        ${previewOnly ? "'[]'::text" : `(
+        ${
+          previewOnly
+            ? "'[]'::text"
+            : `(
           SELECT json_agg(json_build_object('role', m.role, 'content', m.content) ORDER BY m.created_at)
           FROM chat.messages m WHERE m.conversation_id = c.id
-        )`} AS messages
+        )`
+        } AS messages
       FROM chat.conversations c
       LEFT JOIN training.conversation_quality cq ON cq.conversation_id = c.id
       ${where}

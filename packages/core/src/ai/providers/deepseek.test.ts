@@ -469,9 +469,7 @@ describe('DeepSeekProvider', () => {
 
     it('TokenLimitError is marked as non-recoverable', async () => {
       const { APIError } = await import('openai');
-      mockCreate.mockRejectedValueOnce(
-        new (APIError as any)(400, 'token limit reached')
-      );
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(400, 'token limit reached'));
       try {
         await provider.chat(simpleRequest);
         expect.unreachable();
@@ -522,9 +520,7 @@ describe('DeepSeekProvider', () => {
 
     it('maps stream 400 token error to TokenLimitError', async () => {
       const { APIError } = await import('openai');
-      mockCreate.mockRejectedValueOnce(
-        new (APIError as any)(400, 'context token limit exceeded')
-      );
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(400, 'context token limit exceeded'));
       await expect(async () => {
         for await (const _ of provider.chatStream(simpleRequest)) {
           /* drain */

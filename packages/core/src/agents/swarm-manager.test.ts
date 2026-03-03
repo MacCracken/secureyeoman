@@ -438,9 +438,16 @@ describe('SwarmManager.estimateSwarmCost', () => {
     const logger = makeMockLogger();
     const costCalculator = {
       calculate: vi.fn().mockReturnValue(0.005),
-      getModelCosts: vi.fn().mockReturnValue([
-        { provider: 'anthropic', model: 'claude-sonnet-4-20250514', inputPer1M: 3, outputPer1M: 15 },
-      ]),
+      getModelCosts: vi
+        .fn()
+        .mockReturnValue([
+          {
+            provider: 'anthropic',
+            model: 'claude-sonnet-4-20250514',
+            inputPer1M: 3,
+            outputPer1M: 15,
+          },
+        ]),
     };
 
     const manager = new SwarmManager({
@@ -468,9 +475,16 @@ describe('SwarmManager — cost-aware model selection', () => {
     const logger = makeMockLogger();
     const costCalculator = {
       calculate: vi.fn().mockReturnValue(0.01),
-      getModelCosts: vi.fn().mockReturnValue([
-        { provider: 'anthropic', model: 'claude-sonnet-4-20250514', inputPer1M: 3, outputPer1M: 15 },
-      ]),
+      getModelCosts: vi
+        .fn()
+        .mockReturnValue([
+          {
+            provider: 'anthropic',
+            model: 'claude-sonnet-4-20250514',
+            inputPer1M: 3,
+            outputPer1M: 15,
+          },
+        ]),
     };
 
     const manager = new SwarmManager({
@@ -552,7 +566,10 @@ describe('SwarmManager.executeSwarm — parallel coordinator failure', () => {
     // Coder member should be marked failed
     expect(storage.updateMember).toHaveBeenCalledWith(
       mem2.id,
-      expect.objectContaining({ status: 'failed', result: expect.stringContaining('coder profile missing') })
+      expect.objectContaining({
+        status: 'failed',
+        result: expect.stringContaining('coder profile missing'),
+      })
     );
   });
 });
@@ -569,7 +586,10 @@ describe('SwarmManager.executeSwarm — unknown strategy', () => {
     await manager.executeSwarm({ templateId: 'tmpl-1', task: 'Build' });
     expect(storage.updateRun).toHaveBeenCalledWith(
       'run-1',
-      expect.objectContaining({ status: 'failed', error: expect.stringContaining('Unknown swarm strategy') })
+      expect.objectContaining({
+        status: 'failed',
+        error: expect.stringContaining('Unknown swarm strategy'),
+      })
     );
   });
 });
@@ -599,16 +619,23 @@ describe('SwarmManager — buildContextWithProfileSkills (via sequential)', () =
     const profile = { id: 'prof-1', name: 'researcher' };
     const skills = [
       { name: 'WebSearch', description: 'Search the web', instructions: 'Use web search tool...' },
-      { name: 'CodeReview', description: '', instructions: 'Review code for quality and security concerns' },
+      {
+        name: 'CodeReview',
+        description: '',
+        instructions: 'Review code for quality and security concerns',
+      },
     ];
 
-    const { manager, subAgentManager } = buildManager({
-      createMember: vi.fn().mockResolvedValue(MEMBER),
-      getProfileSkills: vi.fn().mockResolvedValue(skills),
-    } as any, {
-      delegate: vi.fn().mockResolvedValue(DELEGATION_RESULT),
-      getProfileByName: vi.fn().mockResolvedValue(profile),
-    } as any);
+    const { manager, subAgentManager } = buildManager(
+      {
+        createMember: vi.fn().mockResolvedValue(MEMBER),
+        getProfileSkills: vi.fn().mockResolvedValue(skills),
+      } as any,
+      {
+        delegate: vi.fn().mockResolvedValue(DELEGATION_RESULT),
+        getProfileByName: vi.fn().mockResolvedValue(profile),
+      } as any
+    );
 
     await manager.executeSwarm({
       templateId: 'tmpl-1',
@@ -623,12 +650,15 @@ describe('SwarmManager — buildContextWithProfileSkills (via sequential)', () =
   });
 
   it('returns original context when profile not found', async () => {
-    const { manager, subAgentManager } = buildManager({
-      createMember: vi.fn().mockResolvedValue(MEMBER),
-    }, {
-      delegate: vi.fn().mockResolvedValue(DELEGATION_RESULT),
-      getProfileByName: vi.fn().mockResolvedValue(null),
-    } as any);
+    const { manager, subAgentManager } = buildManager(
+      {
+        createMember: vi.fn().mockResolvedValue(MEMBER),
+      },
+      {
+        delegate: vi.fn().mockResolvedValue(DELEGATION_RESULT),
+        getProfileByName: vi.fn().mockResolvedValue(null),
+      } as any
+    );
 
     await manager.executeSwarm({
       templateId: 'tmpl-1',
@@ -641,12 +671,15 @@ describe('SwarmManager — buildContextWithProfileSkills (via sequential)', () =
   });
 
   it('returns original context when getProfileByName throws', async () => {
-    const { manager, subAgentManager } = buildManager({
-      createMember: vi.fn().mockResolvedValue(MEMBER),
-    }, {
-      delegate: vi.fn().mockResolvedValue(DELEGATION_RESULT),
-      getProfileByName: vi.fn().mockRejectedValue(new Error('DB error')),
-    } as any);
+    const { manager, subAgentManager } = buildManager(
+      {
+        createMember: vi.fn().mockResolvedValue(MEMBER),
+      },
+      {
+        delegate: vi.fn().mockResolvedValue(DELEGATION_RESULT),
+        getProfileByName: vi.fn().mockRejectedValue(new Error('DB error')),
+      } as any
+    );
 
     await manager.executeSwarm({
       templateId: 'tmpl-1',

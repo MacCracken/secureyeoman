@@ -41,7 +41,7 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
       if (!isEnterprise || !license) return false;
       return license.features.includes(feature);
     },
-    [isEnterprise, license],
+    [isEnterprise, license]
   );
 
   const refresh = useCallback(async () => {

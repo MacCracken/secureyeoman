@@ -677,10 +677,7 @@ describe('ContentGuardrail', () => {
         { groundingEnabled: true, groundingMode: 'block' },
         { brainManager: { semanticSearch: mockSearch } }
       );
-      const result = await guardrail.scanAsync(
-        'He said "short" and moved on.',
-        ctx
-      );
+      const result = await guardrail.scanAsync('He said "short" and moved on.', ctx);
       // "short" is only 5 chars — should not be extracted as citation
       expect(mockSearch).not.toHaveBeenCalled();
       expect(result.passed).toBe(true);

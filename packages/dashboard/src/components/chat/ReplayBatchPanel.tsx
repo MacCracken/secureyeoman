@@ -1,11 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Play, Loader2, CheckCircle2, XCircle, Clock, BarChart3 } from 'lucide-react';
-import {
-  createReplayBatch,
-  fetchReplayJobs,
-  fetchReplayReport,
-} from '../../api/client';
+import { createReplayBatch, fetchReplayJobs, fetchReplayReport } from '../../api/client';
 import type { ReplayJob, ReplayBatchReport } from '../../types';
 
 interface ReplayBatchPanelProps {
@@ -74,14 +70,17 @@ export function ReplayBatchPanel({
       <div className="border rounded-lg p-4 space-y-3">
         <h4 className="text-sm font-semibold">Batch Replay</h4>
         <div className="text-xs text-muted-foreground">
-          {selectedConversationIds.length} conversation{selectedConversationIds.length !== 1 ? 's' : ''} selected
+          {selectedConversationIds.length} conversation
+          {selectedConversationIds.length !== 1 ? 's' : ''} selected
         </div>
 
         <div className="grid grid-cols-2 gap-2">
           <input
             type="text"
             value={model}
-            onChange={(e) => setModel(e.target.value)}
+            onChange={(e) => {
+              setModel(e.target.value);
+            }}
             placeholder="Model"
             className="border rounded px-2 py-1.5 text-sm bg-background"
             data-testid="batch-model-input"
@@ -89,7 +88,9 @@ export function ReplayBatchPanel({
           <input
             type="text"
             value={provider}
-            onChange={(e) => setProvider(e.target.value)}
+            onChange={(e) => {
+              setProvider(e.target.value);
+            }}
             placeholder="Provider"
             className="border rounded px-2 py-1.5 text-sm bg-background"
             data-testid="batch-provider-input"
@@ -98,7 +99,9 @@ export function ReplayBatchPanel({
 
         <button
           onClick={handleSubmit}
-          disabled={selectedConversationIds.length === 0 || !model || !provider || batchMutation.isPending}
+          disabled={
+            selectedConversationIds.length === 0 || !model || !provider || batchMutation.isPending
+          }
           className="w-full px-3 py-2 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
           data-testid="batch-submit"
         >
@@ -132,7 +135,9 @@ export function ReplayBatchPanel({
                 </div>
                 {job.status === 'completed' && (
                   <button
-                    onClick={() => setViewingReportId(job.id)}
+                    onClick={() => {
+                      setViewingReportId(job.id);
+                    }}
                     className="flex items-center gap-1 text-primary hover:underline"
                     data-testid={`view-report-${job.id}`}
                   >
@@ -180,7 +185,9 @@ export function ReplayBatchPanel({
             <tbody>
               {report.results.map((r) => (
                 <tr key={r.id} className="border-b">
-                  <td className="py-1 font-mono truncate max-w-[100px]">{r.sourceConversationId.slice(0, 8)}</td>
+                  <td className="py-1 font-mono truncate max-w-[100px]">
+                    {r.sourceConversationId.slice(0, 8)}
+                  </td>
                   <td className="py-1">{r.replayModel}</td>
                   <td className="py-1">{r.pairwiseWinner ?? '—'}</td>
                 </tr>

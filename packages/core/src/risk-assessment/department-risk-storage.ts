@@ -133,7 +133,7 @@ function rowToDepartmentScore(row: DepartmentScoreRow): DepartmentScore {
   return {
     id: row.id,
     departmentId: row.department_id,
-    scoredAt: String(row.scored_at),
+    scoredAt: row.scored_at,
     overallScore: Number(row.overall_score),
     domainScores: (row.domain_scores as Record<string, number>) ?? {},
     openRisks: Number(row.open_risks),
@@ -172,7 +172,15 @@ export class DepartmentRiskStorage extends PgBaseStorage {
         JSON.stringify(data.objectives ?? []),
         data.parentId ?? null,
         data.teamId ?? null,
-        JSON.stringify(data.riskAppetite ?? { security: 50, operational: 50, financial: 50, compliance: 50, reputational: 50 }),
+        JSON.stringify(
+          data.riskAppetite ?? {
+            security: 50,
+            operational: 50,
+            financial: 50,
+            compliance: 50,
+            reputational: 50,
+          }
+        ),
         JSON.stringify(data.complianceTargets ?? []),
         JSON.stringify(data.metadata ?? {}),
         tenantId ?? null,
@@ -184,10 +192,9 @@ export class DepartmentRiskStorage extends PgBaseStorage {
   }
 
   async getDepartment(id: string): Promise<Department | null> {
-    const row = await this.queryOne<DepartmentRow>(
-      `SELECT * FROM risk.departments WHERE id = $1`,
-      [id]
-    );
+    const row = await this.queryOne<DepartmentRow>(`SELECT * FROM risk.departments WHERE id = $1`, [
+      id,
+    ]);
     return row ? rowToDepartment(row) : null;
   }
 
@@ -196,15 +203,42 @@ export class DepartmentRiskStorage extends PgBaseStorage {
     const params: unknown[] = [];
     let idx = 1;
 
-    if (data.name !== undefined) { sets.push(`name = $${idx++}`); params.push(data.name); }
-    if (data.description !== undefined) { sets.push(`description = $${idx++}`); params.push(data.description); }
-    if (data.mission !== undefined) { sets.push(`mission = $${idx++}`); params.push(data.mission); }
-    if (data.objectives !== undefined) { sets.push(`objectives = $${idx++}`); params.push(JSON.stringify(data.objectives)); }
-    if (data.parentId !== undefined) { sets.push(`parent_id = $${idx++}`); params.push(data.parentId); }
-    if (data.teamId !== undefined) { sets.push(`team_id = $${idx++}`); params.push(data.teamId); }
-    if (data.riskAppetite !== undefined) { sets.push(`risk_appetite = $${idx++}`); params.push(JSON.stringify(data.riskAppetite)); }
-    if (data.complianceTargets !== undefined) { sets.push(`compliance_targets = $${idx++}`); params.push(JSON.stringify(data.complianceTargets)); }
-    if (data.metadata !== undefined) { sets.push(`metadata = $${idx++}`); params.push(JSON.stringify(data.metadata)); }
+    if (data.name !== undefined) {
+      sets.push(`name = $${idx++}`);
+      params.push(data.name);
+    }
+    if (data.description !== undefined) {
+      sets.push(`description = $${idx++}`);
+      params.push(data.description);
+    }
+    if (data.mission !== undefined) {
+      sets.push(`mission = $${idx++}`);
+      params.push(data.mission);
+    }
+    if (data.objectives !== undefined) {
+      sets.push(`objectives = $${idx++}`);
+      params.push(JSON.stringify(data.objectives));
+    }
+    if (data.parentId !== undefined) {
+      sets.push(`parent_id = $${idx++}`);
+      params.push(data.parentId);
+    }
+    if (data.teamId !== undefined) {
+      sets.push(`team_id = $${idx++}`);
+      params.push(data.teamId);
+    }
+    if (data.riskAppetite !== undefined) {
+      sets.push(`risk_appetite = $${idx++}`);
+      params.push(JSON.stringify(data.riskAppetite));
+    }
+    if (data.complianceTargets !== undefined) {
+      sets.push(`compliance_targets = $${idx++}`);
+      params.push(JSON.stringify(data.complianceTargets));
+    }
+    if (data.metadata !== undefined) {
+      sets.push(`metadata = $${idx++}`);
+      params.push(JSON.stringify(data.metadata));
+    }
 
     if (sets.length === 0) return this.getDepartment(id);
 
@@ -220,10 +254,7 @@ export class DepartmentRiskStorage extends PgBaseStorage {
   }
 
   async deleteDepartment(id: string): Promise<boolean> {
-    const rowCount = await this.execute(
-      `DELETE FROM risk.departments WHERE id = $1`,
-      [id]
-    );
+    const rowCount = await this.execute(`DELETE FROM risk.departments WHERE id = $1`, [id]);
     return rowCount > 0;
   }
 
@@ -287,7 +318,11 @@ export class DepartmentRiskStorage extends PgBaseStorage {
 
   // ── Register Entry CRUD ──────────────────────────────────────
 
-  async createRegisterEntry(data: RegisterEntryCreate, createdBy?: string, tenantId?: string): Promise<RegisterEntry> {
+  async createRegisterEntry(
+    data: RegisterEntryCreate,
+    createdBy?: string,
+    tenantId?: string
+  ): Promise<RegisterEntry> {
     const id = uuidv7();
     const now = Date.now();
     const row = await this.queryOne<RegisterEntryRow>(
@@ -334,19 +369,58 @@ export class DepartmentRiskStorage extends PgBaseStorage {
     const params: unknown[] = [];
     let idx = 1;
 
-    if (data.title !== undefined) { sets.push(`title = $${idx++}`); params.push(data.title); }
-    if (data.description !== undefined) { sets.push(`description = $${idx++}`); params.push(data.description); }
-    if (data.category !== undefined) { sets.push(`category = $${idx++}`); params.push(data.category); }
-    if (data.severity !== undefined) { sets.push(`severity = $${idx++}`); params.push(data.severity); }
-    if (data.likelihood !== undefined) { sets.push(`likelihood = $${idx++}`); params.push(data.likelihood); }
-    if (data.impact !== undefined) { sets.push(`impact = $${idx++}`); params.push(data.impact); }
-    if (data.owner !== undefined) { sets.push(`owner = $${idx++}`); params.push(data.owner); }
-    if (data.mitigations !== undefined) { sets.push(`mitigations = $${idx++}`); params.push(JSON.stringify(data.mitigations)); }
-    if (data.status !== undefined) { sets.push(`status = $${idx++}`); params.push(data.status); }
-    if (data.dueDate !== undefined) { sets.push(`due_date = $${idx++}`); params.push(data.dueDate); }
-    if (data.source !== undefined) { sets.push(`source = $${idx++}`); params.push(data.source); }
-    if (data.sourceRef !== undefined) { sets.push(`source_ref = $${idx++}`); params.push(data.sourceRef); }
-    if (data.evidenceRefs !== undefined) { sets.push(`evidence_refs = $${idx++}`); params.push(JSON.stringify(data.evidenceRefs)); }
+    if (data.title !== undefined) {
+      sets.push(`title = $${idx++}`);
+      params.push(data.title);
+    }
+    if (data.description !== undefined) {
+      sets.push(`description = $${idx++}`);
+      params.push(data.description);
+    }
+    if (data.category !== undefined) {
+      sets.push(`category = $${idx++}`);
+      params.push(data.category);
+    }
+    if (data.severity !== undefined) {
+      sets.push(`severity = $${idx++}`);
+      params.push(data.severity);
+    }
+    if (data.likelihood !== undefined) {
+      sets.push(`likelihood = $${idx++}`);
+      params.push(data.likelihood);
+    }
+    if (data.impact !== undefined) {
+      sets.push(`impact = $${idx++}`);
+      params.push(data.impact);
+    }
+    if (data.owner !== undefined) {
+      sets.push(`owner = $${idx++}`);
+      params.push(data.owner);
+    }
+    if (data.mitigations !== undefined) {
+      sets.push(`mitigations = $${idx++}`);
+      params.push(JSON.stringify(data.mitigations));
+    }
+    if (data.status !== undefined) {
+      sets.push(`status = $${idx++}`);
+      params.push(data.status);
+    }
+    if (data.dueDate !== undefined) {
+      sets.push(`due_date = $${idx++}`);
+      params.push(data.dueDate);
+    }
+    if (data.source !== undefined) {
+      sets.push(`source = $${idx++}`);
+      params.push(data.source);
+    }
+    if (data.sourceRef !== undefined) {
+      sets.push(`source_ref = $${idx++}`);
+      params.push(data.sourceRef);
+    }
+    if (data.evidenceRefs !== undefined) {
+      sets.push(`evidence_refs = $${idx++}`);
+      params.push(JSON.stringify(data.evidenceRefs));
+    }
 
     if (sets.length === 0) return this.getRegisterEntry(id);
 
@@ -362,10 +436,7 @@ export class DepartmentRiskStorage extends PgBaseStorage {
   }
 
   async deleteRegisterEntry(id: string): Promise<boolean> {
-    const rowCount = await this.execute(
-      `DELETE FROM risk.register_entries WHERE id = $1`,
-      [id]
-    );
+    const rowCount = await this.execute(`DELETE FROM risk.register_entries WHERE id = $1`, [id]);
     return rowCount > 0;
   }
 
@@ -384,13 +455,35 @@ export class DepartmentRiskStorage extends PgBaseStorage {
     const params: unknown[] = [];
     let idx = 1;
 
-    if (opts?.departmentId) { where.push(`department_id = $${idx++}`); params.push(opts.departmentId); }
-    if (opts?.status) { where.push(`status = $${idx++}`); params.push(opts.status); }
-    if (opts?.category) { where.push(`category = $${idx++}`); params.push(opts.category); }
-    if (opts?.severity) { where.push(`severity = $${idx++}`); params.push(opts.severity); }
-    if (opts?.owner) { where.push(`owner = $${idx++}`); params.push(opts.owner); }
-    if (opts?.tenantId) { where.push(`tenant_id = $${idx++}`); params.push(opts.tenantId); }
-    if (opts?.overdue) { where.push(`due_date < now() AND status NOT IN ('closed', 'mitigated', 'accepted', 'transferred')`); }
+    if (opts?.departmentId) {
+      where.push(`department_id = $${idx++}`);
+      params.push(opts.departmentId);
+    }
+    if (opts?.status) {
+      where.push(`status = $${idx++}`);
+      params.push(opts.status);
+    }
+    if (opts?.category) {
+      where.push(`category = $${idx++}`);
+      params.push(opts.category);
+    }
+    if (opts?.severity) {
+      where.push(`severity = $${idx++}`);
+      params.push(opts.severity);
+    }
+    if (opts?.owner) {
+      where.push(`owner = $${idx++}`);
+      params.push(opts.owner);
+    }
+    if (opts?.tenantId) {
+      where.push(`tenant_id = $${idx++}`);
+      params.push(opts.tenantId);
+    }
+    if (opts?.overdue) {
+      where.push(
+        `due_date < now() AND status NOT IN ('closed', 'mitigated', 'accepted', 'transferred')`
+      );
+    }
 
     const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
     const limit = opts?.limit ?? 100;
@@ -451,7 +544,7 @@ export class DepartmentRiskStorage extends PgBaseStorage {
     domainScores: Record<string, number>;
     openRisks: number;
     overdueRisks: number;
-    appetiteBreaches: Array<{ domain: string; score: number; threshold: number }>;
+    appetiteBreaches: { domain: string; score: number; threshold: number }[];
     assessmentId?: string;
     tenantId?: string;
   }): Promise<DepartmentScore> {
@@ -488,8 +581,14 @@ export class DepartmentRiskStorage extends PgBaseStorage {
     const params: unknown[] = [opts.departmentId];
     let idx = 2;
 
-    if (opts.from) { where.push(`scored_at >= $${idx++}`); params.push(opts.from); }
-    if (opts.to) { where.push(`scored_at <= $${idx++}`); params.push(opts.to); }
+    if (opts.from) {
+      where.push(`scored_at >= $${idx++}`);
+      params.push(opts.from);
+    }
+    if (opts.to) {
+      where.push(`scored_at <= $${idx++}`);
+      params.push(opts.to);
+    }
 
     const limit = opts.limit ?? 100;
     const rows = await this.queryMany<DepartmentScoreRow>(

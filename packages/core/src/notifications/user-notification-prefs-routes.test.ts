@@ -345,7 +345,12 @@ describe('POST body parsing branches (Phase 105)', () => {
       method: 'POST',
       url: '/api/v1/users/me/notification-prefs',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ channel: 'slack', chatId: 'C1', quietHoursStart: 22, quietHoursEnd: 8 }),
+      body: JSON.stringify({
+        channel: 'slack',
+        chatId: 'C1',
+        quietHoursStart: 22,
+        quietHoursEnd: 8,
+      }),
     });
     expect(storage.upsert).toHaveBeenCalledWith(
       'user-1',
@@ -360,7 +365,12 @@ describe('POST body parsing branches (Phase 105)', () => {
       method: 'POST',
       url: '/api/v1/users/me/notification-prefs',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ channel: 'slack', chatId: 'C1', quietHoursStart: 'abc', quietHoursEnd: 'xyz' }),
+      body: JSON.stringify({
+        channel: 'slack',
+        chatId: 'C1',
+        quietHoursStart: 'abc',
+        quietHoursEnd: 'xyz',
+      }),
     });
     expect(storage.upsert).toHaveBeenCalledWith(
       'user-1',

@@ -470,7 +470,14 @@ describe('SlackIntegration', () => {
           ts: '1234567890.000100',
           user: 'U123',
           channel: 'C456',
-          files: [{ name: 'image.png', mimetype: 'image/png', url_private: 'https://files.slack.com/img.png', size: 1024 }],
+          files: [
+            {
+              name: 'image.png',
+              mimetype: 'image/png',
+              url_private: 'https://files.slack.com/img.png',
+              size: 1024,
+            },
+          ],
         },
       });
 
@@ -486,7 +493,9 @@ describe('SlackIntegration', () => {
 
     it('processes image attachments through multimodalManager', async () => {
       const onMessage = vi.fn().mockResolvedValue(undefined);
-      const mockAnalyzeImage = vi.fn().mockResolvedValue({ description: 'A sunset over the ocean' });
+      const mockAnalyzeImage = vi
+        .fn()
+        .mockResolvedValue({ description: 'A sunset over the ocean' });
       const deps = {
         logger: makeLogger(),
         onMessage,
@@ -569,9 +578,7 @@ describe('SlackIntegration', () => {
       });
 
       // Should still call onMessage despite vision failure
-      expect(onMessage).toHaveBeenCalledWith(
-        expect.objectContaining({ text: 'Check image' })
-      );
+      expect(onMessage).toHaveBeenCalledWith(expect.objectContaining({ text: 'Check image' }));
     });
 
     it('skips non-image attachments in vision processing', async () => {
@@ -707,9 +714,7 @@ describe('SlackIntegration', () => {
         },
       });
 
-      expect(onMessage).toHaveBeenCalledWith(
-        expect.objectContaining({ chatId: 'C888' })
-      );
+      expect(onMessage).toHaveBeenCalledWith(expect.objectContaining({ chatId: 'C888' }));
     });
   });
 
@@ -761,9 +766,7 @@ describe('SlackIntegration', () => {
         ack: vi.fn().mockResolvedValue(undefined),
       });
 
-      expect(onMessage).toHaveBeenCalledWith(
-        expect.objectContaining({ text: '/friday' })
-      );
+      expect(onMessage).toHaveBeenCalledWith(expect.objectContaining({ text: '/friday' }));
     });
   });
 
@@ -847,9 +850,7 @@ describe('SlackIntegration', () => {
       expect(ack).toHaveBeenCalled();
       expect(configure).toHaveBeenCalledWith(
         expect.objectContaining({
-          blocks: expect.arrayContaining([
-            expect.objectContaining({ block_id: 'task_block' }),
-          ]),
+          blocks: expect.arrayContaining([expect.objectContaining({ block_id: 'task_block' })]),
         })
       );
     });

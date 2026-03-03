@@ -48,7 +48,13 @@ interface DepartmentFormModalProps {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const APPETITE_DOMAINS = ['security', 'operational', 'financial', 'compliance', 'reputational'] as const;
+const APPETITE_DOMAINS = [
+  'security',
+  'operational',
+  'financial',
+  'compliance',
+  'reputational',
+] as const;
 type AppetiteDomain = (typeof APPETITE_DOMAINS)[number];
 
 const DEFAULT_APPETITE: RiskAppetite = {
@@ -92,7 +98,12 @@ function sliderTrackColor(value: number): string {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function DepartmentFormModal({ open, onClose, onSubmit, department }: DepartmentFormModalProps) {
+export function DepartmentFormModal({
+  open,
+  onClose,
+  onSubmit,
+  department,
+}: DepartmentFormModalProps) {
   const isEdit = !!department?.id;
 
   const [name, setName] = useState('');
@@ -108,8 +119,12 @@ export function DepartmentFormModal({ open, onClose, onSubmit, department }: Dep
       setName(department.name ?? '');
       setDescription(department.description ?? '');
       setMission(department.mission ?? '');
-      setAppetite(department.riskAppetite ? { ...department.riskAppetite } : { ...DEFAULT_APPETITE });
-      setTargets(department.complianceTargets ? department.complianceTargets.map((t) => ({ ...t })) : []);
+      setAppetite(
+        department.riskAppetite ? { ...department.riskAppetite } : { ...DEFAULT_APPETITE }
+      );
+      setTargets(
+        department.complianceTargets ? department.complianceTargets.map((t) => ({ ...t })) : []
+      );
     } else {
       setName('');
       setDescription('');
@@ -144,11 +159,12 @@ export function DepartmentFormModal({ open, onClose, onSubmit, department }: Dep
     setTargets((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const updateTarget = useCallback((index: number, field: keyof ComplianceTarget, value: string) => {
-    setTargets((prev) =>
-      prev.map((t, i) => (i === index ? { ...t, [field]: value } : t)),
-    );
-  }, []);
+  const updateTarget = useCallback(
+    (index: number, field: keyof ComplianceTarget, value: string) => {
+      setTargets((prev) => prev.map((t, i) => (i === index ? { ...t, [field]: value } : t)));
+    },
+    []
+  );
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -162,13 +178,16 @@ export function DepartmentFormModal({ open, onClose, onSubmit, department }: Dep
         complianceTargets: targets.filter((t) => t.framework.trim()),
       });
     },
-    [name, description, mission, appetite, targets, onSubmit],
+    [name, description, mission, appetite, targets, onSubmit]
   );
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" data-testid="department-form-modal">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      data-testid="department-form-modal"
+    >
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
@@ -178,7 +197,9 @@ export function DepartmentFormModal({ open, onClose, onSubmit, department }: Dep
         <div className="sticky top-0 bg-background border-b border-border px-6 py-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold">{isEdit ? 'Edit Department' : 'Create Department'}</h2>
+            <h2 className="text-lg font-semibold">
+              {isEdit ? 'Edit Department' : 'Create Department'}
+            </h2>
           </div>
           <button
             className="text-muted-foreground hover:text-foreground transition-colors"
@@ -200,7 +221,9 @@ export function DepartmentFormModal({ open, onClose, onSubmit, department }: Dep
                 type="text"
                 className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                }}
                 placeholder="e.g. Engineering"
                 required
                 maxLength={200}
@@ -212,7 +235,9 @@ export function DepartmentFormModal({ open, onClose, onSubmit, department }: Dep
               <textarea
                 className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[60px]"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                }}
                 placeholder="Brief description of the department"
                 rows={2}
               />
@@ -223,7 +248,9 @@ export function DepartmentFormModal({ open, onClose, onSubmit, department }: Dep
               <textarea
                 className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[60px]"
                 value={mission}
-                onChange={(e) => setMission(e.target.value)}
+                onChange={(e) => {
+                  setMission(e.target.value);
+                }}
                 placeholder="Department mission statement"
                 rows={2}
               />
@@ -243,7 +270,9 @@ export function DepartmentFormModal({ open, onClose, onSubmit, department }: Dep
                     key={preset.label}
                     type="button"
                     className={`px-2.5 py-1 text-xs text-white rounded transition-colors ${preset.color}`}
-                    onClick={() => applyPreset(preset.value)}
+                    onClick={() => {
+                      applyPreset(preset.value);
+                    }}
                   >
                     {preset.label}
                   </button>
@@ -263,7 +292,9 @@ export function DepartmentFormModal({ open, onClose, onSubmit, department }: Dep
                     max={100}
                     step={1}
                     value={appetite[domain]}
-                    onChange={(e) => handleAppetiteChange(domain, Number(e.target.value))}
+                    onChange={(e) => {
+                      handleAppetiteChange(domain, Number(e.target.value));
+                    }}
                     className={`flex-1 h-2 rounded-lg cursor-pointer ${sliderTrackColor(appetite[domain])}`}
                   />
                   <span className="w-10 text-sm text-right font-mono tabular-nums">
@@ -304,7 +335,9 @@ export function DepartmentFormModal({ open, onClose, onSubmit, department }: Dep
                       type="text"
                       className="w-full border border-border rounded px-2 py-1 text-sm bg-background text-foreground mt-0.5"
                       value={target.framework}
-                      onChange={(e) => updateTarget(idx, 'framework', e.target.value)}
+                      onChange={(e) => {
+                        updateTarget(idx, 'framework', e.target.value);
+                      }}
                       placeholder="e.g. SOC 2"
                     />
                   </div>
@@ -314,7 +347,9 @@ export function DepartmentFormModal({ open, onClose, onSubmit, department }: Dep
                       type="text"
                       className="w-full border border-border rounded px-2 py-1 text-sm bg-background text-foreground mt-0.5"
                       value={target.requirement ?? ''}
-                      onChange={(e) => updateTarget(idx, 'requirement', e.target.value)}
+                      onChange={(e) => {
+                        updateTarget(idx, 'requirement', e.target.value);
+                      }}
                       placeholder="Optional"
                     />
                   </div>
@@ -324,7 +359,9 @@ export function DepartmentFormModal({ open, onClose, onSubmit, department }: Dep
                       type="date"
                       className="w-full border border-border rounded px-2 py-1 text-sm bg-background text-foreground mt-0.5"
                       value={target.targetDate ?? ''}
-                      onChange={(e) => updateTarget(idx, 'targetDate', e.target.value)}
+                      onChange={(e) => {
+                        updateTarget(idx, 'targetDate', e.target.value);
+                      }}
                     />
                   </div>
                   <div>
@@ -332,7 +369,9 @@ export function DepartmentFormModal({ open, onClose, onSubmit, department }: Dep
                     <select
                       className="w-full border border-border rounded px-2 py-1 text-sm bg-background text-foreground mt-0.5"
                       value={target.status}
-                      onChange={(e) => updateTarget(idx, 'status', e.target.value)}
+                      onChange={(e) => {
+                        updateTarget(idx, 'status', e.target.value);
+                      }}
                     >
                       {COMPLIANCE_STATUSES.map((s) => (
                         <option key={s} value={s}>
@@ -345,7 +384,9 @@ export function DepartmentFormModal({ open, onClose, onSubmit, department }: Dep
                     <button
                       type="button"
                       className="text-muted-foreground hover:text-red-600 transition-colors"
-                      onClick={() => removeTarget(idx)}
+                      onClick={() => {
+                        removeTarget(idx);
+                      }}
                       title="Remove target"
                     >
                       <Trash2 className="w-4 h-4" />

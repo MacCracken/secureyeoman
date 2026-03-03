@@ -27,9 +27,7 @@ interface RiskAppetite {
   [domain: string]: number;
 }
 
-interface DomainScores {
-  [domain: string]: number;
-}
+type DomainScores = Record<string, number>;
 
 interface DepartmentScorecardPanelProps {
   scorecard: {
@@ -63,7 +61,7 @@ interface ChartDatum {
 
 function buildChartData(
   domainScores: DomainScores | undefined,
-  appetite: RiskAppetite,
+  appetite: RiskAppetite
 ): ChartDatum[] {
   return DOMAINS.map((domain) => ({
     domain: capitalize(domain),
@@ -101,9 +99,7 @@ function CustomTooltip({ active, payload, label }: any) {
         <span>Threshold:</span>
         <span className="font-medium">{threshold}</span>
       </div>
-      {breached && (
-        <div className="text-red-600 font-medium mt-1">Appetite breached</div>
-      )}
+      {breached && <div className="text-red-600 font-medium mt-1">Appetite breached</div>}
     </div>
   );
 }
@@ -157,7 +153,10 @@ export function DepartmentScorecardPanel({ scorecard }: DepartmentScorecardPanel
             axisLine={{ stroke: 'hsl(var(--border))' }}
             tickLine={false}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }} />
+          <Tooltip
+            content={<CustomTooltip />}
+            cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
+          />
           <Bar dataKey="score" radius={[4, 4, 0, 0]} maxBarSize={48}>
             {data.map((entry, index) => (
               <Cell key={index} fill={getBarColor(entry.score)} />
@@ -193,19 +192,31 @@ export function DepartmentScorecardPanel({ scorecard }: DepartmentScorecardPanel
       {/* Score legend */}
       <div className="flex items-center gap-4 text-xs text-muted-foreground justify-center">
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: '#16a34a' }} />
+          <span
+            className="inline-block w-3 h-3 rounded-sm"
+            style={{ backgroundColor: '#16a34a' }}
+          />
           {'< 25'}
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: '#eab308' }} />
+          <span
+            className="inline-block w-3 h-3 rounded-sm"
+            style={{ backgroundColor: '#eab308' }}
+          />
           25-49
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: '#ea580c' }} />
+          <span
+            className="inline-block w-3 h-3 rounded-sm"
+            style={{ backgroundColor: '#ea580c' }}
+          />
           50-74
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: '#dc2626' }} />
+          <span
+            className="inline-block w-3 h-3 rounded-sm"
+            style={{ backgroundColor: '#dc2626' }}
+          />
           {'>='}75
         </span>
       </div>

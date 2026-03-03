@@ -118,7 +118,10 @@ describe('Sidebar nav order', () => {
     mockFetchExtensionConfig.mockResolvedValue({ config: { enabled: false } } as any);
     mockFetchProactiveConfig.mockResolvedValue({ config: { enabled: false } } as any);
     mockFetchHealth.mockResolvedValue({ version: '1.0.0' } as any);
-    mockFetchModelInfo.mockResolvedValue({ available: { ollama: ['llama3'] }, default: null } as any);
+    mockFetchModelInfo.mockResolvedValue({
+      available: { ollama: ['llama3'] },
+      default: null,
+    } as any);
   });
 
   it('shows a Mission Control nav link pointing to /metrics', async () => {

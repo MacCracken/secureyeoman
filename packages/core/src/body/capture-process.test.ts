@@ -468,7 +468,9 @@ describe('CaptureProcess', () => {
 
   describe('getSanitizedEnv', () => {
     it('includes CAPTURE_SANDBOX and CAPTURE_MAX_DURATION in env', async () => {
-      const cp = new CaptureProcess(makeCfg({ sandboxConfig: { maxDuration: 60, maxMemory: 1024 } }));
+      const cp = new CaptureProcess(
+        makeCfg({ sandboxConfig: { maxDuration: 60, maxMemory: 1024 } })
+      );
       await cp.start();
 
       const spawnCall = mockSpawn.mock.calls[0];

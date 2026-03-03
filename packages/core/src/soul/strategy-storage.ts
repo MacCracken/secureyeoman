@@ -170,9 +170,11 @@ export class StrategyStorage extends PgBaseStorage {
     return row ? rowToStrategy(row) : null;
   }
 
-  async listStrategies(
-    opts?: { category?: ReasoningStrategyCategory; limit?: number; offset?: number }
-  ): Promise<{ items: ReasoningStrategy[]; total: number }> {
+  async listStrategies(opts?: {
+    category?: ReasoningStrategyCategory;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ items: ReasoningStrategy[]; total: number }> {
     const conditions: string[] = [];
     const values: unknown[] = [];
     let paramIndex = 1;
@@ -202,7 +204,10 @@ export class StrategyStorage extends PgBaseStorage {
     return { items: rows.map(rowToStrategy), total };
   }
 
-  async updateStrategy(id: string, data: ReasoningStrategyUpdate): Promise<ReasoningStrategy | null> {
+  async updateStrategy(
+    id: string,
+    data: ReasoningStrategyUpdate
+  ): Promise<ReasoningStrategy | null> {
     const existing = await this.getStrategy(id);
     if (!existing) return null;
     if (existing.isBuiltin) {
@@ -255,10 +260,7 @@ export class StrategyStorage extends PgBaseStorage {
       throw new Error('Cannot delete built-in strategies');
     }
 
-    const count = await this.execute(
-      'DELETE FROM soul.reasoning_strategies WHERE id = $1',
-      [id]
-    );
+    const count = await this.execute('DELETE FROM soul.reasoning_strategies WHERE id = $1', [id]);
     return count > 0;
   }
 

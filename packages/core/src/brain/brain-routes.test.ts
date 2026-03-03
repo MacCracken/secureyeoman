@@ -72,9 +72,7 @@ function makeMockHeartbeat(overrides?: Partial<HeartbeatManager>): HeartbeatMana
   } as unknown as HeartbeatManager;
 }
 
-function makeMockHeartbeatLogStorage(
-  overrides?: Record<string, unknown>
-): HeartbeatLogStorage {
+function makeMockHeartbeatLogStorage(overrides?: Record<string, unknown>): HeartbeatLogStorage {
   return {
     list: vi.fn().mockResolvedValue({ entries: [], total: 0 }),
     ...overrides,
@@ -124,21 +122,13 @@ function buildApp(opts: BuildAppOptions = {}) {
   registerBrainRoutes(app, {
     brainManager: makeMockBrain(opts.brainOverrides),
     heartbeatManager:
-      opts.heartbeatManager === OMIT
-        ? undefined
-        : (opts.heartbeatManager ?? makeMockHeartbeat()),
+      opts.heartbeatManager === OMIT ? undefined : (opts.heartbeatManager ?? makeMockHeartbeat()),
     heartbeatLogStorage:
       opts.heartbeatLogStorage === OMIT
         ? undefined
         : (opts.heartbeatLogStorage ?? makeMockHeartbeatLogStorage()),
-    externalSync:
-      opts.externalSync === OMIT
-        ? undefined
-        : (opts.externalSync ?? makeMockSync()),
-    soulManager:
-      opts.soulManager === OMIT
-        ? undefined
-        : (opts.soulManager ?? makeMockSoul()),
+    externalSync: opts.externalSync === OMIT ? undefined : (opts.externalSync ?? makeMockSync()),
+    soulManager: opts.soulManager === OMIT ? undefined : (opts.soulManager ?? makeMockSoul()),
   });
   return app;
 }
@@ -283,7 +273,9 @@ describe('POST /api/v1/brain/memories', () => {
   });
 
   it('returns 400 on manager error', async () => {
-    const app = buildApp({ brainOverrides: { remember: vi.fn().mockRejectedValue(new Error('db error')) } });
+    const app = buildApp({
+      brainOverrides: { remember: vi.fn().mockRejectedValue(new Error('db error')) },
+    });
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/brain/memories',
@@ -331,7 +323,9 @@ describe('DELETE /api/v1/brain/memories/:id', () => {
   });
 
   it('returns 400 on error', async () => {
-    const app = buildApp({ brainOverrides: { forget: vi.fn().mockRejectedValue(new Error('not found')) } });
+    const app = buildApp({
+      brainOverrides: { forget: vi.fn().mockRejectedValue(new Error('not found')) },
+    });
     const res = await app.inject({ method: 'DELETE', url: '/api/v1/brain/memories/missing' });
     expect(res.statusCode).toBe(400);
   });
@@ -1054,9 +1048,7 @@ describe('POST /api/v1/brain/consolidation/run', () => {
     const app = buildApp();
     const results = [];
     for (let i = 0; i < 6; i++) {
-      results.push(
-        app.inject({ method: 'POST', url: '/api/v1/brain/consolidation/run' })
-      );
+      results.push(app.inject({ method: 'POST', url: '/api/v1/brain/consolidation/run' }));
     }
     const responses = await Promise.all(results);
     const codes = responses.map((r) => r.statusCode);

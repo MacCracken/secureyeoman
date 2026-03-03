@@ -855,9 +855,9 @@ describe('AuditChain — record queue resilience', () => {
     await chain.record({ event: 'e1', level: 'info', message: 'OK 1' });
 
     // Second record will fail in storage.append
-    await expect(
-      chain.record({ event: 'e2', level: 'info', message: 'Fail' })
-    ).rejects.toThrow('Transient storage error');
+    await expect(chain.record({ event: 'e2', level: 'info', message: 'Fail' })).rejects.toThrow(
+      'Transient storage error'
+    );
 
     // Third record should still succeed
     const e3 = await chain.record({ event: 'e3', level: 'info', message: 'OK 3' });

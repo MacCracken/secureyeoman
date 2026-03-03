@@ -65,15 +65,49 @@ import type {
 } from '../types';
 
 // Phase 111-F: Lazy-loaded departmental risk components
-const AppetiteRadarChart = lazy(() => import('./risk/AppetiteRadarChart').then((m) => ({ default: m.AppetiteRadarChart ?? m.default })));
-const MitigationPlansPanel = lazy(() => import('./risk/MitigationPlansPanel').then((m) => ({ default: m.MitigationPlansPanel ?? m.default })));
-const ObjectivesEditor = lazy(() => import('./risk/ObjectivesEditor').then((m) => ({ default: m.ObjectivesEditor ?? m.default })));
-const DepartmentScorecardPanel = lazy(() => import('./risk/DepartmentScorecardPanel').then((m) => ({ default: m.DepartmentScorecardPanel ?? m.default })));
-const RiskRegisterTable = lazy(() => import('./risk/RiskRegisterTable').then((m) => ({ default: m.RiskRegisterTable ?? m.default })));
-const RiskTrendChart = lazy(() => import('./risk/RiskTrendChart').then((m) => ({ default: m.RiskTrendChart ?? m.default })));
-const EnhancedHeatmap = lazy(() => import('./risk/EnhancedHeatmap').then((m) => ({ default: m.EnhancedHeatmap ?? m.default })));
-const ExecutiveSummaryPanel = lazy(() => import('./risk/ExecutiveSummaryPanel').then((m) => ({ default: m.ExecutiveSummaryPanel ?? m.default })));
-const DepartmentFormModal = lazy(() => import('./risk/DepartmentFormModal').then((m) => ({ default: m.DepartmentFormModal ?? m.default })));
+const AppetiteRadarChart = lazy(() =>
+  import('./risk/AppetiteRadarChart').then((m) => ({
+    default: m.AppetiteRadarChart ?? (m as any).default,
+  }))
+);
+const MitigationPlansPanel = lazy(() =>
+  import('./risk/MitigationPlansPanel').then((m) => ({
+    default: m.MitigationPlansPanel ?? (m as any).default,
+  }))
+);
+const ObjectivesEditor = lazy(() =>
+  import('./risk/ObjectivesEditor').then((m) => ({
+    default: m.ObjectivesEditor ?? (m as any).default,
+  }))
+);
+const DepartmentScorecardPanel = lazy(() =>
+  import('./risk/DepartmentScorecardPanel').then((m) => ({
+    default: m.DepartmentScorecardPanel ?? (m as any).default,
+  }))
+);
+const RiskRegisterTable = lazy(() =>
+  import('./risk/RiskRegisterTable').then((m) => ({
+    default: m.RiskRegisterTable ?? (m as any).default,
+  }))
+);
+const RiskTrendChart = lazy(() =>
+  import('./risk/RiskTrendChart').then((m) => ({ default: m.RiskTrendChart ?? (m as any).default }))
+);
+const EnhancedHeatmap = lazy(() =>
+  import('./risk/EnhancedHeatmap').then((m) => ({
+    default: m.EnhancedHeatmap ?? (m as any).default,
+  }))
+);
+const ExecutiveSummaryPanel = lazy(() =>
+  import('./risk/ExecutiveSummaryPanel').then((m) => ({
+    default: m.ExecutiveSummaryPanel ?? (m as any).default,
+  }))
+);
+const DepartmentFormModal = lazy(() =>
+  import('./risk/DepartmentFormModal').then((m) => ({
+    default: m.DepartmentFormModal ?? (m as any).default,
+  }))
+);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -898,14 +932,15 @@ function DepartmentsSection() {
 
   const { data: registerData } = useQuery({
     queryKey: ['risk-register', selectedDept],
-    queryFn: () => (selectedDept ? fetchRegisterEntries({ departmentId: selectedDept, limit: 100 }) : null),
+    queryFn: () =>
+      selectedDept ? fetchRegisterEntries({ departmentId: selectedDept, limit: 100 }) : null,
     enabled: !!selectedDept,
   });
 
   const departments = deptsData?.items ?? [];
-  const scorecard = (scorecardData as any)?.scorecard ?? scorecardData;
-  const heatmap = (heatmapData as any)?.cells ?? [];
-  const summary = (summaryData as any)?.summary ?? summaryData;
+  const scorecard = scorecardData?.scorecard ?? scorecardData;
+  const heatmap = heatmapData?.cells ?? [];
+  const summary = summaryData?.summary ?? summaryData;
   const registerEntries = (registerData as any)?.items ?? [];
 
   const invalidateAll = () => {
@@ -948,7 +983,9 @@ function DepartmentsSection() {
       severity: 'medium',
       likelihood: 3,
       impact: 3,
-    }).then(() => invalidateAll());
+    }).then(() => {
+      invalidateAll();
+    });
   };
 
   const handleAppetiteChange = async (appetite: any) => {
@@ -976,10 +1013,15 @@ function DepartmentsSection() {
         {/* Department list */}
         <div className="w-64 space-y-2 shrink-0">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Departments</h3>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              Departments
+            </h3>
             <button
               className="text-xs px-2 py-1 bg-primary text-primary-content rounded hover:opacity-90"
-              onClick={() => { setEditingDept(null); setShowDeptModal(true); }}
+              onClick={() => {
+                setEditingDept(null);
+                setShowDeptModal(true);
+              }}
             >
               <Plus className="w-3 h-3 inline -mt-0.5" /> New
             </button>
@@ -993,13 +1035,18 @@ function DepartmentsSection() {
                     ? 'bg-primary/10 text-primary font-medium'
                     : 'hover:bg-base-200 text-foreground'
                 }`}
-                onClick={() => setSelectedDept(d.id)}
+                onClick={() => {
+                  setSelectedDept(d.id);
+                }}
               >
                 {d.name}
               </button>
               <button
                 className="p-1 text-muted-foreground hover:text-foreground"
-                onClick={() => { setEditingDept(d); setShowDeptModal(true); }}
+                onClick={() => {
+                  setEditingDept(d);
+                  setShowDeptModal(true);
+                }}
                 title="Edit"
               >
                 <Edit2 className="w-3 h-3" />
@@ -1026,21 +1073,30 @@ function DepartmentsSection() {
               <div className="flex items-center gap-2">
                 <button
                   className={`px-3 py-1 text-sm rounded ${view === 'intent' ? 'bg-primary text-primary-content' : 'bg-base-200'}`}
-                  onClick={() => setView('intent')}
+                  onClick={() => {
+                    setView('intent');
+                  }}
                 >
                   Intent
                 </button>
                 <button
                   className={`px-3 py-1 text-sm rounded ${view === 'risk' ? 'bg-primary text-primary-content' : 'bg-base-200'}`}
-                  onClick={() => setView('risk')}
+                  onClick={() => {
+                    setView('risk');
+                  }}
                 >
                   Risk
                 </button>
                 <button
                   className="ml-auto text-xs px-2 py-1 border border-border rounded hover:bg-base-200"
-                  onClick={() => { snapshotDepartment(selectedDept).then(() => invalidateAll()); }}
+                  onClick={() => {
+                    snapshotDepartment(selectedDept).then(() => {
+                      invalidateAll();
+                    });
+                  }}
                 >
-                  <RefreshCw className="w-3 h-3 inline -mt-0.5 mr-1" />Snapshot
+                  <RefreshCw className="w-3 h-3 inline -mt-0.5 mr-1" />
+                  Snapshot
                 </button>
               </div>
 
@@ -1053,7 +1109,9 @@ function DepartmentsSection() {
                     <h3 className="text-lg font-semibold">{scorecard.department?.name}</h3>
                     {scorecard.department?.mission && (
                       <div>
-                        <span className="text-xs font-medium text-muted-foreground uppercase">Mission</span>
+                        <span className="text-xs font-medium text-muted-foreground uppercase">
+                          Mission
+                        </span>
                         <p className="text-sm mt-1">{scorecard.department.mission}</p>
                       </div>
                     )}
@@ -1070,7 +1128,9 @@ function DepartmentsSection() {
                     />
 
                     <MitigationPlansPanel
-                      mitigations={scorecard.topRisks?.flatMap((r: any) => r.mitigations ?? []) ?? []}
+                      mitigations={
+                        scorecard.topRisks?.flatMap((r: any) => r.mitigations ?? []) ?? []
+                      }
                     />
                   </div>
                 </Suspense>
@@ -1105,7 +1165,9 @@ function DepartmentsSection() {
         <Suspense fallback={<Loader2 className="w-5 h-5 animate-spin" />}>
           <EnhancedHeatmap
             cells={heatmap}
-            onCellClick={(cell: any) => setSelectedDept(cell.departmentId)}
+            onCellClick={(cell: any) => {
+              setSelectedDept(cell.departmentId);
+            }}
           />
         </Suspense>
       )}
@@ -1115,7 +1177,10 @@ function DepartmentsSection() {
         <Suspense fallback={null}>
           <DepartmentFormModal
             open={showDeptModal}
-            onClose={() => { setShowDeptModal(false); setEditingDept(null); }}
+            onClose={() => {
+              setShowDeptModal(false);
+              setEditingDept(null);
+            }}
             onSubmit={handleDeptSubmit}
             department={editingDept}
           />

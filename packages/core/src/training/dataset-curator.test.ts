@@ -109,7 +109,12 @@ describe('DatasetCuratorManager', () => {
           ],
         });
 
-      const result = await manager.commitDataset('test-ds', undefined, { minTokens: 0 }, '/tmp/out');
+      const result = await manager.commitDataset(
+        'test-ds',
+        undefined,
+        { minTokens: 0 },
+        '/tmp/out'
+      );
       expect(result.status).toBe('committed');
       expect(result.sampleCount).toBe(1);
       expect(writeFileSync).toHaveBeenCalled();

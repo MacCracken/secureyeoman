@@ -62,12 +62,28 @@ describe('AppetiteRadarChart', () => {
 
   beforeEach(async () => {
     const mod = await import('./AppetiteRadarChart');
-    AppetiteRadarChart = mod.AppetiteRadarChart ?? mod.default;
+    AppetiteRadarChart = mod.AppetiteRadarChart ?? (mod as any).default;
   });
 
   it('renders radar chart with department data', () => {
-    const dept = { riskAppetite: { security: 50, operational: 40, financial: 60, compliance: 45, reputational: 55 } };
-    const score = { domainScores: { security: 30, operational: 20, financial: 40, compliance: 50, reputational: 35 } };
+    const dept = {
+      riskAppetite: {
+        security: 50,
+        operational: 40,
+        financial: 60,
+        compliance: 45,
+        reputational: 55,
+      },
+    };
+    const score = {
+      domainScores: {
+        security: 30,
+        operational: 20,
+        financial: 40,
+        compliance: 50,
+        reputational: 35,
+      },
+    };
     render(<AppetiteRadarChart department={dept} latestScore={score} />);
     expect(screen.getByTestId('radar-chart')).toBeTruthy();
   });
@@ -96,7 +112,7 @@ describe('MitigationPlansPanel', () => {
 
   beforeEach(async () => {
     const mod = await import('./MitigationPlansPanel');
-    MitigationPlansPanel = mod.MitigationPlansPanel ?? mod.default;
+    MitigationPlansPanel = mod.MitigationPlansPanel ?? (mod as any).default;
   });
 
   it('renders empty state', () => {
@@ -132,7 +148,7 @@ describe('ObjectivesEditor', () => {
 
   beforeEach(async () => {
     const mod = await import('./ObjectivesEditor');
-    ObjectivesEditor = mod.ObjectivesEditor ?? mod.default;
+    ObjectivesEditor = mod.ObjectivesEditor ?? (mod as any).default;
   });
 
   it('renders objectives list', () => {
@@ -158,7 +174,7 @@ describe('DepartmentScorecardPanel', () => {
 
   beforeEach(async () => {
     const mod = await import('./DepartmentScorecardPanel');
-    DepartmentScorecardPanel = mod.DepartmentScorecardPanel ?? mod.default;
+    DepartmentScorecardPanel = mod.DepartmentScorecardPanel ?? (mod as any).default;
   });
 
   it('renders bar chart with domain scores', () => {
@@ -184,24 +200,49 @@ describe('RiskRegisterTable', () => {
 
   beforeEach(async () => {
     const mod = await import('./RiskRegisterTable');
-    RiskRegisterTable = mod.RiskRegisterTable ?? mod.default;
+    RiskRegisterTable = mod.RiskRegisterTable ?? (mod as any).default;
   });
 
   it('renders entries in table', () => {
     const entries = [
-      { id: 'r1', title: 'SQL Injection', category: 'security', severity: 'high', likelihood: 4, impact: 5, riskScore: 20, status: 'open', owner: 'alice', dueDate: null, mitigations: [], createdAt: Date.now(), updatedAt: Date.now() },
+      {
+        id: 'r1',
+        title: 'SQL Injection',
+        category: 'security',
+        severity: 'high',
+        likelihood: 4,
+        impact: 5,
+        riskScore: 20,
+        status: 'open',
+        owner: 'alice',
+        dueDate: null,
+        mitigations: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
     ];
-    render(<RiskRegisterTable entries={entries} onStatusChange={vi.fn()} onDelete={vi.fn()} onAdd={vi.fn()} />);
+    render(
+      <RiskRegisterTable
+        entries={entries}
+        onStatusChange={vi.fn()}
+        onDelete={vi.fn()}
+        onAdd={vi.fn()}
+      />
+    );
     expect(screen.getByText('SQL Injection')).toBeTruthy();
   });
 
   it('shows add risk button', () => {
-    render(<RiskRegisterTable entries={[]} onStatusChange={vi.fn()} onDelete={vi.fn()} onAdd={vi.fn()} />);
+    render(
+      <RiskRegisterTable entries={[]} onStatusChange={vi.fn()} onDelete={vi.fn()} onAdd={vi.fn()} />
+    );
     expect(screen.getByText(/add risk/i)).toBeTruthy();
   });
 
   it('shows empty state when no entries', () => {
-    render(<RiskRegisterTable entries={[]} onStatusChange={vi.fn()} onDelete={vi.fn()} onAdd={vi.fn()} />);
+    render(
+      <RiskRegisterTable entries={[]} onStatusChange={vi.fn()} onDelete={vi.fn()} onAdd={vi.fn()} />
+    );
     expect(screen.getByText(/no.*entries/i)).toBeTruthy();
   });
 });
@@ -213,7 +254,7 @@ describe('RiskTrendChart', () => {
 
   beforeEach(async () => {
     const mod = await import('./RiskTrendChart');
-    RiskTrendChart = mod.RiskTrendChart ?? mod.default;
+    RiskTrendChart = mod.RiskTrendChart ?? (mod as any).default;
   });
 
   it('renders with time range buttons', () => {
@@ -232,13 +273,27 @@ describe('EnhancedHeatmap', () => {
 
   beforeEach(async () => {
     const mod = await import('./EnhancedHeatmap');
-    EnhancedHeatmap = mod.EnhancedHeatmap ?? mod.default;
+    EnhancedHeatmap = mod.EnhancedHeatmap ?? (mod as any).default;
   });
 
   it('renders dept x domain grid', () => {
     const cells = [
-      { departmentId: 'd1', departmentName: 'Engineering', domain: 'security', score: 60, threshold: 50, breached: true },
-      { departmentId: 'd1', departmentName: 'Engineering', domain: 'operational', score: 20, threshold: 50, breached: false },
+      {
+        departmentId: 'd1',
+        departmentName: 'Engineering',
+        domain: 'security',
+        score: 60,
+        threshold: 50,
+        breached: true,
+      },
+      {
+        departmentId: 'd1',
+        departmentName: 'Engineering',
+        domain: 'operational',
+        score: 20,
+        threshold: 50,
+        breached: false,
+      },
     ];
     render(<EnhancedHeatmap cells={cells} />);
     expect(screen.getByText('Engineering')).toBeTruthy();
@@ -252,7 +307,14 @@ describe('EnhancedHeatmap', () => {
   it('calls onCellClick', () => {
     const onClick = vi.fn();
     const cells = [
-      { departmentId: 'd1', departmentName: 'Eng', domain: 'security', score: 60, threshold: 50, breached: true },
+      {
+        departmentId: 'd1',
+        departmentName: 'Eng',
+        domain: 'security',
+        score: 60,
+        threshold: 50,
+        breached: true,
+      },
     ];
     render(<EnhancedHeatmap cells={cells} onCellClick={onClick} />);
     const cell = screen.getByText('60');
@@ -268,7 +330,7 @@ describe('ExecutiveSummaryPanel', () => {
 
   beforeEach(async () => {
     const mod = await import('./ExecutiveSummaryPanel');
-    ExecutiveSummaryPanel = mod.ExecutiveSummaryPanel ?? mod.default;
+    ExecutiveSummaryPanel = mod.ExecutiveSummaryPanel ?? (mod as any).default;
   });
 
   it('renders KPI cards', () => {
@@ -297,7 +359,14 @@ describe('ExecutiveSummaryPanel', () => {
       appetiteBreaches: 0,
       averageScore: 42,
       departments: [
-        { id: 'd1', name: 'Engineering', score: 42, openRisks: 5, criticalRisks: 0, appetiteBreaches: 0 },
+        {
+          id: 'd1',
+          name: 'Engineering',
+          score: 42,
+          openRisks: 5,
+          criticalRisks: 0,
+          appetiteBreaches: 0,
+        },
       ],
     };
     render(<ExecutiveSummaryPanel summary={summary} />);
@@ -312,7 +381,7 @@ describe('DepartmentFormModal', () => {
 
   beforeEach(async () => {
     const mod = await import('./DepartmentFormModal');
-    DepartmentFormModal = mod.DepartmentFormModal ?? mod.default;
+    DepartmentFormModal = mod.DepartmentFormModal ?? (mod as any).default;
   });
 
   it('renders create form when open', () => {
@@ -322,13 +391,17 @@ describe('DepartmentFormModal', () => {
 
   it('renders edit form with pre-filled data', () => {
     const dept = { id: 'd1', name: 'Engineering', description: 'Dev team', mission: 'Build stuff' };
-    render(<DepartmentFormModal open={true} onClose={vi.fn()} onSubmit={vi.fn()} department={dept} />);
+    render(
+      <DepartmentFormModal open={true} onClose={vi.fn()} onSubmit={vi.fn()} department={dept} />
+    );
     const nameInput = screen.getByDisplayValue('Engineering');
     expect(nameInput).toBeTruthy();
   });
 
   it('does not render when closed', () => {
-    const { container } = render(<DepartmentFormModal open={false} onClose={vi.fn()} onSubmit={vi.fn()} />);
+    const { container } = render(
+      <DepartmentFormModal open={false} onClose={vi.fn()} onSubmit={vi.fn()} />
+    );
     expect(container.innerHTML).toBe('');
   });
 

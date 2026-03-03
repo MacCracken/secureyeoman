@@ -43,13 +43,7 @@ export const RegisterEntrySourceSchema = z.enum([
 ]);
 export type RegisterEntrySource = z.infer<typeof RegisterEntrySourceSchema>;
 
-export const RegisterEntrySeveritySchema = z.enum([
-  'critical',
-  'high',
-  'medium',
-  'low',
-  'info',
-]);
+export const RegisterEntrySeveritySchema = z.enum(['critical', 'high', 'medium', 'low', 'info']);
 export type RegisterEntrySeverity = z.infer<typeof RegisterEntrySeveritySchema>;
 
 // ─── Nested Objects ──────────────────────────────────────────────
@@ -65,7 +59,9 @@ export const ComplianceTargetSchema = z.object({
   framework: z.string().min(1).max(100),
   requirement: z.string().max(500).optional(),
   targetDate: z.string().optional(),
-  status: z.enum(['not_started', 'in_progress', 'compliant', 'non_compliant']).default('not_started'),
+  status: z
+    .enum(['not_started', 'in_progress', 'compliant', 'non_compliant'])
+    .default('not_started'),
 });
 export type ComplianceTarget = z.infer<typeof ComplianceTargetSchema>;
 
@@ -168,7 +164,9 @@ export const RegisterEntryCreateSchema = z.object({
 });
 export type RegisterEntryCreate = z.infer<typeof RegisterEntryCreateSchema>;
 
-export const RegisterEntryUpdateSchema = RegisterEntryCreateSchema.omit({ departmentId: true }).partial();
+export const RegisterEntryUpdateSchema = RegisterEntryCreateSchema.omit({
+  departmentId: true,
+}).partial();
 export type RegisterEntryUpdate = z.infer<typeof RegisterEntryUpdateSchema>;
 
 // ─── Department Score ────────────────────────────────────────────
@@ -181,11 +179,15 @@ export const DepartmentScoreSchema = z.object({
   domainScores: z.record(z.number()).default({}),
   openRisks: z.number().int().default(0),
   overdueRisks: z.number().int().default(0),
-  appetiteBreaches: z.array(z.object({
-    domain: z.string(),
-    score: z.number(),
-    threshold: z.number(),
-  })).default([]),
+  appetiteBreaches: z
+    .array(
+      z.object({
+        domain: z.string(),
+        score: z.number(),
+        threshold: z.number(),
+      })
+    )
+    .default([]),
   assessmentId: z.string().nullable().optional(),
   tenantId: z.string().nullable().optional(),
   createdAt: z.number(),
@@ -200,11 +202,13 @@ export const DepartmentScorecardSchema = z.object({
   openRisks: z.number().int(),
   overdueRisks: z.number().int(),
   criticalRisks: z.number().int(),
-  appetiteBreaches: z.array(z.object({
-    domain: z.string(),
-    score: z.number(),
-    threshold: z.number(),
-  })),
+  appetiteBreaches: z.array(
+    z.object({
+      domain: z.string(),
+      score: z.number(),
+      threshold: z.number(),
+    })
+  ),
   topRisks: z.array(RegisterEntrySchema),
 });
 export type DepartmentScorecard = z.infer<typeof DepartmentScorecardSchema>;
@@ -215,10 +219,12 @@ export const DepartmentIntentSummarySchema = z.object({
   objectives: z.array(DepartmentObjectiveSchema),
   complianceTargets: z.array(ComplianceTargetSchema),
   teamName: z.string().nullable().optional(),
-  childDepartments: z.array(z.object({
-    id: z.string(),
-    name: z.string(),
-  })),
+  childDepartments: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+    })
+  ),
 });
 export type DepartmentIntentSummary = z.infer<typeof DepartmentIntentSummarySchema>;
 

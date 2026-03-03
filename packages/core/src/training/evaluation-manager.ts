@@ -346,18 +346,22 @@ export class EvaluationManager {
       metrics: result.metrics,
     });
 
-    void emitJobCompletion(this.getAlertManager?.() ?? null, {
-      jobType: 'evaluation',
-      status: 'completed',
-      jobId: evalId,
-      metrics: {
-        exactMatch: result.metrics.exact_match,
-        charSimilarity: result.metrics.char_similarity,
-        sampleCount: result.metrics.sample_count,
-        toolNameAccuracy: result.metrics.tool_name_accuracy,
-        toolArgMatch: result.metrics.tool_arg_match,
+    emitJobCompletion(
+      this.getAlertManager?.() ?? null,
+      {
+        jobType: 'evaluation',
+        status: 'completed',
+        jobId: evalId,
+        metrics: {
+          exactMatch: result.metrics.exact_match,
+          charSimilarity: result.metrics.char_similarity,
+          sampleCount: result.metrics.sample_count,
+          toolNameAccuracy: result.metrics.tool_name_accuracy,
+          toolArgMatch: result.metrics.tool_arg_match,
+        },
       },
-    }, this.logger);
+      this.logger
+    );
 
     return result;
   }

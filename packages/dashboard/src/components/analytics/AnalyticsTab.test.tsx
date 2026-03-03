@@ -8,12 +8,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 vi.mock('../../api/client', () => ({
   getAccessToken: vi.fn(() => null),
-  fetchPersonalities: vi.fn().mockResolvedValue([
-    { id: 'p1', name: 'Test Bot', isActive: true, isDefault: true },
-  ]),
-  fetchSentimentTrend: vi.fn().mockResolvedValue([
-    { date: '2026-01-01', positive: 5, neutral: 3, negative: 2, avgScore: 0.65 },
-  ]),
+  fetchPersonalities: vi
+    .fn()
+    .mockResolvedValue([{ id: 'p1', name: 'Test Bot', isActive: true, isDefault: true }]),
+  fetchSentimentTrend: vi
+    .fn()
+    .mockResolvedValue([
+      { date: '2026-01-01', positive: 5, neutral: 3, negative: 2, avgScore: 0.65 },
+    ]),
   fetchEngagementMetrics: vi.fn().mockResolvedValue({
     personalityId: 'p1',
     periodDays: 30,
@@ -24,11 +26,21 @@ vi.mock('../../api/client', () => ({
     totalConversations: 100,
   }),
   fetchKeyPhrases: vi.fn().mockResolvedValue([
-    { id: 'kp1', personalityId: 'p1', phrase: 'machine learning', frequency: 12, windowStart: '2026-01-01', windowEnd: '2026-01-31', updatedAt: '2026-01-15' },
+    {
+      id: 'kp1',
+      personalityId: 'p1',
+      phrase: 'machine learning',
+      frequency: 12,
+      windowStart: '2026-01-01',
+      windowEnd: '2026-01-31',
+      updatedAt: '2026-01-15',
+    },
   ]),
-  fetchTopEntities: vi.fn().mockResolvedValue([
-    { entityType: 'technology', entityValue: 'React', totalMentions: 10, conversationCount: 3 },
-  ]),
+  fetchTopEntities: vi
+    .fn()
+    .mockResolvedValue([
+      { entityType: 'technology', entityValue: 'React', totalMentions: 10, conversationCount: 3 },
+    ]),
   searchEntities: vi.fn().mockResolvedValue([]),
   fetchAnomalies: vi.fn().mockResolvedValue({ anomalies: [], total: 0 }),
 }));
@@ -57,11 +69,7 @@ function createTestQueryClient() {
 
 function renderWithProviders(ui: React.ReactElement) {
   const qc = createTestQueryClient();
-  return render(
-    <QueryClientProvider client={qc}>
-      {ui}
-    </QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
 }
 
 // Dynamic import for lazy component

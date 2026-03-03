@@ -14,23 +14,31 @@ const mockProxyStop = vi.fn();
 vi.mock('./linux-sandbox.js', () => ({
   LinuxSandbox: class MockLinuxSandbox {
     opts: any;
-    constructor(opts?: any) { this.opts = opts; }
-    getCapabilities() { return mockLinuxGetCapabilities(); }
-    get [Symbol.toStringTag]() { return 'LinuxSandbox'; }
+    constructor(opts?: any) {
+      this.opts = opts;
+    }
+    getCapabilities() {
+      return mockLinuxGetCapabilities();
+    }
+    readonly [Symbol.toStringTag] = 'LinuxSandbox';
   },
 }));
 
 vi.mock('./darwin-sandbox.js', () => ({
   DarwinSandbox: class MockDarwinSandbox {
-    getCapabilities() { return mockDarwinGetCapabilities(); }
-    get [Symbol.toStringTag]() { return 'DarwinSandbox'; }
+    getCapabilities() {
+      return mockDarwinGetCapabilities();
+    }
+    readonly [Symbol.toStringTag] = 'DarwinSandbox';
   },
 }));
 
 vi.mock('./credential-proxy.js', () => ({
   CredentialProxy: class MockCredentialProxy {
     constructor(_opts: any) {}
-    start() { return mockProxyStart(); }
+    start() {
+      return mockProxyStart();
+    }
   },
 }));
 
@@ -91,7 +99,11 @@ describe('SandboxManager — Phase 105 platform + proxy coverage', () => {
     it('delegates to LinuxSandbox.getCapabilities()', () => {
       Object.defineProperty(process, 'platform', { value: 'linux', writable: true });
       mockLinuxGetCapabilities.mockReturnValue({
-        landlock: true, seccomp: true, namespaces: true, rlimits: true, platform: 'linux',
+        landlock: true,
+        seccomp: true,
+        namespaces: true,
+        rlimits: true,
+        platform: 'linux',
       });
       const mgr = new SandboxManager(makeConfig(), { logger: makeLogger() as any });
       const caps = mgr.detect();
@@ -105,7 +117,11 @@ describe('SandboxManager — Phase 105 platform + proxy coverage', () => {
     it('delegates to DarwinSandbox.getCapabilities()', () => {
       Object.defineProperty(process, 'platform', { value: 'darwin', writable: true });
       mockDarwinGetCapabilities.mockReturnValue({
-        landlock: false, seccomp: false, namespaces: false, rlimits: false, platform: 'darwin',
+        landlock: false,
+        seccomp: false,
+        namespaces: false,
+        rlimits: false,
+        platform: 'darwin',
       });
       const mgr = new SandboxManager(makeConfig(), { logger: makeLogger() as any });
       const caps = mgr.detect();
@@ -140,24 +156,30 @@ describe('SandboxManager — Phase 105 platform + proxy coverage', () => {
 
     it('creates LinuxSandbox with enforceLandlock=true when landlock available', () => {
       mockLinuxGetCapabilities.mockReturnValue({
-        landlock: true, seccomp: true, namespaces: true, rlimits: true, platform: 'linux',
+        landlock: true,
+        seccomp: true,
+        namespaces: true,
+        rlimits: true,
+        platform: 'linux',
       });
-      const mgr = new SandboxManager(
-        makeConfig({ enabled: true, technology: 'auto' }),
-        { logger: makeLogger() as any },
-      );
+      const mgr = new SandboxManager(makeConfig({ enabled: true, technology: 'auto' }), {
+        logger: makeLogger() as any,
+      });
       const sb = mgr.createSandbox();
       expect((sb as any).opts).toEqual({ enforceLandlock: true });
     });
 
     it('creates LinuxSandbox with enforceLandlock=false when landlock unavailable', () => {
       mockLinuxGetCapabilities.mockReturnValue({
-        landlock: false, seccomp: true, namespaces: true, rlimits: true, platform: 'linux',
+        landlock: false,
+        seccomp: true,
+        namespaces: true,
+        rlimits: true,
+        platform: 'linux',
       });
-      const mgr = new SandboxManager(
-        makeConfig({ enabled: true, technology: 'auto' }),
-        { logger: makeLogger() as any },
-      );
+      const mgr = new SandboxManager(makeConfig({ enabled: true, technology: 'auto' }), {
+        logger: makeLogger() as any,
+      });
       const sb = mgr.createSandbox();
       expect((sb as any).opts).toEqual({ enforceLandlock: false });
     });
@@ -167,12 +189,15 @@ describe('SandboxManager — Phase 105 platform + proxy coverage', () => {
     it('creates DarwinSandbox', () => {
       Object.defineProperty(process, 'platform', { value: 'darwin', writable: true });
       mockDarwinGetCapabilities.mockReturnValue({
-        landlock: false, seccomp: false, namespaces: false, rlimits: false, platform: 'darwin',
+        landlock: false,
+        seccomp: false,
+        namespaces: false,
+        rlimits: false,
+        platform: 'darwin',
       });
-      const mgr = new SandboxManager(
-        makeConfig({ enabled: true, technology: 'auto' }),
-        { logger: makeLogger() as any },
-      );
+      const mgr = new SandboxManager(makeConfig({ enabled: true, technology: 'auto' }), {
+        logger: makeLogger() as any,
+      });
       const sb = mgr.createSandbox();
       expect(sb.constructor.name).toBe('MockDarwinSandbox');
     });
@@ -182,15 +207,14 @@ describe('SandboxManager — Phase 105 platform + proxy coverage', () => {
     it('falls back to NoopSandbox', () => {
       Object.defineProperty(process, 'platform', { value: 'win32', writable: true });
       const logger = makeLogger();
-      const mgr = new SandboxManager(
-        makeConfig({ enabled: true, technology: 'auto' }),
-        { logger: logger as any },
-      );
+      const mgr = new SandboxManager(makeConfig({ enabled: true, technology: 'auto' }), {
+        logger: logger as any,
+      });
       const sb = mgr.createSandbox();
       expect(sb.constructor.name).toBe('NoopSandbox');
       expect(logger.warn).toHaveBeenCalledWith(
         expect.stringContaining('No sandbox available'),
-        expect.any(Object),
+        expect.any(Object)
       );
     });
   });
@@ -199,12 +223,15 @@ describe('SandboxManager — Phase 105 platform + proxy coverage', () => {
     it('creates LinuxSandbox with enforceLandlock on linux', () => {
       Object.defineProperty(process, 'platform', { value: 'linux', writable: true });
       mockLinuxGetCapabilities.mockReturnValue({
-        landlock: true, seccomp: true, namespaces: true, rlimits: true, platform: 'linux',
+        landlock: true,
+        seccomp: true,
+        namespaces: true,
+        rlimits: true,
+        platform: 'linux',
       });
-      const mgr = new SandboxManager(
-        makeConfig({ enabled: true, technology: 'landlock' }),
-        { logger: makeLogger() as any },
-      );
+      const mgr = new SandboxManager(makeConfig({ enabled: true, technology: 'landlock' }), {
+        logger: makeLogger() as any,
+      });
       const sb = mgr.createSandbox();
       expect((sb as any).opts).toEqual({ enforceLandlock: true });
     });
@@ -212,13 +239,16 @@ describe('SandboxManager — Phase 105 platform + proxy coverage', () => {
     it('falls back to NoopSandbox when not on linux', () => {
       Object.defineProperty(process, 'platform', { value: 'darwin', writable: true });
       mockDarwinGetCapabilities.mockReturnValue({
-        landlock: false, seccomp: false, namespaces: false, rlimits: false, platform: 'darwin',
+        landlock: false,
+        seccomp: false,
+        namespaces: false,
+        rlimits: false,
+        platform: 'darwin',
       });
       const logger = makeLogger();
-      const mgr = new SandboxManager(
-        makeConfig({ enabled: true, technology: 'landlock' }),
-        { logger: logger as any },
-      );
+      const mgr = new SandboxManager(makeConfig({ enabled: true, technology: 'landlock' }), {
+        logger: logger as any,
+      });
       const sb = mgr.createSandbox();
       expect(sb.constructor.name).toBe('NoopSandbox');
       expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Landlock requested'));
@@ -229,18 +259,21 @@ describe('SandboxManager — Phase 105 platform + proxy coverage', () => {
     it('falls back to NoopSandbox (not implemented)', () => {
       Object.defineProperty(process, 'platform', { value: 'linux', writable: true });
       mockLinuxGetCapabilities.mockReturnValue({
-        landlock: false, seccomp: false, namespaces: false, rlimits: false, platform: 'linux',
+        landlock: false,
+        seccomp: false,
+        namespaces: false,
+        rlimits: false,
+        platform: 'linux',
       });
       const logger = makeLogger();
-      const mgr = new SandboxManager(
-        makeConfig({ enabled: true, technology: 'seccomp' }),
-        { logger: logger as any },
-      );
+      const mgr = new SandboxManager(makeConfig({ enabled: true, technology: 'seccomp' }), {
+        logger: logger as any,
+      });
       const sb = mgr.createSandbox();
       expect(sb.constructor.name).toBe('NoopSandbox');
       expect(logger.warn).toHaveBeenCalledWith(
         expect.stringContaining('not implemented'),
-        expect.objectContaining({ technology: 'seccomp' }),
+        expect.objectContaining({ technology: 'seccomp' })
       );
     });
   });
@@ -267,7 +300,7 @@ describe('SandboxManager — Phase 105 platform + proxy coverage', () => {
       const mgr = new SandboxManager(makeConfig(), { logger: makeLogger() as any });
       const url = await mgr.startProxy(
         [{ match: '*.example.com', headers: { Authorization: 'Bearer tok' } }],
-        ['example.com'],
+        ['example.com']
       );
       expect(url).toBe('http://127.0.0.1:9999');
     });
@@ -318,16 +351,19 @@ describe('SandboxManager — Phase 105 platform + proxy coverage', () => {
     it('includes credentialProxyUrl when proxy is running', async () => {
       Object.defineProperty(process, 'platform', { value: 'linux', writable: true });
       mockLinuxGetCapabilities.mockReturnValue({
-        landlock: false, seccomp: false, namespaces: false, rlimits: false, platform: 'linux',
+        landlock: false,
+        seccomp: false,
+        namespaces: false,
+        rlimits: false,
+        platform: 'linux',
       });
       mockProxyStart.mockResolvedValue({
         proxyUrl: 'http://127.0.0.1:8888',
         stop: vi.fn(),
       });
-      const mgr = new SandboxManager(
-        makeConfig({ enabled: false }),
-        { logger: makeLogger() as any },
-      );
+      const mgr = new SandboxManager(makeConfig({ enabled: false }), {
+        logger: makeLogger() as any,
+      });
       await mgr.startProxy([], []);
       const status = mgr.getStatus();
       expect(status.credentialProxyUrl).toBe('http://127.0.0.1:8888');

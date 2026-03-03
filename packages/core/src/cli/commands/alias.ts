@@ -77,11 +77,39 @@ export function resolveAlias(name: string, path?: string): string[] | null {
 
 // Reserved names that cannot be used as aliases
 const RESERVED_NAMES = new Set([
-  'start', 'health', 'status', 'config', 'init', 'integration', 'role',
-  'extension', 'execute', 'a2a', 'repl', 'browser', 'memory', 'scraper',
-  'multimodal', 'model', 'policy', 'completion', 'plugin', 'mcp-server',
-  'migrate', 'security', 'mcp-quickbooks', 'agnostic', 'tui', 'agents',
-  'training', 'world', 'crew', 'license', 'strategy', 'help', 'alias',
+  'start',
+  'health',
+  'status',
+  'config',
+  'init',
+  'integration',
+  'role',
+  'extension',
+  'execute',
+  'a2a',
+  'repl',
+  'browser',
+  'memory',
+  'scraper',
+  'multimodal',
+  'model',
+  'policy',
+  'completion',
+  'plugin',
+  'mcp-server',
+  'migrate',
+  'security',
+  'mcp-quickbooks',
+  'agnostic',
+  'tui',
+  'agents',
+  'training',
+  'world',
+  'crew',
+  'license',
+  'strategy',
+  'help',
+  'alias',
   'chat',
 ]);
 
@@ -117,7 +145,9 @@ export const aliasCommand: Command = {
           return 1;
         }
         if (RESERVED_NAMES.has(name)) {
-          ctx.stderr.write(`${red(`"${name}" is a reserved command name and cannot be used as an alias.`)}\n`);
+          ctx.stderr.write(
+            `${red(`"${name}" is a reserved command name and cannot be used as an alias.`)}\n`
+          );
           return 1;
         }
 

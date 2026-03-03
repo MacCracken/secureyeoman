@@ -145,11 +145,7 @@ export class AbTestManager {
     };
   }
 
-  async recordQualityScore(
-    testId: string,
-    conversationId: string,
-    score: number
-  ): Promise<void> {
+  async recordQualityScore(testId: string, conversationId: string, score: number): Promise<void> {
     await this.deps.pool.query(
       `UPDATE training.ab_test_assignments SET quality_score = $1
        WHERE ab_test_id = $2 AND conversation_id = $3`,
@@ -176,7 +172,11 @@ export class AbTestManager {
     const total = updated.conversationsA + updated.conversationsB;
     let winner: string | null = null;
 
-    if (total >= updated.minConversations && updated.avgQualityA != null && updated.avgQualityB != null) {
+    if (
+      total >= updated.minConversations &&
+      updated.avgQualityA != null &&
+      updated.avgQualityB != null
+    ) {
       winner = updated.avgQualityA >= updated.avgQualityB ? 'a' : 'b';
     }
 

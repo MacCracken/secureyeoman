@@ -91,10 +91,7 @@ export function ObjectivesEditor({ objectives, onChange }: ObjectivesEditorProps
           const isEditing = editingIndex === index;
 
           return (
-            <div
-              key={index}
-              className="border border-border rounded-lg bg-base-100 px-3 py-2"
-            >
+            <div key={index} className="border border-border rounded-lg bg-base-100 px-3 py-2">
               {isEditing ? (
                 /* ─── Editing mode ─── */
                 <div className="space-y-2">
@@ -104,13 +101,17 @@ export function ObjectivesEditor({ objectives, onChange }: ObjectivesEditorProps
                       className="flex-1 text-sm border border-border rounded px-2 py-1 bg-transparent focus:outline-none focus:ring-1 focus:ring-primary"
                       placeholder="Objective title"
                       value={obj.title}
-                      onChange={(e) => handleUpdate(index, 'title', e.target.value)}
+                      onChange={(e) => {
+                        handleUpdate(index, 'title', e.target.value);
+                      }}
                       autoFocus
                     />
                     <select
                       className="text-xs border border-border rounded px-2 py-1 bg-transparent focus:outline-none focus:ring-1 focus:ring-primary"
                       value={obj.priority}
-                      onChange={(e) => handleUpdate(index, 'priority', e.target.value)}
+                      onChange={(e) => {
+                        handleUpdate(index, 'priority', e.target.value);
+                      }}
                     >
                       {PRIORITY_OPTIONS.map((p) => (
                         <option key={p} value={p}>
@@ -120,7 +121,9 @@ export function ObjectivesEditor({ objectives, onChange }: ObjectivesEditorProps
                     </select>
                     <button
                       className="text-red-500 hover:text-red-700 transition-colors p-0.5"
-                      onClick={() => handleDelete(index)}
+                      onClick={() => {
+                        handleDelete(index);
+                      }}
                       title="Delete objective"
                     >
                       <X className="w-4 h-4" />
@@ -131,11 +134,15 @@ export function ObjectivesEditor({ objectives, onChange }: ObjectivesEditorProps
                     placeholder="Description (optional)"
                     rows={2}
                     value={obj.description ?? ''}
-                    onChange={(e) => handleUpdate(index, 'description', e.target.value)}
+                    onChange={(e) => {
+                      handleUpdate(index, 'description', e.target.value);
+                    }}
                   />
                   <button
                     className="text-xs text-primary hover:underline"
-                    onClick={() => setEditingIndex(null)}
+                    onClick={() => {
+                      setEditingIndex(null);
+                    }}
                   >
                     Done
                   </button>
@@ -144,7 +151,9 @@ export function ObjectivesEditor({ objectives, onChange }: ObjectivesEditorProps
                 /* ─── View mode ─── */
                 <div
                   className="flex items-center gap-2 cursor-pointer group"
-                  onClick={() => setEditingIndex(index)}
+                  onClick={() => {
+                    setEditingIndex(index);
+                  }}
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">

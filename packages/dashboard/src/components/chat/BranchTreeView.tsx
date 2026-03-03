@@ -1,11 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import ReactFlow, {
-  type Node,
-  type Edge,
-  Position,
-  MarkerType,
-} from 'reactflow';
+import ReactFlow, { type Node, type Edge, Position, MarkerType } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { GitBranch, X } from 'lucide-react';
 import { fetchBranchTree } from '../../api/client';
@@ -75,7 +70,13 @@ function flattenTree(
   }
 
   node.children.forEach((child, i) => {
-    const childResult = flattenTree(child, node.conversationId, depth + 1, siblingIndex + i, activeId);
+    const childResult = flattenTree(
+      child,
+      node.conversationId,
+      depth + 1,
+      siblingIndex + i,
+      activeId
+    );
     nodes.push(...childResult.nodes);
     edges.push(...childResult.edges);
   });
@@ -107,10 +108,7 @@ export function BranchTreeView({
   );
 
   return (
-    <div
-      className="flex flex-col h-full border-l bg-card"
-      data-testid="branch-tree-view"
-    >
+    <div className="flex flex-col h-full border-l bg-card" data-testid="branch-tree-view">
       <div className="flex items-center justify-between px-3 py-2 border-b">
         <div className="flex items-center gap-2 text-sm font-medium">
           <GitBranch className="w-4 h-4" />

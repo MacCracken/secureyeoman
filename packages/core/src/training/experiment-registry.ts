@@ -138,10 +138,7 @@ export class ExperimentRegistryManager {
     if (!a || !b) return null;
 
     const hyperparamDiffs: Record<string, { a: unknown; b: unknown }> = {};
-    const allKeys = new Set([
-      ...Object.keys(a.hyperparameters),
-      ...Object.keys(b.hyperparameters),
-    ]);
+    const allKeys = new Set([...Object.keys(a.hyperparameters), ...Object.keys(b.hyperparameters)]);
     for (const key of allKeys) {
       const va = a.hyperparameters[key];
       const vb = b.hyperparameters[key];
@@ -151,10 +148,7 @@ export class ExperimentRegistryManager {
     }
 
     const metricDiffs: Record<string, { a: number | null; b: number | null }> = {};
-    const allMetricKeys = new Set([
-      ...Object.keys(a.evalMetrics),
-      ...Object.keys(b.evalMetrics),
-    ]);
+    const allMetricKeys = new Set([...Object.keys(a.evalMetrics), ...Object.keys(b.evalMetrics)]);
     for (const key of allMetricKeys) {
       const va = a.evalMetrics[key] ?? null;
       const vb = b.evalMetrics[key] ?? null;

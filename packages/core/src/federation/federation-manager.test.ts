@@ -405,8 +405,17 @@ describe('FederationManager', () => {
         storage: mockStorage as any,
         masterSecret: 'test-master-secret',
         logger: {
-          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+          debug: vi.fn(),
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+          child: vi.fn(() => ({
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+            child: vi.fn(),
+          })),
         } as any,
         marketplaceManager: mockMarketplace as any,
       });
@@ -443,8 +452,17 @@ describe('FederationManager', () => {
         storage: mockStorage as any,
         masterSecret: 'test-master-secret',
         logger: {
-          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+          debug: vi.fn(),
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+          child: vi.fn(() => ({
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+            child: vi.fn(),
+          })),
         } as any,
         marketplaceManager: mockMarketplace as any,
       });
@@ -474,8 +492,17 @@ describe('FederationManager', () => {
         storage: mockStorage as any,
         masterSecret: 'test-master-secret',
         logger: {
-          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+          debug: vi.fn(),
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+          child: vi.fn(() => ({
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+            child: vi.fn(),
+          })),
         } as any,
         marketplaceManager: mockMarketplace as any,
       });
@@ -503,8 +530,17 @@ describe('FederationManager', () => {
         storage: mockStorage as any,
         masterSecret: 'test-master-secret',
         logger: {
-          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+          debug: vi.fn(),
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+          child: vi.fn(() => ({
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+            child: vi.fn(),
+          })),
         } as any,
         soulManager: mockSoul as any,
         brainManager: mockBrain as any,
@@ -537,8 +573,17 @@ describe('FederationManager', () => {
         storage: mockStorage as any,
         masterSecret: 'test-master-secret',
         logger: {
-          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+          debug: vi.fn(),
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+          child: vi.fn(() => ({
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+            child: vi.fn(),
+          })),
         } as any,
         soulManager: mockSoul as any,
       });
@@ -559,8 +604,17 @@ describe('FederationManager', () => {
         storage: mockStorage as any,
         masterSecret: 'test-master-secret',
         logger: {
-          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+          debug: vi.fn(),
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+          child: vi.fn(() => ({
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+            child: vi.fn(),
+          })),
         } as any,
         soulManager: mockSoul as any,
         brainManager: mockBrain as any,
@@ -584,8 +638,17 @@ describe('FederationManager', () => {
         storage: mockStorage as any,
         masterSecret: 'test-master-secret',
         logger: {
-          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+          debug: vi.fn(),
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+          child: vi.fn(() => ({
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+            child: vi.fn(),
+          })),
         } as any,
         soulManager: mockSoul as any,
         brainManager: mockBrain as any,
@@ -603,7 +666,11 @@ describe('FederationManager', () => {
     it('decrypts bundle and creates personality with new ID', async () => {
       const bundle = {
         version: '1',
-        personality: { id: 'old-id', name: 'Imported', integrationAccess: { github: { mode: 'allow' } } },
+        personality: {
+          id: 'old-id',
+          name: 'Imported',
+          integrationAccess: { github: { mode: 'allow' } },
+        },
         skills: [],
         knowledgeEntries: [],
       };
@@ -618,8 +685,17 @@ describe('FederationManager', () => {
         storage: mockStorage as any,
         masterSecret: 'test-master-secret',
         logger: {
-          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+          debug: vi.fn(),
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+          child: vi.fn(() => ({
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+            child: vi.fn(),
+          })),
         } as any,
         soulManager: mockSoul as any,
       });
@@ -654,8 +730,17 @@ describe('FederationManager', () => {
         storage: mockStorage as any,
         masterSecret: 'test-master-secret',
         logger: {
-          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+          debug: vi.fn(),
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+          child: vi.fn(() => ({
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+            child: vi.fn(),
+          })),
         } as any,
         soulManager: mockSoul as any,
       });
@@ -669,9 +754,9 @@ describe('FederationManager', () => {
 
     it('throws when soulManager not available', async () => {
       const manager = makeManager();
-      await expect(
-        manager.importPersonalityBundle(Buffer.from('{}'), 'pass')
-      ).rejects.toThrow('Soul manager not available');
+      await expect(manager.importPersonalityBundle(Buffer.from('{}'), 'pass')).rejects.toThrow(
+        'Soul manager not available'
+      );
     });
 
     it('throws on unsupported bundle version', async () => {
@@ -687,15 +772,24 @@ describe('FederationManager', () => {
         storage: mockStorage as any,
         masterSecret: 'test-master-secret',
         logger: {
-          debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-          child: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() })),
+          debug: vi.fn(),
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+          child: vi.fn(() => ({
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+            child: vi.fn(),
+          })),
         } as any,
         soulManager: mockSoul as any,
       });
 
-      await expect(
-        manager.importPersonalityBundle(encrypted, 'pass')
-      ).rejects.toThrow('Unsupported bundle version');
+      await expect(manager.importPersonalityBundle(encrypted, 'pass')).rejects.toThrow(
+        'Unsupported bundle version'
+      );
     });
   });
 

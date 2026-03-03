@@ -11,7 +11,15 @@ interface EntityExplorerPanelProps {
   personalityId: string | null;
 }
 
-const ENTITY_TYPES = ['all', 'person', 'organization', 'technology', 'location', 'product', 'concept'] as const;
+const ENTITY_TYPES = [
+  'all',
+  'person',
+  'organization',
+  'technology',
+  'location',
+  'product',
+  'concept',
+] as const;
 
 export function EntityExplorerPanel({ personalityId }: EntityExplorerPanelProps) {
   const [activeType, setActiveType] = useState<string>('all');
@@ -41,7 +49,9 @@ export function EntityExplorerPanel({ personalityId }: EntityExplorerPanelProps)
             type="text"
             placeholder="Search entities..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+            }}
             className="w-full pl-8 pr-3 py-1.5 text-sm rounded-md border bg-background"
           />
         </div>
@@ -51,7 +61,9 @@ export function EntityExplorerPanel({ personalityId }: EntityExplorerPanelProps)
         {ENTITY_TYPES.map((type) => (
           <button
             key={type}
-            onClick={() => setActiveType(type)}
+            onClick={() => {
+              setActiveType(type);
+            }}
             className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
               activeType === type
                 ? 'bg-primary text-primary-foreground'
@@ -71,7 +83,10 @@ export function EntityExplorerPanel({ personalityId }: EntityExplorerPanelProps)
             <div className="text-sm text-muted-foreground">No results found</div>
           ) : (
             searchResults.map((r) => (
-              <div key={r.conversationId} className="flex justify-between text-sm py-1 border-b last:border-0">
+              <div
+                key={r.conversationId}
+                className="flex justify-between text-sm py-1 border-b last:border-0"
+              >
                 <span className="truncate">{r.title || r.conversationId}</span>
                 <span className="text-muted-foreground ml-2 shrink-0">{r.mentionCount}x</span>
               </div>
@@ -84,14 +99,19 @@ export function EntityExplorerPanel({ personalityId }: EntityExplorerPanelProps)
             <div className="text-sm text-muted-foreground">No entities found</div>
           ) : (
             filteredEntities.map((e) => (
-              <div key={`${e.entityType}-${e.entityValue}`} className="flex justify-between text-sm py-1 border-b last:border-0">
+              <div
+                key={`${e.entityType}-${e.entityValue}`}
+                className="flex justify-between text-sm py-1 border-b last:border-0"
+              >
                 <div>
                   <span className="font-medium">{e.entityValue}</span>
                   <span className="text-xs text-muted-foreground ml-1.5 px-1.5 py-0.5 bg-muted rounded">
                     {e.entityType}
                   </span>
                 </div>
-                <span className="text-muted-foreground ml-2 shrink-0">{e.totalMentions}x / {e.conversationCount} convs</span>
+                <span className="text-muted-foreground ml-2 shrink-0">
+                  {e.totalMentions}x / {e.conversationCount} convs
+                </span>
               </div>
             ))
           )}

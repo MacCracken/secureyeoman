@@ -368,9 +368,7 @@ describe('GrokProvider', () => {
 
     it('maps 400 without token keyword to InvalidResponseError', async () => {
       const { APIError } = await import('openai');
-      mockCreate.mockRejectedValueOnce(
-        new (APIError as any)(400, 'Invalid model parameter')
-      );
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(400, 'Invalid model parameter'));
       try {
         await provider.chat(simpleRequest);
         expect.unreachable();
@@ -431,9 +429,7 @@ describe('GrokProvider', () => {
           choices: [
             {
               delta: {
-                tool_calls: [
-                  { id: 'call_A', function: { name: 'get_weather', arguments: '' } },
-                ],
+                tool_calls: [{ id: 'call_A', function: { name: 'get_weather', arguments: '' } }],
               },
               finish_reason: null,
             },
@@ -444,9 +440,7 @@ describe('GrokProvider', () => {
           choices: [
             {
               delta: {
-                tool_calls: [
-                  { function: { arguments: '{"loc":"SF"}' } },
-                ],
+                tool_calls: [{ function: { arguments: '{"loc":"SF"}' } }],
               },
               finish_reason: null,
             },

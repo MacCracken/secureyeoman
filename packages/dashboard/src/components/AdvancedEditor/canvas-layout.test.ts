@@ -13,10 +13,10 @@ const localStorageMock = {
     store[key] = value;
   }),
   removeItem: vi.fn((key: string) => {
-    delete store[key];
+    Reflect.deleteProperty(store, key);
   }),
   clear: vi.fn(() => {
-    Object.keys(store).forEach((k) => delete store[k]);
+    Object.keys(store).forEach((k) => Reflect.deleteProperty(store, k));
   }),
 };
 Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true });

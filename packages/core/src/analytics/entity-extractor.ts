@@ -87,12 +87,8 @@ export class EntityExtractor {
     return extracted;
   }
 
-  async extractFromMessages(
-    messages: { role: string; content: string }[]
-  ): Promise<ExtractResult> {
-    const transcript = messages
-      .map((m) => `${m.role}: ${m.content.slice(0, 500)}`)
-      .join('\n');
+  async extractFromMessages(messages: { role: string; content: string }[]): Promise<ExtractResult> {
+    const transcript = messages.map((m) => `${m.role}: ${m.content.slice(0, 500)}`).join('\n');
     const truncated = transcript.length > 4000 ? transcript.slice(0, 4000) + '\n...' : transcript;
 
     const response = await this.aiClient.chat({
@@ -101,7 +97,7 @@ export class EntityExtractor {
     });
 
     const text = typeof response.content === 'string' ? response.content : '';
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const jsonMatch = /\{[\s\S]*\}/.exec(text);
     if (!jsonMatch) {
       return { entities: [], keyPhrases: [] };
     }

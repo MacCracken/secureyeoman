@@ -177,9 +177,9 @@ describe('SecureIPC', () => {
         }),
       } as unknown as import('node:stream').Writable;
 
-      await expect(
-        ipc.send(mockWritable, { type: 'command', action: 'test' })
-      ).rejects.toThrow('write failed');
+      await expect(ipc.send(mockWritable, { type: 'command', action: 'test' })).rejects.toThrow(
+        'write failed'
+      );
     });
 
     it('should receive and decrypt message from a readable channel', async () => {

@@ -912,13 +912,19 @@ describe('POST /api/v1/webhooks/custom/:id — advanced paths', () => {
     // We need a mock adapter that returns false for verifyWebhook
     const { GenericWebhookIntegration } = await import('./webhook/adapter.js').catch(() => ({
       GenericWebhookIntegration: class {
-        verifyWebhook() { return false; }
-        handleInbound() { return Promise.resolve(); }
+        verifyWebhook() {
+          return false;
+        }
+        handleInbound() {
+          return Promise.resolve();
+        }
       },
     }));
 
     const manager = buildMockManager();
-    manager.getIntegration = vi.fn().mockResolvedValue({ ...BASE_INTEGRATION, platform: 'webhook' });
+    manager.getIntegration = vi
+      .fn()
+      .mockResolvedValue({ ...BASE_INTEGRATION, platform: 'webhook' });
     const mockAdapter = Object.create(GenericWebhookIntegration.prototype);
     mockAdapter.verifyWebhook = vi.fn().mockReturnValue(false);
     mockAdapter.handleInbound = vi.fn().mockResolvedValue(undefined);
@@ -938,13 +944,19 @@ describe('POST /api/v1/webhooks/custom/:id — advanced paths', () => {
   it('handles custom webhook with valid signature and transformer', async () => {
     const { GenericWebhookIntegration } = await import('./webhook/adapter.js').catch(() => ({
       GenericWebhookIntegration: class {
-        verifyWebhook() { return true; }
-        handleInbound() { return Promise.resolve(); }
+        verifyWebhook() {
+          return true;
+        }
+        handleInbound() {
+          return Promise.resolve();
+        }
       },
     }));
 
     const manager = buildMockManager();
-    manager.getIntegration = vi.fn().mockResolvedValue({ ...BASE_INTEGRATION, platform: 'webhook' });
+    manager.getIntegration = vi
+      .fn()
+      .mockResolvedValue({ ...BASE_INTEGRATION, platform: 'webhook' });
     const mockAdapter = Object.create(GenericWebhookIntegration.prototype);
     mockAdapter.verifyWebhook = vi.fn().mockReturnValue(true);
     mockAdapter.handleInbound = vi.fn().mockResolvedValue(undefined);
@@ -984,13 +996,19 @@ describe('POST /api/v1/webhooks/custom/:id — advanced paths', () => {
   it('handles custom webhook error gracefully', async () => {
     const { GenericWebhookIntegration } = await import('./webhook/adapter.js').catch(() => ({
       GenericWebhookIntegration: class {
-        verifyWebhook() { return true; }
-        handleInbound() { return Promise.reject(new Error('Processing failed')); }
+        verifyWebhook() {
+          return true;
+        }
+        handleInbound() {
+          return Promise.reject(new Error('Processing failed'));
+        }
       },
     }));
 
     const manager = buildMockManager();
-    manager.getIntegration = vi.fn().mockResolvedValue({ ...BASE_INTEGRATION, platform: 'webhook' });
+    manager.getIntegration = vi
+      .fn()
+      .mockResolvedValue({ ...BASE_INTEGRATION, platform: 'webhook' });
     const mockAdapter = Object.create(GenericWebhookIntegration.prototype);
     mockAdapter.verifyWebhook = vi.fn().mockReturnValue(true);
     mockAdapter.handleInbound = vi.fn().mockRejectedValue(new Error('Processing failed'));
@@ -1013,9 +1031,11 @@ describe('POST /api/v1/webhooks/custom/:id — advanced paths', () => {
 describe('plugin endpoints — hasConfigSchema', () => {
   it('returns hasConfigSchema: true when configSchema is present', async () => {
     const manager = buildMockManager();
-    manager.getLoadedPlugins = vi.fn().mockReturnValue([
-      { platform: 'custom', path: '/tmp/plugin.js', configSchema: { type: 'object' } },
-    ]);
+    manager.getLoadedPlugins = vi
+      .fn()
+      .mockReturnValue([
+        { platform: 'custom', path: '/tmp/plugin.js', configSchema: { type: 'object' } },
+      ]);
     const { app } = await buildApp(manager);
     const res = await app.inject({ method: 'GET', url: '/api/v1/integrations/plugins' });
     expect(res.statusCode).toBe(200);
@@ -1025,9 +1045,9 @@ describe('plugin endpoints — hasConfigSchema', () => {
 
   it('returns hasConfigSchema: false when configSchema is undefined', async () => {
     const manager = buildMockManager();
-    manager.getLoadedPlugins = vi.fn().mockReturnValue([
-      { platform: 'custom', path: '/tmp/plugin.js', configSchema: undefined },
-    ]);
+    manager.getLoadedPlugins = vi
+      .fn()
+      .mockReturnValue([{ platform: 'custom', path: '/tmp/plugin.js', configSchema: undefined }]);
     const { app } = await buildApp(manager);
     const res = await app.inject({ method: 'GET', url: '/api/v1/integrations/plugins' });
     expect(res.statusCode).toBe(200);

@@ -28,6 +28,7 @@ Check these whenever running `npm update` or when the relevant packages release 
 | `graphology-types` missing | N/A | 2026-02-21 | Added as explicit devDependency in `packages/dashboard`. Required by `graphology` for `AbstractGraph` type with full graph mutation API. |
 | `@storybook/react` not found by TypeScript | N/A | 2026-02-21 | Added as explicit devDependency in `packages/dashboard`. Was only available as a nested dep inside `@storybook/react-vite/node_modules/`; TypeScript could not resolve it from there. |
 | MCP SDK — `SSEServerTransport` | N/A | 2026-02-28 | Migrated to `StreamableHTTPServerTransport`. `sse.ts` removed; `McpTransportSchema` now `['stdio', 'streamable-http']`; `MCP_TRANSPORT=streamable-http` in `.env.dev`. |
+| `tar` (via `@capacitor/cli@6`) | GHSA-r6q2-hw4h-h46w, GHSA-34x7-hfp2-rc4v, GHSA-8qq5-rm4j-mr97, GHSA-83g3-92jg-28cx | 2026-03-02 | Upgraded `@capacitor/*` from `^6` to `^8` in `packages/mobile`. Capacitor v8 drops the vulnerable `tar` transitive dep. All 4 HIGH advisories resolved. `npm audit` reports 0 vulnerabilities. |
 
 ---
 
@@ -39,4 +40,4 @@ Check these whenever running `npm update` or when the relevant packages release 
 
 ---
 
-*Last updated: 2026-02-28 — SSEServerTransport migration complete; `sse.ts` removed, transport schema narrowed to `['stdio', 'streamable-http']`. Active tracked items: minimatch ReDoS (dev-only).*
+*Last updated: 2026-03-02 — Capacitor v6→v8 upgrade resolves 4 HIGH `tar` advisories. `npm audit` clean (0 vulns). Active tracked items: minimatch ReDoS (dev-only).*

@@ -16,11 +16,11 @@ import type { AnalyticsStorage } from './analytics-storage.js';
 export interface AnomalyDetectorConfig {
   enabled: boolean;
   rateSpikeFactor: number; // 10x default
-  offHoursStart: number;   // 22 (10 PM)
-  offHoursEnd: number;     // 6  (6 AM)
+  offHoursStart: number; // 22 (10 PM)
+  offHoursEnd: number; // 6  (6 AM)
   credentialStuffingLimit: number; // 5
   credentialStuffingWindowMs: number; // 60_000
-  sessionTtlMs: number;   // 30 minutes
+  sessionTtlMs: number; // 30 minutes
 }
 
 const DEFAULT_CONFIG: AnomalyDetectorConfig = {
@@ -130,17 +130,19 @@ export class UsageAnomalyDetector {
     this.logger.warn(`UsageAnomalyDetector: ${anomalyType}`, { userId, severity, ...details });
 
     if (this.storage) {
-      void this.storage.insertAnomaly({
-        anomalyType,
-        personalityId,
-        userId,
-        severity,
-        details,
-      }).catch((err: unknown) => {
-        this.logger.error('UsageAnomalyDetector: failed to persist anomaly', {
-          error: err instanceof Error ? err.message : String(err),
+      void this.storage
+        .insertAnomaly({
+          anomalyType,
+          personalityId,
+          userId,
+          severity,
+          details,
+        })
+        .catch((err: unknown) => {
+          this.logger.error('UsageAnomalyDetector: failed to persist anomaly', {
+            error: err instanceof Error ? err.message : String(err),
+          });
         });
-      });
     }
   }
 

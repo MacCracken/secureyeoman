@@ -31,7 +31,13 @@ function makeMockStorage(): BrainStorage {
     getSkillByName: vi.fn().mockResolvedValue(null),
     getEnabledSkills: vi.fn().mockResolvedValue([
       { id: 'sk-1', name: 'search', enabled: true, category: 'utility', instructions: 'Search.' },
-      { id: 'sk-2', name: 'summarize', enabled: true, category: 'utility', instructions: 'Summarize.' },
+      {
+        id: 'sk-2',
+        name: 'summarize',
+        enabled: true,
+        category: 'utility',
+        instructions: 'Summarize.',
+      },
       { id: 'sk-3', name: 'code', enabled: true, category: 'utility', instructions: 'Write code.' },
     ]),
     addSkill: vi.fn().mockResolvedValue({

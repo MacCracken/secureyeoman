@@ -54,8 +54,24 @@ describe('AnalyticsStorage', () => {
     it('returns sentiments ordered by analyzed_at', async () => {
       mockQuery.mockResolvedValueOnce({
         rows: [
-          { id: '1', conversation_id: 'c1', message_id: 'm1', personality_id: 'p1', sentiment: 'positive', score: 0.8, analyzed_at: '2026-01-01' },
-          { id: '2', conversation_id: 'c1', message_id: 'm2', personality_id: 'p1', sentiment: 'negative', score: 0.2, analyzed_at: '2026-01-02' },
+          {
+            id: '1',
+            conversation_id: 'c1',
+            message_id: 'm1',
+            personality_id: 'p1',
+            sentiment: 'positive',
+            score: 0.8,
+            analyzed_at: '2026-01-01',
+          },
+          {
+            id: '2',
+            conversation_id: 'c1',
+            message_id: 'm2',
+            personality_id: 'p1',
+            sentiment: 'negative',
+            score: 0.2,
+            analyzed_at: '2026-01-02',
+          },
         ],
       });
       const results = await storage.getSentimentsByConversation('c1');
@@ -67,9 +83,7 @@ describe('AnalyticsStorage', () => {
   describe('getSentimentTrend', () => {
     it('aggregates by date', async () => {
       mockQuery.mockResolvedValueOnce({
-        rows: [
-          { date: '2026-01-01', positive: '5', neutral: '3', negative: '2', avg_score: 0.65 },
-        ],
+        rows: [{ date: '2026-01-01', positive: '5', neutral: '3', negative: '2', avg_score: 0.65 }],
       });
       const trend = await storage.getSentimentTrend('p1', 30);
       expect(trend).toHaveLength(1);
@@ -97,9 +111,7 @@ describe('AnalyticsStorage', () => {
   describe('getUnanalyzedMessages', () => {
     it('returns messages without sentiment records', async () => {
       mockQuery.mockResolvedValueOnce({
-        rows: [
-          { id: 'm1', conversation_id: 'c1', personality_id: 'p1', content: 'Hello' },
-        ],
+        rows: [{ id: 'm1', conversation_id: 'c1', personality_id: 'p1', content: 'Hello' }],
       });
       const messages = await storage.getUnanalyzedMessages(100);
       expect(messages).toHaveLength(1);
@@ -128,7 +140,15 @@ describe('AnalyticsStorage', () => {
   describe('getSummary', () => {
     it('returns a summary for existing conversation', async () => {
       mockQuery.mockResolvedValueOnce({
-        rows: [{ conversation_id: 'c1', personality_id: 'p1', summary: 'A chat.', message_count: 10, generated_at: '2026-01-01' }],
+        rows: [
+          {
+            conversation_id: 'c1',
+            personality_id: 'p1',
+            summary: 'A chat.',
+            message_count: 10,
+            generated_at: '2026-01-01',
+          },
+        ],
       });
       const summary = await storage.getSummary('c1');
       expect(summary?.summary).toBe('A chat.');
@@ -175,7 +195,15 @@ describe('AnalyticsStorage', () => {
     it('returns entities ordered by mention count', async () => {
       mockQuery.mockResolvedValueOnce({
         rows: [
-          { id: 'e1', conversation_id: 'c1', personality_id: 'p1', entity_type: 'person', entity_value: 'Alice', mention_count: 5, first_seen_at: '2026-01-01' },
+          {
+            id: 'e1',
+            conversation_id: 'c1',
+            personality_id: 'p1',
+            entity_type: 'person',
+            entity_value: 'Alice',
+            mention_count: 5,
+            first_seen_at: '2026-01-01',
+          },
         ],
       });
       const entities = await storage.getEntitiesByConversation('c1');
@@ -198,7 +226,14 @@ describe('AnalyticsStorage', () => {
   describe('getTopEntities', () => {
     it('aggregates entities by personality', async () => {
       mockQuery.mockResolvedValueOnce({
-        rows: [{ entity_type: 'technology', entity_value: 'React', total_mentions: '10', conversation_count: '3' }],
+        rows: [
+          {
+            entity_type: 'technology',
+            entity_value: 'React',
+            total_mentions: '10',
+            conversation_count: '3',
+          },
+        ],
       });
       const top = await storage.getTopEntities('p1', 10);
       expect(top[0]!.totalMentions).toBe(10);
@@ -228,7 +263,17 @@ describe('AnalyticsStorage', () => {
   describe('getKeyPhrases', () => {
     it('returns key phrases ordered by frequency', async () => {
       mockQuery.mockResolvedValueOnce({
-        rows: [{ id: 'kp1', personality_id: 'p1', phrase: 'AI safety', frequency: 12, window_start: '2026-01-01', window_end: '2026-01-31', updated_at: '2026-01-15' }],
+        rows: [
+          {
+            id: 'kp1',
+            personality_id: 'p1',
+            phrase: 'AI safety',
+            frequency: 12,
+            window_start: '2026-01-01',
+            window_end: '2026-01-31',
+            updated_at: '2026-01-15',
+          },
+        ],
       });
       const phrases = await storage.getKeyPhrases('p1', 50);
       expect(phrases).toHaveLength(1);
@@ -257,13 +302,19 @@ describe('AnalyticsStorage', () => {
 
   describe('getAnomalies', () => {
     it('returns paginated anomalies', async () => {
-      mockQuery
-        .mockResolvedValueOnce({ rows: [{ count: '5' }] })
-        .mockResolvedValueOnce({
-          rows: [
-            { id: 'a1', anomaly_type: 'message_rate_spike', personality_id: 'p1', user_id: 'u1', severity: 'high', details: {}, detected_at: '2026-01-01' },
-          ],
-        });
+      mockQuery.mockResolvedValueOnce({ rows: [{ count: '5' }] }).mockResolvedValueOnce({
+        rows: [
+          {
+            id: 'a1',
+            anomaly_type: 'message_rate_spike',
+            personality_id: 'p1',
+            user_id: 'u1',
+            severity: 'high',
+            details: {},
+            detected_at: '2026-01-01',
+          },
+        ],
+      });
       const result = await storage.getAnomalies({ limit: 10 });
       expect(result.total).toBe(5);
       expect(result.anomalies).toHaveLength(1);
@@ -276,17 +327,14 @@ describe('AnalyticsStorage', () => {
       const result = await storage.getAnomalies({ limit: 10, anomalyType: 'off_hours_activity' });
       expect(result.total).toBe(2);
       // Count query
-      expect(mockQuery).toHaveBeenNthCalledWith(
-        1,
-        expect.stringContaining('anomaly_type = $1'),
-        ['off_hours_activity']
-      );
+      expect(mockQuery).toHaveBeenNthCalledWith(1, expect.stringContaining('anomaly_type = $1'), [
+        'off_hours_activity',
+      ]);
       // Data query includes both anomalyType and limit
-      expect(mockQuery).toHaveBeenNthCalledWith(
-        2,
-        expect.stringContaining('anomaly_type = $1'),
-        ['off_hours_activity', 10]
-      );
+      expect(mockQuery).toHaveBeenNthCalledWith(2, expect.stringContaining('anomaly_type = $1'), [
+        'off_hours_activity',
+        10,
+      ]);
     });
   });
 });

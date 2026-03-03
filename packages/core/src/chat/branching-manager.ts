@@ -8,8 +8,17 @@
 import type { Pool } from 'pg';
 import type { SecureLogger } from '../logging/logger.js';
 import type { AIClient } from '../ai/client.js';
-import type { ConversationStorage, Conversation, ConversationMessage } from './conversation-storage.js';
-import type { BranchTreeNode, ReplayJob, ReplayBatchReport, ReplayResult } from '@secureyeoman/shared';
+import type {
+  ConversationStorage,
+  Conversation,
+  ConversationMessage,
+} from './conversation-storage.js';
+import type {
+  BranchTreeNode,
+  ReplayJob,
+  ReplayBatchReport,
+  ReplayResult,
+} from '@secureyeoman/shared';
 
 // ── Deps ──────────────────────────────────────────────────────────────────────
 
@@ -88,9 +97,11 @@ export class BranchingManager {
 
     // Kick off async replay
     setImmediate(() => {
-      void this._runReplay(job.id, sourceId, branch.id, userMessages, config).catch((err) => {
-        this.logger.error('Replay failed', { jobId: job.id, error: String(err) });
-      });
+      void this._runReplay(job.id, sourceId, branch.id, userMessages, config).catch(
+        (err: unknown) => {
+          this.logger.error('Replay failed', { jobId: job.id, error: String(err) });
+        }
+      );
     });
 
     return { replayConversationId: branch.id, replayJobId: job.id };
@@ -116,7 +127,7 @@ export class BranchingManager {
     });
 
     setImmediate(() => {
-      void this._runBatchReplay(job.id, config).catch((err) => {
+      void this._runBatchReplay(job.id, config).catch((err: unknown) => {
         this.logger.error('Batch replay failed', { jobId: job.id, error: String(err) });
       });
     });
@@ -287,13 +298,7 @@ export class BranchingManager {
           branchLabel: `batch-replay:${config.replayModel}`,
         });
 
-        await this._runReplayInline(
-          jobId,
-          sourceId,
-          branch.id,
-          userMessages,
-          config
-        );
+        await this._runReplayInline(jobId, sourceId, branch.id, userMessages, config);
 
         completed++;
       } catch (err) {

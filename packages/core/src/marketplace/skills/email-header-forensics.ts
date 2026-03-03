@@ -36,7 +36,7 @@ export const emailHeaderForensicsSkill: Partial<MarketplaceSkill> = {
     '**SPF (Sender Policy Framework)**:',
     '- Extract `Received-SPF:` or `Authentication-Results:` SPF result',
     '- Identify the envelope sender (`Return-Path:` / `MAIL FROM`)',
-    '- Determine if the sending IP is authorized by the domain\'s SPF record',
+    "- Determine if the sending IP is authorized by the domain's SPF record",
     '- Provide the DNS lookup command: `dig TXT domain.com`',
     '- Flag: `softfail`, `fail`, `temperror`, `permerror` results',
     '',

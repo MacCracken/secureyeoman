@@ -29,7 +29,9 @@ export default function ConsentDialog({ consent, onGrant, onDeny, onClose }: Con
         onClose();
       }
     }, 1000);
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+    };
   }, [consent.expiresAt, onClose]);
 
   return (
@@ -63,13 +65,17 @@ export default function ConsentDialog({ consent, onGrant, onDeny, onClose }: Con
 
         <div className="flex gap-3">
           <button
-            onClick={() => onDeny(consent.id)}
+            onClick={() => {
+              onDeny(consent.id);
+            }}
             className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
           >
             Deny
           </button>
           <button
-            onClick={() => onGrant(consent.id)}
+            onClick={() => {
+              onGrant(consent.id);
+            }}
             className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
           >
             Approve

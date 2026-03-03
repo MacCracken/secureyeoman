@@ -325,18 +325,19 @@ let resolved = router.resolve(process.argv);
 
 // If the resolved command is the default (start) but argv[2] doesn't look like
 // a start flag, check if it's a user-defined alias before falling through.
-if (
-  resolved.command.name === 'start' &&
-  process.argv[2] &&
-  !process.argv[2].startsWith('-')
-) {
+if (resolved.command.name === 'start' && process.argv[2] && !process.argv[2].startsWith('-')) {
   // Lazy-import alias resolution to avoid loading fs on every CLI invocation
   // unless we actually need it.
   const { resolveAlias } = await import('./cli/commands/alias.js');
   const expansion = resolveAlias(process.argv[2]);
   if (expansion) {
     // Re-resolve with the expanded tokens + any trailing args
-    const expandedArgv = [process.argv[0]!, process.argv[1]!, ...expansion, ...process.argv.slice(3)];
+    const expandedArgv = [
+      process.argv[0]!,
+      process.argv[1]!,
+      ...expansion,
+      ...process.argv.slice(3),
+    ];
     resolved = router.resolve(expandedArgv);
   }
 }

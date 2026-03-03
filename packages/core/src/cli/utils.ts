@@ -294,14 +294,14 @@ export async function apiCall(
  */
 export function handleLicenseError(
   result: { ok: boolean; status: number; data: unknown },
-  stderr: NodeJS.WritableStream,
+  stderr: NodeJS.WritableStream
 ): boolean {
   if (result.status !== 402) return false;
   const data = result.data as { error?: string; feature?: string };
   const feature = data.feature ? ` (feature: ${data.feature})` : '';
   stderr.write(
     `This command requires an Enterprise license${feature}.\n` +
-    'Run `secureyeoman license status` to check your current tier.\n',
+      'Run `secureyeoman license status` to check your current tier.\n'
   );
   return true;
 }

@@ -84,7 +84,16 @@ const DeploymentTab = lazy(() =>
   import('./training/DeploymentTab').then((m) => ({ default: m.DeploymentTab }))
 );
 
-type TabType = 'export' | 'distillation' | 'finetune' | 'live' | 'computer-use' | 'evaluation' | 'preferences' | 'experiments' | 'deployment';
+type TabType =
+  | 'export'
+  | 'distillation'
+  | 'finetune'
+  | 'live'
+  | 'computer-use'
+  | 'evaluation'
+  | 'preferences'
+  | 'experiments'
+  | 'deployment';
 type ExportFormat = 'sharegpt' | 'instruction' | 'raw';
 
 const FORMAT_INFO: Record<

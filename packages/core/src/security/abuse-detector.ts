@@ -58,7 +58,9 @@ export class AbuseDetector {
     this.cfg = cfg;
     this.auditRecord = auditRecord;
     if (cfg?.enabled) {
-      this.evictTimer = setInterval(() => this.evictStale(), 60_000);
+      this.evictTimer = setInterval(() => {
+        this.evictStale();
+      }, 60_000);
       this.evictTimer.unref?.();
     }
   }

@@ -576,7 +576,9 @@ describe('Federation Routes', () => {
 
   describe('POST /api/v1/federation/personalities/:id/export — error catch (Phase 105)', () => {
     it('returns 500 when exportPersonalityBundle throws Error', async () => {
-      mockFederationManager.exportPersonalityBundle.mockRejectedValueOnce(new Error('no such personality'));
+      mockFederationManager.exportPersonalityBundle.mockRejectedValueOnce(
+        new Error('no such personality')
+      );
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/federation/personalities/pers-1/export',

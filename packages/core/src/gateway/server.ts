@@ -532,9 +532,17 @@ export class GatewayServer {
     try {
       const strategyStorage = this.secureYeoman.getStrategyStorage();
       let strategyValidator;
-      try { strategyValidator = this.secureYeoman.getValidator(); } catch { /* optional */ }
+      try {
+        strategyValidator = this.secureYeoman.getValidator();
+      } catch {
+        /* optional */
+      }
       let strategyAuditChain;
-      try { strategyAuditChain = this.secureYeoman.getAuditChain(); } catch { /* optional */ }
+      try {
+        strategyAuditChain = this.secureYeoman.getAuditChain();
+      } catch {
+        /* optional */
+      }
       registerStrategyRoutes(this.app, {
         strategyStorage,
         validator: strategyValidator,

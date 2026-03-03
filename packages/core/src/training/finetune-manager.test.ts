@@ -321,7 +321,9 @@ describe('FinetuneManager', () => {
 
       const result = await manager.cancelJob('ft-1');
       expect(result).toBe(true);
-      expect(mockExecFileSync).toHaveBeenCalledWith('docker', ['stop', 'sy-finetune-ft-1'], { stdio: 'ignore' });
+      expect(mockExecFileSync).toHaveBeenCalledWith('docker', ['stop', 'sy-finetune-ft-1'], {
+        stdio: 'ignore',
+      });
     });
 
     it('handles docker stop failure gracefully', async () => {
@@ -500,12 +502,10 @@ describe('FinetuneManager', () => {
 
   describe('input validation — containerId', () => {
     it('rejects containerId with shell metacharacters', async () => {
-      pool.query = vi
-        .fn()
-        .mockResolvedValueOnce({
-          rows: [makeJobRow({ status: 'running', container_id: 'valid; rm -rf /' })],
-          rowCount: 1,
-        });
+      pool.query = vi.fn().mockResolvedValueOnce({
+        rows: [makeJobRow({ status: 'running', container_id: 'valid; rm -rf /' })],
+        rowCount: 1,
+      });
 
       await expect(manager.cancelJob('ft-1')).rejects.toThrow('Invalid container ID');
     });
@@ -523,18 +523,28 @@ describe('FinetuneManager', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
       await manager.cancelJob('ft-1');
-      expect(mockExecFileSync).toHaveBeenCalledWith('docker', ['stop', 'sy-finetune-ft.1_test'], { stdio: 'ignore' });
+      expect(mockExecFileSync).toHaveBeenCalledWith('docker', ['stop', 'sy-finetune-ft.1_test'], {
+        stdio: 'ignore',
+      });
     });
   });
 
   describe('input validation — adapterName', () => {
     it('rejects adapterName with shell metacharacters', async () => {
       pool.query = vi.fn(async () => ({
-        rows: [makeJobRow({ status: 'complete', adapter_path: '/workspace/adapter', adapter_name: 'bad; rm -rf /' })],
+        rows: [
+          makeJobRow({
+            status: 'complete',
+            adapter_path: '/workspace/adapter',
+            adapter_name: 'bad; rm -rf /',
+          }),
+        ],
         rowCount: 1,
       }));
 
-      await expect(manager.registerWithOllama('ft-1', 'http://localhost:11434')).rejects.toThrow('Invalid adapter name');
+      await expect(manager.registerWithOllama('ft-1', 'http://localhost:11434')).rejects.toThrow(
+        'Invalid adapter name'
+      );
     });
 
     it('accepts valid adapterName with hyphens and underscores', async () => {
@@ -542,11 +552,19 @@ describe('FinetuneManager', () => {
       vi.mocked(execFileSync).mockReturnValue(Buffer.from(''));
 
       pool.query = vi.fn(async () => ({
-        rows: [makeJobRow({ status: 'complete', adapter_path: '/workspace/adapter', adapter_name: 'my_adapter-v2' })],
+        rows: [
+          makeJobRow({
+            status: 'complete',
+            adapter_path: '/workspace/adapter',
+            adapter_name: 'my_adapter-v2',
+          }),
+        ],
         rowCount: 1,
       }));
 
-      await expect(manager.registerWithOllama('ft-1', 'http://localhost:11434')).resolves.toBeUndefined();
+      await expect(
+        manager.registerWithOllama('ft-1', 'http://localhost:11434')
+      ).resolves.toBeUndefined();
     });
   });
 

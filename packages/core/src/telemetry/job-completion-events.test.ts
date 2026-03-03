@@ -165,11 +165,15 @@ describe('emitJobCompletion', () => {
   it('logs error when evaluate rejects', async () => {
     alertManager.evaluate.mockRejectedValue(new Error('DB down'));
 
-    emitJobCompletion(alertManager as any, {
-      jobType: 'workflow',
-      status: 'completed',
-      jobId: 'wf-1',
-    }, logger as any);
+    emitJobCompletion(
+      alertManager as any,
+      {
+        jobType: 'workflow',
+        status: 'completed',
+        jobId: 'wf-1',
+      },
+      logger as any
+    );
 
     // Wait for the promise to settle
     await new Promise((r) => setTimeout(r, 10));

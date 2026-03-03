@@ -37,7 +37,7 @@ describe('DesktopTrainingBridge', () => {
         actionType: 'click',
         actionTarget: '#submit-btn',
         actionValue: '',
-      }),
+      })
     );
   });
 
@@ -76,7 +76,7 @@ describe('DesktopTrainingBridge', () => {
         done: false,
         skillName: 'desktop_control',
         stateEncoding: {},
-      }),
+      })
     );
   });
 
@@ -90,7 +90,7 @@ describe('DesktopTrainingBridge', () => {
     expect(mockRecordEpisode).toHaveBeenCalledWith(
       expect.objectContaining({
         skillName: 'form_fill',
-      }),
+      })
     );
   });
 
@@ -105,7 +105,7 @@ describe('DesktopTrainingBridge', () => {
     expect(mockRecordEpisode).toHaveBeenCalledWith(
       expect.objectContaining({
         stateEncoding,
-      }),
+      })
     );
   });
 });

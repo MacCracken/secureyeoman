@@ -1189,7 +1189,10 @@ export class SecureYeoman {
         await this.swarmStorage.seedBuiltinTemplates();
 
         // Wire managers into marketplace for community sync (if they exist)
-        if (this.marketplaceManager && (this.workflowManager || this.swarmManager || this.soulManager)) {
+        if (
+          this.marketplaceManager &&
+          (this.workflowManager || this.swarmManager || this.soulManager)
+        ) {
           this.marketplaceManager.setDelegationManagers({
             workflowManager: this.workflowManager ?? undefined,
             swarmManager: this.swarmManager ?? undefined,
@@ -1588,7 +1591,7 @@ export class SecureYeoman {
         this.modelVersionManager = new ModelVersionManager({
           pool,
           logger: this.logger.child({ component: 'ModelVersionManager' }),
-          soulStorage: this.soulStorage!,
+          soulStorage: this.soulStorage,
         });
         this.abTestManager = new AbTestManager({
           pool,
@@ -1848,21 +1851,23 @@ export class SecureYeoman {
         lastAuditVerification: auditStats.lastVerification,
       },
       // Departmental risk metrics (Phase 111) — non-fatal; omitted when unavailable
-      ...(this.departmentRiskManager ? await (async () => {
-        try {
-          const summary = await this.departmentRiskManager!.getExecutiveSummary();
-          return {
-            departmentalRisk: {
-              departmentCount: summary.totalDepartments,
-              openRegisterEntries: summary.totalOpenRisks,
-              overdueEntries: summary.totalOverdueRisks,
-              appetiteBreaches: summary.appetiteBreaches,
-            },
-          };
-        } catch {
-          return {};
-        }
-      })() : {}),
+      ...(this.departmentRiskManager
+        ? await (async () => {
+            try {
+              const summary = await this.departmentRiskManager!.getExecutiveSummary();
+              return {
+                departmentalRisk: {
+                  departmentCount: summary.totalDepartments,
+                  openRegisterEntries: summary.totalOpenRisks,
+                  overdueEntries: summary.totalOverdueRisks,
+                  appetiteBreaches: summary.appetiteBreaches,
+                },
+              };
+            } catch {
+              return {};
+            }
+          })()
+        : {}),
     };
   }
 

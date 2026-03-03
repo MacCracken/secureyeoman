@@ -81,9 +81,7 @@ export class ConversationSummarizer {
   }
 
   async generateSummary(messages: { role: string; content: string }[]): Promise<string> {
-    const transcript = messages
-      .map((m) => `${m.role}: ${m.content.slice(0, 500)}`)
-      .join('\n');
+    const transcript = messages.map((m) => `${m.role}: ${m.content.slice(0, 500)}`).join('\n');
     const truncated = transcript.length > 4000 ? transcript.slice(0, 4000) + '\n...' : transcript;
 
     const response = await this.aiClient.chat({

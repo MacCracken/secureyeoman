@@ -52,8 +52,12 @@ import { sanitizeText } from '../utils/sanitize';
 import { ChatMarkdown } from './ChatMarkdown';
 import { GroupChatPage } from './GroupChatPage';
 
-const ReplayDialog = lazy(() => import('./chat/ReplayDialog').then((m) => ({ default: m.ReplayDialog })));
-const BranchTreeView = lazy(() => import('./chat/BranchTreeView').then((m) => ({ default: m.BranchTreeView })));
+const ReplayDialog = lazy(() =>
+  import('./chat/ReplayDialog').then((m) => ({ default: m.ReplayDialog }))
+);
+const BranchTreeView = lazy(() =>
+  import('./chat/BranchTreeView').then((m) => ({ default: m.BranchTreeView }))
+);
 import { PersonalityAvatar } from './PersonalityEditor';
 import { Link } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -1161,7 +1165,9 @@ export function ChatPage() {
                 {/* Strategy picker */}
                 <div className="relative">
                   <button
-                    onClick={() => setShowStrategyPicker((v) => !v)}
+                    onClick={() => {
+                      setShowStrategyPicker((v) => !v);
+                    }}
                     className={`btn-ghost text-xs px-3 py-1.5 rounded-full border max-w-[10rem] truncate ${
                       selectedStrategy ? 'bg-primary/15 border-primary text-primary' : ''
                     }`}
@@ -1209,14 +1215,18 @@ export function ChatPage() {
                 {selectedConversationId && (
                   <>
                     <button
-                      onClick={() => setShowReplayDialog(true)}
+                      onClick={() => {
+                        setShowReplayDialog(true);
+                      }}
                       className="btn-ghost text-xs px-2 py-1.5 rounded-full border"
                       title="Replay with different model"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => setShowBranchTree((v) => !v)}
+                      onClick={() => {
+                        setShowBranchTree((v) => !v);
+                      }}
                       className={`btn-ghost text-xs px-2 py-1.5 rounded-full border ${showBranchTree ? 'bg-primary/15 border-primary text-primary' : ''}`}
                       title="View branch tree"
                     >
@@ -1430,7 +1440,9 @@ export function ChatPage() {
                 setSelectedConversationId(id);
                 setShowBranchTree(false);
               }}
-              onClose={() => setShowBranchTree(false)}
+              onClose={() => {
+                setShowBranchTree(false);
+              }}
             />
           </div>
         </Suspense>
@@ -1442,7 +1454,9 @@ export function ChatPage() {
           <ReplayDialog
             conversationId={selectedConversationId}
             open={showReplayDialog}
-            onClose={() => setShowReplayDialog(false)}
+            onClose={() => {
+              setShowReplayDialog(false);
+            }}
             onReplayCreated={(replayId) => {
               setSelectedConversationId(replayId);
               setShowReplayDialog(false);

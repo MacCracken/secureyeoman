@@ -30,7 +30,9 @@ const CUSTOM_STRATEGY: ReasoningStrategy = {
   isBuiltin: false,
 };
 
-function makeMockStorage(overrides?: Partial<Record<keyof StrategyStorage, unknown>>): StrategyStorage {
+function makeMockStorage(
+  overrides?: Partial<Record<keyof StrategyStorage, unknown>>
+): StrategyStorage {
   return {
     listStrategies: vi.fn().mockResolvedValue({ items: [STRATEGY], total: 1 }),
     getStrategy: vi.fn().mockResolvedValue(STRATEGY),

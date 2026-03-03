@@ -38,13 +38,10 @@ export function PreferencesTab() {
   };
 
   const pairs = data?.pairs ?? [];
-  const sourceCounts = pairs.reduce(
-    (acc, p) => {
-      acc[p.source] = (acc[p.source] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
-  );
+  const sourceCounts = pairs.reduce<Record<string, number>>((acc, p) => {
+    acc[p.source] = (acc[p.source] || 0) + 1;
+    return acc;
+  }, {});
 
   return (
     <div className="space-y-4">
@@ -64,7 +61,9 @@ export function PreferencesTab() {
             <Filter className="w-3.5 h-3.5 text-muted-foreground" />
             <select
               value={sourceFilter}
-              onChange={(e) => setSourceFilter(e.target.value)}
+              onChange={(e) => {
+                setSourceFilter(e.target.value);
+              }}
               className="text-xs bg-muted border-0 rounded px-2 py-1"
             >
               <option value="">All sources</option>
@@ -94,10 +93,7 @@ export function PreferencesTab() {
       ) : (
         <div className="space-y-2">
           {pairs.map((pair) => (
-            <div
-              key={pair.id}
-              className="border rounded-lg p-3 space-y-2 text-sm"
-            >
+            <div key={pair.id} className="border rounded-lg p-3 space-y-2 text-sm">
               <div className="flex items-start justify-between">
                 <div className="flex-1 space-y-1">
                   <p className="font-medium text-xs text-muted-foreground uppercase tracking-wide">
@@ -108,7 +104,9 @@ export function PreferencesTab() {
                 <div className="flex items-center gap-2 ml-3">
                   <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{pair.source}</span>
                   <button
-                    onClick={() => deleteMutation.mutate(pair.id)}
+                    onClick={() => {
+                      deleteMutation.mutate(pair.id);
+                    }}
                     className="text-muted-foreground hover:text-destructive p-1"
                     title="Delete"
                   >

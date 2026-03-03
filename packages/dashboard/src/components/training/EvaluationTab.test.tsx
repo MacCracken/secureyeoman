@@ -20,12 +20,16 @@ vi.mock('../../api/client', () => ({
 // Mock recharts to avoid canvas rendering issues in jsdom
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  RadarChart: ({ children }: { children: React.ReactNode }) => <div data-testid="radar-mock">{children}</div>,
+  RadarChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="radar-mock">{children}</div>
+  ),
   Radar: () => null,
   PolarGrid: () => null,
   PolarAngleAxis: () => null,
   PolarRadiusAxis: () => null,
-  BarChart: ({ children }: { children: React.ReactNode }) => <div data-testid="bar-mock">{children}</div>,
+  BarChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="bar-mock">{children}</div>
+  ),
   Bar: () => null,
   XAxis: () => null,
   YAxis: () => null,

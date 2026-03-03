@@ -59,15 +59,18 @@ export function registerCaptureConsentRoutes(
         const consent = await manager.requestConsent(
           userId ?? authUserId,
           authUserId,
-          { resource: scope.resource, duration: scope.duration ?? 60, quality: 'medium', purpose: scope.purpose },
+          {
+            resource: scope.resource,
+            duration: scope.duration ?? 60,
+            quality: 'medium',
+            purpose: scope.purpose,
+          },
           `session-${Date.now()}`,
           timeoutMs
         );
         return reply.code(201).send(consent);
       } catch (err) {
-        return reply
-          .code(500)
-          .send({ error: err instanceof Error ? err.message : String(err) });
+        return reply.code(500).send({ error: err instanceof Error ? err.message : String(err) });
       }
     }
   );
@@ -82,9 +85,7 @@ export function registerCaptureConsentRoutes(
       const pending = await manager.getPendingConsents(userId);
       return { consents: pending };
     } catch (err) {
-      return reply
-        .code(500)
-        .send({ error: err instanceof Error ? err.message : String(err) });
+      return reply.code(500).send({ error: err instanceof Error ? err.message : String(err) });
     }
   });
 
@@ -100,9 +101,7 @@ export function registerCaptureConsentRoutes(
         if (!consent) return sendError(reply, 404, 'Consent not found');
         return consent;
       } catch (err) {
-        return reply
-          .code(500)
-          .send({ error: err instanceof Error ? err.message : String(err) });
+        return reply.code(500).send({ error: err instanceof Error ? err.message : String(err) });
       }
     }
   );
@@ -122,9 +121,7 @@ export function registerCaptureConsentRoutes(
         }
         return result.consent;
       } catch (err) {
-        return reply
-          .code(500)
-          .send({ error: err instanceof Error ? err.message : String(err) });
+        return reply.code(500).send({ error: err instanceof Error ? err.message : String(err) });
       }
     }
   );
@@ -151,9 +148,7 @@ export function registerCaptureConsentRoutes(
         }
         return result.consent;
       } catch (err) {
-        return reply
-          .code(500)
-          .send({ error: err instanceof Error ? err.message : String(err) });
+        return reply.code(500).send({ error: err instanceof Error ? err.message : String(err) });
       }
     }
   );
@@ -173,9 +168,7 @@ export function registerCaptureConsentRoutes(
         }
         return result.consent;
       } catch (err) {
-        return reply
-          .code(500)
-          .send({ error: err instanceof Error ? err.message : String(err) });
+        return reply.code(500).send({ error: err instanceof Error ? err.message : String(err) });
       }
     }
   );

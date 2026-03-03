@@ -50,7 +50,9 @@ function readStdin(): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
     process.stdin.on('data', (chunk: Buffer) => chunks.push(chunk));
-    process.stdin.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8').trim()));
+    process.stdin.on('end', () => {
+      resolve(Buffer.concat(chunks).toString('utf-8').trim());
+    });
     process.stdin.on('error', reject);
   });
 }
@@ -78,17 +80,17 @@ function copyToClipboard(text: string): boolean {
 
 function stripMarkdown(text: string): string {
   return text
-    .replace(/#{1,6}\s+/g, '')         // headings
-    .replace(/\*\*(.+?)\*\*/g, '$1')   // bold
-    .replace(/\*(.+?)\*/g, '$1')       // italic
-    .replace(/__(.+?)__/g, '$1')       // bold alt
-    .replace(/_(.+?)_/g, '$1')         // italic alt
+    .replace(/#{1,6}\s+/g, '') // headings
+    .replace(/\*\*(.+?)\*\*/g, '$1') // bold
+    .replace(/\*(.+?)\*/g, '$1') // italic
+    .replace(/__(.+?)__/g, '$1') // bold alt
+    .replace(/_(.+?)_/g, '$1') // italic alt
     .replace(/`{3}[\s\S]*?`{3}/g, (m) => m.replace(/`{3}\w*\n?/g, '')) // code blocks
-    .replace(/`(.+?)`/g, '$1')         // inline code
-    .replace(/^\s*[-*+]\s+/gm, '  ')   // list items
-    .replace(/^\s*\d+\.\s+/gm, '  ')   // ordered list items
+    .replace(/`(.+?)`/g, '$1') // inline code
+    .replace(/^\s*[-*+]\s+/gm, '  ') // list items
+    .replace(/^\s*\d+\.\s+/gm, '  ') // ordered list items
     .replace(/\[(.+?)\]\(.+?\)/g, '$1') // links
-    .replace(/^>\s+/gm, '');            // blockquotes
+    .replace(/^>\s+/gm, ''); // blockquotes
 }
 
 export const chatCommand: Command = {
@@ -209,7 +211,7 @@ export const chatCommand: Command = {
           const data = result.data as { error?: string; feature?: string };
           ctx.stderr.write(
             `This command requires an Enterprise license (feature: ${data.feature ?? 'unknown'}).\n` +
-            'Run `secureyeoman license status` to check your current tier.\n',
+              'Run `secureyeoman license status` to check your current tier.\n'
           );
           return 1;
         }
@@ -234,15 +236,19 @@ export const chatCommand: Command = {
       let output: string;
       switch (format) {
         case 'json':
-          output = JSON.stringify({
-            response: responseText,
-            conversationId: data.conversationId ?? null,
-            model: data.model ?? null,
-            personality: personality ?? null,
-            strategy: strategy ?? null,
-            tokensUsed: data.tokensUsed ?? null,
-            elapsedMs: elapsed,
-          }, null, 2);
+          output = JSON.stringify(
+            {
+              response: responseText,
+              conversationId: data.conversationId ?? null,
+              model: data.model ?? null,
+              personality: personality ?? null,
+              strategy: strategy ?? null,
+              tokensUsed: data.tokensUsed ?? null,
+              elapsedMs: elapsed,
+            },
+            null,
+            2
+          );
           break;
         case 'plain':
           output = stripMarkdown(responseText);
@@ -268,7 +274,7 @@ export const chatCommand: Command = {
           ctx.stderr.write(
             copied
               ? `${dim('Copied to clipboard')}\n`
-              : `${red('Failed to copy to clipboard — install xclip or xsel')}\n`,
+              : `${red('Failed to copy to clipboard — install xclip or xsel')}\n`
           );
         }
       }

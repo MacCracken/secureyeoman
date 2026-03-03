@@ -895,7 +895,7 @@ export class SoulManager {
       if (resolvedId) {
         try {
           const strategy = await this.strategyStorage.getStrategy(resolvedId);
-          if (strategy && strategy.promptPrefix) {
+          if (strategy?.promptPrefix) {
             parts.push(`## Reasoning Strategy: ${strategy.name}\n${strategy.promptPrefix}`);
           }
         } catch {

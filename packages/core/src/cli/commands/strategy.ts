@@ -113,7 +113,11 @@ export const strategyCommand: Command = {
             ctx.stderr.write('Error: slug is required\n');
             return 1;
           }
-          const res = await apiCall(baseUrl, `/api/v1/soul/strategies/slug/${encodeURIComponent(slug)}`, { token });
+          const res = await apiCall(
+            baseUrl,
+            `/api/v1/soul/strategies/slug/${encodeURIComponent(slug)}`,
+            { token }
+          );
           if (!res.ok) {
             ctx.stderr.write(`Error: ${JSON.stringify(res.data)}\n`);
             return 1;
@@ -138,7 +142,9 @@ export const strategyCommand: Command = {
               `Builtin:  ${s.isBuiltin ? 'yes' : 'no'}`,
               `ID:       ${dim(s.id)}`,
               s.description ? `\n${s.description}` : '',
-              s.promptPrefix ? `\n${dim('Prompt Prefix:')}\n${s.promptPrefix}` : dim('(no prompt prefix)'),
+              s.promptPrefix
+                ? `\n${dim('Prompt Prefix:')}\n${s.promptPrefix}`
+                : dim('(no prompt prefix)'),
             ]
               .filter(Boolean)
               .join('\n') + '\n'
@@ -162,7 +168,9 @@ export const strategyCommand: Command = {
           createArgv = prefixResult.rest;
 
           if (!nameResult.value || !slugResult.value || !catResult.value || !prefixResult.value) {
-            ctx.stderr.write('Error: --name, --slug, --category, and --prompt-prefix are required\n');
+            ctx.stderr.write(
+              'Error: --name, --slug, --category, and --prompt-prefix are required\n'
+            );
             return 1;
           }
 

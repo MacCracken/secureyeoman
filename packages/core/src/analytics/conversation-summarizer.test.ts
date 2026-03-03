@@ -28,13 +28,10 @@ describe('ConversationSummarizer', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    summarizer = new ConversationSummarizer(
-      mockPool,
-      mockAiClient,
-      mockStorage,
-      mockLogger,
-      { minMessageCount: 5, batchSize: 10 }
-    );
+    summarizer = new ConversationSummarizer(mockPool, mockAiClient, mockStorage, mockLogger, {
+      minMessageCount: 5,
+      batchSize: 10,
+    });
   });
 
   afterEach(() => {
@@ -66,9 +63,7 @@ describe('ConversationSummarizer', () => {
 
     it('handles non-string response', async () => {
       mockAiClient.chat.mockResolvedValueOnce({ content: 42 });
-      const summary = await summarizer.generateSummary([
-        { role: 'user', content: 'test' },
-      ]);
+      const summary = await summarizer.generateSummary([{ role: 'user', content: 'test' }]);
       expect(summary).toBe('');
     });
   });
@@ -130,8 +125,16 @@ describe('ConversationSummarizer', () => {
       // Batch fetch returns messages for both conversations
       mockQuery.mockResolvedValueOnce({
         rows: [
-          ...Array.from({ length: 10 }, () => ({ conversation_id: 'c1', role: 'user', content: 'msg' })),
-          ...Array.from({ length: 12 }, () => ({ conversation_id: 'c2', role: 'user', content: 'msg' })),
+          ...Array.from({ length: 10 }, () => ({
+            conversation_id: 'c1',
+            role: 'user',
+            content: 'msg',
+          })),
+          ...Array.from({ length: 12 }, () => ({
+            conversation_id: 'c2',
+            role: 'user',
+            content: 'msg',
+          })),
         ],
       });
       mockAiClient.chat

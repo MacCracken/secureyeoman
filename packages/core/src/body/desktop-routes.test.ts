@@ -56,7 +56,15 @@ vi.mock('./capture/recording.js', () => {
   const sessions = new Map<string, Record<string, unknown>>();
   class MockScreenRecordingManager {
     async startRecording(userId: string, config: Record<string, unknown>) {
-      const session = { id: 'rec-1', userId, status: 'active', config, filePath: '/tmp/rec.bin', fileSize: 0, startedAt: Date.now() };
+      const session = {
+        id: 'rec-1',
+        userId,
+        status: 'active',
+        config,
+        filePath: '/tmp/rec.bin',
+        fileSize: 0,
+        startedAt: Date.now(),
+      };
       sessions.set('rec-1', session);
       return session;
     }
@@ -476,7 +484,11 @@ describe('desktop-routes — RBAC enforcement (108-A)', () => {
     const { checkCapturePermission } = await import('./capture-permissions.js');
     vi.mocked(checkCapturePermission).mockClear();
     const app = buildApp({ allowDesktop: true });
-    await app.inject({ method: 'POST', url: '/api/v1/desktop/mouse/move', payload: { x: 0, y: 0 } });
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/desktop/mouse/move',
+      payload: { x: 0, y: 0 },
+    });
     expect(vi.mocked(checkCapturePermission)).toHaveBeenCalledWith(
       'capture.screen',
       'configure',
@@ -529,7 +541,11 @@ describe('desktop-routes — training bridge (108-C)', () => {
   it('POST /keyboard/type records action via bridge', async () => {
     const mockBridge = { recordAction: vi.fn().mockResolvedValue(undefined) };
     const app = buildApp({ allowDesktop: true, trainingBridge: mockBridge });
-    await app.inject({ method: 'POST', url: '/api/v1/desktop/keyboard/type', payload: { text: 'hi' } });
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/desktop/keyboard/type',
+      payload: { text: 'hi' },
+    });
     expect(mockBridge.recordAction).toHaveBeenCalledWith(
       expect.objectContaining({ actionType: 'keyboard_type' })
     );

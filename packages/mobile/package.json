@@ -1,7 +1,7 @@
 {
   "name": "@secureyeoman/mobile",
   "version": "2026.3.2",
-  "description": "SecureYeoman mobile app — Capacitor v6 shell",
+  "description": "SecureYeoman mobile app — Capacitor v8 shell",
   "private": true,
   "scripts": {
     "sync": "cap sync",
@@ -11,12 +11,12 @@
     "add:android": "cap add android"
   },
   "dependencies": {
-    "@capacitor/core": "^6",
-    "@capacitor/ios": "^6",
-    "@capacitor/android": "^6"
+    "@capacitor/core": "^8",
+    "@capacitor/ios": "^8",
+    "@capacitor/android": "^8"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6",
+    "@capacitor/cli": "^8",
     "vitest": "^3",
     "typescript": "^5"
   }

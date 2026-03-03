@@ -2,7 +2,15 @@
  * SentimentTrendChart — Area chart showing sentiment distribution over time.
  */
 
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 import type { SentimentTrendPoint } from '../../api/client';
 
 interface SentimentTrendChartProps {

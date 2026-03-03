@@ -812,7 +812,10 @@ describe('Model Routes', () => {
   });
 
   it('GET /api/v1/ai/health returns configured for cloud provider with key', async () => {
-    const mock = createMockSecureYeoman({ provider: 'anthropic', model: 'claude-sonnet-4-20250514' });
+    const mock = createMockSecureYeoman({
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+    });
     registerModelRoutes(app, { secureYeoman: mock });
 
     const res = await app.inject({ method: 'GET', url: '/api/v1/ai/health' });
@@ -828,7 +831,10 @@ describe('Model Routes', () => {
     const savedKey = process.env.ANTHROPIC_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
 
-    const mock = createMockSecureYeoman({ provider: 'anthropic', model: 'claude-sonnet-4-20250514' });
+    const mock = createMockSecureYeoman({
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+    });
     registerModelRoutes(app, { secureYeoman: mock });
 
     const res = await app.inject({ method: 'GET', url: '/api/v1/ai/health' });
@@ -876,7 +882,11 @@ describe('Model Routes', () => {
     });
 
     // baseUrl is undefined in config
-    const mock = createMockSecureYeoman({ provider: 'ollama', model: 'llama3:latest', baseUrl: undefined });
+    const mock = createMockSecureYeoman({
+      provider: 'ollama',
+      model: 'llama3:latest',
+      baseUrl: undefined,
+    });
     registerModelRoutes(app, { secureYeoman: mock });
 
     const res = await app.inject({
@@ -922,7 +932,14 @@ describe('Model Routes', () => {
 
     const { OllamaProvider } = await import('./providers/ollama.js');
     vi.mocked(OllamaProvider.fetchAvailableModels).mockResolvedValueOnce([
-      { id: 'llama3:latest', name: 'llama3:latest', size: 4700000000, provider: 'ollama', inputPer1M: 0, outputPer1M: 0 },
+      {
+        id: 'llama3:latest',
+        name: 'llama3:latest',
+        size: 4700000000,
+        provider: 'ollama',
+        inputPer1M: 0,
+        outputPer1M: 0,
+      },
     ]);
 
     mockFetch.mockImplementation((url: string) => {

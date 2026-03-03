@@ -14,6 +14,8 @@ export default tseslint.config(
       '**/*.js',
       '**/*.cjs',
       '**/*.mjs',
+      'packages/core/vitest.*.config.ts',
+      'packages/mobile/**',
     ],
   },
 

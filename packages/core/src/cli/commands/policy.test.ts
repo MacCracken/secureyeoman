@@ -245,7 +245,11 @@ describe('policy command', () => {
 
   it('set returns 1 when value is neither true nor false', async () => {
     const { stdout, stderr, getStderr } = createStreams();
-    const code = await policyCommand.run({ argv: ['set', 'allowSubAgents', 'yes'], stdout, stderr });
+    const code = await policyCommand.run({
+      argv: ['set', 'allowSubAgents', 'yes'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(1);
     expect(getStderr()).toContain('Value must be "true" or "false"');
   });
@@ -253,7 +257,11 @@ describe('policy command', () => {
   it('set returns 1 when API returns error', async () => {
     mockFetch({ error: 'Permission denied' }, 403);
     const { stdout, stderr, getStderr } = createStreams();
-    const code = await policyCommand.run({ argv: ['set', 'allowSubAgents', 'true'], stdout, stderr });
+    const code = await policyCommand.run({
+      argv: ['set', 'allowSubAgents', 'true'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(1);
     expect(getStderr()).toContain('Failed to update policy');
   });
@@ -261,7 +269,11 @@ describe('policy command', () => {
   it('set --json outputs raw JSON on success', async () => {
     mockFetch({ ...MOCK_POLICY, allowSubAgents: true });
     const { stdout, stderr, getStdout } = createStreams();
-    const code = await policyCommand.run({ argv: ['--json', 'set', 'allowSubAgents', 'true'], stdout, stderr });
+    const code = await policyCommand.run({
+      argv: ['--json', 'set', 'allowSubAgents', 'true'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(0);
     const parsed = JSON.parse(getStdout());
     expect(parsed.allowSubAgents).toBe(true);
@@ -270,7 +282,11 @@ describe('policy command', () => {
   it('dynamic-tools get --json returns DTC subset', async () => {
     mockFetch(MOCK_POLICY);
     const { stdout, stderr, getStdout } = createStreams();
-    const code = await policyCommand.run({ argv: ['--json', 'dynamic-tools', 'get'], stdout, stderr });
+    const code = await policyCommand.run({
+      argv: ['--json', 'dynamic-tools', 'get'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(0);
     const parsed = JSON.parse(getStdout());
     expect(typeof parsed.allowDynamicTools).toBe('boolean');
@@ -294,7 +310,11 @@ describe('policy command', () => {
 
   it('dynamic-tools sandbox with invalid arg returns 1', async () => {
     const { stdout, stderr, getStderr } = createStreams();
-    const code = await policyCommand.run({ argv: ['dynamic-tools', 'sandbox', 'bogus'], stdout, stderr });
+    const code = await policyCommand.run({
+      argv: ['dynamic-tools', 'sandbox', 'bogus'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(1);
     expect(getStderr()).toContain('Usage');
   });
@@ -308,7 +328,11 @@ describe('policy command', () => {
     });
     vi.stubGlobal('fetch', fetchSpy);
     const { stdout, stderr, getStdout } = createStreams();
-    const code = await policyCommand.run({ argv: ['dynamic-tools', 'sandbox', 'disable'], stdout, stderr });
+    const code = await policyCommand.run({
+      argv: ['dynamic-tools', 'sandbox', 'disable'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(0);
     const call = fetchSpy.mock.calls[0] as [string, RequestInit];
     expect(call[1].body).toBe(JSON.stringify({ sandboxDynamicTools: false }));
@@ -318,7 +342,11 @@ describe('policy command', () => {
   it('dynamic-tools sandbox returns 1 when API fails', async () => {
     mockFetch({ error: 'forbidden' }, 403);
     const { stdout, stderr, getStderr } = createStreams();
-    const code = await policyCommand.run({ argv: ['dynamic-tools', 'sandbox', 'enable'], stdout, stderr });
+    const code = await policyCommand.run({
+      argv: ['dynamic-tools', 'sandbox', 'enable'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(1);
     expect(getStderr()).toContain('Failed to update policy');
   });
@@ -326,7 +354,11 @@ describe('policy command', () => {
   it('dynamic-tools enable --json outputs raw JSON', async () => {
     mockFetch({ ...MOCK_POLICY, allowDynamicTools: true });
     const { stdout, stderr, getStdout } = createStreams();
-    const code = await policyCommand.run({ argv: ['--json', 'dynamic-tools', 'enable'], stdout, stderr });
+    const code = await policyCommand.run({
+      argv: ['--json', 'dynamic-tools', 'enable'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(0);
     const parsed = JSON.parse(getStdout());
     expect(parsed.allowDynamicTools).toBe(true);
@@ -342,7 +374,11 @@ describe('policy command', () => {
 
   it('dynamic-tools personality without action returns 1', async () => {
     const { stdout, stderr, getStderr } = createStreams();
-    const code = await policyCommand.run({ argv: ['dynamic-tools', 'personality'], stdout, stderr });
+    const code = await policyCommand.run({
+      argv: ['dynamic-tools', 'personality'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(1);
     expect(getStderr()).toContain('Usage');
   });
@@ -361,7 +397,11 @@ describe('policy command', () => {
       })
     );
     const { stdout, stderr, getStdout } = createStreams();
-    const code = await policyCommand.run({ argv: ['dynamic-tools', 'personality', 'get'], stdout, stderr });
+    const code = await policyCommand.run({
+      argv: ['dynamic-tools', 'personality', 'get'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(0);
     expect(getStdout()).toContain('enabled');
   });
@@ -380,7 +420,11 @@ describe('policy command', () => {
       })
     );
     const { stdout, stderr, getStdout } = createStreams();
-    const code = await policyCommand.run({ argv: ['--json', 'dynamic-tools', 'personality', 'get'], stdout, stderr });
+    const code = await policyCommand.run({
+      argv: ['--json', 'dynamic-tools', 'personality', 'get'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(0);
     const parsed = JSON.parse(getStdout());
     expect(parsed.allowDynamicTools).toBe(false);
@@ -397,7 +441,11 @@ describe('policy command', () => {
       })
     );
     const { stdout, stderr, getStderr } = createStreams();
-    const code = await policyCommand.run({ argv: ['dynamic-tools', 'personality', 'get'], stdout, stderr });
+    const code = await policyCommand.run({
+      argv: ['dynamic-tools', 'personality', 'get'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(1);
     expect(getStderr()).toContain('Failed to resolve personality');
   });
@@ -413,7 +461,11 @@ describe('policy command', () => {
       })
     );
     const { stdout, stderr, getStderr } = createStreams();
-    const code = await policyCommand.run({ argv: ['dynamic-tools', 'personality', 'bogus'], stdout, stderr });
+    const code = await policyCommand.run({
+      argv: ['dynamic-tools', 'personality', 'bogus'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(1);
     expect(getStderr()).toContain('Usage');
   });
@@ -449,7 +501,9 @@ describe('policy command', () => {
     expect(code).toBe(0);
     expect(getStdout()).toContain('disabled');
     const putCall = fetchSpy.mock.calls[1] as [string, RequestInit];
-    const body = JSON.parse(putCall[1].body as string) as { body: { creationConfig: { allowDynamicTools: boolean } } };
+    const body = JSON.parse(putCall[1].body as string) as {
+      body: { creationConfig: { allowDynamicTools: boolean } };
+    };
     expect(body.body.creationConfig.allowDynamicTools).toBe(false);
   });
 
@@ -490,7 +544,11 @@ describe('policy command', () => {
   it('dynamic-tools sandbox --json returns JSON on success', async () => {
     mockFetch({ ...MOCK_POLICY, sandboxDynamicTools: true });
     const { stdout, stderr, getStdout } = createStreams();
-    const code = await policyCommand.run({ argv: ['--json', 'dynamic-tools', 'sandbox', 'enable'], stdout, stderr });
+    const code = await policyCommand.run({
+      argv: ['--json', 'dynamic-tools', 'sandbox', 'enable'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(0);
     const parsed = JSON.parse(getStdout());
     expect(typeof parsed.sandboxDynamicTools).toBe('boolean');

@@ -322,7 +322,13 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
         />
       )}
       {activeTab === 'analytics' && (
-        <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}>
+        <Suspense
+          fallback={
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          }
+        >
           <AnalyticsTab />
         </Suspense>
       )}

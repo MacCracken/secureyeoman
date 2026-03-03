@@ -471,9 +471,11 @@ describe('MarketplaceManager', () => {
       const createSkill = vi.fn();
       const brainManager = {
         createSkill,
-        listSkills: vi.fn().mockResolvedValue([
-          { id: 'bs-1', name: 'Test Skill', source: 'marketplace', personalityId: null },
-        ]),
+        listSkills: vi
+          .fn()
+          .mockResolvedValue([
+            { id: 'bs-1', name: 'Test Skill', source: 'marketplace', personalityId: null },
+          ]),
         deleteSkill: vi.fn(),
       };
       const { manager } = makeManager({}, { brainManager });
@@ -524,7 +526,8 @@ describe('MarketplaceManager', () => {
     it('removes only personality-specific brain skill when personalityId provided', async () => {
       const deleteSkill = vi.fn().mockResolvedValue(undefined);
       const brainManager = {
-        listSkills: vi.fn()
+        listSkills: vi
+          .fn()
           .mockResolvedValueOnce([
             { id: 'bs-1', name: 'Test Skill', source: 'marketplace', personalityId: 'p1' },
             { id: 'bs-2', name: 'Test Skill', source: 'marketplace', personalityId: 'p2' },
@@ -550,7 +553,8 @@ describe('MarketplaceManager', () => {
     it('skips delete when personalityId provided but no matching brain skill found', async () => {
       const deleteSkill = vi.fn();
       const brainManager = {
-        listSkills: vi.fn()
+        listSkills: vi
+          .fn()
           .mockResolvedValueOnce([
             { id: 'bs-1', name: 'Test Skill', source: 'marketplace', personalityId: 'other' },
           ])
@@ -574,7 +578,8 @@ describe('MarketplaceManager', () => {
     it('removes ALL brain skills when no personalityId provided', async () => {
       const deleteSkill = vi.fn().mockResolvedValue(undefined);
       const brainManager = {
-        listSkills: vi.fn()
+        listSkills: vi
+          .fn()
           .mockResolvedValueOnce([
             { id: 'bs-1', name: 'Test Skill', source: 'marketplace', personalityId: 'p1' },
             { id: 'bs-2', name: 'Test Skill', source: 'marketplace', personalityId: null },
@@ -613,7 +618,8 @@ describe('MarketplaceManager', () => {
     it('looks up published/builtin source when brainSource is marketplace', async () => {
       // When brainSource is 'marketplace', the code tries 'published' then 'builtin'
       const { manager, storage } = makeManager({
-        findByNameAndSource: vi.fn()
+        findByNameAndSource: vi
+          .fn()
           .mockResolvedValueOnce({ ...SKILL, id: 'pub-1', installed: true }), // published found
       });
       // No brainManager → skips remaining check → goes straight to MP lookup
@@ -624,9 +630,10 @@ describe('MarketplaceManager', () => {
 
     it('falls back to builtin when published not found', async () => {
       const { manager, storage } = makeManager({
-        findByNameAndSource: vi.fn()
-          .mockResolvedValueOnce(null)  // published → null
-          .mockResolvedValueOnce({ ...SKILL, id: 'bi-1', installed: true }),  // builtin → found
+        findByNameAndSource: vi
+          .fn()
+          .mockResolvedValueOnce(null) // published → null
+          .mockResolvedValueOnce({ ...SKILL, id: 'bi-1', installed: true }), // builtin → found
       });
       await manager.onBrainSkillDeleted('Test Skill', 'marketplace');
       expect(storage.findByNameAndSource).toHaveBeenCalledWith('Test Skill', 'published');
@@ -644,8 +651,7 @@ describe('MarketplaceManager', () => {
 
     it('does nothing when MP skill found but not installed', async () => {
       const { manager, storage } = makeManager({
-        findByNameAndSource: vi.fn()
-          .mockResolvedValue({ ...SKILL, id: 'pub-1', installed: false }),
+        findByNameAndSource: vi.fn().mockResolvedValue({ ...SKILL, id: 'pub-1', installed: false }),
       });
       await manager.onBrainSkillDeleted('Test Skill', 'marketplace');
       expect(storage.setInstalled).not.toHaveBeenCalled();
@@ -697,9 +703,7 @@ describe('MarketplaceManager', () => {
           return [] as any; // no JSON skills
         }
         if (s.endsWith('security-templates')) {
-          return [
-            { name: 'ir-playbook', isDirectory: () => true, isFile: () => false },
-          ] as any;
+          return [{ name: 'ir-playbook', isDirectory: () => true, isFile: () => false }] as any;
         }
         return [];
       });
@@ -756,9 +760,7 @@ describe('MarketplaceManager', () => {
         const s = String(dir);
         if (s.endsWith('skills')) return [] as any;
         if (s.endsWith('security-templates')) {
-          return [
-            { name: 'cloud-posture', isDirectory: () => true, isFile: () => false },
-          ] as any;
+          return [{ name: 'cloud-posture', isDirectory: () => true, isFile: () => false }] as any;
         }
         return [];
       });
@@ -794,15 +796,11 @@ describe('MarketplaceManager', () => {
         const s = String(dir);
         if (s.endsWith('skills')) return [] as any;
         if (s.endsWith('security-templates')) {
-          return [
-            { name: 'bad-template', isDirectory: () => true, isFile: () => false },
-          ] as any;
+          return [{ name: 'bad-template', isDirectory: () => true, isFile: () => false }] as any;
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ name: 'Bad Template' })
-      );
+      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ name: 'Bad Template' }));
 
       const { manager } = makeManager({
         search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
@@ -825,9 +823,7 @@ describe('MarketplaceManager', () => {
         const s = String(dir);
         if (s.endsWith('skills')) return [] as any;
         if (s.endsWith('security-templates')) {
-          return [
-            { name: 'no-meta', isDirectory: () => true, isFile: () => false },
-          ] as any;
+          return [{ name: 'no-meta', isDirectory: () => true, isFile: () => false }] as any;
         }
         return [];
       });
@@ -850,9 +846,7 @@ describe('MarketplaceManager', () => {
         const s = String(dir);
         if (s.endsWith('skills')) return [] as any;
         if (s.endsWith('security-templates')) {
-          return [
-            { name: 'no-name', isDirectory: () => true, isFile: () => false },
-          ] as any;
+          return [{ name: 'no-name', isDirectory: () => true, isFile: () => false }] as any;
         }
         return [];
       });
@@ -881,9 +875,7 @@ describe('MarketplaceManager', () => {
         const s = String(dir);
         if (s.endsWith('skills')) return [] as any;
         if (s.endsWith('security-templates')) {
-          return [
-            { name: 'api-sec', isDirectory: () => true, isFile: () => false },
-          ] as any;
+          return [{ name: 'api-sec', isDirectory: () => true, isFile: () => false }] as any;
         }
         return [];
       });
@@ -919,9 +911,7 @@ describe('MarketplaceManager', () => {
         const s = String(dir);
         if (s.endsWith('skills')) return [] as any;
         if (s.endsWith('security-templates')) {
-          return [
-            { name: 'test', isDirectory: () => true, isFile: () => false },
-          ] as any;
+          return [{ name: 'test', isDirectory: () => true, isFile: () => false }] as any;
         }
         return [];
       });
@@ -954,9 +944,7 @@ describe('MarketplaceManager', () => {
         const s = String(dir);
         if (s.endsWith('skills')) return [] as any;
         if (s.endsWith('security-templates')) {
-          return [
-            { name: 'custom-names', isDirectory: () => true, isFile: () => false },
-          ] as any;
+          return [{ name: 'custom-names', isDirectory: () => true, isFile: () => false }] as any;
         }
         return [];
       });
@@ -992,11 +980,7 @@ describe('MarketplaceManager', () => {
       const fs = (await import('fs')).default;
       vi.mocked(fs.existsSync).mockImplementation((p: any) => {
         const s = String(p);
-        return (
-          s === '/tmp/community' ||
-          s.includes('skills') ||
-          s.includes('personalities')
-        );
+        return s === '/tmp/community' || s.includes('skills') || s.includes('personalities');
       });
       vi.mocked(fs.readdirSync).mockImplementation((p: any, opts: any) => {
         const s = String(p);
@@ -1147,9 +1131,7 @@ describe('MarketplaceManager', () => {
         const s = String(p);
         if (s.endsWith('themes')) {
           if (opts?.withFileTypes) {
-            return [
-              { name: 'ocean.json', isDirectory: () => false, isFile: () => true },
-            ] as any;
+            return [{ name: 'ocean.json', isDirectory: () => false, isFile: () => true }] as any;
           }
           return ['ocean.json'] as any;
         }
@@ -1229,9 +1211,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ name: 'Bad Theme' })
-      );
+      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ name: 'Bad Theme' }));
 
       const { manager } = makeManager({
         findByNameAndSource: vi.fn().mockResolvedValue(null),

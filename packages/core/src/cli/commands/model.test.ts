@@ -467,14 +467,21 @@ describe('model command', () => {
       status: 200,
       headers: { get: () => 'application/json' },
       json: async () => ({
-        current: { provider: 'anthropic', model: 'claude-sonnet-4-6', maxTokens: 8192, temperature: 0.7 },
+        current: {
+          provider: 'anthropic',
+          model: 'claude-sonnet-4-6',
+          maxTokens: 8192,
+          temperature: 0.7,
+        },
       }),
     });
     vi.stubGlobal('fetch', fetchMock);
     const { stdout, stderr } = createStreams();
     await modelCommand.run({ argv: ['info', '--token', 'my-secret'], stdout, stderr });
     const [, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect((opts as { headers: Record<string, string> }).headers.Authorization).toBe('Bearer my-secret');
+    expect((opts as { headers: Record<string, string> }).headers.Authorization).toBe(
+      'Bearer my-secret'
+    );
   });
 
   // ── list edge cases ─────────────────────────────────────────────────
@@ -491,7 +498,9 @@ describe('model command', () => {
     mockFetch({
       current: { provider: 'anthropic', model: 'x', maxTokens: 1, temperature: 0 },
       available: {
-        anthropic: { models: { 'claude-sonnet-4-6': { inputPricePerMToken: 3, outputPricePerMToken: 15 } } },
+        anthropic: {
+          models: { 'claude-sonnet-4-6': { inputPricePerMToken: 3, outputPricePerMToken: 15 } },
+        },
       },
     });
     const { stdout, stderr, getStdout } = createStreams();
@@ -554,7 +563,11 @@ describe('model command', () => {
   it('switch --json outputs raw JSON on success', async () => {
     mockFetch({ success: true, model: 'openai/gpt-4o' });
     const { stdout, stderr, getStdout } = createStreams();
-    const code = await modelCommand.run({ argv: ['--json', 'switch', 'openai', 'gpt-4o'], stdout, stderr });
+    const code = await modelCommand.run({
+      argv: ['--json', 'switch', 'openai', 'gpt-4o'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(0);
     const parsed = JSON.parse(getStdout()) as { success: boolean };
     expect(parsed.success).toBe(true);
@@ -847,11 +860,14 @@ describe('model command', () => {
   });
 
   it('pull returns error when response has no body', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      body: null,
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: null,
+      })
+    );
     const { stdout, stderr, getStderr } = createStreams();
     const code = await modelCommand.run({ argv: ['pull', 'llama3.2'], stdout, stderr });
     expect(code).toBe(1);
@@ -876,11 +892,14 @@ describe('model command', () => {
       }),
       releaseLock: vi.fn(),
     };
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      body: { getReader: () => reader },
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: { getReader: () => reader },
+      })
+    );
     const { stdout, stderr, getStdout } = createStreams();
     const code = await modelCommand.run({ argv: ['pull', 'llama3.2'], stdout, stderr });
     expect(code).toBe(0);
@@ -903,11 +922,14 @@ describe('model command', () => {
       }),
       releaseLock: vi.fn(),
     };
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      body: { getReader: () => reader },
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: { getReader: () => reader },
+      })
+    );
     const { stdout, stderr, getStderr } = createStreams();
     const code = await modelCommand.run({ argv: ['pull', 'nonexistent'], stdout, stderr });
     expect(code).toBe(1);
@@ -915,10 +937,7 @@ describe('model command', () => {
   });
 
   it('pull shows progress bar with percentage', async () => {
-    const chunks = [
-      '{"status":"pulling","completed":50,"total":100}\n',
-      '{"status":"done"}\n',
-    ];
+    const chunks = ['{"status":"pulling","completed":50,"total":100}\n', '{"status":"done"}\n'];
     let chunkIdx = 0;
     const reader = {
       read: vi.fn().mockImplementation(async () => {
@@ -932,11 +951,14 @@ describe('model command', () => {
       }),
       releaseLock: vi.fn(),
     };
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      body: { getReader: () => reader },
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: { getReader: () => reader },
+      })
+    );
     const { stdout, stderr, getStdout } = createStreams();
     const code = await modelCommand.run({ argv: ['pull', 'llama3.2'], stdout, stderr });
     expect(code).toBe(0);
@@ -944,10 +966,7 @@ describe('model command', () => {
   });
 
   it('pull shows status line when no total/completed', async () => {
-    const chunks = [
-      '{"status":"verifying sha256 digest"}\n',
-      '{"status":"done"}\n',
-    ];
+    const chunks = ['{"status":"verifying sha256 digest"}\n', '{"status":"done"}\n'];
     let chunkIdx = 0;
     const reader = {
       read: vi.fn().mockImplementation(async () => {
@@ -961,11 +980,14 @@ describe('model command', () => {
       }),
       releaseLock: vi.fn(),
     };
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      body: { getReader: () => reader },
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: { getReader: () => reader },
+      })
+    );
     const { stdout, stderr, getStdout } = createStreams();
     const code = await modelCommand.run({ argv: ['pull', 'llama3.2'], stdout, stderr });
     expect(code).toBe(0);
@@ -987,11 +1009,14 @@ describe('model command', () => {
       }),
       releaseLock: vi.fn(),
     };
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      body: { getReader: () => reader },
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: { getReader: () => reader },
+      })
+    );
     const { stdout, stderr, getStdout } = createStreams();
     const code = await modelCommand.run({ argv: ['pull', 'llama3.2'], stdout, stderr });
     expect(code).toBe(0);
@@ -1013,7 +1038,9 @@ describe('model command', () => {
     const { stdout, stderr } = createStreams();
     await modelCommand.run({ argv: ['pull', 'llama3.2', '--token', 'tok123'], stdout, stderr });
     const [, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect((opts as { headers: Record<string, string> }).headers.Authorization).toBe('Bearer tok123');
+    expect((opts as { headers: Record<string, string> }).headers.Authorization).toBe(
+      'Bearer tok123'
+    );
   });
 
   // ── rm ────────────────────────────────────────────────────────────────
