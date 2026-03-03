@@ -142,6 +142,8 @@ import { NotificationManager } from './notifications/notification-manager.js';
 import { UserNotificationPrefsStorage } from './notifications/user-notification-prefs-storage.js';
 import { RiskAssessmentStorage } from './risk-assessment/risk-assessment-storage.js';
 import { RiskAssessmentManager } from './risk-assessment/risk-assessment-manager.js';
+import { DepartmentRiskStorage } from './risk-assessment/department-risk-storage.js';
+import { DepartmentRiskManager } from './risk-assessment/department-risk-manager.js';
 import { BackupStorage } from './backup/backup-storage.js';
 import { BackupManager } from './backup/backup-manager.js';
 import { TenantStorage } from './tenants/tenant-storage.js';
@@ -290,6 +292,8 @@ export class SecureYeoman {
   private riskAssessmentStorage: RiskAssessmentStorage | null = null;
   private riskAssessmentManager: RiskAssessmentManager | null = null;
   private riskScheduleTimer: ReturnType<typeof setInterval> | null = null;
+  private departmentRiskStorage: DepartmentRiskStorage | null = null;
+  private departmentRiskManager: DepartmentRiskManager | null = null;
   private proactiveManager: import('./proactive/manager.js').ProactiveManager | null = null;
   private multimodalManager: import('./multimodal/manager.js').MultimodalManager | null = null;
   private browserSessionStorage: import('./browser/storage.js').BrowserSessionStorage | null = null;
@@ -461,6 +465,10 @@ export class SecureYeoman {
       // Step 2.10: Initialize RiskAssessmentStorage
       this.riskAssessmentStorage = new RiskAssessmentStorage();
       this.logger.debug('RiskAssessmentStorage initialized');
+
+      // Step 2.11: Initialize DepartmentRiskStorage
+      this.departmentRiskStorage = new DepartmentRiskStorage();
+      this.logger.debug('DepartmentRiskStorage initialized');
 
       // Step 3: Validate secrets are available
       validateSecrets(this.config);
@@ -1428,6 +1436,24 @@ export class SecureYeoman {
           }, MS_PER_DAY);
         } catch (error) {
           this.logger.warn('RiskAssessmentManager initialization failed (non-fatal)', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+
+      // Step 6e.2: Initialize DepartmentRiskManager (Phase 111)
+      if (this.departmentRiskStorage) {
+        try {
+          const pool = getPool();
+          this.departmentRiskManager = new DepartmentRiskManager({
+            storage: this.departmentRiskStorage,
+            pool,
+            auditChain: this.auditChain,
+            getAlertManager: () => this.alertManager,
+          });
+          this.logger.debug('DepartmentRiskManager initialized');
+        } catch (error) {
+          this.logger.warn('DepartmentRiskManager initialization failed (non-fatal)', {
             error: error instanceof Error ? error.message : 'Unknown error',
           });
         }
@@ -2415,6 +2441,11 @@ export class SecureYeoman {
   getRiskAssessmentManager(): RiskAssessmentManager | null {
     this.ensureInitialized();
     return this.riskAssessmentManager;
+  }
+
+  getDepartmentRiskManager(): DepartmentRiskManager | null {
+    this.ensureInitialized();
+    return this.departmentRiskManager;
   }
 
   getMultimodalManager(): import('./multimodal/manager.js').MultimodalManager | null {

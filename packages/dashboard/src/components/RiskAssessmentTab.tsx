@@ -25,6 +25,7 @@ import {
   Upload,
   Loader2,
   TrendingUp,
+  Building,
 } from 'lucide-react';
 import {
   runRiskAssessment,
@@ -38,6 +39,10 @@ import {
   fetchRiskFindings,
   acknowledgeRiskFinding,
   resolveRiskFinding,
+  fetchDepartments,
+  fetchDepartmentScorecard,
+  fetchHeatmap,
+  fetchRiskSummary,
 } from '../api/client';
 import type {
   RiskAssessment,
@@ -53,7 +58,7 @@ import type {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-type SubTab = 'overview' | 'assessments' | 'findings' | 'feeds';
+type SubTab = 'overview' | 'assessments' | 'findings' | 'feeds' | 'departments';
 
 const LEVEL_COLORS: Record<string, string> = {
   critical: 'text-red-600 bg-red-50 border-red-200',
@@ -837,6 +842,244 @@ const ALL_DOMAINS: RiskDomain[] = [
   'external',
 ];
 
+// ─── Departments Section (Phase 111) ─────────────────────────────────────────
+
+type DeptView = 'intent' | 'risk';
+
+function DepartmentsSection() {
+  const [selectedDept, setSelectedDept] = useState<string | null>(null);
+  const [view, setView] = useState<DeptView>('risk');
+
+  const { data: deptsData, isLoading: deptsLoading } = useQuery({
+    queryKey: ['risk-departments'],
+    queryFn: () => fetchDepartments(),
+    refetchInterval: 15_000,
+  });
+
+  const { data: scorecardData, isLoading: scorecardLoading } = useQuery({
+    queryKey: ['risk-department-scorecard', selectedDept],
+    queryFn: () => (selectedDept ? fetchDepartmentScorecard(selectedDept) : null),
+    enabled: !!selectedDept,
+  });
+
+  const { data: heatmapData } = useQuery({
+    queryKey: ['risk-heatmap'],
+    queryFn: () => fetchHeatmap(),
+    refetchInterval: 30_000,
+  });
+
+  const { data: summaryData } = useQuery({
+    queryKey: ['risk-summary'],
+    queryFn: () => fetchRiskSummary(),
+    refetchInterval: 30_000,
+  });
+
+  const departments = deptsData?.items ?? [];
+  const scorecard = (scorecardData as any)?.scorecard;
+  const heatmap = (heatmapData as any)?.cells ?? [];
+  const summary = (summaryData as any)?.summary;
+
+  return (
+    <div className="space-y-4">
+      {/* Summary strip */}
+      {summary && (
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {[
+            { label: 'Departments', value: summary.totalDepartments },
+            { label: 'Open Risks', value: summary.totalOpenRisks },
+            { label: 'Overdue', value: summary.totalOverdueRisks },
+            { label: 'Critical', value: summary.totalCriticalRisks },
+            { label: 'Breaches', value: summary.appetiteBreaches },
+          ].map((s) => (
+            <div key={s.label} className="bg-base-100 border border-border rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold">{s.value}</div>
+              <div className="text-xs text-muted-foreground">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex gap-4">
+        {/* Department list */}
+        <div className="w-64 space-y-2 shrink-0">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Departments</h3>
+          {deptsLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+          {departments.map((d: any) => (
+            <button
+              key={d.id}
+              className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                selectedDept === d.id
+                  ? 'bg-primary/10 text-primary font-medium'
+                  : 'hover:bg-base-200 text-foreground'
+              }`}
+              onClick={() => setSelectedDept(d.id)}
+            >
+              {d.name}
+            </button>
+          ))}
+          {!deptsLoading && departments.length === 0 && (
+            <p className="text-xs text-muted-foreground">No departments configured.</p>
+          )}
+        </div>
+
+        {/* Detail pane */}
+        <div className="flex-1 min-w-0">
+          {!selectedDept && (
+            <div className="text-center py-12 text-muted-foreground">
+              <Building className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p>Select a department to view details</p>
+            </div>
+          )}
+
+          {selectedDept && (
+            <div className="space-y-4">
+              {/* View toggle */}
+              <div className="flex gap-2">
+                <button
+                  className={`px-3 py-1 text-sm rounded ${view === 'intent' ? 'bg-primary text-primary-content' : 'bg-base-200'}`}
+                  onClick={() => setView('intent')}
+                >
+                  Intent
+                </button>
+                <button
+                  className={`px-3 py-1 text-sm rounded ${view === 'risk' ? 'bg-primary text-primary-content' : 'bg-base-200'}`}
+                  onClick={() => setView('risk')}
+                >
+                  Risk
+                </button>
+              </div>
+
+              {scorecardLoading && <Loader2 className="w-5 h-5 animate-spin" />}
+
+              {scorecard && view === 'intent' && (
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold">{scorecard.department.name}</h3>
+                  {scorecard.department.mission && (
+                    <div>
+                      <span className="text-xs font-medium text-muted-foreground uppercase">Mission</span>
+                      <p className="text-sm mt-1">{scorecard.department.mission}</p>
+                    </div>
+                  )}
+                  {scorecard.department.objectives?.length > 0 && (
+                    <div>
+                      <span className="text-xs font-medium text-muted-foreground uppercase">Objectives</span>
+                      <ul className="list-disc list-inside text-sm mt-1 space-y-1">
+                        {scorecard.department.objectives.map((o: any, i: number) => (
+                          <li key={i}>{o.title}{o.priority !== 'medium' ? ` (${o.priority})` : ''}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {scorecard.department.complianceTargets?.length > 0 && (
+                    <div>
+                      <span className="text-xs font-medium text-muted-foreground uppercase">Compliance Targets</span>
+                      <div className="mt-1 space-y-1">
+                        {scorecard.department.complianceTargets.map((t: any, i: number) => (
+                          <div key={i} className="flex items-center gap-2 text-sm">
+                            <span className="font-medium">{t.framework}</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${
+                              t.status === 'compliant' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                            }`}>{t.status}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {scorecard && view === 'risk' && (
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold">{scorecard.department.name}</h3>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className="bg-base-100 border border-border rounded p-2 text-center">
+                      <div className="text-xl font-bold">{scorecard.latestScore?.overallScore?.toFixed(1) ?? '—'}</div>
+                      <div className="text-xs text-muted-foreground">Score</div>
+                    </div>
+                    <div className="bg-base-100 border border-border rounded p-2 text-center">
+                      <div className="text-xl font-bold">{scorecard.openRisks}</div>
+                      <div className="text-xs text-muted-foreground">Open</div>
+                    </div>
+                    <div className="bg-base-100 border border-border rounded p-2 text-center">
+                      <div className="text-xl font-bold">{scorecard.overdueRisks}</div>
+                      <div className="text-xs text-muted-foreground">Overdue</div>
+                    </div>
+                    <div className="bg-base-100 border border-border rounded p-2 text-center">
+                      <div className="text-xl font-bold text-red-600">{scorecard.criticalRisks}</div>
+                      <div className="text-xs text-muted-foreground">Critical</div>
+                    </div>
+                  </div>
+
+                  {scorecard.appetiteBreaches?.length > 0 && (
+                    <div className="bg-red-50 border border-red-200 rounded p-3">
+                      <div className="text-sm font-medium text-red-700 mb-1">Appetite Breaches</div>
+                      {scorecard.appetiteBreaches.map((b: any, i: number) => (
+                        <div key={i} className="text-xs text-red-600">
+                          {b.domain}: {b.score.toFixed(1)} (threshold: {b.threshold})
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {scorecard.topRisks?.length > 0 && (
+                    <div>
+                      <span className="text-xs font-medium text-muted-foreground uppercase">Top Risks</span>
+                      <div className="mt-1 space-y-1">
+                        {scorecard.topRisks.map((r: any) => (
+                          <div key={r.id} className="flex items-center gap-2 text-sm bg-base-100 border border-border rounded px-3 py-1.5">
+                            <LevelBadge level={r.severity} />
+                            <span className="flex-1 truncate">{r.title}</span>
+                            <span className="text-xs text-muted-foreground">score={r.riskScore}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Heatmap */}
+      {heatmap.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Risk Heatmap</h3>
+          <div className="overflow-x-auto">
+            <table className="text-xs w-full">
+              <thead>
+                <tr>
+                  <th className="text-left py-1 px-2">Department</th>
+                  <th className="text-left py-1 px-2">Domain</th>
+                  <th className="text-right py-1 px-2">Score</th>
+                  <th className="text-right py-1 px-2">Threshold</th>
+                  <th className="text-center py-1 px-2">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {heatmap.map((cell: any, i: number) => (
+                  <tr key={i} className={cell.breached ? 'bg-red-50' : ''}>
+                    <td className="py-1 px-2">{cell.departmentName}</td>
+                    <td className="py-1 px-2">{cell.domain}</td>
+                    <td className="py-1 px-2 text-right">{cell.score.toFixed(1)}</td>
+                    <td className="py-1 px-2 text-right">{cell.threshold}</td>
+                    <td className="py-1 px-2 text-center">
+                      {cell.breached
+                        ? <ShieldAlert className="w-3 h-3 text-red-600 inline" />
+                        : <ShieldCheck className="w-3 h-3 text-green-600 inline" />}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function RiskAssessmentTab() {
   const qc = useQueryClient();
   const [subTab, setSubTab] = useState<SubTab>('overview');
@@ -868,6 +1111,7 @@ export function RiskAssessmentTab() {
     { id: 'assessments', label: 'Assessments', icon: <Shield className="w-4 h-4" /> },
     { id: 'findings', label: 'Findings', icon: <AlertTriangle className="w-4 h-4" /> },
     { id: 'feeds', label: 'External Feeds', icon: <Database className="w-4 h-4" /> },
+    { id: 'departments', label: 'Departments', icon: <Building className="w-4 h-4" /> },
   ];
 
   return (
@@ -899,6 +1143,7 @@ export function RiskAssessmentTab() {
       {subTab === 'assessments' && <AssessmentsSection />}
       {subTab === 'findings' && <FindingsSection />}
       {subTab === 'feeds' && <FeedsSection />}
+      {subTab === 'departments' && <DepartmentsSection />}
 
       {/* Run Assessment Modal */}
       {runModal && (

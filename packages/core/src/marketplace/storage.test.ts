@@ -31,6 +31,13 @@ vi.mock('./skills/index.js', () => ({
     version: '1.0.0',
   },
   sopWriterSkill: { name: 'SOP Writer', author: 'YEOMAN', version: '1.0.0' },
+  strideThreatModelSkill: { name: 'STRIDE Threat Model', author: 'YEOMAN', version: '2026.3.2' },
+  sigmaRuleGeneratorSkill: { name: 'SIGMA Rule Generator', author: 'YEOMAN', version: '2026.3.2' },
+  malwareAnalysisSkill: { name: 'Malware Analysis', author: 'YEOMAN', version: '2026.3.2' },
+  emailHeaderForensicsSkill: { name: 'Email Header Forensics', author: 'YEOMAN', version: '2026.3.2' },
+  ttrcAnalysisSkill: { name: 'TTRC Analysis', author: 'YEOMAN', version: '2026.3.2' },
+  securityArchitectureReviewSkill: { name: 'Security Architecture Review', author: 'YEOMAN', version: '2026.3.2' },
+  securityLogAnalysisSkill: { name: 'Security Log Analysis', author: 'YEOMAN', version: '2026.3.2' },
 }));
 
 // ─── Test Data ────────────────────────────────────────────────
@@ -370,11 +377,11 @@ describe('MarketplaceStorage', () => {
       );
       expect(batchSelect).toBeDefined();
 
-      // Should have INSERT calls for each of the 11 skills
+      // Should have INSERT calls for each of the 18 skills (11 original + 7 security)
       const insertCalls = mockQuery.mock.calls.filter(
         (c: any[]) => typeof c[0] === 'string' && c[0].includes('INSERT INTO marketplace.skills')
       );
-      expect(insertCalls).toHaveLength(11);
+      expect(insertCalls).toHaveLength(18);
     });
 
     it('uses batch SELECT for existing builtins check', async () => {

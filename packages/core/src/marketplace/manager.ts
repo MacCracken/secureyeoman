@@ -33,6 +33,8 @@ export interface CommunitySyncResult {
   workflowsUpdated: number;
   swarmsAdded: number;
   swarmsUpdated: number;
+  securityTemplatesAdded: number;
+  securityTemplatesUpdated: number;
 }
 
 export class MarketplaceManager {
@@ -271,6 +273,8 @@ export class MarketplaceManager {
       workflowsUpdated: 0,
       swarmsAdded: 0,
       swarmsUpdated: 0,
+      securityTemplatesAdded: 0,
+      securityTemplatesUpdated: 0,
     };
 
     // Git fetch — only when policy allows and a git URL is available
@@ -525,6 +529,143 @@ export class MarketplaceManager {
       }
     }
 
+    // ── Sync community security templates ──────────────────────────────────
+    const securityTemplatesDir = path.join(repoPath, 'security-templates');
+    if (fs.existsSync(securityTemplatesDir)) {
+      try {
+        const templateDirs = fs
+          .readdirSync(securityTemplatesDir, { withFileTypes: true })
+          .filter((d) => d.isDirectory());
+
+        for (const dir of templateDirs) {
+          const templatePath = path.join(securityTemplatesDir, dir.name);
+          const metadataPath = path.join(templatePath, 'metadata.json');
+
+          if (!fs.existsSync(metadataPath)) {
+            result.errors.push(
+              `Skipped security template ${dir.name}: missing metadata.json`
+            );
+            result.skipped++;
+            continue;
+          }
+
+          try {
+            const metadata = JSON.parse(
+              fs.readFileSync(metadataPath, 'utf-8')
+            ) as Record<string, unknown>;
+
+            if (!metadata.name || typeof metadata.name !== 'string') {
+              result.errors.push(
+                `Skipped security template ${dir.name}: metadata.json missing "name"`
+              );
+              result.skipped++;
+              continue;
+            }
+
+            // Resolve filenames — metadata.files overrides defaults
+            const files = metadata.files as Record<string, unknown> | undefined;
+            const systemFile =
+              files && typeof files.system === 'string'
+                ? files.system
+                : 'system.md';
+            const userFile =
+              files && typeof files.user === 'string' ? files.user : 'user.md';
+
+            const systemPath = path.join(templatePath, systemFile);
+            const userPath = path.join(templatePath, userFile);
+
+            if (!fs.existsSync(systemPath)) {
+              result.errors.push(
+                `Skipped security template ${dir.name}: missing ${systemFile}`
+              );
+              result.skipped++;
+              continue;
+            }
+
+            const systemContent = fs.readFileSync(systemPath, 'utf-8');
+            let instructions = systemContent;
+
+            if (fs.existsSync(userPath)) {
+              const userContent = fs.readFileSync(userPath, 'utf-8');
+              instructions += '\n\n## User Input Template\n\n' + userContent;
+            }
+
+            // Parse author
+            const rawAuthor = metadata.author;
+            let authorDisplay = 'community';
+            let authorInfo: CatalogSkill['authorInfo'];
+            if (typeof rawAuthor === 'string') {
+              authorDisplay = rawAuthor;
+            } else if (rawAuthor && typeof rawAuthor === 'object') {
+              const a = rawAuthor as Record<string, unknown>;
+              authorDisplay = typeof a.name === 'string' ? a.name : 'community';
+              authorInfo = {
+                name: authorDisplay,
+                github: typeof a.github === 'string' ? a.github : undefined,
+                website: typeof a.website === 'string' ? a.website : undefined,
+                license: typeof a.license === 'string' ? a.license : undefined,
+              };
+            }
+
+            const tags = Array.isArray(metadata.tags)
+              ? (metadata.tags as string[])
+              : [];
+            if (!tags.includes('security-template')) {
+              tags.push('security-template');
+            }
+
+            const skillData: Partial<CatalogSkill> = {
+              name: metadata.name,
+              description:
+                typeof metadata.description === 'string'
+                  ? metadata.description
+                  : '',
+              version:
+                typeof metadata.version === 'string' ? metadata.version : '1.0.0',
+              author: authorDisplay,
+              authorInfo,
+              category: 'security',
+              tags,
+              instructions,
+              triggerPatterns: [],
+              useWhen: '',
+              doNotUseWhen: '',
+              successCriteria: '',
+              mcpToolsAllowed: [],
+              routing: 'fuzzy',
+              autonomyLevel: (['L1', 'L2', 'L3', 'L4', 'L5'].includes(
+                metadata.autonomyLevel as string
+              )
+                ? metadata.autonomyLevel
+                : 'L1') as 'L1' | 'L2' | 'L3' | 'L4' | 'L5',
+              source: 'community',
+            };
+
+            const existing = await this.storage.findByNameAndSource(
+              skillData.name!,
+              'community'
+            );
+            if (existing) {
+              await this.storage.updateSkill(existing.id, skillData);
+              result.securityTemplatesUpdated++;
+            } else {
+              await this.storage.addSkill(skillData);
+              result.securityTemplatesAdded++;
+            }
+
+            // Track for prune protection
+            syncedNames.add(metadata.name);
+          } catch (err) {
+            result.errors.push(
+              `Error processing security template ${dir.name}: ${err instanceof Error ? err.message : String(err)}`
+            );
+          }
+        }
+      } catch {
+        // Non-readable directory — skip silently
+      }
+    }
+
     this.lastSyncedAt = Date.now();
     this.logger.info('Community skill sync complete', {
       path: repoPath,
@@ -536,6 +677,8 @@ export class MarketplaceManager {
       workflowsUpdated: result.workflowsUpdated,
       swarmsAdded: result.swarmsAdded,
       swarmsUpdated: result.swarmsUpdated,
+      securityTemplatesAdded: result.securityTemplatesAdded,
+      securityTemplatesUpdated: result.securityTemplatesUpdated,
     });
 
     return result;

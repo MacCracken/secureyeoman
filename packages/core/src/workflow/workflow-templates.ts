@@ -804,4 +804,111 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
     createdBy: 'system',
     autonomyLevel: 'L2' as const,
   },
+
+  // ── Security Templates (Phase 107-B) ────────────────────────
+
+  {
+    name: 'stride-threat-analysis',
+    description:
+      'Automated STRIDE threat analysis pipeline: performs per-element threat modeling, formats a structured report, and saves findings to the knowledge base.',
+    steps: [
+      agentStep(
+        {
+          id: 'stride-analysis',
+          name: 'STRIDE Threat Analysis',
+          description:
+            'Perform STRIDE per-element threat modeling on the provided system architecture',
+          dependsOn: [],
+          onError: 'fail',
+        },
+        'security-analyst',
+        'Perform a STRIDE per-element threat analysis on the following system:\n\n{{input.systemDescription}}\n\nInclude trust boundaries, data flow diagram, threat table with severity ratings, attack trees for critical threats, and prioritized mitigations.',
+        '{{input.additionalContext}}'
+      ),
+      transformStep(
+        {
+          id: 'format-report',
+          name: 'Format Threat Report',
+          description: 'Format the STRIDE analysis into a structured markdown report',
+          dependsOn: ['stride-analysis'],
+          onError: 'continue',
+        },
+        '# STRIDE Threat Model Report\n\n**System**: {{input.systemName}}\n**Date**: {{input.date}}\n**Analyst**: Automated Pipeline\n\n{{steps.stride-analysis.output}}'
+      ),
+      resourceStep(
+        {
+          id: 'save-to-kb',
+          name: 'Save to Knowledge Base',
+          description: 'Persist the threat model report to the knowledge base for future reference',
+          dependsOn: ['format-report'],
+          onError: 'continue',
+        },
+        'knowledge',
+        '{"title":"STRIDE Threat Model — {{input.systemName}}","content":"{{steps.format-report.output}}","tags":["stride","threat-model","security"]}'
+      ),
+    ],
+    edges: [
+      { source: 'stride-analysis', target: 'format-report' },
+      { source: 'format-report', target: 'save-to-kb' },
+    ],
+    triggers: [{ type: 'manual', config: {} }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L2' as const,
+  },
+
+  {
+    name: 'security-architecture-review',
+    description:
+      'Security architecture review pipeline: performs an 8-domain secure-by-design review, routes to human approval, and saves the approved review to the knowledge base.',
+    steps: [
+      agentStep(
+        {
+          id: 'arch-review',
+          name: '8-Domain Architecture Review',
+          description:
+            'Perform a comprehensive security architecture review across all 8 domains',
+          dependsOn: [],
+          onError: 'fail',
+        },
+        'security-architect',
+        'Perform an 8-domain security architecture review on:\n\n{{input.systemDescription}}\n\nDomains: Authentication, Authorization, Data Protection, Network Security, Supply Chain, Logging & Monitoring, Incident Response, Compliance & Governance.\n\nProduce findings with severity ratings, a per-domain checklist, and a remediation roadmap.',
+        '{{input.additionalContext}}'
+      ),
+      {
+        id: 'approval',
+        type: 'human_approval',
+        name: 'Review Approval',
+        description: 'A human reviewer must approve the architecture review before it is saved',
+        config: {
+          prompt:
+            'Please review the security architecture assessment below and approve or reject.\n\n{{steps.arch-review.output}}',
+          timeoutMs: 86_400_000,
+        },
+        dependsOn: ['arch-review'],
+        onError: 'fail',
+      } as unknown as WorkflowStep,
+      resourceStep(
+        {
+          id: 'save-approved',
+          name: 'Save Approved Review',
+          description: 'Save the human-approved security architecture review to the knowledge base',
+          dependsOn: ['approval'],
+          onError: 'continue',
+        },
+        'knowledge',
+        '{"title":"Security Architecture Review — {{input.systemName}}","content":"{{steps.arch-review.output}}","tags":["architecture-review","security","approved"]}'
+      ),
+    ],
+    edges: [
+      { source: 'arch-review', target: 'approval' },
+      { source: 'approval', target: 'save-approved' },
+    ],
+    triggers: [{ type: 'manual', config: {} }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L3' as const,
+  },
 ];

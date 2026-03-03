@@ -18,6 +18,13 @@ import {
   intentEngineeringSkill,
   specificationEngineeringSkill,
   sopWriterSkill,
+  strideThreatModelSkill,
+  sigmaRuleGeneratorSkill,
+  malwareAnalysisSkill,
+  emailHeaderForensicsSkill,
+  ttrcAnalysisSkill,
+  securityArchitectureReviewSkill,
+  securityLogAnalysisSkill,
 } from './skills/index.js';
 
 export class MarketplaceStorage extends PgBaseStorage {
@@ -353,6 +360,13 @@ export class MarketplaceStorage extends PgBaseStorage {
       intentEngineeringSkill,
       specificationEngineeringSkill,
       sopWriterSkill,
+      strideThreatModelSkill,
+      sigmaRuleGeneratorSkill,
+      malwareAnalysisSkill,
+      emailHeaderForensicsSkill,
+      ttrcAnalysisSkill,
+      securityArchitectureReviewSkill,
+      securityLogAnalysisSkill,
     ];
 
     // Batch-fetch all existing builtins in one query instead of N individual SELECTs

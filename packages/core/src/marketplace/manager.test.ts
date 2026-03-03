@@ -680,4 +680,309 @@ describe('MarketplaceManager', () => {
       expect(true).toBe(true);
     });
   });
+
+  // ── Phase 107-B: Security template sync ──────────────────────────────────
+
+  describe('syncFromCommunity — security templates', () => {
+    it('syncs a security template directory with system.md + user.md + metadata.json', async () => {
+      const { default: fs } = await import('fs');
+      vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+        const s = String(p);
+        // Repo path, skills dir, security-templates dir, metadata.json, system.md, user.md
+        return true;
+      });
+      vi.mocked(fs.readdirSync).mockImplementation((dir: any, _opts?: any) => {
+        const s = String(dir);
+        if (s.endsWith('skills')) {
+          return [] as any; // no JSON skills
+        }
+        if (s.endsWith('security-templates')) {
+          return [
+            { name: 'ir-playbook', isDirectory: () => true, isFile: () => false },
+          ] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockImplementation((p: any) => {
+        const s = String(p);
+        if (s.endsWith('metadata.json')) {
+          return JSON.stringify({
+            name: 'IR Playbook',
+            description: 'Incident response playbook',
+            version: '2026.3.2',
+            author: { name: 'Community', github: 'MacCracken' },
+            category: 'security',
+            tags: ['incident-response', 'security-template'],
+            autonomyLevel: 'L1',
+          });
+        }
+        if (s.endsWith('system.md')) {
+          return 'You are an IR expert.';
+        }
+        if (s.endsWith('user.md')) {
+          return '# IR Request\n\n{{incident_type}}';
+        }
+        return '{}';
+      });
+
+      const { manager, storage } = makeManager({
+        findByNameAndSource: vi.fn().mockResolvedValue(null),
+        search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+      });
+
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.securityTemplatesAdded).toBe(1);
+      expect(result.securityTemplatesUpdated).toBe(0);
+      expect(storage.addSkill).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'IR Playbook',
+          category: 'security',
+          source: 'community',
+          instructions: expect.stringContaining('You are an IR expert.'),
+        })
+      );
+      // Instructions should contain both system.md and user.md
+      const callArgs = storage.addSkill.mock.calls[0][0];
+      expect(callArgs.instructions).toContain('## User Input Template');
+      expect(callArgs.instructions).toContain('{{incident_type}}');
+      // Tags should include security-template
+      expect(callArgs.tags).toContain('security-template');
+    });
+
+    it('counts updated when security template already exists', async () => {
+      const { default: fs } = await import('fs');
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readdirSync).mockImplementation((dir: any, _opts?: any) => {
+        const s = String(dir);
+        if (s.endsWith('skills')) return [] as any;
+        if (s.endsWith('security-templates')) {
+          return [
+            { name: 'cloud-posture', isDirectory: () => true, isFile: () => false },
+          ] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockImplementation((p: any) => {
+        const s = String(p);
+        if (s.endsWith('metadata.json')) {
+          return JSON.stringify({ name: 'Cloud Posture', version: '2026.3.2' });
+        }
+        if (s.endsWith('system.md')) return 'Cloud security expert.';
+        return '';
+      });
+
+      const existingSkill = { ...SKILL, id: 'st-1', name: 'Cloud Posture', source: 'community' };
+      const { manager, storage } = makeManager({
+        findByNameAndSource: vi.fn().mockResolvedValue(existingSkill),
+        search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+      });
+
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.securityTemplatesUpdated).toBe(1);
+      expect(result.securityTemplatesAdded).toBe(0);
+      expect(storage.updateSkill).toHaveBeenCalledWith('st-1', expect.any(Object));
+    });
+
+    it('skips security template missing system.md', async () => {
+      const { default: fs } = await import('fs');
+      vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+        const s = String(p);
+        if (s.endsWith('system.md')) return false;
+        return true;
+      });
+      vi.mocked(fs.readdirSync).mockImplementation((dir: any, _opts?: any) => {
+        const s = String(dir);
+        if (s.endsWith('skills')) return [] as any;
+        if (s.endsWith('security-templates')) {
+          return [
+            { name: 'bad-template', isDirectory: () => true, isFile: () => false },
+          ] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({ name: 'Bad Template' })
+      );
+
+      const { manager } = makeManager({
+        search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+      });
+
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.skipped).toBe(1);
+      expect(result.errors.some((e) => e.includes('missing system.md'))).toBe(true);
+      expect(result.securityTemplatesAdded).toBe(0);
+    });
+
+    it('skips security template missing metadata.json', async () => {
+      const { default: fs } = await import('fs');
+      vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+        const s = String(p);
+        if (s.endsWith('metadata.json')) return false;
+        return true;
+      });
+      vi.mocked(fs.readdirSync).mockImplementation((dir: any, _opts?: any) => {
+        const s = String(dir);
+        if (s.endsWith('skills')) return [] as any;
+        if (s.endsWith('security-templates')) {
+          return [
+            { name: 'no-meta', isDirectory: () => true, isFile: () => false },
+          ] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockReturnValue('Some system prompt content');
+
+      const { manager } = makeManager({
+        search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+      });
+
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.skipped).toBe(1);
+      expect(result.errors.some((e) => e.includes('missing metadata.json'))).toBe(true);
+      expect(result.securityTemplatesAdded).toBe(0);
+    });
+
+    it('skips template when metadata.json is missing name field', async () => {
+      const { default: fs } = await import('fs');
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readdirSync).mockImplementation((dir: any, _opts?: any) => {
+        const s = String(dir);
+        if (s.endsWith('skills')) return [] as any;
+        if (s.endsWith('security-templates')) {
+          return [
+            { name: 'no-name', isDirectory: () => true, isFile: () => false },
+          ] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockImplementation((p: any) => {
+        const s = String(p);
+        if (s.endsWith('metadata.json')) {
+          return JSON.stringify({ description: 'No name here' });
+        }
+        if (s.endsWith('system.md')) return 'System content';
+        return '';
+      });
+
+      const { manager } = makeManager({
+        search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+      });
+
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.skipped).toBe(1);
+      expect(result.errors.some((e) => e.includes('missing "name"'))).toBe(true);
+    });
+
+    it('adds security-template tag when not already present', async () => {
+      const { default: fs } = await import('fs');
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readdirSync).mockImplementation((dir: any, _opts?: any) => {
+        const s = String(dir);
+        if (s.endsWith('skills')) return [] as any;
+        if (s.endsWith('security-templates')) {
+          return [
+            { name: 'api-sec', isDirectory: () => true, isFile: () => false },
+          ] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockImplementation((p: any) => {
+        const s = String(p);
+        if (s.endsWith('metadata.json')) {
+          return JSON.stringify({
+            name: 'API Security',
+            tags: ['api', 'owasp'], // no security-template tag
+          });
+        }
+        if (s.endsWith('system.md')) return 'API security expert.';
+        return '';
+      });
+
+      const { manager, storage } = makeManager({
+        findByNameAndSource: vi.fn().mockResolvedValue(null),
+        search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+      });
+
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.securityTemplatesAdded).toBe(1);
+      const callArgs = storage.addSkill.mock.calls[0][0];
+      expect(callArgs.tags).toContain('security-template');
+      expect(callArgs.tags).toContain('api');
+      expect(callArgs.tags).toContain('owasp');
+    });
+
+    it('handles string author in metadata', async () => {
+      const { default: fs } = await import('fs');
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readdirSync).mockImplementation((dir: any, _opts?: any) => {
+        const s = String(dir);
+        if (s.endsWith('skills')) return [] as any;
+        if (s.endsWith('security-templates')) {
+          return [
+            { name: 'test', isDirectory: () => true, isFile: () => false },
+          ] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockImplementation((p: any) => {
+        const s = String(p);
+        if (s.endsWith('metadata.json')) {
+          return JSON.stringify({
+            name: 'Test Template',
+            author: 'john-doe',
+          });
+        }
+        if (s.endsWith('system.md')) return 'Test system prompt.';
+        return '';
+      });
+
+      const { manager, storage } = makeManager({
+        findByNameAndSource: vi.fn().mockResolvedValue(null),
+        search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+      });
+
+      await manager.syncFromCommunity('/tmp/community');
+      const callArgs = storage.addSkill.mock.calls[0][0];
+      expect(callArgs.author).toBe('john-doe');
+    });
+
+    it('uses custom filenames from metadata.files', async () => {
+      const { default: fs } = await import('fs');
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readdirSync).mockImplementation((dir: any, _opts?: any) => {
+        const s = String(dir);
+        if (s.endsWith('skills')) return [] as any;
+        if (s.endsWith('security-templates')) {
+          return [
+            { name: 'custom-names', isDirectory: () => true, isFile: () => false },
+          ] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockImplementation((p: any) => {
+        const s = String(p);
+        if (s.endsWith('metadata.json')) {
+          return JSON.stringify({
+            name: 'Custom Files Template',
+            files: { system: 'prompt.md', user: 'input.md' },
+          });
+        }
+        if (s.endsWith('prompt.md')) return 'Custom system prompt content.';
+        if (s.endsWith('input.md')) return '# Custom Input\n\n{{data}}';
+        return '';
+      });
+
+      const { manager, storage } = makeManager({
+        findByNameAndSource: vi.fn().mockResolvedValue(null),
+        search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+      });
+
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.securityTemplatesAdded).toBe(1);
+      const callArgs = storage.addSkill.mock.calls[0][0];
+      expect(callArgs.instructions).toContain('Custom system prompt content.');
+      expect(callArgs.instructions).toContain('{{data}}');
+    });
+  });
 });

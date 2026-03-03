@@ -4559,6 +4559,103 @@ export async function resolveRiskFinding(id: string): Promise<ExternalFinding> {
   return res.finding;
 }
 
+// ── Departmental Risk Register (Phase 111) ─────────────────────────
+
+export async function fetchDepartments(params?: {
+  parentId?: string | null;
+  limit?: number;
+  offset?: number;
+}): Promise<{ items: any[]; total: number }> {
+  const q = new URLSearchParams();
+  if (params?.parentId !== undefined) q.set('parentId', params.parentId === null ? 'null' : params.parentId);
+  if (params?.limit != null) q.set('limit', String(params.limit));
+  if (params?.offset != null) q.set('offset', String(params.offset));
+  const qs = q.toString();
+  return request<{ items: any[]; total: number }>(`/risk/departments${qs ? `?${qs}` : ''}`);
+}
+
+export async function createDepartment(data: {
+  name: string;
+  description?: string;
+  mission?: string;
+  parentId?: string;
+}): Promise<any> {
+  const res = await request<{ department: any }>('/risk/departments', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return res.department;
+}
+
+export async function updateDepartment(id: string, data: Record<string, unknown>): Promise<any> {
+  const res = await request<{ department: any }>(
+    `/risk/departments/${encodeURIComponent(id)}`,
+    { method: 'PUT', body: JSON.stringify(data) }
+  );
+  return res.department;
+}
+
+export async function deleteDepartment(id: string, force = false): Promise<void> {
+  await request(
+    `/risk/departments/${encodeURIComponent(id)}${force ? '?force=true' : ''}`,
+    { method: 'DELETE' }
+  );
+}
+
+export async function fetchDepartmentScorecard(id: string): Promise<any> {
+  return request<any>(`/risk/departments/${encodeURIComponent(id)}/scorecard`);
+}
+
+export async function fetchRegisterEntries(params?: {
+  departmentId?: string;
+  status?: string;
+  category?: string;
+  severity?: string;
+  overdue?: boolean;
+  limit?: number;
+  offset?: number;
+}): Promise<{ items: any[]; total: number }> {
+  const q = new URLSearchParams();
+  if (params?.departmentId) q.set('departmentId', params.departmentId);
+  if (params?.status) q.set('status', params.status);
+  if (params?.category) q.set('category', params.category);
+  if (params?.severity) q.set('severity', params.severity);
+  if (params?.overdue) q.set('overdue', 'true');
+  if (params?.limit != null) q.set('limit', String(params.limit));
+  if (params?.offset != null) q.set('offset', String(params.offset));
+  const qs = q.toString();
+  return request<{ items: any[]; total: number }>(`/risk/register${qs ? `?${qs}` : ''}`);
+}
+
+export async function createRegisterEntry(data: {
+  departmentId: string;
+  title: string;
+  category: string;
+  severity: string;
+  likelihood: number;
+  impact: number;
+  description?: string;
+  owner?: string;
+}): Promise<any> {
+  const res = await request<{ entry: any }>('/risk/register', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return res.entry;
+}
+
+export async function fetchHeatmap(): Promise<any> {
+  return request<any>('/risk/heatmap');
+}
+
+export async function fetchRiskTrend(departmentId: string, days = 30): Promise<any> {
+  return request<any>(`/risk/departments/${encodeURIComponent(departmentId)}/trend?days=${days}`);
+}
+
+export async function fetchRiskSummary(): Promise<any> {
+  return request<any>('/risk/summary');
+}
+
 // ── Tenants ────────────────────────────────────────────────────────
 
 export async function fetchTenants(

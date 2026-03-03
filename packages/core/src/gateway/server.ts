@@ -80,6 +80,7 @@ import { registerAutonomyRoutes } from '../security/autonomy-routes.js';
 import { registerNotificationRoutes } from '../notifications/notification-routes.js';
 import { registerUserNotificationPrefsRoutes } from '../notifications/user-notification-prefs-routes.js';
 import { registerRiskAssessmentRoutes } from '../risk-assessment/risk-assessment-routes.js';
+import { registerDepartmentRiskRoutes } from '../risk-assessment/department-risk-routes.js';
 import { registerAuditExportRoutes } from '../logging/audit-export-routes.js';
 import { SQLiteAuditStorage } from '../logging/sqlite-storage.js';
 import { registerBackupRoutes } from '../backup/backup-routes.js';
@@ -915,6 +916,19 @@ export class GatewayServer {
       }
     } catch (err) {
       this.getLogger().debug('Risk assessment routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Department Risk Register routes (Phase 111)
+    try {
+      const departmentRiskManager = this.secureYeoman.getDepartmentRiskManager();
+      if (departmentRiskManager) {
+        registerDepartmentRiskRoutes(this.app, { departmentRiskManager });
+        this.getLogger().info('Department risk register routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Department risk register routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }

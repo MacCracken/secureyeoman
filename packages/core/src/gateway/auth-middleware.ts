@@ -936,6 +936,52 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/desktop/recording/active': {
     GET: { resource: 'capture.screen', action: 'capture' },
   },
+  // Departmental Risk Register routes (Phase 111)
+  '/api/v1/risk/departments': {
+    GET: { resource: 'risk', action: 'read' },
+    POST: { resource: 'risk', action: 'write' },
+  },
+  '/api/v1/risk/departments/tree': {
+    GET: { resource: 'risk', action: 'read' },
+  },
+  '/api/v1/risk/departments/snapshot-all': {
+    POST: { resource: 'risk', action: 'write' },
+  },
+  '/api/v1/risk/departments/:id': {
+    GET: { resource: 'risk', action: 'read' },
+    PUT: { resource: 'risk', action: 'write' },
+    DELETE: { resource: 'risk', action: 'write' },
+  },
+  '/api/v1/risk/departments/:id/scorecard': {
+    GET: { resource: 'risk', action: 'read' },
+  },
+  '/api/v1/risk/departments/:id/snapshot': {
+    POST: { resource: 'risk', action: 'write' },
+  },
+  '/api/v1/risk/departments/:id/scores': {
+    GET: { resource: 'risk', action: 'read' },
+  },
+  '/api/v1/risk/departments/:id/trend': {
+    GET: { resource: 'risk', action: 'read' },
+  },
+  '/api/v1/risk/register': {
+    GET: { resource: 'risk', action: 'read' },
+    POST: { resource: 'risk', action: 'write' },
+  },
+  '/api/v1/risk/register/:id': {
+    GET: { resource: 'risk', action: 'read' },
+    PUT: { resource: 'risk', action: 'write' },
+    DELETE: { resource: 'risk', action: 'write' },
+  },
+  '/api/v1/risk/register/:id/close': {
+    PATCH: { resource: 'risk', action: 'write' },
+  },
+  '/api/v1/risk/heatmap': {
+    GET: { resource: 'risk', action: 'read' },
+  },
+  '/api/v1/risk/summary': {
+    GET: { resource: 'risk', action: 'read' },
+  },
 };
 
 const PUBLIC_ROUTES = new Set([

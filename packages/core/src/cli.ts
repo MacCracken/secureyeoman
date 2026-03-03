@@ -291,6 +291,14 @@ router.registerLazy({
   loader: () => import('./cli/commands/strategy.js').then((m) => m.strategyCommand),
 });
 
+router.registerLazy({
+  name: 'risk',
+  aliases: ['rsk'],
+  description: 'Departmental risk register management',
+  usage: 'secureyeoman risk <departments|register|heatmap|summary> [options]',
+  loader: () => import('./cli/commands/risk.js').then((m) => m.riskCommand),
+});
+
 // ── Help command (eager — uses router directly) ────────────────────────────
 
 router.register({
