@@ -323,6 +323,14 @@ router.registerLazy({
   loader: () => import('./cli/commands/personality.js').then((m) => m.personalityCommand),
 });
 
+router.registerLazy({
+  name: 'sandbox',
+  aliases: ['sbx'],
+  description: 'Sandbox artifact scanning and quarantine management',
+  usage: 'secureyeoman sandbox <scan|quarantine|policy|threats|stats> [options]',
+  loader: () => import('./cli/commands/sandbox.js').then((m) => m.sandboxCommand),
+});
+
 // ── Help command (eager — uses router directly) ────────────────────────────
 
 router.register({

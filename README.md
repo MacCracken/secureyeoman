@@ -70,6 +70,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Sec
 | Authorization | RBAC, per-personality active hours, Organizational Intent (OPA) |
 | Encryption | AES-256-GCM at rest, mTLS in transit, TLS lifecycle management |
 | Sandboxing | Landlock, seccomp, gVisor, WASM |
+| Sandbox Scanning | Artifact scanning, externalization gate, quarantine, threat classification |
 | Prompt Security | Jailbreak scoring, system-prompt leak detection, abuse pattern detection |
 | Content Guardrails | PII redaction, topic restrictions, toxicity filtering, citation grounding |
 | Secrets Management | env / keyring / file / Vault / OpenBao backends |

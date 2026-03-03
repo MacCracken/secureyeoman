@@ -1140,6 +1140,36 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/provider-accounts/costs/export': {
     GET: { resource: 'ai', action: 'read' },
   },
+
+  // ── Sandbox Scanning (Phase 116) ──────────────────────────────
+  '/api/v1/sandbox/scans': {
+    GET: { resource: 'sandbox', action: 'read' },
+  },
+  '/api/v1/sandbox/scans/stats': {
+    GET: { resource: 'sandbox', action: 'read' },
+  },
+  '/api/v1/sandbox/scans/:id': {
+    GET: { resource: 'sandbox', action: 'read' },
+  },
+  '/api/v1/sandbox/quarantine': {
+    GET: { resource: 'sandbox', action: 'read' },
+  },
+  '/api/v1/sandbox/quarantine/:id': {
+    GET: { resource: 'sandbox', action: 'read' },
+    DELETE: { resource: 'sandbox', action: 'write' },
+  },
+  '/api/v1/sandbox/quarantine/:id/approve': {
+    POST: { resource: 'sandbox', action: 'write' },
+  },
+  '/api/v1/sandbox/threats': {
+    GET: { resource: 'sandbox', action: 'read' },
+  },
+  '/api/v1/sandbox/scan': {
+    POST: { resource: 'sandbox', action: 'execute' },
+  },
+  '/api/v1/sandbox/policy': {
+    GET: { resource: 'sandbox', action: 'read' },
+  },
 };
 
 const PUBLIC_ROUTES = new Set([

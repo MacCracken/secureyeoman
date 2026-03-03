@@ -104,6 +104,7 @@ import { otelFastifyPlugin } from '../telemetry/otel-fastify-plugin.js';
 import { registerAlertRoutes } from '../telemetry/alert-routes.js';
 import { registerCicdWebhookRoutes } from '../integrations/cicd/cicd-webhook-routes.js';
 import { registerAnalyticsRoutes } from '../analytics/analytics-routes.js';
+import { registerScanningRoutes } from '../sandbox/scanning/scanning-routes.js';
 
 /**
  * Check if an IP address belongs to a private/loopback range.
@@ -1285,6 +1286,32 @@ export class GatewayServer {
       this.getLogger().debug('Analytics routes registered');
     } catch (err) {
       this.getLogger().debug('Analytics routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Sandbox Scanning routes (Phase 116)
+    try {
+      const scanHistoryStore = this.secureYeoman.getScanHistoryStore();
+      const quarantineStorage = this.secureYeoman.getQuarantineStorage();
+      const externalizationGate = this.secureYeoman.getExternalizationGate();
+      const scanningPolicy = this.secureYeoman.getConfig().security?.sandboxArtifactScanning;
+      let scanningAuditChain;
+      try {
+        scanningAuditChain = this.secureYeoman.getAuditChain();
+      } catch {
+        /* optional */
+      }
+      registerScanningRoutes(this.app, {
+        scanHistoryStore,
+        quarantineStorage,
+        pipeline: (externalizationGate as any)?.deps?.pipeline ?? null,
+        policy: scanningPolicy ?? null,
+        auditChain: scanningAuditChain,
+      });
+      this.getLogger().info('Sandbox scanning routes registered');
+    } catch (err) {
+      this.getLogger().debug('Sandbox scanning routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }

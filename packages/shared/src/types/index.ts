@@ -870,6 +870,32 @@ export {
   type GroundingCheckResult,
 } from './citations.js';
 
+// Sandbox Scanning types (Phase 116)
+export {
+  ScanFindingSeveritySchema,
+  ScanVerdictSchema,
+  ThreatClassificationSchema,
+  KillChainStageSchema,
+  EscalationTierSchema,
+  ScanFindingSchema,
+  ThreatAssessmentSchema,
+  ScanResultSchema,
+  ExternalizationPolicySchema,
+  QuarantineEntrySchema,
+  ScanHistoryRowSchema,
+  type ScanFindingSeverity,
+  type ScanVerdict,
+  type ThreatClassification,
+  type KillChainStage,
+  type EscalationTier,
+  type ScanFinding,
+  type ThreatAssessment,
+  type ScanResult,
+  type ExternalizationPolicy,
+  type QuarantineEntry,
+  type ScanHistoryRow,
+} from './sandbox-scanning.js';
+
 // Provider Account types (Phase 112)
 export {
   ProviderAccountStatusSchema,

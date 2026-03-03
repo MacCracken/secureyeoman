@@ -201,6 +201,15 @@ import { ConversationSummarizer } from './analytics/conversation-summarizer.js';
 import { EntityExtractor } from './analytics/entity-extractor.js';
 import { EngagementMetricsService } from './analytics/engagement-metrics.js';
 import { UsageAnomalyDetector } from './analytics/usage-anomaly-detector.js';
+import {
+  CodeScanner,
+  SecretsScanner,
+  DataScanner,
+  ScannerPipeline,
+  ExternalizationGate,
+  QuarantineStorage,
+  ScanHistoryStore,
+} from './sandbox/scanning/index.js';
 
 export interface SecureYeomanOptions {
   /** Configuration options */
@@ -359,6 +368,9 @@ export class SecureYeoman {
   private providerHealthTracker: ProviderHealthTracker = new ProviderHealthTracker();
   private costBudgetChecker: CostBudgetChecker | null = null;
   private strategyStorage: StrategyStorage | null = null;
+  private scanHistoryStore: ScanHistoryStore | null = null;
+  private quarantineStorage: QuarantineStorage | null = null;
+  private externalizationGate: ExternalizationGate | null = null;
   private modelDefaultSet = false;
   private initialized = false;
   private startedAt: number | null = null;
@@ -504,6 +516,12 @@ export class SecureYeoman {
       // Step 2.12: Initialize AthiStorage (Phase 107-F)
       this.athiStorage = new AthiStorage();
       this.logger.debug('AthiStorage initialized');
+
+      // Step 2.13: Initialize ScanHistoryStore + QuarantineStorage (Phase 116)
+      this.scanHistoryStore = new ScanHistoryStore();
+      const dataDir = this.config.core?.dataDir ?? '~/.secureyeoman/data';
+      this.quarantineStorage = new QuarantineStorage(dataDir);
+      this.logger.debug('ScanHistoryStore + QuarantineStorage initialized');
 
       // Step 3: Validate secrets are available
       validateSecrets(this.config);
@@ -901,6 +919,29 @@ export class SecureYeoman {
         enabled: this.sandboxManager.isEnabled(),
         capabilities: sandboxCaps,
       });
+
+      // Step 5.85: Initialize ExternalizationGate (Phase 116)
+      try {
+        const scanPolicy = this.config.security.sandboxArtifactScanning ?? {};
+        const pipeline = new ScannerPipeline(
+          [new CodeScanner(), new SecretsScanner(), new DataScanner()],
+          { policy: scanPolicy as import('@secureyeoman/shared').ExternalizationPolicy },
+        );
+        this.externalizationGate = new ExternalizationGate({
+          pipeline,
+          quarantineStorage: this.quarantineStorage,
+          scanHistoryStore: this.scanHistoryStore,
+          secretsScanner: new SecretsScanner(),
+          policy: scanPolicy as import('@secureyeoman/shared').ExternalizationPolicy,
+          getAlertManager: () => this.alertManager,
+          auditChain: this.auditChain,
+        });
+        this.logger.debug('ExternalizationGate initialized');
+      } catch (err) {
+        this.logger.warn('ExternalizationGate initialization failed', {
+          reason: err instanceof Error ? err.message : String(err),
+        });
+      }
 
       // Step 5.9: Initialize task storage
       this.taskStorage = new TaskStorage();
@@ -1946,6 +1987,29 @@ export class SecureYeoman {
         auditChainValid: auditStats.chainValid,
         lastAuditVerification: auditStats.lastVerification,
       },
+      // Sandbox scanning metrics (Phase 116) — non-fatal; omitted when unavailable
+      ...(this.scanHistoryStore
+        ? await (async () => {
+            try {
+              const stats = await this.scanHistoryStore!.getStats();
+              return {
+                sandbox: {
+                  scanning: {
+                    totalScans: stats.total,
+                    quarantineCount: stats.byVerdict?.quarantine ?? 0,
+                    blockCount: stats.byVerdict?.block ?? 0,
+                    criticalFindings: stats.bySeverity?.critical ?? 0,
+                    maxIntentScore: 0,
+                    failureRate: 0,
+                    escalations: 0,
+                  },
+                },
+              };
+            } catch {
+              return {};
+            }
+          })()
+        : {}),
       // Departmental risk metrics (Phase 111) — non-fatal; omitted when unavailable
       ...(this.departmentRiskManager
         ? await (async () => {
@@ -2593,6 +2657,21 @@ export class SecureYeoman {
   getProviderAccountManager(): ProviderAccountManager | null {
     this.ensureInitialized();
     return this.providerAccountManager;
+  }
+
+  getExternalizationGate(): ExternalizationGate | null {
+    this.ensureInitialized();
+    return this.externalizationGate;
+  }
+
+  getQuarantineStorage(): QuarantineStorage | null {
+    this.ensureInitialized();
+    return this.quarantineStorage;
+  }
+
+  getScanHistoryStore(): ScanHistoryStore | null {
+    this.ensureInitialized();
+    return this.scanHistoryStore;
   }
 
   getProviderHealthTracker(): ProviderHealthTracker {

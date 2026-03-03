@@ -6052,3 +6052,66 @@ export async function exportAccountCostsCsv(opts?: {
   const res = await fetch(`/api/v1/provider-accounts/costs/export${qs}`, { headers });
   return res.text();
 }
+
+// ── Sandbox Scanning (Phase 116) ─────────────────────────────────────────────
+
+export async function fetchScanHistory(params?: {
+  limit?: number;
+  offset?: number;
+  verdict?: string;
+  sourceContext?: string;
+  personalityId?: string;
+}): Promise<{ rows: any[]; total: number }> {
+  const query = new URLSearchParams();
+  if (params?.limit) query.set('limit', params.limit.toString());
+  if (params?.offset !== undefined) query.set('offset', params.offset.toString());
+  if (params?.verdict) query.set('verdict', params.verdict);
+  if (params?.sourceContext) query.set('sourceContext', params.sourceContext);
+  if (params?.personalityId) query.set('personalityId', params.personalityId);
+  const qs = query.toString() ? `?${query.toString()}` : '';
+  try {
+    return await request<{ rows: any[]; total: number }>(`/sandbox/scans${qs}`);
+  } catch {
+    return { rows: [], total: 0 };
+  }
+}
+
+export async function fetchScanStats(): Promise<{ stats: any }> {
+  try {
+    return await request<{ stats: any }>('/sandbox/scans/stats');
+  } catch {
+    return { stats: { total: 0, byVerdict: {}, bySeverity: {} } };
+  }
+}
+
+export async function fetchQuarantineItems(): Promise<{ items: any[] }> {
+  try {
+    return await request<{ items: any[] }>('/sandbox/quarantine');
+  } catch {
+    return { items: [] };
+  }
+}
+
+export async function approveQuarantine(id: string): Promise<void> {
+  await request(`/sandbox/quarantine/${id}/approve`, { method: 'POST' });
+}
+
+export async function deleteQuarantine(id: string): Promise<void> {
+  await request(`/sandbox/quarantine/${id}`, { method: 'DELETE' });
+}
+
+export async function fetchThreatIntelligence(): Promise<any> {
+  try {
+    return await request<any>('/sandbox/threats');
+  } catch {
+    return { patternCount: 0, categories: [], stages: [], patterns: [] };
+  }
+}
+
+export async function fetchSandboxPolicy(): Promise<{ policy: any }> {
+  try {
+    return await request<{ policy: any }>('/sandbox/policy');
+  } catch {
+    return { policy: { enabled: false } };
+  }
+}

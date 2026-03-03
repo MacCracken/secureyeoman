@@ -6,6 +6,28 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.3] — 2026-03-03
 
+### Phase 116: Sandbox Artifact Scanning & Externalization Gate
+
+- **Shared types** (`packages/shared/src/types/sandbox-scanning.ts`): Zod schemas for `ScanFindingSeverity`, `ScanVerdict`, `ThreatClassification`, `KillChainStage`, `EscalationTier`, `ScanFinding`, `ThreatAssessment`, `ScanResult`, `ExternalizationPolicy`, `QuarantineEntry`, `ScanHistoryRow`. Exported from `types/index.ts`. 6 new `SecurityEventType` values. `sandboxArtifactScanning` added to `SecurityConfigSchema`.
+- **Scanning engine** (`packages/core/src/sandbox/scanning/`): `CodeScanner` (24 patterns, 8 categories, anti-ReDoS guards), `SecretsScanner` (18 patterns, redaction mode), `DataScanner` (magic bytes, polyglot, serialization attacks, formula injection). `ScannerPipeline` runs scanners via `Promise.allSettled` with `AbortController` failFast support.
+- **Externalization gate** (`externalization-gate.ts`): Wraps `SandboxResult<T>`, runs scanning pipeline, applies policy. Gate decisions: pass, redact, quarantine, block. Transparent to callers.
+- **Quarantine storage** (`quarantine-storage.ts`): File-based under `<dataDir>/quarantine/<uuid>/`. CRUD with approve/release/delete workflow.
+- **Scan history** (`scan-history-store.ts`): `PgBaseStorage` subclass for `sandbox.scan_history` table. Paginated listing, filtering by verdict/source/personality, aggregated stats.
+- **SQL migration** (`005_sandbox_scanning.sql`): `sandbox` schema, `scan_history` table with indexes on `created_at`, `verdict`, `personality_id`, `source_context`.
+- **Threat patterns** (`threat-patterns.ts`): 17 `BUILTIN_THREAT_PATTERNS` across 7 categories — reverse shells, web shells, cryptominers, ransomware, credential harvesters, supply chain, data exfiltration. Kill chain stage mapping, co-occurrence relationships, versioned.
+- **Threat classifier** (`threat-classifier.ts`): Intent scoring 0.0–1.0 via pattern matching + co-occurrence amplification + severity weighting. Classifications: benign/suspicious/likely_malicious/malicious. Maps to 4 escalation tiers.
+- **Runtime guards** (`runtime-guard.ts`): `RuntimeGuard` + `RuntimeMonitor`. Network host allowlist, filesystem path blocklist, fork bomb detection, time anomaly flagging (2x threshold).
+- **Escalation manager** (`escalation.ts`): 4-tier response — tier1_log, tier2_alert (AlertManager), tier3_suspend (personality suspension via SoulManager), tier4_revoke (privilege revocation + risk register entry via DepartmentRiskManager).
+- **Offender tracker** (`offender-tracker.ts`): Rolling window repeat-offender detection per user/personality. Configurable thresholds, time decay, auto-escalation.
+- **API routes** (`scanning-routes.ts`): 10 endpoints — `GET/POST` scans, quarantine CRUD, threat intelligence, manual scan, policy. Auth: `sandbox:read`/`sandbox:write`/`sandbox:execute`. Route permissions in `auth-middleware.ts`.
+- **CLI** (`packages/core/src/cli/commands/sandbox.ts`): `sandbox` command (alias: `sbx`). Subcommands: `scan <file|->`, `quarantine list|approve|delete`, `policy`, `threats`, `stats`. Supports `--json`, `--url`, `--token`.
+- **Dashboard** (`packages/dashboard/src/components/security/SecuritySandboxTab.tsx`): Security → Sandbox tab with stats cards, policy banner, quarantine table (approve/delete actions), threat intelligence panel, paginated recent scans table. 7 new API client functions.
+- **Alert templates**: 5 new in `Sandbox` category — artifact quarantined, critical threat detected, high intent score, scan failures, repeat offender escalation.
+- **Metrics**: `sandbox.scanning` block in `getMetrics()` — totalScans, quarantineCount, blockCount, criticalFindings.
+- **Wiring** (`secureyeoman.ts`): `scanHistoryStore`, `quarantineStorage`, `externalizationGate` fields + init + getters. `ScannerPipeline` created with all 3 scanners. Gate wired with quarantine, history, secrets scanner, alert manager, audit chain.
+- **Tests**: ~380 new across 16 files — sandbox-scanning-types (27), code-scanner (38), secrets-scanner (28), data-scanner (28), scanner-pipeline (24), externalization-gate (21), quarantine-unit (14), scan-history-unit (8), threat-patterns (15), threat-classifier (14), runtime-guard (26), escalation (14), offender-tracker (16), scanning-routes (25), sandbox CLI (16), SecuritySandboxTab (12).
+- **ADR 194** (`docs/adr/194-sandbox-artifact-scanning.md`). **Guide** (`docs/guides/sandbox-artifact-scanning.md`).
+
 ### Phase 119: LLM Provider Improvements
 
 - **Model registry updates**: Added OpenAI `o3` (200K context, $10/$40 per 1M tokens) and Gemini `gemini-2.0-flash-lite` (1M context, $0.075/$0.30 per 1M tokens) to `cost-calculator.ts`, `context-compactor.ts`, and `MODEL_PROVIDER_MAP`.

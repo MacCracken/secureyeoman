@@ -45,7 +45,7 @@ export interface SandboxResult<T> {
 }
 
 export interface SandboxViolation {
-  type: 'filesystem' | 'network' | 'resource' | 'syscall';
+  type: 'filesystem' | 'network' | 'resource' | 'syscall' | 'scanning';
   description: string;
   path?: string;
   timestamp: number;

@@ -38,3 +38,5 @@ export {
   type CredentialRule,
   type CredentialProxyConfig,
 } from './credential-proxy.js';
+
+export * from './scanning/index.js';

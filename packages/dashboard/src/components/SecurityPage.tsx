@@ -13,6 +13,7 @@ import {
   Loader2,
   Camera,
   Target,
+  ScanSearch,
 } from 'lucide-react';
 import {
   fetchSecurityEvents,
@@ -51,6 +52,9 @@ const CaptureTab = lazy(() => import('./capture/CaptureTab'));
 const ATHITab = lazy(() =>
   import('./security/SecurityATHITab').then((m) => ({ default: m.ATHITab }))
 );
+const SandboxTab = lazy(() =>
+  import('./security/SecuritySandboxTab').then((m) => ({ default: m.SandboxTab }))
+);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -65,7 +69,8 @@ type TabType =
   | 'risk'
   | 'scope'
   | 'capture'
-  | 'athi';
+  | 'athi'
+  | 'sandbox';
 
 // ─── Shared localStorage helpers ─────────────────────────────────────────────
 
@@ -372,6 +377,19 @@ export function SecurityPage() {
           <Camera className="w-4 h-4" />
           Capture
         </button>
+        <button
+          onClick={() => {
+            setActiveTab('sandbox');
+          }}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'sandbox'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <ScanSearch className="w-4 h-4" />
+          Sandbox
+        </button>
       </div>
 
       {activeTab === 'overview' && (
@@ -445,6 +463,12 @@ export function SecurityPage() {
       {activeTab === 'capture' && (
         <Suspense fallback={<TabSkeleton />}>
           <CaptureTab />
+        </Suspense>
+      )}
+
+      {activeTab === 'sandbox' && (
+        <Suspense fallback={<TabSkeleton />}>
+          <SandboxTab />
         </Suspense>
       )}
     </div>

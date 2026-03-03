@@ -32,6 +32,12 @@ export const SecurityEventType = {
   SANDBOX_VIOLATION: 'sandbox_violation',
   CONFIG_CHANGE: 'config_change',
   SECRET_ACCESS: 'secret_access',
+  ARTIFACT_QUARANTINED: 'artifact_quarantined',
+  ARTIFACT_BLOCKED: 'artifact_blocked',
+  ARTIFACT_RELEASED: 'artifact_released',
+  THREAT_DETECTED: 'threat_detected',
+  ESCALATION_TRIGGERED: 'escalation_triggered',
+  OFFENDER_TRACKED: 'offender_tracked',
 } as const;
 
 export type SecurityEventType = (typeof SecurityEventType)[keyof typeof SecurityEventType];
@@ -46,6 +52,12 @@ export const SecurityEventTypeSchema = z.enum([
   'sandbox_violation',
   'config_change',
   'secret_access',
+  'artifact_quarantined',
+  'artifact_blocked',
+  'artifact_released',
+  'threat_detected',
+  'escalation_triggered',
+  'offender_tracked',
 ]);
 
 // Security event schema
