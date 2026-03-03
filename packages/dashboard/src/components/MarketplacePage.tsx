@@ -14,14 +14,18 @@ const WorkflowsTab = lazy(() =>
 const SwarmTemplatesTab = lazy(() =>
   import('./marketplace/SwarmTemplatesTab').then((m) => ({ default: m.SwarmTemplatesTab }))
 );
+const PersonalitiesTab = lazy(() =>
+  import('./marketplace/PersonalitiesTab').then((m) => ({ default: m.PersonalitiesTab }))
+);
 
-type TypeFilter = 'skills' | 'workflows' | 'swarms';
+type TypeFilter = 'skills' | 'workflows' | 'swarms' | 'personalities';
 type OriginFilter = 'all' | 'marketplace' | 'community';
 
 const TYPE_TABS: { value: TypeFilter; label: string }[] = [
   { value: 'skills', label: 'Skills' },
   { value: 'workflows', label: 'Workflows' },
   { value: 'swarms', label: 'Swarm Templates' },
+  { value: 'personalities', label: 'Personalities' },
 ];
 
 const ORIGIN_TABS: { value: OriginFilter; label: string }[] = [
@@ -123,6 +127,17 @@ export function MarketplacePage() {
           }
         >
           <SwarmTemplatesTab />
+        </Suspense>
+      )}
+      {typeFilter === 'personalities' && (
+        <Suspense
+          fallback={
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          }
+        >
+          <PersonalitiesTab />
         </Suspense>
       )}
 

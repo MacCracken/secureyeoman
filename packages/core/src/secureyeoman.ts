@@ -1188,10 +1188,11 @@ export class SecureYeoman {
         await this.swarmStorage.seedBuiltinTemplates();
 
         // Wire managers into marketplace for community sync (if they exist)
-        if (this.marketplaceManager && (this.workflowManager || this.swarmManager)) {
+        if (this.marketplaceManager && (this.workflowManager || this.swarmManager || this.soulManager)) {
           this.marketplaceManager.setDelegationManagers({
             workflowManager: this.workflowManager ?? undefined,
             swarmManager: this.swarmManager ?? undefined,
+            soulManager: this.soulManager ?? undefined,
           });
         }
 
@@ -3055,6 +3056,7 @@ export class SecureYeoman {
         this.marketplaceManager?.setDelegationManagers({
           workflowManager: this.workflowManager,
           swarmManager: this.swarmManager ?? undefined,
+          soulManager: this.soulManager ?? undefined,
         });
       } catch (workflowError) {
         this.logger!.warn('Workflow manager initialization failed (non-fatal)', {

@@ -985,4 +985,295 @@ describe('MarketplaceManager', () => {
       expect(callArgs.instructions).toContain('{{data}}');
     });
   });
+
+  // ── Personality sync (Phase 107-D) ──────────────────────────────────
+  describe('syncFromCommunity — personalities', () => {
+    it('syncs a new community personality from markdown', async () => {
+      const fs = (await import('fs')).default;
+      vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+        const s = String(p);
+        return (
+          s === '/tmp/community' ||
+          s.includes('skills') ||
+          s.includes('personalities')
+        );
+      });
+      vi.mocked(fs.readdirSync).mockImplementation((p: any, opts: any) => {
+        const s = String(p);
+        if (s.endsWith('skills')) return [];
+        if (s.endsWith('personalities')) {
+          if (opts?.withFileTypes) {
+            return [{ name: 'analyst.md', isDirectory: () => false, isFile: () => true }] as any;
+          }
+          return ['analyst.md'] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        '---\nname: "Security Analyst"\ndescription: "Defensive sec"\n---\n\n# Identity & Purpose\n\nYou are a security analyst.\n'
+      );
+
+      const mockSoulManager = {
+        listPersonalities: vi.fn().mockResolvedValue({ personalities: [], total: 0 }),
+        createPersonality: vi.fn().mockResolvedValue({ id: 'pers-new', name: 'Security Analyst' }),
+        updatePersonality: vi.fn(),
+      };
+
+      const { manager, storage } = makeManager(
+        {
+          findByNameAndSource: vi.fn().mockResolvedValue(null),
+          search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+        },
+        { soulManager: mockSoulManager }
+      );
+
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.personalitiesAdded).toBe(1);
+      expect(mockSoulManager.createPersonality).toHaveBeenCalledTimes(1);
+      const callArg = mockSoulManager.createPersonality.mock.calls[0][0];
+      expect(callArg.name).toBe('Security Analyst');
+      expect(callArg.description).toContain('[community]');
+    });
+
+    it('updates an existing community personality', async () => {
+      const fs = (await import('fs')).default;
+      vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+        const s = String(p);
+        return s === '/tmp/community' || s.includes('skills') || s.includes('personalities');
+      });
+      vi.mocked(fs.readdirSync).mockImplementation((p: any, opts: any) => {
+        const s = String(p);
+        if (s.endsWith('personalities')) {
+          if (opts?.withFileTypes) {
+            return [{ name: 'analyst.md', isDirectory: () => false, isFile: () => true }] as any;
+          }
+          return ['analyst.md'] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        '---\nname: "Security Analyst"\ndescription: "Updated desc"\n---\n\n# Identity & Purpose\n\nUpdated prompt.\n'
+      );
+
+      const mockSoulManager = {
+        listPersonalities: vi.fn().mockResolvedValue({
+          personalities: [
+            { id: 'pers-existing', name: 'Security Analyst', description: '[community] Old desc' },
+          ],
+          total: 1,
+        }),
+        createPersonality: vi.fn(),
+        updatePersonality: vi.fn().mockResolvedValue({ id: 'pers-existing' }),
+      };
+
+      const { manager } = makeManager(
+        {
+          findByNameAndSource: vi.fn().mockResolvedValue(null),
+          search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+        },
+        { soulManager: mockSoulManager }
+      );
+
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.personalitiesUpdated).toBe(1);
+      expect(mockSoulManager.updatePersonality).toHaveBeenCalledTimes(1);
+    });
+
+    it('skips invalid personality markdown gracefully', async () => {
+      const fs = (await import('fs')).default;
+      vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+        const s = String(p);
+        return s === '/tmp/community' || s.includes('skills') || s.includes('personalities');
+      });
+      vi.mocked(fs.readdirSync).mockImplementation((p: any, opts: any) => {
+        const s = String(p);
+        if (s.endsWith('personalities')) {
+          if (opts?.withFileTypes) {
+            return [{ name: 'bad.md', isDirectory: () => false, isFile: () => true }] as any;
+          }
+          return ['bad.md'] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockReturnValue('no frontmatter here');
+
+      const mockSoulManager = {
+        listPersonalities: vi.fn().mockResolvedValue({ personalities: [], total: 0 }),
+        createPersonality: vi.fn(),
+      };
+
+      const { manager } = makeManager(
+        {
+          findByNameAndSource: vi.fn().mockResolvedValue(null),
+          search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+        },
+        { soulManager: mockSoulManager }
+      );
+
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.personalitiesAdded).toBe(0);
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors[0]).toContain('personality');
+    });
+
+    it('does not sync personalities when soulManager is not set', async () => {
+      const fs = (await import('fs')).default;
+      vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+        const s = String(p);
+        return s === '/tmp/community' || s.includes('skills') || s.includes('personalities');
+      });
+      vi.mocked(fs.readdirSync).mockReturnValue([]);
+
+      const { manager } = makeManager({
+        findByNameAndSource: vi.fn().mockResolvedValue(null),
+        search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+      });
+
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.personalitiesAdded).toBe(0);
+      expect(result.personalitiesUpdated).toBe(0);
+    });
+  });
+
+  // ── Theme sync (Phase 107-D) ──────────────────────────────────
+  describe('syncFromCommunity — themes', () => {
+    it('syncs a new community theme', async () => {
+      const fs = (await import('fs')).default;
+      vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+        const s = String(p);
+        return s === '/tmp/community' || s.includes('skills') || s.includes('themes');
+      });
+      vi.mocked(fs.readdirSync).mockImplementation((p: any, opts: any) => {
+        const s = String(p);
+        if (s.endsWith('themes')) {
+          if (opts?.withFileTypes) {
+            return [
+              { name: 'ocean.json', isDirectory: () => false, isFile: () => true },
+            ] as any;
+          }
+          return ['ocean.json'] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({
+          name: 'Ocean Breeze',
+          description: 'Cool blue theme',
+          isDark: true,
+          variables: { background: '#0a1628', foreground: '#e2e8f0', primary: '#38bdf8' },
+        })
+      );
+
+      const { manager, storage } = makeManager({
+        findByNameAndSource: vi.fn().mockResolvedValue(null),
+        search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+      });
+
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.themesAdded).toBe(1);
+      expect(storage.addSkill).toHaveBeenCalledTimes(1);
+      const callArgs = storage.addSkill.mock.calls[0][0];
+      expect(callArgs.name).toBe('Ocean Breeze');
+      expect(callArgs.category).toBe('design');
+      expect(callArgs.tags).toContain('theme');
+      expect(callArgs.tags).toContain('community-theme');
+      expect(callArgs.tags).toContain('dark');
+      // instructions holds the full JSON
+      const parsed = JSON.parse(callArgs.instructions);
+      expect(parsed.variables.background).toBe('#0a1628');
+    });
+
+    it('skips theme without name', async () => {
+      const fs = (await import('fs')).default;
+      vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+        const s = String(p);
+        return s === '/tmp/community' || s.includes('skills') || s.includes('themes');
+      });
+      vi.mocked(fs.readdirSync).mockImplementation((p: any, opts: any) => {
+        const s = String(p);
+        if (s.endsWith('themes')) {
+          if (opts?.withFileTypes) {
+            return [{ name: 'bad.json', isDirectory: () => false, isFile: () => true }] as any;
+          }
+          return ['bad.json'] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({ variables: { background: '#000' } })
+      );
+
+      const { manager } = makeManager({
+        findByNameAndSource: vi.fn().mockResolvedValue(null),
+        search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+      });
+
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.themesAdded).toBe(0);
+      expect(result.skipped).toBe(1);
+    });
+
+    it('skips theme without variables', async () => {
+      const fs = (await import('fs')).default;
+      vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+        const s = String(p);
+        return s === '/tmp/community' || s.includes('skills') || s.includes('themes');
+      });
+      vi.mocked(fs.readdirSync).mockImplementation((p: any, opts: any) => {
+        const s = String(p);
+        if (s.endsWith('themes')) {
+          if (opts?.withFileTypes) {
+            return [{ name: 'bad.json', isDirectory: () => false, isFile: () => true }] as any;
+          }
+          return ['bad.json'] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({ name: 'Bad Theme' })
+      );
+
+      const { manager } = makeManager({
+        findByNameAndSource: vi.fn().mockResolvedValue(null),
+        search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+      });
+
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.themesAdded).toBe(0);
+      expect(result.skipped).toBe(1);
+    });
+
+    it('updates an existing community theme', async () => {
+      const fs = (await import('fs')).default;
+      vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+        const s = String(p);
+        return s === '/tmp/community' || s.includes('skills') || s.includes('themes');
+      });
+      vi.mocked(fs.readdirSync).mockImplementation((p: any, opts: any) => {
+        const s = String(p);
+        if (s.endsWith('themes')) {
+          if (opts?.withFileTypes) {
+            return [{ name: 'ocean.json', isDirectory: () => false, isFile: () => true }] as any;
+          }
+          return ['ocean.json'] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({
+          name: 'Ocean Breeze',
+          variables: { background: '#0a1628', foreground: '#e2e8f0', primary: '#38bdf8' },
+        })
+      );
+
+      const { manager, storage } = makeManager({
+        findByNameAndSource: vi.fn().mockResolvedValue({ id: 'existing-theme' }),
+        search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+      });
+
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.themesUpdated).toBe(1);
+      expect(storage.updateSkill).toHaveBeenCalledTimes(1);
+    });
+  });
 });

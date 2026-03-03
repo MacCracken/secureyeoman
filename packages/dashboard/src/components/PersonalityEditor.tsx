@@ -34,6 +34,8 @@ import {
   ZoomIn,
   ZoomOut,
   Box,
+  Download,
+  Upload,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -74,6 +76,8 @@ import {
   deletePersonalityAvatar,
   fetchOAuthTokens,
   getAccessToken,
+  exportPersonality,
+  importPersonality,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import { useCollabEditor } from '../hooks/useCollabEditor.js';
@@ -4825,13 +4829,35 @@ export function PersonalityEditor({
               Define the agents that power your assistant
             </p>
           </div>
-          <button
-            onClick={startCreate}
-            className="btn btn-ghost flex items-center justify-center gap-1 text-sm sm:text-base"
-          >
-            <Plus className="w-4 h-4" /> <span className="sm:hidden">New</span>
-            <span className="hidden sm:inline">New Personality</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              className="btn btn-ghost flex items-center gap-1 text-sm"
+              onClick={() => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.md,.json';
+                input.onchange = async () => {
+                  const file = input.files?.[0];
+                  if (!file) return;
+                  try {
+                    await importPersonality(file);
+                    void queryClient.invalidateQueries({ queryKey: ['personalities'] });
+                  } catch { /* toast handled by query invalidation */ }
+                };
+                input.click();
+              }}
+            >
+              <Upload className="w-4 h-4" />
+              <span className="hidden sm:inline">Import</span>
+            </button>
+            <button
+              onClick={startCreate}
+              className="btn btn-ghost flex items-center justify-center gap-1 text-sm sm:text-base"
+            >
+              <Plus className="w-4 h-4" /> <span className="sm:hidden">New</span>
+              <span className="hidden sm:inline">New Personality</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -5269,6 +5295,24 @@ export function PersonalityEditor({
                             <Power className="w-4 h-4 sm:w-5 sm:h-5" />
                           </button>
                         )}
+                        <button
+                          onClick={async () => {
+                            try {
+                              const blob = await exportPersonality(p.id, 'md');
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `${p.name}.md`;
+                              a.click();
+                              URL.revokeObjectURL(url);
+                            } catch { /* ignore */ }
+                          }}
+                          className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-foreground rounded-lg"
+                          title={`Export ${p.name}`}
+                          aria-label={`Export personality ${p.name}`}
+                        >
+                          <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </button>
                         <button
                           onClick={() => {
                             startEdit(p);

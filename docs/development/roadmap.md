@@ -42,7 +42,7 @@
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | 105 | Test Coverage: Path to 88%/77% | P1 — engineering quality | 🔄 Near target (87.01%/76.01%) |
 | 106 | License-Gated Feature Reveal | P1 — commercial | 🔄 In Progress (context ✅, card ✅, CLI guard ✅) |
-| 107 | Reasoning Strategies, Security Templates & Portable Personalities | P2 — capability + distribution | 🔄 In Progress (107-A ✅, 107-B ✅, 107-C ✅, community templates ✅) |
+| 107 | Reasoning Strategies, Security Templates & Portable Personalities | P2 — capability + distribution | 🔄 In Progress (107-A ✅, 107-B ✅, 107-C ✅, 107-D ✅, community templates ✅) |
 | 109 | Editor Improvements (Auto-Claude Style) | P3 — power user UX | 🔄 In Progress (unification ✅, IDE features planned) |
 | 110 | Inline Citations & Grounding | P3 — trust layer | Planned |
 | 111 | Departmental Risk Register & Risk Posture Tracking | P2 — risk governance | 🔄 In Progress (111-A ✅, 111-B ✅, 111-E ✅, 111-F partial) |
@@ -106,30 +106,13 @@ Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi
 
 *Bidirectional conversion between SecureYeoman's native personality format and portable markdown documents. The injection model serializes personalities TO markdown for transport/sharing and parses markdown back INTO the native format. Not flat-file storage — markdown is the interchange format.*
 
-- [ ] **`PersonalityMarkdownSerializer`** — `packages/core/src/soul/personality-serializer.ts`. Methods: `toMarkdown(personality: Personality): string` and `fromMarkdown(md: string): PersonalityCreate`. The markdown format uses structured sections with YAML frontmatter:
-  ```
-  ---
-  name: FRIDAY
-  version: 2026.3.2
-  traits: [analytical, security-focused, direct]
-  defaultModel: { provider: ollama, model: llama3 }
-  category: security
-  tags: [assistant, security, general-purpose]
-  ---
-  # Identity & Purpose
-  <system prompt text>
-  # Skills
-  - skill_name: description (autonomy: L3)
-  # Configuration
-  <YAML block of body config subset — only non-default values>
-  # Reasoning Strategy
-  <default strategy slug and description>
-  ```
-- [ ] **Export route** — `GET /api/v1/soul/personalities/:id/export?format=md` returns the markdown document. Also supports `format=json` (existing raw format). Content-Disposition header for download.
-- [ ] **Import route** — `POST /api/v1/soul/personalities/import` accepts `multipart/form-data` with `.md` or `.json` file. Parses markdown via `fromMarkdown()`, validates against `PersonalityCreateSchema`, creates the personality. Returns `{ personality, warnings[] }` — warnings for referenced skills/integrations not found locally.
-- [ ] **CLI export/import** — `secureyeoman personality export <name> [--format md|json] [--output file]` and `secureyeoman personality import <file>`. Round-trip: `export | import` produces an equivalent personality.
-- [ ] **Marketplace markdown transport** — Community repo `personalities/` directory uses `.md` files. `CommunitySyncResult` gains `personalitiesAdded`/`personalitiesUpdated`. Marketplace → Personalities tab shows imported community personalities with a "Community" badge.
-- [ ] **Dashboard export/import** — Export button on PersonalityEditor toolbar (downloads `.md` file). Import button on Personalities list page (file upload dialog with preview of parsed personality before confirmation).
+- [x] **`PersonalityMarkdownSerializer`** — `packages/core/src/soul/personality-serializer.ts`. Methods: `toMarkdown(personality): string` and `fromMarkdown(md): { data: PersonalityCreate, warnings: string[] }`. YAML frontmatter (name, description, traits, defaultModel, sex, voice, preferredLanguage) + markdown sections (Identity & Purpose, Traits, Configuration, Model Fallbacks). *(Done — see Changelog [2026.3.2])*
+- [x] **Export route** — `GET /api/v1/soul/personalities/:id/export?format=md|json`. Content-Disposition header for download. *(Done — see Changelog [2026.3.2])*
+- [x] **Import route** — `POST /api/v1/soul/personalities/import` accepts multipart `.md` or `.json` file. Returns `{ personality, warnings[] }`. *(Done — see Changelog [2026.3.2])*
+- [x] **CLI export/import** — `secureyeoman personality <list|export|import>` (alias `pers`). Round-trip: `export | import` produces an equivalent personality. *(Done — see Changelog [2026.3.2])*
+- [x] **Marketplace markdown transport** — Community repo `personalities/` directory with `.md` files. `CommunitySyncResult` gains `personalitiesAdded`/`personalitiesUpdated`. MarketplacePage → Personalities tab. 3 starter community personalities (security-analyst, code-reviewer, research-assistant). *(Done — see Changelog [2026.3.2])*
+- [x] **Dashboard export/import** — Export button on each personality card. Import button on Personalities list header. PersonalitiesTab in MarketplacePage. *(Done — see Changelog [2026.3.2])*
+- [x] **Community theme sync** — Community repo `themes/` directory with `.json` files. `CommunitySyncResult` gains `themesAdded`/`themesUpdated`. 3 starter themes (ocean-breeze, forest-canopy, sunset-glow). Themes stored as marketplace skills with category `design` and tags `theme`, `community-theme`. *(Done — see Changelog [2026.3.2])*
 - [ ] **TELOS-style guided personality creation** — Structured onboarding wizard for creating personalities from natural language, inspired by [PAI](https://github.com/danielmiessler/Personal_AI_Infrastructure)'s TELOS goal framework. Instead of filling raw schema fields, the user answers 5–8 guided questions: "What is this personality's mission?", "What topics should it focus on?", "What tools does it need?", "What reasoning style should it use?", "What tone and communication style?", "What constraints or guardrails?". Answers are parsed into a `PersonalityCreate` object and previewed as a rendered markdown personality card before confirmation. Accessible from: (1) "Create with Wizard" button on Personalities list page, (2) `secureyeoman personality create --wizard` CLI flag. The wizard is an alternative to direct JSON/markdown creation — both paths produce the same native personality object.
 
 ### 107-E: Personality Core Distillation to Markdown
@@ -458,6 +441,16 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
+### Directory-Based Workflows & Swarm Templates
+
+*Extend the directory-based community content model (established for security templates and personalities) to workflows and swarm templates. Currently these are single-file JSON — as community contributions grow more complex (multi-step workflows with embedded prompts, swarm templates with per-role system instructions), a directory structure with separate markdown files would improve readability, diffability, and collaboration.*
+
+- [ ] **Workflow directory format** — Each workflow as a directory: `metadata.json` (DAG structure, step config, triggers), `README.md` (description, usage instructions), optional per-step prompt files (`steps/step-name.md`). Community sync reads the directory and composes the workflow definition.
+- [ ] **Swarm template directory format** — Each swarm as a directory: `metadata.json` (roles, delegation strategy), `README.md`, optional per-role prompt files (`roles/role-name.md`). Replaces inline `systemPromptOverride` with file references.
+- [ ] **Sync pipeline update** — Extend `syncFromCommunity()` to detect directory-based workflows/swarms alongside existing JSON files. Both formats supported simultaneously for backward compatibility.
+
+---
+
 ### Workflow & Personality Versioning
 
 *Git-like version control for workflows and personality configurations. As teams grow and production personalities accumulate significant configuration, the ability to diff, rollback, and publish specific versions becomes critical.*
@@ -571,7 +564,7 @@ Versions use the project's date-based format: `YYYY.M.D` (e.g., `2026.2.28`). Sa
 
 - [ ] **Theme editor** — Visual theme editor in Appearance settings: live-preview color pickers for all CSS variables (background, foreground, primary, secondary, muted, accent, destructive, border, ring, success, warning, info). Export as JSON; import to apply.
 - [ ] **Theme upload** — Users upload a JSON theme file via the dashboard. Stored per-user in `settings.custom_themes`. Custom themes appear in a "Custom" section below the built-in themes.
-- [ ] **Community theme gallery** — Browse and install community-shared themes from the Marketplace. Themes are shareable JSON files with metadata (name, author, preview colors, dark/light flag). Marketplace sync includes `themes/` directory.
+- [x] **Community theme gallery** — Browse and install community-shared themes from the Marketplace. Themes are shareable JSON files with metadata (name, author, preview colors, dark/light flag). Marketplace sync includes `themes/` directory. *(Done — see Changelog [2026.3.2])*
 - [ ] **Theme scheduling** — Auto-switch between a light and dark theme based on time of day or OS schedule. Configurable transition time.
 
 ---

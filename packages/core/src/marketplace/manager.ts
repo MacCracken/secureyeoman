@@ -10,14 +10,17 @@ import type { SecureLogger } from '../logging/logger.js';
 import type { BrainManager } from '../brain/manager.js';
 import type { WorkflowManager } from '../workflow/workflow-manager.js';
 import type { SwarmManager } from '../agents/swarm-manager.js';
+import type { SoulManager } from '../soul/manager.js';
 import { MarketplaceStorage } from './storage.js';
 import { gitCloneOrPull } from './git-fetch.js';
+import { PersonalityMarkdownSerializer } from '../soul/personality-serializer.js';
 
 export interface MarketplaceManagerDeps {
   logger: SecureLogger;
   brainManager?: BrainManager;
   workflowManager?: WorkflowManager;
   swarmManager?: SwarmManager;
+  soulManager?: SoulManager;
   communityRepoPath?: string;
   allowCommunityGitFetch?: boolean;
   communityGitUrl?: string;
@@ -35,6 +38,10 @@ export interface CommunitySyncResult {
   swarmsUpdated: number;
   securityTemplatesAdded: number;
   securityTemplatesUpdated: number;
+  personalitiesAdded: number;
+  personalitiesUpdated: number;
+  themesAdded: number;
+  themesUpdated: number;
 }
 
 export class MarketplaceManager {
@@ -43,6 +50,7 @@ export class MarketplaceManager {
   private brainManager?: BrainManager;
   private workflowManager?: WorkflowManager;
   private swarmManager?: SwarmManager;
+  private soulManager?: SoulManager;
   private communityRepoPath?: string;
   private allowCommunityGitFetch: boolean;
   private communityGitUrl?: string;
@@ -54,6 +62,7 @@ export class MarketplaceManager {
     this.brainManager = deps.brainManager;
     this.workflowManager = deps.workflowManager;
     this.swarmManager = deps.swarmManager;
+    this.soulManager = deps.soulManager;
     this.communityRepoPath = deps.communityRepoPath;
     this.allowCommunityGitFetch = deps.allowCommunityGitFetch ?? false;
     this.communityGitUrl = deps.communityGitUrl;
@@ -62,9 +71,11 @@ export class MarketplaceManager {
   setDelegationManagers(managers: {
     workflowManager?: WorkflowManager;
     swarmManager?: SwarmManager;
+    soulManager?: SoulManager;
   }): void {
     if (managers.workflowManager) this.workflowManager = managers.workflowManager;
     if (managers.swarmManager) this.swarmManager = managers.swarmManager;
+    if (managers.soulManager) this.soulManager = managers.soulManager;
   }
 
   updatePolicy(p: { allowCommunityGitFetch?: boolean; communityGitUrl?: string }): void {
@@ -275,6 +286,10 @@ export class MarketplaceManager {
       swarmsUpdated: 0,
       securityTemplatesAdded: 0,
       securityTemplatesUpdated: 0,
+      personalitiesAdded: 0,
+      personalitiesUpdated: 0,
+      themesAdded: 0,
+      themesUpdated: 0,
     };
 
     // Git fetch — only when policy allows and a git URL is available
@@ -666,6 +681,122 @@ export class MarketplaceManager {
       }
     }
 
+    // ── Sync community personalities ──────────────────────────────────────
+    if (this.soulManager) {
+      const personalitiesDir = path.join(repoPath, 'personalities');
+      if (fs.existsSync(personalitiesDir)) {
+        const serializer = new PersonalityMarkdownSerializer();
+        const mdFiles = this.findMdFiles(personalitiesDir);
+
+        for (const filePath of mdFiles) {
+          try {
+            const content = fs.readFileSync(filePath, 'utf-8');
+            const { data, warnings } = serializer.fromMarkdown(content);
+
+            if (warnings.length > 0) {
+              this.logger.debug('Community personality parse warnings', {
+                file: filePath,
+                warnings,
+              });
+            }
+
+            // Mark as community personality via description prefix
+            const communityDesc = data.description
+              ? `[community] ${data.description}`
+              : '[community]';
+
+            // Check for existing community personality with same name
+            const { personalities } = await this.soulManager.listPersonalities({ limit: 1000 });
+            const existing = personalities.find(
+              (p) =>
+                p.name === data.name && p.description?.startsWith('[community]')
+            );
+
+            if (existing) {
+              await this.soulManager.updatePersonality(existing.id, {
+                ...data,
+                description: communityDesc,
+              });
+              result.personalitiesUpdated++;
+            } else {
+              await this.soulManager.createPersonality({
+                ...data,
+                description: communityDesc,
+              });
+              result.personalitiesAdded++;
+            }
+          } catch (err) {
+            result.errors.push(
+              `Error processing personality ${filePath}: ${err instanceof Error ? err.message : String(err)}`
+            );
+          }
+        }
+      }
+    }
+
+    // ── Sync community themes ────────────────────────────────────────────
+    const themesDir = path.join(repoPath, 'themes');
+    if (fs.existsSync(themesDir)) {
+      const themeFiles = this.findJsonFiles(themesDir);
+
+      for (const filePath of themeFiles) {
+        try {
+          const raw = fs.readFileSync(filePath, 'utf-8');
+          const data = JSON.parse(raw) as Record<string, unknown>;
+
+          if (!data.name || typeof data.name !== 'string') {
+            result.errors.push(`Skipped theme ${filePath}: missing required field "name"`);
+            result.skipped++;
+            continue;
+          }
+          if (!data.variables || typeof data.variables !== 'object') {
+            result.errors.push(`Skipped theme ${filePath}: missing required field "variables"`);
+            result.skipped++;
+            continue;
+          }
+
+          const tags = ['theme', 'community-theme'];
+          if (typeof data.isDark === 'boolean') {
+            tags.push(data.isDark ? 'dark' : 'light');
+          }
+
+          const skillData: Partial<CatalogSkill> = {
+            name: data.name,
+            description: typeof data.description === 'string' ? data.description : '',
+            version: typeof data.version === 'string' ? data.version : '1.0.0',
+            author: typeof data.author === 'string' ? data.author : 'community',
+            category: 'design',
+            tags,
+            instructions: JSON.stringify(data),
+            triggerPatterns: [],
+            useWhen: '',
+            doNotUseWhen: '',
+            successCriteria: '',
+            mcpToolsAllowed: [],
+            routing: 'fuzzy',
+            autonomyLevel: 'L1',
+            source: 'community',
+          };
+
+          const existing = await this.storage.findByNameAndSource(skillData.name!, 'community');
+          if (existing) {
+            await this.storage.updateSkill(existing.id, skillData);
+            result.themesUpdated++;
+          } else {
+            await this.storage.addSkill(skillData);
+            result.themesAdded++;
+          }
+
+          // Track for prune protection
+          syncedNames.add(data.name);
+        } catch (err) {
+          result.errors.push(
+            `Error processing theme ${filePath}: ${err instanceof Error ? err.message : String(err)}`
+          );
+        }
+      }
+    }
+
     this.lastSyncedAt = Date.now();
     this.logger.info('Community skill sync complete', {
       path: repoPath,
@@ -679,6 +810,10 @@ export class MarketplaceManager {
       swarmsUpdated: result.swarmsUpdated,
       securityTemplatesAdded: result.securityTemplatesAdded,
       securityTemplatesUpdated: result.securityTemplatesUpdated,
+      personalitiesAdded: result.personalitiesAdded,
+      personalitiesUpdated: result.personalitiesUpdated,
+      themesAdded: result.themesAdded,
+      themesUpdated: result.themesUpdated,
     });
 
     return result;
@@ -708,6 +843,23 @@ export class MarketplaceManager {
         if (entry.isDirectory()) {
           results.push(...this.findJsonFiles(fullPath));
         } else if (entry.isFile() && entry.name.endsWith('.json')) {
+          results.push(fullPath);
+        }
+      }
+    } catch {
+      // Non-readable directory — skip silently
+    }
+    return results;
+  }
+
+  private findMdFiles(dir: string): string[] {
+    const results: string[] = [];
+    try {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          results.push(...this.findMdFiles(fullPath));
+        } else if (entry.isFile() && entry.name.endsWith('.md')) {
           results.push(fullPath);
         }
       }

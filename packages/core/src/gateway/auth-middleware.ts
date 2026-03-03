@@ -70,6 +70,12 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/soul/personalities/:id/activate': {
     POST: { resource: 'soul', action: 'write' },
   },
+  '/api/v1/soul/personalities/:id/export': {
+    GET: { resource: 'soul', action: 'read' },
+  },
+  '/api/v1/soul/personalities/import': {
+    POST: { resource: 'soul', action: 'write' },
+  },
   '/api/v1/soul/skills': {
     GET: { resource: 'soul', action: 'read' },
     POST: { resource: 'soul', action: 'write' },

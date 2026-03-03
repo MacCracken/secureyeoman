@@ -2186,6 +2186,42 @@ export async function fetchCommunityStatus(): Promise<{
   return request('/marketplace/community/status');
 }
 
+// ─── Personality Export/Import API (Phase 107-D) ──────────────────────
+
+export async function exportPersonality(
+  id: string,
+  format: 'md' | 'json' = 'md'
+): Promise<Blob> {
+  const token = getAccessToken();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}/soul/personalities/${id}/export?format=${format}`, {
+    headers,
+  });
+  if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+  return res.blob();
+}
+
+export async function importPersonality(
+  file: File
+): Promise<{ personality: { id: string; name: string }; warnings: string[] }> {
+  const token = getAccessToken();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${API_BASE}/soul/personalities/import`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error((err as { error?: string }).error ?? `Import failed: ${res.status}`);
+  }
+  return res.json();
+}
+
 // ─── Reports API ────────────────────────────────────────────────
 
 export interface ReportSummary {

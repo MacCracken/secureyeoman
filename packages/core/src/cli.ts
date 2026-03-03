@@ -299,6 +299,14 @@ router.registerLazy({
   loader: () => import('./cli/commands/risk.js').then((m) => m.riskCommand),
 });
 
+router.registerLazy({
+  name: 'personality',
+  aliases: ['pers'],
+  description: 'Export and import portable personality files',
+  usage: 'secureyeoman personality <list|export|import> [options]',
+  loader: () => import('./cli/commands/personality.js').then((m) => m.personalityCommand),
+});
+
 // ── Help command (eager — uses router directly) ────────────────────────────
 
 router.register({

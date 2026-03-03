@@ -26,6 +26,7 @@ import { toErrorMessage, sendError } from '../utils/errors.js';
 import type { HeartbeatManager } from '../body/heartbeat.js';
 import type { InputValidator } from '../security/input-validator.js';
 import type { AuditChain } from '../logging/audit-chain.js';
+import { PersonalityMarkdownSerializer } from './personality-serializer.js';
 
 export interface SoulRoutesOptions {
   soulManager: SoulManager;
@@ -291,6 +292,75 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         return await reply.code(201).send({ personality });
       } catch (err) {
         return sendError(reply, 400, toErrorMessage(err));
+      }
+    }
+  );
+
+  // ── Personality Export/Import ──────────────────────────────────
+
+  const personalitySerializer = new PersonalityMarkdownSerializer();
+
+  app.get(
+    '/api/v1/soul/personalities/:id/export',
+    async (
+      request: FastifyRequest<{ Params: { id: string }; Querystring: { format?: string } }>,
+      reply: FastifyReply
+    ) => {
+      const personality = await soulManager.getPersonality(request.params.id);
+      if (!personality) return sendError(reply, 404, 'Personality not found');
+
+      const format = request.query.format ?? 'md';
+      if (format === 'json') {
+        return reply
+          .header('Content-Disposition', `attachment; filename="${personality.name}.json"`)
+          .send(personality);
+      }
+
+      const md = personalitySerializer.toMarkdown(personality);
+      return reply
+        .header('Content-Type', 'text/markdown; charset=utf-8')
+        .header('Content-Disposition', `attachment; filename="${personality.name}.md"`)
+        .send(md);
+    }
+  );
+
+  app.post(
+    '/api/v1/soul/personalities/import',
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const file = await request.file();
+      if (!file) return sendError(reply, 400, 'No file uploaded');
+
+      const chunks: Buffer[] = [];
+      for await (const chunk of file.file) {
+        chunks.push(chunk);
+      }
+      const content = Buffer.concat(chunks).toString('utf-8');
+      const ext = file.filename?.toLowerCase().endsWith('.json') ? 'json' : 'md';
+
+      try {
+        let data: PersonalityCreate;
+        let warnings: string[] = [];
+
+        if (ext === 'json') {
+          data = JSON.parse(content) as PersonalityCreate;
+        } else {
+          const result = personalitySerializer.fromMarkdown(content);
+          data = result.data;
+          warnings = result.warnings;
+        }
+
+        // Validate text content
+        const err = validateSoulText(
+          { name: data.name, systemPrompt: data.systemPrompt, description: data.description },
+          'personality_import',
+          request.authUser?.userId
+        );
+        if (err) return sendError(reply, 400, err);
+
+        const personality = await soulManager.createPersonality(data);
+        return await reply.code(201).send({ personality, warnings });
+      } catch (e) {
+        return sendError(reply, 400, toErrorMessage(e));
       }
     }
   );
