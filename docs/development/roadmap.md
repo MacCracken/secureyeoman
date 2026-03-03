@@ -30,6 +30,14 @@
 - [ ] **Workflows & Swarms marketplace lifecycle** — Verify that after a clean rebuild: (1) Installed tab → Workflows shows zero items; (2) Installed tab → Swarm Templates shows zero items; (3) Marketplace tab → Workflows shows all YEOMAN built-ins (research-report-pipeline, code-review-webhook, parallel-intelligence-gather, distill-and-eval, finetune-and-deploy, dpo-loop, pr-ci-triage, build-failure-triage, daily-pr-digest, dev-env-provision) under "YEOMAN Workflows"; (4) Marketplace tab → Swarm Templates shows all YEOMAN built-ins (research-and-code, analyze-and-summarize, parallel-research, code-review, prompt-engineering-quartet) under "YEOMAN Swarm Templates"; (5) Click Install on a workflow → it now appears in Installed tab; (6) Community tab → Sync pulls in community workflows and swarm templates from the configured repo path; (7) Community tab → Workflows and Community tab → Swarm Templates show the synced items; (8) Search filters work across all views. Architecture note: builtin workflows are seeded with `createdBy: 'system'` and builtin swarms with `isBuiltin: true` — these flags are how Installed tab excludes them. Community sync wires `workflowManager` and `swarmManager` into `MarketplaceManager` via `setDelegationManagers()` (called from `bootDelegationChain()`).
 - [ ] **Catalog section review** — Further review of the Catalog page (Skills, Workflows, Swarm Templates) across all tabs (Personal, Marketplace, Community, Installed). Assess UX, labelling, install/uninstall flows, filtering, search, sync behaviour, and any missing functionality before considering the section production-ready.
 
+### Manual Tests — License Gating (Phase 106)
+
+- [ ] **Enforcement off (default)** — Start without `SECUREYEOMAN_LICENSE_ENFORCEMENT`. Verify all enterprise features (distillation, SSO admin, tenants, CI/CD webhook, alert rules) return normal responses — no 402s. Dashboard shows no lock overlays on TrainingTab, ConnectionsPage CI/CD section, or AlertRulesTab.
+- [ ] **Enforcement on, no license** — Set `SECUREYEOMAN_LICENSE_ENFORCEMENT=true`, no `SECUREYEOMAN_LICENSE_KEY`. POST to `/api/v1/training/distillation/jobs` → 402 with `{ error: 'enterprise_license_required', feature: 'adaptive_learning' }`. Same for SSO admin routes (POST/PUT/DELETE `/api/v1/auth/sso/providers`), tenant CRUD, CI/CD webhook, and alert write routes. GET read-only routes still return 200.
+- [ ] **Enforcement on, valid enterprise key** — Set `SECUREYEOMAN_LICENSE_ENFORCEMENT=true` with a valid enterprise license key that includes all features. All guarded routes return normal responses. Dashboard `<FeatureLock>` components render children without lock overlay.
+- [ ] **Dashboard lock overlay** — With enforcement on and no license: navigate to Training tab → distillation/finetune sub-tabs show dimmed content with lock icon, "Adaptive Learning Pipeline" label, and "Upgrade to Enterprise" link. Connections page CI/CD section shows lock overlay. Alert rules create/edit forms show lock overlay.
+- [ ] **Provider cost tracking** — With multi-account providers configured, verify cost dashboard still loads and CSV export works (Phase 112 regression check after Phase 106 wiring changes).
+
 ### Manual Tests — Desktop & Editor
 
 - [ ] **Docker MCP Tools** — Enable `MCP_EXPOSE_DOCKER=true` (socket mode). Verify `docker_ps` lists containers, `docker_logs` streams output, `docker_exec` runs commands correctly. Enable DinD mode via `MCP_DOCKER_MODE=dind` + `MCP_DOCKER_HOST` and repeat.
@@ -43,22 +51,13 @@
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
-| 106 | License-Gated Feature Reveal | P1 — commercial | ✅ Complete (enforcement disabled by default) |
-| License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| 109 | Editor Improvements (Auto-Claude Style) | P3 — power user UX | 🔄 In Progress (unification ✅, IDE features + canvas improvements planned) |
-| 112 | Multi-Account AI Provider Keys & Per-Account Cost Tracking | P2 — cost governance | ✅ Complete |
+| 109 | Editor Improvements (Auto-Claude Style) | P3 — power user UX | 🔄 In Progress |
 | 116 | Sandbox Artifact Scanning & Externalization Gate | P1 — security boundary | Planned |
 | 117 | Excalidraw Diagramming — MCP Tools & Marketplace Skill | P3 — capability + visualization | Planned |
 | 118 | Memory Audits, Compression & Reorganization | P2 — memory quality + governance | Planned |
-| Future | LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Infrastructure | Future / Demand-Gated | — |
-
----
-
-## Phase 106: License-Gated Feature Reveal ✅
-
-**Priority**: P1 — Commercial. **Status**: Complete (ADR 192, CHANGELOG [2026.3.3]).
-
-Enterprise gating infrastructure ships with enforcement **disabled by default** (`SECUREYEOMAN_LICENSE_ENFORCEMENT=false`). Backend `requiresLicense()` preHandler guards on 5 route files + dashboard `<FeatureLock>` component. 51 new tests. See "License Up" in Wrap-Up section for enforcement activation.
+| — | Engineering Backlog | Ongoing | Pick-up opportunistically |
+| License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
+| Future | LLM Providers, LLM Lifecycle, Responsible AI, Voice, Infrastructure | Future / Demand-Gated | — |
 
 ---
 
@@ -70,7 +69,6 @@ Enterprise gating infrastructure ships with enforcement **disabled by default** 
 
 **Remaining IDE features** — Auto-Claude–style patterns (plan display, step-by-step approval, AI commit messages, context badges), multi-file editing (tabs, split panes), project explorer, integrated Git, command palette, inline AI completion (Copilot-style), multi-file search & replace, collaborative editing (Yjs CRDT), keybindings editor, layout persistence, responsive/mobile layout, training integration (export/annotation), and plugin/extension system.
 
-- [ ] **Settings page split** — Extract `<AuditChainTab>`, `<SoulSystemTab>`, `<RateLimitingTab>` from the `SettingsPage.tsx` monolith into dedicated tab components.
 
 ### 109-B: Canvas Workspace Improvements
 
@@ -82,48 +80,6 @@ Enterprise gating infrastructure ships with enforcement **disabled by default** 
 - [ ] **Mission card embedding** — Extract the mission card renderer from `MissionControlPage` into a reusable `<MissionCardEmbed cardId={id} />` component. Wire it into `MissionCardNode` widget (currently a placeholder). Card shows objective, progress, and linked tasks.
 
 ---
-
-## Phase 112: Multi-Account AI Provider Keys & Per-Account Cost Tracking — ✅ COMPLETE
-
-**Status**: Completed 2026-03-03. See [Changelog](../../CHANGELOG.md) for full details.
-
-**Summary**: Provider accounts as first-class entities with CRUD, key validation, cost tracking, and personality-level routing. Groq + OpenRouter providers added. Dashboard CostDashboard component with overview cards, per-account cost table, daily trend bars, and CSV export. CLI `provider` command with 6 subcommands. 12 REST API endpoints. ADR 191.
-
-**Open items** (demand-gated, moved to 112-B LLM Provider Improvements below):
-
-### 112-A: Data Model & Backend — ✅ Complete
-
-Migration `003_provider_accounts.sql`, `ProviderAccountStorage`, `ProviderAccountManager`, `ProviderKeyValidator`, 12 REST endpoints, auth middleware, wiring in `secureyeoman.ts` + `server.ts`. Shared Zod types in `provider-accounts.ts`.
-
-### 112-B: LLM Provider Improvements
-
-*Demand-gated. Enhances the multi-provider AI client with reliability, routing intelligence, and new provider coverage.*
-
-- [ ] **Gemini Flash 2.0 provider** — Add `gemini-2.0-flash` and `gemini-2.0-flash-lite` to the Gemini provider with native function calling, 1M context window support, and grounding via Google Search.
-- [ ] **Anthropic extended thinking** — Surface `thinking: { type: 'enabled', budget_tokens }` on Claude 3.7+ models. Per-personality `thinkingBudgetTokens` field. Dashboard: thinking indicator + expandable reasoning block in chat.
-- [ ] **OpenAI o3 / o3-mini** — Add `o3` and `o3-mini` to the OpenAI provider. Support `reasoning_effort: 'low' | 'medium' | 'high'` param. Per-personality reasoning effort override.
-- [ ] **Mistral AI provider** — `MistralProvider` wrapping the official `@mistralai/mistralai` SDK. Models: `mistral-large-latest`, `mistral-small-latest`, `codestral-latest`. Function calling, JSON mode.
-- [x] **Groq provider** — `GroqProvider` using `openai` package at `https://api.groq.com/openai/v1`. Models: llama-3.3-70b-versatile, llama-3.1-8b-instant, mixtral-8x7b-32768, gemma2-9b-it. ✅ Completed in Phase 112.
-- [ ] **Provider health scoring** — Track each provider's rolling error rate + p95 latency. Prefer providers with high health scores in fallback chains. Dashboard: provider health table in ModelWidget with green/amber/red indicators.
-- [ ] **Smart context management** — When a conversation exceeds 80% of a model's context limit, automatically summarise the oldest turns (using the same model or a faster summary model). Transparent to the user; logged in the conversation metadata. Configurable in personality settings: `contextOverflowStrategy: 'summarise' | 'truncate' | 'error'`.
-- [ ] **Cost budget alerts** — Per-personality and per-user daily/monthly cost caps. Alert (notification + optional block) when the cap is approached (80%) or hit (100%). Configurable in the personality editor and security policy.
-- [ ] **Streaming tool call support for all providers** — Standardise streaming tool call chunks across Anthropic, OpenAI, Gemini, and Mistral so the UI can show partial tool arguments as they stream.
-- [ ] **Local model auto-discovery** — On startup, query Ollama (`/api/tags`) and LM Studio (`/v1/models`) to auto-populate the model list without manual configuration. Refresh every 60s. Surface new models as suggestions in ModelWidget.
-
-
-### 112-B: Key Validation & Account Discovery — ✅ Complete
-
-`ProviderKeyValidator` with per-provider validation (cloud + local). Environment auto-import on startup (`importFromEnv`). `validateAllAccounts()` batch validation. Alert on account invalidation via `AlertManager`.
-
-### 112-C: Personality Wiring & Cost Tracking — ✅ Complete
-
-`DefaultModelSchema` extended with optional `accountId`. `AIClient` resolves key via `providerAccountManager.resolveApiKey()`. Fire-and-forget cost recording in `trackUsage()`. Cost summary, trend, and CSV export queries.
-
-### 112-D: Dashboard & CLI — ✅ Complete
-
-- **Dashboard**: `CostDashboard` component in Settings > Keys tab — period selector (7d/30d/90d), overview cards (total spend, daily avg, top provider, total requests), per-account cost table, daily cost trend bars, CSV export. 12 API functions in `client.ts`.
-- **CLI**: `secureyeoman provider` (alias `prov`) — list, add, validate, set-default, costs, rotate subcommands.
-- **Open dashboard items**: ProviderKeysSettings multi-account redesign, PersonalityEditor account selector dropdown (currently accounts route through API only, not yet reflected in the ProviderKeysSettings or PersonalityEditor UIs).
 
 ---
 
@@ -350,6 +306,23 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
+### LLM Provider Improvements
+
+*Demand-gated. Enhances the multi-provider AI client (Phase 112 ✅) with reliability, routing intelligence, and new provider coverage.*
+
+- [ ] **Gemini Flash 2.0 provider** — Add `gemini-2.0-flash` and `gemini-2.0-flash-lite` to the Gemini provider with native function calling, 1M context window support, and grounding via Google Search.
+- [ ] **Anthropic extended thinking** — Surface `thinking: { type: 'enabled', budget_tokens }` on Claude 3.7+ models. Per-personality `thinkingBudgetTokens` field. Dashboard: thinking indicator + expandable reasoning block in chat.
+- [ ] **OpenAI o3 / o3-mini** — Add `o3` and `o3-mini` to the OpenAI provider. Support `reasoning_effort: 'low' | 'medium' | 'high'` param. Per-personality reasoning effort override.
+- [ ] **Mistral AI provider** — `MistralProvider` wrapping the official `@mistralai/mistralai` SDK. Models: `mistral-large-latest`, `mistral-small-latest`, `codestral-latest`. Function calling, JSON mode.
+- [ ] **Provider health scoring** — Track each provider's rolling error rate + p95 latency. Prefer providers with high health scores in fallback chains. Dashboard: provider health table in ModelWidget with green/amber/red indicators.
+- [ ] **Smart context management** — When a conversation exceeds 80% of a model's context limit, automatically summarise the oldest turns (using the same model or a faster summary model). Transparent to the user; logged in the conversation metadata. Configurable in personality settings: `contextOverflowStrategy: 'summarise' | 'truncate' | 'error'`.
+- [ ] **Cost budget alerts** — Per-personality and per-user daily/monthly cost caps. Alert (notification + optional block) when the cap is approached (80%) or hit (100%). Configurable in the personality editor and security policy.
+- [ ] **Streaming tool call support for all providers** — Standardise streaming tool call chunks across Anthropic, OpenAI, Gemini, and Mistral so the UI can show partial tool arguments as they stream.
+- [ ] **Local model auto-discovery** — On startup, query Ollama (`/api/tags`) and LM Studio (`/v1/models`) to auto-populate the model list without manual configuration. Refresh every 60s. Surface new models as suggestions in ModelWidget.
+- [ ] **ProviderKeysSettings multi-account redesign** — Dashboard ProviderKeysSettings and PersonalityEditor account selector dropdown (currently accounts route through API only).
+
+---
+
 ### LLM Lifecycle Platform — Advanced
 
 *Extends the completed training pipeline (Phases 64, 73, 92, 97, 98) with advanced training objectives, scale, and continual learning. Demand-gated pending real-world usage.*
@@ -466,4 +439,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-03 — See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-03 — Removed completed phases (112). See [Changelog](../../CHANGELOG.md) for full history.*

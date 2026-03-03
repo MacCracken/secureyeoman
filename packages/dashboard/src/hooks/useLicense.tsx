@@ -23,7 +23,7 @@ interface LicenseContextValue {
   refresh: () => Promise<void>;
 }
 
-const LicenseContext = createContext<LicenseContextValue | null>(null);
+export const LicenseContext = createContext<LicenseContextValue | null>(null);
 
 export function LicenseProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();

@@ -1923,7 +1923,7 @@ describe('SoulManager', () => {
     it('returns markdown with Runtime Prompt section', async () => {
       const brain = {
         getActiveSkills: vi.fn().mockResolvedValue([]),
-        getStats: vi.fn().mockResolvedValue({ memoryCount: 5 }),
+        getStats: vi.fn().mockResolvedValue({ memories: { total: 5, byType: {} }, knowledge: { total: 0 }, skills: { total: 0 } }),
         recall: vi.fn().mockResolvedValue([]),
       };
       const { manager } = makeManager({}, {}, brain);
@@ -1937,7 +1937,7 @@ describe('SoulManager', () => {
     it('includes memory content when includeMemory is true', async () => {
       const brain = {
         getActiveSkills: vi.fn().mockResolvedValue([]),
-        getStats: vi.fn().mockResolvedValue({ memoryCount: 2 }),
+        getStats: vi.fn().mockResolvedValue({ memories: { total: 2, byType: {} }, knowledge: { total: 0 }, skills: { total: 0 } }),
         recall: vi.fn().mockResolvedValue([
           { id: 'm1', type: 'semantic', content: 'Memory 1' },
           { id: 'm2', type: 'episodic', content: 'Memory 2' },
@@ -1956,7 +1956,7 @@ describe('SoulManager', () => {
           { name: 'SkillA' },
           { name: 'SkillB' },
         ]),
-        getStats: vi.fn().mockResolvedValue({ memoryCount: 0 }),
+        getStats: vi.fn().mockResolvedValue({ memories: { total: 0, byType: {} }, knowledge: { total: 0 }, skills: { total: 0 } }),
         recall: vi.fn().mockResolvedValue([]),
       };
       const { manager } = makeManager({}, {}, brain);
@@ -1981,7 +1981,7 @@ describe('SoulManager', () => {
       };
       const brain = {
         getActiveSkills: vi.fn().mockResolvedValue([]),
-        getStats: vi.fn().mockResolvedValue({ memoryCount: 0 }),
+        getStats: vi.fn().mockResolvedValue({ memories: { total: 0, byType: {} }, knowledge: { total: 0 }, skills: { total: 0 } }),
         recall: vi.fn().mockResolvedValue([]),
       };
       const { manager } = makeManager(

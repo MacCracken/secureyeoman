@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
 import { Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useLicense, type EnterpriseFeature } from '../hooks/useLicense';
+import { LicenseContext, type EnterpriseFeature } from '../hooks/useLicense';
 
 const FEATURE_LABELS: Record<string, string> = {
   adaptive_learning: 'Adaptive Learning Pipeline',
@@ -18,10 +18,10 @@ interface FeatureLockProps {
 }
 
 export function FeatureLock({ feature, children, className = '' }: FeatureLockProps) {
-  const { enforcementEnabled, hasFeature } = useLicense();
+  const ctx = useContext(LicenseContext);
 
-  // No gate when enforcement is off or feature is licensed
-  if (!enforcementEnabled || hasFeature(feature)) {
+  // No gate when outside LicenseProvider, enforcement is off, or feature is licensed
+  if (!ctx || !ctx.enforcementEnabled || ctx.hasFeature(feature)) {
     return <>{children}</>;
   }
 
