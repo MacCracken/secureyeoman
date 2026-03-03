@@ -44,13 +44,11 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | 106 | License-Gated Feature Reveal | P1 — commercial | 🔄 In Progress (context ✅, card ✅, CLI guard ✅, route guards + feature lock UX remaining) |
-| 107 | Reasoning Strategies, Security Templates & Portable Personalities | P2 — capability + distribution | 🔄 In Progress (A–E ✅, F remaining) |
+| 107 | Reasoning Strategies, Security Templates & Portable Personalities | P2 — capability + distribution | 🔄 In Progress (A–F ✅, 2 extension items remaining under 107-F) |
 | 109 | Editor Improvements (Auto-Claude Style) | P3 — power user UX | 🔄 In Progress (unification ✅, IDE features + canvas improvements planned) |
 | 110 | Inline Citations & Grounding | P3 — trust layer | Planned |
 | 111 | Departmental Risk Register & Risk Posture Tracking | P2 — risk governance | 🔄 In Progress (A–B, E ✅, C partial, D + F remaining) |
 | 112 | Multi-Account AI Provider Keys & Per-Account Cost Tracking | P2 — cost governance | Planned |
-| 113 | Directory-Based Workflows & Swarm Templates | P3 — community content | ✅ Complete |
-| 114 | Workflow & Personality Versioning | P2 — operational safety | ✅ Complete |
 | Future | LLM Lifecycle Advanced, Responsible AI, Voice Pipeline, Infrastructure | Future / Demand-Gated | — |
 
 ---
@@ -76,16 +74,10 @@ Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi
 
 *107-A through 107-F complete — see Changelog [2026.3.2] and [2026.3.3].*
 
-### 107-F: ATHI Threat Governance Framework ✅
+### 107-F: ATHI Threat Governance Framework — Extension Items
 
-*Actors/Techniques/Harms/Impacts taxonomy for AI threat modeling, adapted from Daniel Miessler's ATHI framework. Positioned as an organizational governance tool — extends SecureYeoman's existing security audit capabilities with an AI-specific threat lens communicable to non-technical stakeholders.*
+*Core ATHI framework complete — see Changelog [2026.3.3]. Two extension items remain.*
 
-- [x] **ATHI schema** — `packages/shared/src/types/athi.ts`: `AthiActor` (6 values), `AthiTechnique` (7), `AthiHarm` (7), `AthiImpact` (5). Full `AthiScenarioSchema` with create/update/matrix/summary types.
-- [x] **ATHI storage & migration** — `security.athi_scenarios` table with generated `risk_score` column (likelihood × severity). 4 indexes.
-- [x] **ATHI manager** — CRUD + `getRiskMatrix()`, `getTopRisks()`, `getMitigationCoverage()`, `generateExecutiveSummary()` (30s cache). Fire-and-forget alert on high-risk creation (score ≥ 20).
-- [x] **ATHI routes** — 8 endpoints at `/api/v1/security/athi/`. Auth: `security_athi:read`/`security_athi:write`.
-- [x] **Dashboard: ATHI tab** — SecurityPage sub-tab with summary strip, actor×technique risk matrix, filterable scenario table, create/edit modal with multi-select for techniques/harms/impacts.
-- [x] **CLI: `secureyeoman athi`** — Subcommands: `list`, `show`, `create`, `matrix`, `summary`. Alias: `threat`.
 - [ ] **AI-assisted scenario generation** — Skill/workflow template: given an organization description and its AI usage patterns, generate candidate ATHI threat scenarios. Uses the malware analysis and threat modeling security templates from 107-B as building blocks. Output reviewed by human before persisting.
 - [ ] **Integration with existing security features** — ATHI scenarios can reference audit events (link scenario → observed events). Security Events tab cross-references ATHI scenarios when displaying events that match a known technique pattern. Alert rules can trigger on ATHI-mapped event patterns.
 
@@ -152,8 +144,6 @@ Six sub-phases: data model → shared types & backend → integration → report
 - [ ] **Enforcement log attribution** — When the enforcement engine logs a boundary violation or policy breach (existing `security.enforcement_log`), check if the triggering personality or user is associated with a department (via team membership). If so, auto-create a `risk.register_entries` row with `source: 'enforcement'`, `source_ref: enforcement_log_id`, `category` mapped from the violation type, `severity` mapped from enforcement severity. Deduplication: if an open register entry with the same `source_ref` already exists, skip. This turns enforcement events into trackable risks with owners and mitigations.
   - **Inputs**: enforcement log events with personality/user context.
   - **Outputs**: auto-created register entries attributed to the responsible department; links enforcement → risk register for audit trail.
-
-- [x] **Backward-compatible `department_id` on assessments and findings** — `POST /api/v1/risk/assessments` and `POST /api/v1/risk/findings` accept optional `departmentId`. Wired through storage (`FindingRow.department_id`, `rowToFinding()`, `createFinding()` INSERT) and shared types (`ExternalFindingSchema`, `CreateExternalFindingSchema`).
 
 ### 111-D: Reports & Outputs
 
@@ -326,29 +316,6 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
-### Directory-Based Workflows & Swarm Templates
-
-*Extend the directory-based community content model (established for security templates and personalities) to workflows and swarm templates. Currently these are single-file JSON — as community contributions grow more complex (multi-step workflows with embedded prompts, swarm templates with per-role system instructions), a directory structure with separate markdown files would improve readability, diffability, and collaboration.*
-
-- [ ] **Workflow directory format** — Each workflow as a directory: `metadata.json` (DAG structure, step config, triggers), `README.md` (description, usage instructions), optional per-step prompt files (`steps/step-name.md`). Community sync reads the directory and composes the workflow definition.
-- [ ] **Swarm template directory format** — Each swarm as a directory: `metadata.json` (roles, delegation strategy), `README.md`, optional per-role prompt files (`roles/role-name.md`). Replaces inline `systemPromptOverride` with file references.
-- [ ] **Sync pipeline update** — Extend `syncFromCommunity()` to detect directory-based workflows/swarms alongside existing JSON files. Both formats supported simultaneously for backward compatibility.
-
----
-
-### Workflow & Personality Versioning
-
-*Git-like version control for workflows and personality configurations. As teams grow and production personalities accumulate significant configuration, the ability to diff, rollback, and publish specific versions becomes critical.*
-
-Versions use the project's date-based format: `YYYY.M.D` (e.g., `2026.2.28`). Same-day patches append a numeric suffix: `2026.2.28-1`. This keeps versioning consistent with the Changelog and skill files.
-
-- [ ] **Personality version history** — Every save to a personality's configuration (system prompt, tools, skills, model) creates an immutable version snapshot in `soul.personality_versions`. Dashboard: "History" tab in PersonalityEditor showing timestamp, author, and a short diff summary. Click any version to preview it; one-click rollback.
-- [ ] **Workflow version control** — Same pattern for workflows: `workflow.versions` table. Visual diff between two versions using the existing ReactFlow DAG renderer (added/removed/changed nodes highlighted). Export any version as JSON; import replaces current with confirmation.
-- [ ] **Named releases** — Tag a personality or workflow version with a date-based label matching the project's release format (e.g., `2026.2.28`, `2026.3.1`; same-day patch: `2026.2.28-1`). Named releases surfaced in the version history UI. API: `GET /api/v1/soul/personalities/:id/versions/:tag`.
-- [ ] **Configuration drift detection** — Compare current production personality config against the last tagged release; surface diff count as a badge in the PersonalityEditor header. *"You have 3 uncommitted changes since 2026.2.28."*
-
----
-
 ### LLM Lifecycle Platform — Advanced
 
 *Extends the completed training pipeline (Phases 64, 73, 92, 97, 98) with advanced training objectives, scale, and continual learning. Demand-gated pending real-world usage.*
@@ -482,4 +449,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-02 — See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-03 — See [Changelog](../../CHANGELOG.md) for full history.*
