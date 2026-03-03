@@ -37,4 +37,5 @@ function readSql(filename: string): string {
 export const MIGRATION_MANIFEST: { id: string; sql: string }[] = [
   { id: '001_baseline', sql: readSql('001_baseline.sql') },
   { id: '002_citations_grounding', sql: readSql('002_citations_grounding.sql') },
+  { id: '003_provider_accounts', sql: readSql('003_provider_accounts.sql') },
 ];

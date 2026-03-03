@@ -79,7 +79,8 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Sec
 
 | Capability | Details |
 |---|---|
-| Providers | 12 — Anthropic, OpenAI, Gemini, Ollama, LM Studio, LocalAI, DeepSeek, Mistral, Grok, Letta, OpenCode Zen, and more |
+| Providers | 14 — Anthropic, OpenAI, Gemini, Groq, OpenRouter, Ollama, LM Studio, LocalAI, DeepSeek, Mistral, Grok, Letta, OpenCode Zen, and more |
+| Multi-account | Multiple API keys per provider, per-account cost tracking, key validation, personality-level routing |
 | Routing | Automatic fallback chains, dynamic model discovery, local-first routing |
 | Ollama lifecycle | Pull, delete, quantization-aware memory warnings |
 

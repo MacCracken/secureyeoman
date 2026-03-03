@@ -103,6 +103,8 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
         'mistral',
         'grok',
         'letta',
+        'groq',
+        'openrouter',
       ];
       if (!validProviders.includes(provider)) {
         return sendError(

@@ -15,6 +15,8 @@ export const DefaultModelSchema = z
   .object({
     provider: z.string().min(1),
     model: z.string().min(1),
+    /** Provider account ID for multi-account key routing (Phase 112). */
+    accountId: z.string().min(1).optional(),
   })
   .nullable()
   .default(null);

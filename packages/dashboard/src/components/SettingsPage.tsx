@@ -57,6 +57,7 @@ import { ProviderKeysSettings } from './ProviderKeysSettings';
 import { UsersSettings } from './UsersSettings';
 import { WorkspacesSettings } from './WorkspacesSettings';
 import { NotificationPrefsPanel } from './NotificationPrefsPanel';
+import { CostDashboard } from './telemetry/CostDashboard';
 import { useTheme, THEMES, type ThemeId } from '../hooks/useTheme';
 
 type TabType =
@@ -220,6 +221,7 @@ export function SettingsPage() {
       {activeTab === 'keys' && (
         <div className="space-y-8">
           <ProviderKeysSettings />
+          <CostDashboard />
           <ApiKeysSettings />
           <SecretsPanel />
         </div>

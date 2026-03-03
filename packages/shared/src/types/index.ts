@@ -843,3 +843,23 @@ export {
   type CitationFeedback,
   type GroundingCheckResult,
 } from './citations.js';
+
+// Provider Account types (Phase 112)
+export {
+  ProviderAccountStatusSchema,
+  ProviderAccountSchema,
+  ProviderAccountCreateSchema,
+  ProviderAccountUpdateSchema,
+  AccountCostRecordSchema,
+  AccountCostSummarySchema,
+  CostBreakdownGroupBySchema,
+  CostTrendPointSchema,
+  type ProviderAccountStatus,
+  type ProviderAccount,
+  type ProviderAccountCreate,
+  type ProviderAccountUpdate,
+  type AccountCostRecord,
+  type AccountCostSummary,
+  type CostBreakdownGroupBy,
+  type CostTrendPoint,
+} from './provider-accounts.js';

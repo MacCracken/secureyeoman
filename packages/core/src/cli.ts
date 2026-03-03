@@ -308,6 +308,14 @@ router.registerLazy({
 });
 
 router.registerLazy({
+  name: 'provider',
+  aliases: ['prov'],
+  description: 'Manage multi-account AI provider keys and costs',
+  usage: 'secureyeoman provider <list|add|validate|set-default|costs|rotate> [options]',
+  loader: () => import('./cli/commands/provider.js').then((m) => m.providerCommand),
+});
+
+router.registerLazy({
   name: 'personality',
   aliases: ['pers'],
   description: 'Export and import portable personality files',

@@ -36,6 +36,8 @@ import { DeepSeekProvider } from './providers/deepseek.js';
 import { MistralProvider } from './providers/mistral.js';
 import { GrokProvider } from './providers/grok.js';
 import { LettaProvider } from './providers/letta.js';
+import { GroqProvider } from './providers/groq.js';
+import { OpenRouterProvider } from './providers/openrouter.js';
 import { CostCalculator } from './cost-calculator.js';
 import { UsageTracker, type UsageStats } from './usage-tracker.js';
 import type { UsageStorage } from './usage-storage.js';
@@ -68,6 +70,14 @@ export interface AIClientDeps {
    * across multiple clients or for testing.
    */
   responseCache?: ResponseCache;
+  /**
+   * Provider account manager for multi-account key resolution (Phase 112).
+   * When provided, API keys are resolved through provider accounts instead
+   * of directly from env vars.
+   */
+  providerAccountManager?: import('./provider-account-manager.js').ProviderAccountManager;
+  /** Explicit provider account ID to use for key resolution. */
+  accountId?: string;
 }
 
 const LOCAL_PROVIDERS = new Set(['ollama', 'lmstudio', 'localai']);
@@ -85,6 +95,8 @@ export class AIClient {
   private readonly retryConfig?: Partial<RetryConfig>;
   private readonly responseCache: ResponseCache | null;
   private soulManager: SoulManager | null;
+  private readonly providerAccountManager: import('./provider-account-manager.js').ProviderAccountManager | null;
+  private resolvedAccountId: string | null = null;
   private initPromise: Promise<void> | null = null;
 
   constructor(config: AIClientConfig, deps: AIClientDeps = {}) {
@@ -98,6 +110,8 @@ export class AIClient {
     this.fallbackConfigs = config.model.fallbacks ?? [];
     this.retryConfig = config.retryConfig;
     this.soulManager = deps.soulManager ?? null;
+    this.providerAccountManager = deps.providerAccountManager ?? null;
+    this.resolvedAccountId = deps.accountId ?? null;
     this.provider = this.createProvider(config);
     this.responseCache =
       deps.responseCache ??
@@ -600,6 +614,8 @@ export class AIClient {
 
   private createProvider(config: AIClientConfig): AIProvider {
     const noKeyProviders = ['ollama', 'lmstudio', 'localai'];
+    // Provider account key resolution happens lazily via ensureInitialized().
+    // At construction time, fall back to env var for immediate use.
     const apiKey = !noKeyProviders.includes(config.model.provider)
       ? getSecret(config.model.apiKeyEnv)
       : undefined;
@@ -633,6 +649,10 @@ export class AIClient {
         return new GrokProvider(providerConfig, this.logger ?? undefined);
       case 'letta':
         return new LettaProvider(providerConfig, this.logger ?? undefined);
+      case 'groq':
+        return new GroqProvider(providerConfig, this.logger ?? undefined);
+      case 'openrouter':
+        return new OpenRouterProvider(providerConfig, this.logger ?? undefined);
       default:
         throw new Error(`Unknown AI provider: ${config.model.provider}`);
     }
@@ -658,6 +678,22 @@ export class AIClient {
       personalityId: personality?.id,
       latencyMs: elapsed,
     });
+
+    // Fire-and-forget per-account cost recording (Phase 112)
+    if (this.providerAccountManager && this.resolvedAccountId) {
+      this.providerAccountManager
+        .recordCost({
+          accountId: this.resolvedAccountId,
+          personalityId: personality?.id,
+          model: response.model,
+          inputTokens: response.usage.inputTokens,
+          outputTokens: response.usage.outputTokens,
+          totalTokens: response.usage.totalTokens,
+          costUsd,
+          requestId: response.id,
+        })
+        .catch(() => {});
+    }
   }
 
   private async auditRecord(event: string, metadata: Record<string, unknown>): Promise<void> {

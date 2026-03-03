@@ -5890,3 +5890,146 @@ export async function fetchGroundingStats(
     lowGroundingCount: number;
   }>(`/brain/grounding/stats${params}`);
 }
+
+// ── Phase 112: Provider Accounts ───────────────────────────────────────────
+
+export interface ProviderAccountResponse {
+  id: string;
+  provider: string;
+  label: string;
+  secretName: string;
+  isDefault: boolean;
+  accountInfo: Record<string, unknown> | null;
+  status: 'active' | 'invalid' | 'rate_limited' | 'disabled';
+  lastValidatedAt: number | null;
+  baseUrl: string | null;
+  tenantId: string | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface AccountCostSummaryResponse {
+  accountId: string;
+  provider: string;
+  label: string;
+  totalCostUsd: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalRequests: number;
+}
+
+export interface CostTrendPointResponse {
+  date: string;
+  costUsd: number;
+  requests: number;
+}
+
+export async function fetchProviderAccounts(
+  provider?: string
+): Promise<ProviderAccountResponse[]> {
+  const qs = provider ? `?provider=${encodeURIComponent(provider)}` : '';
+  return request<ProviderAccountResponse[]>(`/provider-accounts${qs}`);
+}
+
+export async function createProviderAccount(input: {
+  provider: string;
+  label: string;
+  apiKey: string;
+  isDefault?: boolean;
+  baseUrl?: string | null;
+}): Promise<ProviderAccountResponse> {
+  return request<ProviderAccountResponse>('/provider-accounts', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateProviderAccount(
+  id: string,
+  update: { label?: string; baseUrl?: string | null; status?: string }
+): Promise<ProviderAccountResponse> {
+  return request<ProviderAccountResponse>(`/provider-accounts/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(update),
+  });
+}
+
+export async function deleteProviderAccount(id: string): Promise<void> {
+  return request(`/provider-accounts/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+export async function setDefaultProviderAccount(id: string): Promise<ProviderAccountResponse> {
+  return request<ProviderAccountResponse>(
+    `/provider-accounts/${encodeURIComponent(id)}/set-default`,
+    { method: 'POST' }
+  );
+}
+
+export async function validateProviderAccount(id: string): Promise<ProviderAccountResponse> {
+  return request<ProviderAccountResponse>(
+    `/provider-accounts/${encodeURIComponent(id)}/validate`,
+    { method: 'POST' }
+  );
+}
+
+export async function rotateProviderAccountKey(
+  id: string,
+  newKey: string
+): Promise<ProviderAccountResponse> {
+  return request<ProviderAccountResponse>(
+    `/provider-accounts/${encodeURIComponent(id)}/rotate`,
+    { method: 'POST', body: JSON.stringify({ newKey }) }
+  );
+}
+
+export async function validateAllProviderAccounts(): Promise<{
+  total: number;
+  valid: number;
+  invalid: number;
+}> {
+  return request<{ total: number; valid: number; invalid: number }>(
+    '/provider-accounts/validate-all',
+    { method: 'POST' }
+  );
+}
+
+export async function fetchAccountCosts(opts?: {
+  from?: number;
+  to?: number;
+  accountId?: string;
+}): Promise<AccountCostSummaryResponse[]> {
+  const params = new URLSearchParams();
+  if (opts?.from) params.set('from', String(opts.from));
+  if (opts?.to) params.set('to', String(opts.to));
+  if (opts?.accountId) params.set('accountId', opts.accountId);
+  const qs = params.toString() ? `?${params.toString()}` : '';
+  return request<AccountCostSummaryResponse[]>(`/provider-accounts/costs${qs}`);
+}
+
+export async function fetchAccountCostTrend(opts?: {
+  accountId?: string;
+  days?: number;
+}): Promise<CostTrendPointResponse[]> {
+  const params = new URLSearchParams();
+  if (opts?.accountId) params.set('accountId', opts.accountId);
+  if (opts?.days) params.set('days', String(opts.days));
+  const qs = params.toString() ? `?${params.toString()}` : '';
+  return request<CostTrendPointResponse[]>(`/provider-accounts/costs/trend${qs}`);
+}
+
+export async function exportAccountCostsCsv(opts?: {
+  from?: number;
+  to?: number;
+  accountId?: string;
+}): Promise<string> {
+  const params = new URLSearchParams();
+  if (opts?.from) params.set('from', String(opts.from));
+  if (opts?.to) params.set('to', String(opts.to));
+  if (opts?.accountId) params.set('accountId', opts.accountId);
+  const qs = params.toString() ? `?${params.toString()}` : '';
+  const token = getAccessToken();
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`/api/v1/provider-accounts/costs/export${qs}`, { headers });
+  return res.text();
+}

@@ -18,6 +18,8 @@ import { DeepSeekProvider } from './providers/deepseek.js';
 import { GrokProvider } from './providers/grok.js';
 import { MistralProvider } from './providers/mistral.js';
 import { LettaProvider } from './providers/letta.js';
+import { GroqProvider } from './providers/groq.js';
+import { OpenRouterProvider } from './providers/openrouter.js';
 
 interface ModelPricing {
   inputPer1M: number;
@@ -67,6 +69,12 @@ const PRICING: Record<string, ModelPricing> = {
   'openai/gpt-4o-mini': { inputPer1M: 0.15, outputPer1M: 0.6 },
   'anthropic/claude-sonnet-4-20250514': { inputPer1M: 3, outputPer1M: 15 },
   'anthropic/claude-haiku-3-5-20241022': { inputPer1M: 0.8, outputPer1M: 4 },
+
+  // Groq (hosted inference)
+  'llama-3.3-70b-versatile': { inputPer1M: 0.59, outputPer1M: 0.79 },
+  'llama-3.1-8b-instant': { inputPer1M: 0.05, outputPer1M: 0.08 },
+  'mixtral-8x7b-32768': { inputPer1M: 0.24, outputPer1M: 0.24 },
+  'gemma2-9b-it': { inputPer1M: 0.2, outputPer1M: 0.2 },
 };
 
 // Fallback pricing per provider when model is unknown
@@ -82,6 +90,8 @@ const FALLBACK_PRICING: Record<string, ModelPricing> = {
   mistral: { inputPer1M: 2, outputPer1M: 6 },
   grok: { inputPer1M: 2, outputPer1M: 10 },
   letta: { inputPer1M: 2.5, outputPer1M: 10 },
+  groq: { inputPer1M: 0.3, outputPer1M: 0.5 },
+  openrouter: { inputPer1M: 2, outputPer1M: 8 },
 };
 
 export interface AvailableModel {
@@ -120,6 +130,10 @@ const MODEL_PROVIDER_MAP: Record<string, string> = {
   'openai/gpt-4o-mini': 'letta',
   'anthropic/claude-sonnet-4-20250514': 'letta',
   'anthropic/claude-haiku-3-5-20241022': 'letta',
+  'llama-3.3-70b-versatile': 'groq',
+  'llama-3.1-8b-instant': 'groq',
+  'mixtral-8x7b-32768': 'groq',
+  'gemma2-9b-it': 'groq',
 };
 
 /**
@@ -138,6 +152,8 @@ export const PROVIDER_KEY_ENV: Record<string, string | null> = {
   mistral: 'MISTRAL_API_KEY',
   grok: 'XAI_API_KEY',
   letta: 'LETTA_API_KEY',
+  groq: 'GROQ_API_KEY',
+  openrouter: 'OPENROUTER_API_KEY',
 };
 
 /**
@@ -414,6 +430,48 @@ export async function getAvailableModelsAsync(
           const fallback = FALLBACK_PRICING.letta!;
           return {
             provider: 'letta',
+            model: m.id,
+            inputPer1M: knownPricing?.inputPer1M ?? fallback.inputPer1M,
+            outputPer1M: knownPricing?.outputPer1M ?? fallback.outputPer1M,
+            cachedInputPer1M: knownPricing?.cachedInputPer1M,
+          };
+        });
+      }),
+    });
+  }
+
+  const groqKey = process.env.GROQ_API_KEY;
+  if (groqKey) {
+    tasks.push({
+      provider: 'groq',
+      promise: GroqProvider.fetchAvailableModels(groqKey).then((models) => {
+        const list = models.length > 0 ? models : GroqProvider.getKnownModels();
+        return list.map((m) => {
+          const knownPricing = PRICING[m.id];
+          const fallback = FALLBACK_PRICING.groq!;
+          return {
+            provider: 'groq',
+            model: m.id,
+            inputPer1M: knownPricing?.inputPer1M ?? fallback.inputPer1M,
+            outputPer1M: knownPricing?.outputPer1M ?? fallback.outputPer1M,
+            cachedInputPer1M: knownPricing?.cachedInputPer1M,
+          };
+        });
+      }),
+    });
+  }
+
+  const openrouterKey = process.env.OPENROUTER_API_KEY;
+  if (openrouterKey) {
+    tasks.push({
+      provider: 'openrouter',
+      promise: OpenRouterProvider.fetchAvailableModels(openrouterKey).then((models) => {
+        const list = models.length > 0 ? models : OpenRouterProvider.getKnownModels();
+        return list.map((m) => {
+          const knownPricing = PRICING[m.id];
+          const fallback = FALLBACK_PRICING.openrouter!;
+          return {
+            provider: 'openrouter',
             model: m.id,
             inputPer1M: knownPricing?.inputPer1M ?? fallback.inputPer1M,
             outputPer1M: knownPricing?.outputPer1M ?? fallback.outputPer1M,

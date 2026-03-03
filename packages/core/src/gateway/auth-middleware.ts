@@ -1085,6 +1085,38 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/workflows/:id/versions/:vId/export': {
     GET: { resource: 'workflows', action: 'read' },
   },
+
+  // ── Provider Accounts (Phase 112) ──────────────────────────────
+  '/api/v1/provider-accounts': {
+    GET: { resource: 'ai', action: 'read' },
+    POST: { resource: 'ai', action: 'write' },
+  },
+  '/api/v1/provider-accounts/:id': {
+    GET: { resource: 'ai', action: 'read' },
+    PUT: { resource: 'ai', action: 'write' },
+    DELETE: { resource: 'ai', action: 'write' },
+  },
+  '/api/v1/provider-accounts/:id/set-default': {
+    POST: { resource: 'ai', action: 'write' },
+  },
+  '/api/v1/provider-accounts/:id/validate': {
+    POST: { resource: 'ai', action: 'write' },
+  },
+  '/api/v1/provider-accounts/:id/rotate': {
+    POST: { resource: 'ai', action: 'write' },
+  },
+  '/api/v1/provider-accounts/validate-all': {
+    POST: { resource: 'ai', action: 'write' },
+  },
+  '/api/v1/provider-accounts/costs': {
+    GET: { resource: 'ai', action: 'read' },
+  },
+  '/api/v1/provider-accounts/costs/trend': {
+    GET: { resource: 'ai', action: 'read' },
+  },
+  '/api/v1/provider-accounts/costs/export': {
+    GET: { resource: 'ai', action: 'read' },
+  },
 };
 
 const PUBLIC_ROUTES = new Set([

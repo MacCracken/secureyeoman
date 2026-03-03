@@ -149,6 +149,9 @@ import { RiskAssessmentStorage } from './risk-assessment/risk-assessment-storage
 import { RiskAssessmentManager } from './risk-assessment/risk-assessment-manager.js';
 import { DepartmentRiskStorage } from './risk-assessment/department-risk-storage.js';
 import { DepartmentRiskManager } from './risk-assessment/department-risk-manager.js';
+import { ProviderAccountStorage } from './ai/provider-account-storage.js';
+import { ProviderAccountManager } from './ai/provider-account-manager.js';
+import { ProviderKeyValidator } from './ai/provider-key-validator.js';
 import { AthiStorage } from './security/athi-storage.js';
 import { AthiManager } from './security/athi-manager.js';
 import { BackupStorage } from './backup/backup-storage.js';
@@ -345,6 +348,8 @@ export class SecureYeoman {
   private engagementMetricsService: EngagementMetricsService | null = null;
   private usageAnomalyDetector: UsageAnomalyDetector | null = null;
   private licenseManager: LicenseManager = new LicenseManager();
+  private providerAccountStorage: ProviderAccountStorage | null = null;
+  private providerAccountManager: ProviderAccountManager | null = null;
   private strategyStorage: StrategyStorage | null = null;
   private modelDefaultSet = false;
   private initialized = false;
@@ -483,6 +488,10 @@ export class SecureYeoman {
       // Step 2.11: Initialize DepartmentRiskStorage
       this.departmentRiskStorage = new DepartmentRiskStorage();
       this.logger.debug('DepartmentRiskStorage initialized');
+
+      // Step 2.11b: Initialize ProviderAccountStorage (Phase 112)
+      this.providerAccountStorage = new ProviderAccountStorage();
+      this.logger.debug('ProviderAccountStorage initialized');
 
       // Step 2.12: Initialize AthiStorage (Phase 107-F)
       this.athiStorage = new AthiStorage();
@@ -674,6 +683,7 @@ export class SecureYeoman {
             auditChain: this.auditChain,
             logger: this.logger.child({ component: 'AIClient' }),
             usageStorage,
+            providerAccountManager: this.providerAccountManager ?? undefined,
           }
         );
 
@@ -1487,6 +1497,30 @@ export class SecureYeoman {
           this.logger.debug('DepartmentRiskManager initialized');
         } catch (error) {
           this.logger.warn('DepartmentRiskManager initialization failed (non-fatal)', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+
+      // Step 6e.2b: Initialize ProviderAccountManager (Phase 112)
+      if (this.providerAccountStorage && this.secretsManager) {
+        try {
+          this.providerAccountManager = new ProviderAccountManager({
+            storage: this.providerAccountStorage,
+            secretsManager: this.secretsManager,
+            validator: new ProviderKeyValidator(),
+            auditChain: this.auditChain ?? undefined,
+            getAlertManager: () => this.alertManager,
+          });
+          // Import API keys from environment variables (fire-and-forget)
+          this.providerAccountManager.importFromEnv().catch((err) => {
+            this.logger?.warn('Provider account env import failed (non-fatal)', {
+              error: err instanceof Error ? err.message : String(err),
+            });
+          });
+          this.logger.debug('ProviderAccountManager initialized');
+        } catch (error) {
+          this.logger.warn('ProviderAccountManager initialization failed (non-fatal)', {
             error: error instanceof Error ? error.message : 'Unknown error',
           });
         }
@@ -2531,6 +2565,11 @@ export class SecureYeoman {
     return this.departmentRiskManager;
   }
 
+  getProviderAccountManager(): ProviderAccountManager | null {
+    this.ensureInitialized();
+    return this.providerAccountManager;
+  }
+
   getAthiManager(): AthiManager | null {
     this.ensureInitialized();
     return this.athiManager;
@@ -2903,6 +2942,7 @@ export class SecureYeoman {
           // provider/model (including the persisted default applied on startup).
           usageStorage: this.usageStorage ?? undefined,
           usageTracker: this.aiClient?.getUsageTracker(),
+          providerAccountManager: this.providerAccountManager ?? undefined,
         }
       );
 
@@ -3004,6 +3044,7 @@ export class SecureYeoman {
           logger: this.logger?.child({ component: 'AIClient' }),
           usageStorage: this.usageStorage ?? undefined,
           usageTracker: this.aiClient.getUsageTracker(),
+          providerAccountManager: this.providerAccountManager ?? undefined,
         }
       );
     }

@@ -81,6 +81,7 @@ import { registerNotificationRoutes } from '../notifications/notification-routes
 import { registerUserNotificationPrefsRoutes } from '../notifications/user-notification-prefs-routes.js';
 import { registerRiskAssessmentRoutes } from '../risk-assessment/risk-assessment-routes.js';
 import { registerDepartmentRiskRoutes } from '../risk-assessment/department-risk-routes.js';
+import { registerProviderAccountRoutes } from '../ai/provider-account-routes.js';
 import { registerAthiRoutes } from '../security/athi-routes.js';
 import { registerAuditExportRoutes } from '../logging/audit-export-routes.js';
 import { SQLiteAuditStorage } from '../logging/sqlite-storage.js';
@@ -943,6 +944,19 @@ export class GatewayServer {
       }
     } catch (err) {
       this.getLogger().debug('Department risk register routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Provider Account routes (Phase 112)
+    try {
+      const providerAccountManager = this.secureYeoman.getProviderAccountManager();
+      if (providerAccountManager) {
+        registerProviderAccountRoutes(this.app, { providerAccountManager });
+        this.getLogger().info('Provider account routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Provider account routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }

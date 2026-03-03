@@ -546,6 +546,8 @@ export const FallbackModelConfigSchema = z.object({
     'mistral',
     'grok',
     'letta',
+    'groq',
+    'openrouter',
   ]),
   model: z.string(),
   apiKeyEnv: EnvVarRefSchema,
@@ -586,6 +588,8 @@ export const ModelConfigSchema = z.object({
       'mistral',
       'grok',
       'letta',
+      'groq',
+      'openrouter',
     ])
     .default('anthropic'),
   model: z.string().default('claude-sonnet-4-20250514'),
