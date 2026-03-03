@@ -61,6 +61,7 @@ describe('useLicense', () => {
       licenseId: null,
       expiresAt: null,
       error: null,
+      enforcementEnabled: false,
     });
     const { result } = renderHook(() => useLicense(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -78,6 +79,7 @@ describe('useLicense', () => {
       licenseId: 'lic-123',
       expiresAt: null,
       error: null,
+      enforcementEnabled: false,
     });
     const { result } = renderHook(() => useLicense(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -85,26 +87,7 @@ describe('useLicense', () => {
     expect(result.current.license?.organization).toBe('Acme Corp');
   });
 
-  it('hasFeature returns true for enabled features on enterprise tier', async () => {
-    mockFetchLicenseStatus.mockResolvedValue({
-      tier: 'enterprise',
-      valid: true,
-      organization: 'Acme',
-      seats: 10,
-      features: ['adaptive_learning', 'cicd_integration'],
-      licenseId: 'lic-1',
-      expiresAt: null,
-      error: null,
-    });
-    const { result } = renderHook(() => useLicense(), { wrapper: createWrapper() });
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(result.current.hasFeature('adaptive_learning')).toBe(true);
-    expect(result.current.hasFeature('cicd_integration')).toBe(true);
-    expect(result.current.hasFeature('sso_saml')).toBe(false);
-    expect(result.current.hasFeature('multi_tenancy')).toBe(false);
-  });
-
-  it('hasFeature always returns false on community tier', async () => {
+  it('hasFeature returns true for all features when enforcement is off', async () => {
     mockFetchLicenseStatus.mockResolvedValue({
       tier: 'community',
       valid: false,
@@ -114,11 +97,67 @@ describe('useLicense', () => {
       licenseId: null,
       expiresAt: null,
       error: null,
+      enforcementEnabled: false,
+    });
+    const { result } = renderHook(() => useLicense(), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.hasFeature('adaptive_learning')).toBe(true);
+    expect(result.current.hasFeature('sso_saml')).toBe(true);
+  });
+
+  it('hasFeature checks license when enforcement is on', async () => {
+    mockFetchLicenseStatus.mockResolvedValue({
+      tier: 'enterprise',
+      valid: true,
+      organization: 'Acme',
+      seats: 10,
+      features: ['adaptive_learning', 'cicd_integration'],
+      licenseId: 'lic-1',
+      expiresAt: null,
+      error: null,
+      enforcementEnabled: true,
+    });
+    const { result } = renderHook(() => useLicense(), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.hasFeature('adaptive_learning')).toBe(true);
+    expect(result.current.hasFeature('cicd_integration')).toBe(true);
+    expect(result.current.hasFeature('sso_saml')).toBe(false);
+    expect(result.current.hasFeature('multi_tenancy')).toBe(false);
+  });
+
+  it('hasFeature returns false on community tier when enforcement is on', async () => {
+    mockFetchLicenseStatus.mockResolvedValue({
+      tier: 'community',
+      valid: false,
+      organization: null,
+      seats: null,
+      features: [],
+      licenseId: null,
+      expiresAt: null,
+      error: null,
+      enforcementEnabled: true,
     });
     const { result } = renderHook(() => useLicense(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.hasFeature('adaptive_learning')).toBe(false);
     expect(result.current.hasFeature('sso_saml')).toBe(false);
+  });
+
+  it('enforcementEnabled is exposed in context value', async () => {
+    mockFetchLicenseStatus.mockResolvedValue({
+      tier: 'enterprise',
+      valid: true,
+      organization: 'Acme',
+      seats: 10,
+      features: ['adaptive_learning'],
+      licenseId: 'lic-1',
+      expiresAt: null,
+      error: null,
+      enforcementEnabled: true,
+    });
+    const { result } = renderHook(() => useLicense(), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.enforcementEnabled).toBe(true);
   });
 
   it('isEnterprise is false when tier is enterprise but valid is false', async () => {
@@ -131,6 +170,7 @@ describe('useLicense', () => {
       licenseId: 'lic-expired',
       expiresAt: '2020-01-01T00:00:00Z',
       error: 'License expired',
+      enforcementEnabled: true,
     });
     const { result } = renderHook(() => useLicense(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));

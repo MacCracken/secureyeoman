@@ -18,6 +18,7 @@ interface LicenseContextValue {
   license: LicenseStatus | null;
   isLoading: boolean;
   isEnterprise: boolean;
+  enforcementEnabled: boolean;
   hasFeature: (feature: string) => boolean;
   refresh: () => Promise<void>;
 }
@@ -35,13 +36,15 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
   });
 
   const isEnterprise = license?.tier === 'enterprise' && license.valid;
+  const enforcementEnabled = license?.enforcementEnabled ?? false;
 
   const hasFeature = useCallback(
     (feature: string): boolean => {
+      if (!enforcementEnabled) return true;
       if (!isEnterprise || !license) return false;
       return license.features.includes(feature);
     },
-    [isEnterprise, license]
+    [enforcementEnabled, isEnterprise, license]
   );
 
   const refresh = useCallback(async () => {
@@ -54,6 +57,7 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
         license,
         isLoading,
         isEnterprise,
+        enforcementEnabled,
         hasFeature,
         refresh,
       }}

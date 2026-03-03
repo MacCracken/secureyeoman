@@ -6,6 +6,20 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.3] — 2026-03-03
 
+### Phase 106: License-Gated Feature Reveal
+
+- **LicenseManager** (`packages/core/src/licensing/license-manager.ts`): `enforcementEnabled` flag (reads `SECUREYEOMAN_LICENSE_ENFORCEMENT`, default `false`). New methods: `isEnforcementEnabled()`, `isFeatureAllowed(feature)`. `toStatusObject()` includes `enforcementEnabled`.
+- **License guard** (`packages/core/src/licensing/license-guard.ts`): `requiresLicense(feature, getLicenseManager)` — Fastify `preHandler` hook factory. Returns `402 Payment Required` with `{ error, feature, tier }`.
+- **Route guards**: `training-routes.ts` (6 distillation/finetune write endpoints), `sso-routes.ts` (3 admin CRUD), `tenant-routes.ts` (5 CRUD), `cicd-webhook-routes.ts` (1 webhook), `alert-routes.ts` (4 write endpoints). Read-only GET routes remain open.
+- **Server wiring** (`server.ts`): `secureYeoman` passed to SSO, tenant, CICD webhook, and alert route registrations.
+- **Dashboard `LicenseStatus`** (`client.ts`): `enforcementEnabled: boolean` field.
+- **`useLicense` hook**: `enforcementEnabled` in context. `hasFeature()` returns `true` when enforcement is off.
+- **`<FeatureLock>`** (`packages/dashboard/src/components/FeatureLock.tsx`): Wraps enterprise content with lock overlay when enforcement is on + feature not licensed. Shows feature label, description, and "Upgrade to Enterprise" link.
+- **FeatureLock wiring**: `TrainingTab.tsx` (distillation + finetune tabs), `ConnectionsPage.tsx` (CI/CD Platforms section), `AlertRulesTab.tsx` (create/edit rule forms).
+- **Env files**: `SECUREYEOMAN_LICENSE_ENFORCEMENT` added to `.env.dev`, `.env.dev.example`, `.env.example` (commented, default false).
+- **Tests**: 51 new — `license-guard.test.ts` (7), `license-manager.test.ts` (+5), `license-routes-guard.test.ts` (29), `FeatureLock.test.tsx` (6), `useLicense.test.tsx` (+4). Existing test mocks updated for `enforcementEnabled` field.
+- **ADR 192** (`docs/adr/192-license-gated-feature-reveal.md`). Enforcement disabled by default; "License Up" roadmap item tracks tier audit + activation.
+
 ### Phase 110: Inline Citations & Grounding
 
 - **Shared types** (`packages/shared/src/types/citations.ts`): `SourceReference`, `CitationMeta`, `ProvenanceScores`, `CitationFeedback`, `GroundingCheckResult`, `PROVENANCE_WEIGHTS`. `BodyConfigSchema` extended with `enableCitations` and `groundednessMode` fields.

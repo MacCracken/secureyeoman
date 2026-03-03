@@ -11,16 +11,23 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { TenantManager } from './tenant-manager.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import type { SecureYeoman } from '../secureyeoman.js';
+import { requiresLicense } from '../licensing/license-guard.js';
 
 export interface TenantRoutesOptions {
   tenantManager: TenantManager;
+  secureYeoman?: SecureYeoman;
 }
 
 export function registerTenantRoutes(app: FastifyInstance, opts: TenantRoutesOptions): void {
-  const { tenantManager } = opts;
+  const { tenantManager, secureYeoman } = opts;
+  const tenantGuardOpts = (secureYeoman
+    ? { preHandler: [requiresLicense('multi_tenancy', () => secureYeoman.getLicenseManager())] }
+    : {}) as Record<string, unknown>;
 
   app.get(
     '/api/v1/admin/tenants',
+    tenantGuardOpts,
     async (
       request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>,
       reply: FastifyReply
@@ -38,6 +45,7 @@ export function registerTenantRoutes(app: FastifyInstance, opts: TenantRoutesOpt
 
   app.post(
     '/api/v1/admin/tenants',
+    tenantGuardOpts,
     async (
       request: FastifyRequest<{ Body: { name: string; slug: string; plan?: string } }>,
       reply: FastifyReply
@@ -55,6 +63,7 @@ export function registerTenantRoutes(app: FastifyInstance, opts: TenantRoutesOpt
 
   app.get(
     '/api/v1/admin/tenants/:id',
+    tenantGuardOpts,
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const tenant = await tenantManager.getById(request.params.id);
       if (!tenant) return sendError(reply, 404, 'Tenant not found');
@@ -64,6 +73,7 @@ export function registerTenantRoutes(app: FastifyInstance, opts: TenantRoutesOpt
 
   app.put(
     '/api/v1/admin/tenants/:id',
+    tenantGuardOpts,
     async (
       request: FastifyRequest<{
         Params: { id: string };
@@ -83,6 +93,7 @@ export function registerTenantRoutes(app: FastifyInstance, opts: TenantRoutesOpt
 
   app.delete(
     '/api/v1/admin/tenants/:id',
+    tenantGuardOpts,
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         await tenantManager.delete(request.params.id);

@@ -97,6 +97,7 @@ import { sanitizeText } from '../utils/sanitize';
 import { McpPrebuilts } from './McpPrebuilts';
 import { RoutingRulesPage } from './RoutingRulesPage';
 import { FederationTab } from './federation/FederationTab';
+import { FeatureLock } from './FeatureLock';
 
 const LOCAL_MCP_NAME = 'YEOMAN MCP';
 
@@ -3245,6 +3246,7 @@ function LocalServerCard({
           </div>
 
           {/* CI/CD Platforms — Phase 90 */}
+          <FeatureLock feature="cicd_integration">
           <div className="mt-3 pt-2 border-t border-border/50">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5 flex items-center gap-1">
               <GitBranch className="w-3 h-3" />
@@ -3344,6 +3346,7 @@ function LocalServerCard({
               </label>
             </div>
           </div>
+          </FeatureLock>
 
           {/* Markdown for Agents — Content-Signal enforcement policy */}
           <div className="mt-3 pt-2 border-t border-border/50">

@@ -5,6 +5,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Fastify from 'fastify';
 import { registerTrainingRoutes } from './training-routes.js';
+import { LicenseManager } from '../licensing/license-manager.js';
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
 
@@ -102,6 +103,7 @@ function buildMockSY(
       if (opts.aiClient === null) throw new Error('AI client not available');
       return opts.aiClient ?? defaultAiClient;
     }),
+    getLicenseManager: vi.fn(() => new LicenseManager()),
   } as any;
 }
 

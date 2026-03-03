@@ -14,15 +14,21 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SsoManager } from '../security/sso-manager.js';
 import type { SsoStorage } from '../security/sso-storage.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
+import type { SecureYeoman } from '../secureyeoman.js';
+import { requiresLicense } from '../licensing/license-guard.js';
 
 export interface SsoRoutesOptions {
   ssoManager: SsoManager;
   ssoStorage: SsoStorage;
   dashboardUrl: string;
+  secureYeoman?: SecureYeoman;
 }
 
 export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions): void {
-  const { ssoManager, ssoStorage, dashboardUrl } = opts;
+  const { ssoManager, ssoStorage, dashboardUrl, secureYeoman } = opts;
+  const ssoGuardOpts = (secureYeoman
+    ? { preHandler: [requiresLicense('sso_saml', () => secureYeoman.getLicenseManager())] }
+    : {}) as Record<string, unknown>;
 
   // ── Provider discovery (public) ──────────────────────────────────
 
@@ -93,6 +99,7 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
 
   app.post(
     '/api/v1/auth/sso/providers',
+    ssoGuardOpts,
     async (
       request: FastifyRequest<{
         Body: {
@@ -144,6 +151,7 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
 
   app.put(
     '/api/v1/auth/sso/providers/:id',
+    ssoGuardOpts,
     async (
       request: FastifyRequest<{ Params: { id: string }; Body: Record<string, unknown> }>,
       reply: FastifyReply
@@ -163,6 +171,7 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
 
   app.delete(
     '/api/v1/auth/sso/providers/:id',
+    ssoGuardOpts,
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!(await ssoStorage.deleteIdentityProvider(request.params.id)))
         return sendError(reply, 404, 'Provider not found');

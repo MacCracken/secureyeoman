@@ -5123,6 +5123,7 @@ export interface LicenseStatus {
   licenseId: string | null;
   expiresAt: string | null;
   error: string | null;
+  enforcementEnabled: boolean;
 }
 
 export async function fetchLicenseStatus(): Promise<LicenseStatus> {

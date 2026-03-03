@@ -52,6 +52,9 @@ vi.mock('../api/client', () => ({
   deleteBackup: vi.fn(),
   fetchLicenseStatus: vi.fn(),
   setLicenseKey: vi.fn(),
+  fetchStrategies: vi.fn(),
+  createStrategy: vi.fn(),
+  deleteStrategy: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -67,6 +70,7 @@ const mockFetchSecurityPolicy = vi.mocked(api.fetchSecurityPolicy);
 const mockFetchUsers = vi.mocked(api.fetchUsers);
 const mockFetchBackups = vi.mocked(api.fetchBackups);
 const mockFetchLicenseStatus = vi.mocked(api.fetchLicenseStatus);
+const mockFetchStrategies = vi.mocked(api.fetchStrategies);
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -109,6 +113,7 @@ describe('SettingsPage', () => {
     mockFetchAssignments.mockResolvedValue({ assignments: [] });
     mockFetchUsers.mockResolvedValue({ users: [] });
     mockFetchBackups.mockResolvedValue({ backups: [], total: 0 });
+    mockFetchStrategies.mockResolvedValue({ items: [] });
     mockFetchLicenseStatus.mockResolvedValue({
       tier: 'community',
       valid: false,
@@ -118,6 +123,7 @@ describe('SettingsPage', () => {
       licenseId: null,
       expiresAt: null,
       error: null,
+      enforcementEnabled: false,
     });
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: false,
@@ -345,6 +351,7 @@ describe('SettingsPage', () => {
       licenseId: 'lic-123',
       expiresAt: null,
       error: null,
+      enforcementEnabled: false,
     });
     renderComponent();
     expect(await screen.findByText('Enterprise')).toBeInTheDocument();
@@ -370,6 +377,7 @@ describe('SettingsPage', () => {
       licenseId: 'lic-456',
       expiresAt: in15Days,
       error: null,
+      enforcementEnabled: false,
     });
     renderComponent();
     expect(await screen.findByText(/License expires in 15 days/)).toBeInTheDocument();
@@ -386,6 +394,7 @@ describe('SettingsPage', () => {
       licenseId: 'lic-789',
       expiresAt: in3Days,
       error: null,
+      enforcementEnabled: false,
     });
     renderComponent();
     expect(await screen.findByText(/License expires in 3 days/)).toBeInTheDocument();
@@ -402,6 +411,7 @@ describe('SettingsPage', () => {
       licenseId: 'lic-exp',
       expiresAt: yesterday,
       error: null,
+      enforcementEnabled: false,
     });
     renderComponent();
     expect(await screen.findByText(/License has expired/)).toBeInTheDocument();
@@ -418,6 +428,7 @@ describe('SettingsPage', () => {
       licenseId: 'lic-ok',
       expiresAt: in60Days,
       error: null,
+      enforcementEnabled: false,
     });
     renderComponent();
     expect(await screen.findByText('Enterprise')).toBeInTheDocument();

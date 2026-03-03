@@ -26,6 +26,7 @@ import type {
   TrainingExperimentCreate,
   SideBySideRating,
 } from '@secureyeoman/shared';
+import { requiresLicense } from '../licensing/license-guard.js';
 
 export interface TrainingRoutesOptions {
   secureYeoman: SecureYeoman;
@@ -102,6 +103,9 @@ function toRawText(conversationId: string, messages: { role: string; content: st
 
 export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoutesOptions): void {
   const { secureYeoman } = opts;
+  const adaptiveLearningGuardOpts = {
+    preHandler: [requiresLicense('adaptive_learning', () => secureYeoman.getLicenseManager())],
+  } as Record<string, unknown>;
 
   /**
    * POST /api/v1/training/export
@@ -268,6 +272,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
    */
   app.post(
     '/api/v1/training/distillation/jobs',
+    adaptiveLearningGuardOpts,
     async (request: FastifyRequest<{ Body: DistillationJobConfig }>, reply: FastifyReply) => {
       const manager = secureYeoman.getDistillationManager();
       if (!manager) return sendError(reply, 503, 'Distillation manager not available');
@@ -318,6 +323,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
    */
   app.delete(
     '/api/v1/training/distillation/jobs/:id',
+    adaptiveLearningGuardOpts,
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const manager = secureYeoman.getDistillationManager();
       if (!manager) return sendError(reply, 503, 'Distillation manager not available');
@@ -335,6 +341,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
    */
   app.post(
     '/api/v1/training/distillation/jobs/:id/run',
+    adaptiveLearningGuardOpts,
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const { secureYeoman } = opts;
       const manager = secureYeoman.getDistillationManager();
@@ -384,6 +391,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
    */
   app.post(
     '/api/v1/training/finetune/jobs',
+    adaptiveLearningGuardOpts,
     async (request: FastifyRequest<{ Body: FinetuneJobConfig }>, reply: FastifyReply) => {
       const manager = secureYeoman.getFinetuneManager();
       if (!manager) return sendError(reply, 503, 'Finetune manager not available');
@@ -477,6 +485,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
    */
   app.post(
     '/api/v1/training/finetune/jobs/:id/register',
+    adaptiveLearningGuardOpts,
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const manager = secureYeoman.getFinetuneManager();
       if (!manager) return sendError(reply, 503, 'Finetune manager not available');
@@ -499,6 +508,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
    */
   app.delete(
     '/api/v1/training/finetune/jobs/:id',
+    adaptiveLearningGuardOpts,
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const manager = secureYeoman.getFinetuneManager();
       if (!manager) return sendError(reply, 503, 'Finetune manager not available');

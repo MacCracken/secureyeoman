@@ -70,6 +70,7 @@ import {
   type ComputerUseEpisode,
   type SkillStat,
 } from '../api/client';
+import { FeatureLock } from './FeatureLock';
 
 const EvaluationTab = lazy(() =>
   import('./training/EvaluationTab').then((m) => ({ default: m.EvaluationTab }))
@@ -1097,8 +1098,16 @@ export function TrainingTab() {
       </div>
 
       {activeTab === 'export' && <ExportTab />}
-      {activeTab === 'distillation' && <DistillationTab />}
-      {activeTab === 'finetune' && <FinetuneTab />}
+      {activeTab === 'distillation' && (
+        <FeatureLock feature="adaptive_learning">
+          <DistillationTab />
+        </FeatureLock>
+      )}
+      {activeTab === 'finetune' && (
+        <FeatureLock feature="adaptive_learning">
+          <FinetuneTab />
+        </FeatureLock>
+      )}
       {activeTab === 'live' && <LiveTab />}
       {activeTab === 'computer-use' && <ComputerUseTab />}
       {activeTab === 'evaluation' && (

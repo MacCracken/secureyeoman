@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Fastify from 'fastify';
 import { registerTrainingRoutes } from './training-routes.js';
+import { LicenseManager } from '../licensing/license-manager.js';
 
 // ── Mock data ───────────────────────────────────────────────
 
@@ -124,6 +125,7 @@ function buildMockSecureYeoman(
   return {
     getConversationStorage: vi.fn(() => opts.conversationStorage ?? buildMockConversationStorage()),
     getBrainManager: vi.fn(() => opts.brainManager ?? buildMockBrainManager()),
+    getLicenseManager: vi.fn(() => new LicenseManager()),
   } as any;
 }
 
@@ -189,7 +191,7 @@ describe('POST /api/v1/training/export', () => {
   });
 
   it('returns 503 when conversation storage unavailable', async () => {
-    const sy = { getConversationStorage: vi.fn(() => null), getBrainManager: vi.fn() } as any;
+    const sy = { getConversationStorage: vi.fn(() => null), getBrainManager: vi.fn(), getLicenseManager: vi.fn(() => new LicenseManager()) } as any;
     const localApp = await buildApp(sy);
     const res = await localApp.inject({
       method: 'POST',
@@ -381,6 +383,7 @@ async function buildMLApp(overrides: Record<string, unknown> = {}) {
     getAIClient: vi.fn(() => ({ chat: vi.fn() })),
     getPipelineApprovalManager: vi.fn(() => buildMockApprovalManager()),
     getPipelineLineageStorage: vi.fn(() => buildMockLineageStorage()),
+    getLicenseManager: vi.fn(() => new LicenseManager()),
     ...overrides,
   };
   registerTrainingRoutes(app, { secureYeoman });
@@ -1718,6 +1721,7 @@ async function buildPhase98App(overrides: Record<string, unknown> = {}) {
     getExperimentRegistryManager: vi.fn(() => null),
     getModelVersionManager: vi.fn(() => null),
     getAbTestManager: vi.fn(() => null),
+    getLicenseManager: vi.fn(() => new LicenseManager()),
     ...overrides,
   };
   registerTrainingRoutes(app, { secureYeoman });

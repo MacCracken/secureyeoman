@@ -218,6 +218,7 @@ beforeEach(() => {
     licenseId: null,
     expiresAt: null,
     error: null,
+    enforcementEnabled: false,
   } as any);
   vi.mocked(api.setLicenseKey).mockResolvedValue({} as any);
 });

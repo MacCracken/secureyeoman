@@ -43,7 +43,8 @@
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
-| 106 | License-Gated Feature Reveal | P1 — commercial | 🔄 In Progress (context ✅, card ✅, CLI guard ✅, route guards + feature lock UX remaining) |
+| 106 | License-Gated Feature Reveal | P1 — commercial | ✅ Complete (enforcement disabled by default) |
+| License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
 | 109 | Editor Improvements (Auto-Claude Style) | P3 — power user UX | 🔄 In Progress (unification ✅, IDE features + canvas improvements planned) |
 | 112 | Multi-Account AI Provider Keys & Per-Account Cost Tracking | P2 — cost governance | ✅ Complete |
 | 116 | Sandbox Artifact Scanning & Externalization Gate | P1 — security boundary | Planned |
@@ -53,16 +54,11 @@
 
 ---
 
-## Phase 106: License-Gated Feature Reveal
+## Phase 106: License-Gated Feature Reveal ✅
 
-**Priority**: P1 — Commercial. Enterprise features are built and instrumented but not yet gated. This phase makes the tier boundary real: community installs see upgrade prompts; enterprise installs unlock the full feature set. Directly tied to revenue (ADR 171).
+**Priority**: P1 — Commercial. **Status**: Complete (ADR 192, CHANGELOG [2026.3.3]).
 
-*Previously Phase 93. Renumbered for sequential ordering.*
-
-Enterprise features gated by this phase: `adaptive_learning`, `sso_saml`, `multi_tenancy`, `cicd_integration`, `advanced_observability`.
-
-- [ ] **Gateway route guards** — Add `requiresLicense(feature: EnterpriseFeature)` hook to the routes that serve enterprise functionality (training advanced modes, SAML endpoints, RLS multi-tenant API, CI/CD webhook, alert rules). Returns `402 Payment Required` with `{ error: 'enterprise_license_required', feature: '<name>' }` for community-tier callers. `LicenseManager` singleton accessed via `secureYeoman.getLicenseManager()` inside route plugins.
-- [ ] **Feature lock UX** — Components for guarded features (Training advanced modes, SSO config, Multi-tenancy settings, CI/CD platforms, Alert Rules) wrap in a `<FeatureLock feature="adaptive_learning">` guard component. Community-tier users see the feature greyed out with a lock icon and an "Upgrade to Enterprise" prompt linking to `docs/guides/licensing.md` rather than a blank 403.
+Enterprise gating infrastructure ships with enforcement **disabled by default** (`SECUREYEOMAN_LICENSE_ENFORCEMENT=false`). Backend `requiresLicense()` preHandler guards on 5 route files + dashboard `<FeatureLock>` component. 51 new tests. See "License Up" in Wrap-Up section for enforcement activation.
 
 ---
 
@@ -311,6 +307,28 @@ Current: 87.01% stmt / 76.02% branches. Target: 88% / 77%. Gap: <1% each.
 - [ ] **Logging branch coverage** — `logging/` at 74.93% stmt / 62.18% branch. Audit chain integrity verification, export format branches, and log rotation logic are unit-testable with mocked storage.
 - [ ] **Actuator branch coverage** — `body/actuator/` at 75.63% stmt / 61.17% branch. Desktop control action dispatch and platform-specific branching.
 - [ ] **Notification branch coverage** — `notifications/` at 90% stmt / 64.22% branch. Notification preference filtering and channel dispatch branches.
+
+---
+
+## Wrap-Up — Pre-Release Gating
+
+Items below represent the final steps required before public release. They depend on completed phases and focus on enforcement activation, tier auditing, and commercialization.
+
+### License Up: Tier Audit & Enforcement Activation
+
+**Priority**: P1 — Commercial. Must complete before public release.
+
+**Prerequisite**: Phase 106 (license gating infrastructure — ✅).
+
+- [ ] **Tier audit** — Comprehensive audit of all features into tiers:
+  - **Community** (free): Chat, personalities, basic brain/memory, manual workflows, MCP tools, marketplace skills, basic editor, training dataset export, community skills, basic observability (metrics dashboard read-only)
+  - **Pro** (mid-tier, new): Advanced editor/canvas, knowledge base connectors, observability dashboards, CI/CD read-only status, provider account management, advanced workflow templates, computer-use episodes, custom integrations, advanced brain features (document ingestion, source guides)
+  - **Enterprise**: Adaptive learning pipeline (distillation, fine-tune, evaluation, DPO, counterfactual generation), SSO/SAML, multi-tenancy (RLS), CI/CD webhook integration + workflow triggers, advanced alert rules (create/edit/delete), A2A federation, swarm orchestration advanced modes, audit chain export
+- [ ] **Pro tier in LicenseManager** — Add `'pro'` to `LicenseTier`. Rename `EnterpriseFeature` → `LicensedFeature`. Add pro-tier features. Update license key generation script + validation.
+- [ ] **Enable enforcement** — Set `SECUREYEOMAN_LICENSE_ENFORCEMENT=true` as default in `.env.example`. Update all env templates.
+- [ ] **Upgrade prompts** — "Upgrade to Pro" and "Upgrade to Enterprise" CTAs in `FeatureLock` with pricing page links.
+- [ ] **License key purchase flow** — Integration with payment provider or manual key issuance workflow. Dashboard license management page.
+- [ ] **Grace period** — Existing community installs get 30-day grace period when enforcement activates, with countdown banner.
 
 ---
 

@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Fastify from 'fastify';
 import { registerTrainingRoutes } from './training-routes.js';
+import { LicenseManager } from '../licensing/license-manager.js';
 
 // ── Mock training-stream ──────────────────────────────────────────────────────
 
@@ -31,6 +32,7 @@ function makeSecureYeoman(overrides: Record<string, unknown> = {}) {
     getConversationQualityScorer: vi.fn(() => null),
     getComputerUseManager: vi.fn(() => null),
     getPool: vi.fn(() => null),
+    getLicenseManager: vi.fn(() => new LicenseManager()),
     ...overrides,
   } as any;
 }

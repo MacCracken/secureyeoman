@@ -406,7 +406,7 @@ export class GatewayServer {
         const scheme = this.config.tls.enabled ? 'https' : 'http';
         const host = this.config.host === '0.0.0.0' ? 'localhost' : this.config.host;
         const dashboardUrl = `${scheme}://${host}:${this.config.port}`;
-        registerSsoRoutes(this.app, { ssoManager, ssoStorage, dashboardUrl });
+        registerSsoRoutes(this.app, { ssoManager, ssoStorage, dashboardUrl, secureYeoman: this.secureYeoman });
       }
     } catch {
       // SSO manager may not be available — skip routes
@@ -834,7 +834,7 @@ export class GatewayServer {
 
         // CI/CD inbound webhook normalizer (Phase 90) — public endpoint with HMAC gate
         try {
-          registerCicdWebhookRoutes(this.app, { workflowManager });
+          registerCicdWebhookRoutes(this.app, { workflowManager, secureYeoman: this.secureYeoman });
           this.getLogger().info('CI/CD webhook routes registered');
         } catch (err) {
           this.getLogger().debug('CI/CD webhook routes skipped', {
@@ -1186,7 +1186,7 @@ export class GatewayServer {
     try {
       const tenantManager = this.secureYeoman.getTenantManager();
       if (tenantManager) {
-        registerTenantRoutes(this.app, { tenantManager });
+        registerTenantRoutes(this.app, { tenantManager, secureYeoman: this.secureYeoman });
         this.getLogger().info('Tenant routes registered');
       }
     } catch (err) {
@@ -1260,7 +1260,7 @@ export class GatewayServer {
     {
       const alertManager = this.secureYeoman.getAlertManager?.();
       if (alertManager) {
-        registerAlertRoutes(this.app, { alertManager });
+        registerAlertRoutes(this.app, { alertManager, secureYeoman: this.secureYeoman });
         this.getLogger().debug('Alert routes registered');
       }
     }

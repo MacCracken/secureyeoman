@@ -345,3 +345,59 @@ describe('LicenseManager — error cases', () => {
     expect(lm.getParseError()).toBeNull();
   });
 });
+
+// ── Phase 106 — Enforcement flag + isFeatureAllowed ──────────────────────────
+
+describe('LicenseManager — enforcement flag', () => {
+  it('isEnforcementEnabled() defaults to false', () => {
+    const lm = new LicenseManager();
+    expect(lm.isEnforcementEnabled()).toBe(false);
+  });
+
+  it('isFeatureAllowed() returns true for all features when enforcement is off', () => {
+    const lm = new LicenseManager(); // no key, enforcement off
+    const features: EnterpriseFeature[] = [
+      'adaptive_learning',
+      'sso_saml',
+      'multi_tenancy',
+      'cicd_integration',
+      'advanced_observability',
+    ];
+    for (const f of features) {
+      expect(lm.isFeatureAllowed(f)).toBe(true);
+    }
+  });
+
+  it('isFeatureAllowed() delegates to hasFeature() when enforcement is on', () => {
+    const origEnv = process.env.SECUREYEOMAN_LICENSE_ENFORCEMENT;
+    process.env.SECUREYEOMAN_LICENSE_ENFORCEMENT = 'true';
+    try {
+      const lm = new LicenseManager(); // no key, community tier
+      expect(lm.isEnforcementEnabled()).toBe(true);
+      expect(lm.isFeatureAllowed('adaptive_learning')).toBe(false);
+      expect(lm.isFeatureAllowed('sso_saml')).toBe(false);
+    } finally {
+      if (origEnv === undefined) delete process.env.SECUREYEOMAN_LICENSE_ENFORCEMENT;
+      else process.env.SECUREYEOMAN_LICENSE_ENFORCEMENT = origEnv;
+    }
+  });
+
+  it('toStatusObject() includes enforcementEnabled field', () => {
+    const lm = new LicenseManager();
+    const status = lm.toStatusObject();
+    expect(status).toHaveProperty('enforcementEnabled');
+    expect(status.enforcementEnabled).toBe(false);
+  });
+
+  it('toStatusObject() reflects enforcementEnabled=true when env is set', () => {
+    const origEnv = process.env.SECUREYEOMAN_LICENSE_ENFORCEMENT;
+    process.env.SECUREYEOMAN_LICENSE_ENFORCEMENT = 'true';
+    try {
+      const lm = new LicenseManager();
+      expect(lm.toStatusObject().enforcementEnabled).toBe(true);
+    } finally {
+      if (origEnv === undefined) delete process.env.SECUREYEOMAN_LICENSE_ENFORCEMENT;
+      else process.env.SECUREYEOMAN_LICENSE_ENFORCEMENT = origEnv;
+    }
+  });
+});

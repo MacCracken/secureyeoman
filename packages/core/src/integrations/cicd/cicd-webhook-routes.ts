@@ -17,6 +17,8 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { WorkflowManager } from '../../workflow/workflow-manager.js';
+import type { SecureYeoman } from '../../secureyeoman.js';
+import { requiresLicense } from '../../licensing/license-guard.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,6 +35,7 @@ export interface CiEvent {
 
 export interface CicdWebhookRoutesOptions {
   workflowManager?: WorkflowManager;
+  secureYeoman?: SecureYeoman;
 }
 
 // ─── Signature Helpers ────────────────────────────────────────────────────────
@@ -179,7 +182,11 @@ export function registerCicdWebhookRoutes(
   app: FastifyInstance,
   opts: CicdWebhookRoutesOptions = {}
 ): void {
-  const { workflowManager } = opts;
+  const { workflowManager, secureYeoman } = opts;
+
+  const cicdPreHandlers = secureYeoman
+    ? [requiresLicense('cicd_integration', () => secureYeoman.getLicenseManager())]
+    : [];
 
   // POST /api/v1/webhooks/ci/:provider
   // No auth middleware — HMAC / token gate is the access control.
@@ -187,7 +194,8 @@ export function registerCicdWebhookRoutes(
     '/api/v1/webhooks/ci/:provider',
     {
       config: { skipAuth: true } as Record<string, unknown>,
-    },
+      preHandler: cicdPreHandlers,
+    } as Record<string, unknown>,
     async (request: FastifyRequest<{ Params: { provider: string } }>, reply: FastifyReply) => {
       const { provider } = request.params;
       const rawBody = JSON.stringify(request.body);

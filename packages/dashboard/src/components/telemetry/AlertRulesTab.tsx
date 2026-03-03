@@ -19,6 +19,7 @@ import {
   testAlertRule,
 } from '../../api/client';
 import type { AlertRule, AlertChannel } from '../../types';
+import { FeatureLock } from '../FeatureLock';
 
 // ── Toast helper ────────────────────────────────────────────────────────────
 
@@ -692,6 +693,7 @@ export function AlertRulesTab() {
         ))}
       </div>
 
+      <FeatureLock feature="advanced_observability">
       {showForm && (
         <RuleForm
           initial={formInitial}
@@ -761,6 +763,7 @@ export function AlertRulesTab() {
           </div>
         </div>
       )}
+      </FeatureLock>
     </div>
   );
 }

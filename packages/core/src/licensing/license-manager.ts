@@ -57,8 +57,10 @@ MCowBQYDK2VwAyEAwlM7v9KTffJ5T67OtcZLenLdq4HfxL3gosI1q8T8syc=
 export class LicenseManager {
   private claims: LicenseClaims | null = null;
   private parseError: string | null = null;
+  private enforcementEnabled: boolean;
 
   constructor(licenseKey?: string) {
+    this.enforcementEnabled = process.env.SECUREYEOMAN_LICENSE_ENFORCEMENT === 'true';
     if (licenseKey) {
       try {
         this.claims = LicenseManager.validate(licenseKey);
@@ -123,6 +125,21 @@ export class LicenseManager {
     return this.claims.features.includes(feature);
   }
 
+  /** Whether license enforcement is active (env SECUREYEOMAN_LICENSE_ENFORCEMENT=true). */
+  isEnforcementEnabled(): boolean {
+    return this.enforcementEnabled;
+  }
+
+  /**
+   * Returns true if the feature is allowed:
+   * - When enforcement is disabled (default), always true.
+   * - When enforcement is enabled, delegates to hasFeature().
+   */
+  isFeatureAllowed(feature: EnterpriseFeature): boolean {
+    if (!this.enforcementEnabled) return true;
+    return this.hasFeature(feature);
+  }
+
   /** Returns all claims from a valid key, or null for community tier. */
   getClaims(): LicenseClaims | null {
     return this.claims;
@@ -150,6 +167,7 @@ export class LicenseManager {
       licenseId: claims?.licenseId ?? null,
       expiresAt: claims?.exp ? new Date(claims.exp * 1000).toISOString() : null,
       error: this.parseError,
+      enforcementEnabled: this.enforcementEnabled,
     };
   }
 }

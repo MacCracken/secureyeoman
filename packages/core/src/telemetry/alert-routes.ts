@@ -18,13 +18,19 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { AlertManager } from './alert-manager.js';
 import type { CreateAlertRuleData, AlertRule } from './alert-storage.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import type { SecureYeoman } from '../secureyeoman.js';
+import { requiresLicense } from '../licensing/license-guard.js';
 
 export interface AlertRoutesOptions {
   alertManager: AlertManager;
+  secureYeoman?: SecureYeoman;
 }
 
 export function registerAlertRoutes(app: FastifyInstance, opts: AlertRoutesOptions): void {
-  const { alertManager } = opts;
+  const { alertManager, secureYeoman } = opts;
+  const alertGuardOpts = (secureYeoman
+    ? { preHandler: [requiresLicense('advanced_observability', () => secureYeoman.getLicenseManager())] }
+    : {}) as Record<string, unknown>;
 
   // GET /api/v1/alerts/rules
   app.get('/api/v1/alerts/rules', async (_request, reply: FastifyReply) => {
@@ -39,6 +45,7 @@ export function registerAlertRoutes(app: FastifyInstance, opts: AlertRoutesOptio
   // POST /api/v1/alerts/rules
   app.post(
     '/api/v1/alerts/rules',
+    alertGuardOpts,
     async (request: FastifyRequest<{ Body: CreateAlertRuleData }>, reply: FastifyReply) => {
       try {
         const rule = await alertManager.createRule(request.body);
@@ -66,6 +73,7 @@ export function registerAlertRoutes(app: FastifyInstance, opts: AlertRoutesOptio
   // PATCH /api/v1/alerts/rules/:id
   app.patch(
     '/api/v1/alerts/rules/:id',
+    alertGuardOpts,
     async (
       request: FastifyRequest<{ Params: { id: string }; Body: Partial<AlertRule> }>,
       reply: FastifyReply
@@ -83,6 +91,7 @@ export function registerAlertRoutes(app: FastifyInstance, opts: AlertRoutesOptio
   // DELETE /api/v1/alerts/rules/:id
   app.delete(
     '/api/v1/alerts/rules/:id',
+    alertGuardOpts,
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const deleted = await alertManager.deleteRule(request.params.id);
@@ -97,6 +106,7 @@ export function registerAlertRoutes(app: FastifyInstance, opts: AlertRoutesOptio
   // POST /api/v1/alerts/rules/:id/test
   app.post(
     '/api/v1/alerts/rules/:id/test',
+    alertGuardOpts,
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         // Use an empty snapshot — in production callers can POST a body snapshot,
