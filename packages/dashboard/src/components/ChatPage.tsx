@@ -204,6 +204,48 @@ const MessageBubble = memo(function MessageBubble({
           </div>
         )}
 
+        {/* Citation Sources (Phase 110) */}
+        {msg.role === 'assistant' && msg.citationsMeta?.sources && msg.citationsMeta.sources.length > 0 && (
+          <div className="mt-2 border-t border-gray-200 dark:border-gray-700 pt-2">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Sources</p>
+            <ol className="text-xs space-y-1">
+              {msg.citationsMeta.sources.map((src) => (
+                <li key={src.index} className="flex items-start gap-1.5">
+                  <span className="font-mono text-blue-600 dark:text-blue-400 shrink-0">[{src.index}]</span>
+                  <span>
+                    {src.type === 'web_search' && src.url ? (
+                      <a href={src.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        {src.sourceLabel}
+                      </a>
+                    ) : (
+                      <span className="text-gray-700 dark:text-gray-300">{src.sourceLabel}</span>
+                    )}
+                    {src.documentTitle && <span className="text-gray-400 ml-1">({src.documentTitle})</span>}
+                    <span className={`ml-1 px-1 rounded text-[10px] ${
+                      src.type === 'web_search' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
+                      src.type === 'document_chunk' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
+                      src.type === 'memory' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' :
+                      'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                    }`}>
+                      {src.type.replace('_', ' ')}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+            {msg.groundingScore != null && (
+              <div className="mt-1 flex items-center gap-1 text-xs">
+                <span className={`w-2 h-2 rounded-full ${
+                  msg.groundingScore >= 0.7 ? 'bg-green-500' :
+                  msg.groundingScore >= 0.4 ? 'bg-yellow-500' :
+                  'bg-red-500'
+                }`} />
+                <span className="text-gray-500">Grounding: {(msg.groundingScore * 100).toFixed(0)}%</span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Phase 1 — Thinking */}
         {msg.role === 'assistant' && msg.thinkingContent && (
           <ThinkingBlock thinking={msg.thinkingContent} />

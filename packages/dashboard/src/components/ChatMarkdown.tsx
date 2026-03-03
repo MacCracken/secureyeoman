@@ -189,9 +189,27 @@ export const ChatMarkdown = memo(function ChatMarkdown({
   const components = useMemo(
     () => ({
       // ── Paragraphs ──────────────────────────────────────────────
-      p: ({ children }: { children?: React.ReactNode }) => (
-        <p className="leading-relaxed break-words">{children}</p>
-      ),
+      p: ({ children }: { children?: React.ReactNode }) => {
+        // Process children to render [N] citation markers as superscript
+        const processed = React.Children.map(children, (child) => {
+          if (typeof child !== 'string') return child;
+          // Split on [N] patterns (1-2 digits, not followed by '(' to avoid markdown links)
+          const parts = child.split(/(\[\d{1,2}\])(?!\()/);
+          if (parts.length === 1) return child;
+          return parts.map((part, i) => {
+            const match = /^\[(\d{1,2})\]$/.exec(part);
+            if (match) {
+              return (
+                <sup key={i} className="text-blue-600 dark:text-blue-400 cursor-pointer font-mono text-[10px] ml-0.5">
+                  {part}
+                </sup>
+              );
+            }
+            return part;
+          });
+        });
+        return <p className="leading-relaxed break-words">{processed}</p>;
+      },
 
       // ── Headings ────────────────────────────────────────────────
       h1: ({ children }: { children?: React.ReactNode }) => (

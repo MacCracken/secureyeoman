@@ -264,6 +264,19 @@ export const BodyConfigSchema = z
      * unless overridden per-request.
      */
     defaultStrategyId: z.string().nullable().optional(),
+    /** Enable inline citations [1], [2] in AI responses referencing knowledge base sources. */
+    enableCitations: z.boolean().default(false),
+    /**
+     * Groundedness enforcement mode for AI responses.
+     *
+     * - 'off' (default) — no grounding check
+     * - 'annotate_only' — flag ungrounded claims with [unverified]
+     * - 'block_unverified' — block response if grounding score < 0.3
+     * - 'strip_unverified' — remove ungrounded sentences from response
+     */
+    groundednessMode: z
+      .enum(['off', 'annotate_only', 'block_unverified', 'strip_unverified'])
+      .default('off'),
   })
   .default({});
 

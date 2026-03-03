@@ -5837,3 +5837,56 @@ export async function fetchWorkflowVersionDiff(
     `/workflows/${workflowId}/versions/${versionA}/diff/${versionB}`
   );
 }
+
+// ── Phase 110: Citation API functions ────────────────────────────────────────
+
+export async function fetchCitationFeedback(
+  messageId: string
+): Promise<{ messageId: string; feedback: any[] }> {
+  return request<{ messageId: string; feedback: any[] }>(
+    `/brain/citations/${messageId}`
+  );
+}
+
+export async function submitCitationFeedback(
+  messageId: string,
+  data: { citationIndex: number; sourceId: string; relevant: boolean }
+): Promise<{ id: string }> {
+  return request<{ id: string }>(`/brain/citations/${messageId}/feedback`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchDocumentProvenance(
+  docId: string
+): Promise<{ sourceQuality: any | null; trustScore: number }> {
+  return request<{ sourceQuality: any | null; trustScore: number }>(
+    `/brain/documents/${docId}/provenance`
+  );
+}
+
+export async function updateDocumentProvenance(
+  docId: string,
+  scores: Record<string, number>
+): Promise<any> {
+  return request<any>(`/brain/documents/${docId}/provenance`, {
+    method: 'PUT',
+    body: JSON.stringify({ scores }),
+  });
+}
+
+export async function fetchGroundingStats(
+  personalityId?: string
+): Promise<{
+  averageScore: number | null;
+  totalMessages: number;
+  lowGroundingCount: number;
+}> {
+  const params = personalityId ? `?personalityId=${personalityId}` : '';
+  return request<{
+    averageScore: number | null;
+    totalMessages: number;
+    lowGroundingCount: number;
+  }>(`/brain/grounding/stats${params}`);
+}

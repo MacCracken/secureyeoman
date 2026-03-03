@@ -20,6 +20,7 @@ import type {
   KnowledgeHealthStats,
   QueryLogCreate,
   NotebookCorpusDocument,
+  ProvenanceScores,
 } from './types.js';
 import type { Skill, SkillCreate, SkillUpdate } from '@secureyeoman/shared';
 import { uuidv7 } from '../utils/crypto.js';
@@ -91,6 +92,8 @@ interface DocumentRow {
   status: string;
   chunk_count: number;
   error_message: string | null;
+  source_quality: unknown | null;
+  trust_score: number | null;
   created_at: number;
   updated_at: number;
 }
@@ -106,6 +109,16 @@ interface QueryLogRow {
 
 // ── Helpers ──────────────────────────────────────────────────
 
+function safeJsonParseProv(val: unknown): ProvenanceScores | null {
+  if (val === null || val === undefined) return null;
+  if (typeof val === 'object') return val as ProvenanceScores;
+  try {
+    return JSON.parse(val as string) as ProvenanceScores;
+  } catch {
+    return null;
+  }
+}
+
 function rowToDocument(row: DocumentRow): KbDocument {
   return {
     id: row.id,
@@ -118,6 +131,8 @@ function rowToDocument(row: DocumentRow): KbDocument {
     status: row.status as KbDocument['status'],
     chunkCount: row.chunk_count,
     errorMessage: row.error_message,
+    sourceQuality: safeJsonParseProv(row.source_quality),
+    trustScore: row.trust_score ?? 0.5,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -1319,6 +1334,105 @@ export class BrainStorage extends PgBaseStorage {
       recentQueryCount: Number(qlRow?.cnt ?? 0),
       avgTopScore: qlRow?.avg_score ?? null,
       lowCoverageQueries: Number(lowRow?.cnt ?? 0),
+    };
+  }
+
+  // ── Provenance (Phase 110) ──────────────────────────────────────
+
+  async updateDocumentProvenance(
+    id: string,
+    sourceQuality: ProvenanceScores,
+    trustScore: number
+  ): Promise<KbDocument | null> {
+    const now = Date.now();
+    await this.query(
+      `UPDATE brain.documents SET source_quality = $1, trust_score = $2, updated_at = $3 WHERE id = $4`,
+      [JSON.stringify(sourceQuality), trustScore, now, id]
+    );
+    return this.getDocument(id);
+  }
+
+  async getDocumentTrustScore(id: string): Promise<number> {
+    const row = await this.queryOne<{ trust_score: number | null }>(
+      'SELECT trust_score FROM brain.documents WHERE id = $1',
+      [id]
+    );
+    return row?.trust_score ?? 0.5;
+  }
+
+  async getDocumentsByIds(ids: string[]): Promise<KbDocument[]> {
+    if (ids.length === 0) return [];
+    const rows = await this.queryMany<DocumentRow>(
+      'SELECT * FROM brain.documents WHERE id = ANY($1)',
+      [ids]
+    );
+    return rows.map(rowToDocument);
+  }
+
+  // ── Citation Feedback (Phase 110) ────────────────────────────────
+
+  async addCitationFeedback(data: {
+    messageId: string;
+    citationIndex: number;
+    sourceId: string;
+    relevant: boolean;
+  }): Promise<{ id: string }> {
+    const id = uuidv7();
+    const now = Date.now();
+    await this.query(
+      `INSERT INTO chat.citation_feedback (id, message_id, citation_index, source_id, relevant, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [id, data.messageId, data.citationIndex, data.sourceId, data.relevant, now]
+    );
+    return { id };
+  }
+
+  async getCitationFeedback(
+    messageId: string
+  ): Promise<{ id: string; citationIndex: number; sourceId: string; relevant: boolean; createdAt: number }[]> {
+    const rows = await this.queryMany<{
+      id: string;
+      citation_index: number;
+      source_id: string;
+      relevant: boolean;
+      created_at: number;
+    }>('SELECT * FROM chat.citation_feedback WHERE message_id = $1 ORDER BY created_at', [
+      messageId,
+    ]);
+    return rows.map((r) => ({
+      id: r.id,
+      citationIndex: r.citation_index,
+      sourceId: r.source_id,
+      relevant: r.relevant,
+      createdAt: r.created_at,
+    }));
+  }
+
+  async getAverageGroundingScore(
+    personalityId: string,
+    windowDays = 30
+  ): Promise<{ averageScore: number | null; totalMessages: number; lowGroundingCount: number }> {
+    const since = Date.now() - windowDays * 86_400_000;
+    const row = await this.queryOne<{
+      avg_score: number | null;
+      total: string;
+      low_count: string;
+    }>(
+      `SELECT
+         AVG(m.grounding_score) AS avg_score,
+         COUNT(*) AS total,
+         COUNT(*) FILTER (WHERE m.grounding_score < 0.5) AS low_count
+       FROM chat.messages m
+       JOIN chat.conversations c ON c.id = m.conversation_id
+       WHERE m.grounding_score IS NOT NULL
+         AND c.personality_id = $1
+         AND m.created_at >= $2`,
+      [personalityId, since]
+    );
+    return {
+      averageScore: row?.avg_score ?? null,
+      totalMessages: Number(row?.total ?? 0),
+      lowGroundingCount: Number(row?.low_count ?? 0),
     };
   }
 }

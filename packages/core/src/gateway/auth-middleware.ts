@@ -239,6 +239,20 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
     GET: { resource: 'brain', action: 'read' },
     PUT: { resource: 'brain', action: 'write' },
   },
+  // Document provenance (Phase 110)
+  '/api/v1/brain/documents/:id/provenance': {
+    GET: { resource: 'brain', action: 'read' },
+    PUT: { resource: 'brain', action: 'write' },
+  },
+  '/api/v1/brain/grounding/stats': {
+    GET: { resource: 'brain', action: 'read' },
+  },
+  '/api/v1/brain/citations/:messageId': {
+    GET: { resource: 'brain', action: 'read' },
+  },
+  '/api/v1/brain/citations/:messageId/feedback': {
+    POST: { resource: 'brain', action: 'write' },
+  },
   // Comms routes
   '/api/v1/comms/identity': {
     GET: { resource: 'comms', action: 'read' },

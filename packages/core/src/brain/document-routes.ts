@@ -7,12 +7,16 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { DocumentManager } from './document-manager.js';
 import type { BrainManager } from './manager.js';
+import type { BrainStorage } from './storage.js';
 import type { DocumentFormat, DocumentVisibility } from './types.js';
+import type { ProvenanceScores } from '@secureyeoman/shared';
+import { ProvenanceScoresSchema } from '@secureyeoman/shared';
 import { sendError } from '../utils/errors.js';
 
 export interface DocumentRoutesOptions {
   documentManager: DocumentManager;
   brainManager: BrainManager;
+  brainStorage?: BrainStorage;
 }
 
 const FORMAT_FROM_EXT: Record<string, DocumentFormat> = {
@@ -239,6 +243,112 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
       const { personalityId } = request.query;
       const stats = await documentManager.getKnowledgeHealthStats(personalityId);
       return stats;
+    }
+  );
+
+  // ── Phase 110: Provenance endpoints ─────────────────────────────────────
+
+  // GET /api/v1/brain/documents/:id/provenance
+  app.get(
+    '/api/v1/brain/documents/:id/provenance',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const prov = await documentManager.getDocumentProvenance(request.params.id);
+      if (prov.sourceQuality === null && prov.trustScore === 0.5) {
+        const doc = await documentManager.getDocument(request.params.id);
+        if (!doc) return sendError(reply, 404, 'Document not found');
+      }
+      return prov;
+    }
+  );
+
+  // PUT /api/v1/brain/documents/:id/provenance
+  app.put(
+    '/api/v1/brain/documents/:id/provenance',
+    async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Body: { scores: ProvenanceScores };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const doc = await documentManager.getDocument(request.params.id);
+      if (!doc) return sendError(reply, 404, 'Document not found');
+
+      const parsed = ProvenanceScoresSchema.safeParse(request.body?.scores);
+      if (!parsed.success) {
+        return sendError(reply, 400, `Invalid provenance scores: ${parsed.error.message}`);
+      }
+
+      const updated = await documentManager.updateProvenance(request.params.id, parsed.data);
+      return { document: updated };
+    }
+  );
+
+  // GET /api/v1/brain/grounding/stats
+  app.get(
+    '/api/v1/brain/grounding/stats',
+    async (
+      request: FastifyRequest<{
+        Querystring: { personalityId?: string; windowDays?: string };
+      }>
+    ) => {
+      const { personalityId, windowDays } = request.query;
+      if (!personalityId) {
+        return { averageScore: null, totalMessages: 0, lowGroundingCount: 0 };
+      }
+      const { brainStorage } = opts;
+      if (!brainStorage) {
+        return { averageScore: null, totalMessages: 0, lowGroundingCount: 0 };
+      }
+      return brainStorage.getAverageGroundingScore(
+        personalityId,
+        windowDays ? parseInt(windowDays, 10) : undefined
+      );
+    }
+  );
+
+  // ── Phase 110: Citation feedback endpoints ──────────────────────────────
+
+  // GET /api/v1/brain/citations/:messageId
+  app.get(
+    '/api/v1/brain/citations/:messageId',
+    async (
+      request: FastifyRequest<{ Params: { messageId: string } }>,
+      reply: FastifyReply
+    ) => {
+      const { brainStorage } = opts;
+      if (!brainStorage) return sendError(reply, 503, 'Brain storage not available');
+      // Return citation feedback for this message
+      const feedback = await brainStorage.getCitationFeedback(request.params.messageId);
+      return { messageId: request.params.messageId, feedback };
+    }
+  );
+
+  // POST /api/v1/brain/citations/:messageId/feedback
+  app.post(
+    '/api/v1/brain/citations/:messageId/feedback',
+    async (
+      request: FastifyRequest<{
+        Params: { messageId: string };
+        Body: { citationIndex: number; sourceId: string; relevant: boolean };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const { brainStorage } = opts;
+      if (!brainStorage) return sendError(reply, 503, 'Brain storage not available');
+
+      const { citationIndex, sourceId, relevant } = request.body ?? {};
+      if (typeof citationIndex !== 'number' || !sourceId || typeof relevant !== 'boolean') {
+        return sendError(reply, 400, 'citationIndex (number), sourceId (string), and relevant (boolean) are required');
+      }
+
+      const result = await brainStorage.addCitationFeedback({
+        messageId: request.params.messageId,
+        citationIndex,
+        sourceId,
+        relevant,
+      });
+      return reply.code(201).send(result);
     }
   );
 }

@@ -15,6 +15,8 @@ import type {
   ChatStreamEvent,
   McpToolDef,
   McpFeatures,
+  SourceReference,
+  CitationMeta,
 } from '@secureyeoman/shared';
 import type { McpFeatureConfig } from '../mcp/storage.js';
 import { PreferenceLearner, type FeedbackType } from '../brain/preference-learner.js';
@@ -26,6 +28,7 @@ import { AbuseDetector } from '../security/abuse-detector.js';
 import { createContentGuardrail } from '../security/content-guardrail.js';
 import { LLMJudge } from '../security/llm-judge.js';
 import { ContextCompactor, getContextWindowSize } from './context-compactor.js';
+import { GroundingChecker } from '../brain/grounding-checker.js';
 import { getLogger } from '../logging/logger.js';
 import { executeCreationTool } from '../soul/creation-tool-executor.js';
 
@@ -484,6 +487,74 @@ export function selectMcpToolSchemas(
   return { schemasToSend, allAllowed };
 }
 
+// ── Citation Instruction Builder (Phase 110) ─────────────────────────────────
+
+/**
+ * Build a system prompt instruction block telling the LLM to produce
+ * inline [N] citations referencing the provided sources.
+ */
+function buildCitationInstruction(sources: SourceReference[]): string {
+  const sourceList = sources
+    .map(
+      (s) =>
+        `[${s.index}] ${s.sourceLabel}${s.documentTitle ? ` (${s.documentTitle})` : ''}${s.url ? ` — ${s.url}` : ''}`
+    )
+    .join('\n');
+  return `
+
+## Citation Instructions
+
+You have access to the following sources. When your response uses information from a source, cite it inline using the notation [N] where N is the source number. Place the citation immediately after the relevant claim or sentence. You may cite multiple sources for a single claim, e.g. [1][3]. Do NOT invent citation numbers beyond those listed below.
+
+### Available Sources
+${sourceList}
+
+If you cannot find supporting evidence in the sources for a claim, state the claim without a citation.`;
+}
+
+/**
+ * Parse web search tool results and append them as web_search sources
+ * to the brain context for citation.
+ */
+function captureWebSearchSources(
+  output: unknown,
+  brainContext: BrainContextMeta
+): void {
+  try {
+    if (!brainContext.sources) brainContext.sources = [];
+    const nextIndex = () =>
+      brainContext.sources!.length > 0
+        ? Math.max(...brainContext.sources!.map((s) => s.index)) + 1
+        : 1;
+
+    const out = output as Record<string, unknown>;
+
+    // Handle array of results (web_search_batch or web_search returning array)
+    const results = Array.isArray(out.results) ? out.results : Array.isArray(out) ? out : [];
+
+    for (const item of results) {
+      if (typeof item !== 'object' || item === null) continue;
+      const r = item as Record<string, unknown>;
+      const title = String(r.title ?? r.name ?? 'Web result');
+      const snippet = String(r.snippet ?? r.content ?? r.description ?? '');
+      const url = typeof r.url === 'string' ? r.url : typeof r.link === 'string' ? r.link : undefined;
+
+      if (!snippet) continue;
+
+      brainContext.sources!.push({
+        index: nextIndex(),
+        type: 'web_search',
+        sourceId: url ?? `web-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        content: snippet,
+        sourceLabel: title,
+        url,
+      });
+    }
+  } catch {
+    // Best-effort — don't break the chat flow
+  }
+}
+
 interface ChatRequestBody {
   message: string;
   history?: { role: string; content: string }[];
@@ -515,6 +586,8 @@ interface BrainContextMeta {
   notebookBlock?: string;
   /** Knowledge mode that was active for this request. */
   knowledgeMode?: 'rag' | 'notebook' | 'hybrid';
+  /** Structured source references for inline citations (Phase 110). */
+  sources?: SourceReference[];
 }
 
 // ── Brain context helpers (shared by streaming and non-streaming paths) ───────
@@ -653,11 +726,66 @@ async function gatherBrainContext(
     const snippets: string[] = [];
     for (const m of memories) snippets.push(`[${m.type}] ${m.content}`);
     for (const k of knowledge) snippets.push(`[${k.topic}] ${k.content}`);
+
+    // Build structured source references for citations (Phase 110)
+    const sources: SourceReference[] = [];
+    let srcIdx = 1;
+    for (const m of memories) {
+      sources.push({
+        index: srcIdx++,
+        type: 'memory',
+        sourceId: m.id,
+        content: m.content,
+        sourceLabel: `[${m.type}] Memory`,
+        confidence: m.importance,
+      });
+    }
+    // Batch-resolve document metadata for knowledge chunks
+    const docIdSet = new Set<string>();
+    for (const k of knowledge) {
+      const match = /^document:([^:]+):chunk/.exec(k.source);
+      if (match) docIdSet.add(match[1]!);
+    }
+    let docMap = new Map<string, { title: string; trustScore: number }>();
+    if (docIdSet.size > 0) {
+      try {
+        const docMgr = secureYeoman.getDocumentManager();
+        const docs = await docMgr.listDocuments();
+        for (const d of docs) {
+          if (docIdSet.has(d.id)) {
+            docMap.set(d.id, { title: d.title, trustScore: d.trustScore });
+          }
+        }
+      } catch { /* best-effort */ }
+    }
+    for (const k of knowledge) {
+      const chunkMatch = /^document:([^:]+):chunk(\d+)$/.exec(k.source);
+      const ref: SourceReference = {
+        index: srcIdx++,
+        type: chunkMatch ? 'document_chunk' : 'knowledge',
+        sourceId: k.id,
+        content: k.content,
+        sourceLabel: k.topic,
+        confidence: k.confidence,
+      };
+      if (chunkMatch) {
+        const docId = chunkMatch[1]!;
+        ref.documentId = docId;
+        const docMeta = docMap.get(docId);
+        if (docMeta) {
+          ref.documentTitle = docMeta.title;
+          ref.trustScore = docMeta.trustScore;
+        }
+      }
+      sources.push(ref);
+    }
+
     return {
       memoriesUsed: memories.length,
       knowledgeUsed: knowledge.length,
       contextSnippets: snippets,
       knowledgeMode: knowledgeMode === 'rag' ? 'rag' : knowledgeMode,
+      sources: sources.length > 0 ? sources : undefined,
     };
   } catch {
     return { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] };
@@ -726,6 +854,9 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         }),
     }
   );
+
+  // Groundedness enforcement — verifies AI claims against retrieved sources (Phase 110).
+  const groundingChecker = new GroundingChecker();
 
   // LLM-as-Judge for high-autonomy tool calls (Phase 54).
   let llmJudge: LLMJudge | null = null;
@@ -873,6 +1004,12 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       // Inject notebook source library block when notebook/hybrid mode loaded corpus
       if (brainContext.notebookBlock) {
         systemPrompt = (systemPrompt ?? '') + '\n\n' + brainContext.notebookBlock;
+      }
+
+      // Inject inline citation instruction when enabled and sources exist (Phase 110)
+      const citationsEnabled = personality?.body?.enableCitations ?? false;
+      if (citationsEnabled && brainContext.sources && brainContext.sources.length > 0) {
+        systemPrompt = (systemPrompt ?? '') + buildCitationInstruction(brainContext.sources);
       }
 
       const messages: AIRequest['messages'] = [];
@@ -1349,6 +1486,15 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               }
             }
 
+            // Capture web search results as citable sources (Phase 110)
+            if (
+              citationsEnabled &&
+              !result.isError &&
+              (toolCall.name === 'web_search' || toolCall.name === 'web_search_batch')
+            ) {
+              captureWebSearchSources(result.output, brainContext);
+            }
+
             messages.push({
               role: 'tool' as const,
               toolResult: {
@@ -1465,6 +1611,43 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         // Assemble thinking content now so it's available for both persistence and response.
         const thinkingContent = thinkingParts.join('\n\n---\n\n') || undefined;
 
+        // ── Grounding enforcement (Phase 110) ─────────────────────────────────
+        let groundingScore: number | null = null;
+        const groundednessMode = personality?.body?.groundednessMode ?? 'off';
+        if (
+          groundednessMode !== 'off' &&
+          brainContext.sources &&
+          brainContext.sources.length > 0
+        ) {
+          const groundingResult = groundingChecker.check(
+            response.content,
+            brainContext.sources,
+            groundednessMode
+          );
+          groundingScore = groundingResult.score;
+
+          if (groundingResult.blocked) {
+            return sendError(reply, 400, 'Response blocked: insufficient grounding in sources');
+          }
+          if (groundingResult.content !== response.content) {
+            response.content = groundingResult.content;
+          }
+          // Audit low grounding scores
+          if (groundingResult.score < 0.5) {
+            void secureYeoman.getAuditChain().record({
+              event: 'low_grounding_score',
+              level: 'warn',
+              message: `AI response grounding score ${groundingResult.score.toFixed(2)} below threshold`,
+              metadata: {
+                score: groundingResult.score,
+                totalSentences: groundingResult.totalSentences,
+                groundedSentences: groundingResult.groundedSentences,
+                personalityId: personality?.id,
+              },
+            });
+          }
+        }
+
         // Persist messages to conversation storage when conversationId is provided
         if (conversationId) {
           try {
@@ -1477,6 +1660,17 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 injectionScore:
                   msgValidation.injectionScore > 0 ? msgValidation.injectionScore : null,
               });
+              // Build citation metadata for persistence (Phase 110)
+              const citationsMeta: CitationMeta | null =
+                citationsEnabled && brainContext.sources && brainContext.sources.length > 0
+                  ? {
+                      sources: brainContext.sources,
+                      citationsEnabled: true,
+                      groundednessMode,
+                      groundingScore: groundingScore ?? undefined,
+                    }
+                  : null;
+
               await convStorage.addMessage({
                 conversationId,
                 role: 'assistant',
@@ -1487,6 +1681,8 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 brainContext,
                 creationEvents: creationEvents.length > 0 ? creationEvents : null,
                 thinkingContent: thinkingContent ?? null,
+                citationsMeta,
+                groundingScore,
               });
             }
           } catch {
@@ -1531,6 +1727,10 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           conversationId: conversationId ?? undefined,
           creationEvents: creationEvents.length > 0 ? creationEvents : undefined,
           thinkingContent,
+          citations:
+            citationsEnabled && brainContext.sources && brainContext.sources.length > 0
+              ? brainContext.sources
+              : undefined,
         };
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : 'Unknown error';
@@ -1751,6 +1951,12 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         // Inject notebook source library block when notebook/hybrid mode loaded corpus
         if (brainContext.notebookBlock) {
           systemPrompt = (systemPrompt ?? '') + '\n\n' + brainContext.notebookBlock;
+        }
+
+        // Inject inline citation instruction when enabled and sources exist (Phase 110)
+        const citationsEnabledS = personality?.body?.enableCitations ?? false;
+        if (citationsEnabledS && brainContext.sources && brainContext.sources.length > 0) {
+          systemPrompt = (systemPrompt ?? '') + buildCitationInstruction(brainContext.sources);
         }
 
         const messages: AIRequest['messages'] = [];
@@ -2244,6 +2450,15 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                   });
                 }
               }
+              // Capture web search results as citable sources (Phase 110)
+              if (
+                citationsEnabledS &&
+                !result.isError &&
+                (toolCall.name === 'web_search' || toolCall.name === 'web_search_batch')
+              ) {
+                captureWebSearchSources(result.output, brainContext);
+              }
+
               messages.push({
                 role: 'tool' as const,
                 toolResult: {
@@ -2351,6 +2566,43 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           /* best-effort */
         }
 
+        // ── Grounding enforcement (Phase 110) — streaming path ────────────────
+        let groundingScoreS: number | null = null;
+        const groundednessModeSS = personality?.body?.groundednessMode ?? 'off';
+        if (
+          groundednessModeSS !== 'off' &&
+          brainContext.sources &&
+          brainContext.sources.length > 0
+        ) {
+          const groundingResultS = groundingChecker.check(
+            guardrailedContent,
+            brainContext.sources,
+            groundednessModeSS
+          );
+          groundingScoreS = groundingResultS.score;
+
+          if (groundingResultS.blocked) {
+            emit({ type: 'error', message: 'Response blocked: insufficient grounding in sources' });
+            return;
+          }
+          if (groundingResultS.content !== guardrailedContent) {
+            guardrailedContent = groundingResultS.content;
+          }
+          if (groundingResultS.score < 0.5) {
+            void secureYeoman.getAuditChain().record({
+              event: 'low_grounding_score',
+              level: 'warn',
+              message: `AI stream response grounding score ${groundingResultS.score.toFixed(2)} below threshold`,
+              metadata: {
+                score: groundingResultS.score,
+                totalSentences: groundingResultS.totalSentences,
+                groundedSentences: groundingResultS.groundedSentences,
+                personalityId: personality?.id,
+              },
+            });
+          }
+        }
+
         // Persist conversation
         if (conversationId) {
           try {
@@ -2363,6 +2615,17 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 injectionScore:
                   msgValidation.injectionScore > 0 ? msgValidation.injectionScore : null,
               });
+              // Build citation metadata for persistence (Phase 110)
+              const citationsMetaS: CitationMeta | null =
+                citationsEnabledS && brainContext.sources && brainContext.sources.length > 0
+                  ? {
+                      sources: brainContext.sources,
+                      citationsEnabled: true,
+                      groundednessMode: groundednessModeSS,
+                      groundingScore: groundingScoreS ?? undefined,
+                    }
+                  : null;
+
               await convStorage.addMessage({
                 conversationId,
                 role: 'assistant',
@@ -2374,6 +2637,8 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 creationEvents: creationEventsS.length > 0 ? creationEventsS : null,
                 thinkingContent: finalThinking ?? null,
                 toolCalls: toolCallsS.length > 0 ? toolCallsS : null,
+                citationsMeta: citationsMetaS,
+                groundingScore: groundingScoreS,
               });
             }
           } catch {
@@ -2415,7 +2680,11 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           tokensUsed: totalTokensUsed,
           thinkingContent: finalThinking,
           creationEvents: creationEventsS,
-        });
+          citations:
+            citationsEnabledS && brainContext.sources && brainContext.sources.length > 0
+              ? brainContext.sources
+              : undefined,
+        } as ChatStreamEvent);
       } catch (err) {
         emit({ type: 'error', message: err instanceof Error ? err.message : String(err) });
       } finally {

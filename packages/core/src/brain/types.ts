@@ -4,7 +4,8 @@
  * Re-exports shared types and defines internal interfaces.
  */
 
-export type { Skill, SkillCreate, SkillUpdate, Tool } from '@secureyeoman/shared';
+export type { Skill, SkillCreate, SkillUpdate, Tool, ProvenanceScores } from '@secureyeoman/shared';
+import type { ProvenanceScores } from '@secureyeoman/shared';
 
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { SecureLogger } from '../logging/logger.js';
@@ -137,6 +138,10 @@ export interface KbDocument {
   status: DocumentStatus;
   chunkCount: number;
   errorMessage: string | null;
+  /** 8-dimension provenance quality scores (Phase 110). */
+  sourceQuality: ProvenanceScores | null;
+  /** Composite trust score derived from provenance weights (0.0–1.0, default 0.5). */
+  trustScore: number;
   createdAt: number;
   updatedAt: number;
 }

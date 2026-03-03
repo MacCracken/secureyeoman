@@ -15,7 +15,9 @@ import type {
   DocumentVisibility,
   KnowledgeHealthStats,
   NotebookCorpus,
+  ProvenanceScores,
 } from './types.js';
+import { PROVENANCE_WEIGHTS } from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
 import { chunk } from './chunker.js';
 
@@ -330,6 +332,33 @@ export class DocumentManager {
       resultsCount,
       topScore,
     });
+  }
+
+  // ── Provenance (Phase 110) ──────────────────────────────────────────────
+
+  /**
+   * Update the 8-dimension provenance scores for a document.
+   * Computes a weighted-average trust_score from the PROVENANCE_WEIGHTS constant.
+   */
+  async updateProvenance(
+    docId: string,
+    scores: ProvenanceScores
+  ): Promise<KbDocument | null> {
+    const trustScore = Object.entries(PROVENANCE_WEIGHTS).reduce(
+      (sum, [key, weight]) => sum + (scores[key as keyof ProvenanceScores] ?? 0.5) * weight,
+      0
+    );
+    return this.storage.updateDocumentProvenance(docId, scores, trustScore);
+  }
+
+  async getDocumentProvenance(
+    docId: string
+  ): Promise<{ sourceQuality: ProvenanceScores | null; trustScore: number }> {
+    const doc = await this.storage.getDocument(docId);
+    return {
+      sourceQuality: doc?.sourceQuality ?? null,
+      trustScore: doc?.trustScore ?? 0.5,
+    };
   }
 
   // ── Private ───────────────────────────────────────────────────────────────

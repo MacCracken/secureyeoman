@@ -299,6 +299,8 @@ export class SoulManager {
           },
           omnipresentMind: false,
           knowledgeMode: 'rag' as const,
+          enableCitations: false,
+          groundednessMode: 'off' as const,
         },
       },
       { isArchetype: true }

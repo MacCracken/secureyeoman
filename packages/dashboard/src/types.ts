@@ -734,6 +734,8 @@ export interface ConversationMessageResponse {
   tokensUsed: number | null;
   brainContext: BrainContext | null;
   creationEvents: CreationEvent[] | null;
+  citationsMeta?: { sources: SourceReference[]; citationsEnabled: boolean; groundednessMode?: string; groundingScore?: number } | null;
+  groundingScore?: number | null;
   createdAt: number;
 }
 
@@ -771,6 +773,8 @@ export interface ChatMessage {
   creationEvents?: CreationEvent[];
   toolCalls?: ToolCallRecord[];
   thinkingContent?: string;
+  citationsMeta?: { sources: SourceReference[]; citationsEnabled: boolean; groundednessMode?: string; groundingScore?: number } | null;
+  groundingScore?: number | null;
 }
 
 export interface ChatResponse {
@@ -1231,4 +1235,19 @@ export interface ReasoningStrategy {
   isBuiltin: boolean;
   createdAt: number;
   updatedAt: number;
+}
+
+// ── Inline Citations & Grounding (Phase 110) ──────────────────
+
+export interface SourceReference {
+  index: number;
+  type: 'memory' | 'knowledge' | 'document_chunk' | 'web_search';
+  sourceId: string;
+  content: string;
+  sourceLabel: string;
+  documentId?: string;
+  documentTitle?: string;
+  confidence?: number;
+  trustScore?: number;
+  url?: string;
 }

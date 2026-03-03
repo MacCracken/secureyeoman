@@ -923,6 +923,8 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
             },
             omnipresentMind: false,
             knowledgeMode: 'rag' as const,
+            enableCitations: false,
+            groundednessMode: 'off' as const,
           },
         };
 

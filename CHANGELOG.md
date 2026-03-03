@@ -6,6 +6,19 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.3] — 2026-03-03
 
+### Phase 110: Inline Citations & Grounding
+
+- **Shared types** (`packages/shared/src/types/citations.ts`): `SourceReference`, `CitationMeta`, `ProvenanceScores`, `CitationFeedback`, `GroundingCheckResult`, `PROVENANCE_WEIGHTS`. `BodyConfigSchema` extended with `enableCitations` and `groundednessMode` fields.
+- **SQL migration** (`002_citations_grounding.sql`): `source_quality` JSONB + `trust_score` on `brain.documents`; `citations_json` + `grounding_score` on `chat.messages`; `chat.citation_feedback` table with indexes.
+- **Brain storage** (`packages/core/src/brain/storage.ts`): `updateDocumentProvenance()`, `getDocumentTrustScore()`, `getDocumentsByIds()`, `addCitationFeedback()`, `getCitationFeedback()`, `getAverageGroundingScore()`.
+- **Document manager** (`packages/core/src/brain/document-manager.ts`): `updateProvenance()` with weighted-average trust score computation, `getDocumentProvenance()`.
+- **GroundingChecker** (`packages/core/src/brain/grounding-checker.ts`): Token-overlap sentence grounding with 4 modes (off, annotate_only, block_unverified, strip_unverified). Sentence splitting with abbreviation handling.
+- **Chat pipeline** (`packages/core/src/ai/chat-routes.ts`): `gatherBrainContext()` builds `SourceReference[]` alongside snippets, batch-resolves document metadata/trust scores. `buildCitationInstruction()` injects numbered source list into system prompt. `captureWebSearchSources()` parses web_search tool results into citable sources. Grounding check after content guardrails (both streaming + non-streaming). Citation metadata + grounding score persisted to `chat.messages`.
+- **Conversation storage** (`packages/core/src/chat/conversation-storage.ts`): `addMessage()` accepts `citationsMeta` + `groundingScore`; INSERT expands to 16 params; `rowToMessage()` parses new columns.
+- **Document routes** (`packages/core/src/brain/document-routes.ts`): `GET/PUT /brain/documents/:id/provenance`, `GET /brain/grounding/stats`, `GET /brain/citations/:messageId`, `POST /brain/citations/:messageId/feedback`.
+- **Dashboard**: Sources section in `ChatPage.tsx` (numbered list with type badges, grounding score dot). `[N]` citation superscript markers in `ChatMarkdown.tsx`. `CitationDrawer` slide-in panel with full source content and relevance feedback buttons. API client functions for citation feedback and provenance CRUD.
+- **ADR 190** (`docs/adr/190-inline-citations-grounding.md`). **Guide** `docs/guides/citations-grounding.md`.
+
 ### Phase 113: Directory-Based Workflows & Swarm Templates
 
 - **Shared types** (`packages/shared/src/types/shareables.ts`): `WorkflowDirectoryMetadata` and `SwarmTemplateDirectoryMetadata` interfaces for directory-based community content. Steps/roles can have their prompts overridden by per-step/role markdown files.

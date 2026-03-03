@@ -826,3 +826,20 @@ export {
   type RiskHeatmapCell,
   type RiskTrendPoint,
 } from './departmental-risk.js';
+
+// Citations & Grounding types (Phase 110)
+export {
+  SourceReferenceTypeSchema,
+  SourceReferenceSchema,
+  GroundednessMode,
+  CitationMetaSchema,
+  ProvenanceScoresSchema,
+  CitationFeedbackSchema,
+  PROVENANCE_WEIGHTS,
+  type SourceReferenceType,
+  type SourceReference,
+  type CitationMeta,
+  type ProvenanceScores,
+  type CitationFeedback,
+  type GroundingCheckResult,
+} from './citations.js';

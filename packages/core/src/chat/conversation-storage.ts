@@ -6,7 +6,7 @@
 
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
-import type { BranchTreeNode, ReplayJob, ReplayResult } from '@secureyeoman/shared';
+import type { BranchTreeNode, ReplayJob, ReplayResult, CitationMeta } from '@secureyeoman/shared';
 
 // ── Row Types ────────────────────────────────────────────────
 
@@ -66,6 +66,8 @@ interface MessageRow {
   thinking_content: string | null;
   tool_calls_json: unknown | null;
   injection_score: number | null;
+  citations_json: unknown | null;
+  grounding_score: number | null;
   created_at: number;
 }
 
@@ -112,6 +114,10 @@ export interface ConversationMessage {
   toolCalls: ToolCallRecord[] | null;
   /** Injection risk score [0, 1] from InputValidator. Null for assistant messages. */
   injectionScore: number | null;
+  /** Structured citation metadata (Phase 110). */
+  citationsMeta: CitationMeta | null;
+  /** Aggregate grounding score 0.0–1.0 (Phase 110). */
+  groundingScore: number | null;
   createdAt: number;
 }
 
@@ -199,6 +205,10 @@ function rowToMessage(row: MessageRow): ConversationMessage {
       ? safeJsonParse<ToolCallRecord[] | null>(row.tool_calls_json, null)
       : null,
     injectionScore: row.injection_score ?? null,
+    citationsMeta: row.citations_json
+      ? safeJsonParse<CitationMeta | null>(row.citations_json, null)
+      : null,
+    groundingScore: row.grounding_score ?? null,
     createdAt: row.created_at,
   };
 }
@@ -328,14 +338,16 @@ export class ConversationStorage extends PgBaseStorage {
     thinkingContent?: string | null;
     toolCalls?: ToolCallRecord[] | null;
     injectionScore?: number | null;
+    citationsMeta?: CitationMeta | null;
+    groundingScore?: number | null;
   }): Promise<ConversationMessage> {
     const now = Date.now();
     const id = uuidv7();
 
     await this.withTransaction(async (client) => {
       await client.query(
-        `INSERT INTO chat.messages (id, conversation_id, role, content, model, provider, tokens_used, attachments_json, brain_context_json, creation_events_json, thinking_content, tool_calls_json, injection_score, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+        `INSERT INTO chat.messages (id, conversation_id, role, content, model, provider, tokens_used, attachments_json, brain_context_json, creation_events_json, thinking_content, tool_calls_json, injection_score, citations_json, grounding_score, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
         [
           id,
           data.conversationId,
@@ -352,6 +364,8 @@ export class ConversationStorage extends PgBaseStorage {
           data.thinkingContent ?? null,
           data.toolCalls && data.toolCalls.length > 0 ? JSON.stringify(data.toolCalls) : null,
           data.injectionScore ?? null,
+          data.citationsMeta ? JSON.stringify(data.citationsMeta) : null,
+          data.groundingScore ?? null,
           now,
         ]
       );

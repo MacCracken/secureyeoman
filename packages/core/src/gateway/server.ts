@@ -584,7 +584,8 @@ export class GatewayServer {
 
       try {
         const documentManager = this.secureYeoman.getDocumentManager();
-        registerDocumentRoutes(this.app, { documentManager, brainManager });
+        const brainStorage = this.secureYeoman.getBrainStorage() ?? undefined;
+        registerDocumentRoutes(this.app, { documentManager, brainManager, brainStorage });
       } catch {
         // Document manager may not be available — skip routes
       }

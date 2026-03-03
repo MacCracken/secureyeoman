@@ -2165,6 +2165,10 @@ export class SecureYeoman {
     return this.documentManager;
   }
 
+  getBrainStorage(): BrainStorage | null {
+    return this.brainStorage;
+  }
+
   /**
    * Get the spirit manager instance
    */
