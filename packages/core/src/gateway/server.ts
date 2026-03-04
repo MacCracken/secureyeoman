@@ -1307,7 +1307,11 @@ export class GatewayServer {
         quarantineStorage,
         pipeline: (externalizationGate as any)?.deps?.pipeline ?? null,
         policy: scanningPolicy ?? null,
-        auditChain: scanningAuditChain,
+        auditChain: scanningAuditChain ? {
+          record: async (event: string, level: string, message: string, metadata?: Record<string, unknown>): Promise<void> => {
+            await scanningAuditChain!.record({ event, level: level as 'info' | 'warn' | 'error' | 'security' | 'debug' | 'trace', message, metadata });
+          },
+        } : null,
       });
       this.getLogger().info('Sandbox scanning routes registered');
     } catch (err) {

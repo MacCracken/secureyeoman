@@ -113,7 +113,7 @@ describe('SettingsPage', () => {
     mockFetchAssignments.mockResolvedValue({ assignments: [] });
     mockFetchUsers.mockResolvedValue({ users: [] });
     mockFetchBackups.mockResolvedValue({ backups: [], total: 0 });
-    mockFetchStrategies.mockResolvedValue({ items: [] });
+    mockFetchStrategies.mockResolvedValue({ items: [], total: 0 });
     mockFetchLicenseStatus.mockResolvedValue({
       tier: 'community',
       valid: false,

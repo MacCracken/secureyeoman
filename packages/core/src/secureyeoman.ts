@@ -933,8 +933,16 @@ export class SecureYeoman {
           scanHistoryStore: this.scanHistoryStore,
           secretsScanner: new SecretsScanner(),
           policy: scanPolicy as import('@secureyeoman/shared').ExternalizationPolicy,
-          getAlertManager: () => this.alertManager,
-          auditChain: this.auditChain,
+          getAlertManager: () => this.alertManager ? {
+            fire: (type: string, severity: string, message: string, meta?: Record<string, unknown>) => {
+              void this.alertManager!.evaluate({ [type]: 1 });
+            },
+          } : null,
+          auditChain: this.auditChain ? {
+            record: async (event: string, level: string, message: string, metadata?: Record<string, unknown>): Promise<void> => {
+              await this.auditChain!.record({ event, level: level as 'info' | 'warn' | 'error' | 'security' | 'debug' | 'trace', message, metadata });
+            },
+          } : null,
         });
         this.logger.debug('ExternalizationGate initialized');
       } catch (err) {

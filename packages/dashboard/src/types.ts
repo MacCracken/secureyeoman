@@ -234,11 +234,23 @@ export interface Personality {
       enabled?: boolean;
       budgetTokens?: number;
     };
+    reasoningConfig?: {
+      enabled?: boolean;
+      effort?: 'low' | 'medium' | 'high';
+    };
+    contextOverflowStrategy?: 'summarise' | 'truncate' | 'error';
+    costBudget?: {
+      dailyUsd?: number;
+      monthlyUsd?: number;
+    };
     maxPromptTokens?: number;
     omnipresentMind?: boolean;
     strictSystemPromptConfidentiality?: boolean;
     knowledgeMode?: 'rag' | 'notebook' | 'hybrid';
     notebookTokenBudget?: number;
+    defaultStrategyId?: string | null;
+    enableCitations?: boolean;
+    groundednessMode?: 'off' | 'annotate_only' | 'block_unverified' | 'strip_unverified';
     resourcePolicy?: {
       deletionMode?: 'auto' | 'request' | 'manual';
       automationLevel?: 'full_manual' | 'semi_auto' | 'supervised_auto';
@@ -335,9 +347,23 @@ export interface PersonalityCreate {
       enabled?: boolean;
       budgetTokens?: number;
     };
+    reasoningConfig?: {
+      enabled?: boolean;
+      effort?: 'low' | 'medium' | 'high';
+    };
+    contextOverflowStrategy?: 'summarise' | 'truncate' | 'error';
+    costBudget?: {
+      dailyUsd?: number;
+      monthlyUsd?: number;
+    };
     maxPromptTokens?: number;
     omnipresentMind?: boolean;
     strictSystemPromptConfidentiality?: boolean;
+    knowledgeMode?: 'rag' | 'notebook' | 'hybrid';
+    notebookTokenBudget?: number;
+    defaultStrategyId?: string | null;
+    enableCitations?: boolean;
+    groundednessMode?: 'off' | 'annotate_only' | 'block_unverified' | 'strip_unverified';
     resourcePolicy?: {
       deletionMode?: 'auto' | 'request' | 'manual';
       automationLevel?: 'full_manual' | 'semi_auto' | 'supervised_auto';

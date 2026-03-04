@@ -74,6 +74,7 @@ const BASE_BODY: PersonalityCreate['body'] = {
   knowledgeMode: 'rag' as const,
   enableCitations: false,
   groundednessMode: 'off' as const,
+  contextOverflowStrategy: 'summarise' as const,
 };
 
 // ── Preset definitions ───────────────────────────────────────────────────────

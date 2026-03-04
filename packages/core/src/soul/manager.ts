@@ -301,6 +301,7 @@ export class SoulManager {
           knowledgeMode: 'rag' as const,
           enableCitations: false,
           groundednessMode: 'off' as const,
+          contextOverflowStrategy: 'summarise' as const,
         },
       },
       { isArchetype: true }

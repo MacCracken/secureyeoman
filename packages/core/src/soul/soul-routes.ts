@@ -925,6 +925,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
             knowledgeMode: 'rag' as const,
             enableCitations: false,
             groundednessMode: 'off' as const,
+            contextOverflowStrategy: 'summarise' as const,
           },
         };
 

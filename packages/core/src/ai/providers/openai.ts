@@ -104,9 +104,9 @@ export class OpenAIProvider extends BaseProvider {
       const params = this.buildParams(model, messages, request, false);
 
       const response = await this.client.chat.completions.create(
-        params as OpenAI.ChatCompletionCreateParams
+        params as unknown as OpenAI.ChatCompletionCreateParams
       );
-      return this.mapResponse(response, model);
+      return this.mapResponse(response as OpenAI.ChatCompletion, model);
     } catch (error) {
       throw this.mapError(error);
     }
@@ -118,7 +118,7 @@ export class OpenAIProvider extends BaseProvider {
     const params = this.buildParams(model, messages, request, true);
 
     try {
-      const stream = await this.client.chat.completions.create(params);
+      const stream = await this.client.chat.completions.create(params as unknown as OpenAI.ChatCompletionCreateParamsStreaming);
 
       let currentToolId = '';
       let currentToolName = '';
