@@ -52,6 +52,7 @@
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | 109 | Editor Improvements | P3 — power user UX | 🔄 In Progress |
 | 120 | Canvas Editor Improvements | P3 — canvas improvements | Planned |
+| 125 | Strategic Trading Skills | P2 — trading analysis | 🔄 In Progress (3 community skills delivered) |
 | — | Engineering Backlog | Ongoing | Pick-up opportunistically |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
 | Future | LLM Providers, LLM Lifecycle, Responsible AI, Voice, Infrastructure | Future / Demand-Gated | — |
@@ -111,6 +112,68 @@
 - [ ] **Canvas keyboard shortcuts** — `Cmd/Ctrl+1..9` to focus widget by position order. `Cmd/Ctrl+W` to close focused widget. `Cmd/Ctrl+N` to open widget catalog. `Cmd/Ctrl+S` to force-save layout. `Escape` to exit fullscreen. Implemented via a `useCanvasShortcuts` hook attached to the canvas container.
 - [ ] **Multiple saved layouts & export** — Replace single `canvas:workspace` localStorage key with a named-layout system. `canvas:layouts` stores `{ [name]: CanvasLayout }`. Layout switcher dropdown in the canvas toolbar. Export layout as JSON; import from file. Presets: "Dev" (terminal + editor + git), "Ops" (CI/CD + pipeline + training live), "Chat" (chat + agent world + task kanban).
 - [ ] **Mission card embedding** — Extract the mission card renderer from `MissionControlPage` into a reusable `<MissionCardEmbed cardId={id} />` component. Wire it into `MissionCardNode` widget (currently a placeholder). Card shows objective, progress, and linked tasks.
+
+---
+
+## Phase 125: Strategic Trading Skills
+
+**Priority**: P2 — High value for financial analysis and algorithmic trading capabilities. Extends the existing `VeteranFinancialManagerSkill` with specialized trading strategy implementations.
+
+> **Note**: Trading skills are distributed via the community skills repository (`secureyeoman-community-skills/skills/trading/`). Users can sync from the community repo to access these skills.
+
+### ICT (Inner Circle Trading) Strategy Skills
+
+The ICT methodology, also known as "Smart Money Concepts" (SMC), focuses on following institutional trading footprints. These skills implement core ICT concepts for stock and futures trading.
+
+- [x] **ICT Smart Money Analyst** — Implements ICT's core market structure concepts: Break of Structure (BOS), Change of Character (CHOCH), and Market Structure Shifts (MSS). Identifies institutional order flow, liquidity pools, and fair value gaps. Analyzes premium/discount zones and order block formations. *(Community skill)*
+
+- [ ] **ICT Silver Bullet Strategist** — Implements the ICT Silver Bullet time-based algorithmic trading model. Uses liquidity sweeps, fair value gaps, and specific kill zone timings (Asian, London, New York sessions) to identify high-probability short-term setups.
+
+- [ ] **ICT Power of Three Analyst** — Implements the AMD (Accumulation, Manipulation, Distribution) framework. Identifies market phases and the "Power of Three" trade setups following institutional accumulation, manipulation of retail stops, and distribution phases.
+
+- [ ] **Supply & Demand Analyst** — Implements ICT-style supply and demand zone identification. Maps institutional order blocks, identifies imbalance zones (FVG), and calculates probability-weighted entry/exit zones.
+
+### Price Action Trading Skills
+
+- [x] **Price Action Strategist** — Implements pure price action trading including IBWT (Inverted Barrel Trust), pin bars, engulfing patterns, and internal/external bar structures. Focuses on reading market structure without indicators. *(Community skill)*
+
+- [x] **Volume Profile Analyst** — Implements Volume Profile analysis including Point of Control (POC), Value Area High/Low (VAH/VAL), Fair Value Area (FVA), and volume node identification. Tracks actual market participation rather than lagging indicators. *(Community skill)*
+
+- [ ] **Naked Chart Analyst** — Implements "naked trading" methodology focusing on pure price structure, support/resistance, and trend line analysis without indicators.
+
+### Technical Analysis Skills
+
+- [ ] **Technical Analysis Specialist** — Implements comprehensive technical analysis: Fibonacci retracements/extensions, moving averages (EMA/SMA crossovers), Bollinger Bands, RSI/ MACD divergence, Donchian channels, and chart pattern recognition (head & shoulders, triangles, flags).
+
+- [ ] **Trend Following Strategist** — Implements trend-following methodologies for swing and position trading. Uses multi-timeframe analysis, trend confirmation indicators, and momentum-based entry signals.
+
+- [ ] **Mean Reversion Specialist** — Implements mean reversion strategies identifying overbought/oversold conditions, Bollinger Band bounces, and range-bound market structures.
+
+### Futures & Options Trading Skills
+
+- [ ] **Futures Market Specialist** — Specialized skills for futures trading including ES, NQ, YM, CL, GC, SI, NG contracts. Includes contract specifications, tick values, margin requirements, and futures-specific strategies.
+
+- [ ] **Options Flow Analyst** — Analyzes options market data including call/put ratios, unusual options activity, gamma exposure, and options order flow to predict underlying price movements.
+
+- [ ] **Spread Trading Analyst** — Implements inter-market and intra-market spread trading strategies including calendar spreads, inter-commodity spreads, and pairs trading.
+
+### Trading Workflows
+
+- [ ] **Daily Trading Setup Workflow** — Automated workflow for generating daily trading setups. Includes market structure analysis, key level identification, and trade setup scanning across multiple instruments.
+
+- [ ] **Trade Analysis & Journal Workflow** — Workflow for analyzing completed trades, calculating statistics (win rate, Sharpe ratio, max drawdown), and generating performance reports.
+
+- [ ] **Multi-Timeframe Analysis Workflow** — Workflow for conducting multi-timeframe analysis (HTF/MTF/LTF alignment) and generating trade recommendations based on confluence of signals.
+
+- [ ] **Risk & Position Sizing Calculator** — Workflow for calculating position sizes, risk/reward ratios, Kelly Criterion position sizing, and portfolio risk metrics.
+
+### Skills Integration
+
+- [ ] **Integrate with existing VeteranFinancialManagerSkill** — Extend the existing `veteranFinancialManagerSkill` to incorporate ICT and technical analysis concepts for deeper market analysis.
+
+- [ ] **Market data tools** — Add MCP tools for fetching real-time and historical market data to support trading strategy execution.
+
+- [ ] **Trading journal integration** — Connect with external trading journals and broker APIs for automated trade logging and performance tracking.
 
 ---
 

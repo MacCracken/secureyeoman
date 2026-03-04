@@ -1285,7 +1285,8 @@ export class SecureYeoman {
   // ------------------------------------------------------------------
 
   reloadLicenseKey(key: string): void {
-    this.licenseManager = new LicenseManager(key, this.config.licensing.enforcement);
+    this.ensureInitialized();
+    this.licenseManager = new LicenseManager(key, this.config!.licensing.enforcement);
     this.logger?.info('License key reloaded', { tier: this.licenseManager.getTier() });
   }
 
