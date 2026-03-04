@@ -55,6 +55,16 @@ vi.mock('./skills/index.js', () => ({
     author: 'YEOMAN',
     version: '2026.3.3',
   },
+  securityReferenceArchitectureSkill: {
+    name: 'Security Reference Architecture',
+    author: 'YEOMAN',
+    version: '2026.3.4',
+  },
+  excalidrawDiagramSkill: {
+    name: 'Excalidraw Diagram',
+    author: 'YEOMAN',
+    version: '2026.3.4',
+  },
 }));
 
 // ─── Test Data ────────────────────────────────────────────────
@@ -394,11 +404,11 @@ describe('MarketplaceStorage', () => {
       );
       expect(batchSelect).toBeDefined();
 
-      // Should have INSERT calls for each of the 19 skills (11 original + 7 security + 1 ATHI generator)
+      // Should have INSERT calls for each of the 21 skills (11 original + 7 security + 1 ATHI + 1 SRA + 1 Excalidraw)
       const insertCalls = mockQuery.mock.calls.filter(
         (c: any[]) => typeof c[0] === 'string' && c[0].includes('INSERT INTO marketplace.skills')
       );
-      expect(insertCalls).toHaveLength(19);
+      expect(insertCalls).toHaveLength(21);
     });
 
     it('uses batch SELECT for existing builtins check', async () => {

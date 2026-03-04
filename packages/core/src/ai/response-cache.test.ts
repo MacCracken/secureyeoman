@@ -82,10 +82,10 @@ describe('ResponseCache', () => {
       expect(k1).not.toBe(k2);
     });
 
-    it('produces a 64-character hex string (SHA-256)', () => {
+    it('produces a 32-character hex string (MD5)', () => {
       const cache = new ResponseCache(enabledConfig);
       const key = cache.buildKey('anthropic', 'model', baseRequest);
-      expect(key).toMatch(/^[0-9a-f]{64}$/);
+      expect(key).toMatch(/^[0-9a-f]{32}$/);
     });
   });
 

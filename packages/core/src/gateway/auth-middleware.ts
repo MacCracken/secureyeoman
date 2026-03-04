@@ -1106,6 +1106,33 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/security/athi/scenarios/by-technique/*': {
     GET: { resource: 'security_athi', action: 'read' },
   },
+  // SRA Security Reference Architecture routes (Phase 123)
+  '/api/v1/security/sra/blueprints': {
+    GET: { resource: 'security_sra', action: 'read' },
+    POST: { resource: 'security_sra', action: 'write' },
+  },
+  '/api/v1/security/sra/blueprints/:id': {
+    GET: { resource: 'security_sra', action: 'read' },
+    PUT: { resource: 'security_sra', action: 'write' },
+    DELETE: { resource: 'security_sra', action: 'write' },
+  },
+  '/api/v1/security/sra/assessments': {
+    GET: { resource: 'security_sra', action: 'read' },
+    POST: { resource: 'security_sra', action: 'write' },
+  },
+  '/api/v1/security/sra/assessments/:id': {
+    GET: { resource: 'security_sra', action: 'read' },
+    PUT: { resource: 'security_sra', action: 'write' },
+  },
+  '/api/v1/security/sra/assessments/*/generate': {
+    POST: { resource: 'security_sra', action: 'write' },
+  },
+  '/api/v1/security/sra/compliance-mappings': {
+    GET: { resource: 'security_sra', action: 'read' },
+  },
+  '/api/v1/security/sra/summary': {
+    GET: { resource: 'security_sra', action: 'read' },
+  },
   // Workflow versioning (Phase 114)
   '/api/v1/workflows/:id/versions': {
     GET: { resource: 'workflows', action: 'read' },

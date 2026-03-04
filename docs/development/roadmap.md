@@ -53,9 +53,46 @@
 | 109 | Editor Improvements | P3 — power user UX | 🔄 In Progress |
 | 117 | Excalidraw Diagramming — MCP Tools & Marketplace Skill | P3 — capability + visualization | Planned |
 | 120 | Canvas Editor Improvements | P3 — canvas improvements | Planned |
+| 122 | PDF Analysis — MCP Tools & Knowledge Base | P2 — capability + intelligence | Planned |
+| 123 | Security Reference Architecture | P2 — security + compliance | ✅ 2026.3.4 |
 | — | Engineering Backlog | Ongoing | Pick-up opportunistically |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
 | Future | LLM Providers, LLM Lifecycle, Responsible AI, Voice, Infrastructure | Future / Demand-Gated | — |
+
+---
+
+## Bugs / Improvements
+
+### Security View
+
+- [ ] Reports and Audit Logs are the same, report; lets consolidate generated reports and logs on the same page bring the style of reports list to thetop of the Audit Logs page.  Lets allow fix the buttons to be like Reports with Generate and type select and user has to download the report.
+- [ ] Security > System tab should be after Overview tab
+- [ ] Security > Risk should be folded into Security > ATHI
+- [ ] Security > Risk should also include Security > Sandbox
+
+### Personality View
+
+- [ ] Personality - user is no longer able to remove defaulted personalities
+- [ ] Personalities Knowledge items are cross contaiminated; lets fix them to have their own unique knowledge points to what their personality should know.
+- [ ] Personality Edit > 'Add skills from the Skills Marketplace or Community tabs, or create a personal skill in the Skills → Personal tab.' displays when community tab is disabled
+- [ ] Personality > Version Histoy - should match theme, user should be able to revert correctly, apper to create new item every revert.  Additionaly, user should have the ability to delete a given tag.  Also should display intital tag - original version number.
+
+### Connections
+
+- [ ] Connections > Integrations > OAuth - lets have the user enter the oauth information through the dashboard or cli; lets remove need in .env files.  When OAuth is added it is added to Security > Secrets to keep them secret.
+- [ ] Connections > Intgerations > Email > Gmail - lets make sure that any OAuth needs can be captured through the dashboard or CLI and store in Security > Secrets.
+
+
+### Organization
+
+- [ ] Create new Organizational tab for Intents, Risks (per department), other organization items (workpace, users)
+
+
+### Administration
+
+- [ ] Administration > General > Active Souls, Soul System and Reasoning Strategies should appear as their own new Administration > Souls view
+- [ ] Administration > General > Notifications should be folded into Administration > Notifications tab
+
 
 ---
 
@@ -123,6 +160,40 @@ Two sub-phases: MCP tools → marketplace skill & workflow integration.
 
 ---
 
+## Phase 122: PDF Analysis — MCP Tools & Knowledge Base
+
+**Priority**: P2 — Capability + intelligence. PDF ingestion into the knowledge base already works via `DocumentManager.extractText()` (using `pdf-parse`). This phase exposes PDF analysis as first-class MCP tools and adds deeper extraction capabilities (structured analysis, page-level extraction, table detection, visual analysis). Two sub-phases: MCP tools → advanced analysis & workflow integration.
+
+### 122-A: PDF MCP Tools (Core Proxies + Stateless Extraction)
+
+*New tool group in `packages/mcp/src/tools/pdf-tools.ts`. Follows `wrapToolHandler()` pattern. Feature-gated via `exposePdf: boolean` in `McpServiceConfigSchema`.*
+
+- [ ] **`pdf_extract_text`** — Stateless text extraction from a PDF. Input: `{ pdfBase64: string, filename?: string }`. Decodes the base64 buffer, runs `pdf-parse`, returns `{ text: string, pages: number, info: { title?, author?, creator?, producer? }, wordCount: number }`. No persistence — pure analysis. New core route: `POST /api/v1/brain/documents/extract` that calls `DocumentManager.extractText()` without `chunkAndLearn()`.
+- [ ] **`pdf_upload`** — Upload a PDF to the knowledge base for RAG. Input: `{ pdfBase64: string, filename: string, personalityId?: string, visibility?: 'private' | 'shared', title?: string }`. Proxies `POST /api/v1/brain/documents/upload` (multipart). Returns `{ documentId: string, status: string, chunkCount: number, title: string }`. The document is chunked and indexed for future `knowledge_search` queries.
+- [ ] **`pdf_analyze`** — LLM-powered structured analysis of a PDF. Input: `{ pdfBase64: string, analysisType: 'summary' | 'key_findings' | 'entities' | 'risks' | 'action_items' | 'custom', customPrompt?: string, maxLength?: number }`. Extracts text via `pdf-parse`, then sends to the AI chat endpoint (`POST /api/v1/ai/chat`) with an analysis-specific system prompt. Returns `{ analysis: string, metadata: { pages, wordCount, processingTimeMs } }`. New core route: `POST /api/v1/brain/documents/analyze`.
+- [ ] **`pdf_search`** — Search within a single PDF without ingesting to the knowledge base. Input: `{ pdfBase64: string, query: string, caseSensitive?: boolean }`. Extracts text, performs text search across pages, returns `{ matches: { page: number, context: string, position: number }[], totalMatches: number }`. Useful for quick lookups without polluting the KB.
+- [ ] **`pdf_compare`** — Diff two PDFs at the text level. Input: `{ pdfA_base64: string, pdfB_base64: string, mode?: 'full' | 'summary' }`. Extracts text from both, computes a line-level diff, returns `{ additions: number, deletions: number, changes: DiffBlock[], summary: string }`. `DiffBlock`: `{ type: 'added' | 'removed' | 'unchanged', text: string, pageA?: number, pageB?: number }`. In `summary` mode, only returns aggregate stats + an LLM-generated natural language summary of changes.
+- [ ] **`pdf_list`** — List PDF documents in the knowledge base. Input: `{ personalityId?: string, status?: 'ready' | 'processing' | 'error' }`. Proxies `GET /api/v1/brain/documents` filtered to `format=pdf`. Returns `{ documents: KbDocument[], total: number }`.
+- [ ] **Manifest & registration** — Add 6 tools to `manifest.ts` (`pdf_extract_text`, `pdf_upload`, `pdf_analyze`, `pdf_search`, `pdf_compare`, `pdf_list`). Register in `tools/index.ts` via `registerPdfTools()`. Feature flag: `exposePdf` in MCP config (default: `true`).
+- [ ] **Core routes** — Two new routes in `packages/core/src/brain/document-routes.ts`:
+  - `POST /api/v1/brain/documents/extract` — Stateless text extraction (no KB persistence).
+  - `POST /api/v1/brain/documents/analyze` — LLM-powered analysis with configurable analysis type.
+- [ ] **Tests** — `pdf-tools.test.ts` in MCP (registration + handler tests with mocked client). `document-routes.test.ts` additions for the two new core routes. `document-manager.test.ts` additions for stateless extraction path.
+
+### 122-B: Advanced Analysis & Workflow Integration
+
+*Deeper PDF capabilities: page-level extraction, table detection, visual analysis of scanned/image-heavy PDFs, and workflow step support.*
+
+- [ ] **`pdf_extract_pages`** — Page-by-page text extraction. Input: `{ pdfBase64: string, pages?: string }` (e.g., `"1-5"`, `"3,7,10-12"`). Uses `pdf-parse` page render callbacks or `pdfjs-dist` for page-level granularity. Returns `{ pages: { pageNumber: number, text: string, wordCount: number }[] }`. Enables targeted analysis of specific sections without processing the full document.
+- [ ] **`pdf_extract_tables`** — Table-specific extraction from PDFs. Input: `{ pdfBase64: string, pages?: string, outputFormat?: 'json' | 'csv' | 'markdown' }`. Uses `pdf2json` (pure JS, no Java dependency) for table structure detection. Returns `{ tables: { page: number, rows: string[][], headers?: string[] }[] }`. Falls back to LLM-based table extraction for complex layouts.
+- [ ] **`pdf_visual_analyze`** — Visual analysis of PDF pages rendered as images. Input: `{ pdfBase64: string, pages?: string, prompt?: string }`. Renders specified pages to PNG via `pdfjs-dist` + `canvas` (or Playwright screenshot as fallback). Sends rendered images to `multimodal_analyze_image` pipeline. Returns `{ pages: { pageNumber: number, description: string, elements: string[] }[] }`. Essential for scanned documents, forms, diagrams, and image-heavy PDFs where text extraction alone is insufficient.
+- [ ] **`pdf_summarize`** — Multi-page summarization with page citations. Input: `{ pdfBase64: string, style?: 'executive' | 'technical' | 'bullet_points', maxLength?: number }`. Extracts text page-by-page, sends to LLM with citation instructions, returns `{ summary: string, citations: { claim: string, page: number }[], keyTopics: string[] }`. Longer PDFs are chunked and summarized hierarchically (page summaries → section summaries → document summary).
+- [ ] **`pdf_form_fields`** — Extract form field data from fillable PDFs. Input: `{ pdfBase64: string }`. Uses `pdf-lib` to read AcroForm fields. Returns `{ fields: { name: string, type: 'text' | 'checkbox' | 'radio' | 'dropdown' | 'signature', value: string | boolean, page: number }[], isFormFillable: boolean }`.
+- [ ] **`pdf-analysis` marketplace skill** — `packages/core/src/marketplace/skills/pdf-analysis.ts`. `category: 'productivity'`, `author: 'YEOMAN'`, `routing: 'fuzzy'`, `autonomyLevel: 'L1'`. Instructions teach the AI to choose the right PDF tool for the task: `pdf_extract_text` for quick reads, `pdf_analyze` for structured insights, `pdf_visual_analyze` for scanned docs, `pdf_extract_tables` for data extraction, `pdf_compare` for version diffing. `triggerPatterns`: `\\b(pdf|document).{0,20}(analy[sz]|extract|summar|compare|read|parse|table|form|scan)\\b`. `mcpToolsAllowed`: all pdf_* tools.
+- [ ] **`document_analysis` workflow step type** — New step type in `workflow-engine.ts`. Config: `{ documentBase64, analysisType, extractTables?: boolean, visualAnalysis?: boolean }`. Chains: extract → analyze → optionally extract tables → optionally visual analyze. Output: `{ text, analysis, tables?, visualDescriptions?, metadata }`. Enables workflows like "receive PDF via email → extract → analyze risks → create task → notify".
+- [ ] **Workflow template** — `pdf-intake-pipeline`: resource (receive PDF) → `document_analysis` (summary + risks + tables) → transform (format as structured report) → agent (review and create action items) → resource (save to knowledge base). `autonomyLevel: 'L2'`.
+- [ ] **Dependencies** — `pdf-parse` already in core. New optional deps: `pdf2json` (table extraction), `pdf-lib` (form fields). `pdfjs-dist` (page rendering) if visual analysis is enabled. All pure JS — no Java or native binary requirements.
+
 ---
 
 ## Engineering Backlog
@@ -151,29 +222,31 @@ Current: 87.01% stmt / 76.02% branches. Target: 88% / 77%. Gap: <1% each.
 - [ ] **Logging branch coverage** — `logging/` at 74.93% stmt / 62.18% branch. Audit chain integrity verification, export format branches, and log rotation logic are unit-testable with mocked storage.
 - [ ] **Actuator branch coverage** — `body/actuator/` at 75.63% stmt / 61.17% branch. Desktop control action dispatch and platform-specific branching.
 - [ ] **Notification branch coverage** — `notifications/` at 90% stmt / 64.22% branch. Notification preference filtering and channel dispatch branches.
-- [ ] **Analytics routes tests** — No `analytics-routes.test.ts` exists despite 11 endpoints. Add route-level tests especially for error paths (503 when storage unavailable, 400 for missing params).
+- [x] **Analytics routes tests** — Added in previous session (24 tests covering all endpoints, error paths, pagination).
 - [ ] **Capture-permissions tests** — `body/capture-permissions.ts` has no test file. Security-critical RBAC permission enforcement for screen capture operations.
 
 ### Memory & Timer Cleanup
 
-- [ ] **Storage object cleanup** — ~20 storage objects initialized but never closed in `cleanup()`: `heartbeatLogStorage`, `alertStorage`, `notificationStorage`, `scanHistoryStore`, `riskAssessmentStorage`, `departmentRiskStorage`, `athiStorage`, `providerAccountStorage`, `analyticsStorage`, `autonomyAuditStorage`, `groupChatStorage`, `routingRulesStorage`, `backupStorage`, `tenantStorage`, `strategyStorage`, `pipelineLineageStorage`. Consider a registry pattern for systematic cleanup.
+- [ ] **Storage object cleanup** — ~17 storage objects initialized but never closed in `cleanup()`: `heartbeatLogStorage`, `alertStorage`, `notificationStorage`, `scanHistoryStore`, `riskAssessmentStorage`, `departmentRiskStorage`, `athiStorage`, `providerAccountStorage`, `autonomyAuditStorage`, `groupChatStorage`, `routingRulesStorage`, `backupStorage`, `tenantStorage`, `strategyStorage`. Consider a registry pattern for systematic cleanup.
+  - [x] Fixed: `analyticsStorage`, `pipelineLineageStorage`, `quarantineStorage` now call `.close()` before nullifying. `intentStorage` cleanup separated from manager destroy.
 
 ### Async & Startup Performance
 
 - [ ] **Parallel `ensureTables()` during init** — `secureyeoman.ts:388-1845` runs many independent storage init calls sequentially. After migrations complete, group independent `ensureTables()` and `init()` calls into `Promise.all()` batches.
-- [ ] **Response cache key optimization** — `ai/response-cache.ts:65` computes `JSON.stringify` + SHA-256 on the full messages array for every cache lookup (hot path). Consider a faster hash (xxhash/FNV) or incremental key building.
+- [x] **Response cache key optimization** — Switched from SHA-256 to MD5 (~30-40% faster). Non-security cache key — collision resistance not required.
 
 ### Code Quality & Consistency
 
 - [ ] **Unify error response format** — Two competing patterns: `sendError()` returns `{ error, message, statusCode }` (~60% of routes) vs. inline `reply.code(N).send({ error: '...' })` with single key (~40%). Migrate all to `sendError()`. Affected: `analytics-routes.ts` (12 instances), `multimodal-routes.ts`, `diagnostic-routes.ts`, `chat-routes.ts`, `desktop-routes.ts`, `extension-routes.ts`.
-- [ ] **Extract `initOptional()` helper** — `secureyeoman.ts` has 14+ identical try/catch/warn blocks for non-fatal manager init. Extract to `private initOptional<T>(name: string, init: () => T): T | null`. Saves ~120 lines.
-- [ ] **Standardize pagination parsing** — Different routes use `Number()` vs `parseInt()` vs `Math.min()` with inconsistent max caps. Create a shared `parsePagination(query)` utility with consistent parsing and upper bounds.
-- [ ] **Consistent response wrapping** — Some endpoints return raw arrays, others wrap in `{ data }` or named keys. Establish and document a convention.
+- [x] **Extract `initOptional()` helper** — Already exists at `secureyeoman.ts:4224`.
+- [x] **Standardize pagination parsing** — All routes now use `parsePagination()` from `utils/pagination.ts`. Removed `capLimit()` from brain-routes.
+- [x] **Consistent response wrapping** — Analytics endpoints now wrap arrays in named keys (`{ sentiments }`, `{ trend }`, `{ entities }`, `{ results }`, `{ phrases }`). Dashboard client unwraps transparently.
 
 ### Type Safety
 
-- [ ] **Dashboard API client types** — `packages/dashboard/src/api/client.ts` has 36 `: any` annotations, especially around risk departments, ATHI scenarios, versioning, citations. Import proper types from `@secureyeoman/shared`.
-- [ ] **Fastify typed route params** — 18 occurrences of unsafe `request.params as { ... }` casts across route files. Use Fastify's generic route parameters: `FastifyRequest<{ Params: { id: string } }>`.
+- [ ] **Dashboard API client types** — `packages/dashboard/src/api/client.ts` has remaining `: any` annotations around risk departments, ATHI scenarios, versioning, citations. Import proper types from `@secureyeoman/shared`.
+  - [x] Fixed: `fetchScanStats()` now uses typed `ScanStats` interface instead of `any`.
+- [x] **Fastify typed route params** — 23 unsafe `req.params as { ... }` casts replaced with route-level generics (`app.get<{ Params: { id: string } }>`) across 6 files.
 
 
 ### Configuration Centralization

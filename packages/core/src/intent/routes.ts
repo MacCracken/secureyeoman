@@ -11,6 +11,7 @@ import type { InputValidator } from '../security/input-validator.js';
 import { OrgIntentDocSchema } from './schema.js';
 import type { EnforcementEventType } from './schema.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export interface IntentRoutesOptions {
   intentManager: IntentManager;
@@ -74,7 +75,7 @@ export function registerIntentRoutes(app: FastifyInstance, opts: IntentRoutesOpt
         agentId: q.agentId,
         itemId: q.itemId,
         since: q.since ? Number(q.since) : undefined,
-        limit: q.limit ? Number(q.limit) : 100,
+        limit: parsePagination(q as { limit?: string }, { defaultLimit: 100 }).limit,
       });
       return reply.send({ entries });
     } catch (err) {
@@ -83,8 +84,8 @@ export function registerIntentRoutes(app: FastifyInstance, opts: IntentRoutesOpt
   });
 
   // ── GET /api/v1/intent/:id — get full intent doc ──────────────────────────
-  app.get('/api/v1/intent/:id', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.get<{ Params: { id: string } }>('/api/v1/intent/:id', async (req, reply) => {
+    const { id } = req.params;
     try {
       const record = await storage.getIntentDoc(id);
       if (!record) return sendError(reply, 404, 'Intent document not found');
@@ -95,8 +96,8 @@ export function registerIntentRoutes(app: FastifyInstance, opts: IntentRoutesOpt
   });
 
   // ── PUT /api/v1/intent/:id — update intent doc ────────────────────────────
-  app.put('/api/v1/intent/:id', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.put<{ Params: { id: string } }>('/api/v1/intent/:id', async (req, reply) => {
+    const { id } = req.params;
     const parsed = OrgIntentDocSchema.partial().safeParse(req.body);
     if (!parsed.success) {
       return sendError(reply, 400, parsed.error.errors.map((e) => e.message).join('; '));
@@ -117,8 +118,8 @@ export function registerIntentRoutes(app: FastifyInstance, opts: IntentRoutesOpt
   });
 
   // ── DELETE /api/v1/intent/:id ─────────────────────────────────────────────
-  app.delete('/api/v1/intent/:id', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.delete<{ Params: { id: string } }>('/api/v1/intent/:id', async (req, reply) => {
+    const { id } = req.params;
     try {
       const deleted = await storage.deleteIntent(id);
       if (!deleted) return sendError(reply, 404, 'Intent document not found');
@@ -130,8 +131,8 @@ export function registerIntentRoutes(app: FastifyInstance, opts: IntentRoutesOpt
   });
 
   // ── POST /api/v1/intent/:id/activate — set as active ─────────────────────
-  app.post('/api/v1/intent/:id/activate', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.post<{ Params: { id: string } }>('/api/v1/intent/:id/activate', async (req, reply) => {
+    const { id } = req.params;
     try {
       const record = await storage.getIntentDoc(id);
       if (!record) return sendError(reply, 404, 'Intent document not found');
@@ -150,8 +151,8 @@ export function registerIntentRoutes(app: FastifyInstance, opts: IntentRoutesOpt
   });
 
   // ── GET /api/v1/intent/signals/:id/value — read a signal value ──────────
-  app.get('/api/v1/intent/signals/:id/value', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.get<{ Params: { id: string } }>('/api/v1/intent/signals/:id/value', async (req, reply) => {
+    const { id } = req.params;
     try {
       const result = await intentManager.readSignal(id);
       if (!result) return sendError(reply, 404, `Signal '${id}' not found in active intent`);
@@ -162,8 +163,8 @@ export function registerIntentRoutes(app: FastifyInstance, opts: IntentRoutesOpt
   });
 
   // ── GET /api/v1/intent/:id/goals/:goalId/timeline — goal lifecycle events ─
-  app.get('/api/v1/intent/:id/goals/:goalId/timeline', async (req, reply) => {
-    const { id, goalId } = req.params as { id: string; goalId: string };
+  app.get<{ Params: { id: string; goalId: string } }>('/api/v1/intent/:id/goals/:goalId/timeline', async (req, reply) => {
+    const { id, goalId } = req.params;
     try {
       const record = await storage.getIntentDoc(id);
       if (!record) return sendError(reply, 404, 'Intent document not found');

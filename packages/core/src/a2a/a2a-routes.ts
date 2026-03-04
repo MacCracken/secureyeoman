@@ -6,6 +6,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { A2AManager } from './manager.js';
 import type { TrustLevel } from './types.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AManager }): void {
   const { a2aManager } = opts;
@@ -19,9 +20,8 @@ export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AM
         Querystring: { status?: string; trustLevel?: string; limit?: string; offset?: string };
       }>
     ) => {
-      const { status, trustLevel, limit: limitStr, offset: offsetStr } = request.query;
-      const limit = limitStr ? Number(limitStr) : undefined;
-      const offset = offsetStr ? Number(offsetStr) : undefined;
+      const { status, trustLevel } = request.query;
+      const { limit, offset } = parsePagination(request.query);
       return a2aManager.listPeers({ status, trustLevel, limit, offset });
     }
   );
@@ -154,10 +154,11 @@ export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AM
       }>
     ) => {
       const q = request.query;
+      const { limit, offset } = parsePagination(q);
       return a2aManager.getMessageHistory({
         peerId: q.peerId,
-        limit: q.limit ? Number(q.limit) : undefined,
-        offset: q.offset ? Number(q.offset) : undefined,
+        limit,
+        offset,
       });
     }
   );

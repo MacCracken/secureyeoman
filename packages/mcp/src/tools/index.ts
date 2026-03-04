@@ -40,6 +40,8 @@ import { registerGithubActionsTools } from './github-actions-tools.js';
 import { registerJenkinsTools } from './jenkins-tools.js';
 import { registerGitlabCiTools } from './gitlab-ci-tools.js';
 import { registerNorthflankTools } from './northflank-tools.js';
+import { registerSraTools } from './sra-tools.js';
+import { registerExcalidrawTools } from './excalidraw-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -91,4 +93,8 @@ export async function registerAllTools(
   registerJenkinsTools(server, config, middleware);
   registerGitlabCiTools(server, config, middleware);
   registerNorthflankTools(server, config, middleware);
+  // SRA tools (Phase 123)
+  registerSraTools(server, client, config, middleware);
+  // Excalidraw diagramming tools (Phase 117)
+  registerExcalidrawTools(server, config, middleware);
 }

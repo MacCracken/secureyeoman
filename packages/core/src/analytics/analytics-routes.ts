@@ -8,6 +8,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SecureYeoman } from '../secureyeoman.js';
 import { sendError } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export function registerAnalyticsRoutes(
   app: FastifyInstance,
@@ -25,15 +26,17 @@ export function registerAnalyticsRoutes(
       if (!storage) return sendError(reply, 503, 'Analytics not available');
 
       const sentiments = await storage.getSentimentsByConversation(conversationId);
-      return sentiments.map((s) => ({
-        id: s.id,
-        conversationId: s.conversation_id,
-        messageId: s.message_id,
-        personalityId: s.personality_id,
-        sentiment: s.sentiment,
-        score: s.score,
-        analyzedAt: s.analyzed_at,
-      }));
+      return {
+        sentiments: sentiments.map((s) => ({
+          id: s.id,
+          conversationId: s.conversation_id,
+          messageId: s.message_id,
+          personalityId: s.personality_id,
+          sentiment: s.sentiment,
+          score: s.score,
+          analyzedAt: s.analyzed_at,
+        })),
+      };
     }
   );
 
@@ -46,13 +49,15 @@ export function registerAnalyticsRoutes(
       if (!storage) return sendError(reply, 503, 'Analytics not available');
 
       const trend = await storage.getSentimentTrend(personalityId, Number(days) || 30);
-      return trend.map((t) => ({
-        date: t.date,
-        positive: t.positive,
-        neutral: t.neutral,
-        negative: t.negative,
-        avgScore: t.avg_score,
-      }));
+      return {
+        trend: trend.map((t) => ({
+          date: t.date,
+          positive: t.positive,
+          neutral: t.neutral,
+          negative: t.negative,
+          avgScore: t.avg_score,
+        })),
+      };
     }
   );
 
@@ -117,15 +122,17 @@ export function registerAnalyticsRoutes(
       if (!storage) return sendError(reply, 503, 'Analytics not available');
 
       const entities = await storage.getEntitiesByConversation(conversationId);
-      return entities.map((e) => ({
-        id: e.id,
-        conversationId: e.conversation_id,
-        personalityId: e.personality_id,
-        entityType: e.entity_type,
-        entityValue: e.entity_value,
-        mentionCount: e.mention_count,
-        firstSeenAt: e.first_seen_at,
-      }));
+      return {
+        entities: entities.map((e) => ({
+          id: e.id,
+          conversationId: e.conversation_id,
+          personalityId: e.personality_id,
+          entityType: e.entity_type,
+          entityValue: e.entity_value,
+          mentionCount: e.mention_count,
+          firstSeenAt: e.first_seen_at,
+        })),
+      };
     }
   );
 
@@ -133,35 +140,35 @@ export function registerAnalyticsRoutes(
     const {
       entity,
       entityType = 'concept',
-      limit = '20',
-      offset = '0',
     } = request.query as {
       entity?: string;
       entityType?: string;
       limit?: string;
       offset?: string;
     };
+    const { limit, offset } = parsePagination(request.query as { limit?: string; offset?: string });
     const storage = secureYeoman.getAnalyticsStorage();
     if (!storage) return sendError(reply, 503, 'Analytics not available');
 
     if (!entity) return sendError(reply, 400, 'entity query param required');
 
     const results = await storage.searchByEntity(entityType, entity, {
-      limit: Number(limit) || 20,
-      offset: Number(offset) || 0,
+      limit,
+      offset,
     });
-    return results;
+    return { results };
   });
 
   app.get(
     '/api/v1/analytics/entities/top/:personalityId',
     async (request: FastifyRequest<{ Params: { personalityId: string } }>, reply: FastifyReply) => {
       const { personalityId } = request.params;
-      const { limit = '20' } = request.query as { limit?: string };
+      const { limit } = parsePagination(request.query as { limit?: string });
       const storage = secureYeoman.getAnalyticsStorage();
       if (!storage) return sendError(reply, 503, 'Analytics not available');
 
-      return storage.getTopEntities(personalityId, Number(limit) || 20);
+      const entities = await storage.getTopEntities(personalityId, limit);
+      return { entities };
     }
   );
 
@@ -171,32 +178,35 @@ export function registerAnalyticsRoutes(
     '/api/v1/analytics/phrases/:personalityId',
     async (request: FastifyRequest<{ Params: { personalityId: string } }>, reply: FastifyReply) => {
       const { personalityId } = request.params;
-      const { limit = '50' } = request.query as { limit?: string };
+      const { limit } = parsePagination(request.query as { limit?: string }, { defaultLimit: 50 });
       const storage = secureYeoman.getAnalyticsStorage();
       if (!storage) return sendError(reply, 503, 'Analytics not available');
 
-      const phrases = await storage.getKeyPhrases(personalityId, Number(limit) || 50);
-      return phrases.map((p) => ({
-        id: p.id,
-        personalityId: p.personality_id,
-        phrase: p.phrase,
-        frequency: p.frequency,
-        windowStart: p.window_start,
-        windowEnd: p.window_end,
-        updatedAt: p.updated_at,
-      }));
+      const phrases = await storage.getKeyPhrases(personalityId, limit);
+      return {
+        phrases: phrases.map((p) => ({
+          id: p.id,
+          personalityId: p.personality_id,
+          phrase: p.phrase,
+          frequency: p.frequency,
+          windowStart: p.window_start,
+          windowEnd: p.window_end,
+          updatedAt: p.updated_at,
+        })),
+      };
     }
   );
 
   // ── Anomalies ──────────────────────────────────────────────────────────────
 
   app.get('/api/v1/analytics/anomalies', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { limit = '50', anomalyType } = request.query as { limit?: string; anomalyType?: string };
+    const { anomalyType } = request.query as { limit?: string; anomalyType?: string };
+    const { limit } = parsePagination(request.query as { limit?: string }, { defaultLimit: 50 });
     const storage = secureYeoman.getAnalyticsStorage();
     if (!storage) return sendError(reply, 503, 'Analytics not available');
 
     const result = await storage.getAnomalies({
-      limit: Number(limit) || 50,
+      limit,
       anomalyType,
     });
     return {

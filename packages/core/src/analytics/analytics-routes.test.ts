@@ -59,8 +59,8 @@ describe('Analytics Routes', () => {
       const res = await app.inject({ method: 'GET', url: '/api/v1/analytics/sentiment/c1' });
       expect(res.statusCode).toBe(200);
       const body = JSON.parse(res.payload);
-      expect(body).toHaveLength(1);
-      expect(body[0].sentiment).toBe('positive');
+      expect(body.sentiments).toHaveLength(1);
+      expect(body.sentiments[0].sentiment).toBe('positive');
     });
 
     it('returns 503 when storage unavailable', async () => {
@@ -81,7 +81,7 @@ describe('Analytics Routes', () => {
       });
       expect(res.statusCode).toBe(200);
       const body = JSON.parse(res.payload);
-      expect(body[0].avgScore).toBe(0.65);
+      expect(body.trend[0].avgScore).toBe(0.65);
     });
   });
 
@@ -177,7 +177,7 @@ describe('Analytics Routes', () => {
       const res = await app.inject({ method: 'GET', url: '/api/v1/analytics/entities/c1' });
       expect(res.statusCode).toBe(200);
       const body = JSON.parse(res.payload);
-      expect(body[0].entityValue).toBe('Alice');
+      expect(body.entities[0].entityValue).toBe('Alice');
     });
   });
 
@@ -227,7 +227,7 @@ describe('Analytics Routes', () => {
       const res = await app.inject({ method: 'GET', url: '/api/v1/analytics/phrases/p1?limit=25' });
       expect(res.statusCode).toBe(200);
       const body = JSON.parse(res.payload);
-      expect(body[0].phrase).toBe('AI safety');
+      expect(body.phrases[0].phrase).toBe('AI safety');
     });
   });
 

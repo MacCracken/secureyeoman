@@ -158,6 +158,8 @@ import { CostBudgetChecker } from './ai/cost-budget-checker.js';
 import { ProviderKeyValidator } from './ai/provider-key-validator.js';
 import { AthiStorage } from './security/athi-storage.js';
 import { AthiManager } from './security/athi-manager.js';
+import { SraStorage } from './security/sra-storage.js';
+import { SraManager } from './security/sra-manager.js';
 import { BackupStorage } from './backup/backup-storage.js';
 import { BackupManager } from './backup/backup-manager.js';
 import { TenantStorage } from './tenants/tenant-storage.js';
@@ -327,6 +329,8 @@ export class SecureYeoman {
   private departmentRiskManager: DepartmentRiskManager | null = null;
   private athiStorage: AthiStorage | null = null;
   private athiManager: AthiManager | null = null;
+  private sraStorage: SraStorage | null = null;
+  private sraManager: SraManager | null = null;
   private proactiveManager: import('./proactive/manager.js').ProactiveManager | null = null;
   private multimodalManager: import('./multimodal/manager.js').MultimodalManager | null = null;
   private browserSessionStorage: import('./browser/storage.js').BrowserSessionStorage | null = null;
@@ -518,6 +522,10 @@ export class SecureYeoman {
       // Step 2.12: Initialize AthiStorage (Phase 107-F)
       this.athiStorage = new AthiStorage();
       this.logger.debug('AthiStorage initialized');
+
+      // Step 2.13a: Initialize SraStorage (Phase 123)
+      this.sraStorage = new SraStorage();
+      this.logger.debug('SraStorage initialized');
 
       // Step 2.13: Initialize ScanHistoryStore + QuarantineStorage (Phase 116)
       this.scanHistoryStore = new ScanHistoryStore();
@@ -1641,6 +1649,22 @@ export class SecureYeoman {
         });
       }
 
+      // Step 6e.4: Initialize SraManager (Phase 123)
+      if (this.sraStorage) {
+        await this.initOptional('SraManager', async () => {
+          const pool = getPool();
+          this.sraManager = new SraManager({
+            storage: this.sraStorage!,
+            pool,
+            auditChain: this.auditChain,
+            getAlertManager: () => this.alertManager,
+          });
+          // Seed built-in blueprints and compliance mappings
+          await this.sraManager!.seedBuiltinBlueprints();
+          await this.sraManager!.seedComplianceMappings();
+        });
+      }
+
       // Step 6f: Initialize BackupManager (Phase 61)
       {
         this.backupStorage = new BackupStorage();
@@ -2738,6 +2762,11 @@ export class SecureYeoman {
   getAthiManager(): AthiManager | null {
     this.ensureInitialized();
     return this.athiManager;
+  }
+
+  getSraManager(): SraManager | null {
+    this.ensureInitialized();
+    return this.sraManager;
   }
 
   getMultimodalManager(): import('./multimodal/manager.js').MultimodalManager | null {
@@ -4055,6 +4084,9 @@ export class SecureYeoman {
     if (this.intentManager) {
       this.intentManager.destroy();
       this.intentManager = null;
+    }
+    if (this.intentStorage) {
+      this.intentStorage.close();
       this.intentStorage = null;
     }
     if (this.extensionStorage) {
@@ -4130,6 +4162,11 @@ export class SecureYeoman {
       this.athiStorage.close();
       this.athiStorage = null;
       this.athiManager = null;
+    }
+    if (this.sraStorage) {
+      this.sraStorage.close();
+      this.sraStorage = null;
+      this.sraManager = null;
     }
     if (this.autonomyAuditStorage) {
       this.autonomyAuditStorage.close();
@@ -4210,9 +4247,19 @@ export class SecureYeoman {
       this.workflowVersionStorage = null;
       this.workflowVersionManager = null;
     }
-    this.analyticsStorage = null;
-    this.pipelineLineageStorage = null;
-    this.quarantineStorage = null;
+    // When adding new storage/manager fields, add cleanup here.
+    if (this.analyticsStorage) {
+      this.analyticsStorage.close();
+      this.analyticsStorage = null;
+    }
+    if (this.pipelineLineageStorage) {
+      this.pipelineLineageStorage.close();
+      this.pipelineLineageStorage = null;
+    }
+    if (this.quarantineStorage) {
+      this.quarantineStorage.close();
+      this.quarantineStorage = null;
+    }
 
     // Close PostgreSQL pool
     await closePool();

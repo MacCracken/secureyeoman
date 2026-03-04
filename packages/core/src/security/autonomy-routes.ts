@@ -58,8 +58,8 @@ export function registerAutonomyRoutes(app: FastifyInstance, opts: AutonomyRoute
   });
 
   // ── GET /api/v1/autonomy/audits/:id ───────────────────────────────────────
-  app.get('/api/v1/autonomy/audits/:id', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.get<{ Params: { id: string } }>('/api/v1/autonomy/audits/:id', async (req, reply) => {
+    const { id } = req.params;
     try {
       const run = await autonomyAuditManager.getAuditRun(id);
       if (!run) return sendError(reply, 404, 'Audit run not found');
@@ -70,8 +70,8 @@ export function registerAutonomyRoutes(app: FastifyInstance, opts: AutonomyRoute
   });
 
   // ── PUT /api/v1/autonomy/audits/:id/items/:itemId ─────────────────────────
-  app.put('/api/v1/autonomy/audits/:id/items/:itemId', async (req, reply) => {
-    const { id, itemId } = req.params as { id: string; itemId: string };
+  app.put<{ Params: { id: string; itemId: string } }>('/api/v1/autonomy/audits/:id/items/:itemId', async (req, reply) => {
+    const { id, itemId } = req.params;
     const body = req.body as { status?: string; note?: string };
     if (!body?.status) {
       return sendError(reply, 400, 'status is required');
@@ -93,8 +93,8 @@ export function registerAutonomyRoutes(app: FastifyInstance, opts: AutonomyRoute
   });
 
   // ── POST /api/v1/autonomy/audits/:id/finalize ─────────────────────────────
-  app.post('/api/v1/autonomy/audits/:id/finalize', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.post<{ Params: { id: string } }>('/api/v1/autonomy/audits/:id/finalize', async (req, reply) => {
+    const { id } = req.params;
     try {
       const run = await autonomyAuditManager.finalizeRun(id);
       if (!run) return sendError(reply, 404, 'Audit run not found');
@@ -105,8 +105,8 @@ export function registerAutonomyRoutes(app: FastifyInstance, opts: AutonomyRoute
   });
 
   // ── POST /api/v1/autonomy/emergency-stop/:type/:id ────────────────────────
-  app.post('/api/v1/autonomy/emergency-stop/:type/:id', async (req, reply) => {
-    const { type, id } = req.params as { type: string; id: string };
+  app.post<{ Params: { type: string; id: string } }>('/api/v1/autonomy/emergency-stop/:type/:id', async (req, reply) => {
+    const { type, id } = req.params;
     const authUser = (req as any).authUser;
 
     // Admin role required

@@ -89,8 +89,8 @@ export function registerRiskAssessmentRoutes(
 
   // ── GET /api/v1/risk/assessments/:id ──────────────────────────────────────
 
-  app.get('/api/v1/risk/assessments/:id', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.get<{ Params: { id: string } }>('/api/v1/risk/assessments/:id', async (req, reply) => {
+    const { id } = req.params;
     try {
       const assessment = await mgr.getAssessment(id);
       if (!assessment) return sendError(reply, 404, 'Assessment not found');
@@ -102,8 +102,8 @@ export function registerRiskAssessmentRoutes(
 
   // ── GET /api/v1/risk/assessments/:id/report/:fmt ──────────────────────────
 
-  app.get('/api/v1/risk/assessments/:id/report/:fmt', async (req, reply) => {
-    const { id, fmt } = req.params as { id: string; fmt: string };
+  app.get<{ Params: { id: string; fmt: string } }>('/api/v1/risk/assessments/:id/report/:fmt', async (req, reply) => {
+    const { id, fmt } = req.params;
 
     if (!VALID_FORMATS.includes(fmt as ReportFormat)) {
       return sendError(reply, 400, `format must be one of: ${VALID_FORMATS.join(', ')}`);
@@ -173,8 +173,8 @@ export function registerRiskAssessmentRoutes(
 
   // ── DELETE /api/v1/risk/feeds/:feedId ─────────────────────────────────────
 
-  app.delete('/api/v1/risk/feeds/:feedId', async (req, reply) => {
-    const { feedId } = req.params as { feedId: string };
+  app.delete<{ Params: { feedId: string } }>('/api/v1/risk/feeds/:feedId', async (req, reply) => {
+    const { feedId } = req.params;
     try {
       await mgr.deleteFeed(feedId);
       return reply.code(204).send();
@@ -185,8 +185,8 @@ export function registerRiskAssessmentRoutes(
 
   // ── POST /api/v1/risk/feeds/:feedId/ingest ────────────────────────────────
 
-  app.post('/api/v1/risk/feeds/:feedId/ingest', async (req, reply) => {
-    const { feedId } = req.params as { feedId: string };
+  app.post<{ Params: { feedId: string } }>('/api/v1/risk/feeds/:feedId/ingest', async (req, reply) => {
+    const { feedId } = req.params;
     const body = req.body;
 
     if (!Array.isArray(body)) {
@@ -270,8 +270,8 @@ export function registerRiskAssessmentRoutes(
 
   // ── PATCH /api/v1/risk/findings/:id/acknowledge ───────────────────────────
 
-  app.patch('/api/v1/risk/findings/:id/acknowledge', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.patch<{ Params: { id: string } }>('/api/v1/risk/findings/:id/acknowledge', async (req, reply) => {
+    const { id } = req.params;
     const userId = (req as any).authUser?.userId;
 
     try {
@@ -285,8 +285,8 @@ export function registerRiskAssessmentRoutes(
 
   // ── PATCH /api/v1/risk/findings/:id/resolve ───────────────────────────────
 
-  app.patch('/api/v1/risk/findings/:id/resolve', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.patch<{ Params: { id: string } }>('/api/v1/risk/findings/:id/resolve', async (req, reply) => {
+    const { id } = req.params;
     try {
       const finding = await mgr.resolveFinding(id);
       if (!finding) return sendError(reply, 404, 'Finding not found');

@@ -26,6 +26,8 @@ import {
   securityArchitectureReviewSkill,
   securityLogAnalysisSkill,
   athiScenarioGeneratorSkill,
+  securityReferenceArchitectureSkill,
+  excalidrawDiagramSkill,
 } from './skills/index.js';
 
 export class MarketplaceStorage extends PgBaseStorage {
@@ -369,6 +371,8 @@ export class MarketplaceStorage extends PgBaseStorage {
       securityArchitectureReviewSkill,
       securityLogAnalysisSkill,
       athiScenarioGeneratorSkill,
+      securityReferenceArchitectureSkill,
+      excalidrawDiagramSkill,
     ];
 
     // Batch-fetch all existing builtins in one query instead of N individual SELECTs

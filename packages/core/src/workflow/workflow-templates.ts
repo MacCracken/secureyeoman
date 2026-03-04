@@ -965,4 +965,69 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
     createdBy: 'system',
     autonomyLevel: 'L3' as const,
   },
+
+  {
+    name: 'sra-posture-assessment',
+    description:
+      'Security Reference Architecture posture assessment pipeline: selects the appropriate SRA blueprint, assesses infrastructure controls, routes to human approval, and saves the approved assessment to the knowledge base.',
+    steps: [
+      agentStep(
+        {
+          id: 'select-blueprint',
+          name: 'Select SRA Blueprint',
+          description: 'Select the appropriate SRA blueprint based on cloud provider and requirements',
+          dependsOn: [],
+          onError: 'fail',
+        },
+        'security-architect',
+        'Review the cloud environment described below and select the most appropriate Security Reference Architecture blueprint.\n\nEnvironment: {{input.infrastructureDescription}}\nProvider: {{input.provider}}\n\nUse sra_list_blueprints to find available blueprints. Recommend the best match and explain why.',
+        '{{input.additionalContext}}'
+      ),
+      agentStep(
+        {
+          id: 'assess-controls',
+          name: 'Assess Infrastructure Controls',
+          description: 'Evaluate infrastructure against SRA blueprint controls and generate gap analysis',
+          dependsOn: ['select-blueprint'],
+          onError: 'fail',
+        },
+        'security-architect',
+        'Using the blueprint selected in the previous step, assess the following infrastructure against all controls.\n\nBlueprint: {{steps.select-blueprint.output}}\nInfrastructure: {{input.infrastructureDescription}}\n\nFor each control, determine: fully_implemented, partially_implemented, not_implemented, or not_applicable. Create the assessment using sra_assess, then generate the summary. Include a domain heatmap, top gaps, and remediation roadmap with IaC snippets.',
+      ),
+      {
+        id: 'approval',
+        type: 'human_approval',
+        name: 'Assessment Approval',
+        description: 'A human reviewer must approve the SRA assessment before it is saved',
+        config: {
+          prompt:
+            'Please review the Security Reference Architecture assessment below and approve or reject.\n\n{{steps.assess-controls.output}}',
+          timeoutMs: 86_400_000,
+        },
+        dependsOn: ['assess-controls'],
+        onError: 'fail',
+      } as unknown as WorkflowStep,
+      resourceStep(
+        {
+          id: 'save-assessment',
+          name: 'Save Approved Assessment',
+          description: 'Save the human-approved SRA assessment to the knowledge base',
+          dependsOn: ['approval'],
+          onError: 'continue',
+        },
+        'knowledge',
+        '{"title":"SRA Posture Assessment — {{input.systemName}}","content":"{{steps.assess-controls.output}}","tags":["sra","security-reference-architecture","assessment","approved"]}'
+      ),
+    ],
+    edges: [
+      { source: 'select-blueprint', target: 'assess-controls' },
+      { source: 'assess-controls', target: 'approval' },
+      { source: 'approval', target: 'save-assessment' },
+    ],
+    triggers: [{ type: 'manual', config: {} }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L3' as const,
+  },
 ];

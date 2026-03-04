@@ -2,7 +2,7 @@
  * LLM Response Cache (ADR 101)
  *
  * In-memory TTL cache for non-streaming AI completions.
- * Keyed by SHA-256(provider + model + messages + temperature + maxTokens + tool names).
+ * Keyed by MD5(provider + model + messages + temperature + maxTokens + tool names).
  *
  * Primary use-case: heartbeat probes and repeated identical system-state queries that
  * run on aggressive schedules, paying for identical API calls every cycle.
@@ -12,7 +12,7 @@
  */
 
 import type { AIRequest, AIResponse, ResponseCacheConfig } from '@secureyeoman/shared';
-import { sha256 } from '../utils/crypto.js';
+import { md5 } from '../utils/crypto.js';
 
 interface CacheEntry {
   response: AIResponse;
@@ -48,7 +48,7 @@ export class ResponseCache {
   }
 
   /**
-   * Build a deterministic SHA-256 cache key from the provider, resolved model,
+   * Build a deterministic MD5 cache key from the provider, resolved model,
    * and the request parameters that determine the LLM output.
    */
   buildKey(provider: string, model: string, request: AIRequest): string {
@@ -62,7 +62,7 @@ export class ResponseCache {
       // but tool schema changes don't pollute the key with verbose JSON.
       toolNames: request.tools ? request.tools.map((t) => t.name).sort() : undefined,
     };
-    return sha256(JSON.stringify(keyData));
+    return md5(JSON.stringify(keyData));
   }
 
   /**

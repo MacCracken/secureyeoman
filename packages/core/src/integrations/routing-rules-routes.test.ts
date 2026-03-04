@@ -95,7 +95,7 @@ describe('routing-rules-routes', () => {
       await app.ready();
       await app.inject({ method: 'GET', url: '/api/v1/routing-rules' });
       expect(storage.list).toHaveBeenCalledWith(
-        expect.objectContaining({ enabled: undefined, limit: undefined, offset: undefined })
+        expect.objectContaining({ enabled: undefined, limit: 20, offset: 0 })
       );
     });
   });

@@ -16,6 +16,7 @@ import type { RoutingRulesStorage } from './routing-rules-storage.js';
 import type { RoutingRulesManager } from './routing-rules-manager.js';
 import type { RoutingRuleCreate, RoutingRuleUpdate, RoutingRuleDryRun } from '@secureyeoman/shared';
 import { sendError } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export interface RoutingRulesRoutesOptions {
   storage: RoutingRulesStorage;
@@ -37,11 +38,12 @@ export function registerRoutingRulesRoutes(
         Querystring: { enabled?: string; limit?: string; offset?: string };
       }>
     ) => {
-      const { enabled, limit, offset } = request.query;
+      const { enabled } = request.query;
+      const { limit, offset } = parsePagination(request.query);
       return storage.list({
         enabled: enabled !== undefined ? enabled === 'true' : undefined,
-        limit: limit ? Number(limit) : undefined,
-        offset: offset ? Number(offset) : undefined,
+        limit,
+        offset,
       });
     }
   );

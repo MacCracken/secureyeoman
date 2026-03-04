@@ -271,6 +271,8 @@ export class SoulManager {
             exposeGithub: false,
             exposeDocker: false,
             exposeCicd: false,
+            exposeSra: false,
+            exposeDiagramming: false,
           },
           proactiveConfig: {
             enabled: false,

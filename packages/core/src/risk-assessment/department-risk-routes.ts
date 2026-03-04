@@ -73,8 +73,8 @@ export function registerDepartmentRiskRoutes(
   });
 
   // GET /api/v1/risk/departments/:id
-  app.get('/api/v1/risk/departments/:id', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.get<{ Params: { id: string } }>('/api/v1/risk/departments/:id', async (req, reply) => {
+    const { id } = req.params;
     try {
       const department = await mgr.getDepartment(id);
       if (!department) return sendError(reply, 404, 'Department not found');
@@ -85,8 +85,8 @@ export function registerDepartmentRiskRoutes(
   });
 
   // PUT /api/v1/risk/departments/:id
-  app.put('/api/v1/risk/departments/:id', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.put<{ Params: { id: string } }>('/api/v1/risk/departments/:id', async (req, reply) => {
+    const { id } = req.params;
     try {
       const parsed = DepartmentUpdateSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -101,8 +101,8 @@ export function registerDepartmentRiskRoutes(
   });
 
   // DELETE /api/v1/risk/departments/:id
-  app.delete('/api/v1/risk/departments/:id', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.delete<{ Params: { id: string } }>('/api/v1/risk/departments/:id', async (req, reply) => {
+    const { id } = req.params;
     const query = req.query as { force?: string };
     try {
       const deleted = await mgr.deleteDepartment(id, query.force === 'true');
@@ -119,8 +119,8 @@ export function registerDepartmentRiskRoutes(
   // ── Department Scorecard ─────────────────────────────────────
 
   // GET /api/v1/risk/departments/:id/scorecard
-  app.get('/api/v1/risk/departments/:id/scorecard', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.get<{ Params: { id: string } }>('/api/v1/risk/departments/:id/scorecard', async (req, reply) => {
+    const { id } = req.params;
     try {
       const scorecard = await mgr.getDepartmentScorecard(id);
       return reply.send({ scorecard });
@@ -133,8 +133,8 @@ export function registerDepartmentRiskRoutes(
   });
 
   // POST /api/v1/risk/departments/:id/snapshot
-  app.post('/api/v1/risk/departments/:id/snapshot', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.post<{ Params: { id: string } }>('/api/v1/risk/departments/:id/snapshot', async (req, reply) => {
+    const { id } = req.params;
     const body = req.body as { assessmentId?: string } | undefined;
     try {
       const score = await mgr.snapshotDepartmentScore(id, body?.assessmentId);
@@ -159,8 +159,8 @@ export function registerDepartmentRiskRoutes(
   });
 
   // GET /api/v1/risk/departments/:id/scores
-  app.get('/api/v1/risk/departments/:id/scores', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.get<{ Params: { id: string } }>('/api/v1/risk/departments/:id/scores', async (req, reply) => {
+    const { id } = req.params;
     const query = req.query as { from?: string; to?: string; limit?: string };
     try {
       const scores = await mgr.getTrend(id, undefined);
@@ -171,8 +171,8 @@ export function registerDepartmentRiskRoutes(
   });
 
   // GET /api/v1/risk/departments/:id/trend
-  app.get('/api/v1/risk/departments/:id/trend', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.get<{ Params: { id: string } }>('/api/v1/risk/departments/:id/trend', async (req, reply) => {
+    const { id } = req.params;
     const query = req.query as { days?: string };
     try {
       const trend = await mgr.getTrend(id, query.days ? Number(query.days) : 30);
@@ -230,8 +230,8 @@ export function registerDepartmentRiskRoutes(
   });
 
   // GET /api/v1/risk/register/:id
-  app.get('/api/v1/risk/register/:id', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.get<{ Params: { id: string } }>('/api/v1/risk/register/:id', async (req, reply) => {
+    const { id } = req.params;
     try {
       const entry = await mgr.getRegisterEntry(id);
       if (!entry) return sendError(reply, 404, 'Register entry not found');
@@ -242,8 +242,8 @@ export function registerDepartmentRiskRoutes(
   });
 
   // PUT /api/v1/risk/register/:id
-  app.put('/api/v1/risk/register/:id', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.put<{ Params: { id: string } }>('/api/v1/risk/register/:id', async (req, reply) => {
+    const { id } = req.params;
     try {
       const parsed = RegisterEntryUpdateSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -258,8 +258,8 @@ export function registerDepartmentRiskRoutes(
   });
 
   // DELETE /api/v1/risk/register/:id
-  app.delete('/api/v1/risk/register/:id', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.delete<{ Params: { id: string } }>('/api/v1/risk/register/:id', async (req, reply) => {
+    const { id } = req.params;
     try {
       const deleted = await mgr.deleteRegisterEntry(id);
       if (!deleted) return sendError(reply, 404, 'Register entry not found');
@@ -270,8 +270,8 @@ export function registerDepartmentRiskRoutes(
   });
 
   // PATCH /api/v1/risk/register/:id/close
-  app.patch('/api/v1/risk/register/:id/close', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.patch<{ Params: { id: string } }>('/api/v1/risk/register/:id/close', async (req, reply) => {
+    const { id } = req.params;
     try {
       const entry = await mgr.closeRegisterEntry(id);
       if (!entry) return sendError(reply, 404, 'Register entry not found');
@@ -321,9 +321,9 @@ export function registerDepartmentRiskRoutes(
   }
 
   // GET /api/v1/risk/reports/department/:id
-  app.get('/api/v1/risk/reports/department/:id', async (req, reply) => {
+  app.get<{ Params: { id: string } }>('/api/v1/risk/reports/department/:id', async (req, reply) => {
     try {
-      const { id } = req.params as { id: string };
+      const { id } = req.params;
       const format = parseFormat(req.query as Record<string, unknown>);
       const content = await reportGen.generateDepartmentScorecard(id, format);
       return reply.type(CONTENT_TYPES[format] ?? 'application/json').send(content);

@@ -57,10 +57,6 @@ function checkBrainRateLimit(key: string, maxPerMinute: number): boolean {
   return true;
 }
 
-function capLimit(raw: string | undefined, fallback = 20): number {
-  const n = raw ? Number(raw) : fallback;
-  return Math.min(Math.max(1, isNaN(n) ? fallback : n), MAX_QUERY_LIMIT);
-}
 
 function validateContent(content: unknown, reply: FastifyReply): string | null {
   if (typeof content !== 'string' || content.trim().length === 0) {
@@ -96,7 +92,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       if (q.search) query.search = q.search;
       if (q.minImportance) query.minImportance = Number(q.minImportance);
       if (q.personalityId) query.personalityId = q.personalityId;
-      query.limit = capLimit(q.limit);
+      query.limit = parsePagination({ limit: q.limit }, { maxLimit: MAX_QUERY_LIMIT }).limit;
 
       const memories = await brainManager.recall(query);
       return { memories };
@@ -168,7 +164,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       if (q.search) query.search = q.search;
       if (q.minConfidence) query.minConfidence = Number(q.minConfidence);
       if (q.personalityId) query.personalityId = q.personalityId;
-      query.limit = capLimit(q.limit);
+      query.limit = parsePagination({ limit: q.limit }, { maxLimit: MAX_QUERY_LIMIT }).limit;
 
       const knowledge = await brainManager.queryKnowledge(query);
       return { knowledge };
@@ -352,7 +348,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       if (!heartbeatManager) {
         return sendError(reply, 503, 'Heartbeat system not available');
       }
-      const limit = capLimit(request.query.limit, 10);
+      const { limit } = parsePagination(request.query, { defaultLimit: 10, maxLimit: MAX_QUERY_LIMIT });
       const memories = await brainManager.recall({ source: 'heartbeat', limit });
       return { history: memories };
     }
@@ -554,7 +550,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     '/api/v1/brain/consolidation/history',
     async (request: FastifyRequest<{ Querystring: { limit?: string } }>, reply: FastifyReply) => {
       try {
-        const limit = capLimit((request.query as any).limit, 50);
+        const { limit } = parsePagination(request.query as { limit?: string }, { defaultLimit: 50, maxLimit: MAX_QUERY_LIMIT });
         const memories = await brainManager.recall({ source: 'consolidation', limit });
         return { history: memories };
       } catch (err) {

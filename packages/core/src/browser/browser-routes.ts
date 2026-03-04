@@ -5,6 +5,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { BrowserSessionStorage } from './storage.js';
 import { sendError } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export function registerBrowserRoutes(
   app: FastifyInstance,
@@ -15,11 +16,12 @@ export function registerBrowserRoutes(
   // List sessions
   app.get('/api/v1/browser/sessions', async (request) => {
     const query = request.query as Record<string, string | undefined>;
+    const { limit, offset } = parsePagination(query as { limit?: string; offset?: string });
     return browserSessionStorage.listSessions({
       status: query.status,
       toolName: query.toolName,
-      limit: query.limit ? parseInt(query.limit, 10) : undefined,
-      offset: query.offset ? parseInt(query.offset, 10) : undefined,
+      limit,
+      offset,
     });
   });
 

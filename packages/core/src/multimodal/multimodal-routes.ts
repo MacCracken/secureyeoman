@@ -6,6 +6,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { MultimodalManager } from './manager.js';
 import type { MultimodalJobType, MultimodalJobStatus } from '@secureyeoman/shared';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 import {
   VisionRequestSchema,
   STTRequestSchema,
@@ -336,11 +337,12 @@ export function registerMultimodalRoutes(
         Querystring: { type?: string; status?: string; limit?: string; offset?: string };
       }>
     ) => {
+      const { limit, offset } = parsePagination(request.query);
       return multimodalManager.getStorage().listJobs({
         type: request.query.type as MultimodalJobType | undefined,
         status: request.query.status as MultimodalJobStatus | undefined,
-        limit: request.query.limit ? parseInt(request.query.limit, 10) : undefined,
-        offset: request.query.offset ? parseInt(request.query.offset, 10) : undefined,
+        limit,
+        offset,
       });
     }
   );

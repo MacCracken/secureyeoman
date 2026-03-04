@@ -12,6 +12,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { GroupChatStorage } from './group-chat-storage.js';
 import type { IntegrationManager } from './manager.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export interface GroupChatRoutesOptions {
   groupChatStorage: GroupChatStorage;
@@ -35,12 +36,13 @@ export function registerGroupChatRoutes(app: FastifyInstance, opts: GroupChatRou
         };
       }>
     ) => {
-      const { platform, integrationId, limit, offset } = request.query;
+      const { platform, integrationId } = request.query;
+      const { limit, offset } = parsePagination(request.query);
       return groupChatStorage.listChannels({
         platform,
         integrationId,
-        limit: limit ? Number(limit) : undefined,
-        offset: offset ? Number(offset) : undefined,
+        limit,
+        offset,
       });
     }
   );
@@ -65,9 +67,10 @@ export function registerGroupChatRoutes(app: FastifyInstance, opts: GroupChatRou
         return sendError(reply, 404, `Integration not found: ${integrationId}`);
       }
 
+      const pagination = parsePagination(request.query);
       return groupChatStorage.listMessages(integrationId, chatId, {
-        limit: limit ? Number(limit) : undefined,
-        offset: offset ? Number(offset) : undefined,
+        limit: pagination.limit,
+        offset: pagination.offset,
         before: before ? Number(before) : undefined,
       });
     }

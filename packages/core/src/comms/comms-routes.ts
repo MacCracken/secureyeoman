@@ -6,6 +6,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { AgentComms } from './agent-comms.js';
 import type { AgentIdentity, EncryptedMessage, MessagePayload } from './types.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export interface CommsRoutesOptions {
   agentComms: AgentComms;
@@ -92,10 +93,11 @@ export function registerCommsRoutes(app: FastifyInstance, opts: CommsRoutesOptio
       }>
     ) => {
       const q = request.query;
+      const { limit } = parsePagination(q);
       const log = await agentComms.getMessageLog({
         peerId: q.peerId,
         type: q.type as import('./types.js').MessageType | undefined,
-        limit: q.limit ? Number(q.limit) : undefined,
+        limit,
       });
       return { log };
     }

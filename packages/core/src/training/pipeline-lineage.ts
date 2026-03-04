@@ -245,4 +245,8 @@ export class PipelineLineageStorage {
       modelVersion: info.modelVersion,
     });
   }
+
+  close(): void {
+    // No-op: shared pg pool is closed separately
+  }
 }

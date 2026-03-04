@@ -147,4 +147,8 @@ export class QuarantineStorage {
     await writeFile(tmpPath, JSON.stringify(meta, null, 2));
     await rename(tmpPath, path);
   }
+
+  close(): void {
+    // No-op: filesystem-based storage, no connections to close
+  }
 }

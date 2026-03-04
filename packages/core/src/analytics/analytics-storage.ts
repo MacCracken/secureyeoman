@@ -396,4 +396,8 @@ export class AnalyticsStorage {
 
     return { anomalies: rows, total };
   }
+
+  close(): void {
+    // No-op: shared pg pool is closed separately
+  }
 }

@@ -22,3 +22,5 @@ export { ttrcAnalysisSkill } from './ttrc-analysis.js';
 export { securityArchitectureReviewSkill } from './security-architecture-review.js';
 export { securityLogAnalysisSkill } from './security-log-analysis.js';
 export { athiScenarioGeneratorSkill } from './athi-scenario-generator.js';
+export { securityReferenceArchitectureSkill } from './security-reference-architecture.js';
+export { excalidrawDiagramSkill } from './excalidraw-diagram.js';

@@ -799,6 +799,48 @@ export {
   type AthiExecutiveSummary,
 } from './athi.js';
 
+// Security Reference Architecture types (Phase 123)
+export {
+  SraProviderSchema,
+  SraFrameworkSchema,
+  SraControlDomainSchema,
+  SraControlStatusSchema,
+  SraBlueprintStatusSchema,
+  SraAssessmentStatusSchema,
+  ComplianceMappingSchema,
+  IacSnippetSchema,
+  SraControlSchema,
+  SraBlueprintSchema,
+  SraControlResultSchema,
+  SraAssessmentSummarySchema,
+  SraAssessmentSchema,
+  SraBlueprintCreateSchema,
+  SraBlueprintUpdateSchema,
+  SraAssessmentCreateSchema,
+  SraAssessmentUpdateSchema,
+  SraComplianceMappingRecordSchema,
+  SraExecutiveSummarySchema,
+  type SraProvider,
+  type SraFramework,
+  type SraControlDomain,
+  type SraControlStatus,
+  type SraBlueprintStatus,
+  type SraAssessmentStatus,
+  type ComplianceMapping,
+  type IacSnippet,
+  type SraControl,
+  type SraBlueprint,
+  type SraControlResult,
+  type SraAssessmentSummary,
+  type SraAssessment,
+  type SraBlueprintCreate,
+  type SraBlueprintUpdate,
+  type SraAssessmentCreate,
+  type SraAssessmentUpdate,
+  type SraComplianceMappingRecord,
+  type SraExecutiveSummary,
+} from './sra.js';
+
 // Versioning types (Phase 114)
 export {
   VersionTagSchema,
@@ -941,3 +983,17 @@ export {
   type CostBreakdownGroupBy,
   type CostTrendPoint,
 } from './provider-accounts.js';
+
+// Excalidraw Diagramming types (Phase 117)
+export {
+  ExcalidrawElementSpecSchema,
+  ExcalidrawElementSchema,
+  ExcalidrawSceneSchema,
+  PatchOperationSchema,
+  ValidationIssueSchema,
+  type ExcalidrawElementSpec,
+  type ExcalidrawElement,
+  type ExcalidrawScene,
+  type PatchOperation,
+  type ValidationIssue,
+} from './excalidraw.js';

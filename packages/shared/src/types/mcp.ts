@@ -178,6 +178,10 @@ export const McpServiceConfigSchema = z.object({
   exposeNorthflank: z.boolean().default(false),
   /** Northflank API key for Bearer auth. */
   northflankApiKey: z.string().optional(),
+  /** Enable Security Reference Architecture tools (sra_*). Off by default. */
+  exposeSra: z.boolean().default(false),
+  /** Enable Excalidraw diagramming tools (excalidraw_*). On by default. */
+  exposeExcalidraw: z.boolean().default(true),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

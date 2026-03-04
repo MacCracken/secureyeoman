@@ -97,6 +97,10 @@ export const McpFeaturesSchema = z
     exposeDocker: z.boolean().default(false),
     /** CI/CD tools (gha_*, jenkins_*, gitlab_*, northflank_*). Requires global expose* per platform. */
     exposeCicd: z.boolean().default(false),
+    /** SRA tools (sra_*). Requires global exposeSra. */
+    exposeSra: z.boolean().default(false),
+    /** Excalidraw diagramming tools (excalidraw_*). Requires global exposeExcalidraw. */
+    exposeDiagramming: z.boolean().default(false),
   })
   .default({});
 

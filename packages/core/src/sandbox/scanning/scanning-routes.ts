@@ -14,6 +14,7 @@ import type { SandboxArtifact } from './types.js';
 import type { ExternalizationPolicy } from '@secureyeoman/shared';
 import { BUILTIN_THREAT_PATTERNS } from './threat-patterns.js';
 import { sendError, toErrorMessage } from '../../utils/errors.js';
+import { parsePagination } from '../../utils/pagination.js';
 
 export interface ScanningRoutesOptions {
   scanHistoryStore?: ScanHistoryStore | null;
@@ -42,9 +43,10 @@ export function registerScanningRoutes(app: FastifyInstance, opts: ScanningRoute
       to?: string;
     };
     try {
+      const { limit: pLimit, offset: pOffset } = parsePagination(query);
       const result = await scanHistoryStore.list({
-        limit: query.limit ? Math.min(Number(query.limit), 100) : undefined,
-        offset: query.offset ? Math.max(Number(query.offset), 0) : undefined,
+        limit: pLimit,
+        offset: pOffset,
         verdict: query.verdict,
         sourceContext: query.sourceContext,
         personalityId: query.personalityId,
@@ -71,9 +73,9 @@ export function registerScanningRoutes(app: FastifyInstance, opts: ScanningRoute
 
   // ── GET /api/v1/sandbox/scans/:id — Scan details ─────────────────────
 
-  app.get('/api/v1/sandbox/scans/:id', async (req, reply) => {
+  app.get<{ Params: { id: string } }>('/api/v1/sandbox/scans/:id', async (req, reply) => {
     if (!scanHistoryStore) return sendError(reply, 503, 'Scan history not available');
-    const { id } = req.params as { id: string };
+    const { id } = req.params;
     try {
       const record = await scanHistoryStore.getById(id);
       if (!record) return sendError(reply, 404, 'Scan record not found');
@@ -97,9 +99,9 @@ export function registerScanningRoutes(app: FastifyInstance, opts: ScanningRoute
 
   // ── GET /api/v1/sandbox/quarantine/:id — Quarantine entry details ─────
 
-  app.get('/api/v1/sandbox/quarantine/:id', async (req, reply) => {
+  app.get<{ Params: { id: string } }>('/api/v1/sandbox/quarantine/:id', async (req, reply) => {
     if (!quarantineStorage) return sendError(reply, 503, 'Quarantine storage not available');
-    const { id } = req.params as { id: string };
+    const { id } = req.params;
     try {
       const entry = await quarantineStorage.get(id);
       if (!entry) return sendError(reply, 404, 'Quarantine entry not found');
@@ -111,9 +113,9 @@ export function registerScanningRoutes(app: FastifyInstance, opts: ScanningRoute
 
   // ── POST /api/v1/sandbox/quarantine/:id/approve — Approve and release ─
 
-  app.post('/api/v1/sandbox/quarantine/:id/approve', async (req, reply) => {
+  app.post<{ Params: { id: string } }>('/api/v1/sandbox/quarantine/:id/approve', async (req, reply) => {
     if (!quarantineStorage) return sendError(reply, 503, 'Quarantine storage not available');
-    const { id } = req.params as { id: string };
+    const { id } = req.params;
     const userId = (req as any).authUser?.userId ?? 'unknown';
     try {
       const entry = await quarantineStorage.get(id);
@@ -142,9 +144,9 @@ export function registerScanningRoutes(app: FastifyInstance, opts: ScanningRoute
 
   // ── DELETE /api/v1/sandbox/quarantine/:id — Permanently delete ────────
 
-  app.delete('/api/v1/sandbox/quarantine/:id', async (req, reply) => {
+  app.delete<{ Params: { id: string } }>('/api/v1/sandbox/quarantine/:id', async (req, reply) => {
     if (!quarantineStorage) return sendError(reply, 503, 'Quarantine storage not available');
-    const { id } = req.params as { id: string };
+    const { id } = req.params;
     try {
       const entry = await quarantineStorage.get(id);
       if (!entry) return sendError(reply, 404, 'Quarantine entry not found');

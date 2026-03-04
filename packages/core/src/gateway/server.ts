@@ -85,6 +85,7 @@ import { registerRiskAssessmentRoutes } from '../risk-assessment/risk-assessment
 import { registerDepartmentRiskRoutes } from '../risk-assessment/department-risk-routes.js';
 import { registerProviderAccountRoutes } from '../ai/provider-account-routes.js';
 import { registerAthiRoutes } from '../security/athi-routes.js';
+import { registerSraRoutes } from '../security/sra-routes.js';
 import { registerAuditExportRoutes } from '../logging/audit-export-routes.js';
 import { SQLiteAuditStorage } from '../logging/sqlite-storage.js';
 import { registerBackupRoutes } from '../backup/backup-routes.js';
@@ -106,6 +107,7 @@ import { registerAlertRoutes } from '../telemetry/alert-routes.js';
 import { registerCicdWebhookRoutes } from '../integrations/cicd/cicd-webhook-routes.js';
 import { registerAnalyticsRoutes } from '../analytics/analytics-routes.js';
 import { registerScanningRoutes } from '../sandbox/scanning/scanning-routes.js';
+import { parsePagination } from '../utils/pagination.js';
 
 /**
  * Check if an IP address belongs to a private/loopback range.
@@ -1011,6 +1013,19 @@ export class GatewayServer {
       });
     }
 
+    // SRA Security Reference Architecture routes (Phase 123)
+    try {
+      const sraManager = this.secureYeoman.getSraManager();
+      if (sraManager) {
+        registerSraRoutes(this.app, { sraManager });
+        this.getLogger().info('SRA security reference architecture routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('SRA routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
     // Extension routes
     try {
       const extensionManager = this.secureYeoman.getExtensionManager();
@@ -1634,8 +1649,7 @@ export class GatewayServer {
             type: q.type,
             from: parseTimestamp(q.from),
             to: parseTimestamp(q.to),
-            limit: q.limit ? Number(q.limit) : 50,
-            offset: q.offset ? Number(q.offset) : 0,
+            ...parsePagination(q, { defaultLimit: 50 }),
           });
         } catch {
           return { tasks: [], total: 0 };
@@ -1887,8 +1901,7 @@ export class GatewayServer {
             level: levelFilter,
             from: q.from ? Number(q.from) : undefined,
             to: q.to ? Number(q.to) : undefined,
-            limit: q.limit ? Number(q.limit) : 50,
-            offset: q.offset ? Number(q.offset) : 0,
+            ...parsePagination(q, { defaultLimit: 50 }),
           });
 
           // Return with "events" key for semantic clarity — the dashboard
@@ -2402,8 +2415,7 @@ export class GatewayServer {
           event: q.event ? q.event.split(',') : undefined,
           userId: q.userId,
           taskId: q.taskId,
-          limit: q.limit ? Number(q.limit) : undefined,
-          offset: q.offset ? Number(q.offset) : undefined,
+          ...parsePagination(q),
         });
       }
     );
@@ -2469,7 +2481,7 @@ export class GatewayServer {
           const entries = await this.secureYeoman.exportAuditLog({
             from: q.from ? Number(q.from) : undefined,
             to: q.to ? Number(q.to) : undefined,
-            limit: q.limit ? Number(q.limit) : 100_000,
+            limit: parsePagination(q, { defaultLimit: 100_000, maxLimit: 100_000 }).limit,
           });
           const filename = `secureyeoman-audit-${new Date().toISOString().slice(0, 10)}.json`;
           return reply

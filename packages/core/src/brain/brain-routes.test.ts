@@ -182,11 +182,11 @@ describe('GET /api/v1/brain/memories', () => {
     expect(recallMock.mock.calls[0][0].limit).toBe(20);
   });
 
-  it('floors limit to 1 when given zero or negative', async () => {
+  it('falls back to default limit when given zero or negative', async () => {
     const recallMock = vi.fn().mockResolvedValue([]);
     const app = buildApp({ brainOverrides: { recall: recallMock } });
     await app.inject({ method: 'GET', url: '/api/v1/brain/memories?limit=0' });
-    expect(recallMock.mock.calls[0][0].limit).toBe(1);
+    expect(recallMock.mock.calls[0][0].limit).toBe(20);
   });
 
   it('handles NaN limit by falling back to default', async () => {

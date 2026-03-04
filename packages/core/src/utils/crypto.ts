@@ -19,6 +19,14 @@ export function sha256(data: string | Buffer): string {
 }
 
 /**
+ * Generate an MD5 hash of the input.
+ * Faster than SHA-256 — use only for non-security cache keys.
+ */
+export function md5(data: string | Buffer): string {
+  return createHash('md5').update(data).digest('hex');
+}
+
+/**
  * Generate an HMAC-SHA256 signature
  * Used for audit chain integrity
  */

@@ -5331,7 +5331,10 @@ export async function fetchSentimentTrend(
   personalityId: string,
   days = 30
 ): Promise<SentimentTrendPoint[]> {
-  return request(`/analytics/sentiment/trend/${encodeURIComponent(personalityId)}?days=${days}`);
+  const { trend } = await request<{ trend: SentimentTrendPoint[] }>(
+    `/analytics/sentiment/trend/${encodeURIComponent(personalityId)}?days=${days}`
+  );
+  return trend;
 }
 
 export async function fetchEngagementMetrics(
@@ -5347,14 +5350,20 @@ export async function fetchEngagementMetrics(
 }
 
 export async function fetchKeyPhrases(personalityId: string, limit = 50): Promise<KeyPhraseItem[]> {
-  return request(`/analytics/phrases/${encodeURIComponent(personalityId)}?limit=${limit}`);
+  const { phrases } = await request<{ phrases: KeyPhraseItem[] }>(
+    `/analytics/phrases/${encodeURIComponent(personalityId)}?limit=${limit}`
+  );
+  return phrases;
 }
 
 export async function fetchTopEntities(
   personalityId: string,
   limit = 20
 ): Promise<TopEntityItem[]> {
-  return request(`/analytics/entities/top/${encodeURIComponent(personalityId)}?limit=${limit}`);
+  const { entities } = await request<{ entities: TopEntityItem[] }>(
+    `/analytics/entities/top/${encodeURIComponent(personalityId)}?limit=${limit}`
+  );
+  return entities;
 }
 
 export async function searchEntities(
@@ -5362,7 +5371,10 @@ export async function searchEntities(
   entityType = 'concept'
 ): Promise<{ conversationId: string; title: string | null; mentionCount: number }[]> {
   const qs = new URLSearchParams({ entity, entityType }).toString();
-  return request(`/analytics/entities?${qs}`);
+  const { results } = await request<{
+    results: { conversationId: string; title: string | null; mentionCount: number }[];
+  }>(`/analytics/entities?${qs}`);
+  return results;
 }
 
 export async function fetchAnomalies(opts?: {
@@ -6191,11 +6203,19 @@ export async function fetchScanHistory(params?: {
   }
 }
 
-export async function fetchScanStats(): Promise<{ stats: any }> {
+export interface ScanStats {
+  total: number;
+  byVerdict: Record<string, number>;
+  bySeverity: Record<string, number>;
+  avgDurationMs: number;
+  last24h: number;
+}
+
+export async function fetchScanStats(): Promise<{ stats: ScanStats }> {
   try {
-    return await request<{ stats: any }>('/sandbox/scans/stats');
+    return await request<{ stats: ScanStats }>('/sandbox/scans/stats');
   } catch {
-    return { stats: { total: 0, byVerdict: {}, bySeverity: {} } };
+    return { stats: { total: 0, byVerdict: {}, bySeverity: {}, avgDurationMs: 0, last24h: 0 } };
   }
 }
 

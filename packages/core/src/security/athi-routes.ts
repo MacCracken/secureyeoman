@@ -60,8 +60,8 @@ export function registerAthiRoutes(app: FastifyInstance, opts: AthiRoutesOptions
 
   // ── GET /api/v1/security/athi/scenarios/:id ──────────────────────────────
 
-  app.get('/api/v1/security/athi/scenarios/:id', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.get<{ Params: { id: string } }>('/api/v1/security/athi/scenarios/:id', async (req, reply) => {
+    const { id } = req.params;
     try {
       const scenario = await mgr.getScenario(id);
       if (!scenario) return sendError(reply, 404, 'Scenario not found');
@@ -73,8 +73,8 @@ export function registerAthiRoutes(app: FastifyInstance, opts: AthiRoutesOptions
 
   // ── PUT /api/v1/security/athi/scenarios/:id ──────────────────────────────
 
-  app.put('/api/v1/security/athi/scenarios/:id', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.put<{ Params: { id: string } }>('/api/v1/security/athi/scenarios/:id', async (req, reply) => {
+    const { id } = req.params;
     try {
       const parsed = AthiScenarioUpdateSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -90,8 +90,8 @@ export function registerAthiRoutes(app: FastifyInstance, opts: AthiRoutesOptions
 
   // ── DELETE /api/v1/security/athi/scenarios/:id ───────────────────────────
 
-  app.delete('/api/v1/security/athi/scenarios/:id', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.delete<{ Params: { id: string } }>('/api/v1/security/athi/scenarios/:id', async (req, reply) => {
+    const { id } = req.params;
     try {
       const deleted = await mgr.deleteScenario(id);
       if (!deleted) return sendError(reply, 404, 'Scenario not found');
@@ -103,8 +103,8 @@ export function registerAthiRoutes(app: FastifyInstance, opts: AthiRoutesOptions
 
   // ── POST /api/v1/security/athi/scenarios/:id/link-events ─────────────────
 
-  app.post('/api/v1/security/athi/scenarios/:id/link-events', async (req, reply) => {
-    const { id } = req.params as { id: string };
+  app.post<{ Params: { id: string } }>('/api/v1/security/athi/scenarios/:id/link-events', async (req, reply) => {
+    const { id } = req.params;
     try {
       const body = req.body as { eventIds?: string[] };
       if (!Array.isArray(body?.eventIds) || body.eventIds.length === 0) {
@@ -120,8 +120,8 @@ export function registerAthiRoutes(app: FastifyInstance, opts: AthiRoutesOptions
 
   // ── GET /api/v1/security/athi/scenarios/by-technique/:technique ────────
 
-  app.get('/api/v1/security/athi/scenarios/by-technique/:technique', async (req, reply) => {
-    const { technique } = req.params as { technique: string };
+  app.get<{ Params: { technique: string } }>('/api/v1/security/athi/scenarios/by-technique/:technique', async (req, reply) => {
+    const { technique } = req.params;
     try {
       const scenarios = await mgr.findScenariosForTechnique(technique);
       return reply.send({ scenarios });

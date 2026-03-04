@@ -6,6 +6,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { ExtensionManager } from './manager.js';
 import type { HookPoint, HookSemantics } from './types.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export function registerExtensionRoutes(
   app: FastifyInstance,
@@ -211,7 +212,7 @@ export function registerExtensionRoutes(
       }>
     ) => {
       const hookPoint = request.query.hookPoint as HookPoint | undefined;
-      const limit = request.query.limit ? parseInt(request.query.limit, 10) : 100;
+      const { limit } = parsePagination(request.query, { defaultLimit: 100 });
       const entries = extensionManager.getExecutionLog(hookPoint, limit);
       return { entries };
     }

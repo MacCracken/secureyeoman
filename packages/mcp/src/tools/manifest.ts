@@ -755,5 +755,64 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'northflank_trigger_deployment',
       description: 'Trigger a redeployment for a Northflank deployment service.',
     },
+
+    // SRA — Security Reference Architecture (Phase 123)
+    {
+      name: 'sra_list_blueprints',
+      description:
+        'List available Security Reference Architecture blueprints, filtered by provider, framework, or status.',
+    },
+    {
+      name: 'sra_get_blueprint',
+      description:
+        'Get a specific SRA blueprint by ID, including all controls with implementation guidance.',
+    },
+    {
+      name: 'sra_create_blueprint',
+      description:
+        'Create a custom Security Reference Architecture blueprint with controls.',
+    },
+    {
+      name: 'sra_assess',
+      description:
+        'Create a new SRA assessment against a blueprint for gap analysis.',
+    },
+    {
+      name: 'sra_get_assessment',
+      description:
+        'Get a specific SRA assessment by ID, including control results and compliance summary.',
+    },
+    {
+      name: 'sra_compliance_map',
+      description:
+        'List compliance framework mappings across security domains (NIST CSF, CIS v8, SOC 2, FedRAMP).',
+    },
+    {
+      name: 'sra_summary',
+      description:
+        'Get an executive summary of the Security Reference Architecture posture.',
+    },
+
+    // Excalidraw diagramming tools (Phase 117)
+    {
+      name: 'excalidraw_create',
+      description:
+        'Generate an Excalidraw scene JSON from structured element specs',
+    },
+    {
+      name: 'excalidraw_validate',
+      description:
+        'Validate an Excalidraw scene for layout issues, orphaned bindings, and accessibility',
+    },
+    {
+      name: 'excalidraw_modify',
+      description:
+        'Patch an existing Excalidraw scene with add/update/delete/move/restyle operations',
+    },
+    {
+      name: 'excalidraw_templates',
+      description:
+        'List available Excalidraw element templates and color palettes',
+    },
   ];
 }

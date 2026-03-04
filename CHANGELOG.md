@@ -4,6 +4,22 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ---
 
+## [2026.3.4] — 2026-03-04
+
+### Phase 123: Security Reference Architecture (SRA)
+
+- **Shared types** (`packages/shared/src/types/sra.ts`): Zod schemas for `SraProvider`, `SraFramework`, `SraControlDomain`, `SraControlStatus`, `SraBlueprintStatus`, `SraAssessmentStatus`, `ComplianceMapping`, `IacSnippet`, `SraControl`, `SraBlueprint`, `SraAssessment`, `SraControlResult`, `SraAssessmentSummary`, `SraComplianceMappingRecord`, `SraExecutiveSummary`. Create/Update schemas for blueprints and assessments. Exported from `types/index.ts`.
+- **SQL migration** (`007_sra.sql`): `security.sra_blueprints` (provider, framework, controls JSONB, is_builtin), `security.sra_assessments` (blueprint_id FK, control_results JSONB, summary JSONB, linked_risk_assessment_id), `security.sra_compliance_mappings` (domain, framework, control_id unique constraint). Indexes on provider, framework, status, org_id, blueprint_id.
+- **SRA storage** (`sra-storage.ts`): `SraStorage` extends `PgBaseStorage`. Blueprint CRUD with `createBuiltinBlueprint` (upsert for seeding), Assessment CRUD, compliance mapping read/seed, summary aggregation (`getBlueprintCounts`, `getAssessmentStats`). 27 unit tests.
+- **SRA manager** (`sra-manager.ts`): `SraManager` with CRUD passthrough, `generateAssessmentSummary` (computes compliance score from control results with domain-level scoring), 30s cached `getSummary`, fire-and-forget alert when compliance score < 50%. Seeds 3 built-in blueprints (AWS SRA Foundation — 25 controls, CISA Zero Trust TRA — 20 controls, Microsoft MCRA Foundation — 22 controls) and ~40 compliance mappings across NIST CSF, CIS v8, SOC 2, FedRAMP. 18 unit tests.
+- **SRA routes** (`sra-routes.ts`): 12 Fastify endpoints — blueprint CRUD (5), assessment CRUD + generate (5), compliance-mappings list, executive summary. 24 unit tests.
+- **Wiring**: `secureyeoman.ts` — SraStorage + SraManager fields, init after ATHI, getter, cleanup, seed on startup. `server.ts` — route registration. `auth-middleware.ts` — `security_sra` resource (read/write) for all endpoints.
+- **MCP tools** (`sra-tools.ts`): 7 tools — `sra_list_blueprints`, `sra_get_blueprint`, `sra_create_blueprint`, `sra_assess`, `sra_get_assessment`, `sra_compliance_map`, `sra_summary`. Feature-gated by `exposeSra` in McpServiceConfig and McpFeaturesSchema. Registered in `tools/index.ts` and `tools/manifest.ts`.
+- **Marketplace skill** (`security-reference-architecture.ts`): "Security Reference Architecture" skill — cloud security architect persona covering blueprint selection, control assessment, gap analysis, IaC remediation, compliance mapping, multi-cloud strategy. 6 trigger patterns, 7 allowed MCP tools, L2 autonomy. Added to BUILTIN_SKILLS (19→20).
+- **Workflow template**: `sra-posture-assessment` — 4-step pipeline: select-blueprint → assess-controls → human_approval → save-assessment. Manual trigger, L3 autonomy.
+
+---
+
 ## [2026.3.3] — 2026-03-03
 
 ### Phase 121: Security Hardening & Code Audit
