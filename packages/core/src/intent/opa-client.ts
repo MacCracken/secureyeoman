@@ -20,12 +20,13 @@ export class OpaClient {
   }
 
   /**
-   * Returns an OpaClient if OPA_ADDR env var is set, otherwise null.
+   * Returns an OpaClient if an OPA address is available, otherwise null.
+   * Checks the config-provided address first, falls back to OPA_ADDR env var.
    * Callers should treat null as "OPA not available" and fall back to
    * natural-language rule matching.
    */
-  static fromEnv(): OpaClient | null {
-    const addr = process.env.OPA_ADDR;
+  static fromEnv(configAddr?: string): OpaClient | null {
+    const addr = configAddr ?? process.env.OPA_ADDR;
     return addr ? new OpaClient(addr) : null;
   }
 

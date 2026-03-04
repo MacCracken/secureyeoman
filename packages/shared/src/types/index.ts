@@ -473,6 +473,8 @@ export {
   type PromptGuardConfig,
   type ResponseGuardConfig,
   type LLMJudgeConfig,
+  LicensingConfigSchema,
+  type LicensingConfig,
 } from './config.js';
 
 // Proactive types

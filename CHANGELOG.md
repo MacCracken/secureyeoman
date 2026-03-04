@@ -93,6 +93,23 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **`secureyeoman.ts`**: Creates `CryptoPool({ poolSize: 2 })` before AuditChain init, passes to config. Cleanup in `cleanup()`.
 - **Tests**: 5 tests in `crypto-pool.test.ts` (parity with sync, concurrency, close fallback, round-robin). 3 tests in `audit-chain.test.ts` (record with pool, verify with pool, cross-verify pool-written chain without pool).
 
+### Engineering Backlog — Unified Error Responses (Verified Complete)
+
+- **Audit**: Verified all 50 route files across the codebase — every error response (4xx/5xx) already uses `sendError()` from `utils/errors.ts`. The 178 `reply.code(N).send(...)` instances detected by grep were all success responses (201/202/204). Phase 22's initial migration was comprehensive; subsequent phases maintained the pattern. Backlog item closed.
+
+### Engineering Backlog — Configuration Centralization
+
+- **`LicensingConfigSchema`** (`packages/shared/src/types/config.ts`): New config section with `licenseKeyEnv` (env-var ref, default `SECUREYEOMAN_LICENSE_KEY`) and `enforcement` (boolean, default `false`). Exported from `types/index.ts`.
+- **`IntentFileConfigSchema`**: Added `opaAddr` optional string field for OPA server address.
+- **`GatewayConfigSchema`**: Added `externalUrl`, `oauthRedirectBaseUrl`, and `dashboardDist` optional string fields.
+- **`loadEnvConfig()`** (`config/loader.ts`): New env var mappings — `SECUREYEOMAN_EXTERNAL_URL` → `gateway.externalUrl`, `OAUTH_REDIRECT_BASE_URL` → `gateway.oauthRedirectBaseUrl`, `SECUREYEOMAN_DASHBOARD_DIST` → `gateway.dashboardDist`, `SECUREYEOMAN_LICENSE_ENFORCEMENT` → `licensing.enforcement`, `OPA_ADDR` → `intent.opaAddr`.
+- **`LicenseManager`**: Constructor accepts optional `enforcement` boolean parameter, falling back to `process.env.SECUREYEOMAN_LICENSE_ENFORCEMENT` for backward compatibility. `secureyeoman.ts` passes `config.licensing.enforcement`.
+- **`OpaClient.fromEnv()`**: Accepts optional `configAddr` parameter, falling back to `process.env.OPA_ADDR`. `IntentManagerDeps` gains `opaAddr` field, wired from `config.intent.opaAddr` in `SoulModule`.
+- **`WorkflowEngine`**: Removed direct `process.env.GITHUB_TOKEN` / `process.env.GH_TOKEN` reads. Token now flows through `cicdConfig.githubToken`, populated from env vars at construction time in `DelegationModule`.
+- **`WorkflowManagerDeps`**: Added `cicdConfig` field, forwarded to `WorkflowEngine`.
+- **`GatewayServer`**: `externalUrl`, `oauthRedirectBaseUrl`, `dashboardDist` now read from `this.config` instead of `process.env`.
+- **Remaining legitimate `process.env` usage**: `pg-pool.ts` (DB connection — infrastructure layer), `test-setup.ts` (test-only), `cli/utils.ts` (NO_COLOR/SECUREYEOMAN_URL — CLI conventions), `body/platform/` (OS detection: WAYLAND_DISPLAY, DISPLAY, XDG_SESSION_TYPE), `terminal-routes.ts` (HOME — shell env), `multimodal/manager.ts` (provider API keys — secrets, ~50 vars), `ai/cost-calculator.ts` (provider key availability), `cicd-webhook-routes.ts` (webhook secrets — runtime secret access), `gateway/server.ts` (OAuth client ID/secrets — runtime secret access).
+
 ### Engineering Backlog — Cleanup, Performance & Type Safety
 
 - **Storage cleanup fix**: Added `systemPreferences` to `cleanup()` in `secureyeoman.ts`. Was the only storage object missing from shutdown cleanup.

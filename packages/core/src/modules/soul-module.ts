@@ -77,6 +77,7 @@ export class SoulModule implements AppModule {
       this.intentManager = new IntentManager({
         storage: this.intentStorage,
         signalRefreshIntervalMs: this.config.intent?.signalRefreshIntervalMs,
+        opaAddr: this.config.intent?.opaAddr,
         getDepartmentRiskManager: this.getDepartmentRiskManager,
       });
       await this.intentManager.initialize();

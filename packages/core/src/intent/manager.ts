@@ -32,6 +32,8 @@ import { evalCel } from './cel-evaluator.js';
 export interface IntentManagerDeps {
   storage: IntentStorage;
   signalRefreshIntervalMs?: number;
+  /** OPA address from config (intent.opaAddr). Passed to OpaClient.fromEnv() for centralized config. */
+  opaAddr?: string;
   /**
    * Optional OPA client override (defaults to OpaClient.fromEnv()).
    * Pass null to explicitly disable OPA even if OPA_ADDR is set (useful in tests).
@@ -110,8 +112,8 @@ export class IntentManager {
   constructor(deps: IntentManagerDeps) {
     this.storage = deps.storage;
     this.signalRefreshIntervalMs = deps.signalRefreshIntervalMs ?? 300_000; // 5 min default
-    // opaClient: undefined → auto-detect from env; null → disabled; instance → use it
-    this.opa = deps.opaClient === undefined ? OpaClient.fromEnv() : (deps.opaClient ?? null);
+    // opaClient: undefined → auto-detect from config/env; null → disabled; instance → use it
+    this.opa = deps.opaClient === undefined ? OpaClient.fromEnv(deps.opaAddr) : (deps.opaClient ?? null);
     this.callMcpTool = deps.callMcpTool ?? null;
     this.getDepartmentRiskManager = deps.getDepartmentRiskManager;
   }

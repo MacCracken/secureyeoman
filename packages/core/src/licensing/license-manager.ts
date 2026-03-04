@@ -59,8 +59,8 @@ export class LicenseManager {
   private parseError: string | null = null;
   private enforcementEnabled: boolean;
 
-  constructor(licenseKey?: string) {
-    this.enforcementEnabled = process.env.SECUREYEOMAN_LICENSE_ENFORCEMENT === 'true';
+  constructor(licenseKey?: string, enforcement?: boolean) {
+    this.enforcementEnabled = enforcement ?? process.env.SECUREYEOMAN_LICENSE_ENFORCEMENT === 'true';
     if (licenseKey) {
       try {
         this.claims = LicenseManager.validate(licenseKey);

@@ -847,7 +847,7 @@ export class WorkflowEngine {
 
         if (provider === 'github-actions') {
           const token =
-            this.cicdConfig?.githubToken ?? process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
+            this.cicdConfig?.githubToken;
           const headers: Record<string, string> = {
             Accept: 'application/vnd.github+json',
             'X-GitHub-Api-Version': '2022-11-28',
@@ -925,7 +925,7 @@ export class WorkflowEngine {
           const owner = this.resolveTemplate(String(cfg.owner ?? ''), ctx);
           const repo = this.resolveTemplate(String(cfg.repo ?? ''), ctx);
           const token =
-            this.cicdConfig?.githubToken ?? process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
+            this.cicdConfig?.githubToken;
           const headers: Record<string, string> = {
             Accept: 'application/vnd.github+json',
             'X-GitHub-Api-Version': '2022-11-28',

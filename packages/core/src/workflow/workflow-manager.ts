@@ -28,6 +28,7 @@ import type {
 import type { AlertManager } from '../telemetry/alert-manager.js';
 import type { CouncilManager } from '../agents/council-manager.js';
 import type { WorkflowVersionManager } from './workflow-version-manager.js';
+import type { CicdEngineConfig } from './workflow-engine.js';
 
 export interface WorkflowManagerDeps {
   storage: WorkflowStorage;
@@ -48,6 +49,8 @@ export interface WorkflowManagerDeps {
   workflowVersionManager?: WorkflowVersionManager | null;
   // Council of AIs
   councilManager?: CouncilManager | null;
+  // CI/CD config (tokens, URLs)
+  cicdConfig?: CicdEngineConfig | null;
 }
 
 export class WorkflowManager {
@@ -74,6 +77,7 @@ export class WorkflowManager {
       lineageStorage: deps.lineageStorage,
       alertManager: deps.alertManager,
       councilManager: deps.councilManager,
+      cicdConfig: deps.cicdConfig,
     });
   }
 

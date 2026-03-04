@@ -12,6 +12,7 @@
 import {
   loadConfig,
   validateSecrets,
+  getSecret,
   type LoadConfigOptions,
 } from './config/loader.js';
 import { initializeLogger, type SecureLogger } from './logging/logger.js';
@@ -253,7 +254,8 @@ export class SecureYeoman {
       });
 
       // Step 2.05b: Initialize LicenseManager
-      this.licenseManager = new LicenseManager(process.env.SECUREYEOMAN_LICENSE_KEY);
+      const licenseKey = getSecret(this.config.licensing.licenseKeyEnv);
+      this.licenseManager = new LicenseManager(licenseKey, this.config.licensing.enforcement);
       const licTier = this.licenseManager.getTier();
       this.logger.info(`License: ${licTier}`, {
         tier: licTier,
@@ -348,12 +350,12 @@ export class SecureYeoman {
       }
 
       // Step 5.7.0a: Load persisted license key from brain.meta if env var not set
-      if (!process.env.SECUREYEOMAN_LICENSE_KEY) {
+      if (!getSecret(this.config.licensing.licenseKeyEnv)) {
         try {
           const persistedKey = await this.brainStorage!.getMeta('license:key');
           if (persistedKey) {
-            process.env.SECUREYEOMAN_LICENSE_KEY = persistedKey;
-            this.licenseManager = new LicenseManager(persistedKey);
+            process.env[this.config.licensing.licenseKeyEnv] = persistedKey;
+            this.licenseManager = new LicenseManager(persistedKey, this.config.licensing.enforcement);
             this.logger.info('License key loaded from brain.meta', {
               tier: this.licenseManager.getTier(),
             });
@@ -1283,7 +1285,7 @@ export class SecureYeoman {
   // ------------------------------------------------------------------
 
   reloadLicenseKey(key: string): void {
-    this.licenseManager = new LicenseManager(key);
+    this.licenseManager = new LicenseManager(key, this.config.licensing.enforcement);
     this.logger?.info('License key reloaded', { tier: this.licenseManager.getTier() });
   }
 

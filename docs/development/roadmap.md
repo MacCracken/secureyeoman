@@ -142,14 +142,6 @@ Current: 87.01% stmt / 76.02% branches. Target: 88% / 77%. Gap: <1% each.
 - [ ] **Notification branch coverage** — `notifications/` at 90% stmt / 64.22% branch. Notification preference filtering and channel dispatch branches.
 - [ ] **Capture-permissions tests** — `body/capture-permissions.ts` has no test file. Security-critical RBAC permission enforcement for screen capture operations.
 
-### Code Quality & Consistency
-
-- [ ] **Unify error response format** — Phase 22 introduced `sendError()` but 178 inline `reply.code(N).send(...)` calls remain across ~50 route files. Highest counts: `training-routes.ts` (21), `soul-routes.ts` (11), `github-api-routes.ts` (9), `integration-routes.ts` (8), `document-routes.ts` (7). Migrate all to `sendError()`.
-
-### Configuration Centralization
-
-- [ ] **Centralize `process.env` access** — Multiple modules read `process.env.*` directly instead of via config loader: `secureyeoman.ts` (`INTEGRATION_PLUGIN_DIR`, `COMMUNITY_REPO_PATH`), `opa-client.ts` (`OPA_ADDR`), `workflow-engine.ts` (`GITHUB_TOKEN`), `license-manager.ts` (`SECUREYEOMAN_LICENSE_ENFORCEMENT`), `pg-pool.ts`. Centralize into `ConfigSchema` with startup validation.
-
 ---
 
 ## Wrap-Up — Pre-Release Gating
@@ -321,4 +313,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-04 — Removed completed God Object decomposition (Phase 1 & 2), Fastify JSON Schema validation & Worker thread pool backlog items. See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-04 — Removed completed backlog items: God Object decomposition (Phase 1 & 2), Fastify JSON Schema validation, Worker thread pool, error response unification, process.env centralization. See [Changelog](../../CHANGELOG.md) for full history.*

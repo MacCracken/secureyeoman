@@ -285,6 +285,37 @@ function loadEnvConfig(): PartialConfig {
     } as PartialConfig['security'];
   }
 
+  // Gateway external URLs
+  if (process.env.SECUREYEOMAN_EXTERNAL_URL) {
+    gateway.externalUrl = process.env.SECUREYEOMAN_EXTERNAL_URL.replace(/\/$/, '');
+  }
+  if (process.env.OAUTH_REDIRECT_BASE_URL) {
+    gateway.oauthRedirectBaseUrl = process.env.OAUTH_REDIRECT_BASE_URL.replace(/\/$/, '');
+  }
+  if (process.env.SECUREYEOMAN_DASHBOARD_DIST) {
+    gateway.dashboardDist = process.env.SECUREYEOMAN_DASHBOARD_DIST;
+  }
+
+  // Licensing
+  const licensing: Record<string, unknown> = {};
+  if (process.env.SECUREYEOMAN_LICENSE_ENFORCEMENT) {
+    licensing.enforcement = process.env.SECUREYEOMAN_LICENSE_ENFORCEMENT === 'true';
+  }
+  if (process.env.SECUREYEOMAN_LICENSE_KEY) {
+    licensing.licenseKeyEnv = 'SECUREYEOMAN_LICENSE_KEY';
+  }
+  if (Object.keys(licensing).length > 0) {
+    config.licensing = licensing as PartialConfig['licensing'];
+  }
+
+  // Intent / OPA
+  if (process.env.OPA_ADDR) {
+    config.intent = {
+      ...config.intent,
+      opaAddr: process.env.OPA_ADDR,
+    } as PartialConfig['intent'];
+  }
+
   // Community / plugin path overrides
   const securityPaths: Record<string, unknown> = {};
   if (process.env.COMMUNITY_REPO_PATH) {

@@ -5,6 +5,7 @@
  * Extracted from SecureYeoman bootDelegationChain() and related fields.
  */
 
+import { getSecret } from '../config/loader.js';
 import { BaseModule } from './types.js';
 import { SubAgentStorage } from '../agents/storage.js';
 import { SubAgentManager } from '../agents/manager.js';
@@ -202,6 +203,9 @@ export class DelegationModule extends BaseModule {
           alertManager: this.deps.getAlertManager(),
           workflowVersionManager: this.workflowVersionManager,
           councilManager: this.councilManager,
+          cicdConfig: {
+            githubToken: getSecret('GITHUB_TOKEN') ?? getSecret('GH_TOKEN'),
+          },
         });
         await this.workflowManager.initialize();
         this.logger!.debug('Workflow manager initialized');

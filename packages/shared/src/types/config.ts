@@ -535,6 +535,12 @@ export const GatewayConfigSchema = z.object({
    * reachable via a proper hostname/cert (e.g. enterprise wildcard cert).
    */
   allowRemoteAccess: z.boolean().default(false),
+  /** Public-facing URL for OAuth redirects and external links (e.g. https://my.domain.com). */
+  externalUrl: z.string().optional(),
+  /** OAuth redirect base URL when it differs from externalUrl (e.g. Vite dev proxy at port 3000). */
+  oauthRedirectBaseUrl: z.string().optional(),
+  /** Path to pre-built dashboard dist directory. Auto-discovered if not set. */
+  dashboardDist: z.string().optional(),
 });
 
 export type GatewayConfig = z.infer<typeof GatewayConfigSchema>;
@@ -640,6 +646,18 @@ export const StorageBackendConfigSchema = z
 
 export type StorageBackendConfig = z.infer<typeof StorageBackendConfigSchema>;
 
+// Licensing configuration
+export const LicensingConfigSchema = z
+  .object({
+    /** Env-var name holding the license key. */
+    licenseKeyEnv: EnvVarRefSchema.default('SECUREYEOMAN_LICENSE_KEY'),
+    /** Enable license enforcement. When false (default), all features are available. */
+    enforcement: z.boolean().default(false),
+  })
+  .default({});
+
+export type LicensingConfig = z.infer<typeof LicensingConfigSchema>;
+
 // Intent config
 export const IntentFileConfigSchema = z
   .object({
@@ -647,6 +665,8 @@ export const IntentFileConfigSchema = z
     filePath: z.string().optional(),
     /** How often (ms) to refresh signal values from data sources. Default: 5 min. */
     signalRefreshIntervalMs: z.number().int().positive().default(300_000),
+    /** OPA server address for governance policy evaluation. */
+    opaAddr: z.string().optional(),
   })
   .default({});
 
@@ -688,6 +708,7 @@ export const ConfigSchema = z.object({
   storage: StorageBackendConfigSchema,
   intent: IntentFileConfigSchema,
   notifications: NotificationsConfigSchema,
+  licensing: LicensingConfigSchema,
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
