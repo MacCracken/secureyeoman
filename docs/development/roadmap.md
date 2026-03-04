@@ -65,7 +65,7 @@
 
 - [ ] Reports and Audit Logs are the same, report; lets consolidate generated reports and logs on the same page bring the style of reports list to thetop of the Audit Logs page.  Lets allow fix the buttons to be like Reports with Generate and type select and user has to download the report.
 - [ ] Security > System tab should be after Overview tab
-- [ ] Security > Risk should be folded into Security > ATHI
+- [ ] Security > Risk should also include Security > ATHI
 - [ ] Security > Risk should also include Security > Sandbox
 
 ### Personality View
