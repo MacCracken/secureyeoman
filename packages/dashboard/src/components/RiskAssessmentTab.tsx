@@ -1025,7 +1025,7 @@ function DepartmentsSection() {
       {/* Executive Summary Panel */}
       {summary && (
         <Suspense fallback={<Loader2 className="w-5 h-5 animate-spin" />}>
-          <ExecutiveSummaryPanel summary={summary} />
+          <ExecutiveSummaryPanel summary={summary as any} />
         </Suspense>
       )}
 

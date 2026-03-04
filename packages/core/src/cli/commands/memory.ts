@@ -329,10 +329,10 @@ Options:
           return 1;
         }
       } else if (subcommand === 'activation') {
-        const spinner = new Spinner(ctx.stderr, 'Fetching cognitive activation stats...');
-        spinner.start();
+        const spinner = new Spinner(ctx.stderr);
+        spinner.start('Fetching cognitive activation stats...');
         const result = await apiCall(baseUrl, '/api/v1/brain/cognitive-stats');
-        spinner.stop();
+        spinner.stop('Done');
         if (!result.ok) {
           ctx.stderr.write(`Failed to fetch stats: HTTP ${result.status}\n`);
           return 1;
@@ -354,7 +354,7 @@ Options:
           ctx.stdout.write('Top Activated Memories:\n');
           ctx.stdout.write(
             formatTable(
-              stats.topMemories.map((m) => [m.id, m.activation.toFixed(3)]),
+              stats.topMemories.map((m) => ({ ID: m.id, Activation: m.activation.toFixed(3) })),
               ['ID', 'Activation']
             )
           );
@@ -363,7 +363,7 @@ Options:
           ctx.stdout.write('\nTop Activated Documents:\n');
           ctx.stdout.write(
             formatTable(
-              stats.topDocuments.map((d) => [d.id, d.activation.toFixed(3)]),
+              stats.topDocuments.map((d) => ({ ID: d.id, Activation: d.activation.toFixed(3) })),
               ['ID', 'Activation']
             )
           );
@@ -372,7 +372,7 @@ Options:
           ctx.stdout.write('\n7-Day Access Trend:\n');
           ctx.stdout.write(
             formatTable(
-              stats.accessTrend.map((t) => [t.day, String(t.count)]),
+              stats.accessTrend.map((t) => ({ Day: t.day, Accesses: String(t.count) })),
               ['Day', 'Accesses']
             )
           );

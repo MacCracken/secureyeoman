@@ -28,7 +28,7 @@ interface DepartmentSummary {
   appetiteBreaches: number;
 }
 
-interface ExecutiveSummary {
+interface DepartmentalSummary {
   totalDepartments: number;
   totalOpenRisks: number;
   totalOverdueRisks: number;
@@ -36,6 +36,36 @@ interface ExecutiveSummary {
   appetiteBreaches: number;
   averageScore: number;
   departments: DepartmentSummary[];
+}
+
+/** ATHI-style summary returned by /risk/summary before 111-D report generator lands. */
+interface AthiStyleSummary {
+  totalScenarios: number;
+  byStatus: Record<string, number>;
+  byActor: Record<string, number>;
+  topRisks: unknown[];
+  averageRiskScore: number;
+  mitigationCoverage: number;
+}
+
+type ExecutiveSummary = DepartmentalSummary | AthiStyleSummary;
+
+function isDepartmental(s: ExecutiveSummary): s is DepartmentalSummary {
+  return 'totalDepartments' in s;
+}
+
+/** Normalise either shape into the fields the KPI grid needs. */
+function normalise(s: ExecutiveSummary) {
+  if (isDepartmental(s)) return s;
+  return {
+    totalDepartments: Object.keys(s.byActor).length,
+    totalOpenRisks: s.totalScenarios - (s.byStatus['mitigated'] ?? 0),
+    totalOverdueRisks: 0,
+    totalCriticalRisks: s.byStatus['identified'] ?? 0,
+    appetiteBreaches: 0,
+    averageScore: s.averageRiskScore,
+    departments: [] as DepartmentSummary[],
+  };
 }
 
 interface ExecutiveSummaryPanelProps {
@@ -172,7 +202,8 @@ function ExportDropdown() {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function ExecutiveSummaryPanel({ summary }: ExecutiveSummaryPanelProps) {
+export function ExecutiveSummaryPanel({ summary: raw }: ExecutiveSummaryPanelProps) {
+  const summary = normalise(raw);
   const avgLevel = scoreLevel(summary.averageScore);
 
   return (

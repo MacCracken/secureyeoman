@@ -873,7 +873,7 @@ export class BrainManager {
     // Record pairwise co-activations
     for (let i = 0; i < ids.length; i++) {
       for (let j = i + 1; j < ids.length; j++) {
-        promises.push(storage.recordCoActivation(ids[i], ids[j], delta));
+        promises.push(storage.recordCoActivation(ids[i]!, ids[j]!, delta));
       }
     }
 

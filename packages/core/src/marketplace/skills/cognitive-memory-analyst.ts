@@ -66,7 +66,6 @@ export const cognitiveMemoryAnalystSkill: Partial<MarketplaceSkill> = {
     '- Use clear, non-technical language when explaining patterns to the user.',
     '- Provide actionable recommendations, not just observations.',
     '- When suggesting improvements, explain the expected cognitive benefit.',
-  ],
-  dependencies: ['memory_activation_stats', 'memory_associations', 'memory_recall'],
+  ].join('\n'),
   tags: ['cognitive', 'memory', 'analysis', 'optimization', 'ACT-R', 'Hebbian'],
 };
