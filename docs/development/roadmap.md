@@ -51,7 +51,6 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | 109 | Editor Improvements | P3 — power user UX | 🔄 In Progress |
-| 117 | Excalidraw Diagramming — Remaining (canvas, KB integration) | P3 — capability + visualization | 🔄 Partial (6/6 tools + workflow done, canvas/KB remaining) |
 | 120 | Canvas Editor Improvements | P3 — canvas improvements | Planned |
 | — | Engineering Backlog | Ongoing | Pick-up opportunistically |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
@@ -101,17 +100,6 @@
 *Previously Phase 100. Renumbered for sequential ordering. Includes "settings page split" from Phase XX.*
 
 **Remaining IDE features** — Auto-Claude–style patterns (plan display, step-by-step approval, AI commit messages, context badges), multi-file editing (tabs, split panes), project explorer, integrated Git, command palette, inline AI completion (Copilot-style), multi-file search & replace, collaborative editing (Yjs CRDT), keybindings editor, layout persistence, responsive/mobile layout, training integration (export/annotation), and plugin/extension system.
-
----
-
-## Phase 117: Excalidraw Diagramming — Remaining
-
-**Priority**: P3 — Capability + visualization. All 6 MCP tools, marketplace skill, feature gates, manifest entries, `diagram_generation` workflow step, and 2 workflow templates are done (2026.3.4). Remaining items: canvas and KB integration.
-
-### 117-B Remaining: Canvas & Knowledge Base Integration
-
-- [ ] **Canvas workspace integration** — Excalidraw widget type in `/editor/advanced`. Interactive embedded Excalidraw editor for AI-generated diagrams. Bi-directional: manual edits saved; AI can read current scene state.
-- [ ] **Knowledge base integration** — Store Excalidraw scenes as `brain.documents` with `format: 'excalidraw'`. Extract text labels for vector embedding. Diagrams searchable by content.
 
 ---
 
