@@ -740,15 +740,15 @@ describe('Community Skill Sync — git fetch', () => {
       logger: createNoopLogger(),
       communityRepoPath: tmpDir,
       allowCommunityGitFetch: true,
-      communityGitUrl: 'https://github.com/MacCracken/secureyeoman-community-skills',
+      communityGitUrl: 'https://github.com/MacCracken/secureyeoman-community-repo',
     });
 
     const result = await manager.syncFromCommunity(
       undefined,
-      'https://github.com/MacCracken/secureyeoman-community-skills'
+      'https://github.com/MacCracken/secureyeoman-community-repo'
     );
     expect(spy).toHaveBeenCalledWith(
-      'https://github.com/MacCracken/secureyeoman-community-skills',
+      'https://github.com/MacCracken/secureyeoman-community-repo',
       tmpDir,
       expect.anything()
     );
@@ -773,7 +773,7 @@ describe('Community Skill Sync — git fetch', () => {
 
     const result = await manager.syncFromCommunity(
       undefined,
-      'https://github.com/MacCracken/secureyeoman-community-skills'
+      'https://github.com/MacCracken/secureyeoman-community-repo'
     );
     expect(spy).not.toHaveBeenCalled();
     expect(result.added).toBe(1);
@@ -787,12 +787,12 @@ describe('Community Skill Sync — git fetch', () => {
       logger: createNoopLogger(),
       communityRepoPath: tmpDir,
       allowCommunityGitFetch: true,
-      communityGitUrl: 'https://github.com/MacCracken/secureyeoman-community-skills',
+      communityGitUrl: 'https://github.com/MacCracken/secureyeoman-community-repo',
     });
 
     const result = await manager.syncFromCommunity(
       undefined,
-      'https://github.com/MacCracken/secureyeoman-community-skills'
+      'https://github.com/MacCracken/secureyeoman-community-repo'
     );
     expect(result.errors).toHaveLength(1);
     expect(result.errors[0]).toMatch(/git clone failed/i);
@@ -812,13 +812,13 @@ describe('Community Skill Sync — git fetch', () => {
       logger: createNoopLogger(),
       communityRepoPath: tmpDir,
       allowCommunityGitFetch: true,
-      communityGitUrl: 'https://github.com/MacCracken/secureyeoman-community-skills',
+      communityGitUrl: 'https://github.com/MacCracken/secureyeoman-community-repo',
     });
 
     // No repoUrl argument — falls back to communityGitUrl from config
     await manager.syncFromCommunity();
     expect(spy).toHaveBeenCalledWith(
-      'https://github.com/MacCracken/secureyeoman-community-skills',
+      'https://github.com/MacCracken/secureyeoman-community-repo',
       tmpDir,
       expect.anything()
     );
@@ -842,7 +842,7 @@ describe('Community Skill Sync — git fetch', () => {
     // Git fetch disabled — spy not called
     await manager.syncFromCommunity(
       undefined,
-      'https://github.com/MacCracken/secureyeoman-community-skills'
+      'https://github.com/MacCracken/secureyeoman-community-repo'
     );
     expect(spy).not.toHaveBeenCalled();
 
@@ -850,7 +850,7 @@ describe('Community Skill Sync — git fetch', () => {
     manager.updatePolicy({ allowCommunityGitFetch: true });
     await manager.syncFromCommunity(
       undefined,
-      'https://github.com/MacCracken/secureyeoman-community-skills'
+      'https://github.com/MacCracken/secureyeoman-community-repo'
     );
     expect(spy).toHaveBeenCalledTimes(1);
   });

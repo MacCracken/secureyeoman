@@ -15,7 +15,7 @@ SecureYeoman's marketplace hosts skills, workflows, and swarm templates as porta
 All three types follow the same two-tier pattern:
 
 - **Builtin** — Shipped with SecureYeoman, seeded at startup, read-only.
-- **Community** — Contributed to the [`secureyeoman-community-skills`](https://github.com/MacCracken/secureyeoman-community-skills) repository; synced via the Marketplace → Community tab.
+- **Community** — Contributed to the [`secureyeoman-community-repo`](https://github.com/MacCracken/secureyeoman-community-repo) repository; synced via the Marketplace → Community tab.
 - **User** — Created by you on this instance.
 - **Imported** — Installed from a shared JSON file.
 
@@ -202,7 +202,7 @@ This follows the same injection pattern as personality-level skills in `SoulMana
 
 ## Community Repository Structure
 
-The `secureyeoman-community-skills` repository contains:
+The `secureyeoman-community-repo` repository contains:
 
 ```
 skills/        ← skill JSON files (existing)

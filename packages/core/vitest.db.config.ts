@@ -21,8 +21,19 @@ const sqlRaw: Plugin = {
 const DB_TESTS = [
   // Explicit integration test directory
   'src/__integration__/**/*.test.ts',
-  // Storage layer — always DB-backed
-  'src/**/*-storage.test.ts',
+  // Storage tests that actually use real DB (setupTestDb/initPool).
+  // Mock-based *-storage.test.ts files run in vitest.unit.config.ts instead.
+  'src/backup/backup-storage.test.ts',
+  'src/chat/conversation-storage.test.ts',
+  'src/logging/sqlite-storage.test.ts',
+  'src/security/auth-storage.test.ts',
+  'src/security/rbac-storage.test.ts',
+  'src/security/sso-storage.test.ts',
+  'src/soul/strategy-storage.test.ts',
+  'src/task/task-storage.test.ts',
+  'src/telemetry/alert-storage.test.ts',
+  'src/tenants/tenant-storage.test.ts',
+  'src/workflow/workflow-storage.test.ts',
   // Brain module — tests that use real DB (setupTestDb/initPool)
   'src/brain/brain.test.ts',
   'src/brain/debug2.test.ts',

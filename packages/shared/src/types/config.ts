@@ -336,7 +336,7 @@ export const SecurityConfigSchema = z.object({
   /** Default git URL for community skills repo when git fetch is enabled. */
   communityGitUrl: z.string().optional(),
   /** Local filesystem path where community skills repo is cloned/checked out. */
-  communityRepoPath: z.string().default('./community-skills'),
+  communityRepoPath: z.string().default('./community-repo'),
   /** Directory from which to load external integration plugins at startup. */
   integrationPluginDir: z.string().optional(),
   /**

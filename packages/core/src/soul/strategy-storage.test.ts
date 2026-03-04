@@ -4,32 +4,16 @@
  * Requires `secureyeoman_test` PostgreSQL database.
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import { StrategyStorage } from './strategy-storage.js';
-import { initPool, getPool, closePool } from '../storage/pg-pool.js';
-import { MIGRATION_MANIFEST } from '../storage/migrations/manifest.js';
+import { getPool } from '../storage/pg-pool.js';
+import { setupTestDb } from '../test-setup.js';
 
 let storage: StrategyStorage;
 
 beforeAll(async () => {
-  initPool({
-    connectionString:
-      process.env.TEST_DATABASE_URL ??
-      'postgresql://postgres:postgres@localhost:5432/secureyeoman_test',
-    max: 2,
-  });
-
-  // Run migrations
-  const pool = getPool();
-  for (const m of MIGRATION_MANIFEST) {
-    await pool.query(m.sql);
-  }
-
+  await setupTestDb();
   storage = new StrategyStorage();
-});
-
-afterAll(async () => {
-  await closePool();
 });
 
 beforeEach(async () => {

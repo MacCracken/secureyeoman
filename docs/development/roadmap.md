@@ -119,7 +119,7 @@
 
 **Priority**: P2 — High value for financial analysis and algorithmic trading capabilities. Extends the existing `VeteranFinancialManagerSkill` with specialized trading strategy implementations.
 
-> **Note**: Trading skills are distributed via the community skills repository (`secureyeoman-community-skills/skills/trading/`). Users can sync from the community repo to access these skills.
+> **Note**: Trading skills are distributed via the community skills repository (`secureyeoman-community-repo/skills/trading/`). Users can sync from the community repo to access these skills.
 
 ### ICT (Inner Circle Trading) Strategy Skills
 

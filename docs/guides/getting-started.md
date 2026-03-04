@@ -458,7 +458,7 @@ Install the security skills from the marketplace to get AI-guided methodology, e
 - **ethical-whitehat-hacker** — Authorized penetration testing methodology, scope awareness, responsible disclosure
 - **security-researcher** — Security research mindset, CVE analysis, threat modeling
 
-See the [Community Skills Registry](https://github.com/MacCracken/secureyeoman-community-skills) for the full catalogue.
+See the [Community Skills Registry](https://github.com/MacCracken/secureyeoman-community-repo) for the full catalogue.
 
 For full security toolkit configuration, see the [Configuration Reference](../configuration.md#security-toolkit).
 

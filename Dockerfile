@@ -18,10 +18,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends git \
  && groupadd -r secureyeoman && useradd -r -g secureyeoman -d /home/secureyeoman -m secureyeoman \
  && mkdir -p /home/secureyeoman/.secureyeoman/data /home/secureyeoman/.secureyeoman/workspace \
  && chown -R secureyeoman:secureyeoman /home/secureyeoman \
- && mkdir -p /usr/share/secureyeoman/community-skills \
+ && mkdir -p /usr/share/secureyeoman/community-repo \
  && chown -R secureyeoman:secureyeoman /usr/share/secureyeoman
 
-ENV COMMUNITY_REPO_PATH=/usr/share/secureyeoman/community-skills
+ENV COMMUNITY_REPO_PATH=/usr/share/secureyeoman/community-repo
 
 # Copy the pre-built binary (built via npm run build:binary)
 COPY dist/secureyeoman-linux-x64 /usr/local/bin/secureyeoman

@@ -119,9 +119,19 @@ export async function truncateWorkflowTables(): Promise<void> {
 
 /**
  * Close the pool and reset state.
+ *
+ * NOTE: With vitest.db.config.ts (isolate: false), all DB test files share a
+ * single worker process. This function is intentionally a no-op in that mode
+ * to prevent closing the pool between files — subsequent files would fail
+ * because runMigrations() re-executes non-idempotent SQL (CREATE SCHEMA
+ * without IF NOT EXISTS). The pool is cleaned up on process exit instead.
+ *
+ * Each test file still calls this in afterAll for correctness when run in
+ * isolation (e.g., `vitest run src/foo.test.ts`), but the shared-process
+ * fast path keeps the pool alive.
  */
 export async function teardownTestDb(): Promise<void> {
-  await closePool();
-  resetPool();
-  initialized = false;
+  if (!initialized) return;
+  // Skip teardown when pool is shared across files (isolate: false).
+  // The initialized guard in setupTestDb() prevents double-init anyway.
 }

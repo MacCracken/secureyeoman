@@ -198,7 +198,7 @@ export class PlatformModule implements AppModule {
       allowCommunityGitFetch: this.config.security.allowCommunityGitFetch,
       communityGitUrl:
         this.config.security.communityGitUrl ??
-        'https://github.com/MacCracken/secureyeoman-community-skills',
+        'https://github.com/MacCracken/secureyeoman-community-repo',
     });
 
     this.chatConversationStorage = new ConversationStorage();

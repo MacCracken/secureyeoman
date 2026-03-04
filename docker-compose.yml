@@ -29,7 +29,7 @@ services:
       - "18789:18789"
     volumes:
       - data:/home/secureyeoman/.secureyeoman
-      - community-skills:/usr/share/secureyeoman/community-skills
+      - community-repo:/usr/share/secureyeoman/community-repo
       - ./certs:/app/certs:ro
     env_file: .env.dev
     environment:
@@ -148,6 +148,6 @@ services:
 volumes:
   pgdata:
   data:
-  community-skills:
+  community-repo:
   node-modules:
   dashboard-node-modules:

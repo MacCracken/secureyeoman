@@ -80,8 +80,8 @@ When an object is provided, `authorInfo` is stored in the catalog for display.
 # REST API
 POST /api/v1/marketplace/community/sync
 {
-  "localPath": "/usr/share/secureyeoman/community-skills",
-  "repoUrl": "https://github.com/your-org/community-skills"  // optional, triggers git pull
+  "localPath": "/usr/share/secureyeoman/community-repo",
+  "repoUrl": "https://github.com/your-org/community-repo"  // optional, triggers git pull
 }
 ```
 

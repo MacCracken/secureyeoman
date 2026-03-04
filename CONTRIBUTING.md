@@ -274,7 +274,7 @@ Types:
 
 ## Contributing Community Skills
 
-Community skills live in `community-skills/skills/<category>/<name>.json`. They are synced into
+Community skills live in `community-repo/skills/<category>/<name>.json`. They are synced into
 the marketplace via `POST /api/v1/marketplace/community/sync`.
 
 ### Skill JSON Format
@@ -340,7 +340,7 @@ Skills will be rejected if they:
 
 ## Contributing Community Skills
 
-Community skills live in `community-skills/skills/<category>/<skill-name>.json`. They are synced
+Community skills live in `community-repo/skills/<category>/<skill-name>.json`. They are synced
 into the marketplace registry via `POST /api/v1/marketplace/community/sync`.
 
 ### Skill JSON Format
@@ -368,7 +368,7 @@ The `author` field also accepts a plain string for backward compatibility:
 "author": "Your Name"
 ```
 
-See `community-skills/schema/skill.schema.json` for the full JSON Schema with all allowed
+See `community-repo/schema/skill.schema.json` for the full JSON Schema with all allowed
 categories and field constraints.
 
 ### Quality Bar
@@ -416,8 +416,8 @@ Pull requests adding community skills will be rejected if:
 ### Submitting a Community Skill
 
 1. Fork the repository
-2. Add your skill JSON to `community-skills/skills/<category>/your-skill-name.json`
-3. Validate your JSON against the schema: `npx ajv validate -s community-skills/schema/skill.schema.json -d community-skills/skills/<category>/your-skill-name.json`
+2. Add your skill JSON to `community-repo/skills/<category>/your-skill-name.json`
+3. Validate your JSON against the schema: `npx ajv validate -s community-repo/schema/skill.schema.json -d community-repo/skills/<category>/your-skill-name.json`
 4. Submit a pull request with a description explaining the use case
 5. Address reviewer feedback
 

@@ -300,12 +300,12 @@ describe('MarketplaceManager', () => {
         {
           communityRepoPath: '/tmp/community',
           allowCommunityGitFetch: true,
-          communityGitUrl: 'https://github.com/MacCracken/secureyeoman-community-skills',
+          communityGitUrl: 'https://github.com/MacCracken/secureyeoman-community-repo',
         }
       );
       await manager.syncFromCommunity();
       expect(gitCloneOrPull).toHaveBeenCalledWith(
-        'https://github.com/MacCracken/secureyeoman-community-skills',
+        'https://github.com/MacCracken/secureyeoman-community-repo',
         '/tmp/community',
         expect.anything()
       );
@@ -319,7 +319,7 @@ describe('MarketplaceManager', () => {
         {
           communityRepoPath: '/tmp/community',
           allowCommunityGitFetch: false,
-          communityGitUrl: 'https://github.com/MacCracken/secureyeoman-community-skills',
+          communityGitUrl: 'https://github.com/MacCracken/secureyeoman-community-repo',
         }
       );
       await manager.syncFromCommunity();
