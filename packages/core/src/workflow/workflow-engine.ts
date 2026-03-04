@@ -995,6 +995,30 @@ export class WorkflowEngine {
         );
       }
 
+      case 'diagram_generation': {
+        const diagramType = String(cfg.diagramType ?? 'architecture');
+        const descTemplate = String(cfg.descriptionTemplate ?? '');
+        const description = this.resolveTemplate(descTemplate, ctx);
+        const style = String(cfg.style ?? 'minimal');
+        const format = String(cfg.format ?? 'svg');
+
+        this.logger.info(
+          'diagram_generation: delegating to MCP excalidraw tools'
+        );
+
+        // The diagram_generation step stores its config for downstream
+        // consumption. Actual scene generation is handled by the agent step
+        // preceding this one (which calls excalidraw_from_description).
+        // This step acts as a typed config container for workflow orchestration.
+        return {
+          diagramType,
+          description,
+          style,
+          format,
+          toolChain: ['excalidraw_from_description', 'excalidraw_validate', 'excalidraw_render'],
+        };
+      }
+
       default:
         throw new Error(`Unknown step type: ${step.type}`);
     }

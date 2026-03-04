@@ -51,9 +51,9 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | 109 | Editor Improvements | P3 — power user UX | 🔄 In Progress |
-| 117 | Excalidraw Diagramming — Remaining (render, from_description, workflow, canvas, KB) | P3 — capability + visualization | 🔄 Partial (117-A: 4/6 tools + skill done) |
+| 117 | Excalidraw Diagramming — Remaining (canvas, KB integration) | P3 — capability + visualization | 🔄 Partial (6/6 tools + workflow done, canvas/KB remaining) |
 | 120 | Canvas Editor Improvements | P3 — canvas improvements | Planned |
-| 122 | PDF Analysis — MCP Tools & Knowledge Base | P2 — capability + intelligence | Planned |
+| 122 | PDF Analysis — MCP Tools & Knowledge Base | P2 — capability + intelligence | 🔄 Partial (122-A done, 122-B remaining) |
 | 124 | Cognitive Memory — ACT-R Activation & Hebbian Learning | P2 — intelligence | Planned |
 | — | Engineering Backlog | Ongoing | Pick-up opportunistically |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
@@ -108,17 +108,10 @@
 
 ## Phase 117: Excalidraw Diagramming — Remaining
 
-**Priority**: P3 — Capability + visualization. Core MCP tools (create, validate, modify, templates), marketplace skill, feature gates, and manifest entries are done (2026.3.4). Remaining items below.
+**Priority**: P3 — Capability + visualization. All 6 MCP tools, marketplace skill, feature gates, manifest entries, `diagram_generation` workflow step, and 2 workflow templates are done (2026.3.4). Remaining items: canvas and KB integration.
 
-### 117-A Remaining: Additional MCP Tools
+### 117-B Remaining: Canvas & Knowledge Base Integration
 
-- [ ] **`excalidraw_from_description`** — Higher-level tool: takes a natural language description and diagram type, returns Excalidraw JSON. Input: `{ description: string, diagramType: 'architecture' | 'sequence' | 'flowchart' | 'entity_relationship' | 'network_topology' | 'threat_model' | 'mindmap' | 'timeline' | 'org_chart' | 'class_diagram' | 'state_machine' | 'deployment' | 'freeform', style?, colorPalette? }`. Delegates to AI personality with skill instructions injected, parses response into valid Excalidraw JSON.
-- [ ] **`excalidraw_render`** — Render an Excalidraw JSON scene to PNG or SVG. Uses `@excalidraw/utils` (`exportToSvg`/`exportToBlob`) for headless export. Returns base64-encoded image data. SVG preserves editability. PNG at configurable resolution (default: 2x scale).
-
-### 117-B Remaining: Workflow & Canvas Integration
-
-- [ ] **`diagram_generation` workflow step type** — New step type in `workflow-engine.ts`. Calls `excalidraw_from_description` → `excalidraw_validate` → `excalidraw_render` internally. Enables workflows like "research a system → generate architecture diagram → attach to report".
-- [ ] **Workflow templates** — `architecture-diagram-pipeline` (L2) and `threat-model-with-dfd` (L3).
 - [ ] **Canvas workspace integration** — Excalidraw widget type in `/editor/advanced`. Interactive embedded Excalidraw editor for AI-generated diagrams. Bi-directional: manual edits saved; AI can read current scene state.
 - [ ] **Knowledge base integration** — Store Excalidraw scenes as `brain.documents` with `format: 'excalidraw'`. Extract text labels for vector embedding. Diagrams searchable by content.
 
@@ -137,23 +130,7 @@
 
 ## Phase 122: PDF Analysis — MCP Tools & Knowledge Base
 
-**Priority**: P2 — Capability + intelligence. PDF ingestion into the knowledge base already works via `DocumentManager.extractText()` (using `pdf-parse`). This phase exposes PDF analysis as first-class MCP tools and adds deeper extraction capabilities (structured analysis, page-level extraction, table detection, visual analysis). Two sub-phases: MCP tools → advanced analysis & workflow integration.
-
-### 122-A: PDF MCP Tools (Core Proxies + Stateless Extraction)
-
-*New tool group in `packages/mcp/src/tools/pdf-tools.ts`. Follows `wrapToolHandler()` pattern. Feature-gated via `exposePdf: boolean` in `McpServiceConfigSchema`.*
-
-- [ ] **`pdf_extract_text`** — Stateless text extraction from a PDF. Input: `{ pdfBase64: string, filename?: string }`. Decodes the base64 buffer, runs `pdf-parse`, returns `{ text: string, pages: number, info: { title?, author?, creator?, producer? }, wordCount: number }`. No persistence — pure analysis. New core route: `POST /api/v1/brain/documents/extract` that calls `DocumentManager.extractText()` without `chunkAndLearn()`.
-- [ ] **`pdf_upload`** — Upload a PDF to the knowledge base for RAG. Input: `{ pdfBase64: string, filename: string, personalityId?: string, visibility?: 'private' | 'shared', title?: string }`. Proxies `POST /api/v1/brain/documents/upload` (multipart). Returns `{ documentId: string, status: string, chunkCount: number, title: string }`. The document is chunked and indexed for future `knowledge_search` queries.
-- [ ] **`pdf_analyze`** — LLM-powered structured analysis of a PDF. Input: `{ pdfBase64: string, analysisType: 'summary' | 'key_findings' | 'entities' | 'risks' | 'action_items' | 'custom', customPrompt?: string, maxLength?: number }`. Extracts text via `pdf-parse`, then sends to the AI chat endpoint (`POST /api/v1/ai/chat`) with an analysis-specific system prompt. Returns `{ analysis: string, metadata: { pages, wordCount, processingTimeMs } }`. New core route: `POST /api/v1/brain/documents/analyze`.
-- [ ] **`pdf_search`** — Search within a single PDF without ingesting to the knowledge base. Input: `{ pdfBase64: string, query: string, caseSensitive?: boolean }`. Extracts text, performs text search across pages, returns `{ matches: { page: number, context: string, position: number }[], totalMatches: number }`. Useful for quick lookups without polluting the KB.
-- [ ] **`pdf_compare`** — Diff two PDFs at the text level. Input: `{ pdfA_base64: string, pdfB_base64: string, mode?: 'full' | 'summary' }`. Extracts text from both, computes a line-level diff, returns `{ additions: number, deletions: number, changes: DiffBlock[], summary: string }`. `DiffBlock`: `{ type: 'added' | 'removed' | 'unchanged', text: string, pageA?: number, pageB?: number }`. In `summary` mode, only returns aggregate stats + an LLM-generated natural language summary of changes.
-- [ ] **`pdf_list`** — List PDF documents in the knowledge base. Input: `{ personalityId?: string, status?: 'ready' | 'processing' | 'error' }`. Proxies `GET /api/v1/brain/documents` filtered to `format=pdf`. Returns `{ documents: KbDocument[], total: number }`.
-- [ ] **Manifest & registration** — Add 6 tools to `manifest.ts` (`pdf_extract_text`, `pdf_upload`, `pdf_analyze`, `pdf_search`, `pdf_compare`, `pdf_list`). Register in `tools/index.ts` via `registerPdfTools()`. Feature flag: `exposePdf` in MCP config (default: `true`).
-- [ ] **Core routes** — Two new routes in `packages/core/src/brain/document-routes.ts`:
-  - `POST /api/v1/brain/documents/extract` — Stateless text extraction (no KB persistence).
-  - `POST /api/v1/brain/documents/analyze` — LLM-powered analysis with configurable analysis type.
-- [ ] **Tests** — `pdf-tools.test.ts` in MCP (registration + handler tests with mocked client). `document-routes.test.ts` additions for the two new core routes. `document-manager.test.ts` additions for stateless extraction path.
+**Priority**: P2 — Capability + intelligence. **122-A done** (2026.3.4): 6 MCP tools (`pdf_extract_text`, `pdf_upload`, `pdf_analyze`, `pdf_search`, `pdf_compare`, `pdf_list`), 2 core endpoints (extract + analyze), feature flags, manifest, tests. Remaining: 122-B advanced analysis.
 
 ### 122-B: Advanced Analysis & Workflow Integration
 
@@ -260,22 +237,9 @@ Current: 87.01% stmt / 76.02% branches. Target: 88% / 77%. Gap: <1% each.
 - [ ] **Notification branch coverage** — `notifications/` at 90% stmt / 64.22% branch. Notification preference filtering and channel dispatch branches.
 - [ ] **Capture-permissions tests** — `body/capture-permissions.ts` has no test file. Security-critical RBAC permission enforcement for screen capture operations.
 
-### Memory & Timer Cleanup
-
-- [ ] **Storage object cleanup** — ~17 storage objects initialized but never closed in `cleanup()`: `heartbeatLogStorage`, `alertStorage`, `notificationStorage`, `scanHistoryStore`, `riskAssessmentStorage`, `departmentRiskStorage`, `athiStorage`, `providerAccountStorage`, `autonomyAuditStorage`, `groupChatStorage`, `routingRulesStorage`, `backupStorage`, `tenantStorage`, `strategyStorage`. Consider a registry pattern for systematic cleanup. *(Partial: `analyticsStorage`, `pipelineLineageStorage`, `quarantineStorage`, `intentStorage` fixed.)*
-
-### Async & Startup Performance
-
-- [ ] **Parallel `ensureTables()` during init** — `secureyeoman.ts:388-1845` runs many independent storage init calls sequentially. After migrations complete, group independent `ensureTables()` and `init()` calls into `Promise.all()` batches.
-
 ### Code Quality & Consistency
 
 - [ ] **Unify error response format** — Two competing patterns: `sendError()` returns `{ error, message, statusCode }` (~60% of routes) vs. inline `reply.code(N).send({ error: '...' })` with single key (~40%). Migrate all to `sendError()`. Affected: `multimodal-routes.ts`, `diagnostic-routes.ts`, `chat-routes.ts`, `desktop-routes.ts`, `extension-routes.ts`.
-
-### Type Safety
-
-- [ ] **Dashboard API client types** — `packages/dashboard/src/api/client.ts` has remaining `: any` annotations around risk departments, ATHI scenarios, versioning, citations. Import proper types from `@secureyeoman/shared`.
-
 
 ### Configuration Centralization
 

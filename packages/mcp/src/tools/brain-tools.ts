@@ -85,4 +85,42 @@ export function registerBrainTools(
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     })
   );
+
+  // Cognitive Memory tools (Phase 124)
+
+  server.registerTool(
+    'memory_activation_stats',
+    {
+      description:
+        'Get cognitive memory activation stats — top activated memories/documents, association count, and 7-day access trend',
+      inputSchema: {
+        personalityId: z.string().optional().describe('Filter stats by personality ID'),
+      },
+    },
+    wrapToolHandler('memory_activation_stats', middleware, async (args) => {
+      const query: Record<string, string> = {};
+      if (args.personalityId) query.personalityId = args.personalityId;
+      const result = await client.get('/api/v1/brain/cognitive-stats', query);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    })
+  );
+
+  server.registerTool(
+    'memory_associations',
+    {
+      description:
+        'Get Hebbian associative links for a memory or document — shows co-retrieved items and their weights',
+      inputSchema: {
+        itemId: z.string().describe('Memory or document ID to get associations for'),
+        limit: z.number().int().min(1).max(100).default(20).describe('Max associations to return'),
+        minWeight: z.number().min(0).max(1).optional().describe('Minimum association weight filter'),
+      },
+    },
+    wrapToolHandler('memory_associations', middleware, async (args) => {
+      const query: Record<string, string> = { limit: String(args.limit) };
+      if (args.minWeight != null) query.minWeight = String(args.minWeight);
+      const result = await client.get(`/api/v1/brain/associations/${args.itemId}`, query);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    })
+  );
 }

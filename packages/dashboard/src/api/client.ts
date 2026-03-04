@@ -1452,7 +1452,7 @@ export async function enforceRetention(data: {
 
 export async function exportAuditBackup(): Promise<Blob> {
   const base =
-    (window as any).__FRIDAY_API_BASE__ ||
+    (window as unknown as { __FRIDAY_API_BASE__?: string }).__FRIDAY_API_BASE__ ||
     `${window.location.protocol}//${window.location.hostname}:18789/api/v1`;
   const headers: Record<string, string> = {};
   const token = getAccessToken();
@@ -4816,19 +4816,19 @@ export async function fetchRiskTrend(departmentId: string, days = 30): Promise<{
   return request<{ points: RiskTrendPoint[] }>(`/risk/departments/${encodeURIComponent(departmentId)}/trend?days=${days}`);
 }
 
-export async function fetchRiskSummary(): Promise<any> {
-  return request<any>('/risk/summary');
+export async function fetchRiskSummary(): Promise<{ summary: AthiExecutiveSummary }> {
+  return request<{ summary: AthiExecutiveSummary }>('/risk/summary');
 }
 
 // Phase 111-D: Report endpoints
-export async function fetchDepartmentReport(departmentId: string, format = 'json'): Promise<any> {
-  return request<any>(
+export async function fetchDepartmentReport(departmentId: string, format = 'json'): Promise<string> {
+  return request<string>(
     `/risk/reports/department/${encodeURIComponent(departmentId)}?format=${format}`
   );
 }
 
-export async function fetchExecutiveReport(format = 'json'): Promise<any> {
-  return request<any>(`/risk/reports/executive?format=${format}`);
+export async function fetchExecutiveReport(format = 'json'): Promise<string> {
+  return request<string>(`/risk/reports/executive?format=${format}`);
 }
 
 export async function fetchRegisterReport(
@@ -4838,13 +4838,13 @@ export async function fetchRegisterReport(
     status?: string;
     category?: string;
   } = {}
-): Promise<any> {
+): Promise<string> {
   const qs = new URLSearchParams();
   if (params.format) qs.set('format', params.format);
   if (params.departmentId) qs.set('departmentId', params.departmentId);
   if (params.status) qs.set('status', params.status);
   if (params.category) qs.set('category', params.category);
-  return request<any>(`/risk/reports/register?${qs.toString()}`);
+  return request<string>(`/risk/reports/register?${qs.toString()}`);
 }
 
 // Phase 111-F: Additional register/department endpoints
@@ -6235,9 +6235,25 @@ export async function deleteQuarantine(id: string): Promise<void> {
   await request(`/sandbox/quarantine/${id}`, { method: 'DELETE' });
 }
 
-export async function fetchThreatIntelligence(): Promise<any> {
+export interface ThreatIntelligenceSummary {
+  patternCount: number;
+  categories: string[];
+  stages: string[];
+  patterns: Array<{
+    id: string;
+    name: string;
+    category: string;
+    description: string;
+    killChainStage: string;
+    intentWeight: number;
+    version: string;
+    indicatorCount: number;
+  }>;
+}
+
+export async function fetchThreatIntelligence(): Promise<ThreatIntelligenceSummary> {
   try {
-    return await request<any>('/sandbox/threats');
+    return await request<ThreatIntelligenceSummary>('/sandbox/threats');
   } catch {
     return { patternCount: 0, categories: [], stages: [], patterns: [] };
   }

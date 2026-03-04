@@ -16,7 +16,7 @@ export const memoryCommand: Command = {
   name: 'memory',
   aliases: ['mem'],
   description: 'Manage vector memory and brain operations',
-  usage: 'secureyeoman memory <search|memories|knowledge|stats|consolidate|audit|schedule>',
+  usage: 'secureyeoman memory <search|memories|knowledge|stats|consolidate|audit|schedule|activation>',
 
   async run(ctx: CommandContext): Promise<number> {
     let argv = ctx.argv;
@@ -35,6 +35,7 @@ Commands:
   reindex           Rebuild vector index
   audit <action>    Memory audit (run|history|show|approve)
   schedule <action> Audit schedule (show|set)
+  activation        Show cognitive memory activation stats
 
 Options:
   --url <url>       Server URL (default: http://127.0.0.1:3000)
@@ -326,6 +327,55 @@ Options:
         } else {
           ctx.stderr.write('Usage: secureyeoman memory schedule <show|set>\n');
           return 1;
+        }
+      } else if (subcommand === 'activation') {
+        const spinner = new Spinner(ctx.stderr, 'Fetching cognitive activation stats...');
+        spinner.start();
+        const result = await apiCall(baseUrl, '/api/v1/brain/cognitive-stats');
+        spinner.stop();
+        if (!result.ok) {
+          ctx.stderr.write(`Failed to fetch stats: HTTP ${result.status}\n`);
+          return 1;
+        }
+        const stats = (result.data as { stats: {
+          topMemories: { id: string; activation: number }[];
+          topDocuments: { id: string; activation: number }[];
+          associationCount: number;
+          avgAssociationWeight: number;
+          accessTrend: { day: string; count: number }[];
+        } }).stats;
+        if (json) {
+          ctx.stdout.write(JSON.stringify(stats, null, 2) + '\n');
+          return 0;
+        }
+        ctx.stdout.write('\n=== Cognitive Memory Activation ===\n\n');
+        ctx.stdout.write(`Associations: ${stats.associationCount}  |  Avg Weight: ${stats.avgAssociationWeight.toFixed(3)}\n\n`);
+        if (stats.topMemories.length > 0) {
+          ctx.stdout.write('Top Activated Memories:\n');
+          ctx.stdout.write(
+            formatTable(
+              stats.topMemories.map((m) => [m.id, m.activation.toFixed(3)]),
+              ['ID', 'Activation']
+            )
+          );
+        }
+        if (stats.topDocuments.length > 0) {
+          ctx.stdout.write('\nTop Activated Documents:\n');
+          ctx.stdout.write(
+            formatTable(
+              stats.topDocuments.map((d) => [d.id, d.activation.toFixed(3)]),
+              ['ID', 'Activation']
+            )
+          );
+        }
+        if (stats.accessTrend.length > 0) {
+          ctx.stdout.write('\n7-Day Access Trend:\n');
+          ctx.stdout.write(
+            formatTable(
+              stats.accessTrend.map((t) => [t.day, String(t.count)]),
+              ['Day', 'Accesses']
+            )
+          );
         }
       } else {
         ctx.stderr.write(`Unknown subcommand: ${subcommand}\n`);

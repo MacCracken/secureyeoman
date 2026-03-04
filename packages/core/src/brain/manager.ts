@@ -24,6 +24,7 @@ import type { VectorResult } from './vector/types.js';
 import { applySkillTrustFilter } from '../soul/skill-trust.js';
 import { chunk as chunkContent } from './chunker.js';
 import { uuidv7 } from '../utils/crypto.js';
+import { actrActivation, ageDays, compositeScore } from './activation.js';
 
 export class BrainManager {
   private readonly storage: BrainStorage;
@@ -226,7 +227,9 @@ export class BrainManager {
             });
           if (memories.length > 0) {
             await this.storage.touchMemories(memories.map((m) => m.id));
-            return memories;
+            const ranked = this.applyCognitiveRanking(memories, Date.now());
+            this.recordRetrieval(ranked.map((m) => m.id));
+            return ranked;
           }
         }
       } catch (err) {
@@ -248,7 +251,11 @@ export class BrainManager {
       await this.storage.touchMemories(memories.map((m) => m.id));
     }
 
-    return memories;
+    // Apply cognitive ranking + fire-and-forget recording
+    const ranked = this.applyCognitiveRanking(memories, Date.now());
+    this.recordRetrieval(ranked.map((m) => m.id));
+
+    return ranked;
   }
 
   async forget(id: string): Promise<void> {
@@ -403,16 +410,21 @@ export class BrainManager {
         );
 
         if (memResults.length > 0) {
-          const memLines = ['### Memories (semantic)'];
+          const fetchedMemories: import('./types.js').Memory[] = [];
           for (const vr of memResults) {
             const memory = await this.storage.getMemory(vr.id);
-            if (memory) {
-              memLines.push(`- [${memory.type}] ${this.sanitizeForPrompt(memory.content)}`);
-            }
+            if (memory) fetchedMemories.push(memory);
+          }
+          const rankedMemories = this.applyCognitiveRanking(fetchedMemories, Date.now());
+          this.recordRetrieval(rankedMemories.map((m) => m.id));
+
+          const memLines = ['### Memories (semantic)'];
+          for (const memory of rankedMemories) {
+            memLines.push(`- [${memory.type}] ${this.sanitizeForPrompt(memory.content)}`);
           }
           if (memLines.length > 1) contentParts.push(memLines.join('\n'));
 
-          const ids = memResults.map((r) => r.id);
+          const ids = rankedMemories.map((m) => m.id);
           await this.storage.touchMemories(ids);
         }
 
@@ -604,6 +616,9 @@ export class BrainManager {
 
   async incrementSkillUsage(skillId: string): Promise<void> {
     await this.storage.incrementUsage(skillId);
+    if (this.cognitiveEnabled) {
+      void this.deps.cognitiveStorage!.recordSkillAccess(skillId).catch(() => {});
+    }
   }
 
   async getActiveSkills(personalityId?: string | null): Promise<Skill[]> {
@@ -803,6 +818,91 @@ export class BrainManager {
 
   async getStats(personalityId?: string): Promise<BrainStats> {
     return this.storage.getStats(this.resolvePersonalityId(personalityId));
+  }
+
+  // ── Cognitive Memory ──────────────────────────────────────
+
+  private get cognitiveEnabled(): boolean {
+    return (
+      this.deps.cognitiveStorage != null && (this.config.cognitiveMemory?.enabled ?? false)
+    );
+  }
+
+  /**
+   * Re-rank memories using ACT-R activation and Hebbian associations.
+   * Filters below retrieval threshold τ.
+   */
+  applyCognitiveRanking(memories: Memory[], nowMs: number): Memory[] {
+    if (!this.cognitiveEnabled || memories.length === 0) return memories;
+
+    const cfg = this.config.cognitiveMemory!;
+    const threshold = cfg.retrievalThreshold;
+
+    const scored = memories.map((m) => {
+      const age = ageDays(m.lastAccessedAt, nowMs);
+      const activation = actrActivation(m.accessCount, age);
+      return { memory: m, activation };
+    });
+
+    // Filter by threshold
+    const filtered = scored.filter((s) => s.activation >= threshold);
+    if (filtered.length === 0) return memories.slice(0, 1); // Always return at least the best match
+
+    // Sort by activation descending
+    filtered.sort((a, b) => b.activation - a.activation);
+    return filtered.map((s) => s.memory);
+  }
+
+  /**
+   * Fire-and-forget: record access + co-activation for retrieved items.
+   * Uses Promise.allSettled to never throw into the caller.
+   */
+  recordRetrieval(ids: string[]): void {
+    if (!this.cognitiveEnabled || ids.length === 0) return;
+
+    const storage = this.deps.cognitiveStorage!;
+    const delta = 1 / Math.max(ids.length, 1);
+
+    const promises: Promise<unknown>[] = [];
+
+    // Record individual accesses
+    for (const id of ids) {
+      promises.push(storage.recordMemoryAccess(id));
+    }
+
+    // Record pairwise co-activations
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        promises.push(storage.recordCoActivation(ids[i], ids[j], delta));
+      }
+    }
+
+    void Promise.allSettled(promises);
+  }
+
+  // ── Skill Activation ────────────────────────────────────────
+
+  /**
+   * List skills ordered by ACT-R activation score (most activated first).
+   */
+  async listSkillsByActivation(filter?: SkillFilter): Promise<Skill[]> {
+    const skills = await this.storage.listSkills(filter);
+    if (!this.cognitiveEnabled) return skills;
+
+    const nowMs = Date.now();
+    const scored = skills.map((s) => {
+      const age = ageDays(
+        (s as unknown as { lastAccessed?: number | null }).lastAccessed ?? null,
+        nowMs
+      );
+      const activation = actrActivation(
+        (s as unknown as { accessCount?: number }).accessCount ?? 0,
+        age
+      );
+      return { skill: s, activation };
+    });
+    scored.sort((a, b) => b.activation - a.activation);
+    return scored.map((s) => s.skill);
   }
 
   // ── Config ─────────────────────────────────────────────────

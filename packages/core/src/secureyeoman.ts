@@ -55,6 +55,8 @@ import { ApprovalManager } from './soul/approval-manager.js';
 import { BrainStorage } from './brain/storage.js';
 import { BrainManager } from './brain/manager.js';
 import { DocumentManager } from './brain/document-manager.js';
+import { CognitiveMemoryStorage } from './brain/cognitive-memory-store.js';
+import { CognitiveMemoryManager } from './brain/cognitive-memory-manager.js';
 import { SpiritStorage } from './spirit/storage.js';
 import { SpiritManager } from './spirit/manager.js';
 import { AgentComms } from './comms/agent-comms.js';
@@ -257,6 +259,8 @@ export class SecureYeoman {
   private rbacStorage: RBACStorage | null = null;
   private brainStorage: BrainStorage | null = null;
   private brainManager: BrainManager | null = null;
+  private cognitiveMemoryStorage: CognitiveMemoryStorage | null = null;
+  private cognitiveMemoryManager: CognitiveMemoryManager | null = null;
   private memoryAuditStorage: import('./brain/audit/audit-store.js').MemoryAuditStorage | null = null;
   private memoryAuditScheduler: import('./brain/audit/scheduler.js').MemoryAuditScheduler | null = null;
   private documentManager: DocumentManager | null = null;
@@ -801,6 +805,12 @@ export class SecureYeoman {
 
       // Step 5.7: Initialize brain system
       this.brainStorage = new BrainStorage();
+      // Step 5.7.0: Initialize cognitive memory storage (Phase 124) — before BrainManager
+      if (this.config.brain?.cognitiveMemory?.enabled) {
+        this.cognitiveMemoryStorage = new CognitiveMemoryStorage();
+        this.logger.debug('Cognitive memory storage initialized');
+      }
+
       this.brainManager = new BrainManager(this.brainStorage, this.config.brain, {
         auditChain: this.auditChain,
         logger: this.logger.child({ component: 'BrainManager' }),
@@ -810,8 +820,19 @@ export class SecureYeoman {
           'searchFullText' in this.auditStorage
             ? (this.auditStorage as unknown as import('./brain/types.js').AuditStorage)
             : undefined,
+        cognitiveStorage: this.cognitiveMemoryStorage ?? undefined,
       });
       this.logger.debug('Brain manager initialized');
+
+      // Step 5.7.0b: Initialize cognitive memory manager (Phase 124)
+      if (this.cognitiveMemoryStorage) {
+        this.cognitiveMemoryManager = new CognitiveMemoryManager({
+          storage: this.cognitiveMemoryStorage,
+          logger: this.logger.child({ component: 'CognitiveMemoryManager' }),
+        });
+        this.cognitiveMemoryManager.start();
+        this.logger.debug('Cognitive memory manager started');
+      }
 
       // Step 5.7.0a: Load persisted license key from brain.meta if env var not set
       if (!process.env.SECUREYEOMAN_LICENSE_KEY) {
@@ -1272,55 +1293,52 @@ export class SecureYeoman {
         this.logger.debug('Cost optimizer initialized');
       }
 
-      this.dashboardStorage = new DashboardStorage();
-      this.dashboardManager = new DashboardManager(this.dashboardStorage, {
-        logger: this.logger.child({ component: 'DashboardManager' }),
-      });
-      this.logger.debug('Dashboard manager initialized');
-
-      this.workspaceStorage = new WorkspaceStorage();
-      this.workspaceManager = new WorkspaceManager(this.workspaceStorage, {
-        logger: this.logger.child({ component: 'WorkspaceManager' }),
-      });
-      await this.workspaceManager.ensureDefaultWorkspace();
-      this.logger.debug('Workspace manager initialized');
-
-      this.experimentStorage = new ExperimentStorage();
-      this.experimentManager = new ExperimentManager(this.experimentStorage, {
-        logger: this.logger.child({ component: 'ExperimentManager' }),
-      });
-      this.logger.debug('Experiment manager initialized');
-
-      this.marketplaceStorage = new MarketplaceStorage();
-      this.marketplaceManager = new MarketplaceManager(this.marketplaceStorage, {
-        logger: this.logger.child({ component: 'MarketplaceManager' }),
-        brainManager: this.brainManager ?? undefined,
-        communityRepoPath: this.config.security.communityRepoPath,
-        allowCommunityGitFetch: this.config.security.allowCommunityGitFetch,
-        communityGitUrl:
-          this.config.security.communityGitUrl ??
-          'https://github.com/MacCracken/secureyeoman-community-skills',
-      });
-      await this.marketplaceManager.seedBuiltinSkills();
-      // Wire marketplace into soul so skill deletion keeps installed state in sync
-      if (this.soulManager) {
-        this.soulManager.setMarketplaceManager(this.marketplaceManager);
-      }
-      this.logger.debug('Marketplace manager initialized');
-
-      // Step 6.10a: Initialize reasoning strategy storage
+      // Steps 6.9–6.10: Initialize independent storage+manager pairs in parallel.
+      // These managers have no cross-dependencies so their async seeds can overlap.
       {
+        this.dashboardStorage = new DashboardStorage();
+        this.dashboardManager = new DashboardManager(this.dashboardStorage, {
+          logger: this.logger.child({ component: 'DashboardManager' }),
+        });
+
+        this.workspaceStorage = new WorkspaceStorage();
+        this.workspaceManager = new WorkspaceManager(this.workspaceStorage, {
+          logger: this.logger.child({ component: 'WorkspaceManager' }),
+        });
+
+        this.experimentStorage = new ExperimentStorage();
+        this.experimentManager = new ExperimentManager(this.experimentStorage, {
+          logger: this.logger.child({ component: 'ExperimentManager' }),
+        });
+
+        this.marketplaceStorage = new MarketplaceStorage();
+        this.marketplaceManager = new MarketplaceManager(this.marketplaceStorage, {
+          logger: this.logger.child({ component: 'MarketplaceManager' }),
+          brainManager: this.brainManager ?? undefined,
+          communityRepoPath: this.config.security.communityRepoPath,
+          allowCommunityGitFetch: this.config.security.allowCommunityGitFetch,
+          communityGitUrl:
+            this.config.security.communityGitUrl ??
+            'https://github.com/MacCracken/secureyeoman-community-skills',
+        });
+
         this.strategyStorage = new StrategyStorage();
-        await this.strategyStorage.seedBuiltinStrategies();
+        this.chatConversationStorage = new ConversationStorage();
+
+        // Run independent async seeds in parallel
+        await Promise.all([
+          this.workspaceManager.ensureDefaultWorkspace(),
+          this.marketplaceManager.seedBuiltinSkills(),
+          this.strategyStorage.seedBuiltinStrategies(),
+        ]);
+
+        // Wire marketplace into soul so skill deletion keeps installed state in sync
         if (this.soulManager) {
+          this.soulManager.setMarketplaceManager(this.marketplaceManager);
           this.soulManager.setStrategyStorage(this.strategyStorage);
         }
-        this.logger.debug('Strategy storage initialized');
+        this.logger.debug('Dashboard, Workspace, Experiment, Marketplace, Strategy, ConversationStorage initialized (parallel seeds)');
       }
-
-      // Step 6.10: Initialize conversation storage
-      this.chatConversationStorage = new ConversationStorage();
-      this.logger.debug('Conversation storage initialized');
 
       // Step 6.10b: Initialize branching manager
       {
@@ -2336,6 +2354,14 @@ export class SecureYeoman {
       throw new Error('Brain manager is not available');
     }
     return this.brainManager;
+  }
+
+  getCognitiveMemoryManager(): CognitiveMemoryManager | null {
+    return this.cognitiveMemoryManager;
+  }
+
+  getCognitiveMemoryStorage(): CognitiveMemoryStorage | null {
+    return this.cognitiveMemoryStorage;
   }
 
   /**
@@ -4012,6 +4038,16 @@ export class SecureYeoman {
       this.memoryAuditStorage = null;
     }
 
+    // Stop cognitive memory manager (Phase 124)
+    if (this.cognitiveMemoryManager) {
+      this.cognitiveMemoryManager.stop();
+      this.cognitiveMemoryManager = null;
+    }
+    if (this.cognitiveMemoryStorage) {
+      this.cognitiveMemoryStorage.close();
+      this.cognitiveMemoryStorage = null;
+    }
+
     // Close brain storage
     if (this.brainStorage) {
       this.brainStorage.close();
@@ -4246,6 +4282,10 @@ export class SecureYeoman {
       this.workflowVersionStorage.close();
       this.workflowVersionStorage = null;
       this.workflowVersionManager = null;
+    }
+    if (this.systemPreferences) {
+      this.systemPreferences.close();
+      this.systemPreferences = null;
     }
     // When adding new storage/manager fields, add cleanup here.
     if (this.analyticsStorage) {

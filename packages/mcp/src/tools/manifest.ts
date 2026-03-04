@@ -22,6 +22,17 @@ export function getToolManifest(): ToolManifestEntry[] {
     { name: 'knowledge_get', description: 'Get a specific knowledge entry by ID' },
     { name: 'knowledge_store', description: 'Store a new knowledge entry' },
     { name: 'memory_recall', description: 'Recall memories matching a query' },
+    // Cognitive Memory tools (Phase 124)
+    {
+      name: 'memory_activation_stats',
+      description:
+        'Get cognitive memory activation stats — top memories/documents, associations, access trend',
+    },
+    {
+      name: 'memory_associations',
+      description:
+        'Get Hebbian associative links for a memory or document with co-activation weights',
+    },
 
     // Task tools
     { name: 'task_create', description: 'Create a new agent task' },
@@ -813,6 +824,48 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'excalidraw_templates',
       description:
         'List available Excalidraw element templates and color palettes',
+    },
+    {
+      name: 'excalidraw_from_description',
+      description:
+        'Generate an Excalidraw scene from a natural language description and diagram type',
+    },
+    {
+      name: 'excalidraw_render',
+      description:
+        'Render an Excalidraw scene to SVG for preview or export',
+    },
+
+    // PDF Analysis tools (Phase 122-A)
+    {
+      name: 'pdf_extract_text',
+      description:
+        'Extract text content from a PDF file (base64-encoded)',
+    },
+    {
+      name: 'pdf_upload',
+      description:
+        'Upload a PDF to the knowledge base for indexing and retrieval',
+    },
+    {
+      name: 'pdf_analyze',
+      description:
+        'Analyze a PDF with AI — summary, key findings, entities, risks, or action items',
+    },
+    {
+      name: 'pdf_search',
+      description:
+        'Search within a PDF for text matches with page-level context',
+    },
+    {
+      name: 'pdf_compare',
+      description:
+        'Compare two PDFs and return a line-level diff with change summary',
+    },
+    {
+      name: 'pdf_list',
+      description:
+        'List PDF documents in the knowledge base',
     },
   ];
 }

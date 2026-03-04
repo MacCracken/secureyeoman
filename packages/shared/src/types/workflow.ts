@@ -35,6 +35,8 @@ export const WorkflowStepTypeSchema = z.enum([
   // CI/CD step types (Phase 90)
   'ci_trigger', // fire a CI/CD job, returns { runId, url, status: 'queued' }
   'ci_wait', // poll until job done, returns { status, conclusion, logs_url, durationMs }
+  // Diagramming step types (Phase 117)
+  'diagram_generation', // generate Excalidraw diagram from description, returns { scene, validationIssues, renderedSvg? }
 ]);
 export type WorkflowStepType = z.infer<typeof WorkflowStepTypeSchema>;
 

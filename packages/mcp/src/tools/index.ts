@@ -42,6 +42,7 @@ import { registerGitlabCiTools } from './gitlab-ci-tools.js';
 import { registerNorthflankTools } from './northflank-tools.js';
 import { registerSraTools } from './sra-tools.js';
 import { registerExcalidrawTools } from './excalidraw-tools.js';
+import { registerPdfTools } from './pdf-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -97,4 +98,6 @@ export async function registerAllTools(
   registerSraTools(server, client, config, middleware);
   // Excalidraw diagramming tools (Phase 117)
   registerExcalidrawTools(server, config, middleware);
+  // PDF analysis tools (Phase 122-A)
+  registerPdfTools(server, client, config, middleware);
 }

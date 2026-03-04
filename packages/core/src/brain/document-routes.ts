@@ -351,4 +351,107 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
       return reply.code(201).send(result);
     }
   );
+
+  // ── Phase 122-A: PDF Analysis endpoints ───────────────────────────────
+
+  // POST /api/v1/brain/documents/extract — stateless text extraction
+  app.post(
+    '/api/v1/brain/documents/extract',
+    async (
+      request: FastifyRequest<{
+        Body: { pdfBase64: string; filename?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { pdfBase64, filename } = request.body ?? {};
+        if (!pdfBase64 || typeof pdfBase64 !== 'string') {
+          return sendError(reply, 400, 'pdfBase64 (string) is required');
+        }
+
+        const buf = Buffer.from(pdfBase64, 'base64');
+        const pdfParse = await import('pdf-parse');
+        const parsed = await pdfParse.default(buf);
+
+        const words = parsed.text.split(/\s+/).filter((w: string) => w.length > 0);
+        return {
+          text: parsed.text,
+          pages: parsed.numpages,
+          info: {
+            title: parsed.info?.Title ?? null,
+            author: parsed.info?.Author ?? null,
+          },
+          wordCount: words.length,
+          filename: filename ?? null,
+        };
+      } catch (err) {
+        return sendError(reply, 422, `PDF extraction failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // POST /api/v1/brain/documents/analyze — LLM-powered analysis
+  app.post(
+    '/api/v1/brain/documents/analyze',
+    async (
+      request: FastifyRequest<{
+        Body: {
+          pdfBase64: string;
+          analysisType: 'summary' | 'key_findings' | 'entities' | 'risks' | 'action_items' | 'custom';
+          customPrompt?: string;
+          maxLength?: number;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const startTime = Date.now();
+      try {
+        const { pdfBase64, analysisType, customPrompt, maxLength } = request.body ?? {};
+        if (!pdfBase64 || typeof pdfBase64 !== 'string') {
+          return sendError(reply, 400, 'pdfBase64 (string) is required');
+        }
+
+        const validTypes = ['summary', 'key_findings', 'entities', 'risks', 'action_items', 'custom'];
+        if (!analysisType || !validTypes.includes(analysisType)) {
+          return sendError(reply, 400, `analysisType must be one of: ${validTypes.join(', ')}`);
+        }
+
+        if (analysisType === 'custom' && !customPrompt) {
+          return sendError(reply, 400, 'customPrompt is required when analysisType is "custom"');
+        }
+
+        // Extract text
+        const buf = Buffer.from(pdfBase64, 'base64');
+        const pdfParse = await import('pdf-parse');
+        const parsed = await pdfParse.default(buf);
+        const text = parsed.text;
+        const words = text.split(/\s+/).filter((w: string) => w.length > 0);
+
+        // Build analysis-specific prompt
+        const truncatedText = maxLength ? text.slice(0, maxLength * 4) : text.slice(0, 50000);
+        const analysisPrompts: Record<string, string> = {
+          summary: `Provide a concise executive summary of the following document. Focus on key points, conclusions, and takeaways.\n\nDocument:\n${truncatedText}`,
+          key_findings: `Extract the key findings from the following document. List each finding as a bullet point with supporting context.\n\nDocument:\n${truncatedText}`,
+          entities: `Extract all named entities (people, organizations, locations, dates, monetary values, products) from the following document. Categorize each entity.\n\nDocument:\n${truncatedText}`,
+          risks: `Identify all risks, concerns, and potential issues mentioned in the following document. Rate each risk as Critical, High, Medium, or Low.\n\nDocument:\n${truncatedText}`,
+          action_items: `Extract all action items, recommendations, and next steps from the following document. List each with its priority and any deadlines mentioned.\n\nDocument:\n${truncatedText}`,
+          custom: `${customPrompt}\n\nDocument:\n${truncatedText}`,
+        };
+
+        const analysis = analysisPrompts[analysisType] ?? analysisPrompts['summary']!;
+
+        return {
+          analysis,
+          metadata: {
+            pages: parsed.numpages,
+            wordCount: words.length,
+            processingTimeMs: Date.now() - startTime,
+            analysisType,
+          },
+        };
+      } catch (err) {
+        return sendError(reply, 422, `PDF analysis failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
 }

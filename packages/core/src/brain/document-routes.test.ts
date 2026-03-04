@@ -364,4 +364,66 @@ describe('Document Routes', () => {
       expect(getKnowledgeHealthStats).toHaveBeenCalledWith('p-2');
     });
   });
+
+  // ── Phase 122-A: PDF Analysis endpoints ──────────────────────────
+
+  describe('POST /api/v1/brain/documents/extract', () => {
+    it('returns 400 when pdfBase64 is missing', async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/brain/documents/extract',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 422 for invalid PDF data', async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/brain/documents/extract',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ pdfBase64: 'bm90YXBkZg==' }), // "notapdf"
+      });
+      // pdf-parse will fail on invalid PDF data
+      expect(res.statusCode).toBe(422);
+    });
+  });
+
+  describe('POST /api/v1/brain/documents/analyze', () => {
+    it('returns 400 when pdfBase64 is missing', async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/brain/documents/analyze',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ analysisType: 'summary' }),
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 400 for invalid analysisType', async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/brain/documents/analyze',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ pdfBase64: 'dGVzdA==', analysisType: 'invalid' }),
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 400 when custom type lacks customPrompt', async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/brain/documents/analyze',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ pdfBase64: 'dGVzdA==', analysisType: 'custom' }),
+      });
+      expect(res.statusCode).toBe(400);
+    });
+  });
 });

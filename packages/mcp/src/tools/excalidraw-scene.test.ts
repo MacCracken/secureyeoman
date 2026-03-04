@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { specToElement, buildScene, validateScene, patchScene } from './excalidraw-scene.js';
+import { specToElement, buildScene, validateScene, patchScene, renderSceneToSvg } from './excalidraw-scene.js';
 import type { ExcalidrawElement, ExcalidrawScene } from '@secureyeoman/shared';
 
 // ─── specToElement ──────────────────────────────────────────────────────────
@@ -400,5 +400,107 @@ describe('patchScene', () => {
     expect(
       arrow?.startBinding === null || arrow?.endBinding === null
     ).toBe(true);
+  });
+});
+
+// ─── renderSceneToSvg ─────────────────────────────────────────────────────
+
+describe('renderSceneToSvg', () => {
+  it('renders empty scene to minimal SVG', () => {
+    const scene = buildScene('Empty', []);
+    const svg = renderSceneToSvg(scene);
+    expect(svg).toContain('<svg');
+    expect(svg).toContain('</svg>');
+  });
+
+  it('renders rectangles as rect elements', () => {
+    const scene = buildScene('Test', [
+      { type: 'rectangle', x: 10, y: 20, width: 100, height: 60 },
+    ]);
+    const svg = renderSceneToSvg(scene);
+    expect(svg).toContain('<rect');
+    expect(svg).toContain('width="100"');
+    expect(svg).toContain('height="60"');
+  });
+
+  it('renders ellipses as ellipse elements', () => {
+    const scene = buildScene('Test', [
+      { type: 'ellipse', x: 0, y: 0, width: 120, height: 80 },
+    ]);
+    const svg = renderSceneToSvg(scene);
+    expect(svg).toContain('<ellipse');
+  });
+
+  it('renders diamonds as polygon elements', () => {
+    const scene = buildScene('Test', [
+      { type: 'diamond', x: 0, y: 0, width: 100, height: 100 },
+    ]);
+    const svg = renderSceneToSvg(scene);
+    expect(svg).toContain('<polygon');
+  });
+
+  it('renders text elements', () => {
+    const scene = buildScene('Test', [
+      { type: 'text', x: 0, y: 0, label: 'Hello World' },
+    ]);
+    const svg = renderSceneToSvg(scene);
+    expect(svg).toContain('<text');
+    expect(svg).toContain('Hello World');
+  });
+
+  it('renders arrows with arrowhead marker', () => {
+    const scene = buildScene('Test', [
+      { id: 'a', type: 'rectangle', x: 0, y: 0 },
+      { id: 'b', type: 'rectangle', x: 300, y: 0 },
+      { type: 'arrow', x: 120, y: 30, startId: 'a', endId: 'b' },
+    ]);
+    const svg = renderSceneToSvg(scene);
+    expect(svg).toContain('<polyline');
+    expect(svg).toContain('arrowhead');
+    expect(svg).toContain('<marker');
+  });
+
+  it('escapes XML special characters in text', () => {
+    const scene = buildScene('Test', [
+      { type: 'text', x: 0, y: 0, label: '<script>alert("xss")</script>' },
+    ]);
+    const svg = renderSceneToSvg(scene);
+    expect(svg).not.toContain('<script>');
+    expect(svg).toContain('&lt;script&gt;');
+  });
+
+  it('respects darkMode option', () => {
+    const scene = buildScene('Test', [
+      { type: 'rectangle', x: 0, y: 0 },
+    ]);
+    const svg = renderSceneToSvg(scene, { darkMode: true });
+    expect(svg).toContain('#1e1e1e');
+  });
+
+  it('respects custom width and height', () => {
+    const scene = buildScene('Test', [
+      { type: 'rectangle', x: 0, y: 0, width: 50, height: 30 },
+    ]);
+    const svg = renderSceneToSvg(scene, { width: 800, height: 600 });
+    expect(svg).toContain('width="800"');
+    expect(svg).toContain('height="600"');
+  });
+
+  it('handles labeled shapes (rect + bound text)', () => {
+    const scene = buildScene('Test', [
+      { type: 'rectangle', x: 0, y: 0, label: 'Box' },
+    ]);
+    const svg = renderSceneToSvg(scene);
+    expect(svg).toContain('<rect');
+    expect(svg).toContain('Box');
+  });
+
+  it('skips deleted elements', () => {
+    const scene = buildScene('Test', [
+      { type: 'rectangle', x: 0, y: 0 },
+    ]);
+    scene.elements[0]!.isDeleted = true;
+    const svg = renderSceneToSvg(scene);
+    expect(svg).not.toContain('<rect');
   });
 });

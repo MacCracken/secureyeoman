@@ -598,6 +598,8 @@ export class GatewayServer {
         heartbeatLogStorage,
         externalSync,
         soulManager,
+        cognitiveMemoryManager: this.secureYeoman.getCognitiveMemoryManager() ?? undefined,
+        cognitiveStorage: this.secureYeoman.getCognitiveMemoryStorage() ?? undefined,
       });
 
       try {

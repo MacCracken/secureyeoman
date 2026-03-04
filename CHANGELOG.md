@@ -6,6 +6,46 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.4] — 2026-03-04
 
+### Phase 124: Cognitive Memory — ACT-R Activation & Hebbian Learning
+
+- **Migration `008_cognitive_memory.sql`**: Adds `access_count`, `last_accessed`, `confidence` to `brain.documents`; `access_count`, `last_accessed` to `brain.skills`; creates `brain.associations` table for Hebbian links with weight-descending index; creates `brain.activation_score()` SQL function implementing ACT-R base-level activation formula.
+- **`activation.ts`**: Pure math module — `actrActivation()` (base-level learning), `ageDays()`, `softplus()`, `compositeScore()` (blends content match + activation + Hebbian boost + confidence).
+- **`cognitive-memory-store.ts`**: `CognitiveMemoryStorage` (extends `PgBaseStorage`) — `recordDocumentAccess()`, `recordSkillAccess()`, `recordMemoryAccess()`, `recordCoActivation()` (bidirectional upsert, weight capped at 1.0), `getAssociations()`, `getTopAssociatedIds()` (spreading activation), `decayAssociations()`, `getCognitiveStats()` (top-5 by activation + 7-day trend).
+- **`BrainManager` integration**: `applyCognitiveRanking()` re-ranks memories using ACT-R activation scores with threshold τ filtering; `recordRetrieval()` fire-and-forget access + pairwise co-activation recording via `Promise.allSettled()`; `recall()` and `getRelevantContext()` apply cognitive ranking when enabled; `incrementSkillUsage()` records cognitive skill access; `listSkillsByActivation()` orders skills by ACT-R score.
+- **`CognitiveMemoryManager`**: Background worker with `setInterval` + `unref()` — periodic Hebbian decay (default factor 0.9), `runMaintenance()`, `getCognitiveStats()`.
+- **Config**: `cognitiveMemory` section in `BrainConfigSchema` — `enabled`, `activationWeight` (α, default 0.3), `hebbianScale`, `retrievalThreshold` (τ, default −2.0), `hebbianTopN`, `hebbianBoostCap`.
+- **REST endpoints**: `GET /brain/cognitive-stats`, `GET /brain/associations/:itemId`, `POST /brain/cognitive/maintenance` — all with RBAC (brain:read/write).
+- **MCP tools**: `memory_activation_stats`, `memory_associations` — registered in manifest, feature-gated by `exposeCognitiveMemory`.
+- **Feature gate**: `exposeCognitiveMemory` added to `McpFeaturesSchema`, `McpServiceConfigSchema`, `manager.ts`, `soul-routes.ts`.
+- **Marketplace skill**: "Cognitive Memory Analyst" — analyzes activation patterns, identifies knowledge clusters and gaps, recommends optimization.
+- **Dashboard**: `CognitiveMemoryWidget` — 7-day access trend bar chart, top-3 activated memories, association count/avg weight.
+- **CLI**: `secureyeoman memory activation` subcommand showing cognitive stats.
+- **Wiring**: `CognitiveMemoryStorage` + `CognitiveMemoryManager` in `secureyeoman.ts` with lifecycle management.
+- **Tests**: 22 activation math + 16 storage mock + 6 manager + 10 MCP = 54 new tests, all passing.
+
+### Phase 117 Completion: Excalidraw Diagramming
+
+- **`excalidraw_from_description` MCP tool**: Generates Excalidraw scenes from natural language descriptions. Supports 12 diagram types (architecture, sequence, flowchart, network, ER, class, deployment, data flow, threat model, state machine, mind map, org chart) with style presets (minimal/detailed/technical). Heuristic layout engine with type-specific strategies (grid, vertical flow, star topology, radial, tree). Added to manifest.
+- **`excalidraw_render` MCP tool**: Server-side SVG rendering of Excalidraw scenes without external dependencies. Converts elements to SVG primitives (rect, ellipse, polygon, polyline, text, path) with arrowhead markers, dark mode support, auto-computed viewBox, and XSS-safe XML escaping. Added to manifest.
+- **SVG render engine** (`excalidraw-scene.ts`): `renderSceneToSvg()` with bounding box computation, configurable padding/dimensions, dark mode background, and arrow marker definitions. Handles all 7 element types.
+- **`diagram_generation` workflow step type**: New step type in `WorkflowStepTypeSchema`. Engine handler stores diagram config (type, description, style, format) for downstream consumption by agent steps.
+- **Workflow templates**: `architecture-diagram-pipeline` (4-step: gather → diagram → report → save, L2) and `threat-model-with-dfd` (5-step: STRIDE → DFD → combine → approval → save, L3).
+- **Tests**: 4 new tool registration tests, 11 SVG render tests (empty scene, rectangles, ellipses, diamonds, text, arrows, XML escaping, dark mode, custom dimensions, labeled shapes, deleted elements).
+
+### Phase 122-A: PDF Analysis MCP Tools
+
+- **Feature flags**: `exposePdf` added to `McpServiceConfigSchema` (default: true) and `McpFeaturesSchema` (default: false). Hardcoded defaults added to `manager.ts` and `soul-routes.ts`.
+- **Core endpoints** (`document-routes.ts`): `POST /api/v1/brain/documents/extract` (stateless PDF text extraction via pdf-parse, returns text + pages + info + wordCount) and `POST /api/v1/brain/documents/analyze` (analysis prompt generation for summary/key_findings/entities/risks/action_items/custom). Auth middleware: `brain:write` for both.
+- **6 MCP tools** (`pdf-tools.ts`): `pdf_extract_text` (→ extract endpoint), `pdf_upload` (→ ingest-text), `pdf_analyze` (→ analyze endpoint), `pdf_search` (stateless: extract → page-level text search with context), `pdf_compare` (stateless: extract both → line-level set diff), `pdf_list` (→ GET documents?format=pdf). All feature-gated by `config.exposePdf`.
+- **Registration**: `registerPdfTools()` in `tools/index.ts`, 6 entries in `tools/manifest.ts`.
+- **Tests**: 16 PDF tool tests (6 registration, feature gate, 5 handler tests with mocked client). 5 document-routes tests (validation for extract + analyze endpoints).
+
+### Engineering Backlog — Cleanup, Performance & Type Safety
+
+- **Storage cleanup fix**: Added `systemPreferences` to `cleanup()` in `secureyeoman.ts`. Was the only storage object missing from shutdown cleanup.
+- **Init parallelization**: Grouped 3 independent async seed calls (`ensureDefaultWorkspace`, `seedBuiltinSkills`, `seedBuiltinStrategies`) into `Promise.all()` batch in `secureyeoman.ts`. Reduces startup time by running independent seeds concurrently.
+- **Dashboard API client types**: Eliminated 8 remaining `: any` annotations in `packages/dashboard/src/api/client.ts`. Typed `window` cast, risk summary/department/executive/register report returns, and created `ThreatIntelligenceSummary` interface for threat intelligence endpoint.
+
 ### Engineering Backlog — Skill Test Coverage
 
 - **Productivity skills tests** (`productivity-skills.test.ts`): 72 tests covering Summarize Text, Prompt Craft, Context Engineering, Intent Engineering, Specification Engineering, SOP Writer. Validates required fields, routing quality, trigger pattern compilation, trigger pattern smoke tests, and instruction content quality.

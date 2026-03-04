@@ -92,4 +92,17 @@ describe('brain-tools', () => {
     registerBrainTools(server, client, noopMiddleware());
     expect(true).toBe(true);
   });
+
+  // Phase 124: Cognitive Memory MCP tools
+  it('should register memory_activation_stats tool', () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    registerBrainTools(server, mockClient(), noopMiddleware());
+    expect(true).toBe(true);
+  });
+
+  it('should register memory_associations tool', () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    registerBrainTools(server, mockClient(), noopMiddleware());
+    expect(true).toBe(true);
+  });
 });

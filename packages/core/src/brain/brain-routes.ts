@@ -10,6 +10,8 @@ import type { HeartbeatManager } from '../body/heartbeat.js';
 import type { HeartbeatLogStorage } from '../body/heartbeat-log-storage.js';
 import type { ExternalBrainSync } from './external-sync.js';
 import type { SoulManager } from '../soul/manager.js';
+import type { CognitiveMemoryManager } from './cognitive-memory-manager.js';
+import type { CognitiveMemoryStorage } from './cognitive-memory-store.js';
 import type { MemoryType, MemoryQuery, KnowledgeQuery } from './types.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
 import { parsePagination } from '../utils/pagination.js';
@@ -20,6 +22,8 @@ export interface BrainRoutesOptions {
   heartbeatLogStorage?: HeartbeatLogStorage;
   externalSync?: ExternalBrainSync;
   soulManager?: SoulManager;
+  cognitiveMemoryManager?: CognitiveMemoryManager;
+  cognitiveStorage?: CognitiveMemoryStorage;
 }
 
 /** Hard cap on query limit parameter to prevent unbounded queries. */
@@ -67,7 +71,15 @@ function validateContent(content: unknown, reply: FastifyReply): string | null {
 }
 
 export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptions): void {
-  const { brainManager, heartbeatManager, heartbeatLogStorage, externalSync, soulManager } = opts;
+  const {
+    brainManager,
+    heartbeatManager,
+    heartbeatLogStorage,
+    externalSync,
+    soulManager,
+    cognitiveMemoryManager,
+    cognitiveStorage,
+  } = opts;
 
   // ── Memories ─────────────────────────────────────────────────
 
@@ -630,6 +642,71 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         return { success: true };
       } catch (err) {
         return sendError(reply, 400, toErrorMessage(err));
+      }
+    }
+  );
+
+  // ── Cognitive Memory (Phase 124) ──────────────────────────────
+
+  app.get(
+    '/api/v1/brain/cognitive-stats',
+    async (request: FastifyRequest<{ Querystring: { personalityId?: string } }>, reply: FastifyReply) => {
+      if (!cognitiveMemoryManager) {
+        return sendError(reply, 503, 'Cognitive memory system not available');
+      }
+      try {
+        const { personalityId } = request.query;
+        const stats = await cognitiveMemoryManager.getCognitiveStats(personalityId || undefined);
+        return { stats };
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
+    }
+  );
+
+  app.get(
+    '/api/v1/brain/associations/:itemId',
+    async (
+      request: FastifyRequest<{
+        Params: { itemId: string };
+        Querystring: { limit?: string; minWeight?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      if (!cognitiveStorage) {
+        return sendError(reply, 503, 'Cognitive memory system not available');
+      }
+      try {
+        const { itemId } = request.params;
+        const { limit, minWeight } = request.query;
+        const associations = await cognitiveStorage.getAssociations(itemId, {
+          limit: limit ? Math.min(Number(limit), MAX_QUERY_LIMIT) : 20,
+          minWeight: minWeight ? Number(minWeight) : undefined,
+        });
+        return { associations };
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
+    }
+  );
+
+  app.post(
+    '/api/v1/brain/cognitive/maintenance',
+    async (_request: FastifyRequest, reply: FastifyReply) => {
+      if (!cognitiveMemoryManager) {
+        return sendError(reply, 503, 'Cognitive memory system not available');
+      }
+
+      const clientIp = _request.ip ?? 'unknown';
+      if (!checkBrainRateLimit(`brain:cognitive:maintenance:${clientIp}`, 5)) {
+        return sendError(reply, 429, 'Rate limit exceeded for cognitive maintenance');
+      }
+
+      try {
+        const result = await cognitiveMemoryManager.runMaintenance();
+        return { result };
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );

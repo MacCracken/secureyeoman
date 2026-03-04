@@ -101,6 +101,10 @@ export const McpFeaturesSchema = z
     exposeSra: z.boolean().default(false),
     /** Excalidraw diagramming tools (excalidraw_*). Requires global exposeExcalidraw. */
     exposeDiagramming: z.boolean().default(false),
+    /** PDF analysis tools (pdf_*). Requires global exposePdf. */
+    exposePdf: z.boolean().default(false),
+    /** Cognitive memory tools (memory_activation_stats, memory_associations). Requires global exposeCognitiveMemory. */
+    exposeCognitiveMemory: z.boolean().default(false),
   })
   .default({});
 
@@ -667,6 +671,24 @@ export const ConsolidationConfigSchema = z
 
 export type ConsolidationConfig = z.infer<typeof ConsolidationConfigSchema>;
 
+export const CognitiveMemoryConfigSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    /** Blend weight α for activation vs content match [0–1]. */
+    activationWeight: z.number().min(0).max(1).default(0.3),
+    /** Scaling factor for Hebbian boost contribution. */
+    hebbianScale: z.number().min(0).default(1.0),
+    /** ACT-R retrieval threshold τ — memories below this are filtered. */
+    retrievalThreshold: z.number().default(-2.0),
+    /** Max associated items to fetch for spreading activation. */
+    hebbianTopN: z.number().int().positive().default(10),
+    /** Cap on Hebbian boost contribution to composite score. */
+    hebbianBoostCap: z.number().min(0).max(1).default(0.5),
+  })
+  .default({});
+
+export type CognitiveMemoryConfig = z.infer<typeof CognitiveMemoryConfigSchema>;
+
 export const BrainConfigSchema = z
   .object({
     enabled: z.boolean().default(true),
@@ -680,6 +702,7 @@ export const BrainConfigSchema = z
     vector: VectorConfigSchema,
     consolidation: ConsolidationConfigSchema,
     audit: MemoryAuditPolicySchema,
+    cognitiveMemory: CognitiveMemoryConfigSchema,
   })
   .default({});
 

@@ -253,6 +253,23 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/brain/citations/:messageId/feedback': {
     POST: { resource: 'brain', action: 'write' },
   },
+  // PDF analysis routes (Phase 122-A)
+  '/api/v1/brain/documents/extract': {
+    POST: { resource: 'brain', action: 'write' },
+  },
+  '/api/v1/brain/documents/analyze': {
+    POST: { resource: 'brain', action: 'write' },
+  },
+  // Cognitive Memory routes (Phase 124)
+  '/api/v1/brain/cognitive-stats': {
+    GET: { resource: 'brain', action: 'read' },
+  },
+  '/api/v1/brain/associations/:itemId': {
+    GET: { resource: 'brain', action: 'read' },
+  },
+  '/api/v1/brain/cognitive/maintenance': {
+    POST: { resource: 'brain', action: 'write' },
+  },
   // Memory Audit routes (Phase 118)
   '/api/v1/brain/audit/run': {
     POST: { resource: 'brain', action: 'write' },

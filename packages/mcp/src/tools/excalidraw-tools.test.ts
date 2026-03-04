@@ -53,8 +53,8 @@ describe('registerExcalidrawTools', () => {
     registerExcalidrawTools(mockServer as never, config, mockMiddleware as never);
   });
 
-  it('registers exactly 4 tools', () => {
-    expect(mockServer.registerTool).toHaveBeenCalledTimes(4);
+  it('registers exactly 6 tools', () => {
+    expect(mockServer.registerTool).toHaveBeenCalledTimes(6);
   });
 
   it('registers excalidraw_create', () => {
@@ -111,5 +111,50 @@ describe('registerExcalidrawTools', () => {
     for (const t of data.templates) {
       expect(t.category).toBe('data');
     }
+  });
+
+  it('registers excalidraw_from_description', () => {
+    const tool = mockServer._tools.find((t) => t.name === 'excalidraw_from_description');
+    expect(tool).toBeDefined();
+    expect(tool!.metadata.description).toContain('natural language');
+  });
+
+  it('excalidraw_from_description generates scene from description', async () => {
+    const tool = mockServer._tools.find((t) => t.name === 'excalidraw_from_description')!;
+    const result = await tool.handler({
+      description: 'Web Server, Database, Cache',
+      diagramType: 'architecture',
+    });
+    expect(result.content).toHaveLength(1);
+    const data = JSON.parse(result.content[0]!.text);
+    expect(data.scene).toBeDefined();
+    expect(data.scene.type).toBe('excalidraw');
+    expect(data.diagramType).toBe('architecture');
+    expect(data.elementCount).toBeGreaterThan(0);
+  });
+
+  it('registers excalidraw_render', () => {
+    const tool = mockServer._tools.find((t) => t.name === 'excalidraw_render');
+    expect(tool).toBeDefined();
+    expect(tool!.metadata.description).toContain('SVG');
+  });
+
+  it('excalidraw_render returns SVG string', async () => {
+    // First create a scene
+    const createTool = mockServer._tools.find((t) => t.name === 'excalidraw_create')!;
+    const createResult = await createTool.handler({
+      title: 'Test',
+      elements: [{ type: 'rectangle', x: 0, y: 0, width: 100, height: 60 }],
+    });
+    const scene = JSON.parse(createResult.content[0]!.text);
+
+    // Then render it
+    const renderTool = mockServer._tools.find((t) => t.name === 'excalidraw_render')!;
+    const result = await renderTool.handler({ scene, format: 'svg' });
+    const data = JSON.parse(result.content[0]!.text);
+    expect(data.svg).toBeDefined();
+    expect(data.svg).toContain('<svg');
+    expect(data.svg).toContain('</svg>');
+    expect(data.format).toBe('svg');
   });
 });

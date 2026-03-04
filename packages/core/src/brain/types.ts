@@ -99,6 +99,7 @@ export interface SkillFilter {
 
 import type { VectorMemoryManager } from './vector/manager.js';
 import type { ConsolidationManager } from './consolidation/manager.js';
+import type { CognitiveMemoryStorage } from './cognitive-memory-store.js';
 
 export interface BrainManagerDeps {
   auditChain: AuditChain;
@@ -106,6 +107,25 @@ export interface BrainManagerDeps {
   auditStorage?: AuditStorage;
   vectorMemoryManager?: VectorMemoryManager;
   consolidationManager?: ConsolidationManager;
+  cognitiveStorage?: CognitiveMemoryStorage;
+}
+
+// ── Cognitive Memory Types ──────────────────────────────────
+
+export interface Association {
+  sourceId: string;
+  targetId: string;
+  weight: number;
+  coActivationCount: number;
+  updatedAt: number;
+}
+
+export interface CognitiveStats {
+  topMemories: Array<{ id: string; activation: number }>;
+  topDocuments: Array<{ id: string; activation: number }>;
+  associationCount: number;
+  avgAssociationWeight: number;
+  accessTrend: Array<{ day: string; count: number }>;
 }
 
 export interface BrainStats {

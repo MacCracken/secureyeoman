@@ -418,6 +418,131 @@ export function validateScene(scene: ExcalidrawScene): ValidationResult {
   };
 }
 
+// ─── renderSceneToSvg ────────────────────────────────────────────────────────
+
+export interface RenderOptions {
+  width?: number;
+  height?: number;
+  darkMode?: boolean;
+  padding?: number;
+}
+
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function hexToRgba(hex: string, opacity: number): string {
+  if (hex === 'transparent') return 'none';
+  const rgb = hex.replace('#', '');
+  if (rgb.length < 6) return hex;
+  const r = parseInt(rgb.slice(0, 2), 16);
+  const g = parseInt(rgb.slice(2, 4), 16);
+  const b = parseInt(rgb.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${opacity / 100})`;
+}
+
+function elementToSvg(el: ExcalidrawElement): string {
+  const fill = hexToRgba(el.backgroundColor, el.opacity);
+  const stroke = hexToRgba(el.strokeColor, el.opacity);
+  const sw = el.strokeWidth;
+
+  switch (el.type) {
+    case 'rectangle': {
+      const rx = el.roundness?.type === 3 ? Math.min(8, el.width / 4) : 0;
+      return `<rect x="${el.x}" y="${el.y}" width="${el.width}" height="${el.height}" rx="${rx}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`;
+    }
+    case 'ellipse':
+      return `<ellipse cx="${el.x + el.width / 2}" cy="${el.y + el.height / 2}" rx="${el.width / 2}" ry="${el.height / 2}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`;
+    case 'diamond': {
+      const cx = el.x + el.width / 2;
+      const cy = el.y + el.height / 2;
+      const hw = el.width / 2;
+      const hh = el.height / 2;
+      return `<polygon points="${cx},${el.y} ${el.x + el.width},${cy} ${cx},${el.y + el.height} ${el.x},${cy}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`;
+    }
+    case 'text': {
+      const fontSize = el.fontSize ?? 20;
+      const fontFamily = el.fontFamily === 3 ? 'monospace' : el.fontFamily === 2 ? 'sans-serif' : 'serif';
+      const anchor = el.textAlign === 'right' ? 'end' : el.textAlign === 'center' ? 'middle' : 'start';
+      const tx = el.textAlign === 'center' ? el.x + el.width / 2 : el.textAlign === 'right' ? el.x + el.width : el.x;
+      const ty = el.y + fontSize;
+      return `<text x="${tx}" y="${ty}" font-size="${fontSize}" font-family="${fontFamily}" fill="${stroke}" text-anchor="${anchor}">${escapeXml(el.text ?? '')}</text>`;
+    }
+    case 'line':
+    case 'arrow': {
+      if (!el.points || el.points.length < 2) return '';
+      const pts = el.points.map(([px, py]) => `${el.x + px},${el.y + py}`).join(' ');
+      const markerId = el.type === 'arrow' ? `marker-end="url(#arrowhead)"` : '';
+      return `<polyline points="${pts}" fill="none" stroke="${stroke}" stroke-width="${sw}" ${markerId} />`;
+    }
+    case 'freedraw': {
+      if (!el.points || el.points.length < 2) return '';
+      const d = el.points.map(([px, py], i) => `${i === 0 ? 'M' : 'L'}${el.x + px} ${el.y + py}`).join(' ');
+      return `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
+    }
+    default:
+      return '';
+  }
+}
+
+export function renderSceneToSvg(
+  scene: ExcalidrawScene,
+  options?: RenderOptions
+): string {
+  const padding = options?.padding ?? 20;
+  const elements = scene.elements.filter((e) => !e.isDeleted);
+
+  if (elements.length === 0) {
+    const w = options?.width ?? 400;
+    const h = options?.height ?? 300;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"></svg>`;
+  }
+
+  // Compute bounding box
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const el of elements) {
+    if (el.type === 'line' || el.type === 'arrow' || el.type === 'freedraw') {
+      for (const [px, py] of el.points ?? []) {
+        minX = Math.min(minX, el.x + px);
+        minY = Math.min(minY, el.y + py);
+        maxX = Math.max(maxX, el.x + px);
+        maxY = Math.max(maxY, el.y + py);
+      }
+    } else {
+      minX = Math.min(minX, el.x);
+      minY = Math.min(minY, el.y);
+      maxX = Math.max(maxX, el.x + el.width);
+      maxY = Math.max(maxY, el.y + el.height);
+    }
+  }
+
+  const contentW = maxX - minX;
+  const contentH = maxY - minY;
+  const svgW = options?.width ?? contentW + padding * 2;
+  const svgH = options?.height ?? contentH + padding * 2;
+  const bgColor = options?.darkMode ? '#1e1e1e' : (scene.appState.viewBackgroundColor ?? '#ffffff');
+
+  const hasArrows = elements.some((e) => e.type === 'arrow');
+  const arrowDef = hasArrows
+    ? `<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="${options?.darkMode ? '#e0e0e0' : '#1e1e1e'}" /></marker></defs>`
+    : '';
+
+  const body = elements.map((el) => elementToSvg(el)).filter(Boolean).join('\n  ');
+
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="${minX - padding} ${minY - padding} ${contentW + padding * 2} ${contentH + padding * 2}">`,
+    `<rect x="${minX - padding}" y="${minY - padding}" width="${contentW + padding * 2}" height="${contentH + padding * 2}" fill="${bgColor}" />`,
+    arrowDef,
+    `  ${body}`,
+    '</svg>',
+  ].join('\n');
+}
+
 // ─── patchScene ─────────────────────────────────────────────────────────────
 
 export function patchScene(

@@ -1030,4 +1030,149 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
     createdBy: 'system',
     autonomyLevel: 'L3' as const,
   },
+
+  // ── Architecture Diagram Pipeline (Phase 117) ────────────────────
+  {
+    name: 'architecture-diagram-pipeline',
+    description:
+      'Architecture diagram generation pipeline: gathers system description from input, generates an Excalidraw architecture diagram, builds a markdown report with the rendered SVG, and saves to the knowledge base.',
+    steps: [
+      agentStep(
+        {
+          id: 'gather-description',
+          name: 'Gather Architecture Description',
+          description: 'Analyze the input and produce a structured architecture description with components and connections',
+          dependsOn: [],
+          onError: 'fail',
+        },
+        'default',
+        'Analyze the following system description and produce a structured list of components and their connections for an architecture diagram.\n\nSystem: {{input.systemDescription}}\n\nOutput a comma-separated list of components and a separate list of connections between them.'
+      ),
+      {
+        id: 'generate-diagram',
+        type: 'diagram_generation',
+        name: 'Generate Architecture Diagram',
+        description: 'Generate Excalidraw architecture diagram from the gathered description',
+        config: {
+          diagramType: 'architecture',
+          descriptionTemplate: '{{steps.gather-description.output}}',
+          style: 'detailed',
+          format: 'svg',
+        },
+        dependsOn: ['gather-description'],
+        onError: 'fail',
+      } as unknown as WorkflowStep,
+      transformStep(
+        {
+          id: 'build-report',
+          name: 'Build Markdown Report',
+          description: 'Combine diagram metadata and description into a markdown report',
+          dependsOn: ['generate-diagram'],
+          onError: 'continue',
+        },
+        '# Architecture Diagram — {{input.systemName}}\n\n## Description\n{{steps.gather-description.output}}\n\n## Diagram Metadata\n- Type: {{steps.generate-diagram.output.diagramType}}\n- Style: {{steps.generate-diagram.output.style}}\n- Tools: {{steps.generate-diagram.output.toolChain}}\n'
+      ),
+      resourceStep(
+        {
+          id: 'save-diagram',
+          name: 'Save Diagram to KB',
+          description: 'Save the architecture diagram report to the knowledge base',
+          dependsOn: ['build-report'],
+          onError: 'continue',
+        },
+        'knowledge',
+        '{"title":"Architecture Diagram — {{input.systemName}}","content":"{{steps.build-report.output}}","tags":["diagram","architecture","excalidraw"]}'
+      ),
+    ],
+    edges: [
+      { source: 'gather-description', target: 'generate-diagram' },
+      { source: 'generate-diagram', target: 'build-report' },
+      { source: 'build-report', target: 'save-diagram' },
+    ],
+    triggers: [{ type: 'manual', config: {} }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L2' as const,
+  },
+
+  // ── Threat Model with DFD (Phase 117) ────────────────────────────
+  {
+    name: 'threat-model-with-dfd',
+    description:
+      'Threat model generation with data flow diagram: performs STRIDE analysis, generates an Excalidraw threat model DFD, combines into a comprehensive report, routes to human approval, and saves to the knowledge base.',
+    steps: [
+      agentStep(
+        {
+          id: 'stride-analysis',
+          name: 'STRIDE Threat Analysis',
+          description: 'Perform STRIDE analysis on the system and identify threats, trust boundaries, and data flows',
+          dependsOn: [],
+          onError: 'fail',
+        },
+        'security-architect',
+        'Perform a STRIDE threat analysis on the following system.\n\nSystem: {{input.systemDescription}}\nScope: {{input.scope}}\n\nIdentify:\n1. Components and their trust boundaries\n2. Data flows between components\n3. STRIDE threats for each component and data flow\n4. Risk ratings (Critical/High/Medium/Low)\n\nOutput a structured analysis with component names suitable for diagramming.'
+      ),
+      {
+        id: 'generate-dfd',
+        type: 'diagram_generation',
+        name: 'Generate Threat Model DFD',
+        description: 'Generate Excalidraw data flow diagram showing trust boundaries and threat vectors',
+        config: {
+          diagramType: 'threat_model',
+          descriptionTemplate: '{{steps.stride-analysis.output}}',
+          style: 'technical',
+          format: 'svg',
+        },
+        dependsOn: ['stride-analysis'],
+        onError: 'continue',
+      } as unknown as WorkflowStep,
+      transformStep(
+        {
+          id: 'combine-report',
+          name: 'Combine Threat Model Report',
+          description: 'Merge STRIDE analysis with DFD diagram metadata into a comprehensive report',
+          dependsOn: ['stride-analysis', 'generate-dfd'],
+          onError: 'fail',
+        },
+        '# Threat Model — {{input.systemName}}\n\n## STRIDE Analysis\n{{steps.stride-analysis.output}}\n\n## Data Flow Diagram\n- Diagram Type: {{steps.generate-dfd.output.diagramType}}\n- Style: {{steps.generate-dfd.output.style}}\n\n## Recommendations\nReview the identified threats and data flow diagram above. Ensure all trust boundaries are correctly identified and all STRIDE categories are covered.\n'
+      ),
+      {
+        id: 'approval',
+        type: 'human_approval',
+        name: 'Threat Model Approval',
+        description: 'A security reviewer must approve the threat model before it is saved',
+        config: {
+          prompt:
+            'Please review the threat model below and approve or reject.\n\n{{steps.combine-report.output}}',
+          timeoutMs: 86_400_000,
+        },
+        dependsOn: ['combine-report'],
+        onError: 'fail',
+      } as unknown as WorkflowStep,
+      resourceStep(
+        {
+          id: 'save-to-kb',
+          name: 'Save Approved Threat Model',
+          description: 'Save the human-approved threat model to the knowledge base',
+          dependsOn: ['approval'],
+          onError: 'continue',
+        },
+        'knowledge',
+        '{"title":"Threat Model — {{input.systemName}}","content":"{{steps.combine-report.output}}","tags":["threat-model","stride","dfd","security","approved"]}'
+      ),
+    ],
+    edges: [
+      { source: 'stride-analysis', target: 'generate-dfd' },
+      { source: 'generate-dfd', target: 'combine-report' },
+      { source: 'stride-analysis', target: 'combine-report' },
+      { source: 'combine-report', target: 'approval' },
+      { source: 'approval', target: 'save-to-kb' },
+    ],
+    triggers: [{ type: 'manual', config: {} }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L3' as const,
+  },
 ];

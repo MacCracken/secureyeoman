@@ -182,6 +182,10 @@ export const McpServiceConfigSchema = z.object({
   exposeSra: z.boolean().default(false),
   /** Enable Excalidraw diagramming tools (excalidraw_*). On by default. */
   exposeExcalidraw: z.boolean().default(true),
+  /** Enable PDF analysis tools (pdf_*). On by default. */
+  exposePdf: z.boolean().default(true),
+  /** Enable cognitive memory tools (memory_activation_stats, memory_associations). Off by default. */
+  exposeCognitiveMemory: z.boolean().default(false),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;
