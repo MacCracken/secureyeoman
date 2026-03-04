@@ -144,16 +144,11 @@ Current: 87.01% stmt / 76.02% branches. Target: 88% / 77%. Gap: <1% each.
 
 ### Code Quality & Consistency
 
-- [ ] **Unify error response format** — Two competing patterns: `sendError()` returns `{ error, message, statusCode }` (~60% of routes) vs. inline `reply.code(N).send({ error: '...' })` with single key (~40%). Migrate all to `sendError()`. Affected: `multimodal-routes.ts`, `diagnostic-routes.ts`, `chat-routes.ts`, `desktop-routes.ts`, `extension-routes.ts`.
+- [ ] **Unify error response format** — Phase 22 introduced `sendError()` but 178 inline `reply.code(N).send(...)` calls remain across ~50 route files. Highest counts: `training-routes.ts` (21), `soul-routes.ts` (11), `github-api-routes.ts` (9), `integration-routes.ts` (8), `document-routes.ts` (7). Migrate all to `sendError()`.
 
 ### Configuration Centralization
 
 - [ ] **Centralize `process.env` access** — Multiple modules read `process.env.*` directly instead of via config loader: `secureyeoman.ts` (`INTEGRATION_PLUGIN_DIR`, `COMMUNITY_REPO_PATH`), `opa-client.ts` (`OPA_ADDR`), `workflow-engine.ts` (`GITHUB_TOKEN`), `license-manager.ts` (`SECUREYEOMAN_LICENSE_ENFORCEMENT`), `pg-pool.ts`. Centralize into `ConfigSchema` with startup validation.
-
-### Future Architecture (Consider When Touching Adjacent Code)
-
-- [x] **`SecureYeoman` God Object decomposition (Phase 1)** — 8 domain modules extracted: Body (3 fields), Audit (4), Security (24), Auth (2), Brain (9), Training (16), Analytics (6), Delegation (12). Class reduced from 4,351 → 3,422 lines, 138 → 103 private fields. All getters preserved as one-liner delegates. See `packages/core/src/modules/`.
-- [x] **`SecureYeoman` God Object decomposition (Phase 2)** — 4 remaining modules extracted: PlatformModule (32 fields), AIModule (10 fields with config mutation callback), SoulModule (7 fields), IntegrationModule (8 fields + 31 adapter imports). Class reduced from 3,422 → 1,738 lines (60% total reduction from original 4,351), ~30 private fields, 12 module files total. All 11,869 tests passing.
 
 ---
 
@@ -326,4 +321,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-04 — Removed completed Fastify JSON Schema validation & Worker thread pool backlog items. See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-04 — Removed completed God Object decomposition (Phase 1 & 2), Fastify JSON Schema validation & Worker thread pool backlog items. See [Changelog](../../CHANGELOG.md) for full history.*
