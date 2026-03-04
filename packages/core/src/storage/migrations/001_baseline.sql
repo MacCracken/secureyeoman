@@ -10,172 +10,172 @@
 -- Name: a2a; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA a2a;
+CREATE SCHEMA IF NOT EXISTS a2a;
 --
 -- Name: admin; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA admin;
+CREATE SCHEMA IF NOT EXISTS admin;
 --
 -- Name: agents; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA agents;
+CREATE SCHEMA IF NOT EXISTS agents;
 --
 -- Name: ai; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA ai;
+CREATE SCHEMA IF NOT EXISTS ai;
 --
 -- Name: analytics; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA analytics;
+CREATE SCHEMA IF NOT EXISTS analytics;
 --
 -- Name: audit; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA audit;
+CREATE SCHEMA IF NOT EXISTS audit;
 --
 -- Name: auth; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA auth;
+CREATE SCHEMA IF NOT EXISTS auth;
 --
 -- Name: brain; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA brain;
+CREATE SCHEMA IF NOT EXISTS brain;
 --
 -- Name: browser; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA browser;
+CREATE SCHEMA IF NOT EXISTS browser;
 --
 -- Name: capture; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA capture;
+CREATE SCHEMA IF NOT EXISTS capture;
 --
 -- Name: chat; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA chat;
+CREATE SCHEMA IF NOT EXISTS chat;
 --
 -- Name: comms; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA comms;
+CREATE SCHEMA IF NOT EXISTS comms;
 --
 -- Name: dashboard; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA dashboard;
+CREATE SCHEMA IF NOT EXISTS dashboard;
 --
 -- Name: execution; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA execution;
+CREATE SCHEMA IF NOT EXISTS execution;
 --
 -- Name: experiment; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA experiment;
+CREATE SCHEMA IF NOT EXISTS experiment;
 --
 -- Name: extensions; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA extensions;
+CREATE SCHEMA IF NOT EXISTS extensions;
 --
 -- Name: federation; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA federation;
+CREATE SCHEMA IF NOT EXISTS federation;
 --
 -- Name: integration; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA integration;
+CREATE SCHEMA IF NOT EXISTS integration;
 --
 -- Name: marketplace; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA marketplace;
+CREATE SCHEMA IF NOT EXISTS marketplace;
 --
 -- Name: mcp; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA mcp;
+CREATE SCHEMA IF NOT EXISTS mcp;
 --
 -- Name: multimodal; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA multimodal;
+CREATE SCHEMA IF NOT EXISTS multimodal;
 --
 -- Name: proactive; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA proactive;
+CREATE SCHEMA IF NOT EXISTS proactive;
 --
 -- Name: rbac; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA rbac;
+CREATE SCHEMA IF NOT EXISTS rbac;
 --
 -- Name: risk; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA risk;
+CREATE SCHEMA IF NOT EXISTS risk;
 --
 -- Name: rotation; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA rotation;
+CREATE SCHEMA IF NOT EXISTS rotation;
 --
 -- Name: sandbox; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA sandbox;
+CREATE SCHEMA IF NOT EXISTS sandbox;
 --
 -- Name: security; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA security;
+CREATE SCHEMA IF NOT EXISTS security;
 --
 -- Name: soul; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA soul;
+CREATE SCHEMA IF NOT EXISTS soul;
 --
 -- Name: spirit; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA spirit;
+CREATE SCHEMA IF NOT EXISTS spirit;
 --
 -- Name: task; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA task;
+CREATE SCHEMA IF NOT EXISTS task;
 --
 -- Name: telemetry; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA telemetry;
+CREATE SCHEMA IF NOT EXISTS telemetry;
 --
 -- Name: training; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA training;
+CREATE SCHEMA IF NOT EXISTS training;
 --
 -- Name: workflow; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA workflow;
+CREATE SCHEMA IF NOT EXISTS workflow;
 --
 -- Name: workspace; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA workspace;
+CREATE SCHEMA IF NOT EXISTS workspace;
 --
 -- Name: vector; Type: EXTENSION; Schema: -; Owner: -
 --
@@ -190,7 +190,7 @@ COMMENT ON EXTENSION vector IS 'vector data type and ivfflat and hnsw access met
 -- Name: update_search_vector(); Type: FUNCTION; Schema: audit; Owner: -
 --
 
-CREATE FUNCTION audit.update_search_vector() RETURNS trigger
+CREATE OR REPLACE FUNCTION audit.update_search_vector() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -205,7 +205,7 @@ $$;
 -- Name: update_chunk_fts(); Type: FUNCTION; Schema: brain; Owner: -
 --
 
-CREATE FUNCTION brain.update_chunk_fts() RETURNS trigger
+CREATE OR REPLACE FUNCTION brain.update_chunk_fts() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -217,7 +217,7 @@ $$;
 -- Name: capabilities; Type: TABLE; Schema: a2a; Owner: -
 --
 
-CREATE TABLE a2a.capabilities (
+CREATE TABLE IF NOT EXISTS a2a.capabilities (
     id text NOT NULL,
     peer_id text NOT NULL,
     name text NOT NULL,
@@ -228,7 +228,7 @@ CREATE TABLE a2a.capabilities (
 -- Name: messages; Type: TABLE; Schema: a2a; Owner: -
 --
 
-CREATE TABLE a2a.messages (
+CREATE TABLE IF NOT EXISTS a2a.messages (
     id text NOT NULL,
     type text NOT NULL,
     from_peer_id text NOT NULL,
@@ -240,7 +240,7 @@ CREATE TABLE a2a.messages (
 -- Name: peers; Type: TABLE; Schema: a2a; Owner: -
 --
 
-CREATE TABLE a2a.peers (
+CREATE TABLE IF NOT EXISTS a2a.peers (
     id text NOT NULL,
     name text DEFAULT ''::text NOT NULL,
     url text NOT NULL,
@@ -256,7 +256,7 @@ CREATE TABLE a2a.peers (
 -- Name: backups; Type: TABLE; Schema: admin; Owner: -
 --
 
-CREATE TABLE admin.backups (
+CREATE TABLE IF NOT EXISTS admin.backups (
     id text NOT NULL,
     label text DEFAULT ''::text NOT NULL,
     status text DEFAULT 'pending'::text NOT NULL,
@@ -273,7 +273,7 @@ CREATE TABLE admin.backups (
 -- Name: council_positions; Type: TABLE; Schema: agents; Owner: -
 --
 
-CREATE TABLE agents.council_positions (
+CREATE TABLE IF NOT EXISTS agents.council_positions (
     id text NOT NULL,
     council_run_id text NOT NULL,
     member_role text NOT NULL,
@@ -290,7 +290,7 @@ CREATE TABLE agents.council_positions (
 -- Name: council_runs; Type: TABLE; Schema: agents; Owner: -
 --
 
-CREATE TABLE agents.council_runs (
+CREATE TABLE IF NOT EXISTS agents.council_runs (
     id text NOT NULL,
     template_id text NOT NULL,
     template_name text NOT NULL,
@@ -316,7 +316,7 @@ CREATE TABLE agents.council_runs (
 -- Name: council_templates; Type: TABLE; Schema: agents; Owner: -
 --
 
-CREATE TABLE agents.council_templates (
+CREATE TABLE IF NOT EXISTS agents.council_templates (
     id text NOT NULL,
     name text NOT NULL,
     description text DEFAULT ''::text NOT NULL,
@@ -332,7 +332,7 @@ CREATE TABLE agents.council_templates (
 -- Name: delegation_messages; Type: TABLE; Schema: agents; Owner: -
 --
 
-CREATE TABLE agents.delegation_messages (
+CREATE TABLE IF NOT EXISTS agents.delegation_messages (
     id text NOT NULL,
     delegation_id text NOT NULL,
     role text NOT NULL,
@@ -347,7 +347,7 @@ CREATE TABLE agents.delegation_messages (
 -- Name: delegations; Type: TABLE; Schema: agents; Owner: -
 --
 
-CREATE TABLE agents.delegations (
+CREATE TABLE IF NOT EXISTS agents.delegations (
     id text NOT NULL,
     parent_delegation_id text,
     profile_id text NOT NULL,
@@ -373,7 +373,7 @@ CREATE TABLE agents.delegations (
 -- Name: profile_skills; Type: TABLE; Schema: agents; Owner: -
 --
 
-CREATE TABLE agents.profile_skills (
+CREATE TABLE IF NOT EXISTS agents.profile_skills (
     profile_id text NOT NULL,
     skill_id text NOT NULL,
     installed_at timestamp with time zone DEFAULT now() NOT NULL
@@ -382,7 +382,7 @@ CREATE TABLE agents.profile_skills (
 -- Name: profiles; Type: TABLE; Schema: agents; Owner: -
 --
 
-CREATE TABLE agents.profiles (
+CREATE TABLE IF NOT EXISTS agents.profiles (
     id text NOT NULL,
     name text NOT NULL,
     description text DEFAULT ''::text NOT NULL,
@@ -407,7 +407,7 @@ CREATE TABLE agents.profiles (
 -- Name: swarm_members; Type: TABLE; Schema: agents; Owner: -
 --
 
-CREATE TABLE agents.swarm_members (
+CREATE TABLE IF NOT EXISTS agents.swarm_members (
     id text NOT NULL,
     swarm_run_id text NOT NULL,
     role text NOT NULL,
@@ -424,7 +424,7 @@ CREATE TABLE agents.swarm_members (
 -- Name: swarm_runs; Type: TABLE; Schema: agents; Owner: -
 --
 
-CREATE TABLE agents.swarm_runs (
+CREATE TABLE IF NOT EXISTS agents.swarm_runs (
     id text NOT NULL,
     template_id text NOT NULL,
     template_name text NOT NULL,
@@ -447,7 +447,7 @@ CREATE TABLE agents.swarm_runs (
 -- Name: swarm_templates; Type: TABLE; Schema: agents; Owner: -
 --
 
-CREATE TABLE agents.swarm_templates (
+CREATE TABLE IF NOT EXISTS agents.swarm_templates (
     id text NOT NULL,
     name text NOT NULL,
     description text DEFAULT ''::text NOT NULL,
@@ -464,7 +464,7 @@ CREATE TABLE agents.swarm_templates (
 -- Name: team_runs; Type: TABLE; Schema: agents; Owner: -
 --
 
-CREATE TABLE agents.team_runs (
+CREATE TABLE IF NOT EXISTS agents.team_runs (
     id text NOT NULL,
     team_id text NOT NULL,
     team_name text NOT NULL,
@@ -485,7 +485,7 @@ CREATE TABLE agents.team_runs (
 -- Name: teams; Type: TABLE; Schema: agents; Owner: -
 --
 
-CREATE TABLE agents.teams (
+CREATE TABLE IF NOT EXISTS agents.teams (
     id text NOT NULL,
     name text NOT NULL,
     description text,
@@ -499,7 +499,7 @@ CREATE TABLE agents.teams (
 -- Name: account_cost_records; Type: TABLE; Schema: ai; Owner: -
 --
 
-CREATE TABLE ai.account_cost_records (
+CREATE TABLE IF NOT EXISTS ai.account_cost_records (
     id text NOT NULL,
     account_id text NOT NULL,
     personality_id text,
@@ -516,7 +516,7 @@ CREATE TABLE ai.account_cost_records (
 -- Name: provider_accounts; Type: TABLE; Schema: ai; Owner: -
 --
 
-CREATE TABLE ai.provider_accounts (
+CREATE TABLE IF NOT EXISTS ai.provider_accounts (
     id text NOT NULL,
     provider text NOT NULL,
     label text NOT NULL,
@@ -536,7 +536,7 @@ CREATE TABLE ai.provider_accounts (
 -- Name: conversation_entities; Type: TABLE; Schema: analytics; Owner: -
 --
 
-CREATE TABLE analytics.conversation_entities (
+CREATE TABLE IF NOT EXISTS analytics.conversation_entities (
     id text DEFAULT (gen_random_uuid())::text NOT NULL,
     conversation_id text NOT NULL,
     personality_id text,
@@ -549,7 +549,7 @@ CREATE TABLE analytics.conversation_entities (
 -- Name: conversation_summaries; Type: TABLE; Schema: analytics; Owner: -
 --
 
-CREATE TABLE analytics.conversation_summaries (
+CREATE TABLE IF NOT EXISTS analytics.conversation_summaries (
     conversation_id text NOT NULL,
     personality_id text,
     summary text NOT NULL,
@@ -560,7 +560,7 @@ CREATE TABLE analytics.conversation_summaries (
 -- Name: key_phrases; Type: TABLE; Schema: analytics; Owner: -
 --
 
-CREATE TABLE analytics.key_phrases (
+CREATE TABLE IF NOT EXISTS analytics.key_phrases (
     id text DEFAULT (gen_random_uuid())::text NOT NULL,
     personality_id text NOT NULL,
     phrase text NOT NULL,
@@ -573,7 +573,7 @@ CREATE TABLE analytics.key_phrases (
 -- Name: turn_sentiments; Type: TABLE; Schema: analytics; Owner: -
 --
 
-CREATE TABLE analytics.turn_sentiments (
+CREATE TABLE IF NOT EXISTS analytics.turn_sentiments (
     id text DEFAULT (gen_random_uuid())::text NOT NULL,
     conversation_id text NOT NULL,
     message_id text NOT NULL,
@@ -587,7 +587,7 @@ CREATE TABLE analytics.turn_sentiments (
 -- Name: usage_anomalies; Type: TABLE; Schema: analytics; Owner: -
 --
 
-CREATE TABLE analytics.usage_anomalies (
+CREATE TABLE IF NOT EXISTS analytics.usage_anomalies (
     id text DEFAULT (gen_random_uuid())::text NOT NULL,
     anomaly_type text NOT NULL,
     personality_id text,
@@ -611,7 +611,7 @@ CREATE SEQUENCE audit.entries_seq_seq
 -- Name: entries; Type: TABLE; Schema: audit; Owner: -
 --
 
-CREATE TABLE audit.entries (
+CREATE TABLE IF NOT EXISTS audit.entries (
     id text NOT NULL,
     correlation_id text,
     event text NOT NULL,
@@ -632,7 +632,7 @@ CREATE TABLE audit.entries (
 -- Name: api_key_usage; Type: TABLE; Schema: auth; Owner: -
 --
 
-CREATE TABLE auth.api_key_usage (
+CREATE TABLE IF NOT EXISTS auth.api_key_usage (
     id text NOT NULL,
     key_id text NOT NULL,
     "timestamp" bigint NOT NULL,
@@ -646,7 +646,7 @@ CREATE TABLE auth.api_key_usage (
 -- Name: api_keys; Type: TABLE; Schema: auth; Owner: -
 --
 
-CREATE TABLE auth.api_keys (
+CREATE TABLE IF NOT EXISTS auth.api_keys (
     id text NOT NULL,
     name text NOT NULL,
     key_hash text NOT NULL,
@@ -667,7 +667,7 @@ CREATE TABLE auth.api_keys (
 -- Name: identity_mappings; Type: TABLE; Schema: auth; Owner: -
 --
 
-CREATE TABLE auth.identity_mappings (
+CREATE TABLE IF NOT EXISTS auth.identity_mappings (
     id text NOT NULL,
     idp_id text NOT NULL,
     local_user_id text NOT NULL,
@@ -680,7 +680,7 @@ CREATE TABLE auth.identity_mappings (
 -- Name: identity_providers; Type: TABLE; Schema: auth; Owner: -
 --
 
-CREATE TABLE auth.identity_providers (
+CREATE TABLE IF NOT EXISTS auth.identity_providers (
     id text NOT NULL,
     name text NOT NULL,
     type text NOT NULL,
@@ -703,7 +703,7 @@ CREATE TABLE auth.identity_providers (
 -- Name: revoked_tokens; Type: TABLE; Schema: auth; Owner: -
 --
 
-CREATE TABLE auth.revoked_tokens (
+CREATE TABLE IF NOT EXISTS auth.revoked_tokens (
     jti text NOT NULL,
     user_id text NOT NULL,
     revoked_at bigint NOT NULL,
@@ -713,7 +713,7 @@ CREATE TABLE auth.revoked_tokens (
 -- Name: sso_state; Type: TABLE; Schema: auth; Owner: -
 --
 
-CREATE TABLE auth.sso_state (
+CREATE TABLE IF NOT EXISTS auth.sso_state (
     state text NOT NULL,
     provider_id text NOT NULL,
     redirect_uri text NOT NULL,
@@ -726,7 +726,7 @@ CREATE TABLE auth.sso_state (
 -- Name: tenants; Type: TABLE; Schema: auth; Owner: -
 --
 
-CREATE TABLE auth.tenants (
+CREATE TABLE IF NOT EXISTS auth.tenants (
     id text NOT NULL,
     name text NOT NULL,
     slug text NOT NULL,
@@ -739,7 +739,7 @@ CREATE TABLE auth.tenants (
 -- Name: user_notification_prefs; Type: TABLE; Schema: auth; Owner: -
 --
 
-CREATE TABLE auth.user_notification_prefs (
+CREATE TABLE IF NOT EXISTS auth.user_notification_prefs (
     id text NOT NULL,
     user_id text NOT NULL,
     channel text NOT NULL,
@@ -760,7 +760,7 @@ CREATE TABLE auth.user_notification_prefs (
 -- Name: users; Type: TABLE; Schema: auth; Owner: -
 --
 
-CREATE TABLE auth.users (
+CREATE TABLE IF NOT EXISTS auth.users (
     id text NOT NULL,
     email text NOT NULL,
     display_name text DEFAULT ''::text NOT NULL,
@@ -774,7 +774,7 @@ CREATE TABLE auth.users (
 -- Name: document_chunks; Type: TABLE; Schema: brain; Owner: -
 --
 
-CREATE TABLE brain.document_chunks (
+CREATE TABLE IF NOT EXISTS brain.document_chunks (
     id text NOT NULL,
     source_id text NOT NULL,
     source_table text NOT NULL,
@@ -788,7 +788,7 @@ CREATE TABLE brain.document_chunks (
 -- Name: documents; Type: TABLE; Schema: brain; Owner: -
 --
 
-CREATE TABLE brain.documents (
+CREATE TABLE IF NOT EXISTS brain.documents (
     id text NOT NULL,
     personality_id text,
     title text NOT NULL,
@@ -811,7 +811,7 @@ CREATE TABLE brain.documents (
 -- Name: knowledge; Type: TABLE; Schema: brain; Owner: -
 --
 
-CREATE TABLE brain.knowledge (
+CREATE TABLE IF NOT EXISTS brain.knowledge (
     id text NOT NULL,
     topic text NOT NULL,
     content text NOT NULL,
@@ -828,7 +828,7 @@ CREATE TABLE brain.knowledge (
 -- Name: knowledge_query_log; Type: TABLE; Schema: brain; Owner: -
 --
 
-CREATE TABLE brain.knowledge_query_log (
+CREATE TABLE IF NOT EXISTS brain.knowledge_query_log (
     id text NOT NULL,
     personality_id text,
     query_text text NOT NULL,
@@ -840,7 +840,7 @@ CREATE TABLE brain.knowledge_query_log (
 -- Name: memories; Type: TABLE; Schema: brain; Owner: -
 --
 
-CREATE TABLE brain.memories (
+CREATE TABLE IF NOT EXISTS brain.memories (
     id text NOT NULL,
     type text NOT NULL,
     content text NOT NULL,
@@ -861,7 +861,7 @@ CREATE TABLE brain.memories (
 -- Name: meta; Type: TABLE; Schema: brain; Owner: -
 --
 
-CREATE TABLE brain.meta (
+CREATE TABLE IF NOT EXISTS brain.meta (
     key text NOT NULL,
     value text NOT NULL,
     updated_at bigint NOT NULL
@@ -870,7 +870,7 @@ CREATE TABLE brain.meta (
 -- Name: skills; Type: TABLE; Schema: brain; Owner: -
 --
 
-CREATE TABLE brain.skills (
+CREATE TABLE IF NOT EXISTS brain.skills (
     id text NOT NULL,
     name text NOT NULL,
     description text DEFAULT ''::text NOT NULL,
@@ -897,7 +897,7 @@ CREATE TABLE brain.skills (
 -- Name: sessions; Type: TABLE; Schema: browser; Owner: -
 --
 
-CREATE TABLE browser.sessions (
+CREATE TABLE IF NOT EXISTS browser.sessions (
     id text NOT NULL,
     status text DEFAULT 'active'::text NOT NULL,
     url text,
@@ -915,7 +915,7 @@ CREATE TABLE browser.sessions (
 -- Name: consents; Type: TABLE; Schema: capture; Owner: -
 --
 
-CREATE TABLE capture.consents (
+CREATE TABLE IF NOT EXISTS capture.consents (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     requested_by text NOT NULL,
     user_id text NOT NULL,
@@ -932,7 +932,7 @@ CREATE TABLE capture.consents (
 -- Name: recordings; Type: TABLE; Schema: capture; Owner: -
 --
 
-CREATE TABLE capture.recordings (
+CREATE TABLE IF NOT EXISTS capture.recordings (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     consent_id uuid,
     user_id text NOT NULL,
@@ -948,7 +948,7 @@ CREATE TABLE capture.recordings (
 -- Name: citation_feedback; Type: TABLE; Schema: chat; Owner: -
 --
 
-CREATE TABLE chat.citation_feedback (
+CREATE TABLE IF NOT EXISTS chat.citation_feedback (
     id text NOT NULL,
     message_id text NOT NULL,
     citation_index integer NOT NULL,
@@ -960,7 +960,7 @@ CREATE TABLE chat.citation_feedback (
 -- Name: conversation_history; Type: TABLE; Schema: chat; Owner: -
 --
 
-CREATE TABLE chat.conversation_history (
+CREATE TABLE IF NOT EXISTS chat.conversation_history (
     id text NOT NULL,
     conversation_id text NOT NULL,
     tier text NOT NULL,
@@ -975,7 +975,7 @@ CREATE TABLE chat.conversation_history (
 -- Name: conversations; Type: TABLE; Schema: chat; Owner: -
 --
 
-CREATE TABLE chat.conversations (
+CREATE TABLE IF NOT EXISTS chat.conversations (
     id text NOT NULL,
     title text NOT NULL,
     personality_id text,
@@ -992,7 +992,7 @@ CREATE TABLE chat.conversations (
 -- Name: messages; Type: TABLE; Schema: chat; Owner: -
 --
 
-CREATE TABLE chat.messages (
+CREATE TABLE IF NOT EXISTS chat.messages (
     id text NOT NULL,
     conversation_id text NOT NULL,
     role text NOT NULL,
@@ -1020,7 +1020,7 @@ COMMENT ON COLUMN chat.messages.injection_score IS 'Weighted injection risk scor
 -- Name: replay_jobs; Type: TABLE; Schema: chat; Owner: -
 --
 
-CREATE TABLE chat.replay_jobs (
+CREATE TABLE IF NOT EXISTS chat.replay_jobs (
     id text NOT NULL,
     status text DEFAULT 'pending'::text NOT NULL,
     source_conversation_ids text[] NOT NULL,
@@ -1039,7 +1039,7 @@ CREATE TABLE chat.replay_jobs (
 -- Name: replay_results; Type: TABLE; Schema: chat; Owner: -
 --
 
-CREATE TABLE chat.replay_results (
+CREATE TABLE IF NOT EXISTS chat.replay_results (
     id text NOT NULL,
     replay_job_id text NOT NULL,
     source_conversation_id text NOT NULL,
@@ -1057,7 +1057,7 @@ CREATE TABLE chat.replay_results (
 -- Name: message_log; Type: TABLE; Schema: comms; Owner: -
 --
 
-CREATE TABLE comms.message_log (
+CREATE TABLE IF NOT EXISTS comms.message_log (
     id text NOT NULL,
     direction text NOT NULL,
     peer_agent_id text NOT NULL,
@@ -1070,7 +1070,7 @@ CREATE TABLE comms.message_log (
 -- Name: peers; Type: TABLE; Schema: comms; Owner: -
 --
 
-CREATE TABLE comms.peers (
+CREATE TABLE IF NOT EXISTS comms.peers (
     id text NOT NULL,
     name text NOT NULL,
     public_key text NOT NULL,
@@ -1084,7 +1084,7 @@ CREATE TABLE comms.peers (
 -- Name: custom_dashboards; Type: TABLE; Schema: dashboard; Owner: -
 --
 
-CREATE TABLE dashboard.custom_dashboards (
+CREATE TABLE IF NOT EXISTS dashboard.custom_dashboards (
     id text NOT NULL,
     name text NOT NULL,
     description text DEFAULT ''::text,
@@ -1097,7 +1097,7 @@ CREATE TABLE dashboard.custom_dashboards (
 -- Name: approvals; Type: TABLE; Schema: execution; Owner: -
 --
 
-CREATE TABLE execution.approvals (
+CREATE TABLE IF NOT EXISTS execution.approvals (
     id text NOT NULL,
     request_id text NOT NULL,
     status text DEFAULT 'pending'::text NOT NULL,
@@ -1109,7 +1109,7 @@ CREATE TABLE execution.approvals (
 -- Name: history; Type: TABLE; Schema: execution; Owner: -
 --
 
-CREATE TABLE execution.history (
+CREATE TABLE IF NOT EXISTS execution.history (
     id text NOT NULL,
     session_id text NOT NULL,
     code text NOT NULL,
@@ -1124,7 +1124,7 @@ CREATE TABLE execution.history (
 -- Name: sessions; Type: TABLE; Schema: execution; Owner: -
 --
 
-CREATE TABLE execution.sessions (
+CREATE TABLE IF NOT EXISTS execution.sessions (
     id text NOT NULL,
     runtime text NOT NULL,
     status text DEFAULT 'active'::text NOT NULL,
@@ -1137,7 +1137,7 @@ CREATE TABLE execution.sessions (
 -- Name: experiments; Type: TABLE; Schema: experiment; Owner: -
 --
 
-CREATE TABLE experiment.experiments (
+CREATE TABLE IF NOT EXISTS experiment.experiments (
     id text NOT NULL,
     name text NOT NULL,
     description text DEFAULT ''::text,
@@ -1153,7 +1153,7 @@ CREATE TABLE experiment.experiments (
 -- Name: hooks; Type: TABLE; Schema: extensions; Owner: -
 --
 
-CREATE TABLE extensions.hooks (
+CREATE TABLE IF NOT EXISTS extensions.hooks (
     id text NOT NULL,
     extension_id text NOT NULL,
     hook_point text NOT NULL,
@@ -1167,7 +1167,7 @@ CREATE TABLE extensions.hooks (
 -- Name: manifests; Type: TABLE; Schema: extensions; Owner: -
 --
 
-CREATE TABLE extensions.manifests (
+CREATE TABLE IF NOT EXISTS extensions.manifests (
     id text NOT NULL,
     name text NOT NULL,
     version text DEFAULT '1.0.0'::text NOT NULL,
@@ -1179,7 +1179,7 @@ CREATE TABLE extensions.manifests (
 -- Name: webhooks; Type: TABLE; Schema: extensions; Owner: -
 --
 
-CREATE TABLE extensions.webhooks (
+CREATE TABLE IF NOT EXISTS extensions.webhooks (
     id text NOT NULL,
     url text NOT NULL,
     hook_points jsonb DEFAULT '[]'::jsonb NOT NULL,
@@ -1191,7 +1191,7 @@ CREATE TABLE extensions.webhooks (
 -- Name: peers; Type: TABLE; Schema: federation; Owner: -
 --
 
-CREATE TABLE federation.peers (
+CREATE TABLE IF NOT EXISTS federation.peers (
     id text NOT NULL,
     name text NOT NULL,
     url text NOT NULL,
@@ -1208,7 +1208,7 @@ CREATE TABLE federation.peers (
 -- Name: sync_log; Type: TABLE; Schema: federation; Owner: -
 --
 
-CREATE TABLE federation.sync_log (
+CREATE TABLE IF NOT EXISTS federation.sync_log (
     id text NOT NULL,
     peer_id text NOT NULL,
     type text NOT NULL,
@@ -1222,7 +1222,7 @@ CREATE TABLE federation.sync_log (
 -- Name: group_chat_pins; Type: TABLE; Schema: integration; Owner: -
 --
 
-CREATE TABLE integration.group_chat_pins (
+CREATE TABLE IF NOT EXISTS integration.group_chat_pins (
     id text NOT NULL,
     integration_id text NOT NULL,
     chat_id text NOT NULL,
@@ -1235,7 +1235,7 @@ CREATE TABLE integration.group_chat_pins (
 -- Name: integrations; Type: TABLE; Schema: integration; Owner: -
 --
 
-CREATE TABLE integration.integrations (
+CREATE TABLE IF NOT EXISTS integration.integrations (
     id text NOT NULL,
     platform text NOT NULL,
     display_name text NOT NULL,
@@ -1253,7 +1253,7 @@ CREATE TABLE integration.integrations (
 -- Name: messages; Type: TABLE; Schema: integration; Owner: -
 --
 
-CREATE TABLE integration.messages (
+CREATE TABLE IF NOT EXISTS integration.messages (
     id text NOT NULL,
     integration_id text NOT NULL,
     platform text NOT NULL,
@@ -1273,7 +1273,7 @@ CREATE TABLE integration.messages (
 -- Name: skills; Type: TABLE; Schema: marketplace; Owner: -
 --
 
-CREATE TABLE marketplace.skills (
+CREATE TABLE IF NOT EXISTS marketplace.skills (
     id text NOT NULL,
     name text NOT NULL,
     description text DEFAULT ''::text,
@@ -1303,7 +1303,7 @@ CREATE TABLE marketplace.skills (
 -- Name: config; Type: TABLE; Schema: mcp; Owner: -
 --
 
-CREATE TABLE mcp.config (
+CREATE TABLE IF NOT EXISTS mcp.config (
     key text NOT NULL,
     value text NOT NULL
 );
@@ -1311,7 +1311,7 @@ CREATE TABLE mcp.config (
 -- Name: server_credentials; Type: TABLE; Schema: mcp; Owner: -
 --
 
-CREATE TABLE mcp.server_credentials (
+CREATE TABLE IF NOT EXISTS mcp.server_credentials (
     server_id text NOT NULL,
     key text NOT NULL,
     encrypted_value text NOT NULL,
@@ -1322,7 +1322,7 @@ CREATE TABLE mcp.server_credentials (
 -- Name: server_health; Type: TABLE; Schema: mcp; Owner: -
 --
 
-CREATE TABLE mcp.server_health (
+CREATE TABLE IF NOT EXISTS mcp.server_health (
     server_id text NOT NULL,
     status text DEFAULT 'unknown'::text NOT NULL,
     latency_ms integer,
@@ -1336,7 +1336,7 @@ CREATE TABLE mcp.server_health (
 -- Name: server_tools; Type: TABLE; Schema: mcp; Owner: -
 --
 
-CREATE TABLE mcp.server_tools (
+CREATE TABLE IF NOT EXISTS mcp.server_tools (
     server_id text NOT NULL,
     name text NOT NULL,
     description text DEFAULT ''::text,
@@ -1346,7 +1346,7 @@ CREATE TABLE mcp.server_tools (
 -- Name: servers; Type: TABLE; Schema: mcp; Owner: -
 --
 
-CREATE TABLE mcp.servers (
+CREATE TABLE IF NOT EXISTS mcp.servers (
     id text NOT NULL,
     name text NOT NULL,
     description text DEFAULT ''::text,
@@ -1363,7 +1363,7 @@ CREATE TABLE mcp.servers (
 -- Name: jobs; Type: TABLE; Schema: multimodal; Owner: -
 --
 
-CREATE TABLE multimodal.jobs (
+CREATE TABLE IF NOT EXISTS multimodal.jobs (
     id text NOT NULL,
     type text NOT NULL,
     status text DEFAULT 'pending'::text NOT NULL,
@@ -1380,7 +1380,7 @@ CREATE TABLE multimodal.jobs (
 -- Name: heartbeat_log; Type: TABLE; Schema: proactive; Owner: -
 --
 
-CREATE TABLE proactive.heartbeat_log (
+CREATE TABLE IF NOT EXISTS proactive.heartbeat_log (
     id text NOT NULL,
     check_name text NOT NULL,
     personality_id text,
@@ -1395,7 +1395,7 @@ CREATE TABLE proactive.heartbeat_log (
 -- Name: autonomy_audit_runs; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.autonomy_audit_runs (
+CREATE TABLE IF NOT EXISTS public.autonomy_audit_runs (
     id text NOT NULL,
     name text NOT NULL,
     status text DEFAULT 'in_progress'::text NOT NULL,
@@ -1410,7 +1410,7 @@ CREATE TABLE public.autonomy_audit_runs (
 -- Name: intent_enforcement_log; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.intent_enforcement_log (
+CREATE TABLE IF NOT EXISTS public.intent_enforcement_log (
     id text NOT NULL,
     event_type text NOT NULL,
     item_id text,
@@ -1427,7 +1427,7 @@ CREATE TABLE public.intent_enforcement_log (
 -- Name: intent_goal_snapshots; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.intent_goal_snapshots (
+CREATE TABLE IF NOT EXISTS public.intent_goal_snapshots (
     intent_id text NOT NULL,
     goal_id text NOT NULL,
     is_active boolean DEFAULT false NOT NULL,
@@ -1438,7 +1438,7 @@ CREATE TABLE public.intent_goal_snapshots (
 -- Name: notifications; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.notifications (
+CREATE TABLE IF NOT EXISTS public.notifications (
     id text NOT NULL,
     type text NOT NULL,
     title text NOT NULL,
@@ -1454,7 +1454,7 @@ CREATE TABLE public.notifications (
 -- Name: oauth_tokens; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.oauth_tokens (
+CREATE TABLE IF NOT EXISTS public.oauth_tokens (
     id text NOT NULL,
     provider text NOT NULL,
     email text NOT NULL,
@@ -1470,7 +1470,7 @@ CREATE TABLE public.oauth_tokens (
 -- Name: org_intents; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.org_intents (
+CREATE TABLE IF NOT EXISTS public.org_intents (
     id text NOT NULL,
     name text NOT NULL,
     api_version text DEFAULT 'v1'::text NOT NULL,
@@ -1483,7 +1483,7 @@ CREATE TABLE public.org_intents (
 -- Name: outbound_webhooks; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.outbound_webhooks (
+CREATE TABLE IF NOT EXISTS public.outbound_webhooks (
     id text NOT NULL,
     name text NOT NULL,
     url text NOT NULL,
@@ -1500,7 +1500,7 @@ CREATE TABLE public.outbound_webhooks (
 -- Name: routing_rules; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.routing_rules (
+CREATE TABLE IF NOT EXISTS public.routing_rules (
     id text NOT NULL,
     name text NOT NULL,
     description text DEFAULT ''::text NOT NULL,
@@ -1527,7 +1527,7 @@ CREATE TABLE public.routing_rules (
 -- Name: system_preferences; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.system_preferences (
+CREATE TABLE IF NOT EXISTS public.system_preferences (
     key text NOT NULL,
     value text NOT NULL,
     updated_at bigint NOT NULL
@@ -1536,7 +1536,7 @@ CREATE TABLE public.system_preferences (
 -- Name: usage_error_records; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.usage_error_records (
+CREATE TABLE IF NOT EXISTS public.usage_error_records (
     id bigint NOT NULL,
     provider text DEFAULT ''::text NOT NULL,
     model text DEFAULT ''::text NOT NULL,
@@ -1561,7 +1561,7 @@ ALTER SEQUENCE public.usage_error_records_id_seq OWNED BY public.usage_error_rec
 -- Name: usage_records; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.usage_records (
+CREATE TABLE IF NOT EXISTS public.usage_records (
     id bigint NOT NULL,
     provider text NOT NULL,
     model text NOT NULL,
@@ -1593,7 +1593,7 @@ ALTER SEQUENCE public.usage_records_id_seq OWNED BY public.usage_records.id;
 -- Name: usage_resets; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.usage_resets (
+CREATE TABLE IF NOT EXISTS public.usage_resets (
     stat text NOT NULL,
     reset_at bigint NOT NULL
 );
@@ -1601,7 +1601,7 @@ CREATE TABLE public.usage_resets (
 -- Name: webhook_transform_rules; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.webhook_transform_rules (
+CREATE TABLE IF NOT EXISTS public.webhook_transform_rules (
     id text NOT NULL,
     integration_id text,
     name text NOT NULL,
@@ -1617,7 +1617,7 @@ CREATE TABLE public.webhook_transform_rules (
 -- Name: role_definitions; Type: TABLE; Schema: rbac; Owner: -
 --
 
-CREATE TABLE rbac.role_definitions (
+CREATE TABLE IF NOT EXISTS rbac.role_definitions (
     id text NOT NULL,
     name text NOT NULL,
     description text,
@@ -1630,7 +1630,7 @@ CREATE TABLE rbac.role_definitions (
 -- Name: user_role_assignments; Type: TABLE; Schema: rbac; Owner: -
 --
 
-CREATE TABLE rbac.user_role_assignments (
+CREATE TABLE IF NOT EXISTS rbac.user_role_assignments (
     id integer NOT NULL,
     user_id text NOT NULL,
     role_id text NOT NULL,
@@ -1658,7 +1658,7 @@ ALTER SEQUENCE rbac.user_role_assignments_id_seq OWNED BY rbac.user_role_assignm
 -- Name: assessments; Type: TABLE; Schema: risk; Owner: -
 --
 
-CREATE TABLE risk.assessments (
+CREATE TABLE IF NOT EXISTS risk.assessments (
     id text NOT NULL,
     name text NOT NULL,
     status text DEFAULT 'pending'::text NOT NULL,
@@ -1684,7 +1684,7 @@ CREATE TABLE risk.assessments (
 -- Name: department_scores; Type: TABLE; Schema: risk; Owner: -
 --
 
-CREATE TABLE risk.department_scores (
+CREATE TABLE IF NOT EXISTS risk.department_scores (
     id text NOT NULL,
     department_id text NOT NULL,
     scored_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -1701,7 +1701,7 @@ CREATE TABLE risk.department_scores (
 -- Name: departments; Type: TABLE; Schema: risk; Owner: -
 --
 
-CREATE TABLE risk.departments (
+CREATE TABLE IF NOT EXISTS risk.departments (
     id text NOT NULL,
     name character varying(200) NOT NULL,
     description text,
@@ -1720,7 +1720,7 @@ CREATE TABLE risk.departments (
 -- Name: external_feeds; Type: TABLE; Schema: risk; Owner: -
 --
 
-CREATE TABLE risk.external_feeds (
+CREATE TABLE IF NOT EXISTS risk.external_feeds (
     id text NOT NULL,
     name text NOT NULL,
     description text,
@@ -1737,7 +1737,7 @@ CREATE TABLE risk.external_feeds (
 -- Name: external_findings; Type: TABLE; Schema: risk; Owner: -
 --
 
-CREATE TABLE risk.external_findings (
+CREATE TABLE IF NOT EXISTS risk.external_findings (
     id text NOT NULL,
     feed_id text,
     source_ref text,
@@ -1760,7 +1760,7 @@ CREATE TABLE risk.external_findings (
 -- Name: register_entries; Type: TABLE; Schema: risk; Owner: -
 --
 
-CREATE TABLE risk.register_entries (
+CREATE TABLE IF NOT EXISTS risk.register_entries (
     id text NOT NULL,
     department_id text NOT NULL,
     title character varying(300) NOT NULL,
@@ -1793,7 +1793,7 @@ CREATE TABLE risk.register_entries (
 -- Name: previous_values; Type: TABLE; Schema: rotation; Owner: -
 --
 
-CREATE TABLE rotation.previous_values (
+CREATE TABLE IF NOT EXISTS rotation.previous_values (
     name text NOT NULL,
     value text NOT NULL,
     stored_at bigint NOT NULL,
@@ -1803,7 +1803,7 @@ CREATE TABLE rotation.previous_values (
 -- Name: secret_metadata; Type: TABLE; Schema: rotation; Owner: -
 --
 
-CREATE TABLE rotation.secret_metadata (
+CREATE TABLE IF NOT EXISTS rotation.secret_metadata (
     name text NOT NULL,
     created_at bigint NOT NULL,
     expires_at bigint,
@@ -1817,7 +1817,7 @@ CREATE TABLE rotation.secret_metadata (
 -- Name: scan_history; Type: TABLE; Schema: sandbox; Owner: -
 --
 
-CREATE TABLE sandbox.scan_history (
+CREATE TABLE IF NOT EXISTS sandbox.scan_history (
     id uuid NOT NULL,
     artifact_id uuid NOT NULL,
     artifact_type text NOT NULL,
@@ -1838,7 +1838,7 @@ CREATE TABLE sandbox.scan_history (
 -- Name: athi_scenarios; Type: TABLE; Schema: security; Owner: -
 --
 
-CREATE TABLE security.athi_scenarios (
+CREATE TABLE IF NOT EXISTS security.athi_scenarios (
     id text NOT NULL,
     org_id text,
     title character varying(300) NOT NULL,
@@ -1864,7 +1864,7 @@ CREATE TABLE security.athi_scenarios (
 -- Name: policy; Type: TABLE; Schema: security; Owner: -
 --
 
-CREATE TABLE security.policy (
+CREATE TABLE IF NOT EXISTS security.policy (
     key text NOT NULL,
     value text NOT NULL,
     updated_at bigint NOT NULL
@@ -1873,7 +1873,7 @@ CREATE TABLE security.policy (
 -- Name: collab_docs; Type: TABLE; Schema: soul; Owner: -
 --
 
-CREATE TABLE soul.collab_docs (
+CREATE TABLE IF NOT EXISTS soul.collab_docs (
     doc_id text NOT NULL,
     state bytea NOT NULL,
     updated_at bigint NOT NULL
@@ -1882,7 +1882,7 @@ CREATE TABLE soul.collab_docs (
 -- Name: meta; Type: TABLE; Schema: soul; Owner: -
 --
 
-CREATE TABLE soul.meta (
+CREATE TABLE IF NOT EXISTS soul.meta (
     key text NOT NULL,
     value text NOT NULL,
     updated_at bigint NOT NULL
@@ -1891,7 +1891,7 @@ CREATE TABLE soul.meta (
 -- Name: pending_approvals; Type: TABLE; Schema: soul; Owner: -
 --
 
-CREATE TABLE soul.pending_approvals (
+CREATE TABLE IF NOT EXISTS soul.pending_approvals (
     id text NOT NULL,
     personality_id text NOT NULL,
     tool_name text NOT NULL,
@@ -1905,7 +1905,7 @@ CREATE TABLE soul.pending_approvals (
 -- Name: personalities; Type: TABLE; Schema: soul; Owner: -
 --
 
-CREATE TABLE soul.personalities (
+CREATE TABLE IF NOT EXISTS soul.personalities (
     id text NOT NULL,
     name text NOT NULL,
     description text DEFAULT ''::text NOT NULL,
@@ -1942,7 +1942,7 @@ COMMENT ON COLUMN soul.personalities.is_archetype IS 'System-seeded personality 
 -- Name: personality_versions; Type: TABLE; Schema: soul; Owner: -
 --
 
-CREATE TABLE soul.personality_versions (
+CREATE TABLE IF NOT EXISTS soul.personality_versions (
     id text NOT NULL,
     personality_id text NOT NULL,
     version_tag text,
@@ -1957,7 +1957,7 @@ CREATE TABLE soul.personality_versions (
 -- Name: reasoning_strategies; Type: TABLE; Schema: soul; Owner: -
 --
 
-CREATE TABLE soul.reasoning_strategies (
+CREATE TABLE IF NOT EXISTS soul.reasoning_strategies (
     id text NOT NULL,
     name text NOT NULL,
     slug text NOT NULL,
@@ -1973,7 +1973,7 @@ CREATE TABLE soul.reasoning_strategies (
 -- Name: skills; Type: TABLE; Schema: soul; Owner: -
 --
 
-CREATE TABLE soul.skills (
+CREATE TABLE IF NOT EXISTS soul.skills (
     id text NOT NULL,
     name text NOT NULL,
     description text DEFAULT ''::text NOT NULL,
@@ -2002,7 +2002,7 @@ CREATE TABLE soul.skills (
 -- Name: users; Type: TABLE; Schema: soul; Owner: -
 --
 
-CREATE TABLE soul.users (
+CREATE TABLE IF NOT EXISTS soul.users (
     id text NOT NULL,
     name text NOT NULL,
     nickname text DEFAULT ''::text NOT NULL,
@@ -2016,7 +2016,7 @@ CREATE TABLE soul.users (
 -- Name: inspirations; Type: TABLE; Schema: spirit; Owner: -
 --
 
-CREATE TABLE spirit.inspirations (
+CREATE TABLE IF NOT EXISTS spirit.inspirations (
     id text NOT NULL,
     source text NOT NULL,
     description text DEFAULT ''::text NOT NULL,
@@ -2030,7 +2030,7 @@ CREATE TABLE spirit.inspirations (
 -- Name: meta; Type: TABLE; Schema: spirit; Owner: -
 --
 
-CREATE TABLE spirit.meta (
+CREATE TABLE IF NOT EXISTS spirit.meta (
     key text NOT NULL,
     value text NOT NULL,
     updated_at bigint NOT NULL
@@ -2039,7 +2039,7 @@ CREATE TABLE spirit.meta (
 -- Name: pains; Type: TABLE; Schema: spirit; Owner: -
 --
 
-CREATE TABLE spirit.pains (
+CREATE TABLE IF NOT EXISTS spirit.pains (
     id text NOT NULL,
     trigger_name text NOT NULL,
     description text DEFAULT ''::text NOT NULL,
@@ -2053,7 +2053,7 @@ CREATE TABLE spirit.pains (
 -- Name: passions; Type: TABLE; Schema: spirit; Owner: -
 --
 
-CREATE TABLE spirit.passions (
+CREATE TABLE IF NOT EXISTS spirit.passions (
     id text NOT NULL,
     name text NOT NULL,
     description text DEFAULT ''::text NOT NULL,
@@ -2067,7 +2067,7 @@ CREATE TABLE spirit.passions (
 -- Name: tasks; Type: TABLE; Schema: task; Owner: -
 --
 
-CREATE TABLE task.tasks (
+CREATE TABLE IF NOT EXISTS task.tasks (
     id text NOT NULL,
     correlation_id text,
     parent_task_id text,
@@ -2090,7 +2090,7 @@ CREATE TABLE task.tasks (
 -- Name: alert_rules; Type: TABLE; Schema: telemetry; Owner: -
 --
 
-CREATE TABLE telemetry.alert_rules (
+CREATE TABLE IF NOT EXISTS telemetry.alert_rules (
     id text NOT NULL,
     name text NOT NULL,
     description text,
@@ -2109,7 +2109,7 @@ CREATE TABLE telemetry.alert_rules (
 -- Name: ab_test_assignments; Type: TABLE; Schema: training; Owner: -
 --
 
-CREATE TABLE training.ab_test_assignments (
+CREATE TABLE IF NOT EXISTS training.ab_test_assignments (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     ab_test_id uuid NOT NULL,
     conversation_id uuid NOT NULL,
@@ -2121,7 +2121,7 @@ CREATE TABLE training.ab_test_assignments (
 -- Name: ab_tests; Type: TABLE; Schema: training; Owner: -
 --
 
-CREATE TABLE training.ab_tests (
+CREATE TABLE IF NOT EXISTS training.ab_tests (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     personality_id uuid NOT NULL,
     name text NOT NULL,
@@ -2145,7 +2145,7 @@ CREATE TABLE training.ab_tests (
 -- Name: approval_requests; Type: TABLE; Schema: training; Owner: -
 --
 
-CREATE TABLE training.approval_requests (
+CREATE TABLE IF NOT EXISTS training.approval_requests (
     id text NOT NULL,
     workflow_run_id text NOT NULL,
     step_id text NOT NULL,
@@ -2162,7 +2162,7 @@ CREATE TABLE training.approval_requests (
 -- Name: computer_use_episodes; Type: TABLE; Schema: training; Owner: -
 --
 
-CREATE TABLE training.computer_use_episodes (
+CREATE TABLE IF NOT EXISTS training.computer_use_episodes (
     id text NOT NULL,
     session_id text NOT NULL,
     skill_name text NOT NULL,
@@ -2178,7 +2178,7 @@ CREATE TABLE training.computer_use_episodes (
 -- Name: conversation_quality; Type: TABLE; Schema: training; Owner: -
 --
 
-CREATE TABLE training.conversation_quality (
+CREATE TABLE IF NOT EXISTS training.conversation_quality (
     conversation_id text NOT NULL,
     quality_score real DEFAULT 0.5 NOT NULL,
     signal_source text DEFAULT 'auto'::text NOT NULL,
@@ -2188,7 +2188,7 @@ CREATE TABLE training.conversation_quality (
 -- Name: curated_datasets; Type: TABLE; Schema: training; Owner: -
 --
 
-CREATE TABLE training.curated_datasets (
+CREATE TABLE IF NOT EXISTS training.curated_datasets (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     name text NOT NULL,
     personality_id uuid,
@@ -2205,7 +2205,7 @@ CREATE TABLE training.curated_datasets (
 -- Name: distillation_jobs; Type: TABLE; Schema: training; Owner: -
 --
 
-CREATE TABLE training.distillation_jobs (
+CREATE TABLE IF NOT EXISTS training.distillation_jobs (
     id text NOT NULL,
     name text NOT NULL,
     teacher_provider text NOT NULL,
@@ -2224,7 +2224,7 @@ CREATE TABLE training.distillation_jobs (
 -- Name: eval_datasets; Type: TABLE; Schema: training; Owner: -
 --
 
-CREATE TABLE training.eval_datasets (
+CREATE TABLE IF NOT EXISTS training.eval_datasets (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     name text NOT NULL,
     personality_id uuid,
@@ -2239,7 +2239,7 @@ CREATE TABLE training.eval_datasets (
 -- Name: eval_scores; Type: TABLE; Schema: training; Owner: -
 --
 
-CREATE TABLE training.eval_scores (
+CREATE TABLE IF NOT EXISTS training.eval_scores (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     eval_run_id uuid NOT NULL,
     dataset_id uuid NOT NULL,
@@ -2265,7 +2265,7 @@ CREATE TABLE training.eval_scores (
 -- Name: experiments; Type: TABLE; Schema: training; Owner: -
 --
 
-CREATE TABLE training.experiments (
+CREATE TABLE IF NOT EXISTS training.experiments (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     name text NOT NULL,
     finetune_job_id text,
@@ -2285,7 +2285,7 @@ CREATE TABLE training.experiments (
 -- Name: finetune_jobs; Type: TABLE; Schema: training; Owner: -
 --
 
-CREATE TABLE training.finetune_jobs (
+CREATE TABLE IF NOT EXISTS training.finetune_jobs (
     id text NOT NULL,
     name text NOT NULL,
     base_model text NOT NULL,
@@ -2308,7 +2308,7 @@ CREATE TABLE training.finetune_jobs (
 -- Name: model_versions; Type: TABLE; Schema: training; Owner: -
 --
 
-CREATE TABLE training.model_versions (
+CREATE TABLE IF NOT EXISTS training.model_versions (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     personality_id uuid NOT NULL,
     model_name text NOT NULL,
@@ -2323,7 +2323,7 @@ CREATE TABLE training.model_versions (
 -- Name: pairwise_results; Type: TABLE; Schema: training; Owner: -
 --
 
-CREATE TABLE training.pairwise_results (
+CREATE TABLE IF NOT EXISTS training.pairwise_results (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     comparison_id uuid NOT NULL,
     dataset_id uuid NOT NULL,
@@ -2342,7 +2342,7 @@ CREATE TABLE training.pairwise_results (
 -- Name: pipeline_lineage; Type: TABLE; Schema: training; Owner: -
 --
 
-CREATE TABLE training.pipeline_lineage (
+CREATE TABLE IF NOT EXISTS training.pipeline_lineage (
     id text NOT NULL,
     workflow_run_id text NOT NULL,
     workflow_id text NOT NULL,
@@ -2367,7 +2367,7 @@ CREATE TABLE training.pipeline_lineage (
 -- Name: preference_pairs; Type: TABLE; Schema: training; Owner: -
 --
 
-CREATE TABLE training.preference_pairs (
+CREATE TABLE IF NOT EXISTS training.preference_pairs (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     prompt text NOT NULL,
     chosen text NOT NULL,
@@ -2385,7 +2385,7 @@ CREATE TABLE training.preference_pairs (
 -- Name: definitions; Type: TABLE; Schema: workflow; Owner: -
 --
 
-CREATE TABLE workflow.definitions (
+CREATE TABLE IF NOT EXISTS workflow.definitions (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     name text NOT NULL,
     description text,
@@ -2406,7 +2406,7 @@ CREATE TABLE workflow.definitions (
 -- Name: runs; Type: TABLE; Schema: workflow; Owner: -
 --
 
-CREATE TABLE workflow.runs (
+CREATE TABLE IF NOT EXISTS workflow.runs (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     workflow_id uuid NOT NULL,
     workflow_name text NOT NULL,
@@ -2423,7 +2423,7 @@ CREATE TABLE workflow.runs (
 -- Name: step_runs; Type: TABLE; Schema: workflow; Owner: -
 --
 
-CREATE TABLE workflow.step_runs (
+CREATE TABLE IF NOT EXISTS workflow.step_runs (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     run_id uuid NOT NULL,
     step_id text NOT NULL,
@@ -2441,7 +2441,7 @@ CREATE TABLE workflow.step_runs (
 -- Name: versions; Type: TABLE; Schema: workflow; Owner: -
 --
 
-CREATE TABLE workflow.versions (
+CREATE TABLE IF NOT EXISTS workflow.versions (
     id text NOT NULL,
     workflow_id uuid NOT NULL,
     version_tag text,
@@ -2455,7 +2455,7 @@ CREATE TABLE workflow.versions (
 -- Name: members; Type: TABLE; Schema: workspace; Owner: -
 --
 
-CREATE TABLE workspace.members (
+CREATE TABLE IF NOT EXISTS workspace.members (
     workspace_id text NOT NULL,
     user_id text NOT NULL,
     role text DEFAULT 'member'::text,
@@ -2466,7 +2466,7 @@ CREATE TABLE workspace.members (
 -- Name: workspaces; Type: TABLE; Schema: workspace; Owner: -
 --
 
-CREATE TABLE workspace.workspaces (
+CREATE TABLE IF NOT EXISTS workspace.workspaces (
     id text NOT NULL,
     name text NOT NULL,
     description text DEFAULT ''::text,
@@ -3390,1087 +3390,1087 @@ ALTER TABLE ONLY workspace.workspaces
 -- Name: idx_a2a_capabilities_name; Type: INDEX; Schema: a2a; Owner: -
 --
 
-CREATE INDEX idx_a2a_capabilities_name ON a2a.capabilities USING btree (name);
+CREATE INDEX IF NOT EXISTS idx_a2a_capabilities_name ON a2a.capabilities USING btree (name);
 --
 -- Name: idx_a2a_capabilities_peer; Type: INDEX; Schema: a2a; Owner: -
 --
 
-CREATE INDEX idx_a2a_capabilities_peer ON a2a.capabilities USING btree (peer_id);
+CREATE INDEX IF NOT EXISTS idx_a2a_capabilities_peer ON a2a.capabilities USING btree (peer_id);
 --
 -- Name: idx_a2a_messages_from; Type: INDEX; Schema: a2a; Owner: -
 --
 
-CREATE INDEX idx_a2a_messages_from ON a2a.messages USING btree (from_peer_id);
+CREATE INDEX IF NOT EXISTS idx_a2a_messages_from ON a2a.messages USING btree (from_peer_id);
 --
 -- Name: idx_a2a_messages_timestamp; Type: INDEX; Schema: a2a; Owner: -
 --
 
-CREATE INDEX idx_a2a_messages_timestamp ON a2a.messages USING btree ("timestamp" DESC);
+CREATE INDEX IF NOT EXISTS idx_a2a_messages_timestamp ON a2a.messages USING btree ("timestamp" DESC);
 --
 -- Name: idx_a2a_messages_to; Type: INDEX; Schema: a2a; Owner: -
 --
 
-CREATE INDEX idx_a2a_messages_to ON a2a.messages USING btree (to_peer_id);
+CREATE INDEX IF NOT EXISTS idx_a2a_messages_to ON a2a.messages USING btree (to_peer_id);
 --
 -- Name: idx_a2a_messages_type; Type: INDEX; Schema: a2a; Owner: -
 --
 
-CREATE INDEX idx_a2a_messages_type ON a2a.messages USING btree (type);
+CREATE INDEX IF NOT EXISTS idx_a2a_messages_type ON a2a.messages USING btree (type);
 --
 -- Name: idx_a2a_peers_status; Type: INDEX; Schema: a2a; Owner: -
 --
 
-CREATE INDEX idx_a2a_peers_status ON a2a.peers USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_a2a_peers_status ON a2a.peers USING btree (status);
 --
 -- Name: idx_a2a_peers_trust; Type: INDEX; Schema: a2a; Owner: -
 --
 
-CREATE INDEX idx_a2a_peers_trust ON a2a.peers USING btree (trust_level);
+CREATE INDEX IF NOT EXISTS idx_a2a_peers_trust ON a2a.peers USING btree (trust_level);
 --
 -- Name: idx_backups_created_at; Type: INDEX; Schema: admin; Owner: -
 --
 
-CREATE INDEX idx_backups_created_at ON admin.backups USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_backups_created_at ON admin.backups USING btree (created_at DESC);
 --
 -- Name: idx_council_positions_run_round; Type: INDEX; Schema: agents; Owner: -
 --
 
-CREATE INDEX idx_council_positions_run_round ON agents.council_positions USING btree (council_run_id, round);
+CREATE INDEX IF NOT EXISTS idx_council_positions_run_round ON agents.council_positions USING btree (council_run_id, round);
 --
 -- Name: idx_council_runs_created_at; Type: INDEX; Schema: agents; Owner: -
 --
 
-CREATE INDEX idx_council_runs_created_at ON agents.council_runs USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_council_runs_created_at ON agents.council_runs USING btree (created_at DESC);
 --
 -- Name: idx_council_runs_status; Type: INDEX; Schema: agents; Owner: -
 --
 
-CREATE INDEX idx_council_runs_status ON agents.council_runs USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_council_runs_status ON agents.council_runs USING btree (status);
 --
 -- Name: idx_delegation_messages_delegation; Type: INDEX; Schema: agents; Owner: -
 --
 
-CREATE INDEX idx_delegation_messages_delegation ON agents.delegation_messages USING btree (delegation_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_delegation_messages_delegation ON agents.delegation_messages USING btree (delegation_id, created_at);
 --
 -- Name: idx_delegations_correlation; Type: INDEX; Schema: agents; Owner: -
 --
 
-CREATE INDEX idx_delegations_correlation ON agents.delegations USING btree (correlation_id) WHERE (correlation_id IS NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_delegations_correlation ON agents.delegations USING btree (correlation_id) WHERE (correlation_id IS NOT NULL);
 --
 -- Name: idx_delegations_created; Type: INDEX; Schema: agents; Owner: -
 --
 
-CREATE INDEX idx_delegations_created ON agents.delegations USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_delegations_created ON agents.delegations USING btree (created_at DESC);
 --
 -- Name: idx_delegations_parent; Type: INDEX; Schema: agents; Owner: -
 --
 
-CREATE INDEX idx_delegations_parent ON agents.delegations USING btree (parent_delegation_id);
+CREATE INDEX IF NOT EXISTS idx_delegations_parent ON agents.delegations USING btree (parent_delegation_id);
 --
 -- Name: idx_delegations_profile; Type: INDEX; Schema: agents; Owner: -
 --
 
-CREATE INDEX idx_delegations_profile ON agents.delegations USING btree (profile_id);
+CREATE INDEX IF NOT EXISTS idx_delegations_profile ON agents.delegations USING btree (profile_id);
 --
 -- Name: idx_delegations_status; Type: INDEX; Schema: agents; Owner: -
 --
 
-CREATE INDEX idx_delegations_status ON agents.delegations USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_delegations_status ON agents.delegations USING btree (status);
 --
 -- Name: idx_profile_skills_profile_id; Type: INDEX; Schema: agents; Owner: -
 --
 
-CREATE INDEX idx_profile_skills_profile_id ON agents.profile_skills USING btree (profile_id);
+CREATE INDEX IF NOT EXISTS idx_profile_skills_profile_id ON agents.profile_skills USING btree (profile_id);
 --
 -- Name: idx_swarm_members_dlg; Type: INDEX; Schema: agents; Owner: -
 --
 
-CREATE INDEX idx_swarm_members_dlg ON agents.swarm_members USING btree (delegation_id) WHERE (delegation_id IS NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_swarm_members_dlg ON agents.swarm_members USING btree (delegation_id) WHERE (delegation_id IS NOT NULL);
 --
 -- Name: idx_swarm_members_run; Type: INDEX; Schema: agents; Owner: -
 --
 
-CREATE INDEX idx_swarm_members_run ON agents.swarm_members USING btree (swarm_run_id);
+CREATE INDEX IF NOT EXISTS idx_swarm_members_run ON agents.swarm_members USING btree (swarm_run_id);
 --
 -- Name: idx_swarm_runs_created; Type: INDEX; Schema: agents; Owner: -
 --
 
-CREATE INDEX idx_swarm_runs_created ON agents.swarm_runs USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_swarm_runs_created ON agents.swarm_runs USING btree (created_at DESC);
 --
 -- Name: idx_swarm_runs_status; Type: INDEX; Schema: agents; Owner: -
 --
 
-CREATE INDEX idx_swarm_runs_status ON agents.swarm_runs USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_swarm_runs_status ON agents.swarm_runs USING btree (status);
 --
 -- Name: idx_team_runs_created_at; Type: INDEX; Schema: agents; Owner: -
 --
 
-CREATE INDEX idx_team_runs_created_at ON agents.team_runs USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_team_runs_created_at ON agents.team_runs USING btree (created_at DESC);
 --
 -- Name: idx_team_runs_status; Type: INDEX; Schema: agents; Owner: -
 --
 
-CREATE INDEX idx_team_runs_status ON agents.team_runs USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_team_runs_status ON agents.team_runs USING btree (status);
 --
 -- Name: idx_team_runs_team_id; Type: INDEX; Schema: agents; Owner: -
 --
 
-CREATE INDEX idx_team_runs_team_id ON agents.team_runs USING btree (team_id);
+CREATE INDEX IF NOT EXISTS idx_team_runs_team_id ON agents.team_runs USING btree (team_id);
 --
 -- Name: idx_account_cost_account_id; Type: INDEX; Schema: ai; Owner: -
 --
 
-CREATE INDEX idx_account_cost_account_id ON ai.account_cost_records USING btree (account_id);
+CREATE INDEX IF NOT EXISTS idx_account_cost_account_id ON ai.account_cost_records USING btree (account_id);
 --
 -- Name: idx_account_cost_personality; Type: INDEX; Schema: ai; Owner: -
 --
 
-CREATE INDEX idx_account_cost_personality ON ai.account_cost_records USING btree (personality_id) WHERE (personality_id IS NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_account_cost_personality ON ai.account_cost_records USING btree (personality_id) WHERE (personality_id IS NOT NULL);
 --
 -- Name: idx_account_cost_recorded_at; Type: INDEX; Schema: ai; Owner: -
 --
 
-CREATE INDEX idx_account_cost_recorded_at ON ai.account_cost_records USING btree (recorded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_account_cost_recorded_at ON ai.account_cost_records USING btree (recorded_at DESC);
 --
 -- Name: idx_provider_accounts_default; Type: INDEX; Schema: ai; Owner: -
 --
 
-CREATE UNIQUE INDEX idx_provider_accounts_default ON ai.provider_accounts USING btree (provider, tenant_id) WHERE (is_default = true);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_provider_accounts_default ON ai.provider_accounts USING btree (provider, tenant_id) WHERE (is_default = true);
 --
 -- Name: idx_provider_accounts_provider; Type: INDEX; Schema: ai; Owner: -
 --
 
-CREATE INDEX idx_provider_accounts_provider ON ai.provider_accounts USING btree (provider);
+CREATE INDEX IF NOT EXISTS idx_provider_accounts_provider ON ai.provider_accounts USING btree (provider);
 --
 -- Name: idx_conv_entities_conversation; Type: INDEX; Schema: analytics; Owner: -
 --
 
-CREATE INDEX idx_conv_entities_conversation ON analytics.conversation_entities USING btree (conversation_id);
+CREATE INDEX IF NOT EXISTS idx_conv_entities_conversation ON analytics.conversation_entities USING btree (conversation_id);
 --
 -- Name: idx_conv_entities_personality; Type: INDEX; Schema: analytics; Owner: -
 --
 
-CREATE INDEX idx_conv_entities_personality ON analytics.conversation_entities USING btree (personality_id);
+CREATE INDEX IF NOT EXISTS idx_conv_entities_personality ON analytics.conversation_entities USING btree (personality_id);
 --
 -- Name: idx_conv_entities_type_value; Type: INDEX; Schema: analytics; Owner: -
 --
 
-CREATE INDEX idx_conv_entities_type_value ON analytics.conversation_entities USING btree (entity_type, entity_value);
+CREATE INDEX IF NOT EXISTS idx_conv_entities_type_value ON analytics.conversation_entities USING btree (entity_type, entity_value);
 --
 -- Name: idx_key_phrases_personality_freq; Type: INDEX; Schema: analytics; Owner: -
 --
 
-CREATE INDEX idx_key_phrases_personality_freq ON analytics.key_phrases USING btree (personality_id, frequency DESC);
+CREATE INDEX IF NOT EXISTS idx_key_phrases_personality_freq ON analytics.key_phrases USING btree (personality_id, frequency DESC);
 --
 -- Name: idx_turn_sentiments_conversation; Type: INDEX; Schema: analytics; Owner: -
 --
 
-CREATE INDEX idx_turn_sentiments_conversation ON analytics.turn_sentiments USING btree (conversation_id);
+CREATE INDEX IF NOT EXISTS idx_turn_sentiments_conversation ON analytics.turn_sentiments USING btree (conversation_id);
 --
 -- Name: idx_turn_sentiments_personality_time; Type: INDEX; Schema: analytics; Owner: -
 --
 
-CREATE INDEX idx_turn_sentiments_personality_time ON analytics.turn_sentiments USING btree (personality_id, analyzed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_turn_sentiments_personality_time ON analytics.turn_sentiments USING btree (personality_id, analyzed_at DESC);
 --
 -- Name: idx_usage_anomalies_type_time; Type: INDEX; Schema: analytics; Owner: -
 --
 
-CREATE INDEX idx_usage_anomalies_type_time ON analytics.usage_anomalies USING btree (anomaly_type, detected_at DESC);
+CREATE INDEX IF NOT EXISTS idx_usage_anomalies_type_time ON analytics.usage_anomalies USING btree (anomaly_type, detected_at DESC);
 --
 -- Name: idx_audit_correlation_id; Type: INDEX; Schema: audit; Owner: -
 --
 
-CREATE INDEX idx_audit_correlation_id ON audit.entries USING btree (correlation_id);
+CREATE INDEX IF NOT EXISTS idx_audit_correlation_id ON audit.entries USING btree (correlation_id);
 --
 -- Name: idx_audit_entries_event_timestamp; Type: INDEX; Schema: audit; Owner: -
 --
 
-CREATE INDEX idx_audit_entries_event_timestamp ON audit.entries USING btree (event, "timestamp" DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_entries_event_timestamp ON audit.entries USING btree (event, "timestamp" DESC);
 --
 -- Name: idx_audit_entries_tenant; Type: INDEX; Schema: audit; Owner: -
 --
 
-CREATE INDEX idx_audit_entries_tenant ON audit.entries USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_audit_entries_tenant ON audit.entries USING btree (tenant_id);
 --
 -- Name: idx_audit_entries_timestamp; Type: INDEX; Schema: audit; Owner: -
 --
 
-CREATE INDEX idx_audit_entries_timestamp ON audit.entries USING btree ("timestamp" DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_entries_timestamp ON audit.entries USING btree ("timestamp" DESC);
 --
 -- Name: idx_audit_event; Type: INDEX; Schema: audit; Owner: -
 --
 
-CREATE INDEX idx_audit_event ON audit.entries USING btree (event);
+CREATE INDEX IF NOT EXISTS idx_audit_event ON audit.entries USING btree (event);
 --
 -- Name: idx_audit_level; Type: INDEX; Schema: audit; Owner: -
 --
 
-CREATE INDEX idx_audit_level ON audit.entries USING btree (level);
+CREATE INDEX IF NOT EXISTS idx_audit_level ON audit.entries USING btree (level);
 --
 -- Name: idx_audit_search_vector; Type: INDEX; Schema: audit; Owner: -
 --
 
-CREATE INDEX idx_audit_search_vector ON audit.entries USING gin (search_vector);
+CREATE INDEX IF NOT EXISTS idx_audit_search_vector ON audit.entries USING gin (search_vector);
 --
 -- Name: idx_audit_seq; Type: INDEX; Schema: audit; Owner: -
 --
 
-CREATE INDEX idx_audit_seq ON audit.entries USING btree (seq);
+CREATE INDEX IF NOT EXISTS idx_audit_seq ON audit.entries USING btree (seq);
 --
 -- Name: idx_audit_task_id; Type: INDEX; Schema: audit; Owner: -
 --
 
-CREATE INDEX idx_audit_task_id ON audit.entries USING btree (task_id);
+CREATE INDEX IF NOT EXISTS idx_audit_task_id ON audit.entries USING btree (task_id);
 --
 -- Name: idx_audit_timestamp; Type: INDEX; Schema: audit; Owner: -
 --
 
-CREATE INDEX idx_audit_timestamp ON audit.entries USING btree ("timestamp");
+CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit.entries USING btree ("timestamp");
 --
 -- Name: idx_audit_user_id; Type: INDEX; Schema: audit; Owner: -
 --
 
-CREATE INDEX idx_audit_user_id ON audit.entries USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_user_id ON audit.entries USING btree (user_id);
 --
 -- Name: idx_api_key_usage_key_ts; Type: INDEX; Schema: auth; Owner: -
 --
 
-CREATE INDEX idx_api_key_usage_key_ts ON auth.api_key_usage USING btree (key_id, "timestamp" DESC);
+CREATE INDEX IF NOT EXISTS idx_api_key_usage_key_ts ON auth.api_key_usage USING btree (key_id, "timestamp" DESC);
 --
 -- Name: idx_api_key_usage_ts; Type: INDEX; Schema: auth; Owner: -
 --
 
-CREATE INDEX idx_api_key_usage_ts ON auth.api_key_usage USING btree ("timestamp" DESC);
+CREATE INDEX IF NOT EXISTS idx_api_key_usage_ts ON auth.api_key_usage USING btree ("timestamp" DESC);
 --
 -- Name: idx_auth_idp_type; Type: INDEX; Schema: auth; Owner: -
 --
 
-CREATE INDEX idx_auth_idp_type ON auth.identity_providers USING btree (type);
+CREATE INDEX IF NOT EXISTS idx_auth_idp_type ON auth.identity_providers USING btree (type);
 --
 -- Name: idx_auth_mappings_user; Type: INDEX; Schema: auth; Owner: -
 --
 
-CREATE INDEX idx_auth_mappings_user ON auth.identity_mappings USING btree (local_user_id);
+CREATE INDEX IF NOT EXISTS idx_auth_mappings_user ON auth.identity_mappings USING btree (local_user_id);
 --
 -- Name: idx_auth_users_email; Type: INDEX; Schema: auth; Owner: -
 --
 
-CREATE INDEX idx_auth_users_email ON auth.users USING btree (email);
+CREATE INDEX IF NOT EXISTS idx_auth_users_email ON auth.users USING btree (email);
 --
 -- Name: idx_sso_state_expires; Type: INDEX; Schema: auth; Owner: -
 --
 
-CREATE INDEX idx_sso_state_expires ON auth.sso_state USING btree (expires_at);
+CREATE INDEX IF NOT EXISTS idx_sso_state_expires ON auth.sso_state USING btree (expires_at);
 --
 -- Name: idx_user_notif_prefs_user; Type: INDEX; Schema: auth; Owner: -
 --
 
-CREATE INDEX idx_user_notif_prefs_user ON auth.user_notification_prefs USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_user_notif_prefs_user ON auth.user_notification_prefs USING btree (user_id);
 --
 -- Name: idx_users_tenant; Type: INDEX; Schema: auth; Owner: -
 --
 
-CREATE INDEX idx_users_tenant ON auth.users USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_users_tenant ON auth.users USING btree (tenant_id);
 --
 -- Name: idx_brain_documents_personality; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_brain_documents_personality ON brain.documents USING btree (personality_id);
+CREATE INDEX IF NOT EXISTS idx_brain_documents_personality ON brain.documents USING btree (personality_id);
 --
 -- Name: idx_brain_documents_status; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_brain_documents_status ON brain.documents USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_brain_documents_status ON brain.documents USING btree (status);
 --
 -- Name: idx_brain_documents_visibility; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_brain_documents_visibility ON brain.documents USING btree (visibility);
+CREATE INDEX IF NOT EXISTS idx_brain_documents_visibility ON brain.documents USING btree (visibility);
 --
 -- Name: idx_brain_knowledge_tenant; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_brain_knowledge_tenant ON brain.knowledge USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_brain_knowledge_tenant ON brain.knowledge USING btree (tenant_id);
 --
 -- Name: idx_brain_memories_personality_created; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_brain_memories_personality_created ON brain.memories USING btree (personality_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_brain_memories_personality_created ON brain.memories USING btree (personality_id, created_at DESC);
 --
 -- Name: idx_brain_memories_tenant; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_brain_memories_tenant ON brain.memories USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_brain_memories_tenant ON brain.memories USING btree (tenant_id);
 --
 -- Name: idx_brain_skills_personality; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_brain_skills_personality ON brain.skills USING btree (personality_id);
+CREATE INDEX IF NOT EXISTS idx_brain_skills_personality ON brain.skills USING btree (personality_id);
 --
 -- Name: idx_document_chunks_embedding; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_document_chunks_embedding ON brain.document_chunks USING hnsw (embedding public.vector_cosine_ops);
+CREATE INDEX IF NOT EXISTS idx_document_chunks_embedding ON brain.document_chunks USING hnsw (embedding public.vector_cosine_ops);
 --
 -- Name: idx_document_chunks_fts; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_document_chunks_fts ON brain.document_chunks USING gin (search_vec);
+CREATE INDEX IF NOT EXISTS idx_document_chunks_fts ON brain.document_chunks USING gin (search_vec);
 --
 -- Name: idx_document_chunks_source; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_document_chunks_source ON brain.document_chunks USING btree (source_id);
+CREATE INDEX IF NOT EXISTS idx_document_chunks_source ON brain.document_chunks USING btree (source_id);
 --
 -- Name: idx_knowledge_embedding; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_knowledge_embedding ON brain.knowledge USING hnsw (embedding public.vector_cosine_ops);
+CREATE INDEX IF NOT EXISTS idx_knowledge_embedding ON brain.knowledge USING hnsw (embedding public.vector_cosine_ops);
 --
 -- Name: idx_knowledge_personality; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_knowledge_personality ON brain.knowledge USING btree (personality_id);
+CREATE INDEX IF NOT EXISTS idx_knowledge_personality ON brain.knowledge USING btree (personality_id);
 --
 -- Name: idx_knowledge_topic; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_knowledge_topic ON brain.knowledge USING btree (topic);
+CREATE INDEX IF NOT EXISTS idx_knowledge_topic ON brain.knowledge USING btree (topic);
 --
 -- Name: idx_kql_personality; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_kql_personality ON brain.knowledge_query_log USING btree (personality_id);
+CREATE INDEX IF NOT EXISTS idx_kql_personality ON brain.knowledge_query_log USING btree (personality_id);
 --
 -- Name: idx_kql_queried_at; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_kql_queried_at ON brain.knowledge_query_log USING btree (queried_at DESC);
+CREATE INDEX IF NOT EXISTS idx_kql_queried_at ON brain.knowledge_query_log USING btree (queried_at DESC);
 --
 -- Name: idx_memories_embedding; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_memories_embedding ON brain.memories USING hnsw (embedding public.vector_cosine_ops);
+CREATE INDEX IF NOT EXISTS idx_memories_embedding ON brain.memories USING hnsw (embedding public.vector_cosine_ops);
 --
 -- Name: idx_memories_expires; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_memories_expires ON brain.memories USING btree (expires_at) WHERE (expires_at IS NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_memories_expires ON brain.memories USING btree (expires_at) WHERE (expires_at IS NOT NULL);
 --
 -- Name: idx_memories_importance; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_memories_importance ON brain.memories USING btree (importance DESC);
+CREATE INDEX IF NOT EXISTS idx_memories_importance ON brain.memories USING btree (importance DESC);
 --
 -- Name: idx_memories_personality; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_memories_personality ON brain.memories USING btree (personality_id);
+CREATE INDEX IF NOT EXISTS idx_memories_personality ON brain.memories USING btree (personality_id);
 --
 -- Name: idx_memories_type; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_memories_type ON brain.memories USING btree (type);
+CREATE INDEX IF NOT EXISTS idx_memories_type ON brain.memories USING btree (type);
 --
 -- Name: idx_memories_type_importance; Type: INDEX; Schema: brain; Owner: -
 --
 
-CREATE INDEX idx_memories_type_importance ON brain.memories USING btree (type, importance DESC);
+CREATE INDEX IF NOT EXISTS idx_memories_type_importance ON brain.memories USING btree (type, importance DESC);
 --
 -- Name: idx_browser_sessions_created; Type: INDEX; Schema: browser; Owner: -
 --
 
-CREATE INDEX idx_browser_sessions_created ON browser.sessions USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_browser_sessions_created ON browser.sessions USING btree (created_at DESC);
 --
 -- Name: idx_browser_sessions_status; Type: INDEX; Schema: browser; Owner: -
 --
 
-CREATE INDEX idx_browser_sessions_status ON browser.sessions USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_browser_sessions_status ON browser.sessions USING btree (status);
 --
 -- Name: idx_consents_expires; Type: INDEX; Schema: capture; Owner: -
 --
 
-CREATE INDEX idx_consents_expires ON capture.consents USING btree (expires_at) WHERE (status = 'pending'::text);
+CREATE INDEX IF NOT EXISTS idx_consents_expires ON capture.consents USING btree (expires_at) WHERE (status = 'pending'::text);
 --
 -- Name: idx_consents_user_status; Type: INDEX; Schema: capture; Owner: -
 --
 
-CREATE INDEX idx_consents_user_status ON capture.consents USING btree (user_id, status);
+CREATE INDEX IF NOT EXISTS idx_consents_user_status ON capture.consents USING btree (user_id, status);
 --
 -- Name: idx_recordings_status; Type: INDEX; Schema: capture; Owner: -
 --
 
-CREATE INDEX idx_recordings_status ON capture.recordings USING btree (status) WHERE (status = 'active'::text);
+CREATE INDEX IF NOT EXISTS idx_recordings_status ON capture.recordings USING btree (status) WHERE (status = 'active'::text);
 --
 -- Name: idx_chat_conversations_tenant; Type: INDEX; Schema: chat; Owner: -
 --
 
-CREATE INDEX idx_chat_conversations_tenant ON chat.conversations USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_chat_conversations_tenant ON chat.conversations USING btree (tenant_id);
 --
 -- Name: idx_citation_feedback_message; Type: INDEX; Schema: chat; Owner: -
 --
 
-CREATE INDEX idx_citation_feedback_message ON chat.citation_feedback USING btree (message_id);
+CREATE INDEX IF NOT EXISTS idx_citation_feedback_message ON chat.citation_feedback USING btree (message_id);
 --
 -- Name: idx_citation_feedback_source; Type: INDEX; Schema: chat; Owner: -
 --
 
-CREATE INDEX idx_citation_feedback_source ON chat.citation_feedback USING btree (source_id);
+CREATE INDEX IF NOT EXISTS idx_citation_feedback_source ON chat.citation_feedback USING btree (source_id);
 --
 -- Name: idx_conv_history_conversation_id; Type: INDEX; Schema: chat; Owner: -
 --
 
-CREATE INDEX idx_conv_history_conversation_id ON chat.conversation_history USING btree (conversation_id);
+CREATE INDEX IF NOT EXISTS idx_conv_history_conversation_id ON chat.conversation_history USING btree (conversation_id);
 --
 -- Name: idx_conv_history_conversation_tier_seq; Type: INDEX; Schema: chat; Owner: -
 --
 
-CREATE INDEX idx_conv_history_conversation_tier_seq ON chat.conversation_history USING btree (conversation_id, tier, sequence);
+CREATE INDEX IF NOT EXISTS idx_conv_history_conversation_tier_seq ON chat.conversation_history USING btree (conversation_id, tier, sequence);
 --
 -- Name: idx_conversations_parent; Type: INDEX; Schema: chat; Owner: -
 --
 
-CREATE INDEX idx_conversations_parent ON chat.conversations USING btree (parent_conversation_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_parent ON chat.conversations USING btree (parent_conversation_id);
 --
 -- Name: idx_conversations_strategy; Type: INDEX; Schema: chat; Owner: -
 --
 
-CREATE INDEX idx_conversations_strategy ON chat.conversations USING btree (strategy_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_strategy ON chat.conversations USING btree (strategy_id);
 --
 -- Name: idx_conversations_updated; Type: INDEX; Schema: chat; Owner: -
 --
 
-CREATE INDEX idx_conversations_updated ON chat.conversations USING btree (updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_conversations_updated ON chat.conversations USING btree (updated_at DESC);
 --
 -- Name: idx_messages_conversation; Type: INDEX; Schema: chat; Owner: -
 --
 
-CREATE INDEX idx_messages_conversation ON chat.messages USING btree (conversation_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation ON chat.messages USING btree (conversation_id, created_at);
 --
 -- Name: idx_messages_grounding_score; Type: INDEX; Schema: chat; Owner: -
 --
 
-CREATE INDEX idx_messages_grounding_score ON chat.messages USING btree (grounding_score) WHERE (grounding_score IS NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_messages_grounding_score ON chat.messages USING btree (grounding_score) WHERE (grounding_score IS NOT NULL);
 --
 -- Name: idx_replay_results_job; Type: INDEX; Schema: chat; Owner: -
 --
 
-CREATE INDEX idx_replay_results_job ON chat.replay_results USING btree (replay_job_id);
+CREATE INDEX IF NOT EXISTS idx_replay_results_job ON chat.replay_results USING btree (replay_job_id);
 --
 -- Name: idx_comms_message_peer; Type: INDEX; Schema: comms; Owner: -
 --
 
-CREATE INDEX idx_comms_message_peer ON comms.message_log USING btree (peer_agent_id);
+CREATE INDEX IF NOT EXISTS idx_comms_message_peer ON comms.message_log USING btree (peer_agent_id);
 --
 -- Name: idx_comms_message_time; Type: INDEX; Schema: comms; Owner: -
 --
 
-CREATE INDEX idx_comms_message_time ON comms.message_log USING btree ("timestamp" DESC);
+CREATE INDEX IF NOT EXISTS idx_comms_message_time ON comms.message_log USING btree ("timestamp" DESC);
 --
 -- Name: idx_exec_approvals_status; Type: INDEX; Schema: execution; Owner: -
 --
 
-CREATE INDEX idx_exec_approvals_status ON execution.approvals USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_exec_approvals_status ON execution.approvals USING btree (status);
 --
 -- Name: idx_exec_history_created; Type: INDEX; Schema: execution; Owner: -
 --
 
-CREATE INDEX idx_exec_history_created ON execution.history USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_exec_history_created ON execution.history USING btree (created_at DESC);
 --
 -- Name: idx_exec_history_session; Type: INDEX; Schema: execution; Owner: -
 --
 
-CREATE INDEX idx_exec_history_session ON execution.history USING btree (session_id);
+CREATE INDEX IF NOT EXISTS idx_exec_history_session ON execution.history USING btree (session_id);
 --
 -- Name: idx_exec_sessions_status; Type: INDEX; Schema: execution; Owner: -
 --
 
-CREATE INDEX idx_exec_sessions_status ON execution.sessions USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_exec_sessions_status ON execution.sessions USING btree (status);
 --
 -- Name: idx_extensions_name; Type: INDEX; Schema: extensions; Owner: -
 --
 
-CREATE INDEX idx_extensions_name ON extensions.manifests USING btree (name);
+CREATE INDEX IF NOT EXISTS idx_extensions_name ON extensions.manifests USING btree (name);
 --
 -- Name: idx_hooks_extension; Type: INDEX; Schema: extensions; Owner: -
 --
 
-CREATE INDEX idx_hooks_extension ON extensions.hooks USING btree (extension_id);
+CREATE INDEX IF NOT EXISTS idx_hooks_extension ON extensions.hooks USING btree (extension_id);
 --
 -- Name: idx_hooks_point; Type: INDEX; Schema: extensions; Owner: -
 --
 
-CREATE INDEX idx_hooks_point ON extensions.hooks USING btree (hook_point);
+CREATE INDEX IF NOT EXISTS idx_hooks_point ON extensions.hooks USING btree (hook_point);
 --
 -- Name: idx_federation_sync_log_peer; Type: INDEX; Schema: federation; Owner: -
 --
 
-CREATE INDEX idx_federation_sync_log_peer ON federation.sync_log USING btree (peer_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_federation_sync_log_peer ON federation.sync_log USING btree (peer_id, created_at DESC);
 --
 -- Name: idx_group_chat_pins_channel; Type: INDEX; Schema: integration; Owner: -
 --
 
-CREATE INDEX idx_group_chat_pins_channel ON integration.group_chat_pins USING btree (integration_id, chat_id);
+CREATE INDEX IF NOT EXISTS idx_group_chat_pins_channel ON integration.group_chat_pins USING btree (integration_id, chat_id);
 --
 -- Name: idx_int_messages_integration; Type: INDEX; Schema: integration; Owner: -
 --
 
-CREATE INDEX idx_int_messages_integration ON integration.messages USING btree (integration_id);
+CREATE INDEX IF NOT EXISTS idx_int_messages_integration ON integration.messages USING btree (integration_id);
 --
 -- Name: idx_int_messages_timestamp; Type: INDEX; Schema: integration; Owner: -
 --
 
-CREATE INDEX idx_int_messages_timestamp ON integration.messages USING btree ("timestamp");
+CREATE INDEX IF NOT EXISTS idx_int_messages_timestamp ON integration.messages USING btree ("timestamp");
 --
 -- Name: idx_messages_channel; Type: INDEX; Schema: integration; Owner: -
 --
 
-CREATE INDEX idx_messages_channel ON integration.messages USING btree (integration_id, chat_id, "timestamp" DESC);
+CREATE INDEX IF NOT EXISTS idx_messages_channel ON integration.messages USING btree (integration_id, chat_id, "timestamp" DESC);
 --
 -- Name: idx_messages_personality; Type: INDEX; Schema: integration; Owner: -
 --
 
-CREATE INDEX idx_messages_personality ON integration.messages USING btree (personality_id, "timestamp" DESC) WHERE (personality_id IS NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_messages_personality ON integration.messages USING btree (personality_id, "timestamp" DESC) WHERE (personality_id IS NOT NULL);
 --
 -- Name: idx_multimodal_jobs_created; Type: INDEX; Schema: multimodal; Owner: -
 --
 
-CREATE INDEX idx_multimodal_jobs_created ON multimodal.jobs USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_multimodal_jobs_created ON multimodal.jobs USING btree (created_at DESC);
 --
 -- Name: idx_multimodal_jobs_status; Type: INDEX; Schema: multimodal; Owner: -
 --
 
-CREATE INDEX idx_multimodal_jobs_status ON multimodal.jobs USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_multimodal_jobs_status ON multimodal.jobs USING btree (status);
 --
 -- Name: idx_multimodal_jobs_type; Type: INDEX; Schema: multimodal; Owner: -
 --
 
-CREATE INDEX idx_multimodal_jobs_type ON multimodal.jobs USING btree (type);
+CREATE INDEX IF NOT EXISTS idx_multimodal_jobs_type ON multimodal.jobs USING btree (type);
 --
 -- Name: idx_heartbeat_log_check_name; Type: INDEX; Schema: proactive; Owner: -
 --
 
-CREATE INDEX idx_heartbeat_log_check_name ON proactive.heartbeat_log USING btree (check_name);
+CREATE INDEX IF NOT EXISTS idx_heartbeat_log_check_name ON proactive.heartbeat_log USING btree (check_name);
 --
 -- Name: idx_heartbeat_log_ran_at; Type: INDEX; Schema: proactive; Owner: -
 --
 
-CREATE INDEX idx_heartbeat_log_ran_at ON proactive.heartbeat_log USING btree (ran_at DESC);
+CREATE INDEX IF NOT EXISTS idx_heartbeat_log_ran_at ON proactive.heartbeat_log USING btree (ran_at DESC);
 --
 -- Name: idx_heartbeat_log_status; Type: INDEX; Schema: proactive; Owner: -
 --
 
-CREATE INDEX idx_heartbeat_log_status ON proactive.heartbeat_log USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_heartbeat_log_status ON proactive.heartbeat_log USING btree (status);
 --
 -- Name: idx_autonomy_audit_runs_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_autonomy_audit_runs_created_at ON public.autonomy_audit_runs USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_autonomy_audit_runs_created_at ON public.autonomy_audit_runs USING btree (created_at DESC);
 --
 -- Name: idx_autonomy_audit_status; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_autonomy_audit_status ON public.autonomy_audit_runs USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_autonomy_audit_status ON public.autonomy_audit_runs USING btree (status);
 --
 -- Name: idx_intent_log_personality; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_intent_log_personality ON public.intent_enforcement_log USING btree (personality_id);
+CREATE INDEX IF NOT EXISTS idx_intent_log_personality ON public.intent_enforcement_log USING btree (personality_id);
 --
 -- Name: idx_routing_rules_priority; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_routing_rules_priority ON public.routing_rules USING btree (priority, enabled DESC);
+CREATE INDEX IF NOT EXISTS idx_routing_rules_priority ON public.routing_rules USING btree (priority, enabled DESC);
 --
 -- Name: intent_enforcement_log_agent_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX intent_enforcement_log_agent_id ON public.intent_enforcement_log USING btree (agent_id);
+CREATE INDEX IF NOT EXISTS intent_enforcement_log_agent_id ON public.intent_enforcement_log USING btree (agent_id);
 --
 -- Name: intent_enforcement_log_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX intent_enforcement_log_created_at ON public.intent_enforcement_log USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS intent_enforcement_log_created_at ON public.intent_enforcement_log USING btree (created_at DESC);
 --
 -- Name: intent_enforcement_log_event_type; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX intent_enforcement_log_event_type ON public.intent_enforcement_log USING btree (event_type);
+CREATE INDEX IF NOT EXISTS intent_enforcement_log_event_type ON public.intent_enforcement_log USING btree (event_type);
 --
 -- Name: intent_goal_snapshots_intent_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX intent_goal_snapshots_intent_id ON public.intent_goal_snapshots USING btree (intent_id);
+CREATE INDEX IF NOT EXISTS intent_goal_snapshots_intent_id ON public.intent_goal_snapshots USING btree (intent_id);
 --
 -- Name: notifications_created_at_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX notifications_created_at_idx ON public.notifications USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS notifications_created_at_idx ON public.notifications USING btree (created_at DESC);
 --
 -- Name: notifications_read_at_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX notifications_read_at_idx ON public.notifications USING btree (read_at) WHERE (read_at IS NULL);
+CREATE INDEX IF NOT EXISTS notifications_read_at_idx ON public.notifications USING btree (read_at) WHERE (read_at IS NULL);
 --
 -- Name: oauth_tokens_provider_email; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX oauth_tokens_provider_email ON public.oauth_tokens USING btree (provider, email);
+CREATE INDEX IF NOT EXISTS oauth_tokens_provider_email ON public.oauth_tokens USING btree (provider, email);
 --
 -- Name: org_intents_one_active; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX org_intents_one_active ON public.org_intents USING btree (is_active) WHERE (is_active = true);
+CREATE UNIQUE INDEX IF NOT EXISTS org_intents_one_active ON public.org_intents USING btree (is_active) WHERE (is_active = true);
 --
 -- Name: outbound_webhooks_enabled; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX outbound_webhooks_enabled ON public.outbound_webhooks USING btree (enabled);
+CREATE INDEX IF NOT EXISTS outbound_webhooks_enabled ON public.outbound_webhooks USING btree (enabled);
 --
 -- Name: usage_error_records_at_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX usage_error_records_at_idx ON public.usage_error_records USING btree (recorded_at);
+CREATE INDEX IF NOT EXISTS usage_error_records_at_idx ON public.usage_error_records USING btree (recorded_at);
 --
 -- Name: usage_records_personality_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX usage_records_personality_idx ON public.usage_records USING btree (personality_id);
+CREATE INDEX IF NOT EXISTS usage_records_personality_idx ON public.usage_records USING btree (personality_id);
 --
 -- Name: usage_records_recorded_at_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX usage_records_recorded_at_idx ON public.usage_records USING btree (recorded_at);
+CREATE INDEX IF NOT EXISTS usage_records_recorded_at_idx ON public.usage_records USING btree (recorded_at);
 --
 -- Name: webhook_transforms_integration; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX webhook_transforms_integration ON public.webhook_transform_rules USING btree (integration_id);
+CREATE INDEX IF NOT EXISTS webhook_transforms_integration ON public.webhook_transform_rules USING btree (integration_id);
 --
 -- Name: webhook_transforms_priority; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX webhook_transforms_priority ON public.webhook_transform_rules USING btree (priority, enabled);
+CREATE INDEX IF NOT EXISTS webhook_transforms_priority ON public.webhook_transform_rules USING btree (priority, enabled);
 --
 -- Name: idx_user_active_role; Type: INDEX; Schema: rbac; Owner: -
 --
 
-CREATE UNIQUE INDEX idx_user_active_role ON rbac.user_role_assignments USING btree (user_id) WHERE (revoked_at IS NULL);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_active_role ON rbac.user_role_assignments USING btree (user_id) WHERE (revoked_at IS NULL);
 --
 -- Name: idx_user_role_role_id; Type: INDEX; Schema: rbac; Owner: -
 --
 
-CREATE INDEX idx_user_role_role_id ON rbac.user_role_assignments USING btree (role_id);
+CREATE INDEX IF NOT EXISTS idx_user_role_role_id ON rbac.user_role_assignments USING btree (role_id);
 --
 -- Name: idx_user_role_user_id; Type: INDEX; Schema: rbac; Owner: -
 --
 
-CREATE INDEX idx_user_role_user_id ON rbac.user_role_assignments USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_user_role_user_id ON rbac.user_role_assignments USING btree (user_id);
 --
 -- Name: idx_assessments_department_id; Type: INDEX; Schema: risk; Owner: -
 --
 
-CREATE INDEX idx_assessments_department_id ON risk.assessments USING btree (department_id);
+CREATE INDEX IF NOT EXISTS idx_assessments_department_id ON risk.assessments USING btree (department_id);
 --
 -- Name: idx_department_scores_dept_scored; Type: INDEX; Schema: risk; Owner: -
 --
 
-CREATE INDEX idx_department_scores_dept_scored ON risk.department_scores USING btree (department_id, scored_at DESC);
+CREATE INDEX IF NOT EXISTS idx_department_scores_dept_scored ON risk.department_scores USING btree (department_id, scored_at DESC);
 --
 -- Name: idx_department_scores_tenant_id; Type: INDEX; Schema: risk; Owner: -
 --
 
-CREATE INDEX idx_department_scores_tenant_id ON risk.department_scores USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_department_scores_tenant_id ON risk.department_scores USING btree (tenant_id);
 --
 -- Name: idx_departments_parent_id; Type: INDEX; Schema: risk; Owner: -
 --
 
-CREATE INDEX idx_departments_parent_id ON risk.departments USING btree (parent_id);
+CREATE INDEX IF NOT EXISTS idx_departments_parent_id ON risk.departments USING btree (parent_id);
 --
 -- Name: idx_departments_team_id; Type: INDEX; Schema: risk; Owner: -
 --
 
-CREATE INDEX idx_departments_team_id ON risk.departments USING btree (team_id);
+CREATE INDEX IF NOT EXISTS idx_departments_team_id ON risk.departments USING btree (team_id);
 --
 -- Name: idx_departments_tenant_id; Type: INDEX; Schema: risk; Owner: -
 --
 
-CREATE INDEX idx_departments_tenant_id ON risk.departments USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_departments_tenant_id ON risk.departments USING btree (tenant_id);
 --
 -- Name: idx_ext_findings_feed_id; Type: INDEX; Schema: risk; Owner: -
 --
 
-CREATE INDEX idx_ext_findings_feed_id ON risk.external_findings USING btree (feed_id);
+CREATE INDEX IF NOT EXISTS idx_ext_findings_feed_id ON risk.external_findings USING btree (feed_id);
 --
 -- Name: idx_ext_findings_imported_at; Type: INDEX; Schema: risk; Owner: -
 --
 
-CREATE INDEX idx_ext_findings_imported_at ON risk.external_findings USING btree (imported_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ext_findings_imported_at ON risk.external_findings USING btree (imported_at DESC);
 --
 -- Name: idx_ext_findings_severity; Type: INDEX; Schema: risk; Owner: -
 --
 
-CREATE INDEX idx_ext_findings_severity ON risk.external_findings USING btree (severity);
+CREATE INDEX IF NOT EXISTS idx_ext_findings_severity ON risk.external_findings USING btree (severity);
 --
 -- Name: idx_ext_findings_status; Type: INDEX; Schema: risk; Owner: -
 --
 
-CREATE INDEX idx_ext_findings_status ON risk.external_findings USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_ext_findings_status ON risk.external_findings USING btree (status);
 --
 -- Name: idx_external_findings_department_id; Type: INDEX; Schema: risk; Owner: -
 --
 
-CREATE INDEX idx_external_findings_department_id ON risk.external_findings USING btree (department_id);
+CREATE INDEX IF NOT EXISTS idx_external_findings_department_id ON risk.external_findings USING btree (department_id);
 --
 -- Name: idx_register_entries_category; Type: INDEX; Schema: risk; Owner: -
 --
 
-CREATE INDEX idx_register_entries_category ON risk.register_entries USING btree (category);
+CREATE INDEX IF NOT EXISTS idx_register_entries_category ON risk.register_entries USING btree (category);
 --
 -- Name: idx_register_entries_department_id; Type: INDEX; Schema: risk; Owner: -
 --
 
-CREATE INDEX idx_register_entries_department_id ON risk.register_entries USING btree (department_id);
+CREATE INDEX IF NOT EXISTS idx_register_entries_department_id ON risk.register_entries USING btree (department_id);
 --
 -- Name: idx_register_entries_due_date; Type: INDEX; Schema: risk; Owner: -
 --
 
-CREATE INDEX idx_register_entries_due_date ON risk.register_entries USING btree (due_date);
+CREATE INDEX IF NOT EXISTS idx_register_entries_due_date ON risk.register_entries USING btree (due_date);
 --
 -- Name: idx_register_entries_risk_score; Type: INDEX; Schema: risk; Owner: -
 --
 
-CREATE INDEX idx_register_entries_risk_score ON risk.register_entries USING btree (risk_score DESC);
+CREATE INDEX IF NOT EXISTS idx_register_entries_risk_score ON risk.register_entries USING btree (risk_score DESC);
 --
 -- Name: idx_register_entries_status; Type: INDEX; Schema: risk; Owner: -
 --
 
-CREATE INDEX idx_register_entries_status ON risk.register_entries USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_register_entries_status ON risk.register_entries USING btree (status);
 --
 -- Name: idx_register_entries_tenant_id; Type: INDEX; Schema: risk; Owner: -
 --
 
-CREATE INDEX idx_register_entries_tenant_id ON risk.register_entries USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_register_entries_tenant_id ON risk.register_entries USING btree (tenant_id);
 --
 -- Name: idx_risk_assessments_created_at; Type: INDEX; Schema: risk; Owner: -
 --
 
-CREATE INDEX idx_risk_assessments_created_at ON risk.assessments USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_risk_assessments_created_at ON risk.assessments USING btree (created_at DESC);
 --
 -- Name: idx_risk_assessments_status; Type: INDEX; Schema: risk; Owner: -
 --
 
-CREATE INDEX idx_risk_assessments_status ON risk.assessments USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_risk_assessments_status ON risk.assessments USING btree (status);
 --
 -- Name: idx_scan_history_created_at; Type: INDEX; Schema: sandbox; Owner: -
 --
 
-CREATE INDEX idx_scan_history_created_at ON sandbox.scan_history USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_scan_history_created_at ON sandbox.scan_history USING btree (created_at DESC);
 --
 -- Name: idx_scan_history_personality; Type: INDEX; Schema: sandbox; Owner: -
 --
 
-CREATE INDEX idx_scan_history_personality ON sandbox.scan_history USING btree (personality_id);
+CREATE INDEX IF NOT EXISTS idx_scan_history_personality ON sandbox.scan_history USING btree (personality_id);
 --
 -- Name: idx_scan_history_source; Type: INDEX; Schema: sandbox; Owner: -
 --
 
-CREATE INDEX idx_scan_history_source ON sandbox.scan_history USING btree (source_context);
+CREATE INDEX IF NOT EXISTS idx_scan_history_source ON sandbox.scan_history USING btree (source_context);
 --
 -- Name: idx_scan_history_verdict; Type: INDEX; Schema: sandbox; Owner: -
 --
 
-CREATE INDEX idx_scan_history_verdict ON sandbox.scan_history USING btree (verdict);
+CREATE INDEX IF NOT EXISTS idx_scan_history_verdict ON sandbox.scan_history USING btree (verdict);
 --
 -- Name: idx_athi_scenarios_actor; Type: INDEX; Schema: security; Owner: -
 --
 
-CREATE INDEX idx_athi_scenarios_actor ON security.athi_scenarios USING btree (actor);
+CREATE INDEX IF NOT EXISTS idx_athi_scenarios_actor ON security.athi_scenarios USING btree (actor);
 --
 -- Name: idx_athi_scenarios_org_id; Type: INDEX; Schema: security; Owner: -
 --
 
-CREATE INDEX idx_athi_scenarios_org_id ON security.athi_scenarios USING btree (org_id);
+CREATE INDEX IF NOT EXISTS idx_athi_scenarios_org_id ON security.athi_scenarios USING btree (org_id);
 --
 -- Name: idx_athi_scenarios_risk_score; Type: INDEX; Schema: security; Owner: -
 --
 
-CREATE INDEX idx_athi_scenarios_risk_score ON security.athi_scenarios USING btree (risk_score DESC);
+CREATE INDEX IF NOT EXISTS idx_athi_scenarios_risk_score ON security.athi_scenarios USING btree (risk_score DESC);
 --
 -- Name: idx_athi_scenarios_status; Type: INDEX; Schema: security; Owner: -
 --
 
-CREATE INDEX idx_athi_scenarios_status ON security.athi_scenarios USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_athi_scenarios_status ON security.athi_scenarios USING btree (status);
 --
 -- Name: idx_personality_versions_pid_created; Type: INDEX; Schema: soul; Owner: -
 --
 
-CREATE INDEX idx_personality_versions_pid_created ON soul.personality_versions USING btree (personality_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_personality_versions_pid_created ON soul.personality_versions USING btree (personality_id, created_at DESC);
 --
 -- Name: idx_reasoning_strategies_category; Type: INDEX; Schema: soul; Owner: -
 --
 
-CREATE INDEX idx_reasoning_strategies_category ON soul.reasoning_strategies USING btree (category);
+CREATE INDEX IF NOT EXISTS idx_reasoning_strategies_category ON soul.reasoning_strategies USING btree (category);
 --
 -- Name: idx_reasoning_strategies_slug; Type: INDEX; Schema: soul; Owner: -
 --
 
-CREATE INDEX idx_reasoning_strategies_slug ON soul.reasoning_strategies USING btree (slug);
+CREATE INDEX IF NOT EXISTS idx_reasoning_strategies_slug ON soul.reasoning_strategies USING btree (slug);
 --
 -- Name: idx_soul_personalities_tenant; Type: INDEX; Schema: soul; Owner: -
 --
 
-CREATE INDEX idx_soul_personalities_tenant ON soul.personalities USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_soul_personalities_tenant ON soul.personalities USING btree (tenant_id);
 --
 -- Name: idx_soul_skills_active; Type: INDEX; Schema: soul; Owner: -
 --
 
-CREATE INDEX idx_soul_skills_active ON soul.skills USING btree (enabled, status, usage_count DESC) WHERE (enabled = true);
+CREATE INDEX IF NOT EXISTS idx_soul_skills_active ON soul.skills USING btree (enabled, status, usage_count DESC) WHERE (enabled = true);
 --
 -- Name: idx_soul_skills_personality; Type: INDEX; Schema: soul; Owner: -
 --
 
-CREATE INDEX idx_soul_skills_personality ON soul.skills USING btree (personality_id);
+CREATE INDEX IF NOT EXISTS idx_soul_skills_personality ON soul.skills USING btree (personality_id);
 --
 -- Name: pending_approvals_personality_status; Type: INDEX; Schema: soul; Owner: -
 --
 
-CREATE INDEX pending_approvals_personality_status ON soul.pending_approvals USING btree (personality_id, status);
+CREATE INDEX IF NOT EXISTS pending_approvals_personality_status ON soul.pending_approvals USING btree (personality_id, status);
 --
 -- Name: uq_personality_versions_pid_tag; Type: INDEX; Schema: soul; Owner: -
 --
 
-CREATE UNIQUE INDEX uq_personality_versions_pid_tag ON soul.personality_versions USING btree (personality_id, version_tag) WHERE (version_tag IS NOT NULL);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_personality_versions_pid_tag ON soul.personality_versions USING btree (personality_id, version_tag) WHERE (version_tag IS NOT NULL);
 --
 -- Name: idx_inspirations_personality; Type: INDEX; Schema: spirit; Owner: -
 --
 
-CREATE INDEX idx_inspirations_personality ON spirit.inspirations USING btree (personality_id);
+CREATE INDEX IF NOT EXISTS idx_inspirations_personality ON spirit.inspirations USING btree (personality_id);
 --
 -- Name: idx_pains_personality; Type: INDEX; Schema: spirit; Owner: -
 --
 
-CREATE INDEX idx_pains_personality ON spirit.pains USING btree (personality_id);
+CREATE INDEX IF NOT EXISTS idx_pains_personality ON spirit.pains USING btree (personality_id);
 --
 -- Name: idx_passions_personality; Type: INDEX; Schema: spirit; Owner: -
 --
 
-CREATE INDEX idx_passions_personality ON spirit.passions USING btree (personality_id);
+CREATE INDEX IF NOT EXISTS idx_passions_personality ON spirit.passions USING btree (personality_id);
 --
 -- Name: idx_task_tasks_tenant; Type: INDEX; Schema: task; Owner: -
 --
 
-CREATE INDEX idx_task_tasks_tenant ON task.tasks USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_task_tasks_tenant ON task.tasks USING btree (tenant_id);
 --
 -- Name: idx_tasks_correlation_id; Type: INDEX; Schema: task; Owner: -
 --
 
-CREATE INDEX idx_tasks_correlation_id ON task.tasks USING btree (correlation_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_correlation_id ON task.tasks USING btree (correlation_id);
 --
 -- Name: idx_tasks_created_at; Type: INDEX; Schema: task; Owner: -
 --
 
-CREATE INDEX idx_tasks_created_at ON task.tasks USING btree (created_at);
+CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON task.tasks USING btree (created_at);
 --
 -- Name: idx_tasks_status; Type: INDEX; Schema: task; Owner: -
 --
 
-CREATE INDEX idx_tasks_status ON task.tasks USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON task.tasks USING btree (status);
 --
 -- Name: idx_tasks_type; Type: INDEX; Schema: task; Owner: -
 --
 
-CREATE INDEX idx_tasks_type ON task.tasks USING btree (type);
+CREATE INDEX IF NOT EXISTS idx_tasks_type ON task.tasks USING btree (type);
 --
 -- Name: idx_alert_rules_enabled; Type: INDEX; Schema: telemetry; Owner: -
 --
 
-CREATE INDEX idx_alert_rules_enabled ON telemetry.alert_rules USING btree (enabled);
+CREATE INDEX IF NOT EXISTS idx_alert_rules_enabled ON telemetry.alert_rules USING btree (enabled);
 --
 -- Name: approval_requests_expires_at_idx; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX approval_requests_expires_at_idx ON training.approval_requests USING btree (expires_at) WHERE (status = 'pending'::text);
+CREATE INDEX IF NOT EXISTS approval_requests_expires_at_idx ON training.approval_requests USING btree (expires_at) WHERE (status = 'pending'::text);
 --
 -- Name: approval_requests_run_idx; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX approval_requests_run_idx ON training.approval_requests USING btree (workflow_run_id);
+CREATE INDEX IF NOT EXISTS approval_requests_run_idx ON training.approval_requests USING btree (workflow_run_id);
 --
 -- Name: approval_requests_status_idx; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX approval_requests_status_idx ON training.approval_requests USING btree (status) WHERE (status = 'pending'::text);
+CREATE INDEX IF NOT EXISTS approval_requests_status_idx ON training.approval_requests USING btree (status) WHERE (status = 'pending'::text);
 --
 -- Name: distillation_jobs_created_at_idx; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX distillation_jobs_created_at_idx ON training.distillation_jobs USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS distillation_jobs_created_at_idx ON training.distillation_jobs USING btree (created_at DESC);
 --
 -- Name: distillation_jobs_status_idx; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX distillation_jobs_status_idx ON training.distillation_jobs USING btree (status);
+CREATE INDEX IF NOT EXISTS distillation_jobs_status_idx ON training.distillation_jobs USING btree (status);
 --
 -- Name: finetune_jobs_created_at_idx; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX finetune_jobs_created_at_idx ON training.finetune_jobs USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS finetune_jobs_created_at_idx ON training.finetune_jobs USING btree (created_at DESC);
 --
 -- Name: finetune_jobs_status_idx; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX finetune_jobs_status_idx ON training.finetune_jobs USING btree (status);
+CREATE INDEX IF NOT EXISTS finetune_jobs_status_idx ON training.finetune_jobs USING btree (status);
 --
 -- Name: idx_ab_test_assignments_test; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX idx_ab_test_assignments_test ON training.ab_test_assignments USING btree (ab_test_id);
+CREATE INDEX IF NOT EXISTS idx_ab_test_assignments_test ON training.ab_test_assignments USING btree (ab_test_id);
 --
 -- Name: idx_ab_tests_personality_status; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX idx_ab_tests_personality_status ON training.ab_tests USING btree (personality_id, status);
+CREATE INDEX IF NOT EXISTS idx_ab_tests_personality_status ON training.ab_tests USING btree (personality_id, status);
 --
 -- Name: idx_conv_quality_score; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX idx_conv_quality_score ON training.conversation_quality USING btree (quality_score);
+CREATE INDEX IF NOT EXISTS idx_conv_quality_score ON training.conversation_quality USING btree (quality_score);
 --
 -- Name: idx_cu_episodes_created; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX idx_cu_episodes_created ON training.computer_use_episodes USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_cu_episodes_created ON training.computer_use_episodes USING btree (created_at DESC);
 --
 -- Name: idx_cu_episodes_session; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX idx_cu_episodes_session ON training.computer_use_episodes USING btree (session_id);
+CREATE INDEX IF NOT EXISTS idx_cu_episodes_session ON training.computer_use_episodes USING btree (session_id);
 --
 -- Name: idx_cu_episodes_skill; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX idx_cu_episodes_skill ON training.computer_use_episodes USING btree (skill_name);
+CREATE INDEX IF NOT EXISTS idx_cu_episodes_skill ON training.computer_use_episodes USING btree (skill_name);
 --
 -- Name: idx_curated_datasets_status; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX idx_curated_datasets_status ON training.curated_datasets USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_curated_datasets_status ON training.curated_datasets USING btree (status);
 --
 -- Name: idx_eval_datasets_content_hash; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX idx_eval_datasets_content_hash ON training.eval_datasets USING btree (content_hash);
+CREATE INDEX IF NOT EXISTS idx_eval_datasets_content_hash ON training.eval_datasets USING btree (content_hash);
 --
 -- Name: idx_eval_datasets_personality_id; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX idx_eval_datasets_personality_id ON training.eval_datasets USING btree (personality_id);
+CREATE INDEX IF NOT EXISTS idx_eval_datasets_personality_id ON training.eval_datasets USING btree (personality_id);
 --
 -- Name: idx_eval_scores_dataset_id; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX idx_eval_scores_dataset_id ON training.eval_scores USING btree (dataset_id);
+CREATE INDEX IF NOT EXISTS idx_eval_scores_dataset_id ON training.eval_scores USING btree (dataset_id);
 --
 -- Name: idx_eval_scores_eval_run_id; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX idx_eval_scores_eval_run_id ON training.eval_scores USING btree (eval_run_id);
+CREATE INDEX IF NOT EXISTS idx_eval_scores_eval_run_id ON training.eval_scores USING btree (eval_run_id);
 --
 -- Name: idx_eval_scores_finetune_job_id; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX idx_eval_scores_finetune_job_id ON training.eval_scores USING btree (finetune_job_id);
+CREATE INDEX IF NOT EXISTS idx_eval_scores_finetune_job_id ON training.eval_scores USING btree (finetune_job_id);
 --
 -- Name: idx_experiments_status; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX idx_experiments_status ON training.experiments USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_experiments_status ON training.experiments USING btree (status);
 --
 -- Name: idx_model_versions_personality_active; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX idx_model_versions_personality_active ON training.model_versions USING btree (personality_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_model_versions_personality_active ON training.model_versions USING btree (personality_id, is_active);
 --
 -- Name: idx_pairwise_results_comparison_id; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX idx_pairwise_results_comparison_id ON training.pairwise_results USING btree (comparison_id);
+CREATE INDEX IF NOT EXISTS idx_pairwise_results_comparison_id ON training.pairwise_results USING btree (comparison_id);
 --
 -- Name: idx_pairwise_results_dataset_id; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX idx_pairwise_results_dataset_id ON training.pairwise_results USING btree (dataset_id);
+CREATE INDEX IF NOT EXISTS idx_pairwise_results_dataset_id ON training.pairwise_results USING btree (dataset_id);
 --
 -- Name: idx_preference_pairs_personality; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX idx_preference_pairs_personality ON training.preference_pairs USING btree (personality_id);
+CREATE INDEX IF NOT EXISTS idx_preference_pairs_personality ON training.preference_pairs USING btree (personality_id);
 --
 -- Name: idx_preference_pairs_source; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX idx_preference_pairs_source ON training.preference_pairs USING btree (source);
+CREATE INDEX IF NOT EXISTS idx_preference_pairs_source ON training.preference_pairs USING btree (source);
 --
 -- Name: pipeline_lineage_created_at_idx; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX pipeline_lineage_created_at_idx ON training.pipeline_lineage USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS pipeline_lineage_created_at_idx ON training.pipeline_lineage USING btree (created_at DESC);
 --
 -- Name: pipeline_lineage_training_job_idx; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX pipeline_lineage_training_job_idx ON training.pipeline_lineage USING btree (training_job_id) WHERE (training_job_id IS NOT NULL);
+CREATE INDEX IF NOT EXISTS pipeline_lineage_training_job_idx ON training.pipeline_lineage USING btree (training_job_id) WHERE (training_job_id IS NOT NULL);
 --
 -- Name: pipeline_lineage_workflow_run_idx; Type: INDEX; Schema: training; Owner: -
 --
 
-CREATE INDEX pipeline_lineage_workflow_run_idx ON training.pipeline_lineage USING btree (workflow_run_id);
+CREATE INDEX IF NOT EXISTS pipeline_lineage_workflow_run_idx ON training.pipeline_lineage USING btree (workflow_run_id);
 --
 -- Name: idx_wf_runs_status; Type: INDEX; Schema: workflow; Owner: -
 --
 
-CREATE INDEX idx_wf_runs_status ON workflow.runs USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_wf_runs_status ON workflow.runs USING btree (status);
 --
 -- Name: idx_wf_runs_workflow; Type: INDEX; Schema: workflow; Owner: -
 --
 
-CREATE INDEX idx_wf_runs_workflow ON workflow.runs USING btree (workflow_id);
+CREATE INDEX IF NOT EXISTS idx_wf_runs_workflow ON workflow.runs USING btree (workflow_id);
 --
 -- Name: idx_wf_step_runs_run; Type: INDEX; Schema: workflow; Owner: -
 --
 
-CREATE INDEX idx_wf_step_runs_run ON workflow.step_runs USING btree (run_id);
+CREATE INDEX IF NOT EXISTS idx_wf_step_runs_run ON workflow.step_runs USING btree (run_id);
 --
 -- Name: idx_workflow_versions_wid_created; Type: INDEX; Schema: workflow; Owner: -
 --
 
-CREATE INDEX idx_workflow_versions_wid_created ON workflow.versions USING btree (workflow_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_workflow_versions_wid_created ON workflow.versions USING btree (workflow_id, created_at DESC);
 --
 -- Name: uq_workflow_def_name; Type: INDEX; Schema: workflow; Owner: -
 --
 
-CREATE UNIQUE INDEX uq_workflow_def_name ON workflow.definitions USING btree (name);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_workflow_def_name ON workflow.definitions USING btree (name);
 --
 -- Name: uq_workflow_versions_wid_tag; Type: INDEX; Schema: workflow; Owner: -
 --
 
-CREATE UNIQUE INDEX uq_workflow_versions_wid_tag ON workflow.versions USING btree (workflow_id, version_tag) WHERE (version_tag IS NOT NULL);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_workflow_versions_wid_tag ON workflow.versions USING btree (workflow_id, version_tag) WHERE (version_tag IS NOT NULL);
 --
 -- Name: idx_workspace_workspaces_tenant; Type: INDEX; Schema: workspace; Owner: -
 --
 
-CREATE INDEX idx_workspace_workspaces_tenant ON workspace.workspaces USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_workspaces_tenant ON workspace.workspaces USING btree (tenant_id);
 --
 -- Name: entries trg_audit_search_vector; Type: TRIGGER; Schema: audit; Owner: -
 --
 
-CREATE TRIGGER trg_audit_search_vector BEFORE INSERT OR UPDATE ON audit.entries FOR EACH ROW EXECUTE FUNCTION audit.update_search_vector();
+CREATE OR REPLACE TRIGGER trg_audit_search_vector BEFORE INSERT OR UPDATE ON audit.entries FOR EACH ROW EXECUTE FUNCTION audit.update_search_vector();
 --
 -- Name: document_chunks trg_chunk_fts; Type: TRIGGER; Schema: brain; Owner: -
 --
 
-CREATE TRIGGER trg_chunk_fts BEFORE INSERT OR UPDATE OF content ON brain.document_chunks FOR EACH ROW EXECUTE FUNCTION brain.update_chunk_fts();
+CREATE OR REPLACE TRIGGER trg_chunk_fts BEFORE INSERT OR UPDATE OF content ON brain.document_chunks FOR EACH ROW EXECUTE FUNCTION brain.update_chunk_fts();
 --
 -- Name: capabilities capabilities_peer_id_fkey; Type: FK CONSTRAINT; Schema: a2a; Owner: -
 --

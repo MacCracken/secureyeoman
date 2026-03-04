@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Editor, { loader, type OnMount } from '@monaco-editor/react';
 import {
@@ -11,8 +11,6 @@ import {
   Terminal,
   Play,
   Trash2,
-  ChevronRight,
-  File,
   Folder,
   Mic,
   Square,
@@ -23,13 +21,11 @@ import {
   Settings,
   Plus,
   X,
-  Split,
   Wrench,
   Star,
   Eye,
-  Brain,
-  Cpu,
   Globe,
+  GitBranch,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -46,6 +42,8 @@ import {
   switchModel,
 } from '../api/client';
 import { useChatStream } from '../hooks/useChat';
+import { useCommandPalette, type CommandItem } from '../hooks/useCommandPalette';
+import { useAiCommitMessage } from '../hooks/useAiCommitMessage';
 import { ThinkingBlock } from './ThinkingBlock';
 import { useVoice } from '../hooks/useVoice';
 import { usePushToTalk } from '../hooks/usePushToTalk';
@@ -55,9 +53,12 @@ import type { Personality, ChatMessage, CreationEvent } from '../types';
 import { sanitizeText } from '../utils/sanitize';
 import { ChatMarkdown } from './ChatMarkdown';
 import { Link, useNavigate } from 'react-router-dom';
-import { ModelWidget } from './ModelWidget';
 import { AgentWorldWidget } from './AgentWorldWidget';
 import { AdvancedEditorPage } from './AdvancedEditor/AdvancedEditorPage';
+import { CommandPalette } from './editor/CommandPalette';
+import { ProjectExplorer } from './editor/ProjectExplorer';
+import { GitPanel } from './editor/GitPanel';
+import { EditorToolbar } from './editor/EditorToolbar';
 
 type MonacoEditor = Parameters<OnMount>[0];
 
@@ -268,7 +269,7 @@ function MultiTerminal({ outputRef, onCommandComplete }: MultiTerminalProps) {
   );
 }
 
-type BottomTab = 'terminal' | 'sessions' | 'history';
+type BottomTab = 'terminal' | 'sessions' | 'history' | 'git';
 
 interface EditorTab {
   id: string;
@@ -646,7 +647,9 @@ function StandardEditorPage() {
   const queryClient = useQueryClient();
   const [tabs, setTabs] = useState<EditorTab[]>(() => [createEditorTab('untitled.ts', '/tmp')]);
   const [activeTabId, setActiveTabId] = useState<string>(tabs[0].id);
-  const [filesPanelOpen, setFilesPanelOpen] = useState(false);
+  const [showExplorer, setShowExplorer] = useState(
+    () => localStorage.getItem('editor:showExplorer') === 'true'
+  );
   const [cwd, setCwd] = useState('/tmp');
   const [renamingTabId, setRenamingTabId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -680,8 +683,6 @@ function StandardEditorPage() {
   );
 
   // ── Model ──
-  const [modelOpen, setModelOpen] = useState(false);
-  const modelBtnRef = useRef<HTMLButtonElement>(null);
   const { data: modelInfo } = useQuery({
     queryKey: ['model-info'],
     queryFn: fetchModelInfo,
@@ -980,6 +981,39 @@ function StandardEditorPage() {
     };
   }, [activeTabId, handleRunCode, createNewTab]);
 
+  // Command palette
+  const commands = useMemo<CommandItem[]>(() => {
+    const items: CommandItem[] = [
+      { id: 'new-file', label: 'New File', category: 'file', icon: <Plus className="w-3.5 h-3.5" />, shortcut: 'Ctrl+Shift+N', action: createNewTab, keywords: ['create', 'tab'] },
+      { id: 'run-code', label: 'Run Code', category: 'file', icon: <Play className="w-3.5 h-3.5" />, shortcut: 'Ctrl+Enter', action: handleRunCode, keywords: ['execute'] },
+      { id: 'toggle-explorer', label: 'Toggle Explorer', category: 'panel', icon: <Folder className="w-3.5 h-3.5" />, action: () => { const n = !showExplorer; localStorage.setItem('editor:showExplorer', String(n)); setShowExplorer(n); }, keywords: ['files', 'sidebar'] },
+      { id: 'toggle-chat', label: 'Toggle Chat', category: 'panel', icon: <Bot className="w-3.5 h-3.5" />, action: () => { const n = !showChat; localStorage.setItem('editor:showChat', String(n)); setShowChat(n); }, keywords: ['ai', 'assistant'] },
+      { id: 'toggle-git', label: 'Toggle Git Panel', category: 'panel', icon: <GitBranch className="w-3.5 h-3.5" />, action: () => setActiveBottomTab(activeBottomTab === 'git' ? 'terminal' : 'git'), keywords: ['version', 'commit'] },
+      { id: 'toggle-world', label: 'Toggle Agent World', category: 'panel', icon: <Globe className="w-3.5 h-3.5" />, action: () => { const n = !showWorld; localStorage.setItem('editor:showWorld', String(n)); setShowWorld(n); }, keywords: ['agents'] },
+      { id: 'toggle-settings', label: 'Editor Settings', category: 'panel', icon: <Settings className="w-3.5 h-3.5" />, action: () => setSettingsOpen((v) => !v), keywords: ['preferences', 'config'] },
+      { id: 'nav-dashboard', label: 'Go to Dashboard', category: 'navigation', icon: <Globe className="w-3.5 h-3.5" />, action: () => navigate('/'), keywords: ['home'] },
+      { id: 'nav-personality', label: 'Go to Personalities', category: 'navigation', icon: <Bot className="w-3.5 h-3.5" />, action: () => navigate('/personality'), keywords: ['souls'] },
+      { id: 'nav-security', label: 'Go to Security', category: 'navigation', icon: <Eye className="w-3.5 h-3.5" />, action: () => navigate('/security'), keywords: ['policy'] },
+    ];
+    // Dynamic personality items
+    personalities.forEach((p: Personality) => {
+      items.push({
+        id: `personality-${p.id}`,
+        label: `Switch to ${p.name}`,
+        category: 'personality',
+        icon: <Star className="w-3.5 h-3.5" />,
+        action: () => setSelectedPersonalityId(p.id),
+        keywords: [p.name.toLowerCase()],
+      });
+    });
+    return items;
+  }, [createNewTab, handleRunCode, showExplorer, showChat, showWorld, activeBottomTab, personalities, navigate]);
+
+  const palette = useCommandPalette(commands);
+
+  // AI commit messages
+  const aiCommit = useAiCommitMessage(cwd, effectivePersonalityId);
+
   const handleInsertAtCursor = useCallback((msg: ChatMessage) => {
     const editor = editorRef.current;
     if (!editor) return;
@@ -1018,6 +1052,7 @@ function StandardEditorPage() {
     { id: 'terminal', label: 'Terminal' },
     { id: 'sessions', label: 'Sessions' },
     { id: 'history', label: 'History' },
+    { id: 'git', label: 'Git' },
   ];
 
   return (
@@ -1039,281 +1074,70 @@ function StandardEditorPage() {
             className={`flex flex-col flex-1 ${showChat ? 'lg:flex-[60]' : ''} min-h-[250px] lg:min-h-0 border rounded-lg overflow-hidden bg-card`}
           >
             {/* Editor toolbar with tabs */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30 flex-wrap">
-              <button
-                onClick={() => {
-                  setFilesPanelOpen(!filesPanelOpen);
-                }}
-                className="btn-ghost p-1 rounded"
-                title="Toggle files panel"
-              >
-                <ChevronRight
-                  className={`w-4 h-4 transition-transform ${filesPanelOpen ? 'rotate-90' : ''}`}
-                />
-              </button>
-
-              {/* Tabs */}
-              <div className="flex items-center gap-1 overflow-x-auto max-w-[200px] sm:max-w-[300px]">
-                {tabs.map((tab) => (
-                  <div
-                    key={tab.id}
-                    className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-mono whitespace-nowrap ${
-                      tab.id === activeTabId
-                        ? 'bg-primary/10 text-primary border border-primary/30'
-                        : 'hover:bg-muted/50 text-muted-foreground'
-                    }`}
-                    onClick={() => {
-                      setActiveTabId(tab.id);
-                    }}
-                  >
-                    {renamingTabId === tab.id ? (
-                      <input
-                        type="text"
-                        value={renameValue}
-                        autoFocus
-                        className="max-w-[100px] bg-transparent border-b border-primary outline-none font-mono text-xs w-[80px]"
-                        onChange={(e) => {
-                          setRenameValue(e.target.value);
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            if (renameValue.trim()) {
-                              setTabs((prev) =>
-                                prev.map((t) =>
-                                  t.id === tab.id
-                                    ? {
-                                        ...t,
-                                        name: renameValue.trim(),
-                                        path: `${cwd}/${renameValue.trim()}`,
-                                        language: detectLanguage(renameValue.trim()),
-                                        isDirty: true,
-                                      }
-                                    : t
-                                )
-                              );
-                            }
-                            setRenamingTabId(null);
-                          } else if (e.key === 'Escape') {
-                            setRenamingTabId(null);
-                          }
-                        }}
-                        onBlur={() => {
-                          if (renameValue.trim()) {
-                            setTabs((prev) =>
-                              prev.map((t) =>
-                                t.id === tab.id
-                                  ? {
-                                      ...t,
-                                      name: renameValue.trim(),
-                                      path: `${cwd}/${renameValue.trim()}`,
-                                      language: detectLanguage(renameValue.trim()),
-                                      isDirty: true,
-                                    }
-                                  : t
-                              )
-                            );
-                          }
-                          setRenamingTabId(null);
-                        }}
-                      />
-                    ) : (
-                      <span
-                        className="max-w-[80px] sm:max-w-[120px] truncate"
-                        onDoubleClick={(e) => {
-                          e.stopPropagation();
-                          setActiveTabId(tab.id);
-                          setRenamingTabId(tab.id);
-                          setRenameValue(tab.name);
-                        }}
-                        title="Double-click to rename"
-                      >
-                        {tab.name}
-                      </span>
-                    )}
-                    {tab.isDirty && renamingTabId !== tab.id && (
-                      <span className="text-primary">●</span>
-                    )}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        closeTab(tab.id);
-                      }}
-                      className="hover:text-destructive ml-1"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-                <button onClick={createNewTab} className="btn-ghost p-1 rounded" title="New file">
-                  <Plus className="w-3 h-3" />
-                </button>
-              </div>
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded hidden sm:inline">
-                {language}
-              </span>
-              <div className="flex-1" />
-
-              {/* Toolbar buttons */}
-              <button
-                onClick={() => {
-                  setSettingsOpen(!settingsOpen);
-                }}
-                className={`btn-ghost p-1.5 rounded ${settingsOpen ? 'bg-primary/10 text-primary' : ''}`}
-                title="Editor settings"
-              >
-                <Settings className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => {
-                  setSplitView(!splitView);
-                }}
-                className={`btn-ghost p-1.5 rounded ${splitView ? 'bg-primary/10 text-primary' : ''}`}
-                title="Toggle split view"
-              >
-                <Split className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={handleRunCode}
-                disabled={runCodeMutation.isPending || !editorContent.trim()}
-                className="btn-ghost text-xs px-2 sm:px-3 py-1.5 rounded border hover:border-primary flex items-center gap-1"
-                title="Run code in terminal (Ctrl+Enter)"
-              >
-                <Play className="w-3 h-3" />
-                <span className="hidden sm:inline">Run</span>
-              </button>
-              <button
-                onClick={handleSendToChat}
-                className="btn-ghost text-xs px-2 sm:px-3 py-1.5 rounded border hover:border-primary"
-                title="Send selected text (or all) to chat"
-              >
-                <span className="hidden sm:inline">Send to Chat</span>
-                <span className="sm:hidden">Send</span>
-              </button>
-              {/* Memory toggle */}
-              <button
-                onClick={() => {
-                  const n = !memoryEnabled;
-                  localStorage.setItem('editor:memoryEnabled', String(n));
-                  setMemoryEnabled(n);
-                }}
-                className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border transition-colors ${
-                  memoryEnabled
-                    ? 'bg-primary/15 border-primary/50 text-primary'
-                    : 'border-border text-muted-foreground hover:text-foreground'
-                }`}
-                title={memoryEnabled ? 'Memory on — commands saved across sessions' : 'Memory off'}
-              >
-                <Brain className="w-3.5 h-3.5" />
-                <span className="hidden xl:inline">Mem</span>
-              </button>
-
-              {/* Model selector */}
-              <div className="relative">
-                <button
-                  ref={modelBtnRef}
-                  onClick={() => {
-                    setModelOpen((v) => !v);
-                  }}
-                  className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
-                  title="Switch model"
-                >
-                  <Cpu className="w-3.5 h-3.5" />
-                  <span className="hidden xl:inline max-w-[70px] truncate">
-                    {modelInfo?.current.model ?? 'Model'}
-                  </span>
-                </button>
-                {modelOpen && (
-                  <div className="absolute right-0 top-full mt-1 z-50">
-                    <ModelWidget
-                      onClose={() => {
-                        setModelOpen(false);
-                      }}
-                      onModelSwitch={() => {
-                        setModelOpen(false);
-                        void queryClient.invalidateQueries({ queryKey: ['model-info'] });
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Chat toggle */}
-              <button
-                onClick={() => {
-                  const n = !showChat;
-                  localStorage.setItem('editor:showChat', String(n));
-                  setShowChat(n);
-                }}
-                className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border transition-colors ${
-                  showChat
-                    ? 'bg-primary/15 border-primary/50 text-primary'
-                    : 'border-border text-muted-foreground hover:text-foreground'
-                }`}
-                title={showChat ? 'Hide chat panel' : 'Show chat panel'}
-              >
-                <Bot className="w-3.5 h-3.5" />
-                <span className="hidden xl:inline">Chat</span>
-              </button>
-
-              {/* Agent World toggle */}
-              <button
-                onClick={() => {
-                  const n = !showWorld;
-                  localStorage.setItem('editor:showWorld', String(n));
-                  setShowWorld(n);
-                }}
-                className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border transition-colors ${
-                  showWorld
-                    ? 'bg-primary/15 border-primary/50 text-primary'
-                    : 'border-border text-muted-foreground hover:text-foreground'
-                }`}
-                title={showWorld ? 'Hide agent world' : 'Show agent world'}
-              >
-                <Globe className="w-3.5 h-3.5" />
-                <span className="hidden xl:inline">World</span>
-              </button>
-            </div>
-
-            {/* Collapsible Files Panel */}
-            <div
-              className={`border-b bg-muted transition-all ${filesPanelOpen ? 'max-h-64' : 'max-h-0'} overflow-hidden`}
-            >
-              <div className="px-3 py-2 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Folder className="w-3 h-3 text-muted-foreground" />
-                  <input
-                    type="text"
-                    value={cwd}
-                    onChange={(e) => {
-                      setCwd(e.target.value);
-                    }}
-                    className="flex-1 bg-transparent border border-border rounded px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-                    placeholder="/path/to/folder"
-                    title="Working directory"
-                  />
-                </div>
-                <div className="space-y-1">
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => {
-                        setActiveTabId(tab.id);
-                      }}
-                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs font-mono text-left hover:bg-muted/50 ${
-                        tab.id === activeTabId ? 'bg-primary/10 text-primary' : ''
-                      }`}
-                    >
-                      <File className="w-3 h-3 flex-shrink-0" />
-                      <span className="truncate">{tab.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <EditorToolbar
+              tabs={tabs}
+              activeTabId={activeTabId}
+              language={language}
+              showExplorer={showExplorer}
+              showChat={showChat}
+              showWorld={showWorld}
+              settingsOpen={settingsOpen}
+              splitView={splitView}
+              memoryEnabled={memoryEnabled}
+              modelInfo={modelInfo}
+              runDisabled={runCodeMutation.isPending || !editorContent.trim()}
+              renamingTabId={renamingTabId}
+              renameValue={renameValue}
+              onToggleExplorer={() => {
+                const n = !showExplorer;
+                localStorage.setItem('editor:showExplorer', String(n));
+                setShowExplorer(n);
+              }}
+              onToggleChat={() => {
+                const n = !showChat;
+                localStorage.setItem('editor:showChat', String(n));
+                setShowChat(n);
+              }}
+              onToggleWorld={() => {
+                const n = !showWorld;
+                localStorage.setItem('editor:showWorld', String(n));
+                setShowWorld(n);
+              }}
+              onToggleSettings={() => setSettingsOpen((v) => !v)}
+              onToggleSplitView={() => setSplitView((v) => !v)}
+              onToggleMemory={() => {
+                const n = !memoryEnabled;
+                localStorage.setItem('editor:memoryEnabled', String(n));
+                setMemoryEnabled(n);
+              }}
+              onTabClick={(id) => setActiveTabId(id)}
+              onTabClose={closeTab}
+              onTabRenameStart={(id, name) => {
+                setActiveTabId(id);
+                setRenamingTabId(id);
+                setRenameValue(name);
+              }}
+              onTabRenameChange={setRenameValue}
+              onTabRenameConfirm={() => {
+                if (renamingTabId && renameValue.trim()) {
+                  setTabs((prev) =>
+                    prev.map((t) =>
+                      t.id === renamingTabId
+                        ? { ...t, name: renameValue.trim(), path: `${cwd}/${renameValue.trim()}`, language: detectLanguage(renameValue.trim()), isDirty: true }
+                        : t
+                    )
+                  );
+                }
+                setRenamingTabId(null);
+              }}
+              onTabRenameCancel={() => setRenamingTabId(null)}
+              onNewTab={createNewTab}
+              onRun={handleRunCode}
+              onSendToChat={handleSendToChat}
+              onCommandPalette={palette.toggle}
+              showGitButton
+              onToggleGit={() => setActiveBottomTab(activeBottomTab === 'git' ? 'terminal' : 'git')}
+            />
 
             {/* Settings Panel */}
             {settingsOpen && (
@@ -1386,40 +1210,42 @@ function StandardEditorPage() {
               </div>
             )}
 
-            {/* Monaco Editor */}
-            <div className={`flex-1 min-h-0 ${splitView ? 'flex gap-1' : ''}`}>
-              <Editor
-                height="100%"
-                width={splitView ? '50%' : '100%'}
-                language={language}
-                theme={isDark ? 'vs-dark' : 'vs'}
-                value={editorContent}
-                onChange={(value) => {
-                  updateTabContent(value ?? '');
-                }}
-                onMount={handleEditorMount}
-                options={{
-                  minimap: { enabled: editorSettings.minimap },
-                  fontSize: editorSettings.fontSize,
-                  tabSize: editorSettings.tabSize,
-                  lineNumbers: editorSettings.lineNumbers ? 'on' : 'off',
-                  wordWrap: editorSettings.wordWrap ? 'on' : 'off',
-                  automaticLayout: true,
-                  scrollBeyondLastLine: false,
-                  padding: { top: 8 },
-                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                }}
-              />
-              {splitView && (
+            {/* Editor area with optional explorer sidebar */}
+            <div className="flex-1 flex min-h-0">
+              {/* Project Explorer sidebar */}
+              {showExplorer && (
+                <div className="w-[220px] flex-shrink-0 overflow-hidden">
+                  <ProjectExplorer
+                    cwd={cwd}
+                    onOpenFile={(path, name, content) => {
+                      const existing = tabs.find((t) => t.path === path);
+                      if (existing) {
+                        setActiveTabId(existing.id);
+                      } else {
+                        const newTab = createEditorTab(name, cwd, content);
+                        newTab.path = path;
+                        newTab.language = detectLanguage(name);
+                        setTabs((prev) => [...prev, newTab]);
+                        setActiveTabId(newTab.id);
+                      }
+                    }}
+                    onCwdChange={setCwd}
+                  />
+                </div>
+              )}
+
+              {/* Monaco Editor */}
+              <div className={`flex-1 min-h-0 ${splitView ? 'flex gap-1' : ''}`}>
                 <Editor
                   height="100%"
-                  width="50%"
+                  width={splitView ? '50%' : '100%'}
                   language={language}
                   theme={isDark ? 'vs-dark' : 'vs'}
                   value={editorContent}
                   onChange={(value) => {
                     updateTabContent(value ?? '');
                   }}
+                  onMount={handleEditorMount}
                   options={{
                     minimap: { enabled: editorSettings.minimap },
                     fontSize: editorSettings.fontSize,
@@ -1430,10 +1256,33 @@ function StandardEditorPage() {
                     scrollBeyondLastLine: false,
                     padding: { top: 8 },
                     fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                    readOnly: true,
                   }}
                 />
-              )}
+                {splitView && (
+                  <Editor
+                    height="100%"
+                    width="50%"
+                    language={language}
+                    theme={isDark ? 'vs-dark' : 'vs'}
+                    value={editorContent}
+                    onChange={(value) => {
+                      updateTabContent(value ?? '');
+                    }}
+                    options={{
+                      minimap: { enabled: editorSettings.minimap },
+                      fontSize: editorSettings.fontSize,
+                      tabSize: editorSettings.tabSize,
+                      lineNumbers: editorSettings.lineNumbers ? 'on' : 'off',
+                      wordWrap: editorSettings.wordWrap ? 'on' : 'off',
+                      automaticLayout: true,
+                      scrollBeyondLastLine: false,
+                      padding: { top: 8 },
+                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                      readOnly: true,
+                    }}
+                  />
+                )}
+              </div>
             </div>
           </div>
 
@@ -1807,6 +1656,18 @@ function StandardEditorPage() {
                 <HistoryPanel />
               </ExecutionGated>
             )}
+
+            {activeBottomTab === 'git' && (
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <GitPanel
+                  cwd={cwd}
+                  commitMessage={aiCommit.message}
+                  onCommitMessageChange={aiCommit.setMessage}
+                  isGeneratingMessage={aiCommit.isGenerating}
+                  onGenerateMessage={aiCommit.generate}
+                />
+              </div>
+            )}
           </div>
 
           {/* Agent World panel (right of terminal, same width as chat) */}
@@ -1852,6 +1713,18 @@ function StandardEditorPage() {
           )}
         </div>
       </div>
+
+      {/* Command Palette overlay */}
+      <CommandPalette
+        open={palette.open}
+        query={palette.query}
+        setQuery={palette.setQuery}
+        filtered={palette.filtered}
+        selectedIndex={palette.selectedIndex}
+        setSelectedIndex={palette.setSelectedIndex}
+        execute={palette.execute}
+        close={palette.close}
+      />
     </div>
   );
 }

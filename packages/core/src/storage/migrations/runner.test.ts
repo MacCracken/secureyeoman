@@ -48,8 +48,11 @@ async function wipeMigrationsTable(): Promise<void> {
 }
 
 describe('runMigrations()', () => {
-  beforeAll(() => {
+  beforeAll(async () => {
     initPool(dbConfig);
+    // Ensure schema objects exist before any test calls wipeMigrationsTable().
+    // On a fresh DB this is the first migration run.
+    await runMigrations();
   });
 
   afterAll(async () => {
