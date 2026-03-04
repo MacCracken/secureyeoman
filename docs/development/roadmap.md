@@ -51,10 +51,10 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | 109 | Editor Improvements | P3 — power user UX | 🔄 In Progress |
-| 117 | Excalidraw Diagramming — MCP Tools & Marketplace Skill | P3 — capability + visualization | Planned |
+| 117 | Excalidraw Diagramming — Remaining (render, from_description, workflow, canvas, KB) | P3 — capability + visualization | 🔄 Partial (117-A: 4/6 tools + skill done) |
 | 120 | Canvas Editor Improvements | P3 — canvas improvements | Planned |
 | 122 | PDF Analysis — MCP Tools & Knowledge Base | P2 — capability + intelligence | Planned |
-| 123 | Security Reference Architecture | P2 — security + compliance | ✅ 2026.3.4 |
+| 124 | Cognitive Memory — ACT-R Activation & Hebbian Learning | P2 — intelligence | Planned |
 | — | Engineering Backlog | Ongoing | Pick-up opportunistically |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
 | Future | LLM Providers, LLM Lifecycle, Responsible AI, Voice, Infrastructure | Future / Demand-Gated | — |
@@ -106,46 +106,21 @@
 
 ---
 
-## Phase 117: Excalidraw Diagramming — MCP Tools & Marketplace Skill
+## Phase 117: Excalidraw Diagramming — Remaining
 
-**Priority**: P3 — Capability + visualization. AI-generated diagrams are a high-value output for architecture reviews, threat models, system design, and documentation. This phase adds first-class Excalidraw support: MCP tools for programmatic diagram creation/rendering, and a marketplace skill that teaches the AI to generate professional diagrams from natural language. Inspired by [excalidraw-diagram-skill](https://github.com/coleam00/excalidraw-diagram-skill) — improved with broader diagram type coverage, a richer element template library, MCP tool integration, workflow step support, and tighter integration with existing YEOMAN features (knowledge base, canvas workspace, export pipeline).
+**Priority**: P3 — Capability + visualization. Core MCP tools (create, validate, modify, templates), marketplace skill, feature gates, and manifest entries are done (2026.3.4). Remaining items below.
 
-Two sub-phases: MCP tools → marketplace skill & workflow integration.
+### 117-A Remaining: Additional MCP Tools
 
-### 117-A: Excalidraw MCP Tools
+- [ ] **`excalidraw_from_description`** — Higher-level tool: takes a natural language description and diagram type, returns Excalidraw JSON. Input: `{ description: string, diagramType: 'architecture' | 'sequence' | 'flowchart' | 'entity_relationship' | 'network_topology' | 'threat_model' | 'mindmap' | 'timeline' | 'org_chart' | 'class_diagram' | 'state_machine' | 'deployment' | 'freeform', style?, colorPalette? }`. Delegates to AI personality with skill instructions injected, parses response into valid Excalidraw JSON.
+- [ ] **`excalidraw_render`** — Render an Excalidraw JSON scene to PNG or SVG. Uses `@excalidraw/utils` (`exportToSvg`/`exportToBlob`) for headless export. Returns base64-encoded image data. SVG preserves editability. PNG at configurable resolution (default: 2x scale).
 
-*New tool group in `packages/mcp/src/tools/excalidraw-tools.ts`. Follows `wrapToolHandler()` pattern. Feature-gated via `exposeExcalidraw: boolean` in `McpServiceConfigSchema` + `exposeDiagramming: boolean` in `McpFeaturesSchema` (per-personality gate).*
+### 117-B Remaining: Workflow & Canvas Integration
 
-- [ ] **`excalidraw_create`** — Generate an Excalidraw scene JSON from a structured description. Input: `{ title: string, elements: ExcalidrawElementSpec[], theme?: 'light' | 'dark', gridMode?: boolean }`. `ExcalidrawElementSpec` is a simplified schema: `{ type: 'rectangle' | 'ellipse' | 'diamond' | 'arrow' | 'line' | 'text' | 'frame' | 'image', label?: string, x: number, y: number, width?: number, height?: number, strokeColor?: string, backgroundColor?: string, groupId?: string, boundElementIds?: string[] }`. Outputs valid Excalidraw JSON (`{ type: 'excalidraw', version: 2, elements: [], appState: {} }`). The tool handles ID generation, z-index ordering, bound arrow linkage, and group semantics so the AI only needs to specify the logical layout.
-- [ ] **`excalidraw_from_description`** — Higher-level tool: takes a natural language description and diagram type, returns Excalidraw JSON. Input: `{ description: string, diagramType: 'architecture' | 'sequence' | 'flowchart' | 'entity_relationship' | 'network_topology' | 'threat_model' | 'mindmap' | 'timeline' | 'org_chart' | 'class_diagram' | 'state_machine' | 'deployment' | 'freeform', style?: 'minimal' | 'detailed' | 'technical', colorPalette?: string }`. Delegates to the AI personality with the excalidraw-diagram skill instructions injected as context, then parses the response into valid Excalidraw JSON. The diagram type hint drives layout strategy: hierarchical top-down for org charts, left-to-right for sequences, radial for mindmaps, swim-lane for flowcharts, zone-based for architecture diagrams.
-- [ ] **`excalidraw_render`** — Render an Excalidraw JSON scene to PNG or SVG. Input: `{ scene: ExcalidrawScene | string, format: 'png' | 'svg', width?: number, height?: number, scale?: number, darkMode?: boolean }`. Uses `@excalidraw/utils` (`exportToSvg`/`exportToBlob`) in a lightweight rendering context (no Playwright dependency — the `@excalidraw/utils` package handles headless export natively). Returns base64-encoded image data. SVG output preserves editability. PNG output at configurable resolution (default: 2x scale for high-DPI).
-- [ ] **`excalidraw_validate`** — Visual validation pipeline inspired by the reference project's render-and-check approach. Input: `{ scene: ExcalidrawScene }`. Checks: (1) **Overlapping elements** — bounding box intersection detection for non-connected elements; (2) **Orphaned arrows** — arrows with `startBinding` or `endBinding` pointing to non-existent elements; (3) **Text overflow** — text elements whose content exceeds their container bounds (estimated via character count × avg char width); (4) **Unbalanced layouts** — center-of-mass deviation from canvas center beyond threshold; (5) **Missing labels** — shapes with no text binding in diagram types that expect labels (architecture, ER, flowchart); (6) **Color contrast** — text-on-background contrast ratio below WCAG AA threshold (4.5:1). Returns `{ valid: boolean, issues: ValidationIssue[], suggestions: string[] }`. The AI can call this after `excalidraw_create`, fix issues, and re-render — enabling the iterative self-correction loop.
-- [ ] **`excalidraw_modify`** — Patch an existing scene. Input: `{ scene: ExcalidrawScene, operations: PatchOperation[] }`. `PatchOperation`: `{ op: 'add' | 'update' | 'delete' | 'move' | 'restyle', elementId?: string, element?: ExcalidrawElementSpec, properties?: Partial<ExcalidrawElementSpec> }`. Enables incremental refinement without regenerating the entire scene. Maintains element IDs and bound arrow references through modifications.
-- [ ] **`excalidraw_templates`** — List available element templates and color palettes. Input: `{ category?: string }`. Returns pre-built component groups: cloud provider icons (AWS/GCP/Azure as grouped shapes), database cylinders, server racks, user/actor icons, lock/shield security icons, container/pod shapes, queue/topic shapes, load balancer shapes. Templates are defined in `packages/mcp/src/tools/excalidraw-templates.ts` as reusable `ExcalidrawElementSpec[]` groups with relative positioning — the AI places them by specifying an anchor point.
-- [ ] **Manifest & registration** — Add 6 tools to `manifest.ts` (`excalidraw_create`, `excalidraw_from_description`, `excalidraw_render`, `excalidraw_validate`, `excalidraw_modify`, `excalidraw_templates`). Register in `tools/index.ts` via `registerExcalidrawTools()`. Feature flag: `exposeExcalidraw` in MCP config (default: `true`).
-
-### 117-B: Marketplace Skill & Workflow Integration
-
-*A marketplace skill that teaches the AI to generate professional Excalidraw diagrams, plus workflow step support for automated diagram generation.*
-
-- [ ] **`excalidraw-diagram` marketplace skill** — `packages/core/src/marketplace/skills/excalidraw-diagram.ts`. `Partial<MarketplaceSkill>` following the established pattern. `category: 'productivity'`, `author: 'YEOMAN'`, `routing: 'fuzzy'`, `autonomyLevel: 'L1'`. Instructions encode the full diagramming methodology:
-  - **Visual argumentation principles** — shapes mirror concepts (fan-outs for one-to-many, timelines for sequences, convergence for aggregation, containment/frames for boundaries). Not generic boxes-and-arrows.
-  - **Diagram type catalog** — 12 supported types with layout rules: architecture (zone-based, trust boundaries as dashed frames), sequence (left-to-right timeline, actor lifelines), flowchart (top-down swim lanes, decision diamonds), ER (entity boxes with PK/FK notation, relationship arrows with cardinality labels), network topology (hierarchical layers — internet/DMZ/internal/data), threat model (DFD elements + trust boundaries + STRIDE annotations, integrates with the existing `stride-threat-model` skill output), mindmap (radial hierarchy from center), timeline (horizontal with milestone markers), org chart (top-down tree), class diagram (UML-style compartmented rectangles), state machine (states as rounded rectangles, transitions as labeled arrows), deployment (infrastructure zones with service boxes).
-  - **Color palette system** — Default palette: `{ primary: '#1e40af', secondary: '#7c3aed', accent: '#059669', warning: '#d97706', danger: '#dc2626', neutral: '#6b7280', background: '#f8fafc', surface: '#ffffff' }`. Palette is overridable per invocation. Zone backgrounds use 10% opacity fills. Arrows inherit source node color. Text always high-contrast against its background.
-  - **Element template awareness** — Instructions reference the `excalidraw_templates` MCP tool for reusable component groups. The AI is taught to compose diagrams from templates rather than raw primitives where applicable.
-  - **Iterative refinement loop** — The skill instructions teach the AI to: (1) generate the initial scene via `excalidraw_create` or `excalidraw_from_description`; (2) validate via `excalidraw_validate`; (3) fix any issues via `excalidraw_modify`; (4) render via `excalidraw_render` and present to the user. If the user requests changes, loop from step 3.
-  - **Evidence embedding** — For technical diagrams (architecture, deployment, threat model), the skill instructs the AI to embed relevant code snippets, config fragments, or API signatures as text annotations within frames — making diagrams self-documenting.
-  - `triggerPatterns`: `\\b(excalidraw|diagram|architecture.?diagram|draw.{0,10}(system|architecture|flow|sequence|er|network|topology|mindmap|org.?chart|class|state|deployment))\\b`, `(create|generate|make|draw|sketch|design).{0,20}(diagram|visual|chart|illustration|schematic|blueprint|dfd|data.?flow)`.
-  - `useWhen`: 'User asks to create, generate, or modify any kind of visual diagram, system architecture drawing, flowchart, ER diagram, network topology, threat model DFD, or Excalidraw scene.'
-  - `doNotUseWhen`: 'User asks for data charts (bar, line, pie — use Recharts), dashboards, or non-diagrammatic visualizations. User wants to edit an existing image that is not Excalidraw.'
-  - `mcpToolsAllowed`: `['excalidraw_create', 'excalidraw_from_description', 'excalidraw_render', 'excalidraw_validate', 'excalidraw_modify', 'excalidraw_templates']`.
-- [ ] **Skill registration** — Export from `skills/index.ts`. Add to `BUILTIN_SKILLS` in `marketplace/storage.ts`. Update `storage.test.ts` mock count (18→19 skills).
-- [ ] **`diagram_generation` workflow step type** — New step type in `workflow-engine.ts`. Config: `{ diagramType, descriptionTemplate: '{{steps.researcher.output}}', style?, colorPalette?, format?: 'png' | 'svg' | 'json' }`. Calls `excalidraw_from_description` → `excalidraw_validate` → `excalidraw_render` internally. Output: `{ scene: ExcalidrawScene, renderedImage: string (base64), validationIssues: ValidationIssue[] }`. Enables workflows like "research a system → generate architecture diagram → attach to report".
-- [ ] **Workflow templates** — 2 new templates appended to `BUILTIN_WORKFLOW_TEMPLATES`:
-  - `architecture-diagram-pipeline` — agent (gather system description from input or knowledge base) → `diagram_generation` (architecture type) → transform (wrap in markdown report with embedded image) → resource (save to memory). `autonomyLevel: 'L2'`.
-  - `threat-model-with-dfd` — agent (STRIDE analysis via `stride-threat-model` skill) → `diagram_generation` (threat_model type, description from STRIDE output) → transform (combine written threat model + DFD diagram) → `human_approval` (24h timeout) → resource (save to knowledge base). `autonomyLevel: 'L3'`.
-- [ ] **Canvas workspace integration** — The existing canvas workspace (`/editor/advanced`) gains an Excalidraw widget type. When the AI generates an Excalidraw scene via MCP tools, the canvas can display it as an interactive embedded Excalidraw editor (using the `@excalidraw/excalidraw` React component). Users can manually refine AI-generated diagrams. Widget persists the scene JSON in `canvas:workspace` layout storage. Bi-directional: manual edits are saved; the AI can read the current scene state via `excalidraw_modify` for further AI-assisted refinement.
-- [ ] **Knowledge base integration** — Excalidraw scenes can be stored as knowledge base documents (`brain.documents` with `format: 'excalidraw'`). The `DocumentManager.ingestBuffer()` path extracts text labels from the scene JSON for vector embedding — making diagrams searchable by their content. When recalled during RAG, the diagram is returned as both the scene JSON (for rendering) and a text summary of its elements.
+- [ ] **`diagram_generation` workflow step type** — New step type in `workflow-engine.ts`. Calls `excalidraw_from_description` → `excalidraw_validate` → `excalidraw_render` internally. Enables workflows like "research a system → generate architecture diagram → attach to report".
+- [ ] **Workflow templates** — `architecture-diagram-pipeline` (L2) and `threat-model-with-dfd` (L3).
+- [ ] **Canvas workspace integration** — Excalidraw widget type in `/editor/advanced`. Interactive embedded Excalidraw editor for AI-generated diagrams. Bi-directional: manual edits saved; AI can read current scene state.
+- [ ] **Knowledge base integration** — Store Excalidraw scenes as `brain.documents` with `format: 'excalidraw'`. Extract text labels for vector embedding. Diagrams searchable by content.
 
 ---
 
@@ -196,6 +171,65 @@ Two sub-phases: MCP tools → marketplace skill & workflow integration.
 
 ---
 
+## Phase 124: Cognitive Memory — ACT-R Activation & Hebbian Learning
+
+**Priority**: P2 — Intelligence. Inspired by CMU's [ACT-R cognitive architecture](https://act-r.psy.cmu.edu/about/) and [MuninnDB](https://github.com/scrypster/muninndb). Adds activation-based memory retrieval, temporal decay, Hebbian co-activation learning, and Bayesian confidence scoring to the knowledge base and skill routing. Memories strengthen with use, fade when unused, and contextually relevant items surface automatically.
+
+**Core formula** (simplified ACT-R base-level activation):
+```
+B(M) = ln(n + 1) − d × ln(ageDays / (n + 1))
+```
+Where `n` = access count, `ageDays` = days since last access (min 0.1), `d` = 0.5 (power-law decay exponent, Anderson 1993).
+
+**Composite retrieval score**:
+```
+Score = ContentMatch × softplus(B(M) + scale × HebbianBoost) × Confidence
+```
+
+### 124-A: Schema & Activation Primitives
+
+*Add activation tracking columns and the core scoring function to PostgreSQL. No behavioural changes yet — just the infrastructure.*
+
+- [ ] **Migration `008_cognitive_memory.sql`** — Add to `brain.documents`: `access_count INTEGER DEFAULT 0`, `last_accessed BIGINT`, `confidence REAL DEFAULT 1.0`. Add to `brain.skills`: `access_count INTEGER DEFAULT 0`, `last_accessed BIGINT`. New table `brain.associations` (`source_id TEXT, target_id TEXT, weight REAL DEFAULT 0.0, co_activation_count INTEGER DEFAULT 0, updated_at BIGINT`, unique on `(source_id, target_id)`). Indexes on `last_accessed`, `access_count`.
+- [ ] **`activation_score()` SQL function** — `CREATE FUNCTION brain.activation_score(access_count INT, last_accessed BIGINT) RETURNS REAL` implementing the ACT-R base-level formula. Query-time computation — no background worker needed for base activation.
+- [ ] **`CognitiveMemoryStorage`** — New storage class extending `PgBaseStorage`. Methods: `recordAccess(id)` (increment access_count + update last_accessed), `recordCoActivation(sourceId, targetId)` (upsert association, increment count, update Hebbian weight), `getActivation(id)`, `getAssociations(id, minWeight?)`, `decayAssociations(maxAge, decayRate)` (periodic Hebbian weight decay), `updateConfidence(id, confidence)`.
+- [ ] **Tests** — `cognitive-memory-store.test.ts` (access tracking, co-activation, weight updates, decay, confidence).
+
+### 124-B: Knowledge Base Integration
+
+*Wire activation scoring into `BrainManager` retrieval so that frequently/recently used knowledge surfaces higher.*
+
+- [ ] **`BrainManager` retrieval enhancement** — Modify `searchDocuments()` and `recallMemories()` to incorporate `brain.activation_score()` in the ORDER BY clause. Composite: existing relevance score × activation weight. Configurable blend factor (0.0 = pure content match, 1.0 = pure activation).
+- [ ] **Access tracking hooks** — When a document/memory is retrieved and used in a response, call `recordAccess(id)`. When multiple items are retrieved together, call `recordCoActivation()` for each pair.
+- [ ] **Hebbian boost in retrieval** — When retrieving document X, also fetch its top-N associations from `brain.associations`. Boost associated items' scores by `weight × hebbianScale`. This creates spreading activation — retrieving "GuardDuty" naturally surfaces "CloudTrail" if they're frequently co-retrieved.
+- [ ] **Retrieval threshold** — Configurable activation threshold τ below which items are excluded from results (ACT-R retrieval failure). Default: no threshold (backwards compatible).
+- [ ] **Tests** — `brain-manager.test.ts` additions for activation-weighted retrieval, co-activation recording, Hebbian boosting.
+
+### 124-C: Skill Routing & Agent Memory
+
+*Apply activation to skill selection and conversation memory.*
+
+- [ ] **Skill activation** — Track which marketplace skills are invoked per personality. Skills with higher activation scores in the current personality context rank higher in fuzzy routing. Modifies `SkillRouter` to blend trigger match score with skill activation.
+- [ ] **Conversation memory decay** — Apply activation scoring to conversation memories in `MemoryManager`. Recent, frequently-referenced memories rank higher in context window construction. Memories below threshold τ are excluded from context (natural forgetting without deletion).
+- [ ] **Background worker** — Periodic task (configurable interval, default 1h) to: (1) decay Hebbian association weights for stale links, (2) compute and cache aggregate activation stats for monitoring. Runs as a `setInterval` in `CognitiveMemoryManager`, not pg_cron (keeps it portable).
+- [ ] **MCP tools** — `memory_activation_stats` (get activation scores for a set of memories), `memory_associations` (get Hebbian associations for a memory). Feature-gated via `exposeCognitiveMemory`.
+- [ ] **Tests** — Skill routing with activation, memory decay, background worker, MCP tools.
+
+### 124-D: Observability & Marketplace Skill
+
+- [ ] **Activation dashboard widget** — Dashboard component showing top-N most activated memories, strongest associations, decay curve visualization. Optional — can defer to later phase.
+- [ ] **Marketplace skill** — "Cognitive Memory Analyst" skill teaching the AI to interpret activation patterns, identify knowledge gaps (low-activation important topics), and recommend memory reinforcement strategies.
+- [ ] **Metrics** — Expose activation distribution, Hebbian edge count, average confidence, retrieval threshold hit rate via `/api/v1/brain/cognitive-stats`.
+
+### References
+
+- Anderson, J. R. (1993). *Rules of the Mind*. Lawrence Erlbaum Associates. (ACT-R base-level learning equation, d = 0.5)
+- [ACT-R Tutorials — Unit 4: Activation and Base-Level Learning](http://act-r.psy.cmu.edu/wordpress/wp-content/themes/ACT-R/tutorials/unit4.htm)
+- [MuninnDB — How It Works](https://muninndb.com/how-it-works) (practical implementation of ACT-R + Hebbian in a database)
+- [ACT-R Base-Level Activation Approximations](https://link.springer.com/article/10.1007/s42113-018-0015-3)
+
+---
+
 ## Engineering Backlog
 
 Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
@@ -203,6 +237,8 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 ### Test Coverage — Final 1% Push (Phase 105)
 
 Current: 87.01% stmt / 76.02% branches. Target: 88% / 77%. Gap: <1% each.
+
+- [x] **Skill test coverage** — Added `productivity-skills.test.ts` (72 tests, 6 skills) and `role-skills.test.ts` (74 tests, 6 skills) covering all 12 previously untested marketplace skills. Added `secureyeoman-community-skills/skills/skills.test.ts` (320 tests) validating all 21 community skill JSON files against schema constraints (required fields, length limits, regex compilation, trigger pattern smoke tests, no duplicate names, no unknown properties).
 
 **Highest-impact targets by coverage gap** (directory-level, sorted by branch gap):
 
@@ -222,31 +258,23 @@ Current: 87.01% stmt / 76.02% branches. Target: 88% / 77%. Gap: <1% each.
 - [ ] **Logging branch coverage** — `logging/` at 74.93% stmt / 62.18% branch. Audit chain integrity verification, export format branches, and log rotation logic are unit-testable with mocked storage.
 - [ ] **Actuator branch coverage** — `body/actuator/` at 75.63% stmt / 61.17% branch. Desktop control action dispatch and platform-specific branching.
 - [ ] **Notification branch coverage** — `notifications/` at 90% stmt / 64.22% branch. Notification preference filtering and channel dispatch branches.
-- [x] **Analytics routes tests** — Added in previous session (24 tests covering all endpoints, error paths, pagination).
 - [ ] **Capture-permissions tests** — `body/capture-permissions.ts` has no test file. Security-critical RBAC permission enforcement for screen capture operations.
 
 ### Memory & Timer Cleanup
 
-- [ ] **Storage object cleanup** — ~17 storage objects initialized but never closed in `cleanup()`: `heartbeatLogStorage`, `alertStorage`, `notificationStorage`, `scanHistoryStore`, `riskAssessmentStorage`, `departmentRiskStorage`, `athiStorage`, `providerAccountStorage`, `autonomyAuditStorage`, `groupChatStorage`, `routingRulesStorage`, `backupStorage`, `tenantStorage`, `strategyStorage`. Consider a registry pattern for systematic cleanup.
-  - [x] Fixed: `analyticsStorage`, `pipelineLineageStorage`, `quarantineStorage` now call `.close()` before nullifying. `intentStorage` cleanup separated from manager destroy.
+- [ ] **Storage object cleanup** — ~17 storage objects initialized but never closed in `cleanup()`: `heartbeatLogStorage`, `alertStorage`, `notificationStorage`, `scanHistoryStore`, `riskAssessmentStorage`, `departmentRiskStorage`, `athiStorage`, `providerAccountStorage`, `autonomyAuditStorage`, `groupChatStorage`, `routingRulesStorage`, `backupStorage`, `tenantStorage`, `strategyStorage`. Consider a registry pattern for systematic cleanup. *(Partial: `analyticsStorage`, `pipelineLineageStorage`, `quarantineStorage`, `intentStorage` fixed.)*
 
 ### Async & Startup Performance
 
 - [ ] **Parallel `ensureTables()` during init** — `secureyeoman.ts:388-1845` runs many independent storage init calls sequentially. After migrations complete, group independent `ensureTables()` and `init()` calls into `Promise.all()` batches.
-- [x] **Response cache key optimization** — Switched from SHA-256 to MD5 (~30-40% faster). Non-security cache key — collision resistance not required.
 
 ### Code Quality & Consistency
 
-- [ ] **Unify error response format** — Two competing patterns: `sendError()` returns `{ error, message, statusCode }` (~60% of routes) vs. inline `reply.code(N).send({ error: '...' })` with single key (~40%). Migrate all to `sendError()`. Affected: `analytics-routes.ts` (12 instances), `multimodal-routes.ts`, `diagnostic-routes.ts`, `chat-routes.ts`, `desktop-routes.ts`, `extension-routes.ts`.
-- [x] **Extract `initOptional()` helper** — Already exists at `secureyeoman.ts:4224`.
-- [x] **Standardize pagination parsing** — All routes now use `parsePagination()` from `utils/pagination.ts`. Removed `capLimit()` from brain-routes.
-- [x] **Consistent response wrapping** — Analytics endpoints now wrap arrays in named keys (`{ sentiments }`, `{ trend }`, `{ entities }`, `{ results }`, `{ phrases }`). Dashboard client unwraps transparently.
+- [ ] **Unify error response format** — Two competing patterns: `sendError()` returns `{ error, message, statusCode }` (~60% of routes) vs. inline `reply.code(N).send({ error: '...' })` with single key (~40%). Migrate all to `sendError()`. Affected: `multimodal-routes.ts`, `diagnostic-routes.ts`, `chat-routes.ts`, `desktop-routes.ts`, `extension-routes.ts`.
 
 ### Type Safety
 
 - [ ] **Dashboard API client types** — `packages/dashboard/src/api/client.ts` has remaining `: any` annotations around risk departments, ATHI scenarios, versioning, citations. Import proper types from `@secureyeoman/shared`.
-  - [x] Fixed: `fetchScanStats()` now uses typed `ScanStats` interface instead of `any`.
-- [x] **Fastify typed route params** — 23 unsafe `req.params as { ... }` casts replaced with route-level generics (`app.get<{ Params: { id: string } }>`) across 6 files.
 
 
 ### Configuration Centralization

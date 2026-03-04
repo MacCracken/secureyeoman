@@ -6,6 +6,13 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.4] — 2026-03-04
 
+### Engineering Backlog — Skill Test Coverage
+
+- **Productivity skills tests** (`productivity-skills.test.ts`): 72 tests covering Summarize Text, Prompt Craft, Context Engineering, Intent Engineering, Specification Engineering, SOP Writer. Validates required fields, routing quality, trigger pattern compilation, trigger pattern smoke tests, and instruction content quality.
+- **Role-based skills tests** (`role-skills.test.ts`): 74 tests covering Senior Web Designer, Senior Software Engineer, Sr. Software Engineer - Audit, Senior DevOps/SRE, Veteran Financial Manager/Trader, Security Reference Architecture. Validates required fields, autonomy levels, SRA MCP tools allowlist, trigger patterns, and instruction content quality.
+- **Community skills tests** (`secureyeoman-community-skills/skills/skills.test.ts`): 320 tests validating all 21 community skill JSON files — schema compliance, required fields, length limits, version format, category-directory consistency, tag constraints, regex compilation, trigger pattern smoke tests (13 skills × 3 inputs), unique names, no unknown properties, instruction quality floor.
+- **Coverage**: All 20 builtin marketplace skills now have test coverage (was 9/20). All 21 community skills validated (was 0/21). Total new tests: 466.
+
 ### Phase 123: Security Reference Architecture (SRA)
 
 - **Shared types** (`packages/shared/src/types/sra.ts`): Zod schemas for `SraProvider`, `SraFramework`, `SraControlDomain`, `SraControlStatus`, `SraBlueprintStatus`, `SraAssessmentStatus`, `ComplianceMapping`, `IacSnippet`, `SraControl`, `SraBlueprint`, `SraAssessment`, `SraControlResult`, `SraAssessmentSummary`, `SraComplianceMappingRecord`, `SraExecutiveSummary`. Create/Update schemas for blueprints and assessments. Exported from `types/index.ts`.
