@@ -2826,9 +2826,8 @@ export class GatewayServer {
     // ── Collaborative editing endpoint (Yjs binary protocol) ────────────
     // Path: /ws/collab/:docId — auth via Sec-WebSocket-Protocol (preferred) or ?token= (fallback)
     // docId format: "personality:<uuid>" | "skill:<uuid>"
-    this.app.get('/ws/collab/:docId', { websocket: true }, async (socket, request) => {
-      const params = request.params as { docId: string };
-      const docId = params.docId;
+    this.app.get('/ws/collab/:docId', { websocket: true }, async (socket, request: FastifyRequest<{ Params: { docId: string } }>) => {
+      const { docId } = request.params;
 
       // Auth — prefer Sec-WebSocket-Protocol subprotocol, fall back to query param
       let authUser: { userId: string; role: string; displayName: string } | undefined;

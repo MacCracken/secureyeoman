@@ -54,7 +54,7 @@ describe('POST /api/v1/diagnostics/agent-report', () => {
       payload: { uptime: 100 },
     });
     expect(res.statusCode).toBe(400);
-    expect(res.json().error).toMatch(/agentId/);
+    expect(res.json().message).toMatch(/agentId/);
   });
 
   it('stores and returns the report', async () => {
@@ -209,6 +209,6 @@ describe('GET /api/v1/diagnostics/ping-integrations', () => {
       url: '/api/v1/diagnostics/ping-integrations',
     });
     expect(res.statusCode).toBe(500);
-    expect(res.json().error).toBe('Failed to ping integrations');
+    expect(res.json().message).toBe('An internal error occurred');
   });
 });

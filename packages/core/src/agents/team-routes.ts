@@ -5,6 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { TeamManager } from './team-manager.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 import { TeamCreateSchema, TeamUpdateSchema, TeamRunParamsSchema } from '@secureyeoman/shared';
 
 export function registerTeamRoutes(app: FastifyInstance, opts: { teamManager: TeamManager }): void {
@@ -14,8 +15,7 @@ export function registerTeamRoutes(app: FastifyInstance, opts: { teamManager: Te
   app.get(
     '/api/v1/agents/teams',
     async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
-      const limit = request.query.limit ? Number(request.query.limit) : undefined;
-      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      const { limit, offset } = parsePagination(request.query);
       return teamManager.listTeams({ limit, offset });
     }
   );

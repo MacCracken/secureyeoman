@@ -5,6 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { ExperimentManager } from './manager.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export interface ExperimentRoutesOptions {
   experimentManager: ExperimentManager;
@@ -19,8 +20,7 @@ export function registerExperimentRoutes(
   app.get(
     '/api/v1/experiments',
     async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
-      const limit = request.query.limit ? Number(request.query.limit) : undefined;
-      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      const { limit, offset } = parsePagination(request.query);
       return experimentManager.list({ limit, offset });
     }
   );

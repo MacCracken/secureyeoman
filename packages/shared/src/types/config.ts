@@ -335,6 +335,10 @@ export const SecurityConfigSchema = z.object({
   allowCommunityGitFetch: z.boolean().default(false),
   /** Default git URL for community skills repo when git fetch is enabled. */
   communityGitUrl: z.string().optional(),
+  /** Local filesystem path where community skills repo is cloned/checked out. */
+  communityRepoPath: z.string().default('./community-skills'),
+  /** Directory from which to load external integration plugins at startup. */
+  integrationPluginDir: z.string().optional(),
   /**
    * When true, the response guard checks for n-gram overlap between AI responses
    * and system prompt contents. Leaks are redacted and audit-logged regardless of

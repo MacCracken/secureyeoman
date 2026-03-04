@@ -9,6 +9,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 import type { FederationManager } from './federation-manager.js';
 import type { FederationStorage } from './federation-storage.js';
 
@@ -260,7 +261,7 @@ export function registerFederationRoutes(
     if (!brainManager) return sendError(reply, 503, 'Brain manager not available');
     const qs = request.query as Record<string, string>;
     const query = qs.q ?? '';
-    const limit = Math.min(parseInt(qs.limit ?? '10', 10), 100);
+    const { limit } = parsePagination(qs, { maxLimit: 100, defaultLimit: 10 });
     try {
       const entries = await brainManager.semanticSearch(query, { limit });
       return reply.send({ entries });
@@ -288,11 +289,11 @@ export function registerFederationRoutes(
   });
 
   // Federated skill detail — called by peer instances
-  app.get('/api/v1/federation/marketplace/:skillId', async (request, reply) => {
+  app.get('/api/v1/federation/marketplace/:skillId', async (request: FastifyRequest<{ Params: { skillId: string } }>, reply) => {
     const ok = await peerAuthPreHandler(request, reply, federationManager);
     if (!ok) return;
     if (!marketplaceManager) return sendError(reply, 503, 'Marketplace manager not available');
-    const { skillId } = request.params as { skillId: string };
+    const { skillId } = request.params;
     try {
       const skill = await marketplaceManager.getSkill(skillId);
       if (!skill) return sendError(reply, 404, 'Skill not found');

@@ -14,6 +14,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { IntegrationManager } from '../integrations/manager.js';
 import type { SoulManager } from '../soul/manager.js';
 import type { McpClientManager } from '../mcp/client.js';
+import { sendError } from '../utils/errors.js';
 
 interface AgentReport {
   agentId: string;
@@ -61,7 +62,7 @@ export function registerDiagnosticRoutes(
     async (request: FastifyRequest, reply: FastifyReply) => {
       const body = request.body as Partial<AgentReport>;
       if (!body?.agentId) {
-        return reply.code(400).send({ error: 'agentId is required' });
+        return sendError(reply, 400, 'agentId is required');
       }
       const report: AgentReport = {
         agentId: body.agentId,
@@ -84,10 +85,7 @@ export function registerDiagnosticRoutes(
     async (request: FastifyRequest<{ Params: { agentId: string } }>, reply: FastifyReply) => {
       const report = agentReports.get(request.params.agentId);
       if (!report) {
-        return reply.code(404).send({
-          error: 'No report found for agent',
-          agentId: request.params.agentId,
-        });
+        return sendError(reply, 404, 'No report found for agent');
       }
       return { report };
     }
@@ -152,7 +150,7 @@ export function registerDiagnosticRoutes(
           checkedAt: new Date().toISOString(),
         };
       } catch (err) {
-        return reply.code(500).send({ error: 'Failed to ping integrations', details: String(err) });
+        return sendError(reply, 500, 'Failed to ping integrations');
       }
     }
   );

@@ -141,7 +141,7 @@ export function registerMultimodalRoutes(
         await multimodalManager.setProvider(type, provider);
         return { ok: true, type, provider };
       } catch (err) {
-        return reply.code(500).send({ error: sanitizeError(err) });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -166,9 +166,7 @@ export function registerMultimodalRoutes(
         const result = await multimodalManager.analyzeImage(parsed.data);
         return result;
       } catch (err) {
-        return reply.code(500).send({
-          error: sanitizeError(err),
-        });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -197,9 +195,7 @@ export function registerMultimodalRoutes(
         const result = await multimodalManager.transcribeAudio(parsed.data);
         return result;
       } catch (err) {
-        return reply.code(500).send({
-          error: sanitizeError(err),
-        });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -223,9 +219,7 @@ export function registerMultimodalRoutes(
         const result = await multimodalManager.synthesizeSpeech(parsed.data);
         return result;
       } catch (err) {
-        return reply.code(500).send({
-          error: sanitizeError(err),
-        });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -255,7 +249,7 @@ export function registerMultimodalRoutes(
         void reply.header('X-Duration-Ms', durationMs);
         return reply.send(buffer);
       } catch (err) {
-        return reply.code(500).send({ error: sanitizeError(err) });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -280,7 +274,7 @@ export function registerMultimodalRoutes(
         await multimodalManager.setModel(type as 'stt' | 'tts', model);
         return { ok: true, type, model };
       } catch (err) {
-        return reply.code(500).send({ error: sanitizeError(err) });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -304,9 +298,7 @@ export function registerMultimodalRoutes(
         const result = await multimodalManager.generateImage(parsed.data);
         return result;
       } catch (err) {
-        return reply.code(500).send({
-          error: sanitizeError(err),
-        });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -330,9 +322,7 @@ export function registerMultimodalRoutes(
         const result = await multimodalManager.triggerHaptic(parsed.data);
         return result;
       } catch (err) {
-        return reply.code(500).send({
-          error: sanitizeError(err),
-        });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );

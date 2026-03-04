@@ -11,6 +11,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { TenantManager } from './tenant-manager.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 import type { SecureYeoman } from '../secureyeoman.js';
 import { requiresLicense } from '../licensing/license-guard.js';
 
@@ -33,8 +34,7 @@ export function registerTenantRoutes(app: FastifyInstance, opts: TenantRoutesOpt
       reply: FastifyReply
     ) => {
       try {
-        const limit = Math.min(Number(request.query.limit ?? 50), 200);
-        const offset = Number(request.query.offset ?? 0);
+        const { limit, offset } = parsePagination(request.query, { maxLimit: 200, defaultLimit: 50 });
         const result = await tenantManager.list(limit, offset);
         return reply.send({ tenants: result.records, total: result.total, limit, offset });
       } catch (err) {

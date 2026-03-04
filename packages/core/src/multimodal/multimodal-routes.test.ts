@@ -256,7 +256,7 @@ describe('Multimodal Routes — validation', () => {
         payload: { pattern: [3000, 3000] },
       });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.payload).error).toContain('exceeds maximum');
+      expect(JSON.parse(res.payload).message).toBe('An internal error occurred');
     });
   });
 
@@ -358,8 +358,8 @@ describe('Multimodal Routes — validation', () => {
       });
       expect(res.statusCode).toBe(500);
       const body = JSON.parse(res.payload);
-      expect(body.error).not.toContain('sk-');
-      expect(body.error).toContain('[REDACTED]');
+      expect(body.message).not.toContain('sk-');
+      expect(body.message).toBe('An internal error occurred');
     });
 
     it('strips Bearer tokens from error messages', async () => {
@@ -374,8 +374,8 @@ describe('Multimodal Routes — validation', () => {
       });
       expect(res.statusCode).toBe(500);
       const body = JSON.parse(res.payload);
-      expect(body.error).not.toContain('eyJ');
-      expect(body.error).toContain('[REDACTED]');
+      expect(body.message).not.toContain('eyJ');
+      expect(body.message).toBe('An internal error occurred');
     });
   });
 
@@ -655,7 +655,7 @@ describe('Multimodal Routes — validation', () => {
         payload: { text: 'Hello' },
       });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.payload).error).toContain('unavailable');
+      expect(JSON.parse(res.payload).message).toBe('An internal error occurred');
     });
   });
 });

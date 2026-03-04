@@ -7,6 +7,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SecureYeoman } from '../secureyeoman.js';
+import { sendError } from '../utils/errors.js';
 
 export function registerAnalyticsRoutes(
   app: FastifyInstance,
@@ -18,10 +19,10 @@ export function registerAnalyticsRoutes(
 
   app.get(
     '/api/v1/analytics/sentiment/:conversationId',
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      const { conversationId } = request.params as { conversationId: string };
+    async (request: FastifyRequest<{ Params: { conversationId: string } }>, reply: FastifyReply) => {
+      const { conversationId } = request.params;
       const storage = secureYeoman.getAnalyticsStorage();
-      if (!storage) return reply.code(503).send({ error: 'Analytics not available' });
+      if (!storage) return sendError(reply, 503, 'Analytics not available');
 
       const sentiments = await storage.getSentimentsByConversation(conversationId);
       return sentiments.map((s) => ({
@@ -38,11 +39,11 @@ export function registerAnalyticsRoutes(
 
   app.get(
     '/api/v1/analytics/sentiment/trend/:personalityId',
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      const { personalityId } = request.params as { personalityId: string };
+    async (request: FastifyRequest<{ Params: { personalityId: string } }>, reply: FastifyReply) => {
+      const { personalityId } = request.params;
       const { days = '30' } = request.query as { days?: string };
       const storage = secureYeoman.getAnalyticsStorage();
-      if (!storage) return reply.code(503).send({ error: 'Analytics not available' });
+      if (!storage) return sendError(reply, 503, 'Analytics not available');
 
       const trend = await storage.getSentimentTrend(personalityId, Number(days) || 30);
       return trend.map((t) => ({
@@ -59,11 +60,11 @@ export function registerAnalyticsRoutes(
 
   app.get(
     '/api/v1/analytics/engagement/:personalityId',
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      const { personalityId } = request.params as { personalityId: string };
+    async (request: FastifyRequest<{ Params: { personalityId: string } }>, reply: FastifyReply) => {
+      const { personalityId } = request.params;
       const { periodDays = '30' } = request.query as { periodDays?: string };
       const service = secureYeoman.getEngagementMetricsService();
-      if (!service) return reply.code(503).send({ error: 'Analytics not available' });
+      if (!service) return sendError(reply, 503, 'Analytics not available');
 
       return service.getMetrics(personalityId, Number(periodDays) || 30);
     }
@@ -72,7 +73,7 @@ export function registerAnalyticsRoutes(
   app.get('/api/v1/analytics/engagement', async (request: FastifyRequest, reply: FastifyReply) => {
     const { periodDays = '30' } = request.query as { periodDays?: string };
     const service = secureYeoman.getEngagementMetricsService();
-    if (!service) return reply.code(503).send({ error: 'Analytics not available' });
+    if (!service) return sendError(reply, 503, 'Analytics not available');
 
     return service.getMetrics(null, Number(periodDays) || 30);
   });
@@ -81,10 +82,10 @@ export function registerAnalyticsRoutes(
 
   app.get(
     '/api/v1/analytics/summary/:conversationId',
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      const { conversationId } = request.params as { conversationId: string };
+    async (request: FastifyRequest<{ Params: { conversationId: string } }>, reply: FastifyReply) => {
+      const { conversationId } = request.params;
       const storage = secureYeoman.getAnalyticsStorage();
-      if (!storage) return reply.code(503).send({ error: 'Analytics not available' });
+      if (!storage) return sendError(reply, 503, 'Analytics not available');
 
       const row = await storage.getSummary(conversationId);
       if (!row) return null;
@@ -100,7 +101,7 @@ export function registerAnalyticsRoutes(
 
   app.post('/api/v1/analytics/summarize', async (request: FastifyRequest, reply: FastifyReply) => {
     const summarizer = secureYeoman.getConversationSummarizer();
-    if (!summarizer) return reply.code(503).send({ error: 'Summarizer not available' });
+    if (!summarizer) return sendError(reply, 503, 'Summarizer not available');
 
     const summarized = await summarizer.summarizeNew();
     return { summarized };
@@ -110,10 +111,10 @@ export function registerAnalyticsRoutes(
 
   app.get(
     '/api/v1/analytics/entities/:conversationId',
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      const { conversationId } = request.params as { conversationId: string };
+    async (request: FastifyRequest<{ Params: { conversationId: string } }>, reply: FastifyReply) => {
+      const { conversationId } = request.params;
       const storage = secureYeoman.getAnalyticsStorage();
-      if (!storage) return reply.code(503).send({ error: 'Analytics not available' });
+      if (!storage) return sendError(reply, 503, 'Analytics not available');
 
       const entities = await storage.getEntitiesByConversation(conversationId);
       return entities.map((e) => ({
@@ -141,9 +142,9 @@ export function registerAnalyticsRoutes(
       offset?: string;
     };
     const storage = secureYeoman.getAnalyticsStorage();
-    if (!storage) return reply.code(503).send({ error: 'Analytics not available' });
+    if (!storage) return sendError(reply, 503, 'Analytics not available');
 
-    if (!entity) return reply.code(400).send({ error: 'entity query param required' });
+    if (!entity) return sendError(reply, 400, 'entity query param required');
 
     const results = await storage.searchByEntity(entityType, entity, {
       limit: Number(limit) || 20,
@@ -154,11 +155,11 @@ export function registerAnalyticsRoutes(
 
   app.get(
     '/api/v1/analytics/entities/top/:personalityId',
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      const { personalityId } = request.params as { personalityId: string };
+    async (request: FastifyRequest<{ Params: { personalityId: string } }>, reply: FastifyReply) => {
+      const { personalityId } = request.params;
       const { limit = '20' } = request.query as { limit?: string };
       const storage = secureYeoman.getAnalyticsStorage();
-      if (!storage) return reply.code(503).send({ error: 'Analytics not available' });
+      if (!storage) return sendError(reply, 503, 'Analytics not available');
 
       return storage.getTopEntities(personalityId, Number(limit) || 20);
     }
@@ -168,11 +169,11 @@ export function registerAnalyticsRoutes(
 
   app.get(
     '/api/v1/analytics/phrases/:personalityId',
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      const { personalityId } = request.params as { personalityId: string };
+    async (request: FastifyRequest<{ Params: { personalityId: string } }>, reply: FastifyReply) => {
+      const { personalityId } = request.params;
       const { limit = '50' } = request.query as { limit?: string };
       const storage = secureYeoman.getAnalyticsStorage();
-      if (!storage) return reply.code(503).send({ error: 'Analytics not available' });
+      if (!storage) return sendError(reply, 503, 'Analytics not available');
 
       const phrases = await storage.getKeyPhrases(personalityId, Number(limit) || 50);
       return phrases.map((p) => ({
@@ -192,7 +193,7 @@ export function registerAnalyticsRoutes(
   app.get('/api/v1/analytics/anomalies', async (request: FastifyRequest, reply: FastifyReply) => {
     const { limit = '50', anomalyType } = request.query as { limit?: string; anomalyType?: string };
     const storage = secureYeoman.getAnalyticsStorage();
-    if (!storage) return reply.code(503).send({ error: 'Analytics not available' });
+    if (!storage) return sendError(reply, 503, 'Analytics not available');
 
     const result = await storage.getAnomalies({
       limit: Number(limit) || 50,

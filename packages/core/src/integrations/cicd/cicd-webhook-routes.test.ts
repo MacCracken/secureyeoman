@@ -60,7 +60,7 @@ describe('CI/CD Webhook Routes', () => {
         payload: {},
       });
       expect(res.statusCode).toBe(400);
-      expect(res.json().error).toMatch(/unknown ci provider/i);
+      expect(res.json().message).toMatch(/unknown ci provider/i);
     });
   });
 

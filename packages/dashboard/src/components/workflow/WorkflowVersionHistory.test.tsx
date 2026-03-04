@@ -63,7 +63,7 @@ describe('WorkflowVersionHistory', () => {
   });
 
   it('calls tagRelease when Tag Release button clicked', async () => {
-    mockTagRelease.mockResolvedValue({});
+    mockTagRelease.mockResolvedValue(VERSION as any);
     render(<WorkflowVersionHistory workflowId="wf-1" />);
     await waitFor(() => {
       expect(screen.getByText('Tag Release')).toBeInTheDocument();

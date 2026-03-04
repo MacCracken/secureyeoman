@@ -285,6 +285,24 @@ function loadEnvConfig(): PartialConfig {
     } as PartialConfig['security'];
   }
 
+  // Community / plugin path overrides
+  const securityPaths: Record<string, unknown> = {};
+  if (process.env.COMMUNITY_REPO_PATH) {
+    securityPaths.communityRepoPath = process.env.COMMUNITY_REPO_PATH;
+  }
+  if (process.env.COMMUNITY_GIT_URL) {
+    securityPaths.communityGitUrl = process.env.COMMUNITY_GIT_URL;
+  }
+  if (process.env.INTEGRATION_PLUGIN_DIR) {
+    securityPaths.integrationPluginDir = process.env.INTEGRATION_PLUGIN_DIR;
+  }
+  if (Object.keys(securityPaths).length > 0) {
+    config.security = {
+      ...config.security,
+      ...securityPaths,
+    } as PartialConfig['security'];
+  }
+
   return config;
 }
 

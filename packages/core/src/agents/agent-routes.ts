@@ -5,6 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SubAgentManager } from './manager.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export function registerAgentRoutes(
   app: FastifyInstance,
@@ -17,8 +18,7 @@ export function registerAgentRoutes(
   app.get(
     '/api/v1/agents/profiles',
     async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
-      const limit = request.query.limit ? Number(request.query.limit) : undefined;
-      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      const { limit, offset } = parsePagination(request.query);
       return subAgentManager.listProfiles({ limit, offset });
     }
   );
@@ -162,11 +162,12 @@ export function registerAgentRoutes(
       }>
     ) => {
       const q = request.query;
+      const { limit, offset } = parsePagination(q);
       return subAgentManager.listDelegations({
         status: q.status,
         profileId: q.profileId,
-        limit: q.limit ? Number(q.limit) : undefined,
-        offset: q.offset ? Number(q.offset) : undefined,
+        limit,
+        offset,
       });
     }
   );

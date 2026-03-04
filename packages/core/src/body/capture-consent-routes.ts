@@ -70,7 +70,7 @@ export function registerCaptureConsentRoutes(
         );
         return reply.code(201).send(consent);
       } catch (err) {
-        return reply.code(500).send({ error: toErrorMessage(err) });
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -85,7 +85,7 @@ export function registerCaptureConsentRoutes(
       const pending = await manager.getPendingConsents(userId);
       return { consents: pending };
     } catch (err) {
-      return reply.code(500).send({ error: toErrorMessage(err) });
+      return sendError(reply, 500, toErrorMessage(err));
     }
   });
 
@@ -101,7 +101,7 @@ export function registerCaptureConsentRoutes(
         if (!consent) return sendError(reply, 404, 'Consent not found');
         return consent;
       } catch (err) {
-        return reply.code(500).send({ error: toErrorMessage(err) });
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -121,7 +121,7 @@ export function registerCaptureConsentRoutes(
         }
         return result.consent;
       } catch (err) {
-        return reply.code(500).send({ error: toErrorMessage(err) });
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -148,7 +148,7 @@ export function registerCaptureConsentRoutes(
         }
         return result.consent;
       } catch (err) {
-        return reply.code(500).send({ error: toErrorMessage(err) });
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -168,7 +168,7 @@ export function registerCaptureConsentRoutes(
         }
         return result.consent;
       } catch (err) {
-        return reply.code(500).send({ error: toErrorMessage(err) });
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );

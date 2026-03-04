@@ -5,6 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { DashboardManager } from './manager.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export interface DashboardRoutesOptions {
   dashboardManager: DashboardManager;
@@ -16,8 +17,7 @@ export function registerDashboardRoutes(app: FastifyInstance, opts: DashboardRou
   app.get(
     '/api/v1/dashboards',
     async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
-      const limit = request.query.limit ? Number(request.query.limit) : undefined;
-      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      const { limit, offset } = parsePagination(request.query);
       return dashboardManager.list({ limit, offset });
     }
   );

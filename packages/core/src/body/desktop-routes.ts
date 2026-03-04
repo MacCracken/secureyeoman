@@ -207,7 +207,7 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
           sessionId,
           sanitizeError(err)
         );
-        return reply.code(500).send({ error: sanitizeError(err) });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -225,7 +225,7 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
       const windows = await listWindows();
       return { windows };
     } catch (err) {
-      return reply.code(500).send({ error: sanitizeError(err) });
+      return sendError(reply, 500, sanitizeError(err));
     }
   });
 
@@ -242,7 +242,7 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
       const displays = await listDisplays();
       return { displays };
     } catch (err) {
-      return reply.code(500).send({ error: sanitizeError(err) });
+      return sendError(reply, 500, sanitizeError(err));
     }
   });
 
@@ -317,7 +317,7 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
           sessionId,
           sanitizeError(err)
         );
-        return reply.code(500).send({ error: sanitizeError(err) });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -359,7 +359,7 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
         );
         return { ok: true };
       } catch (err) {
-        return reply.code(500).send({ error: sanitizeError(err) });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -412,7 +412,7 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
         );
         return { ok: true };
       } catch (err) {
-        return reply.code(500).send({ error: sanitizeError(err) });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -454,7 +454,7 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
         );
         return { ok: true };
       } catch (err) {
-        return reply.code(500).send({ error: sanitizeError(err) });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -499,7 +499,7 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
         );
         return { ok: true, charactersTyped: request.body.text.length };
       } catch (err) {
-        return reply.code(500).send({ error: sanitizeError(err) });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -548,7 +548,7 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
         );
         return { ok: true, combo: request.body.combo };
       } catch (err) {
-        return reply.code(500).send({ error: sanitizeError(err) });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -584,7 +584,7 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
         bridgeRecord(bridge, 'actuator', 'window_focus', request.body.windowId, 'focus');
         return { ok: true };
       } catch (err) {
-        return reply.code(500).send({ error: sanitizeError(err) });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -626,7 +626,7 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
         bridgeRecord(bridge, 'actuator', 'window_resize', windowId, `${width}x${height}+${x}+${y}`);
         return { ok: true };
       } catch (err) {
-        return reply.code(500).send({ error: sanitizeError(err) });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -660,7 +660,7 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
       bridgeRecord(bridge, 'clipboard', 'clipboard_read', 'clipboard', 'read');
       return { text };
     } catch (err) {
-      return reply.code(500).send({ error: sanitizeError(err) });
+      return sendError(reply, 500, sanitizeError(err));
     }
   });
 
@@ -700,7 +700,7 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
         bridgeRecord(bridge, 'clipboard', 'clipboard_write', 'clipboard', 'write');
         return { ok: true };
       } catch (err) {
-        return reply.code(500).send({ error: sanitizeError(err) });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -758,7 +758,7 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
           'sequence',
           sanitizeError(err)
         );
-        return reply.code(500).send({ error: sanitizeError(err) });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -805,7 +805,7 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
         });
         return reply.code(201).send(session);
       } catch (err) {
-        return reply.code(500).send({ error: sanitizeError(err) });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -822,7 +822,7 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
         if (!session) return sendError(reply, 404, 'Recording session not found');
         return session;
       } catch (err) {
-        return reply.code(500).send({ error: sanitizeError(err) });
+        return sendError(reply, 500, sanitizeError(err));
       }
     }
   );
@@ -835,7 +835,7 @@ export function registerDesktopRoutes(app: FastifyInstance, opts: DesktopRoutesO
       const mgr = await getRecordingManager();
       return { recordings: mgr.getActiveRecordings() };
     } catch (err) {
-      return reply.code(500).send({ error: sanitizeError(err) });
+      return sendError(reply, 500, sanitizeError(err));
     }
   });
 }

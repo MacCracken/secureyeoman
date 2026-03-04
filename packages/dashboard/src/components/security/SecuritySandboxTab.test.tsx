@@ -33,6 +33,20 @@ import {
   deleteQuarantine,
 } from '../../api/client';
 
+const QUARANTINE_ENTRY_BASE = {
+  artifactId: 'a0000000-0000-0000-0000-000000000000',
+  createdAt: Date.now(),
+  scanResult: {
+    artifactId: 'a0000000-0000-0000-0000-000000000000',
+    verdict: 'quarantine' as const,
+    findings: [],
+    worstSeverity: 'info' as const,
+    scanDurationMs: 10,
+    scannerVersions: {},
+    scannedAt: Date.now(),
+  },
+};
+
 function renderTab() {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
@@ -96,6 +110,7 @@ describe('SecuritySandboxTab', () => {
   it('shows quarantine items with approve/delete buttons', async () => {
     vi.mocked(fetchQuarantineItems).mockResolvedValue({
       items: [{
+        ...QUARANTINE_ENTRY_BASE,
         id: 'abc12345-1234-1234-1234-1234567890ab',
         status: 'quarantined',
         sourceContext: 'test',
@@ -113,6 +128,7 @@ describe('SecuritySandboxTab', () => {
   it('calls approve mutation on click', async () => {
     vi.mocked(fetchQuarantineItems).mockResolvedValue({
       items: [{
+        ...QUARANTINE_ENTRY_BASE,
         id: 'abc12345-1234-1234-1234-1234567890ab',
         status: 'quarantined',
         sourceContext: 'test',
@@ -133,6 +149,7 @@ describe('SecuritySandboxTab', () => {
   it('calls delete mutation on click', async () => {
     vi.mocked(fetchQuarantineItems).mockResolvedValue({
       items: [{
+        ...QUARANTINE_ENTRY_BASE,
         id: 'abc12345-1234-1234-1234-1234567890ab',
         status: 'quarantined',
         sourceContext: 'test',

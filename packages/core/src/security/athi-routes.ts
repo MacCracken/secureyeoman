@@ -7,6 +7,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { AthiManager } from './athi-manager.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 import { AthiScenarioCreateSchema, AthiScenarioUpdateSchema } from '@secureyeoman/shared';
 
 export interface AthiRoutesOptions {
@@ -43,12 +44,13 @@ export function registerAthiRoutes(app: FastifyInstance, opts: AthiRoutesOptions
       offset?: string;
     };
     try {
+      const { limit, offset } = parsePagination(query, { maxLimit: 100 });
       const result = await mgr.listScenarios({
         actor: query.actor,
         status: query.status,
         orgId: query.orgId,
-        limit: query.limit ? Math.min(Number(query.limit), 100) : undefined,
-        offset: query.offset ? Math.max(Number(query.offset), 0) : undefined,
+        limit,
+        offset,
       });
       return reply.send(result);
     } catch (err) {
@@ -143,10 +145,11 @@ export function registerAthiRoutes(app: FastifyInstance, opts: AthiRoutesOptions
   // ── GET /api/v1/security/athi/top-risks ──────────────────────────────────
 
   app.get('/api/v1/security/athi/top-risks', async (req, reply) => {
-    const { limit, orgId } = req.query as { limit?: string; orgId?: string };
+    const { orgId } = req.query as { limit?: string; orgId?: string };
     try {
+      const { limit: topLimit } = parsePagination(req.query as Record<string, string>, { maxLimit: 50, defaultLimit: 10 });
       const topRisks = await mgr.getTopRisks(
-        limit ? Math.min(Number(limit), 50) : 10,
+        topLimit,
         orgId
       );
       return reply.send({ topRisks });

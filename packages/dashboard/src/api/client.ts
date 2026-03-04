@@ -61,6 +61,26 @@ import type {
   ReasoningStrategy,
 } from '../types.js';
 
+import type {
+  Department,
+  RegisterEntry,
+  DepartmentScore,
+  DepartmentScorecard,
+  RiskHeatmapCell,
+  RiskTrendPoint,
+  AthiScenario,
+  AthiRiskMatrixCell,
+  AthiExecutiveSummary,
+  PersonalityVersion,
+  WorkflowVersion,
+  DriftSummary,
+  CitationFeedback,
+  ProvenanceScores,
+  ScanHistoryRow,
+  QuarantineEntry,
+  ExternalizationPolicy,
+} from '@secureyeoman/shared';
+
 export type { CompatibilityCheckResult } from '../types.js';
 export type { ReasoningStrategy } from '../types.js';
 
@@ -4709,14 +4729,14 @@ export async function fetchDepartments(params?: {
   parentId?: string | null;
   limit?: number;
   offset?: number;
-}): Promise<{ items: any[]; total: number }> {
+}): Promise<{ items: Department[]; total: number }> {
   const q = new URLSearchParams();
   if (params?.parentId !== undefined)
     q.set('parentId', params.parentId === null ? 'null' : params.parentId);
   if (params?.limit != null) q.set('limit', String(params.limit));
   if (params?.offset != null) q.set('offset', String(params.offset));
   const qs = q.toString();
-  return request<{ items: any[]; total: number }>(`/risk/departments${qs ? `?${qs}` : ''}`);
+  return request<{ items: Department[]; total: number }>(`/risk/departments${qs ? `?${qs}` : ''}`);
 }
 
 export async function createDepartment(data: {
@@ -4724,16 +4744,16 @@ export async function createDepartment(data: {
   description?: string;
   mission?: string;
   parentId?: string;
-}): Promise<any> {
-  const res = await request<{ department: any }>('/risk/departments', {
+}): Promise<Department> {
+  const res = await request<{ department: Department }>('/risk/departments', {
     method: 'POST',
     body: JSON.stringify(data),
   });
   return res.department;
 }
 
-export async function updateDepartment(id: string, data: Record<string, unknown>): Promise<any> {
-  const res = await request<{ department: any }>(`/risk/departments/${encodeURIComponent(id)}`, {
+export async function updateDepartment(id: string, data: Record<string, unknown>): Promise<Department> {
+  const res = await request<{ department: Department }>(`/risk/departments/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   });
@@ -4746,8 +4766,8 @@ export async function deleteDepartment(id: string, force = false): Promise<void>
   });
 }
 
-export async function fetchDepartmentScorecard(id: string): Promise<any> {
-  return request<any>(`/risk/departments/${encodeURIComponent(id)}/scorecard`);
+export async function fetchDepartmentScorecard(id: string): Promise<{ scorecard: DepartmentScorecard }> {
+  return request<{ scorecard: DepartmentScorecard }>(`/risk/departments/${encodeURIComponent(id)}/scorecard`);
 }
 
 export async function fetchRegisterEntries(params?: {
@@ -4758,7 +4778,7 @@ export async function fetchRegisterEntries(params?: {
   overdue?: boolean;
   limit?: number;
   offset?: number;
-}): Promise<{ items: any[]; total: number }> {
+}): Promise<{ items: RegisterEntry[]; total: number }> {
   const q = new URLSearchParams();
   if (params?.departmentId) q.set('departmentId', params.departmentId);
   if (params?.status) q.set('status', params.status);
@@ -4768,7 +4788,7 @@ export async function fetchRegisterEntries(params?: {
   if (params?.limit != null) q.set('limit', String(params.limit));
   if (params?.offset != null) q.set('offset', String(params.offset));
   const qs = q.toString();
-  return request<{ items: any[]; total: number }>(`/risk/register${qs ? `?${qs}` : ''}`);
+  return request<{ items: RegisterEntry[]; total: number }>(`/risk/register${qs ? `?${qs}` : ''}`);
 }
 
 export async function createRegisterEntry(data: {
@@ -4780,20 +4800,20 @@ export async function createRegisterEntry(data: {
   impact: number;
   description?: string;
   owner?: string;
-}): Promise<any> {
-  const res = await request<{ entry: any }>('/risk/register', {
+}): Promise<RegisterEntry> {
+  const res = await request<{ entry: RegisterEntry }>('/risk/register', {
     method: 'POST',
     body: JSON.stringify(data),
   });
   return res.entry;
 }
 
-export async function fetchHeatmap(): Promise<any> {
-  return request<any>('/risk/heatmap');
+export async function fetchHeatmap(): Promise<{ cells: RiskHeatmapCell[] }> {
+  return request<{ cells: RiskHeatmapCell[] }>('/risk/heatmap');
 }
 
-export async function fetchRiskTrend(departmentId: string, days = 30): Promise<any> {
-  return request<any>(`/risk/departments/${encodeURIComponent(departmentId)}/trend?days=${days}`);
+export async function fetchRiskTrend(departmentId: string, days = 30): Promise<{ points: RiskTrendPoint[] }> {
+  return request<{ points: RiskTrendPoint[] }>(`/risk/departments/${encodeURIComponent(departmentId)}/trend?days=${days}`);
 }
 
 export async function fetchRiskSummary(): Promise<any> {
@@ -4828,19 +4848,19 @@ export async function fetchRegisterReport(
 }
 
 // Phase 111-F: Additional register/department endpoints
-export async function updateRegisterEntry(id: string, data: Record<string, unknown>): Promise<any> {
-  return request<any>(`/risk/register/${encodeURIComponent(id)}`, {
+export async function updateRegisterEntry(id: string, data: Record<string, unknown>): Promise<RegisterEntry> {
+  return request<RegisterEntry>(`/risk/register/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   });
 }
 
-export async function deleteRegisterEntry(id: string): Promise<any> {
-  return request<any>(`/risk/register/${encodeURIComponent(id)}`, { method: 'DELETE' });
+export async function deleteRegisterEntry(id: string): Promise<{ deleted: boolean }> {
+  return request<{ deleted: boolean }>(`/risk/register/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
-export async function snapshotDepartment(id: string): Promise<any> {
-  return request<any>(`/risk/departments/${encodeURIComponent(id)}/snapshot`, { method: 'POST' });
+export async function snapshotDepartment(id: string): Promise<{ score: DepartmentScore }> {
+  return request<{ score: DepartmentScore }>(`/risk/departments/${encodeURIComponent(id)}/snapshot`, { method: 'POST' });
 }
 
 // ── Tenants ────────────────────────────────────────────────────────
@@ -5761,14 +5781,14 @@ export async function fetchAthiScenarios(params?: {
   status?: string;
   limit?: number;
   offset?: number;
-}): Promise<{ items: any[]; total: number }> {
+}): Promise<{ items: AthiScenario[]; total: number }> {
   const q = new URLSearchParams();
   if (params?.actor) q.set('actor', params.actor);
   if (params?.status) q.set('status', params.status);
   if (params?.limit != null) q.set('limit', String(params.limit));
   if (params?.offset != null) q.set('offset', String(params.offset));
   const qs = q.toString();
-  return request<{ items: any[]; total: number }>(
+  return request<{ items: AthiScenario[]; total: number }>(
     `/security/athi/scenarios${qs ? `?${qs}` : ''}`
   );
 }
@@ -5784,8 +5804,8 @@ export async function createAthiScenario(data: {
   mitigations?: { description: string; status?: string; owner?: string; effectiveness?: number }[];
   status?: string;
   description?: string;
-}): Promise<any> {
-  const res = await request<{ scenario: any }>('/security/athi/scenarios', {
+}): Promise<AthiScenario> {
+  const res = await request<{ scenario: AthiScenario }>('/security/athi/scenarios', {
     method: 'POST',
     body: JSON.stringify(data),
   });
@@ -5795,8 +5815,8 @@ export async function createAthiScenario(data: {
 export async function updateAthiScenario(
   id: string,
   data: Record<string, unknown>
-): Promise<any> {
-  const res = await request<{ scenario: any }>(
+): Promise<AthiScenario> {
+  const res = await request<{ scenario: AthiScenario }>(
     `/security/athi/scenarios/${encodeURIComponent(id)}`,
     { method: 'PUT', body: JSON.stringify(data) }
   );
@@ -5809,22 +5829,22 @@ export async function deleteAthiScenario(id: string): Promise<void> {
   });
 }
 
-export async function fetchAthiMatrix(): Promise<{ matrix: any[] }> {
-  return request<{ matrix: any[] }>('/security/athi/matrix');
+export async function fetchAthiMatrix(): Promise<{ matrix: AthiRiskMatrixCell[] }> {
+  return request<{ matrix: AthiRiskMatrixCell[] }>('/security/athi/matrix');
 }
 
-export async function fetchAthiTopRisks(limit = 10): Promise<{ topRisks: any[] }> {
-  return request<{ topRisks: any[] }>(`/security/athi/top-risks?limit=${limit}`);
+export async function fetchAthiTopRisks(limit = 10): Promise<{ topRisks: AthiScenario[] }> {
+  return request<{ topRisks: AthiScenario[] }>(`/security/athi/top-risks?limit=${limit}`);
 }
 
-export async function fetchAthiSummary(): Promise<{ summary: any }> {
-  return request<{ summary: any }>('/security/athi/summary');
+export async function fetchAthiSummary(): Promise<{ summary: AthiExecutiveSummary }> {
+  return request<{ summary: AthiExecutiveSummary }>('/security/athi/summary');
 }
 
 export async function fetchAthiScenariosByTechnique(
   technique: string
-): Promise<{ scenarios: any[] }> {
-  return request<{ scenarios: any[] }>(
+): Promise<{ scenarios: AthiScenario[] }> {
+  return request<{ scenarios: AthiScenario[] }>(
     `/security/athi/scenarios/by-technique/${encodeURIComponent(technique)}`
   );
 }
@@ -5832,8 +5852,8 @@ export async function fetchAthiScenariosByTechnique(
 export async function linkEventsToAthiScenario(
   scenarioId: string,
   eventIds: string[]
-): Promise<any> {
-  const res = await request<{ scenario: any }>(
+): Promise<AthiScenario> {
+  const res = await request<{ scenario: AthiScenario }>(
     `/security/athi/scenarios/${encodeURIComponent(scenarioId)}/link-events`,
     { method: 'POST', body: JSON.stringify({ eventIds }) }
   );
@@ -5845,12 +5865,12 @@ export async function linkEventsToAthiScenario(
 export async function fetchPersonalityVersions(
   personalityId: string,
   opts?: { limit?: number; offset?: number }
-): Promise<{ versions: any[]; total: number }> {
+): Promise<{ versions: PersonalityVersion[]; total: number }> {
   const params = new URLSearchParams();
   if (opts?.limit) params.set('limit', String(opts.limit));
   if (opts?.offset) params.set('offset', String(opts.offset));
   const qs = params.toString() ? `?${params}` : '';
-  return request<{ versions: any[]; total: number }>(
+  return request<{ versions: PersonalityVersion[]; total: number }>(
     `/soul/personalities/${personalityId}/versions${qs}`
   );
 }
@@ -5858,15 +5878,15 @@ export async function fetchPersonalityVersions(
 export async function fetchPersonalityVersion(
   personalityId: string,
   idOrTag: string
-): Promise<any> {
-  return request<any>(`/soul/personalities/${personalityId}/versions/${idOrTag}`);
+): Promise<PersonalityVersion> {
+  return request<PersonalityVersion>(`/soul/personalities/${personalityId}/versions/${idOrTag}`);
 }
 
 export async function tagPersonalityRelease(
   personalityId: string,
   tag?: string
-): Promise<any> {
-  return request<any>(`/soul/personalities/${personalityId}/versions/tag`, {
+): Promise<PersonalityVersion> {
+  return request<PersonalityVersion>(`/soul/personalities/${personalityId}/versions/tag`, {
     method: 'POST',
     body: JSON.stringify(tag ? { tag } : {}),
   });
@@ -5875,15 +5895,15 @@ export async function tagPersonalityRelease(
 export async function rollbackPersonality(
   personalityId: string,
   versionId: string
-): Promise<any> {
-  return request<any>(
+): Promise<PersonalityVersion> {
+  return request<PersonalityVersion>(
     `/soul/personalities/${personalityId}/versions/${versionId}/rollback`,
     { method: 'POST' }
   );
 }
 
-export async function fetchPersonalityDrift(personalityId: string): Promise<any> {
-  return request<any>(`/soul/personalities/${personalityId}/drift`);
+export async function fetchPersonalityDrift(personalityId: string): Promise<DriftSummary> {
+  return request<DriftSummary>(`/soul/personalities/${personalityId}/drift`);
 }
 
 export async function fetchPersonalityVersionDiff(
@@ -5901,12 +5921,12 @@ export async function fetchPersonalityVersionDiff(
 export async function fetchWorkflowVersions(
   workflowId: string,
   opts?: { limit?: number; offset?: number }
-): Promise<{ versions: any[]; total: number }> {
+): Promise<{ versions: WorkflowVersion[]; total: number }> {
   const params = new URLSearchParams();
   if (opts?.limit) params.set('limit', String(opts.limit));
   if (opts?.offset) params.set('offset', String(opts.offset));
   const qs = params.toString() ? `?${params}` : '';
-  return request<{ versions: any[]; total: number }>(
+  return request<{ versions: WorkflowVersion[]; total: number }>(
     `/workflows/${workflowId}/versions${qs}`
   );
 }
@@ -5914,15 +5934,15 @@ export async function fetchWorkflowVersions(
 export async function fetchWorkflowVersion(
   workflowId: string,
   idOrTag: string
-): Promise<any> {
-  return request<any>(`/workflows/${workflowId}/versions/${idOrTag}`);
+): Promise<WorkflowVersion> {
+  return request<WorkflowVersion>(`/workflows/${workflowId}/versions/${idOrTag}`);
 }
 
 export async function tagWorkflowRelease(
   workflowId: string,
   tag?: string
-): Promise<any> {
-  return request<any>(`/workflows/${workflowId}/versions/tag`, {
+): Promise<WorkflowVersion> {
+  return request<WorkflowVersion>(`/workflows/${workflowId}/versions/tag`, {
     method: 'POST',
     body: JSON.stringify(tag ? { tag } : {}),
   });
@@ -5931,15 +5951,15 @@ export async function tagWorkflowRelease(
 export async function rollbackWorkflow(
   workflowId: string,
   versionId: string
-): Promise<any> {
-  return request<any>(
+): Promise<WorkflowVersion> {
+  return request<WorkflowVersion>(
     `/workflows/${workflowId}/versions/${versionId}/rollback`,
     { method: 'POST' }
   );
 }
 
-export async function fetchWorkflowDrift(workflowId: string): Promise<any> {
-  return request<any>(`/workflows/${workflowId}/drift`);
+export async function fetchWorkflowDrift(workflowId: string): Promise<DriftSummary> {
+  return request<DriftSummary>(`/workflows/${workflowId}/drift`);
 }
 
 export async function fetchWorkflowVersionDiff(
@@ -5956,8 +5976,8 @@ export async function fetchWorkflowVersionDiff(
 
 export async function fetchCitationFeedback(
   messageId: string
-): Promise<{ messageId: string; feedback: any[] }> {
-  return request<{ messageId: string; feedback: any[] }>(
+): Promise<{ messageId: string; feedback: CitationFeedback[] }> {
+  return request<{ messageId: string; feedback: CitationFeedback[] }>(
     `/brain/citations/${messageId}`
   );
 }
@@ -5974,8 +5994,8 @@ export async function submitCitationFeedback(
 
 export async function fetchDocumentProvenance(
   docId: string
-): Promise<{ sourceQuality: any | null; trustScore: number }> {
-  return request<{ sourceQuality: any | null; trustScore: number }>(
+): Promise<{ sourceQuality: ProvenanceScores | null; trustScore: number }> {
+  return request<{ sourceQuality: ProvenanceScores | null; trustScore: number }>(
     `/brain/documents/${docId}/provenance`
   );
 }
@@ -5983,8 +6003,8 @@ export async function fetchDocumentProvenance(
 export async function updateDocumentProvenance(
   docId: string,
   scores: Record<string, number>
-): Promise<any> {
-  return request<any>(`/brain/documents/${docId}/provenance`, {
+): Promise<{ document: KbDocument }> {
+  return request<{ document: KbDocument }>(`/brain/documents/${docId}/provenance`, {
     method: 'PUT',
     body: JSON.stringify({ scores }),
   });
@@ -6156,7 +6176,7 @@ export async function fetchScanHistory(params?: {
   verdict?: string;
   sourceContext?: string;
   personalityId?: string;
-}): Promise<{ rows: any[]; total: number }> {
+}): Promise<{ rows: ScanHistoryRow[]; total: number }> {
   const query = new URLSearchParams();
   if (params?.limit) query.set('limit', params.limit.toString());
   if (params?.offset !== undefined) query.set('offset', params.offset.toString());
@@ -6165,7 +6185,7 @@ export async function fetchScanHistory(params?: {
   if (params?.personalityId) query.set('personalityId', params.personalityId);
   const qs = query.toString() ? `?${query.toString()}` : '';
   try {
-    return await request<{ rows: any[]; total: number }>(`/sandbox/scans${qs}`);
+    return await request<{ rows: ScanHistoryRow[]; total: number }>(`/sandbox/scans${qs}`);
   } catch {
     return { rows: [], total: 0 };
   }
@@ -6179,9 +6199,9 @@ export async function fetchScanStats(): Promise<{ stats: any }> {
   }
 }
 
-export async function fetchQuarantineItems(): Promise<{ items: any[] }> {
+export async function fetchQuarantineItems(): Promise<{ items: QuarantineEntry[] }> {
   try {
-    return await request<{ items: any[] }>('/sandbox/quarantine');
+    return await request<{ items: QuarantineEntry[] }>('/sandbox/quarantine');
   } catch {
     return { items: [] };
   }
@@ -6203,10 +6223,10 @@ export async function fetchThreatIntelligence(): Promise<any> {
   }
 }
 
-export async function fetchSandboxPolicy(): Promise<{ policy: any }> {
+export async function fetchSandboxPolicy(): Promise<{ policy: ExternalizationPolicy }> {
   try {
-    return await request<{ policy: any }>('/sandbox/policy');
+    return await request<{ policy: ExternalizationPolicy }>('/sandbox/policy');
   } catch {
-    return { policy: { enabled: false } };
+    return { policy: { enabled: false } as ExternalizationPolicy };
   }
 }

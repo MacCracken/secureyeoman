@@ -112,13 +112,13 @@ export function RiskTrendChart({ departmentId, compareDepartments = [] }: RiskTr
 
   // Build merged chart data
   const { chartData, lineKeys } = useMemo(() => {
-    const primaryData: TrendPoint[] = primaryQuery.data?.points ?? primaryQuery.data ?? [];
+    const primaryData: TrendPoint[] = primaryQuery.data?.points ?? [];
     const primaryLabel = 'Primary';
 
     const comparisons = capped
       .map((dept, i) => ({
         label: dept.name,
-        data: (compQueries[i]?.data?.points ?? compQueries[i]?.data ?? []) as TrendPoint[],
+        data: (compQueries[i]?.data?.points ?? []) as TrendPoint[],
       }))
       .filter((c) => c.data.length > 0);
 

@@ -6,6 +6,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { ProactiveManager } from './manager.js';
 import type { HeartbeatLogStorage } from '../body/heartbeat-log-storage.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export function registerProactiveRoutes(
   app: FastifyInstance,
@@ -22,11 +23,10 @@ export function registerProactiveRoutes(
         Querystring: { type?: string; enabled?: string; limit?: string; offset?: string };
       }>
     ) => {
-      const filter: { type?: string; enabled?: boolean; limit?: number; offset?: number } = {};
+      const { limit, offset } = parsePagination(request.query);
+      const filter: { type?: string; enabled?: boolean; limit?: number; offset?: number } = { limit, offset };
       if (request.query.type) filter.type = request.query.type;
       if (request.query.enabled !== undefined) filter.enabled = request.query.enabled === 'true';
-      if (request.query.limit) filter.limit = Number(request.query.limit);
-      if (request.query.offset) filter.offset = Number(request.query.offset);
       return proactiveManager.listTriggers(filter);
     }
   );
@@ -144,11 +144,12 @@ export function registerProactiveRoutes(
       }>
     ) => {
       const q = request.query;
+      const { limit, offset } = parsePagination(q);
       return proactiveManager.listSuggestions({
         status: q.status as any,
         triggerId: q.triggerId,
-        limit: q.limit ? Number(q.limit) : undefined,
-        offset: q.offset ? Number(q.offset) : undefined,
+        limit,
+        offset,
       });
     }
   );
@@ -206,12 +207,13 @@ export function registerProactiveRoutes(
       reply: FastifyReply
     ) => {
       if (!logStorage) return sendError(reply, 503, 'Heartbeat log storage not available');
-      const { checkName, status, limit, offset } = request.query;
+      const { checkName, status } = request.query;
+      const { limit, offset } = parsePagination(request.query);
       return logStorage.list({
         checkName,
         status: status as 'ok' | 'warning' | 'error' | undefined,
-        limit: limit ? Number(limit) : 20,
-        offset: offset ? Number(offset) : 0,
+        limit,
+        offset,
       });
     }
   );

@@ -12,6 +12,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { BackupManager } from './backup-manager.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export interface BackupRoutesOptions {
   backupManager: BackupManager;
@@ -43,8 +44,7 @@ export function registerBackupRoutes(app: FastifyInstance, opts: BackupRoutesOpt
       reply: FastifyReply
     ) => {
       try {
-        const limit = Math.min(Number(request.query.limit ?? 50), 200);
-        const offset = Number(request.query.offset ?? 0);
+        const { limit, offset } = parsePagination(request.query, { maxLimit: 200, defaultLimit: 50 });
         const result = await backupManager.listBackups(limit, offset);
         return reply.send({ backups: result.records, total: result.total, limit, offset });
       } catch (err) {

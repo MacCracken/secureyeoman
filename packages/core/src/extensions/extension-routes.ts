@@ -47,9 +47,7 @@ export function registerExtensionRoutes(
         const extension = await extensionManager.registerExtension(manifest);
         return reply.code(201).send({ extension });
       } catch (err) {
-        return reply.code(400).send({
-          error: toErrorMessage(err),
-        });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -123,9 +121,7 @@ export function registerExtensionRoutes(
         );
         return reply.code(201).send({ hookId });
       } catch (err) {
-        return reply.code(400).send({
-          error: toErrorMessage(err),
-        });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -167,9 +163,7 @@ export function registerExtensionRoutes(
         });
         return reply.code(201).send({ webhook });
       } catch (err) {
-        return reply.code(400).send({
-          error: toErrorMessage(err),
-        });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -236,9 +230,7 @@ export function registerExtensionRoutes(
         const result = await extensionManager.testEmit(request.body.hookPoint, request.body.data);
         return { result, durationMs: Date.now() - startTime };
       } catch (err) {
-        return reply.code(400).send({
-          error: toErrorMessage(err),
-        });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -259,9 +251,7 @@ export function registerExtensionRoutes(
         const manifests = await extensionManager.discoverExtensions(request.body?.directory);
         return { manifests, count: manifests.length };
       } catch (err) {
-        return reply.code(400).send({
-          error: toErrorMessage(err),
-        });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );

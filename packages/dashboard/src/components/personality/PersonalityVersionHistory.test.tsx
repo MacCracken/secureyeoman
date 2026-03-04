@@ -26,6 +26,7 @@ const VERSION = {
   id: 'pv-1',
   personalityId: 'pers-1',
   versionTag: '2026.3.2',
+  snapshot: { name: 'FRIDAY', systemPrompt: 'You are helpful.' },
   snapshotMd: '# FRIDAY\nYou are helpful.',
   diffSummary: null,
   changedFields: ['name'],
@@ -91,7 +92,7 @@ describe('PersonalityVersionHistory', () => {
   });
 
   it('calls tagRelease when Tag Release button clicked', async () => {
-    mockTagRelease.mockResolvedValue({});
+    mockTagRelease.mockResolvedValue(VERSION as any);
     render(<PersonalityVersionHistory personalityId="pers-1" />);
     await waitFor(() => {
       expect(screen.getByText('Tag Release')).toBeInTheDocument();

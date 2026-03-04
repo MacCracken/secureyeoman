@@ -1258,7 +1258,7 @@ describe('Chat Routes — additional branch coverage', () => {
     });
 
     expect(res.statusCode).toBe(429);
-    expect(JSON.parse(res.payload).error).toContain('Too many requests');
+    expect(JSON.parse(res.payload).message).toContain('Too many requests');
   });
 
   it('POST /api/v1/chat returns 400 when history entry is blocked', async () => {
@@ -2625,7 +2625,7 @@ describe('Chat Routes — per-personality rate limit (non-streaming)', () => {
     });
 
     expect(res.statusCode).toBe(429);
-    expect(JSON.parse(res.payload).error).toContain('personality');
+    expect(JSON.parse(res.payload).message).toContain('personality');
   });
 
   it('skips rate limiting when rateLimitConfig.enabled is false', async () => {
@@ -5607,7 +5607,7 @@ describe('Phase 119 — Context Overflow Strategy', () => {
     });
     expect(res.statusCode).toBe(413);
     const body = JSON.parse(res.payload);
-    expect(body.error).toBe('Context overflow');
+    expect(body.message).toBe('Context overflow');
   });
 
   it('truncates messages when overflow strategy is truncate', async () => {

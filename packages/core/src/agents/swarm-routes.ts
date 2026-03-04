@@ -5,6 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SwarmManager } from './swarm-manager.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 import type { SwarmTemplateExport } from '@secureyeoman/shared';
 
 export function registerSwarmRoutes(
@@ -18,8 +19,7 @@ export function registerSwarmRoutes(
   app.get(
     '/api/v1/agents/swarms/templates',
     async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
-      const limit = request.query.limit ? Number(request.query.limit) : undefined;
-      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      const { limit, offset } = parsePagination(request.query);
       return swarmManager.listTemplates({ limit, offset });
     }
   );
@@ -235,10 +235,11 @@ export function registerSwarmRoutes(
       }>
     ) => {
       const q = request.query;
+      const { limit, offset } = parsePagination(q);
       return swarmManager.listSwarmRuns({
         status: q.status,
-        limit: q.limit ? Number(q.limit) : undefined,
-        offset: q.offset ? Number(q.offset) : undefined,
+        limit,
+        offset,
       });
     }
   );

@@ -2,7 +2,7 @@
  * Browser Automation Routes — REST API for browser session management.
  */
 
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { BrowserSessionStorage } from './storage.js';
 import { sendError } from '../utils/errors.js';
 
@@ -24,16 +24,16 @@ export function registerBrowserRoutes(
   });
 
   // Get single session
-  app.get('/api/v1/browser/sessions/:id', async (request, reply) => {
-    const { id } = request.params as { id: string };
+  app.get('/api/v1/browser/sessions/:id', async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+    const { id } = request.params;
     const session = await browserSessionStorage.getSession(id);
     if (!session) return sendError(reply, 404, 'Session not found');
     return session;
   });
 
   // Close session
-  app.post('/api/v1/browser/sessions/:id/close', async (request, reply) => {
-    const { id } = request.params as { id: string };
+  app.post('/api/v1/browser/sessions/:id/close', async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+    const { id } = request.params;
     const session = await browserSessionStorage.closeSession(id);
     if (!session) return sendError(reply, 404, 'Session not found');
     return session;

@@ -1058,10 +1058,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               userId: request.authUser?.userId,
               metadata: { rule: 'chat_requests', endpoint: '/api/v1/chat' },
             });
-            return reply.code(429).send({
-              error: 'Too many requests. Please slow down.',
-              retryAfter: globalResult.retryAfter,
-            });
+            return sendError(reply, 429, 'Too many requests. Please slow down.');
           }
 
           // Per-personality override
@@ -1087,10 +1084,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                   personalityId: personality!.id,
                 },
               });
-              return reply.code(429).send({
-                error: 'Too many requests for this personality.',
-                retryAfter: perResult.retryAfter,
-              });
+              return sendError(reply, 429, 'Too many requests for this personality.');
             }
           }
         }
@@ -1143,11 +1137,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         if (budgetChecker) {
           const budgetResult = await budgetChecker.checkBudget(personality.id, costBudget);
           if (!budgetResult.allowed) {
-            return reply.code(429).send({
-              error: 'Cost budget exceeded',
-              message: `${budgetResult.blockedBy} cost budget exceeded for this personality.`,
-              statusCode: 429,
-            });
+            return sendError(reply, 429, `${budgetResult.blockedBy} cost budget exceeded for this personality.`);
           }
         }
       }
@@ -1158,11 +1148,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       const overflowStrategy = personality?.body?.contextOverflowStrategy ?? 'summarise';
       if (compactor.needsCompaction(messages, currentModel)) {
         if (overflowStrategy === 'error') {
-          return reply.code(413).send({
-            error: 'Context overflow',
-            message: 'Message history exceeds model context window.',
-            statusCode: 413,
-          });
+          return sendError(reply, 413, 'Context overflow');
         } else if (overflowStrategy === 'truncate') {
           // Drop oldest non-system messages until under 80% threshold
           const nonSystem = messages.filter((m) => m.role !== 'system');
@@ -1848,7 +1834,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       } = request.body;
 
       if (!message || typeof message !== 'string' || message.trim().length === 0) {
-        reply.code(400).send({ error: 'Message is required' });
+        sendError(reply, 400, 'Message is required');
         return;
       }
 
@@ -1869,7 +1855,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           metadata: { endpoint: '/api/v1/chat/stream', reason: msgValidation.blockReason },
         });
         abuseDetector.recordBlock(_abSessionIdS);
-        reply.code(400).send({ error: 'Message blocked: invalid content' });
+        sendError(reply, 400, 'Message blocked: invalid content');
         return;
       }
 
@@ -1877,9 +1863,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       {
         const abCheckS = abuseDetector.check(_abSessionIdS);
         if (abCheckS.inCoolDown) {
-          reply.code(429).send({
-            error: `Temporarily rate limited due to suspicious activity. Retry after ${abCheckS.coolDownUntil}`,
-          });
+          sendError(reply, 429, `Temporarily rate limited due to suspicious activity. Retry after ${abCheckS.coolDownUntil}`);
           return;
         }
         abuseDetector.recordMessage(_abSessionIdS, message);
@@ -1897,7 +1881,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 userId: (request as FastifyRequest & { user?: { id?: string } }).user?.id,
                 metadata: { endpoint: '/api/v1/chat/stream', reason: hv.blockReason },
               });
-              reply.code(400).send({ error: 'Message blocked: invalid content in history' });
+              sendError(reply, 400, 'Message blocked: invalid content in history');
               return;
             }
           }
@@ -1916,7 +1900,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       try {
         aiClient = secureYeoman.getAIClient();
       } catch {
-        reply.code(503).send({ error: 'AI client is not available.' });
+        sendError(reply, 503, 'AI client is not available.');
         return;
       }
 

@@ -944,7 +944,7 @@ function DepartmentsSection() {
   });
 
   const departments = deptsData?.items ?? [];
-  const scorecard = scorecardData?.scorecard ?? scorecardData;
+  const scorecard = scorecardData?.scorecard;
   const heatmap = heatmapData?.cells ?? [];
   const summary = summaryData?.summary ?? summaryData;
   const registerEntries = (registerData as any)?.items ?? [];

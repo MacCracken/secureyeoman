@@ -1121,8 +1121,8 @@ export class SecureYeoman {
         this.logger.debug('Routing rules manager initialized and wired to message router');
       }
 
-      // Wire up external plugin loader (INTEGRATION_PLUGIN_DIR env var)
-      const pluginDir = process.env.INTEGRATION_PLUGIN_DIR;
+      // Wire up external plugin loader
+      const pluginDir = this.config.security.integrationPluginDir ?? process.env.INTEGRATION_PLUGIN_DIR;
       if (pluginDir) {
         const pluginLoader = new PluginLoader({
           pluginDir,
@@ -1287,11 +1287,10 @@ export class SecureYeoman {
       this.marketplaceManager = new MarketplaceManager(this.marketplaceStorage, {
         logger: this.logger.child({ component: 'MarketplaceManager' }),
         brainManager: this.brainManager ?? undefined,
-        communityRepoPath: process.env.COMMUNITY_REPO_PATH ?? './community-skills',
+        communityRepoPath: this.config.security.communityRepoPath,
         allowCommunityGitFetch: this.config.security.allowCommunityGitFetch,
         communityGitUrl:
           this.config.security.communityGitUrl ??
-          process.env.COMMUNITY_GIT_URL ??
           'https://github.com/MacCracken/secureyeoman-community-skills',
       });
       await this.marketplaceManager.seedBuiltinSkills();
@@ -1316,23 +1315,20 @@ export class SecureYeoman {
       this.logger.debug('Conversation storage initialized');
 
       // Step 6.10b: Initialize branching manager
-      try {
+      {
         const pool = this.getPool();
         if (pool) {
-          this.branchingManager = new BranchingManager({
-            conversationStorage: this.chatConversationStorage,
-            pool,
-            logger: this.logger.child({ component: 'BranchingManager' }),
-            aiClient: this.aiClient ?? undefined,
+          await this.initOptional('Branching manager', () => {
+            this.branchingManager = new BranchingManager({
+              conversationStorage: this.chatConversationStorage!,
+              pool,
+              logger: this.logger!.child({ component: 'BranchingManager' }),
+              aiClient: this.aiClient ?? undefined,
+            });
           });
-          this.logger.debug('Branching manager initialized');
         } else {
           this.logger.debug('Branching manager skipped — no database pool');
         }
-      } catch (err) {
-        this.logger.warn('Branching manager init failed (non-fatal)', {
-          error: err instanceof Error ? err.message : String(err),
-        });
       }
 
       // Step 6.11: Initialize sub-agent delegation.
@@ -1355,7 +1351,7 @@ export class SecureYeoman {
       // managers so the marketplace shows templates even before delegation is
       // explicitly enabled.  bootDelegationChain() already creates these
       // storage objects — this block only runs when it was skipped.
-      try {
+      await this.initOptional('Template seeding', async () => {
         if (!this.workflowStorage) {
           this.workflowStorage = new WorkflowStorage();
         }
@@ -1378,77 +1374,69 @@ export class SecureYeoman {
             soulManager: this.soulManager ?? undefined,
           });
         }
+      });
 
-        this.logger.debug('Workflow/swarm templates seeded');
-      } catch (seedErr) {
-        this.logger.warn('Template seeding failed (non-fatal)', {
-          error: seedErr instanceof Error ? seedErr.message : 'Unknown error',
-        });
-      }
+      // Steps 6.12–6.14: Initialize independent config-gated managers in parallel
+      {
+        const parallelInits: Promise<unknown>[] = [];
 
-      // Step 6.12: Initialize extension hooks (if enabled)
-      if (this.config.extensions?.enabled) {
-        try {
-          this.extensionStorage = new ExtensionStorage();
-          this.extensionManager = new ExtensionManager(this.config.extensions, {
-            storage: this.extensionStorage,
-            logger: this.logger.child({ component: 'ExtensionManager' }),
-            auditChain: this.auditChain,
-          });
-          await this.extensionManager.initialize();
-          this.logger.debug('Extension manager initialized');
-        } catch (error) {
-          this.logger.warn('Extension manager initialization failed (non-fatal)', {
-            error: error instanceof Error ? error.message : 'Unknown error',
-          });
+        // Step 6.12: Initialize extension hooks (if enabled)
+        if (this.config.extensions?.enabled) {
+          parallelInits.push(
+            this.initOptional('Extension manager', async () => {
+              this.extensionStorage = new ExtensionStorage();
+              this.extensionManager = new ExtensionManager(this.config!.extensions!, {
+                storage: this.extensionStorage,
+                logger: this.logger!.child({ component: 'ExtensionManager' }),
+                auditChain: this.auditChain!,
+              });
+              await this.extensionManager.initialize();
+            })
+          );
         }
-      }
 
-      // Step 6.13: Initialize code execution (if enabled)
-      if (this.config.execution?.enabled) {
-        try {
-          this.executionStorage = new ExecutionStorage();
-          this.executionManager = new CodeExecutionManager(this.config.execution, {
-            storage: this.executionStorage,
-            logger: this.logger.child({ component: 'CodeExecutionManager' }),
-            auditChain: this.auditChain,
-          });
-          await this.executionManager.initialize();
-          this.logger.debug('Code execution manager initialized');
-        } catch (error) {
-          this.logger.warn('Code execution manager initialization failed (non-fatal)', {
-            error: error instanceof Error ? error.message : 'Unknown error',
-          });
+        // Step 6.13: Initialize code execution (if enabled)
+        if (this.config.execution?.enabled) {
+          parallelInits.push(
+            this.initOptional('Code execution manager', async () => {
+              this.executionStorage = new ExecutionStorage();
+              this.executionManager = new CodeExecutionManager(this.config!.execution!, {
+                storage: this.executionStorage,
+                logger: this.logger!.child({ component: 'CodeExecutionManager' }),
+                auditChain: this.auditChain!,
+              });
+              await this.executionManager.initialize();
+            })
+          );
         }
-      }
 
-      // Step 6.14: Initialize A2A protocol (if enabled)
-      if (this.config.a2a?.enabled) {
-        try {
-          this.a2aStorage = new A2AStorage();
-          const transport = new RemoteDelegationTransport({
-            logger: this.logger.child({ component: 'A2ATransport' }),
-          });
-          this.a2aManager = new A2AManager(this.config.a2a, {
-            storage: this.a2aStorage,
-            transport,
-            logger: this.logger.child({ component: 'A2AManager' }),
-            auditChain: this.auditChain,
-          });
-          await this.a2aManager.initialize();
-          this.logger.debug('A2A manager initialized');
-        } catch (error) {
-          this.logger.warn('A2A manager initialization failed (non-fatal)', {
-            error: error instanceof Error ? error.message : 'Unknown error',
-          });
+        // Step 6.14: Initialize A2A protocol (if enabled)
+        if (this.config.a2a?.enabled) {
+          parallelInits.push(
+            this.initOptional('A2A manager', async () => {
+              this.a2aStorage = new A2AStorage();
+              const transport = new RemoteDelegationTransport({
+                logger: this.logger!.child({ component: 'A2ATransport' }),
+              });
+              this.a2aManager = new A2AManager(this.config!.a2a!, {
+                storage: this.a2aStorage,
+                transport,
+                logger: this.logger!.child({ component: 'A2AManager' }),
+                auditChain: this.auditChain!,
+              });
+              await this.a2aManager.initialize();
+            })
+          );
         }
+
+        await Promise.allSettled(parallelInits);
       }
 
       // Step 6.15: Initialize dynamic tool manager (if enabled by security policy)
       // The manager is started when allowDynamicTools is true at startup so that
       // tools persisted from a previous session are immediately available.
       if (this.config.security.allowDynamicTools) {
-        try {
+        await this.initOptional('Dynamic tool manager', async () => {
           this.dynamicToolStorage = new DynamicToolStorage();
           await this.dynamicToolStorage.ensureTables();
           this.dynamicToolManager = new DynamicToolManager(
@@ -1456,57 +1444,45 @@ export class SecureYeoman {
             // Pass a live reference to the security config object so that runtime
             // policy changes (e.g. toggling sandboxDynamicTools via the UI) are
             // picked up immediately without requiring a restart.
-            this.config.security,
+            this.config!.security,
             {
-              logger: this.logger.child({ component: 'DynamicToolManager' }),
+              logger: this.logger!.child({ component: 'DynamicToolManager' }),
               auditChain: this.auditChain ?? undefined,
               sandboxManager: this.sandboxManager ?? undefined,
             }
           );
           await this.dynamicToolManager.initialize();
-          // Wire schemas into the soul manager so registered dynamic tools are
-          // injected into the AI context alongside skill and creation tools.
-          if (this.soulManager) {
-            this.soulManager.setDynamicToolManager(this.dynamicToolManager);
-          }
-          this.logger.debug('Dynamic tool manager initialized', {
-            sandboxed: this.config.security.sandboxDynamicTools ?? true,
-          });
-        } catch (error) {
-          this.logger.warn('Dynamic tool manager initialization failed (non-fatal)', {
-            error: error instanceof Error ? error.message : 'Unknown error',
-          });
+        });
+        // Wire schemas into the soul manager so registered dynamic tools are
+        // injected into the AI context alongside skill and creation tools.
+        if (this.dynamicToolManager && this.soulManager) {
+          this.soulManager.setDynamicToolManager(this.dynamicToolManager);
         }
       }
 
       // Step 6b: Initialize Proactive Manager
       if (this.config.security.allowProactive || this.config.proactive?.enabled) {
-        try {
+        await this.initOptional('Proactive manager', async () => {
           const { ProactiveStorage } = await import('./proactive/storage.js');
           const { ProactiveManager } = await import('./proactive/manager.js');
           const { PatternLearner } = await import('./proactive/pattern-learner.js');
           const proactiveStorage = new ProactiveStorage();
           const patternLearner = new PatternLearner(
-            this.brainManager,
-            this.logger.child({ component: 'PatternLearner' })
+            this.brainManager!,
+            this.logger!.child({ component: 'PatternLearner' })
           );
           this.proactiveManager = new ProactiveManager(
             proactiveStorage,
             {
-              logger: this.logger.child({ component: 'ProactiveManager' }),
-              brainManager: this.brainManager,
+              logger: this.logger!.child({ component: 'ProactiveManager' }),
+              brainManager: this.brainManager!,
               integrationManager: this.integrationManager ?? undefined,
             },
-            this.config.proactive ?? {},
+            this.config!.proactive ?? {},
             patternLearner
           );
           await this.proactiveManager.initialize();
-          this.logger.debug('Proactive manager initialized');
-        } catch (error) {
-          this.logger.warn('Proactive manager initialization failed (non-fatal)', {
-            error: error instanceof Error ? error.message : 'Unknown error',
-          });
-        }
+        });
       }
 
       // Step 6c: Initialize Multimodal Manager
@@ -1582,33 +1558,28 @@ export class SecureYeoman {
           }
         }
         if (browserEnabled) {
-          try {
+          await this.initOptional('Browser session storage', async () => {
             const { BrowserSessionStorage } = await import('./browser/storage.js');
             this.browserSessionStorage = new BrowserSessionStorage();
             await this.browserSessionStorage.ensureTables();
-            this.logger.debug('Browser session storage initialized');
-          } catch (error) {
-            this.logger.warn('Browser session storage initialization failed (non-fatal)', {
-              error: error instanceof Error ? error.message : 'Unknown error',
-            });
-          }
+          });
         }
       }
 
       // Step 6e: Initialize RiskAssessmentManager (uses pool from Step 2.1)
       if (this.riskAssessmentStorage) {
-        try {
+        await this.initOptional('RiskAssessmentManager', async () => {
           const pool = getPool();
           this.riskAssessmentManager = new RiskAssessmentManager({
-            storage: this.riskAssessmentStorage,
+            storage: this.riskAssessmentStorage!,
             pool,
             auditChain: this.auditChain,
             tlsManager: this.tlsManager,
             getDepartmentRiskManager: () => this.departmentRiskManager,
           });
-          this.logger.debug('RiskAssessmentManager initialized');
-
-          // Schedule a daily automated assessment
+        });
+        // Schedule a daily automated assessment
+        if (this.riskAssessmentManager) {
           const MS_PER_DAY = 24 * 60 * 60 * 1000;
           this.riskScheduleTimer = setInterval(() => {
             void this.riskAssessmentManager!.runAssessment({
@@ -1620,71 +1591,54 @@ export class SecureYeoman {
             });
           }, MS_PER_DAY);
           this.riskScheduleTimer.unref();
-        } catch (error) {
-          this.logger.warn('RiskAssessmentManager initialization failed (non-fatal)', {
-            error: error instanceof Error ? error.message : 'Unknown error',
-          });
         }
       }
 
       // Step 6e.2: Initialize DepartmentRiskManager (Phase 111)
       if (this.departmentRiskStorage) {
-        try {
+        await this.initOptional('DepartmentRiskManager', async () => {
           const pool = getPool();
           this.departmentRiskManager = new DepartmentRiskManager({
-            storage: this.departmentRiskStorage,
+            storage: this.departmentRiskStorage!,
             pool,
             auditChain: this.auditChain,
             getAlertManager: () => this.alertManager,
           });
-          this.logger.debug('DepartmentRiskManager initialized');
-        } catch (error) {
-          this.logger.warn('DepartmentRiskManager initialization failed (non-fatal)', {
-            error: error instanceof Error ? error.message : 'Unknown error',
-          });
-        }
+        });
       }
 
       // Step 6e.2b: Initialize ProviderAccountManager (Phase 112)
       if (this.providerAccountStorage && this.secretsManager) {
-        try {
+        await this.initOptional('ProviderAccountManager', () => {
           this.providerAccountManager = new ProviderAccountManager({
-            storage: this.providerAccountStorage,
-            secretsManager: this.secretsManager,
+            storage: this.providerAccountStorage!,
+            secretsManager: this.secretsManager!,
             validator: new ProviderKeyValidator(),
             auditChain: this.auditChain ?? undefined,
             getAlertManager: () => this.alertManager,
           });
-          // Import API keys from environment variables (fire-and-forget)
+        });
+        // Import API keys from environment variables (fire-and-forget)
+        if (this.providerAccountManager) {
           this.providerAccountManager.importFromEnv().catch((err) => {
             this.logger?.warn('Provider account env import failed (non-fatal)', {
               error: err instanceof Error ? err.message : String(err),
             });
-          });
-          this.logger.debug('ProviderAccountManager initialized');
-        } catch (error) {
-          this.logger.warn('ProviderAccountManager initialization failed (non-fatal)', {
-            error: error instanceof Error ? error.message : 'Unknown error',
           });
         }
       }
 
       // Step 6e.3: Initialize AthiManager (Phase 107-F)
       if (this.athiStorage) {
-        try {
+        await this.initOptional('AthiManager', async () => {
           const pool = getPool();
           this.athiManager = new AthiManager({
-            storage: this.athiStorage,
+            storage: this.athiStorage!,
             pool,
             auditChain: this.auditChain,
             getAlertManager: () => this.alertManager,
           });
-          this.logger.debug('AthiManager initialized');
-        } catch (error) {
-          this.logger.warn('AthiManager initialization failed (non-fatal)', {
-            error: error instanceof Error ? error.message : 'Unknown error',
-          });
-        }
+        });
       }
 
       // Step 6f: Initialize BackupManager (Phase 61)
@@ -4166,8 +4120,118 @@ export class SecureYeoman {
       this.auditStorage = null;
     }
 
+    // Close remaining storage objects
+    if (this.alertStorage) {
+      this.alertStorage.close();
+      this.alertStorage = null;
+      this.alertManager = null;
+    }
+    if (this.athiStorage) {
+      this.athiStorage.close();
+      this.athiStorage = null;
+      this.athiManager = null;
+    }
+    if (this.autonomyAuditStorage) {
+      this.autonomyAuditStorage.close();
+      this.autonomyAuditStorage = null;
+      this.autonomyAuditManager = null;
+    }
+    if (this.backupStorage) {
+      this.backupStorage.close();
+      this.backupStorage = null;
+      this.backupManager = null;
+    }
+    if (this.departmentRiskStorage) {
+      this.departmentRiskStorage.close();
+      this.departmentRiskStorage = null;
+      this.departmentRiskManager = null;
+    }
+    if (this.dynamicToolStorage) {
+      this.dynamicToolStorage.close();
+      this.dynamicToolStorage = null;
+      this.dynamicToolManager = null;
+    }
+    if (this.groupChatStorage) {
+      this.groupChatStorage.close();
+      this.groupChatStorage = null;
+    }
+    if (this.heartbeatLogStorage) {
+      this.heartbeatLogStorage.close();
+      this.heartbeatLogStorage = null;
+    }
+    if (this.notificationStorage) {
+      this.notificationStorage.close();
+      this.notificationStorage = null;
+      this.notificationManager = null;
+    }
+    if (this.personalityVersionStorage) {
+      this.personalityVersionStorage.close();
+      this.personalityVersionStorage = null;
+      this.personalityVersionManager = null;
+    }
+    if (this.providerAccountStorage) {
+      this.providerAccountStorage.close();
+      this.providerAccountStorage = null;
+      this.providerAccountManager = null;
+    }
+    if (this.riskAssessmentStorage) {
+      this.riskAssessmentStorage.close();
+      this.riskAssessmentStorage = null;
+      this.riskAssessmentManager = null;
+    }
+    if (this.routingRulesStorage) {
+      this.routingRulesStorage.close();
+      this.routingRulesStorage = null;
+      this.routingRulesManager = null;
+    }
+    if (this.scanHistoryStore) {
+      this.scanHistoryStore.close();
+      this.scanHistoryStore = null;
+    }
+    if (this.strategyStorage) {
+      this.strategyStorage.close();
+      this.strategyStorage = null;
+    }
+    if (this.tenantStorage) {
+      this.tenantStorage.close();
+      this.tenantStorage = null;
+      this.tenantManager = null;
+    }
+    if (this.userNotificationPrefsStorage) {
+      this.userNotificationPrefsStorage.close();
+      this.userNotificationPrefsStorage = null;
+    }
+    if (this.usageStorage) {
+      this.usageStorage.close();
+      this.usageStorage = null;
+    }
+    if (this.workflowVersionStorage) {
+      this.workflowVersionStorage.close();
+      this.workflowVersionStorage = null;
+      this.workflowVersionManager = null;
+    }
+    this.analyticsStorage = null;
+    this.pipelineLineageStorage = null;
+    this.quarantineStorage = null;
+
     // Close PostgreSQL pool
     await closePool();
+  }
+
+  /**
+   * Initialize an optional component, logging and swallowing failures.
+   */
+  private async initOptional<T>(name: string, init: () => Promise<T> | T): Promise<T | null> {
+    try {
+      const result = await init();
+      this.logger!.debug(`${name} initialized`);
+      return result;
+    } catch (error) {
+      this.logger!.warn(`${name} initialization failed (non-fatal)`, {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      return null;
+    }
   }
 
   /**
