@@ -115,7 +115,7 @@ export const CANVAS_WIDGET_REGISTRY: readonly CanvasWidgetDef[] = [
     type: 'excalidraw',
     label: 'Excalidraw',
     category: 'development',
-    description: 'SVG viewer for Excalidraw diagrams with KB integration',
+    description: 'Interactive whiteboard for diagrams with AI sync and KB integration',
     defaultWidth: 640,
     defaultHeight: 480,
   },

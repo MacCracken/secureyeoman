@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
       dedupe: ['react', 'react-dom', '@tanstack/react-virtual'],
     },
     optimizeDeps: {
-      include: ['monaco-editor', '@tanstack/react-virtual', '@tanstack/virtual-core'],
+      include: ['monaco-editor', '@tanstack/react-virtual', '@tanstack/virtual-core', '@excalidraw/excalidraw'],
       esbuildOptions: {
         define: {
           global: 'global',
@@ -110,6 +110,7 @@ export default defineConfig(({ mode }) => {
             'flow-vendor': ['reactflow'],
             'dnd-vendor': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
             mermaid: ['mermaid'],
+            excalidraw: ['@excalidraw/excalidraw'],
           },
         },
       },

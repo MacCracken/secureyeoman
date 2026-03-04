@@ -80,7 +80,7 @@ describe('GET /api/v1/auth/oauth/:provider', () => {
     const app = buildApp({ isProviderConfigured: vi.fn().mockReturnValue(false) });
     const res = await app.inject({ method: 'GET', url: '/api/v1/auth/oauth/google' });
     expect(res.statusCode).toBe(400);
-    expect(res.json().error).toContain('not configured');
+    expect(res.json().message).toContain('not configured');
   });
 
   it('returns 400 when provider unknown', async () => {

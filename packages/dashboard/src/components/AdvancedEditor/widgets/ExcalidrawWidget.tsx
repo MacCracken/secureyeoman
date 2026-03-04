@@ -1,4 +1,16 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+/**
+ * Interactive Excalidraw Canvas Widget — Phase 117-B
+ *
+ * Three view modes: Draw (interactive editor) | JSON | SVG
+ * Supports AI → Editor push via WebSocket and KB integration.
+ */
+
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
+import { ExcalidrawEditorLazy } from './ExcalidrawEditorLazy';
+import { useWebSocket } from '../../../hooks/useWebSocket';
+
+// ── Types ────────────────────────────────────────────────────────────
 
 interface ExcalidrawElement {
   type: string;
@@ -33,13 +45,17 @@ interface KbDocument {
   format: string | null;
 }
 
-interface Props {
+export interface ExcalidrawWidgetProps {
   sceneJson?: string;
   documentId?: string;
+  nodeId?: string;
   onConfigChange?: (config: { excalidrawSceneJson?: string; excalidrawDocumentId?: string }) => void;
 }
 
-// TODO: Extract to shared package — lightweight SVG renderer (pure string manipulation, no Node APIs)
+type ViewMode = 'draw' | 'json' | 'svg';
+
+// ── SVG Renderer (read-only preview) ─────────────────────────────────
+
 function renderSceneSvg(scene: ExcalidrawScene): string {
   const elements = scene.elements ?? [];
   if (elements.length === 0) {
@@ -116,13 +132,48 @@ function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-export function ExcalidrawWidget({ sceneJson, documentId, onConfigChange }: Props) {
-  const [viewMode, setViewMode] = useState<'svg' | 'json'>('svg');
+// ── Component ────────────────────────────────────────────────────────
+
+export function ExcalidrawWidget({ sceneJson, documentId, nodeId, onConfigChange }: ExcalidrawWidgetProps) {
+  const [viewMode, setViewMode] = useState<ViewMode>('draw');
   const [jsonText, setJsonText] = useState(sceneJson ?? '');
   const [kbDocs, setKbDocs] = useState<KbDocument[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoSync, setAutoSync] = useState(false);
 
+  const excalidrawAPIRef = useRef<ExcalidrawImperativeAPI | null>(null);
+  const sceneDataRef = useRef<{ elements: readonly Record<string, unknown>[]; appState: Record<string, unknown> } | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // WebSocket for AI → Editor push
+  const { lastMessage, subscribe } = useWebSocket('/ws/metrics');
+
+  useEffect(() => {
+    subscribe(['excalidraw']);
+  }, [subscribe]);
+
+  // Push AI-generated scenes into live editor
+  useEffect(() => {
+    if (!lastMessage || lastMessage.channel !== 'excalidraw') return;
+    const payload = lastMessage.payload as { documentId?: string; scene?: ExcalidrawScene; source?: string };
+    if (!payload.scene) return;
+    // If nodeId-linked to a specific document, only accept matching ones
+    if (documentId && payload.documentId && payload.documentId !== documentId) return;
+
+    const elements = payload.scene.elements ?? [];
+    excalidrawAPIRef.current?.updateScene({ elements: elements as never[] });
+    setJsonText(JSON.stringify(payload.scene, null, 2));
+  }, [lastMessage, documentId]);
+
+  // Theme detection
+  const theme = useMemo<'light' | 'dark'>(() => {
+    if (typeof document === 'undefined') return 'light';
+    return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+  }, []);
+
+  // Parse scene for SVG mode
   const scene = useMemo<ExcalidrawScene | null>(() => {
     try {
       const text = jsonText.trim();
@@ -138,7 +189,14 @@ export function ExcalidrawWidget({ sceneJson, documentId, onConfigChange }: Prop
     try { return renderSceneSvg(scene); } catch { return null; }
   }, [scene]);
 
-  // Fetch KB excalidraw documents
+  // Initial data for Excalidraw editor
+  const initialData = useMemo(() => {
+    if (!scene) return undefined;
+    return { elements: scene.elements as unknown as readonly Record<string, unknown>[] };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- only on mount
+
+  // ── KB operations ──────────────────────────────────────────────────
+
   const loadKbDocs = useCallback(async () => {
     try {
       const resp = await fetch('/api/v1/brain/documents?format=excalidraw');
@@ -157,10 +215,16 @@ export function ExcalidrawWidget({ sceneJson, documentId, onConfigChange }: Prop
     try {
       const resp = await fetch(`/api/v1/brain/documents/${docId}`);
       if (!resp.ok) throw new Error('Failed to load document');
-      const doc = await resp.json() as { document: KbDocument };
-      onConfigChange?.({ excalidrawDocumentId: doc.document.id });
-      // Note: the actual scene JSON would need to be stored/retrieved separately
-      // For now, we just track the document reference
+      const data = await resp.json() as { document: KbDocument & { content?: string; metadata?: { excalidrawScene?: ExcalidrawScene } } };
+      onConfigChange?.({ excalidrawDocumentId: data.document.id });
+
+      // Push scene into live editor if available
+      const sceneData = data.document.metadata?.excalidrawScene;
+      if (sceneData) {
+        const elements = sceneData.elements ?? [];
+        excalidrawAPIRef.current?.updateScene({ elements: elements as never[] });
+        setJsonText(JSON.stringify(sceneData, null, 2));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Load failed');
     } finally {
@@ -169,7 +233,10 @@ export function ExcalidrawWidget({ sceneJson, documentId, onConfigChange }: Prop
   }, [onConfigChange]);
 
   const handleSaveToKb = useCallback(async () => {
-    if (!scene) return;
+    const currentScene = sceneDataRef.current
+      ? { elements: sceneDataRef.current.elements }
+      : scene;
+    if (!currentScene) return;
     setLoading(true);
     setError(null);
     try {
@@ -177,14 +244,16 @@ export function ExcalidrawWidget({ sceneJson, documentId, onConfigChange }: Prop
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          scene,
+          scene: currentScene,
           title: `Excalidraw — ${new Date().toISOString().slice(0, 16)}`,
         }),
       });
       if (!resp.ok) throw new Error('Failed to save');
       const data = await resp.json() as { document: KbDocument };
+      const sceneStr = JSON.stringify(currentScene, null, 2);
+      setJsonText(sceneStr);
       onConfigChange?.({
-        excalidrawSceneJson: jsonText,
+        excalidrawSceneJson: sceneStr,
         excalidrawDocumentId: data.document.id,
       });
       void loadKbDocs();
@@ -193,30 +262,105 @@ export function ExcalidrawWidget({ sceneJson, documentId, onConfigChange }: Prop
     } finally {
       setLoading(false);
     }
-  }, [scene, jsonText, onConfigChange, loadKbDocs]);
+  }, [scene, onConfigChange, loadKbDocs]);
+
+  // ── Draw mode onChange (debounced) ─────────────────────────────────
+
+  const handleEditorChange = useCallback(
+    (elements: readonly Record<string, unknown>[], appState: Record<string, unknown>) => {
+      sceneDataRef.current = { elements, appState };
+
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = setTimeout(() => {
+        const sceneStr = JSON.stringify({ elements }, null, 2);
+        setJsonText(sceneStr);
+        onConfigChange?.({ excalidrawSceneJson: sceneStr, excalidrawDocumentId: documentId });
+      }, 500);
+    },
+    [documentId, onConfigChange]
+  );
+
+  // Auto-sync to KB (5s debounce)
+  useEffect(() => {
+    if (!autoSync || !sceneDataRef.current) return;
+
+    if (autoSyncTimerRef.current) clearTimeout(autoSyncTimerRef.current);
+    autoSyncTimerRef.current = setTimeout(() => {
+      void handleSaveToKb();
+    }, 5000);
+
+    return () => {
+      if (autoSyncTimerRef.current) clearTimeout(autoSyncTimerRef.current);
+    };
+  }, [autoSync, jsonText, handleSaveToKb]);
+
+  // Cleanup timers
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      if (autoSyncTimerRef.current) clearTimeout(autoSyncTimerRef.current);
+    };
+  }, []);
 
   const handleJsonChange = useCallback((val: string) => {
     setJsonText(val);
     onConfigChange?.({ excalidrawSceneJson: val, excalidrawDocumentId: documentId });
   }, [documentId, onConfigChange]);
 
+  // Sync JSON edits into Draw mode when switching
+  const handleModeSwitch = useCallback((mode: ViewMode) => {
+    if (viewMode === 'json' && mode === 'draw') {
+      // Push JSON textarea edits into the live editor
+      try {
+        const parsed = JSON.parse(jsonText) as ExcalidrawScene;
+        const elements = parsed.elements ?? [];
+        excalidrawAPIRef.current?.updateScene({ elements: elements as never[] });
+      } catch { /* invalid JSON, keep editor as-is */ }
+    }
+    setViewMode(mode);
+  }, [viewMode, jsonText]);
+
+  const handleExcalidrawAPI = useCallback((api: ExcalidrawImperativeAPI) => {
+    excalidrawAPIRef.current = api;
+  }, []);
+
+  // ── Render ─────────────────────────────────────────────────────────
+
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
       <div className="flex items-center gap-1 px-2 py-1 border-b text-xs">
-        <button
-          onClick={() => setViewMode(viewMode === 'svg' ? 'json' : 'svg')}
-          className="px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-foreground"
-        >
-          {viewMode === 'svg' ? 'JSON' : 'SVG'}
-        </button>
+        <div className="flex rounded overflow-hidden border mr-1">
+          {(['draw', 'json', 'svg'] as const).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => handleModeSwitch(mode)}
+              className={`px-2 py-0.5 text-xs capitalize ${
+                viewMode === mode
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted hover:bg-muted/80 text-foreground'
+              }`}
+            >
+              {mode === 'draw' ? 'Draw' : mode.toUpperCase()}
+            </button>
+          ))}
+        </div>
         <button
           onClick={handleSaveToKb}
-          disabled={loading || !scene}
+          disabled={loading || (!scene && !sceneDataRef.current)}
           className="px-2 py-0.5 rounded bg-primary/10 hover:bg-primary/20 text-primary disabled:opacity-50"
         >
           Save to KB
         </button>
+        <label className="flex items-center gap-1 cursor-pointer" title="Auto-sync scene to KB every 5s">
+          <input
+            type="checkbox"
+            checked={autoSync}
+            onChange={(e) => setAutoSync(e.target.checked)}
+            className="w-3 h-3"
+          />
+          <span className="text-muted-foreground">Auto</span>
+        </label>
         {kbDocs.length > 0 && (
           <select
             className="px-1 py-0.5 rounded bg-muted text-foreground text-xs max-w-[140px]"
@@ -234,19 +378,20 @@ export function ExcalidrawWidget({ sceneJson, documentId, onConfigChange }: Prop
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto">
-        {viewMode === 'svg' ? (
-          svgString ? (
-            <div
-              className="p-2"
-              dangerouslySetInnerHTML={{ __html: svgString }}
+      <div className="flex-1 overflow-hidden relative">
+        {viewMode === 'draw' ? (
+          <div
+            className="nodrag nowheel w-full h-full"
+            style={{ position: 'relative', isolation: 'isolate' }}
+          >
+            <ExcalidrawEditorLazy
+              initialData={initialData}
+              onChange={handleEditorChange}
+              theme={theme}
+              excalidrawAPI={handleExcalidrawAPI}
             />
-          ) : (
-            <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
-              {jsonText ? 'Invalid scene JSON' : 'Paste Excalidraw JSON or load from KB'}
-            </div>
-          )
-        ) : (
+          </div>
+        ) : viewMode === 'json' ? (
           <textarea
             className="w-full h-full p-2 font-mono text-xs bg-background text-foreground resize-none outline-none"
             value={jsonText}
@@ -254,6 +399,15 @@ export function ExcalidrawWidget({ sceneJson, documentId, onConfigChange }: Prop
             placeholder='{"type":"excalidraw","version":2,"elements":[...]}'
             spellCheck={false}
           />
+        ) : svgString ? (
+          <div
+            className="p-2 overflow-auto h-full"
+            dangerouslySetInnerHTML={{ __html: svgString }}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
+            {jsonText ? 'Invalid scene JSON' : 'Draw something or paste JSON to preview'}
+          </div>
         )}
       </div>
     </div>

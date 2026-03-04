@@ -314,7 +314,7 @@ describe('POST /api/v1/terminal/execute — override removal', () => {
       },
     });
     expect(res.statusCode).toBe(403);
-    expect(res.json().blocked).toBe(true);
+    expect(res.json().message).toContain('not in allowed set');
   });
 
   it('blocks disallowed command without override flag', async () => {
@@ -328,6 +328,6 @@ describe('POST /api/v1/terminal/execute — override removal', () => {
       },
     });
     expect(res.statusCode).toBe(403);
-    expect(res.json().blocked).toBe(true);
+    expect(res.json().message).toContain('not in allowed set');
   });
 });

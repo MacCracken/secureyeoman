@@ -17,6 +17,7 @@ export interface DocumentRoutesOptions {
   documentManager: DocumentManager;
   brainManager: BrainManager;
   brainStorage?: BrainStorage;
+  broadcast?: (channel: string, payload: unknown) => void;
 }
 
 const FORMAT_FROM_EXT: Record<string, DocumentFormat> = {
@@ -35,7 +36,7 @@ function detectFormat(filename: string): DocumentFormat {
 }
 
 export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoutesOptions): void {
-  const { documentManager } = opts;
+  const { documentManager, broadcast } = opts;
 
   // ── POST /api/v1/brain/documents/upload ──────────────────────────────────
   app.post(
@@ -384,6 +385,7 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
         if (doc.status === 'ready') {
           void documentManager.generateSourceGuide(personalityId ?? null);
         }
+        broadcast?.('excalidraw', { documentId: doc.id, scene, source: 'api' });
         return reply.code(201).send({ document: doc });
       } catch (err) {
         return sendError(reply, 500, toErrorMessage(err));

@@ -259,7 +259,7 @@ describe('POST /api/v1/integrations/:id/test', () => {
     const res = await app.inject({ method: 'POST', url: '/api/v1/integrations/intg-1/test' });
     expect(res.statusCode).toBe(400);
     const body = res.json();
-    expect(body.ok).toBe(false);
+    expect(body.error).toBe('Bad Request');
     expect(body.message).toContain('not running');
   });
 

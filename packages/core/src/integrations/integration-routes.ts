@@ -152,10 +152,7 @@ export function registerIntegrationRoutes(
           if (!config) {
             return sendError(reply, 404, 'Integration not found');
           }
-          return reply.code(400).send({
-            ok: false,
-            message: 'Integration is not running. Start it first or use the adapter-specific test.',
-          });
+          return sendError(reply, 400, 'Integration is not running. Start it first or use the adapter-specific test.');
         }
 
         if (!adapter.testConnection) {

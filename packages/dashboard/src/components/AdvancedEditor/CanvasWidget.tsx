@@ -125,6 +125,7 @@ function WidgetContent({ data, nodeId }: { data: CanvasWidgetData; nodeId: strin
         <ExcalidrawWidget
           sceneJson={config.excalidrawSceneJson}
           documentId={config.excalidrawDocumentId}
+          nodeId={nodeId}
           onConfigChange={(cfg) =>
             onConfigChange?.({ ...config, ...cfg })
           }

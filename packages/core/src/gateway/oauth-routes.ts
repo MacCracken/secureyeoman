@@ -432,11 +432,7 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
       const { provider: providerId } = request.params;
 
       if (!oauthService.isProviderConfigured(providerId)) {
-        return reply.code(400).send({
-          error: 'OAuth provider not configured',
-          provider: providerId,
-          configuredProviders: oauthService.getConfiguredProviders(),
-        });
+        return sendError(reply, 400, `OAuth provider not configured: ${providerId}`);
       }
 
       const provider = oauthService.getProvider(providerId);
