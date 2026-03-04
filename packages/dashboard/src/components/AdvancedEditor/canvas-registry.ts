@@ -9,7 +9,8 @@ export type CanvasWidgetType =
   | 'pipeline'
   | 'cicd-monitor'
   | 'chat'
-  | 'mission-card';
+  | 'mission-card'
+  | 'excalidraw';
 
 export interface CanvasWidgetDef {
   type: CanvasWidgetType;
@@ -109,6 +110,14 @@ export const CANVAS_WIDGET_REGISTRY: readonly CanvasWidgetDef[] = [
     description: 'CI/CD pipeline status board',
     defaultWidth: 560,
     defaultHeight: 360,
+  },
+  {
+    type: 'excalidraw',
+    label: 'Excalidraw',
+    category: 'development',
+    description: 'SVG viewer for Excalidraw diagrams with KB integration',
+    defaultWidth: 640,
+    defaultHeight: 480,
   },
 ];
 

@@ -12,6 +12,7 @@ import {
   Activity,
   LayoutDashboard,
   MessageSquare,
+  PenTool,
   X,
   Minus,
   Maximize2,
@@ -28,6 +29,7 @@ import { PipelineWidget } from './widgets/PipelineWidget';
 import { CicdMonitorWidget } from './widgets/CicdMonitorWidget';
 import { MissionCardNode } from './widgets/MissionCardNode';
 import { ChatWidget } from './widgets/ChatWidget';
+import { ExcalidrawWidget } from './widgets/ExcalidrawWidget';
 
 export interface CanvasWidgetConfig {
   worktreeId?: string;
@@ -41,6 +43,8 @@ export interface CanvasWidgetConfig {
     exitCode: number;
     timestamp: string;
   };
+  excalidrawSceneJson?: string;
+  excalidrawDocumentId?: string;
 }
 
 export interface CanvasWidgetData {
@@ -65,6 +69,7 @@ const WIDGET_ICONS: Record<CanvasWidgetType, React.ReactNode> = {
   'cicd-monitor': <Activity className="w-3.5 h-3.5" />,
   'mission-card': <LayoutDashboard className="w-3.5 h-3.5" />,
   chat: <MessageSquare className="w-3.5 h-3.5" />,
+  excalidraw: <PenTool className="w-3.5 h-3.5" />,
 };
 
 function WidgetContent({ data, nodeId }: { data: CanvasWidgetData; nodeId: string }) {
@@ -115,6 +120,16 @@ function WidgetContent({ data, nodeId }: { data: CanvasWidgetData; nodeId: strin
       return <MissionCardNode cardId={config.missionCardId} />;
     case 'chat':
       return <ChatWidget />;
+    case 'excalidraw':
+      return (
+        <ExcalidrawWidget
+          sceneJson={config.excalidrawSceneJson}
+          documentId={config.excalidrawDocumentId}
+          onConfigChange={(cfg) =>
+            onConfigChange?.({ ...config, ...cfg })
+          }
+        />
+      );
     default:
       return <div className="p-4 text-muted-foreground text-sm">Unknown widget type</div>;
   }

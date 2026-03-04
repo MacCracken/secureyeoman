@@ -65,6 +65,11 @@ vi.mock('./skills/index.js', () => ({
     author: 'YEOMAN',
     version: '2026.3.4',
   },
+  pdfAnalysisSkill: {
+    name: 'PDF Analysis',
+    author: 'YEOMAN',
+    version: '2026.3.4',
+  },
   cognitiveMemoryAnalystSkill: {
     name: 'Cognitive Memory Analyst',
     author: 'YEOMAN',
@@ -409,11 +414,11 @@ describe('MarketplaceStorage', () => {
       );
       expect(batchSelect).toBeDefined();
 
-      // Should have INSERT calls for each of the 22 skills (11 original + 7 security + 1 ATHI + 1 SRA + 1 Excalidraw + 1 Cognitive Memory Analyst)
+      // Should have INSERT calls for each of the 23 skills (11 original + 7 security + 1 ATHI + 1 SRA + 1 Excalidraw + 1 PDF Analysis + 1 Cognitive Memory Analyst)
       const insertCalls = mockQuery.mock.calls.filter(
         (c: any[]) => typeof c[0] === 'string' && c[0].includes('INSERT INTO marketplace.skills')
       );
-      expect(insertCalls).toHaveLength(22);
+      expect(insertCalls).toHaveLength(23);
     });
 
     it('uses batch SELECT for existing builtins check', async () => {

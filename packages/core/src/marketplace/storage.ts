@@ -28,6 +28,7 @@ import {
   athiScenarioGeneratorSkill,
   securityReferenceArchitectureSkill,
   excalidrawDiagramSkill,
+  pdfAnalysisSkill,
   cognitiveMemoryAnalystSkill,
 } from './skills/index.js';
 
@@ -374,6 +375,7 @@ export class MarketplaceStorage extends PgBaseStorage {
       athiScenarioGeneratorSkill,
       securityReferenceArchitectureSkill,
       excalidrawDiagramSkill,
+      pdfAnalysisSkill,
       cognitiveMemoryAnalystSkill,
     ];
 

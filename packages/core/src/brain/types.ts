@@ -143,7 +143,7 @@ export interface BrainStats {
 
 // ── Knowledge Base Documents ───────────────────────────────────
 
-export type DocumentFormat = 'pdf' | 'html' | 'md' | 'txt' | 'url';
+export type DocumentFormat = 'pdf' | 'html' | 'md' | 'txt' | 'url' | 'excalidraw';
 export type DocumentVisibility = 'private' | 'shared';
 export type DocumentStatus = 'pending' | 'processing' | 'ready' | 'error';
 

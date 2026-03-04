@@ -103,6 +103,8 @@ export const McpFeaturesSchema = z
     exposeDiagramming: z.boolean().default(false),
     /** PDF analysis tools (pdf_*). Requires global exposePdf. */
     exposePdf: z.boolean().default(false),
+    /** Advanced PDF analysis tools (pdf_extract_pages, pdf_extract_tables, etc.). Requires global exposePdfAdvanced. */
+    exposePdfAdvanced: z.boolean().default(false),
     /** Cognitive memory tools (memory_activation_stats, memory_associations). Requires global exposeCognitiveMemory. */
     exposeCognitiveMemory: z.boolean().default(false),
   })

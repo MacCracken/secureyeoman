@@ -37,6 +37,8 @@ export const WorkflowStepTypeSchema = z.enum([
   'ci_wait', // poll until job done, returns { status, conclusion, logs_url, durationMs }
   // Diagramming step types (Phase 117)
   'diagram_generation', // generate Excalidraw diagram from description, returns { scene, validationIssues, renderedSvg? }
+  // Document analysis step types (Phase 122-B)
+  'document_analysis', // analyze documents with configurable analysis type, returns { analysisType, document, outputFormat, toolChain }
 ]);
 export type WorkflowStepType = z.infer<typeof WorkflowStepTypeSchema>;
 

@@ -23,14 +23,17 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Wiring**: `CognitiveMemoryStorage` + `CognitiveMemoryManager` in `secureyeoman.ts` with lifecycle management.
 - **Tests**: 22 activation math + 16 storage mock + 6 manager + 10 MCP = 54 new tests, all passing.
 
-### Phase 117 Completion: Excalidraw Diagramming
+### Phase 117 Completion: Excalidraw Diagramming + Canvas Widget + KB Integration
 
 - **`excalidraw_from_description` MCP tool**: Generates Excalidraw scenes from natural language descriptions. Supports 12 diagram types (architecture, sequence, flowchart, network, ER, class, deployment, data flow, threat model, state machine, mind map, org chart) with style presets (minimal/detailed/technical). Heuristic layout engine with type-specific strategies (grid, vertical flow, star topology, radial, tree). Added to manifest.
 - **`excalidraw_render` MCP tool**: Server-side SVG rendering of Excalidraw scenes without external dependencies. Converts elements to SVG primitives (rect, ellipse, polygon, polyline, text, path) with arrowhead markers, dark mode support, auto-computed viewBox, and XSS-safe XML escaping. Added to manifest.
 - **SVG render engine** (`excalidraw-scene.ts`): `renderSceneToSvg()` with bounding box computation, configurable padding/dimensions, dark mode background, and arrow marker definitions. Handles all 7 element types.
 - **`diagram_generation` workflow step type**: New step type in `WorkflowStepTypeSchema`. Engine handler stores diagram config (type, description, style, format) for downstream consumption by agent steps.
 - **Workflow templates**: `architecture-diagram-pipeline` (4-step: gather → diagram → report → save, L2) and `threat-model-with-dfd` (5-step: STRIDE → DFD → combine → approval → save, L3).
-- **Tests**: 4 new tool registration tests, 11 SVG render tests (empty scene, rectangles, ellipses, diamonds, text, arrows, XML escaping, dark mode, custom dimensions, labeled shapes, deleted elements).
+- **`'excalidraw'` document format**: Added to `DocumentFormat` union. `DocumentManager.ingestExcalidraw()` extracts text labels from elements (`text`/`originalText` fields, deduped) for vector embedding searchability.
+- **Excalidraw ingest route**: `POST /api/v1/brain/documents/ingest-excalidraw` — accepts scene JSON + title, calls `ingestExcalidraw()`, generates source guide on success. Auth: `brain:write`.
+- **ExcalidrawWidget** (canvas dashboard): Lightweight SVG viewer (no `@excalidraw/excalidraw` dependency). Features: inline SVG renderer for all element types, JSON editor view toggle, Save to KB, Load from KB dropdown. Registered as `'excalidraw'` widget type in canvas registry with PenTool icon.
+- **Tests**: 4 tool registration tests, 11 SVG render tests, 3 ingest-excalidraw route tests, 5 ExcalidrawWidget component tests.
 
 ### Phase 122-A: PDF Analysis MCP Tools
 
@@ -39,6 +42,19 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **6 MCP tools** (`pdf-tools.ts`): `pdf_extract_text` (→ extract endpoint), `pdf_upload` (→ ingest-text), `pdf_analyze` (→ analyze endpoint), `pdf_search` (stateless: extract → page-level text search with context), `pdf_compare` (stateless: extract both → line-level set diff), `pdf_list` (→ GET documents?format=pdf). All feature-gated by `config.exposePdf`.
 - **Registration**: `registerPdfTools()` in `tools/index.ts`, 6 entries in `tools/manifest.ts`.
 - **Tests**: 16 PDF tool tests (6 registration, feature gate, 5 handler tests with mocked client). 5 document-routes tests (validation for extract + analyze endpoints).
+
+### Phase 122-B: Advanced PDF Analysis
+
+- **Feature flag**: `exposePdfAdvanced` added to `McpServiceConfigSchema` (default: true), `McpFeaturesSchema` (default: false), hardcoded defaults in `manager.ts` and `soul-routes.ts`.
+- **Dependency**: `pdf-lib` (pure JS, own types) added for AcroForm field reading.
+- **3 new core endpoints** (`document-routes.ts`): `POST /extract-pages` (page-level text via `\f` splitting with `pageRange` support), `POST /extract-tables` (AI-ready table extraction prompts per page), `POST /form-fields` (`pdf-lib` AcroForm field reading — text/checkbox/radio/dropdown/signature types). Auth: extract-pages + extract-tables `brain:write`, form-fields `brain:read`.
+- **5 new MCP tools** (`pdf-tools.ts`): `pdf_extract_pages` (→ extract-pages), `pdf_extract_tables` (→ extract-tables), `pdf_visual_analyze` (hybrid: extract-pages + structural analysis prompt), `pdf_summarize` (hybrid: extract-pages + hierarchical summarization prompt with page citations), `pdf_form_fields` (→ form-fields). All gated by `config.exposePdf && config.exposePdfAdvanced`.
+- **`parsePageRange()` helper**: Parses "1-5", "2,4,6" page range strings into `Set<number>`.
+- **Manifest**: 5 new entries in `tools/manifest.ts`.
+- **Marketplace skill**: "PDF Analysis" — `mcpToolsAllowed` covers all 11 pdf_* tools. Routing: fuzzy, L1 autonomy. Includes tool selection guide and workflow patterns (quick analysis, deep analysis, form processing, document comparison).
+- **`document_analysis` workflow step type**: Added to `WorkflowStepTypeSchema`. Engine handler returns `{ analysisType, document, outputFormat, toolChain }`.
+- **`pdf-intake-pipeline` workflow template**: 5-step pipeline (load → analyze → format → review → save), manual trigger, L2 autonomy.
+- **Tests**: 5 tool registration tests, 2 feature gate tests, 2 handler tests, 4 route validation tests, 7 marketplace skill tests.
 
 ### Engineering Backlog — Cleanup, Performance & Type Safety
 

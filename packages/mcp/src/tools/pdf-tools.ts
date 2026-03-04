@@ -1,7 +1,8 @@
 /**
  * PDF Analysis Tools — MCP tools for PDF text extraction, analysis, and comparison.
  *
- * Phase 122-A — PDF Analysis
+ * Phase 122-A — PDF Analysis (6 tools)
+ * Phase 122-B — Advanced PDF Analysis (5 tools)
  *
  * pdf_extract_text  — Extract text from a PDF
  * pdf_upload        — Upload PDF to knowledge base
@@ -9,6 +10,11 @@
  * pdf_search        — Search within a PDF
  * pdf_compare       — Compare two PDFs
  * pdf_list          — List PDF documents in KB
+ * pdf_extract_pages — Page-level text extraction with page range
+ * pdf_extract_tables — AI-assisted table extraction prompts
+ * pdf_visual_analyze — Text-based structural analysis
+ * pdf_summarize     — Hierarchical summarization with page citations
+ * pdf_form_fields   — AcroForm field reading
  */
 
 import { z } from 'zod';
@@ -24,6 +30,18 @@ function disabled(): { content: { type: 'text'; text: string }[]; isError: boole
       {
         type: 'text',
         text: 'PDF tools are disabled. Enable PDF Analysis in MCP config to use pdf_* tools.',
+      },
+    ],
+    isError: true,
+  };
+}
+
+function disabledAdvanced(): { content: { type: 'text'; text: string }[]; isError: boolean } {
+  return {
+    content: [
+      {
+        type: 'text',
+        text: 'Advanced PDF tools are disabled. Enable exposePdfAdvanced in MCP config to use these tools.',
       },
     ],
     isError: true,
@@ -236,6 +254,168 @@ export function registerPdfTools(
       if (status) params.status = status;
 
       const result = await client.get('/api/v1/brain/documents', params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    })
+  );
+
+  // ── Phase 122-B: Advanced PDF tools ──────────────────────────────────
+
+  // ── pdf_extract_pages ───────────────────────────────────────────────
+  server.tool(
+    'pdf_extract_pages',
+    'Extract text from a PDF page by page. Returns text, word count per page. Supports page range (e.g. "1-5", "2,4,6").',
+    {
+      pdfBase64: z.string().describe('Base64-encoded PDF file content'),
+      pageRange: z.string().optional().describe('Page range to extract (e.g. "1-5", "2,4,6"). Omit for all pages.'),
+    },
+    wrapToolHandler('pdf_extract_pages', middleware, async ({ pdfBase64, pageRange }) => {
+      if (!config.exposePdf) return disabled();
+      if (!config.exposePdfAdvanced) return disabledAdvanced();
+      const result = await client.post('/api/v1/brain/documents/extract-pages', {
+        pdfBase64,
+        pageRange,
+      });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    })
+  );
+
+  // ── pdf_extract_tables ──────────────────────────────────────────────
+  server.tool(
+    'pdf_extract_tables',
+    'Extract tables from a PDF. Returns AI-ready prompts per page for table extraction. Supports page range filtering.',
+    {
+      pdfBase64: z.string().describe('Base64-encoded PDF file content'),
+      pageRange: z.string().optional().describe('Page range to extract tables from (e.g. "1-3")'),
+      outputFormat: z.enum(['markdown', 'csv', 'json']).optional().describe('Table output format (default: markdown)'),
+    },
+    wrapToolHandler('pdf_extract_tables', middleware, async ({ pdfBase64, pageRange, outputFormat }) => {
+      if (!config.exposePdf) return disabled();
+      if (!config.exposePdfAdvanced) return disabledAdvanced();
+      const result = await client.post('/api/v1/brain/documents/extract-tables', {
+        pdfBase64,
+        pageRange,
+        outputFormat,
+      });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    })
+  );
+
+  // ── pdf_visual_analyze ──────────────────────────────────────────────
+  server.tool(
+    'pdf_visual_analyze',
+    'Analyze the structure and layout of a PDF: headers, sections, lists, figures, and reading order. Returns a structural analysis prompt for the LLM.',
+    {
+      pdfBase64: z.string().describe('Base64-encoded PDF file content'),
+      pageRange: z.string().optional().describe('Page range to analyze (e.g. "1-5")'),
+    },
+    wrapToolHandler('pdf_visual_analyze', middleware, async ({ pdfBase64, pageRange }) => {
+      if (!config.exposePdf) return disabled();
+      if (!config.exposePdfAdvanced) return disabledAdvanced();
+
+      const extracted = await client.post('/api/v1/brain/documents/extract-pages', {
+        pdfBase64,
+        pageRange,
+      }) as { pages: { pageNumber: number; text: string; wordCount: number }[]; totalPages: number };
+
+      const pageAnalysis = extracted.pages.map((p) => {
+        return `--- Page ${p.pageNumber} (${p.wordCount} words) ---\n${p.text}`;
+      }).join('\n\n');
+
+      const analysisPrompt = [
+        'Analyze the structural layout of this document. For each page identify:',
+        '1. Headers and section titles (with hierarchy level H1-H4)',
+        '2. Body text paragraphs',
+        '3. Lists (bulleted, numbered)',
+        '4. Tables (describe dimensions and headers)',
+        '5. Figures, images, or diagrams (described by surrounding context)',
+        '6. Page numbers, headers, footers',
+        '7. Overall reading order and document flow',
+        '',
+        `Document (${extracted.totalPages} pages):`,
+        '',
+        pageAnalysis,
+      ].join('\n');
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            analysisPrompt,
+            totalPages: extracted.totalPages,
+            analyzedPages: extracted.pages.length,
+          }, null, 2),
+        }],
+      };
+    })
+  );
+
+  // ── pdf_summarize ────────────────────────────────────────────────────
+  server.tool(
+    'pdf_summarize',
+    'Generate a hierarchical summary of a PDF with page citations. Returns a summarization prompt for the LLM.',
+    {
+      pdfBase64: z.string().describe('Base64-encoded PDF file content'),
+      pageRange: z.string().optional().describe('Page range to summarize (e.g. "1-10")'),
+      style: z.enum(['executive', 'detailed', 'bullet_points']).optional()
+        .describe('Summary style (default: executive)'),
+    },
+    wrapToolHandler('pdf_summarize', middleware, async ({ pdfBase64, pageRange, style }) => {
+      if (!config.exposePdf) return disabled();
+      if (!config.exposePdfAdvanced) return disabledAdvanced();
+
+      const extracted = await client.post('/api/v1/brain/documents/extract-pages', {
+        pdfBase64,
+        pageRange,
+      }) as { pages: { pageNumber: number; text: string; wordCount: number }[]; totalPages: number };
+
+      const summaryStyle = style ?? 'executive';
+      const styleInstructions: Record<string, string> = {
+        executive: 'Write a concise executive summary (3-5 paragraphs). Focus on key conclusions, decisions needed, and impact.',
+        detailed: 'Write a detailed summary covering all main points, arguments, and evidence. Organize by topic or section.',
+        bullet_points: 'Summarize as a structured bullet-point list. Group related points under section headers.',
+      };
+
+      const pageContent = extracted.pages.map((p) => {
+        return `[Page ${p.pageNumber}]\n${p.text}`;
+      }).join('\n\n');
+
+      const summaryPrompt = [
+        styleInstructions[summaryStyle] ?? styleInstructions['executive']!,
+        '',
+        'IMPORTANT: Cite page numbers for each claim or finding using [p.N] format.',
+        '',
+        `Document (${extracted.totalPages} pages, ${extracted.pages.length} analyzed):`,
+        '',
+        pageContent,
+      ].join('\n');
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            summaryPrompt,
+            style: summaryStyle,
+            totalPages: extracted.totalPages,
+            analyzedPages: extracted.pages.length,
+          }, null, 2),
+        }],
+      };
+    })
+  );
+
+  // ── pdf_form_fields ──────────────────────────────────────────────────
+  server.tool(
+    'pdf_form_fields',
+    'Read AcroForm fields from a PDF. Returns field names, types (text, checkbox, radio, dropdown, signature), and read-only status.',
+    {
+      pdfBase64: z.string().describe('Base64-encoded PDF file content'),
+    },
+    wrapToolHandler('pdf_form_fields', middleware, async ({ pdfBase64 }) => {
+      if (!config.exposePdf) return disabled();
+      if (!config.exposePdfAdvanced) return disabledAdvanced();
+      const result = await client.post('/api/v1/brain/documents/form-fields', {
+        pdfBase64,
+      });
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     })
   );

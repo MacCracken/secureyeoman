@@ -70,13 +70,13 @@ describe('registerPdfTools', () => {
   });
 
   function register(configOverrides?: Partial<McpServiceConfig>) {
-    const config = { exposePdf: true, ...configOverrides } as McpServiceConfig;
+    const config = { exposePdf: true, exposePdfAdvanced: true, ...configOverrides } as McpServiceConfig;
     registerPdfTools(mockServer as never, mockClient as never, config, mockMiddleware as never);
   }
 
-  it('registers exactly 6 tools', () => {
+  it('registers exactly 11 tools', () => {
     register();
-    expect(mockServer.tool).toHaveBeenCalledTimes(6);
+    expect(mockServer.tool).toHaveBeenCalledTimes(11);
   });
 
   it('registers pdf_extract_text', () => {
@@ -207,5 +207,83 @@ describe('registerPdfTools', () => {
     const tool = mockServer._tools.find((t) => t.name === 'pdf_list')!;
     await tool.handler({});
     expect(mockClient.get).toHaveBeenCalledWith('/api/v1/brain/documents', { format: 'pdf' });
+  });
+
+  // ── Phase 122-B: Advanced PDF tools ─────────────────────────────────
+
+  it('registers pdf_extract_pages', () => {
+    register();
+    const tool = mockServer._tools.find((t) => t.name === 'pdf_extract_pages');
+    expect(tool).toBeDefined();
+    expect(tool!.description).toContain('page');
+  });
+
+  it('registers pdf_extract_tables', () => {
+    register();
+    const tool = mockServer._tools.find((t) => t.name === 'pdf_extract_tables');
+    expect(tool).toBeDefined();
+    expect(tool!.description).toContain('table');
+  });
+
+  it('registers pdf_visual_analyze', () => {
+    register();
+    const tool = mockServer._tools.find((t) => t.name === 'pdf_visual_analyze');
+    expect(tool).toBeDefined();
+    expect(tool!.description).toContain('structure');
+  });
+
+  it('registers pdf_summarize', () => {
+    register();
+    const tool = mockServer._tools.find((t) => t.name === 'pdf_summarize');
+    expect(tool).toBeDefined();
+    expect(tool!.description).toContain('summary');
+  });
+
+  it('registers pdf_form_fields', () => {
+    register();
+    const tool = mockServer._tools.find((t) => t.name === 'pdf_form_fields');
+    expect(tool).toBeDefined();
+    expect(tool!.description).toContain('AcroForm');
+  });
+
+  it('returns disabled error when exposePdfAdvanced is false', async () => {
+    register({ exposePdfAdvanced: false });
+    const tool = mockServer._tools.find((t) => t.name === 'pdf_extract_pages')!;
+    const result = await tool.handler({ pdfBase64: 'dGVzdA==' });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toContain('Advanced PDF tools are disabled');
+  });
+
+  it('pdf_extract_pages calls core extract-pages endpoint', async () => {
+    mockClient.post.mockResolvedValueOnce({
+      pages: [{ pageNumber: 1, text: 'Page 1 text', wordCount: 3 }],
+      totalPages: 1,
+      returnedPages: 1,
+    });
+    register();
+    const tool = mockServer._tools.find((t) => t.name === 'pdf_extract_pages')!;
+    const result = await tool.handler({ pdfBase64: 'dGVzdA==' });
+    expect(mockClient.post).toHaveBeenCalledWith('/api/v1/brain/documents/extract-pages', {
+      pdfBase64: 'dGVzdA==',
+      pageRange: undefined,
+    });
+    const data = JSON.parse(result.content[0]!.text);
+    expect(data.totalPages).toBe(1);
+  });
+
+  it('pdf_form_fields calls core form-fields endpoint', async () => {
+    mockClient.post.mockResolvedValueOnce({
+      fields: [{ name: 'name', type: 'text', isReadOnly: false }],
+      totalFields: 1,
+      hasForm: true,
+    });
+    register();
+    const tool = mockServer._tools.find((t) => t.name === 'pdf_form_fields')!;
+    const result = await tool.handler({ pdfBase64: 'dGVzdA==' });
+    expect(mockClient.post).toHaveBeenCalledWith('/api/v1/brain/documents/form-fields', {
+      pdfBase64: 'dGVzdA==',
+    });
+    const data = JSON.parse(result.content[0]!.text);
+    expect(data.hasForm).toBe(true);
   });
 });

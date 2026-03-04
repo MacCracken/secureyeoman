@@ -186,6 +186,8 @@ export const McpServiceConfigSchema = z.object({
   exposePdf: z.boolean().default(true),
   /** Enable cognitive memory tools (memory_activation_stats, memory_associations). Off by default. */
   exposeCognitiveMemory: z.boolean().default(false),
+  /** Enable advanced PDF analysis tools (pdf_extract_pages, pdf_extract_tables, pdf_visual_analyze, pdf_summarize, pdf_form_fields). On by default. */
+  exposePdfAdvanced: z.boolean().default(true),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

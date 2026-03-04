@@ -867,5 +867,32 @@ export function getToolManifest(): ToolManifestEntry[] {
       description:
         'List PDF documents in the knowledge base',
     },
+
+    // Advanced PDF Analysis tools (Phase 122-B)
+    {
+      name: 'pdf_extract_pages',
+      description:
+        'Extract text from a PDF page by page with optional page range',
+    },
+    {
+      name: 'pdf_extract_tables',
+      description:
+        'Extract tables from a PDF with AI-ready prompts per page',
+    },
+    {
+      name: 'pdf_visual_analyze',
+      description:
+        'Analyze the structural layout of a PDF (headers, sections, tables, figures)',
+    },
+    {
+      name: 'pdf_summarize',
+      description:
+        'Generate a hierarchical summary of a PDF with page citations',
+    },
+    {
+      name: 'pdf_form_fields',
+      description:
+        'Read AcroForm fields from a PDF (text, checkbox, radio, dropdown, signature)',
+    },
   ];
 }

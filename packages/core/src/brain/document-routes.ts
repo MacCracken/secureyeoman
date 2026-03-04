@@ -352,6 +352,45 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
     }
   );
 
+  // ── Phase 117: Excalidraw ingest endpoint ─────────────────────────────
+
+  // POST /api/v1/brain/documents/ingest-excalidraw
+  app.post(
+    '/api/v1/brain/documents/ingest-excalidraw',
+    async (
+      request: FastifyRequest<{
+        Body: {
+          scene: Record<string, unknown>;
+          title: string;
+          personalityId?: string;
+          visibility?: string;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const { scene, title, personalityId, visibility } = request.body ?? {};
+
+      if (!scene || typeof scene !== 'object') {
+        return sendError(reply, 400, 'scene (object) is required');
+      }
+      if (!title || typeof title !== 'string') {
+        return sendError(reply, 400, 'title (string) is required');
+      }
+
+      const vis: DocumentVisibility = visibility === 'shared' ? 'shared' : 'private';
+
+      try {
+        const doc = await documentManager.ingestExcalidraw(scene, title, personalityId ?? null, vis);
+        if (doc.status === 'ready') {
+          void documentManager.generateSourceGuide(personalityId ?? null);
+        }
+        return reply.code(201).send({ document: doc });
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
+    }
+  );
+
   // ── Phase 122-A: PDF Analysis endpoints ───────────────────────────────
 
   // POST /api/v1/brain/documents/extract — stateless text extraction
@@ -454,4 +493,167 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
       }
     }
   );
+
+  // ── Phase 122-B: Advanced PDF Analysis endpoints ─────────────────────
+
+  // POST /api/v1/brain/documents/extract-pages — page-level text extraction
+  app.post(
+    '/api/v1/brain/documents/extract-pages',
+    async (
+      request: FastifyRequest<{
+        Body: {
+          pdfBase64: string;
+          pageRange?: string;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { pdfBase64, pageRange } = request.body ?? {};
+        if (!pdfBase64 || typeof pdfBase64 !== 'string') {
+          return sendError(reply, 400, 'pdfBase64 (string) is required');
+        }
+
+        const buf = Buffer.from(pdfBase64, 'base64');
+        const pdfParse = await import('pdf-parse');
+        const parsed = await pdfParse.default(buf);
+
+        const pageTexts = parsed.text.split(/\f/);
+        const totalPages = pageTexts.length;
+        const targetPages = pageRange ? parsePageRange(pageRange, totalPages) : null;
+
+        const pages = pageTexts
+          .map((text: string, i: number) => ({
+            pageNumber: i + 1,
+            text: text.trim(),
+            wordCount: text.split(/\s+/).filter((w: string) => w.length > 0).length,
+          }))
+          .filter((_: unknown, i: number) => !targetPages || targetPages.has(i + 1));
+
+        return { pages, totalPages, returnedPages: pages.length };
+      } catch (err) {
+        return sendError(reply, 422, `PDF page extraction failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // POST /api/v1/brain/documents/extract-tables — AI-assisted table extraction prompts
+  app.post(
+    '/api/v1/brain/documents/extract-tables',
+    async (
+      request: FastifyRequest<{
+        Body: {
+          pdfBase64: string;
+          pageRange?: string;
+          outputFormat?: string;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { pdfBase64, pageRange, outputFormat } = request.body ?? {};
+        if (!pdfBase64 || typeof pdfBase64 !== 'string') {
+          return sendError(reply, 400, 'pdfBase64 (string) is required');
+        }
+
+        const buf = Buffer.from(pdfBase64, 'base64');
+        const pdfParse = await import('pdf-parse');
+        const parsed = await pdfParse.default(buf);
+
+        const pageTexts = parsed.text.split(/\f/);
+        const totalPages = pageTexts.length;
+        const targetPages = pageRange ? parsePageRange(pageRange, totalPages) : null;
+
+        const format = outputFormat ?? 'markdown';
+        const pages = pageTexts
+          .map((text: string, i: number) => {
+            const pageNum = i + 1;
+            if (targetPages && !targetPages.has(pageNum)) return null;
+            return {
+              pageNumber: pageNum,
+              prompt: `Extract all tables from the following text. Output each table in ${format} format. Preserve headers, alignment, and cell values.\n\nPage ${pageNum} text:\n${text.trim()}`,
+              rawText: text.trim(),
+            };
+          })
+          .filter(Boolean);
+
+        return { pages, outputFormat: format, totalPages };
+      } catch (err) {
+        return sendError(reply, 422, `PDF table extraction failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+
+  // POST /api/v1/brain/documents/form-fields — AcroForm field reading via pdf-lib
+  app.post(
+    '/api/v1/brain/documents/form-fields',
+    async (
+      request: FastifyRequest<{
+        Body: { pdfBase64: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { pdfBase64 } = request.body ?? {};
+        if (!pdfBase64 || typeof pdfBase64 !== 'string') {
+          return sendError(reply, 400, 'pdfBase64 (string) is required');
+        }
+
+        const buf = Buffer.from(pdfBase64, 'base64');
+        const { PDFDocument } = await import('pdf-lib');
+        const pdfDoc = await PDFDocument.load(buf, { ignoreEncryption: true });
+
+        let hasForm = false;
+        const fields: { name: string; type: string; isReadOnly: boolean }[] = [];
+
+        try {
+          const form = pdfDoc.getForm();
+          const formFields = form.getFields();
+          hasForm = formFields.length > 0;
+
+          for (const field of formFields) {
+            const name = field.getName();
+            const isReadOnly = field.isReadOnly();
+            let type = 'unknown';
+
+            const ctor = field.constructor.name;
+            if (ctor === 'PDFTextField') type = 'text';
+            else if (ctor === 'PDFCheckBox') type = 'checkbox';
+            else if (ctor === 'PDFRadioGroup') type = 'radio';
+            else if (ctor === 'PDFDropdown') type = 'dropdown';
+            else if (ctor === 'PDFSignature') type = 'signature';
+            else if (ctor === 'PDFButton') type = 'button';
+            else if (ctor === 'PDFOptionList') type = 'option_list';
+
+            fields.push({ name, type, isReadOnly });
+          }
+        } catch {
+          // PDF has no form — hasForm stays false
+        }
+
+        return { fields, totalFields: fields.length, hasForm };
+      } catch (err) {
+        return sendError(reply, 422, `PDF form field extraction failed: ${toErrorMessage(err)}`);
+      }
+    }
+  );
+}
+
+// ── Helpers ─────────────────────────────────────────────────────
+
+function parsePageRange(range: string, totalPages: number): Set<number> {
+  const pages = new Set<number>();
+  for (const part of range.split(',')) {
+    const trimmed = part.trim();
+    if (trimmed.includes('-')) {
+      const [startStr, endStr] = trimmed.split('-');
+      const start = Math.max(1, parseInt(startStr!, 10) || 1);
+      const end = Math.min(totalPages, parseInt(endStr!, 10) || totalPages);
+      for (let i = start; i <= end; i++) pages.add(i);
+    } else {
+      const p = parseInt(trimmed, 10);
+      if (p >= 1 && p <= totalPages) pages.add(p);
+    }
+  }
+  return pages;
 }

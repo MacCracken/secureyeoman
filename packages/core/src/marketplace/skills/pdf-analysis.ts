@@ -1,0 +1,106 @@
+/**
+ * PDF Analysis Skill (Phase 122-B)
+ *
+ * Guides the AI through comprehensive PDF analysis workflows:
+ * extract → analyze → summarize → act.
+ */
+
+import type { MarketplaceSkill } from '@secureyeoman/shared';
+
+export const pdfAnalysisSkill: Partial<MarketplaceSkill> = {
+  name: 'PDF Analysis',
+  description:
+    'Comprehensive PDF document analysis. Extracts text, tables, and form fields. Summarizes content with page citations. Compares document versions. Searches within PDFs. Uploads to knowledge base for retrieval.',
+  category: 'productivity',
+  author: 'YEOMAN',
+  authorInfo: {
+    name: 'YEOMAN',
+    github: 'MacCracken',
+    website: 'https://secureyeoman.ai',
+  },
+  version: '2026.3.4',
+  instructions: [
+    'Role: You are a document analysis specialist. You extract, analyze, and summarize PDF content efficiently, choosing the right tool for each task.',
+    '',
+    '## Tool Selection Guide',
+    '',
+    '| Task | Tool | Notes |',
+    '|------|------|-------|',
+    '| Quick text extraction | `pdf_extract_text` | Full document text in one call |',
+    '| Page-level extraction | `pdf_extract_pages` | Per-page text with word counts, supports page ranges |',
+    '| AI analysis | `pdf_analyze` | Summary, key findings, entities, risks, action items |',
+    '| Table extraction | `pdf_extract_tables` | Returns AI-ready prompts for table parsing |',
+    '| Structural analysis | `pdf_visual_analyze` | Headers, sections, layout, reading order |',
+    '| Summarization | `pdf_summarize` | Executive, detailed, or bullet-point with page citations |',
+    '| Form fields | `pdf_form_fields` | AcroForm field names, types, read-only status |',
+    '| Text search | `pdf_search` | Find text matches with page context |',
+    '| Version comparison | `pdf_compare` | Line-level diff between two PDFs |',
+    '| Save to KB | `pdf_upload` | Index PDF for retrieval |',
+    '| List PDFs | `pdf_list` | Show all PDFs in knowledge base |',
+    '',
+    '## Workflow Patterns',
+    '',
+    '### Quick Analysis',
+    '1. `pdf_extract_text` — get full text',
+    '2. `pdf_analyze` with appropriate type — get analysis',
+    '',
+    '### Deep Analysis',
+    '1. `pdf_extract_pages` — understand document structure page by page',
+    '2. `pdf_visual_analyze` — identify layout patterns',
+    '3. `pdf_summarize` — generate summary with citations',
+    '4. `pdf_extract_tables` — extract structured data if tables are present',
+    '',
+    '### Form Processing',
+    '1. `pdf_form_fields` — discover all form fields',
+    '2. `pdf_extract_text` — read filled values',
+    '',
+    '### Document Comparison',
+    '1. `pdf_compare` — get diff between versions',
+    '2. `pdf_summarize` each version — understand changes in context',
+    '',
+    '## Best Practices',
+    '',
+    '- For large PDFs, use `pageRange` to focus on relevant sections.',
+    '- Always cite page numbers when referencing specific content.',
+    '- Use `pdf_upload` to save important documents to the knowledge base for future retrieval.',
+    '- When extracting tables, specify `outputFormat` (markdown, csv, json) based on the user\'s needs.',
+  ].join('\n'),
+  tags: [
+    'pdf',
+    'document',
+    'analysis',
+    'extraction',
+    'summarization',
+    'tables',
+    'forms',
+    'comparison',
+  ],
+  triggerPatterns: [
+    '\\b(pdf|document).{0,20}(analy[sz]|extract|summar|table|form)\\b',
+    '(read|parse|process|scan|review).{0,20}\\bpdf\\b',
+    '\\bpdf\\b.{0,20}(text|content|page|field)',
+    '(compare|diff).{0,20}(pdf|document)',
+    '\\b(extract|pull).{0,20}(table|form.?field|data).{0,20}(from|in).{0,20}(pdf|document)',
+  ],
+  useWhen:
+    'User asks to analyze, extract, summarize, search, compare PDFs or work with PDF form fields',
+  doNotUseWhen:
+    'User wants to create or edit PDFs, convert PDFs to other formats, or work with image-only scanned PDFs (OCR)',
+  successCriteria:
+    'PDF content extracted accurately, analysis is structured and actionable, page citations included',
+  routing: 'fuzzy',
+  autonomyLevel: 'L1',
+  mcpToolsAllowed: [
+    'pdf_extract_text',
+    'pdf_upload',
+    'pdf_analyze',
+    'pdf_search',
+    'pdf_compare',
+    'pdf_list',
+    'pdf_extract_pages',
+    'pdf_extract_tables',
+    'pdf_visual_analyze',
+    'pdf_summarize',
+    'pdf_form_fields',
+  ],
+};

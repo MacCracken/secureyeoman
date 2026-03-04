@@ -63,6 +63,19 @@ function swarmStep(
   } as unknown as WorkflowStep;
 }
 
+function documentAnalysisStep(
+  base: StepBase,
+  analysisType: string,
+  documentTemplate: string,
+  outputFormat = 'markdown'
+): WorkflowStep {
+  return {
+    type: 'document_analysis',
+    config: { analysisType, documentTemplate, outputFormat },
+    ...base,
+  } as unknown as WorkflowStep;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
@@ -1174,5 +1187,80 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
     version: 1,
     createdBy: 'system',
     autonomyLevel: 'L3' as const,
+  },
+
+  // ── PDF Intake Pipeline (Phase 122-B) ──────────────────────────────
+  {
+    name: 'pdf-intake-pipeline',
+    description:
+      'PDF document intake: loads a PDF, runs document analysis, formats a report, sends to agent review, and saves results to the knowledge base.',
+    steps: [
+      resourceStep(
+        {
+          id: 'load-pdf',
+          name: 'Load PDF Document',
+          description: 'Load PDF content from the provided source',
+          dependsOn: [],
+          onError: 'fail',
+        },
+        'document',
+        '{"pdfBase64":"{{input.pdfBase64}}","filename":"{{input.filename}}"}'
+      ),
+      documentAnalysisStep(
+        {
+          id: 'analyze-pdf',
+          name: 'Analyze PDF',
+          description: 'Run document analysis on the loaded PDF',
+          dependsOn: ['load-pdf'],
+          onError: 'fail',
+        },
+        '{{input.analysisType}}',
+        '{{steps.load-pdf.output}}',
+        'markdown'
+      ),
+      transformStep(
+        {
+          id: 'format-report',
+          name: 'Format Analysis Report',
+          description: 'Transform the analysis output into a structured report',
+          dependsOn: ['analyze-pdf'],
+          onError: 'fail',
+        },
+        '# PDF Analysis Report — {{input.filename}}\n\n## Analysis Type: {{steps.analyze-pdf.output.analysisType}}\n\n{{steps.analyze-pdf.output.document}}\n\n## Tool Chain\n{{steps.analyze-pdf.output.toolChain}}\n'
+      ),
+      agentStep(
+        {
+          id: 'review-report',
+          name: 'Agent Review',
+          description: 'Review the formatted report for completeness and accuracy',
+          dependsOn: ['format-report'],
+          onError: 'continue',
+        },
+        'analyst',
+        'Review the following PDF analysis report for completeness, accuracy, and actionable insights. Suggest improvements if needed.\n\n{{steps.format-report.output}}'
+      ),
+      resourceStep(
+        {
+          id: 'save-to-kb',
+          name: 'Save to Knowledge Base',
+          description: 'Save the analysis report to the knowledge base',
+          dependsOn: ['review-report'],
+          onError: 'continue',
+        },
+        'knowledge',
+        '{"title":"PDF Analysis — {{input.filename}}","content":"{{steps.format-report.output}}","tags":["pdf","analysis","document"]}'
+      ),
+    ],
+    edges: [
+      { source: 'load-pdf', target: 'analyze-pdf' },
+      { source: 'analyze-pdf', target: 'format-report' },
+      { source: 'format-report', target: 'review-report' },
+      { source: 'review-report', target: 'save-to-kb' },
+    ],
+    triggers: [{ type: 'manual', config: {} }],
+    isEnabled: true,
+    version: 1,
+    createdBy: 'system',
+    autonomyLevel: 'L2' as const,
   },
 ];

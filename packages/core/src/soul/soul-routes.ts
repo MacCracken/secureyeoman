@@ -895,6 +895,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               exposeSra: false,
               exposeDiagramming: false,
               exposePdf: false,
+              exposePdfAdvanced: false,
               exposeCognitiveMemory: false,
             },
             proactiveConfig: {

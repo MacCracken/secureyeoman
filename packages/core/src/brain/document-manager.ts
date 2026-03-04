@@ -232,6 +232,43 @@ export class DocumentManager {
   }
 
   /**
+   * Ingest an Excalidraw scene into the knowledge base.
+   * Extracts text labels from elements for vector embedding searchability.
+   */
+  async ingestExcalidraw(
+    scene: Record<string, unknown>,
+    title: string,
+    personalityId: string | null,
+    visibility: DocumentVisibility = 'private'
+  ): Promise<KbDocument> {
+    const doc = await this.storage.createDocument({
+      personalityId,
+      title,
+      format: 'excalidraw',
+      visibility,
+      status: 'processing',
+    });
+
+    try {
+      const labels = extractExcalidrawLabels(scene);
+      const searchableText = `Excalidraw Diagram: ${title}\n\n${labels.join('\n')}`;
+      await this.chunkAndLearn(doc.id, title, searchableText, personalityId);
+      const chunks = chunk(searchableText);
+      return await this.storage.updateDocument(doc.id, {
+        status: 'ready',
+        chunkCount: Math.max(1, chunks.length),
+        errorMessage: null,
+      });
+    } catch (err) {
+      this.logger.warn('Excalidraw ingest failed', { docId: doc.id, error: String(err) });
+      return await this.storage.updateDocument(doc.id, {
+        status: 'error',
+        errorMessage: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  /**
    * Delete a document and all associated knowledge chunks.
    */
   async deleteDocument(id: string): Promise<void> {
@@ -381,6 +418,12 @@ export class DocumentManager {
         return parsed.text;
       }
 
+      case 'excalidraw': {
+        const scene = JSON.parse(buf.toString('utf-8')) as Record<string, unknown>;
+        const labels = extractExcalidrawLabels(scene);
+        return labels.join('\n');
+      }
+
       default:
         return buf.toString('utf-8');
     }
@@ -431,6 +474,18 @@ export class DocumentManager {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+function extractExcalidrawLabels(scene: Record<string, unknown>): string[] {
+  const elements = Array.isArray(scene.elements) ? scene.elements : [];
+  const labels = new Set<string>();
+  for (const el of elements) {
+    if (typeof el !== 'object' || el === null) continue;
+    const elem = el as Record<string, unknown>;
+    if (typeof elem.text === 'string' && elem.text.trim()) labels.add(elem.text.trim());
+    if (typeof elem.originalText === 'string' && elem.originalText.trim()) labels.add(elem.originalText.trim());
+  }
+  return Array.from(labels);
+}
 
 function stripHtmlTags(html: string): string {
   return html

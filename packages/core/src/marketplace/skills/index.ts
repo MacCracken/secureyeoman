@@ -24,4 +24,5 @@ export { securityLogAnalysisSkill } from './security-log-analysis.js';
 export { athiScenarioGeneratorSkill } from './athi-scenario-generator.js';
 export { securityReferenceArchitectureSkill } from './security-reference-architecture.js';
 export { excalidrawDiagramSkill } from './excalidraw-diagram.js';
+export { pdfAnalysisSkill } from './pdf-analysis.js';
 export { cognitiveMemoryAnalystSkill } from './cognitive-memory-analyst.js';

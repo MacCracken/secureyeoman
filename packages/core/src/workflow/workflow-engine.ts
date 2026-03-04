@@ -1019,6 +1019,24 @@ export class WorkflowEngine {
         };
       }
 
+      case 'document_analysis': {
+        const analysisType = String(cfg.analysisType ?? 'summary');
+        const docTemplate = String(cfg.documentTemplate ?? '');
+        const document = this.resolveTemplate(docTemplate, ctx);
+        const outputFormat = String(cfg.outputFormat ?? 'markdown');
+
+        this.logger.info(
+          'document_analysis: delegating to PDF analysis tools'
+        );
+
+        return {
+          analysisType,
+          document,
+          outputFormat,
+          toolChain: ['pdf_extract_text', 'pdf_extract_pages', 'pdf_analyze', 'pdf_summarize'],
+        };
+      }
+
       default:
         throw new Error(`Unknown step type: ${step.type}`);
     }

@@ -260,6 +260,18 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/brain/documents/analyze': {
     POST: { resource: 'brain', action: 'write' },
   },
+  '/api/v1/brain/documents/ingest-excalidraw': {
+    POST: { resource: 'brain', action: 'write' },
+  },
+  '/api/v1/brain/documents/extract-pages': {
+    POST: { resource: 'brain', action: 'write' },
+  },
+  '/api/v1/brain/documents/extract-tables': {
+    POST: { resource: 'brain', action: 'write' },
+  },
+  '/api/v1/brain/documents/form-fields': {
+    POST: { resource: 'brain', action: 'read' },
+  },
   // Cognitive Memory routes (Phase 124)
   '/api/v1/brain/cognitive-stats': {
     GET: { resource: 'brain', action: 'read' },

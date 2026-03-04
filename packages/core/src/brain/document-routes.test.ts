@@ -42,11 +42,20 @@ const HEALTH_STATS = {
 
 // ── Mock factories ────────────────────────────────────────────────
 
+const EXCALIDRAW_DOC: KbDocument = {
+  ...DOC,
+  id: 'doc-excalidraw-1',
+  title: 'Architecture Diagram',
+  format: 'excalidraw',
+  filename: null,
+};
+
 function makeMockDocManager(overrides?: Partial<DocumentManager>): DocumentManager {
   return {
     ingestBuffer: vi.fn().mockResolvedValue(DOC),
     ingestUrl: vi.fn().mockResolvedValue(URL_DOC),
     ingestText: vi.fn().mockResolvedValue(DOC),
+    ingestExcalidraw: vi.fn().mockResolvedValue(EXCALIDRAW_DOC),
     ingestGithubWiki: vi.fn().mockResolvedValue([DOC]),
     listDocuments: vi.fn().mockResolvedValue([DOC]),
     getDocument: vi.fn().mockResolvedValue(DOC),
@@ -422,6 +431,111 @@ describe('Document Routes', () => {
         url: '/api/v1/brain/documents/analyze',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ pdfBase64: 'dGVzdA==', analysisType: 'custom' }),
+      });
+      expect(res.statusCode).toBe(400);
+    });
+  });
+
+  // ── Phase 117: Excalidraw ingest endpoint ───────────────────────────
+
+  describe('POST /api/v1/brain/documents/ingest-excalidraw', () => {
+    it('ingests an Excalidraw scene and returns 201', async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/brain/documents/ingest-excalidraw',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          scene: { elements: [{ type: 'text', text: 'Hello' }] },
+          title: 'Test Diagram',
+        }),
+      });
+      expect(res.statusCode).toBe(201);
+      const data = res.json() as { document: KbDocument };
+      expect(data.document.format).toBe('excalidraw');
+    });
+
+    it('returns 400 when scene is missing', async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/brain/documents/ingest-excalidraw',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ title: 'No scene' }),
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 400 when title is missing', async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/brain/documents/ingest-excalidraw',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ scene: { elements: [] } }),
+      });
+      expect(res.statusCode).toBe(400);
+    });
+  });
+
+  // ── Phase 122-B: Advanced PDF endpoints ─────────────────────────────
+
+  describe('POST /api/v1/brain/documents/extract-pages', () => {
+    it('returns 400 when pdfBase64 is missing', async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/brain/documents/extract-pages',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 422 for invalid PDF data', async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/brain/documents/extract-pages',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ pdfBase64: 'bm90YXBkZg==' }),
+      });
+      expect(res.statusCode).toBe(422);
+    });
+  });
+
+  describe('POST /api/v1/brain/documents/extract-tables', () => {
+    it('returns 400 when pdfBase64 is missing', async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/brain/documents/extract-tables',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 422 for invalid PDF data', async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/brain/documents/extract-tables',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ pdfBase64: 'bm90YXBkZg==' }),
+      });
+      expect(res.statusCode).toBe(422);
+    });
+  });
+
+  describe('POST /api/v1/brain/documents/form-fields', () => {
+    it('returns 400 when pdfBase64 is missing', async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/brain/documents/form-fields',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({}),
       });
       expect(res.statusCode).toBe(400);
     });
