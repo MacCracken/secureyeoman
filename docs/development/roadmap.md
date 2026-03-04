@@ -153,7 +153,7 @@ Current: 87.01% stmt / 76.02% branches. Target: 88% / 77%. Gap: <1% each.
 ### Future Architecture (Consider When Touching Adjacent Code)
 
 - [x] **`SecureYeoman` God Object decomposition (Phase 1)** — 8 domain modules extracted: Body (3 fields), Audit (4), Security (24), Auth (2), Brain (9), Training (16), Analytics (6), Delegation (12). Class reduced from 4,351 → 3,422 lines, 138 → 103 private fields. All getters preserved as one-liner delegates. See `packages/core/src/modules/`.
-- [ ] **`SecureYeoman` God Object decomposition (Phase 2)** — Remaining modules: AIModule (7 fields, complex due to config mutation in setLocalFirst/switchModel), SoulModule (11 fields), IntegrationModule (8 fields, 49 refs for integrationManager + interleaved init with taskExecutor), PlatformModule (28 fields, largest remaining). Target: ~300-400 lines with 12 module fields.
+- [x] **`SecureYeoman` God Object decomposition (Phase 2)** — 4 remaining modules extracted: PlatformModule (32 fields), AIModule (10 fields with config mutation callback), SoulModule (7 fields), IntegrationModule (8 fields + 31 adapter imports). Class reduced from 3,422 → 1,738 lines (60% total reduction from original 4,351), ~30 private fields, 12 module files total. All 11,869 tests passing.
 
 ---
 

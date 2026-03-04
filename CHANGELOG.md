@@ -6,7 +6,15 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.4] — 2026-03-04
 
-### God Object Decomposition — SecureYeoman Facade + Domain Modules
+### God Object Decomposition Phase 2 — Final 4 Modules
+
+- **PlatformModule** (`modules/platform-module.ts`): Extracts 32 fields — dashboard, workspace, experiment, marketplace, chatConversation, branching, backup, tenant, federation, alert, notification, userNotificationPrefs, riskAssessment, departmentRisk, MCP, dynamicTool. Multi-phase init: `initEarly()` (notification/risk storages) → `initCore()` (MCP, dashboard, workspace, experiment, marketplace, chat, branching, dynamicTool) → `initLate()` (risk/dept managers, backup, tenant, federation, alert).
+- **AIModule** (`modules/ai-module.ts`): Extracts 10 fields — aiClient, usageStorage, costOptimizer, providerAccountStorage/Manager, providerHealthTracker, costBudgetChecker, systemPreferences, usagePruneTimer, modelDefaultSet. `onConfigUpdate` callback propagates model config changes back to parent. Methods: `switchModel`, `applyModelSwitch`, `setModelDefault`, `clearModelDefault`, `setLocalFirst`, `getLocalFirst`.
+- **SoulModule** (`modules/soul-module.ts`): Extracts 7 fields — spiritStorage/Manager, soulStorage/Manager, approvalManager, personalityVersionStorage/Manager, intentStorage/Manager. Multi-phase: `initEarly()` (intent) → `initCore()` (spirit, soul, approval, personalityVersion, onboarding/seeding).
+- **IntegrationModule** (`modules/integration-module.ts`): Extracts 8 fields + 31 platform adapter imports (~100 lines) — integrationStorage/Manager, messageRouter, conversationManager, groupChatStorage, routingRulesStorage/Manager, agentComms. Multi-phase: `initEarly()` → `initCore()` (31 adapters, routing, plugins, health checks) → `initLateWiring()` (multimodal/soul into messageRouter).
+- **Result**: 3,422 → 1,738 lines (49% reduction from Phase 1, 60% total from original 4,351), 103 → ~30 private fields, 12 module files, all 11,869 tests passing with zero behavioral changes.
+
+### God Object Decomposition Phase 1 — 8 Domain Modules
 
 - **Architecture**: `SecureYeoman` refactored from a 4,351-line god object with 138 nullable fields into a facade that delegates to 8 domain modules. All 118+ public getters preserved — zero changes to `server.ts`, routes, or tests.
 - **Module scaffold** (`modules/types.ts`): `AppModule` interface, `ModuleContext`, `BaseModule` abstract class with `doInit()` hook and `initOptional()` helper.
