@@ -56,6 +56,21 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **`pdf-intake-pipeline` workflow template**: 5-step pipeline (load → analyze → format → review → save), manual trigger, L2 autonomy.
 - **Tests**: 5 tool registration tests, 2 feature gate tests, 2 handler tests, 4 route validation tests, 7 marketplace skill tests.
 
+### Engineering Backlog — Fastify JSON Schema Validation
+
+- **Auth routes** (`auth-routes.ts`): Added `schema: { body: {...} }` to 7 POST routes — login, refresh, reset-password, api-keys, verify, roles, assignments. Removed redundant manual type-checking (`if (!x || typeof x !== 'string')`). Kept downstream Zod safeParse and business logic checks. All schemas use `additionalProperties: false` with `minLength: 1` on required strings.
+- **Execution routes** (`execution-routes.ts`): Added schema to `POST /execution/run` — `runtime` validated as enum (`node`, `python`, `shell`), `code` requires `minLength: 1`, `timeout` bounded to 100–300000. Previously had zero input validation.
+- **Federation routes** (`federation-routes.ts`): Added schemas to 3 POST routes — peers (url/name/sharedSecret), personality export (passphrase), personality import (bundle/passphrase/nameOverride). Removed manual checks.
+- **Tests**: 2 new tests in `execution-routes.test.ts` (missing fields, invalid runtime). Existing auth and federation tests pass unchanged (all assert `statusCode` only).
+
+### Engineering Backlog — Worker Thread Pool for Audit Chain Hashing
+
+- **`crypto-worker.ts`**: Worker thread script handling `sha256` and `hmacSha256` message ops using `node:crypto` directly. Responds with `{ id, result }`.
+- **`crypto-pool.ts`**: `CryptoPool` class — creates N `Worker` instances with round-robin dispatch, pending `Map<id, Promise>`, sync fallback when pool is closed or has no workers. TS-aware worker path resolution for vitest compatibility (`--import tsx` execArgv when running from `.ts`).
+- **`audit-chain.ts`**: Added optional `cryptoPool` to `AuditChainConfig`. Private `computeEntryHashAsync()` and `computeSignatureAsync()` methods delegate to pool when available, fall back to sync. Updated `_doRecord()`, `verify()`, and `_doRepair()` to use async versions. No change to concurrency model — `_recordQueue` serialization preserved.
+- **`secureyeoman.ts`**: Creates `CryptoPool({ poolSize: 2 })` before AuditChain init, passes to config. Cleanup in `cleanup()`.
+- **Tests**: 5 tests in `crypto-pool.test.ts` (parity with sync, concurrency, close fallback, round-robin). 3 tests in `audit-chain.test.ts` (record with pool, verify with pool, cross-verify pool-written chain without pool).
+
 ### Engineering Backlog — Cleanup, Performance & Type Safety
 
 - **Storage cleanup fix**: Added `systemPreferences` to `cleanup()` in `secureyeoman.ts`. Was the only storage object missing from shutdown cleanup.

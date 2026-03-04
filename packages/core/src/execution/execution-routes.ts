@@ -18,6 +18,21 @@ export function registerExecutionRoutes(
 
   app.post(
     '/api/v1/execution/run',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['runtime', 'code'],
+          additionalProperties: false,
+          properties: {
+            runtime: { type: 'string', enum: ['node', 'python', 'shell'] },
+            code: { type: 'string', minLength: 1 },
+            sessionId: { type: 'string' },
+            timeout: { type: 'number', minimum: 100, maximum: 300000 },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{
         Body: {

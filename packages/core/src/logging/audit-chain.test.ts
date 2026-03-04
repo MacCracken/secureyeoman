@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { AuditChain, InMemoryAuditStorage } from './audit-chain.js';
 import { runWithCorrelationId } from '../utils/correlation-context.js';
 import { uuidv7 } from '../utils/crypto.js';
+import { CryptoPool } from '../utils/crypto-pool.js';
 
 const SIGNING_KEY = 'a'.repeat(64); // 64 chars, well above 32 minimum
 
@@ -1008,5 +1009,61 @@ describe('AuditChain — record() schema validation (Phase 105)', () => {
     await expect(
       chain.record({ event: 'test', level: 'INVALID' as any, message: 'bad level' })
     ).rejects.toThrow(/Invalid audit entry/i);
+  });
+});
+
+describe('AuditChain — with CryptoPool', () => {
+  let pool: CryptoPool;
+
+  afterEach(async () => {
+    await pool?.close();
+  });
+
+  it('record() produces identical results with CryptoPool', async () => {
+    pool = new CryptoPool({ poolSize: 1 });
+    const storage = new InMemoryAuditStorage();
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY, cryptoPool: pool });
+    await chain.initialize();
+
+    const entry = await chain.record({ event: 'e1', level: 'info', message: 'With pool' });
+    expect(entry.integrity.signature).toHaveLength(64);
+    expect(entry.integrity.previousEntryHash).toBe('0'.repeat(64));
+
+    const result = await chain.verify();
+    expect(result.valid).toBe(true);
+    expect(result.entriesChecked).toBe(1);
+  });
+
+  it('verify() produces correct result with CryptoPool', async () => {
+    pool = new CryptoPool({ poolSize: 2 });
+    const storage = new InMemoryAuditStorage();
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY, cryptoPool: pool });
+    await chain.initialize();
+
+    await chain.record({ event: 'e1', level: 'info', message: 'First' });
+    await chain.record({ event: 'e2', level: 'warn', message: 'Second' });
+    await chain.record({ event: 'e3', level: 'error', message: 'Third' });
+
+    const result = await chain.verify();
+    expect(result.valid).toBe(true);
+    expect(result.entriesChecked).toBe(3);
+  });
+
+  it('chain with pool can be verified by chain without pool', async () => {
+    pool = new CryptoPool({ poolSize: 1 });
+
+    // Record entries using the pool
+    const storage = new InMemoryAuditStorage();
+    const chain1 = new AuditChain({ storage, signingKey: SIGNING_KEY, cryptoPool: pool });
+    await chain1.initialize();
+    await chain1.record({ event: 'e1', level: 'info', message: 'Test' });
+    await chain1.record({ event: 'e2', level: 'warn', message: 'Second' });
+
+    // Verify the same storage using a chain WITHOUT the pool
+    const chain2 = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    await chain2.initialize();
+    const result = await chain2.verify();
+    expect(result.valid).toBe(true);
+    expect(result.entriesChecked).toBe(2);
   });
 });

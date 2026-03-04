@@ -10,6 +10,7 @@
  */
 
 import { sha256, hmacSha256, secureCompare, uuidv7 } from '../utils/crypto.js';
+import type { CryptoPool } from '../utils/crypto-pool.js';
 import { AuditEntrySchema, type AuditEntry } from '@secureyeoman/shared';
 import { getLogger, type SecureLogger } from './logger.js';
 import { getCorrelationId } from '../utils/correlation-context.js';
@@ -47,6 +48,8 @@ export interface AuditChainConfig {
    * whose hash or signature no longer matches.
    */
   repairOnInit?: boolean;
+  /** Optional worker thread pool for offloading crypto from the event loop */
+  cryptoPool?: CryptoPool;
 }
 
 export interface VerificationResult {
@@ -115,6 +118,7 @@ export class AuditChain {
   private readonly storage: AuditChainStorage;
   private signingKey: string;
   private readonly repairOnInit: boolean;
+  private readonly cryptoPool: CryptoPool | null;
   private lastHash: string = GENESIS_HASH;
   private initialized = false;
   private logger: SecureLogger | null = null;
@@ -133,11 +137,45 @@ export class AuditChain {
     this.storage = config.storage;
     this.signingKey = config.signingKey;
     this.repairOnInit = config.repairOnInit ?? false;
+    this.cryptoPool = config.cryptoPool ?? null;
 
     // Validate signing key strength
     if (config.signingKey.length < 32) {
       throw new Error('Signing key must be at least 32 characters');
     }
+  }
+
+  /** Compute entry hash, delegating to the pool when available. */
+  private async computeEntryHashAsync(entry: AuditEntry): Promise<string> {
+    const hashData = {
+      id: entry.id,
+      correlationId: entry.correlationId,
+      event: entry.event,
+      level: entry.level,
+      message: entry.message,
+      userId: entry.userId,
+      taskId: entry.taskId,
+      metadata: entry.metadata,
+      timestamp: entry.timestamp,
+    };
+    const serialized = JSON.stringify(hashData, sortedKeysReplacer);
+    if (this.cryptoPool) {
+      return this.cryptoPool.sha256(serialized);
+    }
+    return sha256(serialized);
+  }
+
+  /** Compute HMAC signature, delegating to the pool when available. */
+  private async computeSignatureAsync(
+    entryHash: string,
+    previousHash: string,
+    signingKey: string
+  ): Promise<string> {
+    const dataToSign = `${entryHash}:${previousHash}`;
+    if (this.cryptoPool) {
+      return this.cryptoPool.hmacSha256(dataToSign, signingKey);
+    }
+    return hmacSha256(dataToSign, signingKey);
   }
 
   /**
@@ -282,9 +320,9 @@ export class AuditChain {
       },
     };
 
-    // Compute hash and signature
-    const entryHash = computeEntryHash(entry);
-    entry.integrity.signature = computeSignature(entryHash, this.lastHash, this.signingKey);
+    // Compute hash and signature (async when pool is available)
+    const entryHash = await this.computeEntryHashAsync(entry);
+    entry.integrity.signature = await this.computeSignatureAsync(entryHash, this.lastHash, this.signingKey);
 
     // Validate against schema
     const validation = AuditEntrySchema.safeParse(entry);
@@ -345,8 +383,8 @@ export class AuditChain {
         }
 
         // Compute expected hash and signature
-        const entryHash = computeEntryHash(entry);
-        const expectedSig = computeSignature(
+        const entryHash = await this.computeEntryHashAsync(entry);
+        const expectedSig = await this.computeSignatureAsync(
           entryHash,
           entry.integrity.previousEntryHash,
           activeKey
@@ -458,8 +496,8 @@ export class AuditChain {
     for await (const entry of this.storage.iterate()) {
       entriesTotal++;
 
-      const entryHash = computeEntryHash(entry);
-      const expectedSig = computeSignature(entryHash, previousHash, this.signingKey);
+      const entryHash = await this.computeEntryHashAsync(entry);
+      const expectedSig = await this.computeSignatureAsync(entryHash, previousHash, this.signingKey);
 
       const needsRepair =
         entry.integrity.previousEntryHash !== previousHash ||

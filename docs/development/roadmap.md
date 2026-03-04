@@ -165,8 +165,6 @@ Current: 87.01% stmt / 76.02% branches. Target: 88% / 77%. Gap: <1% each.
 ### Future Architecture (Consider When Touching Adjacent Code)
 
 - [ ] **`SecureYeoman` God Object decomposition** — The class is 4000+ lines with 138 nullable fields managing every subsystem directly. Consider breaking into composed domain modules (e.g., `AnalyticsModule`, `SecurityModule`, `IntegrationModule`) that each own their storage/manager pairs. The main class would compose these modules. This addresses the root cause of cleanup gaps, duplication, and init complexity.
-- [ ] **Fastify JSON Schema validation** — No route registrations use Fastify's built-in JSON Schema validation. All validation is manual `if (!body.name?.trim())` checks. Add schema definitions for at least auth, execution, and federation routes for automatic 400 responses on malformed input.
-- [ ] **Worker threads for CPU-intensive ops** — No `worker_threads` usage anywhere. SHA-256 for audit chain entries (hot path), vector similarity in BrainStorage, and JSON.stringify+SHA-256 for cache keys all run on the main event loop. Consider a small worker pool for audit chain hashing.
 
 ---
 
@@ -339,4 +337,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-04 — Removed completed Phase 122, 124. See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-04 — Removed completed Fastify JSON Schema validation & Worker thread pool backlog items. See [Changelog](../../CHANGELOG.md) for full history.*

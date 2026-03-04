@@ -34,6 +34,19 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
   // ── POST /api/v1/auth/login ───────────────────────────────────────
   app.post(
     '/api/v1/auth/login',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['password'],
+          additionalProperties: false,
+          properties: {
+            password: { type: 'string', minLength: 1 },
+            rememberMe: { type: 'boolean' },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{ Body: { password: string; rememberMe?: boolean } }>,
       reply: FastifyReply
@@ -45,10 +58,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         return sendError(reply, 429, 'Too many login attempts. Please try again later.');
       }
 
-      const { password, rememberMe } = request.body ?? {};
-      if (!password || typeof password !== 'string') {
-        return sendError(reply, 400, 'Password is required');
-      }
+      const { password, rememberMe } = request.body;
 
       try {
         const result = await authService.login(password, request.ip, !!rememberMe);
@@ -65,6 +75,18 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
   // ── POST /api/v1/auth/refresh ─────────────────────────────────────
   app.post(
     '/api/v1/auth/refresh',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['refreshToken'],
+          additionalProperties: false,
+          properties: {
+            refreshToken: { type: 'string', minLength: 1 },
+          },
+        },
+      },
+    },
     async (request: FastifyRequest<{ Body: { refreshToken: string } }>, reply: FastifyReply) => {
       // Rate-limit by IP: max 10 per minute (blocks token-stuffing loops)
       const rl = await rateLimiter.check('auth_refresh', request.ip, { ipAddress: request.ip });
@@ -73,10 +95,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         return sendError(reply, 429, 'Too many refresh attempts. Please try again later.');
       }
 
-      const { refreshToken } = request.body ?? {};
-      if (!refreshToken || typeof refreshToken !== 'string') {
-        return sendError(reply, 400, 'Refresh token is required');
-      }
+      const { refreshToken } = request.body;
 
       try {
         const result = await authService.refresh(refreshToken);
@@ -104,6 +123,19 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
   // ── POST /api/v1/auth/reset-password ─────────────────────────────
   app.post(
     '/api/v1/auth/reset-password',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['currentPassword', 'newPassword'],
+          additionalProperties: false,
+          properties: {
+            currentPassword: { type: 'string', minLength: 1 },
+            newPassword: { type: 'string', minLength: 1 },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{ Body: { currentPassword: string; newPassword: string } }>,
       reply: FastifyReply
@@ -117,13 +149,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         return sendError(reply, 429, 'Too many password reset attempts. Please try again later.');
       }
 
-      const { currentPassword, newPassword } = request.body ?? {};
-      if (!currentPassword || typeof currentPassword !== 'string') {
-        return sendError(reply, 400, 'Current password is required');
-      }
-      if (!newPassword || typeof newPassword !== 'string') {
-        return sendError(reply, 400, 'New password is required');
-      }
+      const { currentPassword, newPassword } = request.body;
 
       try {
         await authService.resetPassword(currentPassword, newPassword);
@@ -140,19 +166,27 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
   // ── POST /api/v1/auth/api-keys ────────────────────────────────────
   app.post(
     '/api/v1/auth/api-keys',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['name', 'role'],
+          additionalProperties: false,
+          properties: {
+            name: { type: 'string', minLength: 1 },
+            role: { type: 'string', minLength: 1 },
+            expiresInDays: { type: 'number' },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{
         Body: { name: string; role: Role; expiresInDays?: number };
       }>,
       reply: FastifyReply
     ) => {
-      const { name, role, expiresInDays } = request.body ?? {};
-      if (!name || typeof name !== 'string') {
-        return sendError(reply, 400, 'Name is required');
-      }
-      if (!role || typeof role !== 'string') {
-        return sendError(reply, 400, 'Role is required');
-      }
+      const { name, role, expiresInDays } = request.body;
 
       try {
         const result = await authService.createApiKey({
@@ -200,11 +234,20 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
   // This allows MCP clients to authenticate with either token type.
   app.post(
     '/api/v1/auth/verify',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['token'],
+          additionalProperties: false,
+          properties: {
+            token: { type: 'string', minLength: 1 },
+          },
+        },
+      },
+    },
     async (request: FastifyRequest<{ Body: { token: string } }>, reply: FastifyReply) => {
-      const { token } = request.body ?? {};
-      if (!token || typeof token !== 'string') {
-        return sendError(reply, 400, 'Token is required');
-      }
+      const { token } = request.body;
 
       // Try JWT first, then fall back to API key validation
       try {
@@ -251,6 +294,26 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
   // ── POST /api/v1/auth/roles ────────────────────────────────────────
   app.post(
     '/api/v1/auth/roles',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['name', 'permissions'],
+          additionalProperties: false,
+          properties: {
+            name: { type: 'string', minLength: 1 },
+            description: { type: 'string' },
+            permissions: {
+              type: 'array',
+              items: {
+                type: 'object',
+              },
+            },
+            inheritFrom: { type: 'array', items: { type: 'string' } },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{
         Body: {
@@ -262,13 +325,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
       }>,
       reply: FastifyReply
     ) => {
-      const { name, description, permissions, inheritFrom } = request.body ?? {};
-      if (!name || typeof name !== 'string') {
-        return sendError(reply, 400, 'Name is required');
-      }
-      if (!permissions || !Array.isArray(permissions)) {
-        return sendError(reply, 400, 'Permissions array is required');
-      }
+      const { name, description, permissions, inheritFrom } = request.body;
 
       const id = `role_${name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
       const role = { id, name, description, permissions, inheritFrom };
@@ -362,19 +419,26 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
   // ── POST /api/v1/auth/assignments ──────────────────────────────────
   app.post(
     '/api/v1/auth/assignments',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['userId', 'roleId'],
+          additionalProperties: false,
+          properties: {
+            userId: { type: 'string', minLength: 1 },
+            roleId: { type: 'string', minLength: 1 },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{
         Body: { userId: string; roleId: string };
       }>,
       reply: FastifyReply
     ) => {
-      const { userId, roleId } = request.body ?? {};
-      if (!userId || typeof userId !== 'string') {
-        return sendError(reply, 400, 'userId is required');
-      }
-      if (!roleId || typeof roleId !== 'string') {
-        return sendError(reply, 400, 'roleId is required');
-      }
+      const { userId, roleId } = request.body;
 
       const role = rbac.getRole(roleId);
       if (!role) {

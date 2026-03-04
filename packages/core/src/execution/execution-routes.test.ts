@@ -95,6 +95,40 @@ describe('POST /api/v1/execution/run', () => {
     expect(res.statusCode).toBe(400);
   });
 
+  it('returns 400 when runtime or code is missing', async () => {
+    const app = buildApp();
+    const res1 = await app.inject({
+      method: 'POST',
+      url: '/api/v1/execution/run',
+      payload: { code: 'console.log("hello")' },
+    });
+    expect(res1.statusCode).toBe(400);
+
+    const res2 = await app.inject({
+      method: 'POST',
+      url: '/api/v1/execution/run',
+      payload: { runtime: 'node' },
+    });
+    expect(res2.statusCode).toBe(400);
+
+    const res3 = await app.inject({
+      method: 'POST',
+      url: '/api/v1/execution/run',
+      payload: {},
+    });
+    expect(res3.statusCode).toBe(400);
+  });
+
+  it('returns 400 for invalid runtime value', async () => {
+    const app = buildApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/execution/run',
+      payload: { runtime: 'ruby', code: 'puts "hello"' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
   it('passes sessionId and timeout to execute', async () => {
     const executeMock = vi.fn().mockResolvedValue(EXECUTION_RESULT);
     const app = buildApp({ execute: executeMock });

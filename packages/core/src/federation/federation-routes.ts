@@ -75,14 +75,25 @@ export function registerFederationRoutes(
   // Add peer
   app.post(
     '/api/v1/federation/peers',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['url', 'name', 'sharedSecret'],
+          additionalProperties: false,
+          properties: {
+            url: { type: 'string', minLength: 1 },
+            name: { type: 'string', minLength: 1 },
+            sharedSecret: { type: 'string', minLength: 1 },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{ Body: { url: string; name: string; sharedSecret: string } }>,
       reply
     ) => {
-      const { url, name, sharedSecret } = request.body ?? {};
-      if (!url || !name || !sharedSecret) {
-        return sendError(reply, 400, 'url, name, and sharedSecret are required');
-      }
+      const { url, name, sharedSecret } = request.body;
       try {
         const peer = await federationManager.addPeer(url, name, sharedSecret);
         const { sharedSecretEnc: _enc, sharedSecretHash: _hash, ...safe } = peer as any;
@@ -195,12 +206,23 @@ export function registerFederationRoutes(
   // Export personality bundle
   app.post(
     '/api/v1/federation/personalities/:id/export',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['passphrase'],
+          additionalProperties: false,
+          properties: {
+            passphrase: { type: 'string', minLength: 1 },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{ Params: { id: string }; Body: { passphrase: string } }>,
       reply
     ) => {
-      const { passphrase } = request.body ?? {};
-      if (!passphrase) return sendError(reply, 400, 'passphrase is required');
+      const { passphrase } = request.body;
       try {
         const bundle = await federationManager.exportPersonalityBundle(
           request.params.id,
@@ -226,15 +248,27 @@ export function registerFederationRoutes(
   // Import personality bundle
   app.post(
     '/api/v1/federation/personalities/import',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['bundle', 'passphrase'],
+          additionalProperties: false,
+          properties: {
+            bundle: { type: 'string', minLength: 1 },
+            passphrase: { type: 'string', minLength: 1 },
+            nameOverride: { type: 'string' },
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{
         Body: { bundle: string; passphrase: string; nameOverride?: string };
       }>,
       reply
     ) => {
-      const { bundle, passphrase, nameOverride } = request.body ?? {};
-      if (!bundle || !passphrase)
-        return sendError(reply, 400, 'bundle and passphrase are required');
+      const { bundle, passphrase, nameOverride } = request.body;
       try {
         const personality = await federationManager.importPersonalityBundle(
           Buffer.from(bundle, 'base64'),

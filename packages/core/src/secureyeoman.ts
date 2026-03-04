@@ -49,6 +49,7 @@ import { UsageStorage } from './ai/usage-storage.js';
 import { AuthStorage } from './security/auth-storage.js';
 import { AuthService } from './security/auth.js';
 import { sha256 } from './utils/crypto.js';
+import { CryptoPool } from './utils/crypto-pool.js';
 import { SoulStorage } from './soul/storage.js';
 import { SoulManager } from './soul/manager.js';
 import { ApprovalManager } from './soul/approval-manager.js';
@@ -241,6 +242,7 @@ export class SecureYeoman {
   private logger: SecureLogger | null = null;
   private auditChain: AuditChain | null = null;
   private auditStorage: AuditChainStorage | null = null;
+  private cryptoPool: CryptoPool | null = null;
   private validator: InputValidator | null = null;
   private rateLimiter: RateLimiterLike | null = null;
   private rbac: RBAC | null = null;
@@ -563,10 +565,12 @@ export class SecureYeoman {
       const storage = this.options.auditStorage ?? new SQLiteAuditStorage();
       this.auditStorage = storage;
 
+      this.cryptoPool = new CryptoPool({ poolSize: 2 });
       this.auditChain = new AuditChain({
         storage,
         signingKey,
         repairOnInit: true,
+        cryptoPool: this.cryptoPool,
       });
       await this.auditChain.initialize();
       this.logger.debug('Audit chain initialized');
@@ -3915,6 +3919,12 @@ export class SecureYeoman {
     // Stop rate limiter cleanup
     if (this.rateLimiter) {
       this.rateLimiter.stop();
+    }
+
+    // Close crypto worker pool
+    if (this.cryptoPool) {
+      await this.cryptoPool.close();
+      this.cryptoPool = null;
     }
 
     // Clear RBAC cache and close persistent storage
