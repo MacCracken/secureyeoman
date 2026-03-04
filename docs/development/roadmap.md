@@ -53,8 +53,6 @@
 | 109 | Editor Improvements | P3 — power user UX | 🔄 In Progress |
 | 117 | Excalidraw Diagramming — Remaining (canvas, KB integration) | P3 — capability + visualization | 🔄 Partial (6/6 tools + workflow done, canvas/KB remaining) |
 | 120 | Canvas Editor Improvements | P3 — canvas improvements | Planned |
-| 122 | PDF Analysis — MCP Tools & Knowledge Base | P2 — capability + intelligence | 🔄 Partial (122-A done, 122-B remaining) |
-| 124 | Cognitive Memory — ACT-R Activation & Hebbian Learning | P2 — intelligence | Planned |
 | — | Engineering Backlog | Ongoing | Pick-up opportunistically |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
 | Future | LLM Providers, LLM Lifecycle, Responsible AI, Voice, Infrastructure | Future / Demand-Gated | — |
@@ -128,85 +126,6 @@
 
 ---
 
-## Phase 122: PDF Analysis — MCP Tools & Knowledge Base
-
-**Priority**: P2 — Capability + intelligence. **122-A done** (2026.3.4): 6 MCP tools (`pdf_extract_text`, `pdf_upload`, `pdf_analyze`, `pdf_search`, `pdf_compare`, `pdf_list`), 2 core endpoints (extract + analyze), feature flags, manifest, tests. Remaining: 122-B advanced analysis.
-
-### 122-B: Advanced Analysis & Workflow Integration
-
-*Deeper PDF capabilities: page-level extraction, table detection, visual analysis of scanned/image-heavy PDFs, and workflow step support.*
-
-- [ ] **`pdf_extract_pages`** — Page-by-page text extraction. Input: `{ pdfBase64: string, pages?: string }` (e.g., `"1-5"`, `"3,7,10-12"`). Uses `pdf-parse` page render callbacks or `pdfjs-dist` for page-level granularity. Returns `{ pages: { pageNumber: number, text: string, wordCount: number }[] }`. Enables targeted analysis of specific sections without processing the full document.
-- [ ] **`pdf_extract_tables`** — Table-specific extraction from PDFs. Input: `{ pdfBase64: string, pages?: string, outputFormat?: 'json' | 'csv' | 'markdown' }`. Uses `pdf2json` (pure JS, no Java dependency) for table structure detection. Returns `{ tables: { page: number, rows: string[][], headers?: string[] }[] }`. Falls back to LLM-based table extraction for complex layouts.
-- [ ] **`pdf_visual_analyze`** — Visual analysis of PDF pages rendered as images. Input: `{ pdfBase64: string, pages?: string, prompt?: string }`. Renders specified pages to PNG via `pdfjs-dist` + `canvas` (or Playwright screenshot as fallback). Sends rendered images to `multimodal_analyze_image` pipeline. Returns `{ pages: { pageNumber: number, description: string, elements: string[] }[] }`. Essential for scanned documents, forms, diagrams, and image-heavy PDFs where text extraction alone is insufficient.
-- [ ] **`pdf_summarize`** — Multi-page summarization with page citations. Input: `{ pdfBase64: string, style?: 'executive' | 'technical' | 'bullet_points', maxLength?: number }`. Extracts text page-by-page, sends to LLM with citation instructions, returns `{ summary: string, citations: { claim: string, page: number }[], keyTopics: string[] }`. Longer PDFs are chunked and summarized hierarchically (page summaries → section summaries → document summary).
-- [ ] **`pdf_form_fields`** — Extract form field data from fillable PDFs. Input: `{ pdfBase64: string }`. Uses `pdf-lib` to read AcroForm fields. Returns `{ fields: { name: string, type: 'text' | 'checkbox' | 'radio' | 'dropdown' | 'signature', value: string | boolean, page: number }[], isFormFillable: boolean }`.
-- [ ] **`pdf-analysis` marketplace skill** — `packages/core/src/marketplace/skills/pdf-analysis.ts`. `category: 'productivity'`, `author: 'YEOMAN'`, `routing: 'fuzzy'`, `autonomyLevel: 'L1'`. Instructions teach the AI to choose the right PDF tool for the task: `pdf_extract_text` for quick reads, `pdf_analyze` for structured insights, `pdf_visual_analyze` for scanned docs, `pdf_extract_tables` for data extraction, `pdf_compare` for version diffing. `triggerPatterns`: `\\b(pdf|document).{0,20}(analy[sz]|extract|summar|compare|read|parse|table|form|scan)\\b`. `mcpToolsAllowed`: all pdf_* tools.
-- [ ] **`document_analysis` workflow step type** — New step type in `workflow-engine.ts`. Config: `{ documentBase64, analysisType, extractTables?: boolean, visualAnalysis?: boolean }`. Chains: extract → analyze → optionally extract tables → optionally visual analyze. Output: `{ text, analysis, tables?, visualDescriptions?, metadata }`. Enables workflows like "receive PDF via email → extract → analyze risks → create task → notify".
-- [ ] **Workflow template** — `pdf-intake-pipeline`: resource (receive PDF) → `document_analysis` (summary + risks + tables) → transform (format as structured report) → agent (review and create action items) → resource (save to knowledge base). `autonomyLevel: 'L2'`.
-- [ ] **Dependencies** — `pdf-parse` already in core. New optional deps: `pdf2json` (table extraction), `pdf-lib` (form fields). `pdfjs-dist` (page rendering) if visual analysis is enabled. All pure JS — no Java or native binary requirements.
-
----
-
-## Phase 124: Cognitive Memory — ACT-R Activation & Hebbian Learning
-
-**Priority**: P2 — Intelligence. Inspired by CMU's [ACT-R cognitive architecture](https://act-r.psy.cmu.edu/about/) and [MuninnDB](https://github.com/scrypster/muninndb). Adds activation-based memory retrieval, temporal decay, Hebbian co-activation learning, and Bayesian confidence scoring to the knowledge base and skill routing. Memories strengthen with use, fade when unused, and contextually relevant items surface automatically.
-
-**Core formula** (simplified ACT-R base-level activation):
-```
-B(M) = ln(n + 1) − d × ln(ageDays / (n + 1))
-```
-Where `n` = access count, `ageDays` = days since last access (min 0.1), `d` = 0.5 (power-law decay exponent, Anderson 1993).
-
-**Composite retrieval score**:
-```
-Score = ContentMatch × softplus(B(M) + scale × HebbianBoost) × Confidence
-```
-
-### 124-A: Schema & Activation Primitives
-
-*Add activation tracking columns and the core scoring function to PostgreSQL. No behavioural changes yet — just the infrastructure.*
-
-- [ ] **Migration `008_cognitive_memory.sql`** — Add to `brain.documents`: `access_count INTEGER DEFAULT 0`, `last_accessed BIGINT`, `confidence REAL DEFAULT 1.0`. Add to `brain.skills`: `access_count INTEGER DEFAULT 0`, `last_accessed BIGINT`. New table `brain.associations` (`source_id TEXT, target_id TEXT, weight REAL DEFAULT 0.0, co_activation_count INTEGER DEFAULT 0, updated_at BIGINT`, unique on `(source_id, target_id)`). Indexes on `last_accessed`, `access_count`.
-- [ ] **`activation_score()` SQL function** — `CREATE FUNCTION brain.activation_score(access_count INT, last_accessed BIGINT) RETURNS REAL` implementing the ACT-R base-level formula. Query-time computation — no background worker needed for base activation.
-- [ ] **`CognitiveMemoryStorage`** — New storage class extending `PgBaseStorage`. Methods: `recordAccess(id)` (increment access_count + update last_accessed), `recordCoActivation(sourceId, targetId)` (upsert association, increment count, update Hebbian weight), `getActivation(id)`, `getAssociations(id, minWeight?)`, `decayAssociations(maxAge, decayRate)` (periodic Hebbian weight decay), `updateConfidence(id, confidence)`.
-- [ ] **Tests** — `cognitive-memory-store.test.ts` (access tracking, co-activation, weight updates, decay, confidence).
-
-### 124-B: Knowledge Base Integration
-
-*Wire activation scoring into `BrainManager` retrieval so that frequently/recently used knowledge surfaces higher.*
-
-- [ ] **`BrainManager` retrieval enhancement** — Modify `searchDocuments()` and `recallMemories()` to incorporate `brain.activation_score()` in the ORDER BY clause. Composite: existing relevance score × activation weight. Configurable blend factor (0.0 = pure content match, 1.0 = pure activation).
-- [ ] **Access tracking hooks** — When a document/memory is retrieved and used in a response, call `recordAccess(id)`. When multiple items are retrieved together, call `recordCoActivation()` for each pair.
-- [ ] **Hebbian boost in retrieval** — When retrieving document X, also fetch its top-N associations from `brain.associations`. Boost associated items' scores by `weight × hebbianScale`. This creates spreading activation — retrieving "GuardDuty" naturally surfaces "CloudTrail" if they're frequently co-retrieved.
-- [ ] **Retrieval threshold** — Configurable activation threshold τ below which items are excluded from results (ACT-R retrieval failure). Default: no threshold (backwards compatible).
-- [ ] **Tests** — `brain-manager.test.ts` additions for activation-weighted retrieval, co-activation recording, Hebbian boosting.
-
-### 124-C: Skill Routing & Agent Memory
-
-*Apply activation to skill selection and conversation memory.*
-
-- [ ] **Skill activation** — Track which marketplace skills are invoked per personality. Skills with higher activation scores in the current personality context rank higher in fuzzy routing. Modifies `SkillRouter` to blend trigger match score with skill activation.
-- [ ] **Conversation memory decay** — Apply activation scoring to conversation memories in `MemoryManager`. Recent, frequently-referenced memories rank higher in context window construction. Memories below threshold τ are excluded from context (natural forgetting without deletion).
-- [ ] **Background worker** — Periodic task (configurable interval, default 1h) to: (1) decay Hebbian association weights for stale links, (2) compute and cache aggregate activation stats for monitoring. Runs as a `setInterval` in `CognitiveMemoryManager`, not pg_cron (keeps it portable).
-- [ ] **MCP tools** — `memory_activation_stats` (get activation scores for a set of memories), `memory_associations` (get Hebbian associations for a memory). Feature-gated via `exposeCognitiveMemory`.
-- [ ] **Tests** — Skill routing with activation, memory decay, background worker, MCP tools.
-
-### 124-D: Observability & Marketplace Skill
-
-- [ ] **Activation dashboard widget** — Dashboard component showing top-N most activated memories, strongest associations, decay curve visualization. Optional — can defer to later phase.
-- [ ] **Marketplace skill** — "Cognitive Memory Analyst" skill teaching the AI to interpret activation patterns, identify knowledge gaps (low-activation important topics), and recommend memory reinforcement strategies.
-- [ ] **Metrics** — Expose activation distribution, Hebbian edge count, average confidence, retrieval threshold hit rate via `/api/v1/brain/cognitive-stats`.
-
-### References
-
-- Anderson, J. R. (1993). *Rules of the Mind*. Lawrence Erlbaum Associates. (ACT-R base-level learning equation, d = 0.5)
-- [ACT-R Tutorials — Unit 4: Activation and Base-Level Learning](http://act-r.psy.cmu.edu/wordpress/wp-content/themes/ACT-R/tutorials/unit4.htm)
-- [MuninnDB — How It Works](https://muninndb.com/how-it-works) (practical implementation of ACT-R + Hebbian in a database)
-- [ACT-R Base-Level Activation Approximations](https://link.springer.com/article/10.1007/s42113-018-0015-3)
-
----
-
 ## Engineering Backlog
 
 Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
@@ -214,8 +133,6 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 ### Test Coverage — Final 1% Push (Phase 105)
 
 Current: 87.01% stmt / 76.02% branches. Target: 88% / 77%. Gap: <1% each.
-
-- [x] **Skill test coverage** — Added `productivity-skills.test.ts` (72 tests, 6 skills) and `role-skills.test.ts` (74 tests, 6 skills) covering all 12 previously untested marketplace skills. Added `secureyeoman-community-skills/skills/skills.test.ts` (320 tests) validating all 21 community skill JSON files against schema constraints (required fields, length limits, regex compilation, trigger pattern smoke tests, no duplicate names, no unknown properties).
 
 **Highest-impact targets by coverage gap** (directory-level, sorted by branch gap):
 
@@ -409,4 +326,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-03 — Cleaned completed items. See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-04 — Removed completed Phase 122, 124. See [Changelog](../../CHANGELOG.md) for full history.*
