@@ -4,7 +4,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { TeamManager } from './team-manager.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 import { TeamCreateSchema, TeamUpdateSchema, TeamRunParamsSchema } from '@secureyeoman/shared';
 
 export function registerTeamRoutes(app: FastifyInstance, opts: { teamManager: TeamManager }): void {
@@ -30,7 +30,7 @@ export function registerTeamRoutes(app: FastifyInstance, opts: { teamManager: Te
       const team = await teamManager.createTeam(parsed.data);
       return reply.code(201).send({ team });
     } catch (err) {
-      return sendError(reply, 400, err instanceof Error ? err.message : 'Failed to create team');
+      return sendError(reply, 400, toErrorMessage(err));
     }
   });
 
@@ -66,7 +66,7 @@ export function registerTeamRoutes(app: FastifyInstance, opts: { teamManager: Te
         const team = await teamManager.updateTeam(request.params.id, parsed.data);
         return { team };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Failed to update team';
+        const msg = toErrorMessage(err);
         const code = msg.includes('not found') ? 404 : msg.includes('builtin') ? 403 : 400;
         return sendError(reply, code, msg);
       }
@@ -81,7 +81,7 @@ export function registerTeamRoutes(app: FastifyInstance, opts: { teamManager: Te
         await teamManager.deleteTeam(request.params.id);
         return reply.code(204).send();
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Failed to delete team';
+        const msg = toErrorMessage(err);
         const code = msg.includes('not found') ? 404 : msg.includes('builtin') ? 403 : 400;
         return sendError(reply, code, msg);
       }
@@ -108,7 +108,7 @@ export function registerTeamRoutes(app: FastifyInstance, opts: { teamManager: Te
         });
         return reply.code(202).send({ run: teamRun });
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Failed to start team run';
+        const msg = toErrorMessage(err);
         const code = msg.includes('not found') ? 404 : 400;
         return sendError(reply, code, msg);
       }

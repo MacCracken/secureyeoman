@@ -13,6 +13,7 @@ import type {
   PainUpdate,
 } from './types.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export interface SpiritRoutesOptions {
   spiritManager: SpiritManager;
@@ -26,8 +27,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
   app.get(
     '/api/v1/spirit/passions',
     async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
-      const limit = request.query.limit ? Number(request.query.limit) : undefined;
-      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      const { limit, offset } = parsePagination(request.query);
       return spiritManager.listPassions({ limit, offset });
     }
   );
@@ -86,8 +86,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
   app.get(
     '/api/v1/spirit/inspirations',
     async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
-      const limit = request.query.limit ? Number(request.query.limit) : undefined;
-      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      const { limit, offset } = parsePagination(request.query);
       return spiritManager.listInspirations({ limit, offset });
     }
   );
@@ -146,8 +145,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
   app.get(
     '/api/v1/spirit/pains',
     async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
-      const limit = request.query.limit ? Number(request.query.limit) : undefined;
-      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      const { limit, offset } = parsePagination(request.query);
       return spiritManager.listPains({ limit, offset });
     }
   );

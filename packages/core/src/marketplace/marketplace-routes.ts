@@ -6,6 +6,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { Config } from '@secureyeoman/shared';
 import type { MarketplaceManager } from './manager.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export interface MarketplaceRoutesOptions {
   marketplaceManager: MarketplaceManager;
@@ -46,11 +47,12 @@ export function registerMarketplaceRoutes(
         // Storage treats source='marketplace' as NOT community (builtin + published)
         effectiveSource = 'marketplace';
       }
+      const { limit, offset } = parsePagination(q);
       return await marketplaceManager.search(
         q.query,
         q.category,
-        q.limit ? Number(q.limit) : undefined,
-        q.offset ? Number(q.offset) : undefined,
+        limit,
+        offset,
         effectiveSource,
         q.personalityId // undefined when not provided → stored boolean fallback
       );

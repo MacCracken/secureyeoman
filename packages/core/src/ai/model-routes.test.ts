@@ -278,7 +278,7 @@ describe('Model Routes', () => {
     });
 
     expect(res.statusCode).toBe(500);
-    expect(JSON.parse(res.payload).message).toContain('API key missing');
+    expect(JSON.parse(res.payload).message).toBe('An internal error occurred');
   });
 
   // ── GET /api/v1/model/info error path ──────────────────────────────────────
@@ -289,7 +289,7 @@ describe('Model Routes', () => {
 
     const res = await app.inject({ method: 'GET', url: '/api/v1/model/info' });
     expect(res.statusCode).toBe(500);
-    expect(JSON.parse(res.payload).message).toContain('config failed');
+    expect(JSON.parse(res.payload).message).toBe('An internal error occurred');
   });
 
   // ── GET /api/v1/model/default ──────────────────────────────────────────────
@@ -589,7 +589,7 @@ describe('Model Routes', () => {
       payload: { localFirst: true },
     });
     expect(res.statusCode).toBe(500);
-    expect(JSON.parse(res.payload).message).toContain('storage error');
+    expect(JSON.parse(res.payload).message).toBe('An internal error occurred');
   });
 
   // ── POST /api/v1/model/ollama/pull ─────────────────────────────────────────
@@ -692,7 +692,7 @@ describe('Model Routes', () => {
     });
 
     expect(res.statusCode).toBe(500);
-    expect(JSON.parse(res.payload).message).toContain('Connection refused');
+    expect(JSON.parse(res.payload).message).toBe('An internal error occurred');
   });
 
   // ── AI Health — local providers ──────────────────────────────────────────

@@ -11,7 +11,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { GroupChatStorage } from './group-chat-storage.js';
 import type { IntegrationManager } from './manager.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 
 export interface GroupChatRoutesOptions {
   groupChatStorage: GroupChatStorage;
@@ -102,7 +102,7 @@ export function registerGroupChatRoutes(app: FastifyInstance, opts: GroupChatRou
         });
         return reply.code(201).send({ success: true, integrationId, chatId, text: text.trim() });
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to send message');
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );

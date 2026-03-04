@@ -8,7 +8,7 @@ import { promisify } from 'node:util';
 import { statSync, existsSync } from 'node:fs';
 import { resolve as resolvePath, join } from 'node:path';
 import { getLogger, type SecureLogger } from '../logging/logger.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 import { buildSafeEnv } from '../utils/process-env.js';
 
 const execAsync = promisify(exec);
@@ -17,7 +17,6 @@ interface ExecuteCommandBody {
   command: string;
   cwd?: string;
   allowedCommands?: string[];
-  override?: boolean;
 }
 
 interface TechStackResponse {
@@ -47,8 +46,25 @@ const BLOCKED_PATTERNS = [
   />\s*\/etc\//, // clobber system configs
 ];
 
-// Shell metacharacter injection — block command chaining/substitution against sensitive targets
-const SHELL_INJECTION_PATTERN = /[;&|`]|(\$\()|(\${)/;
+// Shell injection patterns — block command chaining/substitution/redirection
+// Matches: $(), ${}, backticks, &&, ||, ;, |, >, <
+// Pipe (|) is allowed only for whitelisted patterns like `| grep`, `| head`, `| tail`, `| wc`, `| sort`
+const SHELL_INJECTION_PATTERN = /[;&`]|(\$\()|(\${)|&&|\|\||>>|<<|[><]/;
+const SAFE_PIPE_PATTERN = /\|\s*(grep|head|tail|wc|sort|uniq|less|more|cat|awk|sed|cut|tr)\b/;
+
+function containsShellInjection(command: string): boolean {
+  // Check for unsafe metacharacters
+  if (SHELL_INJECTION_PATTERN.test(command)) return true;
+  // Check for pipes — only allow safe pipe targets
+  if (command.includes('|')) {
+    const parts = command.split('|').slice(1); // skip the first segment (the base command)
+    for (const part of parts) {
+      const trimmed = part.trim();
+      if (!SAFE_PIPE_PATTERN.test('| ' + trimmed)) return true;
+    }
+  }
+  return false;
+}
 
 // Sensitive absolute paths that must not be the cwd
 const SENSITIVE_PATH_PREFIXES = ['/etc', '/root', '/boot', '/proc', '/sys', '/dev'];
@@ -57,12 +73,8 @@ const SENSITIVE_PATH_PREFIXES = ['/etc', '/root', '/boot', '/proc', '/sys', '/de
 function isBlockedCommand(command: string): boolean {
   const lower = command.toLowerCase();
   if (BLOCKED_PATTERNS.some((re) => re.test(lower))) return true;
-  // Block commands containing shell injection operators targeting sensitive paths
-  if (
-    SHELL_INJECTION_PATTERN.test(command) &&
-    SENSITIVE_PATH_PREFIXES.some((p) => command.includes(p))
-  )
-    return true;
+  // Block all shell injection metacharacters (command chaining, substitution, redirection)
+  if (containsShellInjection(command)) return true;
   return false;
 }
 
@@ -140,7 +152,7 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
   app.post(
     '/api/v1/terminal/execute',
     async (request: FastifyRequest<{ Body: ExecuteCommandBody }>, reply: FastifyReply) => {
-      const { command, cwd, allowedCommands, override } = request.body;
+      const { command, cwd, allowedCommands } = request.body;
 
       if (!command || typeof command !== 'string') {
         return sendError(reply, 400, 'Command is required');
@@ -151,15 +163,11 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
       if (allowedCommands && Array.isArray(allowedCommands)) {
         const baseCmd = command.trim().split(/\s+/)[0] ?? '';
         if (!allowedCommands.includes(baseCmd)) {
-          if (override !== true) {
-            return reply.code(403).send({
-              error: 'Command blocked: not in allowed set for this workspace',
-              command: baseCmd,
-              blocked: true,
-            });
-          }
-          // override === true: log audit event and continue
-          logger.warn('Terminal allowlist override', { command: baseCmd, ip: request.ip });
+          return reply.code(403).send({
+            error: 'Command blocked: not in allowed set for this workspace',
+            command: baseCmd,
+            blocked: true,
+          });
         }
       }
 
@@ -304,7 +312,7 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
 
         const response: ExecuteCommandResponse = {
           output: execError.stdout ?? '',
-          error: execError.stderr ?? (error instanceof Error ? error.message : String(error)),
+          error: execError.stderr ?? toErrorMessage(error),
           exitCode: execError.code ?? 1,
           cwd: workingDir,
         };

@@ -414,4 +414,216 @@ describe('RateLimiter', () => {
       rl.stop();
     });
   });
+
+  describe('createFastifyHook', () => {
+    function makeRateLimiter() {
+      return new RateLimiter({
+        defaultWindowMs: 60000,
+        defaultMaxRequests: 100,
+      } as any);
+    }
+
+    function makeRequest(url: string, ip = '127.0.0.1', headers: Record<string, string> = {}) {
+      return { url, ip, headers };
+    }
+
+    function makeReply() {
+      const sent: { code: number; headers: Record<string, string>; body: unknown } = {
+        code: 0,
+        headers: {},
+        body: null,
+      };
+      return {
+        sent,
+        code(n: number) {
+          sent.code = n;
+          return {
+            header(k: string, v: string) {
+              sent.headers[k] = v;
+              return this;
+            },
+            send(body: unknown) {
+              sent.body = body;
+            },
+          };
+        },
+      };
+    }
+
+    it('allows normal API requests through', () => {
+      const rl = makeRateLimiter();
+      const hook = rl.createFastifyHook();
+      let called = false;
+      hook(makeRequest('/api/v1/brain/notes'), makeReply(), () => {
+        called = true;
+      });
+      expect(called).toBe(true);
+      rl.stop();
+    });
+
+    it('skips health check endpoints', () => {
+      const rl = makeRateLimiter();
+      const hook = rl.createFastifyHook();
+      let called = false;
+      hook(makeRequest('/api/v1/terminal/health'), makeReply(), () => {
+        called = true;
+      });
+      expect(called).toBe(true);
+      rl.stop();
+    });
+
+    it('skips non-API routes', () => {
+      const rl = makeRateLimiter();
+      const hook = rl.createFastifyHook();
+      let called = false;
+      hook(makeRequest('/index.html'), makeReply(), () => {
+        called = true;
+      });
+      expect(called).toBe(true);
+      rl.stop();
+    });
+
+    it('skips WebSocket upgrade requests', () => {
+      const rl = makeRateLimiter();
+      const hook = rl.createFastifyHook();
+      let called = false;
+      hook(makeRequest('/api/v1/ws', '127.0.0.1', { upgrade: 'websocket' }), makeReply(), () => {
+        called = true;
+      });
+      expect(called).toBe(true);
+      rl.stop();
+    });
+
+    it('blocks after exceeding terminal route limit (10/min)', () => {
+      const rl = makeRateLimiter();
+      const hook = rl.createFastifyHook();
+      const ip = '10.0.0.1';
+
+      for (let i = 0; i < 10; i++) {
+        let passed = false;
+        hook(makeRequest('/api/v1/terminal/execute', ip), makeReply(), () => {
+          passed = true;
+        });
+        expect(passed).toBe(true);
+      }
+
+      // 11th should be blocked
+      const reply = makeReply();
+      let passed = false;
+      hook(makeRequest('/api/v1/terminal/execute', ip), reply, () => {
+        passed = true;
+      });
+      expect(passed).toBe(false);
+      expect(reply.sent.code).toBe(429);
+      expect(reply.sent.headers['Retry-After']).toBeDefined();
+      rl.stop();
+    });
+
+    it('blocks after exceeding auth route limit (5/min)', () => {
+      const rl = makeRateLimiter();
+      const hook = rl.createFastifyHook();
+      const ip = '10.0.0.2';
+
+      for (let i = 0; i < 5; i++) {
+        let passed = false;
+        hook(makeRequest('/api/v1/auth/login', ip), makeReply(), () => {
+          passed = true;
+        });
+        expect(passed).toBe(true);
+      }
+
+      const reply = makeReply();
+      let passed = false;
+      hook(makeRequest('/api/v1/auth/login', ip), reply, () => {
+        passed = true;
+      });
+      expect(passed).toBe(false);
+      expect(reply.sent.code).toBe(429);
+      rl.stop();
+    });
+
+    it('blocks after exceeding workflow execute limit (10/min)', () => {
+      const rl = makeRateLimiter();
+      const hook = rl.createFastifyHook();
+      const ip = '10.0.0.3';
+
+      for (let i = 0; i < 10; i++) {
+        let passed = false;
+        hook(makeRequest('/api/v1/workflow/abc/execute', ip), makeReply(), () => {
+          passed = true;
+        });
+        expect(passed).toBe(true);
+      }
+
+      const reply = makeReply();
+      let passed = false;
+      hook(makeRequest('/api/v1/workflow/abc/execute', ip), reply, () => {
+        passed = true;
+      });
+      expect(passed).toBe(false);
+      expect(reply.sent.code).toBe(429);
+      rl.stop();
+    });
+
+    it('allows 100 general API requests per IP', () => {
+      const rl = makeRateLimiter();
+      const hook = rl.createFastifyHook();
+      const ip = '10.0.0.4';
+
+      for (let i = 0; i < 100; i++) {
+        let passed = false;
+        hook(makeRequest('/api/v1/brain/notes', ip), makeReply(), () => {
+          passed = true;
+        });
+        expect(passed).toBe(true);
+      }
+
+      // 101st should be blocked
+      const reply = makeReply();
+      let passed = false;
+      hook(makeRequest('/api/v1/brain/notes', ip), reply, () => {
+        passed = true;
+      });
+      expect(passed).toBe(false);
+      expect(reply.sent.code).toBe(429);
+      rl.stop();
+    });
+
+    it('different IPs have independent limits', () => {
+      const rl = makeRateLimiter();
+      const hook = rl.createFastifyHook();
+
+      // Exhaust IP A
+      for (let i = 0; i < 10; i++) {
+        hook(makeRequest('/api/v1/terminal/execute', 'ip-a'), makeReply(), () => {});
+      }
+
+      // IP B should still pass
+      let passed = false;
+      hook(makeRequest('/api/v1/terminal/execute', 'ip-b'), makeReply(), () => {
+        passed = true;
+      });
+      expect(passed).toBe(true);
+      rl.stop();
+    });
+
+    it('returns proper rate limit headers on 429', () => {
+      const rl = makeRateLimiter();
+      const hook = rl.createFastifyHook();
+      const ip = '10.0.0.5';
+
+      // Exhaust auth limit
+      for (let i = 0; i < 5; i++) {
+        hook(makeRequest('/api/v1/auth/login', ip), makeReply(), () => {});
+      }
+
+      const reply = makeReply();
+      hook(makeRequest('/api/v1/auth/login', ip), reply, () => {});
+      expect(reply.sent.code).toBe(429);
+      expect(reply.sent.headers['Retry-After']).toBeDefined();
+      expect(reply.sent.headers['X-RateLimit-Remaining']).toBe('0');
+      expect(reply.sent.headers['X-RateLimit-Reset']).toBeDefined();
+      rl.stop();
+    });
+  });
 });

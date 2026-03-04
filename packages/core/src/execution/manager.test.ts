@@ -40,6 +40,7 @@ function makeMockStorage() {
     createApproval: vi.fn().mockResolvedValue(APPROVAL),
     updateApproval: vi.fn().mockResolvedValue({ ...APPROVAL, status: 'approved' }),
     listPendingApprovals: vi.fn().mockResolvedValue([APPROVAL]),
+    expireStaleSessions: vi.fn().mockResolvedValue(0),
   };
 }
 
@@ -88,16 +89,11 @@ function buildManager(configOverrides?: Partial<ExecutionConfig>, storageOverrid
 describe('CodeExecutionManager — initialization', () => {
   it('initializes and expires stale sessions', async () => {
     vi.useFakeTimers();
-    const staleSession = {
-      ...SESSION,
-      status: 'active' as const,
-      lastActivity: Date.now() - 9999999,
-    };
     const { manager, storage } = buildManager(undefined, {
-      listSessions: vi.fn().mockResolvedValue({ sessions: [staleSession], total: 1 }),
+      expireStaleSessions: vi.fn().mockResolvedValue(2),
     });
     await manager.initialize();
-    expect(storage.updateSession).toHaveBeenCalledWith(SESSION.id, { status: 'expired' });
+    expect(storage.expireStaleSessions).toHaveBeenCalledWith(BASE_CONFIG.sessionTimeout);
     await manager.cleanup();
     vi.useRealTimers();
   });

@@ -46,6 +46,7 @@ interface ActivityRecord {
 export class UsageAnomalyDetector {
   private readonly cfg: AnomalyDetectorConfig;
   private readonly activities = new Map<string, ActivityRecord>();
+  private evictTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private readonly storage: AnalyticsStorage | null,
@@ -53,6 +54,17 @@ export class UsageAnomalyDetector {
     config?: Partial<AnomalyDetectorConfig>
   ) {
     this.cfg = { ...DEFAULT_CONFIG, ...config };
+    if (this.cfg.enabled) {
+      this.evictTimer = setInterval(() => this.evictStale(), 60_000);
+      this.evictTimer.unref();
+    }
+  }
+
+  stop(): void {
+    if (this.evictTimer) {
+      clearInterval(this.evictTimer);
+      this.evictTimer = null;
+    }
   }
 
   recordMessage(userId: string, personalityId?: string | null): void {

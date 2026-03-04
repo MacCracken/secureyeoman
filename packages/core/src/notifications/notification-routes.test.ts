@@ -333,7 +333,7 @@ describe('GET /api/v1/notifications — error with non-Error thrown', () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/notifications' });
     expect(res.statusCode).toBe(500);
     const body = res.json();
-    expect(body.message).toBe('Unknown error');
+    expect(body.message).toBe('An internal error occurred');
   });
 });
 
@@ -344,7 +344,7 @@ describe('GET /api/v1/notifications/count — error with non-Error thrown', () =
     });
     const res = await app.inject({ method: 'GET', url: '/api/v1/notifications/count' });
     expect(res.statusCode).toBe(500);
-    expect(res.json().message).toBe('Unknown error');
+    expect(res.json().message).toBe('An internal error occurred');
   });
 });
 
@@ -358,7 +358,7 @@ describe('POST /api/v1/notifications/:id/read — error with non-Error thrown', 
       url: `/api/v1/notifications/${NOTIF_ID}/read`,
     });
     expect(res.statusCode).toBe(500);
-    expect(res.json().message).toBe('Unknown error');
+    expect(res.json().message).toBe('An internal error occurred');
   });
 });
 
@@ -372,7 +372,7 @@ describe('POST /api/v1/notifications/read-all — error with non-Error thrown', 
       url: '/api/v1/notifications/read-all',
     });
     expect(res.statusCode).toBe(500);
-    expect(res.json().message).toBe('Unknown error');
+    expect(res.json().message).toBe('An internal error occurred');
   });
 });
 
@@ -386,6 +386,6 @@ describe('DELETE /api/v1/notifications/:id — error with non-Error thrown', () 
       url: `/api/v1/notifications/${NOTIF_ID}`,
     });
     expect(res.statusCode).toBe(500);
-    expect(res.json().message).toBe('Unknown error');
+    expect(res.json().message).toBe('An internal error occurred');
   });
 });

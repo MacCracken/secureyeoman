@@ -288,6 +288,7 @@ export class GatewayServer {
       reply.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
       // Content-Security-Policy — defence-in-depth against XSS.
+      // SECURITY(121): Replace with nonce-based CSP when Vite build supports it
       // 'unsafe-inline' is required for Vite-built React (inline event handlers and styles).
       // script-src 'self' still prevents loading external scripts from untrusted origins.
       // connect-src includes ws:/wss: for WebSocket subscriptions.
@@ -355,6 +356,17 @@ export class GatewayServer {
     //     Failure to do so will reintroduce the CSRF attack surface that the
     //     Bearer-token model eliminates.
     // ─────────────────────────────────────────────────────────────────────────
+
+    // Global rate limiting hook — enforce per-IP limits on all API routes
+    {
+      const rateLimiter = this.secureYeoman.getRateLimiter();
+      if (rateLimiter && 'createFastifyHook' in rateLimiter) {
+        this.app.addHook(
+          'onRequest',
+          (rateLimiter as import('../security/rate-limiter.js').RateLimiter).createFastifyHook() as any
+        );
+      }
+    }
 
     // Auth + RBAC hooks (after CORS, before routes)
     if (this.authService) {
@@ -2683,14 +2695,25 @@ export class GatewayServer {
       this.getLogger().info('Dashboard SPA serving enabled', { distPath });
     }
 
-    // WebSocket endpoint — auth is handled via ?token= query param
-    // (browser WebSocket API does not support custom headers)
+    // WebSocket endpoint — auth via Sec-WebSocket-Protocol header (preferred) or ?token= query param (fallback)
     this.app.get('/ws/metrics', { websocket: true }, async (socket, request) => {
-      // Validate token from query string
+      // Extract token: prefer Sec-WebSocket-Protocol subprotocol, fall back to query param
       let authUser: { userId: string; role: string } | undefined;
       if (this.authService) {
         const url = new URL(request.url, `http://${request.hostname}`);
-        const token = url.searchParams.get('token');
+        const protocols = request.headers['sec-websocket-protocol'];
+        const protocolToken = typeof protocols === 'string'
+          ? protocols.split(',').map(p => p.trim()).find(p => p.startsWith('token.'))?.slice(6)
+          : undefined;
+        const queryToken = url.searchParams.get('token');
+        const token = protocolToken ?? queryToken;
+
+        if (queryToken && !protocolToken) {
+          this.getLogger().warn('WebSocket auth via query param is deprecated, use Sec-WebSocket-Protocol', {
+            ip: request.ip,
+          });
+        }
+
         if (!token) {
           socket.close(4401, 'Missing authentication token');
           return;
@@ -2801,17 +2824,29 @@ export class GatewayServer {
     });
 
     // ── Collaborative editing endpoint (Yjs binary protocol) ────────────
-    // Path: /ws/collab/:docId?token=<jwt>
+    // Path: /ws/collab/:docId — auth via Sec-WebSocket-Protocol (preferred) or ?token= (fallback)
     // docId format: "personality:<uuid>" | "skill:<uuid>"
     this.app.get('/ws/collab/:docId', { websocket: true }, async (socket, request) => {
       const params = request.params as { docId: string };
       const docId = params.docId;
 
-      // Auth — same token-in-query-param pattern as /ws/metrics
+      // Auth — prefer Sec-WebSocket-Protocol subprotocol, fall back to query param
       let authUser: { userId: string; role: string; displayName: string } | undefined;
       if (this.authService) {
         const url = new URL(request.url, `http://${request.hostname}`);
-        const token = url.searchParams.get('token');
+        const protocols = request.headers['sec-websocket-protocol'];
+        const protocolToken = typeof protocols === 'string'
+          ? protocols.split(',').map(p => p.trim()).find(p => p.startsWith('token.'))?.slice(6)
+          : undefined;
+        const queryToken = url.searchParams.get('token');
+        const token = protocolToken ?? queryToken;
+
+        if (queryToken && !protocolToken) {
+          this.getLogger().warn('WebSocket auth via query param is deprecated, use Sec-WebSocket-Protocol', {
+            ip: request.ip,
+          });
+        }
+
         if (!token) {
           socket.close(4401, 'Missing authentication token');
           return;

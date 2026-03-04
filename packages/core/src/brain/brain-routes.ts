@@ -12,6 +12,7 @@ import type { ExternalBrainSync } from './external-sync.js';
 import type { SoulManager } from '../soul/manager.js';
 import type { MemoryType, MemoryQuery, KnowledgeQuery } from './types.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export interface BrainRoutesOptions {
   brainManager: BrainManager;
@@ -371,11 +372,12 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     ) => {
       if (!heartbeatLogStorage) return sendError(reply, 503, 'Heartbeat log storage not available');
       const { checkName, status, limit, offset } = request.query;
+      const pg = parsePagination({ limit, offset });
       return heartbeatLogStorage.list({
         checkName,
         status: status as 'ok' | 'warning' | 'error' | undefined,
-        limit: limit ? Number(limit) : 20,
-        offset: offset ? Number(offset) : 0,
+        limit: pg.limit,
+        offset: pg.offset,
       });
     }
   );
@@ -400,11 +402,12 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     ) => {
       try {
         const q = request.query;
+        const auditPg = parsePagination(q, { maxLimit: MAX_QUERY_LIMIT, defaultLimit: 50 });
         const result = await brainManager.queryAuditLogs({
           level: q.level ? q.level.split(',') : undefined,
           event: q.event ? q.event.split(',') : undefined,
-          limit: q.limit ? Math.min(Number(q.limit), MAX_QUERY_LIMIT) : undefined,
-          offset: q.offset ? Number(q.offset) : undefined,
+          limit: auditPg.limit,
+          offset: auditPg.offset,
           from: q.from ? Number(q.from) : undefined,
           to: q.to ? Number(q.to) : undefined,
           order: q.order as 'asc' | 'desc' | undefined,
@@ -429,9 +432,10 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         if (!q) {
           return sendError(reply, 400, 'Query parameter "q" is required');
         }
+        const searchPg = parsePagination({ limit, offset }, { maxLimit: MAX_QUERY_LIMIT, defaultLimit: 50 });
         const result = await brainManager.searchAuditLogs(q, {
-          limit: limit ? Math.min(Number(limit), MAX_QUERY_LIMIT) : undefined,
-          offset: offset ? Number(offset) : undefined,
+          limit: searchPg.limit,
+          offset: searchPg.offset,
         });
         return result;
       } catch (err) {
@@ -461,8 +465,9 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         if (!query) {
           return sendError(reply, 400, 'Query parameter "query" is required');
         }
+        const semPg = parsePagination({ limit }, { maxLimit: MAX_QUERY_LIMIT, defaultLimit: 20 });
         const results = await brainManager.semanticSearch(query, {
-          limit: limit ? Math.min(Number(limit), MAX_QUERY_LIMIT) : undefined,
+          limit: semPg.limit,
           threshold: threshold ? Number(threshold) : undefined,
           type: type as 'memories' | 'knowledge' | 'all' | undefined,
           personalityId,

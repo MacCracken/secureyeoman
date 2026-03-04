@@ -11,6 +11,7 @@ import {
   type ReportFormat,
 } from './department-risk-report-generator.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 import {
   DepartmentCreateSchema,
   DepartmentUpdateSchema,
@@ -47,11 +48,12 @@ export function registerDepartmentRiskRoutes(
   // GET /api/v1/risk/departments
   app.get('/api/v1/risk/departments', async (req, reply) => {
     const query = req.query as { parentId?: string; limit?: string; offset?: string };
+    const { limit, offset } = parsePagination(query);
     try {
       const result = await mgr.listDepartments({
         parentId: query.parentId === 'null' ? null : query.parentId,
-        limit: query.limit ? Number(query.limit) : undefined,
-        offset: query.offset ? Number(query.offset) : undefined,
+        limit,
+        offset,
       });
       return reply.send(result);
     } catch (err) {
@@ -210,6 +212,7 @@ export function registerDepartmentRiskRoutes(
       offset?: string;
     };
     try {
+      const { limit, offset } = parsePagination(query);
       const result = await mgr.listRegisterEntries({
         departmentId: query.departmentId,
         status: query.status,
@@ -217,8 +220,8 @@ export function registerDepartmentRiskRoutes(
         severity: query.severity,
         overdue: query.overdue === 'true',
         owner: query.owner,
-        limit: query.limit ? Number(query.limit) : undefined,
-        offset: query.offset ? Number(query.offset) : undefined,
+        limit,
+        offset,
       });
       return reply.send(result);
     } catch (err) {

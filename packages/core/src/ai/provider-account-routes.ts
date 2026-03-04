@@ -5,7 +5,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { ProviderAccountManager } from './provider-account-manager.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 
 export interface ProviderAccountRoutesOptions {
   providerAccountManager: ProviderAccountManager;
@@ -46,7 +46,7 @@ export function registerProviderAccountRoutes(
         });
         return reply.code(201).send(account);
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Unknown error');
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -62,7 +62,7 @@ export function registerProviderAccountRoutes(
         const accounts = await providerAccountManager.listAccounts(request.query.provider);
         return accounts;
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Unknown error');
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -76,7 +76,7 @@ export function registerProviderAccountRoutes(
         if (!account) return sendError(reply, 404, 'Account not found');
         return account;
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Unknown error');
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -99,7 +99,7 @@ export function registerProviderAccountRoutes(
         if (!account) return sendError(reply, 404, 'Account not found');
         return account;
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Unknown error');
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -113,7 +113,7 @@ export function registerProviderAccountRoutes(
         if (!deleted) return sendError(reply, 404, 'Account not found');
         return reply.code(204).send();
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Unknown error');
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -127,7 +127,7 @@ export function registerProviderAccountRoutes(
         if (!account) return sendError(reply, 404, 'Account not found');
         return account;
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Unknown error');
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -141,7 +141,7 @@ export function registerProviderAccountRoutes(
         if (!account) return sendError(reply, 404, 'Account not found');
         return account;
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Unknown error');
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -160,7 +160,7 @@ export function registerProviderAccountRoutes(
         if (!account) return sendError(reply, 404, 'Account not found');
         return account;
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Unknown error');
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -171,7 +171,7 @@ export function registerProviderAccountRoutes(
       const result = await providerAccountManager.validateAllAccounts();
       return result;
     } catch (err) {
-      return sendError(reply, 500, err instanceof Error ? err.message : 'Unknown error');
+      return sendError(reply, 500, toErrorMessage(err));
     }
   });
 
@@ -193,7 +193,7 @@ export function registerProviderAccountRoutes(
         });
         return summary;
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Unknown error');
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -215,7 +215,7 @@ export function registerProviderAccountRoutes(
         });
         return trend;
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Unknown error');
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -249,7 +249,7 @@ export function registerProviderAccountRoutes(
           .header('Content-Disposition', 'attachment; filename="provider-costs.csv"')
           .send(csv);
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Unknown error');
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );

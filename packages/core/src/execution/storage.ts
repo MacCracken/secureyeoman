@@ -147,6 +147,14 @@ export class ExecutionStorage extends PgBaseStorage {
     return row ? sessionFromRow(row) : null;
   }
 
+  async expireStaleSessions(timeoutMs: number): Promise<number> {
+    const cutoff = Date.now() - timeoutMs;
+    return this.execute(
+      `UPDATE execution.sessions SET status = 'expired' WHERE status = 'active' AND last_activity < $1`,
+      [cutoff]
+    );
+  }
+
   async deleteSession(id: string): Promise<boolean> {
     const count = await this.execute(`DELETE FROM execution.sessions WHERE id = $1`, [id]);
     return count > 0;

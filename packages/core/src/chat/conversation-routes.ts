@@ -6,6 +6,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { ConversationStorage } from './conversation-storage.js';
 import type { HistoryCompressor } from './compression/compressor.js';
 import { sendError } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export interface ConversationRoutesOptions {
   conversationStorage: ConversationStorage;
@@ -77,8 +78,7 @@ export function registerConversationRoutes(
         Querystring: { limit?: string; offset?: string; personalityId?: string };
       }>
     ) => {
-      const limit = request.query.limit ? Number(request.query.limit) : 50;
-      const offset = request.query.offset ? Number(request.query.offset) : 0;
+      const { limit, offset } = parsePagination(request.query, { maxLimit: 100, defaultLimit: 50 });
       const { personalityId } = request.query;
       return await conversationStorage.listConversations({ limit, offset, personalityId });
     }
@@ -120,8 +120,7 @@ export function registerConversationRoutes(
       if (!conversation) {
         return sendError(reply, 404, 'Conversation not found');
       }
-      const limit = request.query.limit ? Number(request.query.limit) : 1000;
-      const offset = request.query.offset ? Number(request.query.offset) : 0;
+      const { limit, offset } = parsePagination(request.query, { maxLimit: 1000, defaultLimit: 1000 });
       const messages = await conversationStorage.getMessages(request.params.id, { limit, offset });
       return { ...conversation, messages };
     }

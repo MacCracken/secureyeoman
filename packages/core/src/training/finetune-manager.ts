@@ -140,7 +140,7 @@ export class FinetuneManager {
 
   async listJobs(): Promise<FinetuneJob[]> {
     const { rows } = await this.pool.query<Record<string, unknown>>(
-      `SELECT * FROM training.finetune_jobs ORDER BY created_at DESC`
+      `SELECT * FROM training.finetune_jobs ORDER BY created_at DESC LIMIT 100`
     );
     return rows.map(rowToJob);
   }

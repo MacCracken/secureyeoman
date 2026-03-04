@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Pre-commit hook: scan staged files for potential credential leaks.
+# Install: git config core.hooksPath .githooks  (or npm run prepare)
+
+set -euo pipefail
+
+HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
+PATTERNS_FILE="$HOOK_DIR/patterns.txt"
+
+if [ ! -f "$PATTERNS_FILE" ]; then
+  echo "Warning: $PATTERNS_FILE not found — skipping secret scan"
+  exit 0
+fi
+
+# Build grep pattern from patterns.txt (skip comments and blank lines)
+PATTERNS=$(grep -v '^\s*#' "$PATTERNS_FILE" | grep -v '^\s*$' || true)
+if [ -z "$PATTERNS" ]; then
+  exit 0
+fi
+
+# Get staged file contents (only added/modified, not deleted)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null || true)
+if [ -z "$STAGED_FILES" ]; then
+  exit 0
+fi
+
+FOUND=0
+
+while IFS= read -r file; do
+  # Only scan text files
+  if ! file --mime-type "$file" 2>/dev/null | grep -q 'text/'; then
+    continue
+  fi
+
+  # Check staged content (not working tree) against each pattern
+  while IFS= read -r pattern; do
+    MATCHES=$(git show ":$file" 2>/dev/null | grep -nE "$pattern" 2>/dev/null || true)
+    if [ -n "$MATCHES" ]; then
+      # Skip lines that are clearly placeholders
+      REAL_MATCHES=$(echo "$MATCHES" | grep -v 'CHANGE_ME' | grep -v 'placeholder' | grep -v 'example' || true)
+      if [ -n "$REAL_MATCHES" ]; then
+        echo "BLOCKED: Potential secret in $file:"
+        echo "$REAL_MATCHES" | head -3
+        echo ""
+        FOUND=1
+      fi
+    fi
+  done <<< "$PATTERNS"
+done <<< "$STAGED_FILES"
+
+if [ "$FOUND" -ne 0 ]; then
+  echo "========================================="
+  echo "Commit blocked: potential credentials detected."
+  echo "If these are false positives, use: git commit --no-verify"
+  echo "========================================="
+  exit 1
+fi
+
+exit 0

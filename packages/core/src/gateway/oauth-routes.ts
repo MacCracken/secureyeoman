@@ -8,7 +8,7 @@ import type { AuthService } from '../security/auth.js';
 import { AuthError } from '../security/auth.js';
 import { generateSecureToken, sha256 } from '../utils/crypto.js';
 import type { OAuthTokenService } from './oauth-token-service.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 
 export interface OAuthProvider {
   id: string;
@@ -600,7 +600,7 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
           `${fe}/connections/oauth?connected=true&provider=${providerId}&email=${encodeURIComponent(userInfo.email || '')}&name=${encodeURIComponent(userInfo.name || '')}&token=${connectionToken}`
         );
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
+        const message = toErrorMessage(err);
         if (providerId === 'gmail') {
           return reply.redirect(`${fe}/connections/email?error=${encodeURIComponent(message)}`);
         }

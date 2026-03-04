@@ -26,5 +26,10 @@ export function httpStatusName(code: number): string {
 }
 
 export function sendError(reply: FastifyReply, statusCode: number, message: string) {
-  return reply.code(statusCode).send({ error: httpStatusName(statusCode), message, statusCode });
+  // For 500 Internal Server Error, sanitize the message to avoid leaking internals.
+  // Other 5xx codes (502, 503) use intentional status descriptions and are safe to surface.
+  const safeMessage = statusCode === 500
+    ? 'An internal error occurred'
+    : message;
+  return reply.code(statusCode).send({ error: httpStatusName(statusCode), message: safeMessage, statusCode });
 }

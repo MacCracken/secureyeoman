@@ -119,21 +119,21 @@ describe('findDirectoryEntries', () => {
 });
 
 describe('readOptionalMd', () => {
-  it('returns content when file exists', () => {
+  it('returns content when file exists', async () => {
     writeMd('test.md', '# Hello');
     const mgr = new MarketplaceManager(mockStorage(), {
       logger: createNoopLogger(),
       communityRepoPath: tmpDir,
     });
-    expect(mgr.readOptionalMd(path.join(tmpDir, 'test.md'))).toBe('# Hello');
+    expect(await mgr.readOptionalMd(path.join(tmpDir, 'test.md'))).toBe('# Hello');
   });
 
-  it('returns null when file does not exist', () => {
+  it('returns null when file does not exist', async () => {
     const mgr = new MarketplaceManager(mockStorage(), {
       logger: createNoopLogger(),
       communityRepoPath: tmpDir,
     });
-    expect(mgr.readOptionalMd(path.join(tmpDir, 'nonexistent.md'))).toBeNull();
+    expect(await mgr.readOptionalMd(path.join(tmpDir, 'nonexistent.md'))).toBeNull();
   });
 });
 

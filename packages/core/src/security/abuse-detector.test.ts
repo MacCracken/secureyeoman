@@ -177,16 +177,20 @@ describe('AbuseDetector — recordToolCalls()', () => {
 // ─── session TTL eviction ─────────────────────────────────────────────────────
 
 describe('AbuseDetector — session eviction', () => {
-  it('evicts stale sessions so their state is lost', async () => {
-    const { detector } = makeDetector({ sessionTtlMs: 1, blockedRetryLimit: 2 });
-    detector.recordBlock('s1');
-    // Wait for TTL to pass
-    await new Promise((r) => setTimeout(r, 5));
-    // check() triggers eviction; session 's1' should be gone
-    detector.check('s1'); // eviction happens here
-    // Now 's1' starts fresh — one block should not trigger cool-down
-    detector.recordBlock('s1');
-    expect(detector.check('s1').inCoolDown).toBe(false);
+  it('evicts stale sessions via periodic timer so their state is lost', () => {
+    vi.useFakeTimers();
+    try {
+      const { detector } = makeDetector({ sessionTtlMs: 1, blockedRetryLimit: 2 });
+      detector.recordBlock('s1');
+      // Advance past TTL + trigger the 60s eviction timer
+      vi.advanceTimersByTime(60_001);
+      // Now 's1' starts fresh — one block should not trigger cool-down
+      detector.recordBlock('s1');
+      expect(detector.check('s1').inCoolDown).toBe(false);
+      detector.stop();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

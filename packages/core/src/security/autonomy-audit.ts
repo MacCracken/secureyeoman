@@ -260,7 +260,7 @@ export class AutonomyAuditStorage extends PgBaseStorage {
 
   async listAuditRuns(): Promise<AuditRun[]> {
     const rows = await this.queryMany<AuditRunRow>(
-      `SELECT * FROM autonomy_audit_runs ORDER BY created_at DESC`
+      `SELECT * FROM autonomy_audit_runs ORDER BY created_at DESC LIMIT 500`
     );
     return rows.map(rowToAuditRun);
   }

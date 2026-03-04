@@ -8,7 +8,7 @@
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 import type { FederationManager } from './federation-manager.js';
 import type { FederationStorage } from './federation-storage.js';
 
@@ -67,7 +67,7 @@ export function registerFederationRoutes(
       const peers = await federationManager.listPeers();
       return reply.send({ peers });
     } catch (err) {
-      return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to list peers');
+      return sendError(reply, 500, toErrorMessage(err));
     }
   });
 
@@ -87,7 +87,7 @@ export function registerFederationRoutes(
         const { sharedSecretEnc: _enc, sharedSecretHash: _hash, ...safe } = peer as any;
         return reply.code(201).send({ peer: safe });
       } catch (err) {
-        return sendError(reply, 400, err instanceof Error ? err.message : 'Failed to add peer');
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -100,7 +100,7 @@ export function registerFederationRoutes(
         await federationManager.removePeer(request.params.id);
         return reply.code(204).send();
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to remove peer');
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -122,7 +122,7 @@ export function registerFederationRoutes(
         return sendError(
           reply,
           500,
-          err instanceof Error ? err.message : 'Failed to update features'
+          toErrorMessage(err)
         );
       }
     }
@@ -136,7 +136,7 @@ export function registerFederationRoutes(
         const status = await federationManager.checkHealth(request.params.id);
         return reply.send({ status });
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Health check failed');
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -158,7 +158,7 @@ export function registerFederationRoutes(
         return sendError(
           reply,
           500,
-          err instanceof Error ? err.message : 'Failed to list peer marketplace'
+          toErrorMessage(err)
         );
       }
     }
@@ -185,7 +185,7 @@ export function registerFederationRoutes(
         return sendError(
           reply,
           500,
-          err instanceof Error ? err.message : 'Failed to install skill'
+          toErrorMessage(err)
         );
       }
     }
@@ -216,7 +216,7 @@ export function registerFederationRoutes(
         return sendError(
           reply,
           500,
-          err instanceof Error ? err.message : 'Failed to export bundle'
+          toErrorMessage(err)
         );
       }
     }
@@ -245,7 +245,7 @@ export function registerFederationRoutes(
         return sendError(
           reply,
           400,
-          err instanceof Error ? err.message : 'Failed to import bundle'
+          toErrorMessage(err)
         );
       }
     }
@@ -265,7 +265,7 @@ export function registerFederationRoutes(
       const entries = await brainManager.semanticSearch(query, { limit });
       return reply.send({ entries });
     } catch (err) {
-      return sendError(reply, 500, err instanceof Error ? err.message : 'Knowledge search failed');
+      return sendError(reply, 500, toErrorMessage(err));
     }
   });
 
@@ -282,7 +282,7 @@ export function registerFederationRoutes(
       return sendError(
         reply,
         500,
-        err instanceof Error ? err.message : 'Marketplace search failed'
+        toErrorMessage(err)
       );
     }
   });
@@ -298,7 +298,7 @@ export function registerFederationRoutes(
       if (!skill) return sendError(reply, 404, 'Skill not found');
       return reply.send(skill);
     } catch (err) {
-      return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to get skill');
+      return sendError(reply, 500, toErrorMessage(err));
     }
   });
 }

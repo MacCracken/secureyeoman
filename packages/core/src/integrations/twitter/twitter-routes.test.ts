@@ -647,7 +647,7 @@ describe('Twitter Routes', () => {
         payload: { text: 'fail' },
       });
       expect(res.statusCode).toBe(500);
-      expect(res.json().message).toContain('string error');
+      expect(res.json().message).toBe('An internal error occurred');
     });
   });
 
@@ -681,7 +681,7 @@ describe('Twitter Routes', () => {
         },
       });
       expect(res.statusCode).toBe(500);
-      expect(res.json().message).toContain('Upload failed');
+      expect(res.json().message).toBe('An internal error occurred');
     });
   });
 
@@ -824,7 +824,7 @@ describe('Twitter Routes', () => {
       const app = await buildApp(mockIntegrationManager());
       const res = await app.inject({ method: 'GET', url: '/api/v1/twitter/profile' });
       expect(res.statusCode).toBe(500);
-      expect(res.json().message).toContain('42');
+      expect(res.json().message).toBe('An internal error occurred');
     });
   });
 

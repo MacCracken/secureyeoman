@@ -160,7 +160,7 @@ export class DistillationManager {
 
   async listJobs(): Promise<DistillationJob[]> {
     const { rows } = await this.pool.query<Record<string, unknown>>(
-      `SELECT * FROM training.distillation_jobs ORDER BY created_at DESC`
+      `SELECT * FROM training.distillation_jobs ORDER BY created_at DESC LIMIT 100`
     );
     return rows.map(rowToJob);
   }

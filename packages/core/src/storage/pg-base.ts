@@ -6,6 +6,7 @@
 
 import pg from 'pg';
 import { getPool } from './pg-pool.js';
+import { getLogger, createNoopLogger } from '../logging/logger.js';
 
 export class PgBaseStorage {
   protected getPool(): pg.Pool {
@@ -72,8 +73,16 @@ export class PgBaseStorage {
   /**
    * Execute a function inside a transaction with row-level security bypassed.
    * Used for admin operations that must see all tenants' data.
+   * Every invocation is audit-logged at warn level.
    */
   protected async bypassRls<T>(fn: (client: import('pg').PoolClient) => Promise<T>): Promise<T> {
+    // Capture caller info for audit trail
+    const stack = new Error().stack ?? '';
+    const callerLine = stack.split('\n').slice(2, 3).join('').trim();
+    let logger;
+    try { logger = getLogger(); } catch { logger = createNoopLogger(); }
+    logger.warn({ caller: callerLine, class: this.constructor.name }, 'RLS bypass executed');
+
     return this.withTransaction(async (client) => {
       await client.query('SET LOCAL row_security = off');
       return fn(client);

@@ -10,6 +10,7 @@ import type { McpToolManifest } from '@secureyeoman/shared';
 import type { McpHealthMonitor } from './health-monitor.js';
 import type { McpCredentialManager } from './credential-manager.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export interface McpRoutesOptions {
   mcpStorage: McpStorage;
@@ -61,8 +62,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
   app.get(
     '/api/v1/mcp/servers',
     async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
-      const limit = request.query.limit ? Number(request.query.limit) : undefined;
-      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      const { limit, offset } = parsePagination(request.query);
       return mcpStorage.listServers({ limit, offset });
     }
   );

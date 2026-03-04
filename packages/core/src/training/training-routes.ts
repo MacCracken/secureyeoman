@@ -13,7 +13,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SecureYeoman } from '../secureyeoman.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 import type { DistillationJobConfig, TeacherClient } from './distillation-manager.js';
 import type { FinetuneJobConfig } from './finetune-manager.js';
 import type { AIMessage } from '@secureyeoman/shared';
@@ -27,6 +27,7 @@ import type {
   SideBySideRating,
 } from '@secureyeoman/shared';
 import { requiresLicense } from '../licensing/license-guard.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export interface TrainingRoutesOptions {
   secureYeoman: SecureYeoman;
@@ -131,7 +132,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
             reply.raw.write(line);
           }
         } catch (err) {
-          const msg = err instanceof Error ? err.message : 'Export error';
+          const msg = toErrorMessage(err);
           reply.raw.write(`{"error":${JSON.stringify(msg)}}\n`);
         }
         reply.raw.end();
@@ -229,7 +230,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
         }
       } catch (err) {
         // Best-effort: stream an error marker and end
-        const msg = err instanceof Error ? err.message : 'Unknown error';
+        const msg = toErrorMessage(err);
         reply.raw.write(`{"error":${JSON.stringify(msg)}}\n`);
       }
 
@@ -285,7 +286,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       if (!body.outputPath?.trim()) return sendError(reply, 400, 'outputPath is required');
 
       const job = await manager.createJob(body);
-      return reply.status(201).send(job);
+      return reply.code(201).send(job);
     }
   );
 
@@ -330,7 +331,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
 
       const deleted = await manager.deleteJob(request.params.id);
       if (!deleted) return sendError(reply, 404, 'Job not found');
-      return reply.status(204).send();
+      return reply.code(204).send();
     }
   );
 
@@ -379,7 +380,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       // Fire and forget — client polls GET .../jobs/:id for status updates
       void manager.runJob(job.id, conversationStorage, teacherClient);
 
-      return reply.status(202).send({ id: job.id, status: 'running' });
+      return reply.code(202).send({ id: job.id, status: 'running' });
     }
   );
 
@@ -409,12 +410,12 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
         await manager.startJob(job.id);
       } catch (err) {
         // Non-fatal: job is created, Docker may not be available in dev
-        const msg = err instanceof Error ? err.message : 'Docker error';
-        return reply.status(201).send({ ...job, startError: msg });
+        const msg = toErrorMessage(err);
+        return reply.code(201).send({ ...job, startError: msg });
       }
 
       const started = await manager.getJob(job.id);
-      return reply.status(201).send(started ?? job);
+      return reply.code(201).send(started ?? job);
     }
   );
 
@@ -470,7 +471,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
           reply.raw.write(`data: ${JSON.stringify({ log: line })}\n\n`);
         }
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Log stream error';
+        const msg = toErrorMessage(err);
         reply.raw.write(`data: ${JSON.stringify({ error: msg })}\n\n`);
       }
 
@@ -515,7 +516,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
 
       const deleted = await manager.deleteJob(request.params.id);
       if (!deleted) return sendError(reply, 404, 'Job not found');
-      return reply.status(204).send();
+      return reply.code(204).send();
     }
   );
 
@@ -674,7 +675,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       const pool = secureYeoman.getPool?.();
       if (!pool) return sendError(reply, 503, 'Database pool not available');
 
-      const limit = Math.min(parseInt(request.query.limit ?? '100', 10) || 100, 1000);
+      const { limit } = parsePagination(request.query, { maxLimit: 1000, defaultLimit: 100 });
       const { rows } = await pool.query<Record<string, unknown>>(
         `SELECT conversation_id, quality_score, signal_source, scored_at
          FROM   training.conversation_quality
@@ -746,7 +747,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       // Broadcast reward event to training stream
       trainingStream.broadcast({ type: 'reward', value: ep.reward, ts: Date.now() });
 
-      return reply.status(201).send(ep);
+      return reply.code(201).send(ep);
     }
   );
 
@@ -765,10 +766,11 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       const manager = secureYeoman.getComputerUseManager();
       if (!manager) return sendError(reply, 503, 'Computer-use manager not available');
 
+      const { limit } = parsePagination(request.query, { defaultLimit: 100 });
       const opts: ListEpisodesOptions = {
         skillName: request.query.skillName,
         sessionId: request.query.sessionId,
-        limit: request.query.limit ? parseInt(request.query.limit, 10) : 100,
+        limit,
       };
 
       const episodes = await manager.listEpisodes(opts);
@@ -809,7 +811,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
 
       const deleted = await manager.deleteEpisode(request.params.id);
       if (!deleted) return sendError(reply, 404, 'Episode not found');
-      return reply.status(204).send();
+      return reply.code(204).send();
     }
   );
 
@@ -830,7 +832,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       if (!body?.samples?.length) return sendError(reply, 400, 'samples must be a non-empty array');
 
       const dataset = await manager.createDataset(body);
-      return reply.status(201).send(dataset);
+      return reply.code(201).send(dataset);
     }
   );
 
@@ -882,7 +884,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
 
       const deleted = await manager.deleteDataset(request.params.id);
       if (!deleted) return sendError(reply, 404, 'Dataset not found');
-      return reply.status(204).send();
+      return reply.code(204).send();
     }
   );
 
@@ -928,7 +930,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
         },
       });
 
-      return reply.status(202).send({ status: 'started', modelName: body.modelName });
+      return reply.code(202).send({ status: 'started', modelName: body.modelName });
     }
   );
 
@@ -971,7 +973,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
 
       const deleted = await manager.deleteEvalRun(request.params.id);
       if (!deleted) return sendError(reply, 404, 'Eval run not found');
-      return reply.status(204).send();
+      return reply.code(204).send();
     }
   );
 
@@ -1132,7 +1134,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       if (!body?.source) return sendError(reply, 400, 'source is required');
 
       const pair = await manager.recordAnnotation(body);
-      return reply.status(201).send(pair);
+      return reply.code(201).send(pair);
     }
   );
 
@@ -1147,11 +1149,12 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       const manager = secureYeoman.getPreferenceManager();
       if (!manager) return sendError(reply, 503, 'Preference manager not available');
 
+      const { limit, offset } = parsePagination(request.query);
       const pairs = await manager.listAnnotations({
         personalityId: request.query.personalityId,
         source: request.query.source as 'annotation' | 'comparison' | 'multi_turn' | undefined,
-        limit: request.query.limit ? parseInt(request.query.limit, 10) : undefined,
-        offset: request.query.offset ? parseInt(request.query.offset, 10) : undefined,
+        limit,
+        offset,
       });
       return { pairs };
     }
@@ -1165,7 +1168,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
 
       const deleted = await manager.deleteAnnotation(request.params.id);
       if (!deleted) return sendError(reply, 404, 'Preference pair not found');
-      return reply.status(204).send();
+      return reply.code(204).send();
     }
   );
 
@@ -1192,7 +1195,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
           reply.raw.write(line);
         }
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Export error';
+        const msg = toErrorMessage(err);
         reply.raw.write(`{"error":${JSON.stringify(msg)}}\n`);
       }
 
@@ -1235,7 +1238,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
         body.rules ?? {},
         body.outputDir
       );
-      return reply.status(201).send(dataset);
+      return reply.code(201).send(dataset);
     }
   );
 
@@ -1248,9 +1251,10 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       const manager = secureYeoman.getDatasetCuratorManager();
       if (!manager) return sendError(reply, 503, 'Dataset curator not available');
 
+      const { limit } = parsePagination(request.query);
       const datasets = await manager.listDatasets({
         status: request.query.status,
-        limit: request.query.limit ? parseInt(request.query.limit, 10) : undefined,
+        limit,
       });
       return { datasets };
     }
@@ -1276,7 +1280,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
 
       const deleted = await manager.deleteDataset(request.params.id);
       if (!deleted) return sendError(reply, 404, 'Dataset not found');
-      return reply.status(204).send();
+      return reply.code(204).send();
     }
   );
 
@@ -1292,7 +1296,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       if (!body?.name?.trim()) return sendError(reply, 400, 'name is required');
 
       const experiment = await manager.createExperiment(body);
-      return reply.status(201).send(experiment);
+      return reply.code(201).send(experiment);
     }
   );
 
@@ -1305,6 +1309,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       const manager = secureYeoman.getExperimentRegistryManager();
       if (!manager) return sendError(reply, 503, 'Experiment registry not available');
 
+      const { limit } = parsePagination(request.query);
       const experiments = await manager.listExperiments({
         status: request.query.status as
           | 'draft'
@@ -1313,7 +1318,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
           | 'failed'
           | 'archived'
           | undefined,
-        limit: request.query.limit ? parseInt(request.query.limit, 10) : undefined,
+        limit,
       });
       return { experiments };
     }
@@ -1367,7 +1372,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
 
       const deleted = await manager.deleteExperiment(request.params.id);
       if (!deleted) return sendError(reply, 404, 'Experiment not found');
-      return reply.status(204).send();
+      return reply.code(204).send();
     }
   );
 
@@ -1413,7 +1418,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       if (!body?.modelName?.trim()) return sendError(reply, 400, 'modelName is required');
 
       const version = await manager.deployModel(body);
-      return reply.status(201).send(version);
+      return reply.code(201).send(version);
     }
   );
 
@@ -1490,7 +1495,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       if (!body?.modelB?.trim()) return sendError(reply, 400, 'modelB is required');
 
       const test = await manager.createTest(body);
-      return reply.status(201).send(test);
+      return reply.code(201).send(test);
     }
   );
 
@@ -1592,7 +1597,7 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
         annotatorId: body.annotatorId,
       });
 
-      return reply.status(201).send(pair);
+      return reply.code(201).send(pair);
     }
   );
 }

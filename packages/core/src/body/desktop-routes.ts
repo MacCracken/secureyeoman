@@ -14,7 +14,7 @@
 
 import { randomUUID } from 'crypto';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 import { checkCapturePermission } from './capture-permissions.js';
 import type { CaptureAuditLogger } from './capture-audit-logger.js';
 import type { DesktopTrainingBridge } from './desktop-training-bridge.js';
@@ -35,7 +35,7 @@ export interface DesktopRoutesOpts {
 }
 
 function sanitizeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  return toErrorMessage(error);
 }
 
 /**

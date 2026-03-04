@@ -7,7 +7,7 @@ import { promisify } from 'node:util';
 import { mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { getLogger } from '../logging/logger.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -52,7 +52,7 @@ export function registerWorktreeRoutes(app: FastifyInstance): void {
         };
         return reply.code(201).send(info);
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = toErrorMessage(err);
         logger.warn('Failed to create worktree', { name, error: msg });
         return sendError(reply, 500, `Failed to create worktree: ${msg}`);
       }
@@ -90,7 +90,7 @@ export function registerWorktreeRoutes(app: FastifyInstance): void {
       }
       return { worktrees };
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = toErrorMessage(err);
       logger.warn('Failed to list worktrees', { error: msg });
       return { worktrees: [] };
     }
@@ -118,7 +118,7 @@ export function registerWorktreeRoutes(app: FastifyInstance): void {
         logger.info('Removed worktree', { id, path: worktreePath });
         return reply.code(204).send();
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = toErrorMessage(err);
         logger.warn('Failed to remove worktree', { id, error: msg });
         return sendError(reply, 500, `Failed to remove worktree: ${msg}`);
       }

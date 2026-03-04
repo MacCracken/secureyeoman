@@ -158,7 +158,7 @@ export class RBACStorage extends PgBaseStorage {
    */
   async getAllRoleDefinitions(): Promise<RoleDefinition[]> {
     const rows = await this.queryMany<RoleDefinitionRow>(
-      'SELECT * FROM rbac.role_definitions ORDER BY created_at ASC'
+      'SELECT * FROM rbac.role_definitions ORDER BY created_at ASC LIMIT 500'
     );
 
     return rows.map((row) => this.rowToRoleDefinition(row));

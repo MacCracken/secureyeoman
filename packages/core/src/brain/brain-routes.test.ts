@@ -621,7 +621,7 @@ describe('POST /api/v1/brain/heartbeat/beat', () => {
     });
     const res = await app.inject({ method: 'POST', url: '/api/v1/brain/heartbeat/beat' });
     expect(res.statusCode).toBe(500);
-    expect(res.json().message).toBe('fail');
+    expect(res.json().message).toBe('An internal error occurred');
   });
 });
 
@@ -857,8 +857,8 @@ describe('GET /api/v1/brain/logs', () => {
     const callArg = queryMock.mock.calls[0][0];
     expect(callArg.level).toBeUndefined();
     expect(callArg.event).toBeUndefined();
-    expect(callArg.limit).toBeUndefined();
-    expect(callArg.offset).toBeUndefined();
+    expect(callArg.limit).toBe(50);
+    expect(callArg.offset).toBe(0);
     expect(callArg.from).toBeUndefined();
     expect(callArg.to).toBeUndefined();
     expect(callArg.order).toBeUndefined();
@@ -967,7 +967,7 @@ describe('GET /api/v1/brain/search/similar', () => {
       url: '/api/v1/brain/search/similar?query=hello',
     });
     const callArg = searchMock.mock.calls[0][1];
-    expect(callArg.limit).toBeUndefined();
+    expect(callArg.limit).toBe(20);
     expect(callArg.threshold).toBeUndefined();
     expect(callArg.type).toBeUndefined();
     expect(callArg.personalityId).toBeUndefined();
@@ -1199,7 +1199,7 @@ describe('POST /api/v1/brain/sync', () => {
     });
     const res = await app.inject({ method: 'POST', url: '/api/v1/brain/sync' });
     expect(res.statusCode).toBe(500);
-    expect(res.json().message).toBe('sync failed');
+    expect(res.json().message).toBe('An internal error occurred');
   });
 
   it('returns 429 when rate limited', async () => {

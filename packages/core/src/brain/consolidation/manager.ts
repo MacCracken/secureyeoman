@@ -58,6 +58,7 @@ export class ConsolidationManager {
   private readonly aiProvider?: AIProvider;
   private schedule: string;
   private schedulerTimer: ReturnType<typeof setInterval> | null = null;
+  private static readonly MAX_FLAGGED_IDS = 10_000;
   private flaggedIds = new Set<string>();
   private history: ConsolidationReport[] = [];
 
@@ -116,7 +117,7 @@ export class ConsolidationManager {
 
       // Flag for scheduled run
       if (topScore >= this.config.quickCheck.flagThreshold) {
-        this.flaggedIds.add(memory.id);
+        this.addFlaggedId(memory.id);
         await this.persistFlaggedIds();
         return 'flagged';
       }
@@ -318,7 +319,7 @@ export class ConsolidationManager {
     try {
       const raw = await this.storage.getMeta(FLAGGED_IDS_META_KEY);
       if (raw) {
-        const ids = JSON.parse(raw) as string[];
+        const ids = (JSON.parse(raw) as string[]).slice(-ConsolidationManager.MAX_FLAGGED_IDS);
         for (const id of ids) {
           this.flaggedIds.add(id);
         }
@@ -369,6 +370,16 @@ export class ConsolidationManager {
   }
 
   // ── Private ──────────────────────────────────────────────
+
+  /** Add to flaggedIds with oldest-first eviction at cap. */
+  private addFlaggedId(id: string): void {
+    if (this.flaggedIds.size >= ConsolidationManager.MAX_FLAGGED_IDS) {
+      // Set iteration order is insertion order — evict oldest
+      const oldest = this.flaggedIds.values().next().value;
+      if (oldest !== undefined) this.flaggedIds.delete(oldest);
+    }
+    this.flaggedIds.add(id);
+  }
 
   private checkSchedule(): void {
     // Full 5-field cron matching: minute hour day-of-month month day-of-week

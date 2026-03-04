@@ -334,7 +334,7 @@ export class MarketplaceManager {
 
     for (const filePath of jsonFiles) {
       try {
-        const raw = fs.readFileSync(filePath, 'utf-8');
+        const raw = await fs.promises.readFile(filePath, 'utf-8');
         const data = JSON.parse(raw) as Record<string, unknown>;
 
         if (!data.name || typeof data.name !== 'string') {
@@ -424,9 +424,19 @@ export class MarketplaceManager {
         const workflowFiles = this.findJsonFiles(workflowsDir);
         const syncedWorkflowNames = new Set<string>();
 
+        // Fetch all definitions once and build lookup map to avoid N+1 queries
+        const { definitions: allDefs } = await this.workflowManager.listDefinitions({
+          limit: 1000,
+        });
+        const communityDefsByName = new Map(
+          allDefs
+            .filter((d) => (d as any).createdBy === 'community')
+            .map((d) => [d.name, d])
+        );
+
         for (const filePath of workflowFiles) {
           try {
-            const raw = fs.readFileSync(filePath, 'utf-8');
+            const raw = await fs.promises.readFile(filePath, 'utf-8');
             const data = JSON.parse(raw) as Record<string, unknown>;
 
             if (!data.name || typeof data.name !== 'string') {
@@ -441,13 +451,7 @@ export class MarketplaceManager {
             }
 
             const workflowName = data.name;
-            // Look up existing community workflow by name
-            const { definitions: allDefs } = await this.workflowManager.listDefinitions({
-              limit: 1000,
-            });
-            const existing = allDefs.find(
-              (d) => d.name === workflowName && (d as any).createdBy === 'community'
-            );
+            const existing = communityDefsByName.get(workflowName);
 
             if (existing) {
               await this.workflowManager.updateDefinition(existing.id, {
@@ -486,7 +490,7 @@ export class MarketplaceManager {
         for (const dirPath of workflowDirEntries) {
           try {
             const metadataPath = path.join(dirPath, 'metadata.json');
-            const raw = fs.readFileSync(metadataPath, 'utf-8');
+            const raw = await fs.promises.readFile(metadataPath, 'utf-8');
             const data = JSON.parse(raw) as Record<string, unknown>;
 
             if (!data.name || typeof data.name !== 'string') {
@@ -505,30 +509,25 @@ export class MarketplaceManager {
             }
 
             // Read README.md as description fallback
-            const readmeContent = this.readOptionalMd(path.join(dirPath, 'README.md'));
+            const readmeContent = await this.readOptionalMd(path.join(dirPath, 'README.md'));
             const description = typeof data.description === 'string'
               ? data.description
               : readmeContent ?? '';
 
             // Inject step prompts from steps/ markdown files
-            const steps = (data.steps as Array<Record<string, unknown>>).map((step) => {
+            const steps = await Promise.all((data.steps as Array<Record<string, unknown>>).map(async (step) => {
               const stepId = String(step.id ?? '');
               const stepMdPath = path.join(dirPath, 'steps', `${stepId}.md`);
-              const stepPrompt = this.readOptionalMd(stepMdPath);
+              const stepPrompt = await this.readOptionalMd(stepMdPath);
               if (stepPrompt !== null) {
                 const config = (step.config ?? {}) as Record<string, unknown>;
                 return { ...step, config: { ...config, prompt: stepPrompt } };
               }
               return step;
-            });
+            }));
 
             const workflowName = data.name;
-            const { definitions: allDefs2 } = await this.workflowManager.listDefinitions({
-              limit: 1000,
-            });
-            const existing = allDefs2.find(
-              (d) => d.name === workflowName && (d as any).createdBy === 'community'
-            );
+            const existing = communityDefsByName.get(workflowName);
 
             if (existing) {
               await this.workflowManager.updateDefinition(existing.id, {
@@ -563,10 +562,10 @@ export class MarketplaceManager {
         }
 
         // Prune stale community workflows
-        const { definitions: allDefs } = await this.workflowManager.listDefinitions({
+        const { definitions: pruneDefs } = await this.workflowManager.listDefinitions({
           limit: 1000,
         });
-        for (const stale of allDefs) {
+        for (const stale of pruneDefs) {
           if ((stale as any).createdBy === 'community' && !syncedWorkflowNames.has(stale.name)) {
             await this.workflowManager.deleteDefinition(stale.id);
           }
@@ -583,7 +582,7 @@ export class MarketplaceManager {
 
         for (const filePath of swarmFiles) {
           try {
-            const raw = fs.readFileSync(filePath, 'utf-8');
+            const raw = await fs.promises.readFile(filePath, 'utf-8');
             const data = JSON.parse(raw) as Record<string, unknown>;
 
             if (!data.name || typeof data.name !== 'string') {
@@ -638,7 +637,7 @@ export class MarketplaceManager {
         for (const dirPath of swarmDirEntries) {
           try {
             const metadataPath = path.join(dirPath, 'metadata.json');
-            const raw = fs.readFileSync(metadataPath, 'utf-8');
+            const raw = await fs.promises.readFile(metadataPath, 'utf-8');
             const data = JSON.parse(raw) as Record<string, unknown>;
 
             if (!data.name || typeof data.name !== 'string') {
@@ -657,24 +656,24 @@ export class MarketplaceManager {
             }
 
             // Read README.md as description fallback
-            const readmeContent = this.readOptionalMd(path.join(dirPath, 'README.md'));
+            const readmeContent = await this.readOptionalMd(path.join(dirPath, 'README.md'));
             const description = typeof data.description === 'string'
               ? data.description
               : readmeContent ?? '';
 
             // Inject role prompts from roles/ markdown files
             const swarmName = data.name;
-            const roles = (data.roles as Record<string, unknown>[]).map((r) => {
+            const roles = await Promise.all((data.roles as Record<string, unknown>[]).map(async (r) => {
               const roleName = String(r.role ?? '');
               const roleMdPath = path.join(dirPath, 'roles', `${roleName}.md`);
-              const rolePrompt = this.readOptionalMd(roleMdPath);
+              const rolePrompt = await this.readOptionalMd(roleMdPath);
               return {
                 role: roleName,
                 profileName: String(r.profileName ?? ''),
                 description: typeof r.description === 'string' ? r.description : '',
                 ...(rolePrompt !== null ? { systemPromptOverride: rolePrompt } : {}),
               };
-            });
+            }));
 
             const { templates } = await this.swarmManager.listTemplates({ limit: 1000 });
             const existing = templates.find((t) => t.name === swarmName && !t.isBuiltin);
@@ -715,7 +714,7 @@ export class MarketplaceManager {
 
         for (const filePath of councilFiles) {
           try {
-            const raw = fs.readFileSync(filePath, 'utf-8');
+            const raw = await fs.promises.readFile(filePath, 'utf-8');
             const data = JSON.parse(raw) as Record<string, unknown>;
 
             if (!data.name || typeof data.name !== 'string') {
@@ -809,7 +808,7 @@ export class MarketplaceManager {
           }
 
           try {
-            const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8')) as Record<
+            const metadata = JSON.parse(await fs.promises.readFile(metadataPath, 'utf-8')) as Record<
               string,
               unknown
             >;
@@ -837,11 +836,11 @@ export class MarketplaceManager {
               continue;
             }
 
-            const systemContent = fs.readFileSync(systemPath, 'utf-8');
+            const systemContent = await fs.promises.readFile(systemPath, 'utf-8');
             let instructions = systemContent;
 
             if (fs.existsSync(userPath)) {
-              const userContent = fs.readFileSync(userPath, 'utf-8');
+              const userContent = await fs.promises.readFile(userPath, 'utf-8');
               instructions += '\n\n## User Input Template\n\n' + userContent;
             }
 
@@ -921,7 +920,7 @@ export class MarketplaceManager {
 
         for (const filePath of mdFiles) {
           try {
-            const content = fs.readFileSync(filePath, 'utf-8');
+            const content = await fs.promises.readFile(filePath, 'utf-8');
             const { data, warnings } = serializer.fromMarkdown(content);
 
             if (warnings.length > 0) {
@@ -971,7 +970,7 @@ export class MarketplaceManager {
 
       for (const filePath of themeFiles) {
         try {
-          const raw = fs.readFileSync(filePath, 'utf-8');
+          const raw = await fs.promises.readFile(filePath, 'utf-8');
           const data = JSON.parse(raw) as Record<string, unknown>;
 
           if (!data.name || typeof data.name !== 'string') {
@@ -1128,9 +1127,9 @@ export class MarketplaceManager {
   /**
    * Read a markdown file, returning its content or null if it doesn't exist.
    */
-  readOptionalMd(filePath: string): string | null {
+  async readOptionalMd(filePath: string): Promise<string | null> {
     try {
-      return fs.readFileSync(filePath, 'utf-8');
+      return await fs.promises.readFile(filePath, 'utf-8');
     } catch {
       return null;
     }

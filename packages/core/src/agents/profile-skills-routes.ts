@@ -8,7 +8,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SwarmStorage } from './swarm-storage.js';
 import type { SubAgentStorage } from './storage.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 
 export interface ProfileSkillsRoutesOpts {
   swarmStorage: SwarmStorage;
@@ -54,7 +54,7 @@ export function registerProfileSkillsRoutes(
         if (!added) return sendError(reply, 404, 'Skill not found');
         return reply.code(201).send({ skill: added });
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Failed to add skill';
+        const msg = toErrorMessage(err);
         return sendError(reply, msg.includes('violates foreign key') ? 404 : 400, msg);
       }
     }

@@ -10,7 +10,7 @@
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 import type { AuthStorage } from '../security/auth-storage.js';
 import type { SecureYeoman } from '../secureyeoman.js';
 
@@ -110,7 +110,7 @@ export function registerGatewayRoutes(app: FastifyInstance, opts: GatewayRoutesO
         return reply.send(chatResponse.rawPayload);
       } catch (err) {
         statusCode = 500;
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Gateway error');
+        return sendError(reply, 500, toErrorMessage(err));
       } finally {
         // 5. Record usage (fire & forget)
         if (authUser.apiKeyId) {
@@ -148,7 +148,7 @@ export function registerGatewayRoutes(app: FastifyInstance, opts: GatewayRoutesO
         const rows = await authStorage.getKeyUsage(request.params.id, fromTs, toTs);
         return reply.send({ usage: rows });
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to get usage');
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -187,7 +187,7 @@ export function registerGatewayRoutes(app: FastifyInstance, opts: GatewayRoutesO
         return sendError(
           reply,
           500,
-          err instanceof Error ? err.message : 'Failed to get usage summary'
+          toErrorMessage(err)
         );
       }
     }

@@ -13,6 +13,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { NotificationManager } from './notification-manager.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export interface NotificationRoutesOptions {
   notificationManager: NotificationManager;
@@ -39,8 +40,7 @@ export function registerNotificationRoutes(
     ) => {
       try {
         const unreadOnly = req.query.unreadOnly === 'true' || req.query.unreadOnly === '1';
-        const limit = req.query.limit ? Math.min(Number(req.query.limit) || 50, 100) : 50;
-        const offset = req.query.offset ? Number(req.query.offset) || 0 : 0;
+        const { limit, offset } = parsePagination(req.query, { maxLimit: 100, defaultLimit: 50 });
 
         const [result, unreadCount] = await Promise.all([
           notificationManager.list({ unreadOnly, limit, offset }),

@@ -27,7 +27,8 @@
     "build:binary:dev": "bash scripts/build-binary.sh --dev",
     "dev:desktop": "npm run dev --workspace=@secureyeoman/desktop",
     "build:desktop": "npm run build --workspace=@secureyeoman/desktop",
-    "db:create-test": "docker compose exec postgres createdb -U secureyeoman secureyeoman_test || true"
+    "db:create-test": "docker compose exec postgres createdb -U secureyeoman secureyeoman_test || true",
+    "prepare": "git config core.hooksPath .githooks"
   },
   "engines": {
     "node": ">=20.0.0"

@@ -39,9 +39,15 @@ export function registerLicenseRoutes(app: FastifyInstance, deps: LicenseRouteDe
       return sendError(reply, 422, `Invalid license key: ${(err as Error).message}`);
     }
 
-    // Persist to env (runtime only) and reinitialise the manager
+    // Persist to env (runtime) and to brain.meta (durable across restarts)
     process.env.SECUREYEOMAN_LICENSE_KEY = key;
     secureYeoman.reloadLicenseKey(key);
+    try {
+      const brainStorage = secureYeoman.getBrainStorage();
+      if (brainStorage) await brainStorage.setMeta('license:key', key);
+    } catch {
+      // Non-fatal: license works from env var, persistence is best-effort
+    }
 
     return reply.send(secureYeoman.getLicenseManager().toStatusObject());
   });

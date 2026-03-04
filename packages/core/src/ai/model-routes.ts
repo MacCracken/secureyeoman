@@ -6,7 +6,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SecureYeoman } from '../secureyeoman.js';
 import { getAvailableModelsAsync } from './cost-calculator.js';
 import { ModelRouter, profileTask } from './model-router.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 import { getSecret } from '../config/loader.js';
 import { OllamaProvider } from './providers/ollama.js';
 import os from 'os';
@@ -60,7 +60,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
         available: await getAvailableModelsAsync(true),
       };
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      const message = toErrorMessage(err);
       return sendError(reply, 500, message);
     }
   });
@@ -76,7 +76,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
         await secureYeoman.setLocalFirst(localFirst);
         return { success: true, localFirst };
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
+        const message = toErrorMessage(err);
         return sendError(reply, 500, message);
       }
     }
@@ -118,7 +118,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
         secureYeoman.switchModel(provider, model);
         return { success: true, model: `${provider}/${model}` };
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
+        const message = toErrorMessage(err);
         return sendError(reply, 500, `Failed to switch model: ${message}`);
       }
     }
@@ -131,7 +131,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
       const def = secureYeoman.getModelDefault();
       return { provider: def?.provider ?? null, model: def?.model ?? null };
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      const message = toErrorMessage(err);
       return sendError(reply, 500, message);
     }
   });
@@ -149,7 +149,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
         await secureYeoman.setModelDefault(provider, model);
         return { success: true, provider, model };
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
+        const message = toErrorMessage(err);
         if (message.startsWith('Invalid provider')) {
           return sendError(reply, 400, message);
         }
@@ -163,7 +163,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
       await secureYeoman.clearModelDefault();
       return reply.code(204).send();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      const message = toErrorMessage(err);
       return sendError(reply, 500, message);
     }
   });
@@ -177,7 +177,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
       }
       return costOptimizer.analyze();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      const message = toErrorMessage(err);
       return sendError(reply, 500, message);
     }
   });
@@ -249,7 +249,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
             : null,
         };
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
+        const message = toErrorMessage(err);
         return sendError(reply, 500, message);
       }
     }
@@ -290,7 +290,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
         }
         reply.raw.write(`data: ${JSON.stringify({ status: 'done' })}\n\n`);
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
+        const message = toErrorMessage(err);
         reply.raw.write(`data: ${JSON.stringify({ error: message })}\n\n`);
       } finally {
         reply.raw.end();
@@ -320,7 +320,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
         await OllamaProvider.deleteModel(ollamaBaseUrl, name);
         return reply.code(204).send();
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
+        const message = toErrorMessage(err);
         if (message === 'Model not found') {
           return sendError(reply, 404, message);
         }
@@ -345,7 +345,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
       }
       return healthTracker.getAllHealth();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      const message = toErrorMessage(err);
       return sendError(reply, 500, message);
     }
   });
@@ -410,7 +410,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
         local: false,
       };
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      const message = toErrorMessage(err);
       return sendError(reply, 500, message);
     }
   });

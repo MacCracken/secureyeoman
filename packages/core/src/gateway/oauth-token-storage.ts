@@ -121,7 +121,7 @@ export class OAuthTokenStorage extends PgBaseStorage {
   async listTokens(): Promise<Omit<OAuthToken, 'accessToken' | 'refreshToken'>[]> {
     const pool = this.getPool();
     const result = await pool.query<OAuthTokenRow>(
-      'SELECT * FROM oauth_tokens ORDER BY created_at DESC'
+      'SELECT * FROM oauth_tokens ORDER BY created_at DESC LIMIT 1000'
     );
     return result.rows.map((row) => {
       const { accessToken: _a, refreshToken: _r, ...rest } = rowToToken(row);

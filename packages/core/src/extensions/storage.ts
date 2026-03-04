@@ -99,7 +99,7 @@ export class ExtensionStorage extends PgBaseStorage {
 
   async listExtensions(): Promise<ExtensionManifest[]> {
     const rows = await this.queryMany<ExtensionRow>(
-      `SELECT * FROM extensions.manifests ORDER BY name ASC`
+      `SELECT * FROM extensions.manifests ORDER BY name ASC LIMIT 1000`
     );
     return rows.map(extensionFromRow);
   }
@@ -182,7 +182,7 @@ export class ExtensionStorage extends PgBaseStorage {
 
   async listWebhooks(): Promise<WebhookConfig[]> {
     const rows = await this.queryMany<WebhookRow>(
-      `SELECT * FROM extensions.webhooks ORDER BY created_at ASC`
+      `SELECT * FROM extensions.webhooks ORDER BY created_at ASC LIMIT 1000`
     );
     return rows.map(webhookFromRow);
   }

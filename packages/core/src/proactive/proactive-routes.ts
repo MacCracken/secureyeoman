@@ -5,7 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { ProactiveManager } from './manager.js';
 import type { HeartbeatLogStorage } from '../body/heartbeat-log-storage.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 
 export function registerProactiveRoutes(
   app: FastifyInstance,
@@ -70,7 +70,7 @@ export function registerProactiveRoutes(
         return sendError(
           reply,
           400,
-          err instanceof Error ? err.message : 'Failed to create trigger'
+          toErrorMessage(err)
         );
       }
     }

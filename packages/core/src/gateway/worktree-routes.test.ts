@@ -150,7 +150,7 @@ describe('POST /api/v1/terminal/worktrees', () => {
       headers: { 'content-type': 'application/json' },
     });
     expect(res.statusCode).toBe(500);
-    expect(res.json<ErrorBody>().message).toContain('Failed to create worktree');
+    expect(res.json<ErrorBody>().message).toBe('An internal error occurred');
   });
 });
 
@@ -237,7 +237,7 @@ describe('DELETE /api/v1/terminal/worktrees/:id', () => {
       url: '/api/v1/terminal/worktrees/ghost-branch',
     });
     expect(res.statusCode).toBe(500);
-    expect(res.json<ErrorBody>().message).toContain('Failed to remove worktree');
+    expect(res.json<ErrorBody>().message).toBe('An internal error occurred');
   });
 
   it('succeeds even if branch delete fails (branch may already be deleted)', async () => {

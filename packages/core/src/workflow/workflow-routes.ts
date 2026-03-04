@@ -9,7 +9,8 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { WorkflowManager } from './workflow-manager.js';
 import type { WorkflowVersionManager } from './workflow-version-manager.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 import type { WorkflowExport } from '@secureyeoman/shared';
 
 /** Known integration keywords to detect from step config strings. */
@@ -67,8 +68,7 @@ export function registerWorkflowRoutes(
       request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>,
       _reply: FastifyReply
     ) => {
-      const limit = request.query.limit ? Number(request.query.limit) : undefined;
-      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      const { limit, offset } = parsePagination(request.query);
       return workflowManager.listDefinitions({ limit, offset });
     }
   );
@@ -105,7 +105,7 @@ export function registerWorkflowRoutes(
         return sendError(
           reply,
           400,
-          err instanceof Error ? err.message : 'Failed to create workflow'
+          toErrorMessage(err)
         );
       }
     }
@@ -191,7 +191,7 @@ export function registerWorkflowRoutes(
         } as any);
         return reply.code(201).send({ definition, compatibility });
       } catch (err) {
-        return sendError(reply, 400, err instanceof Error ? err.message : 'Import failed');
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -209,11 +209,10 @@ export function registerWorkflowRoutes(
     ) => {
       if (!workflowVersionManager) return sendError(reply, 501, 'Versioning not available');
       try {
-        const limit = request.query.limit ? Number(request.query.limit) : 50;
-        const offset = request.query.offset ? Number(request.query.offset) : 0;
+        const { limit, offset } = parsePagination(request.query, { defaultLimit: 50 });
         return await workflowVersionManager.listVersions(request.params.id, { limit, offset });
       } catch (e) {
-        return sendError(reply, 500, e instanceof Error ? e.message : String(e));
+        return sendError(reply, 500, toErrorMessage(e));
       }
     }
   );
@@ -233,7 +232,7 @@ export function registerWorkflowRoutes(
         if (!version) return sendError(reply, 404, 'Version not found');
         return version;
       } catch (e) {
-        return sendError(reply, 500, e instanceof Error ? e.message : String(e));
+        return sendError(reply, 500, toErrorMessage(e));
       }
     }
   );
@@ -253,7 +252,7 @@ export function registerWorkflowRoutes(
         );
         return await reply.code(201).send(version);
       } catch (e) {
-        return sendError(reply, 400, e instanceof Error ? e.message : String(e));
+        return sendError(reply, 400, toErrorMessage(e));
       }
     }
   );
@@ -272,7 +271,7 @@ export function registerWorkflowRoutes(
         );
         return version;
       } catch (e) {
-        return sendError(reply, 400, e instanceof Error ? e.message : String(e));
+        return sendError(reply, 400, toErrorMessage(e));
       }
     }
   );
@@ -287,7 +286,7 @@ export function registerWorkflowRoutes(
       try {
         return await workflowVersionManager.getDrift(request.params.id);
       } catch (e) {
-        return sendError(reply, 500, e instanceof Error ? e.message : String(e));
+        return sendError(reply, 500, toErrorMessage(e));
       }
     }
   );
@@ -306,7 +305,7 @@ export function registerWorkflowRoutes(
         );
         return { diff };
       } catch (e) {
-        return sendError(reply, 500, e instanceof Error ? e.message : String(e));
+        return sendError(reply, 500, toErrorMessage(e));
       }
     }
   );
@@ -331,7 +330,7 @@ export function registerWorkflowRoutes(
           versionTag: version.versionTag,
         };
       } catch (e) {
-        return sendError(reply, 500, e instanceof Error ? e.message : String(e));
+        return sendError(reply, 500, toErrorMessage(e));
       }
     }
   );
@@ -419,7 +418,7 @@ export function registerWorkflowRoutes(
         return sendError(
           reply,
           400,
-          err instanceof Error ? err.message : 'Failed to trigger workflow'
+          toErrorMessage(err)
         );
       }
     }
@@ -436,8 +435,7 @@ export function registerWorkflowRoutes(
       }>,
       _reply: FastifyReply
     ) => {
-      const limit = request.query.limit ? Number(request.query.limit) : undefined;
-      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      const { limit, offset } = parsePagination(request.query);
       return workflowManager.listRuns(request.params.id, { limit, offset });
     }
   );

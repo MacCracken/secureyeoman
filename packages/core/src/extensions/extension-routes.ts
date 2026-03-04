@@ -5,7 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { ExtensionManager } from './manager.js';
 import type { HookPoint, HookSemantics } from './types.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 
 export function registerExtensionRoutes(
   app: FastifyInstance,
@@ -48,7 +48,7 @@ export function registerExtensionRoutes(
         return reply.code(201).send({ extension });
       } catch (err) {
         return reply.code(400).send({
-          error: err instanceof Error ? err.message : 'Failed to register extension',
+          error: toErrorMessage(err),
         });
       }
     }
@@ -124,7 +124,7 @@ export function registerExtensionRoutes(
         return reply.code(201).send({ hookId });
       } catch (err) {
         return reply.code(400).send({
-          error: err instanceof Error ? err.message : 'Failed to register hook',
+          error: toErrorMessage(err),
         });
       }
     }
@@ -168,7 +168,7 @@ export function registerExtensionRoutes(
         return reply.code(201).send({ webhook });
       } catch (err) {
         return reply.code(400).send({
-          error: err instanceof Error ? err.message : 'Failed to register webhook',
+          error: toErrorMessage(err),
         });
       }
     }
@@ -237,7 +237,7 @@ export function registerExtensionRoutes(
         return { result, durationMs: Date.now() - startTime };
       } catch (err) {
         return reply.code(400).send({
-          error: err instanceof Error ? err.message : 'Test emit failed',
+          error: toErrorMessage(err),
         });
       }
     }
@@ -260,7 +260,7 @@ export function registerExtensionRoutes(
         return { manifests, count: manifests.length };
       } catch (err) {
         return reply.code(400).send({
-          error: err instanceof Error ? err.message : 'Discovery failed',
+          error: toErrorMessage(err),
         });
       }
     }

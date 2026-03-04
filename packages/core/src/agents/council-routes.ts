@@ -4,7 +4,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { CouncilManager } from './council-manager.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 
 export function registerCouncilRoutes(
   app: FastifyInstance,
@@ -25,7 +25,7 @@ export function registerCouncilRoutes(
         const template = await councilManager.installFromCatalog(request.params.name);
         return reply.code(201).send({ template });
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Install failed';
+        const msg = toErrorMessage(err);
         const status = msg.includes('already installed') ? 409 : msg.includes('not found') ? 404 : 400;
         return sendError(reply, status, msg);
       }
@@ -98,7 +98,7 @@ export function registerCouncilRoutes(
         return sendError(
           reply,
           400,
-          err instanceof Error ? err.message : 'Failed to create template'
+          toErrorMessage(err)
         );
       }
     }
@@ -151,7 +151,7 @@ export function registerCouncilRoutes(
         if (!updated) return sendError(reply, 404, 'Template not found');
         return { template: updated };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Failed to update template';
+        const msg = toErrorMessage(err);
         return sendError(reply, msg.includes('built-in') ? 403 : 400, msg);
       }
     }
@@ -204,7 +204,7 @@ export function registerCouncilRoutes(
         return sendError(
           reply,
           400,
-          err instanceof Error ? err.message : 'Council deliberation failed'
+          toErrorMessage(err)
         );
       }
     }
@@ -244,7 +244,7 @@ export function registerCouncilRoutes(
         await councilManager.cancelRun(request.params.id);
         return { success: true };
       } catch (err) {
-        return sendError(reply, 400, err instanceof Error ? err.message : 'Cancel failed');
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );

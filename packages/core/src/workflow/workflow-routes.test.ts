@@ -118,12 +118,12 @@ describe('GET /api/v1/workflows', () => {
     expect(mgr.listDefinitions).toHaveBeenCalledWith({ limit: 10, offset: 20 });
   });
 
-  it('omits limit/offset when not provided in query', async () => {
+  it('uses default limit/offset when not provided in query', async () => {
     const mgr = makeMockManager();
     const app = Fastify({ logger: false });
     registerWorkflowRoutes(app, { workflowManager: mgr });
     await app.inject({ method: 'GET', url: '/api/v1/workflows' });
-    expect(mgr.listDefinitions).toHaveBeenCalledWith({ limit: undefined, offset: undefined });
+    expect(mgr.listDefinitions).toHaveBeenCalledWith({ limit: 20, offset: 0 });
   });
 });
 

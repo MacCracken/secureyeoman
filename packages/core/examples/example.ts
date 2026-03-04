@@ -2,10 +2,10 @@
  * SecureYeoman Example Usage
  *
  * This demonstrates basic usage of SecureYeoman.
- * Run with: npx tsx packages/core/src/example.ts
+ * Run with: npx tsx packages/core/examples/example.ts
  */
 
-import { createSecureYeoman, TaskType, type TaskHandler } from './index.js';
+import { createSecureYeoman, TaskType, type TaskHandler } from '../src/index.js';
 
 async function main() {
   console.log('Starting SecureYeoman example...\n');

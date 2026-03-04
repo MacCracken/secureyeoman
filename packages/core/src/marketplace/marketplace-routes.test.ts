@@ -54,8 +54,8 @@ describe('GET /api/v1/marketplace', () => {
     expect(searchMock).toHaveBeenCalledWith(
       undefined,
       undefined,
-      undefined,
-      undefined,
+      20,
+      0,
       'community',
       undefined
     );
@@ -68,8 +68,8 @@ describe('GET /api/v1/marketplace', () => {
     expect(searchMock).toHaveBeenCalledWith(
       undefined,
       undefined,
-      undefined,
-      undefined,
+      20,
+      0,
       'marketplace',
       undefined
     );
@@ -85,8 +85,8 @@ describe('GET /api/v1/marketplace', () => {
     expect(searchMock).toHaveBeenCalledWith(
       undefined,
       undefined,
-      undefined,
-      undefined,
+      20,
+      0,
       'community',
       undefined
     );

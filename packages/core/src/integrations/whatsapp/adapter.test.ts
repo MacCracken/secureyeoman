@@ -1,7 +1,7 @@
 /**
  * Unit tests for WhatsAppIntegration adapter.
  *
- * All baileys, @hapi/boom, path, and fs imports are fully mocked
+ * All baileys, path, and fs imports are fully mocked
  * so no real network calls or filesystem operations occur.
  */
 
@@ -61,18 +61,6 @@ vi.mock('baileys', () => ({
   default: mockMakeWASocket,
   useMultiFileAuthState: mockUseMultiFileAuthState,
   DisconnectReason: { loggedOut: 401 },
-}));
-
-// ── Mock @hapi/boom ───────────────────────────────────────────────────────────
-
-vi.mock('@hapi/boom', () => ({
-  Boom: class Boom extends Error {
-    output: { statusCode: number };
-    constructor(message: string, options?: { statusCode?: number }) {
-      super(message);
-      this.output = { statusCode: options?.statusCode ?? 500 };
-    }
-  },
 }));
 
 // ── Mock path ─────────────────────────────────────────────────────────────────

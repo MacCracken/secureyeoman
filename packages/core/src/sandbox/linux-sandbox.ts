@@ -131,6 +131,7 @@ export class LinuxSandbox implements Sandbox {
           }
         });
 
+        // SECURITY(121): Deferred — replace fn.toString() IPC with message protocol
         // Send the function to the worker
         const execMsg: WorkerExecMessage = {
           type: 'exec',

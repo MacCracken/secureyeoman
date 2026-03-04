@@ -4,7 +4,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SwarmManager } from './swarm-manager.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 import type { SwarmTemplateExport } from '@secureyeoman/shared';
 
 export function registerSwarmRoutes(
@@ -84,7 +84,7 @@ export function registerSwarmRoutes(
         });
         return reply.code(201).send({ template, compatibility });
       } catch (err) {
-        return sendError(reply, 400, err instanceof Error ? err.message : 'Import failed');
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -131,7 +131,7 @@ export function registerSwarmRoutes(
         return sendError(
           reply,
           400,
-          err instanceof Error ? err.message : 'Failed to create template'
+          toErrorMessage(err)
         );
       }
     }
@@ -174,7 +174,7 @@ export function registerSwarmRoutes(
         if (!updated) return sendError(reply, 404, 'Template not found');
         return { template: updated };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Failed to update template';
+        const msg = toErrorMessage(err);
         return sendError(reply, msg.includes('built-in') ? 403 : 400, msg);
       }
     }
@@ -222,7 +222,7 @@ export function registerSwarmRoutes(
         });
         return reply.code(201).send({ run });
       } catch (err) {
-        return sendError(reply, 400, err instanceof Error ? err.message : 'Swarm execution failed');
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -261,7 +261,7 @@ export function registerSwarmRoutes(
         await swarmManager.cancelSwarm(request.params.id);
         return { success: true };
       } catch (err) {
-        return sendError(reply, 400, err instanceof Error ? err.message : 'Cancel failed');
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );

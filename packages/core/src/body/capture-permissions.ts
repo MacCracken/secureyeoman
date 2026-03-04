@@ -227,12 +227,15 @@ export function requireCapturePermissionMiddleware(
   action: CaptureAction
 ) {
   return async (
-    req: Request & {
+    req: {
       user?: { id: string; role: string };
       body?: Partial<CaptureScope>;
+      session?: { id?: string };
+      ip?: string;
+      get: (name: string) => string | undefined;
     },
-    res: Response,
-    next: NextFunction
+    _res: unknown,
+    next: (err?: unknown) => void
   ): Promise<void> => {
     try {
       if (!req.user) {
@@ -242,11 +245,8 @@ export function requireCapturePermissionMiddleware(
       const userContext: CapturePermissionContext = {
         userId: req.user.id,
         roleId: req.user.role,
-        // @ts-expect-error - Express request extensions
         sessionId: req.session?.id,
-        // @ts-expect-error - Express request extensions
         ipAddress: req.ip,
-        // @ts-expect-error - Express request extensions
         userAgent: req.get('user-agent'),
       };
 
@@ -282,6 +282,3 @@ export function getCaptureCacheStats(): {
     ttlMs: CACHE_TTL_MS,
   };
 }
-
-// Type imports for Express middleware
-import type { Response, NextFunction } from 'express';

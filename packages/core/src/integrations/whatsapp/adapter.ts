@@ -10,7 +10,6 @@ import makeWASocket, { useMultiFileAuthState, DisconnectReason, type WASocket } 
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
-import { Boom } from '@hapi/boom';
 import path from 'path';
 import fs from 'fs';
 
@@ -85,7 +84,7 @@ export class WhatsAppIntegration implements Integration {
       }
 
       if (connection === 'close') {
-        const reason = (lastDisconnect?.error as Boom)?.output?.statusCode;
+        const reason = (lastDisconnect?.error as { output?: { statusCode?: number } })?.output?.statusCode;
         const shouldReconnect = reason !== (DisconnectReason.loggedOut as number);
 
         this.logger?.warn('WhatsApp connection closed', { reason, shouldReconnect });

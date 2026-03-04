@@ -256,7 +256,7 @@ describe('PUT /api/v1/agents/teams/:id — generic error fallthrough (Phase 105)
       payload: { name: 'Test' },
     });
     expect(res.statusCode).toBe(400);
-    expect(res.json().message).toContain('Failed to update team');
+    expect(res.json().message).toContain('Unknown error');
   });
 });
 
@@ -283,7 +283,7 @@ describe('DELETE /api/v1/agents/teams/:id — additional error branches (Phase 1
     });
     const res = await app.inject({ method: 'DELETE', url: '/api/v1/agents/teams/team-1' });
     expect(res.statusCode).toBe(400);
-    expect(res.json().message).toContain('Failed to delete team');
+    expect(res.json().message).toContain('Unknown error');
   });
 });
 
@@ -310,6 +310,6 @@ describe('POST /api/v1/agents/teams/:id/run — generic error (Phase 105)', () =
       payload: { task: 'test' },
     });
     expect(res.statusCode).toBe(400);
-    expect(res.json().message).toContain('Failed to start team run');
+    expect(res.json().message).toContain('Unknown error');
   });
 });

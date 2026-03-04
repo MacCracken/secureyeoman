@@ -20,7 +20,7 @@ import type {
 } from '@secureyeoman/shared';
 import type { McpFeatureConfig } from '../mcp/storage.js';
 import { PreferenceLearner, type FeedbackType } from '../brain/preference-learner.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 import { ToolOutputScanner } from '../security/tool-output-scanner.js';
 import { PromptGuard } from '../security/prompt-guard.js';
 import { createResponseGuard } from '../security/response-guard.js';
@@ -1464,7 +1464,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 result = { output: mcpResult, isError: false };
               } catch (err) {
                 result = {
-                  output: { error: err instanceof Error ? err.message : String(err) },
+                  output: { error: toErrorMessage(err) },
                   isError: true,
                 };
               }
@@ -1773,8 +1773,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               : undefined,
         };
       } catch (err) {
-        const errMsg = err instanceof Error ? err.message : 'Unknown error';
-        return sendError(reply, 502, `AI request failed: ${errMsg}`);
+        return sendError(reply, 502, `AI request failed: ${toErrorMessage(err)}`);
       }
     }
   );
@@ -1800,8 +1799,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         );
         return { memory };
       } catch (err) {
-        const errMsg = err instanceof Error ? err.message : 'Brain is not available';
-        return sendError(reply, 503, errMsg);
+        return sendError(reply, 503, toErrorMessage(err));
       }
     }
   );
@@ -1828,8 +1826,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         await learner.recordFeedback(conversationId, messageId, feedback, details);
         return { stored: true };
       } catch (err) {
-        const errMsg = err instanceof Error ? err.message : 'Brain is not available';
-        return sendError(reply, 503, errMsg);
+        return sendError(reply, 503, toErrorMessage(err));
       }
     }
   );
@@ -2764,7 +2761,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               : undefined,
         } as ChatStreamEvent);
       } catch (err) {
-        emit({ type: 'error', message: err instanceof Error ? err.message : String(err) });
+        emit({ type: 'error', message: toErrorMessage(err) });
       } finally {
         reply.raw.end();
       }

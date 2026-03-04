@@ -11,7 +11,7 @@ import type { BrainStorage } from './storage.js';
 import type { DocumentFormat, DocumentVisibility } from './types.js';
 import type { ProvenanceScores } from '@secureyeoman/shared';
 import { ProvenanceScoresSchema } from '@secureyeoman/shared';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 
 export interface DocumentRoutesOptions {
   documentManager: DocumentManager;
@@ -90,7 +90,7 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
         }
         return reply.code(201).send({ document: doc });
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Upload failed');
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );

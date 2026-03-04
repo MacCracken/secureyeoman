@@ -49,22 +49,19 @@ export class CodeExecutionManager {
 
   async initialize(): Promise<void> {
     // Expire any sessions that outlived their timeout from a previous run
-    const { sessions } = await this.deps.storage.listSessions();
-    const now = Date.now();
-    for (const session of sessions) {
-      if (session.status === 'active' && now - session.lastActivity > this.config.sessionTimeout) {
-        await this.deps.storage.updateSession(session.id, { status: 'expired' });
-        this.deps.logger.debug('Expired stale session on startup', {
-          component: 'execution',
-          taskId: session.id,
-        });
-      }
+    const expired = await this.deps.storage.expireStaleSessions(this.config.sessionTimeout);
+    if (expired > 0) {
+      this.deps.logger.debug('Expired stale sessions on startup', {
+        component: 'execution',
+        count: expired,
+      });
     }
 
     // Start periodic expiry check (every 60 seconds)
     this.expiryTimer = setInterval(() => {
       void this.expireStaleSessions();
     }, 60_000);
+    this.expiryTimer.unref();
 
     this.deps.logger.debug('CodeExecutionManager initialized', {
       component: 'execution',
@@ -333,23 +330,14 @@ export class CodeExecutionManager {
 
   private async expireStaleSessions(): Promise<void> {
     try {
-      const { sessions } = await this.deps.storage.listSessions();
-      const now = Date.now();
-      for (const session of sessions) {
-        if (
-          session.status === 'active' &&
-          now - session.lastActivity > this.config.sessionTimeout
-        ) {
-          await this.deps.storage.updateSession(session.id, {
-            status: 'expired',
-          });
-          this.deps.logger.debug('Expired stale session', {
-            component: 'execution',
-            taskId: session.id,
-          });
-        }
+      const expired = await this.deps.storage.expireStaleSessions(this.config.sessionTimeout);
+      if (expired > 0) {
+        this.deps.logger.debug('Expired stale sessions', {
+          component: 'execution',
+          count: expired,
+        });
       }
-    } catch (err) {
+    } catch {
       this.deps.logger.warn('Failed to expire stale sessions', {
         component: 'execution',
       });

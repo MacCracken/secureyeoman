@@ -5,7 +5,8 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { CodeExecutionManager, ApprovalRequiredError } from './manager.js';
 import type { RuntimeType } from './types.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export function registerExecutionRoutes(
   app: FastifyInstance,
@@ -44,7 +45,7 @@ export function registerExecutionRoutes(
             status: 'pending_approval',
           });
         }
-        return sendError(reply, 400, err instanceof Error ? err.message : 'Execution failed');
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -54,8 +55,7 @@ export function registerExecutionRoutes(
   app.get(
     '/api/v1/execution/sessions',
     async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
-      const limit = request.query.limit ? Number(request.query.limit) : undefined;
-      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      const { limit, offset } = parsePagination(request.query);
       return executionManager.listSessions({ limit, offset });
     }
   );
@@ -96,10 +96,11 @@ export function registerExecutionRoutes(
       }>
     ) => {
       const q = request.query;
+      const { limit, offset } = parsePagination(q);
       return executionManager.getExecutionHistory({
         sessionId: q.sessionId,
-        limit: q.limit ? Number(q.limit) : undefined,
-        offset: q.offset ? Number(q.offset) : undefined,
+        limit,
+        offset,
       });
     }
   );

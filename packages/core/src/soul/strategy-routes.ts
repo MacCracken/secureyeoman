@@ -10,7 +10,8 @@ import { ReasoningStrategyCreateSchema, ReasoningStrategyUpdateSchema } from '@s
 import type { StrategyStorage } from './strategy-storage.js';
 import type { InputValidator } from '../security/input-validator.js';
 import type { AuditChain } from '../logging/audit-chain.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export interface StrategyRoutesOptions {
   strategyStorage: StrategyStorage;
@@ -60,8 +61,7 @@ export function registerStrategyRoutes(app: FastifyInstance, opts: StrategyRoute
         }
           ? C
           : never,
-        limit: limit ? parseInt(limit, 10) : undefined,
-        offset: offset ? parseInt(offset, 10) : undefined,
+        ...parsePagination({ limit, offset }),
       });
       return reply.send(result);
     }
@@ -113,7 +113,7 @@ export function registerStrategyRoutes(app: FastifyInstance, opts: StrategyRoute
       const strategy = await strategyStorage.createStrategy(parsed.data);
       return reply.code(201).send(strategy);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Unknown error';
+      const msg = toErrorMessage(e);
       if (msg.includes('unique') || msg.includes('duplicate')) {
         return sendError(reply, 409, 'A strategy with this slug already exists');
       }
@@ -151,7 +151,7 @@ export function registerStrategyRoutes(app: FastifyInstance, opts: StrategyRoute
         }
         return reply.send(strategy);
       } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : 'Unknown error';
+        const msg = toErrorMessage(e);
         if (msg.includes('built-in')) {
           return sendError(reply, 403, msg);
         }
@@ -174,7 +174,7 @@ export function registerStrategyRoutes(app: FastifyInstance, opts: StrategyRoute
         }
         return reply.code(204).send();
       } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : 'Unknown error';
+        const msg = toErrorMessage(e);
         if (msg.includes('built-in')) {
           return sendError(reply, 403, msg);
         }

@@ -5,7 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { A2AManager } from './manager.js';
 import type { TrustLevel } from './types.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 
 export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AManager }): void {
   const { a2aManager } = opts;
@@ -41,7 +41,7 @@ export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AM
         const peer = await a2aManager.addPeer(request.body.url, request.body.name);
         return reply.code(201).send({ peer });
       } catch (err) {
-        return sendError(reply, 400, err instanceof Error ? err.message : 'Failed to add peer');
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -67,7 +67,7 @@ export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AM
         return sendError(
           reply,
           400,
-          err instanceof Error ? err.message : 'Failed to register local peer'
+          toErrorMessage(err)
         );
       }
     }
@@ -135,7 +135,7 @@ export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AM
         }
         return reply.code(201).send({ message });
       } catch (err) {
-        return sendError(reply, 400, err instanceof Error ? err.message : 'Delegation failed');
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -184,7 +184,7 @@ export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AM
         return reply.code(202).send({ status: 'accepted' });
       } catch (err) {
         log.error(
-          { error: err instanceof Error ? err.message : String(err) },
+          { error: toErrorMessage(err) },
           'Failed to handle A2A receive'
         );
         return sendError(reply, 500, 'Failed to handle A2A message');

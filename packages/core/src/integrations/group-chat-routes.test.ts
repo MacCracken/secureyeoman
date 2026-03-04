@@ -162,7 +162,7 @@ describe('POST /api/v1/group-chat/channels/:integrationId/:chatId/messages', () 
       payload: { text: 'Hi' },
     });
     expect(res.statusCode).toBe(500);
-    expect(res.json().message).toContain('Network error');
+    expect(res.json().message).toBe('An internal error occurred');
   });
 
   it('trims whitespace from text', async () => {

@@ -4,7 +4,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { BranchingManager } from './branching-manager.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 
 export interface BranchingRoutesOptions {
   branchingManager: BranchingManager;
@@ -35,7 +35,7 @@ export function registerBranchingRoutes(app: FastifyInstance, opts: BranchingRou
         });
         return reply.code(201).send(branch);
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = toErrorMessage(err);
         if (msg.includes('not found')) return sendError(reply, 404, msg);
         if (msg.includes('Invalid message index')) return sendError(reply, 400, msg);
         throw err;
@@ -62,7 +62,7 @@ export function registerBranchingRoutes(app: FastifyInstance, opts: BranchingRou
         const tree = await branchingManager.getBranchTree(request.params.id);
         return tree;
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = toErrorMessage(err);
         if (msg.includes('not found')) return sendError(reply, 404, msg);
         throw err;
       }
@@ -92,7 +92,7 @@ export function registerBranchingRoutes(app: FastifyInstance, opts: BranchingRou
         });
         return reply.code(201).send(result);
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = toErrorMessage(err);
         if (msg.includes('not found')) return sendError(reply, 404, msg);
         if (msg.includes('No user messages')) return sendError(reply, 400, msg);
         throw err;
@@ -161,7 +161,7 @@ export function registerBranchingRoutes(app: FastifyInstance, opts: BranchingRou
         const report = await branchingManager.getReplayReport(request.params.id);
         return report;
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = toErrorMessage(err);
         if (msg.includes('not found')) return sendError(reply, 404, msg);
         throw err;
       }

@@ -9,7 +9,7 @@ import type { RateLimiterLike } from '../security/rate-limiter.js';
 import type { Role } from '@secureyeoman/shared';
 import { RoleDefinitionSchema } from '@secureyeoman/shared';
 import type { RBAC } from '../security/rbac.js';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 
 /** Built-in role IDs that cannot be mutated or deleted via the API. */
 const BUILTIN_ROLE_IDS = new Set([
@@ -284,7 +284,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         await rbac.defineRole(parsed.data);
         return reply.code(201).send({ role: { ...parsed.data, isBuiltin: false } });
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to create role');
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -331,7 +331,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         await rbac.defineRole(parsed.data);
         return { role: { ...parsed.data, isBuiltin: false } };
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to update role');
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -386,7 +386,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         await rbac.assignUserRole(userId, roleId, assignedBy);
         return reply.code(201).send({ assignment: { userId, roleId } });
       } catch (err) {
-        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to assign role');
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );

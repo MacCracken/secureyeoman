@@ -50,15 +50,11 @@ export class McpHealthMonitor {
 
   async checkAll(): Promise<McpServerHealth[]> {
     const { servers } = await this.storage.listServers();
-    const results: McpServerHealth[] = [];
-
-    for (const server of servers) {
-      if (!server.enabled) continue;
-      const health = await this.checkServer(server.id);
-      results.push(health);
-    }
-
-    return results;
+    const enabled = servers.filter((s) => s.enabled);
+    const settled = await Promise.allSettled(enabled.map((s) => this.checkServer(s.id)));
+    return settled
+      .filter((r): r is PromiseFulfilledResult<McpServerHealth> => r.status === 'fulfilled')
+      .map((r) => r.value);
   }
 
   async checkServer(serverId: string): Promise<McpServerHealth> {

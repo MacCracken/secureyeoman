@@ -63,6 +63,8 @@ export function initPool(config: PgPoolConfig): pg.Pool {
     max: config.poolSize,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 5_000,
+    statement_timeout: 30_000,
+    allowExitOnIdle: true,
   });
 
   pool.on('error', (err: Error) => {

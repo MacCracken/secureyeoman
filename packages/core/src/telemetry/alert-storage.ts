@@ -144,8 +144,8 @@ export class AlertStorage extends PgBaseStorage {
 
   async listRules(onlyEnabled?: boolean): Promise<AlertRule[]> {
     const sql = onlyEnabled
-      ? 'SELECT * FROM telemetry.alert_rules WHERE enabled = TRUE ORDER BY created_at ASC'
-      : 'SELECT * FROM telemetry.alert_rules ORDER BY created_at ASC';
+      ? 'SELECT * FROM telemetry.alert_rules WHERE enabled = TRUE ORDER BY created_at ASC LIMIT 1000'
+      : 'SELECT * FROM telemetry.alert_rules ORDER BY created_at ASC LIMIT 1000';
     const rows = await this.queryMany<AlertRuleRow>(sql);
     return rows.map(rowToRule);
   }

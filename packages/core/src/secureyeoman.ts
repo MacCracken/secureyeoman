@@ -698,6 +698,7 @@ export class SecureYeoman {
             // Non-fatal — old records will be pruned on next startup
           });
         }, MS_PER_DAY);
+        this.usagePruneTimer.unref();
 
         this.aiClient = new AIClient(
           {
@@ -803,6 +804,22 @@ export class SecureYeoman {
             : undefined,
       });
       this.logger.debug('Brain manager initialized');
+
+      // Step 5.7.0a: Load persisted license key from brain.meta if env var not set
+      if (!process.env.SECUREYEOMAN_LICENSE_KEY) {
+        try {
+          const persistedKey = await this.brainStorage.getMeta('license:key');
+          if (persistedKey) {
+            process.env.SECUREYEOMAN_LICENSE_KEY = persistedKey;
+            this.licenseManager = new LicenseManager(persistedKey);
+            this.logger.info('License key loaded from brain.meta', {
+              tier: this.licenseManager.getTier(),
+            });
+          }
+        } catch {
+          // Non-fatal: license remains at community tier
+        }
+      }
 
       // Step 5.7.1: Initialize document manager (knowledge base pipeline)
       this.documentManager = new DocumentManager({
@@ -1602,6 +1619,7 @@ export class SecureYeoman {
               // non-fatal — logged by manager
             });
           }, MS_PER_DAY);
+          this.riskScheduleTimer.unref();
         } catch (error) {
           this.logger.warn('RiskAssessmentManager initialization failed (non-fatal)', {
             error: error instanceof Error ? error.message : 'Unknown error',
@@ -2072,7 +2090,10 @@ export class SecureYeoman {
                   },
                 },
               };
-            } catch {
+            } catch (err) {
+              this.logger.debug('getMetrics: scan history stats unavailable', {
+                error: err instanceof Error ? err.message : String(err),
+              });
               return {};
             }
           })()
@@ -2090,7 +2111,10 @@ export class SecureYeoman {
                   appetiteBreaches: summary.appetiteBreaches,
                 },
               };
-            } catch {
+            } catch (err) {
+              this.logger.debug('getMetrics: department risk summary unavailable', {
+                error: err instanceof Error ? err.message : String(err),
+              });
               return {};
             }
           })()
@@ -3951,6 +3975,11 @@ export class SecureYeoman {
     if (this.riskScheduleTimer) {
       clearInterval(this.riskScheduleTimer);
       this.riskScheduleTimer = null;
+    }
+
+    // Stop notification cleanup job
+    if (this.notificationManager) {
+      this.notificationManager.stopCleanupJob();
     }
 
     // Close conversation manager

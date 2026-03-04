@@ -27,6 +27,7 @@ export interface ConversationContext {
 }
 
 export class ConversationManager {
+  private static readonly MAX_CONVERSATIONS = 10_000;
   private readonly windowSize: number;
   private readonly windowDurationMs: number;
   private readonly conversations = new Map<string, UnifiedMessage[]>();
@@ -68,6 +69,11 @@ export class ConversationManager {
     const k = this.key(message.platform, message.chatId, threadId);
     let window = this.conversations.get(k);
     if (!window) {
+      // Evict oldest conversation if at cap (Map iteration order = insertion order)
+      if (this.conversations.size >= ConversationManager.MAX_CONVERSATIONS) {
+        const oldest = this.conversations.keys().next().value;
+        if (oldest !== undefined) this.conversations.delete(oldest);
+      }
       window = [];
       this.conversations.set(k, window);
     }

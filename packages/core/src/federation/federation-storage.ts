@@ -93,7 +93,7 @@ export class FederationStorage extends PgBaseStorage {
 
   async list(): Promise<FederationPeer[]> {
     const rows = await this.queryMany<PeerRow>(
-      'SELECT * FROM federation.peers ORDER BY created_at ASC'
+      'SELECT * FROM federation.peers ORDER BY created_at ASC LIMIT 1000'
     );
     return rows.map(rowToPeer);
   }

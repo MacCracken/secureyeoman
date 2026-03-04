@@ -76,13 +76,12 @@ export class AbuseDetector {
   /**
    * Check whether the given session is currently in a cool-down.
    * Call this at the top of the chat handler — before any LLM work — to
-   * gate access. Evicts stale sessions as a side-effect.
+   * gate access. Stale sessions are evicted by the periodic timer.
    */
   check(sessionId: string): AbuseCheckResult {
     if (!this.cfg?.enabled) {
       return { inCoolDown: false, coolDownUntil: null, triggeringSignal: null };
     }
-    this.evictStale();
     const rec = this.sessions.get(sessionId);
     if (!rec) {
       return { inCoolDown: false, coolDownUntil: null, triggeringSignal: null };

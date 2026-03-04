@@ -19,6 +19,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { WorkflowManager } from '../../workflow/workflow-manager.js';
 import type { SecureYeoman } from '../../secureyeoman.js';
 import { requiresLicense } from '../../licensing/license-guard.js';
+import { toErrorMessage } from '../../utils/errors.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -209,7 +210,7 @@ export function registerCicdWebhookRoutes(
         if (provider === 'github') {
           const sig = request.headers['x-hub-signature-256'] as string | undefined;
           if (!verifyGithub(webhookSecret, rawBody, sig)) {
-            return reply.status(401).send({ error: 'Invalid GitHub webhook signature' });
+            return reply.code(401).send({ error: 'Invalid GitHub webhook signature' });
           }
           const eventHeader = (request.headers['x-github-event'] as string | undefined) ?? 'push';
           ciEvent = normalizeGithub(eventHeader, body);
@@ -217,14 +218,14 @@ export function registerCicdWebhookRoutes(
           const jenkinsToken = process.env.JENKINS_WEBHOOK_TOKEN;
           const crumb = request.headers['x-jenkins-crumb'] as string | undefined;
           if (!verifyStaticToken(jenkinsToken, crumb)) {
-            return reply.status(401).send({ error: 'Invalid Jenkins crumb token' });
+            return reply.code(401).send({ error: 'Invalid Jenkins crumb token' });
           }
           ciEvent = normalizeJenkins(body);
         } else if (provider === 'gitlab') {
           const gitlabToken = process.env.GITLAB_WEBHOOK_TOKEN;
           const token = request.headers['x-gitlab-token'] as string | undefined;
           if (!verifyStaticToken(gitlabToken, token)) {
-            return reply.status(401).send({ error: 'Invalid GitLab webhook token' });
+            return reply.code(401).send({ error: 'Invalid GitLab webhook token' });
           }
           const eventHeader =
             (request.headers['x-gitlab-event'] as string | undefined) ?? 'Pipeline Hook';
@@ -233,15 +234,15 @@ export function registerCicdWebhookRoutes(
           const northflankSecret = process.env.NORTHFLANK_WEBHOOK_SECRET;
           const sig = request.headers['x-northflank-signature'] as string | undefined;
           if (!verifyHmac(northflankSecret, rawBody, sig)) {
-            return reply.status(401).send({ error: 'Invalid Northflank webhook signature' });
+            return reply.code(401).send({ error: 'Invalid Northflank webhook signature' });
           }
           ciEvent = normalizeNorthflank(body);
         } else {
-          return reply.status(400).send({ error: `Unknown CI provider: ${provider}` });
+          return reply.code(400).send({ error: `Unknown CI provider: ${provider}` });
         }
       } catch (err) {
-        return reply.status(400).send({
-          error: `Failed to parse ${provider} webhook: ${err instanceof Error ? err.message : String(err)}`,
+        return reply.code(400).send({
+          error: `Failed to parse ${provider} webhook: ${toErrorMessage(err)}`,
         });
       }
 
@@ -264,7 +265,7 @@ export function registerCicdWebhookRoutes(
         }
       }
 
-      return reply.status(200).send({ received: true, provider, event: ciEvent.event });
+      return reply.code(200).send({ received: true, provider, event: ciEvent.event });
     }
   );
 }

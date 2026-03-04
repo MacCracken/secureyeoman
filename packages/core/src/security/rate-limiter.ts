@@ -340,6 +340,72 @@ export class RateLimiter {
       totalChecks: this.totalChecks,
     };
   }
+
+  /**
+   * Create a Fastify onRequest hook that enforces rate limits globally.
+   *
+   * Route-specific limits per IP:
+   *   terminal routes   - 10 req/min
+   *   workflow execute   - 10 req/min
+   *   auth routes        - 5 req/min
+   *   all other API      - 100 req/min
+   *
+   * Skips: health checks, WebSocket upgrades, non-API routes.
+   */
+  createFastifyHook(): (
+    request: { url: string; ip: string; headers: Record<string, string | string[] | undefined> },
+    reply: { code: (n: number) => { header: (k: string, v: string) => { send: (body: unknown) => void } } },
+    done: (err?: Error) => void
+  ) => void {
+    // Ensure hook-specific rules exist
+    const hookRules: RateLimitRule[] = [
+      { name: 'global_api', windowMs: 60_000, maxRequests: 100, keyType: 'ip', onExceed: 'reject' },
+      { name: 'global_terminal', windowMs: 60_000, maxRequests: 10, keyType: 'ip', onExceed: 'reject' },
+      { name: 'global_workflow_exec', windowMs: 60_000, maxRequests: 10, keyType: 'ip', onExceed: 'reject' },
+      { name: 'global_auth', windowMs: 60_000, maxRequests: 5, keyType: 'ip', onExceed: 'reject' },
+    ];
+    for (const rule of hookRules) {
+      if (!this.rules.has(rule.name)) this.addRule(rule);
+    }
+
+    return (request, reply, done) => {
+      const url = request.url;
+
+      // Skip health checks and non-API routes
+      if (url === '/api/v1/terminal/health' || url === '/health' || !url.startsWith('/api/')) {
+        return done();
+      }
+
+      // Skip WebSocket upgrade requests
+      if (request.headers.upgrade === 'websocket') {
+        return done();
+      }
+
+      // Determine which rule to apply
+      let ruleName = 'global_api';
+      if (url.startsWith('/api/v1/terminal/')) {
+        ruleName = 'global_terminal';
+      } else if (url.includes('/execute') && url.startsWith('/api/v1/workflow/')) {
+        ruleName = 'global_workflow_exec';
+      } else if (url.startsWith('/api/v1/auth/')) {
+        ruleName = 'global_auth';
+      }
+
+      const result = this.check(ruleName, request.ip, { ipAddress: request.ip });
+
+      if (!result.allowed) {
+        reply
+          .code(429)
+          .header('Retry-After', String(result.retryAfter ?? 60))
+          .header('X-RateLimit-Remaining', '0')
+          .header('X-RateLimit-Reset', String(result.resetAt))
+          .send({ error: 'Too Many Requests', message: 'Rate limit exceeded', statusCode: 429 });
+        return;
+      }
+
+      done();
+    };
+  }
 }
 
 /** Common rate limit rules added to any limiter instance. */

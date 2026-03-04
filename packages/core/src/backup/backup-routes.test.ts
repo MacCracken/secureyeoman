@@ -133,7 +133,7 @@ describe('Backup Routes', () => {
       });
       expect(res.statusCode).toBe(500);
       const body = JSON.parse(res.body);
-      expect(body.message).toBe('pg_dump failed');
+      expect(body.message).toBe('An internal error occurred');
     });
 
     it('uses empty label when no label is provided', async () => {
@@ -164,7 +164,7 @@ describe('Backup Routes', () => {
       expect(manager.createBackup).toHaveBeenCalledWith('from-admin', 'admin-user-42');
     });
 
-    it('returns 500 with "Unknown error" when createBackup throws non-Error', async () => {
+    it('returns 500 with sanitized message when createBackup throws non-Error', async () => {
       manager.createBackup.mockRejectedValue('plain string error');
       app = await buildApp(manager);
       const res = await app.inject({
@@ -174,7 +174,7 @@ describe('Backup Routes', () => {
       });
       expect(res.statusCode).toBe(500);
       const body = JSON.parse(res.body);
-      expect(body.message).toBe('Unknown error');
+      expect(body.message).toBe('An internal error occurred');
     });
   });
 
@@ -220,7 +220,7 @@ describe('Backup Routes', () => {
       });
       expect(res.statusCode).toBe(500);
       const body = JSON.parse(res.body);
-      expect(body.message).toBe('DB connection lost');
+      expect(body.message).toBe('An internal error occurred');
     });
   });
 
@@ -285,7 +285,7 @@ describe('Backup Routes', () => {
       });
       expect(res.statusCode).toBe(500);
       const body = JSON.parse(res.body);
-      expect(body.message).toBe('Restore failed: corrupt dump');
+      expect(body.message).toBe('An internal error occurred');
     });
   });
 
@@ -299,10 +299,10 @@ describe('Backup Routes', () => {
       });
       expect(res.statusCode).toBe(500);
       const body = JSON.parse(res.body);
-      expect(body.message).toBe('Permission denied');
+      expect(body.message).toBe('An internal error occurred');
     });
 
-    it('returns 500 with "Unknown error" for non-Error thrown value', async () => {
+    it('returns 500 with sanitized message for non-Error thrown value', async () => {
       manager.deleteBackup.mockRejectedValue(42);
       app = await buildApp(manager);
       const res = await app.inject({
@@ -311,7 +311,7 @@ describe('Backup Routes', () => {
       });
       expect(res.statusCode).toBe(500);
       const body = JSON.parse(res.body);
-      expect(body.message).toBe('Unknown error');
+      expect(body.message).toBe('An internal error occurred');
     });
   });
 });

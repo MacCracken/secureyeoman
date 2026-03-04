@@ -7,6 +7,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { RiskAssessmentManager } from './risk-assessment-manager.js';
 import { sendError, toErrorMessage } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export interface RiskAssessmentRoutesOptions {
   riskAssessmentManager: RiskAssessmentManager;
@@ -72,8 +73,7 @@ export function registerRiskAssessmentRoutes(
 
   app.get('/api/v1/risk/assessments', async (req, reply) => {
     const query = req.query as { limit?: string; offset?: string; status?: string };
-    const limit = Math.min(Number(query.limit ?? 50), 100);
-    const offset = Math.max(Number(query.offset ?? 0), 0);
+    const { limit, offset } = parsePagination(query, { maxLimit: 100, defaultLimit: 50 });
 
     try {
       const result = await mgr.listAssessments({
@@ -211,8 +211,7 @@ export function registerRiskAssessmentRoutes(
       limit?: string;
       offset?: string;
     };
-    const limit = Math.min(Number(query.limit ?? 50), 200);
-    const offset = Math.max(Number(query.offset ?? 0), 0);
+    const { limit, offset } = parsePagination(query, { maxLimit: 200, defaultLimit: 50 });
 
     try {
       const result = await mgr.listFindings({

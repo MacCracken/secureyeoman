@@ -17,7 +17,7 @@ import { TwitterApi } from 'twitter-api-v2';
 import type { FastifyInstance } from 'fastify';
 import type { IntegrationManager } from '../manager.js';
 import type { SoulManager } from '../../soul/manager.js';
-import { sendError } from '../../utils/errors.js';
+import { sendError, toErrorMessage } from '../../utils/errors.js';
 
 export interface TwitterRoutesOptions {
   integrationManager: IntegrationManager;
@@ -162,7 +162,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
       return sendError(
         reply,
         500,
-        `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+        `Twitter API error: ${toErrorMessage(err)}`
       );
     }
   });
@@ -190,7 +190,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         return sendError(
           reply,
           500,
-          `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+          `Twitter API error: ${toErrorMessage(err)}`
         );
       }
     }
@@ -221,7 +221,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         return sendError(
           reply,
           500,
-          `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+          `Twitter API error: ${toErrorMessage(err)}`
         );
       }
     }
@@ -251,7 +251,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         return sendError(
           reply,
           500,
-          `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+          `Twitter API error: ${toErrorMessage(err)}`
         );
       }
     }
@@ -280,7 +280,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         return sendError(
           reply,
           500,
-          `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+          `Twitter API error: ${toErrorMessage(err)}`
         );
       }
     }
@@ -308,7 +308,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         return sendError(
           reply,
           500,
-          `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+          `Twitter API error: ${toErrorMessage(err)}`
         );
       }
     }
@@ -357,7 +357,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
       return sendError(
         reply,
         500,
-        `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+        `Twitter API error: ${toErrorMessage(err)}`
       );
     }
   });
@@ -406,7 +406,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         return sendError(
           reply,
           400,
-          `Failed to retrieve media: ${err instanceof Error ? err.message : String(err)}`
+          `Failed to retrieve media: ${toErrorMessage(err)}`
         );
       }
 
@@ -417,7 +417,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         return sendError(
           reply,
           500,
-          `Twitter media upload error: ${err instanceof Error ? err.message : String(err)}`
+          `Twitter media upload error: ${toErrorMessage(err)}`
         );
       }
     }
@@ -448,7 +448,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         return sendError(
           reply,
           500,
-          `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+          `Twitter API error: ${toErrorMessage(err)}`
         );
       }
     }
@@ -479,7 +479,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         return sendError(
           reply,
           500,
-          `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+          `Twitter API error: ${toErrorMessage(err)}`
         );
       }
     }
@@ -510,7 +510,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         return sendError(
           reply,
           500,
-          `Twitter API error: ${err instanceof Error ? err.message : String(err)}`
+          `Twitter API error: ${toErrorMessage(err)}`
         );
       }
     }

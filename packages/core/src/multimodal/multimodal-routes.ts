@@ -5,7 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { MultimodalManager } from './manager.js';
 import type { MultimodalJobType, MultimodalJobStatus } from '@secureyeoman/shared';
-import { sendError } from '../utils/errors.js';
+import { sendError, toErrorMessage } from '../utils/errors.js';
 import {
   VisionRequestSchema,
   STTRequestSchema,
@@ -15,8 +15,7 @@ import {
 } from '@secureyeoman/shared';
 
 function sanitizeError(error: unknown): string {
-  const msg = error instanceof Error ? error.message : String(error);
-  return msg
+  return toErrorMessage(error)
     .replace(/sk-[a-zA-Z0-9]{20,}/g, '[REDACTED]')
     .replace(/Bearer [a-zA-Z0-9._-]+/g, 'Bearer [REDACTED]');
 }

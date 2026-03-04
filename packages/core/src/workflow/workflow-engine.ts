@@ -18,6 +18,10 @@ import type { SubAgentManager } from '../agents/manager.js';
 import type { SwarmManager } from '../agents/swarm-manager.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import { WorkflowStorage } from './workflow-storage.js';
+import {
+  evaluateCondition,
+  validateConditionExpression as safeValidateCondition,
+} from './safe-eval.js';
 import { OutputSchemaValidator } from '../security/output-schema-validator.js';
 import type { DataCurationManager } from '../training/data-curation.js';
 import type { EvaluationManager } from '../training/evaluation-manager.js';
@@ -91,9 +95,7 @@ export class WorkflowEngine {
   private readonly swarmManager: SwarmManager | null;
   private readonly auditChain: AuditChain | null;
   private readonly logger: SecureLogger;
-  /** Compiled condition functions, keyed by expression string. */
-  private readonly _conditionCache = new Map<string, (...args: unknown[]) => unknown>();
-  private static readonly MAX_CONDITION_CACHE = 1000;
+  // Condition evaluation uses safe-eval (no more compiled function cache)
   // ML Pipeline managers (Phase 73)
   private readonly dataCurationManager: DataCurationManager | null;
   private readonly distillationManager: DistillationManager | null;
@@ -1042,13 +1044,7 @@ export class WorkflowEngine {
    * Returns { valid: true } or { valid: false, error: <syntax error message> }.
    */
   static validateConditionExpression(expr: string): { valid: boolean; error?: string } {
-    try {
-      // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
-      new Function('steps', 'input', `"use strict"; return !!(${expr});`);
-      return { valid: true };
-    } catch (e) {
-      return { valid: false, error: e instanceof Error ? e.message : String(e) };
-    }
+    return safeValidateCondition(expr);
   }
 
   /**
@@ -1075,20 +1071,12 @@ export class WorkflowEngine {
 
   evaluateCondition(expr: string, ctx: WorkflowEngineContext): boolean {
     try {
-      let fn = this._conditionCache.get(expr);
-      if (!fn) {
-        // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
-        fn = new Function('steps', 'input', `"use strict"; return !!(${expr});`) as (
-          ...args: unknown[]
-        ) => unknown;
-        if (this._conditionCache.size >= WorkflowEngine.MAX_CONDITION_CACHE) {
-          const oldest = this._conditionCache.keys().next().value;
-          if (oldest !== undefined) this._conditionCache.delete(oldest);
-        }
-        this._conditionCache.set(expr, fn);
-      }
-      return fn(ctx.steps, ctx.input) === true;
-    } catch {
+      return evaluateCondition(expr, { steps: ctx.steps, input: ctx.input });
+    } catch (err) {
+      this.logger.warn('Workflow condition evaluation failed', {
+        expression: expr,
+        error: err instanceof Error ? err.message : String(err),
+      });
       return false;
     }
   }

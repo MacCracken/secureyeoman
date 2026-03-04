@@ -459,14 +459,14 @@ describe('Federation Routes', () => {
       mockFederationManager.listPeers.mockRejectedValueOnce(new Error('db error'));
       const res = await app.inject({ method: 'GET', url: '/api/v1/federation/peers' });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.body).message).toBe('db error');
+      expect(JSON.parse(res.body).message).toBe('An internal error occurred');
     });
 
     it('returns 500 with fallback when listPeers throws non-Error', async () => {
       mockFederationManager.listPeers.mockRejectedValueOnce('string-err');
       const res = await app.inject({ method: 'GET', url: '/api/v1/federation/peers' });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.body).message).toContain('Failed to list peers');
+      expect(JSON.parse(res.body).message).toBe('An internal error occurred');
     });
   });
 
@@ -479,7 +479,7 @@ describe('Federation Routes', () => {
         payload: { url: 'https://x.com', name: 'P', sharedSecret: 's' },
       });
       expect(res.statusCode).toBe(400);
-      expect(JSON.parse(res.body).message).toContain('Failed to add peer');
+      expect(JSON.parse(res.body).message).toContain('Unknown error');
     });
   });
 
@@ -488,14 +488,14 @@ describe('Federation Routes', () => {
       mockFederationManager.removePeer.mockRejectedValueOnce(new Error('not found'));
       const res = await app.inject({ method: 'DELETE', url: '/api/v1/federation/peers/p1' });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.body).message).toBe('not found');
+      expect(JSON.parse(res.body).message).toBe('An internal error occurred');
     });
 
     it('returns 500 with fallback when removePeer throws non-Error', async () => {
       mockFederationManager.removePeer.mockRejectedValueOnce(null);
       const res = await app.inject({ method: 'DELETE', url: '/api/v1/federation/peers/p1' });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.body).message).toContain('Failed to remove peer');
+      expect(JSON.parse(res.body).message).toBe('An internal error occurred');
     });
   });
 
@@ -508,7 +508,7 @@ describe('Federation Routes', () => {
         payload: { knowledge: true },
       });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.body).message).toBe('peer gone');
+      expect(JSON.parse(res.body).message).toBe('An internal error occurred');
     });
 
     it('returns 500 with fallback when updateFeatures throws non-Error', async () => {
@@ -519,7 +519,7 @@ describe('Federation Routes', () => {
         payload: { knowledge: true },
       });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.body).message).toContain('Failed to update features');
+      expect(JSON.parse(res.body).message).toBe('An internal error occurred');
     });
   });
 
@@ -528,14 +528,14 @@ describe('Federation Routes', () => {
       mockFederationManager.checkHealth.mockRejectedValueOnce(new Error('timeout'));
       const res = await app.inject({ method: 'POST', url: '/api/v1/federation/peers/p1/health' });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.body).message).toBe('timeout');
+      expect(JSON.parse(res.body).message).toBe('An internal error occurred');
     });
 
     it('returns 500 with fallback when checkHealth throws non-Error', async () => {
       mockFederationManager.checkHealth.mockRejectedValueOnce(false);
       const res = await app.inject({ method: 'POST', url: '/api/v1/federation/peers/p1/health' });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.body).message).toContain('Health check failed');
+      expect(JSON.parse(res.body).message).toBe('An internal error occurred');
     });
   });
 
@@ -547,7 +547,7 @@ describe('Federation Routes', () => {
         url: '/api/v1/federation/peers/p1/marketplace',
       });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.body).message).toBe('peer offline');
+      expect(JSON.parse(res.body).message).toBe('An internal error occurred');
     });
 
     it('returns 500 with fallback when listPeerMarketplace throws non-Error', async () => {
@@ -557,7 +557,7 @@ describe('Federation Routes', () => {
         url: '/api/v1/federation/peers/p1/marketplace',
       });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.body).message).toContain('Failed to list peer marketplace');
+      expect(JSON.parse(res.body).message).toBe('An internal error occurred');
     });
   });
 
@@ -570,7 +570,7 @@ describe('Federation Routes', () => {
         payload: {},
       });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.body).message).toBe('conflict');
+      expect(JSON.parse(res.body).message).toBe('An internal error occurred');
     });
   });
 
@@ -585,7 +585,7 @@ describe('Federation Routes', () => {
         payload: { passphrase: 'pass' },
       });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.body).message).toBe('no such personality');
+      expect(JSON.parse(res.body).message).toBe('An internal error occurred');
     });
 
     it('returns 500 with fallback when export throws non-Error', async () => {
@@ -596,7 +596,7 @@ describe('Federation Routes', () => {
         payload: { passphrase: 'pass' },
       });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.body).message).toContain('Failed to export bundle');
+      expect(JSON.parse(res.body).message).toBe('An internal error occurred');
     });
   });
 
@@ -634,7 +634,7 @@ describe('Federation Routes', () => {
         },
       });
       expect(res.statusCode).toBe(400);
-      expect(JSON.parse(res.body).message).toContain('Failed to import bundle');
+      expect(JSON.parse(res.body).message).toContain('Unknown error');
     });
   });
 
@@ -648,7 +648,7 @@ describe('Federation Routes', () => {
         headers: { Authorization: 'Bearer valid-secret' },
       });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.body).message).toBe('index corrupt');
+      expect(JSON.parse(res.body).message).toBe('An internal error occurred');
     });
 
     it('returns 500 with fallback when semanticSearch throws non-Error', async () => {
@@ -660,7 +660,7 @@ describe('Federation Routes', () => {
         headers: { Authorization: 'Bearer valid-secret' },
       });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.body).message).toContain('Knowledge search failed');
+      expect(JSON.parse(res.body).message).toBe('An internal error occurred');
     });
   });
 
@@ -686,7 +686,7 @@ describe('Federation Routes', () => {
         headers: { Authorization: 'Bearer valid-secret' },
       });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.body).message).toBe('search down');
+      expect(JSON.parse(res.body).message).toBe('An internal error occurred');
     });
 
     it('returns 500 with fallback when marketplace search throws non-Error', async () => {
@@ -698,7 +698,7 @@ describe('Federation Routes', () => {
         headers: { Authorization: 'Bearer valid-secret' },
       });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.body).message).toContain('Marketplace search failed');
+      expect(JSON.parse(res.body).message).toBe('An internal error occurred');
     });
   });
 
@@ -724,7 +724,7 @@ describe('Federation Routes', () => {
         headers: { Authorization: 'Bearer valid-secret' },
       });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.body).message).toBe('storage fail');
+      expect(JSON.parse(res.body).message).toBe('An internal error occurred');
     });
 
     it('returns 500 with fallback when getSkill throws non-Error', async () => {
@@ -736,7 +736,7 @@ describe('Federation Routes', () => {
         headers: { Authorization: 'Bearer valid-secret' },
       });
       expect(res.statusCode).toBe(500);
-      expect(JSON.parse(res.body).message).toContain('Failed to get skill');
+      expect(JSON.parse(res.body).message).toBe('An internal error occurred');
     });
   });
 });

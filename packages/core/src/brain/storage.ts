@@ -731,7 +731,7 @@ export class BrainStorage extends PgBaseStorage {
       params.push(filter.forPersonalityId);
     }
 
-    sql += ' ORDER BY usage_count DESC, created_at DESC';
+    sql += ' ORDER BY usage_count DESC, created_at DESC LIMIT 1000';
 
     const rows = await this.queryMany<SkillRow>(sql, params);
     return rows.map(rowToSkill);

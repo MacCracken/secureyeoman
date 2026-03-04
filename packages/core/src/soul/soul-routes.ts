@@ -23,6 +23,7 @@ import type {
 } from './types.js';
 import { getAvatarDir } from './storage.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
+import { parsePagination } from '../utils/pagination.js';
 import type { HeartbeatManager } from '../body/heartbeat.js';
 import type { InputValidator } from '../security/input-validator.js';
 import type { AuditChain } from '../logging/audit-chain.js';
@@ -130,8 +131,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
   app.get(
     '/api/v1/soul/personalities',
     async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
-      const limit = request.query.limit ? Number(request.query.limit) : undefined;
-      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      const { limit, offset } = parsePagination(request.query);
       const result = await soulManager.listPersonalities({ limit, offset });
       return { personalities: result.personalities.map(withActiveHours), total: result.total };
     }
@@ -433,8 +433,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     ) => {
       if (!personalityVersionManager) return sendError(reply, 501, 'Versioning not available');
       try {
-        const limit = request.query.limit ? Number(request.query.limit) : 50;
-        const offset = request.query.offset ? Number(request.query.offset) : 0;
+        const { limit, offset } = parsePagination(request.query, { defaultLimit: 50 });
         return await personalityVersionManager.listVersions(request.params.id, { limit, offset });
       } catch (e) {
         return sendError(reply, 500, toErrorMessage(e));
@@ -550,12 +549,11 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         };
       }>
     ) => {
-      const { status, source, personalityId, limit: limitStr, offset: offsetStr } = request.query;
-      const filter: Parameters<typeof soulManager.listSkills>[0] = { status, source };
+      const { status, source, personalityId } = request.query;
+      const { limit, offset } = parsePagination(request.query);
+      const filter: Parameters<typeof soulManager.listSkills>[0] = { status, source, limit, offset };
       // When personalityId is supplied, return skills for that personality plus global skills
       if (personalityId) filter.forPersonalityId = personalityId;
-      if (limitStr) filter.limit = Number(limitStr);
-      if (offsetStr) filter.offset = Number(offsetStr);
       return soulManager.listSkills(filter);
     }
   );
@@ -692,8 +690,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
   app.get(
     '/api/v1/soul/users',
     async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
-      const limit = request.query.limit ? Number(request.query.limit) : undefined;
-      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      const { limit, offset } = parsePagination(request.query);
       return soulManager.listUsers({ limit, offset });
     }
   );
@@ -952,12 +949,13 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
       }>
     ) => {
       if (!approvalManager) return { approvals: [], total: 0 };
-      const { personalityId, status, limit, offset } = request.query;
+      const { personalityId, status } = request.query;
+      const { limit, offset } = parsePagination(request.query);
       return approvalManager.listApprovals({
         personalityId,
         status: (status as 'pending' | 'approved' | 'rejected') || undefined,
-        limit: limit ? Number(limit) : undefined,
-        offset: offset ? Number(offset) : undefined,
+        limit,
+        offset,
       });
     }
   );

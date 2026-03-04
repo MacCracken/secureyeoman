@@ -2098,35 +2098,7 @@ describe('WorkflowEngine — SSRF prevention in webhook step (Phase 103)', () =>
   });
 });
 
-describe('WorkflowEngine — _conditionCache FIFO eviction (Phase 103)', () => {
-  it('evicts oldest entry when cache exceeds 1000', () => {
-    const storage = makeStorage();
-    const engine = makeEngine({ storage });
-
-    // Fill the cache to 1000
-    for (let i = 0; i < 1000; i++) {
-      engine.evaluateCondition(`true || ${i}`, { steps: {}, input: {} });
-    }
-
-    // Add one more — should evict the first
-    engine.evaluateCondition('true || 1000', { steps: {}, input: {} });
-
-    // Verify the cache didn't grow beyond 1000
-    // Access private field via cast for testing
-    const cache = (engine as any)._conditionCache as Map<string, unknown>;
-    expect(cache.size).toBeLessThanOrEqual(1000);
-  });
-
-  it('returns correct result for cached conditions', () => {
-    const engine = makeEngine();
-    const ctx = { steps: {}, input: { val: 42 } };
-
-    // First call — compiles and caches
-    expect(engine.evaluateCondition('input.val === 42', ctx)).toBe(true);
-    // Second call — from cache
-    expect(engine.evaluateCondition('input.val === 42', ctx)).toBe(true);
-  });
-});
+// _conditionCache was removed in Phase 121 (replaced by safe-eval). Tests deleted.
 
 // ── Job Completion Events (Phase 104) ─────────────────────────────────────────
 

@@ -6,6 +6,20 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.3] — 2026-03-03
 
+### Phase 121: Security Hardening & Code Audit
+
+- **Secrets hygiene**: Sanitized `.env.dev` (replaced real OAuth/API credentials with `CHANGE_ME_*` placeholders), deleted `.env.old.backup`, added `*.backup` to `.gitignore`.
+- **Pre-commit secret scanner**: `.githooks/pre-commit` + `patterns.txt` — greps staged files for API keys, OAuth secrets, PEM keys. `"prepare": "git config core.hooksPath .githooks"` in root `package.json`.
+- **Terminal hardening**: Removed `override: true` allowlist bypass. Added shell injection guard (`$()`, backticks, `&&`, `||`, `;`, `>`, `<`, `${}`) with safe pipe whitelist. +15 tests.
+- **Safe expression evaluator** (`workflow/safe-eval.ts`): Recursive-descent parser replaces `new Function()` for workflow conditions. Supports property access, comparisons, logical ops, literals. Rejects injection attempts. +53 tests.
+- **Global rate limiting hook**: `RateLimiter.createFastifyHook()` — 100/min general API, 10/min terminal+workflow-execute, 5/min auth. Registered as Fastify `onRequest` hook. +12 tests.
+- **WebSocket auth via `Sec-WebSocket-Protocol`**: Token via `token.<jwt>` subprotocol (preferred), query param deprecated with warning log.
+- **RLS bypass audit logging**: `bypassRls()` logs warn with caller stack trace on every invocation. +5 tests.
+- **Error sanitization**: `sendError()` returns "An internal error occurred" for status 500. +11 tests.
+- **Pagination bounds**: `parsePagination()` utility (default max 100, clamp). Applied to ~20 route files. +12 tests.
+- **License key persistence**: POST `/api/v1/license/key` persists to `brain.meta`. On startup, loads from `brain.meta` if env var not set.
+- **ADR 195**: Security Hardening & Code Audit.
+
 ### Phase 118: Memory Audits, Compression & Reorganization
 
 - **Shared types** (`packages/shared/src/types/memory-audit.ts`): Zod schemas for `MemoryAuditScope`, `MemoryAuditStatus`, `MemoryTransformType`, `AuditSnapshot`, `CompressionSummary`, `ReorganizationSummary`, `MaintenanceSummary`, `MemoryAuditReport`, `MemoryArchiveEntry`, `MemoryAuditPolicy`, `MemoryHealthMetrics`. Exported from `types/index.ts`. `BrainConfigSchema` extended with `audit: MemoryAuditPolicySchema` in `soul.ts`.

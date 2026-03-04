@@ -9,6 +9,7 @@ import type { MemoryAuditScheduler } from './scheduler.js';
 import type { MemoryAuditStorage } from './audit-store.js';
 import type { MemoryAuditScope, MemoryAuditStatus } from '@secureyeoman/shared';
 import { toErrorMessage, sendError } from '../../utils/errors.js';
+import { parsePagination } from '../../utils/pagination.js';
 
 export interface AuditRoutesOptions {
   auditScheduler: MemoryAuditScheduler;
@@ -93,12 +94,13 @@ export function registerAuditRoutes(app: FastifyInstance, opts: AuditRoutesOptio
       }>
     ) => {
       const q = request.query;
+      const { limit, offset } = parsePagination(q, { maxLimit: 200, defaultLimit: 50 });
       const reports = await auditStorage.listReports({
         scope: q.scope as MemoryAuditScope | undefined,
         personalityId: q.personalityId,
         status: q.status as MemoryAuditStatus | undefined,
-        limit: q.limit ? Math.min(Number(q.limit), 200) : 50,
-        offset: q.offset ? Number(q.offset) : 0,
+        limit,
+        offset,
       });
       return { reports };
     }

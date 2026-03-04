@@ -100,12 +100,12 @@ describe('Spirit Routes — passions', () => {
     expect(listMock).toHaveBeenCalledWith({ limit: 10, offset: 5 });
   });
 
-  it('GET /api/v1/spirit/passions passes undefined limit/offset when absent', async () => {
+  it('GET /api/v1/spirit/passions passes default limit/offset when absent', async () => {
     const listMock = vi.fn().mockResolvedValue({ passions: [], total: 0 });
     const mgr = makeMockManager({ listPassions: listMock });
     const a = buildApp(mgr);
     await a.inject({ method: 'GET', url: '/api/v1/spirit/passions' });
-    expect(listMock).toHaveBeenCalledWith({ limit: undefined, offset: undefined });
+    expect(listMock).toHaveBeenCalledWith({ limit: 20, offset: 0 });
   });
 
   it('POST /api/v1/spirit/passions creates passion', async () => {
@@ -225,12 +225,12 @@ describe('Spirit Routes — inspirations', () => {
     expect(listMock).toHaveBeenCalledWith({ limit: 15, offset: 3 });
   });
 
-  it('GET /api/v1/spirit/inspirations passes undefined limit/offset when absent', async () => {
+  it('GET /api/v1/spirit/inspirations passes default limit/offset when absent', async () => {
     const listMock = vi.fn().mockResolvedValue({ inspirations: [], total: 0 });
     const mgr = makeMockManager({ listInspirations: listMock });
     const a = buildApp(mgr);
     await a.inject({ method: 'GET', url: '/api/v1/spirit/inspirations' });
-    expect(listMock).toHaveBeenCalledWith({ limit: undefined, offset: undefined });
+    expect(listMock).toHaveBeenCalledWith({ limit: 20, offset: 0 });
   });
 
   it('POST /api/v1/spirit/inspirations creates inspiration', async () => {
@@ -355,12 +355,12 @@ describe('Spirit Routes — pains', () => {
     expect(listMock).toHaveBeenCalledWith({ limit: 25, offset: 10 });
   });
 
-  it('GET /api/v1/spirit/pains passes undefined limit/offset when absent', async () => {
+  it('GET /api/v1/spirit/pains passes default limit/offset when absent', async () => {
     const listMock = vi.fn().mockResolvedValue({ pains: [], total: 0 });
     const mgr = makeMockManager({ listPains: listMock });
     const a = buildApp(mgr);
     await a.inject({ method: 'GET', url: '/api/v1/spirit/pains' });
-    expect(listMock).toHaveBeenCalledWith({ limit: undefined, offset: undefined });
+    expect(listMock).toHaveBeenCalledWith({ limit: 20, offset: 0 });
   });
 
   it('POST /api/v1/spirit/pains creates pain', async () => {

@@ -616,7 +616,7 @@ export class ConversationStorage extends PgBaseStorage {
 
   async listReplayJobs(): Promise<ReplayJob[]> {
     const rows = await this.queryMany<ReplayJobRow>(
-      'SELECT * FROM chat.replay_jobs ORDER BY created_at DESC'
+      'SELECT * FROM chat.replay_jobs ORDER BY created_at DESC LIMIT 500'
     );
     return rows.map(rowToReplayJob);
   }

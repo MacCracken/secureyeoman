@@ -1,11 +1,17 @@
 import { describe, it, expect, vi } from 'vitest';
 import { MarketplaceManager } from './manager.js';
 
+const { mockReadFile } = vi.hoisted(() => ({
+  mockReadFile: vi.fn().mockResolvedValue('{}'),
+}));
 vi.mock('fs', () => ({
   default: {
     existsSync: vi.fn().mockReturnValue(false),
     readdirSync: vi.fn().mockReturnValue([]),
     readFileSync: vi.fn().mockReturnValue('{}'),
+    promises: {
+      readFile: mockReadFile,
+    },
   },
 }));
 
@@ -329,7 +335,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockReturnValue(
+      mockReadFile.mockResolvedValue(
         JSON.stringify({ name: 'New Skill', description: 'A new skill', instructions: 'Do stuff.' })
       );
       const { manager, storage } = makeManager({
@@ -351,7 +357,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockReturnValue(
+      mockReadFile.mockResolvedValue(
         JSON.stringify({ name: 'Existing Skill', instructions: 'Updated instructions.' })
       );
       const existingSkill = { ...SKILL, id: 'cs-1', name: 'Existing Skill', source: 'community' };
@@ -374,7 +380,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ description: 'No name here' }));
+      mockReadFile.mockResolvedValue(JSON.stringify({ description: 'No name here' }));
       const { manager } = makeManager({
         search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
       });
@@ -392,7 +398,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockReturnValue(
+      mockReadFile.mockResolvedValue(
         JSON.stringify({ name: 'Live Skill', instructions: 'Still here.' })
       );
       const staleSkill = { ...SKILL, id: 'stale-1', name: 'Stale Skill', source: 'community' };
@@ -415,7 +421,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockReturnValue(
+      mockReadFile.mockResolvedValue(
         JSON.stringify({ name: 'Kept Skill', instructions: 'Still present.' })
       );
       const keptSkill = { ...SKILL, id: 'kept-1', name: 'Kept Skill', source: 'community' };
@@ -707,7 +713,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockImplementation((p: any) => {
+      mockReadFile.mockImplementation((p: any) => {
         const s = String(p);
         if (s.endsWith('metadata.json')) {
           return JSON.stringify({
@@ -764,7 +770,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockImplementation((p: any) => {
+      mockReadFile.mockImplementation((p: any) => {
         const s = String(p);
         if (s.endsWith('metadata.json')) {
           return JSON.stringify({ name: 'Cloud Posture', version: '2026.3.2' });
@@ -800,7 +806,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ name: 'Bad Template' }));
+      mockReadFile.mockResolvedValue(JSON.stringify({ name: 'Bad Template' }));
 
       const { manager } = makeManager({
         search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
@@ -827,7 +833,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockReturnValue('Some system prompt content');
+      mockReadFile.mockResolvedValue('Some system prompt content');
 
       const { manager } = makeManager({
         search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
@@ -850,7 +856,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockImplementation((p: any) => {
+      mockReadFile.mockImplementation((p: any) => {
         const s = String(p);
         if (s.endsWith('metadata.json')) {
           return JSON.stringify({ description: 'No name here' });
@@ -879,7 +885,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockImplementation((p: any) => {
+      mockReadFile.mockImplementation((p: any) => {
         const s = String(p);
         if (s.endsWith('metadata.json')) {
           return JSON.stringify({
@@ -915,7 +921,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockImplementation((p: any) => {
+      mockReadFile.mockImplementation((p: any) => {
         const s = String(p);
         if (s.endsWith('metadata.json')) {
           return JSON.stringify({
@@ -948,7 +954,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockImplementation((p: any) => {
+      mockReadFile.mockImplementation((p: any) => {
         const s = String(p);
         if (s.endsWith('metadata.json')) {
           return JSON.stringify({
@@ -993,7 +999,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockReturnValue(
+      mockReadFile.mockResolvedValue(
         '---\nname: "Security Analyst"\ndescription: "Defensive sec"\n---\n\n# Identity & Purpose\n\nYou are a security analyst.\n'
       );
 
@@ -1035,7 +1041,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockReturnValue(
+      mockReadFile.mockResolvedValue(
         '---\nname: "Security Analyst"\ndescription: "Updated desc"\n---\n\n# Identity & Purpose\n\nUpdated prompt.\n'
       );
 
@@ -1079,7 +1085,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockReturnValue('no frontmatter here');
+      mockReadFile.mockResolvedValue('no frontmatter here');
 
       const mockSoulManager = {
         listPersonalities: vi.fn().mockResolvedValue({ personalities: [], total: 0 }),
@@ -1137,7 +1143,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockReturnValue(
+      mockReadFile.mockResolvedValue(
         JSON.stringify({
           name: 'Ocean Breeze',
           description: 'Cool blue theme',
@@ -1181,7 +1187,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockReturnValue(
+      mockReadFile.mockResolvedValue(
         JSON.stringify({ variables: { background: '#000' } })
       );
 
@@ -1211,7 +1217,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ name: 'Bad Theme' }));
+      mockReadFile.mockResolvedValue(JSON.stringify({ name: 'Bad Theme' }));
 
       const { manager } = makeManager({
         findByNameAndSource: vi.fn().mockResolvedValue(null),
@@ -1239,7 +1245,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      vi.mocked(fs.readFileSync).mockReturnValue(
+      mockReadFile.mockResolvedValue(
         JSON.stringify({
           name: 'Ocean Breeze',
           variables: { background: '#0a1628', foreground: '#e2e8f0', primary: '#38bdf8' },

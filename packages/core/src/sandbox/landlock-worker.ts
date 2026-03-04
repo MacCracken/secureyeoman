@@ -133,6 +133,7 @@ if (process.send) {
         ? applyLandlockRestrictions(config.options)
         : { enforced: false, violations: [] as SandboxViolation[] };
 
+      // SECURITY(121): Deferred — replace new Function() IPC with message protocol
       // Execute the function
       // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval -- Intentional: sandboxed code execution requires dynamic function creation
       const fn = new Function(`return (${config.fnBody})`)() as () => Promise<unknown>;
