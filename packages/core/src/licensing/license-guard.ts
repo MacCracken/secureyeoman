@@ -12,6 +12,7 @@
 
 import type { FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
 import type { EnterpriseFeature, LicenseManager } from './license-manager.js';
+import { sendError } from '../utils/errors.js';
 
 export function requiresLicense(
   feature: EnterpriseFeature,
@@ -24,10 +25,6 @@ export function requiresLicense(
       return;
     }
 
-    reply.code(402).send({
-      error: 'enterprise_license_required',
-      feature,
-      tier: lm.getTier(),
-    });
+    sendError(reply, 402, 'Enterprise license required', { extra: { feature, tier: lm.getTier() } });
   };
 }

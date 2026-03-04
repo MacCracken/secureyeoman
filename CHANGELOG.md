@@ -6,6 +6,20 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.4] — 2026-03-04
 
+### God Object Decomposition — SecureYeoman Facade + Domain Modules
+
+- **Architecture**: `SecureYeoman` refactored from a 4,351-line god object with 138 nullable fields into a facade that delegates to 8 domain modules. All 118+ public getters preserved — zero changes to `server.ts`, routes, or tests.
+- **Module scaffold** (`modules/types.ts`): `AppModule` interface, `ModuleContext`, `BaseModule` abstract class with `doInit()` hook and `initOptional()` helper.
+- **BodyModule** (`modules/body-module.ts`): Extracts heartbeatManager, heartbeatLogStorage, heartManager (3 fields). Personality roster seeding logic moved inside module.
+- **AuditModule** (`modules/audit-module.ts`): Extracts auditChain, auditStorage, cryptoPool, reportGenerator (4 fields). Public audit methods (queryAuditLog, verifyAuditChain, repairAuditChain, enforceAuditRetention, exportAuditLog, getAuditStats) moved to module. Late-bound `initReportGenerator()` for deferred dependencies.
+- **SecurityModule** (`modules/security-module.ts`): Extracts 24 fields — keyring, secrets, TLS, rotation, RBAC, validator, rateLimiter, SSO, ATHI, SRA, scanning, autonomyAudit, externalizationGate. Multi-phase init: `initEarly()` → `initCore()` → `initPostAuth()` → `initLate()`. Lazy `getOrCreateAutonomyAuditManager()`.
+- **AuthModule** (`modules/auth-module.ts`): Extracts authStorage, authService (2 fields). Depends on AuditModule (auditChain), SecurityModule (RBAC, rateLimiter).
+- **BrainModule** (`modules/brain-module.ts`): Extracts 9 fields — brainStorage, brainManager, cognitiveMemoryStorage/Manager, documentManager, memoryAuditStorage/Scheduler, externalBrainSync, strategyStorage. `startLateWorkers()` for deferred external sync and audit scheduler start.
+- **TrainingModule** (`modules/training-module.ts`): Extracts 16 fields — distillation, finetune, dataCuration, evaluation, pipelineApproval, lineage, qualityScorer, computerUse, captureAudit, desktopBridge, llmJudge, preference, datasetCurator, experimentRegistry, modelVersion, abTest.
+- **AnalyticsModule** (`modules/analytics-module.ts`): Extracts 6 fields — analyticsStorage, sentimentAnalyzer, conversationSummarizer, entityExtractor, engagementMetrics, usageAnomalyDetector. Background worker lifecycle management.
+- **DelegationModule** (`modules/delegation-module.ts`): Extracts 12 fields — subAgent, swarm, team, council, workflow storages and managers + workflowVersion. Lazy `boot()` method preserves runtime delegation toggling from `updateSecurityPolicy()`. `seedTemplates()` ensures marketplace shows templates even when delegation is off.
+- **Result**: 4,351 → 3,422 lines (21% reduction), 138 → 103 private fields, all 11,866 tests passing with zero behavioral changes.
+
 ### Phase 124: Cognitive Memory — ACT-R Activation & Hebbian Learning
 
 - **Migration `008_cognitive_memory.sql`**: Adds `access_count`, `last_accessed`, `confidence` to `brain.documents`; `access_count`, `last_accessed` to `brain.skills`; creates `brain.associations` table for Hebbian links with weight-descending index; creates `brain.activation_score()` SQL function implementing ACT-R base-level activation formula.

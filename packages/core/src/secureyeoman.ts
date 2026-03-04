@@ -30,7 +30,7 @@ import {
   type AuditQueryOptions,
   type AuditQueryResult,
 } from './logging/audit-chain.js';
-import { SQLiteAuditStorage } from './logging/sqlite-storage.js';
+// SQLiteAuditStorage now owned by AuditModule
 import { createValidator, type InputValidator } from './security/input-validator.js';
 import { createRateLimiter, type RateLimiterLike } from './security/rate-limiter.js';
 import { initializeRBAC, type RBAC } from './security/rbac.js';
@@ -49,15 +49,15 @@ import { UsageStorage } from './ai/usage-storage.js';
 import { AuthStorage } from './security/auth-storage.js';
 import { AuthService } from './security/auth.js';
 import { sha256 } from './utils/crypto.js';
-import { CryptoPool } from './utils/crypto-pool.js';
+// CryptoPool now owned by AuditModule
 import { SoulStorage } from './soul/storage.js';
 import { SoulManager } from './soul/manager.js';
 import { ApprovalManager } from './soul/approval-manager.js';
-import { BrainStorage } from './brain/storage.js';
-import { BrainManager } from './brain/manager.js';
-import { DocumentManager } from './brain/document-manager.js';
-import { CognitiveMemoryStorage } from './brain/cognitive-memory-store.js';
-import { CognitiveMemoryManager } from './brain/cognitive-memory-manager.js';
+import type { BrainStorage } from './brain/storage.js';
+import type { BrainManager } from './brain/manager.js';
+import type { DocumentManager } from './brain/document-manager.js';
+import type { CognitiveMemoryStorage } from './brain/cognitive-memory-store.js';
+import type { CognitiveMemoryManager } from './brain/cognitive-memory-manager.js';
 import { SpiritStorage } from './spirit/storage.js';
 import { SpiritManager } from './spirit/manager.js';
 import { AgentComms } from './comms/agent-comms.js';
@@ -101,7 +101,15 @@ import { TwitterIntegration } from './integrations/twitter/index.js';
 import { HeartbeatManager } from './body/heartbeat.js';
 import { HeartbeatLogStorage } from './body/heartbeat-log-storage.js';
 import { HeartManager } from './body/heart.js';
-import { ExternalBrainSync } from './brain/external-sync.js';
+import { BodyModule } from './modules/body-module.js';
+import type { BrainModule } from './modules/brain-module.js';
+import type { DelegationModule } from './modules/delegation-module.js';
+import { AuditModule } from './modules/audit-module.js';
+import { SecurityModule } from './modules/security-module.js';
+import { AuthModule } from './modules/auth-module.js';
+import { AnalyticsModule } from './modules/analytics-module.js';
+import { TrainingModule } from './modules/training-module.js';
+import type { ExternalBrainSync } from './brain/external-sync.js';
 import { McpStorage } from './mcp/storage.js';
 import { McpClientManager } from './mcp/client.js';
 import { McpServer } from './mcp/server.js';
@@ -120,20 +128,20 @@ import { MarketplaceStorage } from './marketplace/storage.js';
 import { MarketplaceManager } from './marketplace/manager.js';
 import { ConversationStorage } from './chat/conversation-storage.js';
 import { BranchingManager } from './chat/branching-manager.js';
-import { SubAgentStorage } from './agents/storage.js';
-import { SubAgentManager } from './agents/manager.js';
-import { SwarmStorage } from './agents/swarm-storage.js';
-import { SwarmManager } from './agents/swarm-manager.js';
-import { TeamStorage } from './agents/team-storage.js';
-import { TeamManager } from './agents/team-manager.js';
-import { CouncilStorage } from './agents/council-storage.js';
-import { CouncilManager } from './agents/council-manager.js';
-import { WorkflowStorage } from './workflow/workflow-storage.js';
-import { WorkflowManager } from './workflow/workflow-manager.js';
+import type { SubAgentStorage } from './agents/storage.js';
+import type { SubAgentManager } from './agents/manager.js';
+import type { SwarmStorage } from './agents/swarm-storage.js';
+import type { SwarmManager } from './agents/swarm-manager.js';
+import type { TeamStorage } from './agents/team-storage.js';
+import type { TeamManager } from './agents/team-manager.js';
+import type { CouncilStorage } from './agents/council-storage.js';
+import type { CouncilManager } from './agents/council-manager.js';
+import type { WorkflowStorage } from './workflow/workflow-storage.js';
+import type { WorkflowManager } from './workflow/workflow-manager.js';
 import { PersonalityVersionStorage } from './soul/personality-version-storage.js';
 import { PersonalityVersionManager } from './soul/personality-version-manager.js';
-import { WorkflowVersionStorage } from './workflow/workflow-version-storage.js';
-import { WorkflowVersionManager } from './workflow/workflow-version-manager.js';
+import type { WorkflowVersionStorage } from './workflow/workflow-version-storage.js';
+import type { WorkflowVersionManager } from './workflow/workflow-version-manager.js';
 import { PersonalityMarkdownSerializer } from './soul/personality-serializer.js';
 import { ExtensionStorage } from './extensions/storage.js';
 import { ExtensionManager } from './extensions/manager.js';
@@ -177,29 +185,29 @@ import { closePool } from './storage/pg-pool.js';
 import type { Config, TaskCreate, Task, MetricsSnapshot, AuditEntry } from '@secureyeoman/shared';
 import os from 'os';
 import { OllamaProvider } from './ai/providers/ollama.js';
-import { DistillationManager } from './training/distillation-manager.js';
-import { FinetuneManager } from './training/finetune-manager.js';
-import { DataCurationManager } from './training/data-curation.js';
-import { EvaluationManager } from './training/evaluation-manager.js';
-import { PipelineApprovalManager } from './training/approval-manager.js';
-import { PipelineLineageStorage } from './training/pipeline-lineage.js';
-import { ConversationQualityScorer } from './training/conversation-quality-scorer.js';
-import { ComputerUseManager } from './training/computer-use-manager.js';
-import { CaptureAuditLogger } from './body/capture-audit-logger.js';
-import { DesktopTrainingBridge } from './body/desktop-training-bridge.js';
-import { LlmJudgeManager } from './training/llm-judge-manager.js';
-import { PreferenceManager } from './training/preference-manager.js';
-import { DatasetCuratorManager } from './training/dataset-curator.js';
-import { ExperimentRegistryManager } from './training/experiment-registry.js';
-import { ModelVersionManager } from './training/model-version-manager.js';
-import { AbTestManager } from './training/ab-test-manager.js';
+import type { DistillationManager } from './training/distillation-manager.js';
+import type { FinetuneManager } from './training/finetune-manager.js';
+import type { DataCurationManager } from './training/data-curation.js';
+import type { EvaluationManager } from './training/evaluation-manager.js';
+import type { PipelineApprovalManager } from './training/approval-manager.js';
+import type { PipelineLineageStorage } from './training/pipeline-lineage.js';
+import type { ConversationQualityScorer } from './training/conversation-quality-scorer.js';
+import type { ComputerUseManager } from './training/computer-use-manager.js';
+import type { CaptureAuditLogger } from './body/capture-audit-logger.js';
+import type { DesktopTrainingBridge } from './body/desktop-training-bridge.js';
+import type { LlmJudgeManager } from './training/llm-judge-manager.js';
+import type { PreferenceManager } from './training/preference-manager.js';
+import type { DatasetCuratorManager } from './training/dataset-curator.js';
+import type { ExperimentRegistryManager } from './training/experiment-registry.js';
+import type { ModelVersionManager } from './training/model-version-manager.js';
+import type { AbTestManager } from './training/ab-test-manager.js';
 import { FederationStorage } from './federation/federation-storage.js';
 import { FederationManager } from './federation/federation-manager.js';
 import { AlertStorage } from './telemetry/alert-storage.js';
 import { AlertManager } from './telemetry/alert-manager.js';
 import { initTracing } from './telemetry/otel.js';
 import { LicenseManager } from './licensing/license-manager.js';
-import { StrategyStorage } from './soul/strategy-storage.js';
+import type { StrategyStorage } from './soul/strategy-storage.js';
 import { AnalyticsStorage } from './analytics/analytics-storage.js';
 import { SentimentAnalyzer } from './analytics/sentiment-analyzer.js';
 import { ConversationSummarizer } from './analytics/conversation-summarizer.js';
@@ -240,9 +248,12 @@ export interface SecureYeomanState {
 export class SecureYeoman {
   private config: Config | null = null;
   private logger: SecureLogger | null = null;
+  private auditMod: AuditModule | null = null;
+  // Aliases — set from auditMod after init, used by dozens of downstream references
   private auditChain: AuditChain | null = null;
   private auditStorage: AuditChainStorage | null = null;
-  private cryptoPool: CryptoPool | null = null;
+  private securityMod: SecurityModule | null = null;
+  // Aliases — set from securityMod after init, used by many downstream references
   private validator: InputValidator | null = null;
   private rateLimiter: RateLimiterLike | null = null;
   private rbac: RBAC | null = null;
@@ -250,26 +261,17 @@ export class SecureYeoman {
   private aiClient: AIClient | null = null;
   private usageStorage: UsageStorage | null = null;
   private usagePruneTimer: ReturnType<typeof setInterval> | null = null;
+  private authMod: AuthModule | null = null;
+  // Aliases from authMod
   private authStorage: AuthStorage | null = null;
   private authService: AuthService | null = null;
   private gateway: GatewayServer | null = null;
-  private keyringManager: KeyringManager | null = null;
-  private secretsManager: SecretsManager | null = null;
-  private tlsManager: TlsManager | null = null;
-  private rotationManager: SecretRotationManager | null = null;
-  private rotationStorage: RotationStorage | null = null;
-  private rbacStorage: RBACStorage | null = null;
+  // keyringManager, secretsManager, tlsManager, rotationManager, rotationStorage, rbacStorage now owned by SecurityModule
+  private brainMod: BrainModule | null = null;
+  // Aliases for brainStorage/brainManager (widely referenced internally)
   private brainStorage: BrainStorage | null = null;
   private brainManager: BrainManager | null = null;
-  private cognitiveMemoryStorage: CognitiveMemoryStorage | null = null;
-  private cognitiveMemoryManager: CognitiveMemoryManager | null = null;
-  private memoryAuditStorage: import('./brain/audit/audit-store.js').MemoryAuditStorage | null = null;
-  private memoryAuditScheduler: import('./brain/audit/scheduler.js').MemoryAuditScheduler | null = null;
-  private documentManager: DocumentManager | null = null;
-  private heartbeatManager: HeartbeatManager | null = null;
-  private heartbeatLogStorage: HeartbeatLogStorage | null = null;
-  private heartManager: HeartManager | null = null;
-  private externalBrainSync: ExternalBrainSync | null = null;
+  private bodyMod: BodyModule | null = null;
   private spiritStorage: SpiritStorage | null = null;
   private spiritManager: SpiritManager | null = null;
   private soulStorage: SoulStorage | null = null;
@@ -285,34 +287,23 @@ export class SecureYeoman {
   private mcpStorage: McpStorage | null = null;
   private mcpClientManager: McpClientManager | null = null;
   private mcpServer: McpServer | null = null;
-  private reportGenerator: AuditReportGenerator | null = null;
+  // reportGenerator is now owned by AuditModule
   private costOptimizer: CostOptimizer | null = null;
   private dashboardStorage: DashboardStorage | null = null;
   private dashboardManager: DashboardManager | null = null;
   private workspaceStorage: WorkspaceStorage | null = null;
   private workspaceManager: WorkspaceManager | null = null;
-  private ssoStorage: SsoStorage | null = null;
-  private ssoManager: SsoManager | null = null;
+  // ssoStorage, ssoManager now owned by SecurityModule
   private experimentStorage: ExperimentStorage | null = null;
   private experimentManager: ExperimentManager | null = null;
   private marketplaceStorage: MarketplaceStorage | null = null;
   private marketplaceManager: MarketplaceManager | null = null;
   private chatConversationStorage: ConversationStorage | null = null;
   private branchingManager: BranchingManager | null = null;
-  private subAgentStorage: SubAgentStorage | null = null;
-  private subAgentManager: SubAgentManager | null = null;
-  private swarmStorage: SwarmStorage | null = null;
-  private swarmManager: SwarmManager | null = null;
-  private teamStorage: TeamStorage | null = null;
-  private teamManager: TeamManager | null = null;
-  private councilStorage: CouncilStorage | null = null;
-  private councilManager: CouncilManager | null = null;
-  private workflowStorage: WorkflowStorage | null = null;
-  private workflowManager: WorkflowManager | null = null;
+  private delegationMod: DelegationModule | null = null;
   private personalityVersionStorage: PersonalityVersionStorage | null = null;
   private personalityVersionManager: PersonalityVersionManager | null = null;
-  private workflowVersionStorage: WorkflowVersionStorage | null = null;
-  private workflowVersionManager: WorkflowVersionManager | null = null;
+  // workflowVersionStorage/Manager now owned by DelegationModule
   private extensionStorage: ExtensionStorage | null = null;
   private extensionManager: ExtensionManager | null = null;
   private executionStorage: ExecutionStorage | null = null;
@@ -323,8 +314,7 @@ export class SecureYeoman {
   private dynamicToolManager: DynamicToolManager | null = null;
   private intentStorage: IntentStorage | null = null;
   private intentManager: IntentManager | null = null;
-  private autonomyAuditStorage: AutonomyAuditStorage | null = null;
-  private autonomyAuditManager: AutonomyAuditManager | null = null;
+  // autonomyAuditStorage, autonomyAuditManager now owned by SecurityModule
   private notificationStorage: NotificationStorage | null = null;
   private notificationManager: NotificationManager | null = null;
   private userNotificationPrefsStorage: UserNotificationPrefsStorage | null = null;
@@ -333,10 +323,7 @@ export class SecureYeoman {
   private riskScheduleTimer: ReturnType<typeof setInterval> | null = null;
   private departmentRiskStorage: DepartmentRiskStorage | null = null;
   private departmentRiskManager: DepartmentRiskManager | null = null;
-  private athiStorage: AthiStorage | null = null;
-  private athiManager: AthiManager | null = null;
-  private sraStorage: SraStorage | null = null;
-  private sraManager: SraManager | null = null;
+  // athiStorage, athiManager, sraStorage, sraManager now owned by SecurityModule
   private proactiveManager: import('./proactive/manager.js').ProactiveManager | null = null;
   private multimodalManager: import('./multimodal/manager.js').MultimodalManager | null = null;
   private browserSessionStorage: import('./browser/storage.js').BrowserSessionStorage | null = null;
@@ -348,41 +335,18 @@ export class SecureYeoman {
   private backupManager: BackupManager | null = null;
   private tenantStorage: TenantStorage | null = null;
   private tenantManager: TenantManager | null = null;
-  private distillationManager: DistillationManager | null = null;
-  private finetuneManager: FinetuneManager | null = null;
-  private dataCurationManager: DataCurationManager | null = null;
-  private evaluationManager: EvaluationManager | null = null;
-  private pipelineApprovalManager: PipelineApprovalManager | null = null;
-  private pipelineLineageStorage: PipelineLineageStorage | null = null;
-  private conversationQualityScorer: ConversationQualityScorer | null = null;
-  private computerUseManager: ComputerUseManager | null = null;
-  private captureAuditLogger: CaptureAuditLogger | null = null;
-  private desktopTrainingBridge: DesktopTrainingBridge | null = null;
-  private llmJudgeManager: LlmJudgeManager | null = null;
-  private preferenceManager: PreferenceManager | null = null;
-  private datasetCuratorManager: DatasetCuratorManager | null = null;
-  private experimentRegistryManager: ExperimentRegistryManager | null = null;
-  private modelVersionManager: ModelVersionManager | null = null;
-  private abTestManager: AbTestManager | null = null;
+  private trainingMod: TrainingModule | null = null;
   private federationStorage: FederationStorage | null = null;
   private federationManager: FederationManager | null = null;
   private alertStorage: AlertStorage | null = null;
   private alertManager: AlertManager | null = null;
-  private analyticsStorage: AnalyticsStorage | null = null;
-  private sentimentAnalyzer: SentimentAnalyzer | null = null;
-  private conversationSummarizer: ConversationSummarizer | null = null;
-  private entityExtractor: EntityExtractor | null = null;
-  private engagementMetricsService: EngagementMetricsService | null = null;
-  private usageAnomalyDetector: UsageAnomalyDetector | null = null;
+  private analyticsMod: AnalyticsModule | null = null;
   private licenseManager: LicenseManager = new LicenseManager();
   private providerAccountStorage: ProviderAccountStorage | null = null;
   private providerAccountManager: ProviderAccountManager | null = null;
   private providerHealthTracker: ProviderHealthTracker = new ProviderHealthTracker();
   private costBudgetChecker: CostBudgetChecker | null = null;
-  private strategyStorage: StrategyStorage | null = null;
-  private scanHistoryStore: ScanHistoryStore | null = null;
-  private quarantineStorage: QuarantineStorage | null = null;
-  private externalizationGate: ExternalizationGate | null = null;
+  // scanHistoryStore, quarantineStorage, externalizationGate now owned by SecurityModule
   private modelDefaultSet = false;
   private initialized = false;
   private startedAt: number | null = null;
@@ -429,58 +393,10 @@ export class SecureYeoman {
         });
       }
 
-      // Step 2.5: Initialize keyring (pre-loads secrets from system keyring)
-      const knownSecretKeys = [
-        this.config.gateway.auth.tokenSecret,
-        this.config.gateway.auth.adminPasswordEnv,
-        this.config.logging.audit.signingKeyEnv,
-        this.config.security.encryption.keyEnv,
-        this.config.model.apiKeyEnv,
-      ];
-      this.keyringManager = initializeKeyring(this.config.security.secretBackend, knownSecretKeys);
-      this.logger.debug('Keyring initialized', {
-        backend: this.keyringManager.getProvider().name,
-      });
-
-      // Step 2.05: Initialize SecretsManager (unified secrets facade)
-      {
-        const vaultCfg = this.config.security.vault;
-        const smConfig: import('./security/secrets-manager.js').SecretsManagerConfig = {
-          backend: this.config.security.secretBackend,
-          keyringManager: this.keyringManager,
-          knownKeys: knownSecretKeys,
-          ...(vaultCfg && {
-            vault: {
-              address: vaultCfg.address,
-              mount: vaultCfg.mount,
-              namespace: vaultCfg.namespace,
-              token: vaultCfg.tokenEnv ? process.env[vaultCfg.tokenEnv] : undefined,
-              roleId: vaultCfg.roleIdEnv ? process.env[vaultCfg.roleIdEnv] : undefined,
-              secretId: vaultCfg.secretIdEnv ? process.env[vaultCfg.secretIdEnv] : undefined,
-            },
-            vaultFallback: vaultCfg.fallback,
-          }),
-        };
-        this.secretsManager = new SecretsManager(smConfig);
-        await this.secretsManager.initialize();
-        this.logger.debug('SecretsManager initialized', {
-          backend: this.config.security.secretBackend,
-        });
-      }
-
-      // Step 2.06: Initialize TlsManager (cert lifecycle)
-      {
-        const tlsCfg = this.config.gateway.tls;
-        this.tlsManager = new TlsManager({
-          enabled: tlsCfg.enabled,
-          certPath: tlsCfg.certPath,
-          keyPath: tlsCfg.keyPath,
-          caPath: tlsCfg.caPath,
-          autoGenerate: tlsCfg.autoGenerate,
-          certDir: `${this.config.core.dataDir}/tls`,
-        });
-        this.logger.debug('TlsManager initialized', { tlsEnabled: tlsCfg.enabled });
-      }
+      // Step 2.5–2.06: Initialize security early phase (keyring, secrets, TLS) via SecurityModule
+      this.securityMod = new SecurityModule();
+      await this.securityMod.init({ config: this.config, logger: this.logger });
+      await this.securityMod.initEarly();
 
       // Step 2.1: Initialize PostgreSQL pool and run migrations
       initPoolFromConfig(this.config.core.database);
@@ -502,8 +418,11 @@ export class SecureYeoman {
         this.logger.debug('IntentManager initialized');
       }
 
-      // Step 2.08: Initialize AutonomyAuditStorage (manager is wired lazily via getter)
-      this.autonomyAuditStorage = new AutonomyAuditStorage();
+      // Step 2.08–4: Initialize security core phase (storages, RBAC, validator, rateLimiter)
+      await this.securityMod.initCore();
+      this.rbac = this.securityMod.getRBAC()!;
+      this.validator = this.securityMod.getValidator()!;
+      this.rateLimiter = this.securityMod.getRateLimiter()!;
 
       // Step 2.09: Initialize NotificationStorage (manager is wired with broadcast after gateway starts)
       this.notificationStorage = new NotificationStorage();
@@ -525,176 +444,31 @@ export class SecureYeoman {
       this.providerAccountStorage = new ProviderAccountStorage();
       this.logger.debug('ProviderAccountStorage initialized');
 
-      // Step 2.12: Initialize AthiStorage (Phase 107-F)
-      this.athiStorage = new AthiStorage();
-      this.logger.debug('AthiStorage initialized');
-
-      // Step 2.13a: Initialize SraStorage (Phase 123)
-      this.sraStorage = new SraStorage();
-      this.logger.debug('SraStorage initialized');
-
-      // Step 2.13: Initialize ScanHistoryStore + QuarantineStorage (Phase 116)
-      this.scanHistoryStore = new ScanHistoryStore();
-      const dataDir = this.config.core?.dataDir ?? '~/.secureyeoman/data';
-      this.quarantineStorage = new QuarantineStorage(dataDir);
-      this.logger.debug('ScanHistoryStore + QuarantineStorage initialized');
-
       // Step 3: Validate secrets are available
       validateSecrets(this.config);
       this.logger.debug('Secrets validated');
 
-      // Step 4: Initialize security components
-      //
-      // RBAC is now backed by SQLite persistent storage.  Custom role
-      // definitions and user-role assignments are automatically loaded
-      // from the database on construction, so roles created via the API
-      // survive process restarts.  The storage file lives alongside the
-      // other per-component databases in the configured data directory.
-      this.rbacStorage = new RBACStorage();
-      this.rbac = await initializeRBAC(undefined, this.rbacStorage);
-      this.logger.debug('RBAC initialized with persistent storage');
+      // Step 5: Initialize audit chain (AuditModule)
+      this.auditMod = new AuditModule({ customAuditStorage: this.options.auditStorage });
+      await this.auditMod.init({ config: this.config, logger: this.logger });
+      this.auditChain = this.auditMod.getAuditChain()!;
+      this.auditStorage = this.auditMod.getAuditStorage()!;
 
-      this.validator = createValidator(this.config.security);
-      this.logger.debug('Input validator initialized');
-
-      this.rateLimiter = createRateLimiter(this.config.security);
-      this.logger.debug('Rate limiter initialized');
-
-      // Step 5: Initialize audit chain
-      const signingKey = requireSecret(this.config.logging.audit.signingKeyEnv);
-      const storage = this.options.auditStorage ?? new SQLiteAuditStorage();
-      this.auditStorage = storage;
-
-      this.cryptoPool = new CryptoPool({ poolSize: 2 });
-      this.auditChain = new AuditChain({
-        storage,
-        signingKey,
-        repairOnInit: true,
-        cryptoPool: this.cryptoPool,
+      // Step 5.5: Initialize auth service (AuthModule)
+      this.authMod = new AuthModule({
+        auditChain: this.auditChain,
+        rbac: this.rbac,
+        rateLimiter: this.rateLimiter,
       });
-      await this.auditChain.initialize();
-      this.logger.debug('Audit chain initialized');
+      await this.authMod.init({ config: this.config, logger: this.logger });
+      this.authStorage = this.authMod.getAuthStorage()!;
+      this.authService = this.authMod.getAuthService()!;
 
-      // Step 5.5: Initialize auth service
-      this.authStorage = new AuthStorage();
-
-      const tokenSecret = requireSecret(this.config.gateway.auth.tokenSecret);
-      const adminPasswordRaw = requireSecret(this.config.gateway.auth.adminPasswordEnv);
-      const adminPassword = sha256(adminPasswordRaw);
-
-      this.authService = new AuthService(
-        {
-          tokenSecret,
-          tokenExpirySeconds: this.config.gateway.auth.tokenExpirySeconds,
-          refreshTokenExpirySeconds: this.config.gateway.auth.refreshTokenExpirySeconds,
-          adminPassword,
-        },
-        {
-          storage: this.authStorage,
-          auditChain: this.auditChain,
-          rbac: this.rbac,
-          rateLimiter: this.rateLimiter,
-          logger: this.logger.child({ component: 'AuthService' }),
-        }
-      );
-      this.logger.debug('Auth service initialized');
-
-      // Step 5.6: Initialize SSO manager
-      this.ssoStorage = new SsoStorage();
-      this.ssoManager = new SsoManager({
-        storage: this.ssoStorage,
+      // Step 5.6 + 5.55: Initialize SSO + rotation via SecurityModule
+      await this.securityMod.initPostAuth({
         authService: this.authService,
-        logger: this.logger.child({ component: 'SsoManager' }),
+        auditChain: this.auditChain,
       });
-      this.logger.debug('SSO manager initialized');
-
-      // Step 5.55: Initialize secret rotation (if enabled)
-      if (this.config.security.rotation.enabled) {
-        this.rotationStorage = new RotationStorage();
-
-        this.rotationManager = new SecretRotationManager(this.rotationStorage, {
-          checkIntervalMs: this.config.security.rotation.checkIntervalMs,
-          warningDaysBeforeExpiry: this.config.security.rotation.warningDaysBeforeExpiry,
-        });
-
-        // Track known secrets
-        const now = Date.now();
-        const tokenRotDays = this.config.security.rotation.tokenRotationIntervalDays;
-        const signingRotDays = this.config.security.rotation.signingKeyRotationIntervalDays;
-
-        const secretDefs: SecretMetadata[] = [
-          {
-            name: this.config.gateway.auth.tokenSecret,
-            createdAt: now,
-            expiresAt: now + tokenRotDays * 86_400_000,
-            rotatedAt: null,
-            rotationIntervalDays: tokenRotDays,
-            autoRotate: true,
-            source: 'internal',
-            category: 'jwt',
-          },
-          {
-            name: this.config.logging.audit.signingKeyEnv,
-            createdAt: now,
-            expiresAt: now + signingRotDays * 86_400_000,
-            rotatedAt: null,
-            rotationIntervalDays: signingRotDays,
-            autoRotate: true,
-            source: 'internal',
-            category: 'audit_signing',
-          },
-          {
-            name: this.config.gateway.auth.adminPasswordEnv,
-            createdAt: now,
-            expiresAt: null,
-            rotatedAt: null,
-            rotationIntervalDays: null,
-            autoRotate: false,
-            source: 'external',
-            category: 'admin',
-          },
-          {
-            name: this.config.security.encryption.keyEnv,
-            createdAt: now,
-            expiresAt: null,
-            rotatedAt: null,
-            rotationIntervalDays: null,
-            autoRotate: false,
-            source: 'external',
-            category: 'encryption',
-          },
-        ];
-
-        for (const def of secretDefs) {
-          await this.rotationManager.trackSecret(def);
-        }
-
-        // Wire rotation callbacks
-        const authSvc = this.authService;
-        const auditCh = this.auditChain;
-        const tokenSecretEnv = this.config.gateway.auth.tokenSecret;
-        const signingKeyEnv = this.config.logging.audit.signingKeyEnv;
-
-        const secretsMgr = this.secretsManager;
-        this.rotationManager.setCallbacks({
-          onRotate: async (name, newValue) => {
-            // Persist the new value via SecretsManager so the configured backend
-            // (file, keyring, vault) always holds the latest rotated secret.
-            await secretsMgr?.set(name, newValue);
-            if (name === tokenSecretEnv) {
-              authSvc.updateTokenSecret(newValue);
-            } else if (name === signingKeyEnv) {
-              await auditCh.updateSigningKey(newValue);
-            }
-          },
-          onWarning: (name, daysLeft) => {
-            this.logger?.warn('Secret expiring soon', { name, daysLeft });
-          },
-        });
-
-        this.rotationManager.start();
-        this.logger.debug('Secret rotation manager started');
-      }
 
       // Step 5.6: Initialize system preferences storage
       this.systemPreferences = new SystemPreferencesStorage();
@@ -807,41 +581,23 @@ export class SecureYeoman {
         });
       }
 
-      // Step 5.7: Initialize brain system
-      this.brainStorage = new BrainStorage();
-      // Step 5.7.0: Initialize cognitive memory storage (Phase 124) — before BrainManager
-      if (this.config.brain?.cognitiveMemory?.enabled) {
-        this.cognitiveMemoryStorage = new CognitiveMemoryStorage();
-        this.logger.debug('Cognitive memory storage initialized');
-      }
-
-      this.brainManager = new BrainManager(this.brainStorage, this.config.brain, {
-        auditChain: this.auditChain,
-        logger: this.logger.child({ component: 'BrainManager' }),
-        auditStorage:
-          this.auditStorage &&
-          'queryEntries' in this.auditStorage &&
-          'searchFullText' in this.auditStorage
-            ? (this.auditStorage as unknown as import('./brain/types.js').AuditStorage)
-            : undefined,
-        cognitiveStorage: this.cognitiveMemoryStorage ?? undefined,
-      });
-      this.logger.debug('Brain manager initialized');
-
-      // Step 5.7.0b: Initialize cognitive memory manager (Phase 124)
-      if (this.cognitiveMemoryStorage) {
-        this.cognitiveMemoryManager = new CognitiveMemoryManager({
-          storage: this.cognitiveMemoryStorage,
-          logger: this.logger.child({ component: 'CognitiveMemoryManager' }),
+      // Steps 5.7–5.7.2: BrainModule (brain storage, cognitive memory, document manager, memory audit, strategy)
+      {
+        const { BrainModule } = await import('./modules/brain-module.js');
+        this.brainMod = new BrainModule({
+          auditChain: this.auditChain,
+          auditStorage: this.auditStorage,
+          getAlertManager: () => this.alertManager,
         });
-        this.cognitiveMemoryManager.start();
-        this.logger.debug('Cognitive memory manager started');
+        await this.brainMod.init({ config: this.config, logger: this.logger! });
+        this.brainStorage = this.brainMod.getBrainStorage();
+        this.brainManager = this.brainMod.getBrainManager();
       }
 
       // Step 5.7.0a: Load persisted license key from brain.meta if env var not set
       if (!process.env.SECUREYEOMAN_LICENSE_KEY) {
         try {
-          const persistedKey = await this.brainStorage.getMeta('license:key');
+          const persistedKey = await this.brainStorage!.getMeta('license:key');
           if (persistedKey) {
             process.env.SECUREYEOMAN_LICENSE_KEY = persistedKey;
             this.licenseManager = new LicenseManager(persistedKey);
@@ -851,65 +607,6 @@ export class SecureYeoman {
           }
         } catch {
           // Non-fatal: license remains at community tier
-        }
-      }
-
-      // Step 5.7.1: Initialize document manager (knowledge base pipeline)
-      this.documentManager = new DocumentManager({
-        brainManager: this.brainManager,
-        storage: this.brainStorage,
-        logger: this.logger.child({ component: 'DocumentManager' }),
-      });
-      this.logger.debug('Document manager initialized');
-
-      // Step 5.7.2: Initialize memory audit system (Phase 118)
-      if (this.config.brain?.audit?.enabled) {
-        try {
-          const { MemoryAuditStorage } = await import('./brain/audit/audit-store.js');
-          const { MemoryAuditPolicy } = await import('./brain/audit/policy.js');
-          const { MemoryAuditEngine } = await import('./brain/audit/engine.js');
-          const { MemoryAuditScheduler } = await import('./brain/audit/scheduler.js');
-          const { MemoryCompressor } = await import('./brain/audit/compressor.js');
-          const { MemoryReorganizer } = await import('./brain/audit/reorganizer.js');
-          const { KnowledgeGraphCoherenceChecker } = await import('./brain/audit/coherence-checker.js');
-
-          this.memoryAuditStorage = new MemoryAuditStorage();
-          const auditPolicy = new MemoryAuditPolicy(this.config.brain.audit);
-          const compressor = new MemoryCompressor({
-            brainStorage: this.brainStorage,
-            auditStorage: this.memoryAuditStorage,
-            policy: auditPolicy,
-            logger: this.logger.child({ component: 'MemoryCompressor' }),
-          });
-          const reorganizer = new MemoryReorganizer({
-            brainStorage: this.brainStorage,
-            auditStorage: this.memoryAuditStorage,
-            logger: this.logger.child({ component: 'MemoryReorganizer' }),
-          });
-          const coherenceChecker = new KnowledgeGraphCoherenceChecker({
-            brainStorage: this.brainStorage,
-            logger: this.logger.child({ component: 'CoherenceChecker' }),
-          });
-          const auditEngine = new MemoryAuditEngine({
-            brainStorage: this.brainStorage,
-            auditStorage: this.memoryAuditStorage,
-            policy: auditPolicy,
-            brainManager: this.brainManager,
-            compressor,
-            reorganizer,
-            coherenceChecker,
-            logger: this.logger.child({ component: 'MemoryAuditEngine' }),
-            getAlertManager: () => this.alertManager,
-          });
-          this.memoryAuditScheduler = new MemoryAuditScheduler({
-            brainStorage: this.brainStorage,
-            engine: auditEngine,
-            policy: auditPolicy,
-            logger: this.logger.child({ component: 'MemoryAuditScheduler' }),
-          });
-          this.logger.debug('Memory audit system initialized');
-        } catch (error) {
-          this.logger.warn('Failed to initialize memory audit system', { error: String(error) });
         }
       }
 
@@ -932,7 +629,7 @@ export class SecureYeoman {
           logger: this.logger.child({ component: 'SoulManager' }),
           securityConfig: this.config.security,
         },
-        this.brainManager,
+        this.brainManager!,
         this.spiritManager
       );
       await this.soulManager.loadConfigOverrides();
@@ -951,7 +648,7 @@ export class SecureYeoman {
       // This ensures new personalities added after first run also get their self-identity.
       {
         const allResult = await this.soulManager.listPersonalities({ limit: 200 });
-        await this.brainManager.seedBaseKnowledge(
+        await this.brainManager!.seedBaseKnowledge(
           allResult.personalities.map((p) => ({ id: p.id, name: p.name }))
         );
       }
@@ -1023,36 +720,8 @@ export class SecureYeoman {
         capabilities: sandboxCaps,
       });
 
-      // Step 5.85: Initialize ExternalizationGate (Phase 116)
-      try {
-        const scanPolicy = this.config.security.sandboxArtifactScanning ?? {};
-        const pipeline = new ScannerPipeline(
-          [new CodeScanner(), new SecretsScanner(), new DataScanner()],
-          { policy: scanPolicy as import('@secureyeoman/shared').ExternalizationPolicy },
-        );
-        this.externalizationGate = new ExternalizationGate({
-          pipeline,
-          quarantineStorage: this.quarantineStorage,
-          scanHistoryStore: this.scanHistoryStore,
-          secretsScanner: new SecretsScanner(),
-          policy: scanPolicy as import('@secureyeoman/shared').ExternalizationPolicy,
-          getAlertManager: () => this.alertManager ? {
-            fire: (type: string, severity: string, message: string, meta?: Record<string, unknown>) => {
-              void this.alertManager!.evaluate({ [type]: 1 });
-            },
-          } : null,
-          auditChain: this.auditChain ? {
-            record: async (event: string, level: string, message: string, metadata?: Record<string, unknown>): Promise<void> => {
-              await this.auditChain!.record({ event, level: level as 'info' | 'warn' | 'error' | 'security' | 'debug' | 'trace', message, metadata });
-            },
-          } : null,
-        });
-        this.logger.debug('ExternalizationGate initialized');
-      } catch (err) {
-        this.logger.warn('ExternalizationGate initialization failed', {
-          reason: err instanceof Error ? err.message : String(err),
-        });
-      }
+      // Step 5.85: Initialize ExternalizationGate + ATHI + SRA via SecurityModule.initLate()
+      // (moved below after ATHI/SRA init blocks to consolidate)
 
       // Step 5.9: Initialize task storage
       this.taskStorage = new TaskStorage();
@@ -1183,77 +852,18 @@ export class SecureYeoman {
 
       this.logger.debug('Integration manager and message router initialized');
 
-      // Step 6.6: Initialize heartbeat + heart system
-      if (this.config.heartbeat?.enabled) {
-        this.heartbeatLogStorage = new HeartbeatLogStorage();
-        this.heartbeatManager = new HeartbeatManager(
-          this.brainManager,
-          this.auditChain,
-          this.logger.child({ component: 'HeartbeatManager' }),
-          this.config.heartbeat,
-          this.integrationManager,
-          this.heartbeatLogStorage
-        );
-        this.heartManager = new HeartManager(this.heartbeatManager);
-        this.soulManager.setHeart(this.heartManager);
-        if (this.integrationManager) {
-          this.soulManager.setIntegrationManager(this.integrationManager);
-        }
-        // Wire notification manager so heartbeat alerts create DB records
-        if (this.notificationManager) {
-          this.heartbeatManager.setNotificationManager(this.notificationManager);
-        }
-        await this.heartbeatManager.initialize();
-        this.heartbeatManager.start();
-        this.logger.debug('Heart manager started', {
-          intervalMs: this.config.heartbeat.intervalMs,
-        });
-        const hbmRef = this.heartbeatManager;
-        void Promise.all([
-          this.soulManager.getActivePersonality(),
-          this.soulManager.listPersonalities({ limit: 200 }),
-        ])
-          .then(([active, allResult]) => {
-            if (active?.body?.activeHours) {
-              hbmRef.setPersonalitySchedule(active.body.activeHours);
-            }
-            if (active?.id) {
-              hbmRef.setActivePersonalityId(active.id);
-            }
-            hbmRef.setActivePersonalityIds(
-              allResult.personalities.map((p) => ({
-                id: p.id,
-                name: p.name,
-                omnipresentMind: p.body?.omnipresentMind ?? false,
-              }))
-            );
-          })
-          .catch((err: unknown) => {
-            this.logger?.warn('Failed to seed personality roster for heartbeat', {
-              error: err instanceof Error ? err.message : 'Unknown error',
-            });
-          });
-      }
+      // Step 6.6: Initialize heartbeat + heart system (BodyModule)
+      this.bodyMod = new BodyModule({
+        brainManager: this.brainManager!,
+        auditChain: this.auditChain,
+        integrationManager: this.integrationManager,
+        notificationManager: this.notificationManager,
+        soulManager: this.soulManager,
+      });
+      await this.bodyMod.init({ config: this.config, logger: this.logger });
 
-      // Step 6.7: Initialize external brain sync (if configured)
-      if (this.config.externalBrain?.enabled && this.config.externalBrain.path) {
-        this.externalBrainSync = new ExternalBrainSync(
-          this.brainManager,
-          this.config.externalBrain,
-          this.logger.child({ component: 'ExternalBrainSync' })
-        );
-        this.externalBrainSync.start();
-        this.logger.debug('External brain sync initialized', {
-          provider: this.config.externalBrain.provider,
-          path: this.config.externalBrain.path,
-        });
-      }
-
-      // Step 6.7.1: Start memory audit scheduler (Phase 118)
-      if (this.memoryAuditScheduler) {
-        this.memoryAuditScheduler.start();
-        this.logger.debug('Memory audit scheduler started');
-      }
+      // Steps 6.7–6.7.1: Start brain late workers (external sync, memory audit scheduler)
+      this.brainMod?.startLateWorkers();
 
       // Step 6.8: Initialize MCP system (if enabled)
       if (this.config.mcp?.enabled) {
@@ -1278,16 +888,12 @@ export class SecureYeoman {
       }
 
       // Step 6.9: Initialize reporting, dashboard, workspace, experiment, marketplace
-      this.reportGenerator = new AuditReportGenerator({
-        logger: this.logger.child({ component: 'AuditReportGenerator' }),
-        auditChain: this.auditChain,
-        queryAuditLog: (opts) => this.queryAuditLog(opts),
+      this.auditMod!.initReportGenerator({
         queryTasks: this.taskStorage ? (filter) => this.taskStorage!.listTasks(filter) : undefined,
-        queryHeartbeatTasks: this.heartbeatManager
-          ? () => this.heartbeatManager!.getStatus().tasks
+        queryHeartbeatTasks: this.bodyMod?.getHeartbeatManager()
+          ? () => this.bodyMod!.getHeartbeatManager()!.getStatus().tasks
           : undefined,
       });
-      this.logger.debug('Audit report generator initialized');
 
       if (this.aiClient) {
         this.costOptimizer = new CostOptimizer({
@@ -1326,20 +932,22 @@ export class SecureYeoman {
             'https://github.com/MacCracken/secureyeoman-community-skills',
         });
 
-        this.strategyStorage = new StrategyStorage();
         this.chatConversationStorage = new ConversationStorage();
 
         // Run independent async seeds in parallel
+        const strategyStorage = this.brainMod?.getStrategyStorage();
         await Promise.all([
           this.workspaceManager.ensureDefaultWorkspace(),
           this.marketplaceManager.seedBuiltinSkills(),
-          this.strategyStorage.seedBuiltinStrategies(),
+          strategyStorage?.seedBuiltinStrategies(),
         ]);
 
         // Wire marketplace into soul so skill deletion keeps installed state in sync
         if (this.soulManager) {
           this.soulManager.setMarketplaceManager(this.marketplaceManager);
-          this.soulManager.setStrategyStorage(this.strategyStorage);
+          if (strategyStorage) {
+            this.soulManager.setStrategyStorage(strategyStorage);
+          }
         }
         this.logger.debug('Dashboard, Workspace, Experiment, Marketplace, Strategy, ConversationStorage initialized (parallel seeds)');
       }
@@ -1368,39 +976,41 @@ export class SecureYeoman {
       //      allowSubAgents, allowSwarms, or allowWorkflows enabled — meaning
       //      the operator turned these on via Security Settings and expects
       //      the infrastructure to be running.
-      const delegationNeeded =
-        this.config.delegation?.enabled ||
-        this.config.security?.allowSubAgents ||
-        this.config.security?.allowSwarms ||
-        this.config.security?.allowWorkflows;
-      if (delegationNeeded) {
-        await this.bootDelegationChain();
+      // Step 6.11: Initialize DelegationModule
+      {
+        const { DelegationModule } = await import('./modules/delegation-module.js');
+        this.delegationMod = new DelegationModule({
+          getAuditChain: () => this.auditChain,
+          getBrainManager: () => this.brainManager,
+          getMcpClientManager: () => this.mcpClientManager,
+          getAlertManager: () => this.alertManager,
+          getTrainingMod: () => this.trainingMod,
+          getMarketplaceManager: () => this.marketplaceManager,
+          getSoulManager: () => this.soulManager,
+        });
+        await this.delegationMod.init({ config: this.config, logger: this.logger! });
+
+        const delegationNeeded =
+          this.config.delegation?.enabled ||
+          this.config.security?.allowSubAgents ||
+          this.config.security?.allowSwarms ||
+          this.config.security?.allowWorkflows;
+        if (delegationNeeded) {
+          await this.delegationMod.boot();
+        }
       }
 
-      // Step 6.11b: Always seed workflow/swarm templates and wire marketplace
-      // managers so the marketplace shows templates even before delegation is
-      // explicitly enabled.  bootDelegationChain() already creates these
-      // storage objects — this block only runs when it was skipped.
+      // Step 6.11b: Always seed workflow/swarm templates
       await this.initOptional('Template seeding', async () => {
-        if (!this.workflowStorage) {
-          this.workflowStorage = new WorkflowStorage();
-        }
-        const { BUILTIN_WORKFLOW_TEMPLATES } = await import('./workflow/workflow-templates.js');
-        await this.workflowStorage.seedBuiltinWorkflows(BUILTIN_WORKFLOW_TEMPLATES);
-
-        if (!this.swarmStorage) {
-          this.swarmStorage = new SwarmStorage();
-        }
-        await this.swarmStorage.seedBuiltinTemplates();
+        await this.delegationMod!.seedTemplates();
 
         // Wire managers into marketplace for community sync (if they exist)
-        if (
-          this.marketplaceManager &&
-          (this.workflowManager || this.swarmManager || this.soulManager)
-        ) {
+        const wm = this.delegationMod?.getWorkflowManager();
+        const sm = this.delegationMod?.getSwarmManager();
+        if (this.marketplaceManager && (wm || sm || this.soulManager)) {
           this.marketplaceManager.setDelegationManagers({
-            workflowManager: this.workflowManager ?? undefined,
-            swarmManager: this.swarmManager ?? undefined,
+            workflowManager: wm ?? undefined,
+            swarmManager: sm ?? undefined,
             soulManager: this.soulManager ?? undefined,
           });
         }
@@ -1604,7 +1214,7 @@ export class SecureYeoman {
             storage: this.riskAssessmentStorage!,
             pool,
             auditChain: this.auditChain,
-            tlsManager: this.tlsManager,
+            tlsManager: this.securityMod!.getTlsManager(),
             getDepartmentRiskManager: () => this.departmentRiskManager,
           });
         });
@@ -1638,11 +1248,11 @@ export class SecureYeoman {
       }
 
       // Step 6e.2b: Initialize ProviderAccountManager (Phase 112)
-      if (this.providerAccountStorage && this.secretsManager) {
+      if (this.providerAccountStorage && this.securityMod!.getSecretsManager()) {
         await this.initOptional('ProviderAccountManager', () => {
           this.providerAccountManager = new ProviderAccountManager({
             storage: this.providerAccountStorage!,
-            secretsManager: this.secretsManager!,
+            secretsManager: this.securityMod!.getSecretsManager()!,
             validator: new ProviderKeyValidator(),
             auditChain: this.auditChain ?? undefined,
             getAlertManager: () => this.alertManager,
@@ -1658,34 +1268,11 @@ export class SecureYeoman {
         }
       }
 
-      // Step 6e.3: Initialize AthiManager (Phase 107-F)
-      if (this.athiStorage) {
-        await this.initOptional('AthiManager', async () => {
-          const pool = getPool();
-          this.athiManager = new AthiManager({
-            storage: this.athiStorage!,
-            pool,
-            auditChain: this.auditChain,
-            getAlertManager: () => this.alertManager,
-          });
-        });
-      }
-
-      // Step 6e.4: Initialize SraManager (Phase 123)
-      if (this.sraStorage) {
-        await this.initOptional('SraManager', async () => {
-          const pool = getPool();
-          this.sraManager = new SraManager({
-            storage: this.sraStorage!,
-            pool,
-            auditChain: this.auditChain,
-            getAlertManager: () => this.alertManager,
-          });
-          // Seed built-in blueprints and compliance mappings
-          await this.sraManager!.seedBuiltinBlueprints();
-          await this.sraManager!.seedComplianceMappings();
-        });
-      }
+      // Step 5.85 + 6e.3 + 6e.4: ExternalizationGate, ATHI, SRA via SecurityModule
+      await this.securityMod.initLate({
+        auditChain: this.auditChain,
+        getAlertManager: () => this.alertManager,
+      });
 
       // Step 6f: Initialize BackupManager (Phase 61)
       {
@@ -1713,113 +1300,18 @@ export class SecureYeoman {
         this.logger.debug('TenantManager initialized');
       }
 
-      // Step 6h: Initialize DistillationManager (Phase 64)
+      // Steps 6h–6j-3: TrainingModule (distillation, finetune, ML pipeline, LLM judge, lifecycle)
       {
-        const pool = getPool();
-        this.distillationManager = new DistillationManager(
-          pool,
-          this.logger.child({ component: 'DistillationManager' }),
-          () => this.alertManager
-        );
-        this.logger.debug('DistillationManager initialized');
-      }
-
-      // Step 6i: Initialize FinetuneManager (Phase 64)
-      {
-        const pool = getPool();
-        this.finetuneManager = new FinetuneManager(
-          pool,
-          this.logger.child({ component: 'FinetuneManager' }),
-          undefined,
-          undefined,
-          () => this.alertManager
-        );
-        this.logger.debug('FinetuneManager initialized');
-      }
-
-      // Step 6j: Initialize ML Pipeline managers (Phase 73)
-      {
-        const pool = getPool();
-        const convStorage = this.chatConversationStorage;
-        if (convStorage) {
-          this.dataCurationManager = new DataCurationManager(
-            convStorage,
-            this.logger.child({ component: 'DataCurationManager' })
-          );
-          this.logger.debug('DataCurationManager initialized');
-        }
-        this.evaluationManager = new EvaluationManager(
-          this.logger.child({ component: 'EvaluationManager' }),
-          () => this.alertManager
-        );
-        this.logger.debug('EvaluationManager initialized');
-        this.pipelineApprovalManager = new PipelineApprovalManager(
-          pool,
-          this.logger.child({ component: 'PipelineApprovalManager' })
-        );
-        this.pipelineLineageStorage = new PipelineLineageStorage(
-          pool,
-          this.logger.child({ component: 'PipelineLineageStorage' })
-        );
-        this.conversationQualityScorer = new ConversationQualityScorer(
-          pool,
-          this.logger.child({ component: 'ConversationQualityScorer' })
-        );
-        this.computerUseManager = new ComputerUseManager(
-          pool,
-          this.logger.child({ component: 'ComputerUseManager' })
-        );
-        this.conversationQualityScorer.start();
-        this.logger.debug('ML Pipeline managers initialized');
-
-        // Phase 108: Capture audit logger + desktop training bridge
-        this.captureAuditLogger = new CaptureAuditLogger({
-          signingKey: requireSecret(this.config.gateway.auth.tokenSecret),
-        });
-        await this.captureAuditLogger.initialize();
-        this.desktopTrainingBridge = new DesktopTrainingBridge({
-          getComputerUseManager: () => this.computerUseManager,
-        });
-        this.logger.debug('Capture audit logger and desktop training bridge initialized');
-      }
-
-      // Step 6j-2: Initialize LlmJudgeManager (Phase 97)
-      {
-        const pool = getPool();
-        this.llmJudgeManager = new LlmJudgeManager({
-          pool,
-          logger: this.logger.child({ component: 'LlmJudgeManager' }),
-          aiClient: this.aiClient!,
-          notificationManager: this.notificationManager ?? undefined,
-        });
-        this.logger.debug('LlmJudgeManager initialized');
-      }
-
-      // Step 6j-3: Initialize Lifecycle Platform managers (Phase 98)
-      {
-        const pool = getPool();
-        this.preferenceManager = new PreferenceManager({
-          pool,
-          logger: this.logger.child({ component: 'PreferenceManager' }),
-        });
-        this.datasetCuratorManager = new DatasetCuratorManager({
-          pool,
-          logger: this.logger.child({ component: 'DatasetCuratorManager' }),
-        });
-        this.experimentRegistryManager = new ExperimentRegistryManager({
-          pool,
-          logger: this.logger.child({ component: 'ExperimentRegistryManager' }),
-        });
-        this.modelVersionManager = new ModelVersionManager({
-          pool,
-          logger: this.logger.child({ component: 'ModelVersionManager' }),
+        const { TrainingModule } = await import('./modules/training-module.js');
+        this.trainingMod = new TrainingModule({
+          getAlertManager: () => this.alertManager,
+          aiClient: this.aiClient,
+          notificationManager: this.notificationManager,
+          chatConversationStorage: this.chatConversationStorage,
           soulStorage: this.soulStorage,
         });
-        this.abTestManager = new AbTestManager({
-          pool,
-          logger: this.logger.child({ component: 'AbTestManager' }),
-        });
-        this.logger.debug('Lifecycle Platform managers initialized');
+        await this.trainingMod.init({ config: this.config, logger: this.logger! });
+        this.logger.debug('TrainingModule initialized');
       }
 
       // Step 6k: Initialize FederationManager (Phase 79)
@@ -1849,40 +1341,9 @@ export class SecureYeoman {
         this.logger.debug('AlertManager initialized');
       }
 
-      // Step 6m: Initialize Conversation Analytics (Phase 96)
-      {
-        const pool = getPool();
-        this.analyticsStorage = new AnalyticsStorage(pool);
-        this.engagementMetricsService = new EngagementMetricsService(pool);
-        this.usageAnomalyDetector = new UsageAnomalyDetector(
-          this.analyticsStorage,
-          this.logger.child({ component: 'UsageAnomalyDetector' })
-        );
-        if (this.aiClient) {
-          this.sentimentAnalyzer = new SentimentAnalyzer(
-            pool,
-            this.aiClient,
-            this.analyticsStorage,
-            this.logger.child({ component: 'SentimentAnalyzer' })
-          );
-          this.conversationSummarizer = new ConversationSummarizer(
-            pool,
-            this.aiClient,
-            this.analyticsStorage,
-            this.logger.child({ component: 'ConversationSummarizer' })
-          );
-          this.entityExtractor = new EntityExtractor(
-            pool,
-            this.aiClient,
-            this.analyticsStorage,
-            this.logger.child({ component: 'EntityExtractor' })
-          );
-          this.sentimentAnalyzer.start();
-          this.conversationSummarizer.start();
-          this.entityExtractor.start();
-        }
-        this.logger.debug('Conversation Analytics initialized');
-      }
+      // Step 6m: Initialize Conversation Analytics (AnalyticsModule)
+      this.analyticsMod = new AnalyticsModule({ aiClient: this.aiClient });
+      await this.analyticsMod.init({ config: this.config, logger: this.logger });
 
       // Step 7: Record initialization in audit log
       await this.auditChain.record({
@@ -2073,10 +1534,10 @@ export class SecureYeoman {
         lastAuditVerification: auditStats.lastVerification,
       },
       // Sandbox scanning metrics (Phase 116) — non-fatal; omitted when unavailable
-      ...(this.scanHistoryStore
+      ...(this.securityMod?.getScanHistoryStore()
         ? await (async () => {
             try {
-              const stats = await this.scanHistoryStore!.getStats();
+              const stats = await this.securityMod!.getScanHistoryStore()!.getStats();
               return {
                 sandbox: {
                   scanning: {
@@ -2149,16 +1610,7 @@ export class SecureYeoman {
    */
   async queryAuditLog(options: AuditQueryOptions = {}): Promise<AuditQueryResult> {
     this.ensureInitialized();
-    if (
-      !this.auditStorage ||
-      !('queryEntries' in this.auditStorage) ||
-      typeof (this.auditStorage as Record<string, unknown>).queryEntries !== 'function'
-    ) {
-      throw new Error('Audit storage does not support querying');
-    }
-    return (
-      this.auditStorage as { queryEntries(opts: AuditQueryOptions): Promise<AuditQueryResult> }
-    ).queryEntries(options);
+    return this.auditMod!.queryAuditLog(options);
   }
 
   /**
@@ -2166,7 +1618,7 @@ export class SecureYeoman {
    */
   async verifyAuditChain(): Promise<{ valid: boolean; entriesChecked: number; error?: string }> {
     this.ensureInitialized();
-    return this.auditChain!.verify();
+    return this.auditMod!.verifyAuditChain();
   }
 
   /**
@@ -2206,34 +1658,7 @@ export class SecureYeoman {
     chainBrokenAt?: string;
   }> {
     this.ensureInitialized();
-    const stats = await this.auditChain!.getStats();
-
-    let dbSizeEstimateMb: number | undefined;
-    let oldestEntry: number | undefined;
-    try {
-      const pool = getPool();
-      const [sizeResult, oldestResult] = await Promise.all([
-        pool.query<{ size: string }>('SELECT pg_database_size(current_database()) AS size'),
-        pool.query<{ timestamp: number }>(
-          'SELECT timestamp FROM audit.entries ORDER BY timestamp ASC LIMIT 1'
-        ),
-      ]);
-      const bytes = parseInt(sizeResult.rows[0]?.size ?? '0', 10);
-      dbSizeEstimateMb = bytes / (1024 * 1024);
-      oldestEntry = oldestResult.rows[0]?.timestamp;
-    } catch {
-      // Pool may not be available (e.g. SQLite-only mode)
-    }
-
-    return {
-      totalEntries: stats.entriesCount,
-      chainValid: stats.chainValid,
-      lastVerification: stats.lastVerification,
-      chainError: stats.chainError,
-      chainBrokenAt: stats.chainBrokenAt,
-      oldestEntry,
-      dbSizeEstimateMb,
-    };
+    return this.auditMod!.getAuditStats();
   }
 
   /**
@@ -2242,7 +1667,7 @@ export class SecureYeoman {
    */
   async repairAuditChain(): Promise<{ repairedCount: number; entriesTotal: number }> {
     this.ensureInitialized();
-    return this.auditChain!.repair();
+    return this.auditMod!.repairAuditChain();
   }
 
   /**
@@ -2251,10 +1676,7 @@ export class SecureYeoman {
    */
   async enforceAuditRetention(opts: { maxAgeDays?: number; maxEntries?: number }): Promise<number> {
     this.ensureInitialized();
-    if (this.auditStorage && this.auditStorage instanceof SQLiteAuditStorage) {
-      return await this.auditStorage.enforceRetention(opts);
-    }
-    return 0;
+    return this.auditMod!.enforceAuditRetention(opts);
   }
 
   /**
@@ -2266,14 +1688,7 @@ export class SecureYeoman {
     limit?: number;
   }): Promise<AuditEntry[]> {
     this.ensureInitialized();
-    const result = await this.queryAuditLog({
-      from: opts?.from,
-      to: opts?.to,
-      limit: opts?.limit ?? 100_000,
-      offset: 0,
-      order: 'asc' as const,
-    });
-    return result.entries;
+    return this.auditMod!.exportAuditLog(opts);
   }
 
   /**
@@ -2296,28 +1711,28 @@ export class SecureYeoman {
    * Get the SecretsManager instance (unified secret storage facade)
    */
   getSecretsManager(): SecretsManager | null {
-    return this.secretsManager;
+    return this.securityMod?.getSecretsManager() ?? null;
   }
 
   /**
    * Get the TlsManager instance (certificate lifecycle manager)
    */
   getTlsManager(): TlsManager | null {
-    return this.tlsManager;
+    return this.securityMod?.getTlsManager() ?? null;
   }
 
   /**
    * Get the SecretRotationManager instance (may be null if rotation is disabled)
    */
   getRotationManager(): SecretRotationManager | null {
-    return this.rotationManager;
+    return this.securityMod?.getRotationManager() ?? null;
   }
 
   /**
    * Get the KeyringManager instance
    */
   getKeyringManager(): KeyringManager | null {
-    return this.keyringManager;
+    return this.securityMod?.getKeyringManager() ?? null;
   }
 
   /**
@@ -2361,22 +1776,20 @@ export class SecureYeoman {
   }
 
   getCognitiveMemoryManager(): CognitiveMemoryManager | null {
-    return this.cognitiveMemoryManager;
+    return this.brainMod?.getCognitiveMemoryManager() ?? null;
   }
 
   getCognitiveMemoryStorage(): CognitiveMemoryStorage | null {
-    return this.cognitiveMemoryStorage;
+    return this.brainMod?.getCognitiveMemoryStorage() ?? null;
   }
 
-  /**
-   * Get the document manager instance
-   */
   getDocumentManager(): DocumentManager {
     this.ensureInitialized();
-    if (!this.documentManager) {
+    const dm = this.brainMod?.getDocumentManager();
+    if (!dm) {
       throw new Error('Document manager is not available');
     }
-    return this.documentManager;
+    return dm;
   }
 
   getBrainStorage(): BrainStorage | null {
@@ -2384,11 +1797,11 @@ export class SecureYeoman {
   }
 
   getMemoryAuditScheduler(): import('./brain/audit/scheduler.js').MemoryAuditScheduler | null {
-    return this.memoryAuditScheduler;
+    return this.brainMod?.getMemoryAuditScheduler() ?? null;
   }
 
   getMemoryAuditStorage(): import('./brain/audit/audit-store.js').MemoryAuditStorage | null {
-    return this.memoryAuditStorage;
+    return this.brainMod?.getMemoryAuditStorage() ?? null;
   }
 
   /**
@@ -2485,7 +1898,7 @@ export class SecureYeoman {
    */
   getHeartbeatManager(): HeartbeatManager | null {
     this.ensureInitialized();
-    return this.heartbeatManager;
+    return this.bodyMod?.getHeartbeatManager() ?? null;
   }
 
   /**
@@ -2493,7 +1906,7 @@ export class SecureYeoman {
    */
   getHeartbeatLogStorage(): HeartbeatLogStorage | null {
     this.ensureInitialized();
-    return this.heartbeatLogStorage;
+    return this.bodyMod?.getHeartbeatLogStorage() ?? null;
   }
 
   /**
@@ -2501,7 +1914,7 @@ export class SecureYeoman {
    */
   getExternalBrainSync(): ExternalBrainSync | null {
     this.ensureInitialized();
-    return this.externalBrainSync;
+    return this.brainMod?.getExternalBrainSync() ?? null;
   }
 
   /**
@@ -2533,7 +1946,7 @@ export class SecureYeoman {
    */
   getReportGenerator(): AuditReportGenerator | null {
     this.ensureInitialized();
-    return this.reportGenerator;
+    return this.auditMod?.getReportGenerator() ?? null;
   }
 
   /**
@@ -2570,12 +1983,12 @@ export class SecureYeoman {
 
   getSsoStorage(): SsoStorage | null {
     this.ensureInitialized();
-    return this.ssoStorage;
+    return this.securityMod?.getSsoStorage() ?? null;
   }
 
   getSsoManager(): SsoManager | null {
     this.ensureInitialized();
-    return this.ssoManager;
+    return this.securityMod?.getSsoManager() ?? null;
   }
 
   /**
@@ -2609,55 +2022,37 @@ export class SecureYeoman {
    */
   getSubAgentManager(): SubAgentManager | null {
     this.ensureInitialized();
-    return this.subAgentManager;
+    return this.delegationMod?.getSubAgentManager() ?? null;
   }
 
-  /**
-   * Get the swarm manager instance (may be null if delegation is disabled)
-   */
   getSwarmManager(): SwarmManager | null {
     this.ensureInitialized();
-    return this.swarmManager;
+    return this.delegationMod?.getSwarmManager() ?? null;
   }
 
-  /**
-   * Get the swarm storage instance (may be null if not initialized)
-   */
   getSwarmStorage(): SwarmStorage | null {
     this.ensureInitialized();
-    return this.swarmStorage;
+    return this.delegationMod?.getSwarmStorage() ?? null;
   }
 
-  /**
-   * Get the sub-agent storage instance (may be null if not initialized)
-   */
   getSubAgentStorage(): SubAgentStorage | null {
     this.ensureInitialized();
-    return this.subAgentStorage;
+    return this.delegationMod?.getSubAgentStorage() ?? null;
   }
 
-  /**
-   * Get the team manager instance (may be null if not initialized)
-   */
   getTeamManager(): TeamManager | null {
     this.ensureInitialized();
-    return this.teamManager;
+    return this.delegationMod?.getTeamManager() ?? null;
   }
 
-  /**
-   * Get the council manager instance (may be null if not initialized)
-   */
   getCouncilManager(): CouncilManager | null {
     this.ensureInitialized();
-    return this.councilManager;
+    return this.delegationMod?.getCouncilManager() ?? null;
   }
 
-  /**
-   * Get the workflow manager instance (may be null if not initialized)
-   */
   getWorkflowManager(): WorkflowManager | null {
     this.ensureInitialized();
-    return this.workflowManager;
+    return this.delegationMod?.getWorkflowManager() ?? null;
   }
 
   getPersonalityVersionManager(): PersonalityVersionManager | null {
@@ -2667,7 +2062,7 @@ export class SecureYeoman {
 
   getWorkflowVersionManager(): WorkflowVersionManager | null {
     this.ensureInitialized();
-    return this.workflowVersionManager;
+    return this.delegationMod?.getWorkflowVersionManager() ?? null;
   }
 
   /**
@@ -2721,16 +2116,11 @@ export class SecureYeoman {
    */
   getAutonomyAuditManager(): AutonomyAuditManager | null {
     this.ensureInitialized();
-    if (!this.autonomyAuditStorage) return null;
-    if (!this.autonomyAuditManager) {
-      this.autonomyAuditManager = new AutonomyAuditManager(
-        this.autonomyAuditStorage,
-        this.soulManager,
-        this.workflowManager,
-        this.auditChain
-      );
-    }
-    return this.autonomyAuditManager;
+    return this.securityMod?.getOrCreateAutonomyAuditManager(
+      this.soulManager,
+      this.delegationMod?.getWorkflowManager() ?? null,
+      this.auditChain,
+    ) ?? null;
   }
 
   /**
@@ -2768,17 +2158,17 @@ export class SecureYeoman {
 
   getExternalizationGate(): ExternalizationGate | null {
     this.ensureInitialized();
-    return this.externalizationGate;
+    return this.securityMod?.getExternalizationGate() ?? null;
   }
 
   getQuarantineStorage(): QuarantineStorage | null {
     this.ensureInitialized();
-    return this.quarantineStorage;
+    return this.securityMod?.getQuarantineStorage() ?? null;
   }
 
   getScanHistoryStore(): ScanHistoryStore | null {
     this.ensureInitialized();
-    return this.scanHistoryStore;
+    return this.securityMod?.getScanHistoryStore() ?? null;
   }
 
   getProviderHealthTracker(): ProviderHealthTracker {
@@ -2791,12 +2181,12 @@ export class SecureYeoman {
 
   getAthiManager(): AthiManager | null {
     this.ensureInitialized();
-    return this.athiManager;
+    return this.securityMod?.getAthiManager() ?? null;
   }
 
   getSraManager(): SraManager | null {
     this.ensureInitialized();
-    return this.sraManager;
+    return this.securityMod?.getSraManager() ?? null;
   }
 
   getMultimodalManager(): import('./multimodal/manager.js').MultimodalManager | null {
@@ -2906,95 +2296,62 @@ export class SecureYeoman {
    */
   getDistillationManager(): DistillationManager | null {
     this.ensureInitialized();
-    return this.distillationManager;
+    return this.trainingMod?.getDistillationManager() ?? null;
   }
 
-  /**
-   * Get the finetune manager instance (Phase 64).
-   */
   getFinetuneManager(): FinetuneManager | null {
     this.ensureInitialized();
-    return this.finetuneManager;
+    return this.trainingMod?.getFinetuneManager() ?? null;
   }
 
-  /**
-   * Get the data curation manager instance (Phase 73).
-   */
   getDataCurationManager(): DataCurationManager | null {
     this.ensureInitialized();
-    return this.dataCurationManager;
+    return this.trainingMod?.getDataCurationManager() ?? null;
   }
 
-  /**
-   * Get the evaluation manager instance (Phase 73).
-   */
   getEvaluationManager(): EvaluationManager | null {
     this.ensureInitialized();
-    return this.evaluationManager;
+    return this.trainingMod?.getEvaluationManager() ?? null;
   }
 
-  /**
-   * Get the pipeline approval manager instance (Phase 73).
-   */
   getPipelineApprovalManager(): PipelineApprovalManager | null {
     this.ensureInitialized();
-    return this.pipelineApprovalManager;
+    return this.trainingMod?.getPipelineApprovalManager() ?? null;
   }
 
-  /**
-   * Get the pipeline lineage storage instance (Phase 73).
-   */
   getPipelineLineageStorage(): PipelineLineageStorage | null {
     this.ensureInitialized();
-    return this.pipelineLineageStorage;
+    return this.trainingMod?.getPipelineLineageStorage() ?? null;
   }
 
-  /**
-   * Get the LLM judge manager instance (Phase 97).
-   */
   getLlmJudgeManager(): LlmJudgeManager | null {
     this.ensureInitialized();
-    return this.llmJudgeManager;
+    return this.trainingMod?.getLlmJudgeManager() ?? null;
   }
 
-  /**
-   * Get the preference manager instance (Phase 98).
-   */
   getPreferenceManager(): PreferenceManager | null {
     this.ensureInitialized();
-    return this.preferenceManager;
+    return this.trainingMod?.getPreferenceManager() ?? null;
   }
 
-  /**
-   * Get the dataset curator manager instance (Phase 98).
-   */
   getDatasetCuratorManager(): DatasetCuratorManager | null {
     this.ensureInitialized();
-    return this.datasetCuratorManager;
+    return this.trainingMod?.getDatasetCuratorManager() ?? null;
   }
 
-  /**
-   * Get the experiment registry manager instance (Phase 98).
-   */
   getExperimentRegistryManager(): ExperimentRegistryManager | null {
     this.ensureInitialized();
-    return this.experimentRegistryManager;
+    return this.trainingMod?.getExperimentRegistryManager() ?? null;
   }
 
-  /**
-   * Get the model version manager instance (Phase 98).
-   */
   getModelVersionManager(): ModelVersionManager | null {
     this.ensureInitialized();
-    return this.modelVersionManager;
+    return this.trainingMod?.getModelVersionManager() ?? null;
   }
 
-  /**
-   * Get the A/B test manager instance (Phase 98).
-   */
   getAbTestManager(): AbTestManager | null {
     this.ensureInitialized();
-    return this.abTestManager;
+    return this.trainingMod?.getAbTestManager() ?? null;
   }
 
   /**
@@ -3006,10 +2363,11 @@ export class SecureYeoman {
 
   getStrategyStorage(): StrategyStorage {
     this.ensureInitialized();
-    if (!this.strategyStorage) {
+    const ss = this.brainMod?.getStrategyStorage();
+    if (!ss) {
       throw new Error('Strategy storage not initialized');
     }
-    return this.strategyStorage;
+    return ss;
   }
 
   /**
@@ -3025,47 +2383,32 @@ export class SecureYeoman {
    */
   getAnalyticsStorage(): AnalyticsStorage | null {
     this.ensureInitialized();
-    return this.analyticsStorage;
+    return this.analyticsMod?.getAnalyticsStorage() ?? null;
   }
 
-  /**
-   * Get the sentiment analyzer instance (Phase 96).
-   */
   getSentimentAnalyzer(): SentimentAnalyzer | null {
     this.ensureInitialized();
-    return this.sentimentAnalyzer;
+    return this.analyticsMod?.getSentimentAnalyzer() ?? null;
   }
 
-  /**
-   * Get the conversation summarizer instance (Phase 96).
-   */
   getConversationSummarizer(): ConversationSummarizer | null {
     this.ensureInitialized();
-    return this.conversationSummarizer;
+    return this.analyticsMod?.getConversationSummarizer() ?? null;
   }
 
-  /**
-   * Get the entity extractor instance (Phase 96).
-   */
   getEntityExtractor(): EntityExtractor | null {
     this.ensureInitialized();
-    return this.entityExtractor;
+    return this.analyticsMod?.getEntityExtractor() ?? null;
   }
 
-  /**
-   * Get the engagement metrics service instance (Phase 96).
-   */
   getEngagementMetricsService(): EngagementMetricsService | null {
     this.ensureInitialized();
-    return this.engagementMetricsService;
+    return this.analyticsMod?.getEngagementMetricsService() ?? null;
   }
 
-  /**
-   * Get the usage anomaly detector instance (Phase 96).
-   */
   getUsageAnomalyDetector(): UsageAnomalyDetector | null {
     this.ensureInitialized();
-    return this.usageAnomalyDetector;
+    return this.analyticsMod?.getUsageAnomalyDetector() ?? null;
   }
 
   /**
@@ -3073,29 +2416,20 @@ export class SecureYeoman {
    */
   getConversationQualityScorer(): ConversationQualityScorer | null {
     this.ensureInitialized();
-    return this.conversationQualityScorer;
+    return this.trainingMod?.getConversationQualityScorer() ?? null;
   }
 
-  /**
-   * Get the computer-use manager instance (Phase 92).
-   */
   getComputerUseManager(): ComputerUseManager | null {
     this.ensureInitialized();
-    return this.computerUseManager;
+    return this.trainingMod?.getComputerUseManager() ?? null;
   }
 
-  /**
-   * Get the capture audit logger instance (Phase 108-B).
-   */
   getCaptureAuditLogger(): CaptureAuditLogger | null {
-    return this.captureAuditLogger;
+    return this.trainingMod?.getCaptureAuditLogger() ?? null;
   }
 
-  /**
-   * Get the desktop training bridge instance (Phase 108-C).
-   */
   getDesktopTrainingBridge(): DesktopTrainingBridge | null {
-    return this.desktopTrainingBridge;
+    return this.trainingMod?.getDesktopTrainingBridge() ?? null;
   }
 
   /**
@@ -3300,162 +2634,8 @@ export class SecureYeoman {
    * security policy is toggled on via updateSecurityPolicy().
    */
   async ensureDelegationReady(): Promise<void> {
-    if (!this.subAgentManager) {
-      await this.bootDelegationChain();
-    }
-  }
-
-  private async bootDelegationChain(): Promise<void> {
-    try {
-      if (!this.subAgentStorage) {
-        this.subAgentStorage = new SubAgentStorage();
-      }
-      this.subAgentManager = new SubAgentManager(this.config!.delegation, {
-        storage: this.subAgentStorage,
-        aiClientConfig: {
-          model: this.config!.model,
-          retryConfig: {
-            maxRetries: this.config!.model.maxRetries,
-            baseDelayMs: this.config!.model.retryDelayMs,
-          },
-        },
-        aiClientDeps: {
-          auditChain: this.auditChain ?? undefined,
-          logger: this.logger!.child({ component: 'SubAgentAI' }),
-        },
-        mcpClient: this.mcpClientManager ?? undefined,
-        auditChain: this.auditChain!,
-        logger: this.logger!.child({ component: 'SubAgentManager' }),
-        brainManager: this.brainManager ?? undefined,
-        securityConfig: this.config!.security,
-      });
-      await this.subAgentManager.initialize();
-      this.logger!.debug('Sub-agent delegation system initialized');
-
-      // Swarm manager (requires subAgentManager)
-      try {
-        if (!this.swarmStorage) {
-          this.swarmStorage = new SwarmStorage();
-        }
-        const subMgr = this.subAgentManager;
-        this.swarmManager = new SwarmManager({
-          storage: this.swarmStorage,
-          subAgentManager: subMgr,
-          logger: this.logger!.child({ component: 'SwarmManager' }),
-        });
-        await this.swarmManager.initialize();
-        this.logger!.debug('Swarm manager initialized');
-      } catch (swarmError) {
-        this.logger!.warn('Swarm manager initialization failed (non-fatal)', {
-          error: swarmError instanceof Error ? swarmError.message : 'Unknown error',
-        });
-      }
-
-      // Team manager (requires subAgentManager)
-      try {
-        if (!this.teamStorage) {
-          this.teamStorage = new TeamStorage();
-        }
-        const subMgr = this.subAgentManager;
-        this.teamManager = new TeamManager({
-          storage: this.teamStorage,
-          subAgentManager: subMgr,
-          aiClientConfig: {
-            model: this.config!.model,
-            retryConfig: {
-              maxRetries: this.config!.model.maxRetries,
-              baseDelayMs: this.config!.model.retryDelayMs,
-            },
-          },
-          aiClientDeps: {
-            auditChain: this.auditChain ?? undefined,
-            logger: this.logger!.child({ component: 'TeamManagerAI' }),
-          },
-          auditChain: this.auditChain,
-          logger: this.logger!.child({ component: 'TeamManager' }),
-        });
-        await this.teamManager.initialize();
-        this.logger!.debug('Team manager initialized');
-      } catch (teamError) {
-        this.logger!.warn('Team manager initialization failed (non-fatal)', {
-          error: teamError instanceof Error ? teamError.message : 'Unknown error',
-        });
-      }
-
-      // Council manager (requires subAgentManager)
-      try {
-        if (!this.councilStorage) {
-          this.councilStorage = new CouncilStorage();
-        }
-        const subMgrCouncil = this.subAgentManager;
-        this.councilManager = new CouncilManager({
-          storage: this.councilStorage,
-          subAgentManager: subMgrCouncil,
-          aiClientConfig: {
-            model: this.config!.model,
-          },
-          aiClientDeps: {
-            auditChain: this.auditChain ?? undefined,
-            logger: this.logger!.child({ component: 'CouncilManagerAI' }),
-          },
-          logger: this.logger!.child({ component: 'CouncilManager' }),
-        });
-        await this.councilManager.initialize();
-        this.logger!.debug('Council manager initialized');
-      } catch (councilError) {
-        this.logger!.warn('Council manager initialization failed (non-fatal)', {
-          error: councilError instanceof Error ? councilError.message : 'Unknown error',
-        });
-      }
-
-      // Workflow manager (requires subAgentManager + swarmManager)
-      try {
-        if (!this.workflowStorage) {
-          this.workflowStorage = new WorkflowStorage();
-        }
-        const subMgr2 = this.subAgentManager;
-
-        // Workflow version tracking (Phase 114)
-        this.workflowVersionStorage = new WorkflowVersionStorage();
-        this.workflowVersionManager = new WorkflowVersionManager({
-          versionStorage: this.workflowVersionStorage,
-          workflowStorage: this.workflowStorage,
-        });
-
-        this.workflowManager = new WorkflowManager({
-          storage: this.workflowStorage,
-          subAgentManager: subMgr2,
-          swarmManager: this.swarmManager,
-          logger: this.logger!.child({ component: 'WorkflowManager' }),
-          dataCurationManager: this.dataCurationManager,
-          distillationManager: this.distillationManager,
-          finetuneManager: this.finetuneManager,
-          evaluationManager: this.evaluationManager,
-          approvalManager: this.pipelineApprovalManager,
-          lineageStorage: this.pipelineLineageStorage,
-          alertManager: this.alertManager,
-          workflowVersionManager: this.workflowVersionManager,
-          councilManager: this.councilManager,
-        });
-        await this.workflowManager.initialize();
-        this.logger!.debug('Workflow manager initialized');
-
-        // Wire workflow + swarm + council managers into marketplace so community sync works
-        this.marketplaceManager?.setDelegationManagers({
-          workflowManager: this.workflowManager,
-          swarmManager: this.swarmManager ?? undefined,
-          councilManager: this.councilManager ?? undefined,
-          soulManager: this.soulManager ?? undefined,
-        });
-      } catch (workflowError) {
-        this.logger!.warn('Workflow manager initialization failed (non-fatal)', {
-          error: workflowError instanceof Error ? workflowError.message : 'Unknown error',
-        });
-      }
-    } catch (error) {
-      this.logger!.warn('Sub-agent delegation initialization failed (non-fatal)', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
+    if (this.delegationMod && !this.delegationMod.isBooted()) {
+      await this.delegationMod.boot();
     }
   }
 
@@ -3522,8 +2702,8 @@ export class SecureYeoman {
       }
       // Lazy-boot the delegation chain when toggled ON at runtime if it was
       // not initialized at startup (because allowSubAgents was false at boot).
-      if (updates.allowSubAgents && !this.subAgentManager) {
-        void this.bootDelegationChain();
+      if (updates.allowSubAgents && this.delegationMod && !this.delegationMod.isBooted()) {
+        void this.ensureDelegationReady();
       }
     }
     if (updates.allowA2A !== undefined) {
@@ -3804,8 +2984,9 @@ export class SecureYeoman {
 
     // Resolve TLS cert paths (auto-generates dev certs when configured to do so)
     let gatewayConfig = this.config!.gateway;
-    if (this.tlsManager) {
-      const certPaths = await this.tlsManager.ensureCerts();
+    const tlsMgr = this.securityMod?.getTlsManager();
+    if (tlsMgr) {
+      const certPaths = await tlsMgr.ensureCerts();
       if (certPaths) {
         gatewayConfig = {
           ...gatewayConfig,
@@ -3916,34 +3097,17 @@ export class SecureYeoman {
       this.gateway = null;
     }
 
-    // Stop rate limiter cleanup
-    if (this.rateLimiter) {
-      this.rateLimiter.stop();
-    }
+    // rateLimiter cleanup handled by SecurityModule
 
-    // Close crypto worker pool
-    if (this.cryptoPool) {
-      await this.cryptoPool.close();
-      this.cryptoPool = null;
-    }
+    // cryptoPool cleanup handled by AuditModule
 
-    // Clear RBAC cache and close persistent storage
-    if (this.rbac) {
-      this.rbac.clearCache();
-    }
-    if (this.rbacStorage) {
-      this.rbacStorage.close();
-      this.rbacStorage = null;
-    }
-
-    // Stop rotation manager
-    if (this.rotationManager) {
-      this.rotationManager.stop();
-      this.rotationManager = null;
-    }
-    if (this.rotationStorage) {
-      this.rotationStorage.close();
-      this.rotationStorage = null;
+    // Security module cleanup (RBAC, rotation, SSO, ATHI, SRA, scanning, etc.)
+    if (this.securityMod) {
+      await this.securityMod.cleanup();
+      this.securityMod = null;
+      this.rbac = null;
+      this.validator = null;
+      this.rateLimiter = null;
     }
 
     // Close task storage
@@ -3952,36 +3116,30 @@ export class SecureYeoman {
       this.taskStorage = null;
     }
 
-    // Stop external brain sync
-    if (this.externalBrainSync) {
-      this.externalBrainSync.stop();
-      this.externalBrainSync = null;
+    // Brain module cleanup (external sync, memory audit, cognitive memory, brain storage, strategy)
+    if (this.brainMod) {
+      await this.brainMod.cleanup();
+      this.brainStorage = null;
+      this.brainManager = null;
+      this.brainMod = null;
     }
 
-    // Stop conversation quality scorer (Phase 92)
-    if (this.conversationQualityScorer) {
-      this.conversationQualityScorer.stop();
-      this.conversationQualityScorer = null;
+    // Stop training module (quality scorer, lineage storage, etc.)
+    if (this.trainingMod) {
+      await this.trainingMod.cleanup();
+      this.trainingMod = null;
     }
 
-    // Stop conversation analytics (Phase 96)
-    if (this.sentimentAnalyzer) {
-      this.sentimentAnalyzer.stop();
-      this.sentimentAnalyzer = null;
-    }
-    if (this.conversationSummarizer) {
-      this.conversationSummarizer.stop();
-      this.conversationSummarizer = null;
-    }
-    if (this.entityExtractor) {
-      this.entityExtractor.stop();
-      this.entityExtractor = null;
+    // Stop conversation analytics (AnalyticsModule)
+    if (this.analyticsMod) {
+      await this.analyticsMod.cleanup();
+      this.analyticsMod = null;
     }
 
-    // Stop heartbeat
-    if (this.heartbeatManager) {
-      this.heartbeatManager.stop();
-      this.heartbeatManager = null;
+    // Stop heartbeat (BodyModule)
+    if (this.bodyMod) {
+      await this.bodyMod.cleanup();
+      this.bodyMod = null;
     }
 
     // Stop daily usage prune timer
@@ -4038,33 +3196,7 @@ export class SecureYeoman {
       this.spiritManager = null;
     }
 
-    // Stop memory audit scheduler (Phase 118)
-    if (this.memoryAuditScheduler) {
-      this.memoryAuditScheduler.stop();
-      this.memoryAuditScheduler = null;
-    }
-    if (this.memoryAuditStorage) {
-      this.memoryAuditStorage.close();
-      this.memoryAuditStorage = null;
-    }
-
-    // Stop cognitive memory manager (Phase 124)
-    if (this.cognitiveMemoryManager) {
-      this.cognitiveMemoryManager.stop();
-      this.cognitiveMemoryManager = null;
-    }
-    if (this.cognitiveMemoryStorage) {
-      this.cognitiveMemoryStorage.close();
-      this.cognitiveMemoryStorage = null;
-    }
-
-    // Close brain storage
-    if (this.brainStorage) {
-      this.brainStorage.close();
-      this.brainStorage = null;
-      this.brainManager = null;
-      this.documentManager = null;
-    }
+    // memoryAudit, cognitiveMemory, brainStorage cleanup handled by BrainModule
 
     // Close v1.2 module storage
     if (this.mcpStorage) {
@@ -4083,11 +3215,7 @@ export class SecureYeoman {
       this.workspaceStorage = null;
       this.workspaceManager = null;
     }
-    if (this.ssoStorage) {
-      this.ssoStorage.close();
-      this.ssoStorage = null;
-      this.ssoManager = null;
-    }
+    // ssoStorage/ssoManager cleanup handled by SecurityModule
     if (this.experimentStorage) {
       this.experimentStorage.close();
       this.experimentStorage = null;
@@ -4102,30 +3230,10 @@ export class SecureYeoman {
       this.chatConversationStorage.close();
       this.chatConversationStorage = null;
     }
-    if (this.subAgentStorage) {
-      this.subAgentStorage.close();
-      this.subAgentStorage = null;
-      this.subAgentManager = null;
-    }
-    if (this.swarmStorage) {
-      this.swarmStorage.close();
-      this.swarmStorage = null;
-      this.swarmManager = null;
-    }
-    if (this.teamStorage) {
-      this.teamStorage.close();
-      this.teamStorage = null;
-      this.teamManager = null;
-    }
-    if (this.councilStorage) {
-      this.councilStorage.close();
-      this.councilStorage = null;
-      this.councilManager = null;
-    }
-    if (this.workflowStorage) {
-      this.workflowStorage.close();
-      this.workflowStorage = null;
-      this.workflowManager = null;
+    // Delegation module cleanup (subAgent, swarm, team, council, workflow)
+    if (this.delegationMod) {
+      await this.delegationMod.cleanup();
+      this.delegationMod = null;
     }
     if (this.intentManager) {
       this.intentManager.destroy();
@@ -4168,7 +3276,7 @@ export class SecureYeoman {
       this.a2aStorage.close();
       this.a2aStorage = null;
     }
-    this.reportGenerator = null;
+    // reportGenerator cleanup handled by AuditModule
     this.costOptimizer = null;
 
     // Stop federation health cycle (Phase 79)
@@ -4181,20 +3289,19 @@ export class SecureYeoman {
       this.federationStorage = null;
     }
 
-    // Close auth storage
-    if (this.authStorage) {
-      this.authStorage.close();
+    // Close auth (AuthModule)
+    if (this.authMod) {
+      await this.authMod.cleanup();
+      this.authMod = null;
       this.authStorage = null;
       this.authService = null;
     }
 
-    // Close audit storage if it supports closing
-    if (
-      this.auditStorage &&
-      'close' in this.auditStorage &&
-      typeof (this.auditStorage as Record<string, unknown>).close === 'function'
-    ) {
-      (this.auditStorage as { close(): void }).close();
+    // Cleanup audit module (closes audit storage, crypto pool, etc.)
+    if (this.auditMod) {
+      await this.auditMod.cleanup();
+      this.auditMod = null;
+      this.auditChain = null;
       this.auditStorage = null;
     }
 
@@ -4204,21 +3311,7 @@ export class SecureYeoman {
       this.alertStorage = null;
       this.alertManager = null;
     }
-    if (this.athiStorage) {
-      this.athiStorage.close();
-      this.athiStorage = null;
-      this.athiManager = null;
-    }
-    if (this.sraStorage) {
-      this.sraStorage.close();
-      this.sraStorage = null;
-      this.sraManager = null;
-    }
-    if (this.autonomyAuditStorage) {
-      this.autonomyAuditStorage.close();
-      this.autonomyAuditStorage = null;
-      this.autonomyAuditManager = null;
-    }
+    // athiStorage, sraStorage, autonomyAuditStorage cleanup handled by SecurityModule
     if (this.backupStorage) {
       this.backupStorage.close();
       this.backupStorage = null;
@@ -4238,10 +3331,7 @@ export class SecureYeoman {
       this.groupChatStorage.close();
       this.groupChatStorage = null;
     }
-    if (this.heartbeatLogStorage) {
-      this.heartbeatLogStorage.close();
-      this.heartbeatLogStorage = null;
-    }
+    // heartbeatLogStorage cleanup handled by BodyModule
     if (this.notificationStorage) {
       this.notificationStorage.close();
       this.notificationStorage = null;
@@ -4267,14 +3357,8 @@ export class SecureYeoman {
       this.routingRulesStorage = null;
       this.routingRulesManager = null;
     }
-    if (this.scanHistoryStore) {
-      this.scanHistoryStore.close();
-      this.scanHistoryStore = null;
-    }
-    if (this.strategyStorage) {
-      this.strategyStorage.close();
-      this.strategyStorage = null;
-    }
+    // scanHistoryStore cleanup handled by SecurityModule
+    // strategyStorage cleanup handled by BrainModule
     if (this.tenantStorage) {
       this.tenantStorage.close();
       this.tenantStorage = null;
@@ -4288,28 +3372,15 @@ export class SecureYeoman {
       this.usageStorage.close();
       this.usageStorage = null;
     }
-    if (this.workflowVersionStorage) {
-      this.workflowVersionStorage.close();
-      this.workflowVersionStorage = null;
-      this.workflowVersionManager = null;
-    }
+    // workflowVersionStorage cleanup handled by DelegationModule
     if (this.systemPreferences) {
       this.systemPreferences.close();
       this.systemPreferences = null;
     }
     // When adding new storage/manager fields, add cleanup here.
-    if (this.analyticsStorage) {
-      this.analyticsStorage.close();
-      this.analyticsStorage = null;
-    }
-    if (this.pipelineLineageStorage) {
-      this.pipelineLineageStorage.close();
-      this.pipelineLineageStorage = null;
-    }
-    if (this.quarantineStorage) {
-      this.quarantineStorage.close();
-      this.quarantineStorage = null;
-    }
+    // analyticsStorage cleanup handled by AnalyticsModule
+    // pipelineLineageStorage cleanup handled by TrainingModule
+    // quarantineStorage cleanup handled by SecurityModule
 
     // Close PostgreSQL pool
     await closePool();

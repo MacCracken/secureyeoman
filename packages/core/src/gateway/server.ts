@@ -100,7 +100,7 @@ import { registerGithubApiRoutes } from '../integrations/github/github-api-route
 import { CollabManager } from '../soul/collab.js';
 import { SoulStorage } from '../soul/storage.js';
 import { formatPrometheusMetrics } from './prometheus.js';
-import { httpStatusName, sendError } from '../utils/errors.js';
+import { sendError } from '../utils/errors.js';
 import { VERSION } from '../version.js';
 import { otelFastifyPlugin } from '../telemetry/otel-fastify-plugin.js';
 import { registerAlertRoutes } from '../telemetry/alert-routes.js';
@@ -262,10 +262,7 @@ export class GatewayServer {
 
       if (!isLocalNetwork) {
         this.getLogger().warn('Access denied from non-local IP', { ip });
-        return reply.code(403).send({
-          error: 'Access denied',
-          message: 'Dashboard is only accessible from local network',
-        });
+        return sendError(reply, 403, 'Dashboard is only accessible from local network');
       }
     });
 
@@ -403,7 +400,7 @@ export class GatewayServer {
     this.app.setErrorHandler((err, _request, reply) => {
       const statusCode = (err as any).statusCode ?? 500;
       const message = statusCode < 500 ? (err as Error).message : 'An unexpected error occurred';
-      reply.code(statusCode).send({ error: httpStatusName(statusCode), message, statusCode });
+      sendError(reply, statusCode, message);
     });
 
     // Auth routes

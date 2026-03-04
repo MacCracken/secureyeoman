@@ -433,21 +433,22 @@ describe('RateLimiter', () => {
         headers: {},
         body: null,
       };
-      return {
+      const reply: any = {
         sent,
+        header(k: string, v: string) {
+          sent.headers[k] = v;
+          return reply;
+        },
         code(n: number) {
           sent.code = n;
           return {
-            header(k: string, v: string) {
-              sent.headers[k] = v;
-              return this;
-            },
             send(body: unknown) {
               sent.body = body;
             },
           };
         },
       };
+      return reply;
     }
 
     it('allows normal API requests through', () => {

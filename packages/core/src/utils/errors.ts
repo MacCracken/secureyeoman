@@ -13,6 +13,7 @@ const HTTP_STATUS_NAMES: Record<number, string> = {
   401: 'Unauthorized',
   403: 'Forbidden',
   404: 'Not Found',
+  402: 'Payment Required',
   409: 'Conflict',
   410: 'Gone',
   422: 'Unprocessable Entity',
@@ -25,11 +26,26 @@ export function httpStatusName(code: number): string {
   return HTTP_STATUS_NAMES[code] ?? 'Error';
 }
 
-export function sendError(reply: FastifyReply, statusCode: number, message: string) {
+export function sendError(
+  reply: FastifyReply,
+  statusCode: number,
+  message: string,
+  opts?: { headers?: Record<string, string>; extra?: Record<string, unknown> }
+) {
   // For 500 Internal Server Error, sanitize the message to avoid leaking internals.
   // Other 5xx codes (502, 503) use intentional status descriptions and are safe to surface.
   const safeMessage = statusCode === 500
     ? 'An internal error occurred'
     : message;
-  return reply.code(statusCode).send({ error: httpStatusName(statusCode), message: safeMessage, statusCode });
+  if (opts?.headers) {
+    for (const [k, v] of Object.entries(opts.headers)) {
+      reply.header(k, v);
+    }
+  }
+  return reply.code(statusCode).send({
+    error: httpStatusName(statusCode),
+    message: safeMessage,
+    statusCode,
+    ...opts?.extra,
+  });
 }

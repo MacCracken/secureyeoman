@@ -11,6 +11,7 @@
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
 import type { SecurityConfig } from '@secureyeoman/shared';
 import { RedisRateLimiter } from './rate-limiter-redis.js';
+import { sendError } from '../utils/errors.js';
 
 /** Chainable reply subset for the rate-limit Fastify hook. */
 interface RateLimitReply { code: (n: number) => RateLimitReply; header: (k: string, v: string) => RateLimitReply; send: (body: unknown) => void }
@@ -397,12 +398,13 @@ export class RateLimiter {
       const result = this.check(ruleName, request.ip, { ipAddress: request.ip });
 
       if (!result.allowed) {
-        reply
-          .code(429)
-          .header('Retry-After', String(result.retryAfter ?? 60))
-          .header('X-RateLimit-Remaining', '0')
-          .header('X-RateLimit-Reset', String(result.resetAt))
-          .send({ error: 'Too Many Requests', message: 'Rate limit exceeded', statusCode: 429 });
+        sendError(reply as any, 429, 'Rate limit exceeded', {
+          headers: {
+            'Retry-After': String(result.retryAfter ?? 60),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': String(result.resetAt),
+          },
+        });
         return;
       }
 

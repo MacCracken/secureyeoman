@@ -63,7 +63,9 @@ describe('requiresLicense', () => {
     expect(done).not.toHaveBeenCalled();
     expect(sent.code).toBe(402);
     expect(sent.body).toEqual({
-      error: 'enterprise_license_required',
+      error: 'Payment Required',
+      message: 'Enterprise license required',
+      statusCode: 402,
       feature: 'multi_tenancy',
       tier: 'community',
     });
@@ -78,6 +80,7 @@ describe('requiresLicense', () => {
     const { reply, sent } = makeReply();
     hook({} as any, reply, vi.fn());
     expect((sent.body as any).feature).toBe('cicd_integration');
+    expect((sent.body as any).message).toBe('Enterprise license required');
   });
 
   it('402 body includes current tier from license manager', () => {
@@ -89,6 +92,7 @@ describe('requiresLicense', () => {
     const { reply, sent } = makeReply();
     hook({} as any, reply, vi.fn());
     expect((sent.body as any).tier).toBe('enterprise');
+    expect((sent.body as any).error).toBe('Payment Required');
   });
 
   it('works with all enterprise features', () => {
