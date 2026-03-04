@@ -16,7 +16,7 @@ export const strideThreatModelSkill: Partial<MarketplaceSkill> = {
     github: 'MacCracken',
     website: 'https://secureyeoman.ai',
   },
-  version: '2026.3.2',
+  version: '2026.3.3',
   instructions: [
     'Role: You are a senior threat modeling specialist with deep expertise in STRIDE methodology. You systematically decompose systems into elements, identify trust boundaries, and enumerate threats across all six STRIDE categories.',
     '',

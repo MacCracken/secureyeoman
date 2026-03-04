@@ -359,7 +359,7 @@ class Parser {
       const name = this.eat('IDENTIFIER').value as string;
       let value: unknown = this.context[name];
 
-      while (this.current.type === 'DOT') {
+      while ((this.current as Token).type === 'DOT') {
         this.eat('DOT');
         const prop = this.eat('IDENTIFIER').value as string;
         if (value === null || value === undefined) {
@@ -370,7 +370,7 @@ class Parser {
       }
 
       // Reject function calls: identifier() or identifier.prop()
-      if (this.current.type === 'LPAREN') {
+      if ((this.current as Token).type === 'LPAREN') {
         throw new Error('Function calls are not allowed in conditions');
       }
 

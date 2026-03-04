@@ -12,6 +12,9 @@ import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logge
 import type { SecurityConfig } from '@secureyeoman/shared';
 import { RedisRateLimiter } from './rate-limiter-redis.js';
 
+/** Chainable reply subset for the rate-limit Fastify hook. */
+interface RateLimitReply { code: (n: number) => RateLimitReply; header: (k: string, v: string) => RateLimitReply; send: (body: unknown) => void }
+
 export interface RateLimitResult {
   allowed: boolean;
   remaining: number;
@@ -354,7 +357,7 @@ export class RateLimiter {
    */
   createFastifyHook(): (
     request: { url: string; ip: string; headers: Record<string, string | string[] | undefined> },
-    reply: { code: (n: number) => { header: (k: string, v: string) => { send: (body: unknown) => void } } },
+    reply: { code: (n: number) => RateLimitReply; header: (k: string, v: string) => RateLimitReply; send: (body: unknown) => void },
     done: (err?: Error) => void
   ) => void {
     // Ensure hook-specific rules exist

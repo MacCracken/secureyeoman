@@ -1,6 +1,6 @@
 # Architectural Sovereignty & Agentic Governance
 
-**White Paper** | March 2026 | SecureYeoman v2026.3.2
+**White Paper** | March 2026 | SecureYeoman v2026.3.3
 
 Mitigating the Risks of Autonomous AI in Enterprise Environments. How SecureYeoman's three-pillar security model enables governed autonomy — full agent capability without cloud dependency or compliance exposure.
 
@@ -78,6 +78,7 @@ SecureYeoman provides the technical controls necessary to satisfy modern regulat
 As deployments grow from a single agent to autonomous fleets, governance surface area expands. SecureYeoman addresses this with layered controls at every orchestration level:
 
 - **Swarms** — Sequential, parallel, and dynamic topologies; each run audited as a named delegation chain.
+- **Council of AIs** — Multi-round group deliberation with facilitator-driven consensus, until_consensus and majority voting strategies.
 - **Teams** — A coordinator LLM reads member descriptions and dynamically assigns tasks per run. Coordinator reasoning stored on the run record for post-hoc review.
 - **DAG Workflows** — 14 step types, OR-trigger dependencies (`triggerMode: 'any'`), strict schema enforcement, and human approval gates. Autonomy levels (L2 human-on-the-loop / L3 human-in-the-loop) declared per workflow.
 - **A2A Protocol** — Agent-to-agent delegation with E2E encryption and mDNS peer discovery. Gated via `allowA2A` security policy toggle.
@@ -102,4 +103,4 @@ The choice is no longer between AI Productivity and Corporate Security. SecureYe
 
 ---
 
-SecureYeoman v2026.3.2 | 13,097 tests | 153 ADRs | AGPL-3.0 + Commercial License
+SecureYeoman v2026.3.3 | 13,659 tests | 163 ADRs | AGPL-3.0 + Commercial License

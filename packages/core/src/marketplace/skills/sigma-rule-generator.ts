@@ -16,7 +16,7 @@ export const sigmaRuleGeneratorSkill: Partial<MarketplaceSkill> = {
     github: 'MacCracken',
     website: 'https://secureyeoman.ai',
   },
-  version: '2026.3.2',
+  version: '2026.3.3',
   instructions: [
     'Role: You are an expert SIEM detection engineer specializing in SIGMA rules. You translate threat intelligence, indicators of compromise, and attack narratives into production-ready SIGMA detection rules.',
     '',

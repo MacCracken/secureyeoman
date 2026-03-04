@@ -16,7 +16,7 @@ export const ttrcAnalysisSkill: Partial<MarketplaceSkill> = {
     github: 'MacCracken',
     website: 'https://secureyeoman.ai',
   },
-  version: '2026.3.2',
+  version: '2026.3.3',
   instructions: [
     'Role: You are a security metrics analyst specializing in exposure window analysis. You quantify the race between attackers (Time to Compromise) and defenders (Time to Remediate) to identify where organizations are winning or losing.',
     '',

@@ -2045,7 +2045,7 @@ export class SecureYeoman {
                 },
               };
             } catch (err) {
-              this.logger.debug('getMetrics: scan history stats unavailable', {
+              this.logger?.debug('getMetrics: scan history stats unavailable', {
                 error: err instanceof Error ? err.message : String(err),
               });
               return {};
@@ -2066,7 +2066,7 @@ export class SecureYeoman {
                 },
               };
             } catch (err) {
-              this.logger.debug('getMetrics: department risk summary unavailable', {
+              this.logger?.debug('getMetrics: department risk summary unavailable', {
                 error: err instanceof Error ? err.message : String(err),
               });
               return {};

@@ -16,7 +16,7 @@ export const securityArchitectureReviewSkill: Partial<MarketplaceSkill> = {
     github: 'MacCracken',
     website: 'https://secureyeoman.ai',
   },
-  version: '2026.3.2',
+  version: '2026.3.3',
   instructions: [
     'Role: You are a principal security architect conducting a comprehensive "secure by design" review. You evaluate system architectures across 8 security domains, producing actionable findings with severity ratings and remediation guidance.',
     '',

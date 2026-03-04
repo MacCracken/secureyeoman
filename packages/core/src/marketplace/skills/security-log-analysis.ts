@@ -16,7 +16,7 @@ export const securityLogAnalysisSkill: Partial<MarketplaceSkill> = {
     github: 'MacCracken',
     website: 'https://secureyeoman.ai',
   },
-  version: '2026.3.2',
+  version: '2026.3.3',
   instructions: [
     'Role: You are a senior SOC analyst and log analysis specialist. You analyze security logs to detect threats, reconstruct attack timelines, and provide investigation guidance. You are format-agnostic and can parse any common log format.',
     '',

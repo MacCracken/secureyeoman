@@ -86,7 +86,7 @@
       <!-- Release badge — centered across full page width, above columns -->
       <div class="hero-badge">
         <span class="badge-dot"></span>
-        <span>v2026.3.2 Now Available</span>
+        <span>v2026.3.3 Now Available</span>
         <a
           href="https://github.com/MacCracken/secureyeoman/releases"
           target="_blank"
@@ -153,7 +153,7 @@
           </div>
           <div class="hero-stats">
             <div class="stat">
-              <span class="stat-value">13,097</span>
+              <span class="stat-value">13,659</span>
               <span class="stat-label">Tests</span>
             </div>
             <div class="stat-divider"></div>
@@ -229,6 +229,10 @@
             <i class="fas fa-microchip"></i>
             <span>Groq</span>
           </div>
+          <div class="provider-logo" title="OpenRouter">
+            <i class="fas fa-route"></i>
+            <span>OpenRouter</span>
+          </div>
         </div>
       </div>
     </section>
@@ -263,8 +267,8 @@
             <ul class="feature-list">
               <li>RBAC + SSO/OIDC + SAML 2.0 (Okta, Azure AD, Auth0)</li>
               <li>Multi-tenancy with PostgreSQL RLS isolation</li>
-              <li>Vault / OpenBao secrets backend</li>
-              <li>Five sandboxing modes</li>
+              <li>Global rate limiting + sandbox artifact scanning</li>
+              <li>Five sandboxing modes + externalization gate</li>
               <li>Organizational Intent — hard boundaries &amp; OPA policies</li>
             </ul>
           </div>
@@ -278,14 +282,14 @@
             <p class="feature-desc">
               HMAC-SHA256 cryptographic audit chain — every tool call, model response, and
               system event is logged, verifiably chained, and exportable. Prometheus metrics
-              with Grafana dashboards for real-time production monitoring. Built-in Risk
-              Assessment engine scores your deployment across five domains (security, autonomy,
-              governance, infrastructure, external) and produces board-ready reports.
+              with Grafana dashboards for real-time production monitoring. Departmental Risk Register
+              with heatmaps, appetite tracking, and executive summaries. ATHI threat governance
+              for AI-specific risk scenarios.
             </p>
             <ul class="feature-list">
               <li>Cryptographic integrity (HMAC-SHA256)</li>
               <li>Streaming audit export — JSON-Lines, CSV, syslog RFC 5424</li>
-              <li>Backup &amp; DR — pg_dump/restore with 6 REST endpoints</li>
+              <li>Departmental Risk Register &amp; ATHI threat governance</li>
               <li>Risk Assessment — composite 0–100 score across 5 domains</li>
               <li>Immutable, tamper-evident logs + Prometheus metrics</li>
             </ul>
@@ -342,12 +346,13 @@
               A2A protocol with E2E encryption and mDNS peer discovery. Sub-agent delegation
               with budget and depth controls. Agent Swarms (sequential, parallel, dynamic).
               Teams — a coordinator LLM dynamically assigns tasks to members at runtime.
+              Council of AIs — multi-round group deliberation with facilitator-driven consensus.
               DAG workflow engine with 14 step types, OR-trigger dependencies, and a
               ReactFlow visual builder with human approval gates.
             </p>
             <ul class="feature-list">
               <li>A2A protocol (E2E encrypted)</li>
-              <li>Swarms + Teams (dynamic auto-manager)</li>
+              <li>Swarms + Teams + Council of AIs</li>
               <li>DAG workflows — 14 step types</li>
               <li>ReactFlow visual builder + L3 approval gates</li>
             </ul>
@@ -363,13 +368,14 @@
               Vector semantic search (FAISS/Qdrant/ChromaDB) fused with tsvector full-text
               search via Reciprocal Rank Fusion. Knowledge Base ingestion — PDF, HTML,
               Markdown, plain text, URL crawl, GitHub Wiki — chunked, indexed, and
-              searchable via 4 MCP tools. Proactive context compaction at 80% window fill.
+              searchable via 4 MCP tools. Inline citations with provenance scoring and
+              groundedness checking. Scheduled memory audits with compression and reorganization.
             </p>
             <ul class="feature-list">
               <li>Hybrid FTS + vector (RRF)</li>
               <li>Knowledge Base & RAG (PDF · HTML · Markdown · URL)</li>
-              <li>Proactive context compaction</li>
-              <li>Self-repairing task loop</li>
+              <li>Inline citations &amp; groundedness checking</li>
+              <li>Memory audits — compression, reorganization, coherence</li>
             </ul>
           </div>
 
@@ -1286,7 +1292,7 @@ SECUREYEOMAN_ADMIN_PASSWORD="..."</code></pre>
               </div>
               <div class="stat-row">
                 <span class="stat-name">Tests</span>
-                <span class="stat-value">13,097</span>
+                <span class="stat-value">13,659</span>
               </div>
               <div class="stat-row">
                 <span class="stat-name">TS Files</span>

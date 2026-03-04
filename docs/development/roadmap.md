@@ -53,7 +53,6 @@
 | 109 | Editor Improvements | P3 — power user UX | 🔄 In Progress |
 | 117 | Excalidraw Diagramming — MCP Tools & Marketplace Skill | P3 — capability + visualization | Planned |
 | 120 | Canvas Editor Improvements | P3 — canvas improvements | Planned |
-| ~~121~~ | ~~Security Hardening & Code Audit~~ | ~~P1~~ | ✅ Done — ADR 195 |
 | — | Engineering Backlog | Ongoing | Pick-up opportunistically |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
 | Future | LLM Providers, LLM Lifecycle, Responsible AI, Voice, Infrastructure | Future / Demand-Gated | — |
@@ -155,55 +154,27 @@ Current: 87.01% stmt / 76.02% branches. Target: 88% / 77%. Gap: <1% each.
 - [ ] **Analytics routes tests** — No `analytics-routes.test.ts` exists despite 11 endpoints. Add route-level tests especially for error paths (503 when storage unavailable, 400 for missing params).
 - [ ] **Capture-permissions tests** — `body/capture-permissions.ts` has no test file. Security-critical RBAC permission enforcement for screen capture operations.
 
-### Database Performance
-
-- [x] **Add LIMIT to unbounded SELECTs** — Added LIMIT to 11 unbounded queries across finetune-manager, distillation-manager, oauth-token-storage, conversation-storage, federation-storage, autonomy-audit, rbac-storage, alert-storage, extensions/storage (2), brain/storage.
-- [x] **N+1 query in marketplace sync** — Hoisted `listDefinitions()` before the loop, built a lookup Map. Also fixed directory-based sync N+1.
-- [x] **N+1 in code execution init** — Added `expireStaleSessions(timeoutMs)` batch method to storage. Replaced loop with single UPDATE.
-- [x] **PG pool `statement_timeout`** — Added `statement_timeout: 30_000` and `allowExitOnIdle: true` to pool config.
-- [x] **MCP health checks parallelization** — Replaced sequential `for...of` with `Promise.allSettled()`.
-
 ### Memory & Timer Cleanup
 
-- [x] **Timer cleanup in `SecureYeoman.cleanup()`** — Added `notificationManager.stopCleanupJob()` call. (abuseDetector, skillScheduler, mcpHealthMonitor, consolidationManager are not SecureYeoman fields — they're local or passed as options.)
-- [x] **Missing `.unref()` on timers** — Added `.unref()` to `usagePruneTimer`, `riskScheduleTimer`, and `expiryTimer`.
-- [x] **`UsageAnomalyDetector` periodic eviction** — Added 60s `setInterval` eviction timer with `.unref()` and `stop()` method.
-- [x] **`ConsolidationManager.flaggedIds` unbounded** — Added `MAX_FLAGGED_IDS = 10_000` cap with oldest-first eviction via `addFlaggedId()` helper.
-- [x] **`ConversationManager.conversations` cap** — Added `MAX_CONVERSATIONS = 10_000` cap with oldest-first eviction in `addMessage()`.
 - [ ] **Storage object cleanup** — ~20 storage objects initialized but never closed in `cleanup()`: `heartbeatLogStorage`, `alertStorage`, `notificationStorage`, `scanHistoryStore`, `riskAssessmentStorage`, `departmentRiskStorage`, `athiStorage`, `providerAccountStorage`, `analyticsStorage`, `autonomyAuditStorage`, `groupChatStorage`, `routingRulesStorage`, `backupStorage`, `tenantStorage`, `strategyStorage`, `pipelineLineageStorage`. Consider a registry pattern for systematic cleanup.
 
 ### Async & Startup Performance
 
 - [ ] **Parallel `ensureTables()` during init** — `secureyeoman.ts:388-1845` runs many independent storage init calls sequentially. After migrations complete, group independent `ensureTables()` and `init()` calls into `Promise.all()` batches.
-- [x] **Marketplace sync `readFileSync` → async** — Converted all `readFileSync` calls to `await fs.promises.readFile` in marketplace/manager.ts.
-- [x] **`AbuseDetector.evictStale()` hot path** — Removed per-check `evictStale()` call; existing 60s interval timer handles eviction.
 - [ ] **Response cache key optimization** — `ai/response-cache.ts:65` computes `JSON.stringify` + SHA-256 on the full messages array for every cache lookup (hot path). Consider a faster hash (xxhash/FNV) or incremental key building.
 
 ### Code Quality & Consistency
 
 - [ ] **Unify error response format** — Two competing patterns: `sendError()` returns `{ error, message, statusCode }` (~60% of routes) vs. inline `reply.code(N).send({ error: '...' })` with single key (~40%). Migrate all to `sendError()`. Affected: `analytics-routes.ts` (12 instances), `multimodal-routes.ts`, `diagnostic-routes.ts`, `chat-routes.ts`, `desktop-routes.ts`, `extension-routes.ts`.
-- [x] **Adopt `toErrorMessage()` utility** — Replaced ~110 instances across 28 route files with `toErrorMessage()` from `utils/errors.ts`.
 - [ ] **Extract `initOptional()` helper** — `secureyeoman.ts` has 14+ identical try/catch/warn blocks for non-fatal manager init. Extract to `private initOptional<T>(name: string, init: () => T): T | null`. Saves ~120 lines.
-- [x] **Standardize `reply.code()` vs `reply.status()`** — Replaced 28 instances in `training-routes.ts` (21) and `cicd-webhook-routes.ts` (7).
 - [ ] **Standardize pagination parsing** — Different routes use `Number()` vs `parseInt()` vs `Math.min()` with inconsistent max caps. Create a shared `parsePagination(query)` utility with consistent parsing and upper bounds.
 - [ ] **Consistent response wrapping** — Some endpoints return raw arrays, others wrap in `{ data }` or named keys. Establish and document a convention.
-- [x] **Workflow condition failure logging** — Added `warn`-level log with expression and error context to `evaluateCondition()` catch block.
-- [x] **Silent catch blocks in `getMetrics()`** — Added `debug`-level logging to both silent catch blocks.
-
-### Dependency Cleanup
-
-- [x] **Move `@vitest/coverage-v8` to devDependencies** — Moved from production `dependencies` to `devDependencies`.
-- [x] **Remove `discord.js` from dashboard** — Removed from `packages/dashboard/package.json`.
-- [x] **Move `eslint` + `typescript-eslint` to devDependencies** — Moved from `dependencies` to `devDependencies` in dashboard.
-- [x] **Remove `@types/express`** — Removed from core devDependencies. Replaced Express types in `capture-permissions.ts` with inline types.
-- [x] **Evaluate `@hapi/boom` removal** — Removed `@hapi/boom` from core dependencies. Replaced `Boom` type cast in `whatsapp/adapter.ts` with inline structural type.
 
 ### Type Safety
 
 - [ ] **Dashboard API client types** — `packages/dashboard/src/api/client.ts` has 36 `: any` annotations, especially around risk departments, ATHI scenarios, versioning, citations. Import proper types from `@secureyeoman/shared`.
 - [ ] **Fastify typed route params** — 18 occurrences of unsafe `request.params as { ... }` casts across route files. Use Fastify's generic route parameters: `FastifyRequest<{ Params: { id: string } }>`.
-- [x] **Remove dead Express import** — Removed unused `type { Response, NextFunction } from 'express'` from `capture-permissions.ts`.
-- [x] **Delete `debug2.test.ts`** — Deleted debugging artifact `brain/debug2.test.ts`.
+
 
 ### Configuration Centralization
 
@@ -373,4 +344,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-03 — Completed Phase 121 (Security Hardening & Code Audit, ADR 195). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-03 — Cleaned completed items. See [Changelog](../../CHANGELOG.md) for full history.*

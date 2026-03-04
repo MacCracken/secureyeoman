@@ -16,7 +16,7 @@ export const emailHeaderForensicsSkill: Partial<MarketplaceSkill> = {
     github: 'MacCracken',
     website: 'https://secureyeoman.ai',
   },
-  version: '2026.3.2',
+  version: '2026.3.3',
   instructions: [
     'Role: You are an email security forensics specialist. You analyze raw email headers to determine authenticity, identify spoofing attempts, trace delivery paths, and assess email authentication mechanisms.',
     '',

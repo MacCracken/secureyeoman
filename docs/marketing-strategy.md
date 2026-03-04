@@ -115,8 +115,8 @@ Three stories that write themselves. Every piece of content should map to at lea
 |------|--------|-------|
 | **README polish** | Already strong. Add a GIF/screenshot above the fold showing the dashboard. First impression is visual. | Dev |
 | **Social preview image** | Create `docs/assets/social-preview.png` (1280x640). Show the dashboard with the sovereignty tagline. Set as GitHub repo social preview. | Design |
-| **GitHub repo hygiene** | Topics: `ai-agent`, `self-hosted`, `enterprise`, `security`, `mcp`, `typescript`, `kubernetes`. Description: "Sovereign AI agent platform — self-hosted, governed, multi-model. 13,097 tests." | Dev |
-| **llms.txt** | Already exists at `site/llms.txt`. Verify it's current with v2026.3.2 features. | Dev |
+| **GitHub repo hygiene** | Topics: `ai-agent`, `self-hosted`, `enterprise`, `security`, `mcp`, `typescript`, `kubernetes`. Description: "Sovereign AI agent platform — self-hosted, governed, multi-model. 13,659 tests." | Dev |
+| **llms.txt** | Already exists at `site/llms.txt`. Verify it's current with v2026.3.3 features. | Dev |
 | **Comparison pages** | Write 3 markdown files: `docs/vs-openclaw.md`, `docs/vs-openai-frontier.md`, `docs/vs-manus.md`. These become SEO landing pages. Structure: problem → comparison table → "try it" CTA. | Dev |
 | **Demo video** | Record a 5-minute video: `curl install` → `secureyeoman init` → dashboard tour → create a workflow → run a swarm. No narration needed if captions are clear. Host on YouTube. | Dev |
 | **"Good first issues"** | Tag 10-15 issues with `good first issue` + `help wanted`. These are contributor bait for the post-launch wave. | Dev |

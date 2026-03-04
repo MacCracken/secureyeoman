@@ -32,7 +32,7 @@ describe('Phase 107-B — Security Prompt Template Skills', () => {
           expect(skill.description).toBeTruthy();
           expect(skill.category).toBe('security');
           expect(skill.author).toBe('YEOMAN');
-          expect(skill.version).toBe('2026.3.2');
+          expect(skill.version).toBe('2026.3.3');
         });
 
         it('has authorInfo', () => {

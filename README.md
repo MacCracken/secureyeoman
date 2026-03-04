@@ -1,11 +1,11 @@
 # SECUREYEOMAN
 
-[![Version](https://img.shields.io/badge/Version-2026.3.2-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.3.2)
+[![Version](https://img.shields.io/badge/Version-2026.3.3-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.3.3)
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSE.commercial)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: 13,306](https://img.shields.io/badge/Tests-13097-brightgreen.svg)]()
+[![Tests: 13,659](https://img.shields.io/badge/Tests-13%2C659-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%20LTS-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
@@ -70,9 +70,10 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Sec
 | Authorization | RBAC, per-personality active hours, Organizational Intent (OPA) |
 | Encryption | AES-256-GCM at rest, mTLS in transit, TLS lifecycle management |
 | Sandboxing | Landlock, seccomp, gVisor, WASM |
-| Sandbox Scanning | Artifact scanning, externalization gate, quarantine, threat classification |
-| Prompt Security | Jailbreak scoring, system-prompt leak detection, abuse pattern detection |
-| Content Guardrails | PII redaction, topic restrictions, toxicity filtering, citation grounding |
+| Sandbox Scanning | Artifact scanning, externalization gate, quarantine, threat classification, kill chain mapping |
+| Rate Limiting | Global per-route limits (API/terminal/workflow/auth), Fastify onRequest hook |
+| Prompt Security | Jailbreak scoring, system-prompt leak detection, abuse pattern detection, safe expression evaluator |
+| Content Guardrails | PII redaction, topic restrictions, toxicity filtering, citation grounding, groundedness modes |
 | Secrets Management | env / keyring / file / Vault / OpenBao backends |
 | Audit | Cryptographic integrity verification, JSONL/CSV/syslog export |
 
@@ -82,7 +83,9 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Sec
 |---|---|
 | Providers | 14 — Anthropic, OpenAI, Gemini, Groq, OpenRouter, Ollama, LM Studio, LocalAI, DeepSeek, Mistral, Grok, Letta, OpenCode Zen, and more |
 | Multi-account | Multiple API keys per provider, per-account cost tracking, key validation, personality-level routing |
-| Routing | Automatic fallback chains, dynamic model discovery, local-first routing |
+| Provider Health | Per-provider error rate / p95 latency tracking, automatic ranking, health endpoint |
+| Cost Budgets | Per-personality daily/monthly USD limits, 80% warning alerts, 100% hard block |
+| Routing | Automatic fallback chains, dynamic model discovery, local-first routing, reasoning effort passthrough |
 | Ollama lifecycle | Pull, delete, quantization-aware memory warnings |
 
 ### Agents & Workflows
@@ -91,6 +94,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Sec
 |---|---|
 | Cognitive model | Soul / Spirit / Brain / Body architecture; personality presets (F.R.I.D.A.Y., T.Ron) |
 | Sub-agents | Delegation, Agent Swarms (sequential / parallel / dynamic, 5 templates) |
+| Council of AIs | Multi-round group deliberation engine, facilitator-driven consensus, 2 bundled templates |
 | Teams | Dynamic auto-manager with coordinator LLM, 3 built-in teams, `crew` CLI with YAML import/export |
 | Workflows | DAG orchestration with 14 step types, `triggerMode: 'any'` OR-trigger, `outputSchemaMode: 'strict'`, visual ReactFlow builder |
 | A2A Protocol | Cross-instance agent delegation with W3C trace propagation |
@@ -107,6 +111,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Sec
 | LLM-as-Judge | Pointwise scoring, pairwise comparison, auto-eval quality gates |
 | Conversation Analytics | Sentiment tracking, engagement metrics, entity extraction, summarization |
 | Lifecycle Platform | Preference annotation, experiment registry, model versioning, A/B testing |
+| Inline Citations | Source references with provenance scoring, groundedness checking, citation feedback |
 | Adaptive Learning | Conversation quality scoring, computer-use RL episodes, live training stream (SSE) |
 
 ### Dashboard & Editor
@@ -129,12 +134,15 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Sec
 | CI/CD | 21 tools — GitHub Actions, Jenkins, GitLab CI, Northflank; `ci_trigger`/`ci_wait` workflow steps; webhook ingest |
 | Security toolkits | Kali (pentest), Network (37 tools: discovery, scanning, SSH, NetBox, NVD/CVE), Docker (14 tools) |
 | Knowledge Base | Document ingestion (PDF, HTML, Markdown, URL, GitHub Wiki), RAG / Notebook / Hybrid modes, Source Guide |
-| Skills & Marketplace | Skill trust tiers, community repo sync, workflow + swarm template export/import |
+| Memory Audits | Scheduled compression, reorganization, coherence checking, archive with reversibility |
+| Skills & Marketplace | 19 builtin skills, skill trust tiers, community repo sync, workflow + swarm + council template export/import |
 
 ### Enterprise & Operations
 
 | Capability | Details |
 |---|---|
+| Versioning | Immutable snapshots, date-based tags, LCS diff, drift detection, rollback for personalities and workflows |
+| Risk Management | Departmental risk register, ATHI threat governance, heatmaps, executive summaries |
 | Licensing | Dual: AGPL-3.0 + commercial. Ed25519 offline validation, CLI + dashboard + API management |
 | Multi-tenancy | PostgreSQL RLS partitioning, tenant CRUD API |
 | Observability | OpenTelemetry (OTLP gRPC), Prometheus `/metrics`, alert rules engine (Slack/PagerDuty/OpsGenie/webhook), ECS logs, Grafana dashboards |
@@ -210,7 +218,7 @@ TOKEN=$(curl -s -X POST http://localhost:18789/api/v1/auth/login \
   -d '{"password":"your-admin-password"}' | jq -r '.accessToken')
 
 curl http://localhost:18789/health
-# → {"status":"ok","version":"2026.3.2","uptime":12345,"networkMode":"local",...}
+# → {"status":"ok","version":"2026.3.3","uptime":12345,"networkMode":"local",...}
 
 curl http://localhost:18789/api/v1/audit?limit=50 -H "Authorization: Bearer $TOKEN"
 ```
@@ -278,12 +286,12 @@ Or connect via HTTP: `http://localhost:3001/mcp` (when running with `--profile m
 | Topic | Link |
 |-------|------|
 | Architecture | [Architecture Overview](docs/development/architecture.md) |
-| ADRs | [153 Architecture Decision Records](docs/adr/) |
+| ADRs | [163 Architecture Decision Records](docs/adr/) |
 | Roadmap | [Development Roadmap](docs/development/roadmap.md) |
 | Contributing | [Contributing Guide](CONTRIBUTING.md) |
 | Changelog | [CHANGELOG.md](CHANGELOG.md) |
 
-See [`docs/guides/`](docs/guides/) for all 59 guides, including integrations, CI/CD, knowledge base, security testing, content guardrails, and more.
+See [`docs/guides/`](docs/guides/) for all 63 guides, including integrations, CI/CD, knowledge base, security testing, content guardrails, and more.
 
 ---
 

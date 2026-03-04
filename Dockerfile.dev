@@ -19,7 +19,8 @@ COPY packages/core/package.json packages/core/
 COPY packages/mcp/package.json packages/mcp/
 COPY packages/dashboard/package.json packages/dashboard/
 
-RUN npm ci
+# --ignore-scripts: skip "prepare" hook (git config for .githooks) — no .git in builder
+RUN npm ci --ignore-scripts
 
 # Copy source
 COPY tsconfig.json ./

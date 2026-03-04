@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: SecureYeoman API
-  version: 2026.3.2
+  version: 2026.3.3
   description: |
     REST API for SecureYeoman, a secure, local-first AI assistant
     with enterprise-grade protection.

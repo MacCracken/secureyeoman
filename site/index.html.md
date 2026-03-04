@@ -2,13 +2,13 @@
 
 Most AI assistants work for the platform that hosts them. SecureYeoman works for you — self-hosted, enterprise-hardened, and answerable only to you. Your data doesn't have to train their models. Your conversations and data don't have to be their product.
 
-**v2026.3.2** | 13,097 Tests | AGPL-3.0 License | 200+ MCP Tools | 35 CLI Commands
+**v2026.3.3** | 13,659 Tests | AGPL-3.0 License | 200+ MCP Tools | 35 CLI Commands
 
 ---
 
 ## Connect Any AI Provider. Expose Zero Secrets.
 
-12 supported providers: Anthropic, OpenAI, Gemini, Ollama, DeepSeek, OpenCode Zen, Mistral, LM Studio, LocalAI, x.ai Grok, Letta, Groq.
+14 supported providers: Anthropic, OpenAI, Gemini, Ollama, DeepSeek, OpenCode Zen, Mistral, LM Studio, LocalAI, x.ai Grok, Letta, Groq, OpenRouter.
 
 ---
 
@@ -21,6 +21,7 @@ RBAC with 4 permission levels, SSO/OIDC (Okta, Azure AD, Auth0), SAML 2.0, OPA p
 - RBAC + SSO/OIDC + SAML 2.0
 - OPA policy gating + CEL evaluator
 - HMAC-SHA256 cryptographic audit chain
+- Global rate limiting + sandbox artifact scanning
 - Outbound Credential Proxy
 
 ### 2. Sandboxed Execution
@@ -55,7 +56,7 @@ Injection detection scoring, PII scanning (SSN, credit card, email, phone), toxi
 A2A protocol with E2E encryption and mDNS peer discovery. Sub-agent delegation with budget and depth controls. Agent Swarms (sequential, parallel, dynamic). Teams — a coordinator LLM dynamically assigns tasks to members at runtime. DAG workflow engine with 14 step types, OR-trigger dependencies, and a ReactFlow visual builder with human approval gates.
 
 - A2A protocol (E2E encrypted)
-- Swarms + Teams (dynamic auto-manager)
+- Swarms + Teams + Council of AIs
 - DAG workflows — 14 step types
 - ReactFlow visual builder + L3 approval gates
 
@@ -65,8 +66,8 @@ Vector semantic search (FAISS/Qdrant/ChromaDB) fused with tsvector full-text sea
 
 - Hybrid FTS + vector (RRF)
 - Knowledge Base & RAG (PDF, HTML, Markdown, URL)
-- Proactive context compaction
-- Self-repairing task loop
+- Inline citations & groundedness checking
+- Memory audits — compression, reorganization, coherence
 
 ### 7. Developer Experience
 
@@ -158,7 +159,7 @@ cd secureyeoman && npm install && npm run build
 ## Community
 
 - **License**: AGPL-3.0
-- **Tests**: 13,097
+- **Tests**: 13,659
 - **GitHub**: [github.com/MacCracken/secureyeoman](https://github.com/MacCracken/secureyeoman)
 - **Discussions**: [GitHub Discussions](https://github.com/MacCracken/secureyeoman/discussions)
 

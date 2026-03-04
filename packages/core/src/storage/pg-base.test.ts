@@ -152,8 +152,8 @@ describe('PgBaseStorage', () => {
     it('logs a warning with caller info when RLS is bypassed', async () => {
       await storage.testBypassRls(async () => 'result');
       expect(mockWarn).toHaveBeenCalledWith(
-        expect.objectContaining({ class: 'TestStorage', caller: expect.any(String) }),
-        'RLS bypass executed'
+        'RLS bypass executed',
+        expect.objectContaining({ class: 'TestStorage', caller: expect.any(String) })
       );
     });
 
@@ -176,8 +176,8 @@ describe('PgBaseStorage', () => {
         })
       ).rejects.toThrow('rls test error');
       expect(mockWarn).toHaveBeenCalledWith(
-        expect.objectContaining({ class: 'TestStorage' }),
-        'RLS bypass executed'
+        'RLS bypass executed',
+        expect.objectContaining({ class: 'TestStorage' })
       );
       expect(mockClient.query).toHaveBeenCalledWith('ROLLBACK');
     });
@@ -191,8 +191,8 @@ describe('PgBaseStorage', () => {
       const custom = new CustomStorage();
       await custom.run();
       expect(mockWarn).toHaveBeenCalledWith(
-        expect.objectContaining({ class: 'CustomStorage' }),
-        'RLS bypass executed'
+        'RLS bypass executed',
+        expect.objectContaining({ class: 'CustomStorage' })
       );
     });
   });
