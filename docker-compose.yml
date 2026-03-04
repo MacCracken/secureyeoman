@@ -124,7 +124,7 @@ services:
   # Dashboard is now served by the core gateway (SPA serving via @fastify/static).
   # The separate dashboard service below is for local development only.
   dashboard-dev:
-    image: node:20-alpine
+    image: node:22-alpine
     working_dir: /app
     command: sh -c "npm install --ignore-scripts && npm run dev:dashboard"
     ports:
