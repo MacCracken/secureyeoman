@@ -255,6 +255,8 @@ export class SecureYeoman {
   private rbacStorage: RBACStorage | null = null;
   private brainStorage: BrainStorage | null = null;
   private brainManager: BrainManager | null = null;
+  private memoryAuditStorage: import('./brain/audit/audit-store.js').MemoryAuditStorage | null = null;
+  private memoryAuditScheduler: import('./brain/audit/scheduler.js').MemoryAuditScheduler | null = null;
   private documentManager: DocumentManager | null = null;
   private heartbeatManager: HeartbeatManager | null = null;
   private heartbeatLogStorage: HeartbeatLogStorage | null = null;
@@ -810,6 +812,57 @@ export class SecureYeoman {
       });
       this.logger.debug('Document manager initialized');
 
+      // Step 5.7.2: Initialize memory audit system (Phase 118)
+      if (this.config.brain?.audit?.enabled) {
+        try {
+          const { MemoryAuditStorage } = await import('./brain/audit/audit-store.js');
+          const { MemoryAuditPolicy } = await import('./brain/audit/policy.js');
+          const { MemoryAuditEngine } = await import('./brain/audit/engine.js');
+          const { MemoryAuditScheduler } = await import('./brain/audit/scheduler.js');
+          const { MemoryCompressor } = await import('./brain/audit/compressor.js');
+          const { MemoryReorganizer } = await import('./brain/audit/reorganizer.js');
+          const { KnowledgeGraphCoherenceChecker } = await import('./brain/audit/coherence-checker.js');
+
+          this.memoryAuditStorage = new MemoryAuditStorage();
+          const auditPolicy = new MemoryAuditPolicy(this.config.brain.audit);
+          const compressor = new MemoryCompressor({
+            brainStorage: this.brainStorage,
+            auditStorage: this.memoryAuditStorage,
+            policy: auditPolicy,
+            logger: this.logger.child({ component: 'MemoryCompressor' }),
+          });
+          const reorganizer = new MemoryReorganizer({
+            brainStorage: this.brainStorage,
+            auditStorage: this.memoryAuditStorage,
+            logger: this.logger.child({ component: 'MemoryReorganizer' }),
+          });
+          const coherenceChecker = new KnowledgeGraphCoherenceChecker({
+            brainStorage: this.brainStorage,
+            logger: this.logger.child({ component: 'CoherenceChecker' }),
+          });
+          const auditEngine = new MemoryAuditEngine({
+            brainStorage: this.brainStorage,
+            auditStorage: this.memoryAuditStorage,
+            policy: auditPolicy,
+            brainManager: this.brainManager,
+            compressor,
+            reorganizer,
+            coherenceChecker,
+            logger: this.logger.child({ component: 'MemoryAuditEngine' }),
+            getAlertManager: () => this.alertManager,
+          });
+          this.memoryAuditScheduler = new MemoryAuditScheduler({
+            brainStorage: this.brainStorage,
+            engine: auditEngine,
+            policy: auditPolicy,
+            logger: this.logger.child({ component: 'MemoryAuditScheduler' }),
+          });
+          this.logger.debug('Memory audit system initialized');
+        } catch (error) {
+          this.logger.warn('Failed to initialize memory audit system', { error: String(error) });
+        }
+      }
+
       // Step 5.7a: Initialize spirit system (between Brain and Soul)
       this.spiritStorage = new SpiritStorage();
       this.spiritManager = new SpiritManager(this.spiritStorage, this.config.spirit, {
@@ -1144,6 +1197,12 @@ export class SecureYeoman {
           provider: this.config.externalBrain.provider,
           path: this.config.externalBrain.path,
         });
+      }
+
+      // Step 6.7.1: Start memory audit scheduler (Phase 118)
+      if (this.memoryAuditScheduler) {
+        this.memoryAuditScheduler.start();
+        this.logger.debug('Memory audit scheduler started');
       }
 
       // Step 6.8: Initialize MCP system (if enabled)
@@ -2290,6 +2349,14 @@ export class SecureYeoman {
 
   getBrainStorage(): BrainStorage | null {
     return this.brainStorage;
+  }
+
+  getMemoryAuditScheduler(): import('./brain/audit/scheduler.js').MemoryAuditScheduler | null {
+    return this.memoryAuditScheduler;
+  }
+
+  getMemoryAuditStorage(): import('./brain/audit/audit-store.js').MemoryAuditStorage | null {
+    return this.memoryAuditStorage;
   }
 
   /**
@@ -3921,6 +3988,16 @@ export class SecureYeoman {
       this.spiritStorage.close();
       this.spiritStorage = null;
       this.spiritManager = null;
+    }
+
+    // Stop memory audit scheduler (Phase 118)
+    if (this.memoryAuditScheduler) {
+      this.memoryAuditScheduler.stop();
+      this.memoryAuditScheduler = null;
+    }
+    if (this.memoryAuditStorage) {
+      this.memoryAuditStorage.close();
+      this.memoryAuditStorage = null;
     }
 
     // Close brain storage

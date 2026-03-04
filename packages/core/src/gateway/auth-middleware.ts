@@ -253,6 +253,26 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/brain/citations/:messageId/feedback': {
     POST: { resource: 'brain', action: 'write' },
   },
+  // Memory Audit routes (Phase 118)
+  '/api/v1/brain/audit/run': {
+    POST: { resource: 'brain', action: 'write' },
+  },
+  '/api/v1/brain/audit/reports': {
+    GET: { resource: 'brain', action: 'read' },
+  },
+  '/api/v1/brain/audit/reports/:id': {
+    GET: { resource: 'brain', action: 'read' },
+  },
+  '/api/v1/brain/audit/reports/:id/approve': {
+    POST: { resource: 'brain', action: 'write' },
+  },
+  '/api/v1/brain/audit/schedule': {
+    GET: { resource: 'brain', action: 'read' },
+    PUT: { resource: 'brain', action: 'write' },
+  },
+  '/api/v1/brain/audit/health': {
+    GET: { resource: 'brain', action: 'read' },
+  },
   // Comms routes
   '/api/v1/comms/identity': {
     GET: { resource: 'comms', action: 'read' },

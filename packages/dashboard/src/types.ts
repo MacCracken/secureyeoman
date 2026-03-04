@@ -1164,6 +1164,35 @@ export interface KnowledgeHealthStats {
   lowCoverageQueries: number;
 }
 
+// ─── Memory Audit types (Phase 118) ─────────────────────────────────────────
+
+export interface MemoryHealthMetrics {
+  healthScore: number;
+  totalMemories: number;
+  totalKnowledge: number;
+  avgImportance: number;
+  expiringWithin7Days: number;
+  lowImportanceRatio: number;
+  duplicateEstimate: number;
+  lastAuditAt: number | null;
+  lastAuditScope: string | null;
+  compressionSavings: number;
+}
+
+export interface MemoryAuditReport {
+  id: string;
+  scope: string;
+  status: string;
+  startedAt: number;
+  completedAt: number | null;
+  preSnapshot: Record<string, unknown> | null;
+  postSnapshot: Record<string, unknown> | null;
+  compressionSummary: Record<string, unknown> | null;
+  reorganizationSummary: Record<string, unknown> | null;
+  maintenanceSummary: Record<string, unknown> | null;
+  error: string | null;
+}
+
 // ─── Shareables — Workflow + Swarm exports (Phase 89) ────────────────────────
 
 export interface WorkflowShareableRequires {

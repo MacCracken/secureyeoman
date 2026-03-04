@@ -8,6 +8,7 @@
 import { z } from 'zod';
 import { ToolSchema } from './ai.js';
 import { ContentGuardrailPersonalityConfigSchema } from './content-guardrail.js';
+import { MemoryAuditPolicySchema } from './memory-audit.js';
 
 // ─── Personality ──────────────────────────────────────────────
 
@@ -674,6 +675,7 @@ export const BrainConfigSchema = z
     importanceFloor: z.number().min(0).max(1).default(0.05),
     vector: VectorConfigSchema,
     consolidation: ConsolidationConfigSchema,
+    audit: MemoryAuditPolicySchema,
   })
   .default({});
 

@@ -13,8 +13,11 @@ import {
   BookOpen,
   User,
   FolderOpen,
+  Heart,
 } from 'lucide-react';
 import { KnowledgeBaseTab } from './knowledge/KnowledgeBaseTab';
+import MemoryHealthTab from './brain/MemoryHealthTab';
+import AuditScheduleConfig from './brain/AuditScheduleConfig';
 import {
   fetchMemories,
   fetchKnowledge,
@@ -52,7 +55,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
-    'search' | 'memories' | 'knowledge' | 'add' | 'documents'
+    'search' | 'memories' | 'knowledge' | 'add' | 'documents' | 'memory-health'
   >('search');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -172,6 +175,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
     },
     { id: 'add' as const, label: 'Add Entry', icon: <Plus className="w-4 h-4" /> },
     { id: 'documents' as const, label: 'Documents', icon: <FolderOpen className="w-4 h-4" /> },
+    { id: 'memory-health' as const, label: 'Memory Health', icon: <Heart className="w-4 h-4" /> },
   ];
 
   return (
@@ -669,6 +673,13 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
 
       {/* Documents tab */}
       {activeTab === 'documents' && <KnowledgeBaseTab />}
+
+      {activeTab === 'memory-health' && (
+        <div className="space-y-4">
+          <MemoryHealthTab />
+          <AuditScheduleConfig />
+        </div>
+      )}
     </div>
   );
 }

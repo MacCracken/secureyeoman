@@ -38,3 +38,14 @@ export type {
   ConsolidationAction,
   ConsolidationReport,
 } from './consolidation/types.js';
+
+// Memory Audit (Phase 118)
+export {
+  MemoryAuditStorage,
+  MemoryAuditPolicy,
+  MemoryAuditEngine,
+  MemoryAuditScheduler,
+  MemoryCompressor,
+  MemoryReorganizer,
+  KnowledgeGraphCoherenceChecker,
+} from './audit/index.js';

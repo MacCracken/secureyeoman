@@ -33,6 +33,7 @@ import { OAuthTokenService } from './oauth-token-service.js';
 import { registerSoulRoutes } from '../soul/soul-routes.js';
 import { registerStrategyRoutes } from '../soul/strategy-routes.js';
 import { registerBrainRoutes } from '../brain/brain-routes.js';
+import { registerAuditRoutes } from '../brain/audit/audit-routes.js';
 import { registerDocumentRoutes } from '../brain/document-routes.js';
 import { registerSpiritRoutes } from '../spirit/spirit-routes.js';
 import { registerCommsRoutes } from '../comms/comms-routes.js';
@@ -591,6 +592,15 @@ export class GatewayServer {
         registerDocumentRoutes(this.app, { documentManager, brainManager, brainStorage });
       } catch {
         // Document manager may not be available — skip routes
+      }
+
+      // Memory Audit routes (Phase 118)
+      const auditScheduler = this.secureYeoman.getMemoryAuditScheduler();
+      if (auditScheduler) {
+        const auditStorage = this.secureYeoman.getMemoryAuditStorage();
+        if (auditStorage) {
+          registerAuditRoutes(this.app, { auditScheduler, auditStorage });
+        }
       }
     } catch {
       // Brain manager may not be available — skip routes

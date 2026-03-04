@@ -896,6 +896,32 @@ export {
   type ScanHistoryRow,
 } from './sandbox-scanning.js';
 
+// Memory Audit types (Phase 118)
+export {
+  MemoryAuditScopeSchema,
+  MemoryAuditStatusSchema,
+  MemoryTransformTypeSchema,
+  AuditSnapshotSchema,
+  CompressionSummarySchema,
+  ReorganizationSummarySchema,
+  MaintenanceSummarySchema,
+  MemoryAuditReportSchema,
+  MemoryArchiveEntrySchema,
+  MemoryAuditPolicySchema,
+  MemoryHealthMetricsSchema,
+  type MemoryAuditScope,
+  type MemoryAuditStatus,
+  type MemoryTransformType,
+  type AuditSnapshot,
+  type CompressionSummary,
+  type ReorganizationSummary,
+  type MaintenanceSummary,
+  type MemoryAuditReport,
+  type MemoryArchiveEntry,
+  type MemoryAuditPolicy,
+  type MemoryHealthMetrics,
+} from './memory-audit.js';
+
 // Provider Account types (Phase 112)
 export {
   ProviderAccountStatusSchema,

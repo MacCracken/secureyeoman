@@ -410,6 +410,414 @@ describe('memory command', () => {
     expect(getStderr()).toContain('string error');
   });
 
+  // ── audit ──────────────────────────────────────────────────────────────
+
+  it('audit run calls with default scope daily', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => ({ report: { id: 'rpt-1', scope: 'daily', status: 'completed' } }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({ argv: ['audit', 'run'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('Report ID: rpt-1');
+    expect(getStdout()).toContain('Scope: daily');
+
+    const [, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse((opts as { body: string }).body) as { scope: string };
+    expect(body.scope).toBe('daily');
+  });
+
+  it('audit with no action defaults to run', async () => {
+    mockFetch({ report: { id: 'rpt-2', scope: 'daily', status: 'completed' } });
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({ argv: ['audit'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('Report ID: rpt-2');
+  });
+
+  it('audit run --scope weekly passes weekly scope', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => ({ report: { id: 'rpt-w', scope: 'weekly', status: 'completed' } }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({
+      argv: ['audit', 'run', '--scope', 'weekly'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('Scope: weekly');
+
+    const [, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse((opts as { body: string }).body) as { scope: string };
+    expect(body.scope).toBe('weekly');
+  });
+
+  it('audit run --scope monthly passes monthly scope', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => ({ report: { id: 'rpt-m', scope: 'monthly', status: 'completed' } }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({
+      argv: ['audit', 'run', '--scope', 'monthly'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('Scope: monthly');
+
+    const [, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse((opts as { body: string }).body) as { scope: string };
+    expect(body.scope).toBe('monthly');
+  });
+
+  it('audit run --scope daily --personality-id p-1 passes personalityId', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => ({ report: { id: 'rpt-p', scope: 'daily', status: 'completed' } }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { stdout, stderr } = createStreams();
+    const code = await memoryCommand.run({
+      argv: ['audit', 'run', '--scope', 'daily', '--personality-id', 'p-1'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+
+    const [, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse((opts as { body: string }).body) as {
+      scope: string;
+      personalityId: string;
+    };
+    expect(body.scope).toBe('daily');
+    expect(body.personalityId).toBe('p-1');
+  });
+
+  it('audit run fails on HTTP error', async () => {
+    mockFetch({}, 500);
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await memoryCommand.run({ argv: ['audit', 'run'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('500');
+  });
+
+  it('audit run --json outputs raw JSON', async () => {
+    mockFetch({ report: { id: 'rpt-j', scope: 'daily', status: 'completed' } });
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({
+      argv: ['audit', 'run', '--json'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    const out = getStdout();
+    expect(out).toContain('"id": "rpt-j"');
+  });
+
+  it('audit history displays table of reports', async () => {
+    mockFetch({
+      reports: [
+        { id: 'rpt-h1', scope: 'daily', status: 'completed', startedAt: 1709500000000 },
+        { id: 'rpt-h2', scope: 'weekly', status: 'pending', startedAt: 1709600000000 },
+      ],
+    });
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({ argv: ['audit', 'history'], stdout, stderr });
+    expect(code).toBe(0);
+    const out = getStdout();
+    expect(out).toContain('rpt-h1');
+    expect(out).toContain('rpt-h2');
+    expect(out).toContain('daily');
+    expect(out).toContain('weekly');
+  });
+
+  it('audit history with empty results shows message', async () => {
+    mockFetch({ reports: [] });
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({ argv: ['audit', 'history'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('No audit reports found');
+  });
+
+  it('audit history fails on HTTP error', async () => {
+    mockFetch({}, 500);
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await memoryCommand.run({ argv: ['audit', 'history'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Failed to fetch audit history');
+  });
+
+  it('audit history --json outputs raw JSON', async () => {
+    mockFetch({
+      reports: [{ id: 'rpt-hj', scope: 'daily', status: 'completed' }],
+    });
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({
+      argv: ['audit', 'history', '--json'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    const parsed = JSON.parse(getStdout()) as Array<{ id: string }>;
+    expect(parsed[0]?.id).toBe('rpt-hj');
+  });
+
+  it('audit show <id> displays report details', async () => {
+    mockFetch({ report: { id: 'rpt-s1', scope: 'daily', status: 'completed', findings: [] } });
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({ argv: ['audit', 'show', 'rpt-s1'], stdout, stderr });
+    expect(code).toBe(0);
+    const out = getStdout();
+    expect(out).toContain('rpt-s1');
+    expect(out).toContain('completed');
+  });
+
+  it('audit show calls correct API endpoint with id', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => ({ report: { id: 'rpt-s2', scope: 'weekly' } }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { stdout, stderr } = createStreams();
+    await memoryCommand.run({ argv: ['audit', 'show', 'rpt-s2'], stdout, stderr });
+
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toContain('/api/v1/brain/audit/reports/rpt-s2');
+  });
+
+  it('audit show with missing id shows usage error', async () => {
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await memoryCommand.run({ argv: ['audit', 'show'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Usage');
+  });
+
+  it('audit show fails on HTTP error', async () => {
+    mockFetch({}, 404);
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await memoryCommand.run({ argv: ['audit', 'show', 'rpt-bad'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Failed to fetch report');
+  });
+
+  it('audit approve <id> approves report', async () => {
+    mockFetch({ ok: true });
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({
+      argv: ['audit', 'approve', 'rpt-a1'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('Report approved successfully');
+  });
+
+  it('audit approve calls correct API endpoint with POST', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => ({ ok: true }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { stdout, stderr } = createStreams();
+    await memoryCommand.run({ argv: ['audit', 'approve', 'rpt-a2'], stdout, stderr });
+
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('/api/v1/brain/audit/reports/rpt-a2/approve');
+    expect(opts.method).toBe('POST');
+  });
+
+  it('audit approve with missing id shows usage error', async () => {
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await memoryCommand.run({ argv: ['audit', 'approve'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Usage');
+  });
+
+  it('audit approve fails on HTTP error', async () => {
+    mockFetch({}, 500);
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await memoryCommand.run({
+      argv: ['audit', 'approve', 'rpt-fail'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Failed to approve report');
+  });
+
+  // ── schedule ───────────────────────────────────────────────────────────
+
+  it('schedule show displays audit schedules', async () => {
+    mockFetch({ schedules: { daily: '0 3 * * *', weekly: '0 4 * * 0', monthly: '0 5 1 * *' } });
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({ argv: ['schedule', 'show'], stdout, stderr });
+    expect(code).toBe(0);
+    const out = getStdout();
+    expect(out).toContain('Audit Schedules');
+    expect(out).toContain('daily');
+    expect(out).toContain('0 3 * * *');
+    expect(out).toContain('weekly');
+    expect(out).toContain('0 4 * * 0');
+  });
+
+  it('schedule with no action defaults to show', async () => {
+    mockFetch({ schedules: { daily: '0 2 * * *' } });
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({ argv: ['schedule'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('daily');
+    expect(getStdout()).toContain('0 2 * * *');
+  });
+
+  it('schedule show --json outputs raw JSON', async () => {
+    mockFetch({ schedules: { daily: '0 3 * * *' } });
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({
+      argv: ['schedule', 'show', '--json'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    const parsed = JSON.parse(getStdout()) as Record<string, string>;
+    expect(parsed.daily).toBe('0 3 * * *');
+  });
+
+  it('schedule show fails on HTTP error', async () => {
+    mockFetch({}, 500);
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await memoryCommand.run({ argv: ['schedule', 'show'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Failed to fetch schedule');
+  });
+
+  it('schedule set --scope daily --cron updates schedule', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => ({ ok: true }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({
+      argv: ['schedule', 'set', '--scope', 'daily', '--cron', '0 3 * * *'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('Schedule for daily updated to: 0 3 * * *');
+
+    const [, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(opts.method).toBe('PUT');
+    const body = JSON.parse((opts as { body: string }).body) as {
+      scope: string;
+      schedule: string;
+    };
+    expect(body.scope).toBe('daily');
+    expect(body.schedule).toBe('0 3 * * *');
+  });
+
+  it('schedule set --scope weekly --cron works', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => ({ ok: true }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await memoryCommand.run({
+      argv: ['schedule', 'set', '--scope', 'weekly', '--cron', '0 4 * * 0'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('Schedule for weekly updated to: 0 4 * * 0');
+
+    const [, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse((opts as { body: string }).body) as {
+      scope: string;
+      schedule: string;
+    };
+    expect(body.scope).toBe('weekly');
+    expect(body.schedule).toBe('0 4 * * 0');
+  });
+
+  it('schedule set with missing --scope shows usage error', async () => {
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await memoryCommand.run({
+      argv: ['schedule', 'set', '--cron', '0 3 * * *'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Usage');
+  });
+
+  it('schedule set with missing --cron shows usage error', async () => {
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await memoryCommand.run({
+      argv: ['schedule', 'set', '--scope', 'daily'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Usage');
+  });
+
+  it('schedule set with no params shows usage error', async () => {
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await memoryCommand.run({ argv: ['schedule', 'set'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Usage');
+  });
+
+  it('schedule set fails on HTTP error', async () => {
+    mockFetch({}, 500);
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await memoryCommand.run({
+      argv: ['schedule', 'set', '--scope', 'daily', '--cron', '0 3 * * *'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Failed to update schedule');
+  });
+
+  it('schedule unknown action shows usage error', async () => {
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await memoryCommand.run({ argv: ['schedule', 'bogus'], stdout, stderr });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Usage');
+  });
+
   // ── --limit flag ──────────────────────────────────────────────────────
 
   it('search uses custom limit from --limit flag', async () => {

@@ -2398,6 +2398,101 @@ export async function fetchConsolidationHistory(): Promise<{
   }
 }
 
+// ─── Memory Audit API (Phase 118) ─────────────────────────────────
+
+export async function triggerMemoryAudit(opts?: {
+  scope?: string;
+  personalityId?: string;
+}): Promise<{ report: Record<string, unknown> }> {
+  return request('/brain/audit/run', {
+    method: 'POST',
+    body: JSON.stringify({
+      scope: opts?.scope ?? 'daily',
+      personalityId: opts?.personalityId,
+    }),
+  });
+}
+
+export async function fetchAuditReports(opts?: {
+  scope?: string;
+  status?: string;
+  limit?: number;
+}): Promise<{ reports: Record<string, unknown>[] }> {
+  const params = new URLSearchParams();
+  if (opts?.scope) params.set('scope', opts.scope);
+  if (opts?.status) params.set('status', opts.status);
+  if (opts?.limit) params.set('limit', String(opts.limit));
+  const qs = params.toString();
+  try {
+    return await request(`/brain/audit/reports${qs ? `?${qs}` : ''}`);
+  } catch {
+    return { reports: [] };
+  }
+}
+
+export async function fetchAuditReport(id: string): Promise<{ report: Record<string, unknown> }> {
+  return request(`/brain/audit/reports/${id}`);
+}
+
+export async function approveAuditReport(id: string): Promise<{ report: Record<string, unknown> }> {
+  return request(`/brain/audit/reports/${id}/approve`, { method: 'POST' });
+}
+
+export async function fetchAuditSchedules(): Promise<{
+  schedules: Record<string, string>;
+}> {
+  try {
+    return await request('/brain/audit/schedule');
+  } catch {
+    return { schedules: { daily: '30 3 * * *', weekly: '0 4 * * 0', monthly: '0 5 1 * *' } };
+  }
+}
+
+export async function updateAuditSchedule(
+  scope: string,
+  schedule: string
+): Promise<{ schedules: Record<string, string> }> {
+  return request('/brain/audit/schedule', {
+    method: 'PUT',
+    body: JSON.stringify({ scope, schedule }),
+  });
+}
+
+export async function fetchMemoryHealth(personalityId?: string): Promise<{
+  health: {
+    healthScore: number;
+    totalMemories: number;
+    totalKnowledge: number;
+    avgImportance: number;
+    expiringWithin7Days: number;
+    lowImportanceRatio: number;
+    duplicateEstimate: number;
+    lastAuditAt: number | null;
+    lastAuditScope: string | null;
+    compressionSavings: number;
+  };
+}> {
+  const qs = personalityId ? `?personalityId=${encodeURIComponent(personalityId)}` : '';
+  try {
+    return await request(`/brain/audit/health${qs}`);
+  } catch {
+    return {
+      health: {
+        healthScore: 0,
+        totalMemories: 0,
+        totalKnowledge: 0,
+        avgImportance: 0,
+        expiringWithin7Days: 0,
+        lowImportanceRatio: 0,
+        duplicateEstimate: 0,
+        lastAuditAt: null,
+        lastAuditScope: null,
+        compressionSavings: 0,
+      },
+    };
+  }
+}
+
 // ─── History Compression API ──────────────────────────────────────
 
 export interface HistoryEntry {

@@ -257,6 +257,54 @@ export class BrainStorage extends PgBaseStorage {
     return rows.map(rowToMemory);
   }
 
+  async updateMemory(
+    id: string,
+    data: {
+      content?: string;
+      importance?: number;
+      type?: MemoryType;
+      context?: Record<string, string>;
+      expiresAt?: number | null;
+    }
+  ): Promise<Memory | null> {
+    const sets: string[] = [];
+    const vals: unknown[] = [];
+    let idx = 1;
+
+    if (data.content !== undefined) {
+      sets.push(`content = $${idx++}`);
+      vals.push(data.content);
+    }
+    if (data.importance !== undefined) {
+      sets.push(`importance = $${idx++}`);
+      vals.push(data.importance);
+    }
+    if (data.type !== undefined) {
+      sets.push(`type = $${idx++}`);
+      vals.push(data.type);
+    }
+    if (data.context !== undefined) {
+      sets.push(`context = $${idx++}`);
+      vals.push(JSON.stringify(data.context));
+    }
+    if (data.expiresAt !== undefined) {
+      sets.push(`expires_at = $${idx++}`);
+      vals.push(data.expiresAt);
+    }
+
+    if (sets.length === 0) return null;
+
+    sets.push(`updated_at = $${idx++}`);
+    vals.push(Date.now());
+    vals.push(id);
+
+    const row = await this.queryOne<MemoryRow>(
+      `UPDATE brain.memories SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`,
+      vals
+    );
+    return row ? rowToMemory(row) : null;
+  }
+
   async deleteMemory(id: string): Promise<boolean> {
     const count = await this.execute('DELETE FROM brain.memories WHERE id = $1', [id]);
     return count > 0;
