@@ -4,7 +4,7 @@
 
 - Version: 2026.3.3
 - 13,659 tests, 163 ADRs, 63 guides
-- 36 platform integrations, 200+ MCP tools, 35 CLI commands
+- 36 platform integrations, 200+ MCP tools, 39 CLI commands
 
 ## Documentation
 

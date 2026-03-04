@@ -149,7 +149,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Sec
 | API Gateway | Expose personalities as endpoints with per-key RPM/TPD rate limits, usage analytics (p50/p95), CSV export |
 | Deployment | Single binary (~80 MB), Docker (~80 MB), Kubernetes Helm chart; Linux x64/arm64, macOS arm64, Windows x64 |
 | Native clients | Tauri v2 desktop + Capacitor v6 mobile (shared dashboard frontend) |
-| CLI | 35 commands, full-screen TUI, agent world ASCII map, shell completions, `--json` scripting output |
+| CLI | 39 commands, full-screen TUI, agent world ASCII map, shell completions, `--json` scripting output |
 | Extensions | Rich lifecycle hook system, TypeScript plugin modules, hot-reload support |
 | Backup & DR | `pg_dump`/`pg_restore`, download API, restore confirmation, scheduling |
 

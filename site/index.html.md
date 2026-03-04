@@ -2,7 +2,7 @@
 
 Most AI assistants work for the platform that hosts them. SecureYeoman works for you — self-hosted, enterprise-hardened, and answerable only to you. Your data doesn't have to train their models. Your conversations and data don't have to be their product.
 
-**v2026.3.3** | 13,659 Tests | AGPL-3.0 License | 200+ MCP Tools | 35 CLI Commands
+**v2026.3.3** | 13,659 Tests | AGPL-3.0 License | 200+ MCP Tools | 39 CLI Commands
 
 ---
 
@@ -71,9 +71,9 @@ Vector semantic search (FAISS/Qdrant/ChromaDB) fused with tsvector full-text sea
 
 ### 7. Developer Experience
 
-35-command CLI with shell completions and `--json` scripting output. Full-screen TUI (`secureyeoman tui`). Rich lifecycle hook system with observe/transform/veto semantics. Sandboxed code execution (Python, Node.js, shell). Desktop control — screen capture, keyboard/mouse, clipboard — gated by explicit consent and audit trail.
+39-command CLI with shell completions and `--json` scripting output. Full-screen TUI (`secureyeoman tui`). Rich lifecycle hook system with observe/transform/veto semantics. Sandboxed code execution (Python, Node.js, shell). Desktop control — screen capture, keyboard/mouse, clipboard — gated by explicit consent and audit trail.
 
-- 35 CLI commands + full-screen TUI
+- 39 CLI commands + full-screen TUI
 - Rich lifecycle hooks
 - Sandboxed code execution
 - Desktop control (consent-gated)
