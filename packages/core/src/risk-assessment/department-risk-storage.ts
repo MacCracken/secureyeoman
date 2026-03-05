@@ -2,7 +2,7 @@
  * DepartmentRiskStorage — Phase 111: Departmental Risk Register
  *
  * PostgreSQL-backed storage for departments, register entries, and department score snapshots.
- * Uses the risk schema extended in migration 003_departmental_risk.
+ * Uses the risk schema (consolidated in 001_baseline.sql).
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';

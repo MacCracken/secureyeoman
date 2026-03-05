@@ -14,7 +14,9 @@ SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
+-- Removed: SELECT pg_catalog.set_config('search_path', '', false);
+-- pg_dump sets this to empty, but it breaks the migration runner's
+-- subsequent queries to the unqualified schema_migrations table.
 SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
@@ -297,7 +299,7 @@ COMMENT ON EXTENSION vector IS 'vector data type and ivfflat and hnsw access met
 -- Name: update_search_vector(); Type: FUNCTION; Schema: audit; Owner: -
 --
 
-CREATE FUNCTION audit.update_search_vector() RETURNS trigger
+CREATE OR REPLACE FUNCTION audit.update_search_vector() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -314,7 +316,7 @@ $$;
 -- Name: update_chunk_fts(); Type: FUNCTION; Schema: brain; Owner: -
 --
 
-CREATE FUNCTION brain.update_chunk_fts() RETURNS trigger
+CREATE OR REPLACE FUNCTION brain.update_chunk_fts() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -817,12 +819,15 @@ CREATE TABLE IF NOT EXISTS analytics.usage_anomalies (
 -- Name: entries_seq_seq; Type: SEQUENCE; Schema: audit; Owner: -
 --
 
+DO $$ BEGIN
 CREATE SEQUENCE audit.entries_seq_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;
+EXCEPTION WHEN duplicate_table THEN NULL;
+END $$;
 
 
 --
@@ -2133,12 +2138,15 @@ CREATE TABLE IF NOT EXISTS public.usage_error_records (
 -- Name: usage_error_records_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
+DO $$ BEGIN
 CREATE SEQUENCE public.usage_error_records_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;
+EXCEPTION WHEN duplicate_table THEN NULL;
+END $$;
 
 
 --
@@ -2171,12 +2179,15 @@ CREATE TABLE IF NOT EXISTS public.usage_records (
 -- Name: usage_records_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
+DO $$ BEGIN
 CREATE SEQUENCE public.usage_records_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;
+EXCEPTION WHEN duplicate_table THEN NULL;
+END $$;
 
 
 --
@@ -2247,6 +2258,7 @@ CREATE TABLE IF NOT EXISTS rbac.user_role_assignments (
 -- Name: user_role_assignments_id_seq; Type: SEQUENCE; Schema: rbac; Owner: -
 --
 
+DO $$ BEGIN
 CREATE SEQUENCE rbac.user_role_assignments_id_seq
     AS integer
     START WITH 1
@@ -2254,6 +2266,8 @@ CREATE SEQUENCE rbac.user_role_assignments_id_seq
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;
+EXCEPTION WHEN duplicate_table THEN NULL;
+END $$;
 
 
 --
@@ -3310,1368 +3324,1881 @@ ALTER TABLE ONLY rbac.user_role_assignments ALTER COLUMN id SET DEFAULT nextval(
 -- Name: capabilities capabilities_pkey; Type: CONSTRAINT; Schema: a2a; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY a2a.capabilities
     ADD CONSTRAINT capabilities_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: messages messages_pkey; Type: CONSTRAINT; Schema: a2a; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY a2a.messages
     ADD CONSTRAINT messages_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: peers peers_pkey; Type: CONSTRAINT; Schema: a2a; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY a2a.peers
     ADD CONSTRAINT peers_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: backup_replications backup_replications_pkey; Type: CONSTRAINT; Schema: admin; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY admin.backup_replications
     ADD CONSTRAINT backup_replications_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: backups backups_pkey; Type: CONSTRAINT; Schema: admin; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY admin.backups
     ADD CONSTRAINT backups_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: council_positions council_positions_pkey; Type: CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.council_positions
     ADD CONSTRAINT council_positions_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: council_runs council_runs_pkey; Type: CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.council_runs
     ADD CONSTRAINT council_runs_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: council_templates council_templates_name_key; Type: CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.council_templates
     ADD CONSTRAINT council_templates_name_key UNIQUE (name);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: council_templates council_templates_pkey; Type: CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.council_templates
     ADD CONSTRAINT council_templates_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: delegation_messages delegation_messages_pkey; Type: CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.delegation_messages
     ADD CONSTRAINT delegation_messages_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: delegations delegations_pkey; Type: CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.delegations
     ADD CONSTRAINT delegations_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: profile_skills profile_skills_pkey; Type: CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.profile_skills
     ADD CONSTRAINT profile_skills_pkey PRIMARY KEY (profile_id, skill_id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: profiles profiles_name_key; Type: CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.profiles
     ADD CONSTRAINT profiles_name_key UNIQUE (name);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: profiles profiles_pkey; Type: CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.profiles
     ADD CONSTRAINT profiles_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: swarm_members swarm_members_pkey; Type: CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.swarm_members
     ADD CONSTRAINT swarm_members_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: swarm_runs swarm_runs_pkey; Type: CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.swarm_runs
     ADD CONSTRAINT swarm_runs_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: swarm_templates swarm_templates_name_key; Type: CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.swarm_templates
     ADD CONSTRAINT swarm_templates_name_key UNIQUE (name);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: swarm_templates swarm_templates_pkey; Type: CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.swarm_templates
     ADD CONSTRAINT swarm_templates_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: team_runs team_runs_pkey; Type: CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.team_runs
     ADD CONSTRAINT team_runs_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: teams teams_pkey; Type: CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.teams
     ADD CONSTRAINT teams_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: account_cost_records account_cost_records_pkey; Type: CONSTRAINT; Schema: ai; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY ai.account_cost_records
     ADD CONSTRAINT account_cost_records_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: batch_inference_jobs batch_inference_jobs_pkey; Type: CONSTRAINT; Schema: ai; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY ai.batch_inference_jobs
     ADD CONSTRAINT batch_inference_jobs_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: provider_accounts provider_accounts_pkey; Type: CONSTRAINT; Schema: ai; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY ai.provider_accounts
     ADD CONSTRAINT provider_accounts_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: semantic_cache semantic_cache_pkey; Type: CONSTRAINT; Schema: ai; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY ai.semantic_cache
     ADD CONSTRAINT semantic_cache_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: conversation_entities conversation_entities_pkey; Type: CONSTRAINT; Schema: analytics; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY analytics.conversation_entities
     ADD CONSTRAINT conversation_entities_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: conversation_summaries conversation_summaries_pkey; Type: CONSTRAINT; Schema: analytics; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY analytics.conversation_summaries
     ADD CONSTRAINT conversation_summaries_pkey PRIMARY KEY (conversation_id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: key_phrases key_phrases_personality_id_phrase_window_start_key; Type: CONSTRAINT; Schema: analytics; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY analytics.key_phrases
     ADD CONSTRAINT key_phrases_personality_id_phrase_window_start_key UNIQUE (personality_id, phrase, window_start);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: key_phrases key_phrases_pkey; Type: CONSTRAINT; Schema: analytics; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY analytics.key_phrases
     ADD CONSTRAINT key_phrases_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: turn_sentiments turn_sentiments_message_id_key; Type: CONSTRAINT; Schema: analytics; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY analytics.turn_sentiments
     ADD CONSTRAINT turn_sentiments_message_id_key UNIQUE (message_id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: turn_sentiments turn_sentiments_pkey; Type: CONSTRAINT; Schema: analytics; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY analytics.turn_sentiments
     ADD CONSTRAINT turn_sentiments_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: usage_anomalies usage_anomalies_pkey; Type: CONSTRAINT; Schema: analytics; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY analytics.usage_anomalies
     ADD CONSTRAINT usage_anomalies_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: entries entries_pkey; Type: CONSTRAINT; Schema: audit; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY audit.entries
     ADD CONSTRAINT entries_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: api_key_usage api_key_usage_pkey; Type: CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.api_key_usage
     ADD CONSTRAINT api_key_usage_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: api_keys api_keys_key_hash_key; Type: CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.api_keys
     ADD CONSTRAINT api_keys_key_hash_key UNIQUE (key_hash);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: api_keys api_keys_pkey; Type: CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.api_keys
     ADD CONSTRAINT api_keys_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: identity_mappings identity_mappings_idp_id_external_subject_key; Type: CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.identity_mappings
     ADD CONSTRAINT identity_mappings_idp_id_external_subject_key UNIQUE (idp_id, external_subject);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: identity_mappings identity_mappings_pkey; Type: CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.identity_mappings
     ADD CONSTRAINT identity_mappings_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: identity_providers identity_providers_pkey; Type: CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.identity_providers
     ADD CONSTRAINT identity_providers_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: revoked_tokens revoked_tokens_pkey; Type: CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.revoked_tokens
     ADD CONSTRAINT revoked_tokens_pkey PRIMARY KEY (jti);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: sso_state sso_state_pkey; Type: CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.sso_state
     ADD CONSTRAINT sso_state_pkey PRIMARY KEY (state);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: tenants tenants_pkey; Type: CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.tenants
     ADD CONSTRAINT tenants_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: tenants tenants_slug_key; Type: CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.tenants
     ADD CONSTRAINT tenants_slug_key UNIQUE (slug);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: user_notification_prefs user_notification_prefs_pkey; Type: CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.user_notification_prefs
     ADD CONSTRAINT user_notification_prefs_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: user_notification_prefs user_notification_prefs_user_id_channel_chat_id_key; Type: CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.user_notification_prefs
     ADD CONSTRAINT user_notification_prefs_user_id_channel_chat_id_key UNIQUE (user_id, channel, chat_id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: users users_email_key; Type: CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.users
     ADD CONSTRAINT users_email_key UNIQUE (email);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: document_chunks document_chunks_pkey; Type: CONSTRAINT; Schema: brain; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY brain.document_chunks
     ADD CONSTRAINT document_chunks_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: documents documents_pkey; Type: CONSTRAINT; Schema: brain; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY brain.documents
     ADD CONSTRAINT documents_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: knowledge knowledge_pkey; Type: CONSTRAINT; Schema: brain; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY brain.knowledge
     ADD CONSTRAINT knowledge_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: knowledge_query_log knowledge_query_log_pkey; Type: CONSTRAINT; Schema: brain; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY brain.knowledge_query_log
     ADD CONSTRAINT knowledge_query_log_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: memories memories_pkey; Type: CONSTRAINT; Schema: brain; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY brain.memories
     ADD CONSTRAINT memories_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: meta meta_pkey; Type: CONSTRAINT; Schema: brain; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY brain.meta
     ADD CONSTRAINT meta_pkey PRIMARY KEY (key);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: skills skills_pkey; Type: CONSTRAINT; Schema: brain; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY brain.skills
     ADD CONSTRAINT skills_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: sessions sessions_pkey; Type: CONSTRAINT; Schema: browser; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY browser.sessions
     ADD CONSTRAINT sessions_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: consents consents_pkey; Type: CONSTRAINT; Schema: capture; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY capture.consents
     ADD CONSTRAINT consents_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: recordings recordings_pkey; Type: CONSTRAINT; Schema: capture; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY capture.recordings
     ADD CONSTRAINT recordings_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: citation_feedback citation_feedback_pkey; Type: CONSTRAINT; Schema: chat; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY chat.citation_feedback
     ADD CONSTRAINT citation_feedback_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: conversation_history conversation_history_pkey; Type: CONSTRAINT; Schema: chat; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY chat.conversation_history
     ADD CONSTRAINT conversation_history_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: conversations conversations_pkey; Type: CONSTRAINT; Schema: chat; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY chat.conversations
     ADD CONSTRAINT conversations_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: messages messages_pkey; Type: CONSTRAINT; Schema: chat; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY chat.messages
     ADD CONSTRAINT messages_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: replay_jobs replay_jobs_pkey; Type: CONSTRAINT; Schema: chat; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY chat.replay_jobs
     ADD CONSTRAINT replay_jobs_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: replay_results replay_results_pkey; Type: CONSTRAINT; Schema: chat; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY chat.replay_results
     ADD CONSTRAINT replay_results_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: message_log message_log_pkey; Type: CONSTRAINT; Schema: comms; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY comms.message_log
     ADD CONSTRAINT message_log_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: peers peers_pkey; Type: CONSTRAINT; Schema: comms; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY comms.peers
     ADD CONSTRAINT peers_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: custom_dashboards custom_dashboards_pkey; Type: CONSTRAINT; Schema: dashboard; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY dashboard.custom_dashboards
     ADD CONSTRAINT custom_dashboards_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: classifications classifications_pkey; Type: CONSTRAINT; Schema: dlp; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY dlp.classifications
     ADD CONSTRAINT classifications_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: egress_log egress_log_pkey; Type: CONSTRAINT; Schema: dlp; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY dlp.egress_log
     ADD CONSTRAINT egress_log_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: policies policies_pkey; Type: CONSTRAINT; Schema: dlp; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY dlp.policies
     ADD CONSTRAINT policies_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: retention_policies retention_policies_pkey; Type: CONSTRAINT; Schema: dlp; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY dlp.retention_policies
     ADD CONSTRAINT retention_policies_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: watermarks watermarks_pkey; Type: CONSTRAINT; Schema: dlp; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY dlp.watermarks
     ADD CONSTRAINT watermarks_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: scenario_runs scenario_runs_pkey; Type: CONSTRAINT; Schema: eval; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY eval.scenario_runs
     ADD CONSTRAINT scenario_runs_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: scenarios scenarios_pkey; Type: CONSTRAINT; Schema: eval; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY eval.scenarios
     ADD CONSTRAINT scenarios_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: suite_runs suite_runs_pkey; Type: CONSTRAINT; Schema: eval; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY eval.suite_runs
     ADD CONSTRAINT suite_runs_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: suites suites_pkey; Type: CONSTRAINT; Schema: eval; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY eval.suites
     ADD CONSTRAINT suites_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: deliveries deliveries_pkey; Type: CONSTRAINT; Schema: events; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY events.deliveries
     ADD CONSTRAINT deliveries_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: subscriptions subscriptions_pkey; Type: CONSTRAINT; Schema: events; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY events.subscriptions
     ADD CONSTRAINT subscriptions_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: approvals approvals_pkey; Type: CONSTRAINT; Schema: execution; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY execution.approvals
     ADD CONSTRAINT approvals_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: history history_pkey; Type: CONSTRAINT; Schema: execution; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY execution.history
     ADD CONSTRAINT history_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: sessions sessions_pkey; Type: CONSTRAINT; Schema: execution; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY execution.sessions
     ADD CONSTRAINT sessions_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: experiments experiments_pkey; Type: CONSTRAINT; Schema: experiment; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY experiment.experiments
     ADD CONSTRAINT experiments_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: manifests extensions_pkey; Type: CONSTRAINT; Schema: extensions; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY extensions.manifests
     ADD CONSTRAINT extensions_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: hooks hooks_pkey; Type: CONSTRAINT; Schema: extensions; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY extensions.hooks
     ADD CONSTRAINT hooks_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: webhooks webhooks_pkey; Type: CONSTRAINT; Schema: extensions; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY extensions.webhooks
     ADD CONSTRAINT webhooks_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: delegations delegations_pkey; Type: CONSTRAINT; Schema: federation; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY federation.delegations
     ADD CONSTRAINT delegations_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: peers peers_pkey; Type: CONSTRAINT; Schema: federation; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY federation.peers
     ADD CONSTRAINT peers_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: peers peers_url_key; Type: CONSTRAINT; Schema: federation; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY federation.peers
     ADD CONSTRAINT peers_url_key UNIQUE (url);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: sync_log sync_log_pkey; Type: CONSTRAINT; Schema: federation; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY federation.sync_log
     ADD CONSTRAINT sync_log_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: group_chat_pins group_chat_pins_pkey; Type: CONSTRAINT; Schema: integration; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY integration.group_chat_pins
     ADD CONSTRAINT group_chat_pins_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: integrations integrations_pkey; Type: CONSTRAINT; Schema: integration; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY integration.integrations
     ADD CONSTRAINT integrations_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: messages messages_pkey; Type: CONSTRAINT; Schema: integration; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY integration.messages
     ADD CONSTRAINT messages_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: skills skills_pkey; Type: CONSTRAINT; Schema: marketplace; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY marketplace.skills
     ADD CONSTRAINT skills_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: config config_pkey; Type: CONSTRAINT; Schema: mcp; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY mcp.config
     ADD CONSTRAINT config_pkey PRIMARY KEY (key);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: server_credentials server_credentials_pkey; Type: CONSTRAINT; Schema: mcp; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY mcp.server_credentials
     ADD CONSTRAINT server_credentials_pkey PRIMARY KEY (server_id, key);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: server_health server_health_pkey; Type: CONSTRAINT; Schema: mcp; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY mcp.server_health
     ADD CONSTRAINT server_health_pkey PRIMARY KEY (server_id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: server_tools server_tools_pkey; Type: CONSTRAINT; Schema: mcp; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY mcp.server_tools
     ADD CONSTRAINT server_tools_pkey PRIMARY KEY (server_id, name);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: servers servers_pkey; Type: CONSTRAINT; Schema: mcp; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY mcp.servers
     ADD CONSTRAINT servers_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: jobs jobs_pkey; Type: CONSTRAINT; Schema: multimodal; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY multimodal.jobs
     ADD CONSTRAINT jobs_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: heartbeat_log heartbeat_log_pkey; Type: CONSTRAINT; Schema: proactive; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY proactive.heartbeat_log
     ADD CONSTRAINT heartbeat_log_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: autonomy_audit_runs autonomy_audit_runs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY public.autonomy_audit_runs
     ADD CONSTRAINT autonomy_audit_runs_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: intent_enforcement_log intent_enforcement_log_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY public.intent_enforcement_log
     ADD CONSTRAINT intent_enforcement_log_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: intent_goal_snapshots intent_goal_snapshots_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY public.intent_goal_snapshots
     ADD CONSTRAINT intent_goal_snapshots_pkey PRIMARY KEY (intent_id, goal_id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: notifications notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY public.notifications
     ADD CONSTRAINT notifications_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: oauth_tokens oauth_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY public.oauth_tokens
     ADD CONSTRAINT oauth_tokens_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: oauth_tokens oauth_tokens_provider_email_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY public.oauth_tokens
     ADD CONSTRAINT oauth_tokens_provider_email_key UNIQUE (provider, email);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: org_intents org_intents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY public.org_intents
     ADD CONSTRAINT org_intents_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: outbound_webhooks outbound_webhooks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY public.outbound_webhooks
     ADD CONSTRAINT outbound_webhooks_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: routing_rules routing_rules_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY public.routing_rules
     ADD CONSTRAINT routing_rules_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: system_preferences system_preferences_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY public.system_preferences
     ADD CONSTRAINT system_preferences_pkey PRIMARY KEY (key);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: usage_error_records usage_error_records_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY public.usage_error_records
     ADD CONSTRAINT usage_error_records_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: usage_records usage_records_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY public.usage_records
     ADD CONSTRAINT usage_records_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: usage_resets usage_resets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY public.usage_resets
     ADD CONSTRAINT usage_resets_pkey PRIMARY KEY (stat);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: webhook_transform_rules webhook_transform_rules_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY public.webhook_transform_rules
     ADD CONSTRAINT webhook_transform_rules_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: role_definitions role_definitions_pkey; Type: CONSTRAINT; Schema: rbac; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY rbac.role_definitions
     ADD CONSTRAINT role_definitions_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: user_role_assignments user_role_assignments_pkey; Type: CONSTRAINT; Schema: rbac; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY rbac.user_role_assignments
     ADD CONSTRAINT user_role_assignments_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: assessments assessments_pkey; Type: CONSTRAINT; Schema: risk; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY risk.assessments
     ADD CONSTRAINT assessments_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: department_scores department_scores_pkey; Type: CONSTRAINT; Schema: risk; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY risk.department_scores
     ADD CONSTRAINT department_scores_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: departments departments_name_tenant_unique; Type: CONSTRAINT; Schema: risk; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY risk.departments
     ADD CONSTRAINT departments_name_tenant_unique UNIQUE (name, tenant_id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: departments departments_pkey; Type: CONSTRAINT; Schema: risk; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY risk.departments
     ADD CONSTRAINT departments_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: external_feeds external_feeds_pkey; Type: CONSTRAINT; Schema: risk; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY risk.external_feeds
     ADD CONSTRAINT external_feeds_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: external_findings external_findings_pkey; Type: CONSTRAINT; Schema: risk; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY risk.external_findings
     ADD CONSTRAINT external_findings_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: register_entries register_entries_pkey; Type: CONSTRAINT; Schema: risk; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY risk.register_entries
     ADD CONSTRAINT register_entries_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: previous_values previous_values_pkey; Type: CONSTRAINT; Schema: rotation; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY rotation.previous_values
     ADD CONSTRAINT previous_values_pkey PRIMARY KEY (name);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: secret_metadata secret_metadata_pkey; Type: CONSTRAINT; Schema: rotation; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY rotation.secret_metadata
     ADD CONSTRAINT secret_metadata_pkey PRIMARY KEY (name);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: scan_history scan_history_pkey; Type: CONSTRAINT; Schema: sandbox; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY sandbox.scan_history
     ADD CONSTRAINT scan_history_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: athi_scenarios athi_scenarios_pkey; Type: CONSTRAINT; Schema: security; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY security.athi_scenarios
     ADD CONSTRAINT athi_scenarios_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: policy policy_pkey; Type: CONSTRAINT; Schema: security; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY security.policy
     ADD CONSTRAINT policy_pkey PRIMARY KEY (key);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: collab_docs collab_docs_pkey; Type: CONSTRAINT; Schema: soul; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY soul.collab_docs
     ADD CONSTRAINT collab_docs_pkey PRIMARY KEY (doc_id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: meta meta_pkey; Type: CONSTRAINT; Schema: soul; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY soul.meta
     ADD CONSTRAINT meta_pkey PRIMARY KEY (key);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: pending_approvals pending_approvals_pkey; Type: CONSTRAINT; Schema: soul; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY soul.pending_approvals
     ADD CONSTRAINT pending_approvals_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: personalities personalities_pkey; Type: CONSTRAINT; Schema: soul; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY soul.personalities
     ADD CONSTRAINT personalities_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: personality_versions personality_versions_pkey; Type: CONSTRAINT; Schema: soul; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY soul.personality_versions
     ADD CONSTRAINT personality_versions_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: reasoning_strategies reasoning_strategies_pkey; Type: CONSTRAINT; Schema: soul; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY soul.reasoning_strategies
     ADD CONSTRAINT reasoning_strategies_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: reasoning_strategies reasoning_strategies_slug_unique; Type: CONSTRAINT; Schema: soul; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY soul.reasoning_strategies
     ADD CONSTRAINT reasoning_strategies_slug_unique UNIQUE (slug);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: skills skills_pkey; Type: CONSTRAINT; Schema: soul; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY soul.skills
     ADD CONSTRAINT skills_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: soul; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY soul.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: inspirations inspirations_pkey; Type: CONSTRAINT; Schema: spirit; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY spirit.inspirations
     ADD CONSTRAINT inspirations_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: meta meta_pkey; Type: CONSTRAINT; Schema: spirit; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY spirit.meta
     ADD CONSTRAINT meta_pkey PRIMARY KEY (key);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: pains pains_pkey; Type: CONSTRAINT; Schema: spirit; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY spirit.pains
     ADD CONSTRAINT pains_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: passions passions_pkey; Type: CONSTRAINT; Schema: spirit; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY spirit.passions
     ADD CONSTRAINT passions_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: tasks tasks_pkey; Type: CONSTRAINT; Schema: task; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY task.tasks
     ADD CONSTRAINT tasks_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: alert_rules alert_rules_pkey; Type: CONSTRAINT; Schema: telemetry; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY telemetry.alert_rules
     ADD CONSTRAINT alert_rules_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: ab_test_assignments ab_test_assignments_ab_test_id_conversation_id_key; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.ab_test_assignments
     ADD CONSTRAINT ab_test_assignments_ab_test_id_conversation_id_key UNIQUE (ab_test_id, conversation_id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: ab_test_assignments ab_test_assignments_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.ab_test_assignments
     ADD CONSTRAINT ab_test_assignments_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: ab_tests ab_tests_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.ab_tests
     ADD CONSTRAINT ab_tests_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: approval_requests approval_requests_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.approval_requests
     ADD CONSTRAINT approval_requests_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: checkpoints checkpoints_finetune_job_id_step_key; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.checkpoints
     ADD CONSTRAINT checkpoints_finetune_job_id_step_key UNIQUE (finetune_job_id, step);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: checkpoints checkpoints_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.checkpoints
     ADD CONSTRAINT checkpoints_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: computer_use_episodes computer_use_episodes_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.computer_use_episodes
     ADD CONSTRAINT computer_use_episodes_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: conversation_quality conversation_quality_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.conversation_quality
     ADD CONSTRAINT conversation_quality_pkey PRIMARY KEY (conversation_id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: curated_datasets curated_datasets_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.curated_datasets
     ADD CONSTRAINT curated_datasets_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: dataset_refresh_jobs dataset_refresh_jobs_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.dataset_refresh_jobs
     ADD CONSTRAINT dataset_refresh_jobs_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: distillation_jobs distillation_jobs_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.distillation_jobs
     ADD CONSTRAINT distillation_jobs_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: drift_baselines drift_baselines_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.drift_baselines
     ADD CONSTRAINT drift_baselines_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: drift_snapshots drift_snapshots_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.drift_snapshots
     ADD CONSTRAINT drift_snapshots_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: eval_datasets eval_datasets_content_hash_key; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.eval_datasets
     ADD CONSTRAINT eval_datasets_content_hash_key UNIQUE (content_hash);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: eval_datasets eval_datasets_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.eval_datasets
     ADD CONSTRAINT eval_datasets_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: eval_scores eval_scores_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.eval_scores
     ADD CONSTRAINT eval_scores_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: experiments experiments_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.experiments
     ADD CONSTRAINT experiments_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: finetune_jobs finetune_jobs_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.finetune_jobs
     ADD CONSTRAINT finetune_jobs_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: hyperparam_searches hyperparam_searches_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.hyperparam_searches
     ADD CONSTRAINT hyperparam_searches_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: model_versions model_versions_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.model_versions
     ADD CONSTRAINT model_versions_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: online_update_jobs online_update_jobs_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.online_update_jobs
     ADD CONSTRAINT online_update_jobs_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: pairwise_results pairwise_results_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.pairwise_results
     ADD CONSTRAINT pairwise_results_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: pipeline_lineage pipeline_lineage_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.pipeline_lineage
     ADD CONSTRAINT pipeline_lineage_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: preference_pairs preference_pairs_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.preference_pairs
     ADD CONSTRAINT preference_pairs_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: definitions definitions_pkey; Type: CONSTRAINT; Schema: workflow; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY workflow.definitions
     ADD CONSTRAINT definitions_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: runs runs_pkey; Type: CONSTRAINT; Schema: workflow; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY workflow.runs
     ADD CONSTRAINT runs_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: step_runs step_runs_pkey; Type: CONSTRAINT; Schema: workflow; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY workflow.step_runs
     ADD CONSTRAINT step_runs_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: versions versions_pkey; Type: CONSTRAINT; Schema: workflow; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY workflow.versions
     ADD CONSTRAINT versions_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: members members_pkey; Type: CONSTRAINT; Schema: workspace; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY workspace.members
     ADD CONSTRAINT members_pkey PRIMARY KEY (workspace_id, user_id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: workspaces workspaces_pkey; Type: CONSTRAINT; Schema: workspace; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY workspace.workspaces
     ADD CONSTRAINT workspaces_pkey PRIMARY KEY (id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
@@ -6470,566 +6997,781 @@ CREATE INDEX IF NOT EXISTS idx_workspace_workspaces_tenant ON workspace.workspac
 -- Name: entries trg_audit_search_vector; Type: TRIGGER; Schema: audit; Owner: -
 --
 
-CREATE TRIGGER trg_audit_search_vector BEFORE INSERT OR UPDATE ON audit.entries FOR EACH ROW EXECUTE FUNCTION audit.update_search_vector();
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_audit_search_vector') THEN
+    CREATE TRIGGER trg_audit_search_vector BEFORE INSERT OR UPDATE ON audit.entries FOR EACH ROW EXECUTE FUNCTION audit.update_search_vector();
+  END IF;
+END $$;
 
 
 --
 -- Name: document_chunks trg_chunk_fts; Type: TRIGGER; Schema: brain; Owner: -
 --
 
-CREATE TRIGGER trg_chunk_fts BEFORE INSERT OR UPDATE OF content ON brain.document_chunks FOR EACH ROW EXECUTE FUNCTION brain.update_chunk_fts();
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_chunk_fts') THEN
+    CREATE TRIGGER trg_chunk_fts BEFORE INSERT OR UPDATE OF content ON brain.document_chunks FOR EACH ROW EXECUTE FUNCTION brain.update_chunk_fts();
+  END IF;
+END $$;
 
 
 --
 -- Name: capabilities capabilities_peer_id_fkey; Type: FK CONSTRAINT; Schema: a2a; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY a2a.capabilities
     ADD CONSTRAINT capabilities_peer_id_fkey FOREIGN KEY (peer_id) REFERENCES a2a.peers(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: backup_replications backup_replications_backup_id_fkey; Type: FK CONSTRAINT; Schema: admin; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY admin.backup_replications
     ADD CONSTRAINT backup_replications_backup_id_fkey FOREIGN KEY (backup_id) REFERENCES admin.backups(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: council_positions council_positions_council_run_id_fkey; Type: FK CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.council_positions
     ADD CONSTRAINT council_positions_council_run_id_fkey FOREIGN KEY (council_run_id) REFERENCES agents.council_runs(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: council_runs council_runs_template_id_fkey; Type: FK CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.council_runs
     ADD CONSTRAINT council_runs_template_id_fkey FOREIGN KEY (template_id) REFERENCES agents.council_templates(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: delegation_messages delegation_messages_delegation_id_fkey; Type: FK CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.delegation_messages
     ADD CONSTRAINT delegation_messages_delegation_id_fkey FOREIGN KEY (delegation_id) REFERENCES agents.delegations(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: delegations delegations_parent_delegation_id_fkey; Type: FK CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.delegations
     ADD CONSTRAINT delegations_parent_delegation_id_fkey FOREIGN KEY (parent_delegation_id) REFERENCES agents.delegations(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: delegations delegations_profile_id_fkey; Type: FK CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.delegations
     ADD CONSTRAINT delegations_profile_id_fkey FOREIGN KEY (profile_id) REFERENCES agents.profiles(id) ON DELETE RESTRICT;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: profile_skills profile_skills_profile_id_fkey; Type: FK CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.profile_skills
     ADD CONSTRAINT profile_skills_profile_id_fkey FOREIGN KEY (profile_id) REFERENCES agents.profiles(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: profile_skills profile_skills_skill_id_fkey; Type: FK CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.profile_skills
     ADD CONSTRAINT profile_skills_skill_id_fkey FOREIGN KEY (skill_id) REFERENCES marketplace.skills(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: swarm_members swarm_members_delegation_id_fkey; Type: FK CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.swarm_members
     ADD CONSTRAINT swarm_members_delegation_id_fkey FOREIGN KEY (delegation_id) REFERENCES agents.delegations(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: swarm_members swarm_members_swarm_run_id_fkey; Type: FK CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.swarm_members
     ADD CONSTRAINT swarm_members_swarm_run_id_fkey FOREIGN KEY (swarm_run_id) REFERENCES agents.swarm_runs(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: swarm_runs swarm_runs_template_id_fkey; Type: FK CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.swarm_runs
     ADD CONSTRAINT swarm_runs_template_id_fkey FOREIGN KEY (template_id) REFERENCES agents.swarm_templates(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: team_runs team_runs_team_id_fkey; Type: FK CONSTRAINT; Schema: agents; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY agents.team_runs
     ADD CONSTRAINT team_runs_team_id_fkey FOREIGN KEY (team_id) REFERENCES agents.teams(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: account_cost_records account_cost_records_account_id_fkey; Type: FK CONSTRAINT; Schema: ai; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY ai.account_cost_records
     ADD CONSTRAINT account_cost_records_account_id_fkey FOREIGN KEY (account_id) REFERENCES ai.provider_accounts(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: entries entries_tenant_id_fkey; Type: FK CONSTRAINT; Schema: audit; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY audit.entries
     ADD CONSTRAINT entries_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES auth.tenants(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: api_key_usage api_key_usage_key_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.api_key_usage
     ADD CONSTRAINT api_key_usage_key_id_fkey FOREIGN KEY (key_id) REFERENCES auth.api_keys(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: api_keys api_keys_tenant_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.api_keys
     ADD CONSTRAINT api_keys_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES auth.tenants(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: identity_mappings identity_mappings_idp_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.identity_mappings
     ADD CONSTRAINT identity_mappings_idp_id_fkey FOREIGN KEY (idp_id) REFERENCES auth.identity_providers(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: identity_mappings identity_mappings_local_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.identity_mappings
     ADD CONSTRAINT identity_mappings_local_user_id_fkey FOREIGN KEY (local_user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: user_notification_prefs user_notification_prefs_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.user_notification_prefs
     ADD CONSTRAINT user_notification_prefs_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: users users_tenant_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY auth.users
     ADD CONSTRAINT users_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES auth.tenants(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: documents documents_personality_id_fkey; Type: FK CONSTRAINT; Schema: brain; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY brain.documents
     ADD CONSTRAINT documents_personality_id_fkey FOREIGN KEY (personality_id) REFERENCES soul.personalities(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: knowledge knowledge_supersedes_fkey; Type: FK CONSTRAINT; Schema: brain; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY brain.knowledge
     ADD CONSTRAINT knowledge_supersedes_fkey FOREIGN KEY (supersedes) REFERENCES brain.knowledge(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: knowledge knowledge_tenant_id_fkey; Type: FK CONSTRAINT; Schema: brain; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY brain.knowledge
     ADD CONSTRAINT knowledge_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES auth.tenants(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: memories memories_tenant_id_fkey; Type: FK CONSTRAINT; Schema: brain; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY brain.memories
     ADD CONSTRAINT memories_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES auth.tenants(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: recordings recordings_consent_id_fkey; Type: FK CONSTRAINT; Schema: capture; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY capture.recordings
     ADD CONSTRAINT recordings_consent_id_fkey FOREIGN KEY (consent_id) REFERENCES capture.consents(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: citation_feedback citation_feedback_message_id_fkey; Type: FK CONSTRAINT; Schema: chat; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY chat.citation_feedback
     ADD CONSTRAINT citation_feedback_message_id_fkey FOREIGN KEY (message_id) REFERENCES chat.messages(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: conversations conversations_parent_conversation_id_fkey; Type: FK CONSTRAINT; Schema: chat; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY chat.conversations
     ADD CONSTRAINT conversations_parent_conversation_id_fkey FOREIGN KEY (parent_conversation_id) REFERENCES chat.conversations(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: conversations conversations_tenant_id_fkey; Type: FK CONSTRAINT; Schema: chat; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY chat.conversations
     ADD CONSTRAINT conversations_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES auth.tenants(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: messages messages_conversation_id_fkey; Type: FK CONSTRAINT; Schema: chat; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY chat.messages
     ADD CONSTRAINT messages_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES chat.conversations(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: replay_results replay_results_replay_conversation_id_fkey; Type: FK CONSTRAINT; Schema: chat; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY chat.replay_results
     ADD CONSTRAINT replay_results_replay_conversation_id_fkey FOREIGN KEY (replay_conversation_id) REFERENCES chat.conversations(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: replay_results replay_results_replay_job_id_fkey; Type: FK CONSTRAINT; Schema: chat; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY chat.replay_results
     ADD CONSTRAINT replay_results_replay_job_id_fkey FOREIGN KEY (replay_job_id) REFERENCES chat.replay_jobs(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: scenario_runs scenario_runs_suite_run_id_fkey; Type: FK CONSTRAINT; Schema: eval; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY eval.scenario_runs
     ADD CONSTRAINT scenario_runs_suite_run_id_fkey FOREIGN KEY (suite_run_id) REFERENCES eval.suite_runs(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: suite_runs suite_runs_suite_id_fkey; Type: FK CONSTRAINT; Schema: eval; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY eval.suite_runs
     ADD CONSTRAINT suite_runs_suite_id_fkey FOREIGN KEY (suite_id) REFERENCES eval.suites(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: deliveries deliveries_subscription_id_fkey; Type: FK CONSTRAINT; Schema: events; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY events.deliveries
     ADD CONSTRAINT deliveries_subscription_id_fkey FOREIGN KEY (subscription_id) REFERENCES events.subscriptions(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: history history_session_id_fkey; Type: FK CONSTRAINT; Schema: execution; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY execution.history
     ADD CONSTRAINT history_session_id_fkey FOREIGN KEY (session_id) REFERENCES execution.sessions(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: hooks hooks_extension_id_fkey; Type: FK CONSTRAINT; Schema: extensions; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY extensions.hooks
     ADD CONSTRAINT hooks_extension_id_fkey FOREIGN KEY (extension_id) REFERENCES extensions.manifests(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: sync_log sync_log_peer_id_fkey; Type: FK CONSTRAINT; Schema: federation; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY federation.sync_log
     ADD CONSTRAINT sync_log_peer_id_fkey FOREIGN KEY (peer_id) REFERENCES federation.peers(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: group_chat_pins group_chat_pins_integration_id_fkey; Type: FK CONSTRAINT; Schema: integration; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY integration.group_chat_pins
     ADD CONSTRAINT group_chat_pins_integration_id_fkey FOREIGN KEY (integration_id) REFERENCES integration.integrations(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: messages messages_integration_id_fkey; Type: FK CONSTRAINT; Schema: integration; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY integration.messages
     ADD CONSTRAINT messages_integration_id_fkey FOREIGN KEY (integration_id) REFERENCES integration.integrations(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: server_credentials server_credentials_server_id_fkey; Type: FK CONSTRAINT; Schema: mcp; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY mcp.server_credentials
     ADD CONSTRAINT server_credentials_server_id_fkey FOREIGN KEY (server_id) REFERENCES mcp.servers(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: server_health server_health_server_id_fkey; Type: FK CONSTRAINT; Schema: mcp; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY mcp.server_health
     ADD CONSTRAINT server_health_server_id_fkey FOREIGN KEY (server_id) REFERENCES mcp.servers(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: server_tools server_tools_server_id_fkey; Type: FK CONSTRAINT; Schema: mcp; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY mcp.server_tools
     ADD CONSTRAINT server_tools_server_id_fkey FOREIGN KEY (server_id) REFERENCES mcp.servers(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: assessments assessments_department_id_fkey; Type: FK CONSTRAINT; Schema: risk; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY risk.assessments
     ADD CONSTRAINT assessments_department_id_fkey FOREIGN KEY (department_id) REFERENCES risk.departments(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: department_scores department_scores_department_id_fkey; Type: FK CONSTRAINT; Schema: risk; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY risk.department_scores
     ADD CONSTRAINT department_scores_department_id_fkey FOREIGN KEY (department_id) REFERENCES risk.departments(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: departments departments_parent_id_fkey; Type: FK CONSTRAINT; Schema: risk; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY risk.departments
     ADD CONSTRAINT departments_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES risk.departments(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: external_findings external_findings_department_id_fkey; Type: FK CONSTRAINT; Schema: risk; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY risk.external_findings
     ADD CONSTRAINT external_findings_department_id_fkey FOREIGN KEY (department_id) REFERENCES risk.departments(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: external_findings external_findings_feed_id_fkey; Type: FK CONSTRAINT; Schema: risk; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY risk.external_findings
     ADD CONSTRAINT external_findings_feed_id_fkey FOREIGN KEY (feed_id) REFERENCES risk.external_feeds(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: register_entries register_entries_department_id_fkey; Type: FK CONSTRAINT; Schema: risk; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY risk.register_entries
     ADD CONSTRAINT register_entries_department_id_fkey FOREIGN KEY (department_id) REFERENCES risk.departments(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: personalities personalities_tenant_id_fkey; Type: FK CONSTRAINT; Schema: soul; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY soul.personalities
     ADD CONSTRAINT personalities_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES auth.tenants(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: personality_versions personality_versions_personality_id_fkey; Type: FK CONSTRAINT; Schema: soul; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY soul.personality_versions
     ADD CONSTRAINT personality_versions_personality_id_fkey FOREIGN KEY (personality_id) REFERENCES soul.personalities(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: tasks tasks_tenant_id_fkey; Type: FK CONSTRAINT; Schema: task; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY task.tasks
     ADD CONSTRAINT tasks_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES auth.tenants(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: ab_test_assignments ab_test_assignments_ab_test_id_fkey; Type: FK CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.ab_test_assignments
     ADD CONSTRAINT ab_test_assignments_ab_test_id_fkey FOREIGN KEY (ab_test_id) REFERENCES training.ab_tests(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: checkpoints checkpoints_finetune_job_id_fkey; Type: FK CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.checkpoints
     ADD CONSTRAINT checkpoints_finetune_job_id_fkey FOREIGN KEY (finetune_job_id) REFERENCES training.finetune_jobs(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: dataset_refresh_jobs dataset_refresh_jobs_target_dataset_id_fkey; Type: FK CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.dataset_refresh_jobs
     ADD CONSTRAINT dataset_refresh_jobs_target_dataset_id_fkey FOREIGN KEY (target_dataset_id) REFERENCES training.curated_datasets(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: drift_snapshots drift_snapshots_baseline_id_fkey; Type: FK CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.drift_snapshots
     ADD CONSTRAINT drift_snapshots_baseline_id_fkey FOREIGN KEY (baseline_id) REFERENCES training.drift_baselines(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: eval_scores eval_scores_dataset_id_fkey; Type: FK CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.eval_scores
     ADD CONSTRAINT eval_scores_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES training.eval_datasets(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: experiments experiments_finetune_job_id_fkey; Type: FK CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.experiments
     ADD CONSTRAINT experiments_finetune_job_id_fkey FOREIGN KEY (finetune_job_id) REFERENCES training.finetune_jobs(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: finetune_jobs finetune_jobs_parent_job_id_fkey; Type: FK CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.finetune_jobs
     ADD CONSTRAINT finetune_jobs_parent_job_id_fkey FOREIGN KEY (parent_job_id) REFERENCES training.finetune_jobs(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: finetune_jobs finetune_jobs_search_id_fkey; Type: FK CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.finetune_jobs
     ADD CONSTRAINT finetune_jobs_search_id_fkey FOREIGN KEY (search_id) REFERENCES training.hyperparam_searches(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: hyperparam_searches hyperparam_searches_best_job_id_fkey; Type: FK CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.hyperparam_searches
     ADD CONSTRAINT hyperparam_searches_best_job_id_fkey FOREIGN KEY (best_job_id) REFERENCES training.finetune_jobs(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: model_versions model_versions_experiment_id_fkey; Type: FK CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.model_versions
     ADD CONSTRAINT model_versions_experiment_id_fkey FOREIGN KEY (experiment_id) REFERENCES training.experiments(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: model_versions model_versions_finetune_job_id_fkey; Type: FK CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.model_versions
     ADD CONSTRAINT model_versions_finetune_job_id_fkey FOREIGN KEY (finetune_job_id) REFERENCES training.finetune_jobs(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: pairwise_results pairwise_results_dataset_id_fkey; Type: FK CONSTRAINT; Schema: training; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY training.pairwise_results
     ADD CONSTRAINT pairwise_results_dataset_id_fkey FOREIGN KEY (dataset_id) REFERENCES training.eval_datasets(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: runs runs_workflow_id_fkey; Type: FK CONSTRAINT; Schema: workflow; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY workflow.runs
     ADD CONSTRAINT runs_workflow_id_fkey FOREIGN KEY (workflow_id) REFERENCES workflow.definitions(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: step_runs step_runs_run_id_fkey; Type: FK CONSTRAINT; Schema: workflow; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY workflow.step_runs
     ADD CONSTRAINT step_runs_run_id_fkey FOREIGN KEY (run_id) REFERENCES workflow.runs(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: versions versions_workflow_id_fkey; Type: FK CONSTRAINT; Schema: workflow; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY workflow.versions
     ADD CONSTRAINT versions_workflow_id_fkey FOREIGN KEY (workflow_id) REFERENCES workflow.definitions(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: members members_workspace_id_fkey; Type: FK CONSTRAINT; Schema: workspace; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY workspace.members
     ADD CONSTRAINT members_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace.workspaces(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
 -- Name: workspaces workspaces_tenant_id_fkey; Type: FK CONSTRAINT; Schema: workspace; Owner: -
 --
 
+DO $$ BEGIN
 ALTER TABLE ONLY workspace.workspaces
     ADD CONSTRAINT workspaces_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES auth.tenants(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
 
 
 --
@@ -7051,3 +7793,565 @@ INSERT INTO auth.users (id, email, display_name, hashed_password, is_admin, crea
 
 INSERT INTO mcp.config (key, value) VALUES ('exposeGmail', 'false') ON CONFLICT DO NOTHING;
 INSERT INTO mcp.config (key, value) VALUES ('exposeTwitter', 'false') ON CONFLICT DO NOTHING;
+
+
+-- ========================================================================
+-- Incremental migrations consolidated into baseline (phases 131-138)
+-- Originally migrations 002-008, now folded into 001_baseline.
+-- ========================================================================
+
+-- ========================================================================
+-- Consolidated from 002_advanced_training.sql
+-- ========================================================================
+-- Phase 131: Advanced Training
+-- DPO/RLHF training methods, hyperparameter search, multi-GPU, checkpoints
+
+-- 1. Add columns to finetune_jobs
+ALTER TABLE training.finetune_jobs
+  ADD COLUMN IF NOT EXISTS training_method text DEFAULT 'sft' NOT NULL,
+  ADD COLUMN IF NOT EXISTS parent_job_id text REFERENCES training.finetune_jobs(id),
+  ADD COLUMN IF NOT EXISTS num_gpus integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS learning_rate double precision,
+  ADD COLUMN IF NOT EXISTS warmup_steps integer,
+  ADD COLUMN IF NOT EXISTS checkpoint_steps integer,
+  ADD COLUMN IF NOT EXISTS resume_from_checkpoint text,
+  ADD COLUMN IF NOT EXISTS reward_model_path text,
+  ADD COLUMN IF NOT EXISTS search_id uuid;
+
+-- 2. Fix preference_pairs source constraint (add 'constitutional')
+ALTER TABLE training.preference_pairs DROP CONSTRAINT IF EXISTS preference_pairs_source_check;
+ALTER TABLE training.preference_pairs ADD CONSTRAINT preference_pairs_source_check
+  CHECK (source = ANY (ARRAY['annotation','comparison','multi_turn','constitutional']));
+
+-- 3. training.hyperparam_searches
+CREATE TABLE IF NOT EXISTS training.hyperparam_searches (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  base_config jsonb NOT NULL,
+  search_strategy text NOT NULL CHECK (search_strategy IN ('grid','random')),
+  param_space jsonb NOT NULL,
+  max_trials integer DEFAULT 10,
+  metric_to_optimize text DEFAULT 'eval_loss',
+  status text DEFAULT 'pending' CHECK (status IN ('pending','running','completed','failed','cancelled')),
+  best_job_id text REFERENCES training.finetune_jobs(id),
+  best_metric_value double precision,
+  created_at timestamptz DEFAULT now(),
+  completed_at timestamptz
+);
+
+-- 4. training.checkpoints
+CREATE TABLE IF NOT EXISTS training.checkpoints (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  finetune_job_id text NOT NULL REFERENCES training.finetune_jobs(id) ON DELETE CASCADE,
+  step integer NOT NULL,
+  path text NOT NULL,
+  loss double precision,
+  metadata jsonb DEFAULT '{}',
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(finetune_job_id, step)
+);
+
+-- 5. FK from finetune_jobs.search_id -> hyperparam_searches
+DO $$ BEGIN
+ALTER TABLE training.finetune_jobs
+  ADD CONSTRAINT finetune_jobs_search_id_fkey
+  FOREIGN KEY (search_id) REFERENCES training.hyperparam_searches(id);
+EXCEPTION WHEN duplicate_object OR duplicate_table OR invalid_table_definition THEN NULL;
+END $$;
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS checkpoints_job_id_idx ON training.checkpoints(finetune_job_id);
+CREATE INDEX IF NOT EXISTS hyperparam_searches_status_idx ON training.hyperparam_searches(status);
+CREATE INDEX IF NOT EXISTS finetune_jobs_parent_job_id_idx ON training.finetune_jobs(parent_job_id);
+CREATE INDEX IF NOT EXISTS finetune_jobs_search_id_idx ON training.finetune_jobs(search_id);
+
+-- ========================================================================
+-- Consolidated from 003_inference_optimization.sql
+-- ========================================================================
+-- Phase 132: Inference Optimization
+-- Batch inference, semantic cache
+
+-- 1. ai.batch_inference_jobs
+CREATE TABLE IF NOT EXISTS ai.batch_inference_jobs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text,
+  prompts jsonb NOT NULL,
+  concurrency integer DEFAULT 5,
+  status text DEFAULT 'pending' CHECK (status IN ('pending','running','completed','failed','cancelled')),
+  results jsonb DEFAULT '[]',
+  total_prompts integer NOT NULL,
+  completed_prompts integer DEFAULT 0,
+  failed_prompts integer DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  completed_at timestamptz,
+  created_by text
+);
+
+-- 2. ai.semantic_cache
+CREATE TABLE IF NOT EXISTS ai.semantic_cache (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  embedding vector(384) NOT NULL,
+  provider text NOT NULL,
+  model text NOT NULL,
+  request_hash text NOT NULL,
+  response jsonb NOT NULL,
+  hit_count integer DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  expires_at timestamptz NOT NULL
+);
+CREATE INDEX IF NOT EXISTS semantic_cache_embedding_idx
+  ON ai.semantic_cache USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+CREATE INDEX IF NOT EXISTS semantic_cache_expires_idx ON ai.semantic_cache(expires_at);
+CREATE INDEX IF NOT EXISTS batch_inference_status_idx ON ai.batch_inference_jobs(status);
+
+-- ========================================================================
+-- Consolidated from 004_continual_learning.sql
+-- ========================================================================
+-- Phase 133: Continual Learning
+-- Dataset refresh, drift detection, online updates
+
+-- 1. training.dataset_refresh_jobs
+CREATE TABLE IF NOT EXISTS training.dataset_refresh_jobs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  target_dataset_id uuid REFERENCES training.curated_datasets(id),
+  curation_rules jsonb NOT NULL,
+  last_conversation_ts timestamptz,
+  samples_added integer DEFAULT 0,
+  schedule_cron text,
+  status text DEFAULT 'idle' CHECK (status IN ('idle','running','completed','failed')),
+  last_run_at timestamptz,
+  next_run_at timestamptz,
+  created_at timestamptz DEFAULT now()
+);
+
+-- 2. training.drift_baselines
+CREATE TABLE IF NOT EXISTS training.drift_baselines (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  personality_id uuid NOT NULL,
+  baseline_mean double precision NOT NULL,
+  baseline_stddev double precision NOT NULL,
+  sample_count integer NOT NULL,
+  threshold double precision DEFAULT 0.15,
+  computed_at timestamptz DEFAULT now()
+);
+
+-- 3. training.drift_snapshots
+CREATE TABLE IF NOT EXISTS training.drift_snapshots (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  baseline_id uuid NOT NULL REFERENCES training.drift_baselines(id) ON DELETE CASCADE,
+  current_mean double precision NOT NULL,
+  current_stddev double precision NOT NULL,
+  sample_count integer NOT NULL,
+  drift_magnitude double precision NOT NULL,
+  alert_triggered boolean DEFAULT false,
+  computed_at timestamptz DEFAULT now()
+);
+
+-- 4. training.online_update_jobs
+CREATE TABLE IF NOT EXISTS training.online_update_jobs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  personality_id uuid NOT NULL,
+  adapter_name text NOT NULL,
+  conversation_ids text[] NOT NULL,
+  gradient_accumulation_steps integer DEFAULT 4,
+  replay_buffer_size integer DEFAULT 100,
+  status text DEFAULT 'pending' CHECK (status IN ('pending','running','completed','failed')),
+  container_id text,
+  error_message text,
+  created_at timestamptz DEFAULT now(),
+  completed_at timestamptz
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS dataset_refresh_status_idx ON training.dataset_refresh_jobs(status);
+CREATE INDEX IF NOT EXISTS drift_baselines_personality_idx ON training.drift_baselines(personality_id);
+CREATE INDEX IF NOT EXISTS drift_snapshots_baseline_idx ON training.drift_snapshots(baseline_id);
+CREATE INDEX IF NOT EXISTS online_update_status_idx ON training.online_update_jobs(status);
+
+-- ========================================================================
+-- Consolidated from 005_agent_eval.sql
+-- ========================================================================
+-- Migration 005: Agent Evaluation Harness
+-- Phase 135: Structured evaluation framework for agent behavior
+
+CREATE SCHEMA IF NOT EXISTS eval;
+
+-- ── Eval Scenarios ──────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS eval.scenarios (
+  id            TEXT PRIMARY KEY,
+  name          TEXT NOT NULL,
+  description   TEXT NOT NULL DEFAULT '',
+  category      TEXT NOT NULL DEFAULT 'general',
+  tags          JSONB NOT NULL DEFAULT '[]',
+  input         TEXT NOT NULL,
+  conversation_history JSONB NOT NULL DEFAULT '[]',
+  expected_tool_calls  JSONB NOT NULL DEFAULT '[]',
+  ordered_tool_calls   BOOLEAN NOT NULL DEFAULT FALSE,
+  forbidden_tool_calls JSONB NOT NULL DEFAULT '[]',
+  output_assertions    JSONB NOT NULL DEFAULT '[]',
+  max_tokens    INTEGER,
+  max_duration_ms INTEGER NOT NULL DEFAULT 60000,
+  personality_id TEXT,
+  skill_ids     JSONB NOT NULL DEFAULT '[]',
+  model         TEXT,
+  tenant_id     TEXT NOT NULL DEFAULT 'default',
+  created_at    BIGINT NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT,
+  updated_at    BIGINT NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT
+);
+
+CREATE INDEX IF NOT EXISTS idx_eval_scenarios_category ON eval.scenarios (category);
+CREATE INDEX IF NOT EXISTS idx_eval_scenarios_tenant ON eval.scenarios (tenant_id);
+
+-- ── Eval Suites ─────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS eval.suites (
+  id            TEXT PRIMARY KEY,
+  name          TEXT NOT NULL,
+  description   TEXT NOT NULL DEFAULT '',
+  scenario_ids  JSONB NOT NULL DEFAULT '[]',
+  max_cost_usd  DOUBLE PRECISION,
+  concurrency   INTEGER NOT NULL DEFAULT 1,
+  tenant_id     TEXT NOT NULL DEFAULT 'default',
+  created_at    BIGINT NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT,
+  updated_at    BIGINT NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT
+);
+
+CREATE INDEX IF NOT EXISTS idx_eval_suites_tenant ON eval.suites (tenant_id);
+
+-- ── Suite Run Results ───────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS eval.suite_runs (
+  id              TEXT PRIMARY KEY,
+  suite_id        TEXT NOT NULL REFERENCES eval.suites(id) ON DELETE CASCADE,
+  suite_name      TEXT NOT NULL,
+  passed          BOOLEAN NOT NULL,
+  total_scenarios INTEGER NOT NULL DEFAULT 0,
+  passed_count    INTEGER NOT NULL DEFAULT 0,
+  failed_count    INTEGER NOT NULL DEFAULT 0,
+  error_count     INTEGER NOT NULL DEFAULT 0,
+  total_duration_ms INTEGER NOT NULL DEFAULT 0,
+  total_tokens    INTEGER NOT NULL DEFAULT 0,
+  total_cost_usd  DOUBLE PRECISION NOT NULL DEFAULT 0,
+  started_at      BIGINT NOT NULL,
+  completed_at    BIGINT NOT NULL,
+  tenant_id       TEXT NOT NULL DEFAULT 'default',
+  created_at      BIGINT NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT
+);
+
+CREATE INDEX IF NOT EXISTS idx_eval_suite_runs_suite ON eval.suite_runs (suite_id);
+CREATE INDEX IF NOT EXISTS idx_eval_suite_runs_tenant ON eval.suite_runs (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_eval_suite_runs_started ON eval.suite_runs (started_at DESC);
+
+-- ── Scenario Run Results ────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS eval.scenario_runs (
+  id              TEXT PRIMARY KEY,
+  suite_run_id    TEXT NOT NULL REFERENCES eval.suite_runs(id) ON DELETE CASCADE,
+  scenario_id     TEXT NOT NULL,
+  scenario_name   TEXT NOT NULL,
+  passed          BOOLEAN NOT NULL,
+  status          TEXT NOT NULL CHECK (status IN ('passed', 'failed', 'error', 'timeout', 'budget_exceeded')),
+  output          TEXT NOT NULL DEFAULT '',
+  assertion_results JSONB NOT NULL DEFAULT '[]',
+  tool_calls      JSONB NOT NULL DEFAULT '[]',
+  tool_call_errors JSONB NOT NULL DEFAULT '[]',
+  forbidden_violations JSONB NOT NULL DEFAULT '[]',
+  input_tokens    INTEGER NOT NULL DEFAULT 0,
+  output_tokens   INTEGER NOT NULL DEFAULT 0,
+  total_tokens    INTEGER NOT NULL DEFAULT 0,
+  cost_usd        DOUBLE PRECISION NOT NULL DEFAULT 0,
+  duration_ms     INTEGER NOT NULL DEFAULT 0,
+  error_message   TEXT,
+  model           TEXT,
+  personality_id  TEXT,
+  tenant_id       TEXT NOT NULL DEFAULT 'default',
+  created_at      BIGINT NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT
+);
+
+CREATE INDEX IF NOT EXISTS idx_eval_scenario_runs_suite ON eval.scenario_runs (suite_run_id);
+CREATE INDEX IF NOT EXISTS idx_eval_scenario_runs_scenario ON eval.scenario_runs (scenario_id);
+CREATE INDEX IF NOT EXISTS idx_eval_scenario_runs_status ON eval.scenario_runs (status);
+CREATE INDEX IF NOT EXISTS idx_eval_scenario_runs_tenant ON eval.scenario_runs (tenant_id);
+
+-- ========================================================================
+-- Consolidated from 006_dlp.sql
+-- ========================================================================
+-- Phase 136: Data Loss Prevention & Content Classification
+CREATE SCHEMA IF NOT EXISTS dlp;
+
+-- Content classification records
+CREATE TABLE IF NOT EXISTS dlp.classifications (
+  id text PRIMARY KEY,
+  content_id text NOT NULL,
+  content_type text NOT NULL CHECK (content_type IN ('conversation','document','memory','knowledge','message')),
+  classification_level text NOT NULL DEFAULT 'internal' CHECK (classification_level IN ('public','internal','confidential','restricted')),
+  auto_level text CHECK (auto_level IN ('public','internal','confidential','restricted')),
+  manual_override boolean DEFAULT false,
+  overridden_by text,
+  rules_triggered jsonb DEFAULT '[]',
+  classified_at bigint NOT NULL,
+  tenant_id text DEFAULT 'default' NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_dlp_class_content ON dlp.classifications(content_id, content_type);
+CREATE INDEX IF NOT EXISTS idx_dlp_class_level ON dlp.classifications(classification_level);
+CREATE INDEX IF NOT EXISTS idx_dlp_class_tenant ON dlp.classifications(tenant_id);
+
+-- DLP policies
+CREATE TABLE IF NOT EXISTS dlp.policies (
+  id text PRIMARY KEY,
+  name text NOT NULL,
+  description text,
+  enabled boolean DEFAULT true,
+  rules jsonb NOT NULL DEFAULT '[]',
+  action text NOT NULL DEFAULT 'warn' CHECK (action IN ('block','warn','log')),
+  classification_levels text[] NOT NULL DEFAULT '{confidential,restricted}',
+  applies_to text[] NOT NULL DEFAULT '{email,slack,webhook,api}',
+  created_at bigint NOT NULL,
+  updated_at bigint NOT NULL,
+  tenant_id text DEFAULT 'default' NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_dlp_policies_tenant ON dlp.policies(tenant_id);
+
+-- Egress log
+CREATE TABLE IF NOT EXISTS dlp.egress_log (
+  id text PRIMARY KEY,
+  destination_type text NOT NULL,
+  destination_id text,
+  content_hash text NOT NULL,
+  classification_level text,
+  bytes_sent integer DEFAULT 0,
+  policy_id text,
+  action_taken text NOT NULL CHECK (action_taken IN ('allowed','blocked','warned')),
+  scan_findings jsonb DEFAULT '[]',
+  user_id text,
+  personality_id text,
+  created_at bigint NOT NULL,
+  tenant_id text DEFAULT 'default' NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_dlp_egress_created ON dlp.egress_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_dlp_egress_dest ON dlp.egress_log(destination_type);
+CREATE INDEX IF NOT EXISTS idx_dlp_egress_tenant ON dlp.egress_log(tenant_id);
+
+-- Retention policies
+CREATE TABLE IF NOT EXISTS dlp.retention_policies (
+  id text PRIMARY KEY,
+  content_type text NOT NULL CHECK (content_type IN ('conversation','memory','document','knowledge','audit_log')),
+  retention_days integer NOT NULL,
+  classification_level text CHECK (classification_level IN ('public','internal','confidential','restricted')),
+  enabled boolean DEFAULT true,
+  last_purge_at bigint,
+  created_at bigint NOT NULL,
+  updated_at bigint NOT NULL,
+  tenant_id text DEFAULT 'default' NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_dlp_retention_tenant ON dlp.retention_policies(tenant_id);
+
+-- Watermark registry
+CREATE TABLE IF NOT EXISTS dlp.watermarks (
+  id text PRIMARY KEY,
+  content_id text NOT NULL,
+  content_type text NOT NULL,
+  watermark_data text NOT NULL,
+  algorithm text NOT NULL DEFAULT 'unicode-steganography',
+  created_at bigint NOT NULL,
+  tenant_id text DEFAULT 'default' NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_dlp_watermark_content ON dlp.watermarks(content_id);
+
+-- ========================================================================
+-- Consolidated from 007_ha.sql
+-- ========================================================================
+-- Migration 007: Multi-Region & High Availability (Phase 137)
+-- Adds federation cross-cluster tables and backup replication tracking.
+
+-- Federation schema (extends Phase 79 federation.peers)
+-- If federation schema doesn't exist yet, create it
+CREATE SCHEMA IF NOT EXISTS federation;
+
+-- Cross-cluster peer tracking (may already exist from Phase 79, add columns if needed)
+CREATE TABLE IF NOT EXISTS federation.peers (
+  id            TEXT PRIMARY KEY,
+  name          TEXT NOT NULL,
+  url           TEXT NOT NULL,
+  shared_secret_hash TEXT NOT NULL,
+  shared_secret_enc  TEXT NOT NULL,
+  status        TEXT NOT NULL DEFAULT 'unknown',
+  features      JSONB NOT NULL DEFAULT '{}',
+  last_seen     TIMESTAMPTZ,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Add cross-cluster columns if not present
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'federation' AND table_name = 'peers' AND column_name = 'cluster_id') THEN
+    ALTER TABLE federation.peers ADD COLUMN cluster_id TEXT;
+    ALTER TABLE federation.peers ADD COLUMN region TEXT DEFAULT '';
+    ALTER TABLE federation.peers ADD COLUMN agent_count INTEGER DEFAULT 0;
+    ALTER TABLE federation.peers ADD COLUMN latency_ms INTEGER;
+  END IF;
+END $$;
+
+-- Cross-cluster delegations
+CREATE TABLE IF NOT EXISTS federation.delegations (
+  id                  TEXT PRIMARY KEY,
+  source_cluster_id   TEXT NOT NULL,
+  target_cluster_id   TEXT NOT NULL,
+  agent_id            TEXT NOT NULL,
+  task_summary        TEXT NOT NULL DEFAULT '',
+  status              TEXT NOT NULL DEFAULT 'pending',
+  metadata_only       BOOLEAN NOT NULL DEFAULT true,
+  created_at          BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM now())::BIGINT * 1000,
+  completed_at        BIGINT
+);
+
+CREATE INDEX IF NOT EXISTS idx_federation_delegations_source ON federation.delegations (source_cluster_id);
+CREATE INDEX IF NOT EXISTS idx_federation_delegations_target ON federation.delegations (target_cluster_id);
+CREATE INDEX IF NOT EXISTS idx_federation_delegations_status ON federation.delegations (status);
+
+-- Federation sync log (may already exist from Phase 79)
+CREATE TABLE IF NOT EXISTS federation.sync_log (
+  id          TEXT PRIMARY KEY,
+  peer_id     TEXT NOT NULL,
+  type        TEXT NOT NULL,
+  status      TEXT NOT NULL,
+  metadata    JSONB NOT NULL DEFAULT '{}',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_federation_sync_log_peer ON federation.sync_log (peer_id);
+
+-- Backup replication tracking
+CREATE SCHEMA IF NOT EXISTS admin;
+
+CREATE TABLE IF NOT EXISTS admin.backups (
+  id              TEXT PRIMARY KEY,
+  label           TEXT NOT NULL DEFAULT '',
+  status          TEXT NOT NULL DEFAULT 'pending',
+  size_bytes      BIGINT,
+  file_path       TEXT,
+  error           TEXT,
+  pg_dump_version TEXT,
+  created_by      TEXT,
+  created_at      BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM now())::BIGINT * 1000,
+  completed_at    BIGINT
+);
+
+CREATE TABLE IF NOT EXISTS admin.backup_replications (
+  id              TEXT PRIMARY KEY,
+  backup_id       TEXT NOT NULL REFERENCES admin.backups(id) ON DELETE CASCADE,
+  provider        TEXT NOT NULL DEFAULT 'local',
+  remote_path     TEXT NOT NULL,
+  size_bytes      BIGINT,
+  status          TEXT NOT NULL DEFAULT 'pending',
+  created_at      BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM now())::BIGINT * 1000,
+  completed_at    BIGINT,
+  error           TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_backup_replications_backup ON admin.backup_replications (backup_id);
+
+-- ========================================================================
+-- Consolidated from 008_event_subscriptions.sql
+-- ========================================================================
+-- 008_event_subscriptions.sql — Webhook/Event Subscription system
+-- Stores event subscriptions and delivery records for outbound webhook notifications.
+
+CREATE SCHEMA IF NOT EXISTS events;
+
+CREATE TABLE IF NOT EXISTS events.subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  event_types TEXT[] NOT NULL,
+  webhook_url TEXT NOT NULL,
+  secret TEXT,
+  enabled BOOLEAN DEFAULT true,
+  headers JSONB DEFAULT '{}',
+  retry_policy JSONB DEFAULT '{"maxRetries": 3, "backoffMs": 1000}',
+  created_at BIGINT NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT,
+  updated_at BIGINT,
+  tenant_id TEXT NOT NULL DEFAULT 'default'
+);
+
+CREATE TABLE IF NOT EXISTS events.deliveries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  subscription_id UUID NOT NULL REFERENCES events.subscriptions(id) ON DELETE CASCADE,
+  event_type TEXT NOT NULL,
+  payload JSONB NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  attempts INTEGER DEFAULT 0,
+  max_attempts INTEGER DEFAULT 4,
+  last_attempt_at BIGINT,
+  next_retry_at BIGINT,
+  response_status INTEGER,
+  response_body TEXT,
+  error TEXT,
+  created_at BIGINT NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT,
+  tenant_id TEXT NOT NULL DEFAULT 'default'
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscriptions_tenant ON events.subscriptions(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_enabled ON events.subscriptions(enabled) WHERE enabled = true;
+CREATE INDEX IF NOT EXISTS idx_deliveries_subscription ON events.deliveries(subscription_id);
+CREATE INDEX IF NOT EXISTS idx_deliveries_status ON events.deliveries(status) WHERE status IN ('pending', 'retrying');
+CREATE INDEX IF NOT EXISTS idx_deliveries_next_retry ON events.deliveries(next_retry_at) WHERE status = 'retrying';
+
+
+-- ========================================================================
+-- Security Reference Architecture tables (Phase 123)
+-- These were created inline by application code, not in migration files.
+-- ========================================================================
+
+CREATE TABLE IF NOT EXISTS security.sra_blueprints (
+  id text PRIMARY KEY,
+  org_id text,
+  name text NOT NULL,
+  description text,
+  provider text NOT NULL,
+  framework text NOT NULL,
+  controls jsonb NOT NULL DEFAULT '[]',
+  status text NOT NULL DEFAULT 'draft',
+  is_builtin boolean DEFAULT false,
+  metadata jsonb DEFAULT '{}',
+  created_by text,
+  created_at bigint NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT,
+  updated_at bigint NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT
+);
+
+CREATE INDEX IF NOT EXISTS idx_sra_blueprints_provider ON security.sra_blueprints(provider);
+CREATE INDEX IF NOT EXISTS idx_sra_blueprints_framework ON security.sra_blueprints(framework);
+CREATE INDEX IF NOT EXISTS idx_sra_blueprints_status ON security.sra_blueprints(status);
+
+CREATE TABLE IF NOT EXISTS security.sra_assessments (
+  id text PRIMARY KEY,
+  org_id text,
+  blueprint_id text NOT NULL REFERENCES security.sra_blueprints(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  infrastructure_description text,
+  control_results jsonb NOT NULL DEFAULT '[]',
+  summary jsonb,
+  status text NOT NULL DEFAULT 'draft',
+  linked_risk_assessment_id text,
+  created_by text,
+  created_at bigint NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT,
+  updated_at bigint NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT
+);
+
+CREATE INDEX IF NOT EXISTS idx_sra_assessments_blueprint ON security.sra_assessments(blueprint_id);
+CREATE INDEX IF NOT EXISTS idx_sra_assessments_status ON security.sra_assessments(status);
+
+CREATE TABLE IF NOT EXISTS security.sra_compliance_mappings (
+  domain text NOT NULL,
+  framework text NOT NULL,
+  control_id text NOT NULL,
+  control_title text NOT NULL DEFAULT '',
+  description text NOT NULL DEFAULT '',
+  PRIMARY KEY (domain, framework, control_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_sra_mappings_domain ON security.sra_compliance_mappings(domain);
+CREATE INDEX IF NOT EXISTS idx_sra_mappings_framework ON security.sra_compliance_mappings(framework);
+

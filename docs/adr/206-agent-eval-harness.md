@@ -59,7 +59,7 @@ The `EvalManager` orchestrates suite execution:
 
 ### Storage
 
-Migration `005_agent_eval.sql` creates the `eval` schema with four tables:
+The `eval` schema (consolidated into `001_baseline.sql`) contains four tables:
 
 - `eval.scenarios` — Scenario definitions (tenant-scoped).
 - `eval.suites` — Suite definitions (tenant-scoped).
