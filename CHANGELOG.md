@@ -30,6 +30,18 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Output**: `docs/api/openapi.yaml` (and `openapi.json`) with 679 endpoints across 523 unique paths and 36 tags. Path parameters auto-converted from `:param` to `{param}` syntax. Tags derived from directory structure.
 - **Schema placeholders**: Request/response schemas are typed as `object` — intended as a living inventory that can be enriched incrementally with Zod-to-OpenAPI conversion.
 
+### Dashboard Accessibility
+
+- **axe-core integration**: `vitest-axe` matchers wired into global test setup (`setup.ts`) — all component tests can now use `toHaveNoViolations()` without per-file imports.
+- **Expanded a11y smoke tests**: `a11y.test.tsx` expanded from 4 to 13 tests. Now covers SecurityPage, McpPrebuilts, SettingsPage, OnboardingWizard, TasksPage, MetricsPage, AgentsPage, MarketplacePage, EditorPage, ConversationList, GroupChatPage, SkillsPage, DepartmentalRiskTab. Severity threshold tightened from `critical`-only to `critical + serious`.
+- **ARIA label fixes**: Replaced `title=` with `aria-label=` on ~30 icon-only buttons across 7 components: ConversationList (7 buttons), EditorPage (6 buttons — close chat, close agent world, new terminal, terminate, approve, reject), ExtensionsPage (4 buttons), GroupChatPage (refresh button + textarea), IntentEditor (delete button), NewEntityDialog (8 back buttons), WorkspacesSettings (2 form selects).
+
+### MCP Tool Descriptions Enhancement
+
+- **Category field**: Added `category: string` to `ToolManifestEntry` interface. All 291 tools now have a machine-readable category (31 categories: brain, task, system, integration, soul, audit, git, filesystem, web, browser, diagnostic, desktop, network, twingate, intent, gmail, twitter, github_api, ollama, docker, knowledge_base, cicd, sra, constitutional_ai, excalidraw, pdf, trading, charting, security, responsible_ai, tee, training, inference).
+- **Enhanced descriptions**: ~50 generic descriptions (e.g., "Get X", "List Y") replaced with detailed descriptions including parameter hints, return values, and usage context. Covers brain, task, system, integration, soul, audit, git, filesystem, docker, and security tool categories.
+- **Duplicate removal**: Removed duplicate GitHub Actions tool block (6 entries that appeared twice in the manifest). Tool count: 297 → 291.
+
 ### Code Audit 3: Security & Memory Fixes
 
 - **OAuth open redirect fix** (`oauth-routes.ts`): `return_to` query param validated against `publicUrl` origin.
@@ -67,7 +79,7 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Security**: `TOXICITY_CLASSIFIER_TIMEOUT_MS`, `GROUNDING_SEARCH_THRESHOLD`, `DEFAULT_SYSTEM_PROMPT_LEAK_THRESHOLD`, `PARTIAL_COMPLIANCE_WEIGHT` across content-guardrail, response-guard, sra-manager.
 - **Workflow**: `DEFAULT_RETRY_BACKOFF_MS`, `DEFAULT_COMMAND_TIMEOUT_MS`, `MAX_EXEC_BUFFER_BYTES`, `WEBHOOK_TIMEOUT_MS`, `MAX_WEBHOOK_RESPONSE_BYTES`, `CI_FETCH_TIMEOUT_MS`, `CI_ERROR_BODY_LIMIT`, `DEFAULT_CI_POLL_INTERVAL_MS` in workflow-engine. 11 constants in workflow-templates for distillation/finetune/DPO/CI thresholds.
 - **Other**: `DEFAULT_RETENTION_DAYS`/`CLEANUP_INTERVAL_MS` (notification-manager), `DEFAULT_SIGNAL_REFRESH_INTERVAL_MS`/`HTTP_SIGNAL_TIMEOUT_MS` (intent/manager), `SESSION_EXPIRY_CHECK_INTERVAL_MS` (execution/manager), `DEFAULT_COMPACTION_THRESHOLD`/`DEFAULT_PRESERVE_RECENT_TURNS` (context-compactor), `SUMMARIZER_TEMPERATURE` (chat/compression), `AUDIT_EXPORT_DEFAULT_LIMIT` (audit-module), `POLYGLOT_SAMPLE_SIZE` (data-scanner), `DOMAIN_WEIGHT_*` (risk-assessment), `MAX_SECRETS`/`MAX_SECRET_LENGTH` (secrets-filter).
-- **Roadmap cleanup**: Removed 4 completed/already-done items from Code Audit 3 backlog (magic numbers, config schema split, granular health checks, unused optional deps). 4 remaining: dashboard accessibility, MCP tool descriptions, circuit breaker pattern, OpenAPI spec regeneration.
+- **Roadmap cleanup**: Removed 4 completed/already-done items from Code Audit 3 backlog (magic numbers, config schema split, granular health checks, unused optional deps). Remaining 4 items (dashboard accessibility, MCP tool descriptions, circuit breaker, OpenAPI spec) completed in [2026.3.5b].
 
 ### Advanced Training (Phase 131)
 
