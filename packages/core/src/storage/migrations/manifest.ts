@@ -39,4 +39,5 @@ export const MIGRATION_MANIFEST: { id: string; sql: string }[] = [
   { id: '006_memory_audits', sql: readSql('006_memory_audits.sql') },
   { id: '007_sra', sql: readSql('007_sra.sql') },
   { id: '008_cognitive_memory', sql: readSql('008_cognitive_memory.sql') },
+  { id: '009_brain_fts_indexes', sql: readSql('009_brain_fts_indexes.sql') },
 ];

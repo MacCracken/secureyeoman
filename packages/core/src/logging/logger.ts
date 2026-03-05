@@ -125,11 +125,16 @@ function createPinoOptions(config: LoggingConfig): LoggerOptions {
 function createTransport(
   config: LoggingConfig
 ): pino.TransportMultiOptions | pino.TransportSingleOptions | undefined {
+  // In a Bun compiled binary, pino transports (which use worker_threads to
+  // dynamically require modules) will crash because the modules live in the
+  // virtual FS and cannot be resolved.  Fall back to native JSON stdout.
+  const isBunBinary = import.meta.url.includes('/$bunfs/');
+
   const targets: pino.TransportTargetOptions[] = [];
 
   for (const output of config.output) {
     if (output.type === 'stdout') {
-      if (output.format === 'pretty') {
+      if (output.format === 'pretty' && !isBunBinary) {
         targets.push({
           target: 'pino-pretty',
           options: {
@@ -141,7 +146,7 @@ function createTransport(
         });
       }
       // json stdout: pino(options) writes JSON to fd 1 natively — no transport needed.
-    } else if (output.type === 'file') {
+    } else if (output.type === 'file' && !isBunBinary) {
       targets.push({
         target: 'pino/file',
         options: {

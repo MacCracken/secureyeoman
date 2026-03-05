@@ -92,6 +92,7 @@ BUN_EXTERNAL=(
   --external "node-saml"
   --external "canvas"
   --external "kokoro-js"
+  --external "better-sqlite3"
 )
 
 compile_binary() {

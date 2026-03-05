@@ -55,7 +55,7 @@ export class IntegrationManager {
   private readonly storage: IntegrationStorage;
   private readonly deps: IntegrationManagerDeps;
   private readonly registry = new Map<string, IntegrationRegistryEntry>();
-  private readonly factories = new Map<Platform, () => Integration>();
+  private readonly factories = new Map<Platform, () => Integration | Promise<Integration>>();
   private readonly configSchemas = new Map<Platform, z.ZodType>();
 
   // Auto-reconnect
@@ -111,7 +111,7 @@ export class IntegrationManager {
 
   // ── Factory Registration ─────────────────────────────────
 
-  registerPlatform(platform: Platform, factory: () => Integration, configSchema?: z.ZodType): void {
+  registerPlatform(platform: Platform, factory: () => Integration | Promise<Integration>, configSchema?: z.ZodType): void {
     this.factories.set(platform, factory);
     if (configSchema) {
       this.configSchemas.set(platform, configSchema);
@@ -211,7 +211,7 @@ export class IntegrationManager {
     const factory = this.factories.get(config.platform);
     if (!factory) throw new Error(`No adapter registered for platform "${config.platform}"`);
 
-    const integration = factory();
+    const integration = await factory();
     const entry: IntegrationRegistryEntry = {
       integration,
       config,

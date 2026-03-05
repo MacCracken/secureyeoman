@@ -160,7 +160,7 @@ cd secureyeoman && npm install && npm run build
 ## Community
 
 - **License**: AGPL-3.0
-- **ADRs**: 201
+- **ADRs**: 12
 - **GitHub**: [github.com/MacCracken/secureyeoman](https://github.com/MacCracken/secureyeoman)
 - **Discussions**: [GitHub Discussions](https://github.com/MacCracken/secureyeoman/discussions)
 

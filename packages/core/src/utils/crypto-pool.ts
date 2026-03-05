@@ -33,6 +33,13 @@ export class CryptoPool {
   constructor(opts: CryptoPoolOptions = {}) {
     const poolSize = opts.poolSize ?? 2;
 
+    // In a Bun compiled binary the worker script lives in the virtual FS (/$bunfs/)
+    // and Worker threads cannot resolve it.  Skip the pool and use sync fallback.
+    if (import.meta.url.includes('/$bunfs/')) {
+      this.closed = true;
+      return;
+    }
+
     // Resolve worker path: use .ts extension when running under tsx/vitest
     const isTs = __filename.endsWith('.ts');
     const workerPath = join(__dirname, isTs ? 'crypto-worker.ts' : 'crypto-worker.js');

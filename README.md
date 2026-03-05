@@ -1,6 +1,6 @@
 # SECUREYEOMAN
 
-[![Version](https://img.shields.io/badge/Version-2026.3.5-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.3.5)
+[![Version](https://img.shields.io/badge/Version-2026.3.4-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.3.4)
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSE.commercial)
@@ -288,7 +288,7 @@ Or connect via HTTP: `http://localhost:3001/mcp` (when running with `--profile m
 | Topic | Link |
 |-------|------|
 | Architecture | [Architecture Overview](docs/development/architecture.md) |
-| ADRs | [201 Architecture Decision Records](docs/adr/) |
+| ADRs | [12 Architecture Decision Records](docs/adr/) |
 | Roadmap | [Development Roadmap](docs/development/roadmap.md) |
 | Contributing | [Contributing Guide](CONTRIBUTING.md) |
 | Changelog | [CHANGELOG.md](CHANGELOG.md) |

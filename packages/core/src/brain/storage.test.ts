@@ -197,13 +197,13 @@ describe('BrainStorage', () => {
       expect(sql).toContain('OFFSET');
     });
 
-    it('applies default LIMIT 10000 when no limit specified', async () => {
+    it('applies default LIMIT 1000 when no limit specified', async () => {
       mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
       await storage.queryMemories();
       const sql = mockQuery.mock.calls[0][0] as string;
       expect(sql).toContain('LIMIT');
       const params = mockQuery.mock.calls[0][1] as unknown[];
-      expect(params).toContain(10_000);
+      expect(params).toContain(1_000);
     });
   });
 

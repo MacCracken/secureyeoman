@@ -14,7 +14,13 @@ import { execFile } from 'node:child_process';
 import { access, constants } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { promisify } from 'node:util';
-import Database from 'better-sqlite3';
+type SqliteDatabase = import('better-sqlite3').Database;
+
+async function loadSqlite(): Promise<new (filename: string, options?: Record<string, unknown>) => SqliteDatabase> {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const mod = await import('better-sqlite3');
+  return mod.default;
+}
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
@@ -90,7 +96,8 @@ export class IMessageIntegration implements Integration {
 
     // Get current max rowid so we only process new messages
     try {
-      const db = new Database(this.chatDbPath, { readonly: true });
+      const Sqlite = await loadSqlite();
+      const db = new Sqlite(this.chatDbPath, { readonly: true });
       const row = db.prepare('SELECT MAX(ROWID) as maxId FROM message').get() as
         | { maxId: number | null }
         | undefined;
@@ -162,9 +169,10 @@ export class IMessageIntegration implements Integration {
   }
 
   private async pollMessages(): Promise<void> {
-    let db: Database.Database | null = null;
+    let db: SqliteDatabase | null = null;
     try {
-      db = new Database(this.chatDbPath, { readonly: true });
+      const Sqlite = await loadSqlite();
+      db = new Sqlite(this.chatDbPath, { readonly: true });
 
       const rows = db
         .prepare(

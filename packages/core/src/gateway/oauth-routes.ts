@@ -55,6 +55,18 @@ export interface OAuthServiceConfig {
 
 const OAUTH_STATES = new Map<string, OAuthState>();
 const STATE_EXPIRY_MS = 10 * 60 * 1000;
+const MAX_OAUTH_STATES = 1_000;
+
+// Periodic cleanup of expired OAuth states to prevent memory leaks.
+const _oauthCleanupTimer = setInterval(() => {
+  const now = Date.now();
+  for (const [key, state] of OAUTH_STATES) {
+    if (now - state.createdAt > STATE_EXPIRY_MS) {
+      OAUTH_STATES.delete(key);
+    }
+  }
+}, STATE_EXPIRY_MS);
+_oauthCleanupTimer.unref?.();
 
 const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
   google: {
@@ -250,6 +262,11 @@ export class OAuthService {
   }
 
   generateState(provider: string, redirectUri: string, frontendOrigin?: string): string {
+    if (OAUTH_STATES.size >= MAX_OAUTH_STATES) {
+      // Evict oldest entry to prevent unbounded growth
+      const oldest = OAUTH_STATES.keys().next().value;
+      if (oldest !== undefined) OAUTH_STATES.delete(oldest);
+    }
     const state = generateSecureToken(32);
     OAUTH_STATES.set(state, {
       provider,

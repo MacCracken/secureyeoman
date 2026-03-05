@@ -117,7 +117,12 @@ export class OutboundWebhookDispatcher {
       }
 
       try {
-        const response = await fetch(wh.url, { method: 'POST', headers, body });
+        const response = await fetch(wh.url, {
+          method: 'POST',
+          headers,
+          body,
+          signal: AbortSignal.timeout(10_000),
+        });
         lastStatus = response.status;
 
         if (response.ok) {

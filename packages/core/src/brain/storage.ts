@@ -361,8 +361,8 @@ export class BrainStorage extends PgBaseStorage {
     const sortDir = query.sortDirection === 'asc' ? 'ASC' : 'DESC';
     sql += ` ORDER BY importance ${sortDir}, updated_at ${sortDir}`;
 
-    const DEFAULT_QUERY_LIMIT = 10_000;
-    const effectiveLimit = query.limit ?? DEFAULT_QUERY_LIMIT;
+    const MAX_QUERY_LIMIT = 1_000;
+    const effectiveLimit = Math.min(query.limit ?? MAX_QUERY_LIMIT, MAX_QUERY_LIMIT);
     sql += ` LIMIT $${idx++}`;
     params.push(effectiveLimit);
 
@@ -518,10 +518,9 @@ export class BrainStorage extends PgBaseStorage {
 
     sql += ' ORDER BY confidence DESC, updated_at DESC';
 
-    if (query.limit) {
-      sql += ` LIMIT $${idx++}`;
-      params.push(query.limit);
-    }
+    const kbLimit = Math.min(query.limit ?? 1_000, 1_000);
+    sql += ` LIMIT $${idx++}`;
+    params.push(kbLimit);
 
     const rows = await this.queryMany<KnowledgeRow>(sql, params);
     return rows.map(rowToKnowledge);

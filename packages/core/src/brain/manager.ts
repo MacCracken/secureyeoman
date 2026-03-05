@@ -235,8 +235,11 @@ export class BrainManager {
               merged.set(r.id, (merged.get(r.id) ?? 0) + 1 / (60 + i + 1));
             });
             const sortedIds = [...merged.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
+            const resultMap = new Map(
+              [...fusedResults, ...rawResults].map((r) => [r.id, r])
+            );
             vectorResults = sortedIds.slice(0, limit).map((id) => {
-              const orig = fusedResults.find((r) => r.id === id) ?? rawResults.find((r) => r.id === id);
+              const orig = resultMap.get(id);
               return { id, score: orig?.score ?? 0, metadata: orig?.metadata };
             });
           } catch {

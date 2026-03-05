@@ -83,8 +83,16 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
           callbackUrl
         );
 
-        // Redirect to dashboard with token in fragment
-        const target = new URL(redirectUri.startsWith('http') ? redirectUri : dashboardUrl);
+        // Redirect to dashboard with token in fragment.
+        // Validate redirect URI against dashboard origin to prevent open-redirect attacks.
+        const dashOrigin = new URL(dashboardUrl).origin;
+        let target: URL;
+        if (redirectUri.startsWith('http')) {
+          const candidate = new URL(redirectUri);
+          target = candidate.origin === dashOrigin ? candidate : new URL(dashboardUrl);
+        } else {
+          target = new URL(dashboardUrl);
+        }
         target.hash = `access_token=${result.accessToken}&refresh_token=${result.refreshToken}&expires_in=${result.expiresIn}`;
         return reply.redirect(target.toString());
       } catch (err) {

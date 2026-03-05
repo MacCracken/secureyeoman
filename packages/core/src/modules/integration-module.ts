@@ -23,38 +23,9 @@ import { GroupChatStorage } from '../integrations/group-chat-storage.js';
 import { RoutingRulesStorage } from '../integrations/routing-rules-storage.js';
 import { RoutingRulesManager } from '../integrations/routing-rules-manager.js';
 
-// Platform adapters
-import { TelegramIntegration } from '../integrations/telegram/index.js';
-import { DiscordIntegration } from '../integrations/discord/index.js';
-import { SlackIntegration } from '../integrations/slack/index.js';
-import { GitHubIntegration } from '../integrations/github/index.js';
-import { IMessageIntegration } from '../integrations/imessage/index.js';
-import { GoogleChatIntegration } from '../integrations/googlechat/index.js';
-import { GmailIntegration } from '../integrations/gmail/index.js';
-import { EmailIntegration } from '../integrations/email/index.js';
-import { CliIntegration } from '../integrations/cli/index.js';
-import { GenericWebhookIntegration } from '../integrations/webhook/index.js';
-import { WhatsAppIntegration } from '../integrations/whatsapp/index.js';
-import { SignalIntegration } from '../integrations/signal/index.js';
-import { TeamsIntegration } from '../integrations/teams/index.js';
-import { GoogleCalendarIntegration } from '../integrations/googlecalendar/index.js';
-import { NotionIntegration } from '../integrations/notion/index.js';
-import { GitLabIntegration } from '../integrations/gitlab/index.js';
-import { JiraIntegration } from '../integrations/jira/index.js';
-import { AwsIntegration } from '../integrations/aws/index.js';
-import { AzureDevOpsIntegration } from '../integrations/azure/index.js';
-import { FigmaIntegration } from '../integrations/figma/index.js';
-import { StripeIntegration } from '../integrations/stripe/index.js';
-import { ZapierIntegration } from '../integrations/zapier/index.js';
-import { QQIntegration } from '../integrations/qq/index.js';
-import { DingTalkIntegration } from '../integrations/dingtalk/index.js';
-import { LineIntegration } from '../integrations/line/index.js';
-import { LinearIntegration } from '../integrations/linear/index.js';
-import { AirtableIntegration } from '../integrations/airtable/index.js';
-import { TodoistIntegration } from '../integrations/todoist/index.js';
-import { SpotifyIntegration } from '../integrations/spotify/index.js';
-import { YouTubeIntegration } from '../integrations/youtube/index.js';
-import { TwitterIntegration } from '../integrations/twitter/index.js';
+// Platform adapters are loaded lazily via dynamic import() to avoid pulling
+// heavy SDKs (discord.js, baileys, @slack/bolt, etc.) into the bundle when
+// the integration is never used.  Each factory calls import() on first use.
 
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { TaskExecutor } from '../task/executor.js';
@@ -151,38 +122,40 @@ export class IntegrationModule implements AppModule {
       integrationStorage: this.integrationStorage!,
     });
 
-    // Register all 31 platform adapters
-    this.integrationManager.registerPlatform('telegram', () => new TelegramIntegration());
-    this.integrationManager.registerPlatform('discord', () => new DiscordIntegration());
-    this.integrationManager.registerPlatform('slack', () => new SlackIntegration());
-    this.integrationManager.registerPlatform('github', () => new GitHubIntegration());
-    this.integrationManager.registerPlatform('imessage', () => new IMessageIntegration());
-    this.integrationManager.registerPlatform('googlechat', () => new GoogleChatIntegration());
-    this.integrationManager.registerPlatform('gmail', () => new GmailIntegration());
-    this.integrationManager.registerPlatform('email', () => new EmailIntegration());
-    this.integrationManager.registerPlatform('cli', () => new CliIntegration());
-    this.integrationManager.registerPlatform('webhook', () => new GenericWebhookIntegration());
-    this.integrationManager.registerPlatform('whatsapp', () => new WhatsAppIntegration());
-    this.integrationManager.registerPlatform('signal', () => new SignalIntegration());
-    this.integrationManager.registerPlatform('teams', () => new TeamsIntegration());
-    this.integrationManager.registerPlatform('googlecalendar', () => new GoogleCalendarIntegration());
-    this.integrationManager.registerPlatform('notion', () => new NotionIntegration());
-    this.integrationManager.registerPlatform('gitlab', () => new GitLabIntegration());
-    this.integrationManager.registerPlatform('jira', () => new JiraIntegration());
-    this.integrationManager.registerPlatform('aws', () => new AwsIntegration());
-    this.integrationManager.registerPlatform('azure', () => new AzureDevOpsIntegration());
-    this.integrationManager.registerPlatform('figma', () => new FigmaIntegration());
-    this.integrationManager.registerPlatform('stripe', () => new StripeIntegration());
-    this.integrationManager.registerPlatform('zapier', () => new ZapierIntegration());
-    this.integrationManager.registerPlatform('qq', () => new QQIntegration());
-    this.integrationManager.registerPlatform('dingtalk', () => new DingTalkIntegration());
-    this.integrationManager.registerPlatform('line', () => new LineIntegration());
-    this.integrationManager.registerPlatform('linear', () => new LinearIntegration());
-    this.integrationManager.registerPlatform('airtable', () => new AirtableIntegration());
-    this.integrationManager.registerPlatform('todoist', () => new TodoistIntegration());
-    this.integrationManager.registerPlatform('spotify', () => new SpotifyIntegration());
-    this.integrationManager.registerPlatform('youtube', () => new YouTubeIntegration());
-    this.integrationManager.registerPlatform('twitter', () => new TwitterIntegration());
+    // Register all 31 platform adapters with lazy dynamic imports.
+    // SDKs are only loaded when the integration is first created.
+    const im = this.integrationManager;
+    im.registerPlatform('telegram', async () => { const m = await import('../integrations/telegram/index.js'); return new m.TelegramIntegration(); });
+    im.registerPlatform('discord', async () => { const m = await import('../integrations/discord/index.js'); return new m.DiscordIntegration(); });
+    im.registerPlatform('slack', async () => { const m = await import('../integrations/slack/index.js'); return new m.SlackIntegration(); });
+    im.registerPlatform('github', async () => { const m = await import('../integrations/github/index.js'); return new m.GitHubIntegration(); });
+    im.registerPlatform('imessage', async () => { const m = await import('../integrations/imessage/index.js'); return new m.IMessageIntegration(); });
+    im.registerPlatform('googlechat', async () => { const m = await import('../integrations/googlechat/index.js'); return new m.GoogleChatIntegration(); });
+    im.registerPlatform('gmail', async () => { const m = await import('../integrations/gmail/index.js'); return new m.GmailIntegration(); });
+    im.registerPlatform('email', async () => { const m = await import('../integrations/email/index.js'); return new m.EmailIntegration(); });
+    im.registerPlatform('cli', async () => { const m = await import('../integrations/cli/index.js'); return new m.CliIntegration(); });
+    im.registerPlatform('webhook', async () => { const m = await import('../integrations/webhook/index.js'); return new m.GenericWebhookIntegration(); });
+    im.registerPlatform('whatsapp', async () => { const m = await import('../integrations/whatsapp/index.js'); return new m.WhatsAppIntegration(); });
+    im.registerPlatform('signal', async () => { const m = await import('../integrations/signal/index.js'); return new m.SignalIntegration(); });
+    im.registerPlatform('teams', async () => { const m = await import('../integrations/teams/index.js'); return new m.TeamsIntegration(); });
+    im.registerPlatform('googlecalendar', async () => { const m = await import('../integrations/googlecalendar/index.js'); return new m.GoogleCalendarIntegration(); });
+    im.registerPlatform('notion', async () => { const m = await import('../integrations/notion/index.js'); return new m.NotionIntegration(); });
+    im.registerPlatform('gitlab', async () => { const m = await import('../integrations/gitlab/index.js'); return new m.GitLabIntegration(); });
+    im.registerPlatform('jira', async () => { const m = await import('../integrations/jira/index.js'); return new m.JiraIntegration(); });
+    im.registerPlatform('aws', async () => { const m = await import('../integrations/aws/index.js'); return new m.AwsIntegration(); });
+    im.registerPlatform('azure', async () => { const m = await import('../integrations/azure/index.js'); return new m.AzureDevOpsIntegration(); });
+    im.registerPlatform('figma', async () => { const m = await import('../integrations/figma/index.js'); return new m.FigmaIntegration(); });
+    im.registerPlatform('stripe', async () => { const m = await import('../integrations/stripe/index.js'); return new m.StripeIntegration(); });
+    im.registerPlatform('zapier', async () => { const m = await import('../integrations/zapier/index.js'); return new m.ZapierIntegration(); });
+    im.registerPlatform('qq', async () => { const m = await import('../integrations/qq/index.js'); return new m.QQIntegration(); });
+    im.registerPlatform('dingtalk', async () => { const m = await import('../integrations/dingtalk/index.js'); return new m.DingTalkIntegration(); });
+    im.registerPlatform('line', async () => { const m = await import('../integrations/line/index.js'); return new m.LineIntegration(); });
+    im.registerPlatform('linear', async () => { const m = await import('../integrations/linear/index.js'); return new m.LinearIntegration(); });
+    im.registerPlatform('airtable', async () => { const m = await import('../integrations/airtable/index.js'); return new m.AirtableIntegration(); });
+    im.registerPlatform('todoist', async () => { const m = await import('../integrations/todoist/index.js'); return new m.TodoistIntegration(); });
+    im.registerPlatform('spotify', async () => { const m = await import('../integrations/spotify/index.js'); return new m.SpotifyIntegration(); });
+    im.registerPlatform('youtube', async () => { const m = await import('../integrations/youtube/index.js'); return new m.YouTubeIntegration(); });
+    im.registerPlatform('twitter', async () => { const m = await import('../integrations/twitter/index.js'); return new m.TwitterIntegration(); });
 
     // Routing rules
     if (this.routingRulesStorage && this.integrationManager) {
