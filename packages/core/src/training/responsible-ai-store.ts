@@ -6,6 +6,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
+import { safeJsonParse } from '../utils/json.js';
 import type {
   CohortAnalysis,
   FairnessReport,
@@ -94,7 +95,7 @@ function toCohortAnalysis(r: CohortRow): CohortAnalysis {
     evalRunId: r.eval_run_id,
     datasetId: r.dataset_id,
     dimension: r.dimension as CohortAnalysis['dimension'],
-    slices: typeof r.slices === 'string' ? JSON.parse(r.slices) : r.slices,
+    slices: typeof r.slices === 'string' ? safeJsonParse(r.slices, []) : r.slices,
     totalSamples: Number(r.total_samples),
     overallErrorRate: Number(r.overall_error_rate),
     createdAt: Number(r.created_at),
@@ -107,7 +108,7 @@ function toFairnessReport(r: FairnessRow): FairnessReport {
     evalRunId: r.eval_run_id,
     datasetId: r.dataset_id,
     protectedAttribute: r.protected_attribute,
-    groups: typeof r.groups === 'string' ? JSON.parse(r.groups) : r.groups,
+    groups: typeof r.groups === 'string' ? safeJsonParse(r.groups, []) : r.groups,
     demographicParity: Number(r.demographic_parity),
     equalizedOdds: Number(r.equalized_odds),
     disparateImpactRatio: Number(r.disparate_impact_ratio),
@@ -124,7 +125,7 @@ function toShapExplanation(r: ShapRow): ShapExplanation {
     modelName: r.model_name,
     prompt: r.prompt,
     response: r.response,
-    inputTokens: typeof r.input_tokens === 'string' ? JSON.parse(r.input_tokens) : r.input_tokens,
+    inputTokens: typeof r.input_tokens === 'string' ? safeJsonParse(r.input_tokens, []) : r.input_tokens,
     predictionScore: r.prediction_score != null ? Number(r.prediction_score) : undefined,
     dimension: r.dimension ?? undefined,
     createdAt: Number(r.created_at),
@@ -157,18 +158,18 @@ function toModelCard(r: ModelCardRow): ModelCard {
     ethicalConsiderations: r.ethical_considerations ?? undefined,
     trainingDataSummary:
       typeof r.training_data_summary === 'string'
-        ? JSON.parse(r.training_data_summary)
+        ? safeJsonParse(r.training_data_summary, {})
         : r.training_data_summary,
     evaluationResults:
       r.evaluation_results != null
         ? typeof r.evaluation_results === 'string'
-          ? JSON.parse(r.evaluation_results)
+          ? safeJsonParse(r.evaluation_results, undefined)
           : r.evaluation_results
         : undefined,
     fairnessAssessment:
       r.fairness_assessment != null
         ? typeof r.fairness_assessment === 'string'
-          ? JSON.parse(r.fairness_assessment)
+          ? safeJsonParse(r.fairness_assessment, undefined)
           : r.fairness_assessment
         : undefined,
     deployedAt: r.deployed_at ?? undefined,

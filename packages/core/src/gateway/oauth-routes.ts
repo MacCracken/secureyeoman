@@ -466,11 +466,22 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
 
       // Capture where to send the user after OAuth completes.
       // Prefer the explicit return_to param; fall back to the Referer header origin.
-      let frontendOrigin = request.query.return_to ?? '';
+      // Validate against the dashboard origin to prevent open-redirect attacks.
+      const allowedOrigin = new URL(publicUrl).origin;
+      let frontendOrigin = '';
+      const rawReturnTo = request.query.return_to ?? '';
+      if (rawReturnTo) {
+        try {
+          frontendOrigin = new URL(rawReturnTo).origin === allowedOrigin ? rawReturnTo : '';
+        } catch {
+          frontendOrigin = '';
+        }
+      }
       if (!frontendOrigin) {
         const referer = request.headers.referer ?? request.headers.origin ?? '';
         try {
-          frontendOrigin = referer ? new URL(referer).origin : '';
+          const parsed = referer ? new URL(referer).origin : '';
+          frontendOrigin = parsed === allowedOrigin ? parsed : '';
         } catch {
           frontendOrigin = '';
         }

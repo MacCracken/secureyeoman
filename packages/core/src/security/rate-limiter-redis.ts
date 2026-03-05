@@ -10,6 +10,7 @@
  */
 
 import { Redis as RedisClient } from 'ioredis';
+import { randomBytes } from 'node:crypto';
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
 import type { SecurityConfig } from '@secureyeoman/shared';
 import type { RateLimitResult, RateLimitRule } from './rate-limiter.js';
@@ -82,7 +83,7 @@ export class RedisRateLimiter {
     const redisKey = `${this.prefix}:${rule.name}:${rule.keyType}:${key}`;
     const now = Date.now();
     const windowStart = now - rule.windowMs;
-    const member = `${now}:${Math.random().toString(36).slice(2, 8)}`;
+    const member = `${now}:${randomBytes(4).toString('hex')}`;
 
     this.totalChecks++;
 

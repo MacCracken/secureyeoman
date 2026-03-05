@@ -93,8 +93,16 @@
 
 Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
 
-### Security Hardening (from 2026-03-05 Audit)
+### Code Audit 3 (from 2026-03-05 Audit)
 
+- [ ] **Magic numbers to named constants** — Extract hardcoded timeouts, limits, and thresholds (60_000, 30_000, 0.8, etc.) in `gateway/server.ts`, `ai/context-compactor.ts`, and ~20 other files into named constants or config values.
+- [ ] **Config schema split** — Break `packages/shared/src/types/config.ts` (1,007 lines, 184 Zod defs) into `config/core.ts`, `config/security.ts`, `config/brain.ts`, etc. with barrel re-export.
+- [ ] **Granular health checks** — Add `/health/ready` endpoint that probes DB pool, MCP availability, Redis, and integration health for Kubernetes liveness/readiness.
+- [ ] **Dashboard accessibility** — Wire `axe-core` into dashboard test suite (`vitest-axe`). Add ARIA labels to form inputs, icon-only buttons, modals. CI gate on violations.
+- [ ] **MCP tool descriptions** — Enhance 274 tool descriptions with parameter examples, error conditions, and category grouping in `manifest.ts`.
+- [ ] **Circuit breaker pattern** — Add lightweight circuit breaker to AI client and IntegrationManager for external service calls (threshold, half-open, reset).
+- [ ] **Remove unused optional deps** — Audit and remove `@nut-tree/nut-js`, `faiss-node`, consolidate screenshot libraries.
+- [ ] **OpenAPI spec regeneration** — Auto-generate OpenAPI spec from route definitions (current `docs/api/openapi.yaml` is from 2023, 68 route files now).
 
 ### Test Coverage — Final Push (Phase 105)
 
@@ -147,19 +155,6 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 ### LLM Lifecycle — Deferred
 
 - [ ] **Training from scratch** — Pre-train on a curated local corpus. Scoped to small models (≤3B params). *(Deferred — revisit when fine-tuning has real-world usage.)*
-
----
-
-### Voice Pipeline: AWS Polly + Transcribe
-
-*The existing multimodal pipeline (Phase 58) uses Whisper for STT and Voicebox/OpenAI for TTS. When operating in an AWS ecosystem, Polly and Transcribe are the natural drop-in replacements.*
-
-- [ ] **AWS Transcribe STT provider** — `TranscribeProvider` in `multimodal/stt/transcribe.ts`. Streams audio to Amazon Transcribe via the Streaming Transcription API (WebSocket) for real-time STT. Supports: 100+ languages, custom vocabulary, speaker diarization.
-- [ ] **AWS Polly TTS provider** — `PollyProvider` in `multimodal/tts/polly.ts`. Calls Amazon Polly's `SynthesizeSpeech` endpoint. Supports: 60+ languages, Neural Text-To-Speech (NTTS) voices, SSML for prosody control. Per-personality voice ID stored in personality settings.
-- [ ] **AWS voice profile system** — Each personality can have a named Polly voice ID (`Joanna`, `Matthew`, `Aria`, etc.) plus a custom lexicon (pronunciation guide for domain-specific terms).
-- [ ] **Custom vocabulary for Transcribe** — Personality-specific custom vocabulary: product names, technical terms, proper nouns that Whisper frequently mishears. Managed via `POST /api/v1/multimodal/transcribe/vocabulary`.
-- [ ] **Provider auto-selection** — When `TRANSCRIBE_REGION` is set, prefer Transcribe over Whisper. When `POLLY_REGION` is set, prefer Polly over Voicebox. Fallback gracefully if credentials are absent.
-- [ ] **Task/workflow completion voice announcements** — When voice is enabled, announce workflow completions, distillation job results, and long-running task outcomes via TTS. Triggered by the same metric events that feed the AlertManager (see Observability section). Configurable per-personality: `voiceAnnouncements: boolean` + `voiceAnnouncementEvents: ('workflow_complete' | 'job_complete' | 'eval_complete')[]`. Particularly valuable for the Tauri desktop client (Phase 91) where the user may be working in another window. Inspired by [PAI](https://github.com/danielmiessler/Personal_AI_Infrastructure)'s ElevenLabs voice notification system.
 
 ---
 

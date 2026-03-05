@@ -1866,7 +1866,8 @@ export class SecureYeoman {
         },
       };
       for (const row of result.rows) {
-        const val = JSON.parse(row.value);
+        let val: unknown;
+        try { val = JSON.parse(row.value); } catch { continue; }
         if (Object.prototype.hasOwnProperty.call(nestedPolicyHandlers, row.key)) {
           nestedPolicyHandlers[row.key]!(val);
         } else if (policyKeys.includes(row.key as (typeof policyKeys)[number])) {
@@ -1979,135 +1980,71 @@ export class SecureYeoman {
   // ------------------------------------------------------------------
 
   private async cleanup(): Promise<void> {
-    // Stop gateway server
+    // Stop gateway first (stops accepting requests)
     if (this.gateway) {
       await this.gateway.stop();
       this.gateway = null;
     }
 
-    // SecurityModule cleanup
-    if (this.securityMod) {
-      await this.securityMod.cleanup();
-      this.securityMod = null;
-      this.rbac = null;
-      this.validator = null;
-      this.rateLimiter = null;
-    }
+    // Clean up independent modules in parallel
+    const independentCleanups: Promise<void>[] = [];
 
-    // Close task storage
-    if (this.taskStorage) {
-      this.taskStorage.close();
-      this.taskStorage = null;
-    }
+    const cleanupModule = async (mod: { cleanup(): Promise<void> } | null): Promise<void> => {
+      if (mod) await mod.cleanup();
+    };
 
-    // BrainModule cleanup
-    if (this.brainMod) {
-      await this.brainMod.cleanup();
-      this.brainStorage = null;
-      this.brainManager = null;
-      this.brainMod = null;
-    }
+    independentCleanups.push(cleanupModule(this.securityMod));
+    independentCleanups.push(cleanupModule(this.trainingMod));
+    independentCleanups.push(cleanupModule(this.analyticsMod));
+    independentCleanups.push(cleanupModule(this.bodyMod));
+    independentCleanups.push(cleanupModule(this.aiMod));
+    independentCleanups.push(cleanupModule(this.soulMod));
+    independentCleanups.push(cleanupModule(this.integrationMod));
+    independentCleanups.push(cleanupModule(this.platformMod));
+    independentCleanups.push(cleanupModule(this.delegationMod));
+    independentCleanups.push(cleanupModule(this.brainMod));
+    independentCleanups.push(cleanupModule(this.executionManager));
+    independentCleanups.push(cleanupModule(this.a2aManager));
+    independentCleanups.push(cleanupModule(this.authMod));
+    independentCleanups.push(cleanupModule(this.auditMod));
 
-    // TrainingModule cleanup
-    if (this.trainingMod) {
-      await this.trainingMod.cleanup();
-      this.trainingMod = null;
-    }
+    await Promise.all(independentCleanups);
 
-    // AnalyticsModule cleanup
-    if (this.analyticsMod) {
-      await this.analyticsMod.cleanup();
-      this.analyticsMod = null;
-    }
+    // Null out module refs
+    this.securityMod = null;
+    this.rbac = null;
+    this.validator = null;
+    this.rateLimiter = null;
+    this.trainingMod = null;
+    this.analyticsMod = null;
+    this.bodyMod = null;
+    this.aiMod = null;
+    this.soulMod = null;
+    this.integrationMod = null;
+    this.platformMod = null;
+    this.delegationMod = null;
+    this.brainMod = null;
+    this.brainStorage = null;
+    this.brainManager = null;
+    this.executionManager = null;
+    this.a2aManager = null;
+    this.authMod = null;
+    this.authStorage = null;
+    this.authService = null;
+    this.auditMod = null;
+    this.auditChain = null;
+    this.auditStorage = null;
 
-    // BodyModule cleanup
-    if (this.bodyMod) {
-      await this.bodyMod.cleanup();
-      this.bodyMod = null;
-    }
+    // Synchronous closes for storages and standalone managers
+    if (this.taskStorage) { this.taskStorage.close(); this.taskStorage = null; }
+    if (this.extensionStorage) { this.extensionStorage.close(); this.extensionStorage = null; this.extensionManager = null; }
+    if (this.executionStorage) { this.executionStorage.close(); this.executionStorage = null; }
+    if (this.a2aStorage) { this.a2aStorage.close(); this.a2aStorage = null; }
+    if (this.proactiveManager) { this.proactiveManager.close(); this.proactiveManager = null; }
+    if (this.multimodalManager) { this.multimodalManager.close(); this.multimodalManager = null; }
+    if (this.browserSessionStorage) { this.browserSessionStorage.close(); this.browserSessionStorage = null; }
 
-    // AIModule cleanup
-    if (this.aiMod) {
-      await this.aiMod.cleanup();
-      this.aiMod = null;
-    }
-
-    // SoulModule cleanup
-    if (this.soulMod) {
-      await this.soulMod.cleanup();
-      this.soulMod = null;
-    }
-
-    // IntegrationModule cleanup
-    if (this.integrationMod) {
-      await this.integrationMod.cleanup();
-      this.integrationMod = null;
-    }
-
-    // PlatformModule cleanup
-    if (this.platformMod) {
-      await this.platformMod.cleanup();
-      this.platformMod = null;
-    }
-
-    // DelegationModule cleanup
-    if (this.delegationMod) {
-      await this.delegationMod.cleanup();
-      this.delegationMod = null;
-    }
-
-    // Standalone optional managers
-    if (this.extensionStorage) {
-      this.extensionStorage.close();
-      this.extensionStorage = null;
-      this.extensionManager = null;
-    }
-    if (this.executionManager) {
-      await this.executionManager.cleanup();
-      this.executionManager = null;
-    }
-    if (this.executionStorage) {
-      this.executionStorage.close();
-      this.executionStorage = null;
-    }
-    if (this.a2aManager) {
-      await this.a2aManager.cleanup();
-      this.a2aManager = null;
-    }
-    if (this.a2aStorage) {
-      this.a2aStorage.close();
-      this.a2aStorage = null;
-    }
-    if (this.proactiveManager) {
-      this.proactiveManager.close();
-      this.proactiveManager = null;
-    }
-    if (this.multimodalManager) {
-      this.multimodalManager.close();
-      this.multimodalManager = null;
-    }
-    if (this.browserSessionStorage) {
-      this.browserSessionStorage.close();
-      this.browserSessionStorage = null;
-    }
-
-    // AuthModule cleanup
-    if (this.authMod) {
-      await this.authMod.cleanup();
-      this.authMod = null;
-      this.authStorage = null;
-      this.authService = null;
-    }
-
-    // AuditModule cleanup
-    if (this.auditMod) {
-      await this.auditMod.cleanup();
-      this.auditMod = null;
-      this.auditChain = null;
-      this.auditStorage = null;
-    }
-
-    // Close PostgreSQL pool
+    // Close PostgreSQL pool last
     await closePool();
   }
 

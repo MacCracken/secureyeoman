@@ -200,6 +200,13 @@ export class AuditChain {
       key: this.signingKey,
     });
 
+    // Cap history to prevent unbounded growth — oldest keys beyond 20 are
+    // only needed for historical chain verification which can fall back to DB.
+    const MAX_KEY_HISTORY = 20;
+    if (this.signingKeyHistory.length > MAX_KEY_HISTORY) {
+      this.signingKeyHistory.splice(0, this.signingKeyHistory.length - MAX_KEY_HISTORY);
+    }
+
     this.signingKey = newKey;
   }
 

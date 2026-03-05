@@ -6,6 +6,7 @@
 
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
+import { safeJsonParse } from '../utils/json.js';
 import type {
   ProactiveTrigger,
   ProactiveTriggerCreate,
@@ -60,8 +61,8 @@ function triggerFromRow(
     description: row.description ?? undefined,
     enabled: row.enabled,
     type: row.type as ProactiveTrigger['type'],
-    condition: JSON.parse(row.condition),
-    action: JSON.parse(row.action),
+    condition: safeJsonParse(row.condition, {}),
+    action: safeJsonParse(row.action, {}),
     approvalMode: row.approval_mode as ProactiveTrigger['approvalMode'],
     cooldownMs: row.cooldown_ms,
     limitPerDay: row.limit_per_day,
@@ -78,8 +79,8 @@ function suggestionFromRow(row: SuggestionRow): Suggestion {
     id: row.id,
     triggerId: row.trigger_id,
     triggerName: row.trigger_name,
-    action: JSON.parse(row.action),
-    context: JSON.parse(row.context),
+    action: safeJsonParse(row.action, {}),
+    context: safeJsonParse(row.context, {}),
     confidence: row.confidence,
     suggestedAt: row.suggested_at,
     status: row.status as SuggestionStatus,
@@ -87,7 +88,7 @@ function suggestionFromRow(row: SuggestionRow): Suggestion {
     approvedAt: row.approved_at ?? undefined,
     executedAt: row.executed_at ?? undefined,
     dismissedAt: row.dismissed_at ?? undefined,
-    result: row.result ? JSON.parse(row.result) : undefined,
+    result: row.result ? safeJsonParse(row.result, undefined) : undefined,
   };
 }
 

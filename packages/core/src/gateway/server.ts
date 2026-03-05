@@ -177,6 +177,20 @@ export class GatewayServer {
   private heartbeatInterval: NodeJS.Timeout | null = null;
   private lastMetricsJson: string | null = null;
 
+  /**
+   * Register an optional route module. Swallows errors when the manager
+   * is unavailable, logging at debug level instead of silently dropping.
+   */
+  private tryRegister(name: string, fn: () => void): void {
+    try {
+      fn();
+    } catch (err) {
+      this.getLogger().debug(`${name} routes skipped`, {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
   constructor(options: GatewayServerOptions) {
     this.config = options.config;
     this.secureYeoman = options.secureYeoman;
@@ -635,14 +649,10 @@ export class GatewayServer {
     }
 
     // Comms routes
-    try {
+    this.tryRegister('Comms', () => {
       const agentComms = this.secureYeoman.getAgentComms();
-      if (agentComms) {
-        registerCommsRoutes(this.app, { agentComms });
-      }
-    } catch {
-      // Agent comms may not be available — skip routes
-    }
+      if (agentComms) registerCommsRoutes(this.app, { agentComms });
+    });
 
     // Integration routes
     try {
@@ -732,47 +742,33 @@ export class GatewayServer {
     }
 
     // Report routes
-    try {
+    this.tryRegister('Report', () => {
       const reportGenerator = this.secureYeoman.getReportGenerator();
-      if (reportGenerator) {
-        registerReportRoutes(this.app, { reportGenerator });
-      }
-    } catch {
-      // Report generator may not be available — skip routes
-    }
+      if (reportGenerator) registerReportRoutes(this.app, { reportGenerator });
+    });
 
     // Dashboard routes
-    try {
+    this.tryRegister('Dashboard', () => {
       const dashboardManager = this.secureYeoman.getDashboardManager();
-      if (dashboardManager) {
-        registerDashboardRoutes(this.app, { dashboardManager });
-      }
-    } catch {
-      // Dashboard manager may not be available — skip routes
-    }
+      if (dashboardManager) registerDashboardRoutes(this.app, { dashboardManager });
+    });
 
     // Workspace routes
-    try {
+    this.tryRegister('Workspace', () => {
       const workspaceManager = this.secureYeoman.getWorkspaceManager();
       if (workspaceManager && this.authService) {
         registerWorkspaceRoutes(this.app, { workspaceManager, authService: this.authService });
       }
-    } catch {
-      // Workspace manager may not be available — skip routes
-    }
+    });
 
     // Experiment routes
-    try {
+    this.tryRegister('Experiment', () => {
       const experimentManager = this.secureYeoman.getExperimentManager();
-      if (experimentManager) {
-        registerExperimentRoutes(this.app, { experimentManager });
-      }
-    } catch {
-      // Experiment manager may not be available — skip routes
-    }
+      if (experimentManager) registerExperimentRoutes(this.app, { experimentManager });
+    });
 
     // Marketplace routes
-    try {
+    this.tryRegister('Marketplace', () => {
       const marketplaceManager = this.secureYeoman.getMarketplaceManager();
       if (marketplaceManager) {
         registerMarketplaceRoutes(this.app, {
@@ -781,99 +777,56 @@ export class GatewayServer {
           ensureDelegationReady: () => this.secureYeoman.ensureDelegationReady(),
         });
       }
-    } catch {
-      // Marketplace manager may not be available — skip routes
-    }
+    });
 
     // Terminal routes (always available)
     registerTerminalRoutes(this.app);
     registerWorktreeRoutes(this.app);
 
     // Conversation routes
-    try {
+    this.tryRegister('Conversation', () => {
       const conversationStorage = this.secureYeoman.getConversationStorage();
-      if (conversationStorage) {
-        registerConversationRoutes(this.app, { conversationStorage });
-      }
-    } catch {
-      // Conversation storage may not be available — skip routes
-    }
+      if (conversationStorage) registerConversationRoutes(this.app, { conversationStorage });
+    });
 
     // Branching & replay routes (Phase 99)
-    try {
+    this.tryRegister('Branching', () => {
       const branchingManager = this.secureYeoman.getBranchingManager();
-      if (branchingManager) {
-        registerBranchingRoutes(this.app, { branchingManager });
-      }
-    } catch {
-      // Branching manager may not be available — skip routes
-    }
+      if (branchingManager) registerBranchingRoutes(this.app, { branchingManager });
+    });
 
     // Agent delegation routes
-    try {
+    this.tryRegister('Agent', () => {
       const subAgentManager = this.secureYeoman.getSubAgentManager();
-      if (subAgentManager) {
-        registerAgentRoutes(this.app, { subAgentManager });
-        this.getLogger().info('Agent delegation routes registered');
-      }
-    } catch (err) {
-      this.getLogger().debug('Agent delegation routes skipped', {
-        reason: err instanceof Error ? err.message : String(err),
-      });
-    }
+      if (subAgentManager) registerAgentRoutes(this.app, { subAgentManager });
+    });
 
     // Swarm routes
-    try {
+    this.tryRegister('Swarm', () => {
       const swarmManager = this.secureYeoman.getSwarmManager();
-      if (swarmManager) {
-        registerSwarmRoutes(this.app, { swarmManager });
-        this.getLogger().info('Swarm routes registered');
-      }
-    } catch (err) {
-      this.getLogger().debug('Swarm routes skipped', {
-        reason: err instanceof Error ? err.message : String(err),
-      });
-    }
+      if (swarmManager) registerSwarmRoutes(this.app, { swarmManager });
+    });
 
     // Profile skills routes (Phase 89)
-    try {
+    this.tryRegister('ProfileSkills', () => {
       const swarmStorage = this.secureYeoman.getSwarmStorage();
       const subAgentStorage = this.secureYeoman.getSubAgentStorage();
       if (swarmStorage && subAgentStorage) {
         registerProfileSkillsRoutes(this.app, { swarmStorage, subAgentStorage });
-        this.getLogger().info('Profile skills routes registered');
       }
-    } catch (err) {
-      this.getLogger().debug('Profile skills routes skipped', {
-        reason: err instanceof Error ? err.message : String(err),
-      });
-    }
+    });
 
     // Team routes
-    try {
+    this.tryRegister('Team', () => {
       const teamManager = this.secureYeoman.getTeamManager();
-      if (teamManager) {
-        registerTeamRoutes(this.app, { teamManager });
-        this.getLogger().info('Team routes registered');
-      }
-    } catch (err) {
-      this.getLogger().debug('Team routes skipped', {
-        reason: err instanceof Error ? err.message : String(err),
-      });
-    }
+      if (teamManager) registerTeamRoutes(this.app, { teamManager });
+    });
 
     // Council routes
-    try {
+    this.tryRegister('Council', () => {
       const councilManager = this.secureYeoman.getCouncilManager();
-      if (councilManager) {
-        registerCouncilRoutes(this.app, { councilManager });
-        this.getLogger().info('Council routes registered');
-      }
-    } catch (err) {
-      this.getLogger().debug('Council routes skipped', {
-        reason: err instanceof Error ? err.message : String(err),
-      });
-    }
+      if (councilManager) registerCouncilRoutes(this.app, { councilManager });
+    });
 
     // Workflow routes
     try {
@@ -963,91 +916,47 @@ export class GatewayServer {
     }
 
     // User notification prefs routes (Phase 55)
-    try {
+    this.tryRegister('UserNotificationPrefs', () => {
       const userNotificationPrefsStorage = this.secureYeoman.getUserNotificationPrefsStorage();
       if (userNotificationPrefsStorage) {
         registerUserNotificationPrefsRoutes(this.app, { userNotificationPrefsStorage });
-        this.getLogger().info('User notification prefs routes registered');
       }
-    } catch (err) {
-      this.getLogger().debug('User notification prefs routes skipped', {
-        reason: err instanceof Error ? err.message : String(err),
-      });
-    }
+    });
 
     // Risk Assessment routes (Phase 53)
-    try {
+    this.tryRegister('RiskAssessment', () => {
       const riskAssessmentManager = this.secureYeoman.getRiskAssessmentManager();
-      if (riskAssessmentManager) {
-        registerRiskAssessmentRoutes(this.app, { riskAssessmentManager });
-        this.getLogger().info('Risk assessment routes registered');
-      }
-    } catch (err) {
-      this.getLogger().debug('Risk assessment routes skipped', {
-        reason: err instanceof Error ? err.message : String(err),
-      });
-    }
+      if (riskAssessmentManager) registerRiskAssessmentRoutes(this.app, { riskAssessmentManager });
+    });
 
     // Department Risk Register routes (Phase 111)
-    try {
+    this.tryRegister('DepartmentRisk', () => {
       const departmentRiskManager = this.secureYeoman.getDepartmentRiskManager();
-      if (departmentRiskManager) {
-        registerDepartmentRiskRoutes(this.app, { departmentRiskManager });
-        this.getLogger().info('Department risk register routes registered');
-      }
-    } catch (err) {
-      this.getLogger().debug('Department risk register routes skipped', {
-        reason: err instanceof Error ? err.message : String(err),
-      });
-    }
+      if (departmentRiskManager) registerDepartmentRiskRoutes(this.app, { departmentRiskManager });
+    });
 
     // Provider Account routes (Phase 112)
-    try {
+    this.tryRegister('ProviderAccount', () => {
       const providerAccountManager = this.secureYeoman.getProviderAccountManager();
-      if (providerAccountManager) {
-        registerProviderAccountRoutes(this.app, { providerAccountManager });
-        this.getLogger().info('Provider account routes registered');
-      }
-    } catch (err) {
-      this.getLogger().debug('Provider account routes skipped', {
-        reason: err instanceof Error ? err.message : String(err),
-      });
-    }
+      if (providerAccountManager) registerProviderAccountRoutes(this.app, { providerAccountManager });
+    });
 
     // ATHI Threat Governance routes (Phase 107-F)
-    try {
+    this.tryRegister('ATHI', () => {
       const athiManager = this.secureYeoman.getAthiManager();
-      if (athiManager) {
-        registerAthiRoutes(this.app, { athiManager });
-        this.getLogger().info('ATHI threat governance routes registered');
-      }
-    } catch (err) {
-      this.getLogger().debug('ATHI routes skipped', {
-        reason: err instanceof Error ? err.message : String(err),
-      });
-    }
+      if (athiManager) registerAthiRoutes(this.app, { athiManager });
+    });
 
     // SRA Security Reference Architecture routes (Phase 123)
-    try {
+    this.tryRegister('SRA', () => {
       const sraManager = this.secureYeoman.getSraManager();
-      if (sraManager) {
-        registerSraRoutes(this.app, { sraManager });
-        this.getLogger().info('SRA security reference architecture routes registered');
-      }
-    } catch (err) {
-      this.getLogger().debug('SRA routes skipped', {
-        reason: err instanceof Error ? err.message : String(err),
-      });
-    }
+      if (sraManager) registerSraRoutes(this.app, { sraManager });
+    });
 
     // Constitutional AI routes
-    try {
+    this.tryRegister('Constitutional', () => {
       registerConstitutionalRoutes(this.app, this.secureYeoman);
-    } catch (err) {
-      this.getLogger().debug('Constitutional AI routes skipped', {
-        reason: err instanceof Error ? err.message : String(err),
-      });
-    }
+    });
 
     // TEE / Confidential Computing routes (Phase 129)
     try {

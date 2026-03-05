@@ -5,6 +5,7 @@
 import type { CatalogSkill, AuthorInfo } from '@secureyeoman/shared';
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
+import { safeJsonParse } from '../utils/json.js';
 import { getLogger } from '../logging/logger.js';
 import {
   summarizeTextSkill,
@@ -317,7 +318,7 @@ export class MarketplaceStorage extends PgBaseStorage {
       rawAuthorInfo != null && typeof rawAuthorInfo === 'object'
         ? (rawAuthorInfo as CatalogSkill['authorInfo'])
         : typeof rawAuthorInfo === 'string'
-          ? (JSON.parse(rawAuthorInfo) as CatalogSkill['authorInfo'])
+          ? safeJsonParse<CatalogSkill['authorInfo'] | undefined>(rawAuthorInfo, undefined)
           : undefined;
     const source = ((row.source as string) ?? 'published') as CatalogSkill['source'];
     return {

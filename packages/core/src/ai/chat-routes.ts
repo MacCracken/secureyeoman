@@ -359,67 +359,44 @@ export function filterMcpTools(
   const globalTwingateOk = globalConfig.exposeTwingateTools;
   const tools: Tool[] = [];
 
+  // Data-driven feature gate rules for YEOMAN MCP tools.
+  // Each rule: [match predicate, isAllowed(global, personality) → boolean]
+  // Default logic: requires BOTH global AND personality flags. Override for special cases.
+  type GateRule = [(n: string) => boolean, (g: McpFeatureConfig, p: Partial<McpFeatures>) => boolean];
+  const gateRules: GateRule[] = [
+    [isGitCliTool, (g, p) => !!(g.exposeGit && p.exposeGit)],
+    [(n) => n.startsWith('github_') && !isGitCliTool(n), (g, p) => !!(g.exposeGithub && p.exposeGithub)],
+    [(n) => n.startsWith('fs_'), (g, p) => !!(g.exposeFilesystem && p.exposeFilesystem)],
+    // Web scraping: allowed if (global scraping OR global web) OR personality scraping (OR logic from original)
+    [
+      (n) => n.startsWith('web_scrape') || n === 'web_extract_structured' || n === 'web_fetch_markdown',
+      (g, p) => !!((g.exposeWebScraping ?? g.exposeWeb) || p.exposeWebScraping),
+    ],
+    [(n) => n.startsWith('web_search'), (g, p) => !!(g.exposeWeb && p.exposeWebSearch)],
+    [(n) => n.startsWith('browser_'), (g, p) => !!(g.exposeBrowser && p.exposeBrowser)],
+    [(n) => NETWORK_DEVICE_PREFIXES.some((px) => n.startsWith(px)), (_g, p) => !!(globalNetworkOk && p.exposeNetworkDevices)],
+    [(n) => NETWORK_DISCOVERY_PREFIXES.some((px) => n.startsWith(px)), (_g, p) => !!(globalNetworkOk && p.exposeNetworkDiscovery)],
+    [(n) => NETWORK_AUDIT_PREFIXES.some((px) => n.startsWith(px)), (_g, p) => !!(globalNetworkOk && p.exposeNetworkAudit)],
+    [(n) => n.startsWith('netbox_'), (_g, p) => !!(globalNetworkOk && p.exposeNetBox)],
+    [(n) => n.startsWith('nvd_'), (_g, p) => !!(globalNetworkOk && p.exposeNvd)],
+    [(n) => NETWORK_UTIL_PREFIXES.some((px) => n.startsWith(px)), (_g, p) => !!(globalNetworkOk && p.exposeNetworkUtils)],
+    [(n) => n.startsWith('twingate_'), (_g, p) => !!(globalTwingateOk && p.exposeTwingate)],
+    [(n) => n.startsWith('gmail_'), (g, p) => !!(g.exposeGmail && p.exposeGmail)],
+    [(n) => n.startsWith('twitter_'), (g, p) => !!(g.exposeTwitter && p.exposeTwitter)],
+  ];
+
   for (const tool of allMcpTools) {
     if (tool.serverName === 'YEOMAN MCP') {
       const n = tool.name;
 
-      // Git CLI tools (git_* and legacy github_pr_*, github_issue_*, github_repo_*)
-      if (isGitCliTool(n) && !(globalConfig.exposeGit && perPersonality.exposeGit)) continue;
-
-      // Phase-70 GitHub REST API tools (github_profile, github_list_repos, …)
-      if (
-        n.startsWith('github_') &&
-        !isGitCliTool(n) &&
-        !(globalConfig.exposeGithub && perPersonality.exposeGithub)
-      )
-        continue;
-
-      if (
-        n.startsWith('fs_') &&
-        !(globalConfig.exposeFilesystem && perPersonality.exposeFilesystem)
-      )
-        continue;
-      if (
-        (n.startsWith('web_scrape') ||
-          n === 'web_extract_structured' ||
-          n === 'web_fetch_markdown') &&
-        !(globalConfig.exposeWebScraping ?? globalConfig.exposeWeb) &&
-        !perPersonality.exposeWebScraping
-      )
-        continue;
-      if (n.startsWith('web_search') && !(globalConfig.exposeWeb && perPersonality.exposeWebSearch))
-        continue;
-      if (n.startsWith('browser_') && !(globalConfig.exposeBrowser && perPersonality.exposeBrowser))
-        continue;
-
-      if (
-        NETWORK_DEVICE_PREFIXES.some((p) => n.startsWith(p)) &&
-        !(globalNetworkOk && perPersonality.exposeNetworkDevices)
-      )
-        continue;
-      if (
-        NETWORK_DISCOVERY_PREFIXES.some((p) => n.startsWith(p)) &&
-        !(globalNetworkOk && perPersonality.exposeNetworkDiscovery)
-      )
-        continue;
-      if (
-        NETWORK_AUDIT_PREFIXES.some((p) => n.startsWith(p)) &&
-        !(globalNetworkOk && perPersonality.exposeNetworkAudit)
-      )
-        continue;
-      if (n.startsWith('netbox_') && !(globalNetworkOk && perPersonality.exposeNetBox)) continue;
-      if (n.startsWith('nvd_') && !(globalNetworkOk && perPersonality.exposeNvd)) continue;
-      if (
-        NETWORK_UTIL_PREFIXES.some((p) => n.startsWith(p)) &&
-        !(globalNetworkOk && perPersonality.exposeNetworkUtils)
-      )
-        continue;
-      if (n.startsWith('twingate_') && !(globalTwingateOk && perPersonality.exposeTwingate))
-        continue;
-      if (n.startsWith('gmail_') && !(globalConfig.exposeGmail && perPersonality.exposeGmail))
-        continue;
-      if (n.startsWith('twitter_') && !(globalConfig.exposeTwitter && perPersonality.exposeTwitter))
-        continue;
+      let gated = false;
+      for (const [match, isAllowed] of gateRules) {
+        if (match(n) && !isAllowed(globalConfig, perPersonality)) {
+          gated = true;
+          break;
+        }
+      }
+      if (gated) continue;
     } else {
       if (!selectedServers.includes(tool.serverName)) continue;
     }

@@ -6,6 +6,7 @@
 
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
+import { safeJsonParse } from '../utils/json.js';
 
 export interface AlertChannel {
   type: 'slack' | 'pagerduty' | 'opsgenie' | 'webhook' | 'ntfy';
@@ -47,7 +48,7 @@ interface AlertRuleRow {
 
 function rowToRule(row: AlertRuleRow): AlertRule {
   const channels =
-    typeof row.channels === 'string' ? JSON.parse(row.channels) : (row.channels ?? []);
+    typeof row.channels === 'string' ? safeJsonParse(row.channels, [] as AlertChannel[]) : (row.channels ?? []);
   return {
     id: row.id,
     name: row.name,

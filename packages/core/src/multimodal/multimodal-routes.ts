@@ -14,6 +14,12 @@ import {
   ImageGenRequestSchema,
   HapticRequestSchema,
 } from '@secureyeoman/shared';
+import {
+  createCustomVocabulary,
+  listCustomVocabularies,
+  deleteCustomVocabulary,
+} from './stt/transcribe.js';
+import { describeVoices, listLexicons, putLexicon } from './tts/polly.js';
 
 function sanitizeError(error: unknown): string {
   return toErrorMessage(error)
@@ -357,4 +363,121 @@ export function registerMultimodalRoutes(
       providers,
     };
   });
+
+  // ── AWS Transcribe Custom Vocabulary ───────────────────────────────
+
+  app.post(
+    '/api/v1/multimodal/transcribe/vocabulary',
+    async (
+      request: FastifyRequest<{
+        Body: {
+          vocabularyName: string;
+          languageCode: string;
+          entries: { phrase: string; soundsLike?: string[]; ipa?: string; displayAs?: string }[];
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const { vocabularyName, languageCode, entries } = request.body ?? {};
+      if (!vocabularyName || !languageCode || !entries?.length) {
+        return sendError(
+          reply,
+          400,
+          "Body must include 'vocabularyName', 'languageCode', and 'entries' (non-empty array)"
+        );
+      }
+      if (vocabularyName.length > 200 || !/^[a-zA-Z0-9._-]+$/.test(vocabularyName)) {
+        return sendError(reply, 400, 'vocabularyName must be alphanumeric with ._- (max 200 chars)');
+      }
+
+      try {
+        const result = await createCustomVocabulary({ vocabularyName, languageCode, entries });
+        return result;
+      } catch (err) {
+        return sendError(reply, 500, sanitizeError(err));
+      }
+    }
+  );
+
+  app.get(
+    '/api/v1/multimodal/transcribe/vocabulary',
+    async (_request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const vocabularies = await listCustomVocabularies();
+        return { vocabularies };
+      } catch (err) {
+        return sendError(reply, 500, sanitizeError(err));
+      }
+    }
+  );
+
+  app.delete(
+    '/api/v1/multimodal/transcribe/vocabulary/:name',
+    async (
+      request: FastifyRequest<{ Params: { name: string } }>,
+      reply: FastifyReply
+    ) => {
+      const { name } = request.params;
+      if (!name) return sendError(reply, 400, 'Vocabulary name is required');
+
+      try {
+        await deleteCustomVocabulary(name);
+        return { ok: true, deleted: name };
+      } catch (err) {
+        return sendError(reply, 500, sanitizeError(err));
+      }
+    }
+  );
+
+  // ── AWS Polly Voice & Lexicon Management ───────────────────────────
+
+  app.get(
+    '/api/v1/multimodal/polly/voices',
+    async (
+      request: FastifyRequest<{ Querystring: { languageCode?: string } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const voices = await describeVoices(request.query.languageCode);
+        return { voices };
+      } catch (err) {
+        return sendError(reply, 500, sanitizeError(err));
+      }
+    }
+  );
+
+  app.get(
+    '/api/v1/multimodal/polly/lexicons',
+    async (_request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const lexicons = await listLexicons();
+        return { lexicons };
+      } catch (err) {
+        return sendError(reply, 500, sanitizeError(err));
+      }
+    }
+  );
+
+  app.post(
+    '/api/v1/multimodal/polly/lexicons',
+    async (
+      request: FastifyRequest<{ Body: { name: string; content: string } }>,
+      reply: FastifyReply
+    ) => {
+      const { name, content } = request.body ?? {};
+      if (!name || !content) {
+        return sendError(reply, 400, "Body must include 'name' and 'content' (PLS XML)");
+      }
+      if (name.length > 100 || !/^[a-zA-Z0-9._-]+$/.test(name)) {
+        return sendError(reply, 400, 'name must be alphanumeric with ._- (max 100 chars)');
+      }
+
+      try {
+        await putLexicon(name, content);
+        return { ok: true, name };
+      } catch (err) {
+        return sendError(reply, 500, sanitizeError(err));
+      }
+    }
+  );
 }

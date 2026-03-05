@@ -23,6 +23,8 @@ import type {
 import type { MultimodalStorage } from './storage.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { HookPoint, HookContext, HookResult } from '../extensions/types.js';
+import { transcribeViaAWSTranscribe } from './stt/transcribe.js';
+import { synthesizeViaPolly } from './tts/polly.js';
 
 const MAX_BASE64_LENGTH = 20_971_520; // ~20MB encoded
 const FETCH_TIMEOUT_MS = 30_000;
@@ -52,6 +54,9 @@ export const PROVIDER_META: Record<string, ProviderMeta> = {
   kokoro: { label: 'Kokoro (local)', category: 'local' },
   // STT-only
   assemblyai: { label: 'AssemblyAI', category: 'cloud' },
+  // AWS
+  polly: { label: 'AWS Polly', category: 'cloud' },
+  transcribe: { label: 'AWS Transcribe', category: 'cloud' },
 };
 
 function sanitizeErrorMessage(msg: string): string {
@@ -121,19 +126,23 @@ export class MultimodalManager {
     return (this.config.vision.provider ?? 'claude').toLowerCase();
   }
 
-  /** Resolve the active TTS provider: env var > DB pref > config default. */
+  /** Resolve the active TTS provider: env var > DB pref > auto-select (Polly if POLLY_REGION) > config default. */
   private async resolveTTSProvider(): Promise<string> {
     if (process.env.TTS_PROVIDER) return process.env.TTS_PROVIDER.toLowerCase();
     const pref = await this.deps.prefsStorage?.get('multimodal.tts.provider');
     if (pref) return pref.toLowerCase();
+    // Auto-select Polly when POLLY_REGION is configured
+    if (process.env.POLLY_REGION && process.env.AWS_ACCESS_KEY_ID) return 'polly';
     return (this.config.tts.provider ?? 'openai').toLowerCase();
   }
 
-  /** Resolve the active STT provider: env var > DB pref > config default. */
+  /** Resolve the active STT provider: env var > DB pref > auto-select (Transcribe if TRANSCRIBE_REGION) > config default. */
   private async resolveSTTProvider(): Promise<string> {
     if (process.env.STT_PROVIDER) return process.env.STT_PROVIDER.toLowerCase();
     const pref = await this.deps.prefsStorage?.get('multimodal.stt.provider');
     if (pref) return pref.toLowerCase();
+    // Auto-select Transcribe when TRANSCRIBE_REGION is configured
+    if (process.env.TRANSCRIBE_REGION && process.env.AWS_ACCESS_KEY_ID) return 'transcribe';
     return (this.config.stt.provider ?? 'openai').toLowerCase();
   }
 
@@ -223,6 +232,8 @@ export class MultimodalManager {
     const hasAzure = !!(process.env.SPEECH_KEY && process.env.SPEECH_REGION);
     const hasPlayHT = !!(process.env.PLAYHT_API_KEY && process.env.PLAYHT_USER_ID);
     const hasAssemblyAI = !!process.env.ASSEMBLYAI_API_KEY;
+    const hasPolly = !!(process.env.POLLY_REGION && process.env.AWS_ACCESS_KEY_ID);
+    const hasTranscribe = !!(process.env.TRANSCRIBE_REGION && process.env.AWS_ACCESS_KEY_ID);
 
     const [voiceboxReachable, openedAIReachable, kokoroAvailable] = await Promise.all([
       this.isVoiceboxReachable(),
@@ -247,6 +258,7 @@ export class MultimodalManager {
     if (hasPlayHT) ttsConfigured.push('playht');
     if (openedAIReachable) ttsConfigured.push('openedai');
     if (kokoroAvailable) ttsConfigured.push('kokoro');
+    if (hasPolly) ttsConfigured.push('polly');
 
     const sttConfigured: string[] = [];
     if (hasOpenAI) sttConfigured.push('openai');
@@ -256,6 +268,7 @@ export class MultimodalManager {
     if (hasAssemblyAI) sttConfigured.push('assemblyai');
     if (hasGoogleSpeech) sttConfigured.push('google');
     if (hasAzure) sttConfigured.push('azure');
+    if (hasTranscribe) sttConfigured.push('transcribe');
 
     const [activeVision, activeTTS, activeSTT, activeSTTModel] = await Promise.all([
       this.resolveVisionProvider(),
@@ -289,6 +302,7 @@ export class MultimodalManager {
           'playht',
           'openedai',
           'kokoro',
+          'polly',
         ],
         configured: ttsConfigured,
         active: activeTTS,
@@ -304,6 +318,7 @@ export class MultimodalManager {
           'assemblyai',
           'google',
           'azure',
+          'transcribe',
         ],
         configured: sttConfigured,
         active: activeSTT,
@@ -1053,6 +1068,9 @@ export class MultimodalManager {
         case 'azure':
           data = await this.transcribeViaAzure(request);
           break;
+        case 'transcribe':
+          data = await transcribeViaAWSTranscribe(request);
+          break;
         default: {
           // openai (default)
           const apiKey = process.env.OPENAI_API_KEY;
@@ -1143,6 +1161,8 @@ export class MultimodalManager {
             return this.synthesizeViaOpenedAI(request);
           case 'kokoro':
             return this.synthesizeViaKokoro(request);
+          case 'polly':
+            return synthesizeViaPolly(request);
           default: {
             // openai (default)
             const apiKey = process.env.OPENAI_API_KEY;
@@ -1232,6 +1252,7 @@ export class MultimodalManager {
         'playht',
         'openedai',
         'kokoro',
+        'polly',
       ];
 
       if (!OTHER_PROVIDERS.includes(provider)) {
@@ -1289,6 +1310,9 @@ export class MultimodalManager {
             break;
           case 'kokoro':
             b64result = await this.synthesizeViaKokoro(request);
+            break;
+          case 'polly':
+            b64result = await synthesizeViaPolly(request);
             break;
           default:
             throw new Error(`Unknown TTS provider: ${provider}`);

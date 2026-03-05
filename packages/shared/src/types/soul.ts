@@ -321,6 +321,18 @@ export const BodyConfigSchema = z
     confidentialCompute: z.enum(['off', 'optional', 'required']).default('off'),
     /** Warm the KV cache when this personality is activated (Ollama only). */
     warmupOnActivation: z.boolean().default(false),
+    /** AWS Polly voice ID for this personality (e.g. Joanna, Matthew, Aria). Overrides global POLLY_VOICE_ID. */
+    pollyVoiceId: z.string().max(100).optional(),
+    /** Polly lexicon names for custom pronunciation (comma-separated or array). */
+    pollyLexiconNames: z.array(z.string().max(100)).max(5).default([]),
+    /** AWS Transcribe custom vocabulary name for this personality's STT sessions. */
+    transcribeVocabularyName: z.string().max(200).optional(),
+    /** Enable TTS announcements for workflow/job completions. */
+    voiceAnnouncements: z.boolean().default(false),
+    /** Which events trigger voice announcements. Defaults to all if voiceAnnouncements is true. */
+    voiceAnnouncementEvents: z
+      .array(z.enum(['workflow_complete', 'job_complete', 'eval_complete']))
+      .default([]),
   })
   .default({});
 

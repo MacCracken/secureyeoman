@@ -40,12 +40,28 @@ export interface OffenderStatus {
   recommendedTier: string;
 }
 
+/** Maximum number of unique keys tracked before pruning the oldest. */
+const MAX_TRACKED_KEYS = 10_000;
+
 export class OffenderTracker {
   private readonly config: OffenderTrackerConfig;
   private readonly records = new Map<string, OffenseRecord[]>();
+  private pruneTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(config: Partial<OffenderTrackerConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
+    // Auto-prune expired records every window interval
+    this.pruneTimer = setInterval(() => this.prune(), this.config.windowMs);
+    this.pruneTimer.unref();
+  }
+
+  /** Stop the auto-prune timer and clear all records. */
+  stop(): void {
+    if (this.pruneTimer) {
+      clearInterval(this.pruneTimer);
+      this.pruneTimer = null;
+    }
+    this.records.clear();
   }
 
   /**
@@ -66,6 +82,11 @@ export class OffenderTracker {
     for (const key of keys) {
       let list = this.records.get(key);
       if (!list) {
+        // Evict oldest key if at global capacity
+        if (this.records.size >= MAX_TRACKED_KEYS) {
+          const oldest = this.records.keys().next().value;
+          if (oldest !== undefined) this.records.delete(oldest);
+        }
         list = [];
         this.records.set(key, list);
       }

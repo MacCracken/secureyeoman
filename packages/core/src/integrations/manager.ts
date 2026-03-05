@@ -63,7 +63,9 @@ export class IntegrationManager {
   private readonly reconnectState = new Map<string, ReconnectState>();
   private readonly autoReconnect: Required<AutoReconnectConfig>;
 
-  // Rate limiting
+  // Rate limiting — bounded to prevent unbounded growth under DoS
+  private static readonly MAX_RATE_BUCKETS = 1_000;
+  private static readonly MAX_RECONNECT_ENTRIES = 1_000;
   private readonly rateBuckets = new Map<string, RateLimitBucket>();
 
   // Plugin loader (optional — enables listing dynamically loaded external plugins)
@@ -389,6 +391,11 @@ export class IntegrationManager {
   private async attemptReconnect(id: string, entry: IntegrationRegistryEntry): Promise<void> {
     let state = this.reconnectState.get(id);
     if (!state) {
+      // Evict oldest entry if at capacity
+      if (this.reconnectState.size >= IntegrationManager.MAX_RECONNECT_ENTRIES) {
+        const oldest = this.reconnectState.keys().next().value;
+        if (oldest !== undefined) this.reconnectState.delete(oldest);
+      }
       state = { retryCount: 0, nextRetryAt: 0 };
       this.reconnectState.set(id, state);
     }
@@ -446,6 +453,11 @@ export class IntegrationManager {
     let bucket = this.rateBuckets.get(integrationId);
 
     if (!bucket) {
+      // Evict oldest bucket if at capacity
+      if (this.rateBuckets.size >= IntegrationManager.MAX_RATE_BUCKETS) {
+        const oldest = this.rateBuckets.keys().next().value;
+        if (oldest !== undefined) this.rateBuckets.delete(oldest);
+      }
       bucket = { tokens: limit.maxPerSecond, lastRefill: now, maxPerSecond: limit.maxPerSecond };
       this.rateBuckets.set(integrationId, bucket);
     }
@@ -513,6 +525,8 @@ export class IntegrationManager {
   async close(): Promise<void> {
     this.stopHealthChecks();
     await this.stopAll();
+    this.reconnectState.clear();
+    this.rateBuckets.clear();
     this.storage.close();
   }
 }
