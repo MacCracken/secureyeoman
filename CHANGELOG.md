@@ -15,6 +15,13 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Theme type extension**: `ThemeId` union now includes `custom:${string}` for dynamic custom theme IDs. `DARK_THEMES` set and `applyTheme()` handle custom themes via `loadCustomThemes()` lookup.
 - **Tests**: 34 new tests — HSL validation (6), custom theme validation (8), custom theme CRUD (8), theme scheduling (9), CSS vars registry (3). All 48 theme tests passing.
 
+### Database & Storage Hardening
+
+- **Composite indexes for usage storage** (`ai/usage-storage.ts`): Added `(provider, recorded_at DESC)` and `(personality_id, recorded_at DESC)` composite indexes to prevent full table scans on dashboard/reporting queries.
+- **Migration statement timeout** (`storage/migrations/runner.ts`): Each migration now runs with `SET statement_timeout = 300000` (5 min) to prevent stuck migrations from blocking other pods. Timeout is reset after each migration completes.
+- **Brain storage default LIMIT** (`brain/storage.ts`): `queryMemories()` now applies a safe default `LIMIT 10000` when caller doesn't specify, preventing OOM on large datasets.
+- **Delegation history pruning** (`agents/storage.ts`, `agents/manager.ts`): New `pruneDelegations(retentionDays)` method deletes completed/failed/cancelled delegations and their messages older than the retention period (default 90 days). Runs automatically on `SubAgentManager.initialize()`.
+
 ### Codebase Optimization Audit
 
 Applied 24 fixes across 11 files:

@@ -4,18 +4,23 @@
 
 ---
 
+## Timeline
+
+| Phase | Name | Priority | Status |
+|-------|------|----------|--------|
+| XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
+| 125-E | Cognitive ML — Advanced Features | P2 — ML | Planned |
+| 128 | Confidential Computing — TEE Tier 1 | P2 — security | ✅ Complete |
+| 129 | Confidential Computing — TEE Full Stack | P2 — security | Planned |
+| 126 | Canvas Workspace Improvements (Advanced Editor) | P3 — canvas | Planned |
+| 127 | IDE Experience (Basic Editor) | P3 — power user UX | Planned |
+| — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
+| License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
+| Future | LLM Providers, LLM Lifecycle, Responsible AI, Voice, Infrastructure | Future / Demand-Gated | — |
+
+---
+
 - [ ] enterprise department per - what other business units can we provide tools for, additonal skills/worksflows/swarms/security, legal, business risks are already covers as will as intents; where else can we improve
-
-## Phase 125-E: Cognitive ML — Advanced Features (Pending)
-
-**Priority**: P2 — Builds on Phase 125-D scaffolds. Requires active ML features to be validated in production first.
-
-- [ ] **LLM Reconsolidation** — Wire `ReconsolidationManager` into `BrainManager.recall()`. When retrieved memory overlaps with query context (cosine 0.7–0.95), call AIProvider to decide keep/update/split. Add cooldown tracking per memory. Add REST endpoint `POST /brain/memories/:id/reconsolidate`. Add MCP tool `memory_reconsolidate`.
-- [ ] **Semantic Schema Clustering** — Complete `SchemaClusteringManager` pipeline: export embeddings from vector store, run k-means, filter by `minClusterSize`, label via LLM, upsert schema knowledge entries. Add scheduled worker alongside CognitiveMemoryManager. Add REST endpoint `GET /brain/schemas` and MCP tool `brain_schemas`.
-- [ ] **RL Retrieval Optimization** — Wire `RetrievalOptimizer` into `compositeScore()`. Connect `PreferenceLearner.recordFeedback()` to `optimizer.recordFeedback()`. Persist arm posteriors in `brain.meta`. Add dashboard widget showing arm stats and convergence.
-- [ ] **Salience-boosted compositeScore()** — Blend salience composite into the existing `compositeScore()` function as a new term. Load cached salience from `brain.meta` during cognitive ranking. Configurable via `salience.compositeBlendWeight`.
-- [ ] **Context Retrieval for Knowledge** — Extend context-fused search to `getRelevantContext()` knowledge path (currently only memories). Use `searchKnowledgeByVector()`.
-- [ ] **Working Memory REST API** — Expose working memory buffer via `GET /brain/working-memory` and `GET /brain/working-memory/stats`. Add MCP tools `brain_working_memory` and `brain_working_memory_stats`.
 
 ## Phase XX: QA & Manual Testing (Ongoing)
 
@@ -56,23 +61,16 @@
 
 ---
 
-## Timeline
+## Phase 125-E: Cognitive ML — Advanced Features (Pending)
 
-| Phase | Name | Priority | Status |
-|-------|------|----------|--------|
-| XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
-| 125-E | Cognitive ML — Advanced Features | P2 — ML | Planned |
-| 128 | Confidential Computing — TEE Tier 1 | P2 — security | ✅ Complete |
-| 129 | Confidential Computing — TEE Full Stack | P2 — security | Planned |
-| 126 | Canvas Workspace Improvements (Advanced Editor) | P3 — canvas | Planned |
-| 127 | IDE Experience (Basic Editor) | P3 — power user UX | Planned |
-| — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
-| License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| Future | LLM Providers, LLM Lifecycle, Responsible AI, Voice, Infrastructure | Future / Demand-Gated | — |
+**Priority**: P2 — Builds on Phase 125-D scaffolds. Requires active ML features to be validated in production first.
 
----
-
----
+- [ ] **LLM Reconsolidation** — Wire `ReconsolidationManager` into `BrainManager.recall()`. When retrieved memory overlaps with query context (cosine 0.7–0.95), call AIProvider to decide keep/update/split. Add cooldown tracking per memory. Add REST endpoint `POST /brain/memories/:id/reconsolidate`. Add MCP tool `memory_reconsolidate`.
+- [ ] **Semantic Schema Clustering** — Complete `SchemaClusteringManager` pipeline: export embeddings from vector store, run k-means, filter by `minClusterSize`, label via LLM, upsert schema knowledge entries. Add scheduled worker alongside CognitiveMemoryManager. Add REST endpoint `GET /brain/schemas` and MCP tool `brain_schemas`.
+- [ ] **RL Retrieval Optimization** — Wire `RetrievalOptimizer` into `compositeScore()`. Connect `PreferenceLearner.recordFeedback()` to `optimizer.recordFeedback()`. Persist arm posteriors in `brain.meta`. Add dashboard widget showing arm stats and convergence.
+- [ ] **Salience-boosted compositeScore()** — Blend salience composite into the existing `compositeScore()` function as a new term. Load cached salience from `brain.meta` during cognitive ranking. Configurable via `salience.compositeBlendWeight`.
+- [ ] **Context Retrieval for Knowledge** — Extend context-fused search to `getRelevantContext()` knowledge path (currently only memories). Use `searchKnowledgeByVector()`.
+- [ ] **Working Memory REST API** — Expose working memory buffer via `GET /brain/working-memory` and `GET /brain/working-memory/stats`. Add MCP tools `brain_working_memory` and `brain_working_memory_stats`.
 
 ---
 
@@ -133,14 +131,6 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 ### Security Hardening (from 2026-03-05 Audit)
 
-#### Security Gaps
-- [ ] **ROUTE_PERMISSIONS auto-generation** — Auto-generate from route registration metadata instead of maintaining 100+ hardcoded entries. Ensure all dynamically registered routes have explicit permission mapping. Reference: `gateway/auth-middleware.ts`.
-
-#### Database
-- [ ] **Composite indexes for usage storage** — Add `(provider, recorded_at DESC)` and `(personality_id, recorded_at DESC)` indexes to prevent full table scans on dashboard/reporting queries. Reference: `ai/usage-storage.ts:100-104`.
-- [ ] **Migration statement timeout** — Add `SET statement_timeout = 300000` per migration query to prevent stuck migrations from blocking other pods. Reference: `storage/migrations/runner.ts:45-76`.
-- [ ] **Brain storage default LIMIT** — Add safe default `LIMIT 10000` to `queryMemories()` when caller doesn't specify, preventing OOM on large datasets. Reference: `brain/storage.ts:313-376`.
-- [ ] **Delegation history pruning** — Implement retention policy for `agents.delegations` table (archive/delete records older than 90 days). Reference: `agents/manager.ts`.
 
 ### Test Coverage — Final 1% Push (Phase 105)
 

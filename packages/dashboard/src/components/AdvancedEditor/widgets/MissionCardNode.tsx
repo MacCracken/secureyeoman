@@ -1,25 +1,36 @@
+import type { MissionCardId } from '../../MissionControl/registry';
+import { CARD_REGISTRY } from '../../MissionControl/registry';
+import { MissionCardEmbed } from './MissionCardEmbed';
+
 interface Props {
   cardId?: string;
+  onConfigChange?: (config: { missionCardId: string }) => void;
 }
 
-export function MissionCardNode({ cardId }: Props) {
-  if (!cardId) {
+export function MissionCardNode({ cardId, onConfigChange }: Props) {
+  const isValid = cardId && CARD_REGISTRY.some((c) => c.id === cardId);
+
+  if (!cardId || !isValid) {
     return (
-      <div className="flex items-center justify-center h-full text-xs text-muted-foreground p-4 text-center">
-        No card selected. Edit the widget config to set a Mission Card ID.
+      <div className="flex flex-col items-center justify-center h-full text-xs text-muted-foreground p-4 gap-2">
+        <div className="text-center">Select a Mission Card to embed:</div>
+        <select
+          className="bg-muted border rounded px-2 py-1 text-xs w-full max-w-[220px]"
+          value={cardId ?? ''}
+          onChange={(e) => onConfigChange?.({ missionCardId: e.target.value })}
+        >
+          <option value="" disabled>
+            Choose a card...
+          </option>
+          {CARD_REGISTRY.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.label}
+            </option>
+          ))}
+        </select>
       </div>
     );
   }
 
-  return (
-    <div className="flex items-center justify-center h-full text-xs text-muted-foreground p-4 text-center">
-      <div>
-        <div className="font-medium mb-1">Mission Card: {cardId}</div>
-        <div className="text-[10px]">
-          Card sections are embedded in Mission Control. Open the <strong>Mission Control</strong>{' '}
-          view to see this card.
-        </div>
-      </div>
-    </div>
-  );
+  return <MissionCardEmbed cardId={cardId as MissionCardId} />;
 }

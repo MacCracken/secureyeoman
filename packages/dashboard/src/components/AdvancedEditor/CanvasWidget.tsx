@@ -120,7 +120,12 @@ function WidgetContent({ data, nodeId }: { data: CanvasWidgetData; nodeId: strin
     case 'cicd-monitor':
       return <CicdMonitorWidget provider={config.provider} />;
     case 'mission-card':
-      return <MissionCardNode cardId={config.missionCardId} />;
+      return (
+        <MissionCardNode
+          cardId={config.missionCardId}
+          onConfigChange={(cfg) => onConfigChange?.({ ...config, ...cfg })}
+        />
+      );
     case 'chat':
       return <ChatWidget />;
     case 'excalidraw':
