@@ -83,11 +83,9 @@ const childEnv: NodeJS.ProcessEnv = {
   // validateSecrets() requires an API key whenever provider != 'ollama'.
   // A placeholder satisfies the presence check; no AI call is made during startup.
   ANTHROPIC_API_KEY: process.env['ANTHROPIC_API_KEY'] ?? 'test-anthropic-api-key-placeholder',
+  // Disable TLS — secureyeoman.yaml sets certPath for Docker; certs don't exist on the host
+  SECUREYEOMAN_TLS_ENABLED: 'false',
 };
-// Disable TLS — the Docker .env.dev may set a certPath that doesn't exist on the host
-delete childEnv.SECUREYEOMAN_TLS_CERT_PATH;
-delete childEnv.SECUREYEOMAN_TLS_KEY_PATH;
-delete childEnv.SECUREYEOMAN_TLS_ENABLED;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
