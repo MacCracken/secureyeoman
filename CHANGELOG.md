@@ -22,6 +22,15 @@ Applied 24 fixes across 11 files:
 - **SandboxManager**: Added `gvisor` and `wasm` to technology selector (`'auto' | 'seccomp' | 'landlock' | 'gvisor' | 'wasm' | 'none'`). Auto-detection prefers gvisor on Linux when available, falls back through seccomp → wasm → noop.
 - **Tests**: 287 gvisor-sandbox tests, 218 wasm-sandbox tests. All passing.
 
+### Phase 128: Confidential Computing — TEE-Aware Provider Routing (Tier 1)
+
+- **TEE Config Schema** (`shared/types/config.ts`): `TeeConfigSchema` added to `SecurityConfigSchema` — `enabled`, `providerLevel` (`off`/`optional`/`required`), `attestationStrategy` (`none`/`cached`/`per_request`), `attestationCacheTtlMs` (default 1h), `failureAction` (`block`/`warn`/`audit_only`). `confidentialCompute` field added to `ModelConfigSchema` and `FallbackModelConfigSchema` for per-model TEE requirements.
+- **Per-personality TEE policy** (`shared/types/soul.ts`): `confidentialCompute` field added to `BodyConfigSchema` (`off`/`optional`/`required`, default `off`). Allows per-personality override of security-level TEE defaults.
+- **TEE Attestation Verifier** (`security/tee-attestation.ts`): `TeeAttestationVerifier` class with static provider TEE support table (13 providers mapped). `verify()` checks provider compliance against config, with result caching and TTL expiry. `isProviderTeeCapable()`, `getTeeCapableProviders()`, `getProviderTeeInfo()` for capability queries. Three failure actions: `block` (throws), `warn` (logs + allows), `audit_only` (silent allow).
+- **AIClient integration** (`ai/client.ts`): Optional `teeVerifier` dependency. `verifyTeeCompliance()` called before every `doChatWithProvider()` and `doChatStreamWithProvider()`. Model-level `confidentialCompute` overrides security-level config. Non-compliant providers throw `ProviderUnavailableError`, triggering fallback chain.
+- **ModelRouter TEE filtering** (`ai/model-router.ts`): `confidentialCompute` option added to `RouterOptions`. When `'required'`, filters out non-TEE-compliant providers before tier selection. Optional `teeVerifier` constructor parameter.
+- **Tests**: 26 TEE attestation tests (verify with all config combos, caching, TTL, provider queries, failure actions). All 129 related tests passing.
+
 ### Security Gap Fixes
 
 - **Delegation promise cleanup** (`agents/manager.ts`): Added hard timeout (`timeout + 10s grace`) via `Promise.race` in `delegate()`. If `aiClient.chat()` hangs beyond the soft abort window, the hard timeout fires, aborts the controller, and cleans up the `activeDelegations` map entry. Prevents stuck delegations from permanently blocking `maxConcurrent` slots. Returns structured timeout result instead of leaving the promise pending.

@@ -11,6 +11,7 @@
 
 import type { CostCalculator, AvailableModel } from './cost-calculator.js';
 import { getAvailableModels } from './cost-calculator.js';
+import type { TeeAttestationVerifier } from '../security/tee-attestation.js';
 
 // ── Task Complexity ───────────────────────────────────────────────────────────
 
@@ -213,13 +214,17 @@ export interface RouterOptions {
   tokenBudget?: number;
   /** Optional context string to include in token estimation. */
   context?: string;
+  /** When set, filter out providers that don't meet TEE requirements. */
+  confidentialCompute?: 'off' | 'optional' | 'required';
 }
 
 export class ModelRouter {
   private readonly costCalculator: CostCalculator;
+  private readonly teeVerifier: TeeAttestationVerifier | null;
 
-  constructor(costCalculator: CostCalculator) {
+  constructor(costCalculator: CostCalculator, teeVerifier?: TeeAttestationVerifier) {
     this.costCalculator = costCalculator;
+    this.teeVerifier = teeVerifier ?? null;
   }
 
   /**
@@ -235,7 +240,8 @@ export class ModelRouter {
    *  7. If zero candidates survive filtering, return null (fall back to default).
    */
   route(task: string, options: RouterOptions = {}): RoutingDecision {
-    const { allowedModels = [], defaultModel, tokenBudget = 50000, context } = options;
+    const { allowedModels = [], defaultModel, tokenBudget = 50000, context, confidentialCompute } =
+      options;
 
     const taskProfile = profileTask(task, context);
     const tier = targetTier(taskProfile);
@@ -243,11 +249,14 @@ export class ModelRouter {
     const grouped = getAvailableModels(true); // only providers with API keys set
     const allModels: AvailableModel[] = Object.values(grouped).flat();
 
-    // Exclude local/free models from routing decisions if they aren't the only option
-    // (they'll still be selected if the personality explicitly allows only them)
+    // Filter by allowedModels allowlist and TEE requirements
     const candidates = allModels.filter((m) => {
-      // Respect allowedModels allowlist
       if (allowedModels.length > 0 && !allowedModels.includes(m.model)) return false;
+      // When confidentialCompute is 'required', exclude providers that don't meet TEE requirements
+      if (confidentialCompute === 'required' && this.teeVerifier) {
+        const { allowed } = this.teeVerifier.verify(m.provider);
+        if (!allowed) return false;
+      }
       return true;
     });
 

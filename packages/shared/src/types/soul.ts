@@ -313,6 +313,8 @@ export const BodyConfigSchema = z
       .default('off'),
     contextOverflowStrategy: z.enum(['summarise', 'truncate', 'error']).default('summarise'),
     costBudget: CostBudgetSchema,
+    /** Per-personality TEE/confidential compute requirement. Overrides security-level default. */
+    confidentialCompute: z.enum(['off', 'optional', 'required']).default('off'),
   })
   .default({});
 

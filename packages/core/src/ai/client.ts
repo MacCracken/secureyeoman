@@ -48,6 +48,7 @@ import { getSecret } from '../config/loader.js';
 import type { RetryConfig } from './retry-manager.js';
 import type { SoulManager } from '../soul/manager.js';
 import type { ProviderHealthTracker } from './provider-health.js';
+import type { TeeAttestationVerifier } from '../security/tee-attestation.js';
 
 export interface AIClientConfig {
   model: ModelConfig;
@@ -81,6 +82,8 @@ export interface AIClientDeps {
   accountId?: string;
   /** Provider health tracker for recording request outcomes (Phase 119). */
   healthTracker?: ProviderHealthTracker;
+  /** TEE attestation verifier for confidential computing. */
+  teeVerifier?: TeeAttestationVerifier;
 }
 
 const LOCAL_PROVIDERS = new Set(['ollama', 'lmstudio', 'localai']);
@@ -100,6 +103,7 @@ export class AIClient {
   private soulManager: SoulManager | null;
   private readonly providerAccountManager: import('./provider-account-manager.js').ProviderAccountManager | null;
   private readonly healthTracker: ProviderHealthTracker | null;
+  private readonly teeVerifier: TeeAttestationVerifier | null;
   private resolvedAccountId: string | null = null;
   private initPromise: Promise<void> | null = null;
 
@@ -116,6 +120,7 @@ export class AIClient {
     this.soulManager = deps.soulManager ?? null;
     this.providerAccountManager = deps.providerAccountManager ?? null;
     this.healthTracker = deps.healthTracker ?? null;
+    this.teeVerifier = deps.teeVerifier ?? null;
     this.resolvedAccountId = deps.accountId ?? null;
     this.provider = this.createProvider(config);
     this.responseCache =
@@ -510,6 +515,7 @@ export class AIClient {
     request: AIRequest,
     context?: Record<string, unknown>
   ): Promise<AIResponse> {
+    this.verifyTeeCompliance(providerName);
     const startTime = Date.now();
 
     await this.auditRecord('ai_request', {
@@ -564,6 +570,7 @@ export class AIClient {
     request: AIRequest,
     context?: Record<string, unknown>
   ): AsyncGenerator<AIStreamChunk, void, unknown> {
+    this.verifyTeeCompliance(providerName);
     const startTime = Date.now();
 
     await this.auditRecord('ai_stream_request', {
@@ -621,6 +628,27 @@ export class AIClient {
       });
 
       throw error;
+    }
+  }
+
+  /**
+   * Verify that the provider meets TEE/confidential compute requirements.
+   * Checks model-level override first, then falls back to security-level config.
+   * Only active when a teeVerifier is injected.
+   */
+  private verifyTeeCompliance(providerName: string): void {
+    if (!this.teeVerifier) return;
+
+    // Model-level confidentialCompute overrides security-level tee config
+    const modelLevel = this.primaryModelConfig.confidentialCompute;
+    if (modelLevel === 'off') return;
+
+    const { allowed, result } = this.teeVerifier.verify(providerName);
+    if (!allowed) {
+      throw new ProviderUnavailableError(
+        `Provider '${providerName}' does not meet TEE/confidential compute requirements` +
+          (result.details ? `: ${result.details}` : '')
+      );
     }
   }
 

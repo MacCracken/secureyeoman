@@ -61,6 +61,9 @@
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
+| 125-E | Cognitive ML — Advanced Features | P2 — ML | Planned |
+| 128 | Confidential Computing — TEE Tier 1 | P2 — security | ✅ Complete |
+| 129 | Confidential Computing — TEE Full Stack | P2 — security | Planned |
 | 126 | Canvas Workspace Improvements (Advanced Editor) | P3 — canvas | Planned |
 | 127 | IDE Experience (Basic Editor) | P3 — power user UX | Planned |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
@@ -72,6 +75,30 @@
 ---
 
 ---
+
+### 129: Confidential Computing — TEE Full Stack
+
+*Extends Phase 128 (Tier 1: config + routing) with hardware-level TEE integration, attestation APIs, and encrypted model/data handling. Builds on the existing `TeeAttestationVerifier`, `TeeConfigSchema`, and AIClient/ModelRouter TEE filtering.*
+
+**Priority**: P2 — Security/competitive differentiator. Depends on Phase 128 (TEE-aware routing — completed).
+
+#### Remote Attestation (Tier 2a)
+- [ ] **Azure MAA attestation** — Call Azure Attestation Service to verify SGX/SEV-SNP claims for Azure OpenAI endpoints. Async `verifyAzureAttestation()` in `TeeAttestationVerifier`. Cache results per `attestationCacheTtlMs`. Requires Azure MAA SDK or REST calls.
+- [ ] **NVIDIA RAA attestation** — Verify NVIDIA Remote Attestation API for H100/H200 CC mode on self-hosted GPU inference. Parse GPU attestation reports (PPCIE measurements). Useful for local Ollama/vLLM on confidential GPUs.
+- [ ] **AWS Nitro attestation** — Verify Nitro Enclave attestation documents (COSE_Sign1 format). PCR validation against expected measurements. For AWS-hosted inference endpoints.
+- [ ] **Attestation REST API** — `GET /api/v1/security/tee/providers` (list provider TEE capabilities), `GET /api/v1/security/tee/attestation/:provider` (last attestation result), `POST /api/v1/security/tee/verify/:provider` (force re-verify). Auth: `security:read`/`security:write`.
+
+#### Sandbox & Execution (Tier 2b)
+- [ ] **SGX sandbox backend** — Add `'sgx'` to `SandboxManager` technology selector. Execute code inside Intel SGX enclaves using Gramine or Occlum. Requires SGX-capable hardware + driver.
+- [ ] **SEV sandbox backend** — Add `'sev'` to `SandboxManager` technology selector. Launch sandboxed execution in AMD SEV-SNP VMs. Requires SEV-capable CPU + KVM.
+- [ ] **Encrypted model weights at rest** — Sealed storage for local model weights. Keys bound to platform PCR measurements (TPM/TEE). Models decrypted only inside TEE boundary. Integration with Ollama model storage.
+- [ ] **Nitro Enclaves for key management** — Extend HSM roadmap item. Use AWS Nitro Enclaves for audit chain signing keys and credential encryption. Alternative to Vault for cloud-native deployments.
+
+#### Full Pipeline (Tier 3)
+- [ ] **Confidential GPU inference** — Detect NVIDIA CC mode on local GPUs. Verify GPU is in confidential mode before loading training datasets or running fine-tuning jobs. Block non-CC GPUs when `confidentialCompute: 'required'`.
+- [ ] **End-to-end confidential pipeline** — Prompt → TEE-verified inference → encrypted response → TEE-sealed memory storage. Full chain-of-custody attestation recorded in audit log with cryptographic proof.
+- [ ] **TEE-aware training pipeline** — Require TEE attestation before sending training data to fine-tuning endpoints. Verify data never leaves enclave boundary. Integration with `TrainingModule` job dispatch.
+- [ ] **Dashboard TEE status** — Provider TEE status indicators in ModelWidget and provider accounts page. Attestation freshness badges, verification history timeline, TEE coverage percentage across active providers.
 
 ### 126: Canvas Workspace Improvements (Advanced Editor)
 
@@ -164,7 +191,7 @@ Items below represent the final steps required before public release. They depen
 - [ ] **Tier audit** — Comprehensive audit of all features into tiers:
   - **Community** (free): Chat, personalities, basic brain/memory, manual workflows, MCP tools, marketplace skills, basic editor, training dataset export, community skills, basic observability (metrics dashboard read-only)
   - **Pro** (mid-tier, new): Advanced editor/canvas, knowledge base connectors, observability dashboards, CI/CD read-only status, provider account management, advanced workflow templates, computer-use episodes, custom integrations, advanced brain features (document ingestion, source guides)
-  - **Enterprise**: Adaptive learning pipeline (distillation, fine-tune, evaluation, DPO, counterfactual generation), SSO/SAML, multi-tenancy (RLS), CI/CD webhook integration + workflow triggers, advanced alert rules (create/edit/delete), A2A federation, swarm orchestration advanced modes, audit chain export
+  - **Enterprise**: Adaptive learning pipeline (distillation, fine-tune, evaluation, DPO, counterfactual generation), SSO/SAML, multi-tenancy (RLS), CI/CD webhook integration + workflow triggers, advanced alert rules (create/edit/delete), A2A federation, swarm orchestration advanced modes, audit chain export, confidential computing / TEE-aware provider routing, remote attestation verification
 - [ ] **Pro tier in LicenseManager** — Add `'pro'` to `LicenseTier`. Rename `EnterpriseFeature` → `LicensedFeature`. Add pro-tier features. Update license key generation script + validation.
 - [ ] **Enable enforcement** — Set `SECUREYEOMAN_LICENSE_ENFORCEMENT=true` as default in `.env.example`. Update all env templates.
 - [ ] **Upgrade prompts** — "Upgrade to Pro" and "Upgrade to Enterprise" CTAs in `FeatureLock` with pricing page links.
@@ -322,4 +349,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-05 — Fixed 2 security gaps: delegation promise cleanup (hard timeout), async generator stream cleanup (11 providers). Added sandbox enhancements + codebase audit to changelog. See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-05 — Added Phase 128 (TEE Tier 1 — config, attestation verifier, AIClient/ModelRouter integration). Added Phase 129 (TEE Full Stack — remote attestation, SGX/SEV sandbox, confidential GPU, end-to-end pipeline). Fixed 2 security gaps. See [Changelog](../../CHANGELOG.md) for full history.*

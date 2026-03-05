@@ -267,6 +267,24 @@ const LLMJudgeConfigSchema = z
   .default({});
 export type LLMJudgeConfig = z.infer<typeof LLMJudgeConfigSchema>;
 
+// Confidential Computing / TEE configuration
+export const TeeConfigSchema = z
+  .object({
+    /** Enable TEE-aware provider selection and attestation checks. */
+    enabled: z.boolean().default(false),
+    /** Default TEE requirement level for AI providers. */
+    providerLevel: z.enum(['off', 'optional', 'required']).default('off'),
+    /** Attestation verification strategy. */
+    attestationStrategy: z.enum(['none', 'cached', 'per_request']).default('none'),
+    /** Cache TTL for attestation results in milliseconds. Default 1 hour. */
+    attestationCacheTtlMs: z.number().int().positive().max(86_400_000).default(3_600_000),
+    /** Action when attestation verification fails. */
+    failureAction: z.enum(['block', 'warn', 'audit_only']).default('block'),
+  })
+  .default({});
+
+export type TeeConfig = z.infer<typeof TeeConfigSchema>;
+
 // Security configuration
 export const SecurityConfigSchema = z.object({
   rbac: RbacConfigSchema,
@@ -402,6 +420,8 @@ export const SecurityConfigSchema = z.object({
       signingKeyRotationIntervalDays: z.number().int().positive().max(365).default(90),
     })
     .default({}),
+  /** Confidential Computing / TEE configuration for AI provider attestation. */
+  tee: TeeConfigSchema,
 });
 
 export type SecurityConfig = z.infer<typeof SecurityConfigSchema>;
@@ -568,6 +588,8 @@ export const FallbackModelConfigSchema = z.object({
   maxTokens: z.number().int().positive().max(200000).optional(),
   temperature: z.number().min(0).max(2).optional(),
   requestTimeoutMs: z.number().int().positive().max(300000).optional(),
+  /** TEE requirement for this fallback. Inherits from primary if not set. */
+  confidentialCompute: z.enum(['off', 'optional', 'required']).optional(),
 });
 
 export type FallbackModelConfig = z.infer<typeof FallbackModelConfigSchema>;
@@ -632,6 +654,9 @@ export const ModelConfigSchema = z.object({
 
   // Local-first routing — try local providers before cloud (ADR 148)
   localFirst: z.boolean().default(false),
+
+  /** Require TEE-verified providers for AI requests. Overrides security.tee.providerLevel for this model config. */
+  confidentialCompute: z.enum(['off', 'optional', 'required']).default('off'),
 });
 
 export type ModelConfig = z.infer<typeof ModelConfigSchema>;
