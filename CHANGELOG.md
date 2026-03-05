@@ -6,6 +6,15 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.5] — 2026-03-05
 
+### Canvas Workspace Improvements (Phase 126)
+
+- **Inter-widget event bus** (`canvas-event-bus.ts`): `CanvasEventBus` singleton with typed `emit(event)` / `on(type, handler)` / `off()`. Wildcard `*` listeners. Well-known event types: `terminal:output`, `terminal:error`, `editor:fileChanged`, `canvas:focusWidget`, `canvas:createWidget`. Terminal widgets now emit output/error events for cross-widget workflows. Widgets subscribe in `useEffect` with cleanup.
+- **Keyboard shortcuts** (`useCanvasShortcuts.ts`): `Cmd/Ctrl+1..9` focus widget by position order (50px row threshold). `Cmd/Ctrl+W` close focused widget. `Cmd/Ctrl+N` toggle catalog. `Cmd/Ctrl+S` force-save. Input/textarea elements excluded.
+- **Multiple saved layouts** (`canvas-layout.ts`): Named-layout system in `canvas:layouts` localStorage key. Layout switcher dropdown in toolbar with presets, saved layouts, delete, save-as, export JSON, and import JSON. Three presets: **Dev** (terminal + editor + git), **Ops** (CI/CD + pipeline + training), **Chat** (chat + agent world + task kanban). Active layout tracked in `canvas:activeLayout`.
+- **Mission card embedding** (`MissionCardEmbed.tsx`, `MissionCardNode.tsx`): Reusable `MissionCardEmbed` component with self-contained React Query metrics fetching (15s refresh). Card picker `<select>` populated from `CARD_REGISTRY` (13 cards). Lightweight per-card summary renderers (KPI stats, resource gauges, task counts, cost breakdown, etc.). Replaces placeholder `MissionCardNode`.
+- **Tests**: 45 new tests — event bus (10), keyboard shortcuts (6), named layouts (5), active layout name (3), export/import (4), presets (5), plus existing layout tests (8). 53 total canvas tests passing.
+- **ADR 201**: Canvas Workspace Improvements.
+
 ### Theme Editor & Custom Themes
 
 - **Theme editor** (`SettingsPage.tsx`, `useTheme.ts`): Visual theme editor in Appearance settings with live-preview color pickers for all 22 CSS variables (background, foreground, primary, secondary, muted, accent, destructive, border, ring, success, warning, info, and their foreground variants). Real-time swatch preview strip. Export theme as JSON file; import to apply.

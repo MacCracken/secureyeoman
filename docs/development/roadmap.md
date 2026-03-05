@@ -10,9 +10,7 @@
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
 | 125-E | Cognitive ML — Advanced Features | P2 — ML | Planned |
-| 128 | Confidential Computing — TEE Tier 1 | P2 — security | ✅ Complete |
 | 129 | Confidential Computing — TEE Full Stack | P2 — security | Planned |
-| 126 | Canvas Workspace Improvements (Advanced Editor) | P3 — canvas | Planned |
 | 127 | IDE Experience (Basic Editor) | P3 — power user UX | Planned |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
@@ -97,15 +95,6 @@
 - [ ] **End-to-end confidential pipeline** — Prompt → TEE-verified inference → encrypted response → TEE-sealed memory storage. Full chain-of-custody attestation recorded in audit log with cryptographic proof.
 - [ ] **TEE-aware training pipeline** — Require TEE attestation before sending training data to fine-tuning endpoints. Verify data never leaves enclave boundary. Integration with `TrainingModule` job dispatch.
 - [ ] **Dashboard TEE status** — Provider TEE status indicators in ModelWidget and provider accounts page. Attestation freshness badges, verification history timeline, TEE coverage percentage across active providers.
-
-### 126: Canvas Workspace Improvements (Advanced Editor)
-
-*Extends the Phase 100 canvas workspace (`/editor/advanced`) with power-user features. The 11-widget canvas is functional; these items address the gaps identified during QA.*
-
-- [ ] **Inter-widget communication** — Event bus for widget-to-widget data flow. Primary use case: terminal output → auto-populate an editor widget with the result, or terminal error → create a chat widget pre-seeded with the error for AI diagnosis. `CanvasEventBus` singleton with `emit(event)` / `on(event, handler)` / `off()`. Widgets subscribe in `useEffect` and clean up on unmount.
-- [ ] **Canvas keyboard shortcuts** — `Cmd/Ctrl+1..9` to focus widget by position order. `Cmd/Ctrl+W` to close focused widget. `Cmd/Ctrl+N` to open widget catalog. `Cmd/Ctrl+S` to force-save layout. `Escape` to exit fullscreen. Implemented via a `useCanvasShortcuts` hook attached to the canvas container.
-- [ ] **Multiple saved layouts & export** — Replace single `canvas:workspace` localStorage key with a named-layout system. `canvas:layouts` stores `{ [name]: CanvasLayout }`. Layout switcher dropdown in the canvas toolbar. Export layout as JSON; import from file. Presets: "Dev" (terminal + editor + git), "Ops" (CI/CD + pipeline + training live), "Chat" (chat + agent world + task kanban).
-- [ ] **Mission card embedding** — Extract the mission card renderer from `MissionControlPage` into a reusable `<MissionCardEmbed cardId={id} />` component. Wire it into `MissionCardNode` widget (currently a placeholder). Card shows objective, progress, and linked tasks.
 
 ### 127: IDE Experience (Basic Editor)
 
@@ -319,4 +308,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-05 — Added Phase 128 (TEE Tier 1 — config, attestation verifier, AIClient/ModelRouter integration). Added Phase 129 (TEE Full Stack — remote attestation, SGX/SEV sandbox, confidential GPU, end-to-end pipeline). Fixed 2 security gaps. See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-05 — Completed Phase 126 (Canvas Workspace Improvements — event bus, keyboard shortcuts, named layouts, mission card embed). See [Changelog](../../CHANGELOG.md) for full history.*
