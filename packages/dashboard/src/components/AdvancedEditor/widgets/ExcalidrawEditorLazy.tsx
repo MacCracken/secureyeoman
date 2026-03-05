@@ -18,7 +18,10 @@ export interface ExcalidrawEditorLazyProps {
     elements?: readonly Record<string, unknown>[];
     appState?: Record<string, unknown>;
   };
-  onChange?: (elements: readonly Record<string, unknown>[], appState: Record<string, unknown>) => void;
+  onChange?: (
+    elements: readonly Record<string, unknown>[],
+    appState: Record<string, unknown>
+  ) => void;
   theme?: 'light' | 'dark';
   excalidrawAPI?: (api: ExcalidrawImperativeAPI) => void;
 }

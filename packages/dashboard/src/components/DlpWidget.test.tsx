@@ -88,7 +88,7 @@ describe('DlpWidget', () => {
   it('shows loading state', () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(() => new Promise(() => {})),
+      vi.fn(() => new Promise(() => {}))
     );
     render(<DlpWidget />, { wrapper });
     expect(screen.getByText(/Loading DLP/i)).toBeTruthy();
@@ -147,7 +147,7 @@ describe('DlpWidget', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-      }),
+      })
     );
     render(<DlpWidget />, { wrapper });
     await waitFor(() => {

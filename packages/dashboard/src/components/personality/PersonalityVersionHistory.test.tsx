@@ -118,7 +118,7 @@ describe('PersonalityVersionHistory', () => {
     });
     // Click the version row (tag appears in both drift badge and version list)
     const tags = screen.getAllByText('2026.3.2');
-    const versionTag = tags.find(el => el.closest('div[class*="cursor-pointer"]'));
+    const versionTag = tags.find((el) => el.closest('div[class*="cursor-pointer"]'));
     fireEvent.click(versionTag!.closest('div[class*="cursor-pointer"]')!);
     await waitFor(() => {
       expect(screen.getByText(/Preview:/)).toBeInTheDocument();

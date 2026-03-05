@@ -167,7 +167,9 @@ describe('WasmSandbox', () => {
       const sandbox = new WasmSandbox();
       const result = await sandbox.run(
         async () => {
-          while (true) {} // infinite loop
+          while (true) {
+            /* infinite loop */
+          }
         },
         { timeoutMs: 50 }
       );

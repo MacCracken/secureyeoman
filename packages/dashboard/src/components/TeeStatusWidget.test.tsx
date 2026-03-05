@@ -41,7 +41,7 @@ describe('TeeStatusWidget', () => {
   it('shows loading state', () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(() => new Promise(() => {})),
+      vi.fn(() => new Promise(() => {}))
     );
     render(<TeeStatusWidget />, { wrapper });
     expect(screen.getByText(/Loading TEE/i)).toBeTruthy();
@@ -53,7 +53,7 @@ describe('TeeStatusWidget', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => mockProvidersData,
-      }),
+      })
     );
     render(<TeeStatusWidget />, { wrapper });
     await waitFor(() => {
@@ -70,7 +70,7 @@ describe('TeeStatusWidget', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => mockProvidersData,
-      }),
+      })
     );
     render(<TeeStatusWidget />, { wrapper });
     await waitFor(() => {
@@ -86,7 +86,7 @@ describe('TeeStatusWidget', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => mockProvidersData,
-      }),
+      })
     );
     render(<TeeStatusWidget />, { wrapper });
     await waitFor(() => {
@@ -101,7 +101,7 @@ describe('TeeStatusWidget', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => mockProvidersData,
-      }),
+      })
     );
     render(<TeeStatusWidget />, { wrapper });
     await waitFor(() => {
@@ -116,7 +116,7 @@ describe('TeeStatusWidget', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-      }),
+      })
     );
     render(<TeeStatusWidget />, { wrapper });
     await waitFor(() => {
@@ -155,7 +155,7 @@ describe('TeeStatusWidget', () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining('/verify/'),
-        expect.objectContaining({ method: 'POST' }),
+        expect.objectContaining({ method: 'POST' })
       );
     });
   });
@@ -166,7 +166,7 @@ describe('TeeStatusWidget', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => mockProvidersData,
-      }),
+      })
     );
     render(<TeeStatusWidget />, { wrapper });
     await waitFor(() => {
@@ -180,7 +180,7 @@ describe('TeeStatusWidget', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => mockProvidersData,
-      }),
+      })
     );
     render(<TeeStatusWidget />, { wrapper });
     await waitFor(() => {
@@ -207,7 +207,7 @@ describe('TeeStatusWidget', () => {
           },
           cache: { size: 0, providers: [] },
         }),
-      }),
+      })
     );
     render(<TeeStatusWidget />, { wrapper });
     await waitFor(() => {
@@ -222,7 +222,7 @@ describe('TeeStatusWidget', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => mockProvidersData,
-      }),
+      })
     );
     render(<TeeStatusWidget />, { wrapper });
     await waitFor(() => {
@@ -238,7 +238,7 @@ describe('TeeStatusWidget', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => mockProvidersData,
-      }),
+      })
     );
     render(<TeeStatusWidget />, { wrapper });
     await waitFor(() => {

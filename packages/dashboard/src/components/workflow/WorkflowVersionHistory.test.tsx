@@ -80,7 +80,7 @@ describe('WorkflowVersionHistory', () => {
       expect(screen.getByText('Versions (1)')).toBeInTheDocument();
     });
     const tags = screen.getAllByText('2026.3.2');
-    const versionTag = tags.find(el => el.closest('div[class*="cursor-pointer"]'));
+    const versionTag = tags.find((el) => el.closest('div[class*="cursor-pointer"]'));
     fireEvent.click(versionTag!.closest('div[class*="cursor-pointer"]')!);
     await waitFor(() => {
       expect(screen.getByText(/Snapshot:/)).toBeInTheDocument();

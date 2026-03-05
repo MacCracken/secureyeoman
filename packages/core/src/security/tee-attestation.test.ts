@@ -59,7 +59,9 @@ describe('TeeAttestationVerifier', () => {
 
   describe('verify() with required level', () => {
     it('allows supported providers', () => {
-      const verifier = new TeeAttestationVerifier(makeConfig({ providerLevel: 'required', failureAction: 'block' }));
+      const verifier = new TeeAttestationVerifier(
+        makeConfig({ providerLevel: 'required', failureAction: 'block' })
+      );
       const { allowed, result } = verifier.verify('anthropic');
       expect(allowed).toBe(true);
       expect(result.verified).toBe(true);
@@ -67,14 +69,18 @@ describe('TeeAttestationVerifier', () => {
     });
 
     it('blocks unsupported providers when failureAction is block', () => {
-      const verifier = new TeeAttestationVerifier(makeConfig({ providerLevel: 'required', failureAction: 'block' }));
+      const verifier = new TeeAttestationVerifier(
+        makeConfig({ providerLevel: 'required', failureAction: 'block' })
+      );
       const { allowed, result } = verifier.verify('ollama');
       expect(allowed).toBe(false);
       expect(result.verified).toBe(false);
     });
 
     it('blocks unknown providers when failureAction is block', () => {
-      const verifier = new TeeAttestationVerifier(makeConfig({ providerLevel: 'required', failureAction: 'block' }));
+      const verifier = new TeeAttestationVerifier(
+        makeConfig({ providerLevel: 'required', failureAction: 'block' })
+      );
       const { allowed, result } = verifier.verify('some-random-provider');
       expect(allowed).toBe(false);
       expect(result.details).toContain('Unknown provider');
@@ -98,7 +104,7 @@ describe('TeeAttestationVerifier', () => {
       const logger = makeLogger();
       const verifier = new TeeAttestationVerifier(
         makeConfig({ providerLevel: 'optional', failureAction: 'block' }),
-        logger,
+        logger
       );
       const { allowed, result } = verifier.verify('ollama');
       expect(allowed).toBe(true);
@@ -118,7 +124,7 @@ describe('TeeAttestationVerifier', () => {
       const logger = makeLogger();
       const verifier = new TeeAttestationVerifier(
         makeConfig({ attestationStrategy: 'cached' }),
-        logger,
+        logger
       );
       const first = verifier.verify('anthropic');
       const second = verifier.verify('anthropic');
@@ -127,7 +133,7 @@ describe('TeeAttestationVerifier', () => {
       expect(second.result.expiresAt).toBe(first.result.expiresAt);
       expect(logger.debug).toHaveBeenCalledWith(
         'TEE attestation cache hit',
-        expect.objectContaining({ provider: 'anthropic' }),
+        expect.objectContaining({ provider: 'anthropic' })
       );
     });
 
@@ -138,14 +144,16 @@ describe('TeeAttestationVerifier', () => {
     });
 
     it('does not cache when attestationStrategy is per_request', () => {
-      const verifier = new TeeAttestationVerifier(makeConfig({ attestationStrategy: 'per_request' }));
+      const verifier = new TeeAttestationVerifier(
+        makeConfig({ attestationStrategy: 'per_request' })
+      );
       verifier.verify('anthropic');
       expect(verifier.getCacheStats().size).toBe(0);
     });
 
     it('expires cached entries after TTL', () => {
       const verifier = new TeeAttestationVerifier(
-        makeConfig({ attestationStrategy: 'cached', attestationCacheTtlMs: 1 }),
+        makeConfig({ attestationStrategy: 'cached', attestationCacheTtlMs: 1 })
       );
       verifier.verify('anthropic');
 
@@ -247,7 +255,7 @@ describe('TeeAttestationVerifier', () => {
       const logger = makeLogger();
       const verifier = new TeeAttestationVerifier(
         makeConfig({ providerLevel: 'required', failureAction: 'block' }),
-        logger,
+        logger
       );
       const { allowed } = verifier.verify('mistral');
       expect(allowed).toBe(false);
@@ -258,7 +266,7 @@ describe('TeeAttestationVerifier', () => {
       const logger = makeLogger();
       const verifier = new TeeAttestationVerifier(
         makeConfig({ providerLevel: 'required', failureAction: 'warn' }),
-        logger,
+        logger
       );
       const { allowed } = verifier.verify('mistral');
       expect(allowed).toBe(true);
@@ -266,11 +274,11 @@ describe('TeeAttestationVerifier', () => {
       expect(logger.warn).toHaveBeenCalledTimes(2);
       expect(logger.warn).toHaveBeenCalledWith(
         expect.stringContaining('not supported'),
-        expect.objectContaining({ provider: 'mistral' }),
+        expect.objectContaining({ provider: 'mistral' })
       );
       expect(logger.warn).toHaveBeenCalledWith(
         expect.stringContaining('warning only'),
-        expect.objectContaining({ provider: 'mistral' }),
+        expect.objectContaining({ provider: 'mistral' })
       );
     });
 
@@ -278,18 +286,18 @@ describe('TeeAttestationVerifier', () => {
       const logger = makeLogger();
       const verifier = new TeeAttestationVerifier(
         makeConfig({ providerLevel: 'required', failureAction: 'audit_only' }),
-        logger,
+        logger
       );
       const { allowed } = verifier.verify('grok');
       expect(allowed).toBe(true);
       // Step 5 logs warn, applyFailureAction logs info with "audit"
       expect(logger.warn).toHaveBeenCalledWith(
         expect.stringContaining('not supported'),
-        expect.objectContaining({ provider: 'grok' }),
+        expect.objectContaining({ provider: 'grok' })
       );
       expect(logger.info).toHaveBeenCalledWith(
         expect.stringContaining('audit'),
-        expect.objectContaining({ provider: 'grok' }),
+        expect.objectContaining({ provider: 'grok' })
       );
     });
   });
@@ -299,17 +307,22 @@ describe('TeeAttestationVerifier', () => {
   // -------------------------------------------------------------------------
 
   describe('registerRemoteProvider() and verifyAsync()', () => {
-    function makeMockRemoteProvider(verified: boolean, details?: string): RemoteAttestationProvider {
+    function makeMockRemoteProvider(
+      verified: boolean,
+      details?: string
+    ): RemoteAttestationProvider {
       return {
         name: 'mock-remote',
-        verifyAsync: vi.fn(async (provider: string): Promise<ProviderAttestationResult> => ({
-          provider,
-          verified,
-          technology: 'sgx',
-          attestationTime: Date.now(),
-          expiresAt: Date.now() + 3_600_000,
-          details: details ?? 'Remote attestation result',
-        })),
+        verifyAsync: vi.fn(
+          async (provider: string): Promise<ProviderAttestationResult> => ({
+            provider,
+            verified,
+            technology: 'sgx',
+            attestationTime: Date.now(),
+            expiresAt: Date.now() + 3_600_000,
+            details: details ?? 'Remote attestation result',
+          })
+        ),
       };
     }
 
@@ -346,7 +359,9 @@ describe('TeeAttestationVerifier', () => {
 
     it('stores result in cache for per_request strategy', async () => {
       const remote = makeMockRemoteProvider(true);
-      const verifier = new TeeAttestationVerifier(makeConfig({ attestationStrategy: 'per_request' }));
+      const verifier = new TeeAttestationVerifier(
+        makeConfig({ attestationStrategy: 'per_request' })
+      );
       verifier.registerRemoteProvider('anthropic', remote);
 
       await verifier.verifyAsync('anthropic');
@@ -358,7 +373,7 @@ describe('TeeAttestationVerifier', () => {
       const remote = makeMockRemoteProvider(false, 'Remote check failed');
       const verifier = new TeeAttestationVerifier(
         makeConfig({ providerLevel: 'required', failureAction: 'block' }),
-        logger,
+        logger
       );
       verifier.registerRemoteProvider('ollama', remote);
 
@@ -372,7 +387,7 @@ describe('TeeAttestationVerifier', () => {
       const remote = makeMockRemoteProvider(false);
       const verifier = new TeeAttestationVerifier(
         makeConfig({ providerLevel: 'required', failureAction: 'warn' }),
-        logger,
+        logger
       );
       verifier.registerRemoteProvider('ollama', remote);
 
@@ -403,7 +418,10 @@ describe('TeeAttestationVerifier', () => {
     it('returns cached result on subsequent async calls', async () => {
       const remote = makeMockRemoteProvider(true);
       const logger = makeLogger();
-      const verifier = new TeeAttestationVerifier(makeConfig({ attestationStrategy: 'cached' }), logger);
+      const verifier = new TeeAttestationVerifier(
+        makeConfig({ attestationStrategy: 'cached' }),
+        logger
+      );
       verifier.registerRemoteProvider('anthropic', remote);
 
       await verifier.verifyAsync('anthropic');
@@ -413,7 +431,7 @@ describe('TeeAttestationVerifier', () => {
       expect(remote.verifyAsync).toHaveBeenCalledTimes(1);
       expect(logger.debug).toHaveBeenCalledWith(
         'TEE attestation cache hit (async)',
-        expect.objectContaining({ provider: 'anthropic' }),
+        expect.objectContaining({ provider: 'anthropic' })
       );
     });
   });
@@ -444,7 +462,9 @@ describe('TeeAttestationVerifier', () => {
 
     it('returns results from async verification', async () => {
       const remote = makeMockRemoteProvider();
-      const verifier = new TeeAttestationVerifier(makeConfig({ attestationStrategy: 'per_request' }));
+      const verifier = new TeeAttestationVerifier(
+        makeConfig({ attestationStrategy: 'per_request' })
+      );
       verifier.registerRemoteProvider('test', remote);
 
       await verifier.verifyAsync('test');

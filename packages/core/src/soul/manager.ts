@@ -394,7 +394,7 @@ export class SoulManager {
   async updatePersonality(id: string, data: PersonalityUpdate): Promise<Personality> {
     const result = await this.storage.updatePersonality(id, data);
     // Fire-and-forget version recording
-    this.personalityVersionManager?.recordVersion(id).catch((err) => {
+    this.personalityVersionManager?.recordVersion(id).catch((err: unknown) => {
       this.deps.logger.error('Failed to record personality version', { err });
     });
     return result;

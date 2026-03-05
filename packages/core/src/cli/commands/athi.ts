@@ -100,11 +100,9 @@ async function runList(
   if (statusResult.value) params.set('status', statusResult.value);
   const qs = params.toString();
 
-  const res = await apiCall(
-    baseUrl,
-    `/api/v1/security/athi/scenarios${qs ? `?${qs}` : ''}`,
-    { token }
-  );
+  const res = await apiCall(baseUrl, `/api/v1/security/athi/scenarios${qs ? `?${qs}` : ''}`, {
+    token,
+  });
 
   if (!res?.ok) {
     ctx.stderr.write('Failed to fetch scenarios\n');
@@ -126,7 +124,12 @@ async function runList(
   }
 
   for (const s of items) {
-    const scoreStr = s.riskScore >= 20 ? c.red(`[${s.riskScore}]`) : s.riskScore >= 10 ? c.yellow(`[${s.riskScore}]`) : c.green(`[${s.riskScore}]`);
+    const scoreStr =
+      s.riskScore >= 20
+        ? c.red(`[${s.riskScore}]`)
+        : s.riskScore >= 10
+          ? c.yellow(`[${s.riskScore}]`)
+          : c.green(`[${s.riskScore}]`);
     ctx.stdout.write(
       `  ${c.dim(s.id.slice(0, 8))}  ${scoreStr}  ` +
         `${s.title}  ${c.dim(`(${s.actor}, ${s.status})`)}\n`
@@ -150,11 +153,9 @@ async function runShow(
     return 1;
   }
 
-  const res = await apiCall(
-    baseUrl,
-    `/api/v1/security/athi/scenarios/${encodeURIComponent(id)}`,
-    { token }
-  );
+  const res = await apiCall(baseUrl, `/api/v1/security/athi/scenarios/${encodeURIComponent(id)}`, {
+    token,
+  });
 
   if (!res?.ok) {
     ctx.stderr.write('Scenario not found\n');
@@ -280,7 +281,12 @@ async function runMatrix(
   }
 
   for (const cell of cells) {
-    const scoreStr = cell.avgRiskScore >= 20 ? c.red(`avg=${cell.avgRiskScore}`) : cell.avgRiskScore >= 10 ? c.yellow(`avg=${cell.avgRiskScore}`) : c.green(`avg=${cell.avgRiskScore}`);
+    const scoreStr =
+      cell.avgRiskScore >= 20
+        ? c.red(`avg=${cell.avgRiskScore}`)
+        : cell.avgRiskScore >= 10
+          ? c.yellow(`avg=${cell.avgRiskScore}`)
+          : c.green(`avg=${cell.avgRiskScore}`);
     ctx.stdout.write(
       `  ${cell.actor.padEnd(18)} × ${cell.technique.padEnd(22)} ` +
         `${scoreStr}  ` +
@@ -336,7 +342,12 @@ async function runSummary(
   if (s.topRisks?.length) {
     ctx.stdout.write(`  ${c.bold('Top Risks:')}\n`);
     for (const r of s.topRisks) {
-      const scoreStr = r.riskScore >= 20 ? c.red(`[${r.riskScore}]`) : r.riskScore >= 10 ? c.yellow(`[${r.riskScore}]`) : c.green(`[${r.riskScore}]`);
+      const scoreStr =
+        r.riskScore >= 20
+          ? c.red(`[${r.riskScore}]`)
+          : r.riskScore >= 10
+            ? c.yellow(`[${r.riskScore}]`)
+            : c.green(`[${r.riskScore}]`);
       ctx.stdout.write(`    ${scoreStr} ${r.title}\n`);
     }
   }

@@ -7,7 +7,9 @@ function makeScanResult(overrides: Partial<ScanResult> = {}): ScanResult {
   return {
     artifactId: randomUUID(),
     verdict: 'quarantine',
-    findings: [{ id: randomUUID(), scanner: 'test', severity: 'high', category: 'test', message: 'test' }],
+    findings: [
+      { id: randomUUID(), scanner: 'test', severity: 'high', category: 'test', message: 'test' },
+    ],
     worstSeverity: 'high',
     scanDurationMs: 100,
     scannerVersions: {},

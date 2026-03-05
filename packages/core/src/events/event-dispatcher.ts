@@ -89,8 +89,11 @@ export class EventDispatcher {
     for (const delivery of deliveries) {
       try {
         const sub = await this.store.getSubscription(delivery.subscriptionId);
-        if (!sub || !sub.enabled) {
-          await this.store.updateDelivery(delivery.id, { status: 'failed', error: 'Subscription disabled or deleted' });
+        if (!sub?.enabled) {
+          await this.store.updateDelivery(delivery.id, {
+            status: 'failed',
+            error: 'Subscription disabled or deleted',
+          });
           count++;
           continue;
         }

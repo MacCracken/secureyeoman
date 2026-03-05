@@ -169,7 +169,12 @@ describe('chatCommand', () => {
 
   it('handles 402 enterprise license error', async () => {
     mockFetch.mockReturnValue(
-      apiErr(402, { error: 'Payment Required', message: 'Enterprise license required', statusCode: 402, feature: 'adaptive_learning' })
+      apiErr(402, {
+        error: 'Payment Required',
+        message: 'Enterprise license required',
+        statusCode: 402,
+        feature: 'adaptive_learning',
+      })
     );
     const ctx = makeCtx(['Hello']);
     const code = await chatCommand.run(ctx);

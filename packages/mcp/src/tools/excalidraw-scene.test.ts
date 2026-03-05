@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { specToElement, buildScene, validateScene, patchScene, renderSceneToSvg } from './excalidraw-scene.js';
+import {
+  specToElement,
+  buildScene,
+  validateScene,
+  patchScene,
+  renderSceneToSvg,
+} from './excalidraw-scene.js';
 import type { ExcalidrawElement, ExcalidrawScene } from '@secureyeoman/shared';
 
 // ─── specToElement ──────────────────────────────────────────────────────────
@@ -52,7 +58,10 @@ describe('specToElement', () => {
 
   it('creates arrow element with points and arrowhead', () => {
     const el = specToElement({ type: 'arrow', x: 0, y: 0 }, 0);
-    expect(el.points).toEqual([[0, 0], [200, 0]]);
+    expect(el.points).toEqual([
+      [0, 0],
+      [200, 0],
+    ]);
     expect(el.startBinding).toBeNull();
     expect(el.endBinding).toBeNull();
     expect(el.startArrowhead).toBeNull();
@@ -60,11 +69,24 @@ describe('specToElement', () => {
   });
 
   it('uses custom points for arrows', () => {
-    const el = specToElement({
-      type: 'arrow', x: 0, y: 0,
-      points: [[0, 0], [100, 50], [200, 0]],
-    }, 0);
-    expect(el.points).toEqual([[0, 0], [100, 50], [200, 0]]);
+    const el = specToElement(
+      {
+        type: 'arrow',
+        x: 0,
+        y: 0,
+        points: [
+          [0, 0],
+          [100, 50],
+          [200, 0],
+        ],
+      },
+      0
+    );
+    expect(el.points).toEqual([
+      [0, 0],
+      [100, 50],
+      [200, 0],
+    ]);
   });
 
   it('assigns groupIds from groupId', () => {
@@ -73,9 +95,16 @@ describe('specToElement', () => {
   });
 
   it('sets containerId for text elements', () => {
-    const el = specToElement({
-      type: 'text', x: 0, y: 0, label: 'X', containerId: 'parent',
-    }, 0);
+    const el = specToElement(
+      {
+        type: 'text',
+        x: 0,
+        y: 0,
+        label: 'X',
+        containerId: 'parent',
+      },
+      0
+    );
     expect(el.containerId).toBe('parent');
   });
 });
@@ -84,9 +113,7 @@ describe('specToElement', () => {
 
 describe('buildScene', () => {
   it('creates valid scene structure', () => {
-    const scene = buildScene('Test', [
-      { type: 'rectangle', x: 0, y: 0 },
-    ]);
+    const scene = buildScene('Test', [{ type: 'rectangle', x: 0, y: 0 }]);
     expect(scene.type).toBe('excalidraw');
     expect(scene.version).toBe(2);
     expect(scene.source).toBe('secureyeoman');
@@ -96,9 +123,7 @@ describe('buildScene', () => {
   });
 
   it('handles bound text — creates text element for labeled shapes', () => {
-    const scene = buildScene('Test', [
-      { type: 'rectangle', x: 0, y: 0, label: 'Box' },
-    ]);
+    const scene = buildScene('Test', [{ type: 'rectangle', x: 0, y: 0, label: 'Box' }]);
     // Should have: rectangle + bound text
     expect(scene.elements.length).toBe(2);
     const rect = scene.elements.find((e) => e.type === 'rectangle')!;
@@ -109,9 +134,7 @@ describe('buildScene', () => {
   });
 
   it('does not create bound text for text elements with labels', () => {
-    const scene = buildScene('Test', [
-      { type: 'text', x: 0, y: 0, label: 'Hello' },
-    ]);
+    const scene = buildScene('Test', [{ type: 'text', x: 0, y: 0, label: 'Hello' }]);
     expect(scene.elements.length).toBe(1);
     expect(scene.elements[0]!.type).toBe('text');
   });
@@ -173,13 +196,29 @@ describe('validateScene', () => {
     return {
       id: `shape_${Math.random().toString(36).slice(2, 6)}`,
       type: 'rectangle',
-      x: 0, y: 0, width: 100, height: 60,
-      angle: 0, strokeColor: '#1e1e1e', backgroundColor: '#a5d8ff',
-      fillStyle: 'solid', strokeWidth: 2, strokeStyle: 'solid',
-      roughness: 1, opacity: 100, groupIds: [], frameId: null,
-      roundness: { type: 3 }, seed: 123, version: 1, versionNonce: 456,
-      isDeleted: false, boundElements: null, updated: Date.now(),
-      link: null, locked: false,
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 60,
+      angle: 0,
+      strokeColor: '#1e1e1e',
+      backgroundColor: '#a5d8ff',
+      fillStyle: 'solid',
+      strokeWidth: 2,
+      strokeStyle: 'solid',
+      roughness: 1,
+      opacity: 100,
+      groupIds: [],
+      frameId: null,
+      roundness: { type: 3 },
+      seed: 123,
+      version: 1,
+      versionNonce: 456,
+      isDeleted: false,
+      boundElements: null,
+      updated: Date.now(),
+      link: null,
+      locked: false,
       ...overrides,
     };
   }
@@ -204,14 +243,35 @@ describe('validateScene', () => {
 
   it('detects orphaned arrow bindings', () => {
     const arrow: ExcalidrawElement = {
-      id: 'arrow1', type: 'arrow', x: 0, y: 0, width: 200, height: 0,
-      angle: 0, strokeColor: '#1e1e1e', backgroundColor: 'transparent',
-      fillStyle: 'solid', strokeWidth: 2, strokeStyle: 'solid',
-      roughness: 1, opacity: 100, groupIds: [], frameId: null,
-      roundness: null, seed: 123, version: 1, versionNonce: 456,
-      isDeleted: false, boundElements: null, updated: Date.now(),
-      link: null, locked: false,
-      points: [[0, 0], [200, 0]],
+      id: 'arrow1',
+      type: 'arrow',
+      x: 0,
+      y: 0,
+      width: 200,
+      height: 0,
+      angle: 0,
+      strokeColor: '#1e1e1e',
+      backgroundColor: 'transparent',
+      fillStyle: 'solid',
+      strokeWidth: 2,
+      strokeStyle: 'solid',
+      roughness: 1,
+      opacity: 100,
+      groupIds: [],
+      frameId: null,
+      roundness: null,
+      seed: 123,
+      version: 1,
+      versionNonce: 456,
+      isDeleted: false,
+      boundElements: null,
+      updated: Date.now(),
+      link: null,
+      locked: false,
+      points: [
+        [0, 0],
+        [200, 0],
+      ],
       startBinding: { elementId: 'nonexistent', focus: 0, gap: 8 },
       endBinding: null,
     };
@@ -228,17 +288,40 @@ describe('validateScene', () => {
       boundElements: [{ type: 'text', id: 'label' }],
     });
     const text: ExcalidrawElement = {
-      id: 'label', type: 'text', x: 5, y: 15, width: 50, height: 25,
-      angle: 0, strokeColor: '#1e1e1e', backgroundColor: 'transparent',
-      fillStyle: 'solid', strokeWidth: 2, strokeStyle: 'solid',
-      roughness: 1, opacity: 100, groupIds: [], frameId: null,
-      roundness: null, seed: 123, version: 1, versionNonce: 456,
-      isDeleted: false, boundElements: null, updated: Date.now(),
-      link: null, locked: false,
+      id: 'label',
+      type: 'text',
+      x: 5,
+      y: 15,
+      width: 50,
+      height: 25,
+      angle: 0,
+      strokeColor: '#1e1e1e',
+      backgroundColor: 'transparent',
+      fillStyle: 'solid',
+      strokeWidth: 2,
+      strokeStyle: 'solid',
+      roughness: 1,
+      opacity: 100,
+      groupIds: [],
+      frameId: null,
+      roundness: null,
+      seed: 123,
+      version: 1,
+      versionNonce: 456,
+      isDeleted: false,
+      boundElements: null,
+      updated: Date.now(),
+      link: null,
+      locked: false,
       text: 'This is a very long label text that should overflow',
       originalText: 'This is a very long label text that should overflow',
-      fontSize: 20, fontFamily: 1, textAlign: 'center', verticalAlign: 'middle',
-      containerId: 'container', autoResize: true, lineHeight: 1.25,
+      fontSize: 20,
+      fontFamily: 1,
+      textAlign: 'center',
+      verticalAlign: 'middle',
+      containerId: 'container',
+      autoResize: true,
+      lineHeight: 1.25,
     };
     const scene = makeScene([container, text]);
     const result = validateScene(scene);
@@ -246,9 +329,7 @@ describe('validateScene', () => {
   });
 
   it('detects missing labels on shapes', () => {
-    const scene = makeScene([
-      makeShape({ id: 'unlabeled', boundElements: null }),
-    ]);
+    const scene = makeScene([makeShape({ id: 'unlabeled', boundElements: null })]);
     const result = validateScene(scene);
     expect(result.issues.some((i) => i.type === 'missing-label')).toBe(true);
   });
@@ -261,16 +342,40 @@ describe('validateScene', () => {
       boundElements: [{ type: 'text', id: 't1' }],
     });
     const text: ExcalidrawElement = {
-      id: 't1', type: 'text', x: 5, y: 15, width: 80, height: 25,
-      angle: 0, strokeColor: '#fefefe', backgroundColor: 'transparent',
-      fillStyle: 'solid', strokeWidth: 2, strokeStyle: 'solid',
-      roughness: 1, opacity: 100, groupIds: [], frameId: null,
-      roundness: null, seed: 123, version: 1, versionNonce: 456,
-      isDeleted: false, boundElements: null, updated: Date.now(),
-      link: null, locked: false,
-      text: 'Hi', originalText: 'Hi', fontSize: 20, fontFamily: 1,
-      textAlign: 'center', verticalAlign: 'middle',
-      containerId: 'c1', autoResize: true, lineHeight: 1.25,
+      id: 't1',
+      type: 'text',
+      x: 5,
+      y: 15,
+      width: 80,
+      height: 25,
+      angle: 0,
+      strokeColor: '#fefefe',
+      backgroundColor: 'transparent',
+      fillStyle: 'solid',
+      strokeWidth: 2,
+      strokeStyle: 'solid',
+      roughness: 1,
+      opacity: 100,
+      groupIds: [],
+      frameId: null,
+      roundness: null,
+      seed: 123,
+      version: 1,
+      versionNonce: 456,
+      isDeleted: false,
+      boundElements: null,
+      updated: Date.now(),
+      link: null,
+      locked: false,
+      text: 'Hi',
+      originalText: 'Hi',
+      fontSize: 20,
+      fontFamily: 1,
+      textAlign: 'center',
+      verticalAlign: 'middle',
+      containerId: 'c1',
+      autoResize: true,
+      lineHeight: 1.25,
     };
     const scene = makeScene([container, text]);
     const result = validateScene(scene);
@@ -283,16 +388,40 @@ describe('validateScene', () => {
       boundElements: [{ type: 'text', id: 't1' }],
     });
     const text: ExcalidrawElement = {
-      id: 't1', type: 'text', x: 5, y: 15, width: 80, height: 25,
-      angle: 0, strokeColor: '#1e1e1e', backgroundColor: 'transparent',
-      fillStyle: 'solid', strokeWidth: 2, strokeStyle: 'solid',
-      roughness: 1, opacity: 100, groupIds: [], frameId: null,
-      roundness: null, seed: 123, version: 1, versionNonce: 456,
-      isDeleted: false, boundElements: null, updated: Date.now(),
-      link: null, locked: false,
-      text: 'Box', originalText: 'Box', fontSize: 20, fontFamily: 1,
-      textAlign: 'center', verticalAlign: 'middle',
-      containerId: 's1', autoResize: true, lineHeight: 1.25,
+      id: 't1',
+      type: 'text',
+      x: 5,
+      y: 15,
+      width: 80,
+      height: 25,
+      angle: 0,
+      strokeColor: '#1e1e1e',
+      backgroundColor: 'transparent',
+      fillStyle: 'solid',
+      strokeWidth: 2,
+      strokeStyle: 'solid',
+      roughness: 1,
+      opacity: 100,
+      groupIds: [],
+      frameId: null,
+      roundness: null,
+      seed: 123,
+      version: 1,
+      versionNonce: 456,
+      isDeleted: false,
+      boundElements: null,
+      updated: Date.now(),
+      link: null,
+      locked: false,
+      text: 'Box',
+      originalText: 'Box',
+      fontSize: 20,
+      fontFamily: 1,
+      textAlign: 'center',
+      verticalAlign: 'middle',
+      containerId: 's1',
+      autoResize: true,
+      lineHeight: 1.25,
     };
     const scene = makeScene([shape, text]);
     const result = validateScene(scene);
@@ -336,9 +465,7 @@ describe('patchScene', () => {
     const scene = makeTestScene();
     const rect = scene.elements.find((e) => e.type === 'rectangle')!;
     const textId = rect.boundElements?.find((b) => b.type === 'text')?.id;
-    const result = patchScene(scene, [
-      { op: 'delete', elementId: rect.id },
-    ]);
+    const result = patchScene(scene, [{ op: 'delete', elementId: rect.id }]);
     expect(result.elements.find((e) => e.id === rect.id)).toBeUndefined();
     if (textId) {
       expect(result.elements.find((e) => e.id === textId)).toBeUndefined();
@@ -382,9 +509,7 @@ describe('patchScene', () => {
   it('does not mutate the original scene', () => {
     const scene = makeTestScene();
     const originalElements = [...scene.elements];
-    patchScene(scene, [
-      { op: 'add', element: { type: 'diamond', x: 500, y: 0 } },
-    ]);
+    patchScene(scene, [{ op: 'add', element: { type: 'diamond', x: 500, y: 0 } }]);
     expect(scene.elements.length).toBe(originalElements.length);
   });
 
@@ -394,12 +519,12 @@ describe('patchScene', () => {
       { id: 'b', type: 'rectangle', x: 300, y: 0 },
       { id: 'arr', type: 'arrow', x: 120, y: 30, startId: 'a', endId: 'b' },
     ]);
-    const result = patchScene(scene, [{ op: 'delete', elementId: scene.elements.find((e) => e.type === 'rectangle')!.id }]);
+    const result = patchScene(scene, [
+      { op: 'delete', elementId: scene.elements.find((e) => e.type === 'rectangle')!.id },
+    ]);
     const arrow = result.elements.find((e) => e.type === 'arrow');
     // At least one binding should be nullified
-    expect(
-      arrow?.startBinding === null || arrow?.endBinding === null
-    ).toBe(true);
+    expect(arrow?.startBinding === null || arrow?.endBinding === null).toBe(true);
   });
 });
 
@@ -414,9 +539,7 @@ describe('renderSceneToSvg', () => {
   });
 
   it('renders rectangles as rect elements', () => {
-    const scene = buildScene('Test', [
-      { type: 'rectangle', x: 10, y: 20, width: 100, height: 60 },
-    ]);
+    const scene = buildScene('Test', [{ type: 'rectangle', x: 10, y: 20, width: 100, height: 60 }]);
     const svg = renderSceneToSvg(scene);
     expect(svg).toContain('<rect');
     expect(svg).toContain('width="100"');
@@ -424,25 +547,19 @@ describe('renderSceneToSvg', () => {
   });
 
   it('renders ellipses as ellipse elements', () => {
-    const scene = buildScene('Test', [
-      { type: 'ellipse', x: 0, y: 0, width: 120, height: 80 },
-    ]);
+    const scene = buildScene('Test', [{ type: 'ellipse', x: 0, y: 0, width: 120, height: 80 }]);
     const svg = renderSceneToSvg(scene);
     expect(svg).toContain('<ellipse');
   });
 
   it('renders diamonds as polygon elements', () => {
-    const scene = buildScene('Test', [
-      { type: 'diamond', x: 0, y: 0, width: 100, height: 100 },
-    ]);
+    const scene = buildScene('Test', [{ type: 'diamond', x: 0, y: 0, width: 100, height: 100 }]);
     const svg = renderSceneToSvg(scene);
     expect(svg).toContain('<polygon');
   });
 
   it('renders text elements', () => {
-    const scene = buildScene('Test', [
-      { type: 'text', x: 0, y: 0, label: 'Hello World' },
-    ]);
+    const scene = buildScene('Test', [{ type: 'text', x: 0, y: 0, label: 'Hello World' }]);
     const svg = renderSceneToSvg(scene);
     expect(svg).toContain('<text');
     expect(svg).toContain('Hello World');
@@ -470,35 +587,27 @@ describe('renderSceneToSvg', () => {
   });
 
   it('respects darkMode option', () => {
-    const scene = buildScene('Test', [
-      { type: 'rectangle', x: 0, y: 0 },
-    ]);
+    const scene = buildScene('Test', [{ type: 'rectangle', x: 0, y: 0 }]);
     const svg = renderSceneToSvg(scene, { darkMode: true });
     expect(svg).toContain('#1e1e1e');
   });
 
   it('respects custom width and height', () => {
-    const scene = buildScene('Test', [
-      { type: 'rectangle', x: 0, y: 0, width: 50, height: 30 },
-    ]);
+    const scene = buildScene('Test', [{ type: 'rectangle', x: 0, y: 0, width: 50, height: 30 }]);
     const svg = renderSceneToSvg(scene, { width: 800, height: 600 });
     expect(svg).toContain('width="800"');
     expect(svg).toContain('height="600"');
   });
 
   it('handles labeled shapes (rect + bound text)', () => {
-    const scene = buildScene('Test', [
-      { type: 'rectangle', x: 0, y: 0, label: 'Box' },
-    ]);
+    const scene = buildScene('Test', [{ type: 'rectangle', x: 0, y: 0, label: 'Box' }]);
     const svg = renderSceneToSvg(scene);
     expect(svg).toContain('<rect');
     expect(svg).toContain('Box');
   });
 
   it('skips deleted elements', () => {
-    const scene = buildScene('Test', [
-      { type: 'rectangle', x: 0, y: 0 },
-    ]);
+    const scene = buildScene('Test', [{ type: 'rectangle', x: 0, y: 0 }]);
     scene.elements[0]!.isDeleted = true;
     const svg = renderSceneToSvg(scene);
     expect(svg).not.toContain('<rect');

@@ -78,11 +78,7 @@ function buildAttestationDoc(pcrs: Record<string, string>): Buffer {
     pcrEntries.push(cborBytes(Buffer.from(pcrs[key], 'hex')));
   }
   const pcrMap = Buffer.concat([cborMapHeader(pcrKeys.length), ...pcrEntries]);
-  const payloadMap = Buffer.concat([
-    cborMapHeader(1),
-    cborText('pcrs'),
-    pcrMap,
-  ]);
+  const payloadMap = Buffer.concat([cborMapHeader(1), cborText('pcrs'), pcrMap]);
   const payloadBytes = cborBytes(payloadMap);
 
   // COSE_Sign1 = [protected, unprotected, payload, signature]

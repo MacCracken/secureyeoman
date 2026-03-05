@@ -62,7 +62,10 @@ function getMarketDataProvider(): { name: string; baseUrl: string; apiKey: strin
   return null;
 }
 
-async function marketDataFetch(path: string, params: Record<string, string> = {}): Promise<unknown> {
+async function marketDataFetch(
+  path: string,
+  params: Record<string, string> = {}
+): Promise<unknown> {
   const provider = getMarketDataProvider();
   if (!provider) {
     throw new Error(
@@ -336,7 +339,11 @@ export function registerTradingTools(server: McpServer, middleware: ToolMiddlewa
           .max(100)
           .optional()
           .describe('Trade setup type, e.g. "ICT OB", "Wyckoff Spring", "Breakout"'),
-        notes: z.string().max(2000).optional().describe('Trade notes, lessons learned, screenshots'),
+        notes: z
+          .string()
+          .max(2000)
+          .optional()
+          .describe('Trade notes, lessons learned, screenshots'),
         tags: z
           .array(z.string().max(50))
           .max(10)

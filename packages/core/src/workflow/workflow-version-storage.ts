@@ -94,10 +94,7 @@ export class WorkflowVersionStorage extends PgBaseStorage {
     return row ? rowToVersion(row) : null;
   }
 
-  async getVersionByTag(
-    workflowId: string,
-    tag: string
-  ): Promise<WorkflowVersion | null> {
+  async getVersionByTag(workflowId: string, tag: string): Promise<WorkflowVersion | null> {
     const row = await this.queryOne<WorkflowVersionRow>(
       'SELECT * FROM workflow.versions WHERE workflow_id = $1 AND version_tag = $2',
       [workflowId, tag]
@@ -150,7 +147,7 @@ export class WorkflowVersionStorage extends PgBaseStorage {
       if (row.version_tag === baseTag) {
         maxSuffix = Math.max(maxSuffix, 1);
       } else {
-        const match = row.version_tag.match(/-(\d+)$/);
+        const match = /-(\d+)$/.exec(row.version_tag);
         if (match) {
           maxSuffix = Math.max(maxSuffix, Number(match[1]) + 1);
         }
@@ -160,9 +157,6 @@ export class WorkflowVersionStorage extends PgBaseStorage {
   }
 
   async deleteVersionsForWorkflow(workflowId: string): Promise<number> {
-    return this.execute(
-      'DELETE FROM workflow.versions WHERE workflow_id = $1',
-      [workflowId]
-    );
+    return this.execute('DELETE FROM workflow.versions WHERE workflow_id = $1', [workflowId]);
   }
 }

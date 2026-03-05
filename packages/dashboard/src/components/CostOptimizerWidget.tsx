@@ -44,7 +44,7 @@ interface CostForecast {
 interface DetailedCostAnalysis {
   totalCostUsd: number;
   dailyAverageCostUsd: number;
-  topModels: Array<{ model: string; costUsd: number; callCount: number }>;
+  topModels: { model: string; costUsd: number; callCount: number }[];
   perModelStats: PerModelStats[];
   workloadBreakdown: { simple: number; moderate: number; complex: number };
   potentialSavingsUsd: number;
@@ -84,14 +84,25 @@ export function CostOptimizerWidget() {
     return <div className="p-4 text-sm text-zinc-500">Cost data unavailable</div>;
   }
 
-  const { forecast, workloadBreakdown, routingSuggestions, perModelStats, potentialSavingsUsd } = data;
+  const { forecast, workloadBreakdown, routingSuggestions, perModelStats, potentialSavingsUsd } =
+    data;
 
   // Sparkline data from top models (simplified — uses per-model cost as bar heights)
   const topModels = perModelStats.slice(0, 5);
   const maxCost = Math.max(...topModels.map((m) => m.totalCostUsd), 0.01);
 
-  const trendIcon = forecast.trend === 'increasing' ? '\u2191' : forecast.trend === 'decreasing' ? '\u2193' : '\u2192';
-  const trendColor = forecast.trend === 'increasing' ? 'text-red-400' : forecast.trend === 'decreasing' ? 'text-green-400' : 'text-zinc-400';
+  const trendIcon =
+    forecast.trend === 'increasing'
+      ? '\u2191'
+      : forecast.trend === 'decreasing'
+        ? '\u2193'
+        : '\u2192';
+  const trendColor =
+    forecast.trend === 'increasing'
+      ? 'text-red-400'
+      : forecast.trend === 'decreasing'
+        ? 'text-green-400'
+        : 'text-zinc-400';
 
   return (
     <div className="flex flex-col gap-3 p-4 text-sm">
@@ -102,15 +113,21 @@ export function CostOptimizerWidget() {
         <div className="mb-2 font-medium text-zinc-300">Forecast</div>
         <div className="grid grid-cols-3 gap-2 text-center">
           <div>
-            <div className="text-lg font-bold text-zinc-200">${forecast.dailyProjected.toFixed(2)}</div>
+            <div className="text-lg font-bold text-zinc-200">
+              ${forecast.dailyProjected.toFixed(2)}
+            </div>
             <div className="text-xs text-zinc-500">Daily</div>
           </div>
           <div>
-            <div className="text-lg font-bold text-zinc-200">${forecast.weeklyProjected.toFixed(2)}</div>
+            <div className="text-lg font-bold text-zinc-200">
+              ${forecast.weeklyProjected.toFixed(2)}
+            </div>
             <div className="text-xs text-zinc-500">Weekly</div>
           </div>
           <div>
-            <div className="text-lg font-bold text-zinc-200">${forecast.monthlyProjected.toFixed(2)}</div>
+            <div className="text-lg font-bold text-zinc-200">
+              ${forecast.monthlyProjected.toFixed(2)}
+            </div>
             <div className="text-xs text-zinc-500">Monthly</div>
           </div>
         </div>

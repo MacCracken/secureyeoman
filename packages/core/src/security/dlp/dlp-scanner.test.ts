@@ -5,9 +5,12 @@ import type { DlpPolicyStore } from './dlp-policy-store.js';
 import type { DlpPolicy } from './types.js';
 
 function makeEngine() {
-  return new ClassificationEngine({}, {
-    logger: { debug: vi.fn(), warn: vi.fn(), info: vi.fn(), error: vi.fn() } as any,
-  });
+  return new ClassificationEngine(
+    {},
+    {
+      logger: { debug: vi.fn(), warn: vi.fn(), info: vi.fn(), error: vi.fn() } as any,
+    }
+  );
 }
 
 function makeMockPolicyStore(policies: DlpPolicy[] = []) {
@@ -185,10 +188,13 @@ describe('DlpScanner', () => {
     });
     const store = makeMockPolicyStore([policy]);
     const scanner = new DlpScanner(engine, store);
-    const result = await scanner.scan('Email alice@example.com about the top secret project', 'slack');
+    const result = await scanner.scan(
+      'Email alice@example.com about the top secret project',
+      'slack'
+    );
     expect(result.allowed).toBe(false);
     expect(result.findings.length).toBe(2);
-    const types = result.findings.map(f => f.type);
+    const types = result.findings.map((f) => f.type);
     expect(types).toContain('pii_type');
     expect(types).toContain('keyword');
   });

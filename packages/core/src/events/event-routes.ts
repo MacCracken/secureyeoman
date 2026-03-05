@@ -16,10 +16,7 @@ export interface EventRoutesOptions {
   store: EventSubscriptionStore;
 }
 
-export function registerEventRoutes(
-  app: FastifyInstance,
-  opts: EventRoutesOptions
-): void {
+export function registerEventRoutes(app: FastifyInstance, opts: EventRoutesOptions): void {
   const { dispatcher, store } = opts;
 
   // POST /api/v1/events/subscriptions — create subscription
@@ -151,38 +148,44 @@ export function registerEventRoutes(
   });
 
   // GET /api/v1/events/subscriptions/:id/deliveries — list deliveries
-  app.get<{ Params: { id: string } }>('/api/v1/events/subscriptions/:id/deliveries', async (req, reply) => {
-    try {
-      const subscription = await store.getSubscription(req.params.id);
-      if (!subscription) return sendError(reply, 404, 'Subscription not found');
+  app.get<{ Params: { id: string } }>(
+    '/api/v1/events/subscriptions/:id/deliveries',
+    async (req, reply) => {
+      try {
+        const subscription = await store.getSubscription(req.params.id);
+        if (!subscription) return sendError(reply, 404, 'Subscription not found');
 
-      const query = req.query as { limit?: string; offset?: string };
-      const { limit, offset } = parsePagination(query);
-      const result = await store.listDeliveries(req.params.id, { limit, offset });
-      return reply.send(result);
-    } catch (err) {
-      return sendError(reply, 500, toErrorMessage(err));
+        const query = req.query as { limit?: string; offset?: string };
+        const { limit, offset } = parsePagination(query);
+        const result = await store.listDeliveries(req.params.id, { limit, offset });
+        return reply.send(result);
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
     }
-  });
+  );
 
   // POST /api/v1/events/subscriptions/:id/test — send test event
-  app.post<{ Params: { id: string } }>('/api/v1/events/subscriptions/:id/test', async (req, reply) => {
-    try {
-      const subscription = await store.getSubscription(req.params.id);
-      if (!subscription) return sendError(reply, 404, 'Subscription not found');
+  app.post<{ Params: { id: string } }>(
+    '/api/v1/events/subscriptions/:id/test',
+    async (req, reply) => {
+      try {
+        const subscription = await store.getSubscription(req.params.id);
+        if (!subscription) return sendError(reply, 404, 'Subscription not found');
 
-      const testEvent = {
-        id: uuidv7(),
-        type: subscription.eventTypes[0] ?? ('conversation.started' as const),
-        timestamp: Date.now(),
-        tenantId: subscription.tenantId,
-        data: { test: true, message: 'This is a test event from SecureYeoman' },
-      };
+        const testEvent = {
+          id: uuidv7(),
+          type: subscription.eventTypes[0] ?? ('conversation.started' as const),
+          timestamp: Date.now(),
+          tenantId: subscription.tenantId,
+          data: { test: true, message: 'This is a test event from SecureYeoman' },
+        };
 
-      await dispatcher.emit(testEvent);
-      return reply.send({ sent: true, event: testEvent });
-    } catch (err) {
-      return sendError(reply, 500, toErrorMessage(err));
+        await dispatcher.emit(testEvent);
+        return reply.send({ sent: true, event: testEvent });
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
     }
-  });
+  );
 }

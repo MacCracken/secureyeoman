@@ -60,10 +60,7 @@ export class MemoryAuditEngine {
     this.getAlertManager = opts.getAlertManager;
   }
 
-  async runAudit(
-    scope: MemoryAuditScope,
-    personalityId?: string
-  ): Promise<MemoryAuditReport> {
+  async runAudit(scope: MemoryAuditScope, personalityId?: string): Promise<MemoryAuditReport> {
     const report = await this.auditStorage.createReport({
       scope,
       personalityId: personalityId ?? null,
@@ -109,7 +106,9 @@ export class MemoryAuditEngine {
       const postSnapshot = await this.takeSnapshot(personalityId);
 
       // Determine final status
-      const finalStatus = this.policy.requiresApproval() ? 'pending_approval' as const : 'completed' as const;
+      const finalStatus = this.policy.requiresApproval()
+        ? ('pending_approval' as const)
+        : ('completed' as const);
 
       const updated = await this.auditStorage.updateReport(report.id, {
         status: finalStatus,
@@ -138,10 +137,15 @@ export class MemoryAuditEngine {
       if (postSnapshot.totalMemories > 0) {
         const health = await this.auditStorage.getHealthMetrics(personalityId);
         if (health.healthScore < 50) {
-          this.emitAlert('brain.memory_health_degraded', 'warning', 'Memory health score below threshold', {
-            healthScore: health.healthScore,
-            threshold: 50,
-          });
+          this.emitAlert(
+            'brain.memory_health_degraded',
+            'warning',
+            'Memory health score below threshold',
+            {
+              healthScore: health.healthScore,
+              threshold: 50,
+            }
+          );
         }
       }
 

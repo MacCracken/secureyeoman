@@ -98,10 +98,7 @@ export class PersonalityVersionStorage extends PgBaseStorage {
     return row ? rowToVersion(row) : null;
   }
 
-  async getVersionByTag(
-    personalityId: string,
-    tag: string
-  ): Promise<PersonalityVersion | null> {
+  async getVersionByTag(personalityId: string, tag: string): Promise<PersonalityVersion | null> {
     const row = await this.queryOne<PersonalityVersionRow>(
       'SELECT * FROM soul.personality_versions WHERE personality_id = $1 AND version_tag = $2',
       [personalityId, tag]
@@ -164,7 +161,7 @@ export class PersonalityVersionStorage extends PgBaseStorage {
       if (row.version_tag === baseTag) {
         maxSuffix = Math.max(maxSuffix, 1);
       } else {
-        const match = row.version_tag.match(/-(\d+)$/);
+        const match = /-(\d+)$/.exec(row.version_tag);
         if (match) {
           maxSuffix = Math.max(maxSuffix, Number(match[1]) + 1);
         }
@@ -174,9 +171,8 @@ export class PersonalityVersionStorage extends PgBaseStorage {
   }
 
   async deleteVersionsForPersonality(personalityId: string): Promise<number> {
-    return this.execute(
-      'DELETE FROM soul.personality_versions WHERE personality_id = $1',
-      [personalityId]
-    );
+    return this.execute('DELETE FROM soul.personality_versions WHERE personality_id = $1', [
+      personalityId,
+    ]);
   }
 }

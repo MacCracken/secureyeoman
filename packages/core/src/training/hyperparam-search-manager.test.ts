@@ -63,7 +63,8 @@ function rowToSearch(row: Record<string, unknown>): HyperparamSearch {
     status: row.status as HyperparamSearch['status'],
     bestJobId: (row.best_job_id as string) ?? null,
     bestMetricValue: (row.best_metric_value as number) ?? null,
-    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at ?? ''),
+    createdAt:
+      row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at ?? ''),
     completedAt: row.completed_at instanceof Date ? row.completed_at.toISOString() : null,
   };
 }
@@ -155,10 +156,12 @@ describe('HyperparamSearchManager', () => {
 
   describe('generateTrialConfigs()', () => {
     it('grid search: 2 params x 2 values = 4 combos', () => {
-      const search = rowToSearch(makeSearchRow({
-        param_space: { loraRank: [8, 16], epochs: [3, 5] },
-        max_trials: 10,
-      }));
+      const search = rowToSearch(
+        makeSearchRow({
+          param_space: { loraRank: [8, 16], epochs: [3, 5] },
+          max_trials: 10,
+        })
+      );
 
       const configs = manager.generateTrialConfigs(search);
       expect(configs).toHaveLength(4);
@@ -171,20 +174,24 @@ describe('HyperparamSearchManager', () => {
     });
 
     it('grid search respects maxTrials', () => {
-      const search = rowToSearch(makeSearchRow({
-        param_space: { loraRank: [8, 16, 32], epochs: [3, 5, 10] },
-        max_trials: 4,
-      }));
+      const search = rowToSearch(
+        makeSearchRow({
+          param_space: { loraRank: [8, 16, 32], epochs: [3, 5, 10] },
+          max_trials: 4,
+        })
+      );
 
       const configs = manager.generateTrialConfigs(search);
       expect(configs).toHaveLength(4);
     });
 
     it('grid search with single param', () => {
-      const search = rowToSearch(makeSearchRow({
-        param_space: { loraRank: [8, 16, 32] },
-        max_trials: 10,
-      }));
+      const search = rowToSearch(
+        makeSearchRow({
+          param_space: { loraRank: [8, 16, 32] },
+          max_trials: 10,
+        })
+      );
 
       const configs = manager.generateTrialConfigs(search);
       expect(configs).toHaveLength(3);
@@ -194,22 +201,26 @@ describe('HyperparamSearchManager', () => {
     });
 
     it('random search returns maxTrials configs', () => {
-      const search = rowToSearch(makeSearchRow({
-        search_strategy: 'random',
-        param_space: { loraRank: [8, 16, 32], epochs: [3, 5] },
-        max_trials: 5,
-      }));
+      const search = rowToSearch(
+        makeSearchRow({
+          search_strategy: 'random',
+          param_space: { loraRank: [8, 16, 32], epochs: [3, 5] },
+          max_trials: 5,
+        })
+      );
 
       const configs = manager.generateTrialConfigs(search);
       expect(configs).toHaveLength(5);
     });
 
     it('random search samples from arrays', () => {
-      const search = rowToSearch(makeSearchRow({
-        search_strategy: 'random',
-        param_space: { loraRank: [8, 16] },
-        max_trials: 20,
-      }));
+      const search = rowToSearch(
+        makeSearchRow({
+          search_strategy: 'random',
+          param_space: { loraRank: [8, 16] },
+          max_trials: 20,
+        })
+      );
 
       const configs = manager.generateTrialConfigs(search);
       const values = configs.map((c) => c.loraRank);
@@ -219,11 +230,13 @@ describe('HyperparamSearchManager', () => {
     });
 
     it('empty param space returns base config', () => {
-      const search = rowToSearch(makeSearchRow({
-        param_space: {},
-        base_config: { baseModel: 'llama3:8b' },
-        max_trials: 5,
-      }));
+      const search = rowToSearch(
+        makeSearchRow({
+          param_space: {},
+          base_config: { baseModel: 'llama3:8b' },
+          max_trials: 5,
+        })
+      );
 
       const configs = manager.generateTrialConfigs(search);
       expect(configs).toHaveLength(1);
@@ -232,11 +245,13 @@ describe('HyperparamSearchManager', () => {
     });
 
     it('carries base config fields', () => {
-      const search = rowToSearch(makeSearchRow({
-        base_config: { baseModel: 'llama3:8b', datasetPath: '/data/train.jsonl' },
-        param_space: { loraRank: [8] },
-        max_trials: 5,
-      }));
+      const search = rowToSearch(
+        makeSearchRow({
+          base_config: { baseModel: 'llama3:8b', datasetPath: '/data/train.jsonl' },
+          param_space: { loraRank: [8] },
+          max_trials: 5,
+        })
+      );
 
       const configs = manager.generateTrialConfigs(search);
       expect(configs[0]!.baseModel).toBe('llama3:8b');
@@ -272,8 +287,8 @@ describe('HyperparamSearchManager', () => {
       pool.query = vi
         .fn()
         .mockResolvedValueOnce({ rows: [searchRow], rowCount: 1 }) // get()
-        .mockResolvedValueOnce({ rows: [], rowCount: 1 })          // UPDATE running
-        .mockResolvedValue({ rows: [], rowCount: 0 });             // _watchCompletion polls
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // UPDATE running
+        .mockResolvedValue({ rows: [], rowCount: 0 }); // _watchCompletion polls
 
       await manager.startSearch('hs-1');
 

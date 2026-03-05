@@ -205,19 +205,15 @@ export class SecurityModule implements AppModule {
     // DLP Classification (Phase 136)
     this.classificationStore = new ClassificationStore();
     const dlpCfg = this.config.security.dlp;
-    this.classificationEngine = new ClassificationEngine(
-      dlpCfg?.classification ?? {},
-      { logger: this.logger.child({ component: 'ClassificationEngine' }) },
-    );
+    this.classificationEngine = new ClassificationEngine(dlpCfg?.classification ?? {}, {
+      logger: this.logger.child({ component: 'ClassificationEngine' }),
+    });
     this.logger.debug('DLP classification engine initialized');
 
     // DLP Outbound Scanning (Phase 136-B)
     this.dlpPolicyStore = new DlpPolicyStore();
     this.egressStore = new EgressStore();
-    this.dlpScanner = new DlpScanner(
-      this.classificationEngine,
-      this.dlpPolicyStore,
-    );
+    this.dlpScanner = new DlpScanner(this.classificationEngine, this.dlpPolicyStore);
     this.dlpManager = new DlpManager({
       scanner: this.dlpScanner,
       policyStore: this.dlpPolicyStore,
@@ -356,7 +352,7 @@ export class SecurityModule implements AppModule {
       const scanPolicy = this.config.security.sandboxArtifactScanning ?? {};
       const pipeline = new ScannerPipeline(
         [new CodeScanner(), new SecretsScanner(), new DataScanner()],
-        { policy: scanPolicy as import('@secureyeoman/shared').ExternalizationPolicy },
+        { policy: scanPolicy as import('@secureyeoman/shared').ExternalizationPolicy }
       );
       this.externalizationGate = new ExternalizationGate({
         pipeline,
@@ -364,16 +360,36 @@ export class SecurityModule implements AppModule {
         scanHistoryStore: this.scanHistoryStore,
         secretsScanner: new SecretsScanner(),
         policy: scanPolicy as import('@secureyeoman/shared').ExternalizationPolicy,
-        getAlertManager: () => deps.getAlertManager() ? {
-          fire: (type: string, severity: string, message: string, meta?: Record<string, unknown>) => {
-            void deps.getAlertManager()!.evaluate({ [type]: 1 });
-          },
-        } : null,
-        auditChain: deps.auditChain ? {
-          record: async (event: string, level: string, message: string, metadata?: Record<string, unknown>): Promise<void> => {
-            await deps.auditChain.record({ event, level: level as 'info' | 'warn' | 'error' | 'security' | 'debug' | 'trace', message, metadata });
-          },
-        } : null,
+        getAlertManager: () =>
+          deps.getAlertManager()
+            ? {
+                fire: (
+                  type: string,
+                  severity: string,
+                  message: string,
+                  meta?: Record<string, unknown>
+                ) => {
+                  void deps.getAlertManager()!.evaluate({ [type]: 1 });
+                },
+              }
+            : null,
+        auditChain: deps.auditChain
+          ? {
+              record: async (
+                event: string,
+                level: string,
+                message: string,
+                metadata?: Record<string, unknown>
+              ): Promise<void> => {
+                await deps.auditChain.record({
+                  event,
+                  level: level as 'info' | 'warn' | 'error' | 'security' | 'debug' | 'trace',
+                  message,
+                  metadata,
+                });
+              },
+            }
+          : null,
       });
       this.logger.debug('ExternalizationGate initialized');
     } catch (err) {
@@ -387,7 +403,7 @@ export class SecurityModule implements AppModule {
       try {
         const pool = getPool();
         this.athiManager = new AthiManager({
-          storage: this.athiStorage!,
+          storage: this.athiStorage,
           pool,
           auditChain: deps.auditChain,
           getAlertManager: deps.getAlertManager,
@@ -405,13 +421,13 @@ export class SecurityModule implements AppModule {
       try {
         const pool = getPool();
         this.sraManager = new SraManager({
-          storage: this.sraStorage!,
+          storage: this.sraStorage,
           pool,
           auditChain: deps.auditChain,
           getAlertManager: deps.getAlertManager,
         });
-        await this.sraManager!.seedBuiltinBlueprints();
-        await this.sraManager!.seedComplianceMappings();
+        await this.sraManager.seedBuiltinBlueprints();
+        await this.sraManager.seedComplianceMappings();
         this.logger.debug('SraManager initialized');
       } catch (error) {
         this.logger.warn('SraManager initialization failed (non-fatal)', {
@@ -434,14 +450,14 @@ export class SecurityModule implements AppModule {
   getOrCreateAutonomyAuditManager(
     soulManager: SoulManager | null,
     workflowManager: WorkflowManager | null,
-    auditChain: AuditChain | null,
+    auditChain: AuditChain | null
   ): AutonomyAuditManager | null {
     if (!this.autonomyAuditManager && this.autonomyAuditStorage) {
       this.autonomyAuditManager = new AutonomyAuditManager(
         this.autonomyAuditStorage,
         soulManager,
         workflowManager,
-        auditChain,
+        auditChain
       );
     }
     return this.autonomyAuditManager;
@@ -554,29 +570,79 @@ export class SecurityModule implements AppModule {
   // Getters
   // ------------------------------------------------------------------
 
-  getKeyringManager(): KeyringManager | null { return this.keyringManager; }
-  getSecretsManager(): SecretsManager | null { return this.secretsManager; }
-  getTlsManager(): TlsManager | null { return this.tlsManager; }
-  getRotationManager(): SecretRotationManager | null { return this.rotationManager; }
-  getRBAC(): RBAC | null { return this.rbac; }
-  getRBACStorage(): RBACStorage | null { return this.rbacStorage; }
-  getValidator(): InputValidator | null { return this.validator; }
-  getRateLimiter(): RateLimiterLike | null { return this.rateLimiter; }
-  getSsoStorage(): SsoStorage | null { return this.ssoStorage; }
-  getSsoManager(): SsoManager | null { return this.ssoManager; }
-  getAthiManager(): AthiManager | null { return this.athiManager; }
-  getSraManager(): SraManager | null { return this.sraManager; }
-  getAutonomyAuditStorage(): AutonomyAuditStorage | null { return this.autonomyAuditStorage; }
-  getAutonomyAuditManager(): AutonomyAuditManager | null { return this.autonomyAuditManager; }
-  getScanHistoryStore(): ScanHistoryStore | null { return this.scanHistoryStore; }
-  getQuarantineStorage(): QuarantineStorage | null { return this.quarantineStorage; }
-  getExternalizationGate(): ExternalizationGate | null { return this.externalizationGate; }
-  getClassificationEngine(): ClassificationEngine | null { return this.classificationEngine; }
-  getClassificationStore(): ClassificationStore | null { return this.classificationStore; }
-  getDlpManager(): DlpManager | null { return this.dlpManager; }
-  getDlpPolicyStore(): DlpPolicyStore | null { return this.dlpPolicyStore; }
-  getWatermarkEngine(): WatermarkEngine | null { return this.watermarkEngine; }
-  getWatermarkStore(): WatermarkStore | null { return this.watermarkStore; }
-  getRetentionStore(): RetentionStore | null { return this.retentionStore; }
-  getRetentionManager(): RetentionManager | null { return this.retentionManager; }
+  getKeyringManager(): KeyringManager | null {
+    return this.keyringManager;
+  }
+  getSecretsManager(): SecretsManager | null {
+    return this.secretsManager;
+  }
+  getTlsManager(): TlsManager | null {
+    return this.tlsManager;
+  }
+  getRotationManager(): SecretRotationManager | null {
+    return this.rotationManager;
+  }
+  getRBAC(): RBAC | null {
+    return this.rbac;
+  }
+  getRBACStorage(): RBACStorage | null {
+    return this.rbacStorage;
+  }
+  getValidator(): InputValidator | null {
+    return this.validator;
+  }
+  getRateLimiter(): RateLimiterLike | null {
+    return this.rateLimiter;
+  }
+  getSsoStorage(): SsoStorage | null {
+    return this.ssoStorage;
+  }
+  getSsoManager(): SsoManager | null {
+    return this.ssoManager;
+  }
+  getAthiManager(): AthiManager | null {
+    return this.athiManager;
+  }
+  getSraManager(): SraManager | null {
+    return this.sraManager;
+  }
+  getAutonomyAuditStorage(): AutonomyAuditStorage | null {
+    return this.autonomyAuditStorage;
+  }
+  getAutonomyAuditManager(): AutonomyAuditManager | null {
+    return this.autonomyAuditManager;
+  }
+  getScanHistoryStore(): ScanHistoryStore | null {
+    return this.scanHistoryStore;
+  }
+  getQuarantineStorage(): QuarantineStorage | null {
+    return this.quarantineStorage;
+  }
+  getExternalizationGate(): ExternalizationGate | null {
+    return this.externalizationGate;
+  }
+  getClassificationEngine(): ClassificationEngine | null {
+    return this.classificationEngine;
+  }
+  getClassificationStore(): ClassificationStore | null {
+    return this.classificationStore;
+  }
+  getDlpManager(): DlpManager | null {
+    return this.dlpManager;
+  }
+  getDlpPolicyStore(): DlpPolicyStore | null {
+    return this.dlpPolicyStore;
+  }
+  getWatermarkEngine(): WatermarkEngine | null {
+    return this.watermarkEngine;
+  }
+  getWatermarkStore(): WatermarkStore | null {
+    return this.watermarkStore;
+  }
+  getRetentionStore(): RetentionStore | null {
+    return this.retentionStore;
+  }
+  getRetentionManager(): RetentionManager | null {
+    return this.retentionManager;
+  }
 }

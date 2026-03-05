@@ -197,7 +197,11 @@ describe('ProviderAccountManager', () => {
       mockValidator.validate.mockResolvedValue({ valid: true, models: ['claude-sonnet-4'] });
 
       const result = await manager.validateAccount('acc-1');
-      expect(mockStorage.updateValidation).toHaveBeenCalledWith('acc-1', 'active', expect.any(Object));
+      expect(mockStorage.updateValidation).toHaveBeenCalledWith(
+        'acc-1',
+        'active',
+        expect.any(Object)
+      );
       expect(result!.status).toBe('active');
     });
 

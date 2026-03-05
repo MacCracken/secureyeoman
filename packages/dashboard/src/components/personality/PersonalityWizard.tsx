@@ -52,7 +52,9 @@ export function PersonalityWizard({ onComplete, onCancel }: PersonalityWizardPro
       queryClient.invalidateQueries({ queryKey: ['personalities'] });
       onComplete();
     },
-    onError: (err: Error) => setError(err.message),
+    onError: (err: Error) => {
+      setError(err.message);
+    },
   });
 
   const canAdvance = () => {
@@ -62,12 +64,12 @@ export function PersonalityWizard({ onComplete, onCancel }: PersonalityWizardPro
 
   const goNext = () => {
     const idx = STEPS.indexOf(currentStep);
-    if (idx < STEPS.length - 1) setCurrentStep(STEPS[idx + 1]!);
+    if (idx < STEPS.length - 1) setCurrentStep(STEPS[idx + 1]);
   };
 
   const goBack = () => {
     const idx = STEPS.indexOf(currentStep);
-    if (idx > 0) setCurrentStep(STEPS[idx - 1]!);
+    if (idx > 0) setCurrentStep(STEPS[idx - 1]);
   };
 
   const handleCreate = () => {
@@ -136,7 +138,9 @@ export function PersonalityWizard({ onComplete, onCancel }: PersonalityWizardPro
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+              }}
               placeholder="e.g., FRIDAY, SecurityBot, DataAnalyst"
               className="w-full px-3 py-2 border rounded-md bg-background"
               autoFocus
@@ -144,7 +148,9 @@ export function PersonalityWizard({ onComplete, onCancel }: PersonalityWizardPro
             <label className="block text-sm font-medium mt-4 mb-1">Mission (System Prompt)</label>
             <textarea
               value={systemPrompt}
-              onChange={(e) => setSystemPrompt(e.target.value)}
+              onChange={(e) => {
+                setSystemPrompt(e.target.value);
+              }}
               placeholder="Describe this personality's role and mission..."
               rows={4}
               className="w-full px-3 py-2 border rounded-md bg-background resize-y"
@@ -157,7 +163,9 @@ export function PersonalityWizard({ onComplete, onCancel }: PersonalityWizardPro
             <label className="block text-sm font-medium mb-1">Description / Focus Areas</label>
             <textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                setDescription(e.target.value);
+              }}
               placeholder="What topics should this personality focus on?"
               rows={3}
               className="w-full px-3 py-2 border rounded-md bg-background resize-y"
@@ -165,7 +173,9 @@ export function PersonalityWizard({ onComplete, onCancel }: PersonalityWizardPro
             <label className="block text-sm font-medium mt-4 mb-1">Sex</label>
             <select
               value={sex}
-              onChange={(e) => setSex(e.target.value)}
+              onChange={(e) => {
+                setSex(e.target.value);
+              }}
               className="w-full px-3 py-2 border rounded-md bg-background"
             >
               <option value="unspecified">Unspecified</option>
@@ -217,7 +227,9 @@ export function PersonalityWizard({ onComplete, onCancel }: PersonalityWizardPro
             </label>
             <textarea
               value={constraints}
-              onChange={(e) => setConstraints(e.target.value)}
+              onChange={(e) => {
+                setConstraints(e.target.value);
+              }}
               placeholder="Any rules or boundaries this personality should follow..."
               rows={5}
               className="w-full px-3 py-2 border rounded-md bg-background resize-y"
@@ -229,13 +241,27 @@ export function PersonalityWizard({ onComplete, onCancel }: PersonalityWizardPro
           <div className="space-y-3">
             <h3 className="font-medium">Review your personality</h3>
             <div className="bg-muted/50 rounded-md p-4 space-y-2 text-sm">
-              <p><strong>Name:</strong> {name}</p>
-              <p><strong>Description:</strong> {description || `${name} personality`}</p>
-              <p><strong>Traits:</strong> {formality}, {humor}, {verbosity}</p>
-              <p><strong>Reasoning:</strong> {reasoning}</p>
-              {constraints && <p><strong>Constraints:</strong> {constraints.slice(0, 100)}...</p>}
+              <p>
+                <strong>Name:</strong> {name}
+              </p>
+              <p>
+                <strong>Description:</strong> {description || `${name} personality`}
+              </p>
+              <p>
+                <strong>Traits:</strong> {formality}, {humor}, {verbosity}
+              </p>
+              <p>
+                <strong>Reasoning:</strong> {reasoning}
+              </p>
+              {constraints && (
+                <p>
+                  <strong>Constraints:</strong> {constraints.slice(0, 100)}...
+                </p>
+              )}
               {systemPrompt && (
-                <p><strong>System Prompt:</strong> {systemPrompt.slice(0, 100)}...</p>
+                <p>
+                  <strong>System Prompt:</strong> {systemPrompt.slice(0, 100)}...
+                </p>
               )}
             </div>
           </div>
@@ -312,7 +338,9 @@ function TraitSelector({
         {options.map((opt) => (
           <button
             key={opt}
-            onClick={() => onChange(opt)}
+            onClick={() => {
+              onChange(opt);
+            }}
             className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
               value === opt
                 ? 'bg-primary text-primary-foreground border-primary'

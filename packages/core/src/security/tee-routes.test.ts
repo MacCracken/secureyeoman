@@ -186,9 +186,18 @@ describe('TEE Routes', () => {
   describe('route registration', () => {
     it('registers 3 routes', async () => {
       // Use known providers to avoid application-level 404s
-      const getProviders = await app.inject({ method: 'GET', url: '/api/v1/security/tee/providers' });
-      const getAttestation = await app.inject({ method: 'GET', url: '/api/v1/security/tee/attestation/anthropic' });
-      const postVerify = await app.inject({ method: 'POST', url: '/api/v1/security/tee/verify/anthropic' });
+      const getProviders = await app.inject({
+        method: 'GET',
+        url: '/api/v1/security/tee/providers',
+      });
+      const getAttestation = await app.inject({
+        method: 'GET',
+        url: '/api/v1/security/tee/attestation/anthropic',
+      });
+      const postVerify = await app.inject({
+        method: 'POST',
+        url: '/api/v1/security/tee/verify/anthropic',
+      });
 
       // All should return 200 (valid routes with known providers)
       expect(getProviders.statusCode).toBe(200);

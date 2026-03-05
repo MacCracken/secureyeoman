@@ -13,7 +13,7 @@ const MAX_FINDINGS = 200;
 const POLYGLOT_SAMPLE_SIZE = 512;
 
 // ── Magic bytes for executable detection ──
-const MAGIC_BYTES: Array<{ name: string; bytes: number[]; severity: ScanFinding['severity'] }> = [
+const MAGIC_BYTES: { name: string; bytes: number[]; severity: ScanFinding['severity'] }[] = [
   { name: 'ELF executable', bytes: [0x7f, 0x45, 0x4c, 0x46], severity: 'critical' },
   { name: 'PE executable (MZ)', bytes: [0x4d, 0x5a], severity: 'critical' },
   { name: 'Mach-O 64-bit', bytes: [0xcf, 0xfa, 0xed, 0xfe], severity: 'critical' },
@@ -41,7 +41,8 @@ const SERIALIZATION_PATTERNS: SerializationPattern[] = [
     severity: 'critical',
     pattern: (buf: Buffer) => {
       for (let i = 0; i < buf.length - 1; i++) {
-        if (buf[i]! === 0x80 && buf[i + 1]! >= 0x02 && buf[i + 1]! <= 0x05) return true;
+        const byte = buf[i]!;
+        if (byte === 0x80 && buf[i + 1]! >= 0x02 && buf[i + 1]! <= 0x05) return true;
       }
       return false;
     },
@@ -88,9 +89,10 @@ export class DataScanner implements ArtifactScanner {
   async scan(artifact: SandboxArtifact, signal?: AbortSignal): Promise<ScanFinding[]> {
     const findings: ScanFinding[] = [];
 
-    const buf = typeof artifact.content === 'string'
-      ? Buffer.from(artifact.content, 'utf-8')
-      : artifact.content;
+    const buf =
+      typeof artifact.content === 'string'
+        ? Buffer.from(artifact.content, 'utf-8')
+        : artifact.content;
 
     // Check size
     if (artifact.sizeBytes > 52_428_800) {
@@ -118,9 +120,8 @@ export class DataScanner implements ArtifactScanner {
     if (signal?.aborted || findings.length >= MAX_FINDINGS) return findings;
 
     // Formula injection for CSV/JSONL content
-    const contentStr = typeof artifact.content === 'string'
-      ? artifact.content
-      : artifact.content.toString('utf-8');
+    const contentStr =
+      typeof artifact.content === 'string' ? artifact.content : artifact.content.toString('utf-8');
     this.scanFormulaInjection(artifact, contentStr, findings);
 
     return findings.slice(0, MAX_FINDINGS);
@@ -201,7 +202,7 @@ export class DataScanner implements ArtifactScanner {
   private scanFormulaInjection(
     artifact: SandboxArtifact,
     content: string,
-    findings: ScanFinding[],
+    findings: ScanFinding[]
   ): void {
     const isCsvOrJsonl =
       artifact.type?.includes('csv') ||
@@ -231,7 +232,8 @@ export class DataScanner implements ArtifactScanner {
             line: i + 1,
             evidence: trimmedCell.substring(0, 100),
             cwe: 'CWE-1236',
-            recommendation: "Prefix cell values with a single quote (') to prevent formula execution",
+            recommendation:
+              "Prefix cell values with a single quote (') to prevent formula execution",
           });
         } else if (FORMULA_SIMPLE.test(trimmedCell) && trimmedCell.length > 2) {
           findings.push({

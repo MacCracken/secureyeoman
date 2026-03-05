@@ -115,7 +115,11 @@ export function ConversationList({
       <div className="flex items-center justify-between px-3 py-2.5 border-b">
         <span className="text-sm font-medium">Conversations</span>
         <div className="flex items-center gap-1">
-          <button onClick={handleNew} className="btn-ghost p-1.5 rounded" aria-label="New conversation">
+          <button
+            onClick={handleNew}
+            className="btn-ghost p-1.5 rounded"
+            aria-label="New conversation"
+          >
             <Plus className="w-4 h-4" />
           </button>
           {/* Hide collapse on mobile — use backdrop dismiss instead */}
@@ -265,7 +269,11 @@ export function ConversationList({
           >
             <ChevronRight className="w-4 h-4" />
           </button>
-          <button onClick={onNew} className="btn-ghost p-1.5 rounded mb-2" aria-label="New conversation">
+          <button
+            onClick={onNew}
+            className="btn-ghost p-1.5 rounded mb-2"
+            aria-label="New conversation"
+          >
             <Plus className="w-4 h-4" />
           </button>
           {conversations.slice(0, 10).map((conv) => (

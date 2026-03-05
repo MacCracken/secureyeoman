@@ -22,9 +22,11 @@ export interface TenantRoutesOptions {
 
 export function registerTenantRoutes(app: FastifyInstance, opts: TenantRoutesOptions): void {
   const { tenantManager, secureYeoman } = opts;
-  const tenantGuardOpts = (secureYeoman
-    ? { preHandler: [requiresLicense('multi_tenancy', () => secureYeoman.getLicenseManager())] }
-    : {}) as Record<string, unknown>;
+  const tenantGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('multi_tenancy', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
 
   app.get(
     '/api/v1/admin/tenants',
@@ -34,7 +36,10 @@ export function registerTenantRoutes(app: FastifyInstance, opts: TenantRoutesOpt
       reply: FastifyReply
     ) => {
       try {
-        const { limit, offset } = parsePagination(request.query, { maxLimit: 200, defaultLimit: 50 });
+        const { limit, offset } = parsePagination(request.query, {
+          maxLimit: 200,
+          defaultLimit: 50,
+        });
         const result = await tenantManager.list(limit, offset);
         return reply.send({ tenants: result.records, total: result.total, limit, offset });
       } catch (err) {

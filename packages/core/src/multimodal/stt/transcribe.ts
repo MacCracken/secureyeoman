@@ -95,7 +95,9 @@ function getAwsCredentials(): {
   const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
   const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
   if (!accessKeyId || !secretAccessKey) {
-    throw new Error('AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables are required');
+    throw new Error(
+      'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables are required'
+    );
   }
 
   return {
@@ -119,12 +121,19 @@ function signAwsRequest(
 ): Record<string, string> {
   const parsedUrl = new URL(url);
   const now = new Date();
-  const dateStamp = now.toISOString().replace(/[:-]|\.\d{3}/g, '').slice(0, 8);
-  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '').slice(0, 15) + 'Z';
+  const dateStamp = now
+    .toISOString()
+    .replace(/[:-]|\.\d{3}/g, '')
+    .slice(0, 8);
+  const amzDate =
+    now
+      .toISOString()
+      .replace(/[:-]|\.\d{3}/g, '')
+      .slice(0, 15) + 'Z';
 
   const signedHeaders = { ...headers };
   signedHeaders['x-amz-date'] = amzDate;
-  signedHeaders['host'] = parsedUrl.host;
+  signedHeaders.host = parsedUrl.host;
   if (credentials.sessionToken) {
     signedHeaders['x-amz-security-token'] = credentials.sessionToken;
   }
@@ -133,7 +142,10 @@ function signAwsRequest(
     .map((k) => k.toLowerCase())
     .sort();
   const canonicalHeaders = sortedHeaderKeys
-    .map((k) => `${k}:${signedHeaders[Object.keys(signedHeaders).find((h) => h.toLowerCase() === k)!]?.trim()}`)
+    .map(
+      (k) =>
+        `${k}:${signedHeaders[Object.keys(signedHeaders).find((h) => h.toLowerCase() === k)!]?.trim()}`
+    )
     .join('\n');
   const signedHeadersStr = sortedHeaderKeys.join(';');
 
@@ -166,19 +178,14 @@ function signAwsRequest(
   );
   const signature = createHmac('sha256', signingKey).update(stringToSign).digest('hex');
 
-  signedHeaders['Authorization'] =
+  signedHeaders.Authorization =
     `AWS4-HMAC-SHA256 Credential=${credentials.accessKeyId}/${credentialScope}, ` +
     `SignedHeaders=${signedHeadersStr}, Signature=${signature}`;
 
   return signedHeaders;
 }
 
-function getSignatureKey(
-  key: string,
-  dateStamp: string,
-  region: string,
-  service: string
-): Buffer {
+function getSignatureKey(key: string, dateStamp: string, region: string, service: string): Buffer {
   const kDate = createHmac('sha256', `AWS4${key}`).update(dateStamp).digest();
   const kRegion = createHmac('sha256', kDate).update(region).digest();
   const kService = createHmac('sha256', kRegion).update(service).digest();
@@ -223,8 +230,7 @@ export async function transcribeViaAWSTranscribe(
     jobBody.IdentifyLanguage = true;
   }
 
-  const vocabularyName =
-    request.vocabularyName ?? process.env.TRANSCRIBE_CUSTOM_VOCABULARY;
+  const vocabularyName = request.vocabularyName ?? process.env.TRANSCRIBE_CUSTOM_VOCABULARY;
   if (vocabularyName) {
     jobBody.Settings = {
       ...(jobBody.Settings as Record<string, unknown> | undefined),
@@ -325,8 +331,8 @@ export async function transcribeViaAWSTranscribe(
   }
 
   // Fetch the transcript from the output URI
-  const transcriptUri = (resultData as { Transcript?: { TranscriptFileUri?: string } })
-    ?.Transcript?.TranscriptFileUri;
+  const transcriptUri = (resultData as { Transcript?: { TranscriptFileUri?: string } })?.Transcript
+    ?.TranscriptFileUri;
 
   if (!transcriptUri) {
     throw new Error('AWS Transcribe job completed but no transcript URI returned');
@@ -530,9 +536,7 @@ export async function listCustomVocabularies(): Promise<
 /**
  * Delete a custom vocabulary.
  */
-export async function deleteCustomVocabulary(
-  vocabularyName: string
-): Promise<void> {
+export async function deleteCustomVocabulary(vocabularyName: string): Promise<void> {
   const creds = getAwsCredentials();
   const endpoint = `https://transcribe.${creds.region}.amazonaws.com`;
 

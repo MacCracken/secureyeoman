@@ -121,7 +121,16 @@ export const MultimodalConfigSchema = z
       .object({
         enabled: z.boolean().default(true),
         provider: z
-          .enum(['openai', 'voicebox', 'deepgram', 'elevenlabs', 'assemblyai', 'google', 'azure', 'transcribe'])
+          .enum([
+            'openai',
+            'voicebox',
+            'deepgram',
+            'elevenlabs',
+            'assemblyai',
+            'google',
+            'azure',
+            'transcribe',
+          ])
           .default('openai'),
         maxDurationSeconds: z.number().int().positive().max(600).default(120),
         model: z.string().default('whisper-1'),

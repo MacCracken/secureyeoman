@@ -6,11 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  runScenario,
-  validateToolCalls,
-  evaluateAssertions,
-} from './eval-engine.js';
+import { runScenario, validateToolCalls, evaluateAssertions } from './eval-engine.js';
 import type { EvalAgentDeps } from './eval-engine.js';
 import type {
   EvalScenario,
@@ -124,9 +120,7 @@ describe('evaluateAssertions', () => {
   });
 
   it('semantic — fail when no similarity provider', async () => {
-    const assertions: OutputAssertion[] = [
-      { type: 'semantic', value: 'greeting', threshold: 0.8 },
-    ];
+    const assertions: OutputAssertion[] = [{ type: 'semantic', value: 'greeting', threshold: 0.8 }];
     const results = await evaluateAssertions('hello', assertions, deps);
     expect(results[0]!.passed).toBe(false);
     expect(results[0]!.reason).toContain('not available');
@@ -136,9 +130,7 @@ describe('evaluateAssertions', () => {
     const depsWithSim = makeDeps({
       computeSimilarity: vi.fn().mockResolvedValue(0.95),
     });
-    const assertions: OutputAssertion[] = [
-      { type: 'semantic', value: 'greeting', threshold: 0.8 },
-    ];
+    const assertions: OutputAssertion[] = [{ type: 'semantic', value: 'greeting', threshold: 0.8 }];
     const results = await evaluateAssertions('hello', assertions, depsWithSim);
     expect(results[0]!.passed).toBe(true);
   });
@@ -147,9 +139,7 @@ describe('evaluateAssertions', () => {
     const depsWithSim = makeDeps({
       computeSimilarity: vi.fn().mockResolvedValue(0.5),
     });
-    const assertions: OutputAssertion[] = [
-      { type: 'semantic', value: 'greeting', threshold: 0.8 },
-    ];
+    const assertions: OutputAssertion[] = [{ type: 'semantic', value: 'greeting', threshold: 0.8 }];
     const results = await evaluateAssertions('completely unrelated', assertions, depsWithSim);
     expect(results[0]!.passed).toBe(false);
   });
@@ -259,9 +249,7 @@ describe('validateToolCalls', () => {
 
   it('optional tool — no error when missing', () => {
     const actual: ToolCallRecord[] = [];
-    const expected: ExpectedToolCall[] = [
-      { name: 'optional_tool', required: false },
-    ];
+    const expected: ExpectedToolCall[] = [{ name: 'optional_tool', required: false }];
     expect(validateToolCalls(actual, expected, false)).toEqual([]);
   });
 });
@@ -358,14 +346,18 @@ describe('runScenario', () => {
     const deps = makeDeps({
       executePrompt: vi.fn().mockImplementation(({ abortSignal }) => {
         return new Promise((resolve, reject) => {
-          const timer = setTimeout(() => resolve({
-            output: 'late',
-            inputTokens: 0,
-            outputTokens: 0,
-            totalTokens: 0,
-            costUsd: 0,
-            model: 'test',
-          }), 5000);
+          const timer = setTimeout(
+            () =>
+              resolve({
+                output: 'late',
+                inputTokens: 0,
+                outputTokens: 0,
+                totalTokens: 0,
+                costUsd: 0,
+                model: 'test',
+              }),
+            5000
+          );
           abortSignal?.addEventListener('abort', () => {
             clearTimeout(timer);
             reject(new DOMException('Aborted', 'AbortError'));

@@ -12,16 +12,7 @@ export const ExcalidrawElementSpecSchema = z.object({
   /** Optional ID; auto-generated if omitted. */
   id: z.string().optional(),
   /** Element type. */
-  type: z.enum([
-    'rectangle',
-    'ellipse',
-    'diamond',
-    'line',
-    'arrow',
-    'text',
-    'freedraw',
-    'image',
-  ]),
+  type: z.enum(['rectangle', 'ellipse', 'diamond', 'line', 'arrow', 'text', 'freedraw', 'image']),
   /** Text label — for shapes, auto-creates a bound text element. */
   label: z.string().optional(),
   /** X coordinate. */
@@ -87,16 +78,12 @@ export const ExcalidrawElementSchema = z.object({
   groupIds: z.array(z.string()),
   frameId: z.string().nullable(),
   index: z.string().nullable().optional(),
-  roundness: z
-    .object({ type: z.number().int(), value: z.number().optional() })
-    .nullable(),
+  roundness: z.object({ type: z.number().int(), value: z.number().optional() }).nullable(),
   seed: z.number().int(),
   version: z.number().int(),
   versionNonce: z.number().int(),
   isDeleted: z.boolean(),
-  boundElements: z
-    .array(z.object({ type: z.string(), id: z.string() }))
-    .nullable(),
+  boundElements: z.array(z.object({ type: z.string(), id: z.string() })).nullable(),
   updated: z.number(),
   link: z.string().nullable(),
   locked: z.boolean(),

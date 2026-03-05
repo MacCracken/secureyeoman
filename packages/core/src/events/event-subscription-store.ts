@@ -8,12 +8,7 @@
 
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
-import type {
-  EventType,
-  EventPayload,
-  EventSubscription,
-  EventDelivery,
-} from './types.js';
+import type { EventType, EventPayload, EventSubscription, EventDelivery } from './types.js';
 
 // ─── Row types ──────────────────────────────────────────────
 
@@ -332,10 +327,9 @@ export class EventSubscriptionStore extends PgBaseStorage {
   }
 
   async getDelivery(id: string): Promise<EventDelivery | null> {
-    const row = await this.queryOne<DeliveryRow>(
-      'SELECT * FROM events.deliveries WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne<DeliveryRow>('SELECT * FROM events.deliveries WHERE id = $1', [
+      id,
+    ]);
     return row ? rowToDelivery(row) : null;
   }
 

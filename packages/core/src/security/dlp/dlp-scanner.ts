@@ -51,11 +51,7 @@ export class DlpScanner {
     this.config = config ?? {};
   }
 
-  async scan(
-    content: string,
-    destination: string,
-    contentType?: string
-  ): Promise<DlpScanResult> {
+  async scan(content: string, destination: string, contentType?: string): Promise<DlpScanResult> {
     // 1. Classify content
     const classification = this.engine.classify(content);
 
@@ -84,7 +80,12 @@ export class DlpScanner {
     const allFindings: DlpFinding[] = [];
 
     for (const policy of policies) {
-      const findings = this.evaluatePolicy(policy, content, classification.level, classification.piiFound);
+      const findings = this.evaluatePolicy(
+        policy,
+        content,
+        classification.level,
+        classification.piiFound
+      );
       if (findings.length > 0) {
         allFindings.push(...findings);
         const policySeverity = ACTION_SEVERITY[policy.action] ?? 0;

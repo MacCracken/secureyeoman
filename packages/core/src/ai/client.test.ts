@@ -1510,10 +1510,7 @@ describe('AIClient', () => {
     it('records success to health tracker', async () => {
       const { ProviderHealthTracker } = await import('./provider-health.js');
       const healthTracker = new ProviderHealthTracker();
-      const client = new AIClient(
-        { model: makeModelConfig('anthropic') },
-        { healthTracker }
-      );
+      const client = new AIClient({ model: makeModelConfig('anthropic') }, { healthTracker });
       const provider = (client as any).provider;
       provider.chat.mockResolvedValue(mockResponse);
 
@@ -1526,10 +1523,7 @@ describe('AIClient', () => {
     it('records failure to health tracker', async () => {
       const { ProviderHealthTracker } = await import('./provider-health.js');
       const healthTracker = new ProviderHealthTracker();
-      const client = new AIClient(
-        { model: makeModelConfig('anthropic') },
-        { healthTracker }
-      );
+      const client = new AIClient({ model: makeModelConfig('anthropic') }, { healthTracker });
       const provider = (client as any).provider;
       provider.chat.mockRejectedValue(new AuthenticationError('anthropic'));
 

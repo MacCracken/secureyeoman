@@ -24,7 +24,10 @@ export function registerProactiveRoutes(
       }>
     ) => {
       const { limit, offset } = parsePagination(request.query);
-      const filter: { type?: string; enabled?: boolean; limit?: number; offset?: number } = { limit, offset };
+      const filter: { type?: string; enabled?: boolean; limit?: number; offset?: number } = {
+        limit,
+        offset,
+      };
       if (request.query.type) filter.type = request.query.type;
       if (request.query.enabled !== undefined) filter.enabled = request.query.enabled === 'true';
       return proactiveManager.listTriggers(filter);
@@ -67,11 +70,7 @@ export function registerProactiveRoutes(
         const trigger = await proactiveManager.createTrigger(request.body as any);
         return reply.code(201).send(trigger);
       } catch (err) {
-        return sendError(
-          reply,
-          400,
-          toErrorMessage(err)
-        );
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );

@@ -6,9 +6,7 @@ const PersonalityWizard = lazy(() =>
   import('./personality/PersonalityWizard').then((m) => ({ default: m.PersonalityWizard }))
 );
 
-const PersonalityVersionHistory = lazy(() =>
-  import('./personality/PersonalityVersionHistory')
-);
+const PersonalityVersionHistory = lazy(() => import('./personality/PersonalityVersionHistory'));
 import {
   Bot,
   User,
@@ -1231,7 +1229,10 @@ function BrainSection({
   thinkingConfig: { enabled: boolean; budgetTokens: number };
   onThinkingConfigChange: (config: { enabled: boolean; budgetTokens: number }) => void;
   reasoningConfig: { enabled: boolean; effort: 'low' | 'medium' | 'high' };
-  onReasoningConfigChange: (config: { enabled: boolean; effort: 'low' | 'medium' | 'high' }) => void;
+  onReasoningConfigChange: (config: {
+    enabled: boolean;
+    effort: 'low' | 'medium' | 'high';
+  }) => void;
   contextOverflowStrategy: 'summarise' | 'truncate' | 'error';
   onContextOverflowStrategyChange: (v: 'summarise' | 'truncate' | 'error') => void;
   costBudget: { dailyUsd?: number; monthlyUsd?: number };
@@ -1829,11 +1830,11 @@ function BrainSection({
               Strategy when conversation exceeds the model&apos;s context window.
             </p>
             <div className="flex gap-2">
-              {([
+              {[
                 { value: 'summarise' as const, label: 'Summarise', desc: 'Compact older messages' },
                 { value: 'truncate' as const, label: 'Truncate', desc: 'Drop oldest messages' },
                 { value: 'error' as const, label: 'Error', desc: 'Reject the request' },
-              ]).map((opt) => (
+              ].map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => {
@@ -1855,11 +1856,14 @@ function BrainSection({
         <CollapsibleSection title="Cost Budget" defaultOpen={false}>
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              Limit AI spending for this personality. Requests are blocked when the budget is exceeded.
+              Limit AI spending for this personality. Requests are blocked when the budget is
+              exceeded.
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Daily limit (USD)</label>
+                <label className="text-xs text-muted-foreground block mb-1">
+                  Daily limit (USD)
+                </label>
                 <input
                   type="number"
                   min={0}
@@ -1874,7 +1878,9 @@ function BrainSection({
                 />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Monthly limit (USD)</label>
+                <label className="text-xs text-muted-foreground block mb-1">
+                  Monthly limit (USD)
+                </label>
                 <input
                   type="number"
                   min={0}
@@ -4471,8 +4477,13 @@ export function PersonalityEditor({
   });
 
   const [thinkingConfig, setThinkingConfig] = useState({ enabled: false, budgetTokens: 10000 });
-  const [reasoningConfig, setReasoningConfig] = useState({ enabled: false, effort: 'medium' as 'low' | 'medium' | 'high' });
-  const [contextOverflowStrategy, setContextOverflowStrategy] = useState<'summarise' | 'truncate' | 'error'>('summarise');
+  const [reasoningConfig, setReasoningConfig] = useState({
+    enabled: false,
+    effort: 'medium' as 'low' | 'medium' | 'high',
+  });
+  const [contextOverflowStrategy, setContextOverflowStrategy] = useState<
+    'summarise' | 'truncate' | 'error'
+  >('summarise');
   const [costBudget, setCostBudget] = useState<{ dailyUsd?: number; monthlyUsd?: number }>({});
   const [maxPromptTokens, setMaxPromptTokens] = useState<number | null>(null);
   const [omnipresentMind, setOmnipresentMind] = useState(false);
@@ -5010,7 +5021,9 @@ export function PersonalityEditor({
               <span className="hidden sm:inline">Import</span>
             </button>
             <button
-              onClick={() => setShowWizard(true)}
+              onClick={() => {
+                setShowWizard(true);
+              }}
               className="btn btn-ghost flex items-center justify-center gap-1 text-sm sm:text-base"
             >
               <Sparkles className="w-4 h-4" />
@@ -5029,10 +5042,18 @@ export function PersonalityEditor({
 
       {showWizard && (
         <div className="card p-6 mb-4">
-          <Suspense fallback={<div className="text-center py-8 text-muted-foreground">Loading wizard...</div>}>
+          <Suspense
+            fallback={
+              <div className="text-center py-8 text-muted-foreground">Loading wizard...</div>
+            }
+          >
             <PersonalityWizard
-              onComplete={() => setShowWizard(false)}
-              onCancel={() => setShowWizard(false)}
+              onComplete={() => {
+                setShowWizard(false);
+              }}
+              onCancel={() => {
+                setShowWizard(false);
+              }}
             />
           </Suspense>
         </div>

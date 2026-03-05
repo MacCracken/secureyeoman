@@ -96,8 +96,8 @@ function toCohortAnalysis(r: CohortRow): CohortAnalysis {
     datasetId: r.dataset_id,
     dimension: r.dimension as CohortAnalysis['dimension'],
     slices: typeof r.slices === 'string' ? safeJsonParse(r.slices, []) : r.slices,
-    totalSamples: Number(r.total_samples),
-    overallErrorRate: Number(r.overall_error_rate),
+    totalSamples: r.total_samples,
+    overallErrorRate: r.overall_error_rate,
     createdAt: Number(r.created_at),
   };
 }
@@ -109,11 +109,11 @@ function toFairnessReport(r: FairnessRow): FairnessReport {
     datasetId: r.dataset_id,
     protectedAttribute: r.protected_attribute,
     groups: typeof r.groups === 'string' ? safeJsonParse(r.groups, []) : r.groups,
-    demographicParity: Number(r.demographic_parity),
-    equalizedOdds: Number(r.equalized_odds),
-    disparateImpactRatio: Number(r.disparate_impact_ratio),
+    demographicParity: r.demographic_parity,
+    equalizedOdds: r.equalized_odds,
+    disparateImpactRatio: r.disparate_impact_ratio,
     passesThreshold: r.passes_threshold,
-    threshold: Number(r.threshold),
+    threshold: r.threshold,
     createdAt: Number(r.created_at),
   };
 }
@@ -125,8 +125,9 @@ function toShapExplanation(r: ShapRow): ShapExplanation {
     modelName: r.model_name,
     prompt: r.prompt,
     response: r.response,
-    inputTokens: typeof r.input_tokens === 'string' ? safeJsonParse(r.input_tokens, []) : r.input_tokens,
-    predictionScore: r.prediction_score != null ? Number(r.prediction_score) : undefined,
+    inputTokens:
+      typeof r.input_tokens === 'string' ? safeJsonParse(r.input_tokens, []) : r.input_tokens,
+    predictionScore: r.prediction_score != null ? r.prediction_score : undefined,
     dimension: r.dimension ?? undefined,
     createdAt: Number(r.created_at),
   };
@@ -148,6 +149,18 @@ function toProvenanceEntry(r: ProvenanceRow): ProvenanceEntry {
 }
 
 function toModelCard(r: ModelCardRow): ModelCard {
+  const evaluationResults =
+    r.evaluation_results != null
+      ? typeof r.evaluation_results === 'string'
+        ? (safeJsonParse(r.evaluation_results, null) as unknown as ModelCard['evaluationResults'])
+        : r.evaluation_results
+      : undefined;
+  const fairnessAssessment =
+    r.fairness_assessment != null
+      ? typeof r.fairness_assessment === 'string'
+        ? (safeJsonParse(r.fairness_assessment, null) as unknown as ModelCard['fairnessAssessment'])
+        : r.fairness_assessment
+      : undefined;
   return {
     id: r.id,
     personalityId: r.personality_id,
@@ -160,18 +173,8 @@ function toModelCard(r: ModelCardRow): ModelCard {
       typeof r.training_data_summary === 'string'
         ? safeJsonParse(r.training_data_summary, { sampleCount: 0 })
         : r.training_data_summary,
-    evaluationResults:
-      r.evaluation_results != null
-        ? typeof r.evaluation_results === 'string'
-          ? safeJsonParse(r.evaluation_results, undefined)
-          : r.evaluation_results
-        : undefined,
-    fairnessAssessment:
-      r.fairness_assessment != null
-        ? typeof r.fairness_assessment === 'string'
-          ? safeJsonParse(r.fairness_assessment, undefined)
-          : r.fairness_assessment
-        : undefined,
+    evaluationResults,
+    fairnessAssessment,
     deployedAt: r.deployed_at ?? undefined,
     riskClassification: (r.risk_classification as ModelCard['riskClassification']) ?? undefined,
     generatedBy: r.generated_by as ModelCard['generatedBy'],
@@ -438,10 +441,10 @@ export class ResponsibleAiStorage extends PgBaseStorage {
     return {
       datasetId,
       totalEntries: total,
-      included: counts['included'] ?? 0,
-      filtered: counts['filtered'] ?? 0,
-      synthetic: counts['synthetic'] ?? 0,
-      redacted: counts['redacted'] ?? 0,
+      included: counts.included ?? 0,
+      filtered: counts.filtered ?? 0,
+      synthetic: counts.synthetic ?? 0,
+      redacted: counts.redacted ?? 0,
       uniqueUsers: Number(uniqueRows?.users ?? 0),
       uniqueConversations: Number(uniqueRows?.convs ?? 0),
       filterReasons,

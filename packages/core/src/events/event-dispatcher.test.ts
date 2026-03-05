@@ -208,9 +208,7 @@ describe('EventDispatcher', () => {
     expect(headers['X-Signature']).toBeDefined();
 
     // Verify the HMAC is correct
-    const expectedSig = createHmac('sha256', 'my-secret-key')
-      .update(fetchOpts.body)
-      .digest('hex');
+    const expectedSig = createHmac('sha256', 'my-secret-key').update(fetchOpts.body).digest('hex');
     expect(headers['X-Signature']).toBe(expectedSig);
   });
 

@@ -62,8 +62,14 @@ describe('QuarantineStorage', () => {
   });
 
   it('lists quarantined items', async () => {
-    await storage.quarantine('content1', makeScanResult(), { artifactType: 'text/plain', sourceContext: 'test' });
-    await storage.quarantine('content2', makeScanResult(), { artifactType: 'text/plain', sourceContext: 'test' });
+    await storage.quarantine('content1', makeScanResult(), {
+      artifactType: 'text/plain',
+      sourceContext: 'test',
+    });
+    await storage.quarantine('content2', makeScanResult(), {
+      artifactType: 'text/plain',
+      sourceContext: 'test',
+    });
     const items = await storage.list();
     expect(items.length).toBe(2);
   });
@@ -161,10 +167,16 @@ describe('QuarantineStorage', () => {
   });
 
   it('sorts list by createdAt descending', async () => {
-    await storage.quarantine('first', makeScanResult(), { artifactType: 'text/plain', sourceContext: 'test' });
+    await storage.quarantine('first', makeScanResult(), {
+      artifactType: 'text/plain',
+      sourceContext: 'test',
+    });
     // Small delay for timestamp difference
     await new Promise((r) => setTimeout(r, 10));
-    await storage.quarantine('second', makeScanResult(), { artifactType: 'text/plain', sourceContext: 'test' });
+    await storage.quarantine('second', makeScanResult(), {
+      artifactType: 'text/plain',
+      sourceContext: 'test',
+    });
 
     const items = await storage.list();
     expect(items[0].createdAt).toBeGreaterThanOrEqual(items[1].createdAt);

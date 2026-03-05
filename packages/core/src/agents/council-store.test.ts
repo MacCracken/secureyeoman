@@ -15,7 +15,13 @@ const templateRow = {
   name: 'Board of Directors',
   description: 'Strategic review',
   members: [
-    { role: 'CFO', profileName: 'analyst', description: 'Finance', weight: 1, perspective: 'Financial' },
+    {
+      role: 'CFO',
+      profileName: 'analyst',
+      description: 'Finance',
+      weight: 1,
+      perspective: 'Financial',
+    },
   ],
   facilitator_profile: 'summarizer',
   deliberation_strategy: 'rounds',
@@ -102,7 +108,10 @@ describe('CouncilStorage', () => {
     it('returns templates with total', async () => {
       mockQuery
         .mockResolvedValueOnce({ rows: [{ count: '2' }], rowCount: 1 })
-        .mockResolvedValueOnce({ rows: [templateRow, { ...templateRow, id: 'tmpl-2' }], rowCount: 2 });
+        .mockResolvedValueOnce({
+          rows: [templateRow, { ...templateRow, id: 'tmpl-2' }],
+          rowCount: 2,
+        });
       const result = await storage.listTemplates();
       expect(result.total).toBe(2);
       expect(result.templates).toHaveLength(2);

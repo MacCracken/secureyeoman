@@ -93,10 +93,7 @@ describe('CognitiveMemoryStorage', () => {
     it('uses default limit and minWeight', async () => {
       mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
       await store.getAssociations('x');
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.any(String),
-        ['x', 0, 20]
-      );
+      expect(mockQuery).toHaveBeenCalledWith(expect.any(String), ['x', 0, 20]);
     });
   });
 
@@ -125,8 +122,8 @@ describe('CognitiveMemoryStorage', () => {
   describe('decayAssociations', () => {
     it('multiplies weights and deletes near-zero', async () => {
       mockQuery
-        .mockResolvedValueOnce({ rows: [], rowCount: 0 })  // UPDATE
-        .mockResolvedValueOnce({ rows: [], rowCount: 3 });  // DELETE
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // UPDATE
+        .mockResolvedValueOnce({ rows: [], rowCount: 3 }); // DELETE
 
       const deleted = await store.decayAssociations(0.9);
       expect(mockQuery).toHaveBeenCalledTimes(2);

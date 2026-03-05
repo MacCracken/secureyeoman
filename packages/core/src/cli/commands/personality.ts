@@ -354,10 +354,15 @@ async function runCreate(
 
   // Interactive wizard using process.stdin
   const readline = await import('node:readline');
-  const rl = readline.createInterface({ input: process.stdin, output: ctx.stdout as NodeJS.WriteStream });
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: ctx.stdout as NodeJS.WriteStream,
+  });
 
   const ask = (prompt: string): Promise<string> =>
-    new Promise((resolve) => rl.question(prompt, resolve));
+    new Promise((resolve) => {
+      rl.question(prompt, resolve);
+    });
 
   const askChoice = async (prompt: string, choices: string[]): Promise<string> => {
     const choiceStr = choices.map((c, i) => `  ${i + 1}. ${c}`).join('\n');
@@ -374,14 +379,14 @@ async function runCreate(
     ctx.stdout.write('─'.repeat(40) + '\n\n');
 
     // 1. Name
-    const name = await ask('What is this personality\'s name? ');
+    const name = await ask("What is this personality's name? ");
     if (!name.trim()) {
       ctx.stderr.write('Name is required.\n');
       return 1;
     }
 
     // 2. System prompt
-    const systemPrompt = await ask('Describe this personality\'s mission (system prompt): ');
+    const systemPrompt = await ask("Describe this personality's mission (system prompt): ");
 
     // 3. Topics
     const topicsRaw = await ask('What topics should it focus on? (comma-separated or blank): ');
@@ -479,11 +484,20 @@ async function runHistory(
   }
 
   const id = await resolvePersonalityId(baseUrl, token, name);
-  if (!id) { ctx.stderr.write(`Personality not found: ${name}\n`); return 1; }
+  if (!id) {
+    ctx.stderr.write(`Personality not found: ${name}\n`);
+    return 1;
+  }
 
   const res = await apiCall(baseUrl, `/api/v1/soul/personalities/${id}/versions`, { token });
   const { versions, total } = res.data as {
-    versions: { id: string; versionTag: string | null; changedFields: string[]; author: string; createdAt: number }[];
+    versions: {
+      id: string;
+      versionTag: string | null;
+      changedFields: string[];
+      author: string;
+      createdAt: number;
+    }[];
     total: number;
   };
 
@@ -498,7 +512,9 @@ async function runHistory(
     const tag = v.versionTag ? c.green(v.versionTag) : c.dim('untagged');
     const date = new Date(v.createdAt).toISOString().slice(0, 19);
     const fields = v.changedFields.length > 0 ? ` [${v.changedFields.join(', ')}]` : '';
-    ctx.stdout.write(`  ${tag}  ${c.dim(date)}  ${v.author}${fields}  ${c.dim(v.id.slice(0, 8))}\n`);
+    ctx.stdout.write(
+      `  ${tag}  ${c.dim(date)}  ${v.author}${fields}  ${c.dim(v.id.slice(0, 8))}\n`
+    );
   }
   return 0;
 }
@@ -519,7 +535,10 @@ async function runTag(
   }
 
   const id = await resolvePersonalityId(baseUrl, token, name);
-  if (!id) { ctx.stderr.write(`Personality not found: ${name}\n`); return 1; }
+  if (!id) {
+    ctx.stderr.write(`Personality not found: ${name}\n`);
+    return 1;
+  }
 
   const body: Record<string, unknown> = {};
   if (args[1]) body.tag = args[1];
@@ -537,7 +556,9 @@ async function runTag(
 
   const version = res.data as { versionTag: string; id: string };
   const c = colorContext(ctx.stdout);
-  ctx.stdout.write(c.bold(`Tagged release: ${version.versionTag}`) + ` (${version.id.slice(0, 8)})\n`);
+  ctx.stdout.write(
+    c.bold(`Tagged release: ${version.versionTag}`) + ` (${version.id.slice(0, 8)})\n`
+  );
   return 0;
 }
 
@@ -557,7 +578,10 @@ async function runRollback(
   }
 
   const id = await resolvePersonalityId(baseUrl, token, name);
-  if (!id) { ctx.stderr.write(`Personality not found: ${name}\n`); return 1; }
+  if (!id) {
+    ctx.stderr.write(`Personality not found: ${name}\n`);
+    return 1;
+  }
 
   const res = await apiCall(
     baseUrl,
@@ -591,7 +615,10 @@ async function runDrift(
   }
 
   const id = await resolvePersonalityId(baseUrl, token, name);
-  if (!id) { ctx.stderr.write(`Personality not found: ${name}\n`); return 1; }
+  if (!id) {
+    ctx.stderr.write(`Personality not found: ${name}\n`);
+    return 1;
+  }
 
   const res = await apiCall(baseUrl, `/api/v1/soul/personalities/${id}/drift`, { token });
 
@@ -642,13 +669,14 @@ async function runDiff(
   }
 
   const id = await resolvePersonalityId(baseUrl, token, name);
-  if (!id) { ctx.stderr.write(`Personality not found: ${name}\n`); return 1; }
+  if (!id) {
+    ctx.stderr.write(`Personality not found: ${name}\n`);
+    return 1;
+  }
 
-  const res = await apiCall(
-    baseUrl,
-    `/api/v1/soul/personalities/${id}/versions/${vA}/diff/${vB}`,
-    { token }
-  );
+  const res = await apiCall(baseUrl, `/api/v1/soul/personalities/${id}/versions/${vA}/diff/${vB}`, {
+    token,
+  });
 
   if (jsonOutput) {
     ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');

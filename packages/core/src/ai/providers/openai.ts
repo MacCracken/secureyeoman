@@ -118,7 +118,9 @@ export class OpenAIProvider extends BaseProvider {
     const params = this.buildParams(model, messages, request, true);
 
     try {
-      const stream = await this.client.chat.completions.create(params as unknown as OpenAI.ChatCompletionCreateParamsStreaming);
+      const stream = await this.client.chat.completions.create(
+        params as unknown as OpenAI.ChatCompletionCreateParamsStreaming
+      );
 
       let currentToolId = '';
       let currentToolName = '';

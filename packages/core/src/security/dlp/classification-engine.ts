@@ -23,7 +23,10 @@ const PII_PATTERNS: { name: string; pattern: RegExp }[] = [
   { name: 'phone', pattern: /\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g },
   { name: 'ssn', pattern: /\b\d{3}-\d{2}-\d{4}\b/g },
   { name: 'credit_card', pattern: /\b(?:\d{4}[-\s]?){3}\d{4}\b/g },
-  { name: 'ip_address', pattern: /\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b/g },
+  {
+    name: 'ip_address',
+    pattern: /\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b/g,
+  },
 ];
 
 export interface ClassificationEngineConfig {
@@ -54,7 +57,11 @@ export class ClassificationEngine {
   private readonly logger: SecureLogger;
 
   constructor(config: Partial<ClassificationEngineConfig> = {}, deps: ClassificationEngineDeps) {
-    this.config = { ...DEFAULT_CONFIG, ...config, keywords: { ...DEFAULT_CONFIG.keywords, ...config.keywords } };
+    this.config = {
+      ...DEFAULT_CONFIG,
+      ...config,
+      keywords: { ...DEFAULT_CONFIG.keywords, ...config.keywords },
+    };
     this.logger = deps.logger;
   }
 
@@ -73,7 +80,9 @@ export class ClassificationEngine {
       pattern.lastIndex = 0;
       if (pattern.test(text)) {
         piiFound.push(name);
-        const piiLevel: ClassificationLevel = this.config.piiAsConfidential ? 'confidential' : 'internal';
+        const piiLevel: ClassificationLevel = this.config.piiAsConfidential
+          ? 'confidential'
+          : 'internal';
         rules.push({ type: 'pii', name, level: piiLevel });
         if (CLASSIFICATION_RANK[piiLevel] > CLASSIFICATION_RANK[highestLevel]) {
           highestLevel = piiLevel;
@@ -121,10 +130,11 @@ export class ClassificationEngine {
       }
     }
 
-    this.logger.debug(
-      'Content classified',
-      { level: highestLevel, rulesCount: rules.length, piiCount: piiFound.length }
-    );
+    this.logger.debug('Content classified', {
+      level: highestLevel,
+      rulesCount: rules.length,
+      piiCount: piiFound.length,
+    });
 
     return {
       level: highestLevel,

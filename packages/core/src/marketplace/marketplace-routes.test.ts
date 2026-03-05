@@ -51,28 +51,14 @@ describe('GET /api/v1/marketplace', () => {
     const searchMock = vi.fn().mockResolvedValue({ skills: [], total: 0 });
     const app = buildApp({ search: searchMock });
     await app.inject({ method: 'GET', url: '/api/v1/marketplace?origin=community' });
-    expect(searchMock).toHaveBeenCalledWith(
-      undefined,
-      undefined,
-      20,
-      0,
-      'community',
-      undefined
-    );
+    expect(searchMock).toHaveBeenCalledWith(undefined, undefined, 20, 0, 'community', undefined);
   });
 
   it('translates origin=marketplace to source=marketplace (builtin+published filter)', async () => {
     const searchMock = vi.fn().mockResolvedValue({ skills: [], total: 0 });
     const app = buildApp({ search: searchMock });
     await app.inject({ method: 'GET', url: '/api/v1/marketplace?origin=marketplace' });
-    expect(searchMock).toHaveBeenCalledWith(
-      undefined,
-      undefined,
-      20,
-      0,
-      'marketplace',
-      undefined
-    );
+    expect(searchMock).toHaveBeenCalledWith(undefined, undefined, 20, 0, 'marketplace', undefined);
   });
 
   it('origin takes precedence over source when both present', async () => {
@@ -82,14 +68,7 @@ describe('GET /api/v1/marketplace', () => {
       method: 'GET',
       url: '/api/v1/marketplace?origin=community&source=published',
     });
-    expect(searchMock).toHaveBeenCalledWith(
-      undefined,
-      undefined,
-      20,
-      0,
-      'community',
-      undefined
-    );
+    expect(searchMock).toHaveBeenCalledWith(undefined, undefined, 20, 0, 'community', undefined);
   });
 });
 

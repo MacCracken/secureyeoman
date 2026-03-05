@@ -32,8 +32,7 @@ async function fetchApi<T>(path: string, opts?: RequestInit): Promise<T> {
 
 function HitRateGauge({ rate }: { rate: number }) {
   const pct = Math.round(rate * 100);
-  const color =
-    pct >= 80 ? 'text-green-400' : pct >= 50 ? 'text-yellow-400' : 'text-red-400';
+  const color = pct >= 80 ? 'text-green-400' : pct >= 50 ? 'text-yellow-400' : 'text-red-400';
   const ringColor =
     pct >= 80 ? 'stroke-green-500' : pct >= 50 ? 'stroke-yellow-500' : 'stroke-red-500';
 
@@ -90,10 +89,7 @@ function CacheBreakdown({
       </div>
       <div className="mb-1 flex items-center gap-2">
         <div className="h-1.5 flex-1 rounded bg-zinc-700">
-          <div
-            className="h-1.5 rounded bg-blue-500"
-            style={{ width: `${fill}%` }}
-          />
+          <div className="h-1.5 rounded bg-blue-500" style={{ width: `${fill}%` }} />
         </div>
         <span className="text-xs text-zinc-500">
           {stats.size}/{stats.maxSize}
@@ -110,7 +106,11 @@ function CacheBreakdown({
 export default function CacheStatsCard() {
   const queryClient = useQueryClient();
 
-  const { data: stats, isLoading, error } = useQuery<CacheStats>({
+  const {
+    data: stats,
+    isLoading,
+    error,
+  } = useQuery<CacheStats>({
     queryKey: ['cache-stats'],
     queryFn: () => fetchApi('/api/v1/inference/cache/stats'),
     refetchInterval: 15_000,
@@ -127,33 +127,25 @@ export default function CacheStatsCard() {
   });
 
   if (isLoading) {
-    return (
-      <div className="p-4 text-sm text-zinc-400">Loading cache stats...</div>
-    );
+    return <div className="p-4 text-sm text-zinc-400">Loading cache stats...</div>;
   }
 
   if (error) {
-    return (
-      <div className="p-4 text-sm text-red-400">
-        Error: {(error as Error).message}
-      </div>
-    );
+    return <div className="p-4 text-sm text-red-400">Error: {error.message}</div>;
   }
 
   if (!stats) {
-    return (
-      <div className="p-4 text-sm text-zinc-500">Cache data unavailable</div>
-    );
+    return <div className="p-4 text-sm text-zinc-500">Cache data unavailable</div>;
   }
 
   return (
     <div className="flex flex-col gap-3 p-4 text-sm">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-zinc-200">
-          Cache Statistics
-        </h3>
+        <h3 className="text-base font-semibold text-zinc-200">Cache Statistics</h3>
         <button
-          onClick={() => clearMutation.mutate()}
+          onClick={() => {
+            clearMutation.mutate();
+          }}
           disabled={clearMutation.isPending}
           className="rounded bg-red-600 px-2 py-0.5 text-xs text-white hover:bg-red-500 disabled:opacity-50"
         >
@@ -177,9 +169,7 @@ export default function CacheStatsCard() {
       </div>
 
       {clearMutation.isError && (
-        <div className="text-xs text-red-400">
-          Clear failed: {(clearMutation.error as Error).message}
-        </div>
+        <div className="text-xs text-red-400">Clear failed: {clearMutation.error.message}</div>
       )}
     </div>
   );

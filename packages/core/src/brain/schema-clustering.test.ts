@@ -25,8 +25,12 @@ describe('kMeans', () => {
 
   it('clusters two well-separated groups', () => {
     const points = [
-      [0, 0], [0.1, 0.1], [0.2, 0],
-      [10, 10], [10.1, 10.1], [10.2, 10],
+      [0, 0],
+      [0.1, 0.1],
+      [0.2, 0],
+      [10, 10],
+      [10.1, 10.1],
+      [10.2, 10],
     ];
     const result = kMeans(points, 2, 50);
 
@@ -41,14 +45,25 @@ describe('kMeans', () => {
   });
 
   it('handles k > n gracefully', () => {
-    const result = kMeans([[1, 2], [3, 4]], 5, 10);
+    const result = kMeans(
+      [
+        [1, 2],
+        [3, 4],
+      ],
+      5,
+      10
+    );
     // Should create at most n centroids
     expect(result.centroids.length).toBeLessThanOrEqual(2);
     expect(result.assignments).toHaveLength(2);
   });
 
   it('converges for identical points', () => {
-    const points = [[1, 1], [1, 1], [1, 1]];
+    const points = [
+      [1, 1],
+      [1, 1],
+      [1, 1],
+    ];
     const result = kMeans(points, 2, 50);
     expect(result.assignments).toHaveLength(3);
   });

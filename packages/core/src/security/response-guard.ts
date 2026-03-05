@@ -119,7 +119,8 @@ export class ResponseGuard {
 
   constructor(config: ResponseGuardConfig) {
     this.mode = config.mode;
-    this.systemPromptLeakThreshold = config.systemPromptLeakThreshold ?? DEFAULT_SYSTEM_PROMPT_LEAK_THRESHOLD;
+    this.systemPromptLeakThreshold =
+      config.systemPromptLeakThreshold ?? DEFAULT_SYSTEM_PROMPT_LEAK_THRESHOLD;
   }
 
   private getLogger(): SecureLogger {

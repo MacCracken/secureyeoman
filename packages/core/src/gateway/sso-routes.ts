@@ -26,9 +26,11 @@ export interface SsoRoutesOptions {
 
 export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions): void {
   const { ssoManager, ssoStorage, dashboardUrl, secureYeoman } = opts;
-  const ssoGuardOpts = (secureYeoman
-    ? { preHandler: [requiresLicense('sso_saml', () => secureYeoman.getLicenseManager())] }
-    : {}) as Record<string, unknown>;
+  const ssoGuardOpts = (
+    secureYeoman
+      ? { preHandler: [requiresLicense('sso_saml', () => secureYeoman.getLicenseManager())] }
+      : {}
+  ) as Record<string, unknown>;
 
   // ── Provider discovery (public) ──────────────────────────────────
 

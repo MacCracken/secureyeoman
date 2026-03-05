@@ -315,9 +315,7 @@ describe('syncFromCommunity — swarm directories', () => {
   it('adds a new community swarm from directory', async () => {
     writeJson('swarms/hunt-team/metadata.json', {
       name: 'Hunt Team',
-      roles: [
-        { role: 'leader', profileName: 'sec-lead', description: 'Leads the hunt' },
-      ],
+      roles: [{ role: 'leader', profileName: 'sec-lead', description: 'Leads the hunt' }],
       strategy: 'hierarchical',
     });
 

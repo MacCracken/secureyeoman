@@ -10,8 +10,22 @@ vi.mock('../ModelWidget', () => ({
 }));
 
 const tabs = [
-  { id: '1', name: 'index.ts', path: '/tmp/index.ts', content: '', language: 'typescript', isDirty: false },
-  { id: '2', name: 'app.tsx', path: '/tmp/app.tsx', content: 'code', language: 'typescript', isDirty: true },
+  {
+    id: '1',
+    name: 'index.ts',
+    path: '/tmp/index.ts',
+    content: '',
+    language: 'typescript',
+    isDirty: false,
+  },
+  {
+    id: '2',
+    name: 'app.tsx',
+    path: '/tmp/app.tsx',
+    content: 'code',
+    language: 'typescript',
+    isDirty: true,
+  },
 ];
 
 function createProps(overrides = {}) {

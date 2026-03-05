@@ -162,10 +162,26 @@ export class FinetuneManager {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
        RETURNING *`,
       [
-        id, name, baseModel, adapterName, datasetPath,
-        loraRank, loraAlpha, batchSize, epochs, vramBudgetGb, image,
-        trainingMethod, parentJobId ?? null, numGpus, learningRate ?? null, warmupSteps ?? null,
-        checkpointSteps ?? null, resumeFromCheckpoint ?? null, rewardModelPath ?? null, searchId ?? null,
+        id,
+        name,
+        baseModel,
+        adapterName,
+        datasetPath,
+        loraRank,
+        loraAlpha,
+        batchSize,
+        epochs,
+        vramBudgetGb,
+        image,
+        trainingMethod,
+        parentJobId ?? null,
+        numGpus,
+        learningRate ?? null,
+        warmupSteps ?? null,
+        checkpointSteps ?? null,
+        resumeFromCheckpoint ?? null,
+        rewardModelPath ?? null,
+        searchId ?? null,
       ]
     );
     return rowToJob(rows[0]!);

@@ -31,7 +31,11 @@ describe('KvCacheWarmer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     logger = makeLogger();
-    warmer = new KvCacheWarmer({ logger, ollamaBaseUrl: OLLAMA_BASE_URL, config: { enabled: true, keepAlive: '30m' } });
+    warmer = new KvCacheWarmer({
+      logger,
+      ollamaBaseUrl: OLLAMA_BASE_URL,
+      config: { enabled: true, keepAlive: '30m' },
+    });
     global.fetch = vi.fn();
   });
 
@@ -45,7 +49,11 @@ describe('KvCacheWarmer', () => {
     it('reflects config', () => {
       expect(warmer.enabled).toBe(true);
 
-      const disabledWarmer = new KvCacheWarmer({ logger, ollamaBaseUrl: OLLAMA_BASE_URL, config: { enabled: false, keepAlive: '30m' } });
+      const disabledWarmer = new KvCacheWarmer({
+        logger,
+        ollamaBaseUrl: OLLAMA_BASE_URL,
+        config: { enabled: false, keepAlive: '30m' },
+      });
       expect(disabledWarmer.enabled).toBe(false);
     });
   });
@@ -54,7 +62,11 @@ describe('KvCacheWarmer', () => {
 
   describe('warmup()', () => {
     it('returns false when disabled', async () => {
-      const disabledWarmer = new KvCacheWarmer({ logger, ollamaBaseUrl: OLLAMA_BASE_URL, config: { enabled: false, keepAlive: '30m' } });
+      const disabledWarmer = new KvCacheWarmer({
+        logger,
+        ollamaBaseUrl: OLLAMA_BASE_URL,
+        config: { enabled: false, keepAlive: '30m' },
+      });
       const result = await disabledWarmer.warmup(TEST_MODEL, TEST_SYSTEM_PROMPT);
       expect(result).toBe(false);
       expect(global.fetch).not.toHaveBeenCalled();
@@ -117,9 +129,7 @@ describe('KvCacheWarmer', () => {
     });
 
     it('returns false on fetch error', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(
-        new Error('Connection refused')
-      );
+      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Connection refused'));
 
       const result = await warmer.warmup(TEST_MODEL, TEST_SYSTEM_PROMPT);
       expect(result).toBe(false);

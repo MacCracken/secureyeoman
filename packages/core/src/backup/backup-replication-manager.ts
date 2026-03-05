@@ -64,7 +64,11 @@ export class BackupReplicationManager {
     await this.shipToProvider(localPath, remotePath);
 
     // Cleanup local temp file
-    try { unlinkSync(localPath); } catch { /* ignore */ }
+    try {
+      unlinkSync(localPath);
+    } catch {
+      /* ignore */
+    }
 
     const info: BackupInfo = {
       filename,
@@ -75,7 +79,11 @@ export class BackupReplicationManager {
     };
 
     this.backupHistory.push(info);
-    logger.info('Backup shipped successfully', { filename, provider: this.config.provider, sizeBytes: stats.size });
+    logger.info('Backup shipped successfully', {
+      filename,
+      provider: this.config.provider,
+      sizeBytes: stats.size,
+    });
 
     // Enforce retention
     await this.enforceRetention();
@@ -125,10 +133,9 @@ export class BackupReplicationManager {
   }
 
   private async shipToGcs(localPath: string, remotePath: string): Promise<void> {
-    await execAsync(
-      `gsutil cp "${localPath}" "gs://${this.config.bucket}/${remotePath}"`,
-      { timeout: 120_000 }
-    );
+    await execAsync(`gsutil cp "${localPath}" "gs://${this.config.bucket}/${remotePath}"`, {
+      timeout: 120_000,
+    });
   }
 
   private async shipToLocal(localPath: string, remotePath: string): Promise<void> {
@@ -155,16 +162,21 @@ export class BackupReplicationManager {
         try {
           unlinkSync(join(destDir, file));
           getLogger().info('Removed old backup', { file });
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
     }
     // For cloud providers, retention is typically handled by lifecycle policies.
     // Log a warning if history exceeds retention as a reminder.
     if (this.backupHistory.length > this.config.retentionCount) {
-      getLogger().info('Backup history exceeds retention count — consider configuring lifecycle policies on your storage provider', {
-        historyCount: this.backupHistory.length,
-        retentionCount: this.config.retentionCount,
-      });
+      getLogger().info(
+        'Backup history exceeds retention count — consider configuring lifecycle policies on your storage provider',
+        {
+          historyCount: this.backupHistory.length,
+          retentionCount: this.config.retentionCount,
+        }
+      );
     }
   }
 
@@ -180,13 +192,16 @@ export class BackupReplicationManager {
     // Default daily at 2 AM = 24h interval.
     const intervalMs = 24 * 60 * 60 * 1000;
     this.scheduleTimer = setInterval(() => {
-      void this.createAndShipBackup().catch((err) => {
+      void this.createAndShipBackup().catch((err: unknown) => {
         getLogger().error('Scheduled backup failed', {
           error: err instanceof Error ? err.message : String(err),
         });
       });
     }, intervalMs);
-    getLogger().info('Backup schedule started', { schedule: this.config.schedule, provider: this.config.provider });
+    getLogger().info('Backup schedule started', {
+      schedule: this.config.schedule,
+      provider: this.config.provider,
+    });
   }
 
   async cleanup(): Promise<void> {

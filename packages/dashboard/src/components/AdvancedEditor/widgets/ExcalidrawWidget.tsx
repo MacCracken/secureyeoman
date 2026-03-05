@@ -49,7 +49,10 @@ export interface ExcalidrawWidgetProps {
   sceneJson?: string;
   documentId?: string;
   nodeId?: string;
-  onConfigChange?: (config: { excalidrawSceneJson?: string; excalidrawDocumentId?: string }) => void;
+  onConfigChange?: (config: {
+    excalidrawSceneJson?: string;
+    excalidrawDocumentId?: string;
+  }) => void;
 }
 
 type ViewMode = 'draw' | 'json' | 'svg';
@@ -62,7 +65,10 @@ function renderSceneSvg(scene: ExcalidrawScene): string {
     return '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"><text x="20" y="50" font-size="14" fill="#666">Empty scene</text></svg>';
   }
 
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
   for (const el of elements) {
     const x = el.x ?? 0;
     const y = el.y ?? 0;
@@ -85,35 +91,50 @@ function renderSceneSvg(scene: ExcalidrawScene): string {
     const w = el.width ?? 100;
     const h = el.height ?? 50;
     const stroke = el.strokeColor ?? '#1e1e1e';
-    const fill = el.backgroundColor === 'transparent' || !el.backgroundColor ? 'none' : el.backgroundColor;
+    const fill =
+      el.backgroundColor === 'transparent' || !el.backgroundColor ? 'none' : el.backgroundColor;
 
     switch (el.type) {
       case 'rectangle':
-        shapes.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" stroke="${stroke}" stroke-width="1.5" rx="${el.roundness ? 8 : 0}" />`);
+        shapes.push(
+          `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" stroke="${stroke}" stroke-width="1.5" rx="${el.roundness ? 8 : 0}" />`
+        );
         break;
       case 'ellipse':
-        shapes.push(`<ellipse cx="${x + w / 2}" cy="${y + h / 2}" rx="${w / 2}" ry="${h / 2}" fill="${fill}" stroke="${stroke}" stroke-width="1.5" />`);
+        shapes.push(
+          `<ellipse cx="${x + w / 2}" cy="${y + h / 2}" rx="${w / 2}" ry="${h / 2}" fill="${fill}" stroke="${stroke}" stroke-width="1.5" />`
+        );
         break;
       case 'diamond': {
-        const cx = x + w / 2, cy = y + h / 2;
-        shapes.push(`<polygon points="${cx},${y} ${x + w},${cy} ${cx},${y + h} ${x},${cy}" fill="${fill}" stroke="${stroke}" stroke-width="1.5" />`);
+        const cx = x + w / 2,
+          cy = y + h / 2;
+        shapes.push(
+          `<polygon points="${cx},${y} ${x + w},${cy} ${cx},${y + h} ${x},${cy}" fill="${fill}" stroke="${stroke}" stroke-width="1.5" />`
+        );
         break;
       }
       case 'text': {
         const fontSize = el.fontSize ?? 16;
         const text = el.text ?? el.originalText ?? '';
-        shapes.push(`<text x="${x}" y="${y + fontSize}" font-size="${fontSize}" fill="${stroke}" font-family="sans-serif">${escapeHtml(text)}</text>`);
+        shapes.push(
+          `<text x="${x}" y="${y + fontSize}" font-size="${fontSize}" fill="${stroke}" font-family="sans-serif">${escapeHtml(text)}</text>`
+        );
         break;
       }
       case 'arrow':
       case 'line': {
-        const pts = el.points ?? [[0, 0], [w, 0]];
+        const pts = el.points ?? [
+          [0, 0],
+          [w, 0],
+        ];
         if (pts.length >= 2) {
           const x1 = x + (pts[0]?.[0] ?? 0);
           const y1 = y + (pts[0]?.[1] ?? 0);
           const x2 = x + (pts[pts.length - 1]?.[0] ?? 0);
           const y2 = y + (pts[pts.length - 1]?.[1] ?? 0);
-          shapes.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="1.5" />`);
+          shapes.push(
+            `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="1.5" />`
+          );
           if (el.type === 'arrow') {
             shapes.push(`<circle cx="${x2}" cy="${y2}" r="3" fill="${stroke}" />`);
           }
@@ -121,7 +142,9 @@ function renderSceneSvg(scene: ExcalidrawScene): string {
         break;
       }
       default:
-        shapes.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="4" />`);
+        shapes.push(
+          `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="4" />`
+        );
     }
   }
 
@@ -129,12 +152,21 @@ function renderSceneSvg(scene: ExcalidrawScene): string {
 }
 
 function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 // ── Component ────────────────────────────────────────────────────────
 
-export function ExcalidrawWidget({ sceneJson, documentId, nodeId, onConfigChange }: ExcalidrawWidgetProps) {
+export function ExcalidrawWidget({
+  sceneJson,
+  documentId,
+  nodeId,
+  onConfigChange,
+}: ExcalidrawWidgetProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('draw');
   const [jsonText, setJsonText] = useState(sceneJson ?? '');
   const [kbDocs, setKbDocs] = useState<KbDocument[]>([]);
@@ -143,7 +175,10 @@ export function ExcalidrawWidget({ sceneJson, documentId, nodeId, onConfigChange
   const [autoSync, setAutoSync] = useState(false);
 
   const excalidrawAPIRef = useRef<ExcalidrawImperativeAPI | null>(null);
-  const sceneDataRef = useRef<{ elements: readonly Record<string, unknown>[]; appState: Record<string, unknown> } | null>(null);
+  const sceneDataRef = useRef<{
+    elements: readonly Record<string, unknown>[];
+    appState: Record<string, unknown>;
+  } | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -156,8 +191,12 @@ export function ExcalidrawWidget({ sceneJson, documentId, nodeId, onConfigChange
 
   // Push AI-generated scenes into live editor
   useEffect(() => {
-    if (!lastMessage || lastMessage.channel !== 'excalidraw') return;
-    const payload = lastMessage.payload as { documentId?: string; scene?: ExcalidrawScene; source?: string };
+    if (lastMessage?.channel !== 'excalidraw') return;
+    const payload = lastMessage.payload as {
+      documentId?: string;
+      scene?: ExcalidrawScene;
+      source?: string;
+    };
     if (!payload.scene) return;
     // If nodeId-linked to a specific document, only accept matching ones
     if (documentId && payload.documentId && payload.documentId !== documentId) return;
@@ -186,7 +225,11 @@ export function ExcalidrawWidget({ sceneJson, documentId, nodeId, onConfigChange
 
   const svgString = useMemo(() => {
     if (!scene) return null;
-    try { return renderSceneSvg(scene); } catch { return null; }
+    try {
+      return renderSceneSvg(scene);
+    } catch {
+      return null;
+    }
   }, [scene]);
 
   // Initial data for Excalidraw editor
@@ -201,41 +244,51 @@ export function ExcalidrawWidget({ sceneJson, documentId, nodeId, onConfigChange
     try {
       const resp = await fetch('/api/v1/brain/documents?format=excalidraw');
       if (resp.ok) {
-        const data = await resp.json() as { documents: KbDocument[] };
+        const data = (await resp.json()) as { documents: KbDocument[] };
         setKbDocs(data.documents ?? []);
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
-  useEffect(() => { void loadKbDocs(); }, [loadKbDocs]);
+  useEffect(() => {
+    void loadKbDocs();
+  }, [loadKbDocs]);
 
-  const handleLoadFromKb = useCallback(async (docId: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const resp = await fetch(`/api/v1/brain/documents/${docId}`);
-      if (!resp.ok) throw new Error('Failed to load document');
-      const data = await resp.json() as { document: KbDocument & { content?: string; metadata?: { excalidrawScene?: ExcalidrawScene } } };
-      onConfigChange?.({ excalidrawDocumentId: data.document.id });
+  const handleLoadFromKb = useCallback(
+    async (docId: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const resp = await fetch(`/api/v1/brain/documents/${docId}`);
+        if (!resp.ok) throw new Error('Failed to load document');
+        const data = (await resp.json()) as {
+          document: KbDocument & {
+            content?: string;
+            metadata?: { excalidrawScene?: ExcalidrawScene };
+          };
+        };
+        onConfigChange?.({ excalidrawDocumentId: data.document.id });
 
-      // Push scene into live editor if available
-      const sceneData = data.document.metadata?.excalidrawScene;
-      if (sceneData) {
-        const elements = sceneData.elements ?? [];
-        excalidrawAPIRef.current?.updateScene({ elements: elements as never[] });
-        setJsonText(JSON.stringify(sceneData, null, 2));
+        // Push scene into live editor if available
+        const sceneData = data.document.metadata?.excalidrawScene;
+        if (sceneData) {
+          const elements = sceneData.elements ?? [];
+          excalidrawAPIRef.current?.updateScene({ elements: elements as never[] });
+          setJsonText(JSON.stringify(sceneData, null, 2));
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Load failed');
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Load failed');
-    } finally {
-      setLoading(false);
-    }
-  }, [onConfigChange]);
+    },
+    [onConfigChange]
+  );
 
   const handleSaveToKb = useCallback(async () => {
-    const currentScene = sceneDataRef.current
-      ? { elements: sceneDataRef.current.elements }
-      : scene;
+    const currentScene = sceneDataRef.current ? { elements: sceneDataRef.current.elements } : scene;
     if (!currentScene) return;
     setLoading(true);
     setError(null);
@@ -249,7 +302,7 @@ export function ExcalidrawWidget({ sceneJson, documentId, nodeId, onConfigChange
         }),
       });
       if (!resp.ok) throw new Error('Failed to save');
-      const data = await resp.json() as { document: KbDocument };
+      const data = (await resp.json()) as { document: KbDocument };
       const sceneStr = JSON.stringify(currentScene, null, 2);
       setJsonText(sceneStr);
       onConfigChange?.({
@@ -302,23 +355,31 @@ export function ExcalidrawWidget({ sceneJson, documentId, nodeId, onConfigChange
     };
   }, []);
 
-  const handleJsonChange = useCallback((val: string) => {
-    setJsonText(val);
-    onConfigChange?.({ excalidrawSceneJson: val, excalidrawDocumentId: documentId });
-  }, [documentId, onConfigChange]);
+  const handleJsonChange = useCallback(
+    (val: string) => {
+      setJsonText(val);
+      onConfigChange?.({ excalidrawSceneJson: val, excalidrawDocumentId: documentId });
+    },
+    [documentId, onConfigChange]
+  );
 
   // Sync JSON edits into Draw mode when switching
-  const handleModeSwitch = useCallback((mode: ViewMode) => {
-    if (viewMode === 'json' && mode === 'draw') {
-      // Push JSON textarea edits into the live editor
-      try {
-        const parsed = JSON.parse(jsonText) as ExcalidrawScene;
-        const elements = parsed.elements ?? [];
-        excalidrawAPIRef.current?.updateScene({ elements: elements as never[] });
-      } catch { /* invalid JSON, keep editor as-is */ }
-    }
-    setViewMode(mode);
-  }, [viewMode, jsonText]);
+  const handleModeSwitch = useCallback(
+    (mode: ViewMode) => {
+      if (viewMode === 'json' && mode === 'draw') {
+        // Push JSON textarea edits into the live editor
+        try {
+          const parsed = JSON.parse(jsonText) as ExcalidrawScene;
+          const elements = parsed.elements ?? [];
+          excalidrawAPIRef.current?.updateScene({ elements: elements as never[] });
+        } catch {
+          /* invalid JSON, keep editor as-is */
+        }
+      }
+      setViewMode(mode);
+    },
+    [viewMode, jsonText]
+  );
 
   const handleExcalidrawAPI = useCallback((api: ExcalidrawImperativeAPI) => {
     excalidrawAPIRef.current = api;
@@ -334,7 +395,9 @@ export function ExcalidrawWidget({ sceneJson, documentId, nodeId, onConfigChange
           {(['draw', 'json', 'svg'] as const).map((mode) => (
             <button
               key={mode}
-              onClick={() => handleModeSwitch(mode)}
+              onClick={() => {
+                handleModeSwitch(mode);
+              }}
               className={`px-2 py-0.5 text-xs capitalize ${
                 viewMode === mode
                   ? 'bg-primary text-primary-foreground'
@@ -352,11 +415,16 @@ export function ExcalidrawWidget({ sceneJson, documentId, nodeId, onConfigChange
         >
           Save to KB
         </button>
-        <label className="flex items-center gap-1 cursor-pointer" title="Auto-sync scene to KB every 5s">
+        <label
+          className="flex items-center gap-1 cursor-pointer"
+          title="Auto-sync scene to KB every 5s"
+        >
           <input
             type="checkbox"
             checked={autoSync}
-            onChange={(e) => setAutoSync(e.target.checked)}
+            onChange={(e) => {
+              setAutoSync(e.target.checked);
+            }}
             className="w-3 h-3"
           />
           <span className="text-muted-foreground">Auto</span>
@@ -365,11 +433,15 @@ export function ExcalidrawWidget({ sceneJson, documentId, nodeId, onConfigChange
           <select
             className="px-1 py-0.5 rounded bg-muted text-foreground text-xs max-w-[140px]"
             defaultValue=""
-            onChange={(e) => { if (e.target.value) void handleLoadFromKb(e.target.value); }}
+            onChange={(e) => {
+              if (e.target.value) void handleLoadFromKb(e.target.value);
+            }}
           >
             <option value="">Load from KB...</option>
             {kbDocs.map((d) => (
-              <option key={d.id} value={d.id}>{d.title}</option>
+              <option key={d.id} value={d.id}>
+                {d.title}
+              </option>
             ))}
           </select>
         )}
@@ -395,7 +467,9 @@ export function ExcalidrawWidget({ sceneJson, documentId, nodeId, onConfigChange
           <textarea
             className="w-full h-full p-2 font-mono text-xs bg-background text-foreground resize-none outline-none"
             value={jsonText}
-            onChange={(e) => handleJsonChange(e.target.value)}
+            onChange={(e) => {
+              handleJsonChange(e.target.value);
+            }}
             placeholder='{"type":"excalidraw","version":2,"elements":[...]}'
             spellCheck={false}
           />

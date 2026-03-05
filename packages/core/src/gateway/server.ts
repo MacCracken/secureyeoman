@@ -619,7 +619,9 @@ export class GatewayServer {
           documentManager,
           brainManager,
           brainStorage,
-          broadcast: (channel, payload) => this.broadcast(channel, payload),
+          broadcast: (channel, payload) => {
+            this.broadcast(channel, payload);
+          },
         });
       } catch {
         // Document manager may not be available — skip routes
@@ -737,7 +739,8 @@ export class GatewayServer {
     await this.tryRegister('Report', async () => {
       const reportGenerator = this.secureYeoman.getReportGenerator();
       if (reportGenerator) {
-        const complianceReportGenerator = this.secureYeoman.getComplianceReportGenerator() ?? undefined;
+        const complianceReportGenerator =
+          this.secureYeoman.getComplianceReportGenerator() ?? undefined;
         const { registerReportRoutes } = await import('../reporting/report-routes.js');
         registerReportRoutes(this.app, { reportGenerator, complianceReportGenerator });
       }
@@ -942,7 +945,8 @@ export class GatewayServer {
     await this.tryRegister('UserNotificationPrefs', async () => {
       const userNotificationPrefsStorage = this.secureYeoman.getUserNotificationPrefsStorage();
       if (userNotificationPrefsStorage) {
-        const { registerUserNotificationPrefsRoutes } = await import('../notifications/user-notification-prefs-routes.js');
+        const { registerUserNotificationPrefsRoutes } =
+          await import('../notifications/user-notification-prefs-routes.js');
         registerUserNotificationPrefsRoutes(this.app, { userNotificationPrefsStorage });
       }
     });
@@ -951,7 +955,8 @@ export class GatewayServer {
     await this.tryRegister('RiskAssessment', async () => {
       const riskAssessmentManager = this.secureYeoman.getRiskAssessmentManager();
       if (riskAssessmentManager) {
-        const { registerRiskAssessmentRoutes } = await import('../risk-assessment/risk-assessment-routes.js');
+        const { registerRiskAssessmentRoutes } =
+          await import('../risk-assessment/risk-assessment-routes.js');
         registerRiskAssessmentRoutes(this.app, { riskAssessmentManager });
       }
     });
@@ -960,7 +965,8 @@ export class GatewayServer {
     await this.tryRegister('DepartmentRisk', async () => {
       const departmentRiskManager = this.secureYeoman.getDepartmentRiskManager();
       if (departmentRiskManager) {
-        const { registerDepartmentRiskRoutes } = await import('../risk-assessment/department-risk-routes.js');
+        const { registerDepartmentRiskRoutes } =
+          await import('../risk-assessment/department-risk-routes.js');
         registerDepartmentRiskRoutes(this.app, { departmentRiskManager });
       }
     });
@@ -1009,7 +1015,7 @@ export class GatewayServer {
           attestationCacheTtlMs: teeConfig?.attestationCacheTtlMs ?? 3_600_000,
           failureAction: teeConfig?.failureAction ?? 'block',
         },
-        this.getLogger(),
+        this.getLogger()
       );
       registerTeeRoutes(this.app, { teeVerifier });
       this.getLogger().info('TEE confidential computing routes registered');
@@ -1377,7 +1383,7 @@ export class GatewayServer {
                 message: string,
                 metadata?: Record<string, unknown>
               ): Promise<void> => {
-                await scanningAuditChain!.record({
+                await scanningAuditChain.record({
                   event,
                   level: level as 'info' | 'warn' | 'error' | 'security' | 'debug' | 'trace',
                   message,
@@ -1400,7 +1406,10 @@ export class GatewayServer {
       const eventSubscriptionStore = this.secureYeoman.getEventSubscriptionStore();
       if (eventDispatcher && eventSubscriptionStore) {
         const { registerEventRoutes } = await import('../events/event-routes.js');
-        registerEventRoutes(this.app, { dispatcher: eventDispatcher, store: eventSubscriptionStore });
+        registerEventRoutes(this.app, {
+          dispatcher: eventDispatcher,
+          store: eventSubscriptionStore,
+        });
         this.getLogger().info('Event subscription routes registered');
       }
     } catch (err) {

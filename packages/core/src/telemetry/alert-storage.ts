@@ -48,7 +48,9 @@ interface AlertRuleRow {
 
 function rowToRule(row: AlertRuleRow): AlertRule {
   const channels =
-    typeof row.channels === 'string' ? safeJsonParse(row.channels, [] as AlertChannel[]) : (row.channels ?? []);
+    typeof row.channels === 'string'
+      ? safeJsonParse(row.channels, [] as AlertChannel[])
+      : (row.channels ?? []);
   return {
     id: row.id,
     name: row.name,

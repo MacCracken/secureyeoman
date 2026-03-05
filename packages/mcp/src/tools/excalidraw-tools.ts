@@ -19,9 +19,9 @@ import {
 
 const ElementSpecInputSchema = z.object({
   id: z.string().optional().describe('Optional element ID; auto-generated if omitted'),
-  type: z.enum([
-    'rectangle', 'ellipse', 'diamond', 'line', 'arrow', 'text', 'freedraw', 'image',
-  ]).describe('Element type'),
+  type: z
+    .enum(['rectangle', 'ellipse', 'diamond', 'line', 'arrow', 'text', 'freedraw', 'image'])
+    .describe('Element type'),
   label: z.string().optional().describe('Text label — shapes with labels auto-create bound text'),
   x: z.number().describe('X coordinate'),
   y: z.number().describe('Y coordinate'),
@@ -40,21 +40,26 @@ const ElementSpecInputSchema = z.object({
   containerId: z.string().optional().describe('Container element ID (for bound text)'),
   startId: z.string().optional().describe('Arrow start binding element ID'),
   endId: z.string().optional().describe('Arrow end binding element ID'),
-  points: z.array(z.tuple([z.number(), z.number()])).optional().describe('Points for line/arrow'),
+  points: z
+    .array(z.tuple([z.number(), z.number()]))
+    .optional()
+    .describe('Points for line/arrow'),
 });
 
-const SceneInputSchema = z.object({
-  type: z.literal('excalidraw'),
-  version: z.literal(2),
-  source: z.string().optional(),
-  elements: z.array(z.record(z.unknown())),
-  appState: z.object({
-    gridSize: z.number().nullable().optional(),
-    viewBackgroundColor: z.string(),
-    theme: z.enum(['light', 'dark']).optional(),
-  }),
-  files: z.record(z.unknown()),
-}).describe('Excalidraw scene JSON');
+const SceneInputSchema = z
+  .object({
+    type: z.literal('excalidraw'),
+    version: z.literal(2),
+    source: z.string().optional(),
+    elements: z.array(z.record(z.unknown())),
+    appState: z.object({
+      gridSize: z.number().nullable().optional(),
+      viewBackgroundColor: z.string(),
+      theme: z.enum(['light', 'dark']).optional(),
+    }),
+    files: z.record(z.unknown()),
+  })
+  .describe('Excalidraw scene JSON');
 
 const PatchOpSchema = z.object({
   op: z.enum(['add', 'update', 'delete', 'move', 'restyle']).describe('Operation type'),
@@ -177,32 +182,37 @@ export function registerExcalidrawTools(
         category: z.string().optional().describe('Filter templates by category'),
       },
     },
-    wrapToolHandler(
-      'excalidraw_templates',
-      middleware,
-      async (args: { category?: string }) => {
-        const categories = getTemplateCategories();
-        const templates = getTemplatesByCategory(args.category);
-        const palettes = getAllPalettes();
+    wrapToolHandler('excalidraw_templates', middleware, async (args: { category?: string }) => {
+      const categories = getTemplateCategories();
+      const templates = getTemplatesByCategory(args.category);
+      const palettes = getAllPalettes();
 
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: JSON.stringify({ categories, templates, palettes }, null, 2),
-            },
-          ],
-        };
-      }
-    )
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify({ categories, templates, palettes }, null, 2),
+          },
+        ],
+      };
+    })
   );
 
   // ── excalidraw_from_description ─────────────────────────────────────────
 
   const DiagramTypeEnum = z.enum([
-    'architecture', 'sequence', 'flowchart', 'network', 'er_diagram',
-    'class_diagram', 'deployment', 'data_flow', 'threat_model',
-    'state_machine', 'mind_map', 'org_chart',
+    'architecture',
+    'sequence',
+    'flowchart',
+    'network',
+    'er_diagram',
+    'class_diagram',
+    'deployment',
+    'data_flow',
+    'threat_model',
+    'state_machine',
+    'mind_map',
+    'org_chart',
   ]);
 
   server.registerTool(
@@ -216,7 +226,10 @@ export function registerExcalidrawTools(
         description: z.string().describe('Natural language description of the diagram'),
         diagramType: DiagramTypeEnum.describe('Type of diagram to generate'),
         style: z.enum(['minimal', 'detailed', 'technical']).optional().describe('Visual style'),
-        colorPalette: z.string().optional().describe('Color palette name from excalidraw_templates'),
+        colorPalette: z
+          .string()
+          .optional()
+          .describe('Color palette name from excalidraw_templates'),
       },
     },
     wrapToolHandler(
@@ -239,12 +252,16 @@ export function registerExcalidrawTools(
           content: [
             {
               type: 'text' as const,
-              text: JSON.stringify({
-                scene,
-                diagramType: args.diagramType,
-                style: args.style ?? 'minimal',
-                elementCount: scene.elements.length,
-              }, null, 2),
+              text: JSON.stringify(
+                {
+                  scene,
+                  diagramType: args.diagramType,
+                  style: args.style ?? 'minimal',
+                  elementCount: scene.elements.length,
+                },
+                null,
+                2
+              ),
             },
           ],
         };
@@ -334,8 +351,8 @@ function descriptionToElements(
   const nodeH = style === 'detailed' ? 80 : 60;
   const elements: ElementSpec[] = [];
 
-  const layoutFn = LAYOUT_STRATEGIES[diagramType] ?? LAYOUT_STRATEGIES['flowchart']!;
-  layoutFn!(items, elements, { spacing, nodeW, nodeH, diagramType });
+  const layoutFn = LAYOUT_STRATEGIES[diagramType] ?? LAYOUT_STRATEGIES.flowchart!;
+  layoutFn(items, elements, { spacing, nodeW, nodeH, diagramType });
 
   return elements;
 }
@@ -347,7 +364,10 @@ interface LayoutOpts {
   diagramType: string;
 }
 
-const LAYOUT_STRATEGIES: Record<string, (items: string[], elements: ElementSpec[], opts: LayoutOpts) => void> = {
+const LAYOUT_STRATEGIES: Record<
+  string,
+  (items: string[], elements: ElementSpec[], opts: LayoutOpts) => void
+> = {
   architecture: (items, elements, { spacing, nodeW, nodeH }) => {
     // Grid layout
     const cols = Math.ceil(Math.sqrt(items.length));
@@ -369,7 +389,8 @@ const LAYOUT_STRATEGIES: Record<string, (items: string[], elements: ElementSpec[
     for (let i = 0; i < items.length - 1; i++) {
       elements.push({
         type: 'arrow',
-        x: 0, y: 0,
+        x: 0,
+        y: 0,
         startId: `node_${i}`,
         endId: `node_${i + 1}`,
       });
@@ -393,7 +414,8 @@ const LAYOUT_STRATEGIES: Record<string, (items: string[], elements: ElementSpec[
     for (let i = 0; i < items.length - 1; i++) {
       elements.push({
         type: 'arrow',
-        x: 0, y: 0,
+        x: 0,
+        y: 0,
         startId: `step_${i}`,
         endId: `step_${i + 1}`,
       });
@@ -417,7 +439,8 @@ const LAYOUT_STRATEGIES: Record<string, (items: string[], elements: ElementSpec[
     for (let i = 0; i < items.length - 1; i++) {
       elements.push({
         type: 'arrow',
-        x: 0, y: 0,
+        x: 0,
+        y: 0,
         startId: `actor_${i}`,
         endId: `actor_${i + 1}`,
       });
@@ -453,7 +476,8 @@ const LAYOUT_STRATEGIES: Record<string, (items: string[], elements: ElementSpec[
       });
       elements.push({
         type: 'arrow',
-        x: 0, y: 0,
+        x: 0,
+        y: 0,
         startId: 'core',
         endId: `node_${i}`,
       });
@@ -479,7 +503,8 @@ const LAYOUT_STRATEGIES: Record<string, (items: string[], elements: ElementSpec[
     for (let i = 0; i < items.length - 1; i++) {
       elements.push({
         type: 'arrow',
-        x: 0, y: 0,
+        x: 0,
+        y: 0,
         startId: `dfd_${i}`,
         endId: `dfd_${i + 1}`,
       });
@@ -513,7 +538,8 @@ const LAYOUT_STRATEGIES: Record<string, (items: string[], elements: ElementSpec[
       });
       elements.push({
         type: 'line',
-        x: 0, y: 0,
+        x: 0,
+        y: 0,
         startId: 'center',
         endId: `branch_${i}`,
       });
@@ -525,7 +551,8 @@ const LAYOUT_STRATEGIES: Record<string, (items: string[], elements: ElementSpec[
     items.forEach((label, i) => {
       const level = i === 0 ? 0 : i < 4 ? 1 : 2;
       const posInLevel = i === 0 ? 0 : level === 1 ? i - 1 : i - 4;
-      const levelWidth = level === 0 ? 1 : level === 1 ? Math.min(3, items.length - 1) : items.length - 4;
+      const levelWidth =
+        level === 0 ? 1 : level === 1 ? Math.min(3, items.length - 1) : items.length - 4;
       const offsetX = (posInLevel - (levelWidth - 1) / 2) * spacing;
       elements.push({
         id: `person_${i}`,
@@ -538,10 +565,12 @@ const LAYOUT_STRATEGIES: Record<string, (items: string[], elements: ElementSpec[
         backgroundColor: level === 0 ? '#ffd43b' : '#a5d8ff',
       });
       if (i > 0) {
-        const parentId = level === 1 ? 'person_0' : `person_${Math.min(3, Math.floor((i - 4) / 2) + 1)}`;
+        const parentId =
+          level === 1 ? 'person_0' : `person_${Math.min(3, Math.floor((i - 4) / 2) + 1)}`;
         elements.push({
           type: 'arrow',
-          x: 0, y: 0,
+          x: 0,
+          y: 0,
           startId: parentId,
           endId: `person_${i}`,
         });
@@ -551,8 +580,8 @@ const LAYOUT_STRATEGIES: Record<string, (items: string[], elements: ElementSpec[
 };
 
 // Aliases
-LAYOUT_STRATEGIES['er_diagram'] = LAYOUT_STRATEGIES['architecture']!;
-LAYOUT_STRATEGIES['class_diagram'] = LAYOUT_STRATEGIES['architecture']!;
-LAYOUT_STRATEGIES['deployment'] = LAYOUT_STRATEGIES['architecture']!;
-LAYOUT_STRATEGIES['data_flow'] = LAYOUT_STRATEGIES['flowchart']!;
-LAYOUT_STRATEGIES['state_machine'] = LAYOUT_STRATEGIES['flowchart']!
+LAYOUT_STRATEGIES.er_diagram = LAYOUT_STRATEGIES.architecture!;
+LAYOUT_STRATEGIES.class_diagram = LAYOUT_STRATEGIES.architecture!;
+LAYOUT_STRATEGIES.deployment = LAYOUT_STRATEGIES.architecture!;
+LAYOUT_STRATEGIES.data_flow = LAYOUT_STRATEGIES.flowchart!;
+LAYOUT_STRATEGIES.state_machine = LAYOUT_STRATEGIES.flowchart!;

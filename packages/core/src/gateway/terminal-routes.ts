@@ -163,7 +163,11 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
       if (allowedCommands && Array.isArray(allowedCommands)) {
         const baseCmd = command.trim().split(/\s+/)[0] ?? '';
         if (!allowedCommands.includes(baseCmd)) {
-          return sendError(reply, 403, `Command blocked: ${baseCmd} is not in allowed set for this workspace`);
+          return sendError(
+            reply,
+            403,
+            `Command blocked: ${baseCmd} is not in allowed set for this workspace`
+          );
         }
       }
 

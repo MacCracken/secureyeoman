@@ -17,7 +17,9 @@ const PERSONALITY = {
   traits: {},
   isDefault: false,
   isArchetype: false,
-  body: { activeHours: { enabled: false, start: '09:00', end: '17:00', daysOfWeek: [], timezone: 'UTC' } },
+  body: {
+    activeHours: { enabled: false, start: '09:00', end: '17:00', daysOfWeek: [], timezone: 'UTC' },
+  },
 };
 
 const VERSION = {
@@ -66,7 +68,9 @@ function makeMockSoulManager(): SoulManager {
     deleteUser: vi.fn().mockResolvedValue(true),
     composeSoulPrompt: vi.fn().mockResolvedValue('prompt'),
     getActiveTools: vi.fn().mockResolvedValue([]),
-    getConfig: vi.fn().mockReturnValue({ enabled: true, maxSkills: 50, maxPromptTokens: 32000, learningMode: [] }),
+    getConfig: vi
+      .fn()
+      .mockReturnValue({ enabled: true, maxSkills: 50, maxPromptTokens: 32000, learningMode: [] }),
     updateConfig: vi.fn().mockResolvedValue(undefined),
     getAgentName: vi.fn().mockResolvedValue('FRIDAY'),
     setAgentName: vi.fn().mockResolvedValue(undefined),
@@ -81,7 +85,9 @@ function makeMockSoulManager(): SoulManager {
   } as unknown as SoulManager;
 }
 
-function makeMockVersionManager(overrides: Partial<PersonalityVersionManager> = {}): PersonalityVersionManager {
+function makeMockVersionManager(
+  overrides: Partial<PersonalityVersionManager> = {}
+): PersonalityVersionManager {
   return {
     recordVersion: vi.fn().mockResolvedValue(VERSION),
     tagRelease: vi.fn().mockResolvedValue({ ...VERSION, versionTag: '2026.3.3' }),
@@ -125,7 +131,10 @@ describe('Personality version routes', () => {
     it('uses default pagination when no query params', async () => {
       const mgr = makeMockVersionManager();
       const app = Fastify({ logger: false });
-      registerSoulRoutes(app, { soulManager: makeMockSoulManager(), personalityVersionManager: mgr });
+      registerSoulRoutes(app, {
+        soulManager: makeMockSoulManager(),
+        personalityVersionManager: mgr,
+      });
 
       await app.inject({ method: 'GET', url: '/api/v1/soul/personalities/pers-1/versions' });
       expect(mgr.listVersions).toHaveBeenCalledWith('pers-1', { limit: 50, offset: 0 });
@@ -171,7 +180,10 @@ describe('Personality version routes', () => {
     it('passes custom tag from body', async () => {
       const mgr = makeMockVersionManager();
       const app = Fastify({ logger: false });
-      registerSoulRoutes(app, { soulManager: makeMockSoulManager(), personalityVersionManager: mgr });
+      registerSoulRoutes(app, {
+        soulManager: makeMockSoulManager(),
+        personalityVersionManager: mgr,
+      });
 
       await app.inject({
         method: 'POST',

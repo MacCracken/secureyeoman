@@ -10,25 +10,31 @@ import { z } from 'zod';
 // ─── Deliberation Strategy ────────────────────────────────────────
 
 export const CouncilDeliberationStrategySchema = z.enum([
-  'rounds',           // Fixed N rounds
-  'until_consensus',  // Run until facilitator judges convergence (up to maxRounds)
-  'single_pass',      // One round only, no convergence check
+  'rounds', // Fixed N rounds
+  'until_consensus', // Run until facilitator judges convergence (up to maxRounds)
+  'single_pass', // One round only, no convergence check
 ]);
 export type CouncilDeliberationStrategy = z.infer<typeof CouncilDeliberationStrategySchema>;
 
 // ─── Voting Strategy ──────────────────────────────────────────────
 
 export const CouncilVotingStrategySchema = z.enum([
-  'facilitator_judgment',  // Facilitator synthesizes and decides
-  'majority',              // Simple majority of members
-  'unanimous',             // All must agree
-  'weighted',              // Weight-based voting
+  'facilitator_judgment', // Facilitator synthesizes and decides
+  'majority', // Simple majority of members
+  'unanimous', // All must agree
+  'weighted', // Weight-based voting
 ]);
 export type CouncilVotingStrategy = z.infer<typeof CouncilVotingStrategySchema>;
 
 // ─── Status ───────────────────────────────────────────────────────
 
-export const CouncilStatusSchema = z.enum(['pending', 'running', 'completed', 'failed', 'cancelled']);
+export const CouncilStatusSchema = z.enum([
+  'pending',
+  'running',
+  'completed',
+  'failed',
+  'cancelled',
+]);
 export type CouncilStatus = z.infer<typeof CouncilStatusSchema>;
 
 // ─── Member Config ────────────────────────────────────────────────

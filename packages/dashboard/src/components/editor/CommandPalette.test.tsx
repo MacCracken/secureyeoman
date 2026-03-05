@@ -7,9 +7,30 @@ import type { CommandItem } from '../../hooks/useCommandPalette';
 import { Plus, Play, Settings } from 'lucide-react';
 
 const mockCommands: CommandItem[] = [
-  { id: 'new-file', label: 'New File', category: 'file', icon: <Plus className="w-3.5 h-3.5" />, action: vi.fn(), keywords: ['create'] },
-  { id: 'run-code', label: 'Run Code', category: 'file', icon: <Play className="w-3.5 h-3.5" />, shortcut: 'Ctrl+Enter', action: vi.fn() },
-  { id: 'toggle-settings', label: 'Editor Settings', category: 'panel', icon: <Settings className="w-3.5 h-3.5" />, action: vi.fn(), keywords: ['preferences'] },
+  {
+    id: 'new-file',
+    label: 'New File',
+    category: 'file',
+    icon: <Plus className="w-3.5 h-3.5" />,
+    action: vi.fn(),
+    keywords: ['create'],
+  },
+  {
+    id: 'run-code',
+    label: 'Run Code',
+    category: 'file',
+    icon: <Play className="w-3.5 h-3.5" />,
+    shortcut: 'Ctrl+Enter',
+    action: vi.fn(),
+  },
+  {
+    id: 'toggle-settings',
+    label: 'Editor Settings',
+    category: 'panel',
+    icon: <Settings className="w-3.5 h-3.5" />,
+    action: vi.fn(),
+    keywords: ['preferences'],
+  },
 ];
 
 function renderPalette(overrides: Partial<React.ComponentProps<typeof CommandPalette>> = {}) {

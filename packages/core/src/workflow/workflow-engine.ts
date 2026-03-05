@@ -161,7 +161,9 @@ export class WorkflowEngine {
         // Batch parallel execution to prevent resource exhaustion
         for (let i = 0; i < tier.length; i += MAX_PARALLEL_STEPS) {
           const batch = tier.slice(i, i + MAX_PARALLEL_STEPS);
-          await Promise.all(batch.map((stepId) => this.executeStep(stepId, definition, ctx, run.id)));
+          await Promise.all(
+            batch.map((stepId) => this.executeStep(stepId, definition, ctx, run.id))
+          );
         }
       }
 
@@ -537,7 +539,9 @@ export class WorkflowEngine {
 
       case 'subworkflow': {
         if (this.subworkflowDepth >= WorkflowEngine.MAX_SUBWORKFLOW_DEPTH) {
-          throw new Error(`Subworkflow nesting depth exceeds limit (${WorkflowEngine.MAX_SUBWORKFLOW_DEPTH})`);
+          throw new Error(
+            `Subworkflow nesting depth exceeds limit (${WorkflowEngine.MAX_SUBWORKFLOW_DEPTH})`
+          );
         }
         const subWorkflowId = String(cfg.workflowId ?? '');
         const subDefinition = await this.storage.getDefinition(subWorkflowId);
@@ -878,8 +882,7 @@ export class WorkflowEngine {
         });
 
         if (provider === 'github-actions') {
-          const token =
-            this.cicdConfig?.githubToken;
+          const token = this.cicdConfig?.githubToken;
           const headers: Record<string, string> = {
             Accept: 'application/vnd.github+json',
             'X-GitHub-Api-Version': '2022-11-28',
@@ -888,7 +891,12 @@ export class WorkflowEngine {
           if (token) headers.Authorization = `Bearer ${token}`;
           const res = await fetch(
             `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowId}/dispatches`,
-            { method: 'POST', headers, body: JSON.stringify({ ref, inputs }), signal: AbortSignal.timeout(CI_FETCH_TIMEOUT_MS) }
+            {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ ref, inputs }),
+              signal: AbortSignal.timeout(CI_FETCH_TIMEOUT_MS),
+            }
           );
           if (!res.ok && res.status !== 204) {
             const errBody = (await res.text()).slice(0, CI_ERROR_BODY_LIMIT);
@@ -957,8 +965,7 @@ export class WorkflowEngine {
         if (provider === 'github-actions') {
           const owner = this.resolveTemplate(String(cfg.owner ?? ''), ctx);
           const repo = this.resolveTemplate(String(cfg.repo ?? ''), ctx);
-          const token =
-            this.cicdConfig?.githubToken;
+          const token = this.cicdConfig?.githubToken;
           const headers: Record<string, string> = {
             Accept: 'application/vnd.github+json',
             'X-GitHub-Api-Version': '2022-11-28',
@@ -1035,9 +1042,7 @@ export class WorkflowEngine {
         const style = String(cfg.style ?? 'minimal');
         const format = String(cfg.format ?? 'svg');
 
-        this.logger.info(
-          'diagram_generation: delegating to MCP excalidraw tools'
-        );
+        this.logger.info('diagram_generation: delegating to MCP excalidraw tools');
 
         // The diagram_generation step stores its config for downstream
         // consumption. Actual scene generation is handled by the agent step
@@ -1058,9 +1063,7 @@ export class WorkflowEngine {
         const document = this.resolveTemplate(docTemplate, ctx);
         const outputFormat = String(cfg.outputFormat ?? 'markdown');
 
-        this.logger.info(
-          'document_analysis: delegating to PDF analysis tools'
-        );
+        this.logger.info('document_analysis: delegating to PDF analysis tools');
 
         return {
           analysisType,

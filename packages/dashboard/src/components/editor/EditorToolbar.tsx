@@ -118,7 +118,9 @@ export function EditorToolbar({
                 ? 'bg-primary/10 text-primary border border-primary/30'
                 : 'hover:bg-muted/50 text-muted-foreground'
             }`}
-            onClick={() => onTabClick(tab.id)}
+            onClick={() => {
+              onTabClick(tab.id);
+            }}
           >
             {renamingTabId === tab.id ? (
               <input
@@ -126,8 +128,12 @@ export function EditorToolbar({
                 value={renameValue}
                 autoFocus
                 className="max-w-[100px] bg-transparent border-b border-primary outline-none font-mono text-xs w-[80px]"
-                onChange={(e) => onTabRenameChange(e.target.value)}
-                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  onTabRenameChange(e.target.value);
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -228,7 +234,9 @@ export function EditorToolbar({
       <div className="relative">
         <button
           ref={modelBtnRef}
-          onClick={() => setModelOpen((v) => !v)}
+          onClick={() => {
+            setModelOpen((v) => !v);
+          }}
           className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
           title="Switch model"
         >
@@ -240,7 +248,9 @@ export function EditorToolbar({
         {modelOpen && (
           <div className="absolute right-0 top-full mt-1 z-50">
             <ModelWidget
-              onClose={() => setModelOpen(false)}
+              onClose={() => {
+                setModelOpen(false);
+              }}
               onModelSwitch={() => {
                 setModelOpen(false);
                 void queryClient.invalidateQueries({ queryKey: ['model-info'] });

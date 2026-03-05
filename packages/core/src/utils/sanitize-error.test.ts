@@ -72,7 +72,9 @@ describe('sanitizeErrorForClient', () => {
 
   it('handles TypeError in production', () => {
     vi.stubEnv('NODE_ENV', 'production');
-    const result = sanitizeErrorForClient(new TypeError("Cannot read properties of undefined (reading 'foo')"));
+    const result = sanitizeErrorForClient(
+      new TypeError("Cannot read properties of undefined (reading 'foo')")
+    );
     expect(result.message).toBe('An internal error occurred');
   });
 

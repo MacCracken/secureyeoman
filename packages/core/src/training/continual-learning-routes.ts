@@ -163,12 +163,15 @@ export function registerContinualLearningRoutes(
       const body = request.body;
       if (!body?.personalityId?.trim()) return sendError(reply, 400, 'personalityId is required');
       if (!body?.adapterName?.trim()) return sendError(reply, 400, 'adapterName is required');
-      if (!body?.conversationIds?.length) return sendError(reply, 400, 'conversationIds is required');
+      if (!body?.conversationIds?.length)
+        return sendError(reply, 400, 'conversationIds is required');
 
       try {
         const job = await manager.create(body);
         // Start in background
-        manager.startJob(job.id).catch(() => {/* error recorded in DB */});
+        manager.startJob(job.id).catch(() => {
+          /* error recorded in DB */
+        });
         return reply.code(202).send(job);
       } catch (err) {
         return sendError(reply, 500, toErrorMessage(err));

@@ -182,7 +182,8 @@ const CODE_PATTERNS: CodePattern[] = [
     category: 'sql_injection',
     severity: 'high',
     message: 'SQL query built via string concatenation',
-    pattern: /(?:SELECT|INSERT|UPDATE|DELETE|DROP|ALTER)\s+.*\+\s*(?:req\.|params\.|query\.|body\.)/i,
+    pattern:
+      /(?:SELECT|INSERT|UPDATE|DELETE|DROP|ALTER)\s+.*\+\s*(?:req\.|params\.|query\.|body\.)/i,
     cwe: 'CWE-89',
     recommendation: 'Use parameterized queries',
   },
@@ -237,9 +238,8 @@ export class CodeScanner implements ArtifactScanner {
   readonly version = '1.0.0';
 
   async scan(artifact: SandboxArtifact, signal?: AbortSignal): Promise<ScanFinding[]> {
-    const content = typeof artifact.content === 'string'
-      ? artifact.content
-      : artifact.content.toString('utf-8');
+    const content =
+      typeof artifact.content === 'string' ? artifact.content : artifact.content.toString('utf-8');
 
     // Skip binary-looking content
     if (this.isBinary(content)) return [];
@@ -253,9 +253,8 @@ export class CodeScanner implements ArtifactScanner {
 
       // Anti-ReDoS: skip extremely long lines
       const rawLine = lines[i] ?? '';
-      const line = rawLine.length > MAX_LINE_LENGTH
-        ? rawLine.substring(0, MAX_LINE_LENGTH)
-        : rawLine;
+      const line =
+        rawLine.length > MAX_LINE_LENGTH ? rawLine.substring(0, MAX_LINE_LENGTH) : rawLine;
 
       // Skip comment lines
       if (this.isComment(line)) continue;

@@ -96,7 +96,10 @@ export function checkCertExpiry(certPath?: string): HealthComponent {
       return { ok: false, detail: `Certificate expires in ${daysLeft} day(s) — renewal critical` };
     }
     if (daysLeft <= 30) {
-      return { ok: true, detail: `Certificate expires in ${daysLeft} day(s) — renewal recommended` };
+      return {
+        ok: true,
+        detail: `Certificate expires in ${daysLeft} day(s) — renewal recommended`,
+      };
     }
     return { ok: true, detail: `Certificate valid for ${daysLeft} day(s)` };
   } catch (err) {

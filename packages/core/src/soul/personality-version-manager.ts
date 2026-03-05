@@ -19,9 +19,20 @@ export interface PersonalityVersionManagerDeps {
 
 /** Fields to track for change detection */
 const TRACKED_FIELDS = [
-  'name', 'description', 'systemPrompt', 'traits', 'sex', 'voice',
-  'preferredLanguage', 'defaultModel', 'modelFallbacks', 'includeArchetypes',
-  'injectDateTime', 'empathyResonance', 'avatarUrl', 'body',
+  'name',
+  'description',
+  'systemPrompt',
+  'traits',
+  'sex',
+  'voice',
+  'preferredLanguage',
+  'defaultModel',
+  'modelFallbacks',
+  'includeArchetypes',
+  'injectDateTime',
+  'empathyResonance',
+  'avatarUrl',
+  'body',
 ] as const;
 
 function detectChangedFields(a: Record<string, unknown>, b: Record<string, unknown>): string[] {
@@ -65,10 +76,7 @@ export class PersonalityVersionManager {
     if (previous) {
       const previousMd = previous.snapshotMd;
       diffSummary = computeUnifiedDiff(previousMd, snapshotMd, 'previous', 'current');
-      changedFields = detectChangedFields(
-        previous.snapshot as Record<string, unknown>,
-        snapshot
-      );
+      changedFields = detectChangedFields(previous.snapshot, snapshot);
     }
 
     return this.versionStorage.createVersion({
@@ -90,7 +98,7 @@ export class PersonalityVersionManager {
     author?: string
   ): Promise<PersonalityVersion> {
     const version = await this.recordVersion(personalityId, author);
-    const tag = customTag ?? await this.versionStorage.generateNextTag(personalityId);
+    const tag = customTag ?? (await this.versionStorage.generateNextTag(personalityId));
     const tagged = await this.versionStorage.tagVersion(version.id, tag);
     return tagged ?? version;
   }
@@ -108,13 +116,10 @@ export class PersonalityVersionManager {
   /**
    * Get a specific version by ID or tag.
    */
-  async getVersion(
-    personalityId: string,
-    idOrTag: string
-  ): Promise<PersonalityVersion | null> {
+  async getVersion(personalityId: string, idOrTag: string): Promise<PersonalityVersion | null> {
     // Try by ID first
     const byId = await this.versionStorage.getVersion(idOrTag);
-    if (byId && byId.personalityId === personalityId) return byId;
+    if (byId?.personalityId === personalityId) return byId;
 
     // Then by tag
     return this.versionStorage.getVersionByTag(personalityId, idOrTag);
@@ -155,12 +160,12 @@ export class PersonalityVersionManager {
     author?: string
   ): Promise<PersonalityVersion> {
     const target = await this.versionStorage.getVersion(targetVersionId);
-    if (!target || target.personalityId !== personalityId) {
+    if (target?.personalityId !== personalityId) {
       throw new Error(`Version not found: ${targetVersionId}`);
     }
 
     // Extract the personality fields from snapshot and apply to current personality
-    const snap = target.snapshot as Record<string, unknown>;
+    const snap = target.snapshot;
     const updateData: Record<string, unknown> = {};
     for (const field of TRACKED_FIELDS) {
       if (field in snap) {
@@ -197,10 +202,7 @@ export class PersonalityVersionManager {
     const currentMd = this.serializer.toMarkdown(personality);
     const currentSnapshot = JSON.parse(JSON.stringify(personality)) as Record<string, unknown>;
 
-    const changedFields = detectChangedFields(
-      lastTagged.snapshot as Record<string, unknown>,
-      currentSnapshot
-    );
+    const changedFields = detectChangedFields(lastTagged.snapshot, currentSnapshot);
 
     const diffSummary = computeUnifiedDiff(
       lastTagged.snapshotMd,

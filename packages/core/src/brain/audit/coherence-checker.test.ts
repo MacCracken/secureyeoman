@@ -222,7 +222,7 @@ describe('KnowledgeGraphCoherenceChecker', () => {
   it('counts issuesFound correctly across all types', async () => {
     const fiftyDaysAgo = Date.now() - 50 * 24 * 60 * 60 * 1000;
     mockStorage.queryKnowledge.mockResolvedValue([
-      makeEntry({ id: 'k-1', supersedes: 'k-missing' }),           // orphaned
+      makeEntry({ id: 'k-1', supersedes: 'k-missing' }), // orphaned
       makeEntry({ id: 'k-2', confidence: 0.95, updatedAt: fiftyDaysAgo }), // stale
     ]);
 
@@ -234,7 +234,7 @@ describe('KnowledgeGraphCoherenceChecker', () => {
   it('counts issuesFixed correctly (only auto-fixed ones)', async () => {
     const fiftyDaysAgo = Date.now() - 50 * 24 * 60 * 60 * 1000;
     mockStorage.queryKnowledge.mockResolvedValue([
-      makeEntry({ id: 'k-1', supersedes: 'k-missing' }),           // auto-fixed
+      makeEntry({ id: 'k-1', supersedes: 'k-missing' }), // auto-fixed
       makeEntry({ id: 'k-2', confidence: 0.95, updatedAt: fiftyDaysAgo }), // NOT auto-fixed
     ]);
 
@@ -246,9 +246,7 @@ describe('KnowledgeGraphCoherenceChecker', () => {
   // ── Error handling ─────────────────────────────────────
 
   it('handles updateKnowledge errors gracefully for orphaned supersedes', async () => {
-    mockStorage.queryKnowledge.mockResolvedValue([
-      makeEntry({ id: 'k-1', supersedes: 'k-gone' }),
-    ]);
+    mockStorage.queryKnowledge.mockResolvedValue([makeEntry({ id: 'k-1', supersedes: 'k-gone' })]);
     mockStorage.updateKnowledge.mockRejectedValue(new Error('db down'));
 
     const result = await checker.check();

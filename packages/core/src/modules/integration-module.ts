@@ -125,37 +125,130 @@ export class IntegrationModule implements AppModule {
     // Register all 31 platform adapters with lazy dynamic imports.
     // SDKs are only loaded when the integration is first created.
     const im = this.integrationManager;
-    im.registerPlatform('telegram', async () => { const m = await import('../integrations/telegram/index.js'); return new m.TelegramIntegration(); });
-    im.registerPlatform('discord', async () => { const m = await import('../integrations/discord/index.js'); return new m.DiscordIntegration(); });
-    im.registerPlatform('slack', async () => { const m = await import('../integrations/slack/index.js'); return new m.SlackIntegration(); });
-    im.registerPlatform('github', async () => { const m = await import('../integrations/github/index.js'); return new m.GitHubIntegration(); });
-    im.registerPlatform('imessage', async () => { const m = await import('../integrations/imessage/index.js'); return new m.IMessageIntegration(); });
-    im.registerPlatform('googlechat', async () => { const m = await import('../integrations/googlechat/index.js'); return new m.GoogleChatIntegration(); });
-    im.registerPlatform('gmail', async () => { const m = await import('../integrations/gmail/index.js'); return new m.GmailIntegration(); });
-    im.registerPlatform('email', async () => { const m = await import('../integrations/email/index.js'); return new m.EmailIntegration(); });
-    im.registerPlatform('cli', async () => { const m = await import('../integrations/cli/index.js'); return new m.CliIntegration(); });
-    im.registerPlatform('webhook', async () => { const m = await import('../integrations/webhook/index.js'); return new m.GenericWebhookIntegration(); });
-    im.registerPlatform('whatsapp', async () => { const m = await import('../integrations/whatsapp/index.js'); return new m.WhatsAppIntegration(); });
-    im.registerPlatform('signal', async () => { const m = await import('../integrations/signal/index.js'); return new m.SignalIntegration(); });
-    im.registerPlatform('teams', async () => { const m = await import('../integrations/teams/index.js'); return new m.TeamsIntegration(); });
-    im.registerPlatform('googlecalendar', async () => { const m = await import('../integrations/googlecalendar/index.js'); return new m.GoogleCalendarIntegration(); });
-    im.registerPlatform('notion', async () => { const m = await import('../integrations/notion/index.js'); return new m.NotionIntegration(); });
-    im.registerPlatform('gitlab', async () => { const m = await import('../integrations/gitlab/index.js'); return new m.GitLabIntegration(); });
-    im.registerPlatform('jira', async () => { const m = await import('../integrations/jira/index.js'); return new m.JiraIntegration(); });
-    im.registerPlatform('aws', async () => { const m = await import('../integrations/aws/index.js'); return new m.AwsIntegration(); });
-    im.registerPlatform('azure', async () => { const m = await import('../integrations/azure/index.js'); return new m.AzureDevOpsIntegration(); });
-    im.registerPlatform('figma', async () => { const m = await import('../integrations/figma/index.js'); return new m.FigmaIntegration(); });
-    im.registerPlatform('stripe', async () => { const m = await import('../integrations/stripe/index.js'); return new m.StripeIntegration(); });
-    im.registerPlatform('zapier', async () => { const m = await import('../integrations/zapier/index.js'); return new m.ZapierIntegration(); });
-    im.registerPlatform('qq', async () => { const m = await import('../integrations/qq/index.js'); return new m.QQIntegration(); });
-    im.registerPlatform('dingtalk', async () => { const m = await import('../integrations/dingtalk/index.js'); return new m.DingTalkIntegration(); });
-    im.registerPlatform('line', async () => { const m = await import('../integrations/line/index.js'); return new m.LineIntegration(); });
-    im.registerPlatform('linear', async () => { const m = await import('../integrations/linear/index.js'); return new m.LinearIntegration(); });
-    im.registerPlatform('airtable', async () => { const m = await import('../integrations/airtable/index.js'); return new m.AirtableIntegration(); });
-    im.registerPlatform('todoist', async () => { const m = await import('../integrations/todoist/index.js'); return new m.TodoistIntegration(); });
-    im.registerPlatform('spotify', async () => { const m = await import('../integrations/spotify/index.js'); return new m.SpotifyIntegration(); });
-    im.registerPlatform('youtube', async () => { const m = await import('../integrations/youtube/index.js'); return new m.YouTubeIntegration(); });
-    im.registerPlatform('twitter', async () => { const m = await import('../integrations/twitter/index.js'); return new m.TwitterIntegration(); });
+    im.registerPlatform('telegram', async () => {
+      const m = await import('../integrations/telegram/index.js');
+      return new m.TelegramIntegration();
+    });
+    im.registerPlatform('discord', async () => {
+      const m = await import('../integrations/discord/index.js');
+      return new m.DiscordIntegration();
+    });
+    im.registerPlatform('slack', async () => {
+      const m = await import('../integrations/slack/index.js');
+      return new m.SlackIntegration();
+    });
+    im.registerPlatform('github', async () => {
+      const m = await import('../integrations/github/index.js');
+      return new m.GitHubIntegration();
+    });
+    im.registerPlatform('imessage', async () => {
+      const m = await import('../integrations/imessage/index.js');
+      return new m.IMessageIntegration();
+    });
+    im.registerPlatform('googlechat', async () => {
+      const m = await import('../integrations/googlechat/index.js');
+      return new m.GoogleChatIntegration();
+    });
+    im.registerPlatform('gmail', async () => {
+      const m = await import('../integrations/gmail/index.js');
+      return new m.GmailIntegration();
+    });
+    im.registerPlatform('email', async () => {
+      const m = await import('../integrations/email/index.js');
+      return new m.EmailIntegration();
+    });
+    im.registerPlatform('cli', async () => {
+      const m = await import('../integrations/cli/index.js');
+      return new m.CliIntegration();
+    });
+    im.registerPlatform('webhook', async () => {
+      const m = await import('../integrations/webhook/index.js');
+      return new m.GenericWebhookIntegration();
+    });
+    im.registerPlatform('whatsapp', async () => {
+      const m = await import('../integrations/whatsapp/index.js');
+      return new m.WhatsAppIntegration();
+    });
+    im.registerPlatform('signal', async () => {
+      const m = await import('../integrations/signal/index.js');
+      return new m.SignalIntegration();
+    });
+    im.registerPlatform('teams', async () => {
+      const m = await import('../integrations/teams/index.js');
+      return new m.TeamsIntegration();
+    });
+    im.registerPlatform('googlecalendar', async () => {
+      const m = await import('../integrations/googlecalendar/index.js');
+      return new m.GoogleCalendarIntegration();
+    });
+    im.registerPlatform('notion', async () => {
+      const m = await import('../integrations/notion/index.js');
+      return new m.NotionIntegration();
+    });
+    im.registerPlatform('gitlab', async () => {
+      const m = await import('../integrations/gitlab/index.js');
+      return new m.GitLabIntegration();
+    });
+    im.registerPlatform('jira', async () => {
+      const m = await import('../integrations/jira/index.js');
+      return new m.JiraIntegration();
+    });
+    im.registerPlatform('aws', async () => {
+      const m = await import('../integrations/aws/index.js');
+      return new m.AwsIntegration();
+    });
+    im.registerPlatform('azure', async () => {
+      const m = await import('../integrations/azure/index.js');
+      return new m.AzureDevOpsIntegration();
+    });
+    im.registerPlatform('figma', async () => {
+      const m = await import('../integrations/figma/index.js');
+      return new m.FigmaIntegration();
+    });
+    im.registerPlatform('stripe', async () => {
+      const m = await import('../integrations/stripe/index.js');
+      return new m.StripeIntegration();
+    });
+    im.registerPlatform('zapier', async () => {
+      const m = await import('../integrations/zapier/index.js');
+      return new m.ZapierIntegration();
+    });
+    im.registerPlatform('qq', async () => {
+      const m = await import('../integrations/qq/index.js');
+      return new m.QQIntegration();
+    });
+    im.registerPlatform('dingtalk', async () => {
+      const m = await import('../integrations/dingtalk/index.js');
+      return new m.DingTalkIntegration();
+    });
+    im.registerPlatform('line', async () => {
+      const m = await import('../integrations/line/index.js');
+      return new m.LineIntegration();
+    });
+    im.registerPlatform('linear', async () => {
+      const m = await import('../integrations/linear/index.js');
+      return new m.LinearIntegration();
+    });
+    im.registerPlatform('airtable', async () => {
+      const m = await import('../integrations/airtable/index.js');
+      return new m.AirtableIntegration();
+    });
+    im.registerPlatform('todoist', async () => {
+      const m = await import('../integrations/todoist/index.js');
+      return new m.TodoistIntegration();
+    });
+    im.registerPlatform('spotify', async () => {
+      const m = await import('../integrations/spotify/index.js');
+      return new m.SpotifyIntegration();
+    });
+    im.registerPlatform('youtube', async () => {
+      const m = await import('../integrations/youtube/index.js');
+      return new m.YouTubeIntegration();
+    });
+    im.registerPlatform('twitter', async () => {
+      const m = await import('../integrations/twitter/index.js');
+      return new m.TwitterIntegration();
+    });
 
     // Routing rules
     if (this.routingRulesStorage && this.integrationManager) {
@@ -173,7 +266,8 @@ export class IntegrationModule implements AppModule {
     }
 
     // Plugin loader
-    const pluginDir = this.config.security.integrationPluginDir ?? process.env.INTEGRATION_PLUGIN_DIR;
+    const pluginDir =
+      this.config.security.integrationPluginDir ?? process.env.INTEGRATION_PLUGIN_DIR;
     if (pluginDir) {
       const pluginLoader = new PluginLoader({
         pluginDir,
@@ -210,8 +304,7 @@ export class IntegrationModule implements AppModule {
     if (deps.multimodalManager && this.integrationManager) {
       const mmRef = deps.multimodalManager;
       this.integrationManager.setMultimodalManager({
-        analyzeImage: (req) =>
-          mmRef.analyzeImage(req as Parameters<typeof mmRef.analyzeImage>[0]),
+        analyzeImage: (req) => mmRef.analyzeImage(req as Parameters<typeof mmRef.analyzeImage>[0]),
         transcribeAudio: (req) =>
           mmRef.transcribeAudio(req as Parameters<typeof mmRef.transcribeAudio>[0]),
         synthesizeSpeech: (req) =>
@@ -288,12 +381,28 @@ export class IntegrationModule implements AppModule {
   // Getters
   // ------------------------------------------------------------------
 
-  getIntegrationStorage(): IntegrationStorage | null { return this.integrationStorage; }
-  getIntegrationManager(): IntegrationManager | null { return this.integrationManager; }
-  getMessageRouter(): MessageRouter | null { return this.messageRouter; }
-  getConversationManager(): ConversationManager | null { return this.conversationManager; }
-  getGroupChatStorage(): GroupChatStorage | null { return this.groupChatStorage; }
-  getRoutingRulesStorage(): RoutingRulesStorage | null { return this.routingRulesStorage; }
-  getRoutingRulesManager(): RoutingRulesManager | null { return this.routingRulesManager; }
-  getAgentComms(): AgentComms | null { return this.agentComms; }
+  getIntegrationStorage(): IntegrationStorage | null {
+    return this.integrationStorage;
+  }
+  getIntegrationManager(): IntegrationManager | null {
+    return this.integrationManager;
+  }
+  getMessageRouter(): MessageRouter | null {
+    return this.messageRouter;
+  }
+  getConversationManager(): ConversationManager | null {
+    return this.conversationManager;
+  }
+  getGroupChatStorage(): GroupChatStorage | null {
+    return this.groupChatStorage;
+  }
+  getRoutingRulesStorage(): RoutingRulesStorage | null {
+    return this.routingRulesStorage;
+  }
+  getRoutingRulesManager(): RoutingRulesManager | null {
+    return this.routingRulesManager;
+  }
+  getAgentComms(): AgentComms | null {
+    return this.agentComms;
+  }
 }

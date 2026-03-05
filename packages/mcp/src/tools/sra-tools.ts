@@ -42,8 +42,14 @@ export function registerSraTools(
     'sra_list_blueprints',
     'List available Security Reference Architecture blueprints. Filter by cloud provider, framework, or status.',
     {
-      provider: z.string().optional().describe('Filter by provider (aws, azure, gcp, generic, etc.)'),
-      framework: z.string().optional().describe('Filter by framework (aws_sra, cisa_tra, mcra, etc.)'),
+      provider: z
+        .string()
+        .optional()
+        .describe('Filter by provider (aws, azure, gcp, generic, etc.)'),
+      framework: z
+        .string()
+        .optional()
+        .describe('Filter by framework (aws_sra, cisa_tra, mcra, etc.)'),
       status: z.string().optional().describe('Filter by status (draft, active, archived)'),
     },
     wrapToolHandler('sra_list_blueprints', middleware, async ({ provider, framework, status }) => {
@@ -79,23 +85,40 @@ export function registerSraTools(
     {
       name: z.string().min(1).describe('Blueprint name'),
       description: z.string().optional().describe('Blueprint description'),
-      provider: z.string().describe('Cloud provider (aws, azure, gcp, multi_cloud, on_premises, hybrid, generic)'),
-      framework: z.string().describe('Framework (aws_sra, cisa_tra, mcra, nist_csf, cis_benchmarks, custom)'),
-      controls: z.array(z.object({
-        id: z.string(),
-        domain: z.string(),
-        title: z.string(),
-        description: z.string(),
-        priority: z.string().optional(),
-      })).default([]).describe('Array of controls'),
+      provider: z
+        .string()
+        .describe('Cloud provider (aws, azure, gcp, multi_cloud, on_premises, hybrid, generic)'),
+      framework: z
+        .string()
+        .describe('Framework (aws_sra, cisa_tra, mcra, nist_csf, cis_benchmarks, custom)'),
+      controls: z
+        .array(
+          z.object({
+            id: z.string(),
+            domain: z.string(),
+            title: z.string(),
+            description: z.string(),
+            priority: z.string().optional(),
+          })
+        )
+        .default([])
+        .describe('Array of controls'),
     },
-    wrapToolHandler('sra_create_blueprint', middleware, async ({ name, description, provider, framework, controls }) => {
-      if (!(config as any).exposeSra) return disabled();
-      const result = await client.post('/api/v1/security/sra/blueprints', {
-        name, description, provider, framework, controls,
-      });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    })
+    wrapToolHandler(
+      'sra_create_blueprint',
+      middleware,
+      async ({ name, description, provider, framework, controls }) => {
+        if (!(config as any).exposeSra) return disabled();
+        const result = await client.post('/api/v1/security/sra/blueprints', {
+          name,
+          description,
+          provider,
+          framework,
+          controls,
+        });
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      }
+    )
   );
 
   // ── sra_assess ───────────────────────────────────────────────────────────
@@ -105,15 +128,24 @@ export function registerSraTools(
     {
       blueprintId: z.string().min(1).describe('Blueprint ID to assess against'),
       name: z.string().min(1).describe('Assessment name (e.g. "Q1 2026 Production Assessment")'),
-      infrastructureDescription: z.string().optional().describe('Description of the infrastructure being assessed'),
+      infrastructureDescription: z
+        .string()
+        .optional()
+        .describe('Description of the infrastructure being assessed'),
     },
-    wrapToolHandler('sra_assess', middleware, async ({ blueprintId, name, infrastructureDescription }) => {
-      if (!(config as any).exposeSra) return disabled();
-      const result = await client.post('/api/v1/security/sra/assessments', {
-        blueprintId, name, infrastructureDescription,
-      });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    })
+    wrapToolHandler(
+      'sra_assess',
+      middleware,
+      async ({ blueprintId, name, infrastructureDescription }) => {
+        if (!(config as any).exposeSra) return disabled();
+        const result = await client.post('/api/v1/security/sra/assessments', {
+          blueprintId,
+          name,
+          infrastructureDescription,
+        });
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      }
+    )
   );
 
   // ── sra_get_assessment ───────────────────────────────────────────────────
@@ -135,8 +167,14 @@ export function registerSraTools(
     'sra_compliance_map',
     'List compliance framework mappings across security domains. Maps controls to NIST CSF, CIS v8, SOC 2, and FedRAMP.',
     {
-      domain: z.string().optional().describe('Filter by domain (identity_access, network_security, etc.)'),
-      framework: z.string().optional().describe('Filter by framework (NIST CSF, CIS v8, SOC 2, FedRAMP)'),
+      domain: z
+        .string()
+        .optional()
+        .describe('Filter by domain (identity_access, network_security, etc.)'),
+      framework: z
+        .string()
+        .optional()
+        .describe('Filter by framework (NIST CSF, CIS v8, SOC 2, FedRAMP)'),
     },
     wrapToolHandler('sra_compliance_map', middleware, async ({ domain, framework }) => {
       if (!(config as any).exposeSra) return disabled();

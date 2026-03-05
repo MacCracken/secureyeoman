@@ -27,9 +27,39 @@ const SAMPLE_BLUEPRINT: SraBlueprint = {
   provider: 'aws',
   framework: 'aws_sra',
   controls: [
-    { id: 'c1', domain: 'identity_access', title: 'MFA', description: 'Enable MFA', priority: 'critical', complianceMappings: [], iacSnippets: [], dependencies: [], tags: [] },
-    { id: 'c2', domain: 'network_security', title: 'VPC Logs', description: 'Enable VPC flow logs', priority: 'high', complianceMappings: [], iacSnippets: [], dependencies: [], tags: [] },
-    { id: 'c3', domain: 'data_protection', title: 'KMS', description: 'KMS key management', priority: 'medium', complianceMappings: [], iacSnippets: [], dependencies: [], tags: [] },
+    {
+      id: 'c1',
+      domain: 'identity_access',
+      title: 'MFA',
+      description: 'Enable MFA',
+      priority: 'critical',
+      complianceMappings: [],
+      iacSnippets: [],
+      dependencies: [],
+      tags: [],
+    },
+    {
+      id: 'c2',
+      domain: 'network_security',
+      title: 'VPC Logs',
+      description: 'Enable VPC flow logs',
+      priority: 'high',
+      complianceMappings: [],
+      iacSnippets: [],
+      dependencies: [],
+      tags: [],
+    },
+    {
+      id: 'c3',
+      domain: 'data_protection',
+      title: 'KMS',
+      description: 'KMS key management',
+      priority: 'medium',
+      complianceMappings: [],
+      iacSnippets: [],
+      dependencies: [],
+      tags: [],
+    },
   ],
   status: 'active',
   isBuiltin: true,
@@ -52,13 +82,17 @@ const SAMPLE_ASSESSMENT: SraAssessment = {
   updatedAt: 2000,
 };
 
-function makeManager(): { manager: SraManager; storage: SraStorage; alertEval: ReturnType<typeof vi.fn> } {
+function makeManager(): {
+  manager: SraManager;
+  storage: SraStorage;
+  alertEval: ReturnType<typeof vi.fn>;
+} {
   const storage = new SraStorage();
   const alertEval = vi.fn().mockResolvedValue(undefined);
   const deps: SraManagerDeps = {
     storage,
     pool: { query: mockQuery } as any,
-    getAlertManager: () => ({ evaluate: alertEval } as any),
+    getAlertManager: () => ({ evaluate: alertEval }) as any,
   };
   return { manager: new SraManager(deps), storage, alertEval };
 }
@@ -100,7 +134,10 @@ describe('SraManager', () => {
 
   describe('updateBlueprint', () => {
     it('delegates to storage and invalidates cache', async () => {
-      vi.spyOn(storage, 'updateBlueprint').mockResolvedValue({ ...SAMPLE_BLUEPRINT, status: 'archived' });
+      vi.spyOn(storage, 'updateBlueprint').mockResolvedValue({
+        ...SAMPLE_BLUEPRINT,
+        status: 'archived',
+      });
       const result = await manager.updateBlueprint('bp-1', { status: 'archived' });
       expect(result?.status).toBe('archived');
     });
@@ -116,7 +153,10 @@ describe('SraManager', () => {
 
   describe('listBlueprints', () => {
     it('delegates to storage', async () => {
-      vi.spyOn(storage, 'listBlueprints').mockResolvedValue({ items: [SAMPLE_BLUEPRINT], total: 1 });
+      vi.spyOn(storage, 'listBlueprints').mockResolvedValue({
+        items: [SAMPLE_BLUEPRINT],
+        total: 1,
+      });
       const result = await manager.listBlueprints({ provider: 'aws' });
       expect(result.items).toHaveLength(1);
     });
@@ -149,11 +189,14 @@ describe('SraManager', () => {
     it('computes summary from control results and blueprint', async () => {
       vi.spyOn(storage, 'getAssessment').mockResolvedValue(SAMPLE_ASSESSMENT);
       vi.spyOn(storage, 'getBlueprint').mockResolvedValue(SAMPLE_BLUEPRINT);
-      vi.spyOn(storage, 'updateAssessment').mockImplementation(async (_id, data) => ({
-        ...SAMPLE_ASSESSMENT,
-        summary: data.summary,
-        status: data.status ?? SAMPLE_ASSESSMENT.status,
-      } as SraAssessment));
+      vi.spyOn(storage, 'updateAssessment').mockImplementation(
+        async (_id, data) =>
+          ({
+            ...SAMPLE_ASSESSMENT,
+            summary: data.summary,
+            status: data.status ?? SAMPLE_ASSESSMENT.status,
+          }) as SraAssessment
+      );
 
       const result = await manager.generateAssessmentSummary('assess-1');
       expect(result).not.toBeNull();
@@ -191,11 +234,14 @@ describe('SraManager', () => {
 
       vi.spyOn(storage, 'getAssessment').mockResolvedValue(lowScoreAssessment);
       vi.spyOn(storage, 'getBlueprint').mockResolvedValue(SAMPLE_BLUEPRINT);
-      vi.spyOn(storage, 'updateAssessment').mockImplementation(async (_id, data) => ({
-        ...lowScoreAssessment,
-        summary: data.summary,
-        status: data.status ?? lowScoreAssessment.status,
-      } as SraAssessment));
+      vi.spyOn(storage, 'updateAssessment').mockImplementation(
+        async (_id, data) =>
+          ({
+            ...lowScoreAssessment,
+            summary: data.summary,
+            status: data.status ?? lowScoreAssessment.status,
+          }) as SraAssessment
+      );
 
       await manager.generateAssessmentSummary('assess-1');
       expect(alertEval).toHaveBeenCalledTimes(1);
@@ -204,11 +250,14 @@ describe('SraManager', () => {
     it('does not fire alert when compliance score is >= 50', async () => {
       vi.spyOn(storage, 'getAssessment').mockResolvedValue(SAMPLE_ASSESSMENT);
       vi.spyOn(storage, 'getBlueprint').mockResolvedValue(SAMPLE_BLUEPRINT);
-      vi.spyOn(storage, 'updateAssessment').mockImplementation(async (_id, data) => ({
-        ...SAMPLE_ASSESSMENT,
-        summary: data.summary,
-        status: data.status ?? SAMPLE_ASSESSMENT.status,
-      } as SraAssessment));
+      vi.spyOn(storage, 'updateAssessment').mockImplementation(
+        async (_id, data) =>
+          ({
+            ...SAMPLE_ASSESSMENT,
+            summary: data.summary,
+            status: data.status ?? SAMPLE_ASSESSMENT.status,
+          }) as SraAssessment
+      );
 
       await manager.generateAssessmentSummary('assess-1');
       expect(alertEval).not.toHaveBeenCalled();
@@ -226,11 +275,14 @@ describe('SraManager', () => {
 
       vi.spyOn(storage, 'getAssessment').mockResolvedValue(naAssessment);
       vi.spyOn(storage, 'getBlueprint').mockResolvedValue(SAMPLE_BLUEPRINT);
-      vi.spyOn(storage, 'updateAssessment').mockImplementation(async (_id, data) => ({
-        ...naAssessment,
-        summary: data.summary,
-        status: data.status ?? naAssessment.status,
-      } as SraAssessment));
+      vi.spyOn(storage, 'updateAssessment').mockImplementation(
+        async (_id, data) =>
+          ({
+            ...naAssessment,
+            summary: data.summary,
+            status: data.status ?? naAssessment.status,
+          }) as SraAssessment
+      );
 
       const result = await manager.generateAssessmentSummary('assess-1');
       expect(result!.summary!.complianceScore).toBe(100);

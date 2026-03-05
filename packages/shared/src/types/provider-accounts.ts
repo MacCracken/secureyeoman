@@ -8,7 +8,12 @@ import { z } from 'zod';
 
 // ─── Provider Account ──────────────────────────────────────────
 
-export const ProviderAccountStatusSchema = z.enum(['active', 'invalid', 'rate_limited', 'disabled']);
+export const ProviderAccountStatusSchema = z.enum([
+  'active',
+  'invalid',
+  'rate_limited',
+  'disabled',
+]);
 export type ProviderAccountStatus = z.infer<typeof ProviderAccountStatusSchema>;
 
 export const ProviderAccountSchema = z.object({

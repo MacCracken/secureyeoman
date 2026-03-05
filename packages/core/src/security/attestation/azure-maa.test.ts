@@ -8,7 +8,7 @@ import { AzureMaaAttestationProvider } from './azure-maa.js';
 function makeJwt(payload: Record<string, unknown>, exp?: number): string {
   const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
   const body = Buffer.from(
-    JSON.stringify({ ...payload, ...(exp !== undefined ? { exp } : {}) }),
+    JSON.stringify({ ...payload, ...(exp !== undefined ? { exp } : {}) })
   ).toString('base64url');
   const sig = Buffer.from('fake-signature').toString('base64url');
   return `${header}.${body}.${sig}`;
@@ -27,7 +27,10 @@ describe('AzureMaaAttestationProvider', () => {
   });
 
   it('has name "azure-maa"', () => {
-    const provider = new AzureMaaAttestationProvider({ tenantUrl: 'https://maa.example.com', policyName: 'default' });
+    const provider = new AzureMaaAttestationProvider({
+      tenantUrl: 'https://maa.example.com',
+      policyName: 'default',
+    });
     expect(provider.name).toBe('azure-maa');
   });
 
@@ -40,11 +43,14 @@ describe('AzureMaaAttestationProvider', () => {
   });
 
   it('returns unverified on HTTP error response', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: false,
-      status: 503,
-      statusText: 'Service Unavailable',
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+        statusText: 'Service Unavailable',
+      })
+    );
 
     const provider = new AzureMaaAttestationProvider({
       tenantUrl: 'https://maa.example.com',
@@ -58,10 +64,13 @@ describe('AzureMaaAttestationProvider', () => {
   });
 
   it('returns unverified when response has no token', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ something: 'else' }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ something: 'else' }),
+      })
+    );
 
     const provider = new AzureMaaAttestationProvider({
       tenantUrl: 'https://maa.example.com',
@@ -73,10 +82,13 @@ describe('AzureMaaAttestationProvider', () => {
   });
 
   it('returns unverified for invalid JWT format (not 3 parts)', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ token: 'only.two' }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ token: 'only.two' }),
+      })
+    );
 
     const provider = new AzureMaaAttestationProvider({
       tenantUrl: 'https://maa.example.com',
@@ -88,15 +100,21 @@ describe('AzureMaaAttestationProvider', () => {
   });
 
   it('returns verified for valid JWT with correct claims', async () => {
-    const token = makeJwt({
-      'x-ms-attestation-type': 'sgx',
-      'x-ms-policy-signer': { alg: 'RS256' },
-    }, Math.floor(Date.now() / 1000) + 7200);
+    const token = makeJwt(
+      {
+        'x-ms-attestation-type': 'sgx',
+        'x-ms-policy-signer': { alg: 'RS256' },
+      },
+      Math.floor(Date.now() / 1000) + 7200
+    );
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ token }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ token }),
+      })
+    );
 
     const provider = new AzureMaaAttestationProvider({
       tenantUrl: 'https://maa.example.com',
@@ -115,10 +133,13 @@ describe('AzureMaaAttestationProvider', () => {
       'x-ms-policy-signer': { alg: 'RS256' },
     });
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ token }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ token }),
+      })
+    );
 
     const provider = new AzureMaaAttestationProvider({
       tenantUrl: 'https://maa.example.com',
@@ -134,10 +155,13 @@ describe('AzureMaaAttestationProvider', () => {
       'x-ms-attestation-type': 'sgx',
     });
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ token }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ token }),
+      })
+    );
 
     const provider = new AzureMaaAttestationProvider({
       tenantUrl: 'https://maa.example.com',
@@ -148,7 +172,10 @@ describe('AzureMaaAttestationProvider', () => {
   });
 
   it('handles fetch timeout/abort', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new DOMException('The operation was aborted', 'AbortError')));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new DOMException('The operation was aborted', 'AbortError'))
+    );
 
     const provider = new AzureMaaAttestationProvider({
       tenantUrl: 'https://maa.example.com',
@@ -174,15 +201,21 @@ describe('AzureMaaAttestationProvider', () => {
 
   it('uses JWT exp claim for expiresAt', async () => {
     const futureExp = Math.floor(Date.now() / 1000) + 7200;
-    const token = makeJwt({
-      'x-ms-attestation-type': 'sgx',
-      'x-ms-policy-signer': { alg: 'RS256' },
-    }, futureExp);
+    const token = makeJwt(
+      {
+        'x-ms-attestation-type': 'sgx',
+        'x-ms-policy-signer': { alg: 'RS256' },
+      },
+      futureExp
+    );
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ token }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ token }),
+      })
+    );
 
     const provider = new AzureMaaAttestationProvider({
       tenantUrl: 'https://maa.example.com',
@@ -198,10 +231,13 @@ describe('AzureMaaAttestationProvider', () => {
       'x-ms-policy-signer': { alg: 'RS256' },
     });
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ token }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ token }),
+      })
+    );
 
     const provider = new AzureMaaAttestationProvider({
       tenantUrl: 'https://maa.example.com',
@@ -229,7 +265,7 @@ describe('AzureMaaAttestationProvider', () => {
     await provider.verifyAsync('openai');
     expect(fetchMock).toHaveBeenCalledWith(
       'https://maa.example.com/attest/SgxEnclave?api-version=2022-08-01',
-      expect.any(Object),
+      expect.any(Object)
     );
   });
 

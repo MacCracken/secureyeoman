@@ -1298,7 +1298,7 @@ export class SraManager {
         domainTotals[dom] = 0;
         domainImplemented[dom] = 0;
       }
-      domainTotals[dom]!++;
+      domainTotals[dom]++;
 
       switch (status) {
         case 'fully_implemented':
@@ -1336,7 +1336,9 @@ export class SraManager {
 
     const assessable = totalControls - notApplicable;
     const complianceScore =
-      assessable > 0 ? Math.round(((implemented + partial * PARTIAL_COMPLIANCE_WEIGHT) / assessable) * 100) : 100;
+      assessable > 0
+        ? Math.round(((implemented + partial * PARTIAL_COMPLIANCE_WEIGHT) / assessable) * 100)
+        : 100;
 
     return {
       complianceScore,

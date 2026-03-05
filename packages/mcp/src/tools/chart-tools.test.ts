@@ -106,10 +106,19 @@ describe('chart-tools — chart_line', () => {
     const handlers = captureHandlers();
     const result = await handlers.chart_line({
       series: [
-        { name: 'Price', data: [{ x: 1, y: 100 }, { x: 2, y: 110 }] },
+        {
+          name: 'Price',
+          data: [
+            { x: 1, y: 100 },
+            { x: 2, y: 110 },
+          ],
+        },
       ],
     });
-    const parsed = parseResult(result) as { svg: string; data: { seriesCount: number; pointCount: number } };
+    const parsed = parseResult(result) as {
+      svg: string;
+      data: { seriesCount: number; pointCount: number };
+    };
     expect(parsed.svg).toContain('<svg');
     expect(parsed.data.seriesCount).toBe(1);
     expect(parsed.data.pointCount).toBe(2);
@@ -127,7 +136,10 @@ describe('chart-tools — chart_bar', () => {
         { label: 'Q2', values: { Revenue: 120 } },
       ],
     });
-    const parsed = parseResult(result) as { svg: string; data: { barCount: number; categories: string[] } };
+    const parsed = parseResult(result) as {
+      svg: string;
+      data: { barCount: number; categories: string[] };
+    };
     expect(parsed.data.barCount).toBe(2);
     expect(parsed.data.categories).toContain('Revenue');
   });
@@ -144,7 +156,10 @@ describe('chart-tools — chart_pie', () => {
         { label: 'Bonds', value: 40 },
       ],
     });
-    const parsed = parseResult(result) as { svg: string; data: { sliceCount: number; total: number } };
+    const parsed = parseResult(result) as {
+      svg: string;
+      data: { sliceCount: number; total: number };
+    };
     expect(parsed.data.sliceCount).toBe(2);
     expect(parsed.data.total).toBe(100);
   });
@@ -178,7 +193,10 @@ describe('chart-tools — chart_waterfall', () => {
         { label: 'Net', value: 0, isTotal: true },
       ],
     });
-    const parsed = parseResult(result) as { svg: string; data: { itemCount: number; netTotal: number } };
+    const parsed = parseResult(result) as {
+      svg: string;
+      data: { itemCount: number; netTotal: number };
+    };
     expect(parsed.data.itemCount).toBe(3);
     expect(parsed.data.netTotal).toBe(60);
   });
@@ -191,7 +209,10 @@ describe('chart-tools — chart_heatmap', () => {
     const handlers = captureHandlers();
     const result = await handlers.chart_heatmap({
       labels: ['A', 'B'],
-      values: [[1, 0.5], [0.5, 1]],
+      values: [
+        [1, 0.5],
+        [0.5, 1],
+      ],
     });
     const parsed = parseResult(result) as { svg: string; data: { dimensions: number[] } };
     expect(parsed.data.dimensions).toEqual([2, 2]);
@@ -206,7 +227,10 @@ describe('chart-tools — chart_sparkline', () => {
     const result = await handlers.chart_sparkline({
       values: [10, 20, 15, 25, 18],
     });
-    const parsed = parseResult(result) as { svg: string; data: { pointCount: number; min: number; max: number } };
+    const parsed = parseResult(result) as {
+      svg: string;
+      data: { pointCount: number; min: number; max: number };
+    };
     expect(parsed.data.pointCount).toBe(5);
     expect(parsed.data.min).toBe(10);
     expect(parsed.data.max).toBe(25);

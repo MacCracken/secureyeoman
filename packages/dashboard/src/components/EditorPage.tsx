@@ -988,16 +988,104 @@ function StandardEditorPage() {
   // Command palette
   const commands = useMemo<CommandItem[]>(() => {
     const items: CommandItem[] = [
-      { id: 'new-file', label: 'New File', category: 'file', icon: <Plus className="w-3.5 h-3.5" />, shortcut: 'Ctrl+Shift+N', action: createNewTab, keywords: ['create', 'tab'] },
-      { id: 'run-code', label: 'Run Code', category: 'file', icon: <Play className="w-3.5 h-3.5" />, shortcut: 'Ctrl+Enter', action: handleRunCode, keywords: ['execute'] },
-      { id: 'toggle-explorer', label: 'Toggle Explorer', category: 'panel', icon: <Folder className="w-3.5 h-3.5" />, action: () => { const n = !showExplorer; localStorage.setItem('editor:showExplorer', String(n)); setShowExplorer(n); }, keywords: ['files', 'sidebar'] },
-      { id: 'toggle-chat', label: 'Toggle Chat', category: 'panel', icon: <Bot className="w-3.5 h-3.5" />, action: () => { const n = !showChat; localStorage.setItem('editor:showChat', String(n)); setShowChat(n); }, keywords: ['ai', 'assistant'] },
-      { id: 'toggle-git', label: 'Toggle Git Panel', category: 'panel', icon: <GitBranch className="w-3.5 h-3.5" />, action: () => setActiveBottomTab(activeBottomTab === 'git' ? 'terminal' : 'git'), keywords: ['version', 'commit'] },
-      { id: 'toggle-world', label: 'Toggle Agent World', category: 'panel', icon: <Globe className="w-3.5 h-3.5" />, action: () => { const n = !showWorld; localStorage.setItem('editor:showWorld', String(n)); setShowWorld(n); }, keywords: ['agents'] },
-      { id: 'toggle-settings', label: 'Editor Settings', category: 'panel', icon: <Settings className="w-3.5 h-3.5" />, action: () => setSettingsOpen((v) => !v), keywords: ['preferences', 'config'] },
-      { id: 'nav-dashboard', label: 'Go to Dashboard', category: 'navigation', icon: <Globe className="w-3.5 h-3.5" />, action: () => navigate('/'), keywords: ['home'] },
-      { id: 'nav-personality', label: 'Go to Personalities', category: 'navigation', icon: <Bot className="w-3.5 h-3.5" />, action: () => navigate('/personality'), keywords: ['souls'] },
-      { id: 'nav-security', label: 'Go to Security', category: 'navigation', icon: <Eye className="w-3.5 h-3.5" />, action: () => navigate('/security'), keywords: ['policy'] },
+      {
+        id: 'new-file',
+        label: 'New File',
+        category: 'file',
+        icon: <Plus className="w-3.5 h-3.5" />,
+        shortcut: 'Ctrl+Shift+N',
+        action: createNewTab,
+        keywords: ['create', 'tab'],
+      },
+      {
+        id: 'run-code',
+        label: 'Run Code',
+        category: 'file',
+        icon: <Play className="w-3.5 h-3.5" />,
+        shortcut: 'Ctrl+Enter',
+        action: handleRunCode,
+        keywords: ['execute'],
+      },
+      {
+        id: 'toggle-explorer',
+        label: 'Toggle Explorer',
+        category: 'panel',
+        icon: <Folder className="w-3.5 h-3.5" />,
+        action: () => {
+          const n = !showExplorer;
+          localStorage.setItem('editor:showExplorer', String(n));
+          setShowExplorer(n);
+        },
+        keywords: ['files', 'sidebar'],
+      },
+      {
+        id: 'toggle-chat',
+        label: 'Toggle Chat',
+        category: 'panel',
+        icon: <Bot className="w-3.5 h-3.5" />,
+        action: () => {
+          const n = !showChat;
+          localStorage.setItem('editor:showChat', String(n));
+          setShowChat(n);
+        },
+        keywords: ['ai', 'assistant'],
+      },
+      {
+        id: 'toggle-git',
+        label: 'Toggle Git Panel',
+        category: 'panel',
+        icon: <GitBranch className="w-3.5 h-3.5" />,
+        action: () => {
+          setActiveBottomTab(activeBottomTab === 'git' ? 'terminal' : 'git');
+        },
+        keywords: ['version', 'commit'],
+      },
+      {
+        id: 'toggle-world',
+        label: 'Toggle Agent World',
+        category: 'panel',
+        icon: <Globe className="w-3.5 h-3.5" />,
+        action: () => {
+          const n = !showWorld;
+          localStorage.setItem('editor:showWorld', String(n));
+          setShowWorld(n);
+        },
+        keywords: ['agents'],
+      },
+      {
+        id: 'toggle-settings',
+        label: 'Editor Settings',
+        category: 'panel',
+        icon: <Settings className="w-3.5 h-3.5" />,
+        action: () => {
+          setSettingsOpen((v) => !v);
+        },
+        keywords: ['preferences', 'config'],
+      },
+      {
+        id: 'nav-dashboard',
+        label: 'Go to Dashboard',
+        category: 'navigation',
+        icon: <Globe className="w-3.5 h-3.5" />,
+        action: () => navigate('/'),
+        keywords: ['home'],
+      },
+      {
+        id: 'nav-personality',
+        label: 'Go to Personalities',
+        category: 'navigation',
+        icon: <Bot className="w-3.5 h-3.5" />,
+        action: () => navigate('/personality'),
+        keywords: ['souls'],
+      },
+      {
+        id: 'nav-security',
+        label: 'Go to Security',
+        category: 'navigation',
+        icon: <Eye className="w-3.5 h-3.5" />,
+        action: () => navigate('/security'),
+        keywords: ['policy'],
+      },
     ];
     // Dynamic personality items
     personalities.forEach((p: Personality) => {
@@ -1006,12 +1094,23 @@ function StandardEditorPage() {
         label: `Switch to ${p.name}`,
         category: 'personality',
         icon: <Star className="w-3.5 h-3.5" />,
-        action: () => setSelectedPersonalityId(p.id),
+        action: () => {
+          setSelectedPersonalityId(p.id);
+        },
         keywords: [p.name.toLowerCase()],
       });
     });
     return items;
-  }, [createNewTab, handleRunCode, showExplorer, showChat, showWorld, activeBottomTab, personalities, navigate]);
+  }, [
+    createNewTab,
+    handleRunCode,
+    showExplorer,
+    showChat,
+    showWorld,
+    activeBottomTab,
+    personalities,
+    navigate,
+  ]);
 
   const palette = useCommandPalette(commands);
 
@@ -1107,14 +1206,20 @@ function StandardEditorPage() {
                 localStorage.setItem('editor:showWorld', String(n));
                 setShowWorld(n);
               }}
-              onToggleSettings={() => setSettingsOpen((v) => !v)}
-              onToggleSplitView={() => setSplitView((v) => !v)}
+              onToggleSettings={() => {
+                setSettingsOpen((v) => !v);
+              }}
+              onToggleSplitView={() => {
+                setSplitView((v) => !v);
+              }}
               onToggleMemory={() => {
                 const n = !memoryEnabled;
                 localStorage.setItem('editor:memoryEnabled', String(n));
                 setMemoryEnabled(n);
               }}
-              onTabClick={(id) => setActiveTabId(id)}
+              onTabClick={(id) => {
+                setActiveTabId(id);
+              }}
               onTabClose={closeTab}
               onTabRenameStart={(id, name) => {
                 setActiveTabId(id);
@@ -1127,20 +1232,30 @@ function StandardEditorPage() {
                   setTabs((prev) =>
                     prev.map((t) =>
                       t.id === renamingTabId
-                        ? { ...t, name: renameValue.trim(), path: `${cwd}/${renameValue.trim()}`, language: detectLanguage(renameValue.trim()), isDirty: true }
+                        ? {
+                            ...t,
+                            name: renameValue.trim(),
+                            path: `${cwd}/${renameValue.trim()}`,
+                            language: detectLanguage(renameValue.trim()),
+                            isDirty: true,
+                          }
                         : t
                     )
                   );
                 }
                 setRenamingTabId(null);
               }}
-              onTabRenameCancel={() => setRenamingTabId(null)}
+              onTabRenameCancel={() => {
+                setRenamingTabId(null);
+              }}
               onNewTab={createNewTab}
               onRun={handleRunCode}
               onSendToChat={handleSendToChat}
               onCommandPalette={palette.toggle}
               showGitButton
-              onToggleGit={() => setActiveBottomTab(activeBottomTab === 'git' ? 'terminal' : 'git')}
+              onToggleGit={() => {
+                setActiveBottomTab(activeBottomTab === 'git' ? 'terminal' : 'git');
+              }}
             />
 
             {/* Settings Panel */}
@@ -1281,7 +1396,8 @@ function StandardEditorPage() {
                       automaticLayout: true,
                       scrollBeyondLastLine: false,
                       padding: { top: 8 },
-                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                      fontFamily:
+                        'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                       readOnly: true,
                     }}
                   />

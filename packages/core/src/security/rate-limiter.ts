@@ -14,7 +14,11 @@ import { RedisRateLimiter } from './rate-limiter-redis.js';
 import { sendError } from '../utils/errors.js';
 
 /** Chainable reply subset for the rate-limit Fastify hook. */
-interface RateLimitReply { code: (n: number) => RateLimitReply; header: (k: string, v: string) => RateLimitReply; send: (body: unknown) => void }
+interface RateLimitReply {
+  code: (n: number) => RateLimitReply;
+  header: (k: string, v: string) => RateLimitReply;
+  send: (body: unknown) => void;
+}
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -358,14 +362,30 @@ export class RateLimiter {
    */
   createFastifyHook(): (
     request: { url: string; ip: string; headers: Record<string, string | string[] | undefined> },
-    reply: { code: (n: number) => RateLimitReply; header: (k: string, v: string) => RateLimitReply; send: (body: unknown) => void },
+    reply: {
+      code: (n: number) => RateLimitReply;
+      header: (k: string, v: string) => RateLimitReply;
+      send: (body: unknown) => void;
+    },
     done: (err?: Error) => void
   ) => void {
     // Ensure hook-specific rules exist
     const hookRules: RateLimitRule[] = [
       { name: 'global_api', windowMs: 60_000, maxRequests: 100, keyType: 'ip', onExceed: 'reject' },
-      { name: 'global_terminal', windowMs: 60_000, maxRequests: 10, keyType: 'ip', onExceed: 'reject' },
-      { name: 'global_workflow_exec', windowMs: 60_000, maxRequests: 10, keyType: 'ip', onExceed: 'reject' },
+      {
+        name: 'global_terminal',
+        windowMs: 60_000,
+        maxRequests: 10,
+        keyType: 'ip',
+        onExceed: 'reject',
+      },
+      {
+        name: 'global_workflow_exec',
+        windowMs: 60_000,
+        maxRequests: 10,
+        keyType: 'ip',
+        onExceed: 'reject',
+      },
       { name: 'global_auth', windowMs: 60_000, maxRequests: 5, keyType: 'ip', onExceed: 'reject' },
     ];
     for (const rule of hookRules) {
@@ -377,12 +397,14 @@ export class RateLimiter {
 
       // Skip health checks and non-API routes
       if (url === '/api/v1/terminal/health' || url === '/health' || !url.startsWith('/api/')) {
-        return done();
+        done();
+        return;
       }
 
       // Skip WebSocket upgrade requests
       if (request.headers.upgrade === 'websocket') {
-        return done();
+        done();
+        return;
       }
 
       // Determine which rule to apply

@@ -93,14 +93,20 @@ function makeOnlineUpdateManager(overrides: Record<string, unknown> = {}) {
   } as any;
 }
 
-function buildMockSY(opts: {
-  datasetRefreshManager?: any;
-  driftDetectionManager?: any;
-  onlineUpdateManager?: any;
-} = {}) {
+function buildMockSY(
+  opts: {
+    datasetRefreshManager?: any;
+    driftDetectionManager?: any;
+    onlineUpdateManager?: any;
+  } = {}
+) {
   return {
-    getDatasetRefreshManager: vi.fn(() => opts.datasetRefreshManager ?? makeDatasetRefreshManager()),
-    getDriftDetectionManager: vi.fn(() => opts.driftDetectionManager ?? makeDriftDetectionManager()),
+    getDatasetRefreshManager: vi.fn(
+      () => opts.datasetRefreshManager ?? makeDatasetRefreshManager()
+    ),
+    getDriftDetectionManager: vi.fn(
+      () => opts.driftDetectionManager ?? makeDriftDetectionManager()
+    ),
     getOnlineUpdateManager: vi.fn(() => opts.onlineUpdateManager ?? makeOnlineUpdateManager()),
   } as any;
 }

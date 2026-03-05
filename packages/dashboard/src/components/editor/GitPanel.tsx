@@ -238,7 +238,9 @@ export function GitPanel({
           <div className="flex items-center gap-1">
             <textarea
               value={commitMessage}
-              onChange={(e) => setCommitMessage(e.target.value)}
+              onChange={(e) => {
+                setCommitMessage(e.target.value);
+              }}
               placeholder="Commit message..."
               className="flex-1 bg-background border rounded px-2 py-1.5 text-xs font-mono resize-none focus:outline-none focus:ring-1 focus:ring-primary min-h-[48px] max-h-[96px]"
               rows={2}
@@ -278,14 +280,17 @@ export function GitPanel({
         {/* Diff section */}
         <div className="px-3 py-1.5">
           <button
-            onClick={() => setShowDiff((v) => !v)}
+            onClick={() => {
+              setShowDiff((v) => !v);
+            }}
             className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
           >
             {showDiff ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
             Diff
           </button>
           {showDiff && activeDiff && (
-            <pre className="mt-1 rounded border p-2 bg-muted/30 font-mono text-[10px] max-h-[200px] overflow-auto whitespace-pre-wrap"
+            <pre
+              className="mt-1 rounded border p-2 bg-muted/30 font-mono text-[10px] max-h-[200px] overflow-auto whitespace-pre-wrap"
               data-testid="diff-output"
             >
               {activeDiff.split('\n').map((line, i) => (
@@ -314,14 +319,17 @@ export function GitPanel({
         {/* Log section */}
         <div className="px-3 py-1.5">
           <button
-            onClick={() => setShowLog((v) => !v)}
+            onClick={() => {
+              setShowLog((v) => !v);
+            }}
             className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
           >
             {showLog ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
             Log
           </button>
           {showLog && logData && (
-            <pre className="mt-1 rounded border p-2 bg-muted/30 font-mono text-[10px] max-h-[120px] overflow-auto"
+            <pre
+              className="mt-1 rounded border p-2 bg-muted/30 font-mono text-[10px] max-h-[120px] overflow-auto"
               data-testid="log-output"
             >
               {logData}

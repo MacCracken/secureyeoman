@@ -41,7 +41,11 @@ export const MissionCardEmbed = memo(function MissionCardEmbed({ cardId }: Missi
         <div className="text-[10px] text-muted-foreground">{cardDef.description}</div>
       </div>
       <div className="flex-1 p-3 text-xs">
-        <MissionCardSummary cardId={cardId} metrics={metrics as Record<string, unknown> | undefined} navigate={navigate} />
+        <MissionCardSummary
+          cardId={cardId}
+          metrics={metrics as Record<string, unknown> | undefined}
+          navigate={navigate}
+        />
       </div>
     </div>
   );
@@ -70,14 +74,20 @@ function MissionCardSummary({
           <Stat label="Active Tasks" value={m.activeTasks} />
           <Stat label="Active Agents" value={m.activePersonalities} />
           <Stat label="Token Usage" value={m.totalTokens} />
-          <Stat label="Uptime" value={m.uptimeSeconds ? `${Math.floor((m.uptimeSeconds as number) / 3600)}h` : '-'} />
+          <Stat
+            label="Uptime"
+            value={m.uptimeSeconds ? `${Math.floor(m.uptimeSeconds / 3600)}h` : '-'}
+          />
         </div>
       );
     case 'resource-monitoring':
       return (
         <div className="grid grid-cols-2 gap-2">
-          <Stat label="CPU" value={m.cpuPercent != null ? `${Number(m.cpuPercent).toFixed(1)}%` : '-'} />
-          <Stat label="Memory" value={m.memoryPercent != null ? `${Number(m.memoryPercent).toFixed(1)}%` : '-'} />
+          <Stat label="CPU" value={m.cpuPercent != null ? `${m.cpuPercent.toFixed(1)}%` : '-'} />
+          <Stat
+            label="Memory"
+            value={m.memoryPercent != null ? `${m.memoryPercent.toFixed(1)}%` : '-'}
+          />
           <Stat label="Tokens/min" value={m.tokensPerMinute} />
           <Stat label="Requests/min" value={m.requestsPerMinute} />
         </div>
@@ -125,7 +135,10 @@ function MissionCardSummary({
     case 'cost-breakdown':
       return (
         <div className="space-y-1">
-          <Stat label="Total Spend" value={m.totalCost != null ? `$${Number(m.totalCost).toFixed(2)}` : '-'} />
+          <Stat
+            label="Total Spend"
+            value={m.totalCost != null ? `$${m.totalCost.toFixed(2)}` : '-'}
+          />
           <Stat label="Tokens Used" value={m.totalTokens ?? 0} />
         </div>
       );

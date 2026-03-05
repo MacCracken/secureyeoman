@@ -55,10 +55,7 @@ export class ProviderKeyValidator {
     return this.validateCloud(provider, apiKey, baseUrl ?? url);
   }
 
-  private async validateLocal(
-    provider: string,
-    baseUrl?: string
-  ): Promise<KeyValidationResult> {
+  private async validateLocal(provider: string, baseUrl?: string): Promise<KeyValidationResult> {
     const defaults: Record<string, string> = {
       ollama: 'http://localhost:11434',
       lmstudio: 'http://localhost:1234',
@@ -109,7 +106,7 @@ export class ProviderKeyValidator {
         }
         return { valid: false, error: `API returned ${res.status}` };
       } else {
-        headers['Authorization'] = `Bearer ${apiKey}`;
+        headers.Authorization = `Bearer ${apiKey}`;
       }
 
       // OpenRouter-specific headers

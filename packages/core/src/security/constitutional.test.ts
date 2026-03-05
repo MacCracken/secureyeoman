@@ -41,7 +41,7 @@ describe('ConstitutionalEngine', () => {
     it('should be disabled when no principles exist', () => {
       const engine = new ConstitutionalEngine(
         makeConfig({ useDefaults: false, principles: [] }),
-        makeDeps(),
+        makeDeps()
       );
       expect(engine.isEnabled).toBe(false);
     });
@@ -66,7 +66,7 @@ describe('ConstitutionalEngine', () => {
       };
       const engine = new ConstitutionalEngine(
         makeConfig({ useDefaults: false, principles: [custom] }),
-        makeDeps(),
+        makeDeps()
       );
       const principles = engine.getPrinciples();
       expect(principles).toHaveLength(1);
@@ -82,10 +82,7 @@ describe('ConstitutionalEngine', () => {
         weight: 0.5,
         enabled: true,
       };
-      const engine = new ConstitutionalEngine(
-        makeConfig({ principles: [override] }),
-        makeDeps(),
-      );
+      const engine = new ConstitutionalEngine(makeConfig({ principles: [override] }), makeDeps());
       const principles = engine.getPrinciples();
       const helpfulness = principles.find((p) => p.id === 'helpfulness');
       expect(helpfulness?.name).toBe('Custom Helpfulness');
@@ -103,7 +100,7 @@ describe('ConstitutionalEngine', () => {
       };
       const engine = new ConstitutionalEngine(
         makeConfig({ useDefaults: false, principles: [disabled] }),
-        makeDeps(),
+        makeDeps()
       );
       expect(engine.getPrinciples()).toHaveLength(0);
     });
@@ -113,10 +110,7 @@ describe('ConstitutionalEngine', () => {
       (deps as any).getIntentBoundaries = () => [
         { id: 'boundary1', rule: 'Never access /etc/shadow', rationale: 'Security policy' },
       ];
-      const engine = new ConstitutionalEngine(
-        makeConfig({ importIntentBoundaries: true }),
-        deps,
-      );
+      const engine = new ConstitutionalEngine(makeConfig({ importIntentBoundaries: true }), deps);
       const principles = engine.getPrinciples();
       const intentP = principles.find((p) => p.id === 'intent_boundary1');
       expect(intentP).toBeDefined();
@@ -134,7 +128,12 @@ describe('ConstitutionalEngine', () => {
     it('should parse valid critique JSON', async () => {
       const mockResponse = JSON.stringify([
         { principleId: 'helpfulness', violated: false, explanation: 'Looks good', severity: 'low' },
-        { principleId: 'harmlessness', violated: true, explanation: 'Contains harmful advice', severity: 'high' },
+        {
+          principleId: 'harmlessness',
+          violated: true,
+          explanation: 'Contains harmful advice',
+          severity: 'high',
+        },
         { principleId: 'honesty', violated: false, explanation: 'Accurate', severity: 'low' },
       ]);
       const chat = vi.fn<any>().mockResolvedValue(mockResponse);
@@ -148,7 +147,8 @@ describe('ConstitutionalEngine', () => {
     });
 
     it('should handle markdown-fenced JSON in critique response', async () => {
-      const mockResponse = '```json\n[{"principleId":"helpfulness","violated":false,"explanation":"OK","severity":"low"}]\n```';
+      const mockResponse =
+        '```json\n[{"principleId":"helpfulness","violated":false,"explanation":"OK","severity":"low"}]\n```';
       const chat = vi.fn<any>().mockResolvedValue(mockResponse);
       const engine = new ConstitutionalEngine(makeConfig(), makeDeps(chat));
 
@@ -175,7 +175,12 @@ describe('ConstitutionalEngine', () => {
 
     it('should default severity to medium for unknown values', async () => {
       const mockResponse = JSON.stringify([
-        { principleId: 'helpfulness', violated: true, explanation: 'Bad', severity: 'unknown_level' },
+        {
+          principleId: 'helpfulness',
+          violated: true,
+          explanation: 'Bad',
+          severity: 'unknown_level',
+        },
       ]);
       const chat = vi.fn<any>().mockResolvedValue(mockResponse);
       const engine = new ConstitutionalEngine(makeConfig(), makeDeps(chat));
@@ -215,7 +220,8 @@ describe('ConstitutionalEngine', () => {
         { principleId: 'helpfulness', violated: false, explanation: 'OK', severity: 'low' },
         { principleId: 'honesty', violated: false, explanation: 'OK', severity: 'low' },
       ]);
-      const chat = vi.fn<any>()
+      const chat = vi
+        .fn<any>()
         .mockResolvedValueOnce(critique) // critique
         .mockResolvedValueOnce('A safer, revised response'); // revision
       const engine = new ConstitutionalEngine(makeConfig(), makeDeps(chat));
@@ -228,17 +234,20 @@ describe('ConstitutionalEngine', () => {
 
     it('should respect maxRevisionRounds', async () => {
       const violation = JSON.stringify([
-        { principleId: 'harmlessness', violated: true, explanation: 'Still harmful', severity: 'high' },
+        {
+          principleId: 'harmlessness',
+          violated: true,
+          explanation: 'Still harmful',
+          severity: 'high',
+        },
       ]);
-      const chat = vi.fn<any>()
+      const chat = vi
+        .fn<any>()
         .mockResolvedValueOnce(violation) // round 1 critique
         .mockResolvedValueOnce('revision 1') // round 1 revise
         .mockResolvedValueOnce(violation) // round 2 critique
         .mockResolvedValueOnce('revision 2'); // round 2 revise
-      const engine = new ConstitutionalEngine(
-        makeConfig({ maxRevisionRounds: 2 }),
-        makeDeps(chat),
-      );
+      const engine = new ConstitutionalEngine(makeConfig({ maxRevisionRounds: 2 }), makeDeps(chat));
 
       const result = await engine.critiqueAndRevise('test', 'bad');
       expect(result.revised).toBe(true);
@@ -251,10 +260,7 @@ describe('ConstitutionalEngine', () => {
         { principleId: 'harmlessness', violated: true, explanation: 'Minor', severity: 'low' },
       ]);
       const chat = vi.fn<any>().mockResolvedValue(critique);
-      const engine = new ConstitutionalEngine(
-        makeConfig({ revisionThreshold: 2 }),
-        makeDeps(chat),
-      );
+      const engine = new ConstitutionalEngine(makeConfig({ revisionThreshold: 2 }), makeDeps(chat));
 
       const result = await engine.critiqueAndRevise('test', 'response');
       expect(result.revised).toBe(false);
@@ -265,7 +271,8 @@ describe('ConstitutionalEngine', () => {
       const critique = JSON.stringify([
         { principleId: 'harmlessness', violated: true, explanation: 'Bad', severity: 'high' },
       ]);
-      const chat = vi.fn<any>()
+      const chat = vi
+        .fn<any>()
         .mockResolvedValueOnce(critique)
         .mockRejectedValueOnce(new Error('Revision LLM failed'));
       const engine = new ConstitutionalEngine(makeConfig(), makeDeps(chat));
@@ -279,9 +286,7 @@ describe('ConstitutionalEngine', () => {
       const critique = JSON.stringify([
         { principleId: 'harmlessness', violated: true, explanation: 'Bad', severity: 'high' },
       ]);
-      const chat = vi.fn<any>()
-        .mockResolvedValueOnce(critique)
-        .mockResolvedValueOnce('original'); // same as input
+      const chat = vi.fn<any>().mockResolvedValueOnce(critique).mockResolvedValueOnce('original'); // same as input
       const engine = new ConstitutionalEngine(makeConfig(), makeDeps(chat));
 
       const result = await engine.critiqueAndRevise('test', 'original');
@@ -339,7 +344,7 @@ describe('ConstitutionalEngine', () => {
       const chat = vi.fn<any>().mockResolvedValue('[]');
       const engine = new ConstitutionalEngine(
         makeConfig({ critiqueTemperature: 0.1, model: 'critique-model' }),
-        makeDeps(chat),
+        makeDeps(chat)
       );
 
       await engine.critique('test', 'test');

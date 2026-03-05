@@ -30,7 +30,7 @@ interface RiskReturnScatterProps {
 export function RiskReturnScatter({ assets, height = 350, riskFreeRate }: RiskReturnScatterProps) {
   if (!assets.length) return <p className="text-muted-foreground text-sm">No data</p>;
 
-  const data = assets.map(a => ({
+  const data = assets.map((a) => ({
     x: a.risk,
     y: a.return,
     z: a.weight ?? 50,
@@ -46,14 +46,25 @@ export function RiskReturnScatter({ assets, height = 350, riskFreeRate }: RiskRe
           dataKey="x"
           name="Risk"
           tick={{ fontSize: 10 }}
-          label={{ value: 'Risk (Volatility %)', position: 'insideBottom', offset: -15, fontSize: 12 }}
+          label={{
+            value: 'Risk (Volatility %)',
+            position: 'insideBottom',
+            offset: -15,
+            fontSize: 12,
+          }}
         />
         <YAxis
           type="number"
           dataKey="y"
           name="Return"
           tick={{ fontSize: 10 }}
-          label={{ value: 'Return %', angle: -90, position: 'insideLeft', offset: 10, fontSize: 12 }}
+          label={{
+            value: 'Return %',
+            angle: -90,
+            position: 'insideLeft',
+            offset: 10,
+            fontSize: 12,
+          }}
         />
         <ZAxis type="number" dataKey="z" range={[40, 400]} />
         {riskFreeRate !== undefined && (

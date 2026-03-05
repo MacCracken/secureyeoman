@@ -163,15 +163,13 @@ describe('GVisorSandbox', () => {
       });
 
       // Mock execFile to simulate runsc execution
-      mockExecFile.mockImplementation(
-        (_cmd: string, _args: string[], _opts: any, cb: Function) => {
-          const child = {
-            stderr: { on: vi.fn() },
-          };
-          cb(null, JSON.stringify({ success: true, result: 99 }), '');
-          return child;
-        }
-      );
+      mockExecFile.mockImplementation((_cmd: string, _args: string[], _opts: any, cb: Function) => {
+        const child = {
+          stderr: { on: vi.fn() },
+        };
+        cb(null, JSON.stringify({ success: true, result: 99 }), '');
+        return child;
+      });
 
       const sandbox = new GVisorSandbox();
       const result = await sandbox.run(async () => 99);
@@ -190,13 +188,11 @@ describe('GVisorSandbox', () => {
         return '';
       });
 
-      mockExecFile.mockImplementation(
-        (_cmd: string, _args: string[], _opts: any, cb: Function) => {
-          const child = { stderr: { on: vi.fn() } };
-          cb(new Error('runsc crashed'), '', 'fatal error');
-          return child;
-        }
-      );
+      mockExecFile.mockImplementation((_cmd: string, _args: string[], _opts: any, cb: Function) => {
+        const child = { stderr: { on: vi.fn() } };
+        cb(new Error('runsc crashed'), '', 'fatal error');
+        return child;
+      });
 
       const sandbox = new GVisorSandbox();
       const result = await sandbox.run(async () => 0);
@@ -215,13 +211,11 @@ describe('GVisorSandbox', () => {
         return '';
       });
 
-      mockExecFile.mockImplementation(
-        (_cmd: string, _args: string[], _opts: any, cb: Function) => {
-          const child = { stderr: { on: vi.fn() } };
-          cb(null, 'not json', '');
-          return child;
-        }
-      );
+      mockExecFile.mockImplementation((_cmd: string, _args: string[], _opts: any, cb: Function) => {
+        const child = { stderr: { on: vi.fn() } };
+        cb(null, 'not json', '');
+        return child;
+      });
 
       const sandbox = new GVisorSandbox();
       const result = await sandbox.run(async () => 0);
@@ -251,14 +245,12 @@ describe('GVisorSandbox', () => {
       });
 
       let capturedArgs: string[] = [];
-      mockExecFile.mockImplementation(
-        (_cmd: string, args: string[], _opts: any, cb: Function) => {
-          capturedArgs = args;
-          const child = { stderr: { on: vi.fn() } };
-          cb(null, JSON.stringify({ success: true, result: 1 }), '');
-          return child;
-        }
-      );
+      mockExecFile.mockImplementation((_cmd: string, args: string[], _opts: any, cb: Function) => {
+        capturedArgs = args;
+        const child = { stderr: { on: vi.fn() } };
+        cb(null, JSON.stringify({ success: true, result: 1 }), '');
+        return child;
+      });
 
       const sandbox = new GVisorSandbox({ platform: 'kvm', networkEnabled: false });
       await sandbox.run(async () => 1, {
@@ -268,8 +260,8 @@ describe('GVisorSandbox', () => {
 
       // Should have written config.json
       expect(mockWriteFileSync).toHaveBeenCalled();
-      const configCall = mockWriteFileSync.mock.calls.find(
-        (c: any[]) => String(c[0]).endsWith('config.json')
+      const configCall = mockWriteFileSync.mock.calls.find((c: any[]) =>
+        String(c[0]).endsWith('config.json')
       );
       expect(configCall).toBeDefined();
       const ociConfig = JSON.parse(configCall![1] as string);

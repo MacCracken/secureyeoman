@@ -411,12 +411,27 @@ export const crewCommand: Command = {
 
         case 'wf:versions': {
           const wfId = argv[1];
-          if (!wfId) { ctx.stderr.write('Usage: secureyeoman crew wf:versions <workflowId>\n'); return 1; }
+          if (!wfId) {
+            ctx.stderr.write('Usage: secureyeoman crew wf:versions <workflowId>\n');
+            return 1;
+          }
           const res = await apiCall(baseUrl, `/api/v1/workflows/${wfId}/versions`, { token });
-          if (!res.ok) { ctx.stderr.write(`Error: ${JSON.stringify(res.data)}\n`); return 1; }
-          if (jsonOutput) { ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n'); return 0; }
+          if (!res.ok) {
+            ctx.stderr.write(`Error: ${JSON.stringify(res.data)}\n`);
+            return 1;
+          }
+          if (jsonOutput) {
+            ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
+            return 0;
+          }
           const { versions, total } = res.data as {
-            versions: { id: string; versionTag: string | null; changedFields: string[]; author: string; createdAt: number }[];
+            versions: {
+              id: string;
+              versionTag: string | null;
+              changedFields: string[];
+              author: string;
+              createdAt: number;
+            }[];
             total: number;
           };
           ctx.stdout.write(bold(`Workflow versions`) + ` (${total})\n\n`);
@@ -424,45 +439,79 @@ export const crewCommand: Command = {
             const tag = v.versionTag ? green(v.versionTag) : dim('untagged');
             const date = new Date(v.createdAt).toISOString().slice(0, 19);
             const fields = v.changedFields.length > 0 ? ` [${v.changedFields.join(', ')}]` : '';
-            ctx.stdout.write(`  ${tag}  ${dim(date)}  ${v.author}${fields}  ${dim(v.id.slice(0, 8))}\n`);
+            ctx.stdout.write(
+              `  ${tag}  ${dim(date)}  ${v.author}${fields}  ${dim(v.id.slice(0, 8))}\n`
+            );
           }
           return 0;
         }
 
         case 'wf:tag': {
           const wfId = argv[1];
-          if (!wfId) { ctx.stderr.write('Usage: secureyeoman crew wf:tag <workflowId> [tag]\n'); return 1; }
+          if (!wfId) {
+            ctx.stderr.write('Usage: secureyeoman crew wf:tag <workflowId> [tag]\n');
+            return 1;
+          }
           const body: Record<string, unknown> = {};
           if (argv[2]) body.tag = argv[2];
           const res = await apiCall(baseUrl, `/api/v1/workflows/${wfId}/versions/tag`, {
-            method: 'POST', body, token,
+            method: 'POST',
+            body,
+            token,
           });
-          if (!res.ok) { ctx.stderr.write(`Error: ${JSON.stringify(res.data)}\n`); return 1; }
-          if (jsonOutput) { ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n'); return 0; }
+          if (!res.ok) {
+            ctx.stderr.write(`Error: ${JSON.stringify(res.data)}\n`);
+            return 1;
+          }
+          if (jsonOutput) {
+            ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
+            return 0;
+          }
           const version = res.data as { versionTag: string; id: string };
-          ctx.stdout.write(bold(`Tagged: ${version.versionTag}`) + ` (${version.id.slice(0, 8)})\n`);
+          ctx.stdout.write(
+            bold(`Tagged: ${version.versionTag}`) + ` (${version.id.slice(0, 8)})\n`
+          );
           return 0;
         }
 
         case 'wf:rollback': {
           const wfId = argv[1];
           const vId = argv[2];
-          if (!wfId || !vId) { ctx.stderr.write('Usage: secureyeoman crew wf:rollback <workflowId> <versionId>\n'); return 1; }
+          if (!wfId || !vId) {
+            ctx.stderr.write('Usage: secureyeoman crew wf:rollback <workflowId> <versionId>\n');
+            return 1;
+          }
           const res = await apiCall(baseUrl, `/api/v1/workflows/${wfId}/versions/${vId}/rollback`, {
-            method: 'POST', token,
+            method: 'POST',
+            token,
           });
-          if (!res.ok) { ctx.stderr.write(`Error: ${JSON.stringify(res.data)}\n`); return 1; }
-          if (jsonOutput) { ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n'); return 0; }
+          if (!res.ok) {
+            ctx.stderr.write(`Error: ${JSON.stringify(res.data)}\n`);
+            return 1;
+          }
+          if (jsonOutput) {
+            ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
+            return 0;
+          }
           ctx.stdout.write(bold('Rollback complete.') + ' New version recorded.\n');
           return 0;
         }
 
         case 'wf:drift': {
           const wfId = argv[1];
-          if (!wfId) { ctx.stderr.write('Usage: secureyeoman crew wf:drift <workflowId>\n'); return 1; }
+          if (!wfId) {
+            ctx.stderr.write('Usage: secureyeoman crew wf:drift <workflowId>\n');
+            return 1;
+          }
           const res = await apiCall(baseUrl, `/api/v1/workflows/${wfId}/drift`, { token });
-          if (!res.ok) { ctx.stderr.write(`Error: ${JSON.stringify(res.data)}\n`); return 1; }
-          if (jsonOutput) { ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n'); return 0; }
+          if (!res.ok) {
+            ctx.stderr.write(`Error: ${JSON.stringify(res.data)}\n`);
+            return 1;
+          }
+          if (jsonOutput) {
+            ctx.stdout.write(JSON.stringify(res.data, null, 2) + '\n');
+            return 0;
+          }
           const drift = res.data as {
             lastTaggedVersion: string | null;
             uncommittedChanges: number;

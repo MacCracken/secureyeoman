@@ -1455,7 +1455,9 @@ export class BrainStorage extends PgBaseStorage {
 
   async getCitationFeedback(
     messageId: string
-  ): Promise<{ id: string; citationIndex: number; sourceId: string; relevant: boolean; createdAt: number }[]> {
+  ): Promise<
+    { id: string; citationIndex: number; sourceId: string; relevant: boolean; createdAt: number }[]
+  > {
     const rows = await this.queryMany<{
       id: string;
       citation_index: number;

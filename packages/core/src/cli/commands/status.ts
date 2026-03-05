@@ -122,7 +122,8 @@ Options:
             const mem = process.memoryUsage ? process.memoryUsage() : null;
             if (components) {
               for (const [name, check] of Object.entries(components)) {
-                const status = check.status === 'ok' ? c.green('ok') : c.yellow(String(check.status));
+                const status =
+                  check.status === 'ok' ? c.green('ok') : c.yellow(String(check.status));
                 const details = check.message ? ` — ${check.message}` : '';
                 ctx.stdout.write(`      ${name.padEnd(24)} ${status}${details}\n`);
               }

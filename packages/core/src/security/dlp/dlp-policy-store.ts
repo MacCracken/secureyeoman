@@ -15,9 +15,7 @@ export interface DlpPolicyFilters {
 }
 
 export class DlpPolicyStore extends PgBaseStorage {
-  async create(
-    policy: Omit<DlpPolicy, 'id' | 'createdAt' | 'updatedAt'>
-  ): Promise<string> {
+  async create(policy: Omit<DlpPolicy, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     const id = generateId();
     const now = Date.now();
     await this.execute(
@@ -97,7 +95,18 @@ export class DlpPolicyStore extends PgBaseStorage {
 
   async update(
     id: string,
-    changes: Partial<Pick<DlpPolicy, 'name' | 'description' | 'enabled' | 'rules' | 'action' | 'classificationLevels' | 'appliesTo'>>
+    changes: Partial<
+      Pick<
+        DlpPolicy,
+        | 'name'
+        | 'description'
+        | 'enabled'
+        | 'rules'
+        | 'action'
+        | 'classificationLevels'
+        | 'appliesTo'
+      >
+    >
   ): Promise<number> {
     const sets: string[] = [];
     const values: unknown[] = [];
@@ -138,16 +147,13 @@ export class DlpPolicyStore extends PgBaseStorage {
     values.push(Date.now());
 
     values.push(id);
-    return this.execute(
-      `UPDATE dlp.policies SET ${sets.join(', ')} WHERE id = $${idx}`,
-      values
-    );
+    return this.execute(`UPDATE dlp.policies SET ${sets.join(', ')} WHERE id = $${idx}`, values);
   }
 
   async delete(id: string): Promise<number> {
-    return this.execute(
-      `UPDATE dlp.policies SET enabled = false, updated_at = $1 WHERE id = $2`,
-      [Date.now(), id]
-    );
+    return this.execute(`UPDATE dlp.policies SET enabled = false, updated_at = $1 WHERE id = $2`, [
+      Date.now(),
+      id,
+    ]);
   }
 }

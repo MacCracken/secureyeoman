@@ -1,5 +1,8 @@
 export { ClassificationEngine } from './classification-engine.js';
-export type { ClassificationEngineConfig, ClassificationEngineDeps } from './classification-engine.js';
+export type {
+  ClassificationEngineConfig,
+  ClassificationEngineDeps,
+} from './classification-engine.js';
 export { ClassificationStore } from './classification-store.js';
 export { WatermarkEngine } from './watermark-engine.js';
 export type { WatermarkPayload, WatermarkAlgorithm } from './watermark-engine.js';

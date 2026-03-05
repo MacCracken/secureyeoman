@@ -244,7 +244,9 @@ function AppearanceTab() {
   const [schedule, setSchedule] = useState<ThemeSchedule>(loadSchedule);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const refreshCustomThemes = () => setCustomThemes(loadCustomThemes());
+  const refreshCustomThemes = () => {
+    setCustomThemes(loadCustomThemes());
+  };
 
   const darkThemes = THEMES.filter((t) => t.isDark && !t.enterprise);
   const darkEnterprise = THEMES.filter((t) => t.isDark && t.enterprise);
@@ -255,7 +257,9 @@ function AppearanceTab() {
   const ThemeCard = ({ t }: { t: (typeof THEMES)[0] }) => (
     <button
       key={t.id}
-      onClick={() => setTheme(t.id)}
+      onClick={() => {
+        setTheme(t.id);
+      }}
       className={`relative flex flex-col rounded-lg border-2 overflow-hidden transition-all duration-150 ${
         theme === t.id
           ? 'border-primary shadow-md shadow-primary/20'
@@ -284,7 +288,12 @@ function AppearanceTab() {
             : 'border-border hover:border-muted-foreground/50'
         }`}
       >
-        <button onClick={() => setTheme(themeId)} className="flex-1">
+        <button
+          onClick={() => {
+            setTheme(themeId);
+          }}
+          className="flex-1"
+        >
           <div className="h-12 flex">
             <div className="flex-1" style={{ backgroundColor: `hsl(${t.colors.background})` }} />
             <div className="flex-1" style={{ backgroundColor: `hsl(${t.colors.foreground})` }} />
@@ -359,7 +368,11 @@ function AppearanceTab() {
   // ── Save editor theme ──
 
   const saveEditorTheme = () => {
-    const result = validateCustomTheme({ name: editorName, isDark: editorIsDark, colors: editorColors });
+    const result = validateCustomTheme({
+      name: editorName,
+      isDark: editorIsDark,
+      colors: editorColors,
+    });
     if (!result.valid) {
       setUploadError(result.error);
       return;
@@ -395,7 +408,9 @@ function AppearanceTab() {
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium text-muted-foreground">Custom</h3>
           <button
-            onClick={() => setShowEditor(!showEditor)}
+            onClick={() => {
+              setShowEditor(!showEditor);
+            }}
             className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20"
           >
             <Plus className="w-3 h-3 inline mr-1" />
@@ -408,11 +423,15 @@ function AppearanceTab() {
             <Upload className="w-3 h-3 inline mr-1" />
             Import
           </button>
-          <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleUpload} />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={handleUpload}
+          />
         </div>
-        {uploadError && (
-          <p className="text-xs text-destructive">{uploadError}</p>
-        )}
+        {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
         {customThemes.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {customThemes.map((t) => (
@@ -421,7 +440,9 @@ function AppearanceTab() {
           </div>
         )}
         {customThemes.length === 0 && !showEditor && (
-          <p className="text-xs text-muted-foreground">No custom themes yet. Create or import one.</p>
+          <p className="text-xs text-muted-foreground">
+            No custom themes yet. Create or import one.
+          </p>
         )}
       </div>
 
@@ -430,14 +451,21 @@ function AppearanceTab() {
         <div className="border border-border rounded-lg p-4 space-y-4 bg-card">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold">Theme Editor</h3>
-            <button onClick={() => setShowEditor(false)} className="text-muted-foreground hover:text-foreground">
+            <button
+              onClick={() => {
+                setShowEditor(false);
+              }}
+              className="text-muted-foreground hover:text-foreground"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
           <div className="flex gap-4 items-center">
             <input
               value={editorName}
-              onChange={(e) => setEditorName(e.target.value)}
+              onChange={(e) => {
+                setEditorName(e.target.value);
+              }}
               className="text-sm px-2 py-1 rounded border border-input bg-background flex-1"
               placeholder="Theme name"
               maxLength={64}
@@ -446,7 +474,9 @@ function AppearanceTab() {
               <input
                 type="checkbox"
                 checked={editorIsDark}
-                onChange={(e) => setEditorIsDark(e.target.checked)}
+                onChange={(e) => {
+                  setEditorIsDark(e.target.checked);
+                }}
                 className="rounded"
               />
               Dark theme
@@ -454,12 +484,21 @@ function AppearanceTab() {
           </div>
           {/* Live preview strip */}
           <div className="h-8 rounded flex overflow-hidden border border-border">
-            <div className="flex-1" style={{ backgroundColor: `hsl(${editorColors.background})` }} />
-            <div className="flex-1" style={{ backgroundColor: `hsl(${editorColors.foreground})` }} />
+            <div
+              className="flex-1"
+              style={{ backgroundColor: `hsl(${editorColors.background})` }}
+            />
+            <div
+              className="flex-1"
+              style={{ backgroundColor: `hsl(${editorColors.foreground})` }}
+            />
             <div className="flex-1" style={{ backgroundColor: `hsl(${editorColors.primary})` }} />
             <div className="flex-1" style={{ backgroundColor: `hsl(${editorColors.accent})` }} />
             <div className="flex-1" style={{ backgroundColor: `hsl(${editorColors.secondary})` }} />
-            <div className="flex-1" style={{ backgroundColor: `hsl(${editorColors.destructive})` }} />
+            <div
+              className="flex-1"
+              style={{ backgroundColor: `hsl(${editorColors.destructive})` }}
+            />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {THEME_CSS_VARS.map((v) => (
@@ -468,13 +507,17 @@ function AppearanceTab() {
                 <div className="flex items-center gap-1.5">
                   <div
                     className="w-6 h-6 rounded border border-border flex-shrink-0"
-                    style={{ backgroundColor: isValidHsl(editorColors[v]) ? `hsl(${editorColors[v]})` : '#888' }}
+                    style={{
+                      backgroundColor: isValidHsl(editorColors[v])
+                        ? `hsl(${editorColors[v]})`
+                        : '#888',
+                    }}
                   />
                   <input
                     value={editorColors[v]}
-                    onChange={(e) =>
-                      setEditorColors((prev) => ({ ...prev, [v]: e.target.value }))
-                    }
+                    onChange={(e) => {
+                      setEditorColors((prev) => ({ ...prev, [v]: e.target.value }));
+                    }}
                     className={`text-xs px-1.5 py-1 rounded border bg-background flex-1 font-mono ${
                       isValidHsl(editorColors[v]) ? 'border-input' : 'border-destructive'
                     }`}
@@ -487,7 +530,11 @@ function AppearanceTab() {
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => {
-                const json = JSON.stringify({ name: editorName, isDark: editorIsDark, colors: editorColors }, null, 2);
+                const json = JSON.stringify(
+                  { name: editorName, isDark: editorIsDark, colors: editorColors },
+                  null,
+                  2
+                );
                 const blob = new Blob([json], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -521,7 +568,9 @@ function AppearanceTab() {
             <input
               type="checkbox"
               checked={schedule.enabled}
-              onChange={(e) => updateSchedule({ enabled: e.target.checked })}
+              onChange={(e) => {
+                updateSchedule({ enabled: e.target.checked });
+              }}
               className="rounded"
             />
             Enable scheduled theme switching
@@ -532,7 +581,9 @@ function AppearanceTab() {
                 <input
                   type="checkbox"
                   checked={schedule.useOsSchedule}
-                  onChange={(e) => updateSchedule({ useOsSchedule: e.target.checked })}
+                  onChange={(e) => {
+                    updateSchedule({ useOsSchedule: e.target.checked });
+                  }}
                   className="rounded"
                 />
                 Use OS light/dark schedule
@@ -547,7 +598,9 @@ function AppearanceTab() {
                       min={0}
                       max={23}
                       value={schedule.lightHour}
-                      onChange={(e) => updateSchedule({ lightHour: parseInt(e.target.value) || 0 })}
+                      onChange={(e) => {
+                        updateSchedule({ lightHour: parseInt(e.target.value) || 0 });
+                      }}
                       className="w-14 px-1.5 py-0.5 rounded border border-input bg-background text-center"
                     />
                     :00
@@ -560,7 +613,9 @@ function AppearanceTab() {
                       min={0}
                       max={23}
                       value={schedule.darkHour}
-                      onChange={(e) => updateSchedule({ darkHour: parseInt(e.target.value) || 0 })}
+                      onChange={(e) => {
+                        updateSchedule({ darkHour: parseInt(e.target.value) || 0 });
+                      }}
                       className="w-14 px-1.5 py-0.5 rounded border border-input bg-background text-center"
                     />
                     :00
@@ -573,15 +628,23 @@ function AppearanceTab() {
                   Light theme:
                   <select
                     value={schedule.lightTheme}
-                    onChange={(e) => updateSchedule({ lightTheme: e.target.value as ThemeId })}
+                    onChange={(e) => {
+                      updateSchedule({ lightTheme: e.target.value as ThemeId });
+                    }}
                     className="px-1.5 py-0.5 rounded border border-input bg-background text-xs"
                   >
                     {THEMES.filter((t) => !t.isDark && t.id !== 'system').map((t) => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
                     ))}
-                    {customThemes.filter((t) => !t.isDark).map((t) => (
-                      <option key={t.id} value={`custom:${t.id}`}>{t.name}</option>
-                    ))}
+                    {customThemes
+                      .filter((t) => !t.isDark)
+                      .map((t) => (
+                        <option key={t.id} value={`custom:${t.id}`}>
+                          {t.name}
+                        </option>
+                      ))}
                   </select>
                 </label>
                 <label className="flex items-center gap-1.5">
@@ -589,15 +652,23 @@ function AppearanceTab() {
                   Dark theme:
                   <select
                     value={schedule.darkTheme}
-                    onChange={(e) => updateSchedule({ darkTheme: e.target.value as ThemeId })}
+                    onChange={(e) => {
+                      updateSchedule({ darkTheme: e.target.value as ThemeId });
+                    }}
                     className="px-1.5 py-0.5 rounded border border-input bg-background text-xs"
                   >
                     {THEMES.filter((t) => t.isDark).map((t) => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
                     ))}
-                    {customThemes.filter((t) => t.isDark).map((t) => (
-                      <option key={t.id} value={`custom:${t.id}`}>{t.name}</option>
-                    ))}
+                    {customThemes
+                      .filter((t) => t.isDark)
+                      .map((t) => (
+                        <option key={t.id} value={`custom:${t.id}`}>
+                          {t.name}
+                        </option>
+                      ))}
                   </select>
                 </label>
               </div>
@@ -836,7 +907,13 @@ function LicenseCard() {
           <span
             className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${isEnterprise ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
           >
-            {isLoading ? '…' : isEnterprise ? (license?.tier === 'enterprise' ? 'Enterprise' : 'Pro') : 'Community'}
+            {isLoading
+              ? '…'
+              : isEnterprise
+                ? license?.tier === 'enterprise'
+                  ? 'Enterprise'
+                  : 'Pro'
+                : 'Community'}
           </span>
         </div>
         <button

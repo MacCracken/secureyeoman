@@ -61,7 +61,7 @@ export class WorkingMemoryBuffer {
   private queryTrajectory: number[][] = [];
 
   /** Cache of pre-fetched items ready for immediate retrieval. */
-  private prefetchCache: Map<string, WorkingMemoryItem> = new Map();
+  private prefetchCache = new Map<string, WorkingMemoryItem>();
 
   constructor(
     embeddingProvider: EmbeddingProvider,
@@ -108,7 +108,7 @@ export class WorkingMemoryBuffer {
    * Add retrieved items to the working memory buffer.
    * Evicts lowest-score items when capacity is exceeded.
    */
-  addItems(items: Array<{ id: string; content: string; score: number }>): void {
+  addItems(items: { id: string; content: string; score: number }[]): void {
     const now = Date.now();
 
     for (const item of items) {

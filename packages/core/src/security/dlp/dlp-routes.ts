@@ -28,7 +28,17 @@ export interface DlpRouteDeps {
 }
 
 export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): void {
-  const { classificationEngine, classificationStore, dlpManager, dlpPolicyStore, watermarkEngine, watermarkStore, egressMonitor, retentionStore, retentionManager } = deps;
+  const {
+    classificationEngine,
+    classificationStore,
+    dlpManager,
+    dlpPolicyStore,
+    watermarkEngine,
+    watermarkStore,
+    egressMonitor,
+    retentionStore,
+    retentionManager,
+  } = deps;
 
   // ── POST /api/v1/security/dlp/classify ──────────────────────────────────
 
@@ -45,7 +55,12 @@ export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): voi
         if (contentId && contentType) {
           await classificationStore.create({
             contentId,
-            contentType: contentType as 'conversation' | 'document' | 'memory' | 'knowledge' | 'message',
+            contentType: contentType as
+              | 'conversation'
+              | 'document'
+              | 'memory'
+              | 'knowledge'
+              | 'message',
             classificationLevel: result.level,
             autoLevel: result.autoLevel,
             manualOverride: false,
@@ -84,32 +99,34 @@ export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): voi
   app.put<{
     Params: { contentId: string };
     Body: { level: ClassificationLevel; contentType?: string };
-  }>(
-    '/api/v1/security/dlp/classifications/:contentId',
-    async (req, reply) => {
-      try {
-        const { contentId } = req.params;
-        const { level, contentType } = req.body;
-        if (!level) {
-          return sendError(reply, 400, 'Missing required field: level');
-        }
-        const updated = await classificationStore.override(
-          contentId,
-          contentType ?? 'message',
-          level,
-          (req as any).authUser?.userId ?? 'system'
-        );
-        return reply.send({ updated: updated > 0 });
-      } catch (err) {
-        return sendError(reply, 500, toErrorMessage(err));
+  }>('/api/v1/security/dlp/classifications/:contentId', async (req, reply) => {
+    try {
+      const { contentId } = req.params;
+      const { level, contentType } = req.body;
+      if (!level) {
+        return sendError(reply, 400, 'Missing required field: level');
       }
+      const updated = await classificationStore.override(
+        contentId,
+        contentType ?? 'message',
+        level,
+        (req as any).authUser?.userId ?? 'system'
+      );
+      return reply.send({ updated: updated > 0 });
+    } catch (err) {
+      return sendError(reply, 500, toErrorMessage(err));
     }
-  );
+  });
 
   // ── GET /api/v1/security/dlp/classifications ────────────────────────────
 
   app.get<{
-    Querystring: { level?: ClassificationLevel; contentType?: string; limit?: string; offset?: string };
+    Querystring: {
+      level?: ClassificationLevel;
+      contentType?: string;
+      limit?: string;
+      offset?: string;
+    };
   }>('/api/v1/security/dlp/classifications', async (req, reply) => {
     try {
       const query = req.query as {
@@ -135,28 +152,33 @@ export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): voi
   if (dlpManager && dlpPolicyStore) {
     // ── POST /api/v1/security/dlp/scan ──────────────────────────────────
 
-    app.post<{ Body: { content: string; destination: string; contentType?: string; userId?: string; personalityId?: string } }>(
-      '/api/v1/security/dlp/scan',
-      async (req, reply) => {
-        try {
-          const { content, destination, contentType, userId, personalityId } = req.body;
-          if (!content) {
-            return sendError(reply, 400, 'Missing required field: content');
-          }
-          if (!destination) {
-            return sendError(reply, 400, 'Missing required field: destination');
-          }
-          const result = await dlpManager.scanOutbound(content, destination, {
-            contentType,
-            userId: userId ?? (req as any).authUser?.userId,
-            personalityId,
-          });
-          return reply.send({ scan: result });
-        } catch (err) {
-          return sendError(reply, 500, toErrorMessage(err));
+    app.post<{
+      Body: {
+        content: string;
+        destination: string;
+        contentType?: string;
+        userId?: string;
+        personalityId?: string;
+      };
+    }>('/api/v1/security/dlp/scan', async (req, reply) => {
+      try {
+        const { content, destination, contentType, userId, personalityId } = req.body;
+        if (!content) {
+          return sendError(reply, 400, 'Missing required field: content');
         }
+        if (!destination) {
+          return sendError(reply, 400, 'Missing required field: destination');
+        }
+        const result = await dlpManager.scanOutbound(content, destination, {
+          contentType,
+          userId: userId ?? (req as any).authUser?.userId,
+          personalityId,
+        });
+        return reply.send({ scan: result });
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
       }
-    );
+    });
 
     // ── POST /api/v1/security/dlp/policies ──────────────────────────────
 
@@ -172,7 +194,8 @@ export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): voi
       };
     }>('/api/v1/security/dlp/policies', async (req, reply) => {
       try {
-        const { name, description, enabled, rules, action, classificationLevels, appliesTo } = req.body;
+        const { name, description, enabled, rules, action, classificationLevels, appliesTo } =
+          req.body;
         if (!name) {
           return sendError(reply, 400, 'Missing required field: name');
         }
@@ -188,7 +211,10 @@ export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): voi
           enabled: enabled ?? true,
           rules: rules as any,
           action,
-          classificationLevels: (classificationLevels ?? ['confidential', 'restricted']) as ClassificationLevel[],
+          classificationLevels: (classificationLevels ?? [
+            'confidential',
+            'restricted',
+          ]) as ClassificationLevel[],
           appliesTo: appliesTo ?? ['email', 'slack', 'webhook', 'api'],
           tenantId: 'default',
         });
@@ -204,7 +230,12 @@ export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): voi
       Querystring: { active?: string; appliesTo?: string; limit?: string; offset?: string };
     }>('/api/v1/security/dlp/policies', async (req, reply) => {
       try {
-        const query = req.query as { active?: string; appliesTo?: string; limit?: string; offset?: string };
+        const query = req.query as {
+          active?: string;
+          appliesTo?: string;
+          limit?: string;
+          offset?: string;
+        };
         const result = await dlpPolicyStore.list({
           active: query.active !== undefined ? query.active === 'true' : undefined,
           appliesTo: query.appliesTo,
@@ -219,20 +250,17 @@ export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): voi
 
     // ── GET /api/v1/security/dlp/policies/:id ───────────────────────────
 
-    app.get<{ Params: { id: string } }>(
-      '/api/v1/security/dlp/policies/:id',
-      async (req, reply) => {
-        try {
-          const policy = await dlpPolicyStore.getById(req.params.id);
-          if (!policy) {
-            return sendError(reply, 404, 'Policy not found');
-          }
-          return reply.send({ policy });
-        } catch (err) {
-          return sendError(reply, 500, toErrorMessage(err));
+    app.get<{ Params: { id: string } }>('/api/v1/security/dlp/policies/:id', async (req, reply) => {
+      try {
+        const policy = await dlpPolicyStore.getById(req.params.id);
+        if (!policy) {
+          return sendError(reply, 404, 'Policy not found');
         }
+        return reply.send({ policy });
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
       }
-    );
+    });
 
     // ── PUT /api/v1/security/dlp/policies/:id ───────────────────────────
 
@@ -328,7 +356,9 @@ export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): voi
         }
 
         const engine = algorithm
-          ? new (watermarkEngine.constructor as new (algo: WatermarkAlgorithm) => WatermarkEngine)(algorithm)
+          ? new (watermarkEngine.constructor as new (algo: WatermarkAlgorithm) => WatermarkEngine)(
+              algorithm
+            )
           : watermarkEngine;
 
         const resolvedUserId = userId ?? (req as any).authUser?.userId ?? 'system';
@@ -351,7 +381,11 @@ export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): voi
           tenantId: 'default',
         });
 
-        return reply.send({ watermarked, contentId, algorithm: algorithm ?? engine.getAlgorithm() });
+        return reply.send({
+          watermarked,
+          contentId,
+          algorithm: algorithm ?? engine.getAlgorithm(),
+        });
       } catch (err) {
         return sendError(reply, 500, toErrorMessage(err));
       }
@@ -368,7 +402,9 @@ export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): voi
           }
 
           const engine = algorithm
-            ? new (watermarkEngine.constructor as new (algo: WatermarkAlgorithm) => WatermarkEngine)(algorithm)
+            ? new (watermarkEngine.constructor as new (
+                algo: WatermarkAlgorithm
+              ) => WatermarkEngine)(algorithm)
             : watermarkEngine;
 
           const payload = engine.extract(text);
@@ -390,7 +426,9 @@ export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): voi
           }
 
           const engine = algorithm
-            ? new (watermarkEngine.constructor as new (algo: WatermarkAlgorithm) => WatermarkEngine)(algorithm)
+            ? new (watermarkEngine.constructor as new (
+                algo: WatermarkAlgorithm
+              ) => WatermarkEngine)(algorithm)
             : watermarkEngine;
 
           const detected = engine.detect(text);
@@ -449,7 +487,11 @@ export function registerDlpRoutes(app: FastifyInstance, deps: DlpRouteDeps): voi
     // PUT /api/v1/security/dlp/retention/:id
     app.put<{
       Params: { id: string };
-      Body: { retentionDays?: number; enabled?: boolean; classificationLevel?: ClassificationLevel };
+      Body: {
+        retentionDays?: number;
+        enabled?: boolean;
+        classificationLevel?: ClassificationLevel;
+      };
     }>('/api/v1/security/dlp/retention/:id', async (req, reply) => {
       try {
         const updated = await retentionStore.update(req.params.id, req.body);

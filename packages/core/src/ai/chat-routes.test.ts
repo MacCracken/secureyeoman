@@ -5603,7 +5603,10 @@ describe('Phase 119 — Context Overflow Strategy', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/chat',
-      payload: { message: 'Hello', history: Array.from({ length: 200 }, () => ({ role: 'user', content: 'A'.repeat(500) })) },
+      payload: {
+        message: 'Hello',
+        history: Array.from({ length: 200 }, () => ({ role: 'user', content: 'A'.repeat(500) })),
+      },
     });
     expect(res.statusCode).toBe(413);
     const body = JSON.parse(res.payload);
@@ -5646,7 +5649,13 @@ describe('Phase 119 — Context Overflow Strategy', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/chat',
-      payload: { message: 'Latest', history: Array.from({ length: 200 }, (_, i) => ({ role: 'user', content: `msg${i} ${'X'.repeat(500)}` })) },
+      payload: {
+        message: 'Latest',
+        history: Array.from({ length: 200 }, (_, i) => ({
+          role: 'user',
+          content: `msg${i} ${'X'.repeat(500)}`,
+        })),
+      },
     });
     // Should succeed (200) with truncated context
     expect(res.statusCode).toBe(200);

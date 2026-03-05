@@ -30,7 +30,9 @@ class CanvasEventBusImpl {
       this.listeners.set(type, set);
     }
     set.add(handler);
-    return () => this.off(type, handler);
+    return () => {
+      this.off(type, handler);
+    };
   }
 
   /** Unsubscribe a handler from a given event type. */

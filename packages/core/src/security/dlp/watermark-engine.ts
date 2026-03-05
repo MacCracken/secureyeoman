@@ -17,9 +17,9 @@ export interface WatermarkPayload {
 export type WatermarkAlgorithm = 'unicode-steganography' | 'whitespace' | 'homoglyph';
 
 // Zero-width characters for unicode-steganography
-const ZW_ZERO = '\u200B';   // ZERO WIDTH SPACE = bit 0
-const ZW_ONE = '\u200C';    // ZERO WIDTH NON-JOINER = bit 1
-const ZW_SEP = '\u200D';    // ZERO WIDTH JOINER = separator/marker
+const ZW_ZERO = '\u200B'; // ZERO WIDTH SPACE = bit 0
+const ZW_ONE = '\u200C'; // ZERO WIDTH NON-JOINER = bit 1
+const ZW_SEP = '\u200D'; // ZERO WIDTH JOINER = separator/marker
 
 // Homoglyph map: Latin -> Cyrillic lookalike
 const HOMOGLYPH_MAP: Record<string, string> = {
@@ -32,7 +32,7 @@ const HOMOGLYPH_MAP: Record<string, string> = {
 };
 
 const REVERSE_HOMOGLYPH: Record<string, string> = Object.fromEntries(
-  Object.entries(HOMOGLYPH_MAP).map(([latin, cyrillic]) => [cyrillic, latin]),
+  Object.entries(HOMOGLYPH_MAP).map(([latin, cyrillic]) => [cyrillic, latin])
 );
 
 // All Cyrillic homoglyph code points for detection
@@ -72,7 +72,13 @@ function payloadToJson(payload: WatermarkPayload): string {
 function jsonToPayload(json: string): WatermarkPayload | null {
   try {
     const obj = JSON.parse(json);
-    if (obj && typeof obj.t === 'string' && typeof obj.u === 'string' && typeof obj.c === 'string' && typeof obj.s === 'number') {
+    if (
+      obj &&
+      typeof obj.t === 'string' &&
+      typeof obj.u === 'string' &&
+      typeof obj.c === 'string' &&
+      typeof obj.s === 'number'
+    ) {
       return { tenantId: obj.t, userId: obj.u, contentId: obj.c, timestamp: obj.s };
     }
     return null;
@@ -93,7 +99,7 @@ function embedUnicode(text: string, payload: WatermarkPayload): string {
   encoded += ZW_SEP; // end marker
 
   // Insert after first word boundary
-  const match = text.match(/^(\S+)/);
+  const match = /^(\S+)/.exec(text);
   if (match) {
     const pos = match[0].length;
     return text.slice(0, pos) + encoded + text.slice(pos);
@@ -129,7 +135,7 @@ function detectUnicode(text: string): boolean {
 function embedWhitespace(text: string, payload: WatermarkPayload): string {
   const json = payloadToJson(payload);
   const bits = stringToBits(json);
-  let lines = text.split('\n');
+  const lines = text.split('\n');
 
   // Pad with empty lines if needed
   while (lines.length < bits.length) {
@@ -182,7 +188,7 @@ function embedHomoglyph(text: string, payload: WatermarkPayload): string {
   // Prefix with 16-bit length header so extraction knows where data ends
   const lengthBits = dataBits.length.toString(2).padStart(16, '0');
   const bits = lengthBits + dataBits;
-  const chars = [...text];
+  const chars = Array.from(text);
   let bitIdx = 0;
 
   for (let i = 0; i < chars.length && bitIdx < bits.length; i++) {
@@ -190,9 +196,9 @@ function embedHomoglyph(text: string, payload: WatermarkPayload): string {
     if (HOMOGLYPH_MAP[lower]) {
       if (bits[bitIdx] === '1') {
         // Replace with Cyrillic lookalike, preserving case
-        chars[i] = chars[i]! === chars[i]!.toUpperCase()
-          ? HOMOGLYPH_MAP[lower]!.toUpperCase()
-          : HOMOGLYPH_MAP[lower]!;
+        const ch = chars[i]!;
+        chars[i] =
+          ch === ch.toUpperCase() ? HOMOGLYPH_MAP[lower].toUpperCase() : HOMOGLYPH_MAP[lower];
       }
       // bit 0 = keep original Latin
       bitIdx++;
@@ -204,7 +210,7 @@ function embedHomoglyph(text: string, payload: WatermarkPayload): string {
 }
 
 function extractHomoglyph(text: string): WatermarkPayload | null {
-  const chars = [...text];
+  const chars = Array.from(text);
   let bits = '';
 
   for (const ch of chars) {

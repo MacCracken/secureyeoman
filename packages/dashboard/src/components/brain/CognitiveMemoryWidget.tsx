@@ -49,9 +49,7 @@ function TrendBar({ entries }: { entries: AccessTrendEntry[] }) {
             style={{ height: `${(entry.count / max) * 100}%`, minHeight: '2px' }}
             title={`${entry.day}: ${entry.count} accesses`}
           />
-          <span className="text-[9px] text-muted-foreground">
-            {entry.day.slice(5)}
-          </span>
+          <span className="text-[9px] text-muted-foreground">{entry.day.slice(5)}</span>
         </div>
       ))}
     </div>
@@ -79,9 +77,7 @@ export function CognitiveMemoryWidget() {
   if (error || !data) {
     return (
       <div className="p-4 rounded-lg border bg-card">
-        <p className="text-sm text-muted-foreground">
-          Cognitive memory not available
-        </p>
+        <p className="text-sm text-muted-foreground">Cognitive memory not available</p>
       </div>
     );
   }

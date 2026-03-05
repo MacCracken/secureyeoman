@@ -25,7 +25,7 @@ export function registerBatchInferenceRoutes(
       request: FastifyRequest<{
         Body: {
           name?: string;
-          prompts: Array<{ id: string; prompt: string; systemPrompt?: string }>;
+          prompts: { id: string; prompt: string; systemPrompt?: string }[];
           concurrency?: number;
         };
       }>,
@@ -36,7 +36,8 @@ export function registerBatchInferenceRoutes(
 
       const body = request.body;
       if (!body?.prompts?.length) return sendError(reply, 400, 'prompts array is required');
-      if (body.prompts.length > 10_000) return sendError(reply, 400, 'Maximum 10,000 prompts per batch');
+      if (body.prompts.length > 10_000)
+        return sendError(reply, 400, 'Maximum 10,000 prompts per batch');
 
       try {
         const job = await batchManager.createJob({
@@ -71,15 +72,12 @@ export function registerBatchInferenceRoutes(
     }
   );
 
-  app.get(
-    '/api/v1/ai/batch',
-    async (_request: FastifyRequest, reply: FastifyReply) => {
-      const batchManager = secureYeoman.getBatchInferenceManager?.();
-      if (!batchManager) return sendError(reply, 503, 'Batch inference not available');
+  app.get('/api/v1/ai/batch', async (_request: FastifyRequest, reply: FastifyReply) => {
+    const batchManager = secureYeoman.getBatchInferenceManager?.();
+    if (!batchManager) return sendError(reply, 503, 'Batch inference not available');
 
-      return batchManager.listJobs();
-    }
-  );
+    return batchManager.listJobs();
+  });
 
   app.delete(
     '/api/v1/ai/batch/:id',
@@ -95,29 +93,23 @@ export function registerBatchInferenceRoutes(
 
   // ── Cache Stats & Clear ──────────────────────────────────────────────
 
-  app.get(
-    '/api/v1/ai/cache/stats',
-    async (_request: FastifyRequest, reply: FastifyReply) => {
-      const semanticCache = secureYeoman.getSemanticCache?.();
-      const aiClient = secureYeoman.getAIClient?.();
+  app.get('/api/v1/ai/cache/stats', async (_request: FastifyRequest, reply: FastifyReply) => {
+    const semanticCache = secureYeoman.getSemanticCache?.();
+    const aiClient = secureYeoman.getAIClient?.();
 
-      const lruStats = aiClient?.getCacheStats?.() ?? null;
-      const semanticStats = semanticCache ? await semanticCache.getStats() : null;
+    const lruStats = aiClient?.getCacheStats?.() ?? null;
+    const semanticStats = semanticCache ? await semanticCache.getStats() : null;
 
-      return { lru: lruStats, semantic: semanticStats };
-    }
-  );
+    return { lru: lruStats, semantic: semanticStats };
+  });
 
-  app.post(
-    '/api/v1/ai/cache/clear',
-    async (_request: FastifyRequest, reply: FastifyReply) => {
-      const semanticCache = secureYeoman.getSemanticCache?.();
-      if (!semanticCache) return sendError(reply, 503, 'Semantic cache not available');
+  app.post('/api/v1/ai/cache/clear', async (_request: FastifyRequest, reply: FastifyReply) => {
+    const semanticCache = secureYeoman.getSemanticCache?.();
+    if (!semanticCache) return sendError(reply, 503, 'Semantic cache not available');
 
-      const deleted = await semanticCache.clear();
-      return { deleted };
-    }
-  );
+    const deleted = await semanticCache.clear();
+    return { deleted };
+  });
 
   // ── KV Cache Warmup ──────────────────────────────────────────────────
 

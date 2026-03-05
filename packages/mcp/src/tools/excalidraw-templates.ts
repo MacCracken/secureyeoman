@@ -451,10 +451,8 @@ export function getTemplateCategories(): string[] {
 
 export function getTemplatesByCategory(
   category?: string
-): Array<{ name: string; description: string; category: string }> {
-  const filtered = category
-    ? TEMPLATES.filter((t) => t.category === category)
-    : TEMPLATES;
+): { name: string; description: string; category: string }[] {
+  const filtered = category ? TEMPLATES.filter((t) => t.category === category) : TEMPLATES;
   return filtered.map(({ name, description, category: cat }) => ({
     name,
     description,

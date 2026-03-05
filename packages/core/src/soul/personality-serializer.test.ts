@@ -356,7 +356,8 @@ This is the full composed prompt.
       });
       const md = serializer.toMarkdown(original);
       // Simulate distillation by appending runtime sections
-      const distilled = md + '\n# Runtime Prompt\n\nFull prompt here.\n\n# Runtime Context\n\n- stuff\n';
+      const distilled =
+        md + '\n# Runtime Prompt\n\nFull prompt here.\n\n# Runtime Context\n\n- stuff\n';
       const { data } = serializer.fromMarkdown(distilled);
       expect(data.name).toBe('RoundTrip');
       expect(data.systemPrompt).toBe('You are RoundTrip.');

@@ -68,7 +68,9 @@ function makeCompressionSummary(overrides: Partial<CompressionSummary> = {}): Co
   };
 }
 
-function makeReorganizationSummary(overrides: Partial<ReorganizationSummary> = {}): ReorganizationSummary {
+function makeReorganizationSummary(
+  overrides: Partial<ReorganizationSummary> = {}
+): ReorganizationSummary {
   return {
     promoted: 2,
     demoted: 1,
@@ -107,9 +109,11 @@ function makeMocks() {
 
   const auditStorage = {
     createReport: vi.fn().mockResolvedValue(makeReport()),
-    updateReport: vi.fn().mockImplementation((_id: string, updates: Partial<MemoryAuditReport>) =>
-      Promise.resolve(makeReport(updates))
-    ),
+    updateReport: vi
+      .fn()
+      .mockImplementation((_id: string, updates: Partial<MemoryAuditReport>) =>
+        Promise.resolve(makeReport(updates))
+      ),
     getHealthMetrics: vi.fn().mockResolvedValue(makeHealthMetrics()),
   };
 
@@ -219,8 +223,12 @@ describe('MemoryAuditEngine', () => {
     expect(mocks.brainManager.getStats).toHaveBeenCalledTimes(2);
     // updateReport called with preSnapshot and postSnapshot
     const calls = mocks.auditStorage.updateReport.mock.calls;
-    const preCall = calls.find((c: unknown[]) => (c[1] as Record<string, unknown>).preSnapshot !== undefined);
-    const postCall = calls.find((c: unknown[]) => (c[1] as Record<string, unknown>).postSnapshot !== undefined);
+    const preCall = calls.find(
+      (c: unknown[]) => (c[1] as Record<string, unknown>).preSnapshot !== undefined
+    );
+    const postCall = calls.find(
+      (c: unknown[]) => (c[1] as Record<string, unknown>).postSnapshot !== undefined
+    );
     expect(preCall).toBeDefined();
     expect(postCall).toBeDefined();
   });
@@ -362,7 +370,8 @@ describe('MemoryAuditEngine', () => {
       (c: unknown[]) => (c[1] as Record<string, unknown>).reorganizationSummary !== undefined
     );
     expect(reorgCall).toBeDefined();
-    const summary = (reorgCall![1] as { reorganizationSummary: ReorganizationSummary }).reorganizationSummary;
+    const summary = (reorgCall![1] as { reorganizationSummary: ReorganizationSummary })
+      .reorganizationSummary;
     expect(summary.coherenceIssuesFound).toBe(3);
     expect(summary.coherenceIssuesFixed).toBe(2);
   });
@@ -384,7 +393,9 @@ describe('MemoryAuditEngine', () => {
       (c: unknown[]) => (c[1] as Record<string, unknown>).maintenanceSummary !== undefined
     );
     expect(maintCall).toBeDefined();
-    const summary = (maintCall![1] as { maintenanceSummary: { expiredPruned: number; decayApplied: number } }).maintenanceSummary;
+    const summary = (
+      maintCall![1] as { maintenanceSummary: { expiredPruned: number; decayApplied: number } }
+    ).maintenanceSummary;
     expect(summary.expiredPruned).toBe(2);
     expect(summary.decayApplied).toBe(5);
   });
@@ -410,7 +421,9 @@ describe('MemoryAuditEngine', () => {
     const maintCall = calls.find(
       (c: unknown[]) => (c[1] as Record<string, unknown>).maintenanceSummary !== undefined
     );
-    const summary = (maintCall![1] as { maintenanceSummary: { expiredPruned: number; decayApplied: number } }).maintenanceSummary;
+    const summary = (
+      maintCall![1] as { maintenanceSummary: { expiredPruned: number; decayApplied: number } }
+    ).maintenanceSummary;
     expect(summary.expiredPruned).toBe(0);
     expect(summary.decayApplied).toBe(0);
   });
@@ -480,7 +493,8 @@ describe('MemoryAuditEngine', () => {
 
     const evaluateCalls = mocks.mockAlertManager.evaluate.mock.calls;
     const healthCall = evaluateCalls.find(
-      (c: unknown[]) => (c[0] as Record<string, unknown>)['brain.memory_health_degraded'] !== undefined
+      (c: unknown[]) =>
+        (c[0] as Record<string, unknown>)['brain.memory_health_degraded'] !== undefined
     );
     expect(healthCall).toBeUndefined();
   });

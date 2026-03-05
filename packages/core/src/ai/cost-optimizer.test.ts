@@ -137,8 +137,21 @@ describe('CostOptimizer', () => {
 
   it('analyzeDetailed returns correct per-model stats', async () => {
     const rows: HistoryRow[] = [
-      makeHistoryRow({ model: 'claude-opus-4-20250514', calls: 10, costUsd: 5, totalTokens: 10000, outputTokens: 2000 }),
-      makeHistoryRow({ model: 'gpt-4o-mini', provider: 'openai', calls: 20, costUsd: 0.5, totalTokens: 8000, outputTokens: 4000 }),
+      makeHistoryRow({
+        model: 'claude-opus-4-20250514',
+        calls: 10,
+        costUsd: 5,
+        totalTokens: 10000,
+        outputTokens: 2000,
+      }),
+      makeHistoryRow({
+        model: 'gpt-4o-mini',
+        provider: 'openai',
+        calls: 20,
+        costUsd: 0.5,
+        totalTokens: 8000,
+        outputTokens: 4000,
+      }),
     ];
     const optimizer = new CostOptimizer({
       logger: createNoopLogger(),

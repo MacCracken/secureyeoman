@@ -99,7 +99,11 @@ describe('ProjectExplorer', () => {
     await user.click(screen.getByTestId('tree-node-hello.txt'));
 
     await waitFor(() => {
-      expect(props.onOpenFile).toHaveBeenCalledWith('/tmp/hello.txt', 'hello.txt', 'file contents here');
+      expect(props.onOpenFile).toHaveBeenCalledWith(
+        '/tmp/hello.txt',
+        'hello.txt',
+        'file contents here'
+      );
     });
   });
 

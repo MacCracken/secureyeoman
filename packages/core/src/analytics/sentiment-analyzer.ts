@@ -72,7 +72,10 @@ export class SentimentAnalyzer {
   async classifyMessage(
     content: string
   ): Promise<{ sentiment: 'positive' | 'neutral' | 'negative'; score: number }> {
-    const truncated = content.length > CONTENT_TRUNCATION_LENGTH ? content.slice(0, CONTENT_TRUNCATION_LENGTH) + '...' : content;
+    const truncated =
+      content.length > CONTENT_TRUNCATION_LENGTH
+        ? content.slice(0, CONTENT_TRUNCATION_LENGTH) + '...'
+        : content;
     const response = await this.aiClient.chat({
       messages: [{ role: 'user', content: SENTIMENT_PROMPT + truncated }],
       stream: false,
@@ -88,7 +91,10 @@ export class SentimentAnalyzer {
     const sentiment = ['positive', 'neutral', 'negative'].includes(parsed.sentiment ?? '')
       ? (parsed.sentiment as 'positive' | 'neutral' | 'negative')
       : 'neutral';
-    const score = typeof parsed.score === 'number' ? Math.max(0, Math.min(1, parsed.score)) : DEFAULT_SENTIMENT_SCORE;
+    const score =
+      typeof parsed.score === 'number'
+        ? Math.max(0, Math.min(1, parsed.score))
+        : DEFAULT_SENTIMENT_SCORE;
 
     return { sentiment, score };
   }

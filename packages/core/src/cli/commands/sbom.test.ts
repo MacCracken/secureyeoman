@@ -5,10 +5,16 @@ function createStreams() {
   let stdoutBuf = '';
   let stderrBuf = '';
   const stdout = {
-    write: (s: string) => { stdoutBuf += s; return true; },
+    write: (s: string) => {
+      stdoutBuf += s;
+      return true;
+    },
   } as NodeJS.WritableStream;
   const stderr = {
-    write: (s: string) => { stderrBuf += s; return true; },
+    write: (s: string) => {
+      stderrBuf += s;
+      return true;
+    },
   } as NodeJS.WritableStream;
   return { stdout, stderr, getStdout: () => stdoutBuf, getStderr: () => stderrBuf };
 }
@@ -69,14 +75,22 @@ describe('sbom command', () => {
 
   it('compliance --framework filters to specific framework', async () => {
     const { stdout, stderr, getStdout } = createStreams();
-    const code = await sbomCommand.run({ argv: ['compliance', '--framework', 'hipaa'], stdout, stderr });
+    const code = await sbomCommand.run({
+      argv: ['compliance', '--framework', 'hipaa'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(0);
     expect(getStdout()).toContain('hipaa');
   });
 
   it('compliance returns 1 for unknown framework', async () => {
     const { stdout, stderr, getStderr } = createStreams();
-    const code = await sbomCommand.run({ argv: ['compliance', '--framework', 'bogus'], stdout, stderr });
+    const code = await sbomCommand.run({
+      argv: ['compliance', '--framework', 'bogus'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(1);
     expect(getStderr()).toContain('Unknown framework');
   });

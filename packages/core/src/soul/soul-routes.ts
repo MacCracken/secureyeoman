@@ -389,9 +389,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
 
         const accept = request.headers.accept ?? '';
         if (accept.includes('text/markdown')) {
-          return reply
-            .header('Content-Type', 'text/markdown; charset=utf-8')
-            .send(result.markdown);
+          return reply.header('Content-Type', 'text/markdown; charset=utf-8').send(result.markdown);
         }
         return result;
       } catch (e) {
@@ -402,10 +400,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
 
   app.get(
     '/api/v1/soul/personalities/:id/distill/diff',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const personality = await soulManager.getPersonality(request.params.id);
       if (!personality) return sendError(reply, 404, 'Personality not found');
 
@@ -519,10 +514,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
 
   app.get(
     '/api/v1/soul/personalities/:id/drift',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!personalityVersionManager) return sendError(reply, 501, 'Versioning not available');
       try {
         return await personalityVersionManager.getDrift(request.params.id);
@@ -568,7 +560,12 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     ) => {
       const { status, source, personalityId } = request.query;
       const { limit, offset } = parsePagination(request.query);
-      const filter: Parameters<typeof soulManager.listSkills>[0] = { status, source, limit, offset };
+      const filter: Parameters<typeof soulManager.listSkills>[0] = {
+        status,
+        source,
+        limit,
+        offset,
+      };
       // When personalityId is supplied, return skills for that personality plus global skills
       if (personalityId) filter.forPersonalityId = personalityId;
       return soulManager.listSkills(filter);

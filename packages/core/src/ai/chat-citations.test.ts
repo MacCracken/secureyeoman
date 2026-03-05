@@ -78,8 +78,7 @@ describe('Web Search Source Capture', () => {
     };
 
     const sources: SourceReference[] = [];
-    const nextIndex = () =>
-      sources.length > 0 ? Math.max(...sources.map((s) => s.index)) + 1 : 1;
+    const nextIndex = () => (sources.length > 0 ? Math.max(...sources.map((s) => s.index)) + 1 : 1);
 
     const results = Array.isArray(output.results) ? output.results : [];
     for (const item of results) {
@@ -109,15 +108,11 @@ describe('Web Search Source Capture', () => {
 
   it('handles missing fields in results', () => {
     const output = {
-      results: [
-        { title: 'No snippet' },
-        { snippet: 'Has content', link: 'https://example.com' },
-      ],
+      results: [{ title: 'No snippet' }, { snippet: 'Has content', link: 'https://example.com' }],
     };
 
     const sources: SourceReference[] = [];
-    const nextIndex = () =>
-      sources.length > 0 ? Math.max(...sources.map((s) => s.index)) + 1 : 1;
+    const nextIndex = () => (sources.length > 0 ? Math.max(...sources.map((s) => s.index)) + 1 : 1);
 
     const results = Array.isArray(output.results) ? output.results : [];
     for (const item of results) {

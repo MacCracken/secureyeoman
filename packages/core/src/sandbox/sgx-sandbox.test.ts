@@ -204,12 +204,10 @@ describe('SgxSandbox', () => {
         return '';
       });
 
-      mockExecFile.mockImplementation(
-        (_cmd: string, _args: string[], _opts: any, cb: Function) => {
-          cb(null, JSON.stringify({ success: true, result: 99 }), '');
-          return { stderr: { on: vi.fn() } };
-        }
-      );
+      mockExecFile.mockImplementation((_cmd: string, _args: string[], _opts: any, cb: Function) => {
+        cb(null, JSON.stringify({ success: true, result: 99 }), '');
+        return { stderr: { on: vi.fn() } };
+      });
 
       const sandbox = new SgxSandbox();
       const result = await sandbox.run(async () => 99);
@@ -229,12 +227,10 @@ describe('SgxSandbox', () => {
         return '';
       });
 
-      mockExecFile.mockImplementation(
-        (_cmd: string, _args: string[], _opts: any, cb: Function) => {
-          cb(new Error('gramine crashed'), '', 'fatal error');
-          return { stderr: { on: vi.fn() } };
-        }
-      );
+      mockExecFile.mockImplementation((_cmd: string, _args: string[], _opts: any, cb: Function) => {
+        cb(new Error('gramine crashed'), '', 'fatal error');
+        return { stderr: { on: vi.fn() } };
+      });
 
       const sandbox = new SgxSandbox();
       const result = await sandbox.run(async () => 0);
@@ -254,12 +250,10 @@ describe('SgxSandbox', () => {
         return '';
       });
 
-      mockExecFile.mockImplementation(
-        (_cmd: string, _args: string[], _opts: any, cb: Function) => {
-          cb(null, 'not json at all', '');
-          return { stderr: { on: vi.fn() } };
-        }
-      );
+      mockExecFile.mockImplementation((_cmd: string, _args: string[], _opts: any, cb: Function) => {
+        cb(null, 'not json at all', '');
+        return { stderr: { on: vi.fn() } };
+      });
 
       const sandbox = new SgxSandbox();
       const result = await sandbox.run(async () => 0);
@@ -279,12 +273,10 @@ describe('SgxSandbox', () => {
         return '';
       });
 
-      mockExecFile.mockImplementation(
-        (_cmd: string, _args: string[], _opts: any, cb: Function) => {
-          cb(null, JSON.stringify({ success: true, result: 1 }), 'syscall DENIED by policy');
-          return { stderr: { on: vi.fn() } };
-        }
-      );
+      mockExecFile.mockImplementation((_cmd: string, _args: string[], _opts: any, cb: Function) => {
+        cb(null, JSON.stringify({ success: true, result: 1 }), 'syscall DENIED by policy');
+        return { stderr: { on: vi.fn() } };
+      });
 
       const sandbox = new SgxSandbox();
       const result = await sandbox.run(async () => 1);
@@ -306,12 +298,10 @@ describe('SgxSandbox', () => {
         return '';
       });
 
-      mockExecFile.mockImplementation(
-        (_cmd: string, _args: string[], _opts: any, cb: Function) => {
-          cb(null, JSON.stringify({ success: true, result: 1 }), '');
-          return { stderr: { on: vi.fn() } };
-        }
-      );
+      mockExecFile.mockImplementation((_cmd: string, _args: string[], _opts: any, cb: Function) => {
+        cb(null, JSON.stringify({ success: true, result: 1 }), '');
+        return { stderr: { on: vi.fn() } };
+      });
 
       const sandbox = new SgxSandbox();
       await sandbox.run(async () => 1);
@@ -333,12 +323,10 @@ describe('SgxSandbox', () => {
         return '';
       });
 
-      mockExecFile.mockImplementation(
-        (_cmd: string, _args: string[], _opts: any, cb: Function) => {
-          cb(null, JSON.stringify({ success: true, result: 1 }), '');
-          return { stderr: { on: vi.fn() } };
-        }
-      );
+      mockExecFile.mockImplementation((_cmd: string, _args: string[], _opts: any, cb: Function) => {
+        cb(null, JSON.stringify({ success: true, result: 1 }), '');
+        return { stderr: { on: vi.fn() } };
+      });
 
       const sandbox = new SgxSandbox({ enclaveSize: '512M' });
       await sandbox.run(async () => 1);

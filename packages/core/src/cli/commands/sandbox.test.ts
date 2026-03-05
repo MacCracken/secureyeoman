@@ -147,7 +147,15 @@ describe('sandbox CLI command', () => {
     it('lists quarantine items', async () => {
       mockApiCall.mockResolvedValue({
         ok: true,
-        data: { items: [{ id: 'abc12345-1234-1234-1234-1234567890ab', status: 'quarantined', sourceContext: 'test' }] },
+        data: {
+          items: [
+            {
+              id: 'abc12345-1234-1234-1234-1234567890ab',
+              status: 'quarantined',
+              sourceContext: 'test',
+            },
+          ],
+        },
       } as any);
       const ctx = makeCtx(['quarantine', 'list']);
       const code = await sandboxCommand.run(ctx);

@@ -102,7 +102,9 @@ describe('route-permissions', () => {
       ];
       for (const [path, expectedResource] of cases) {
         const result = resolvePermission(path, 'GET');
-        expect(result?.resource, `${path} should map to ${expectedResource}`).toBe(expectedResource);
+        expect(result?.resource, `${path} should map to ${expectedResource}`).toBe(
+          expectedResource
+        );
       }
     });
   });
@@ -203,13 +205,27 @@ describe('route-permissions', () => {
     it('should have entries for all major domains', () => {
       const prefixes = getPrefixResourceMap().map(([p]) => p);
       const expectedDomains = [
-        'brain', 'soul', 'spirit', 'auth', 'chat', 'execution', 'agents',
-        'integrations', 'mcp', 'workspaces', 'marketplace', 'training',
-        'analytics', 'risk', 'sandbox', 'federation', 'workflows',
+        'brain',
+        'soul',
+        'spirit',
+        'auth',
+        'chat',
+        'execution',
+        'agents',
+        'integrations',
+        'mcp',
+        'workspaces',
+        'marketplace',
+        'training',
+        'analytics',
+        'risk',
+        'sandbox',
+        'federation',
+        'workflows',
       ];
       for (const domain of expectedDomains) {
         expect(
-          prefixes.some(p => p.includes(domain)),
+          prefixes.some((p) => p.includes(domain)),
           `prefix map should include ${domain}`
         ).toBe(true);
       }

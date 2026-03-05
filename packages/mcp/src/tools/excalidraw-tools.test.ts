@@ -7,7 +7,9 @@ import type { McpServiceConfig } from '@secureyeoman/shared';
 interface RegisteredTool {
   name: string;
   metadata: { description: string; inputSchema: Record<string, unknown> };
-  handler: (args: Record<string, unknown>) => Promise<{ content: Array<{ type: string; text: string }> }>;
+  handler: (
+    args: Record<string, unknown>
+  ) => Promise<{ content: Array<{ type: string; text: string }> }>;
 }
 
 function createMockServer() {
@@ -17,7 +19,9 @@ function createMockServer() {
       (
         name: string,
         metadata: { description: string; inputSchema: Record<string, unknown> },
-        handler: (args: Record<string, unknown>) => Promise<{ content: Array<{ type: string; text: string }> }>
+        handler: (
+          args: Record<string, unknown>
+        ) => Promise<{ content: Array<{ type: string; text: string }> }>
       ) => {
         tools.push({ name, metadata, handler });
       }

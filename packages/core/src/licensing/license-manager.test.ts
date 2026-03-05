@@ -407,10 +407,7 @@ describe('LicenseManager — enforcement flag', () => {
 /**
  * Extended TestLicenseManager that accepts enforcement parameter.
  */
-function withTestKeyAndEnforcement(
-  licenseKey: string,
-  enforcement?: boolean
-): LicenseManager {
+function withTestKeyAndEnforcement(licenseKey: string, enforcement?: boolean): LicenseManager {
   const testPublicKeyPem = publicKeyPem;
 
   class TestLicenseManager2 extends LicenseManager {

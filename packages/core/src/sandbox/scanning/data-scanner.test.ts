@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 
 function makeArtifact(
   content: string | Buffer,
-  overrides: Partial<SandboxArtifact> = {},
+  overrides: Partial<SandboxArtifact> = {}
 ): SandboxArtifact {
   const buf = typeof content === 'string' ? Buffer.from(content) : content;
   return {
@@ -45,7 +45,9 @@ describe('DataScanner', () => {
     it('detects ELF binary', async () => {
       const buf = Buffer.from([0x7f, 0x45, 0x4c, 0x46, 0x00, 0x00]);
       const findings = await scanner.scan(makeArtifact(buf));
-      expect(findings.some((f) => f.category === 'embedded_executable' && f.message.includes('ELF'))).toBe(true);
+      expect(
+        findings.some((f) => f.category === 'embedded_executable' && f.message.includes('ELF'))
+      ).toBe(true);
     });
 
     it('detects PE/MZ binary', async () => {
@@ -113,7 +115,9 @@ describe('DataScanner', () => {
     it('detects Python pickle protocol 2', async () => {
       const buf = Buffer.from([0x80, 0x02, 0x63, 0x6f, 0x73]); // \x80\x02cos
       const findings = await scanner.scan(makeArtifact(buf));
-      expect(findings.some((f) => f.category === 'serialization_attack' && f.message.includes('pickle'))).toBe(true);
+      expect(
+        findings.some((f) => f.category === 'serialization_attack' && f.message.includes('pickle'))
+      ).toBe(true);
     });
 
     it('detects Java serialized object', async () => {
@@ -133,7 +137,9 @@ describe('DataScanner', () => {
     });
 
     it('detects Node.js serialize-javascript injection', async () => {
-      const findings = await scanner.scan(makeArtifact('{"rce":"_$$ND_FUNC$$_function(){require(\'child_process\').exec(\'ls\')}"}'));
+      const findings = await scanner.scan(
+        makeArtifact('{"rce":"_$$ND_FUNC$$_function(){require(\'child_process\').exec(\'ls\')}"}')
+      );
       expect(findings.some((f) => f.message.includes('serialize-javascript'))).toBe(true);
     });
 
@@ -149,7 +155,9 @@ describe('DataScanner', () => {
       const findings = await scanner.scan(
         makeArtifact('name,score\n=cmd("calc"),100', { type: 'text/csv', filename: 'data.csv' })
       );
-      expect(findings.some((f) => f.category === 'formula_injection' && f.severity === 'high')).toBe(true);
+      expect(
+        findings.some((f) => f.category === 'formula_injection' && f.severity === 'high')
+      ).toBe(true);
     });
 
     it('detects formula in JSONL files', async () => {
@@ -160,10 +168,10 @@ describe('DataScanner', () => {
     });
 
     it('detects simple formula trigger characters', async () => {
-      const findings = await scanner.scan(
-        makeArtifact('+1+2+3', { filename: 'data.csv' })
+      const findings = await scanner.scan(makeArtifact('+1+2+3', { filename: 'data.csv' }));
+      expect(findings.some((f) => f.category === 'formula_injection' && f.severity === 'low')).toBe(
+        true
       );
-      expect(findings.some((f) => f.category === 'formula_injection' && f.severity === 'low')).toBe(true);
     });
 
     it('does not flag formulas in non-CSV files', async () => {

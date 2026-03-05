@@ -224,10 +224,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
 
   app.get(
     '/api/v1/model/cost-forecast',
-    async (
-      request: FastifyRequest<{ Querystring: { days?: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Querystring: { days?: string } }>, reply: FastifyReply) => {
       try {
         const costOptimizer = secureYeoman.getCostOptimizer();
         if (!costOptimizer) {

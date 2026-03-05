@@ -115,9 +115,11 @@ export class IntentManager {
 
   constructor(deps: IntentManagerDeps) {
     this.storage = deps.storage;
-    this.signalRefreshIntervalMs = deps.signalRefreshIntervalMs ?? DEFAULT_SIGNAL_REFRESH_INTERVAL_MS;
+    this.signalRefreshIntervalMs =
+      deps.signalRefreshIntervalMs ?? DEFAULT_SIGNAL_REFRESH_INTERVAL_MS;
     // opaClient: undefined → auto-detect from config/env; null → disabled; instance → use it
-    this.opa = deps.opaClient === undefined ? OpaClient.fromEnv(deps.opaAddr) : (deps.opaClient ?? null);
+    this.opa =
+      deps.opaClient === undefined ? OpaClient.fromEnv(deps.opaAddr) : (deps.opaClient ?? null);
     this.callMcpTool = deps.callMcpTool ?? null;
     this.getDepartmentRiskManager = deps.getDepartmentRiskManager;
   }

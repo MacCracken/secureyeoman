@@ -35,10 +35,9 @@ describe('EgressStore', () => {
   });
 
   it('queries egress events with filters', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ count: '1' }] })
-      .mockResolvedValueOnce({
-        rows: [{
+    mockQuery.mockResolvedValueOnce({ rows: [{ count: '1' }] }).mockResolvedValueOnce({
+      rows: [
+        {
           id: 'e1',
           destinationType: 'slack',
           destinationId: '#general',
@@ -52,8 +51,9 @@ describe('EgressStore', () => {
           personalityId: null,
           createdAt: 1000,
           tenantId: 'default',
-        }],
-      });
+        },
+      ],
+    });
     const { events, total } = await store.queryEgress({
       destinationType: 'slack',
       actionTaken: 'blocked',
@@ -64,9 +64,7 @@ describe('EgressStore', () => {
   });
 
   it('queries with time range', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ count: '0' }] })
-      .mockResolvedValueOnce({ rows: [] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ count: '0' }] }).mockResolvedValueOnce({ rows: [] });
     const { events, total } = await store.queryEgress({
       fromTime: 1000,
       toTime: 2000,
@@ -78,9 +76,7 @@ describe('EgressStore', () => {
   });
 
   it('queries all events without filters', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ count: '0' }] })
-      .mockResolvedValueOnce({ rows: [] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ count: '0' }] }).mockResolvedValueOnce({ rows: [] });
     const { events, total } = await store.queryEgress();
     expect(total).toBe(0);
     expect(events).toHaveLength(0);

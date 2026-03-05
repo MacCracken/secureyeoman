@@ -25,7 +25,7 @@ export interface PerModelStats {
 }
 
 export interface WorkloadBreakdown {
-  simple: number;   // percentage 0-100
+  simple: number; // percentage 0-100
   moderate: number;
   complex: number;
 }
@@ -61,13 +61,7 @@ export interface DetailedCostAnalysis extends CostAnalysis {
 
 // ── Premium/Fast model classification ──────────────────────────────────────
 
-const PREMIUM_MODELS = new Set([
-  'claude-opus-4-20250514',
-  'gpt-4-turbo',
-  'o1',
-  'o1-mini',
-  'o3',
-]);
+const PREMIUM_MODELS = new Set(['claude-opus-4-20250514', 'gpt-4-turbo', 'o1', 'o1-mini', 'o3']);
 
 const FAST_MODEL_ALTERNATIVES: Record<string, { model: string; provider: string }> = {
   'claude-opus-4-20250514': { model: 'claude-haiku-3-5-20241022', provider: 'anthropic' },
@@ -185,9 +179,10 @@ export class CostOptimizer {
 
   // ── Detailed Analysis ──────────────────────────────────────────────────
 
-  async analyzeDetailed(
-    options?: { days?: number; personalityId?: string }
-  ): Promise<DetailedCostAnalysis> {
+  async analyzeDetailed(options?: {
+    days?: number;
+    personalityId?: string;
+  }): Promise<DetailedCostAnalysis> {
     const days = options?.days ?? 30;
     const personalityId = options?.personalityId;
 
@@ -205,12 +200,17 @@ export class CostOptimizer {
       .slice()
       .sort((a, b) => b.totalCostUsd - a.totalCostUsd)
       .slice(0, 10)
-      .map((s) => ({ model: `${s.provider}/${s.model}`, costUsd: s.totalCostUsd, callCount: s.calls }));
+      .map((s) => ({
+        model: `${s.provider}/${s.model}`,
+        costUsd: s.totalCostUsd,
+        callCount: s.calls,
+      }));
 
-    this.logger.info(
-      'Detailed cost analysis completed',
-      { days, perModelCount: perModelStats.length, suggestionsCount: routingSuggestions.length }
-    );
+    this.logger.info('Detailed cost analysis completed', {
+      days,
+      perModelCount: perModelStats.length,
+      suggestionsCount: routingSuggestions.length,
+    });
 
     return {
       ...base,
@@ -333,8 +333,8 @@ export class CostOptimizer {
       // Estimate projected cost with the alternative model
       let projectedCostUsd = row.costUsd * 0.2; // default: assume 80% savings
       if (this.costCalculator) {
-        const avgInputPerCall = row.calls > 0 ? (row.inputTokens / row.calls) : 0;
-        const avgOutputPerCall = row.calls > 0 ? (row.outputTokens / row.calls) : 0;
+        const avgInputPerCall = row.calls > 0 ? row.inputTokens / row.calls : 0;
+        const avgOutputPerCall = row.calls > 0 ? row.outputTokens / row.calls : 0;
         const perCallCost = this.costCalculator.calculate(alt.provider as any, alt.model, {
           inputTokens: Math.ceil(avgInputPerCall),
           outputTokens: Math.ceil(avgOutputPerCall),
@@ -381,8 +381,7 @@ export class CostOptimizer {
       dailyCost.set(row.date, (dailyCost.get(row.date) ?? 0) + row.costUsd);
     }
 
-    const sortedDays = Array.from(dailyCost.entries())
-      .sort(([a], [b]) => a.localeCompare(b));
+    const sortedDays = Array.from(dailyCost.entries()).sort(([a], [b]) => a.localeCompare(b));
 
     if (sortedDays.length === 0) {
       return {
@@ -402,12 +401,10 @@ export class CostOptimizer {
     const mid = Math.floor(costs.length / 2);
     const firstHalf = costs.slice(0, mid);
     const secondHalf = costs.slice(mid);
-    const firstAvg = firstHalf.length > 0
-      ? firstHalf.reduce((s, c) => s + c, 0) / firstHalf.length
-      : 0;
-    const secondAvg = secondHalf.length > 0
-      ? secondHalf.reduce((s, c) => s + c, 0) / secondHalf.length
-      : 0;
+    const firstAvg =
+      firstHalf.length > 0 ? firstHalf.reduce((s, c) => s + c, 0) / firstHalf.length : 0;
+    const secondAvg =
+      secondHalf.length > 0 ? secondHalf.reduce((s, c) => s + c, 0) / secondHalf.length : 0;
 
     let trend: CostForecast['trend'] = 'stable';
     if (costs.length >= 2) {

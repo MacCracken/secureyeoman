@@ -29,7 +29,7 @@ export function registerConstitutionalTools(
   server: McpServer,
   client: CoreApiClient,
   config: McpServiceConfig,
-  middleware: ToolMiddleware,
+  middleware: ToolMiddleware
 ): void {
   // ── constitutional_principles ──────────────────────────────────────────
   server.tool(
@@ -40,7 +40,7 @@ export function registerConstitutionalTools(
       if (!(config as any).exposeConstitutional) return disabled();
       const result = await client.get('/security/constitutional/principles');
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   // ── constitutional_critique ────────────────────────────────────────────
@@ -55,7 +55,7 @@ export function registerConstitutionalTools(
       if (!(config as any).exposeConstitutional) return disabled();
       const result = await client.post('/security/constitutional/critique', { prompt, response });
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   // ── constitutional_revise ──────────────────────────────────────────────
@@ -70,6 +70,6 @@ export function registerConstitutionalTools(
       if (!(config as any).exposeConstitutional) return disabled();
       const result = await client.post('/security/constitutional/revise', { prompt, response });
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 }

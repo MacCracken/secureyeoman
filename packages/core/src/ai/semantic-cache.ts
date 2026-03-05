@@ -42,11 +42,7 @@ export class SemanticCache {
 
   constructor(private readonly deps: SemanticCacheDeps) {}
 
-  async get(
-    query: string,
-    provider: string,
-    model: string
-  ): Promise<CachedResponse | null> {
+  async get(query: string, provider: string, model: string): Promise<CachedResponse | null> {
     if (!this.deps.config.enabled) return null;
 
     try {
@@ -77,7 +73,7 @@ export class SemanticCache {
         [row.id]
       );
 
-      const response = row.response as Record<string, unknown>;
+      const response = row.response;
       return {
         content: (response.content as string) ?? '',
         provider: (response.provider as string) ?? provider,
@@ -85,10 +81,9 @@ export class SemanticCache {
         metadata: response.metadata as Record<string, unknown> | undefined,
       };
     } catch (err) {
-      this.deps.logger.warn(
-        'Semantic cache get error',
-        { error: err instanceof Error ? err.message : String(err) }
-      );
+      this.deps.logger.warn('Semantic cache get error', {
+        error: err instanceof Error ? err.message : String(err),
+      });
       return null;
     }
   }
@@ -125,20 +120,12 @@ export class SemanticCache {
         `INSERT INTO ai.semantic_cache
            (embedding, provider, model, request_hash, response, expires_at)
          VALUES ($1::vector, $2, $3, $4, $5, $6)`,
-        [
-          vectorStr,
-          provider,
-          model,
-          requestHash,
-          JSON.stringify(response),
-          expiresAt,
-        ]
+        [vectorStr, provider, model, requestHash, JSON.stringify(response), expiresAt]
       );
     } catch (err) {
-      this.deps.logger.warn(
-        'Semantic cache set error',
-        { error: err instanceof Error ? err.message : String(err) }
-      );
+      this.deps.logger.warn('Semantic cache set error', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
@@ -172,11 +159,10 @@ export class SemanticCache {
   startCleanupInterval(intervalMs = 60_000): void {
     if (this.cleanupInterval) return;
     this.cleanupInterval = setInterval(() => {
-      void this.cleanup().catch((err) => {
-        this.deps.logger.warn(
-          'Semantic cache cleanup error',
-          { error: err instanceof Error ? err.message : String(err) }
-        );
+      void this.cleanup().catch((err: unknown) => {
+        this.deps.logger.warn('Semantic cache cleanup error', {
+          error: err instanceof Error ? err.message : String(err),
+        });
       });
     }, intervalMs);
   }

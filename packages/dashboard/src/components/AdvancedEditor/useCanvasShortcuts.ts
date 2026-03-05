@@ -54,11 +54,7 @@ export function useCanvasShortcuts(actions: CanvasShortcutActions): void {
 
       // Don't intercept shortcuts when typing in an input
       const target = e.target as HTMLElement;
-      if (
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.isContentEditable
-      ) {
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
         return;
       }
 
@@ -96,7 +92,9 @@ export function useCanvasShortcuts(actions: CanvasShortcutActions): void {
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, [handleKeyDown]);
 }
 

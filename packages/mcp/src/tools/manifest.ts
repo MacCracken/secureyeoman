@@ -1628,8 +1628,7 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'training_list_checkpoints',
-      description:
-        'List checkpoints for a fine-tuning job with step numbers and loss values',
+      description: 'List checkpoints for a fine-tuning job with step numbers and loss values',
       category: 'training',
     },
     {
@@ -1651,14 +1650,12 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'ai_cache_stats',
-      description:
-        'Get LRU and semantic cache statistics including hit rates',
+      description: 'Get LRU and semantic cache statistics including hit rates',
       category: 'inference',
     },
     {
       name: 'ai_warmup_model',
-      description:
-        'Warm the KV cache for an Ollama model to reduce first-response latency',
+      description: 'Warm the KV cache for an Ollama model to reduce first-response latency',
       category: 'inference',
     },
 
@@ -1671,20 +1668,17 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'training_drift_check',
-      description:
-        'Run an immediate drift check across all personality quality baselines',
+      description: 'Run an immediate drift check across all personality quality baselines',
       category: 'training',
     },
     {
       name: 'training_drift_baseline',
-      description:
-        'Compute a quality score baseline for a personality for drift detection',
+      description: 'Compute a quality score baseline for a personality for drift detection',
       category: 'training',
     },
     {
       name: 'training_online_update',
-      description:
-        'Start an online LoRA adapter update from recent high-quality conversations',
+      description: 'Start an online LoRA adapter update from recent high-quality conversations',
       category: 'training',
     },
 
@@ -1712,8 +1706,7 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'eval_create_suite',
-      description:
-        'Create an eval suite — a collection of scenarios to run together',
+      description: 'Create an eval suite — a collection of scenarios to run together',
       category: 'eval',
     },
     {
@@ -1729,7 +1722,8 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'eval_get_run',
-      description: 'Get detailed results of a specific eval suite run including per-scenario results',
+      description:
+        'Get detailed results of a specific eval suite run including per-scenario results',
       category: 'eval',
     },
 
@@ -1759,14 +1753,12 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'dlp_watermark_embed',
-      description:
-        'Embed an invisible watermark into text for content provenance tracking',
+      description: 'Embed an invisible watermark into text for content provenance tracking',
       category: 'dlp',
     },
     {
       name: 'dlp_watermark_extract',
-      description:
-        'Extract a watermark payload from watermarked text to identify provenance',
+      description: 'Extract a watermark payload from watermarked text to identify provenance',
       category: 'dlp',
     },
   ];

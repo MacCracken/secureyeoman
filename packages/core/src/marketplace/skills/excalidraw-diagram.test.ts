@@ -14,7 +14,7 @@ describe('excalidrawDiagramSkill', () => {
 
   it('has non-empty instructions string', () => {
     expect(typeof excalidrawDiagramSkill.instructions).toBe('string');
-    expect((excalidrawDiagramSkill.instructions as string).length).toBeGreaterThan(100);
+    expect(excalidrawDiagramSkill.instructions!.length).toBeGreaterThan(100);
   });
 
   it('triggerPatterns compile as valid RegExp', () => {

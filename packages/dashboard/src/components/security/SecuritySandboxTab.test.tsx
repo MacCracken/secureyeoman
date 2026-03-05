@@ -15,9 +15,7 @@ vi.mock('../../api/client', () => ({
     patternCount: 17,
     categories: ['reverse_shell', 'cryptominer'],
     stages: ['command_and_control'],
-    patterns: [
-      { id: 'p1', name: 'Bash Rev Shell', category: 'reverse_shell', intentWeight: 0.9 },
-    ],
+    patterns: [{ id: 'p1', name: 'Bash Rev Shell', category: 'reverse_shell', intentWeight: 0.9 }],
   }),
   fetchSandboxPolicy: vi.fn().mockResolvedValue({
     policy: { enabled: true, maxArtifactSizeBytes: 10_000_000, redactSecrets: true },
@@ -54,7 +52,7 @@ function renderTab() {
   return render(
     <QueryClientProvider client={qc}>
       <SandboxTab />
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
 }
 
@@ -109,13 +107,15 @@ describe('SecuritySandboxTab', () => {
 
   it('shows quarantine items with approve/delete buttons', async () => {
     vi.mocked(fetchQuarantineItems).mockResolvedValue({
-      items: [{
-        ...QUARANTINE_ENTRY_BASE,
-        id: 'abc12345-1234-1234-1234-1234567890ab',
-        status: 'quarantined',
-        sourceContext: 'test',
-        artifactType: 'text/javascript',
-      }],
+      items: [
+        {
+          ...QUARANTINE_ENTRY_BASE,
+          id: 'abc12345-1234-1234-1234-1234567890ab',
+          status: 'quarantined',
+          sourceContext: 'test',
+          artifactType: 'text/javascript',
+        },
+      ],
     });
     renderTab();
     await waitFor(() => {
@@ -127,13 +127,15 @@ describe('SecuritySandboxTab', () => {
 
   it('calls approve mutation on click', async () => {
     vi.mocked(fetchQuarantineItems).mockResolvedValue({
-      items: [{
-        ...QUARANTINE_ENTRY_BASE,
-        id: 'abc12345-1234-1234-1234-1234567890ab',
-        status: 'quarantined',
-        sourceContext: 'test',
-        artifactType: 'text/plain',
-      }],
+      items: [
+        {
+          ...QUARANTINE_ENTRY_BASE,
+          id: 'abc12345-1234-1234-1234-1234567890ab',
+          status: 'quarantined',
+          sourceContext: 'test',
+          artifactType: 'text/plain',
+        },
+      ],
     });
     renderTab();
     const user = userEvent.setup();
@@ -148,13 +150,15 @@ describe('SecuritySandboxTab', () => {
 
   it('calls delete mutation on click', async () => {
     vi.mocked(fetchQuarantineItems).mockResolvedValue({
-      items: [{
-        ...QUARANTINE_ENTRY_BASE,
-        id: 'abc12345-1234-1234-1234-1234567890ab',
-        status: 'quarantined',
-        sourceContext: 'test',
-        artifactType: 'text/plain',
-      }],
+      items: [
+        {
+          ...QUARANTINE_ENTRY_BASE,
+          id: 'abc12345-1234-1234-1234-1234567890ab',
+          status: 'quarantined',
+          sourceContext: 'test',
+          artifactType: 'text/plain',
+        },
+      ],
     });
     renderTab();
     const user = userEvent.setup();

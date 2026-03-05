@@ -418,43 +418,65 @@ export const ConstitutionalConfigSchema = z
 export type ConstitutionalConfig = z.infer<typeof ConstitutionalConfigSchema>;
 
 // ─── Data Loss Prevention Config (Phase 136) ──────────────────────────
-export const DlpConfigSchema = z.object({
-  enabled: z.boolean().default(false),
-  classification: z.object({
-    enabled: z.boolean().default(true),
-    defaultLevel: z.enum(['public', 'internal', 'confidential', 'restricted']).default('internal'),
-    keywords: z.object({
-      restricted: z.array(z.string()).default(['top secret', 'classified', 'restricted', 'secret clearance']),
-      confidential: z.array(z.string()).default(['confidential', 'proprietary', 'trade secret', 'internal only']),
-    }).default({}),
-    piiAsConfidential: z.boolean().default(true),
-    autoClassifyOnIngest: z.boolean().default(true),
-  }).default({}),
-  scanning: z.object({
-    enabled: z.boolean().default(true),
-    defaultAction: z.enum(['block', 'warn', 'log']).default('warn'),
-    scanIntegrations: z.boolean().default(true),
-    scanWebhooks: z.boolean().default(true),
-    scanEmails: z.boolean().default(true),
-  }).default({}),
-  retention: z.object({
+export const DlpConfigSchema = z
+  .object({
     enabled: z.boolean().default(false),
-    purgeIntervalHours: z.number().int().positive().default(24),
-    defaults: z.object({
-      conversation: z.number().int().positive().default(365),
-      memory: z.number().int().positive().default(730),
-      document: z.number().int().positive().default(730),
-      knowledge: z.number().int().positive().default(1095),
-      audit_log: z.number().int().positive().default(2555),
-    }).default({}),
-  }).default({}),
-  watermarking: z.object({
-    enabled: z.boolean().default(false),
-    algorithm: z.enum(['unicode-steganography', 'whitespace', 'homoglyph']).default('unicode-steganography'),
-    includeTimestamp: z.boolean().default(true),
-    includeUserId: z.boolean().default(true),
-  }).default({}),
-}).default({});
+    classification: z
+      .object({
+        enabled: z.boolean().default(true),
+        defaultLevel: z
+          .enum(['public', 'internal', 'confidential', 'restricted'])
+          .default('internal'),
+        keywords: z
+          .object({
+            restricted: z
+              .array(z.string())
+              .default(['top secret', 'classified', 'restricted', 'secret clearance']),
+            confidential: z
+              .array(z.string())
+              .default(['confidential', 'proprietary', 'trade secret', 'internal only']),
+          })
+          .default({}),
+        piiAsConfidential: z.boolean().default(true),
+        autoClassifyOnIngest: z.boolean().default(true),
+      })
+      .default({}),
+    scanning: z
+      .object({
+        enabled: z.boolean().default(true),
+        defaultAction: z.enum(['block', 'warn', 'log']).default('warn'),
+        scanIntegrations: z.boolean().default(true),
+        scanWebhooks: z.boolean().default(true),
+        scanEmails: z.boolean().default(true),
+      })
+      .default({}),
+    retention: z
+      .object({
+        enabled: z.boolean().default(false),
+        purgeIntervalHours: z.number().int().positive().default(24),
+        defaults: z
+          .object({
+            conversation: z.number().int().positive().default(365),
+            memory: z.number().int().positive().default(730),
+            document: z.number().int().positive().default(730),
+            knowledge: z.number().int().positive().default(1095),
+            audit_log: z.number().int().positive().default(2555),
+          })
+          .default({}),
+      })
+      .default({}),
+    watermarking: z
+      .object({
+        enabled: z.boolean().default(false),
+        algorithm: z
+          .enum(['unicode-steganography', 'whitespace', 'homoglyph'])
+          .default('unicode-steganography'),
+        includeTimestamp: z.boolean().default(true),
+        includeUserId: z.boolean().default(true),
+      })
+      .default({}),
+  })
+  .default({});
 
 export type DlpConfig = z.infer<typeof DlpConfigSchema>;
 
@@ -1121,8 +1143,7 @@ export const ExtensionsDomainConfigSchema = z.object({
 export type ExtensionsDomainConfig = z.infer<typeof ExtensionsDomainConfigSchema>;
 
 // Complete configuration schema (composed from domain groups)
-export const ConfigSchema = InfraConfigSchema
-  .merge(SecurityDomainConfigSchema)
+export const ConfigSchema = InfraConfigSchema.merge(SecurityDomainConfigSchema)
   .merge(AIDomainConfigSchema)
   .merge(PersonalityDomainConfigSchema)
   .merge(OpsDomainConfigSchema)

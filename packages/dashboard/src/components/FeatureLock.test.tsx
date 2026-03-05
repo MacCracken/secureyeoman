@@ -102,9 +102,7 @@ describe('FeatureLock', () => {
         </FeatureLock>
       </Wrapper>
     );
-    expect(
-      await screen.findByText('This feature requires a Pro license')
-    ).toBeInTheDocument();
+    expect(await screen.findByText('This feature requires a Pro license')).toBeInTheDocument();
     expect(screen.getByText('Adaptive Learning Pipeline')).toBeInTheDocument();
     expect(screen.getByText('Upgrade to Pro')).toBeInTheDocument();
   });

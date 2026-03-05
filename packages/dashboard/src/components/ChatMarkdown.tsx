@@ -200,7 +200,10 @@ export const ChatMarkdown = memo(function ChatMarkdown({
             const match = /^\[(\d{1,2})\]$/.exec(part);
             if (match) {
               return (
-                <sup key={i} className="text-blue-600 dark:text-blue-400 cursor-pointer font-mono text-[10px] ml-0.5">
+                <sup
+                  key={i}
+                  className="text-blue-600 dark:text-blue-400 cursor-pointer font-mono text-[10px] ml-0.5"
+                >
                   {part}
                 </sup>
               );

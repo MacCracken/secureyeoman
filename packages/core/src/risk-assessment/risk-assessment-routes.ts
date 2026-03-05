@@ -102,32 +102,35 @@ export function registerRiskAssessmentRoutes(
 
   // ── GET /api/v1/risk/assessments/:id/report/:fmt ──────────────────────────
 
-  app.get<{ Params: { id: string; fmt: string } }>('/api/v1/risk/assessments/:id/report/:fmt', async (req, reply) => {
-    const { id, fmt } = req.params;
+  app.get<{ Params: { id: string; fmt: string } }>(
+    '/api/v1/risk/assessments/:id/report/:fmt',
+    async (req, reply) => {
+      const { id, fmt } = req.params;
 
-    if (!VALID_FORMATS.includes(fmt as ReportFormat)) {
-      return sendError(reply, 400, `format must be one of: ${VALID_FORMATS.join(', ')}`);
-    }
-
-    try {
-      const assessment = await mgr.getAssessment(id);
-      if (!assessment) return sendError(reply, 404, 'Assessment not found');
-      if (assessment.status !== 'completed') {
-        return sendError(reply, 409, 'Assessment is not yet completed');
+      if (!VALID_FORMATS.includes(fmt as ReportFormat)) {
+        return sendError(reply, 400, `format must be one of: ${VALID_FORMATS.join(', ')}`);
       }
 
-      const content = await mgr.generateReport(assessment, fmt as ReportFormat);
-      const contentType = FORMAT_CONTENT_TYPE[fmt as ReportFormat];
+      try {
+        const assessment = await mgr.getAssessment(id);
+        if (!assessment) return sendError(reply, 404, 'Assessment not found');
+        if (assessment.status !== 'completed') {
+          return sendError(reply, 409, 'Assessment is not yet completed');
+        }
 
-      void reply.header('Content-Type', contentType);
-      if (fmt === 'csv') {
-        void reply.header('Content-Disposition', `attachment; filename="risk-report-${id}.csv"`);
+        const content = await mgr.generateReport(assessment, fmt as ReportFormat);
+        const contentType = FORMAT_CONTENT_TYPE[fmt as ReportFormat];
+
+        void reply.header('Content-Type', contentType);
+        if (fmt === 'csv') {
+          void reply.header('Content-Disposition', `attachment; filename="risk-report-${id}.csv"`);
+        }
+        return reply.send(content);
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
       }
-      return reply.send(content);
-    } catch (err) {
-      return sendError(reply, 500, toErrorMessage(err));
     }
-  });
+  );
 
   // ── GET /api/v1/risk/feeds ────────────────────────────────────────────────
 
@@ -185,21 +188,24 @@ export function registerRiskAssessmentRoutes(
 
   // ── POST /api/v1/risk/feeds/:feedId/ingest ────────────────────────────────
 
-  app.post<{ Params: { feedId: string } }>('/api/v1/risk/feeds/:feedId/ingest', async (req, reply) => {
-    const { feedId } = req.params;
-    const body = req.body;
+  app.post<{ Params: { feedId: string } }>(
+    '/api/v1/risk/feeds/:feedId/ingest',
+    async (req, reply) => {
+      const { feedId } = req.params;
+      const body = req.body;
 
-    if (!Array.isArray(body)) {
-      return sendError(reply, 400, 'Request body must be a JSON array of findings');
-    }
+      if (!Array.isArray(body)) {
+        return sendError(reply, 400, 'Request body must be a JSON array of findings');
+      }
 
-    try {
-      const result = await mgr.ingestFindings(feedId, body);
-      return reply.send(result);
-    } catch (err) {
-      return sendError(reply, 500, toErrorMessage(err));
+      try {
+        const result = await mgr.ingestFindings(feedId, body);
+        return reply.send(result);
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
     }
-  });
+  );
 
   // ── GET /api/v1/risk/findings ─────────────────────────────────────────────
 
@@ -270,18 +276,21 @@ export function registerRiskAssessmentRoutes(
 
   // ── PATCH /api/v1/risk/findings/:id/acknowledge ───────────────────────────
 
-  app.patch<{ Params: { id: string } }>('/api/v1/risk/findings/:id/acknowledge', async (req, reply) => {
-    const { id } = req.params;
-    const userId = (req as any).authUser?.userId;
+  app.patch<{ Params: { id: string } }>(
+    '/api/v1/risk/findings/:id/acknowledge',
+    async (req, reply) => {
+      const { id } = req.params;
+      const userId = (req as any).authUser?.userId;
 
-    try {
-      const finding = await mgr.acknowledgeFinding(id, userId);
-      if (!finding) return sendError(reply, 404, 'Finding not found');
-      return reply.send({ finding });
-    } catch (err) {
-      return sendError(reply, 500, toErrorMessage(err));
+      try {
+        const finding = await mgr.acknowledgeFinding(id, userId);
+        if (!finding) return sendError(reply, 404, 'Finding not found');
+        return reply.send({ finding });
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
     }
-  });
+  );
 
   // ── PATCH /api/v1/risk/findings/:id/resolve ───────────────────────────────
 

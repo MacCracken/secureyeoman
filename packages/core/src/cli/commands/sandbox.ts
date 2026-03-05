@@ -5,7 +5,13 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractBoolFlag, extractCommonFlags, extractFlag, apiCall, colorContext } from '../utils.js';
+import {
+  extractBoolFlag,
+  extractCommonFlags,
+  extractFlag,
+  apiCall,
+  colorContext,
+} from '../utils.js';
 
 const USAGE = `
 Usage: secureyeoman sandbox <subcommand> [options]
@@ -76,7 +82,7 @@ async function runScan(
   baseUrl: string,
   token: string | undefined,
   jsonOutput: boolean,
-  args: string[],
+  args: string[]
 ): Promise<number> {
   let content: string;
 
@@ -102,7 +108,9 @@ async function runScan(
       return 1;
     }
   } else {
-    ctx.stderr.write('Usage: secureyeoman sandbox scan <file|-> [--type <mime>] [--source <context>]\n');
+    ctx.stderr.write(
+      'Usage: secureyeoman sandbox scan <file|-> [--type <mime>] [--source <context>]\n'
+    );
     return 1;
   }
 
@@ -133,7 +141,8 @@ async function runScan(
   }
 
   const c = colorContext(ctx.stdout);
-  const verdictColor = result.verdict === 'pass' ? c.green : result.verdict === 'block' ? c.red : c.yellow;
+  const verdictColor =
+    result.verdict === 'pass' ? c.green : result.verdict === 'block' ? c.red : c.yellow;
   ctx.stdout.write(`\n  ${c.bold('Scan Result')}\n\n`);
   ctx.stdout.write(`  Verdict:   ${verdictColor(result.verdict)}\n`);
   ctx.stdout.write(`  Severity:  ${result.worstSeverity}\n`);
@@ -171,7 +180,7 @@ async function runQuarantine(
   baseUrl: string,
   token: string | undefined,
   jsonOutput: boolean,
-  args: string[],
+  args: string[]
 ): Promise<number> {
   const action = args[0] ?? 'list';
 
@@ -194,7 +203,9 @@ async function runQuarantine(
     ctx.stdout.write(`\n  ${c.bold('Quarantined Artifacts')} (${items.length})\n\n`);
     for (const item of items) {
       const id = (item.id ?? '').slice(0, 8);
-      ctx.stdout.write(`  ${c.cyan(id)}  ${item.status ?? 'quarantined'}  ${item.sourceContext ?? ''}\n`);
+      ctx.stdout.write(
+        `  ${c.cyan(id)}  ${item.status ?? 'quarantined'}  ${item.sourceContext ?? ''}\n`
+      );
     }
     ctx.stdout.write('\n');
     return 0;
@@ -246,7 +257,7 @@ async function runPolicy(
   ctx: CommandContext,
   baseUrl: string,
   token: string | undefined,
-  jsonOutput: boolean,
+  jsonOutput: boolean
 ): Promise<number> {
   const res = await apiCall(baseUrl, '/api/v1/sandbox/policy', { token });
   if (!res?.ok) {
@@ -273,7 +284,7 @@ async function runThreats(
   ctx: CommandContext,
   baseUrl: string,
   token: string | undefined,
-  jsonOutput: boolean,
+  jsonOutput: boolean
 ): Promise<number> {
   const res = await apiCall(baseUrl, '/api/v1/sandbox/threats', { token });
   if (!res?.ok) {
@@ -286,7 +297,9 @@ async function runThreats(
   }
   const data = res.data as any;
   const c = colorContext(ctx.stdout);
-  ctx.stdout.write(`\n  ${c.bold('Threat Intelligence')} (${data?.patternCount ?? 0} patterns)\n\n`);
+  ctx.stdout.write(
+    `\n  ${c.bold('Threat Intelligence')} (${data?.patternCount ?? 0} patterns)\n\n`
+  );
   ctx.stdout.write(`  Categories: ${(data?.categories ?? []).join(', ')}\n`);
   ctx.stdout.write(`  Kill Chain:  ${(data?.stages ?? []).join(', ')}\n\n`);
 
@@ -303,7 +316,7 @@ async function runStats(
   ctx: CommandContext,
   baseUrl: string,
   token: string | undefined,
-  jsonOutput: boolean,
+  jsonOutput: boolean
 ): Promise<number> {
   const res = await apiCall(baseUrl, '/api/v1/sandbox/scans/stats', { token });
   if (!res?.ok) {

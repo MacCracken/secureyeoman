@@ -102,11 +102,7 @@ export function registerWorkflowRoutes(
         });
         return reply.code(201).send({ definition });
       } catch (err) {
-        return sendError(
-          reply,
-          400,
-          toErrorMessage(err)
-        );
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -278,10 +274,7 @@ export function registerWorkflowRoutes(
 
   app.get(
     '/api/v1/workflows/:id/drift',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!workflowVersionManager) return sendError(reply, 501, 'Versioning not available');
       try {
         return await workflowVersionManager.getDrift(request.params.id);
@@ -299,10 +292,7 @@ export function registerWorkflowRoutes(
     ) => {
       if (!workflowVersionManager) return sendError(reply, 501, 'Versioning not available');
       try {
-        const diff = await workflowVersionManager.diffVersions(
-          request.params.a,
-          request.params.b
-        );
+        const diff = await workflowVersionManager.diffVersions(request.params.a, request.params.b);
         return { diff };
       } catch (e) {
         return sendError(reply, 500, toErrorMessage(e));
@@ -415,11 +405,7 @@ export function registerWorkflowRoutes(
         );
         return reply.code(202).send({ run });
       } catch (err) {
-        return sendError(
-          reply,
-          400,
-          toErrorMessage(err)
-        );
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );

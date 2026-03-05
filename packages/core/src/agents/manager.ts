@@ -230,11 +230,15 @@ export class SubAgentManager {
       // Hard timeout triggered — return a timeout result instead of throwing,
       // so the caller gets a structured response like a normal timeout.
       const errorMsg = err instanceof Error ? err.message : 'Hard timeout';
-      await this.storage.updateDelegation(delegationId, {
-        status: 'timeout',
-        error: errorMsg,
-        completedAt: Date.now(),
-      }).catch(() => { /* best-effort — may already be updated by executeDelegation */ });
+      await this.storage
+        .updateDelegation(delegationId, {
+          status: 'timeout',
+          error: errorMsg,
+          completedAt: Date.now(),
+        })
+        .catch(() => {
+          /* best-effort — may already be updated by executeDelegation */
+        });
 
       return {
         delegationId,

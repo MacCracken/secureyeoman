@@ -34,7 +34,9 @@ const VERSION = {
   createdAt: 1700000000000,
 };
 
-function makeMockStorage(overrides: Partial<PersonalityVersionStorage> = {}): PersonalityVersionStorage {
+function makeMockStorage(
+  overrides: Partial<PersonalityVersionStorage> = {}
+): PersonalityVersionStorage {
   return {
     createVersion: vi.fn().mockResolvedValue(VERSION),
     listVersions: vi.fn().mockResolvedValue({ versions: [VERSION], total: 1 }),
@@ -221,9 +223,7 @@ describe('PersonalityVersionManager', () => {
       const vA = { ...VERSION, id: 'pv-a', snapshotMd: '# A' };
       const vB = { ...VERSION, id: 'pv-b', snapshotMd: '# B' };
       versionStorage = makeMockStorage({
-        getVersion: vi.fn()
-          .mockResolvedValueOnce(vA)
-          .mockResolvedValueOnce(vB),
+        getVersion: vi.fn().mockResolvedValueOnce(vA).mockResolvedValueOnce(vB),
       });
       manager = new PersonalityVersionManager({ versionStorage, soulStorage, serializer });
 
@@ -237,7 +237,9 @@ describe('PersonalityVersionManager', () => {
       });
       manager = new PersonalityVersionManager({ versionStorage, soulStorage, serializer });
 
-      await expect(manager.diffVersions('missing', 'pv-1')).rejects.toThrow('Version not found: missing');
+      await expect(manager.diffVersions('missing', 'pv-1')).rejects.toThrow(
+        'Version not found: missing'
+      );
     });
 
     it('throws when version B not found', async () => {
@@ -246,7 +248,9 @@ describe('PersonalityVersionManager', () => {
       });
       manager = new PersonalityVersionManager({ versionStorage, soulStorage, serializer });
 
-      await expect(manager.diffVersions('pv-1', 'missing')).rejects.toThrow('Version not found: missing');
+      await expect(manager.diffVersions('pv-1', 'missing')).rejects.toThrow(
+        'Version not found: missing'
+      );
     });
   });
 

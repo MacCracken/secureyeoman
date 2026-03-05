@@ -362,24 +362,43 @@ export function filterMcpTools(
   // Data-driven feature gate rules for YEOMAN MCP tools.
   // Each rule: [match predicate, isAllowed(global, personality) → boolean]
   // Default logic: requires BOTH global AND personality flags. Override for special cases.
-  type GateRule = [(n: string) => boolean, (g: McpFeatureConfig, p: Partial<McpFeatures>) => boolean];
+  type GateRule = [
+    (n: string) => boolean,
+    (g: McpFeatureConfig, p: Partial<McpFeatures>) => boolean,
+  ];
   const gateRules: GateRule[] = [
     [isGitCliTool, (g, p) => !!(g.exposeGit && p.exposeGit)],
-    [(n) => n.startsWith('github_') && !isGitCliTool(n), (g, p) => !!(g.exposeGithub && p.exposeGithub)],
+    [
+      (n) => n.startsWith('github_') && !isGitCliTool(n),
+      (g, p) => !!(g.exposeGithub && p.exposeGithub),
+    ],
     [(n) => n.startsWith('fs_'), (g, p) => !!(g.exposeFilesystem && p.exposeFilesystem)],
     // Web scraping: allowed if (global scraping OR global web) OR personality scraping (OR logic from original)
     [
-      (n) => n.startsWith('web_scrape') || n === 'web_extract_structured' || n === 'web_fetch_markdown',
+      (n) =>
+        n.startsWith('web_scrape') || n === 'web_extract_structured' || n === 'web_fetch_markdown',
       (g, p) => !!((g.exposeWebScraping ?? g.exposeWeb) || p.exposeWebScraping),
     ],
     [(n) => n.startsWith('web_search'), (g, p) => !!(g.exposeWeb && p.exposeWebSearch)],
     [(n) => n.startsWith('browser_'), (g, p) => !!(g.exposeBrowser && p.exposeBrowser)],
-    [(n) => NETWORK_DEVICE_PREFIXES.some((px) => n.startsWith(px)), (_g, p) => !!(globalNetworkOk && p.exposeNetworkDevices)],
-    [(n) => NETWORK_DISCOVERY_PREFIXES.some((px) => n.startsWith(px)), (_g, p) => !!(globalNetworkOk && p.exposeNetworkDiscovery)],
-    [(n) => NETWORK_AUDIT_PREFIXES.some((px) => n.startsWith(px)), (_g, p) => !!(globalNetworkOk && p.exposeNetworkAudit)],
+    [
+      (n) => NETWORK_DEVICE_PREFIXES.some((px) => n.startsWith(px)),
+      (_g, p) => !!(globalNetworkOk && p.exposeNetworkDevices),
+    ],
+    [
+      (n) => NETWORK_DISCOVERY_PREFIXES.some((px) => n.startsWith(px)),
+      (_g, p) => !!(globalNetworkOk && p.exposeNetworkDiscovery),
+    ],
+    [
+      (n) => NETWORK_AUDIT_PREFIXES.some((px) => n.startsWith(px)),
+      (_g, p) => !!(globalNetworkOk && p.exposeNetworkAudit),
+    ],
     [(n) => n.startsWith('netbox_'), (_g, p) => !!(globalNetworkOk && p.exposeNetBox)],
     [(n) => n.startsWith('nvd_'), (_g, p) => !!(globalNetworkOk && p.exposeNvd)],
-    [(n) => NETWORK_UTIL_PREFIXES.some((px) => n.startsWith(px)), (_g, p) => !!(globalNetworkOk && p.exposeNetworkUtils)],
+    [
+      (n) => NETWORK_UTIL_PREFIXES.some((px) => n.startsWith(px)),
+      (_g, p) => !!(globalNetworkOk && p.exposeNetworkUtils),
+    ],
     [(n) => n.startsWith('twingate_'), (_g, p) => !!(globalTwingateOk && p.exposeTwingate)],
     [(n) => n.startsWith('gmail_'), (g, p) => !!(g.exposeGmail && p.exposeGmail)],
     [(n) => n.startsWith('twitter_'), (g, p) => !!(g.exposeTwitter && p.exposeTwitter)],
@@ -496,10 +515,7 @@ If you cannot find supporting evidence in the sources for a claim, state the cla
  * Parse web search tool results and append them as web_search sources
  * to the brain context for citation.
  */
-function captureWebSearchSources(
-  output: unknown,
-  brainContext: BrainContextMeta
-): void {
+function captureWebSearchSources(output: unknown, brainContext: BrainContextMeta): void {
   try {
     if (!brainContext.sources) brainContext.sources = [];
     const nextIndex = () =>
@@ -517,11 +533,12 @@ function captureWebSearchSources(
       const r = item as Record<string, unknown>;
       const title = String(r.title ?? r.name ?? 'Web result');
       const snippet = String(r.snippet ?? r.content ?? r.description ?? '');
-      const url = typeof r.url === 'string' ? r.url : typeof r.link === 'string' ? r.link : undefined;
+      const url =
+        typeof r.url === 'string' ? r.url : typeof r.link === 'string' ? r.link : undefined;
 
       if (!snippet) continue;
 
-      brainContext.sources!.push({
+      brainContext.sources.push({
         index: nextIndex(),
         type: 'web_search',
         sourceId: url ?? `web-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -726,7 +743,7 @@ async function gatherBrainContext(
       const match = /^document:([^:]+):chunk/.exec(k.source);
       if (match) docIdSet.add(match[1]!);
     }
-    let docMap = new Map<string, { title: string; trustScore: number }>();
+    const docMap = new Map<string, { title: string; trustScore: number }>();
     if (docIdSet.size > 0) {
       try {
         const docMgr = secureYeoman.getDocumentManager();
@@ -736,7 +753,9 @@ async function gatherBrainContext(
             docMap.set(d.id, { title: d.title, trustScore: d.trustScore });
           }
         }
-      } catch { /* best-effort */ }
+      } catch {
+        /* best-effort */
+      }
     }
     for (const k of knowledge) {
       const chunkMatch = /^document:([^:]+):chunk(\d+)$/.exec(k.source);
@@ -1144,7 +1163,11 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         if (budgetChecker) {
           const budgetResult = await budgetChecker.checkBudget(personality.id, costBudget);
           if (!budgetResult.allowed) {
-            return sendError(reply, 429, `${budgetResult.blockedBy} cost budget exceeded for this personality.`);
+            return sendError(
+              reply,
+              429,
+              `${budgetResult.blockedBy} cost budget exceeded for this personality.`
+            );
           }
         }
       }
@@ -1160,7 +1183,10 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           // Drop oldest non-system messages until under 80% threshold
           const nonSystem = messages.filter((m) => m.role !== 'system');
           const system = messages.filter((m) => m.role === 'system');
-          while (nonSystem.length > 2 && compactor.needsCompaction([...system, ...nonSystem], currentModel)) {
+          while (
+            nonSystem.length > 2 &&
+            compactor.needsCompaction([...system, ...nonSystem], currentModel)
+          ) {
             nonSystem.shift();
           }
           messages.length = 0;
@@ -1176,7 +1202,9 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                   messages: [{ role: 'user', content: prompt }],
                   stream: false,
                 };
-                const summaryResp = await aiClient.chat(summaryReq, { source: 'context_compaction' });
+                const summaryResp = await aiClient.chat(summaryReq, {
+                  source: 'context_compaction',
+                });
                 return summaryResp.content;
               }
             );
@@ -1559,7 +1587,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           const userPrompt = messages.filter((m) => m.role === 'user').pop()?.content ?? '';
           const revision = await constitutionalEngine.critiqueAndRevise(
             typeof userPrompt === 'string' ? userPrompt : '',
-            response.content,
+            response.content
           );
 
           if (revision.critiques.some((c) => c.violated)) {
@@ -1703,11 +1731,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         // ── Grounding enforcement (Phase 110) ─────────────────────────────────
         let groundingScore: number | null = null;
         const groundednessMode = personality?.body?.groundednessMode ?? 'off';
-        if (
-          groundednessMode !== 'off' &&
-          brainContext.sources &&
-          brainContext.sources.length > 0
-        ) {
+        if (groundednessMode !== 'off' && brainContext.sources && brainContext.sources.length > 0) {
           const groundingResult = groundingChecker.check(
             response.content,
             brainContext.sources,
@@ -1926,7 +1950,11 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       {
         const abCheckS = abuseDetector.check(_abSessionIdS);
         if (abCheckS.inCoolDown) {
-          sendError(reply, 429, `Temporarily rate limited due to suspicious activity. Retry after ${abCheckS.coolDownUntil}`);
+          sendError(
+            reply,
+            429,
+            `Temporarily rate limited due to suspicious activity. Retry after ${abCheckS.coolDownUntil}`
+          );
           return;
         }
         abuseDetector.recordMessage(_abSessionIdS, message);
@@ -2184,7 +2212,10 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           } else if (streamOverflowStrategy === 'truncate') {
             const nonSystem = messages.filter((m) => m.role !== 'system');
             const system = messages.filter((m) => m.role === 'system');
-            while (nonSystem.length > 2 && compactor.needsCompaction([...system, ...nonSystem], currentModel)) {
+            while (
+              nonSystem.length > 2 &&
+              compactor.needsCompaction([...system, ...nonSystem], currentModel)
+            ) {
               nonSystem.shift();
             }
             messages.length = 0;
@@ -2608,7 +2639,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           const userPromptS = messages.filter((m) => m.role === 'user').pop()?.content ?? '';
           const revisionS = await constitutionalEngine.critiqueAndRevise(
             typeof userPromptS === 'string' ? userPromptS : '',
-            safeContent,
+            safeContent
           );
 
           if (revisionS.critiques.some((c) => c.violated)) {

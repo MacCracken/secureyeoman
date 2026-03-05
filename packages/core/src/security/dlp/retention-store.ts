@@ -10,9 +10,7 @@ import { uuidv7 } from '../../utils/crypto.js';
 import type { RetentionPolicy, ClassificationLevel } from './types.js';
 
 export class RetentionStore extends PgBaseStorage {
-  async create(
-    policy: Omit<RetentionPolicy, 'id' | 'createdAt' | 'updatedAt'>
-  ): Promise<string> {
+  async create(policy: Omit<RetentionPolicy, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     const id = uuidv7();
     const now = Date.now();
     await this.execute(
@@ -42,7 +40,9 @@ export class RetentionStore extends PgBaseStorage {
     const values: unknown[] = [contentType];
 
     if (level) {
-      conditions.push(`(classification_level = $${values.length + 1} OR classification_level IS NULL)`);
+      conditions.push(
+        `(classification_level = $${values.length + 1} OR classification_level IS NULL)`
+      );
       values.push(level);
     }
 
@@ -123,7 +123,7 @@ export class RetentionStore extends PgBaseStorage {
   async purgeClassifications(
     contentType: string,
     cutoff: number,
-    classificationLevel?: ClassificationLevel | null,
+    classificationLevel?: ClassificationLevel | null
   ): Promise<number> {
     const { conditions, values } = this.buildCriteria(contentType, cutoff, classificationLevel);
     return this.execute(
@@ -138,7 +138,7 @@ export class RetentionStore extends PgBaseStorage {
   async countEligible(
     contentType: string,
     cutoff: number,
-    classificationLevel?: ClassificationLevel | null,
+    classificationLevel?: ClassificationLevel | null
   ): Promise<number> {
     const { conditions, values } = this.buildCriteria(contentType, cutoff, classificationLevel);
     const row = await this.queryOne<{ count: string }>(
@@ -151,7 +151,7 @@ export class RetentionStore extends PgBaseStorage {
   private buildCriteria(
     contentType: string,
     cutoff: number,
-    classificationLevel?: ClassificationLevel | null,
+    classificationLevel?: ClassificationLevel | null
   ) {
     const conditions: string[] = [];
     const values: unknown[] = [];

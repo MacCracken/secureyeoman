@@ -9,7 +9,11 @@ describe('Dependency Tracker', () => {
         lockfileVersion: 3,
         packages: {
           '': { name: 'root', version: '1.0.0' },
-          'node_modules/fastify': { version: '4.28.0', integrity: 'sha512-abc==', resolved: 'https://registry.npmjs.org/fastify/-/fastify-4.28.0.tgz' },
+          'node_modules/fastify': {
+            version: '4.28.0',
+            integrity: 'sha512-abc==',
+            resolved: 'https://registry.npmjs.org/fastify/-/fastify-4.28.0.tgz',
+          },
           'node_modules/@types/node': { version: '22.0.0', dev: true },
         },
       });
@@ -64,7 +68,10 @@ describe('Dependency Tracker', () => {
     });
 
     it('detects removed dependencies', () => {
-      const old = makeMap([['fastify', {}], ['lodash', {}]]);
+      const old = makeMap([
+        ['fastify', {}],
+        ['lodash', {}],
+      ]);
       const newer = makeMap([['fastify', {}]]);
 
       const diff = diffLockFiles(old, newer);
@@ -91,8 +98,12 @@ describe('Dependency Tracker', () => {
     });
 
     it('detects registry changes', () => {
-      const old = makeMap([['pkg', { version: '1.0.0', resolved: 'https://registry.npmjs.org/pkg/-/pkg-1.0.0.tgz' }]]);
-      const newer = makeMap([['pkg', { version: '1.0.0', resolved: 'https://evil-registry.com/pkg/-/pkg-1.0.0.tgz' }]]);
+      const old = makeMap([
+        ['pkg', { version: '1.0.0', resolved: 'https://registry.npmjs.org/pkg/-/pkg-1.0.0.tgz' }],
+      ]);
+      const newer = makeMap([
+        ['pkg', { version: '1.0.0', resolved: 'https://evil-registry.com/pkg/-/pkg-1.0.0.tgz' }],
+      ]);
 
       const diff = diffLockFiles(old, newer);
       expect(diff.registryChanged).toHaveLength(1);
@@ -116,7 +127,14 @@ describe('Dependency Tracker', () => {
         removed: [],
         versionChanged: [],
         integrityChanged: [],
-        registryChanged: [{ name: 'pkg', version: '1.0.0', from: 'https://registry.npmjs.org/...', to: 'https://evil.com/...' }],
+        registryChanged: [
+          {
+            name: 'pkg',
+            version: '1.0.0',
+            from: 'https://registry.npmjs.org/...',
+            to: 'https://evil.com/...',
+          },
+        ],
       };
 
       const alerts = analyzeRisks(diff);
@@ -130,12 +148,16 @@ describe('Dependency Tracker', () => {
         added: [],
         removed: [],
         versionChanged: [],
-        integrityChanged: [{ name: 'pkg', version: '1.0.0', from: 'sha512-old==', to: 'sha512-new==' }],
+        integrityChanged: [
+          { name: 'pkg', version: '1.0.0', from: 'sha512-old==', to: 'sha512-new==' },
+        ],
         registryChanged: [],
       };
 
       const alerts = analyzeRisks(diff);
-      expect(alerts.some((a) => a.level === 'critical' && a.category === 'integrity-mismatch')).toBe(true);
+      expect(
+        alerts.some((a) => a.level === 'critical' && a.category === 'integrity-mismatch')
+      ).toBe(true);
     });
 
     it('does not flag integrity change when version also changed', () => {
@@ -143,7 +165,9 @@ describe('Dependency Tracker', () => {
         added: [],
         removed: [],
         versionChanged: [{ name: 'pkg', from: '1.0.0', to: '1.0.1' }],
-        integrityChanged: [{ name: 'pkg', version: '1.0.1', from: 'sha512-old==', to: 'sha512-new==' }],
+        integrityChanged: [
+          { name: 'pkg', version: '1.0.1', from: 'sha512-old==', to: 'sha512-new==' },
+        ],
         registryChanged: [],
       };
 
@@ -201,7 +225,14 @@ describe('Dependency Tracker', () => {
         removed: [],
         versionChanged: [],
         integrityChanged: [],
-        registryChanged: [{ name: 'hijacked', version: '1.0.0', from: 'https://registry.npmjs.org/...', to: 'https://evil.com/...' }],
+        registryChanged: [
+          {
+            name: 'hijacked',
+            version: '1.0.0',
+            from: 'https://registry.npmjs.org/...',
+            to: 'https://evil.com/...',
+          },
+        ],
       };
 
       const alerts = analyzeRisks(diff);

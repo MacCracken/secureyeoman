@@ -26,20 +26,26 @@ export function registerBrowserRoutes(
   });
 
   // Get single session
-  app.get('/api/v1/browser/sessions/:id', async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
-    const { id } = request.params;
-    const session = await browserSessionStorage.getSession(id);
-    if (!session) return sendError(reply, 404, 'Session not found');
-    return session;
-  });
+  app.get(
+    '/api/v1/browser/sessions/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+      const { id } = request.params;
+      const session = await browserSessionStorage.getSession(id);
+      if (!session) return sendError(reply, 404, 'Session not found');
+      return session;
+    }
+  );
 
   // Close session
-  app.post('/api/v1/browser/sessions/:id/close', async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
-    const { id } = request.params;
-    const session = await browserSessionStorage.closeSession(id);
-    if (!session) return sendError(reply, 404, 'Session not found');
-    return session;
-  });
+  app.post(
+    '/api/v1/browser/sessions/:id/close',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+      const { id } = request.params;
+      const session = await browserSessionStorage.closeSession(id);
+      if (!session) return sendError(reply, 404, 'Session not found');
+      return session;
+    }
+  );
 
   // Get browser config
   app.get('/api/v1/browser/config', async () => {

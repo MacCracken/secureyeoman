@@ -407,8 +407,8 @@ describe('SubAgentStorage', () => {
   describe('pruneDelegations', () => {
     it('deletes messages then delegations older than retention period', async () => {
       mockQuery
-        .mockResolvedValueOnce({ rows: [], rowCount: 5 })   // delete messages
-        .mockResolvedValueOnce({ rows: [], rowCount: 3 });   // delete delegations
+        .mockResolvedValueOnce({ rows: [], rowCount: 5 }) // delete messages
+        .mockResolvedValueOnce({ rows: [], rowCount: 3 }); // delete delegations
       const pruned = await storage.pruneDelegations(90);
       expect(pruned).toBe(3);
       expect(mockQuery).toHaveBeenCalledTimes(2);

@@ -34,7 +34,9 @@ const VERSION = {
   createdAt: 1700000000000,
 };
 
-function makeMockVersionStorage(overrides: Partial<WorkflowVersionStorage> = {}): WorkflowVersionStorage {
+function makeMockVersionStorage(
+  overrides: Partial<WorkflowVersionStorage> = {}
+): WorkflowVersionStorage {
   return {
     createVersion: vi.fn().mockResolvedValue(VERSION),
     listVersions: vi.fn().mockResolvedValue({ versions: [VERSION], total: 1 }),
@@ -94,7 +96,9 @@ describe('WorkflowVersionManager', () => {
 
     it('computes diff against previous version when one exists', async () => {
       const previous = { ...VERSION, id: 'wv-0', snapshot: { name: 'Old', steps: [] } };
-      versionStorage = makeMockVersionStorage({ getLatestVersion: vi.fn().mockResolvedValue(previous) });
+      versionStorage = makeMockVersionStorage({
+        getLatestVersion: vi.fn().mockResolvedValue(previous),
+      });
       manager = new WorkflowVersionManager({ versionStorage, workflowStorage });
 
       await manager.recordVersion('wf-1');
@@ -110,7 +114,9 @@ describe('WorkflowVersionManager', () => {
         id: 'wv-0',
         snapshot: { name: 'OLD_NAME', steps: [], isEnabled: true },
       };
-      versionStorage = makeMockVersionStorage({ getLatestVersion: vi.fn().mockResolvedValue(previous) });
+      versionStorage = makeMockVersionStorage({
+        getLatestVersion: vi.fn().mockResolvedValue(previous),
+      });
       manager = new WorkflowVersionManager({ versionStorage, workflowStorage });
 
       await manager.recordVersion('wf-1');
@@ -204,7 +210,9 @@ describe('WorkflowVersionManager', () => {
       });
       manager = new WorkflowVersionManager({ versionStorage, workflowStorage });
 
-      await expect(manager.diffVersions('missing', 'wv-1')).rejects.toThrow('Version not found: missing');
+      await expect(manager.diffVersions('missing', 'wv-1')).rejects.toThrow(
+        'Version not found: missing'
+      );
     });
 
     it('throws when version B not found', async () => {
@@ -213,7 +221,9 @@ describe('WorkflowVersionManager', () => {
       });
       manager = new WorkflowVersionManager({ versionStorage, workflowStorage });
 
-      await expect(manager.diffVersions('wv-1', 'missing')).rejects.toThrow('Version not found: missing');
+      await expect(manager.diffVersions('wv-1', 'missing')).rejects.toThrow(
+        'Version not found: missing'
+      );
     });
   });
 

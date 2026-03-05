@@ -39,7 +39,7 @@ export class QuarantineStorage {
       sourceContext: string;
       personalityId?: string;
       userId?: string;
-    },
+    }
   ): Promise<QuarantineMetadata> {
     const id = randomUUID();
     const dir = join(this.baseDir, id);
@@ -57,9 +57,8 @@ export class QuarantineStorage {
       createdAt: Date.now(),
     };
 
-    const content = typeof artifactContent === 'string'
-      ? Buffer.from(artifactContent, 'utf-8')
-      : artifactContent;
+    const content =
+      typeof artifactContent === 'string' ? Buffer.from(artifactContent, 'utf-8') : artifactContent;
 
     await Promise.all([
       writeFile(join(dir, 'artifact.bin'), content),
@@ -116,7 +115,7 @@ export class QuarantineStorage {
 
   async release(id: string): Promise<boolean> {
     const meta = await this.readMetadata(id);
-    if (!meta || meta.status !== 'approved') return false;
+    if (meta?.status !== 'approved') return false;
 
     meta.status = 'released';
     await this.writeMetadata(id, meta);

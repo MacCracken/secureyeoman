@@ -16,7 +16,15 @@ const SAMPLE_BLUEPRINT_ROW = {
   description: 'AWS reference architecture',
   provider: 'aws',
   framework: 'aws_sra',
-  controls: [{ id: 'c1', domain: 'identity_access', title: 'MFA', description: 'Enable MFA', priority: 'critical' }],
+  controls: [
+    {
+      id: 'c1',
+      domain: 'identity_access',
+      title: 'MFA',
+      description: 'Enable MFA',
+      priority: 'critical',
+    },
+  ],
   status: 'active',
   is_builtin: true,
   metadata: { version: '2026.3.5' },
@@ -32,7 +40,16 @@ const SAMPLE_ASSESSMENT_ROW = {
   name: 'Q1 Assessment',
   infrastructure_description: 'Production AWS environment',
   control_results: [{ controlId: 'c1', status: 'fully_implemented' }],
-  summary: { complianceScore: 85, totalControls: 1, implemented: 1, partial: 0, notImplemented: 0, notApplicable: 0, topGaps: [], domainScores: {} },
+  summary: {
+    complianceScore: 85,
+    totalControls: 1,
+    implemented: 1,
+    partial: 0,
+    notImplemented: 0,
+    notApplicable: 0,
+    topGaps: [],
+    domainScores: {},
+  },
   status: 'completed',
   linked_risk_assessment_id: null,
   created_by: 'user-1',
@@ -266,7 +283,13 @@ describe('SraStorage', () => {
     it('returns all mappings when no filters', async () => {
       mockQuery.mockResolvedValueOnce({
         rows: [
-          { domain: 'identity_access', framework: 'NIST CSF', control_id: 'PR.AC', control_title: 'Access Control', description: 'desc' },
+          {
+            domain: 'identity_access',
+            framework: 'NIST CSF',
+            control_id: 'PR.AC',
+            control_title: 'Access Control',
+            description: 'desc',
+          },
         ],
       });
 
@@ -294,7 +317,13 @@ describe('SraStorage', () => {
       mockQuery.mockResolvedValue({ rowCount: 1 });
 
       await storage.seedComplianceMappings([
-        { domain: 'identity_access', framework: 'NIST CSF', controlId: 'PR.AC', controlTitle: 'Access Control', description: 'desc' },
+        {
+          domain: 'identity_access',
+          framework: 'NIST CSF',
+          controlId: 'PR.AC',
+          controlTitle: 'Access Control',
+          description: 'desc',
+        },
       ]);
 
       expect(mockQuery).toHaveBeenCalledTimes(1);

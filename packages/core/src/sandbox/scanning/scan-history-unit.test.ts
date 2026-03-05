@@ -18,7 +18,13 @@ function makeScanResult(): ScanResult {
     artifactId: randomUUID(),
     verdict: 'warn',
     findings: [
-      { id: randomUUID(), scanner: 'test', severity: 'medium', category: 'test', message: 'Test finding' },
+      {
+        id: randomUUID(),
+        scanner: 'test',
+        severity: 'medium',
+        category: 'test',
+        message: 'Test finding',
+      },
     ],
     worstSeverity: 'medium',
     scanDurationMs: 15,
@@ -40,23 +46,25 @@ describe('ScanHistoryStore', () => {
       const now = Date.now();
       const sr = makeScanResult();
       mockQuery.mockResolvedValueOnce({
-        rows: [{
-          id: 'row-id',
-          artifact_id: sr.artifactId,
-          artifact_type: 'text/javascript',
-          source_context: 'sandbox.run',
-          personality_id: null,
-          user_id: 'u1',
-          verdict: 'warn',
-          finding_count: 1,
-          worst_severity: 'medium',
-          intent_score: null,
-          scan_duration_ms: 15,
-          findings: JSON.stringify(sr.findings),
-          threat_assessment: null,
-          tenant_id: null,
-          created_at: now,
-        }],
+        rows: [
+          {
+            id: 'row-id',
+            artifact_id: sr.artifactId,
+            artifact_type: 'text/javascript',
+            source_context: 'sandbox.run',
+            personality_id: null,
+            user_id: 'u1',
+            verdict: 'warn',
+            finding_count: 1,
+            worst_severity: 'medium',
+            intent_score: null,
+            scan_duration_ms: 15,
+            findings: JSON.stringify(sr.findings),
+            threat_assessment: null,
+            tenant_id: null,
+            created_at: now,
+          },
+        ],
       });
 
       const result = await store.record({
@@ -81,14 +89,28 @@ describe('ScanHistoryStore', () => {
         .mockResolvedValueOnce({
           rows: [
             {
-              id: 'r1', artifact_id: 'a1', artifact_type: 'text/plain', source_context: 'test',
-              verdict: 'pass', finding_count: 0, worst_severity: 'info', scan_duration_ms: 5,
-              findings: '[]', created_at: Date.now(),
+              id: 'r1',
+              artifact_id: 'a1',
+              artifact_type: 'text/plain',
+              source_context: 'test',
+              verdict: 'pass',
+              finding_count: 0,
+              worst_severity: 'info',
+              scan_duration_ms: 5,
+              findings: '[]',
+              created_at: Date.now(),
             },
             {
-              id: 'r2', artifact_id: 'a2', artifact_type: 'text/plain', source_context: 'test',
-              verdict: 'warn', finding_count: 1, worst_severity: 'medium', scan_duration_ms: 10,
-              findings: '[]', created_at: Date.now(),
+              id: 'r2',
+              artifact_id: 'a2',
+              artifact_type: 'text/plain',
+              source_context: 'test',
+              verdict: 'warn',
+              finding_count: 1,
+              worst_severity: 'medium',
+              scan_duration_ms: 10,
+              findings: '[]',
+              created_at: Date.now(),
             },
           ],
         });
@@ -111,11 +133,21 @@ describe('ScanHistoryStore', () => {
   describe('getById', () => {
     it('returns mapped row by id', async () => {
       mockQuery.mockResolvedValueOnce({
-        rows: [{
-          id: 'r1', artifact_id: 'a1', artifact_type: 'text/plain', source_context: 'test',
-          verdict: 'pass', finding_count: 0, worst_severity: 'info', scan_duration_ms: 5,
-          findings: '[]', threat_assessment: null, created_at: Date.now(),
-        }],
+        rows: [
+          {
+            id: 'r1',
+            artifact_id: 'a1',
+            artifact_type: 'text/plain',
+            source_context: 'test',
+            verdict: 'pass',
+            finding_count: 0,
+            worst_severity: 'info',
+            scan_duration_ms: 5,
+            findings: '[]',
+            threat_assessment: null,
+            created_at: Date.now(),
+          },
+        ],
       });
 
       const result = await store.getById('r1');
@@ -163,13 +195,25 @@ describe('ScanHistoryStore', () => {
 
   describe('row mapping', () => {
     it('parses JSON findings from string', async () => {
-      const findings = [{ id: 'f1', scanner: 'test', severity: 'high', category: 'test', message: 'msg' }];
+      const findings = [
+        { id: 'f1', scanner: 'test', severity: 'high', category: 'test', message: 'msg' },
+      ];
       mockQuery.mockResolvedValueOnce({
-        rows: [{
-          id: 'r1', artifact_id: 'a1', artifact_type: 'text/plain', source_context: 'test',
-          verdict: 'warn', finding_count: 1, worst_severity: 'high', scan_duration_ms: 5,
-          findings: JSON.stringify(findings), threat_assessment: null, created_at: Date.now(),
-        }],
+        rows: [
+          {
+            id: 'r1',
+            artifact_id: 'a1',
+            artifact_type: 'text/plain',
+            source_context: 'test',
+            verdict: 'warn',
+            finding_count: 1,
+            worst_severity: 'high',
+            scan_duration_ms: 5,
+            findings: JSON.stringify(findings),
+            threat_assessment: null,
+            created_at: Date.now(),
+          },
+        ],
       });
 
       const result = await store.getById('r1');
@@ -179,11 +223,22 @@ describe('ScanHistoryStore', () => {
     it('parses threat assessment from JSON string', async () => {
       const ta = { classification: 'suspicious', intentScore: 0.5, escalationTier: 'tier2_alert' };
       mockQuery.mockResolvedValueOnce({
-        rows: [{
-          id: 'r1', artifact_id: 'a1', artifact_type: 'text/plain', source_context: 'test',
-          verdict: 'quarantine', finding_count: 3, worst_severity: 'high', scan_duration_ms: 20,
-          findings: '[]', threat_assessment: JSON.stringify(ta), intent_score: 0.5, created_at: Date.now(),
-        }],
+        rows: [
+          {
+            id: 'r1',
+            artifact_id: 'a1',
+            artifact_type: 'text/plain',
+            source_context: 'test',
+            verdict: 'quarantine',
+            finding_count: 3,
+            worst_severity: 'high',
+            scan_duration_ms: 20,
+            findings: '[]',
+            threat_assessment: JSON.stringify(ta),
+            intent_score: 0.5,
+            created_at: Date.now(),
+          },
+        ],
       });
 
       const result = await store.getById('r1');

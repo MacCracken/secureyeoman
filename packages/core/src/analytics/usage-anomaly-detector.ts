@@ -55,7 +55,9 @@ export class UsageAnomalyDetector {
   ) {
     this.cfg = { ...DEFAULT_CONFIG, ...config };
     if (this.cfg.enabled) {
-      this.evictTimer = setInterval(() => this.evictStale(), 60_000);
+      this.evictTimer = setInterval(() => {
+        this.evictStale();
+      }, 60_000);
       this.evictTimer.unref();
     }
   }

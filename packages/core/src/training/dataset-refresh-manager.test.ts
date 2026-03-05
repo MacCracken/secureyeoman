@@ -140,7 +140,8 @@ describe('DatasetRefreshManager', () => {
   describe('runRefresh()', () => {
     it('queries new conversations from DB', async () => {
       const row = makeJobRow();
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 }) // get job
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SET status='running'
         .mockResolvedValueOnce({ rows: [{ id: 'conv-1', created_at: new Date() }], rowCount: 1 }) // SELECT conversations
@@ -157,7 +158,8 @@ describe('DatasetRefreshManager', () => {
 
     it('updates last_conversation_ts watermark', async () => {
       const row = makeJobRow();
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 }) // get job
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SET status='running'
         .mockResolvedValueOnce({ rows: [{ id: 'conv-1', created_at: new Date() }], rowCount: 1 }) // SELECT conversations
@@ -173,7 +175,8 @@ describe('DatasetRefreshManager', () => {
 
     it('sets status to completed', async () => {
       const row = makeJobRow();
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 }) // get job
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SET status='running'
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT conversations (none)
@@ -189,7 +192,8 @@ describe('DatasetRefreshManager', () => {
 
     it('sets status to failed on error', async () => {
       const row = makeJobRow();
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 }) // get job
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SET status='running'
         .mockRejectedValueOnce(new Error('DB error')); // SELECT conversations fails
@@ -205,7 +209,8 @@ describe('DatasetRefreshManager', () => {
 
     it('respects quality threshold from curation rules', async () => {
       const row = makeJobRow({ curation_rules: { qualityThreshold: 0.9 } });
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 }) // get job
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SET status='running'
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT conversations
@@ -221,10 +226,17 @@ describe('DatasetRefreshManager', () => {
 
     it('counts samples added', async () => {
       const row = makeJobRow();
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 }) // get job
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SET status='running'
-        .mockResolvedValueOnce({ rows: [{ id: 'conv-1', created_at: new Date() }, { id: 'conv-2', created_at: new Date() }], rowCount: 2 }) // SELECT conversations
+        .mockResolvedValueOnce({
+          rows: [
+            { id: 'conv-1', created_at: new Date() },
+            { id: 'conv-2', created_at: new Date() },
+          ],
+          rowCount: 2,
+        }) // SELECT conversations
         .mockResolvedValueOnce({ rows: [], rowCount: 1 }); // SET status='completed'
 
       const result = await manager.runRefresh('refresh-1');

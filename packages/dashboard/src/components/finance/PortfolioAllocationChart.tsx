@@ -4,7 +4,16 @@
 
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const DEFAULT_COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#eab308', '#a855f7', '#f97316', '#06b6d4', '#ec4899'];
+const DEFAULT_COLORS = [
+  '#3b82f6',
+  '#ef4444',
+  '#22c55e',
+  '#eab308',
+  '#a855f7',
+  '#f97316',
+  '#06b6d4',
+  '#ec4899',
+];
 
 export interface AllocationSlice {
   name: string;
@@ -18,7 +27,11 @@ interface PortfolioAllocationChartProps {
   donut?: boolean;
 }
 
-export function PortfolioAllocationChart({ allocations, height = 300, donut = true }: PortfolioAllocationChartProps) {
+export function PortfolioAllocationChart({
+  allocations,
+  height = 300,
+  donut = true,
+}: PortfolioAllocationChartProps) {
   if (!allocations.length) return <p className="text-muted-foreground text-sm">No data</p>;
 
   const total = allocations.reduce((a, s) => a + s.value, 0);
@@ -40,7 +53,10 @@ export function PortfolioAllocationChart({ allocations, height = 300, donut = tr
           labelLine={{ strokeWidth: 1 }}
         >
           {allocations.map((entry, i) => (
-            <Cell key={entry.name} fill={entry.color ?? DEFAULT_COLORS[i % DEFAULT_COLORS.length]} />
+            <Cell
+              key={entry.name}
+              fill={entry.color ?? DEFAULT_COLORS[i % DEFAULT_COLORS.length]}
+            />
           ))}
         </Pie>
         <Tooltip
@@ -50,7 +66,10 @@ export function PortfolioAllocationChart({ allocations, height = 300, donut = tr
             borderRadius: '6px',
             fontSize: '12px',
           }}
-          formatter={(value: number) => [`$${value.toLocaleString()} (${((value / total) * 100).toFixed(1)}%)`, 'Value']}
+          formatter={(value: number) => [
+            `$${value.toLocaleString()} (${((value / total) * 100).toFixed(1)}%)`,
+            'Value',
+          ]}
         />
         <Legend />
       </PieChart>

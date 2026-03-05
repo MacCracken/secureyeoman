@@ -235,28 +235,26 @@ describe('EventSubscriptionStore', () => {
   });
 
   it('listDeliveries returns deliveries for a subscription with pagination', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ count: '1' }] })
-      .mockResolvedValueOnce({
-        rows: [
-          {
-            id: 'del-1',
-            subscription_id: 'sub-1',
-            event_type: 'tool.called',
-            payload: { id: 'e1', type: 'tool.called', timestamp: 1, tenantId: 'x', data: {} },
-            status: 'delivered',
-            attempts: '1',
-            max_attempts: '4',
-            last_attempt_at: '1700000000000',
-            next_retry_at: null,
-            response_status: '200',
-            response_body: 'ok',
-            error: null,
-            created_at: '1700000000000',
-            tenant_id: 'default',
-          },
-        ],
-      });
+    mockQuery.mockResolvedValueOnce({ rows: [{ count: '1' }] }).mockResolvedValueOnce({
+      rows: [
+        {
+          id: 'del-1',
+          subscription_id: 'sub-1',
+          event_type: 'tool.called',
+          payload: { id: 'e1', type: 'tool.called', timestamp: 1, tenantId: 'x', data: {} },
+          status: 'delivered',
+          attempts: '1',
+          max_attempts: '4',
+          last_attempt_at: '1700000000000',
+          next_retry_at: null,
+          response_status: '200',
+          response_body: 'ok',
+          error: null,
+          created_at: '1700000000000',
+          tenant_id: 'default',
+        },
+      ],
+    });
 
     const result = await store.listDeliveries('sub-1', { limit: 10, offset: 0 });
     expect(result.total).toBe(1);

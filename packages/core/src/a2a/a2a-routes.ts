@@ -64,11 +64,7 @@ export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AM
         });
         return reply.code(201).send({ peer });
       } catch (err) {
-        return sendError(
-          reply,
-          400,
-          toErrorMessage(err)
-        );
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -184,10 +180,7 @@ export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AM
         // Accept and acknowledge — routing is handled by a2aManager internally
         return reply.code(202).send({ status: 'accepted' });
       } catch (err) {
-        log.error(
-          { error: toErrorMessage(err) },
-          'Failed to handle A2A receive'
-        );
+        log.error({ error: toErrorMessage(err) }, 'Failed to handle A2A receive');
         return sendError(reply, 500, 'Failed to handle A2A message');
       }
     }

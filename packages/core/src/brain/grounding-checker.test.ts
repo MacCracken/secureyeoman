@@ -5,11 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  GroundingChecker,
-  splitSentences,
-  tokenOverlap,
-} from './grounding-checker.js';
+import { GroundingChecker, splitSentences, tokenOverlap } from './grounding-checker.js';
 import type { SourceReference } from '@secureyeoman/shared';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -100,11 +96,8 @@ describe('GroundingChecker', () => {
 
   describe('mode: annotate_only', () => {
     it('marks ungrounded sentences with [unverified]', () => {
-      const sources = makeSources([
-        'The database uses PostgreSQL for storage and indexing.',
-      ]);
-      const content =
-        'The database uses PostgreSQL for storage. The weather is sunny today.';
+      const sources = makeSources(['The database uses PostgreSQL for storage and indexing.']);
+      const content = 'The database uses PostgreSQL for storage. The weather is sunny today.';
 
       const result = checker.check(content, sources, 'annotate_only');
       expect(result.content).toContain('[unverified]');
@@ -114,9 +107,7 @@ describe('GroundingChecker', () => {
     });
 
     it('does not mark well-grounded sentences', () => {
-      const sources = makeSources([
-        'PostgreSQL is a relational database management system.',
-      ]);
+      const sources = makeSources(['PostgreSQL is a relational database management system.']);
       const content = 'PostgreSQL is a relational database management system.';
 
       const result = checker.check(content, sources, 'annotate_only');
@@ -197,9 +188,7 @@ describe('GroundingChecker', () => {
     });
 
     it('computes groundedSentences and totalSentences correctly', () => {
-      const sources = makeSources([
-        'PostgreSQL is used for data storage in the system.',
-      ]);
+      const sources = makeSources(['PostgreSQL is used for data storage in the system.']);
       const content = 'PostgreSQL is used for data storage. Aliens live on Mars.';
 
       const result = checker.check(content, sources, 'annotate_only');

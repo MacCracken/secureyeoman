@@ -56,7 +56,7 @@ describe('dlp-tools', () => {
   it('registers all 6 dlp_* tools without throwing', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     expect(() =>
-      registerDlpTools(server, makeMockClient(), makeConfig(), noopMiddleware()),
+      registerDlpTools(server, makeMockClient(), makeConfig(), noopMiddleware())
     ).not.toThrow();
   });
 
@@ -67,7 +67,7 @@ describe('dlp-tools', () => {
         server,
         makeMockClient(),
         makeConfig({ exposeDlp: false } as any),
-        noopMiddleware(),
+        noopMiddleware()
       );
 
       const { globalToolRegistry } = await import('./tool-utils.js');
@@ -100,10 +100,9 @@ describe('dlp-tools', () => {
       const handler = globalToolRegistry.get('dlp_classify');
       const result = await handler!({ text: 'hello world' });
 
-      expect(client.post).toHaveBeenCalledWith(
-        '/api/v1/security/dlp/classify',
-        { text: 'hello world' },
-      );
+      expect(client.post).toHaveBeenCalledWith('/api/v1/security/dlp/classify', {
+        text: 'hello world',
+      });
       const parsed = JSON.parse((result.content[0] as { text: string }).text);
       expect(parsed.classification).toBeDefined();
     });
@@ -123,10 +122,10 @@ describe('dlp-tools', () => {
       const handler = globalToolRegistry.get('dlp_scan');
       const result = await handler!({ content: 'test data', destination: 'email' });
 
-      expect(client.post).toHaveBeenCalledWith(
-        '/api/v1/security/dlp/scan',
-        { content: 'test data', destination: 'email' },
-      );
+      expect(client.post).toHaveBeenCalledWith('/api/v1/security/dlp/scan', {
+        content: 'test data',
+        destination: 'email',
+      });
       const parsed = JSON.parse((result.content[0] as { text: string }).text);
       expect(parsed.scan.allowed).toBe(true);
     });
@@ -142,10 +141,7 @@ describe('dlp-tools', () => {
       const handler = globalToolRegistry.get('dlp_policies');
       const result = await handler!({ active: true });
 
-      expect(client.get).toHaveBeenCalledWith(
-        '/api/v1/security/dlp/policies',
-        { active: 'true' },
-      );
+      expect(client.get).toHaveBeenCalledWith('/api/v1/security/dlp/policies', { active: 'true' });
       const parsed = JSON.parse((result.content[0] as { text: string }).text);
       expect(parsed.policies).toBeDefined();
     });
@@ -169,10 +165,10 @@ describe('dlp-tools', () => {
       const handler = globalToolRegistry.get('dlp_egress_stats');
       const result = await handler!({ from: 1000, to: 2000 });
 
-      expect(client.get).toHaveBeenCalledWith(
-        '/api/v1/security/dlp/egress/stats',
-        { from: '1000', to: '2000' },
-      );
+      expect(client.get).toHaveBeenCalledWith('/api/v1/security/dlp/egress/stats', {
+        from: '1000',
+        to: '2000',
+      });
       const parsed = JSON.parse((result.content[0] as { text: string }).text);
       expect(parsed.totalEvents).toBe(42);
     });
@@ -194,10 +190,10 @@ describe('dlp-tools', () => {
       const handler = globalToolRegistry.get('dlp_watermark_embed');
       const result = await handler!({ text: 'hello', contentId: 'doc-1' });
 
-      expect(client.post).toHaveBeenCalledWith(
-        '/api/v1/security/dlp/watermark/embed',
-        { text: 'hello', contentId: 'doc-1' },
-      );
+      expect(client.post).toHaveBeenCalledWith('/api/v1/security/dlp/watermark/embed', {
+        text: 'hello',
+        contentId: 'doc-1',
+      });
       const parsed = JSON.parse((result.content[0] as { text: string }).text);
       expect(parsed.watermarked).toBeDefined();
     });
@@ -215,10 +211,9 @@ describe('dlp-tools', () => {
       const handler = globalToolRegistry.get('dlp_watermark_extract');
       const result = await handler!({ text: 'watermarked text' });
 
-      expect(client.post).toHaveBeenCalledWith(
-        '/api/v1/security/dlp/watermark/extract',
-        { text: 'watermarked text' },
-      );
+      expect(client.post).toHaveBeenCalledWith('/api/v1/security/dlp/watermark/extract', {
+        text: 'watermarked text',
+      });
       const parsed = JSON.parse((result.content[0] as { text: string }).text);
       expect(parsed.found).toBe(true);
     });

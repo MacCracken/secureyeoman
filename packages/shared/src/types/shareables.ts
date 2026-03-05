@@ -58,13 +58,13 @@ export interface WorkflowDirectoryMetadata {
   author?: string;
   category?: string;
   tags?: string[];
-  steps: Array<{
+  steps: {
     id: string;
     type: string;
     config: Record<string, unknown>;
-  }>;
-  edges?: Array<{ from: string; to: string; condition?: string }>;
-  triggers?: Array<Record<string, unknown>>;
+  }[];
+  edges?: { from: string; to: string; condition?: string }[];
+  triggers?: Record<string, unknown>[];
   autonomyLevel?: string;
   requires?: WorkflowShareableRequires;
 }
@@ -79,12 +79,12 @@ export interface SwarmTemplateDirectoryMetadata {
   version?: string;
   author?: string;
   strategy?: string;
-  roles: Array<{
+  roles: {
     role: string;
     profileName: string;
     description?: string;
     systemPromptOverride?: string;
-  }>;
+  }[];
   coordinatorProfile?: string | null;
   requires?: SwarmTemplateRequires;
 }

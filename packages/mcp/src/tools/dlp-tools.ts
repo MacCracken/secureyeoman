@@ -28,7 +28,7 @@ export function registerDlpTools(
   server: McpServer,
   client: CoreApiClient,
   config: McpServiceConfig,
-  middleware: ToolMiddleware,
+  middleware: ToolMiddleware
 ): void {
   // ── dlp_classify ────────────────────────────────────────────────────────────
   server.tool(
@@ -46,7 +46,7 @@ export function registerDlpTools(
       if (!(config as any).exposeDlp) return disabled();
       const result = await client.post('/api/v1/security/dlp/classify', args);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   // ── dlp_scan ────────────────────────────────────────────────────────────────
@@ -62,7 +62,7 @@ export function registerDlpTools(
       if (!(config as any).exposeDlp) return disabled();
       const result = await client.post('/api/v1/security/dlp/scan', args);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   // ── dlp_policies ────────────────────────────────────────────────────────────
@@ -80,7 +80,7 @@ export function registerDlpTools(
       if (args.limit !== undefined) query.limit = String(args.limit);
       const result = await client.get('/api/v1/security/dlp/policies', query);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   // ── dlp_egress_stats ────────────────────────────────────────────────────────
@@ -98,7 +98,7 @@ export function registerDlpTools(
       if (args.to !== undefined) query.to = String(args.to);
       const result = await client.get('/api/v1/security/dlp/egress/stats', query);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   // ── dlp_watermark_embed ─────────────────────────────────────────────────────
@@ -117,7 +117,7 @@ export function registerDlpTools(
       if (!(config as any).exposeDlp) return disabled();
       const result = await client.post('/api/v1/security/dlp/watermark/embed', args);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   // ── dlp_watermark_extract ───────────────────────────────────────────────────
@@ -135,6 +135,6 @@ export function registerDlpTools(
       if (!(config as any).exposeDlp) return disabled();
       const result = await client.post('/api/v1/security/dlp/watermark/extract', args);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 }

@@ -51,7 +51,9 @@ export function registerResponsibleAiTools(
       inputSchema: {
         evalRunId: z.string().describe('Evaluation run ID'),
         datasetId: z.string().describe('Dataset ID'),
-        protectedAttribute: z.string().describe('Protected attribute to evaluate (e.g. "gender", "age_group")'),
+        protectedAttribute: z
+          .string()
+          .describe('Protected attribute to evaluate (e.g. "gender", "age_group")'),
         threshold: z
           .number()
           .min(0)
@@ -77,7 +79,10 @@ export function registerResponsibleAiTools(
         prompt: z.string().describe('Input prompt'),
         response: z.string().describe('Model response'),
         evalRunId: z.string().optional().describe('Optional eval run ID to associate with'),
-        dimension: z.string().optional().describe('Quality dimension to explain (e.g. "groundedness")'),
+        dimension: z
+          .string()
+          .optional()
+          .describe('Quality dimension to explain (e.g. "groundedness")'),
       },
     },
     wrapToolHandler('rai_shap_explain', middleware, async (args) => {
@@ -118,13 +123,16 @@ export function registerResponsibleAiTools(
   server.registerTool(
     'rai_provenance_summary',
     {
-      description: 'Get a summary of data provenance for a dataset (included/filtered/synthetic/redacted counts).',
+      description:
+        'Get a summary of data provenance for a dataset (included/filtered/synthetic/redacted counts).',
       inputSchema: {
         datasetId: z.string().describe('Dataset ID'),
       },
     },
     wrapToolHandler('rai_provenance_summary', middleware, async (args) => {
-      const result = await client.get(`/api/v1/responsible-ai/provenance/summary/${args.datasetId}`);
+      const result = await client.get(
+        `/api/v1/responsible-ai/provenance/summary/${args.datasetId}`
+      );
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     })
   );

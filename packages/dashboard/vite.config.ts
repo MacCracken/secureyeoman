@@ -17,7 +17,12 @@ export default defineConfig(({ mode }) => {
       dedupe: ['react', 'react-dom', '@tanstack/react-virtual'],
     },
     optimizeDeps: {
-      include: ['monaco-editor', '@tanstack/react-virtual', '@tanstack/virtual-core', '@excalidraw/excalidraw'],
+      include: [
+        'monaco-editor',
+        '@tanstack/react-virtual',
+        '@tanstack/virtual-core',
+        '@excalidraw/excalidraw',
+      ],
       esbuildOptions: {
         define: {
           global: 'global',

@@ -20,7 +20,10 @@ function makePolicy(overrides: Partial<ExternalizationPolicy> = {}): Externaliza
   };
 }
 
-function makeScanResult(verdict: ScanResult['verdict'] = 'pass', overrides: Partial<ScanResult> = {}): ScanResult {
+function makeScanResult(
+  verdict: ScanResult['verdict'] = 'pass',
+  overrides: Partial<ScanResult> = {}
+): ScanResult {
   return {
     artifactId: randomUUID(),
     verdict,
@@ -124,14 +127,20 @@ describe('ExternalizationGate', () => {
     const quarantineStorage = {
       quarantine: vi.fn().mockResolvedValue({ id: 'q-123' }),
     };
-    deps.pipeline = makePipeline(makeScanResult('quarantine', {
-      findings: [{ id: randomUUID(), scanner: 'test', severity: 'high', category: 'test', message: 'bad' }],
-      worstSeverity: 'high',
-    }));
+    deps.pipeline = makePipeline(
+      makeScanResult('quarantine', {
+        findings: [
+          { id: randomUUID(), scanner: 'test', severity: 'high', category: 'test', message: 'bad' },
+        ],
+        worstSeverity: 'high',
+      })
+    );
     deps.quarantineStorage = quarantineStorage as any;
     gate = new ExternalizationGate(deps);
 
-    const result = await gate.gate(makeSandboxResult('malicious code'), { sourceContext: 'sandbox.run' });
+    const result = await gate.gate(makeSandboxResult('malicious code'), {
+      sourceContext: 'sandbox.run',
+    });
     expect(result.scanReport?.gateDecision).toBe('quarantine');
     expect(result.scanReport?.quarantineId).toBe('q-123');
     expect(result.sandboxResult.success).toBe(false);
@@ -139,10 +148,20 @@ describe('ExternalizationGate', () => {
   });
 
   it('blocks critical findings', async () => {
-    deps.pipeline = makePipeline(makeScanResult('block', {
-      findings: [{ id: randomUUID(), scanner: 'test', severity: 'critical', category: 'test', message: 'critical' }],
-      worstSeverity: 'critical',
-    }));
+    deps.pipeline = makePipeline(
+      makeScanResult('block', {
+        findings: [
+          {
+            id: randomUUID(),
+            scanner: 'test',
+            severity: 'critical',
+            category: 'test',
+            message: 'critical',
+          },
+        ],
+        worstSeverity: 'critical',
+      })
+    );
     gate = new ExternalizationGate(deps);
 
     const result = await gate.gate(makeSandboxResult('exploit'), { sourceContext: 'test' });
@@ -179,7 +198,7 @@ describe('ExternalizationGate', () => {
       'artifact_quarantined',
       expect.any(String),
       expect.stringContaining('quarantined'),
-      expect.any(Object),
+      expect.any(Object)
     );
   });
 
@@ -194,7 +213,7 @@ describe('ExternalizationGate', () => {
       'artifact_blocked',
       'critical',
       expect.stringContaining('blocked'),
-      expect.any(Object),
+      expect.any(Object)
     );
   });
 
@@ -205,9 +224,11 @@ describe('ExternalizationGate', () => {
     gate = new ExternalizationGate(deps);
 
     await gate.gate(makeSandboxResult('content'), { sourceContext: 'test' });
-    expect(store.record).toHaveBeenCalledWith(expect.objectContaining({
-      sourceContext: 'test',
-    }));
+    expect(store.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceContext: 'test',
+      })
+    );
   });
 
   it('records audit entry on non-pass verdict', async () => {
@@ -250,7 +271,9 @@ describe('ExternalizationGate', () => {
   });
 
   it('handles Buffer result', async () => {
-    const result = await gate.gate(makeSandboxResult(Buffer.from('binary data')), { sourceContext: 'test' });
+    const result = await gate.gate(makeSandboxResult(Buffer.from('binary data')), {
+      sourceContext: 'test',
+    });
     expect(result.scanReport?.gateDecision).toBe('pass');
   });
 
@@ -276,9 +299,11 @@ describe('ExternalizationGate', () => {
       personalityId: 'p-1',
       userId: 'u-1',
     });
-    expect(store.record).toHaveBeenCalledWith(expect.objectContaining({
-      personalityId: 'p-1',
-      userId: 'u-1',
-    }));
+    expect(store.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        personalityId: 'p-1',
+        userId: 'u-1',
+      })
+    );
   });
 });

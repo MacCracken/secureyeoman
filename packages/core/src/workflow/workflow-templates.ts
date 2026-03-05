@@ -1015,7 +1015,8 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         {
           id: 'select-blueprint',
           name: 'Select SRA Blueprint',
-          description: 'Select the appropriate SRA blueprint based on cloud provider and requirements',
+          description:
+            'Select the appropriate SRA blueprint based on cloud provider and requirements',
           dependsOn: [],
           onError: 'fail',
         },
@@ -1027,12 +1028,13 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         {
           id: 'assess-controls',
           name: 'Assess Infrastructure Controls',
-          description: 'Evaluate infrastructure against SRA blueprint controls and generate gap analysis',
+          description:
+            'Evaluate infrastructure against SRA blueprint controls and generate gap analysis',
           dependsOn: ['select-blueprint'],
           onError: 'fail',
         },
         'security-architect',
-        'Using the blueprint selected in the previous step, assess the following infrastructure against all controls.\n\nBlueprint: {{steps.select-blueprint.output}}\nInfrastructure: {{input.infrastructureDescription}}\n\nFor each control, determine: fully_implemented, partially_implemented, not_implemented, or not_applicable. Create the assessment using sra_assess, then generate the summary. Include a domain heatmap, top gaps, and remediation roadmap with IaC snippets.',
+        'Using the blueprint selected in the previous step, assess the following infrastructure against all controls.\n\nBlueprint: {{steps.select-blueprint.output}}\nInfrastructure: {{input.infrastructureDescription}}\n\nFor each control, determine: fully_implemented, partially_implemented, not_implemented, or not_applicable. Create the assessment using sra_assess, then generate the summary. Include a domain heatmap, top gaps, and remediation roadmap with IaC snippets.'
       ),
       {
         id: 'approval',
@@ -1081,7 +1083,8 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         {
           id: 'gather-description',
           name: 'Gather Architecture Description',
-          description: 'Analyze the input and produce a structured architecture description with components and connections',
+          description:
+            'Analyze the input and produce a structured architecture description with components and connections',
           dependsOn: [],
           onError: 'fail',
         },
@@ -1146,7 +1149,8 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         {
           id: 'stride-analysis',
           name: 'STRIDE Threat Analysis',
-          description: 'Perform STRIDE analysis on the system and identify threats, trust boundaries, and data flows',
+          description:
+            'Perform STRIDE analysis on the system and identify threats, trust boundaries, and data flows',
           dependsOn: [],
           onError: 'fail',
         },
@@ -1157,7 +1161,8 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         id: 'generate-dfd',
         type: 'diagram_generation',
         name: 'Generate Threat Model DFD',
-        description: 'Generate Excalidraw data flow diagram showing trust boundaries and threat vectors',
+        description:
+          'Generate Excalidraw data flow diagram showing trust boundaries and threat vectors',
         config: {
           diagramType: 'threat_model',
           descriptionTemplate: '{{steps.stride-analysis.output}}',
@@ -1171,7 +1176,8 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         {
           id: 'combine-report',
           name: 'Combine Threat Model Report',
-          description: 'Merge STRIDE analysis with DFD diagram metadata into a comprehensive report',
+          description:
+            'Merge STRIDE analysis with DFD diagram metadata into a comprehensive report',
           dependsOn: ['stride-analysis', 'generate-dfd'],
           onError: 'fail',
         },

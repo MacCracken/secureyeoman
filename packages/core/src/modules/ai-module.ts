@@ -117,9 +117,9 @@ export class AIModule extends BaseModule {
       }
 
       // Background usage history init
-      void this.aiClient
-        .init()
-        .catch((err: unknown) => this.logger?.warn('AI usage history init failed', { err }));
+      void this.aiClient.init().catch((err: unknown) => {
+        this.logger?.warn('AI usage history init failed', { err });
+      });
       this.logger.debug('AI client initialized', { provider: this.config.model.provider });
 
       // Apply persisted model default
@@ -193,7 +193,7 @@ export class AIModule extends BaseModule {
         this.logger.debug('ProviderAccountManager initialized');
 
         // Import API keys from environment (fire-and-forget)
-        this.providerAccountManager.importFromEnv().catch((err) => {
+        this.providerAccountManager.importFromEnv().catch((err: unknown) => {
           this.logger?.warn('Provider account env import failed (non-fatal)', {
             error: err instanceof Error ? err.message : String(err),
           });
@@ -413,7 +413,9 @@ export class AIModule extends BaseModule {
   }
 
   // Phase 132 stubs — initialized lazily to avoid dependency on pool
-  private batchInferenceManager: import('../ai/batch-inference-manager.js').BatchInferenceManager | null = null;
+  private batchInferenceManager:
+    | import('../ai/batch-inference-manager.js').BatchInferenceManager
+    | null = null;
   private semanticCache: import('../ai/semantic-cache.js').SemanticCache | null = null;
   private kvCacheWarmer: import('../ai/kv-cache-warmer.js').KvCacheWarmer | null = null;
 

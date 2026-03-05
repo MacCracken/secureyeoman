@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import { ScannerPipeline, worstSeverity, severityRank, severityToVerdict } from './scanner-pipeline.js';
+import {
+  ScannerPipeline,
+  worstSeverity,
+  severityRank,
+  severityToVerdict,
+} from './scanner-pipeline.js';
 import type { ArtifactScanner, SandboxArtifact, ScanPipelineConfig } from './types.js';
 import { randomUUID } from 'node:crypto';
 import type { ScanFinding, ScanFindingSeverity, ExternalizationPolicy } from '@secureyeoman/shared';
@@ -129,25 +134,25 @@ describe('ScannerPipeline', () => {
   });
 
   it('records scanner versions', async () => {
-    const pipeline = new ScannerPipeline([makeScanner([], 'my-scanner')], { policy: defaultPolicy });
+    const pipeline = new ScannerPipeline([makeScanner([], 'my-scanner')], {
+      policy: defaultPolicy,
+    });
     const result = await pipeline.scan(makeArtifact());
     expect(result.scannerVersions['my-scanner']).toBe('1.0.0');
   });
 
   it('returns quarantine for high severity findings', async () => {
-    const pipeline = new ScannerPipeline(
-      [makeScanner([makeFinding({ severity: 'high' })])],
-      { policy: defaultPolicy },
-    );
+    const pipeline = new ScannerPipeline([makeScanner([makeFinding({ severity: 'high' })])], {
+      policy: defaultPolicy,
+    });
     const result = await pipeline.scan(makeArtifact());
     expect(result.verdict).toBe('quarantine');
   });
 
   it('returns block for critical severity findings', async () => {
-    const pipeline = new ScannerPipeline(
-      [makeScanner([makeFinding({ severity: 'critical' })])],
-      { policy: defaultPolicy },
-    );
+    const pipeline = new ScannerPipeline([makeScanner([makeFinding({ severity: 'critical' })])], {
+      policy: defaultPolicy,
+    });
     const result = await pipeline.scan(makeArtifact());
     expect(result.verdict).toBe('block');
   });
@@ -223,10 +228,9 @@ describe('ScannerPipeline', () => {
   });
 
   it('integrates with threat classifier', async () => {
-    const pipeline = new ScannerPipeline(
-      [makeScanner([makeFinding({ severity: 'medium' })])],
-      { policy: defaultPolicy },
-    );
+    const pipeline = new ScannerPipeline([makeScanner([makeFinding({ severity: 'medium' })])], {
+      policy: defaultPolicy,
+    });
     pipeline.setClassifier({
       classify: () => ({
         classification: 'suspicious',

@@ -29,7 +29,7 @@ export function registerTeeTools(
   server: McpServer,
   client: CoreApiClient,
   config: McpServiceConfig,
-  middleware: ToolMiddleware,
+  middleware: ToolMiddleware
 ): void {
   // ── tee_providers ──────────────────────────────────────────────────────────
   server.tool(
@@ -40,7 +40,7 @@ export function registerTeeTools(
       if (!(config as any).exposeTee) return disabled();
       const result = await client.get('/api/v1/security/tee/providers');
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   // ── tee_status ─────────────────────────────────────────────────────────────
@@ -53,10 +53,10 @@ export function registerTeeTools(
     wrapToolHandler('tee_status', middleware, async ({ provider }) => {
       if (!(config as any).exposeTee) return disabled();
       const result = await client.get(
-        `/api/v1/security/tee/attestation/${encodeURIComponent(provider)}`,
+        `/api/v1/security/tee/attestation/${encodeURIComponent(provider)}`
       );
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   // ── tee_verify ─────────────────────────────────────────────────────────────
@@ -70,9 +70,9 @@ export function registerTeeTools(
       if (!(config as any).exposeTee) return disabled();
       const result = await client.post(
         `/api/v1/security/tee/verify/${encodeURIComponent(provider)}`,
-        {},
+        {}
       );
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 }

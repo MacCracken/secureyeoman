@@ -85,10 +85,22 @@ export class AnalyticsModule extends BaseModule {
     this.usageAnomalyDetector = null;
   }
 
-  getAnalyticsStorage(): AnalyticsStorage | null { return this.analyticsStorage; }
-  getSentimentAnalyzer(): SentimentAnalyzer | null { return this.sentimentAnalyzer; }
-  getConversationSummarizer(): ConversationSummarizer | null { return this.conversationSummarizer; }
-  getEntityExtractor(): EntityExtractor | null { return this.entityExtractor; }
-  getEngagementMetricsService(): EngagementMetricsService | null { return this.engagementMetricsService; }
-  getUsageAnomalyDetector(): UsageAnomalyDetector | null { return this.usageAnomalyDetector; }
+  getAnalyticsStorage(): AnalyticsStorage | null {
+    return this.analyticsStorage;
+  }
+  getSentimentAnalyzer(): SentimentAnalyzer | null {
+    return this.sentimentAnalyzer;
+  }
+  getConversationSummarizer(): ConversationSummarizer | null {
+    return this.conversationSummarizer;
+  }
+  getEntityExtractor(): EntityExtractor | null {
+    return this.entityExtractor;
+  }
+  getEngagementMetricsService(): EngagementMetricsService | null {
+    return this.engagementMetricsService;
+  }
+  getUsageAnomalyDetector(): UsageAnomalyDetector | null {
+    return this.usageAnomalyDetector;
+  }
 }

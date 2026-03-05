@@ -137,10 +137,7 @@ export class KnowledgeGraphCoherenceChecker {
     }
   }
 
-  private checkStaleConfidence(
-    knowledge: KnowledgeEntry[],
-    issues: CoherenceIssue[]
-  ): void {
+  private checkStaleConfidence(knowledge: KnowledgeEntry[], issues: CoherenceIssue[]): void {
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
     for (const entry of knowledge) {

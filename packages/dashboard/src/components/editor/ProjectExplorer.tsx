@@ -33,7 +33,7 @@ function parseListing(output: string, parentPath: string): FileNode[] {
     .split('\n')
     .filter((line) => line.trim())
     .map((line) => {
-      const type: 'file' | 'directory' = line.charAt(0) === 'd' ? 'directory' : 'file';
+      const type: 'file' | 'directory' = line.startsWith('d') ? 'directory' : 'file';
       const name = line.substring(2).trim();
       return { name, type, path: `${parentPath}/${name}` };
     })
@@ -91,7 +91,9 @@ function TreeNode({
     setContextMenu({ x: e.clientX, y: e.clientY });
   };
 
-  const closeContext = () => setContextMenu(null);
+  const closeContext = () => {
+    setContextMenu(null);
+  };
 
   const handleDelete = async () => {
     closeContext();
@@ -117,7 +119,8 @@ function TreeNode({
       setCreating(null);
       return;
     }
-    const cmd = type === 'folder' ? `mkdir -p "${node.path}/${name}"` : `touch "${node.path}/${name}"`;
+    const cmd =
+      type === 'folder' ? `mkdir -p "${node.path}/${name}"` : `touch "${node.path}/${name}"`;
     await executeTerminalCommand(cmd, cwd);
     setCreating(null);
     setCreateName('');
@@ -153,13 +156,17 @@ function TreeNode({
             autoFocus
             className="flex-1 bg-transparent border-b border-primary outline-none text-xs font-mono"
             value={renameValue}
-            onChange={(e) => setRenameValue(e.target.value)}
+            onChange={(e) => {
+              setRenameValue(e.target.value);
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') void handleRename(renameValue);
               if (e.key === 'Escape') setRenaming(false);
             }}
             onBlur={() => void handleRename(renameValue)}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
           />
         ) : (
           <span className="truncate">{node.name}</span>
@@ -222,18 +229,19 @@ function TreeNode({
       )}
 
       {/* Children */}
-      {expanded && children && children.map((child) => (
-        <TreeNode
-          key={child.path}
-          node={child}
-          depth={depth + 1}
-          onOpenFile={onOpenFile}
-          onRefreshParent={() =>
-            void queryClient.invalidateQueries({ queryKey: ['dir-contents', node.path] })
-          }
-          cwd={cwd}
-        />
-      ))}
+      {expanded &&
+        children?.map((child) => (
+          <TreeNode
+            key={child.path}
+            node={child}
+            depth={depth + 1}
+            onOpenFile={onOpenFile}
+            onRefreshParent={() =>
+              void queryClient.invalidateQueries({ queryKey: ['dir-contents', node.path] })
+            }
+            cwd={cwd}
+          />
+        ))}
 
       {/* Inline create input */}
       {creating && (
@@ -251,7 +259,9 @@ function TreeNode({
             className="flex-1 bg-transparent border-b border-primary outline-none text-xs font-mono"
             placeholder={creating === 'folder' ? 'folder name...' : 'file name...'}
             value={createName}
-            onChange={(e) => setCreateName(e.target.value)}
+            onChange={(e) => {
+              setCreateName(e.target.value);
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') void handleCreate(creating, createName);
               if (e.key === 'Escape') {
@@ -296,9 +306,7 @@ export function ProjectExplorer({ cwd, onOpenFile, onCwdChange }: Props) {
         <Folder className="w-3.5 h-3.5 text-muted-foreground" />
         <span className="text-xs font-medium flex-1">Explorer</span>
         <button
-          onClick={() =>
-            void queryClient.invalidateQueries({ queryKey: ['dir-contents', cwd] })
-          }
+          onClick={() => void queryClient.invalidateQueries({ queryKey: ['dir-contents', cwd] })}
           className="text-muted-foreground hover:text-foreground p-0.5"
           title="Refresh"
         >
@@ -311,7 +319,9 @@ export function ProjectExplorer({ cwd, onOpenFile, onCwdChange }: Props) {
         <input
           type="text"
           value={cwdInput}
-          onChange={(e) => setCwdInput(e.target.value)}
+          onChange={(e) => {
+            setCwdInput(e.target.value);
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleCwdSubmit();
           }}
@@ -341,10 +351,8 @@ export function ProjectExplorer({ cwd, onOpenFile, onCwdChange }: Props) {
             cwd={cwd}
           />
         ))}
-        {rootFiles && rootFiles.length === 0 && !isLoading && (
-          <div className="px-3 py-4 text-center text-xs text-muted-foreground">
-            Empty directory
-          </div>
+        {rootFiles?.length === 0 && !isLoading && (
+          <div className="px-3 py-4 text-center text-xs text-muted-foreground">Empty directory</div>
         )}
       </div>
     </div>

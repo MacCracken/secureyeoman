@@ -95,23 +95,24 @@ describe('MemoryReorganizer', () => {
       const mem = makeMemory({ id: 'ep-1', accessCount: 8, content: 'user prefers dark mode' });
       brainStorage.queryMemories
         .mockResolvedValueOnce([mem]) // episodic query
-        .mockResolvedValueOnce([]);   // semantic query
+        .mockResolvedValueOnce([]); // semantic query
 
       const r = new MemoryReorganizer({ brainStorage, auditStorage, logger });
       const result = await r.reorganize('daily', 'r-1', 'p-1');
 
       expect(result.promoted).toBe(1);
-      expect(brainStorage.updateMemory).toHaveBeenCalledWith('ep-1', expect.objectContaining({
-        type: 'semantic',
-        expiresAt: null,
-      }));
+      expect(brainStorage.updateMemory).toHaveBeenCalledWith(
+        'ep-1',
+        expect.objectContaining({
+          type: 'semantic',
+          expiresAt: null,
+        })
+      );
     });
 
     it('skips episodic memory with accessCount <= 5', async () => {
       const mem = makeMemory({ id: 'ep-1', accessCount: 3 });
-      brainStorage.queryMemories
-        .mockResolvedValueOnce([mem])
-        .mockResolvedValueOnce([]);
+      brainStorage.queryMemories.mockResolvedValueOnce([mem]).mockResolvedValueOnce([]);
 
       const r = new MemoryReorganizer({ brainStorage, auditStorage, logger });
       const result = await r.reorganize('daily', 'r-1');
@@ -122,9 +123,7 @@ describe('MemoryReorganizer', () => {
 
     it('skips episodic with exactly accessCount = 5', async () => {
       const mem = makeMemory({ id: 'ep-1', accessCount: 5 });
-      brainStorage.queryMemories
-        .mockResolvedValueOnce([mem])
-        .mockResolvedValueOnce([]);
+      brainStorage.queryMemories.mockResolvedValueOnce([mem]).mockResolvedValueOnce([]);
 
       const r = new MemoryReorganizer({ brainStorage, auditStorage, logger });
       const result = await r.reorganize('daily', 'r-1');
@@ -136,11 +135,10 @@ describe('MemoryReorganizer', () => {
       const mem = makeMemory({
         id: 'ep-1',
         accessCount: 10,
-        content: 'Yesterday the user configured the server. Today they deployed it. Just now it started.',
+        content:
+          'Yesterday the user configured the server. Today they deployed it. Just now it started.',
       });
-      brainStorage.queryMemories
-        .mockResolvedValueOnce([mem])
-        .mockResolvedValueOnce([]);
+      brainStorage.queryMemories.mockResolvedValueOnce([mem]).mockResolvedValueOnce([]);
 
       const r = new MemoryReorganizer({ brainStorage, auditStorage, logger });
       await r.reorganize('daily', 'r-1');
@@ -158,11 +156,10 @@ describe('MemoryReorganizer', () => {
       const mem = makeMemory({
         id: 'ep-1',
         accessCount: 7,
-        content: 'This morning the build failed. Earlier it worked. Last night it was fine. Recently changes landed.',
+        content:
+          'This morning the build failed. Earlier it worked. Last night it was fine. Recently changes landed.',
       });
-      brainStorage.queryMemories
-        .mockResolvedValueOnce([mem])
-        .mockResolvedValueOnce([]);
+      brainStorage.queryMemories.mockResolvedValueOnce([mem]).mockResolvedValueOnce([]);
 
       const r = new MemoryReorganizer({ brainStorage, auditStorage, logger });
       await r.reorganize('daily', 'r-1');
@@ -176,18 +173,18 @@ describe('MemoryReorganizer', () => {
 
     it('archives original before promoting', async () => {
       const mem = makeMemory({ id: 'ep-1', accessCount: 10 });
-      brainStorage.queryMemories
-        .mockResolvedValueOnce([mem])
-        .mockResolvedValueOnce([]);
+      brainStorage.queryMemories.mockResolvedValueOnce([mem]).mockResolvedValueOnce([]);
 
       const r = new MemoryReorganizer({ brainStorage, auditStorage, logger });
       await r.reorganize('daily', 'r-1');
 
-      expect(auditStorage.archiveMemory).toHaveBeenCalledWith(expect.objectContaining({
-        originalMemoryId: 'ep-1',
-        transformType: 'promoted',
-        auditReportId: 'r-1',
-      }));
+      expect(auditStorage.archiveMemory).toHaveBeenCalledWith(
+        expect.objectContaining({
+          originalMemoryId: 'ep-1',
+          transformType: 'promoted',
+          auditReportId: 'r-1',
+        })
+      );
       // Archive happens before update
       const archiveOrder = auditStorage.archiveMemory.mock.invocationCallOrder[0];
       const updateOrder = brainStorage.updateMemory.mock.invocationCallOrder[0];
@@ -200,9 +197,7 @@ describe('MemoryReorganizer', () => {
         makeMemory({ id: 'ep-2', accessCount: 12 }),
         makeMemory({ id: 'ep-3', accessCount: 2 }), // not eligible
       ];
-      brainStorage.queryMemories
-        .mockResolvedValueOnce(mems)
-        .mockResolvedValueOnce([]);
+      brainStorage.queryMemories.mockResolvedValueOnce(mems).mockResolvedValueOnce([]);
 
       const r = new MemoryReorganizer({ brainStorage, auditStorage, logger });
       const result = await r.reorganize('daily', 'r-1');
@@ -212,9 +207,7 @@ describe('MemoryReorganizer', () => {
 
     it('captures promote error in summary.errors', async () => {
       const mem = makeMemory({ id: 'ep-1', accessCount: 10 });
-      brainStorage.queryMemories
-        .mockResolvedValueOnce([mem])
-        .mockResolvedValueOnce([]);
+      brainStorage.queryMemories.mockResolvedValueOnce([mem]).mockResolvedValueOnce([]);
       brainStorage.updateMemory.mockRejectedValue(new Error('update failed'));
 
       const r = new MemoryReorganizer({ brainStorage, auditStorage, logger });
@@ -236,16 +229,19 @@ describe('MemoryReorganizer', () => {
         lastAccessedAt: FORTY_DAYS_AGO,
       });
       brainStorage.queryMemories
-        .mockResolvedValueOnce([])   // episodic query
+        .mockResolvedValueOnce([]) // episodic query
         .mockResolvedValueOnce([mem]); // semantic query
 
       const r = new MemoryReorganizer({ brainStorage, auditStorage, logger });
       const result = await r.reorganize('daily', 'r-1');
 
       expect(result.demoted).toBe(1);
-      expect(brainStorage.updateMemory).toHaveBeenCalledWith('sem-1', expect.objectContaining({
-        type: 'episodic',
-      }));
+      expect(brainStorage.updateMemory).toHaveBeenCalledWith(
+        'sem-1',
+        expect.objectContaining({
+          type: 'episodic',
+        })
+      );
     });
 
     it('skips semantic accessed recently (within 30 days)', async () => {
@@ -255,9 +251,7 @@ describe('MemoryReorganizer', () => {
         importance: 0.1,
         lastAccessedAt: TEN_DAYS_AGO,
       });
-      brainStorage.queryMemories
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([mem]);
+      brainStorage.queryMemories.mockResolvedValueOnce([]).mockResolvedValueOnce([mem]);
 
       const r = new MemoryReorganizer({ brainStorage, auditStorage, logger });
       const result = await r.reorganize('daily', 'r-1');
@@ -272,9 +266,7 @@ describe('MemoryReorganizer', () => {
         importance: 0.5,
         lastAccessedAt: FORTY_DAYS_AGO,
       });
-      brainStorage.queryMemories
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([mem]);
+      brainStorage.queryMemories.mockResolvedValueOnce([]).mockResolvedValueOnce([mem]);
 
       const r = new MemoryReorganizer({ brainStorage, auditStorage, logger });
       const result = await r.reorganize('daily', 'r-1');
@@ -289,9 +281,7 @@ describe('MemoryReorganizer', () => {
         importance: 0.05,
         lastAccessedAt: FORTY_DAYS_AGO,
       });
-      brainStorage.queryMemories
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([mem]);
+      brainStorage.queryMemories.mockResolvedValueOnce([]).mockResolvedValueOnce([mem]);
 
       const r = new MemoryReorganizer({ brainStorage, auditStorage, logger });
       await r.reorganize('daily', 'r-1');
@@ -311,9 +301,7 @@ describe('MemoryReorganizer', () => {
         lastAccessedAt: null,
         createdAt: FORTY_DAYS_AGO,
       });
-      brainStorage.queryMemories
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([mem]);
+      brainStorage.queryMemories.mockResolvedValueOnce([]).mockResolvedValueOnce([mem]);
 
       const r = new MemoryReorganizer({ brainStorage, auditStorage, logger });
       const result = await r.reorganize('daily', 'r-1');
@@ -328,17 +316,17 @@ describe('MemoryReorganizer', () => {
         importance: 0.05,
         lastAccessedAt: FORTY_DAYS_AGO,
       });
-      brainStorage.queryMemories
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([mem]);
+      brainStorage.queryMemories.mockResolvedValueOnce([]).mockResolvedValueOnce([mem]);
 
       const r = new MemoryReorganizer({ brainStorage, auditStorage, logger });
       await r.reorganize('daily', 'r-1');
 
-      expect(auditStorage.archiveMemory).toHaveBeenCalledWith(expect.objectContaining({
-        originalMemoryId: 'sem-1',
-        transformType: 'demoted',
-      }));
+      expect(auditStorage.archiveMemory).toHaveBeenCalledWith(
+        expect.objectContaining({
+          originalMemoryId: 'sem-1',
+          transformType: 'demoted',
+        })
+      );
     });
 
     it('captures demote error in summary.errors', async () => {
@@ -348,9 +336,7 @@ describe('MemoryReorganizer', () => {
         importance: 0.05,
         lastAccessedAt: FORTY_DAYS_AGO,
       });
-      brainStorage.queryMemories
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([mem]);
+      brainStorage.queryMemories.mockResolvedValueOnce([]).mockResolvedValueOnce([mem]);
       auditStorage.archiveMemory.mockRejectedValue(new Error('archive failure'));
 
       const r = new MemoryReorganizer({ brainStorage, auditStorage, logger });
@@ -365,8 +351,18 @@ describe('MemoryReorganizer', () => {
 
   describe('topic merge', () => {
     it('merges knowledge with edit distance < 3', async () => {
-      const k1 = makeKnowledge({ id: 'k-1', topic: 'TypeScript', confidence: 0.9, content: 'TS is typed' });
-      const k2 = makeKnowledge({ id: 'k-2', topic: 'Typescript', confidence: 0.7, content: 'TS is great' });
+      const k1 = makeKnowledge({
+        id: 'k-1',
+        topic: 'TypeScript',
+        confidence: 0.9,
+        content: 'TS is typed',
+      });
+      const k2 = makeKnowledge({
+        id: 'k-2',
+        topic: 'Typescript',
+        confidence: 0.7,
+        content: 'TS is great',
+      });
       brainStorage.queryMemories.mockResolvedValue([]);
       brainStorage.queryKnowledge.mockResolvedValue([k1, k2]);
 
@@ -377,8 +373,18 @@ describe('MemoryReorganizer', () => {
     });
 
     it('higher confidence absorbs lower', async () => {
-      const k1 = makeKnowledge({ id: 'winner', topic: 'React', confidence: 0.95, content: 'React is a UI library' });
-      const k2 = makeKnowledge({ id: 'loser', topic: 'Reacr', confidence: 0.3, content: 'React uses JSX' });
+      const k1 = makeKnowledge({
+        id: 'winner',
+        topic: 'React',
+        confidence: 0.95,
+        content: 'React is a UI library',
+      });
+      const k2 = makeKnowledge({
+        id: 'loser',
+        topic: 'Reacr',
+        confidence: 0.3,
+        content: 'React uses JSX',
+      });
       brainStorage.queryMemories.mockResolvedValue([]);
       brainStorage.queryKnowledge.mockResolvedValue([k1, k2]);
 
@@ -396,8 +402,18 @@ describe('MemoryReorganizer', () => {
     });
 
     it('lower confidence entry absorbs when it has higher confidence', async () => {
-      const k1 = makeKnowledge({ id: 'k-1', topic: 'Docker', confidence: 0.4, content: 'Docker containers' });
-      const k2 = makeKnowledge({ id: 'k-2', topic: 'Dockre', confidence: 0.8, content: 'Docker images' });
+      const k1 = makeKnowledge({
+        id: 'k-1',
+        topic: 'Docker',
+        confidence: 0.4,
+        content: 'Docker containers',
+      });
+      const k2 = makeKnowledge({
+        id: 'k-2',
+        topic: 'Dockre',
+        confidence: 0.8,
+        content: 'Docker images',
+      });
       brainStorage.queryMemories.mockResolvedValue([]);
       brainStorage.queryKnowledge.mockResolvedValue([k1, k2]);
 
@@ -413,9 +429,24 @@ describe('MemoryReorganizer', () => {
     it('skips already assigned (loser) entries', async () => {
       // k1 and k2 match (distance=0), k2 and k3 also match
       // But once k2 is assigned as loser, k3 should not try to merge with k2
-      const k1 = makeKnowledge({ id: 'k-1', topic: 'Node', confidence: 0.9, content: 'Node.js runtime' });
-      const k2 = makeKnowledge({ id: 'k-2', topic: 'Node', confidence: 0.5, content: 'Node event loop' });
-      const k3 = makeKnowledge({ id: 'k-3', topic: 'Node', confidence: 0.3, content: 'Node modules' });
+      const k1 = makeKnowledge({
+        id: 'k-1',
+        topic: 'Node',
+        confidence: 0.9,
+        content: 'Node.js runtime',
+      });
+      const k2 = makeKnowledge({
+        id: 'k-2',
+        topic: 'Node',
+        confidence: 0.5,
+        content: 'Node event loop',
+      });
+      const k3 = makeKnowledge({
+        id: 'k-3',
+        topic: 'Node',
+        confidence: 0.3,
+        content: 'Node modules',
+      });
       brainStorage.queryMemories.mockResolvedValue([]);
       brainStorage.queryKnowledge.mockResolvedValue([k1, k2, k3]);
 
@@ -457,10 +488,16 @@ describe('MemoryReorganizer', () => {
 
   describe('topic split', () => {
     it('splits knowledge > 2000 chars at paragraphs', async () => {
-      const longContent = 'First paragraph content here.\n\nSecond paragraph content here.\n\nThird paragraph content here.';
+      const longContent =
+        'First paragraph content here.\n\nSecond paragraph content here.\n\nThird paragraph content here.';
       // Pad to exceed 2000 chars
       const padded = longContent + '\n\n' + 'a'.repeat(2000);
-      const entry = makeKnowledge({ id: 'k-big', content: padded, topic: 'BigTopic', confidence: 0.85 });
+      const entry = makeKnowledge({
+        id: 'k-big',
+        content: padded,
+        topic: 'BigTopic',
+        confidence: 0.85,
+      });
       brainStorage.queryMemories.mockResolvedValue([]);
       brainStorage.queryKnowledge.mockResolvedValue([entry]);
 
@@ -469,16 +506,24 @@ describe('MemoryReorganizer', () => {
 
       expect(result.topicsSplit).toBe(1);
       // Original updated with first part
-      expect(brainStorage.updateKnowledge).toHaveBeenCalledWith('k-big', expect.objectContaining({
-        content: expect.any(String),
-      }));
+      expect(brainStorage.updateKnowledge).toHaveBeenCalledWith(
+        'k-big',
+        expect.objectContaining({
+          content: expect.any(String),
+        })
+      );
       // New entries created for remaining parts
       expect(brainStorage.createKnowledge).toHaveBeenCalled();
     });
 
     it('preserves confidence on new child entries', async () => {
       const longContent = 'Paragraph one.\n\n' + 'b'.repeat(2000);
-      const entry = makeKnowledge({ id: 'k-big', content: longContent, topic: 'Topic', confidence: 0.75 });
+      const entry = makeKnowledge({
+        id: 'k-big',
+        content: longContent,
+        topic: 'Topic',
+        confidence: 0.75,
+      });
       brainStorage.queryMemories.mockResolvedValue([]);
       brainStorage.queryKnowledge.mockResolvedValue([entry]);
 
@@ -491,7 +536,12 @@ describe('MemoryReorganizer', () => {
 
     it('creates numbered topic names for split parts', async () => {
       const longContent = 'Part A.\n\nPart B.\n\n' + 'c'.repeat(2000);
-      const entry = makeKnowledge({ id: 'k-big', content: longContent, topic: 'SplitMe', confidence: 0.8 });
+      const entry = makeKnowledge({
+        id: 'k-big',
+        content: longContent,
+        topic: 'SplitMe',
+        confidence: 0.8,
+      });
       brainStorage.queryMemories.mockResolvedValue([]);
       brainStorage.queryKnowledge.mockResolvedValue([entry]);
 
@@ -825,9 +875,11 @@ describe('MemoryReorganizer', () => {
       const result = await r.reorganize('daily', 'r-1');
 
       expect(result.errors).toEqual([]);
-      expect(brainStorage.queryMemories).toHaveBeenCalledWith(expect.objectContaining({
-        personalityId: undefined,
-      }));
+      expect(brainStorage.queryMemories).toHaveBeenCalledWith(
+        expect.objectContaining({
+          personalityId: undefined,
+        })
+      );
     });
 
     it('constructs without error', () => {

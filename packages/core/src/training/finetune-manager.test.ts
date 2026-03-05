@@ -905,7 +905,7 @@ describe('FinetuneManager — Phase 131 (Advanced Training)', () => {
         .fn()
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 }) // createJob INSERT
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 }) // startJob getJob
-        .mockResolvedValueOnce({ rows: [], rowCount: 1 })    // startJob UPDATE running
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // startJob UPDATE running
         .mockResolvedValue({ rows: [runningRow], rowCount: 1 }); // getJob final
 
       const job = await manager.startDpoJob({

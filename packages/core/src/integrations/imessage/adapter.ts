@@ -16,8 +16,9 @@ import { homedir } from 'node:os';
 import { promisify } from 'node:util';
 type SqliteDatabase = import('better-sqlite3').Database;
 
-async function loadSqlite(): Promise<new (filename: string, options?: Record<string, unknown>) => SqliteDatabase> {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+async function loadSqlite(): Promise<
+  new (filename: string, options?: Record<string, unknown>) => SqliteDatabase
+> {
   const mod = await import('better-sqlite3');
   return mod.default;
 }

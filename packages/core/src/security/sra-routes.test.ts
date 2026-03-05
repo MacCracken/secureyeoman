@@ -343,7 +343,16 @@ describe('SraRoutes', () => {
     it('generates assessment summary', async () => {
       const withSummary = {
         ...SAMPLE_ASSESSMENT,
-        summary: { complianceScore: 85, totalControls: 10, implemented: 8, partial: 1, notImplemented: 1, notApplicable: 0, topGaps: [], domainScores: {} },
+        summary: {
+          complianceScore: 85,
+          totalControls: 10,
+          implemented: 8,
+          partial: 1,
+          notImplemented: 1,
+          notApplicable: 0,
+          topGaps: [],
+          domainScores: {},
+        },
         status: 'completed',
       };
       (mgr.generateAssessmentSummary as any).mockResolvedValue(withSummary);
@@ -374,7 +383,13 @@ describe('SraRoutes', () => {
   describe('GET /api/v1/security/sra/compliance-mappings', () => {
     it('returns compliance mappings', async () => {
       (mgr.getComplianceMappings as any).mockResolvedValue([
-        { domain: 'identity_access', framework: 'NIST CSF', controlId: 'PR.AC', controlTitle: 'Access Control', description: 'desc' },
+        {
+          domain: 'identity_access',
+          framework: 'NIST CSF',
+          controlId: 'PR.AC',
+          controlTitle: 'Access Control',
+          description: 'desc',
+        },
       ]);
 
       const res = await app.inject({

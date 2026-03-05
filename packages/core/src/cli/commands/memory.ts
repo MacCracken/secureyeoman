@@ -19,7 +19,8 @@ export const memoryCommand: Command = {
   name: 'memory',
   aliases: ['mem'],
   description: 'Manage vector memory and brain operations',
-  usage: 'secureyeoman memory <search|memories|knowledge|stats|consolidate|audit|schedule|activation>',
+  usage:
+    'secureyeoman memory <search|memories|knowledge|stats|consolidate|audit|schedule|activation>',
 
   async run(ctx: CommandContext): Promise<number> {
     let argv = ctx.argv;
@@ -192,7 +193,9 @@ Options:
             ctx.stdout.write(`  Health Score: ${health.healthScore}/100\n`);
             ctx.stdout.write(`  Avg Importance: ${health.avgImportance}\n`);
             ctx.stdout.write(`  Expiring (7 days): ${health.expiringWithin7Days}\n`);
-            ctx.stdout.write(`  Last Audit: ${health.lastAuditAt ? new Date(health.lastAuditAt as number).toLocaleString() : 'Never'}\n`);
+            ctx.stdout.write(
+              `  Last Audit: ${health.lastAuditAt ? new Date(health.lastAuditAt as number).toLocaleString() : 'Never'}\n`
+            );
           }
         } catch {
           // Audit health endpoint may not be available
@@ -294,7 +297,9 @@ Options:
             ctx.stderr.write(`Failed to fetch report: HTTP ${result.status}\n`);
             return 1;
           }
-          ctx.stdout.write(JSON.stringify((result.data as { report: unknown }).report, null, 2) + '\n');
+          ctx.stdout.write(
+            JSON.stringify((result.data as { report: unknown }).report, null, 2) + '\n'
+          );
         } else if (action === 'approve' && argv[2]) {
           const result = await apiCall(baseUrl, `/api/v1/brain/audit/reports/${argv[2]}/approve`, {
             method: 'POST',
@@ -306,7 +311,9 @@ Options:
           }
           ctx.stdout.write('Report approved successfully.\n');
         } else {
-          ctx.stderr.write("Usage: secureyeoman memory audit <run|history|show <id>|approve <id>>\n");
+          ctx.stderr.write(
+            'Usage: secureyeoman memory audit <run|history|show <id>|approve <id>>\n'
+          );
           return 1;
         }
       } else if (subcommand === 'schedule') {
@@ -333,7 +340,9 @@ Options:
           const cronResult = extractFlag(scopeResult.rest, 'cron');
           const cron = cronResult.value;
           if (!scope || !cron) {
-            ctx.stderr.write('Usage: secureyeoman memory schedule set --scope <daily|weekly|monthly> --cron "0 2 * * *"\n');
+            ctx.stderr.write(
+              'Usage: secureyeoman memory schedule set --scope <daily|weekly|monthly> --cron "0 2 * * *"\n'
+            );
             return 1;
           }
           const result = await apiCall(baseUrl, '/api/v1/brain/audit/schedule', {
@@ -358,19 +367,25 @@ Options:
           ctx.stderr.write(`Failed to fetch stats: HTTP ${result.status}\n`);
           return 1;
         }
-        const stats = (result.data as { stats: {
-          topMemories: { id: string; activation: number }[];
-          topDocuments: { id: string; activation: number }[];
-          associationCount: number;
-          avgAssociationWeight: number;
-          accessTrend: { day: string; count: number }[];
-        } }).stats;
+        const stats = (
+          result.data as {
+            stats: {
+              topMemories: { id: string; activation: number }[];
+              topDocuments: { id: string; activation: number }[];
+              associationCount: number;
+              avgAssociationWeight: number;
+              accessTrend: { day: string; count: number }[];
+            };
+          }
+        ).stats;
         if (json) {
           ctx.stdout.write(JSON.stringify(stats, null, 2) + '\n');
           return 0;
         }
         ctx.stdout.write('\n=== Cognitive Memory Activation ===\n\n');
-        ctx.stdout.write(`Associations: ${stats.associationCount}  |  Avg Weight: ${stats.avgAssociationWeight.toFixed(3)}\n\n`);
+        ctx.stdout.write(
+          `Associations: ${stats.associationCount}  |  Avg Weight: ${stats.avgAssociationWeight.toFixed(3)}\n\n`
+        );
         if (stats.topMemories.length > 0) {
           ctx.stdout.write('Top Activated Memories:\n');
           ctx.stdout.write(
@@ -458,8 +473,8 @@ async function runLocalMemory(
               type: m.type ?? '',
               importance: Number(m.importance ?? 0).toFixed(2),
               content:
-                (m.content ?? '').substring(0, 40) +
-                ((m.content ?? '').length > 40 ? '...' : ''),
+                String(m.content ?? '').substring(0, 40) +
+                (String(m.content ?? '').length > 40 ? '...' : ''),
             }))
           ) +
           '\n'
@@ -484,8 +499,8 @@ async function runLocalMemory(
               id: String(k.id ?? '').substring(0, 12),
               title: (k.title ?? '').substring(0, 30),
               content:
-                (k.content ?? '').substring(0, 40) +
-                ((k.content ?? '').length > 40 ? '...' : ''),
+                String(k.content ?? '').substring(0, 40) +
+                (String(k.content ?? '').length > 40 ? '...' : ''),
             }))
           ) +
           '\n'

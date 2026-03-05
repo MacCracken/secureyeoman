@@ -45,9 +45,12 @@ interface ChartRow {
 function computeSMA(data: OhlcvPoint[], period: number): (number | null)[] {
   const result: (number | null)[] = [];
   for (let i = 0; i < data.length; i++) {
-    if (i < period - 1) { result.push(null); continue; }
+    if (i < period - 1) {
+      result.push(null);
+      continue;
+    }
     let sum = 0;
-    for (let j = i - period + 1; j <= i; j++) sum += data[j]!.close;
+    for (let j = i - period + 1; j <= i; j++) sum += data[j].close;
     result.push(sum / period);
   }
   return result;
@@ -58,7 +61,11 @@ const MA_COLORS = ['#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899'];
 // Custom bar shape rendering a candle body + wicks
 function CandleShape(props: Record<string, unknown>) {
   const { x, y, width, height, payload } = props as {
-    x: number; y: number; width: number; height: number; payload: ChartRow;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    payload: ChartRow;
   };
   if (!payload) return null;
   const color = payload.isUp ? '#22c55e' : '#ef4444';
@@ -69,14 +76,26 @@ function CandleShape(props: Record<string, unknown>) {
   return (
     <g>
       <line x1={cx} y1={y} x2={cx} y2={y + height} stroke={color} strokeWidth={1} />
-      <rect x={x + 1} y={y} width={Math.max(1, width - 2)} height={Math.max(1, height)} fill={color} rx={1} />
+      <rect
+        x={x + 1}
+        y={y}
+        width={Math.max(1, width - 2)}
+        height={Math.max(1, height)}
+        fill={color}
+        rx={1}
+      />
     </g>
   );
 }
 
-export function CandlestickChart({ data, movingAverages = [], showVolume = false, height = 400 }: CandlestickChartProps) {
+export function CandlestickChart({
+  data,
+  movingAverages = [],
+  showVolume = false,
+  height = 400,
+}: CandlestickChartProps) {
   const chartData = useMemo(() => {
-    const mas = movingAverages.map(p => ({ period: p, values: computeSMA(data, p) }));
+    const mas = movingAverages.map((p) => ({ period: p, values: computeSMA(data, p) }));
 
     return data.map((d, i) => {
       const isUp = d.close >= d.open;
@@ -98,8 +117,8 @@ export function CandlestickChart({ data, movingAverages = [], showVolume = false
 
   if (!data.length) return <p className="text-muted-foreground text-sm">No data</p>;
 
-  const allLow = Math.min(...data.map(d => d.low));
-  const allHigh = Math.max(...data.map(d => d.high));
+  const allLow = Math.min(...data.map((d) => d.low));
+  const allHigh = Math.max(...data.map((d) => d.high));
   const pad = (allHigh - allLow) * 0.05 || 1;
 
   return (
@@ -111,14 +130,8 @@ export function CandlestickChart({ data, movingAverages = [], showVolume = false
           tick={{ fontSize: 10 }}
           interval={Math.max(0, Math.floor(data.length / 8))}
         />
-        <YAxis
-          domain={[allLow - pad, allHigh + pad]}
-          tick={{ fontSize: 10 }}
-          yAxisId="price"
-        />
-        {showVolume && (
-          <YAxis yAxisId="volume" orientation="right" tick={{ fontSize: 9 }} hide />
-        )}
+        <YAxis domain={[allLow - pad, allHigh + pad]} tick={{ fontSize: 10 }} yAxisId="price" />
+        {showVolume && <YAxis yAxisId="volume" orientation="right" tick={{ fontSize: 9 }} hide />}
         <Tooltip
           contentStyle={{
             backgroundColor: 'hsl(var(--card))',

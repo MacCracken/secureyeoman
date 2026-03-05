@@ -167,7 +167,11 @@ export class McpClientManager {
         const token = await mintCallthruToken(this.tokenSecret);
         const endpoint = `${server.url}/api/v1/internal/tool-call`;
 
-        this.logger.info('Calling MCP tool via internal callthrough', { serverId, toolName, endpoint });
+        this.logger.info('Calling MCP tool via internal callthrough', {
+          serverId,
+          toolName,
+          endpoint,
+        });
 
         const res = await fetch(endpoint, {
           method: 'POST',
@@ -193,7 +197,10 @@ export class McpClientManager {
       } catch (error) {
         const elapsed = Date.now() - startTime;
         span.setAttribute('mcp.latency_ms', elapsed);
-        span.setStatus({ code: SpanStatusCode.ERROR, message: error instanceof Error ? error.message : 'Unknown' });
+        span.setStatus({
+          code: SpanStatusCode.ERROR,
+          message: error instanceof Error ? error.message : 'Unknown',
+        });
         span.recordException(error instanceof Error ? error : new Error(String(error)));
         span.end();
         throw error;

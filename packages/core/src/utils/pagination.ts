@@ -27,11 +27,11 @@ export function parsePagination(
   const maxLimit = options?.maxLimit ?? DEFAULT_MAX_LIMIT;
   const defaultLimit = options?.defaultLimit ?? DEFAULT_LIMIT;
 
-  let limit = typeof query.limit === 'number' ? query.limit : parseInt(String(query.limit ?? ''), 10);
+  let limit = typeof query.limit === 'number' ? query.limit : parseInt(query.limit ?? '', 10);
   if (isNaN(limit) || limit < 1) limit = defaultLimit;
   if (limit > maxLimit) limit = maxLimit;
 
-  let offset = typeof query.offset === 'number' ? query.offset : parseInt(String(query.offset ?? ''), 10);
+  let offset = typeof query.offset === 'number' ? query.offset : parseInt(query.offset ?? '', 10);
   if (isNaN(offset) || offset < 0) offset = 0;
 
   return { limit, offset };

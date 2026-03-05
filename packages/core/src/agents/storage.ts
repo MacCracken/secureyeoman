@@ -536,7 +536,7 @@ export class SubAgentStorage extends PgBaseStorage {
    * Delete completed/failed/cancelled delegations (and their messages) older than
    * the given retention period. Returns the number of pruned delegation records.
    */
-  async pruneDelegations(retentionDays: number = 90): Promise<number> {
+  async pruneDelegations(retentionDays = 90): Promise<number> {
     const cutoff = Date.now() - retentionDays * 86_400_000;
     // Delete messages first (FK child), then delegations
     await this.execute(

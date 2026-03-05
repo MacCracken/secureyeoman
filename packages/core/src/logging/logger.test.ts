@@ -480,7 +480,8 @@ import { sanitizeForLogging } from '../utils/crypto.js';
 
 describe('sanitizeForLogging — JWT and DB connection string redaction', () => {
   it('redacts JWT tokens in strings', () => {
-    const jwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4ifQ.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
+    const jwt =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4ifQ.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
     // The JWT is embedded alone (no "token:" prefix which triggers a different pattern first)
     const result = sanitizeForLogging(`JWT=${jwt} end`);
     expect(result).toContain('[REDACTED_JWT]');

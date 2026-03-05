@@ -162,7 +162,8 @@ describe('OnlineUpdateManager', () => {
         { role: 'user', content: 'Hello' },
         { role: 'assistant', content: 'Hi there!' },
       ];
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 }) // get job
         .mockResolvedValueOnce({ rows: messageRows, rowCount: 2 }) // _exportConversations conv-1
         .mockResolvedValueOnce({ rows: messageRows, rowCount: 2 }) // _exportConversations conv-2
@@ -198,7 +199,8 @@ describe('OnlineUpdateManager', () => {
         { role: 'user', content: 'Hello' },
         { role: 'assistant', content: 'Hi there!' },
       ];
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 }) // get job
         .mockResolvedValueOnce({ rows: messageRows, rowCount: 2 }) // conv-1
         .mockResolvedValueOnce({ rows: messageRows, rowCount: 2 }) // conv-2
@@ -206,8 +208,8 @@ describe('OnlineUpdateManager', () => {
 
       await manager.startJob('online-1');
 
-      const configCall = (writeFileSync as ReturnType<typeof vi.fn>).mock.calls.find(
-        (c: any) => String(c[0]).includes('config.json')
+      const configCall = (writeFileSync as ReturnType<typeof vi.fn>).mock.calls.find((c: any) =>
+        String(c[0]).includes('config.json')
       );
       expect(configCall).toBeDefined();
     });
@@ -219,7 +221,8 @@ describe('OnlineUpdateManager', () => {
         { role: 'user', content: 'Hello' },
         { role: 'assistant', content: 'Hi there!' },
       ];
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 }) // get job
         .mockResolvedValueOnce({ rows: messageRows, rowCount: 2 }) // conv-1
         .mockResolvedValueOnce({ rows: messageRows, rowCount: 2 }) // conv-2
@@ -227,8 +230,8 @@ describe('OnlineUpdateManager', () => {
 
       await manager.startJob('online-1');
 
-      const trainCall = (writeFileSync as ReturnType<typeof vi.fn>).mock.calls.find(
-        (c: any) => String(c[0]).includes('train.jsonl')
+      const trainCall = (writeFileSync as ReturnType<typeof vi.fn>).mock.calls.find((c: any) =>
+        String(c[0]).includes('train.jsonl')
       );
       expect(trainCall).toBeDefined();
     });
@@ -244,7 +247,8 @@ describe('OnlineUpdateManager', () => {
         { role: 'user', content: 'Hello' },
         { role: 'assistant', content: 'Hi there!' },
       ];
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 }) // get job
         .mockResolvedValueOnce({ rows: messageRows, rowCount: 2 }) // conv-1
         .mockResolvedValueOnce({ rows: messageRows, rowCount: 2 }) // conv-2
@@ -252,8 +256,8 @@ describe('OnlineUpdateManager', () => {
 
       await manager.startJob('online-1');
 
-      const trainCall = (writeFileSync as ReturnType<typeof vi.fn>).mock.calls.find(
-        (c: any) => String(c[0]).includes('train.jsonl')
+      const trainCall = (writeFileSync as ReturnType<typeof vi.fn>).mock.calls.find((c: any) =>
+        String(c[0]).includes('train.jsonl')
       );
       if (trainCall) {
         const content = String(trainCall[1]);

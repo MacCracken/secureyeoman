@@ -47,8 +47,7 @@ export function AgentEvalWidget() {
 
   const { data: runs } = useQuery<RunListResponse>({
     queryKey: ['eval-runs', selectedSuite],
-    queryFn: () =>
-      apiFetch(`/eval/runs${selectedSuite ? `?suiteId=${selectedSuite}` : ''}`),
+    queryFn: () => apiFetch(`/eval/runs${selectedSuite ? `?suiteId=${selectedSuite}` : ''}`),
     refetchInterval: 10_000,
   });
 
@@ -59,8 +58,7 @@ export function AgentEvalWidget() {
   });
 
   const runSuiteMutation = useMutation({
-    mutationFn: (suiteId: string) =>
-      apiFetch(`/eval/suites/${suiteId}/run`, { method: 'POST' }),
+    mutationFn: (suiteId: string) => apiFetch(`/eval/suites/${suiteId}/run`, { method: 'POST' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['eval-runs'] });
     },
@@ -97,7 +95,9 @@ export function AgentEvalWidget() {
             type="button"
             className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
             disabled={runSuiteMutation.isPending}
-            onClick={() => runSuiteMutation.mutate(selectedSuite)}
+            onClick={() => {
+              runSuiteMutation.mutate(selectedSuite);
+            }}
           >
             {runSuiteMutation.isPending ? 'Running...' : 'Run Suite'}
           </button>
@@ -125,7 +125,9 @@ export function AgentEvalWidget() {
               <tr
                 key={run.id}
                 className="cursor-pointer border-b hover:bg-gray-50 dark:hover:bg-gray-800"
-                onClick={() => setSelectedRun(run.id)}
+                onClick={() => {
+                  setSelectedRun(run.id);
+                }}
               >
                 <td className="px-2 py-1">{run.suiteName}</td>
                 <td className="px-2 py-1">
@@ -145,9 +147,7 @@ export function AgentEvalWidget() {
                 <td className="px-2 py-1">{((run.totalDurationMs ?? 0) / 1000).toFixed(1)}s</td>
                 <td className="px-2 py-1">{(run.totalTokens ?? 0).toLocaleString()}</td>
                 <td className="px-2 py-1">${(run.totalCostUsd ?? 0).toFixed(4)}</td>
-                <td className="px-2 py-1">
-                  {new Date(run.startedAt).toLocaleString()}
-                </td>
+                <td className="px-2 py-1">{new Date(run.startedAt).toLocaleString()}</td>
               </tr>
             ))}
           </tbody>

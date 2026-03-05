@@ -21,7 +21,9 @@ function makeLogger() {
   } as any;
 }
 
-function makeCheckpointRow(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
+function makeCheckpointRow(
+  overrides: Partial<Record<string, unknown>> = {}
+): Record<string, unknown> {
   return {
     id: 'ckpt-1',
     finetune_job_id: 'ft-1',

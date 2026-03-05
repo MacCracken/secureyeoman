@@ -8,9 +8,17 @@ import type { SecureLogger } from '../logging/logger.js';
 import type { AuditQueryOptions, AuditQueryResult } from '../logging/sqlite-storage.js';
 import type { EgressStore, EgressQueryFilters } from '../security/dlp/egress-store.js';
 import type { ClassificationStore } from '../security/dlp/classification-store.js';
-import type { EgressEvent, ClassificationRecord, ClassificationLevel } from '../security/dlp/types.js';
+import type {
+  EgressEvent,
+  ClassificationRecord,
+  ClassificationLevel,
+} from '../security/dlp/types.js';
 import { uuidv7 } from '../utils/crypto.js';
-import { escapeHtml, escapeCsv, formatTimestamp } from '../risk-assessment/risk-assessment-report.js';
+import {
+  escapeHtml,
+  escapeCsv,
+  formatTimestamp,
+} from '../risk-assessment/risk-assessment-report.js';
 
 export interface ComplianceReportOptions {
   from: number;
@@ -65,7 +73,9 @@ export class ComplianceReportGenerator {
     this.logger = deps.logger;
   }
 
-  async generate(options: ComplianceReportOptions): Promise<{ id: string; summary: ComplianceReportSummary; content: string }> {
+  async generate(
+    options: ComplianceReportOptions
+  ): Promise<{ id: string; summary: ComplianceReportSummary; content: string }> {
     const id = uuidv7();
     const includeAudit = options.includeAudit !== false;
     const includeEgress = options.includeEgress !== false;
@@ -88,7 +98,10 @@ export class ComplianceReportGenerator {
         const result = await this.queryAuditLog(auditOpts);
         auditEvents = result.entries;
       } catch (err) {
-        this.logger.warn('Failed to query audit events for compliance report', { id, error: err instanceof Error ? err.message : String(err) });
+        this.logger.warn('Failed to query audit events for compliance report', {
+          id,
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
     }
 
@@ -105,7 +118,10 @@ export class ComplianceReportGenerator {
         const result = await this.egressStore.queryEgress(egressFilters);
         egressEvents = result.events;
       } catch (err) {
-        this.logger.warn('Failed to query egress events for compliance report', { id, error: err instanceof Error ? err.message : String(err) });
+        this.logger.warn('Failed to query egress events for compliance report', {
+          id,
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
     }
 
@@ -132,16 +148,23 @@ export class ComplianceReportGenerator {
         }
         // Filter by content type if specified
         if (options.contentTypes?.length) {
-          classifications = classifications.filter((c) => options.contentTypes!.includes(c.contentType));
+          classifications = classifications.filter((c) =>
+            options.contentTypes!.includes(c.contentType)
+          );
         }
       } catch (err) {
-        this.logger.warn('Failed to query classifications for compliance report', { id, error: err instanceof Error ? err.message : String(err) });
+        this.logger.warn('Failed to query classifications for compliance report', {
+          id,
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
     }
 
     // 4. Compute summary
     const blockedEgressCount = egressEvents.filter((e) => e.actionTaken === 'blocked').length;
-    const restrictedContentCount = classifications.filter((c) => c.classificationLevel === 'restricted').length;
+    const restrictedContentCount = classifications.filter(
+      (c) => c.classificationLevel === 'restricted'
+    ).length;
     const piiDetectionCount = egressEvents.reduce((count, e) => {
       if (!e.scanFindings) return count;
       return count + e.scanFindings.filter((f) => f.type === 'pii').length;
@@ -172,10 +195,12 @@ export class ComplianceReportGenerator {
 
     this.reports.set(id, { ...report, content });
 
-    this.logger.info(
-      'Compliance report generated',
-      { id, auditEvents: auditEvents.length, egressEvents: egressEvents.length, classifications: classifications.length }
-    );
+    this.logger.info('Compliance report generated', {
+      id,
+      auditEvents: auditEvents.length,
+      egressEvents: egressEvents.length,
+      classifications: classifications.length,
+    });
 
     return { id, summary, content };
   }
@@ -297,17 +322,29 @@ tr+tr td{border-top:1px solid #f3f4f6}
 <div class="summary-card${summary.piiDetectionCount > 0 ? ' alert' : ''}"><div class="summary-val">${summary.piiDetectionCount}</div><div class="summary-label">PII Detections</div></div>
 </div>
 
-${report.auditEvents.length > 0 ? `<h2>Audit Events</h2>
+${
+  report.auditEvents.length > 0
+    ? `<h2>Audit Events</h2>
 <table><thead><tr><th>Timestamp</th><th>Event</th><th>Level</th><th>User</th><th>Message</th></tr></thead>
-<tbody>${auditRows}</tbody></table>` : ''}
+<tbody>${auditRows}</tbody></table>`
+    : ''
+}
 
-${report.egressEvents.length > 0 ? `<h2>Egress Events</h2>
+${
+  report.egressEvents.length > 0
+    ? `<h2>Egress Events</h2>
 <table><thead><tr><th>Timestamp</th><th>Destination</th><th>Action</th><th>Classification</th><th>Bytes</th><th>User</th></tr></thead>
-<tbody>${egressRows}</tbody></table>` : ''}
+<tbody>${egressRows}</tbody></table>`
+    : ''
+}
 
-${report.classifications.length > 0 ? `<h2>Classifications</h2>
+${
+  report.classifications.length > 0
+    ? `<h2>Classifications</h2>
 <table><thead><tr><th>Timestamp</th><th>Content Type</th><th>Level</th><th>Manual Override</th><th>Rules</th></tr></thead>
-<tbody>${classRows}</tbody></table>` : ''}
+<tbody>${classRows}</tbody></table>`
+    : ''
+}
 </body></html>`;
   }
 
@@ -317,14 +354,7 @@ ${report.classifications.length > 0 ? `<h2>Classifications</h2>
 
     for (const e of report.auditEvents) {
       rows.push(
-        [
-          formatTimestamp(e.timestamp),
-          'audit',
-          e.event,
-          e.userId ?? '',
-          e.message,
-          e.level,
-        ]
+        [formatTimestamp(e.timestamp), 'audit', e.event, e.userId ?? '', e.message, e.level]
           .map(escapeCsv)
           .join(',')
       );

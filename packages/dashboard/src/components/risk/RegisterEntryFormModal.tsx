@@ -126,7 +126,9 @@ export function RegisterEntryFormModal({ open, onClose, onSubmit }: RegisterEntr
               type="text"
               className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+              }}
               placeholder="e.g. Unauthorized API access"
               required
               maxLength={300}
@@ -140,7 +142,9 @@ export function RegisterEntryFormModal({ open, onClose, onSubmit }: RegisterEntr
               <select
                 className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-foreground"
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                }}
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
@@ -154,7 +158,9 @@ export function RegisterEntryFormModal({ open, onClose, onSubmit }: RegisterEntr
               <select
                 className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-foreground"
                 value={severity}
-                onChange={(e) => setSeverity(e.target.value)}
+                onChange={(e) => {
+                  setSeverity(e.target.value);
+                }}
               >
                 {SEVERITIES.map((s) => (
                   <option key={s} value={s}>
@@ -172,7 +178,9 @@ export function RegisterEntryFormModal({ open, onClose, onSubmit }: RegisterEntr
               <select
                 className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-foreground"
                 value={likelihood}
-                onChange={(e) => setLikelihood(Number(e.target.value))}
+                onChange={(e) => {
+                  setLikelihood(Number(e.target.value));
+                }}
               >
                 {[1, 2, 3, 4, 5].map((v) => (
                   <option key={v} value={v}>
@@ -186,7 +194,9 @@ export function RegisterEntryFormModal({ open, onClose, onSubmit }: RegisterEntr
               <select
                 className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-foreground"
                 value={impact}
-                onChange={(e) => setImpact(Number(e.target.value))}
+                onChange={(e) => {
+                  setImpact(Number(e.target.value));
+                }}
               >
                 {[1, 2, 3, 4, 5].map((v) => (
                   <option key={v} value={v}>
@@ -221,7 +231,9 @@ export function RegisterEntryFormModal({ open, onClose, onSubmit }: RegisterEntr
                 type="text"
                 className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                 value={owner}
-                onChange={(e) => setOwner(e.target.value)}
+                onChange={(e) => {
+                  setOwner(e.target.value);
+                }}
                 placeholder="Responsible person"
               />
             </div>
@@ -231,7 +243,9 @@ export function RegisterEntryFormModal({ open, onClose, onSubmit }: RegisterEntr
                 type="date"
                 className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                 value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+                onChange={(e) => {
+                  setDueDate(e.target.value);
+                }}
               />
             </div>
           </div>
@@ -242,7 +256,9 @@ export function RegisterEntryFormModal({ open, onClose, onSubmit }: RegisterEntr
             <textarea
               className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[60px]"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                setDescription(e.target.value);
+              }}
               placeholder="Describe the risk scenario and context"
               rows={3}
             />

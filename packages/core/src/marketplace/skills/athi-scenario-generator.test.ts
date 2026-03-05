@@ -24,7 +24,7 @@ describe('ATHI Scenario Generator Skill', () => {
     // instructions may be string[] (pre-join) or string (post-join by storage)
     const text = Array.isArray(athiScenarioGeneratorSkill.instructions)
       ? (athiScenarioGeneratorSkill.instructions as string[]).join('\n')
-      : (athiScenarioGeneratorSkill.instructions as string);
+      : athiScenarioGeneratorSkill.instructions!;
     expect(text.length).toBeGreaterThan(100);
     expect(text.length).toBeLessThanOrEqual(8000);
   });
@@ -38,9 +38,7 @@ describe('ATHI Scenario Generator Skill', () => {
   });
 
   it('trigger patterns match expected inputs', () => {
-    const patterns = athiScenarioGeneratorSkill.triggerPatterns!.map(
-      (p) => new RegExp(p, 'i')
-    );
+    const patterns = athiScenarioGeneratorSkill.triggerPatterns!.map((p) => new RegExp(p, 'i'));
     const shouldMatch = [
       'generate ATHI scenarios',
       'threat scenario generation for my org',
@@ -66,7 +64,7 @@ describe('ATHI Scenario Generator Skill', () => {
   it('instructions reference ATHI taxonomy elements', () => {
     const text = Array.isArray(athiScenarioGeneratorSkill.instructions)
       ? (athiScenarioGeneratorSkill.instructions as string[]).join('\n')
-      : (athiScenarioGeneratorSkill.instructions as string);
+      : athiScenarioGeneratorSkill.instructions!;
     expect(text).toContain('nation_state');
     expect(text).toContain('prompt_injection');
     expect(text).toContain('data_breach');

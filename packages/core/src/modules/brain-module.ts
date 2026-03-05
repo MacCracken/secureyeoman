@@ -29,8 +29,10 @@ export class BrainModule extends BaseModule {
   private cognitiveMemoryStorage: CognitiveMemoryStorage | null = null;
   private cognitiveMemoryManager: CognitiveMemoryManager | null = null;
   private documentManager: DocumentManager | null = null;
-  private memoryAuditStorage: import('../brain/audit/audit-store.js').MemoryAuditStorage | null = null;
-  private memoryAuditScheduler: import('../brain/audit/scheduler.js').MemoryAuditScheduler | null = null;
+  private memoryAuditStorage: import('../brain/audit/audit-store.js').MemoryAuditStorage | null =
+    null;
+  private memoryAuditScheduler: import('../brain/audit/scheduler.js').MemoryAuditScheduler | null =
+    null;
   private externalBrainSync: ExternalBrainSync | null = null;
   private strategyStorage: StrategyStorage | null = null;
 
@@ -89,7 +91,8 @@ export class BrainModule extends BaseModule {
         const { MemoryAuditScheduler } = await import('../brain/audit/scheduler.js');
         const { MemoryCompressor } = await import('../brain/audit/compressor.js');
         const { MemoryReorganizer } = await import('../brain/audit/reorganizer.js');
-        const { KnowledgeGraphCoherenceChecker } = await import('../brain/audit/coherence-checker.js');
+        const { KnowledgeGraphCoherenceChecker } =
+          await import('../brain/audit/coherence-checker.js');
 
         this.memoryAuditStorage = new MemoryAuditStorage();
         const auditPolicy = new MemoryAuditPolicy(this.config.brain.audit);
@@ -202,13 +205,31 @@ export class BrainModule extends BaseModule {
   }
 
   // --- Getters ---
-  getBrainStorage(): BrainStorage | null { return this.brainStorage; }
-  getBrainManager(): BrainManager | null { return this.brainManager; }
-  getCognitiveMemoryStorage(): CognitiveMemoryStorage | null { return this.cognitiveMemoryStorage; }
-  getCognitiveMemoryManager(): CognitiveMemoryManager | null { return this.cognitiveMemoryManager; }
-  getDocumentManager(): DocumentManager | null { return this.documentManager; }
-  getMemoryAuditStorage(): import('../brain/audit/audit-store.js').MemoryAuditStorage | null { return this.memoryAuditStorage; }
-  getMemoryAuditScheduler(): import('../brain/audit/scheduler.js').MemoryAuditScheduler | null { return this.memoryAuditScheduler; }
-  getExternalBrainSync(): ExternalBrainSync | null { return this.externalBrainSync; }
-  getStrategyStorage(): StrategyStorage | null { return this.strategyStorage; }
+  getBrainStorage(): BrainStorage | null {
+    return this.brainStorage;
+  }
+  getBrainManager(): BrainManager | null {
+    return this.brainManager;
+  }
+  getCognitiveMemoryStorage(): CognitiveMemoryStorage | null {
+    return this.cognitiveMemoryStorage;
+  }
+  getCognitiveMemoryManager(): CognitiveMemoryManager | null {
+    return this.cognitiveMemoryManager;
+  }
+  getDocumentManager(): DocumentManager | null {
+    return this.documentManager;
+  }
+  getMemoryAuditStorage(): import('../brain/audit/audit-store.js').MemoryAuditStorage | null {
+    return this.memoryAuditStorage;
+  }
+  getMemoryAuditScheduler(): import('../brain/audit/scheduler.js').MemoryAuditScheduler | null {
+    return this.memoryAuditScheduler;
+  }
+  getExternalBrainSync(): ExternalBrainSync | null {
+    return this.externalBrainSync;
+  }
+  getStrategyStorage(): StrategyStorage | null {
+    return this.strategyStorage;
+  }
 }

@@ -22,7 +22,12 @@ export interface ScanningRoutesOptions {
   pipeline?: ScannerPipeline | null;
   policy?: ExternalizationPolicy | null;
   auditChain?: {
-    record: (event: string, level: string, message: string, metadata?: Record<string, unknown>) => Promise<void>;
+    record: (
+      event: string,
+      level: string,
+      message: string,
+      metadata?: Record<string, unknown>
+    ) => Promise<void>;
   } | null;
 }
 
@@ -113,34 +118,37 @@ export function registerScanningRoutes(app: FastifyInstance, opts: ScanningRoute
 
   // ── POST /api/v1/sandbox/quarantine/:id/approve — Approve and release ─
 
-  app.post<{ Params: { id: string } }>('/api/v1/sandbox/quarantine/:id/approve', async (req, reply) => {
-    if (!quarantineStorage) return sendError(reply, 503, 'Quarantine storage not available');
-    const { id } = req.params;
-    const userId = (req as any).authUser?.userId ?? 'unknown';
-    try {
-      const entry = await quarantineStorage.get(id);
-      if (!entry) return sendError(reply, 404, 'Quarantine entry not found');
+  app.post<{ Params: { id: string } }>(
+    '/api/v1/sandbox/quarantine/:id/approve',
+    async (req, reply) => {
+      if (!quarantineStorage) return sendError(reply, 503, 'Quarantine storage not available');
+      const { id } = req.params;
+      const userId = (req as any).authUser?.userId ?? 'unknown';
+      try {
+        const entry = await quarantineStorage.get(id);
+        if (!entry) return sendError(reply, 404, 'Quarantine entry not found');
 
-      await quarantineStorage.approve(id, userId);
+        await quarantineStorage.approve(id, userId);
 
-      if (auditChain) {
-        try {
-          await auditChain.record(
-            'artifact_released',
-            'info',
-            `Quarantined artifact ${id} approved by ${userId}`,
-            { quarantineId: id, approvedBy: userId },
-          );
-        } catch {
-          // Non-critical
+        if (auditChain) {
+          try {
+            await auditChain.record(
+              'artifact_released',
+              'info',
+              `Quarantined artifact ${id} approved by ${userId}`,
+              { quarantineId: id, approvedBy: userId }
+            );
+          } catch {
+            // Non-critical
+          }
         }
-      }
 
-      return reply.send({ message: 'Quarantine entry approved', id });
-    } catch (err) {
-      return sendError(reply, 500, toErrorMessage(err));
+        return reply.send({ message: 'Quarantine entry approved', id });
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
     }
-  });
+  );
 
   // ── DELETE /api/v1/sandbox/quarantine/:id — Permanently delete ────────
 
@@ -189,7 +197,9 @@ export function registerScanningRoutes(app: FastifyInstance, opts: ScanningRoute
 
   app.post('/api/v1/sandbox/scan', async (req, reply) => {
     if (!pipeline) return sendError(reply, 503, 'Scanning pipeline not available');
-    const body = req.body as { content?: string; type?: string; sourceContext?: string } | undefined;
+    const body = req.body as
+      | { content?: string; type?: string; sourceContext?: string }
+      | undefined;
     if (!body?.content) {
       return sendError(reply, 400, 'content is required');
     }

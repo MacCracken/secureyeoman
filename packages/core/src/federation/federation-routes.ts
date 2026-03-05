@@ -131,11 +131,7 @@ export function registerFederationRoutes(
         await federationStorage.updateFeatures(request.params.id, request.body ?? {});
         return reply.send({ ok: true });
       } catch (err) {
-        return sendError(
-          reply,
-          500,
-          toErrorMessage(err)
-        );
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -167,11 +163,7 @@ export function registerFederationRoutes(
         );
         return reply.send({ skills });
       } catch (err) {
-        return sendError(
-          reply,
-          500,
-          toErrorMessage(err)
-        );
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -194,11 +186,7 @@ export function registerFederationRoutes(
         );
         return reply.send({ ok: true });
       } catch (err) {
-        return sendError(
-          reply,
-          500,
-          toErrorMessage(err)
-        );
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -236,11 +224,7 @@ export function registerFederationRoutes(
           )
           .send(bundle);
       } catch (err) {
-        return sendError(
-          reply,
-          500,
-          toErrorMessage(err)
-        );
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -277,11 +261,7 @@ export function registerFederationRoutes(
         );
         return reply.code(201).send({ personality });
       } catch (err) {
-        return sendError(
-          reply,
-          400,
-          toErrorMessage(err)
-        );
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -314,26 +294,25 @@ export function registerFederationRoutes(
       const skills = await marketplaceManager.search(qs.query, { limit: 100 });
       return reply.send({ skills });
     } catch (err) {
-      return sendError(
-        reply,
-        500,
-        toErrorMessage(err)
-      );
+      return sendError(reply, 500, toErrorMessage(err));
     }
   });
 
   // Federated skill detail — called by peer instances
-  app.get('/api/v1/federation/marketplace/:skillId', async (request: FastifyRequest<{ Params: { skillId: string } }>, reply) => {
-    const ok = await peerAuthPreHandler(request, reply, federationManager);
-    if (!ok) return;
-    if (!marketplaceManager) return sendError(reply, 503, 'Marketplace manager not available');
-    const { skillId } = request.params;
-    try {
-      const skill = await marketplaceManager.getSkill(skillId);
-      if (!skill) return sendError(reply, 404, 'Skill not found');
-      return reply.send(skill);
-    } catch (err) {
-      return sendError(reply, 500, toErrorMessage(err));
+  app.get(
+    '/api/v1/federation/marketplace/:skillId',
+    async (request: FastifyRequest<{ Params: { skillId: string } }>, reply) => {
+      const ok = await peerAuthPreHandler(request, reply, federationManager);
+      if (!ok) return;
+      if (!marketplaceManager) return sendError(reply, 503, 'Marketplace manager not available');
+      const { skillId } = request.params;
+      try {
+        const skill = await marketplaceManager.getSkill(skillId);
+        if (!skill) return sendError(reply, 404, 'Skill not found');
+        return reply.send(skill);
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
     }
-  });
+  );
 }

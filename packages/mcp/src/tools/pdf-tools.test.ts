@@ -8,7 +8,9 @@ interface RegisteredTool {
   name: string;
   description: string;
   schema: Record<string, unknown>;
-  handler: (args: Record<string, unknown>) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
+  handler: (
+    args: Record<string, unknown>
+  ) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 }
 
 function createMockServer() {
@@ -19,7 +21,9 @@ function createMockServer() {
         name: string,
         description: string,
         schema: Record<string, unknown>,
-        handler: (args: Record<string, unknown>) => Promise<{ content: Array<{ type: string; text: string }> }>
+        handler: (
+          args: Record<string, unknown>
+        ) => Promise<{ content: Array<{ type: string; text: string }> }>
       ) => {
         tools.push({ name, description, schema, handler });
       }
@@ -70,7 +74,11 @@ describe('registerPdfTools', () => {
   });
 
   function register(configOverrides?: Partial<McpServiceConfig>) {
-    const config = { exposePdf: true, exposePdfAdvanced: true, ...configOverrides } as McpServiceConfig;
+    const config = {
+      exposePdf: true,
+      exposePdfAdvanced: true,
+      ...configOverrides,
+    } as McpServiceConfig;
     registerPdfTools(mockServer as never, mockClient as never, config, mockMiddleware as never);
   }
 

@@ -21,7 +21,7 @@ export interface EvalAgentDeps {
    */
   executePrompt(opts: {
     input: string;
-    conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
+    conversationHistory: { role: 'user' | 'assistant'; content: string }[];
     personalityId?: string | null;
     skillIds?: string[];
     model?: string | null;
@@ -54,11 +54,19 @@ export async function runScenario(
   // Set up timeout
   const timeoutMs = scenario.maxDurationMs;
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
 
   // Chain with external abort signal
   if (abortSignal) {
-    abortSignal.addEventListener('abort', () => controller.abort(), { once: true });
+    abortSignal.addEventListener(
+      'abort',
+      () => {
+        controller.abort();
+      },
+      { once: true }
+    );
   }
 
   try {
@@ -113,9 +121,7 @@ export async function runScenario(
 
     const allAssertionsPassed = assertionResults.every((r) => r.passed);
     const passed =
-      allAssertionsPassed &&
-      toolCallErrors.length === 0 &&
-      forbiddenViolations.length === 0;
+      allAssertionsPassed && toolCallErrors.length === 0 && forbiddenViolations.length === 0;
 
     return buildResult(scenario, {
       passed,
@@ -135,8 +141,7 @@ export async function runScenario(
   } catch (error) {
     clearTimeout(timeoutId);
     const durationMs = Date.now() - startTime;
-    const isTimeout =
-      controller.signal.aborted && !(abortSignal?.aborted);
+    const isTimeout = controller.signal.aborted && !abortSignal?.aborted;
 
     return buildResult(scenario, {
       passed: false,
@@ -174,9 +179,7 @@ export function validateToolCalls(
         continue;
       }
       if (act.name !== exp.name) {
-        errors.push(
-          `Expected tool call #${i + 1}: "${exp.name}" but got "${act.name}"`
-        );
+        errors.push(`Expected tool call #${i + 1}: "${exp.name}" but got "${act.name}"`);
         continue;
       }
       if (exp.args) {
@@ -249,7 +252,8 @@ async function evaluateAssertion(
         assertion,
         passed: output === assertion.value,
         actual: output,
-        reason: output === assertion.value ? undefined : 'Output does not exactly match expected value',
+        reason:
+          output === assertion.value ? undefined : 'Output does not exactly match expected value',
       };
 
     case 'regex': {

@@ -181,9 +181,19 @@ export class SoulModule implements AppModule {
   // Getters
   // ------------------------------------------------------------------
 
-  getSpiritManager(): SpiritManager | null { return this.spiritManager; }
-  getSoulManager(): SoulManager | null { return this.soulManager; }
-  getApprovalManager(): ApprovalManager | null { return this.approvalManager; }
-  getPersonalityVersionManager(): PersonalityVersionManager | null { return this.personalityVersionManager; }
-  getIntentManager(): IntentManager | null { return this.intentManager; }
+  getSpiritManager(): SpiritManager | null {
+    return this.spiritManager;
+  }
+  getSoulManager(): SoulManager | null {
+    return this.soulManager;
+  }
+  getApprovalManager(): ApprovalManager | null {
+    return this.approvalManager;
+  }
+  getPersonalityVersionManager(): PersonalityVersionManager | null {
+    return this.personalityVersionManager;
+  }
+  getIntentManager(): IntentManager | null {
+    return this.intentManager;
+  }
 }

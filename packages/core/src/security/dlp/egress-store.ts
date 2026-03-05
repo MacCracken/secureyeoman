@@ -42,7 +42,9 @@ export class EgressStore extends PgBaseStorage {
     return id;
   }
 
-  async queryEgress(filters?: EgressQueryFilters): Promise<{ events: EgressEvent[]; total: number }> {
+  async queryEgress(
+    filters?: EgressQueryFilters
+  ): Promise<{ events: EgressEvent[]; total: number }> {
     const conditions: string[] = [];
     const values: unknown[] = [];
     let idx = 1;

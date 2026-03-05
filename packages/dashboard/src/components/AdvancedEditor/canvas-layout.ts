@@ -11,9 +11,7 @@ export interface CanvasLayout {
   viewport: Viewport;
 }
 
-export interface NamedLayouts {
-  [name: string]: CanvasLayout;
-}
+export type NamedLayouts = Record<string, CanvasLayout>;
 
 export function defaultCanvasLayout(): CanvasLayout {
   return {
@@ -75,7 +73,7 @@ export function saveNamedLayout(name: string, layout: CanvasLayout): void {
 
 export function deleteNamedLayout(name: string): void {
   const layouts = loadNamedLayouts();
-  delete layouts[name];
+  Reflect.deleteProperty(layouts, name);
   saveNamedLayouts(layouts);
 }
 
@@ -156,8 +154,26 @@ export const PRESET_LAYOUTS: Record<PresetName, CanvasLayout> = {
     viewport: { x: 0, y: 0, zoom: 1 },
     nodes: [
       presetNode('preset-cicd', 'canvasWidget', 'cicd-monitor', 'CI/CD Monitor', 20, 20, 560, 360),
-      presetNode('preset-pipeline', 'canvasWidget', 'pipeline', 'Pipeline Viewer', 600, 20, 560, 380),
-      presetNode('preset-training', 'canvasWidget', 'training-live', 'Training Live', 20, 400, 560, 380),
+      presetNode(
+        'preset-pipeline',
+        'canvasWidget',
+        'pipeline',
+        'Pipeline Viewer',
+        600,
+        20,
+        560,
+        380
+      ),
+      presetNode(
+        'preset-training',
+        'canvasWidget',
+        'training-live',
+        'Training Live',
+        20,
+        400,
+        560,
+        380
+      ),
     ],
   },
   Chat: {

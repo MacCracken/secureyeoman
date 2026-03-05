@@ -27,30 +27,100 @@ export const POLLY_VOICES: Record<
   { voiceId: string; languageCode: string; gender: string; engines: string[] }
 > = {
   // English (US)
-  joanna: { voiceId: 'Joanna', languageCode: 'en-US', gender: 'Female', engines: ['neural', 'standard', 'long-form'] },
-  matthew: { voiceId: 'Matthew', languageCode: 'en-US', gender: 'Male', engines: ['neural', 'standard', 'long-form'] },
-  ruth: { voiceId: 'Ruth', languageCode: 'en-US', gender: 'Female', engines: ['neural', 'long-form', 'generative'] },
-  stephen: { voiceId: 'Stephen', languageCode: 'en-US', gender: 'Male', engines: ['neural', 'long-form', 'generative'] },
+  joanna: {
+    voiceId: 'Joanna',
+    languageCode: 'en-US',
+    gender: 'Female',
+    engines: ['neural', 'standard', 'long-form'],
+  },
+  matthew: {
+    voiceId: 'Matthew',
+    languageCode: 'en-US',
+    gender: 'Male',
+    engines: ['neural', 'standard', 'long-form'],
+  },
+  ruth: {
+    voiceId: 'Ruth',
+    languageCode: 'en-US',
+    gender: 'Female',
+    engines: ['neural', 'long-form', 'generative'],
+  },
+  stephen: {
+    voiceId: 'Stephen',
+    languageCode: 'en-US',
+    gender: 'Male',
+    engines: ['neural', 'long-form', 'generative'],
+  },
   ivy: { voiceId: 'Ivy', languageCode: 'en-US', gender: 'Female', engines: ['neural', 'standard'] },
-  kendra: { voiceId: 'Kendra', languageCode: 'en-US', gender: 'Female', engines: ['neural', 'standard'] },
-  kimberly: { voiceId: 'Kimberly', languageCode: 'en-US', gender: 'Female', engines: ['neural', 'standard'] },
-  salli: { voiceId: 'Salli', languageCode: 'en-US', gender: 'Female', engines: ['neural', 'standard'] },
+  kendra: {
+    voiceId: 'Kendra',
+    languageCode: 'en-US',
+    gender: 'Female',
+    engines: ['neural', 'standard'],
+  },
+  kimberly: {
+    voiceId: 'Kimberly',
+    languageCode: 'en-US',
+    gender: 'Female',
+    engines: ['neural', 'standard'],
+  },
+  salli: {
+    voiceId: 'Salli',
+    languageCode: 'en-US',
+    gender: 'Female',
+    engines: ['neural', 'standard'],
+  },
   joey: { voiceId: 'Joey', languageCode: 'en-US', gender: 'Male', engines: ['neural', 'standard'] },
-  justin: { voiceId: 'Justin', languageCode: 'en-US', gender: 'Male', engines: ['neural', 'standard'] },
-  kevin: { voiceId: 'Kevin', languageCode: 'en-US', gender: 'Male', engines: ['neural', 'standard'] },
+  justin: {
+    voiceId: 'Justin',
+    languageCode: 'en-US',
+    gender: 'Male',
+    engines: ['neural', 'standard'],
+  },
+  kevin: {
+    voiceId: 'Kevin',
+    languageCode: 'en-US',
+    gender: 'Male',
+    engines: ['neural', 'standard'],
+  },
   // English (UK)
-  amy: { voiceId: 'Amy', languageCode: 'en-GB', gender: 'Female', engines: ['neural', 'standard', 'generative'] },
-  emma: { voiceId: 'Emma', languageCode: 'en-GB', gender: 'Female', engines: ['neural', 'standard'] },
-  brian: { voiceId: 'Brian', languageCode: 'en-GB', gender: 'Male', engines: ['neural', 'standard'] },
+  amy: {
+    voiceId: 'Amy',
+    languageCode: 'en-GB',
+    gender: 'Female',
+    engines: ['neural', 'standard', 'generative'],
+  },
+  emma: {
+    voiceId: 'Emma',
+    languageCode: 'en-GB',
+    gender: 'Female',
+    engines: ['neural', 'standard'],
+  },
+  brian: {
+    voiceId: 'Brian',
+    languageCode: 'en-GB',
+    gender: 'Male',
+    engines: ['neural', 'standard'],
+  },
   arthur: { voiceId: 'Arthur', languageCode: 'en-GB', gender: 'Male', engines: ['neural'] },
   // English (AU)
   olivia: { voiceId: 'Olivia', languageCode: 'en-AU', gender: 'Female', engines: ['neural'] },
   // English (IN)
   kajal: { voiceId: 'Kajal', languageCode: 'en-IN', gender: 'Female', engines: ['neural'] },
   // Spanish
-  lupe: { voiceId: 'Lupe', languageCode: 'es-US', gender: 'Female', engines: ['neural', 'standard'] },
+  lupe: {
+    voiceId: 'Lupe',
+    languageCode: 'es-US',
+    gender: 'Female',
+    engines: ['neural', 'standard'],
+  },
   pedro: { voiceId: 'Pedro', languageCode: 'es-US', gender: 'Male', engines: ['neural'] },
-  lucia: { voiceId: 'Lucia', languageCode: 'es-ES', gender: 'Female', engines: ['neural', 'standard'] },
+  lucia: {
+    voiceId: 'Lucia',
+    languageCode: 'es-ES',
+    gender: 'Female',
+    engines: ['neural', 'standard'],
+  },
   sergio: { voiceId: 'Sergio', languageCode: 'es-ES', gender: 'Male', engines: ['neural'] },
   mia: { voiceId: 'Mia', languageCode: 'es-MX', gender: 'Female', engines: ['neural', 'standard'] },
   andres: { voiceId: 'Andres', languageCode: 'es-MX', gender: 'Male', engines: ['neural'] },
@@ -58,22 +128,52 @@ export const POLLY_VOICES: Record<
   lea: { voiceId: 'Lea', languageCode: 'fr-FR', gender: 'Female', engines: ['neural', 'standard'] },
   remi: { voiceId: 'Remi', languageCode: 'fr-FR', gender: 'Male', engines: ['neural'] },
   // German
-  vicki: { voiceId: 'Vicki', languageCode: 'de-DE', gender: 'Female', engines: ['neural', 'standard'] },
+  vicki: {
+    voiceId: 'Vicki',
+    languageCode: 'de-DE',
+    gender: 'Female',
+    engines: ['neural', 'standard'],
+  },
   daniel: { voiceId: 'Daniel', languageCode: 'de-DE', gender: 'Male', engines: ['neural'] },
   // Italian
-  bianca: { voiceId: 'Bianca', languageCode: 'it-IT', gender: 'Female', engines: ['neural', 'standard'] },
+  bianca: {
+    voiceId: 'Bianca',
+    languageCode: 'it-IT',
+    gender: 'Female',
+    engines: ['neural', 'standard'],
+  },
   adriano: { voiceId: 'Adriano', languageCode: 'it-IT', gender: 'Male', engines: ['neural'] },
   // Portuguese (BR)
-  camila: { voiceId: 'Camila', languageCode: 'pt-BR', gender: 'Female', engines: ['neural', 'standard'] },
+  camila: {
+    voiceId: 'Camila',
+    languageCode: 'pt-BR',
+    gender: 'Female',
+    engines: ['neural', 'standard'],
+  },
   thiago: { voiceId: 'Thiago', languageCode: 'pt-BR', gender: 'Male', engines: ['neural'] },
   // Japanese
   kazuha: { voiceId: 'Kazuha', languageCode: 'ja-JP', gender: 'Female', engines: ['neural'] },
   tomoko: { voiceId: 'Tomoko', languageCode: 'ja-JP', gender: 'Female', engines: ['neural'] },
-  takumi: { voiceId: 'Takumi', languageCode: 'ja-JP', gender: 'Male', engines: ['neural', 'standard'] },
+  takumi: {
+    voiceId: 'Takumi',
+    languageCode: 'ja-JP',
+    gender: 'Male',
+    engines: ['neural', 'standard'],
+  },
   // Korean
-  seoyeon: { voiceId: 'Seoyeon', languageCode: 'ko-KR', gender: 'Female', engines: ['neural', 'standard'] },
+  seoyeon: {
+    voiceId: 'Seoyeon',
+    languageCode: 'ko-KR',
+    gender: 'Female',
+    engines: ['neural', 'standard'],
+  },
   // Chinese (Mandarin)
-  zhiyu: { voiceId: 'Zhiyu', languageCode: 'cmn-CN', gender: 'Female', engines: ['neural', 'standard'] },
+  zhiyu: {
+    voiceId: 'Zhiyu',
+    languageCode: 'cmn-CN',
+    gender: 'Female',
+    engines: ['neural', 'standard'],
+  },
   // Arabic
   hala: { voiceId: 'Hala', languageCode: 'ar-AE', gender: 'Female', engines: ['neural'] },
   zayd: { voiceId: 'Zayd', languageCode: 'ar-AE', gender: 'Male', engines: ['neural'] },
@@ -115,7 +215,9 @@ function getAwsCredentials(): {
   const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
   const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
   if (!accessKeyId || !secretAccessKey) {
-    throw new Error('AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables are required');
+    throw new Error(
+      'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables are required'
+    );
   }
 
   return {
@@ -136,12 +238,19 @@ function signAwsRequest(
 ): Record<string, string> {
   const parsedUrl = new URL(url);
   const now = new Date();
-  const dateStamp = now.toISOString().replace(/[:-]|\.\d{3}/g, '').slice(0, 8);
-  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '').slice(0, 15) + 'Z';
+  const dateStamp = now
+    .toISOString()
+    .replace(/[:-]|\.\d{3}/g, '')
+    .slice(0, 8);
+  const amzDate =
+    now
+      .toISOString()
+      .replace(/[:-]|\.\d{3}/g, '')
+      .slice(0, 15) + 'Z';
 
   const signedHeaders = { ...headers };
   signedHeaders['x-amz-date'] = amzDate;
-  signedHeaders['host'] = parsedUrl.host;
+  signedHeaders.host = parsedUrl.host;
   if (credentials.sessionToken) {
     signedHeaders['x-amz-security-token'] = credentials.sessionToken;
   }
@@ -150,7 +259,10 @@ function signAwsRequest(
     .map((k) => k.toLowerCase())
     .sort();
   const canonicalHeaders = sortedHeaderKeys
-    .map((k) => `${k}:${signedHeaders[Object.keys(signedHeaders).find((h) => h.toLowerCase() === k)!]?.trim()}`)
+    .map(
+      (k) =>
+        `${k}:${signedHeaders[Object.keys(signedHeaders).find((h) => h.toLowerCase() === k)!]?.trim()}`
+    )
     .join('\n');
   const signedHeadersStr = sortedHeaderKeys.join(';');
 
@@ -181,19 +293,14 @@ function signAwsRequest(
   );
   const signature = createHmac('sha256', signingKey).update(stringToSign).digest('hex');
 
-  signedHeaders['Authorization'] =
+  signedHeaders.Authorization =
     `AWS4-HMAC-SHA256 Credential=${credentials.accessKeyId}/${credentialScope}, ` +
     `SignedHeaders=${signedHeadersStr}, Signature=${signature}`;
 
   return signedHeaders;
 }
 
-function getSignatureKey(
-  key: string,
-  dateStamp: string,
-  region: string,
-  service: string
-): Buffer {
+function getSignatureKey(key: string, dateStamp: string, region: string, service: string): Buffer {
   const kDate = createHmac('sha256', `AWS4${key}`).update(dateStamp).digest();
   const kRegion = createHmac('sha256', kDate).update(region).digest();
   const kService = createHmac('sha256', kRegion).update(service).digest();
@@ -213,9 +320,7 @@ function escapeXml(text: string): string {
  * Resolve a voice name/ID to a Polly voice ID.
  * Accepts: voice name (case-insensitive), direct Polly voice ID, or OpenAI-style voice names.
  */
-export function resolvePollyVoice(
-  voiceName?: string
-): { voiceId: string; languageCode?: string } {
+export function resolvePollyVoice(voiceName?: string): { voiceId: string; languageCode?: string } {
   const defaultVoice = process.env.POLLY_VOICE_ID ?? 'Joanna';
 
   if (!voiceName || voiceName === 'alloy') {
@@ -270,8 +375,11 @@ export async function synthesizeViaPolly(
   }
 
   // Apply lexicon names
-  const lexiconNames = request.lexiconNames ??
-    (process.env.POLLY_LEXICON_NAMES ? process.env.POLLY_LEXICON_NAMES.split(',').map((s) => s.trim()) : undefined);
+  const lexiconNames =
+    request.lexiconNames ??
+    (process.env.POLLY_LEXICON_NAMES
+      ? process.env.POLLY_LEXICON_NAMES.split(',').map((s) => s.trim())
+      : undefined);
   if (lexiconNames?.length) {
     body.LexiconNames = lexiconNames;
   }
@@ -308,10 +416,7 @@ export async function synthesizeViaPolly(
  * Upload a pronunciation lexicon to AWS Polly.
  * Lexicons use PLS (Pronunciation Lexicon Specification) XML format.
  */
-export async function putLexicon(
-  name: string,
-  content: string
-): Promise<void> {
+export async function putLexicon(name: string, content: string): Promise<void> {
   const creds = getAwsCredentials();
   const endpoint = `https://polly.${creds.region}.amazonaws.com/v1/lexicons/${encodeURIComponent(name)}`;
 

@@ -109,16 +109,11 @@ describe('VoiceAnnouncementManager', () => {
 
     await manager.announce('p1', 'workflow_complete', { name: 'Test' });
 
-    expect(deps.synthesizeSpeech).toHaveBeenCalledWith(
-      expect.any(String),
-      'Joanna'
-    );
+    expect(deps.synthesizeSpeech).toHaveBeenCalledWith(expect.any(String), 'Joanna');
   });
 
   it('should not crash on synthesizeSpeech error', async () => {
-    (deps.synthesizeSpeech as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error('TTS failed')
-    );
+    (deps.synthesizeSpeech as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('TTS failed'));
 
     await manager.announce('p1', 'workflow_complete', { name: 'Test' });
 

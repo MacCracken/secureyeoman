@@ -98,16 +98,19 @@ export function registerSraRoutes(app: FastifyInstance, opts: SraRoutesOptions):
 
   // ── DELETE /api/v1/security/sra/blueprints/:id ───────────────────────────
 
-  app.delete<{ Params: { id: string } }>('/api/v1/security/sra/blueprints/:id', async (req, reply) => {
-    const { id } = req.params;
-    try {
-      const deleted = await mgr.deleteBlueprint(id);
-      if (!deleted) return sendError(reply, 404, 'Blueprint not found');
-      return reply.code(204).send();
-    } catch (err) {
-      return sendError(reply, 500, toErrorMessage(err));
+  app.delete<{ Params: { id: string } }>(
+    '/api/v1/security/sra/blueprints/:id',
+    async (req, reply) => {
+      const { id } = req.params;
+      try {
+        const deleted = await mgr.deleteBlueprint(id);
+        if (!deleted) return sendError(reply, 404, 'Blueprint not found');
+        return reply.code(204).send();
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
     }
-  });
+  );
 
   // ── POST /api/v1/security/sra/assessments ────────────────────────────────
 
@@ -152,46 +155,55 @@ export function registerSraRoutes(app: FastifyInstance, opts: SraRoutesOptions):
 
   // ── GET /api/v1/security/sra/assessments/:id ─────────────────────────────
 
-  app.get<{ Params: { id: string } }>('/api/v1/security/sra/assessments/:id', async (req, reply) => {
-    const { id } = req.params;
-    try {
-      const assessment = await mgr.getAssessment(id);
-      if (!assessment) return sendError(reply, 404, 'Assessment not found');
-      return reply.send({ assessment });
-    } catch (err) {
-      return sendError(reply, 500, toErrorMessage(err));
+  app.get<{ Params: { id: string } }>(
+    '/api/v1/security/sra/assessments/:id',
+    async (req, reply) => {
+      const { id } = req.params;
+      try {
+        const assessment = await mgr.getAssessment(id);
+        if (!assessment) return sendError(reply, 404, 'Assessment not found');
+        return reply.send({ assessment });
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
     }
-  });
+  );
 
   // ── PUT /api/v1/security/sra/assessments/:id ─────────────────────────────
 
-  app.put<{ Params: { id: string } }>('/api/v1/security/sra/assessments/:id', async (req, reply) => {
-    const { id } = req.params;
-    try {
-      const parsed = SraAssessmentUpdateSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return sendError(reply, 400, parsed.error.issues.map((i) => i.message).join('; '));
+  app.put<{ Params: { id: string } }>(
+    '/api/v1/security/sra/assessments/:id',
+    async (req, reply) => {
+      const { id } = req.params;
+      try {
+        const parsed = SraAssessmentUpdateSchema.safeParse(req.body);
+        if (!parsed.success) {
+          return sendError(reply, 400, parsed.error.issues.map((i) => i.message).join('; '));
+        }
+        const assessment = await mgr.updateAssessment(id, parsed.data);
+        if (!assessment) return sendError(reply, 404, 'Assessment not found');
+        return reply.send({ assessment });
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
       }
-      const assessment = await mgr.updateAssessment(id, parsed.data);
-      if (!assessment) return sendError(reply, 404, 'Assessment not found');
-      return reply.send({ assessment });
-    } catch (err) {
-      return sendError(reply, 500, toErrorMessage(err));
     }
-  });
+  );
 
   // ── POST /api/v1/security/sra/assessments/:id/generate ───────────────────
 
-  app.post<{ Params: { id: string } }>('/api/v1/security/sra/assessments/:id/generate', async (req, reply) => {
-    const { id } = req.params;
-    try {
-      const assessment = await mgr.generateAssessmentSummary(id);
-      if (!assessment) return sendError(reply, 404, 'Assessment not found');
-      return reply.send({ assessment });
-    } catch (err) {
-      return sendError(reply, 500, toErrorMessage(err));
+  app.post<{ Params: { id: string } }>(
+    '/api/v1/security/sra/assessments/:id/generate',
+    async (req, reply) => {
+      const { id } = req.params;
+      try {
+        const assessment = await mgr.generateAssessmentSummary(id);
+        if (!assessment) return sendError(reply, 404, 'Assessment not found');
+        return reply.send({ assessment });
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
     }
-  });
+  );
 
   // ── GET /api/v1/security/sra/compliance-mappings ─────────────────────────
 

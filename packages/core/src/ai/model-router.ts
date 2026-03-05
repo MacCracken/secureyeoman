@@ -240,8 +240,13 @@ export class ModelRouter {
    *  7. If zero candidates survive filtering, return null (fall back to default).
    */
   route(task: string, options: RouterOptions = {}): RoutingDecision {
-    const { allowedModels = [], defaultModel, tokenBudget = 50000, context, confidentialCompute } =
-      options;
+    const {
+      allowedModels = [],
+      defaultModel,
+      tokenBudget = 50000,
+      context,
+      confidentialCompute,
+    } = options;
 
     const taskProfile = profileTask(task, context);
     const tier = targetTier(taskProfile);

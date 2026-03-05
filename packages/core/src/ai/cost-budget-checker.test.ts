@@ -5,11 +5,13 @@ import type { AlertManager } from '../telemetry/alert-manager.js';
 
 function mockStorage(daily = 0, monthly = 0): ProviderAccountStorage {
   return {
-    getPersonalityCostTotal: vi.fn().mockImplementation((_pid: string, from: number, _to: number) => {
-      // Rough heuristic: if "from" is start-of-month (day=1), return monthly; else daily
-      const d = new Date(from);
-      return Promise.resolve(d.getUTCDate() === 1 && d.getUTCHours() === 0 ? monthly : daily);
-    }),
+    getPersonalityCostTotal: vi
+      .fn()
+      .mockImplementation((_pid: string, from: number, _to: number) => {
+        // Rough heuristic: if "from" is start-of-month (day=1), return monthly; else daily
+        const d = new Date(from);
+        return Promise.resolve(d.getUTCDate() === 1 && d.getUTCHours() === 0 ? monthly : daily);
+      }),
   } as unknown as ProviderAccountStorage;
 }
 
@@ -107,11 +109,14 @@ describe('CostBudgetChecker', () => {
     checker = new CostBudgetChecker(storage, () => alertMgr);
 
     await checker.checkBudget('p1', { dailyUsd: 20, monthlyUsd: 100 });
-    const callCount = (storage.getPersonalityCostTotal as ReturnType<typeof vi.fn>).mock.calls.length;
+    const callCount = (storage.getPersonalityCostTotal as ReturnType<typeof vi.fn>).mock.calls
+      .length;
 
     await checker.checkBudget('p1', { dailyUsd: 20, monthlyUsd: 100 });
     // Should not have made additional DB calls
-    expect((storage.getPersonalityCostTotal as ReturnType<typeof vi.fn>).mock.calls.length).toBe(callCount);
+    expect((storage.getPersonalityCostTotal as ReturnType<typeof vi.fn>).mock.calls.length).toBe(
+      callCount
+    );
   });
 
   it('works when only daily budget is set', async () => {

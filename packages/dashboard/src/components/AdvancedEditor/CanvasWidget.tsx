@@ -148,9 +148,7 @@ function WidgetContent({ data, nodeId }: { data: CanvasWidgetData; nodeId: strin
           sceneJson={config.excalidrawSceneJson}
           documentId={config.excalidrawDocumentId}
           nodeId={nodeId}
-          onConfigChange={(cfg) =>
-            onConfigChange?.({ ...config, ...cfg })
-          }
+          onConfigChange={(cfg) => onConfigChange?.({ ...config, ...cfg })}
         />
       );
     case 'trading-dashboard':

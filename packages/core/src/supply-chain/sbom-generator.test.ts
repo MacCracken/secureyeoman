@@ -182,7 +182,11 @@ describe('SBOM Generator', () => {
     const lockV1 = JSON.stringify({
       lockfileVersion: 1,
       dependencies: {
-        express: { version: '4.19.2', integrity: 'sha512-xxx==', resolved: 'https://registry.npmjs.org/express/-/express-4.19.2.tgz' },
+        express: {
+          version: '4.19.2',
+          integrity: 'sha512-xxx==',
+          resolved: 'https://registry.npmjs.org/express/-/express-4.19.2.tgz',
+        },
       },
     });
     mockExistsSync.mockReturnValue(true);

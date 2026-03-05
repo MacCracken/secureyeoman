@@ -25,8 +25,7 @@ function rowToJob(row: Record<string, unknown>): OnlineUpdateJob {
     errorMessage: (row.error_message as string) ?? null,
     createdAt:
       row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at ?? ''),
-    completedAt:
-      row.completed_at instanceof Date ? row.completed_at.toISOString() : null,
+    completedAt: row.completed_at instanceof Date ? row.completed_at.toISOString() : null,
   };
 }
 
@@ -116,9 +115,14 @@ export class OnlineUpdateManager {
     const child = spawn(
       'docker',
       [
-        'run', '--rm', '--gpus', 'all',
-        '-v', `${jobDir}:/workspace`,
-        '--name', containerId,
+        'run',
+        '--rm',
+        '--gpus',
+        'all',
+        '-v',
+        `${jobDir}:/workspace`,
+        '--name',
+        containerId,
         this.image,
       ],
       { detached: true, stdio: 'ignore' }
@@ -136,10 +140,10 @@ export class OnlineUpdateManager {
 
     // Watch container completion
     this._watchContainer(id, containerId).catch((err: unknown) => {
-      this.deps.logger.error(
-        'Online update watcher error',
-        { id, error: err instanceof Error ? err.message : String(err) }
-      );
+      this.deps.logger.error('Online update watcher error', {
+        id,
+        error: err instanceof Error ? err.message : String(err),
+      });
     });
   }
 

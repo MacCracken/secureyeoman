@@ -51,7 +51,9 @@ export class OffenderTracker {
   constructor(config: Partial<OffenderTrackerConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     // Auto-prune expired records every window interval
-    this.pruneTimer = setInterval(() => this.prune(), this.config.windowMs);
+    this.pruneTimer = setInterval(() => {
+      this.prune();
+    }, this.config.windowMs);
     this.pruneTimer.unref();
   }
 
@@ -68,7 +70,11 @@ export class OffenderTracker {
    * Track a scan result for a user/personality.
    * Only records non-pass verdicts.
    */
-  track(userId: string | undefined, personalityId: string | undefined, scanResult: ScanResult): void {
+  track(
+    userId: string | undefined,
+    personalityId: string | undefined,
+    scanResult: ScanResult
+  ): void {
     if (scanResult.verdict === 'pass') return;
 
     const keys = this.buildKeys(userId, personalityId);
@@ -186,11 +192,16 @@ export class OffenderTracker {
 
   private severityWeight(severity: string): number {
     switch (severity) {
-      case 'critical': return 4;
-      case 'high': return 3;
-      case 'medium': return 2;
-      case 'low': return 1;
-      default: return 0.5;
+      case 'critical':
+        return 4;
+      case 'high':
+        return 3;
+      case 'medium':
+        return 2;
+      case 'low':
+        return 1;
+      default:
+        return 0.5;
     }
   }
 

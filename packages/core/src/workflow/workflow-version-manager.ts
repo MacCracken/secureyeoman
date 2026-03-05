@@ -17,8 +17,14 @@ export interface WorkflowVersionManagerDeps {
 
 /** Fields to track for change detection */
 const TRACKED_FIELDS = [
-  'name', 'description', 'steps', 'edges', 'triggers', 'isEnabled',
-  'autonomyLevel', 'triggerMode',
+  'name',
+  'description',
+  'steps',
+  'edges',
+  'triggers',
+  'isEnabled',
+  'autonomyLevel',
+  'triggerMode',
 ] as const;
 
 function detectChangedFields(a: Record<string, unknown>, b: Record<string, unknown>): string[] {
@@ -62,12 +68,9 @@ export class WorkflowVersionManager {
     let changedFields: string[] = [];
 
     if (previous) {
-      const previousText = snapshotToText(previous.snapshot as Record<string, unknown>);
+      const previousText = snapshotToText(previous.snapshot);
       diffSummary = computeUnifiedDiff(previousText, snapshotText, 'previous', 'current');
-      changedFields = detectChangedFields(
-        previous.snapshot as Record<string, unknown>,
-        snapshot
-      );
+      changedFields = detectChangedFields(previous.snapshot, snapshot);
     }
 
     return this.versionStorage.createVersion({
@@ -88,7 +91,7 @@ export class WorkflowVersionManager {
     author?: string
   ): Promise<WorkflowVersion> {
     const version = await this.recordVersion(workflowId, author);
-    const tag = customTag ?? await this.versionStorage.generateNextTag(workflowId);
+    const tag = customTag ?? (await this.versionStorage.generateNextTag(workflowId));
     const tagged = await this.versionStorage.tagVersion(version.id, tag);
     return tagged ?? version;
   }
@@ -106,13 +109,10 @@ export class WorkflowVersionManager {
   /**
    * Get a specific version by ID or tag.
    */
-  async getVersion(
-    workflowId: string,
-    idOrTag: string
-  ): Promise<WorkflowVersion | null> {
+  async getVersion(workflowId: string, idOrTag: string): Promise<WorkflowVersion | null> {
     // Try by ID first
     const byId = await this.versionStorage.getVersion(idOrTag);
-    if (byId && byId.workflowId === workflowId) return byId;
+    if (byId?.workflowId === workflowId) return byId;
 
     // Then by tag
     return this.versionStorage.getVersionByTag(workflowId, idOrTag);
@@ -129,8 +129,8 @@ export class WorkflowVersionManager {
     if (!a) throw new Error(`Version not found: ${versionIdA}`);
     if (!b) throw new Error(`Version not found: ${versionIdB}`);
 
-    const textA = snapshotToText(a.snapshot as Record<string, unknown>);
-    const textB = snapshotToText(b.snapshot as Record<string, unknown>);
+    const textA = snapshotToText(a.snapshot);
+    const textB = snapshotToText(b.snapshot);
     const labelA = a.versionTag ?? a.id.slice(0, 8);
     const labelB = b.versionTag ?? b.id.slice(0, 8);
 
@@ -146,11 +146,11 @@ export class WorkflowVersionManager {
     author?: string
   ): Promise<WorkflowVersion> {
     const target = await this.versionStorage.getVersion(targetVersionId);
-    if (!target || target.workflowId !== workflowId) {
+    if (target?.workflowId !== workflowId) {
       throw new Error(`Version not found: ${targetVersionId}`);
     }
 
-    const snap = target.snapshot as Record<string, unknown>;
+    const snap = target.snapshot;
     const updateData: Record<string, unknown> = {};
     for (const field of TRACKED_FIELDS) {
       if (field in snap) {
@@ -185,12 +185,9 @@ export class WorkflowVersionManager {
 
     const currentSnapshot = JSON.parse(JSON.stringify(workflow)) as Record<string, unknown>;
     const currentText = snapshotToText(currentSnapshot);
-    const taggedText = snapshotToText(lastTagged.snapshot as Record<string, unknown>);
+    const taggedText = snapshotToText(lastTagged.snapshot);
 
-    const changedFields = detectChangedFields(
-      lastTagged.snapshot as Record<string, unknown>,
-      currentSnapshot
-    );
+    const changedFields = detectChangedFields(lastTagged.snapshot, currentSnapshot);
 
     const diffSummary = computeUnifiedDiff(
       taggedText,

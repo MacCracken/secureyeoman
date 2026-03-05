@@ -138,11 +138,13 @@ function makeMockLogger() {
   } as any;
 }
 
-function makeDeps(overrides: {
-  auditEntries?: AuditEntry[];
-  egressEvents?: EgressEvent[];
-  classifications?: ClassificationRecord[];
-} = {}) {
+function makeDeps(
+  overrides: {
+    auditEntries?: AuditEntry[];
+    egressEvents?: EgressEvent[];
+    classifications?: ClassificationRecord[];
+  } = {}
+) {
   const queryAuditLog = vi.fn().mockResolvedValue({
     entries: overrides.auditEntries ?? mockAuditEntries,
     total: (overrides.auditEntries ?? mockAuditEntries).length,

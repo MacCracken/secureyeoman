@@ -20,7 +20,10 @@ export function registerAnalyticsRoutes(
 
   app.get(
     '/api/v1/analytics/sentiment/:conversationId',
-    async (request: FastifyRequest<{ Params: { conversationId: string } }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{ Params: { conversationId: string } }>,
+      reply: FastifyReply
+    ) => {
       const { conversationId } = request.params;
       const storage = secureYeoman.getAnalyticsStorage();
       if (!storage) return sendError(reply, 503, 'Analytics not available');
@@ -87,7 +90,10 @@ export function registerAnalyticsRoutes(
 
   app.get(
     '/api/v1/analytics/summary/:conversationId',
-    async (request: FastifyRequest<{ Params: { conversationId: string } }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{ Params: { conversationId: string } }>,
+      reply: FastifyReply
+    ) => {
       const { conversationId } = request.params;
       const storage = secureYeoman.getAnalyticsStorage();
       if (!storage) return sendError(reply, 503, 'Analytics not available');
@@ -116,7 +122,10 @@ export function registerAnalyticsRoutes(
 
   app.get(
     '/api/v1/analytics/entities/:conversationId',
-    async (request: FastifyRequest<{ Params: { conversationId: string } }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{ Params: { conversationId: string } }>,
+      reply: FastifyReply
+    ) => {
       const { conversationId } = request.params;
       const storage = secureYeoman.getAnalyticsStorage();
       if (!storage) return sendError(reply, 503, 'Analytics not available');
@@ -137,10 +146,7 @@ export function registerAnalyticsRoutes(
   );
 
   app.get('/api/v1/analytics/entities', async (request: FastifyRequest, reply: FastifyReply) => {
-    const {
-      entity,
-      entityType = 'concept',
-    } = request.query as {
+    const { entity, entityType = 'concept' } = request.query as {
       entity?: string;
       entityType?: string;
       limit?: string;

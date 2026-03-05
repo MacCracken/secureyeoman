@@ -96,9 +96,7 @@ describe('ClassificationEngine', () => {
 
   it('supports custom regex patterns', () => {
     const engine = makeEngine({
-      customPatterns: [
-        { name: 'project_code', pattern: 'PROJECT-\\d{4}', level: 'restricted' },
-      ],
+      customPatterns: [{ name: 'project_code', pattern: 'PROJECT-\\d{4}', level: 'restricted' }],
     });
     const result = engine.classify('Refer to PROJECT-1234 for details.');
     expect(result.level).toBe('restricted');
@@ -120,7 +118,9 @@ describe('ClassificationEngine', () => {
 
   it('detects multiple PII types in one text', () => {
     const engine = makeEngine();
-    const result = engine.classify('SSN: 123-45-6789, email: bob@test.com, card: 4111-1111-1111-1111');
+    const result = engine.classify(
+      'SSN: 123-45-6789, email: bob@test.com, card: 4111-1111-1111-1111'
+    );
     expect(result.level).toBe('confidential');
     expect(result.piiFound).toHaveLength(3);
     expect(result.piiFound).toContain('ssn');

@@ -118,7 +118,9 @@ export function ExperimentsTab() {
         />
         <button
           onClick={() => {
-            newName.trim() && createMutation.mutate(newName.trim());
+            if (newName.trim()) {
+              createMutation.mutate(newName.trim());
+            }
           }}
           disabled={!newName.trim() || createMutation.isPending}
           className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"

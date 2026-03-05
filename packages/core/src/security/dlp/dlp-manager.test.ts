@@ -35,8 +35,19 @@ describe('DlpManager', () => {
   beforeEach(() => {
     mockScanner = { scan: vi.fn() };
     mockEgressStore = { record: vi.fn().mockResolvedValue('eg-1'), query: vi.fn() };
-    mockPolicyStore = { list: vi.fn(), create: vi.fn(), getById: vi.fn(), update: vi.fn(), delete: vi.fn() };
-    mockClassificationStore = { create: vi.fn(), getByContentId: vi.fn(), override: vi.fn(), list: vi.fn() };
+    mockPolicyStore = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getById: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    };
+    mockClassificationStore = {
+      create: vi.fn(),
+      getByContentId: vi.fn(),
+      override: vi.fn(),
+      list: vi.fn(),
+    };
     vi.clearAllMocks();
 
     manager = new DlpManager({
@@ -68,13 +79,15 @@ describe('DlpManager', () => {
   });
 
   it('returns blocked result for blocked content', async () => {
-    mockScanner.scan.mockResolvedValue(makeScanResult({
-      allowed: false,
-      action: 'blocked',
-      policyId: 'pol-1',
-      policyName: 'Block PII',
-      findings: [{ type: 'pii_type', description: 'SSN detected', severity: 'high' }],
-    }));
+    mockScanner.scan.mockResolvedValue(
+      makeScanResult({
+        allowed: false,
+        action: 'blocked',
+        policyId: 'pol-1',
+        policyName: 'Block PII',
+        findings: [{ type: 'pii_type', description: 'SSN detected', severity: 'high' }],
+      })
+    );
     const result = await manager.scanOutbound('SSN: 123-45-6789', 'slack');
     expect(result.allowed).toBe(false);
     expect(result.action).toBe('blocked');
@@ -110,7 +123,12 @@ describe('DlpManager', () => {
   });
 
   it('logs scan info on completion', async () => {
-    mockScanner.scan.mockResolvedValue(makeScanResult({ action: 'warned', findings: [{ type: 'keyword', description: 'Found', severity: 'medium' }] }));
+    mockScanner.scan.mockResolvedValue(
+      makeScanResult({
+        action: 'warned',
+        findings: [{ type: 'keyword', description: 'Found', severity: 'medium' }],
+      })
+    );
     await manager.scanOutbound('Content', 'slack');
     expect(mockLogger.info).toHaveBeenCalledWith(
       'DLP outbound scan completed',

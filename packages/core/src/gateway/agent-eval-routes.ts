@@ -13,10 +13,7 @@ export interface AgentEvalRoutesOptions {
   evalManager: EvalManager;
 }
 
-export function registerAgentEvalRoutes(
-  app: FastifyInstance,
-  opts: AgentEvalRoutesOptions
-): void {
+export function registerAgentEvalRoutes(app: FastifyInstance, opts: AgentEvalRoutesOptions): void {
   const { evalManager } = opts;
 
   // ── Scenarios ───────────────────────────────────────────
@@ -24,7 +21,9 @@ export function registerAgentEvalRoutes(
   app.get(
     '/api/v1/eval/scenarios',
     async (
-      request: FastifyRequest<{ Querystring: { category?: string; limit?: string; offset?: string } }>,
+      request: FastifyRequest<{
+        Querystring: { category?: string; limit?: string; offset?: string };
+      }>,
       _reply: FastifyReply
     ) => {
       const { category, limit, offset } = request.query;
@@ -38,10 +37,7 @@ export function registerAgentEvalRoutes(
 
   app.get(
     '/api/v1/eval/scenarios/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const scenario = await evalManager.getScenario(request.params.id);
       if (!scenario) return sendError(reply, 404, 'Scenario not found');
       return scenario;
@@ -89,10 +85,7 @@ export function registerAgentEvalRoutes(
 
   app.delete(
     '/api/v1/eval/scenarios/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const deleted = await evalManager.deleteScenario(request.params.id);
       if (!deleted) return sendError(reply, 404, 'Scenario not found');
       reply.code(204);
@@ -118,10 +111,7 @@ export function registerAgentEvalRoutes(
 
   app.get(
     '/api/v1/eval/suites/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const suite = await evalManager.getSuite(request.params.id);
       if (!suite) return sendError(reply, 404, 'Suite not found');
       return suite;
@@ -156,10 +146,7 @@ export function registerAgentEvalRoutes(
 
   app.delete(
     '/api/v1/eval/suites/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const deleted = await evalManager.deleteSuite(request.params.id);
       if (!deleted) return sendError(reply, 404, 'Suite not found');
       reply.code(204);
@@ -171,10 +158,7 @@ export function registerAgentEvalRoutes(
 
   app.post(
     '/api/v1/eval/suites/:id/run',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const result = await evalManager.runSuite(request.params.id);
         return result;
@@ -189,10 +173,7 @@ export function registerAgentEvalRoutes(
 
   app.post(
     '/api/v1/eval/scenarios/:id/run',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         const result = await evalManager.runSingleScenario(request.params.id);
         return result;
@@ -210,7 +191,9 @@ export function registerAgentEvalRoutes(
   app.get(
     '/api/v1/eval/runs',
     async (
-      request: FastifyRequest<{ Querystring: { suiteId?: string; limit?: string; offset?: string } }>,
+      request: FastifyRequest<{
+        Querystring: { suiteId?: string; limit?: string; offset?: string };
+      }>,
       _reply: FastifyReply
     ) => {
       const { suiteId, limit, offset } = request.query;
@@ -224,10 +207,7 @@ export function registerAgentEvalRoutes(
 
   app.get(
     '/api/v1/eval/runs/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const run = await evalManager.getSuiteRun(request.params.id);
       if (!run) return sendError(reply, 404, 'Suite run not found');
       return run;

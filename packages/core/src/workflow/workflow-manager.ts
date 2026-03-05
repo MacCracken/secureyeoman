@@ -112,7 +112,7 @@ export class WorkflowManager {
     const result = await this.storage.updateDefinition(id, data);
     if (result) {
       // Fire-and-forget version recording
-      this.workflowVersionManager?.recordVersion(id).catch((err) => {
+      this.workflowVersionManager?.recordVersion(id).catch((err: unknown) => {
         this.logger.error('Failed to record workflow version', { err });
       });
     }

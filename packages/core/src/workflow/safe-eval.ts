@@ -385,10 +385,7 @@ class Parser {
  * Evaluate a condition expression safely against a context object.
  * Returns true/false. Throws on syntax errors or forbidden constructs.
  */
-export function evaluateCondition(
-  expr: string,
-  context: Record<string, unknown>
-): boolean {
+export function evaluateCondition(expr: string, context: Record<string, unknown>): boolean {
   if (!expr || typeof expr !== 'string') return false;
   if (expr.length > MAX_EXPRESSION_LENGTH) {
     throw new Error(`Expression too long (${expr.length} chars, max ${MAX_EXPRESSION_LENGTH})`);
@@ -403,9 +400,7 @@ export function evaluateCondition(
  * Validate a condition expression at save time (no execution context needed).
  * Returns { valid: true } or { valid: false, error: string }.
  */
-export function validateConditionExpression(
-  expr: string
-): { valid: boolean; error?: string } {
+export function validateConditionExpression(expr: string): { valid: boolean; error?: string } {
   if (!expr || typeof expr !== 'string') return { valid: false, error: 'Expression is empty' };
   if (expr.length > MAX_EXPRESSION_LENGTH) {
     return { valid: false, error: `Expression too long (max ${MAX_EXPRESSION_LENGTH} chars)` };

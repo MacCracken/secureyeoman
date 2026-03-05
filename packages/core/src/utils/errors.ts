@@ -34,9 +34,7 @@ export function sendError(
 ) {
   // For 500 Internal Server Error, sanitize the message to avoid leaking internals.
   // Other 5xx codes (502, 503) use intentional status descriptions and are safe to surface.
-  const safeMessage = statusCode === 500
-    ? 'An internal error occurred'
-    : message;
+  const safeMessage = statusCode === 500 ? 'An internal error occurred' : message;
   if (opts?.headers) {
     for (const [k, v] of Object.entries(opts.headers)) {
       reply.header(k, v);

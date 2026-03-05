@@ -20,10 +20,27 @@ export interface ExternalizationGateDeps {
   scanHistoryStore?: ScanHistoryStore | null;
   secretsScanner?: SecretsScanner | null;
   policy: ExternalizationPolicy;
-  getAlertManager?: () => { fire: (type: string, severity: string, message: string, meta?: Record<string, unknown>) => void } | null;
-  auditChain?: { record: (event: string, level: string, message: string, metadata?: Record<string, unknown>) => Promise<void> } | null;
-  escalationManager?: { handleEscalation: (scanResult: ScanResult, artifact: SandboxArtifact) => Promise<void> } | null;
-  offenderTracker?: { track: (userId: string | undefined, personalityId: string | undefined, scanResult: ScanResult) => void } | null;
+  getAlertManager?: () => {
+    fire: (type: string, severity: string, message: string, meta?: Record<string, unknown>) => void;
+  } | null;
+  auditChain?: {
+    record: (
+      event: string,
+      level: string,
+      message: string,
+      metadata?: Record<string, unknown>
+    ) => Promise<void>;
+  } | null;
+  escalationManager?: {
+    handleEscalation: (scanResult: ScanResult, artifact: SandboxArtifact) => Promise<void>;
+  } | null;
+  offenderTracker?: {
+    track: (
+      userId: string | undefined,
+      personalityId: string | undefined,
+      scanResult: ScanResult
+    ) => void;
+  } | null;
 }
 
 export interface GatedResult<T> {
@@ -49,7 +66,7 @@ export class ExternalizationGate {
       personalityId?: string;
       userId?: string;
       artifactType?: string;
-    },
+    }
   ): Promise<GatedResult<T>> {
     if (!this.deps.policy.enabled) {
       return { sandboxResult };
@@ -76,13 +93,15 @@ export class ExternalizationGate {
       const scanResult: ScanResult = {
         artifactId: artifact.id,
         verdict: 'block',
-        findings: [{
-          id: randomUUID(),
-          scanner: 'externalization-gate',
-          severity: 'high',
-          category: 'oversized',
-          message: `Artifact exceeds size limit (${artifact.sizeBytes} bytes)`,
-        }],
+        findings: [
+          {
+            id: randomUUID(),
+            scanner: 'externalization-gate',
+            severity: 'high',
+            category: 'oversized',
+            message: `Artifact exceeds size limit (${artifact.sizeBytes} bytes)`,
+          },
+        ],
         worstSeverity: 'high',
         scanDurationMs: 0,
         scannerVersions: {},
@@ -92,7 +111,11 @@ export class ExternalizationGate {
       await this.recordAndAudit(scanResult, artifact);
 
       return {
-        sandboxResult: { ...sandboxResult, success: false, error: new Error('Artifact blocked: exceeds size limit') },
+        sandboxResult: {
+          ...sandboxResult,
+          success: false,
+          error: new Error('Artifact blocked: exceeds size limit'),
+        },
         scanReport: { scanResult, redacted: false, gateDecision: 'block' },
       };
     }
@@ -154,7 +177,7 @@ export class ExternalizationGate {
             'artifact_quarantined',
             scanResult.worstSeverity,
             `Artifact quarantined: ${scanResult.findings.length} findings (worst: ${scanResult.worstSeverity})`,
-            { artifactId: artifact.id, quarantineId, sourceContext: artifact.sourceContext },
+            { artifactId: artifact.id, quarantineId, sourceContext: artifact.sourceContext }
           );
         }
 
@@ -162,7 +185,9 @@ export class ExternalizationGate {
           sandboxResult: {
             ...sandboxResult,
             success: false,
-            error: new Error(`Artifact quarantined (${quarantineId ?? 'no-store'}): ${scanResult.findings.length} findings`),
+            error: new Error(
+              `Artifact quarantined (${quarantineId ?? 'no-store'}): ${scanResult.findings.length} findings`
+            ),
             violations: [
               ...sandboxResult.violations,
               {
@@ -192,7 +217,7 @@ export class ExternalizationGate {
             'artifact_blocked',
             'critical',
             `Artifact blocked: critical threat detected`,
-            { artifactId: artifact.id, sourceContext: artifact.sourceContext },
+            { artifactId: artifact.id, sourceContext: artifact.sourceContext }
           );
         }
 
@@ -200,7 +225,9 @@ export class ExternalizationGate {
           sandboxResult: {
             ...sandboxResult,
             success: false,
-            error: new Error(`Artifact blocked: critical threat detected (${scanResult.findings.length} findings)`),
+            error: new Error(
+              `Artifact blocked: critical threat detected (${scanResult.findings.length} findings)`
+            ),
             violations: [
               ...sandboxResult.violations,
               {
@@ -230,7 +257,10 @@ export class ExternalizationGate {
     }
   }
 
-  private redactResult<T>(result: SandboxResult<T>, secretsScanner: SecretsScanner): SandboxResult<T> {
+  private redactResult<T>(
+    result: SandboxResult<T>,
+    secretsScanner: SecretsScanner
+  ): SandboxResult<T> {
     if (typeof result.result === 'string') {
       return { ...result, result: secretsScanner.redact(result.result) as T };
     }
@@ -268,7 +298,7 @@ export class ExternalizationGate {
             findingCount: scanResult.findings.length,
             sourceContext: artifact.sourceContext,
             threatAssessment: scanResult.threatAssessment,
-          },
+          }
         );
       } catch {
         // Non-critical

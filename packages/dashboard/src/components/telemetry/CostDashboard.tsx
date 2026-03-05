@@ -50,7 +50,7 @@ export function CostDashboard() {
   const totalCost = costs?.reduce((sum, c) => sum + c.totalCostUsd, 0) ?? 0;
   const totalRequests = costs?.reduce((sum, c) => sum + c.totalRequests, 0) ?? 0;
   const topProvider = costs?.length
-    ? costs.reduce((max, c) => (c.totalCostUsd > max.totalCostUsd ? c : max), costs[0]!)
+    ? costs.reduce((max, c) => (c.totalCostUsd > max.totalCostUsd ? c : max), costs[0])
     : null;
   const dailyAvg = totalCost / periodToDays(period);
 
@@ -78,7 +78,9 @@ export function CostDashboard() {
             {(['7d', '30d', '90d'] as Period[]).map((p) => (
               <button
                 key={p}
-                onClick={() => setPeriod(p)}
+                onClick={() => {
+                  setPeriod(p);
+                }}
                 className={`px-3 py-1 text-xs rounded-md transition-colors ${
                   period === p ? 'bg-background shadow-sm font-medium' : 'hover:bg-background/50'
                 }`}
@@ -151,7 +153,9 @@ function OverviewCard({
 }) {
   return (
     <div className="border rounded-lg p-4 space-y-1">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">{icon} {label}</div>
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        {icon} {label}
+      </div>
       <div className="text-lg font-semibold">{value}</div>
     </div>
   );
@@ -167,9 +171,7 @@ function CostTable({ costs }: { costs: AccountCostSummaryResponse[] }) {
             <th className="text-left px-4 py-2 font-medium">Account</th>
             <th className="text-right px-4 py-2 font-medium">Cost (USD)</th>
             <th className="text-right px-4 py-2 font-medium hidden sm:table-cell">Input Tokens</th>
-            <th className="text-right px-4 py-2 font-medium hidden sm:table-cell">
-              Output Tokens
-            </th>
+            <th className="text-right px-4 py-2 font-medium hidden sm:table-cell">Output Tokens</th>
             <th className="text-right px-4 py-2 font-medium">Requests</th>
           </tr>
         </thead>

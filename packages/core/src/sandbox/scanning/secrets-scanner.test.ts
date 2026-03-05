@@ -25,7 +25,9 @@ describe('SecretsScanner', () => {
   describe('AWS credentials', () => {
     it('detects AWS Access Key ID', async () => {
       const findings = await scanner.scan(makeArtifact('key = "AKIAIOSFODNN7EXAMPLE"'));
-      expect(findings.some((f) => f.category === 'credentials' && f.evidence?.includes('AWS_KEY'))).toBe(true);
+      expect(
+        findings.some((f) => f.category === 'credentials' && f.evidence?.includes('AWS_KEY'))
+      ).toBe(true);
     });
 
     it('detects AWS Secret Access Key', async () => {
@@ -40,7 +42,9 @@ describe('SecretsScanner', () => {
   describe('GCP credentials', () => {
     it('detects GCP API key', async () => {
       // GCP API keys are AIza + 35 alphanumeric chars = 39 total
-      const findings = await scanner.scan(makeArtifact('apiKey: "AIzaSy00000000000000000000000000000test"'));
+      const findings = await scanner.scan(
+        makeArtifact('apiKey: "AIzaSy00000000000000000000000000000test"')
+      );
       expect(findings.some((f) => f.evidence?.includes('GCP_KEY'))).toBe(true);
     });
   });
@@ -48,12 +52,16 @@ describe('SecretsScanner', () => {
   // ── GitHub ──
   describe('GitHub tokens', () => {
     it('detects GitHub PAT', async () => {
-      const findings = await scanner.scan(makeArtifact('token = "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmn"'));
+      const findings = await scanner.scan(
+        makeArtifact('token = "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmn"')
+      );
       expect(findings.some((f) => f.evidence?.includes('GITHUB_TOKEN'))).toBe(true);
     });
 
     it('detects GitHub app token', async () => {
-      const findings = await scanner.scan(makeArtifact('ghs_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmn'));
+      const findings = await scanner.scan(
+        makeArtifact('ghs_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmn')
+      );
       expect(findings.some((f) => f.evidence?.includes('GITHUB_TOKEN'))).toBe(true);
     });
   });
@@ -62,12 +70,16 @@ describe('SecretsScanner', () => {
   describe('Stripe keys', () => {
     it('detects Stripe live key', async () => {
       const findings = await scanner.scan(makeArtifact('sk_live_' + 'ABCDEFGHIJKLMNOPQRSTUVXYa'));
-      expect(findings.some((f) => f.severity === 'critical' && f.evidence?.includes('STRIPE_KEY'))).toBe(true);
+      expect(
+        findings.some((f) => f.severity === 'critical' && f.evidence?.includes('STRIPE_KEY'))
+      ).toBe(true);
     });
 
     it('detects Stripe test key with lower severity', async () => {
       const findings = await scanner.scan(makeArtifact('sk_test_ABCDEFGHIJKLMNOPQRSTUVXYa'));
-      expect(findings.some((f) => f.severity === 'medium' && f.evidence?.includes('STRIPE_TEST_KEY'))).toBe(true);
+      expect(
+        findings.some((f) => f.severity === 'medium' && f.evidence?.includes('STRIPE_TEST_KEY'))
+      ).toBe(true);
     });
   });
 
@@ -80,7 +92,9 @@ describe('SecretsScanner', () => {
 
     it('detects Slack webhook URL', async () => {
       const findings = await scanner.scan(
-        makeArtifact('https://hooks.slack.com/services/T01234567/B01234567/ABCDEFGHIJKLMNOPQRSTUVWXy')
+        makeArtifact(
+          'https://hooks.slack.com/services/T01234567/B01234567/ABCDEFGHIJKLMNOPQRSTUVWXy'
+        )
       );
       expect(findings.some((f) => f.evidence?.includes('SLACK_WEBHOOK'))).toBe(true);
     });
@@ -100,14 +114,18 @@ describe('SecretsScanner', () => {
 
     it('detects Bearer token', async () => {
       const findings = await scanner.scan(
-        makeArtifact('Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U')
+        makeArtifact(
+          'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U'
+        )
       );
       expect(findings.some((f) => f.evidence?.includes('BEARER_TOKEN'))).toBe(true);
     });
 
     it('detects JWT', async () => {
       const findings = await scanner.scan(
-        makeArtifact('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c')
+        makeArtifact(
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+        )
       );
       expect(findings.some((f) => f.evidence?.includes('JWT'))).toBe(true);
     });
@@ -138,7 +156,9 @@ describe('SecretsScanner', () => {
   describe('PII', () => {
     it('detects email addresses', async () => {
       const findings = await scanner.scan(makeArtifact('contact: user@example.com'));
-      expect(findings.some((f) => f.category === 'pii' && f.evidence?.includes('EMAIL'))).toBe(true);
+      expect(findings.some((f) => f.category === 'pii' && f.evidence?.includes('EMAIL'))).toBe(
+        true
+      );
     });
 
     it('detects SSN pattern', async () => {
@@ -148,7 +168,9 @@ describe('SecretsScanner', () => {
 
     it('detects credit card numbers', async () => {
       const findings = await scanner.scan(makeArtifact('card: 4111111111111111'));
-      expect(findings.some((f) => f.category === 'pii' && f.evidence?.includes('CREDIT_CARD'))).toBe(true);
+      expect(
+        findings.some((f) => f.category === 'pii' && f.evidence?.includes('CREDIT_CARD'))
+      ).toBe(true);
     });
   });
 
@@ -187,7 +209,10 @@ describe('SecretsScanner', () => {
     it('respects abort signal', async () => {
       const ac = new AbortController();
       ac.abort();
-      const findings = await scanner.scan(makeArtifact('password = "test"\napi_key = "test"'), ac.signal);
+      const findings = await scanner.scan(
+        makeArtifact('password = "test"\napi_key = "test"'),
+        ac.signal
+      );
       expect(findings.length).toBeLessThanOrEqual(2);
     });
 

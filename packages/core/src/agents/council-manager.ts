@@ -202,7 +202,11 @@ export class CouncilManager {
         // ── Convergence check (until_consensus only) ─────────────
         if (template.deliberationStrategy === 'until_consensus' && round < maxRounds) {
           const roundPositions = await this.storage.getPositionsForRound(run.id, round);
-          const converged = await this.checkConvergence(roundPositions, params.topic, perCallBudget);
+          const converged = await this.checkConvergence(
+            roundPositions,
+            params.topic,
+            perCallBudget
+          );
           tokensUsed += converged.tokensUsed;
           if (converged.result) {
             this.logger.debug('Council reached convergence', {
@@ -220,12 +224,7 @@ export class CouncilManager {
 
       // ── Synthesis ───────────────────────────────────────────────
       const allPositions = await this.storage.getPositionsForRun(run.id);
-      const synthesis = await this.synthesize(
-        template,
-        params.topic,
-        allPositions,
-        perCallBudget
-      );
+      const synthesis = await this.synthesize(template, params.topic, allPositions, perCallBudget);
       tokensUsed += synthesis.tokensUsed;
 
       await this.storage.updateRun(run.id, {
@@ -314,10 +313,15 @@ export class CouncilManager {
         const parsed = JSON.parse(jsonMatch[0]);
         return {
           position: String(parsed.position ?? response),
-          confidence: typeof parsed.confidence === 'number' ? Math.min(1, Math.max(0, parsed.confidence)) : 0.5,
+          confidence:
+            typeof parsed.confidence === 'number'
+              ? Math.min(1, Math.max(0, parsed.confidence))
+              : 0.5,
           keyPoints: Array.isArray(parsed.keyPoints) ? parsed.keyPoints.map(String) : [],
           agreements: Array.isArray(parsed.agreements) ? parsed.agreements.map(String) : [],
-          disagreements: Array.isArray(parsed.disagreements) ? parsed.disagreements.map(String) : [],
+          disagreements: Array.isArray(parsed.disagreements)
+            ? parsed.disagreements.map(String)
+            : [],
         };
       }
     } catch {
@@ -406,9 +410,12 @@ Have the members converged on a shared position? Respond ONLY with JSON:
       historyParts.push(`--- Round ${round} ---`);
       for (const pos of roundPositions) {
         historyParts.push(`[${pos.memberRole}] (confidence: ${pos.confidence}): ${pos.position}`);
-        if (pos.keyPoints.length > 0) historyParts.push(`  Key points: ${pos.keyPoints.join('; ')}`);
-        if (pos.agreements.length > 0) historyParts.push(`  Agrees with: ${pos.agreements.join('; ')}`);
-        if (pos.disagreements.length > 0) historyParts.push(`  Disagrees with: ${pos.disagreements.join('; ')}`);
+        if (pos.keyPoints.length > 0)
+          historyParts.push(`  Key points: ${pos.keyPoints.join('; ')}`);
+        if (pos.agreements.length > 0)
+          historyParts.push(`  Agrees with: ${pos.agreements.join('; ')}`);
+        if (pos.disagreements.length > 0)
+          historyParts.push(`  Disagrees with: ${pos.disagreements.join('; ')}`);
       }
     }
 

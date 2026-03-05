@@ -61,18 +61,18 @@ export const verifyCommand: Command = {
       return 1;
     }
 
-    const { verifyRelease, isCosignAvailable } = await import('../../supply-chain/release-verifier.js');
-    const { dirname, join } = await import('node:path');
-    const { existsSync } = await import('node:fs');
+    const { verifyRelease } = await import('../../supply-chain/release-verifier.js');
+    const pathMod = await import('node:path');
+    const fsMod = await import('node:fs');
 
     // Resolve SHA256SUMS path
     let sha256sumsPath = sumsResult.value;
     if (!sha256sumsPath) {
-      const dir = dirname(binaryPath);
-      const candidate = join(dir, 'SHA256SUMS');
-      if (existsSync(candidate)) {
+      const dir = pathMod.dirname(binaryPath);
+      const candidate = pathMod.join(dir, 'SHA256SUMS');
+      if (fsMod.existsSync(candidate)) {
         sha256sumsPath = candidate;
-      } else if (existsSync('SHA256SUMS')) {
+      } else if (fsMod.existsSync('SHA256SUMS')) {
         sha256sumsPath = 'SHA256SUMS';
       }
     }

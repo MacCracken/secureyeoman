@@ -345,7 +345,11 @@ export class ProviderAccountStorage extends PgBaseStorage {
     return rows.map(rowToTrendPoint);
   }
 
-  async getPersonalityCostTotal(personalityId: string, fromMs: number, toMs: number): Promise<number> {
+  async getPersonalityCostTotal(
+    personalityId: string,
+    fromMs: number,
+    toMs: number
+  ): Promise<number> {
     const row = await this.queryOne<{ total: string }>(
       `SELECT COALESCE(SUM(cost_usd), 0)::text AS total
        FROM ai.account_cost_records
@@ -357,10 +361,7 @@ export class ProviderAccountStorage extends PgBaseStorage {
     return Number(row?.total ?? 0);
   }
 
-  async getTopAccounts(
-    limit = 10,
-    tenantId?: string
-  ): Promise<AccountCostSummary[]> {
+  async getTopAccounts(limit = 10, tenantId?: string): Promise<AccountCostSummary[]> {
     const conditions: string[] = [];
     const values: unknown[] = [];
     let idx = 1;

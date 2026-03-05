@@ -105,9 +105,7 @@ describe('liteBootstrap', () => {
   it('uses pool size 2 by default for lite mode', async () => {
     const ctx = await liteBootstrap({ skipMigrations: true });
 
-    expect(MockPool).toHaveBeenCalledWith(
-      expect.objectContaining({ max: 2 })
-    );
+    expect(MockPool).toHaveBeenCalledWith(expect.objectContaining({ max: 2 }));
 
     await ctx.cleanup();
   });
@@ -115,9 +113,7 @@ describe('liteBootstrap', () => {
   it('allows custom pool size override', async () => {
     const ctx = await liteBootstrap({ skipMigrations: true, poolSize: 5 });
 
-    expect(MockPool).toHaveBeenCalledWith(
-      expect.objectContaining({ max: 5 })
-    );
+    expect(MockPool).toHaveBeenCalledWith(expect.objectContaining({ max: 5 }));
 
     await ctx.cleanup();
   });

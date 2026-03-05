@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { parseSha256Sums, sha256File, verifyChecksum, isCosignAvailable } from './release-verifier.js';
+import {
+  parseSha256Sums,
+  sha256File,
+  verifyChecksum,
+  isCosignAvailable,
+} from './release-verifier.js';
 
 vi.mock('node:fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs')>();
@@ -37,12 +42,17 @@ describe('Release Verifier', () => {
 
       const sums = parseSha256Sums(content);
       expect(sums.size).toBe(2);
-      expect(sums.get('secureyeoman-linux-x64')).toBe('a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2');
-      expect(sums.get('secureyeoman-darwin-arm64')).toBe('f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2');
+      expect(sums.get('secureyeoman-linux-x64')).toBe(
+        'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
+      );
+      expect(sums.get('secureyeoman-darwin-arm64')).toBe(
+        'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
+      );
     });
 
     it('skips empty lines and comments', () => {
-      const content = '# checksums\n\na1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2  file.txt\n\n';
+      const content =
+        '# checksums\n\na1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2  file.txt\n\n';
       const sums = parseSha256Sums(content);
       expect(sums.size).toBe(1);
     });
@@ -64,7 +74,9 @@ describe('Release Verifier', () => {
 
       // Re-import to pick up mock
       const { promisify } = await import('node:util');
-      vi.mocked(promisify).mockReturnValue(vi.fn().mockRejectedValue(new Error('command not found')));
+      vi.mocked(promisify).mockReturnValue(
+        vi.fn().mockRejectedValue(new Error('command not found'))
+      );
 
       const result = await isCosignAvailable();
       expect(result).toBe(false);

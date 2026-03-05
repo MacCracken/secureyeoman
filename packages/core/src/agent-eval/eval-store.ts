@@ -23,7 +23,8 @@ function rowToScenario(row: Record<string, unknown>): EvalScenario {
     category: (row.category as string) ?? 'general',
     tags: (row.tags as string[]) ?? [],
     input: row.input as string,
-    conversationHistory: (row.conversation_history as Array<{ role: 'user' | 'assistant'; content: string }>) ?? [],
+    conversationHistory:
+      (row.conversation_history as { role: 'user' | 'assistant'; content: string }[]) ?? [],
     expectedToolCalls: (row.expected_tool_calls as EvalScenario['expectedToolCalls']) ?? [],
     orderedToolCalls: (row.ordered_tool_calls as boolean) ?? false,
     forbiddenToolCalls: (row.forbidden_tool_calls as string[]) ?? [],
@@ -107,16 +108,25 @@ export class EvalStore extends PgBaseStorage {
         tenant_id, created_at, updated_at
       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
       [
-        scenario.id, scenario.name, scenario.description, scenario.category,
-        JSON.stringify(scenario.tags), scenario.input,
+        scenario.id,
+        scenario.name,
+        scenario.description,
+        scenario.category,
+        JSON.stringify(scenario.tags),
+        scenario.input,
         JSON.stringify(scenario.conversationHistory),
         JSON.stringify(scenario.expectedToolCalls),
         scenario.orderedToolCalls,
         JSON.stringify(scenario.forbiddenToolCalls),
         JSON.stringify(scenario.outputAssertions),
-        scenario.maxTokens, scenario.maxDurationMs,
-        scenario.personalityId, JSON.stringify(scenario.skillIds),
-        scenario.model, tenantId, now, now,
+        scenario.maxTokens,
+        scenario.maxDurationMs,
+        scenario.personalityId,
+        JSON.stringify(scenario.skillIds),
+        scenario.model,
+        tenantId,
+        now,
+        now,
       ]
     );
     return scenario;
@@ -233,9 +243,15 @@ export class EvalStore extends PgBaseStorage {
       `INSERT INTO eval.suites (id, name, description, scenario_ids, max_cost_usd, concurrency, tenant_id, created_at, updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
       [
-        suite.id, suite.name, suite.description,
+        suite.id,
+        suite.name,
+        suite.description,
         JSON.stringify(suite.scenarioIds),
-        suite.maxCostUsd, suite.concurrency, tenantId, now, now,
+        suite.maxCostUsd,
+        suite.concurrency,
+        tenantId,
+        now,
+        now,
       ]
     );
     return suite;
@@ -270,10 +286,10 @@ export class EvalStore extends PgBaseStorage {
   }
 
   async deleteSuite(id: string, tenantId = 'default'): Promise<boolean> {
-    const count = await this.execute(
-      'DELETE FROM eval.suites WHERE id = $1 AND tenant_id = $2',
-      [id, tenantId]
-    );
+    const count = await this.execute('DELETE FROM eval.suites WHERE id = $1 AND tenant_id = $2', [
+      id,
+      tenantId,
+    ]);
     return count > 0;
   }
 
@@ -287,11 +303,21 @@ export class EvalStore extends PgBaseStorage {
         total_cost_usd, started_at, completed_at, tenant_id, created_at
       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
       [
-        result.id, result.suiteId, result.suiteName, result.passed,
-        result.totalScenarios, result.passedCount, result.failedCount,
-        result.errorCount, result.totalDurationMs, result.totalTokens,
-        result.totalCostUsd, result.startedAt, result.completedAt,
-        tenantId, Date.now(),
+        result.id,
+        result.suiteId,
+        result.suiteName,
+        result.passed,
+        result.totalScenarios,
+        result.passedCount,
+        result.failedCount,
+        result.errorCount,
+        result.totalDurationMs,
+        result.totalTokens,
+        result.totalCostUsd,
+        result.startedAt,
+        result.completedAt,
+        tenantId,
+        Date.now(),
       ]
     );
 
@@ -307,14 +333,27 @@ export class EvalStore extends PgBaseStorage {
           tenant_id, created_at
         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
         [
-          srId, result.id, sr.scenarioId, sr.scenarioName, sr.passed, sr.status,
-          sr.output, JSON.stringify(sr.assertionResults),
-          JSON.stringify(sr.toolCalls), JSON.stringify(sr.toolCallErrors),
+          srId,
+          result.id,
+          sr.scenarioId,
+          sr.scenarioName,
+          sr.passed,
+          sr.status,
+          sr.output,
+          JSON.stringify(sr.assertionResults),
+          JSON.stringify(sr.toolCalls),
+          JSON.stringify(sr.toolCallErrors),
           JSON.stringify(sr.forbiddenToolCallViolations),
-          sr.inputTokens, sr.outputTokens, sr.totalTokens,
-          sr.costUsd, sr.durationMs, sr.errorMessage ?? null,
-          sr.model ?? null, sr.personalityId ?? null,
-          tenantId, Date.now(),
+          sr.inputTokens,
+          sr.outputTokens,
+          sr.totalTokens,
+          sr.costUsd,
+          sr.durationMs,
+          sr.errorMessage ?? null,
+          sr.model ?? null,
+          sr.personalityId ?? null,
+          tenantId,
+          Date.now(),
         ]
       );
     }

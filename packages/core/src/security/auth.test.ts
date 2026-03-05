@@ -233,7 +233,7 @@ describe('AuthService', () => {
       const failures = results.filter((r) => r.status === 'rejected');
       expect(successes).toHaveLength(1);
       expect(failures).toHaveLength(1);
-      expect((failures[0] as PromiseRejectedResult).reason.message).toMatch(/revoked/);
+      expect(failures[0]!.reason.message).toMatch(/revoked/);
     });
   });
 

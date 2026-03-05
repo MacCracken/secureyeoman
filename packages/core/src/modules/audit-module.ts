@@ -13,10 +13,7 @@ import {
 } from '../logging/audit-chain.js';
 import { SQLiteAuditStorage } from '../logging/sqlite-storage.js';
 import { CryptoPool } from '../utils/crypto-pool.js';
-import {
-  AuditReportGenerator,
-  type AuditReportGeneratorDeps,
-} from '../reporting/audit-report.js';
+import { AuditReportGenerator, type AuditReportGeneratorDeps } from '../reporting/audit-report.js';
 import {
   ComplianceReportGenerator,
   type ComplianceReportGeneratorDeps,
@@ -37,7 +34,10 @@ export interface AuditModuleDeps {
 }
 
 /** Deps injected after other modules are ready, for report generator. */
-export type AuditModuleLateDeps = Pick<AuditReportGeneratorDeps, 'queryTasks' | 'queryHeartbeatTasks'>;
+export type AuditModuleLateDeps = Pick<
+  AuditReportGeneratorDeps,
+  'queryTasks' | 'queryHeartbeatTasks'
+>;
 
 /** Deps for compliance report generator (DLP stores from SecurityModule). */
 export interface ComplianceReportDeps {

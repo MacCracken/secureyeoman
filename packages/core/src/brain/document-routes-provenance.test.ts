@@ -87,12 +87,20 @@ describe('Document Routes — Provenance (Phase 110)', () => {
   describe('PUT /api/v1/brain/documents/:id/provenance', () => {
     it('updates provenance scores', async () => {
       const scores = {
-        authority: 0.9, currency: 0.8, objectivity: 0.7, accuracy: 0.9,
-        methodology: 0.6, coverage: 0.5, reliability: 0.8, provenance: 0.7,
+        authority: 0.9,
+        currency: 0.8,
+        objectivity: 0.7,
+        accuracy: 0.9,
+        methodology: 0.6,
+        coverage: 0.5,
+        reliability: 0.8,
+        provenance: 0.7,
       };
       mockDocumentManager.getDocument.mockResolvedValue({ id: 'doc-1' });
       mockDocumentManager.updateProvenance.mockResolvedValue({
-        id: 'doc-1', sourceQuality: scores, trustScore: 0.78,
+        id: 'doc-1',
+        sourceQuality: scores,
+        trustScore: 0.78,
       });
 
       const result = await mockDocumentManager.updateProvenance('doc-1', scores);

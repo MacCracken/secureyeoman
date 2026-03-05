@@ -239,7 +239,7 @@ export class SecureYeoman {
       throw new Error('SecureYeoman is already initialized');
     }
 
-    const startupTimings: Array<{ step: string; ms: number }> = [];
+    const startupTimings: { step: string; ms: number }[] = [];
     const mark = (step: string, startMs: number) => {
       startupTimings.push({ step, ms: Math.round(performance.now() - startMs) });
     };
@@ -359,7 +359,7 @@ export class SecureYeoman {
           auditStorage: this.auditStorage,
           getAlertManager: () => this.platformMod?.getAlertManager() ?? null,
         });
-        await this.brainMod.init({ config: this.config, logger: this.logger! });
+        await this.brainMod.init({ config: this.config, logger: this.logger });
         this.brainStorage = this.brainMod.getBrainStorage();
         this.brainManager = this.brainMod.getBrainManager();
       }
@@ -465,7 +465,7 @@ export class SecureYeoman {
       // Step 6.6: Initialize heartbeat + heart system (BodyModule)
       this.bodyMod = new BodyModule({
         brainManager: this.brainManager!,
-        auditChain: this.auditChain!,
+        auditChain: this.auditChain,
         integrationManager: this.integrationMod.getIntegrationManager()!,
         notificationManager: this.platformMod.getNotificationManager(),
         soulManager: soulManager!,
@@ -476,7 +476,7 @@ export class SecureYeoman {
       this.brainMod?.startLateWorkers();
 
       // Step 6.9: Initialize reporting via AuditModule
-      this.auditMod!.initReportGenerator({
+      this.auditMod.initReportGenerator({
         queryTasks: this.taskStorage ? (filter) => this.taskStorage!.listTasks(filter) : undefined,
         queryHeartbeatTasks: this.bodyMod?.getHeartbeatManager()
           ? () => this.bodyMod!.getHeartbeatManager()!.getStatus().tasks
@@ -487,7 +487,7 @@ export class SecureYeoman {
       const egressStore = this.securityMod?.getDlpManager()?.getEgressStore();
       const classificationStore = this.securityMod?.getClassificationStore();
       if (egressStore && classificationStore) {
-        this.auditMod!.initComplianceReportGenerator({ egressStore, classificationStore });
+        this.auditMod.initComplianceReportGenerator({ egressStore, classificationStore });
       }
 
       // Steps 6.9–6.10b: PlatformModule core phase (MCP, dashboard, workspace, experiment, marketplace, chat, branching, dynamic tool)
@@ -512,7 +512,7 @@ export class SecureYeoman {
           getMarketplaceManager: () => this.platformMod?.getMarketplaceManager() ?? null,
           getSoulManager: () => this.soulMod?.getSoulManager() ?? null,
         });
-        await this.delegationMod.init({ config: this.config, logger: this.logger! });
+        await this.delegationMod.init({ config: this.config, logger: this.logger });
 
         const delegationNeeded =
           this.config.delegation?.enabled ||
@@ -552,7 +552,7 @@ export class SecureYeoman {
               const { ExtensionStorage } = await import('./extensions/storage.js');
               const { ExtensionManager } = await import('./extensions/manager.js');
               this.extensionStorage = new ExtensionStorage();
-              this.extensionManager = new ExtensionManager(this.config!.extensions!, {
+              this.extensionManager = new ExtensionManager(this.config!.extensions, {
                 storage: this.extensionStorage,
                 logger: this.logger!.child({ component: 'ExtensionManager' }),
                 auditChain: this.auditChain!,
@@ -569,7 +569,7 @@ export class SecureYeoman {
               const { ExecutionStorage } = await import('./execution/storage.js');
               const { CodeExecutionManager } = await import('./execution/manager.js');
               this.executionStorage = new ExecutionStorage();
-              this.executionManager = new CodeExecutionManager(this.config!.execution!, {
+              this.executionManager = new CodeExecutionManager(this.config!.execution, {
                 storage: this.executionStorage,
                 logger: this.logger!.child({ component: 'CodeExecutionManager' }),
                 auditChain: this.auditChain!,
@@ -589,7 +589,7 @@ export class SecureYeoman {
               const transport = new RemoteDelegationTransport({
                 logger: this.logger!.child({ component: 'A2ATransport' }),
               });
-              this.a2aManager = new A2AManager(this.config!.a2a!, {
+              this.a2aManager = new A2AManager(this.config!.a2a, {
                 storage: this.a2aStorage,
                 transport,
                 logger: this.logger!.child({ component: 'A2AManager' }),
@@ -628,7 +628,7 @@ export class SecureYeoman {
 
       // Steps 6h–6j-3: TrainingModule (distillation, finetune, ML pipeline, LLM judge, lifecycle)
       stepStart = performance.now();
-      if (this.config.training?.enabled !== false) {
+      if (this.config.training?.enabled) {
         const { TrainingModule } = await import('./modules/training-module.js');
         this.trainingMod = new TrainingModule({
           getAlertManager: () => this.platformMod?.getAlertManager() ?? null,
@@ -637,7 +637,7 @@ export class SecureYeoman {
           chatConversationStorage: this.platformMod.getConversationStorage(),
           soulStorage: null, // SoulStorage is internal to SoulModule
         });
-        await this.trainingMod.init({ config: this.config, logger: this.logger! });
+        await this.trainingMod.init({ config: this.config, logger: this.logger });
         this.logger.debug('TrainingModule initialized');
       } else {
         this.logger.info('TrainingModule skipped (training.enabled=false)');
@@ -646,7 +646,7 @@ export class SecureYeoman {
 
       // Step 6m: Initialize Conversation Analytics (AnalyticsModule)
       stepStart = performance.now();
-      if (this.config.analytics?.enabled !== false) {
+      if (this.config.analytics?.enabled) {
         const { AnalyticsModule } = await import('./modules/analytics-module.js');
         this.analyticsMod = new AnalyticsModule({ aiClient: this.aiMod.getAIClient() });
         await this.analyticsMod.init({ config: this.config, logger: this.logger });
@@ -1464,7 +1464,9 @@ export class SecureYeoman {
     this.ensureInitialized();
     return this.platformMod?.getEventDispatcher() ?? null;
   }
-  getEventSubscriptionStore(): import('./events/event-subscription-store.js').EventSubscriptionStore | null {
+  getEventSubscriptionStore():
+    | import('./events/event-subscription-store.js').EventSubscriptionStore
+    | null {
     this.ensureInitialized();
     return this.platformMod?.getEventSubscriptionStore() ?? null;
   }
@@ -1959,7 +1961,11 @@ export class SecureYeoman {
       };
       for (const row of result.rows) {
         let val: unknown;
-        try { val = JSON.parse(row.value); } catch { continue; }
+        try {
+          val = JSON.parse(row.value);
+        } catch {
+          continue;
+        }
         if (Object.prototype.hasOwnProperty.call(nestedPolicyHandlers, row.key)) {
           nestedPolicyHandlers[row.key]!(val);
         } else if (policyKeys.includes(row.key as (typeof policyKeys)[number])) {
@@ -2128,13 +2134,35 @@ export class SecureYeoman {
     this.auditStorage = null;
 
     // Synchronous closes for storages and standalone managers
-    if (this.taskStorage) { this.taskStorage.close(); this.taskStorage = null; }
-    if (this.extensionStorage) { this.extensionStorage.close(); this.extensionStorage = null; this.extensionManager = null; }
-    if (this.executionStorage) { this.executionStorage.close(); this.executionStorage = null; }
-    if (this.a2aStorage) { this.a2aStorage.close(); this.a2aStorage = null; }
-    if (this.proactiveManager) { this.proactiveManager.close(); this.proactiveManager = null; }
-    if (this.multimodalManager) { this.multimodalManager.close(); this.multimodalManager = null; }
-    if (this.browserSessionStorage) { this.browserSessionStorage.close(); this.browserSessionStorage = null; }
+    if (this.taskStorage) {
+      this.taskStorage.close();
+      this.taskStorage = null;
+    }
+    if (this.extensionStorage) {
+      this.extensionStorage.close();
+      this.extensionStorage = null;
+      this.extensionManager = null;
+    }
+    if (this.executionStorage) {
+      this.executionStorage.close();
+      this.executionStorage = null;
+    }
+    if (this.a2aStorage) {
+      this.a2aStorage.close();
+      this.a2aStorage = null;
+    }
+    if (this.proactiveManager) {
+      this.proactiveManager.close();
+      this.proactiveManager = null;
+    }
+    if (this.multimodalManager) {
+      this.multimodalManager.close();
+      this.multimodalManager = null;
+    }
+    if (this.browserSessionStorage) {
+      this.browserSessionStorage.close();
+      this.browserSessionStorage = null;
+    }
 
     // Close PostgreSQL pool last
     await closePool();

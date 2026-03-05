@@ -58,7 +58,7 @@ describe('tee-tools', () => {
   it('registers all 3 tee_* tools without throwing', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     expect(() =>
-      registerTeeTools(server, makeMockClient(), makeConfig(), noopMiddleware()),
+      registerTeeTools(server, makeMockClient(), makeConfig(), noopMiddleware())
     ).not.toThrow();
   });
 
@@ -69,7 +69,7 @@ describe('tee-tools', () => {
         server,
         makeMockClient(),
         makeConfig({ exposeTee: false } as any),
-        noopMiddleware(),
+        noopMiddleware()
       );
 
       const { globalToolRegistry } = await import('./tool-utils.js');
@@ -148,10 +148,7 @@ describe('tee-tools', () => {
       const handler = globalToolRegistry.get('tee_verify');
       const result = await handler!({ provider: 'anthropic' });
 
-      expect(client.post).toHaveBeenCalledWith(
-        '/api/v1/security/tee/verify/anthropic',
-        {},
-      );
+      expect(client.post).toHaveBeenCalledWith('/api/v1/security/tee/verify/anthropic', {});
       const parsed = JSON.parse((result.content[0] as { text: string }).text);
       expect(parsed.allowed).toBe(true);
     });
@@ -165,10 +162,7 @@ describe('tee-tools', () => {
       const handler = globalToolRegistry.get('tee_verify');
       await handler!({ provider: 'some provider' });
 
-      expect(client.post).toHaveBeenCalledWith(
-        '/api/v1/security/tee/verify/some%20provider',
-        {},
-      );
+      expect(client.post).toHaveBeenCalledWith('/api/v1/security/tee/verify/some%20provider', {});
     });
   });
 });

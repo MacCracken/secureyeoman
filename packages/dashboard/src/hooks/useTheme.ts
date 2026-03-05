@@ -314,7 +314,11 @@ export function validateCustomTheme(
   }
   return {
     valid: true,
-    theme: { name: t.name as string, isDark: t.isDark as boolean, colors: colors as Record<ThemeCssVar, string> },
+    theme: {
+      name: t.name,
+      isDark: t.isDark,
+      colors: colors as Record<ThemeCssVar, string>,
+    },
   };
 }
 
@@ -348,7 +352,11 @@ export function saveCustomThemes(themes: CustomTheme[]): void {
 
 export function addCustomTheme(exported: CustomThemeExport): CustomTheme {
   const themes = loadCustomThemes();
-  const id = exported.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').slice(0, 32);
+  const id = exported.name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 32);
   const theme: CustomTheme = { id, ...exported };
   // Replace if same name exists, otherwise append
   const idx = themes.findIndex((t) => t.id === id);

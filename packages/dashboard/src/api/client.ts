@@ -4758,11 +4758,17 @@ export async function createDepartment(data: {
   return res.department;
 }
 
-export async function updateDepartment(id: string, data: Record<string, unknown>): Promise<Department> {
-  const res = await request<{ department: Department }>(`/risk/departments/${encodeURIComponent(id)}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  });
+export async function updateDepartment(
+  id: string,
+  data: Record<string, unknown>
+): Promise<Department> {
+  const res = await request<{ department: Department }>(
+    `/risk/departments/${encodeURIComponent(id)}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }
+  );
   return res.department;
 }
 
@@ -4772,8 +4778,12 @@ export async function deleteDepartment(id: string, force = false): Promise<void>
   });
 }
 
-export async function fetchDepartmentScorecard(id: string): Promise<{ scorecard: DepartmentScorecard }> {
-  return request<{ scorecard: DepartmentScorecard }>(`/risk/departments/${encodeURIComponent(id)}/scorecard`);
+export async function fetchDepartmentScorecard(
+  id: string
+): Promise<{ scorecard: DepartmentScorecard }> {
+  return request<{ scorecard: DepartmentScorecard }>(
+    `/risk/departments/${encodeURIComponent(id)}/scorecard`
+  );
 }
 
 export async function fetchRegisterEntries(params?: {
@@ -4818,8 +4828,13 @@ export async function fetchHeatmap(): Promise<{ cells: RiskHeatmapCell[] }> {
   return request<{ cells: RiskHeatmapCell[] }>('/risk/heatmap');
 }
 
-export async function fetchRiskTrend(departmentId: string, days = 30): Promise<{ points: RiskTrendPoint[] }> {
-  return request<{ points: RiskTrendPoint[] }>(`/risk/departments/${encodeURIComponent(departmentId)}/trend?days=${days}`);
+export async function fetchRiskTrend(
+  departmentId: string,
+  days = 30
+): Promise<{ points: RiskTrendPoint[] }> {
+  return request<{ points: RiskTrendPoint[] }>(
+    `/risk/departments/${encodeURIComponent(departmentId)}/trend?days=${days}`
+  );
 }
 
 export async function fetchRiskSummary(): Promise<{ summary: AthiExecutiveSummary }> {
@@ -4827,7 +4842,10 @@ export async function fetchRiskSummary(): Promise<{ summary: AthiExecutiveSummar
 }
 
 // Phase 111-D: Report endpoints
-export async function fetchDepartmentReport(departmentId: string, format = 'json'): Promise<string> {
+export async function fetchDepartmentReport(
+  departmentId: string,
+  format = 'json'
+): Promise<string> {
   return request<string>(
     `/risk/reports/department/${encodeURIComponent(departmentId)}?format=${format}`
   );
@@ -4854,7 +4872,10 @@ export async function fetchRegisterReport(
 }
 
 // Phase 111-F: Additional register/department endpoints
-export async function updateRegisterEntry(id: string, data: Record<string, unknown>): Promise<RegisterEntry> {
+export async function updateRegisterEntry(
+  id: string,
+  data: Record<string, unknown>
+): Promise<RegisterEntry> {
   return request<RegisterEntry>(`/risk/register/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(data),
@@ -4862,11 +4883,16 @@ export async function updateRegisterEntry(id: string, data: Record<string, unkno
 }
 
 export async function deleteRegisterEntry(id: string): Promise<{ deleted: boolean }> {
-  return request<{ deleted: boolean }>(`/risk/register/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  return request<{ deleted: boolean }>(`/risk/register/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
 }
 
 export async function snapshotDepartment(id: string): Promise<{ score: DepartmentScore }> {
-  return request<{ score: DepartmentScore }>(`/risk/departments/${encodeURIComponent(id)}/snapshot`, { method: 'POST' });
+  return request<{ score: DepartmentScore }>(
+    `/risk/departments/${encodeURIComponent(id)}/snapshot`,
+    { method: 'POST' }
+  );
 }
 
 // ── Tenants ────────────────────────────────────────────────────────
@@ -5980,10 +6006,9 @@ export async function rollbackWorkflow(
   workflowId: string,
   versionId: string
 ): Promise<WorkflowVersion> {
-  return request<WorkflowVersion>(
-    `/workflows/${workflowId}/versions/${versionId}/rollback`,
-    { method: 'POST' }
-  );
+  return request<WorkflowVersion>(`/workflows/${workflowId}/versions/${versionId}/rollback`, {
+    method: 'POST',
+  });
 }
 
 export async function fetchWorkflowDrift(workflowId: string): Promise<DriftSummary> {
@@ -6038,9 +6063,7 @@ export async function updateDocumentProvenance(
   });
 }
 
-export async function fetchGroundingStats(
-  personalityId?: string
-): Promise<{
+export async function fetchGroundingStats(personalityId?: string): Promise<{
   averageScore: number | null;
   totalMessages: number;
   lowGroundingCount: number;
@@ -6086,9 +6109,7 @@ export interface CostTrendPointResponse {
   requests: number;
 }
 
-export async function fetchProviderAccounts(
-  provider?: string
-): Promise<ProviderAccountResponse[]> {
+export async function fetchProviderAccounts(provider?: string): Promise<ProviderAccountResponse[]> {
   const qs = provider ? `?provider=${encodeURIComponent(provider)}` : '';
   return request<ProviderAccountResponse[]>(`/provider-accounts${qs}`);
 }
@@ -6128,20 +6149,19 @@ export async function setDefaultProviderAccount(id: string): Promise<ProviderAcc
 }
 
 export async function validateProviderAccount(id: string): Promise<ProviderAccountResponse> {
-  return request<ProviderAccountResponse>(
-    `/provider-accounts/${encodeURIComponent(id)}/validate`,
-    { method: 'POST' }
-  );
+  return request<ProviderAccountResponse>(`/provider-accounts/${encodeURIComponent(id)}/validate`, {
+    method: 'POST',
+  });
 }
 
 export async function rotateProviderAccountKey(
   id: string,
   newKey: string
 ): Promise<ProviderAccountResponse> {
-  return request<ProviderAccountResponse>(
-    `/provider-accounts/${encodeURIComponent(id)}/rotate`,
-    { method: 'POST', body: JSON.stringify({ newKey }) }
-  );
+  return request<ProviderAccountResponse>(`/provider-accounts/${encodeURIComponent(id)}/rotate`, {
+    method: 'POST',
+    body: JSON.stringify({ newKey }),
+  });
 }
 
 export async function validateAllProviderAccounts(): Promise<{
@@ -6191,7 +6211,7 @@ export async function exportAccountCostsCsv(opts?: {
   const qs = params.toString() ? `?${params.toString()}` : '';
   const token = getAccessToken();
   const headers: Record<string, string> = {};
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(`/api/v1/provider-accounts/costs/export${qs}`, { headers });
   return res.text();
 }
@@ -6255,7 +6275,7 @@ export interface ThreatIntelligenceSummary {
   patternCount: number;
   categories: string[];
   stages: string[];
-  patterns: Array<{
+  patterns: {
     id: string;
     name: string;
     category: string;
@@ -6264,7 +6284,7 @@ export interface ThreatIntelligenceSummary {
     intentWeight: number;
     version: string;
     indicatorCount: number;
-  }>;
+  }[];
 }
 
 export async function fetchThreatIntelligence(): Promise<ThreatIntelligenceSummary> {

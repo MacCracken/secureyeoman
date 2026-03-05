@@ -329,7 +329,11 @@ export class AuditChain {
 
     // Compute hash and signature (async when pool is available)
     const entryHash = await this.computeEntryHashAsync(entry);
-    entry.integrity.signature = await this.computeSignatureAsync(entryHash, this.lastHash, this.signingKey);
+    entry.integrity.signature = await this.computeSignatureAsync(
+      entryHash,
+      this.lastHash,
+      this.signingKey
+    );
 
     // Validate against schema
     const validation = AuditEntrySchema.safeParse(entry);
@@ -504,7 +508,11 @@ export class AuditChain {
       entriesTotal++;
 
       const entryHash = await this.computeEntryHashAsync(entry);
-      const expectedSig = await this.computeSignatureAsync(entryHash, previousHash, this.signingKey);
+      const expectedSig = await this.computeSignatureAsync(
+        entryHash,
+        previousHash,
+        this.signingKey
+      );
 
       const needsRepair =
         entry.integrity.previousEntryHash !== previousHash ||

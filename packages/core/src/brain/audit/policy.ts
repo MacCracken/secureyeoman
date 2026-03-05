@@ -4,7 +4,10 @@
  * Phase 118: Memory Audits, Compression & Reorganization.
  */
 
-import type { MemoryAuditPolicy as MemoryAuditPolicyConfig, MemoryAuditScope } from '@secureyeoman/shared';
+import type {
+  MemoryAuditPolicy as MemoryAuditPolicyConfig,
+  MemoryAuditScope,
+} from '@secureyeoman/shared';
 
 export class MemoryAuditPolicy {
   private readonly config: MemoryAuditPolicyConfig;

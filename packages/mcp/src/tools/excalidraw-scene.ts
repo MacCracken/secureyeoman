@@ -38,10 +38,7 @@ const DEFAULT_DIMENSIONS: Record<string, { width: number; height: number }> = {
 
 // ─── specToElement ──────────────────────────────────────────────────────────
 
-export function specToElement(
-  spec: ExcalidrawElementSpec,
-  _index: number
-): ExcalidrawElement {
+export function specToElement(spec: ExcalidrawElementSpec, _index: number): ExcalidrawElement {
   const defaults = DEFAULT_DIMENSIONS[spec.type] ?? { width: 100, height: 60 };
   const isLinear = spec.type === 'line' || spec.type === 'arrow';
   const isText = spec.type === 'text';
@@ -171,9 +168,7 @@ export function buildScene(
   // Third pass: resolve arrow bindings
   for (const el of elements) {
     if (el.type !== 'arrow') continue;
-    const spec = specs.find(
-      (s) => (s.id && idMap.get(s.id) === el.id) || s.id === el.id
-    );
+    const spec = specs.find((s) => (s.id && idMap.get(s.id) === el.id) || s.id === el.id);
     if (!spec) continue;
 
     if (spec.startId) {
@@ -185,10 +180,7 @@ export function buildScene(
           focus: 0,
           gap: 8,
         };
-        target.boundElements = [
-          ...(target.boundElements ?? []),
-          { type: 'arrow', id: el.id },
-        ];
+        target.boundElements = [...(target.boundElements ?? []), { type: 'arrow', id: el.id }];
       }
     }
 
@@ -201,10 +193,7 @@ export function buildScene(
           focus: 0,
           gap: 8,
         };
-        target.boundElements = [
-          ...(target.boundElements ?? []),
-          { type: 'arrow', id: el.id },
-        ];
+        target.boundElements = [...(target.boundElements ?? []), { type: 'arrow', id: el.id }];
       }
     }
   }
@@ -231,10 +220,7 @@ export interface ValidationResult {
   suggestions: string[];
 }
 
-function boxesOverlap(
-  a: ExcalidrawElement,
-  b: ExcalidrawElement
-): boolean {
+function boxesOverlap(a: ExcalidrawElement, b: ExcalidrawElement): boolean {
   // Allow 5px tolerance
   const t = 5;
   return (
@@ -371,8 +357,7 @@ export function validateScene(scene: ExcalidrawScene): ValidationResult {
 
   // Check missing labels on shapes
   for (const shape of shapes) {
-    const hasBoundText =
-      shape.boundElements?.some((b) => b.type === 'text') ?? false;
+    const hasBoundText = shape.boundElements?.some((b) => b.type === 'text') ?? false;
     if (!hasBoundText) {
       issues.push({
         type: 'missing-label',
@@ -387,11 +372,7 @@ export function validateScene(scene: ExcalidrawScene): ValidationResult {
   for (const textEl of textElements) {
     if (textEl.containerId) {
       const container = nonDeletedElements.find((e) => e.id === textEl.containerId);
-      if (
-        container &&
-        container.backgroundColor !== 'transparent' &&
-        textEl.strokeColor
-      ) {
+      if (container && container.backgroundColor !== 'transparent' && textEl.strokeColor) {
         const ratio = contrastRatio(textEl.strokeColor, container.backgroundColor);
         if (ratio < 4.5) {
           issues.push({
@@ -467,9 +448,16 @@ function elementToSvg(el: ExcalidrawElement): string {
     }
     case 'text': {
       const fontSize = el.fontSize ?? 20;
-      const fontFamily = el.fontFamily === 3 ? 'monospace' : el.fontFamily === 2 ? 'sans-serif' : 'serif';
-      const anchor = el.textAlign === 'right' ? 'end' : el.textAlign === 'center' ? 'middle' : 'start';
-      const tx = el.textAlign === 'center' ? el.x + el.width / 2 : el.textAlign === 'right' ? el.x + el.width : el.x;
+      const fontFamily =
+        el.fontFamily === 3 ? 'monospace' : el.fontFamily === 2 ? 'sans-serif' : 'serif';
+      const anchor =
+        el.textAlign === 'right' ? 'end' : el.textAlign === 'center' ? 'middle' : 'start';
+      const tx =
+        el.textAlign === 'center'
+          ? el.x + el.width / 2
+          : el.textAlign === 'right'
+            ? el.x + el.width
+            : el.x;
       const ty = el.y + fontSize;
       return `<text x="${tx}" y="${ty}" font-size="${fontSize}" font-family="${fontFamily}" fill="${stroke}" text-anchor="${anchor}">${escapeXml(el.text ?? '')}</text>`;
     }
@@ -482,7 +470,9 @@ function elementToSvg(el: ExcalidrawElement): string {
     }
     case 'freedraw': {
       if (!el.points || el.points.length < 2) return '';
-      const d = el.points.map(([px, py], i) => `${i === 0 ? 'M' : 'L'}${el.x + px} ${el.y + py}`).join(' ');
+      const d = el.points
+        .map(([px, py], i) => `${i === 0 ? 'M' : 'L'}${el.x + px} ${el.y + py}`)
+        .join(' ');
       return `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
     }
     default:
@@ -490,10 +480,7 @@ function elementToSvg(el: ExcalidrawElement): string {
   }
 }
 
-export function renderSceneToSvg(
-  scene: ExcalidrawScene,
-  options?: RenderOptions
-): string {
+export function renderSceneToSvg(scene: ExcalidrawScene, options?: RenderOptions): string {
   const padding = options?.padding ?? 20;
   const elements = scene.elements.filter((e) => !e.isDeleted);
 
@@ -504,7 +491,10 @@ export function renderSceneToSvg(
   }
 
   // Compute bounding box
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
   for (const el of elements) {
     if (el.type === 'line' || el.type === 'arrow' || el.type === 'freedraw') {
       for (const [px, py] of el.points ?? []) {
@@ -532,7 +522,10 @@ export function renderSceneToSvg(
     ? `<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="${options?.darkMode ? '#e0e0e0' : '#1e1e1e'}" /></marker></defs>`
     : '';
 
-  const body = elements.map((el) => elementToSvg(el)).filter(Boolean).join('\n  ');
+  const body = elements
+    .map((el) => elementToSvg(el))
+    .filter(Boolean)
+    .join('\n  ');
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="${minX - padding} ${minY - padding} ${contentW + padding * 2} ${contentH + padding * 2}">`,
@@ -545,10 +538,7 @@ export function renderSceneToSvg(
 
 // ─── patchScene ─────────────────────────────────────────────────────────────
 
-export function patchScene(
-  scene: ExcalidrawScene,
-  operations: PatchOperation[]
-): ExcalidrawScene {
+export function patchScene(scene: ExcalidrawScene, operations: PatchOperation[]): ExcalidrawScene {
   // Work on a mutable copy
   let elements = scene.elements.map((e) => ({ ...e }));
 
@@ -576,10 +566,7 @@ export function patchScene(
           );
           textEl.id = textId;
           elements.push(textEl);
-          newEl.boundElements = [
-            ...(newEl.boundElements ?? []),
-            { type: 'text', id: textId },
-          ];
+          newEl.boundElements = [...(newEl.boundElements ?? []), { type: 'text', id: textId }];
         }
         break;
       }
@@ -622,9 +609,7 @@ export function patchScene(
             el.endBinding = null;
           }
           if (el.boundElements) {
-            el.boundElements = el.boundElements.filter(
-              (b) => b.id !== op.elementId
-            );
+            el.boundElements = el.boundElements.filter((b) => b.id !== op.elementId);
           }
         }
 

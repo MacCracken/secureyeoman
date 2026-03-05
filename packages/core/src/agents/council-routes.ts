@@ -27,7 +27,11 @@ export function registerCouncilRoutes(
         return reply.code(201).send({ template });
       } catch (err) {
         const msg = toErrorMessage(err);
-        const status = msg.includes('already installed') ? 409 : msg.includes('not found') ? 404 : 400;
+        const status = msg.includes('already installed')
+          ? 409
+          : msg.includes('not found')
+            ? 404
+            : 400;
         return sendError(reply, status, msg);
       }
     }
@@ -95,11 +99,7 @@ export function registerCouncilRoutes(
         });
         return reply.code(201).send({ template });
       } catch (err) {
-        return sendError(
-          reply,
-          400,
-          toErrorMessage(err)
-        );
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -201,11 +201,7 @@ export function registerCouncilRoutes(
         });
         return reply.code(201).send({ run });
       } catch (err) {
-        return sendError(
-          reply,
-          400,
-          toErrorMessage(err)
-        );
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );

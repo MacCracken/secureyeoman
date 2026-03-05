@@ -26,11 +26,7 @@ interface DriftInfo {
   diffSummary: string;
 }
 
-export default function WorkflowVersionHistory({
-  workflowId,
-}: {
-  workflowId: string;
-}) {
+export default function WorkflowVersionHistory({ workflowId }: { workflowId: string }) {
   const [versions, setVersions] = useState<VersionEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [drift, setDrift] = useState<DriftInfo | null>(null);
@@ -104,14 +100,15 @@ export default function WorkflowVersionHistory({
       )}
 
       {/* Drift badge */}
-      {drift && drift.lastTaggedVersion && (
+      {drift?.lastTaggedVersion && (
         <div className="flex items-center justify-between bg-gray-50 border rounded px-4 py-3">
           <div>
             <span className="font-medium">Last release: </span>
             <span className="font-mono text-sm">{drift.lastTaggedVersion}</span>
             {drift.uncommittedChanges > 0 && (
               <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                {drift.uncommittedChanges} uncommitted change{drift.uncommittedChanges > 1 ? 's' : ''}
+                {drift.uncommittedChanges} uncommitted change
+                {drift.uncommittedChanges > 1 ? 's' : ''}
               </span>
             )}
             {drift.uncommittedChanges === 0 && (
@@ -154,7 +151,9 @@ export default function WorkflowVersionHistory({
                 className={`px-4 py-3 hover:bg-gray-50 cursor-pointer ${
                   selectedVersion?.id === v.id ? 'bg-blue-50' : ''
                 }`}
-                onClick={() => setSelectedVersion(selectedVersion?.id === v.id ? null : v)}
+                onClick={() => {
+                  setSelectedVersion(selectedVersion?.id === v.id ? null : v);
+                }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -170,9 +169,7 @@ export default function WorkflowVersionHistory({
                     </span>
                     <span className="text-xs text-gray-400">{v.author}</span>
                     {v.changedFields.length > 0 && (
-                      <span className="text-xs text-gray-500">
-                        [{v.changedFields.join(', ')}]
-                      </span>
+                      <span className="text-xs text-gray-500">[{v.changedFields.join(', ')}]</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
@@ -224,7 +221,10 @@ export default function WorkflowVersionHistory({
               Diff: {diffPair[0].slice(0, 8)} vs {diffPair[1].slice(0, 8)}
             </h3>
             <button
-              onClick={() => { setDiffText(null); setDiffPair(null); }}
+              onClick={() => {
+                setDiffText(null);
+                setDiffPair(null);
+              }}
               className="text-xs text-gray-500 hover:text-gray-700"
             >
               Close
@@ -235,13 +235,17 @@ export default function WorkflowVersionHistory({
               <span
                 key={i}
                 className={
-                  line.startsWith('+') ? 'text-green-400' :
-                  line.startsWith('-') ? 'text-red-400' :
-                  line.startsWith('@') ? 'text-cyan-400' :
-                  ''
+                  line.startsWith('+')
+                    ? 'text-green-400'
+                    : line.startsWith('-')
+                      ? 'text-red-400'
+                      : line.startsWith('@')
+                        ? 'text-cyan-400'
+                        : ''
                 }
               >
-                {line}{'\n'}
+                {line}
+                {'\n'}
               </span>
             ))}
           </pre>

@@ -50,7 +50,12 @@ export class EvalManager {
     return this.store.getScenario(id, tenantId);
   }
 
-  async listScenarios(opts?: { category?: string; tenantId?: string; limit?: number; offset?: number }) {
+  async listScenarios(opts?: {
+    category?: string;
+    tenantId?: string;
+    limit?: number;
+    offset?: number;
+  }) {
     return this.store.listScenarios(opts);
   }
 
@@ -92,7 +97,11 @@ export class EvalManager {
     const controller = new AbortController();
     this.activeRuns.set(runId, controller);
 
-    this.logger.info('Starting eval suite run', { suiteId, runId, scenarioCount: suite.scenarioIds.length });
+    this.logger.info('Starting eval suite run', {
+      suiteId,
+      runId,
+      scenarioCount: suite.scenarioIds.length,
+    });
 
     const startedAt = Date.now();
     const results: ScenarioRunResult[] = [];
@@ -125,7 +134,12 @@ export class EvalManager {
           results.push(result);
           totalCostUsd += result.costUsd;
 
-          this.logger.info('Scenario completed', { scenarioId: scenario.id, passed: result.passed, status: result.status, durationMs: result.durationMs });
+          this.logger.info('Scenario completed', {
+            scenarioId: scenario.id,
+            passed: result.passed,
+            status: result.status,
+            durationMs: result.durationMs,
+          });
         }
       } else {
         // Concurrent execution in batches
@@ -155,7 +169,9 @@ export class EvalManager {
     const completedAt = Date.now();
     const passedCount = results.filter((r) => r.passed).length;
     const failedCount = results.filter((r) => r.status === 'failed').length;
-    const errorCount = results.filter((r) => r.status === 'error' || r.status === 'timeout' || r.status === 'budget_exceeded').length;
+    const errorCount = results.filter(
+      (r) => r.status === 'error' || r.status === 'timeout' || r.status === 'budget_exceeded'
+    ).length;
 
     const suiteResult: SuiteRunResult = {
       id: runId,
@@ -179,7 +195,15 @@ export class EvalManager {
       await this.store.saveSuiteRun(suiteResult, tenantId);
     }
 
-    this.logger.info('Eval suite run completed', { runId, suiteId, passed: suiteResult.passed, passedCount, failedCount, errorCount, durationMs: suiteResult.totalDurationMs });
+    this.logger.info('Eval suite run completed', {
+      runId,
+      suiteId,
+      passed: suiteResult.passed,
+      passedCount,
+      failedCount,
+      errorCount,
+      durationMs: suiteResult.totalDurationMs,
+    });
 
     return suiteResult;
   }
@@ -201,7 +225,12 @@ export class EvalManager {
     return this.store.getSuiteRun(id, tenantId);
   }
 
-  async listSuiteRuns(opts?: { suiteId?: string; tenantId?: string; limit?: number; offset?: number }) {
+  async listSuiteRuns(opts?: {
+    suiteId?: string;
+    tenantId?: string;
+    limit?: number;
+    offset?: number;
+  }) {
     return this.store.listSuiteRuns(opts);
   }
 
@@ -215,7 +244,12 @@ export class EvalManager {
     this.logger.info('Running single scenario evaluation', { scenarioId });
     const result = await runScenario(scenario, this.agentDeps);
 
-    this.logger.info('Single scenario evaluation completed', { scenarioId, passed: result.passed, status: result.status, durationMs: result.durationMs });
+    this.logger.info('Single scenario evaluation completed', {
+      scenarioId,
+      passed: result.passed,
+      status: result.status,
+      durationMs: result.durationMs,
+    });
 
     return result;
   }
@@ -224,7 +258,10 @@ export class EvalManager {
   async cleanupOldRuns(tenantId = 'default'): Promise<number> {
     const deleted = await this.store.deleteOldRuns(this.config.retentionDays, tenantId);
     if (deleted > 0) {
-      this.logger.info('Cleaned up old eval runs', { deleted, retentionDays: this.config.retentionDays });
+      this.logger.info('Cleaned up old eval runs', {
+        deleted,
+        retentionDays: this.config.retentionDays,
+      });
     }
     return deleted;
   }

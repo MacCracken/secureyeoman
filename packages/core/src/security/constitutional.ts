@@ -38,9 +38,12 @@ export interface ConstitutionalRevision {
 export interface ConstitutionalEngineDeps {
   logger: SecureLogger;
   /** Callback to make LLM calls — decoupled from AIClient to avoid circular deps */
-  chat: (messages: ChatMessage[], opts?: { model?: string; temperature?: number }) => Promise<string>;
+  chat: (
+    messages: ChatMessage[],
+    opts?: { model?: string; temperature?: number }
+  ) => Promise<string>;
   /** Optional: fetch hard boundaries from active organizational intent */
-  getIntentBoundaries?: () => Array<{ id: string; rule: string; rationale: string }>;
+  getIntentBoundaries?: () => { id: string; rule: string; rationale: string }[];
 }
 
 interface ChatMessage {
@@ -54,7 +57,7 @@ const DEFAULT_PRINCIPLES: ConstitutionalPrinciple[] = [
   {
     id: 'helpfulness',
     name: 'Helpfulness',
-    description: 'The response should be genuinely helpful, addressing the user\'s actual need.',
+    description: "The response should be genuinely helpful, addressing the user's actual need.",
     critiquePrompt:
       'Does this response directly address what the user asked for? Is it complete and actionable? If the response is evasive, vague, or misses the point, flag it.',
     weight: 1,
@@ -63,7 +66,8 @@ const DEFAULT_PRINCIPLES: ConstitutionalPrinciple[] = [
   {
     id: 'harmlessness',
     name: 'Harmlessness',
-    description: 'The response should not cause harm, promote dangerous activities, or produce harmful content.',
+    description:
+      'The response should not cause harm, promote dangerous activities, or produce harmful content.',
     critiquePrompt:
       'Could this response cause harm to the user or others? Does it promote dangerous, illegal, or unethical actions? Does it contain toxic, discriminatory, or offensive content?',
     weight: 1,
@@ -72,7 +76,8 @@ const DEFAULT_PRINCIPLES: ConstitutionalPrinciple[] = [
   {
     id: 'honesty',
     name: 'Honesty',
-    description: 'The response should be truthful, acknowledge uncertainty, and not fabricate information.',
+    description:
+      'The response should be truthful, acknowledge uncertainty, and not fabricate information.',
     critiquePrompt:
       'Does this response present information as fact when it might be uncertain or fabricated? Does it acknowledge limitations or uncertainty where appropriate? Is it misleading in any way?',
     weight: 1,
@@ -107,10 +112,7 @@ export class ConstitutionalEngine {
    * Critique a response against all active principles.
    * Returns findings — does NOT revise.
    */
-  async critique(
-    userPrompt: string,
-    response: string,
-  ): Promise<CritiqueResult[]> {
+  async critique(userPrompt: string, response: string): Promise<CritiqueResult[]> {
     if (!this.isEnabled) return [];
 
     const systemPrompt = this.buildCritiqueSystemPrompt();
@@ -125,7 +127,7 @@ export class ConstitutionalEngine {
         {
           model: this.config.model ?? undefined,
           temperature: this.config.critiqueTemperature,
-        },
+        }
       );
       return this.parseCritiqueResponse(raw);
     } catch (err) {
@@ -138,10 +140,7 @@ export class ConstitutionalEngine {
    * Full critique-and-revise loop.
    * Returns the (potentially) revised response plus all critique findings.
    */
-  async critiqueAndRevise(
-    userPrompt: string,
-    response: string,
-  ): Promise<ConstitutionalRevision> {
+  async critiqueAndRevise(userPrompt: string, response: string): Promise<ConstitutionalRevision> {
     if (!this.isEnabled) {
       return {
         originalResponse: response,
@@ -194,7 +193,7 @@ export class ConstitutionalEngine {
   private async revise(
     userPrompt: string,
     response: string,
-    violations: CritiqueResult[],
+    violations: CritiqueResult[]
   ): Promise<string> {
     const systemPrompt = [
       'You are a careful editor. Revise the following AI response to address the identified issues.',
@@ -229,7 +228,7 @@ export class ConstitutionalEngine {
       {
         model: this.config.model ?? undefined,
         temperature: this.config.critiqueTemperature,
-      },
+      }
     );
   }
 
@@ -296,7 +295,7 @@ export class ConstitutionalEngine {
       return parsed
         .filter(
           (item: unknown): item is Record<string, unknown> =>
-            typeof item === 'object' && item !== null && 'principleId' in item,
+            typeof item === 'object' && item !== null && 'principleId' in item
         )
         .map((item) => ({
           principleId: String(item.principleId ?? ''),

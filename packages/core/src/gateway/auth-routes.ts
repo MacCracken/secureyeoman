@@ -332,7 +332,9 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
 
       const parsed = RoleDefinitionSchema.safeParse(role);
       if (!parsed.success) {
-        return sendError(reply, 400, 'Invalid role definition', { extra: { details: parsed.error.format() } });
+        return sendError(reply, 400, 'Invalid role definition', {
+          extra: { details: parsed.error.format() },
+        });
       }
 
       try {
@@ -377,7 +379,9 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
 
       const parsed = RoleDefinitionSchema.safeParse(updated);
       if (!parsed.success) {
-        return sendError(reply, 400, 'Invalid role definition', { extra: { details: parsed.error.format() } });
+        return sendError(reply, 400, 'Invalid role definition', {
+          extra: { details: parsed.error.format() },
+        });
       }
 
       try {

@@ -219,7 +219,12 @@ describe('MemoryAuditStorage', () => {
     });
 
     it('parses JSON snapshot fields from row', async () => {
-      const snapshot = { totalMemories: 50, totalKnowledge: 10, byType: { fact: 30 }, avgImportance: 0.7 };
+      const snapshot = {
+        totalMemories: 50,
+        totalKnowledge: 10,
+        byType: { fact: 30 },
+        avgImportance: 0.7,
+      };
       const row = makeReportRow({ pre_snapshot: JSON.stringify(snapshot) });
       mockQuery.mockResolvedValueOnce({ rows: [row], rowCount: 1 });
 
@@ -424,15 +429,17 @@ describe('MemoryAuditStorage', () => {
   // ── getHealthMetrics ─────────────────────────────────────────────
 
   describe('getHealthMetrics', () => {
-    function mockHealthQueries(overrides: {
-      totalMemories?: string;
-      totalKnowledge?: string;
-      avgImportance?: number | null;
-      expiringCount?: string;
-      lowCount?: string;
-      lastAudit?: { started_at: number; scope: string } | null;
-      archiveCount?: string;
-    } = {}) {
+    function mockHealthQueries(
+      overrides: {
+        totalMemories?: string;
+        totalKnowledge?: string;
+        avgImportance?: number | null;
+        expiringCount?: string;
+        lowCount?: string;
+        lastAudit?: { started_at: number; scope: string } | null;
+        archiveCount?: string;
+      } = {}
+    ) {
       // 1. total memories
       mockQuery.mockResolvedValueOnce({
         rows: [{ count: overrides.totalMemories ?? '100' }],
@@ -459,10 +466,13 @@ describe('MemoryAuditStorage', () => {
         rowCount: 1,
       });
       // 6. last audit
-      const lastAudit = overrides.lastAudit !== undefined ? overrides.lastAudit : {
-        started_at: Date.now() - 2 * 24 * 60 * 60 * 1000,
-        scope: 'daily',
-      };
+      const lastAudit =
+        overrides.lastAudit !== undefined
+          ? overrides.lastAudit
+          : {
+              started_at: Date.now() - 2 * 24 * 60 * 60 * 1000,
+              scope: 'daily',
+            };
       mockQuery.mockResolvedValueOnce({
         rows: lastAudit ? [lastAudit] : [],
         rowCount: lastAudit ? 1 : 0,
@@ -596,8 +606,8 @@ describe('MemoryAuditStorage', () => {
       // Everything bad: high low-ratio, many expiring, stale audit
       mockHealthQueries({
         totalMemories: '10',
-        lowCount: '8',       // ratio 0.8 => -20
-        expiringCount: '5',  // 50% > 20% => -15
+        lowCount: '8', // ratio 0.8 => -20
+        expiringCount: '5', // 50% > 20% => -15
         lastAudit: {
           started_at: Date.now() - 60 * 24 * 60 * 60 * 1000, // > 30 days => -15
           scope: 'daily',

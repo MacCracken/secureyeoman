@@ -24,7 +24,14 @@ export interface CanvasWidgetDef {
   type: CanvasWidgetType;
   label: string;
   description: string;
-  category: 'development' | 'ai-agents' | 'monitoring' | 'pipelines' | 'finance' | 'security' | 'analytics';
+  category:
+    | 'development'
+    | 'ai-agents'
+    | 'monitoring'
+    | 'pipelines'
+    | 'finance'
+    | 'security'
+    | 'analytics';
   defaultWidth: number;
   defaultHeight: number;
   singleton?: boolean;
@@ -187,7 +194,8 @@ export const CANVAS_WIDGET_REGISTRY: readonly CanvasWidgetDef[] = [
     type: 'cost-optimizer',
     label: 'Cost Optimizer',
     category: 'analytics',
-    description: 'AI model cost analysis with routing suggestions, forecasts, and savings breakdown',
+    description:
+      'AI model cost analysis with routing suggestions, forecasts, and savings breakdown',
     defaultWidth: 560,
     defaultHeight: 480,
   },

@@ -147,7 +147,14 @@ describe('chart-scene — renderCandlestick', () => {
 describe('chart-scene — renderLineChart', () => {
   it('renders a single series', () => {
     const svg = renderLineChart([
-      { name: 'Price', data: [{ x: 1, y: 10 }, { x: 2, y: 20 }, { x: 3, y: 15 }] },
+      {
+        name: 'Price',
+        data: [
+          { x: 1, y: 10 },
+          { x: 2, y: 20 },
+          { x: 3, y: 15 },
+        ],
+      },
     ]);
     expect(svg).toContain('<svg');
     expect(svg).toContain('polyline');
@@ -155,7 +162,13 @@ describe('chart-scene — renderLineChart', () => {
 
   it('handles categorical x values', () => {
     const svg = renderLineChart([
-      { name: 'A', data: [{ x: 'Jan', y: 10 }, { x: 'Feb', y: 20 }] },
+      {
+        name: 'A',
+        data: [
+          { x: 'Jan', y: 10 },
+          { x: 'Feb', y: 20 },
+        ],
+      },
     ]);
     expect(svg).toContain('Jan');
     expect(svg).toContain('Feb');
@@ -308,7 +321,10 @@ describe('chart-scene — renderHeatmap', () => {
   it('renders cells with color gradient', () => {
     const svg = renderHeatmap({
       labels: ['A', 'B'],
-      values: [[1, 0.5], [0.5, 1]],
+      values: [
+        [1, 0.5],
+        [0.5, 1],
+      ],
     });
     expect(svg).toContain('<rect');
     expect(svg).toContain('rgb(');
@@ -317,7 +333,13 @@ describe('chart-scene — renderHeatmap', () => {
 
   it('hides values when showValues is false', () => {
     const svg = renderHeatmap(
-      { labels: ['X', 'Y'], values: [[1, 0], [0, 1]] },
+      {
+        labels: ['X', 'Y'],
+        values: [
+          [1, 0],
+          [0, 1],
+        ],
+      },
       { showValues: false }
     );
     // Should NOT contain cell value text (only label text)

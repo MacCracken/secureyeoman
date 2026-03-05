@@ -66,7 +66,9 @@ export function useCommandPalette(commands: CommandItem[]) {
       }
     };
     window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    return () => {
+      window.removeEventListener('keydown', handler);
+    };
   }, [toggle]);
 
   return {

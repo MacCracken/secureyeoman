@@ -157,7 +157,9 @@ export class SandboxManager {
         this.sandbox = gvisor;
         return this.sandbox;
       }
-      this.getLogger().warn('gVisor requested but runsc not available, falling back to NoopSandbox');
+      this.getLogger().warn(
+        'gVisor requested but runsc not available, falling back to NoopSandbox'
+      );
       this.sandbox = new NoopSandbox();
       return this.sandbox;
     }

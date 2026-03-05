@@ -759,7 +759,7 @@ export const SalienceConfigSchema = z
   .object({
     enabled: z.boolean().default(false),
     /** Weight for urgency dimension. */
-    urgencyWeight: z.number().min(0).max(1).default(0.30),
+    urgencyWeight: z.number().min(0).max(1).default(0.3),
     /** Weight for error dimension. */
     errorWeight: z.number().min(0).max(1).default(0.25),
     /** Weight for frustration dimension. */

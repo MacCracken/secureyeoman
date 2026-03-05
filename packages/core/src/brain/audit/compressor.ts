@@ -66,7 +66,9 @@ export class MemoryCompressor {
       // Calculate compression ratio
       if (summary.candidatesFound > 0) {
         summary.compressionRatio =
-          Math.round(((summary.candidatesFound - summary.memoriesCompressed) / summary.candidatesFound) * 100) / 100;
+          Math.round(
+            ((summary.candidatesFound - summary.memoriesCompressed) / summary.candidatesFound) * 100
+          ) / 100;
       }
     } catch (err) {
       summary.errors.push(String(err));
@@ -202,9 +204,7 @@ export class MemoryCompressor {
               context: {
                 ...anchor.context,
                 compressedFrom: cluster.map((m) => m.id).join(','),
-                compressionLevel: String(
-                  parseInt(anchor.context.compressionLevel ?? '0', 10) + 1
-                ),
+                compressionLevel: String(parseInt(anchor.context.compressionLevel ?? '0', 10) + 1),
               },
             });
 
@@ -327,10 +327,7 @@ export class MemoryCompressor {
           stream: false,
         });
 
-        const text =
-          typeof response === 'string'
-            ? response
-            : response?.content ?? '';
+        const text = typeof response === 'string' ? response : (response?.content ?? '');
         const parsed = parseCompressionResponse(text);
         return parsed;
       } catch (err) {
@@ -347,7 +344,10 @@ export class MemoryCompressor {
   private qualityCheck(originals: Memory[], compressed: string): boolean {
     const keyTerms = new Set<string>();
     for (const mem of originals) {
-      const words = mem.content.toLowerCase().split(/\s+/).filter((w) => w.length > 4);
+      const words = mem.content
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w.length > 4);
       for (const w of words) keyTerms.add(w);
     }
 

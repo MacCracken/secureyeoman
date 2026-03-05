@@ -10,23 +10,23 @@ import type { RetentionPolicy, ClassificationLevel } from './types.js';
 export interface PurgeResult {
   totalPurged: number;
   policiesApplied: number;
-  details: Array<{
+  details: {
     policyId: string;
     contentType: string;
     classificationLevel: ClassificationLevel | null;
     purgedCount: number;
-  }>;
+  }[];
   durationMs: number;
 }
 
 export interface PurgePreview {
   totalEligible: number;
-  details: Array<{
+  details: {
     policyId: string;
     contentType: string;
     classificationLevel: ClassificationLevel | null;
     eligibleCount: number;
-  }>;
+  }[];
 }
 
 export interface RetentionManagerDeps {
@@ -56,7 +56,7 @@ export class RetentionManager {
   start(): void {
     if (this.timer) return;
     this.timer = setInterval(() => {
-      void this.runPurge().catch((err) => {
+      void this.runPurge().catch((err: unknown) => {
         this.logger.error('Retention purge failed', { err });
       });
     }, this.purgeIntervalMs);
@@ -91,7 +91,7 @@ export class RetentionManager {
       const purged = await this.retentionStore.purgeClassifications(
         policy.contentType,
         cutoff,
-        policy.classificationLevel,
+        policy.classificationLevel
       );
 
       if (purged > 0) {
@@ -108,10 +108,11 @@ export class RetentionManager {
     }
 
     const durationMs = Date.now() - start;
-    this.logger.info(
-      'Retention purge completed',
-      { totalPurged, policiesApplied: details.length, durationMs }
-    );
+    this.logger.info('Retention purge completed', {
+      totalPurged,
+      policiesApplied: details.length,
+      durationMs,
+    });
 
     return {
       totalPurged,
@@ -136,7 +137,7 @@ export class RetentionManager {
       const count = await this.retentionStore.countEligible(
         policy.contentType,
         cutoff,
-        policy.classificationLevel,
+        policy.classificationLevel
       );
 
       if (count > 0) {

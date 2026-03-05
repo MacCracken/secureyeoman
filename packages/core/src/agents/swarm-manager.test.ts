@@ -438,16 +438,14 @@ describe('SwarmManager.estimateSwarmCost', () => {
     const logger = makeMockLogger();
     const costCalculator = {
       calculate: vi.fn().mockReturnValue(0.005),
-      getModelCosts: vi
-        .fn()
-        .mockReturnValue([
-          {
-            provider: 'anthropic',
-            model: 'claude-sonnet-4-20250514',
-            inputPer1M: 3,
-            outputPer1M: 15,
-          },
-        ]),
+      getModelCosts: vi.fn().mockReturnValue([
+        {
+          provider: 'anthropic',
+          model: 'claude-sonnet-4-20250514',
+          inputPer1M: 3,
+          outputPer1M: 15,
+        },
+      ]),
     };
 
     const manager = new SwarmManager({
@@ -475,16 +473,14 @@ describe('SwarmManager — cost-aware model selection', () => {
     const logger = makeMockLogger();
     const costCalculator = {
       calculate: vi.fn().mockReturnValue(0.01),
-      getModelCosts: vi
-        .fn()
-        .mockReturnValue([
-          {
-            provider: 'anthropic',
-            model: 'claude-sonnet-4-20250514',
-            inputPer1M: 3,
-            outputPer1M: 15,
-          },
-        ]),
+      getModelCosts: vi.fn().mockReturnValue([
+        {
+          provider: 'anthropic',
+          model: 'claude-sonnet-4-20250514',
+          inputPer1M: 3,
+          outputPer1M: 15,
+        },
+      ]),
     };
 
     const manager = new SwarmManager({

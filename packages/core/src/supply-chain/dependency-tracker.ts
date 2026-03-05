@@ -28,9 +28,9 @@ export interface LockEntry {
 export interface DependencyDiff {
   added: LockEntry[];
   removed: LockEntry[];
-  versionChanged: Array<{ name: string; from: string; to: string; dev?: boolean }>;
-  integrityChanged: Array<{ name: string; version: string; from: string; to: string }>;
-  registryChanged: Array<{ name: string; version: string; from: string; to: string }>;
+  versionChanged: { name: string; from: string; to: string; dev?: boolean }[];
+  integrityChanged: { name: string; version: string; from: string; to: string }[];
+  registryChanged: { name: string; version: string; from: string; to: string }[];
 }
 
 export type RiskLevel = 'critical' | 'high' | 'medium' | 'low' | 'info';
@@ -48,8 +48,14 @@ export interface ProvenanceAlert {
  */
 export function parseLockFile(content: string): Map<string, LockEntry> {
   const lock = JSON.parse(content) as {
-    packages?: Record<string, { version?: string; integrity?: string; resolved?: string; dev?: boolean }>;
-    dependencies?: Record<string, { version?: string; integrity?: string; resolved?: string; dev?: boolean }>;
+    packages?: Record<
+      string,
+      { version?: string; integrity?: string; resolved?: string; dev?: boolean }
+    >;
+    dependencies?: Record<
+      string,
+      { version?: string; integrity?: string; resolved?: string; dev?: boolean }
+    >;
   };
 
   const entries = new Map<string, LockEntry>();
@@ -75,12 +81,21 @@ export function parseLockFile(content: string): Map<string, LockEntry> {
 }
 
 function extractName(path: string): string | null {
-  const match = path.match(/node_modules\/(.+)$/);
+  const match = /node_modules\/(.+)$/.exec(path);
   return match?.[1] ?? null;
 }
 
 function flattenDeps(
-  deps: Record<string, { version?: string; integrity?: string; resolved?: string; dev?: boolean; dependencies?: Record<string, unknown> }>,
+  deps: Record<
+    string,
+    {
+      version?: string;
+      integrity?: string;
+      resolved?: string;
+      dev?: boolean;
+      dependencies?: Record<string, unknown>;
+    }
+  >,
   entries: Map<string, LockEntry>
 ): void {
   for (const [name, dep] of Object.entries(deps)) {
@@ -282,7 +297,13 @@ export function trackDependencies(rootDir: string): {
     }
     writeFileSync(baselinePath, currentContent, 'utf-8');
     return {
-      diff: { added: [], removed: [], versionChanged: [], integrityChanged: [], registryChanged: [] },
+      diff: {
+        added: [],
+        removed: [],
+        versionChanged: [],
+        integrityChanged: [],
+        registryChanged: [],
+      },
       alerts: [],
       baselineCreated: true,
     };

@@ -87,15 +87,16 @@ export function registerProviderAccountRoutes(
     async (
       request: FastifyRequest<{
         Params: { id: string };
-        Body: { label?: string; baseUrl?: string | null; status?: 'active' | 'disabled' | 'invalid' | 'rate_limited' };
+        Body: {
+          label?: string;
+          baseUrl?: string | null;
+          status?: 'active' | 'disabled' | 'invalid' | 'rate_limited';
+        };
       }>,
       reply: FastifyReply
     ) => {
       try {
-        const account = await providerAccountManager.updateAccount(
-          request.params.id,
-          request.body
-        );
+        const account = await providerAccountManager.updateAccount(request.params.id, request.body);
         if (!account) return sendError(reply, 404, 'Account not found');
         return account;
       } catch (err) {
@@ -237,7 +238,8 @@ export function registerProviderAccountRoutes(
           accountId: q.accountId,
         });
 
-        const header = 'account_id,provider,label,total_cost_usd,total_input_tokens,total_output_tokens,total_requests';
+        const header =
+          'account_id,provider,label,total_cost_usd,total_input_tokens,total_output_tokens,total_requests';
         const rows = summary.map(
           (s) =>
             `${s.accountId},${s.provider},"${s.label}",${s.totalCostUsd},${s.totalInputTokens},${s.totalOutputTokens},${s.totalRequests}`

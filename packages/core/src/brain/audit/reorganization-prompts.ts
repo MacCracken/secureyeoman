@@ -17,9 +17,7 @@ Available operations:
 
 Respond with a JSON array of operations.`;
 
-export function buildClusterDecisionPrompt(
-  memories: Memory[]
-): string {
+export function buildClusterDecisionPrompt(memories: Memory[]): string {
   const items = memories
     .map(
       (m, i) =>
@@ -35,9 +33,7 @@ For each memory, decide: PROMOTE, DEMOTE, MERGE (with which other IDs), or KEEP.
 Respond with a JSON array of { "id": "...", "action": "...", "mergeWith": [...], "reason": "..." }.`;
 }
 
-export function buildKnowledgeMergePrompt(
-  entries: KnowledgeEntry[]
-): string {
+export function buildKnowledgeMergePrompt(entries: KnowledgeEntry[]): string {
   const items = entries
     .map(
       (e, i) =>

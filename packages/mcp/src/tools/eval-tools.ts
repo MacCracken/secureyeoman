@@ -77,7 +77,8 @@ export function registerEvalTools(
     inputSchema: {
       scenarioId: z.string().describe('Scenario ID to run'),
     },
-    buildPath: (args) => `/api/v1/eval/scenarios/${encodeURIComponent(String(args.scenarioId))}/run`,
+    buildPath: (args) =>
+      `/api/v1/eval/scenarios/${encodeURIComponent(String(args.scenarioId))}/run`,
     buildBody: () => ({}),
   });
 
@@ -94,8 +95,7 @@ export function registerEvalTools(
 
   registerApiProxyTool(server, client, middleware, {
     name: 'eval_create_suite',
-    description:
-      'Create an eval suite — a collection of scenarios to run together',
+    description: 'Create an eval suite — a collection of scenarios to run together',
     method: 'post',
     inputSchema: {
       id: z.string().describe('Unique suite ID'),

@@ -10,14 +10,7 @@
  */
 
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
-import {
-  readFileSync,
-  writeFileSync,
-  existsSync,
-  openSync,
-  readSync,
-  closeSync,
-} from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, openSync, readSync, closeSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
 export type KeySource = 'tpm' | 'tee' | 'keyring';
@@ -86,7 +79,7 @@ export class TeeEncryptionManager {
     offset += 1;
     const ciphertext = sealed.subarray(offset);
 
-    const detectedSource = TAG_TO_SOURCE[keySourceTag as number];
+    const detectedSource = TAG_TO_SOURCE[keySourceTag];
     if (!detectedSource) {
       throw new Error(`Unknown key source tag: 0x${keySourceTag.toString(16)}`);
     }

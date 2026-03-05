@@ -64,9 +64,5 @@ export const confidentialComputingSkill: Partial<MarketplaceSkill> = {
     'Clear assessment of TEE hardware availability, provider attestation status, and actionable compliance recommendations',
   routing: 'fuzzy',
   autonomyLevel: 'L2',
-  mcpToolsAllowed: [
-    'tee_providers',
-    'tee_status',
-    'tee_verify',
-  ],
+  mcpToolsAllowed: ['tee_providers', 'tee_status', 'tee_verify'],
 };

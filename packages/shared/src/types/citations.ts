@@ -82,14 +82,14 @@ export type ProvenanceScores = z.infer<typeof ProvenanceScoresSchema>;
 
 /** Weights for computing composite trust score from provenance dimensions. */
 export const PROVENANCE_WEIGHTS: Record<keyof ProvenanceScores, number> = {
-  authority: 0.20,
-  currency: 0.10,
-  objectivity: 0.10,
-  accuracy: 0.20,
-  methodology: 0.10,
+  authority: 0.2,
+  currency: 0.1,
+  objectivity: 0.1,
+  accuracy: 0.2,
+  methodology: 0.1,
   coverage: 0.05,
   reliability: 0.15,
-  provenance: 0.10,
+  provenance: 0.1,
 };
 
 // ── Citation Feedback ───────────────────────────────────────────

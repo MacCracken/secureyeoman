@@ -8,8 +8,12 @@
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 export function escapeXml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 }
 
 export function hexToRgba(hex: string, opacity: number): string {
@@ -28,7 +32,16 @@ function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
 }
 
-const DEFAULT_COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#eab308', '#a855f7', '#f97316', '#06b6d4', '#ec4899'];
+const DEFAULT_COLORS = [
+  '#3b82f6',
+  '#ef4444',
+  '#22c55e',
+  '#eab308',
+  '#a855f7',
+  '#f97316',
+  '#06b6d4',
+  '#ec4899',
+];
 
 // ─── Scale Helpers ──────────────────────────────────────────────────────────
 
@@ -115,7 +128,19 @@ function resolveConfig(cfg?: ChartConfig) {
   const fg = dark ? '#e5e7eb' : '#374151';
   const bg = dark ? '#1f2937' : '#ffffff';
   const grid = dark ? '#374151' : '#e5e7eb';
-  return { w, h, pad, dark, colors, fg, bg, grid, showLegend: cfg?.showLegend ?? true, gridLines: cfg?.gridLines ?? true, title: cfg?.title };
+  return {
+    w,
+    h,
+    pad,
+    dark,
+    colors,
+    fg,
+    bg,
+    grid,
+    showLegend: cfg?.showLegend ?? true,
+    gridLines: cfg?.gridLines ?? true,
+    title: cfg?.title,
+  };
 }
 
 // ─── SVG Fragment Builders ──────────────────────────────────────────────────
@@ -129,34 +154,65 @@ function svgTitle(text: string | undefined, w: number, fg: string): string {
   return `<text x="${w / 2}" y="24" text-anchor="middle" font-size="16" font-weight="600" fill="${fg}">${escapeXml(text)}</text>`;
 }
 
-function svgXAxis(labels: string[], scale: BandScale | LinearScale, y: number, fg: string, rotate = false): string {
+function svgXAxis(
+  labels: string[],
+  scale: BandScale | LinearScale,
+  y: number,
+  fg: string,
+  rotate = false
+): string {
   const parts: string[] = [];
   for (const label of labels) {
-    const x = typeof scale === 'function' ? scale(label as never) + ((scale as BandScale).bandwidth ?? 0) / 2 : 0;
+    const x =
+      typeof scale === 'function'
+        ? scale(label as never) + ((scale as BandScale).bandwidth ?? 0) / 2
+        : 0;
     const transform = rotate ? ` transform="rotate(-45,${x},${y + 14})"` : '';
     const anchor = rotate ? 'end' : 'middle';
-    parts.push(`<text x="${x}" y="${y + 14}" text-anchor="${anchor}" font-size="10" fill="${fg}"${transform}>${escapeXml(label)}</text>`);
+    parts.push(
+      `<text x="${x}" y="${y + 14}" text-anchor="${anchor}" font-size="10" fill="${fg}"${transform}>${escapeXml(label)}</text>`
+    );
   }
   return parts.join('');
 }
 
 function svgYAxis(ticks: number[], scale: LinearScale, x: number, fg: string): string {
-  return ticks.map(v => {
-    const y = scale(v);
-    return `<text x="${x - 6}" y="${y + 3}" text-anchor="end" font-size="10" fill="${fg}">${formatTick(v)}</text>`;
-  }).join('');
+  return ticks
+    .map((v) => {
+      const y = scale(v);
+      return `<text x="${x - 6}" y="${y + 3}" text-anchor="end" font-size="10" fill="${fg}">${formatTick(v)}</text>`;
+    })
+    .join('');
 }
 
-function svgGridH(ticks: number[], scale: LinearScale, x0: number, x1: number, gridColor: string): string {
-  return ticks.map(v => `<line x1="${x0}" y1="${scale(v)}" x2="${x1}" y2="${scale(v)}" stroke="${gridColor}" stroke-dasharray="3 3" opacity="0.5"/>`).join('');
+function svgGridH(
+  ticks: number[],
+  scale: LinearScale,
+  x0: number,
+  x1: number,
+  gridColor: string
+): string {
+  return ticks
+    .map(
+      (v) =>
+        `<line x1="${x0}" y1="${scale(v)}" x2="${x1}" y2="${scale(v)}" stroke="${gridColor}" stroke-dasharray="3 3" opacity="0.5"/>`
+    )
+    .join('');
 }
 
-function svgLegend(items: { name: string; color: string }[], x: number, y: number, fg: string): string {
+function svgLegend(
+  items: { name: string; color: string }[],
+  x: number,
+  y: number,
+  fg: string
+): string {
   if (items.length <= 1) return '';
-  return items.map((it, i) => {
-    const lx = x + i * 120;
-    return `<rect x="${lx}" y="${y}" width="12" height="12" rx="2" fill="${it.color}"/><text x="${lx + 16}" y="${y + 10}" font-size="11" fill="${fg}">${escapeXml(it.name)}</text>`;
-  }).join('');
+  return items
+    .map((it, i) => {
+      const lx = x + i * 120;
+      return `<rect x="${lx}" y="${y}" width="12" height="12" rx="2" fill="${it.color}"/><text x="${lx + 16}" y="${y + 10}" font-size="11" fill="${fg}">${escapeXml(it.name)}</text>`;
+    })
+    .join('');
 }
 
 // ─── OhlcvBar type ──────────────────────────────────────────────────────────
@@ -180,7 +236,10 @@ export interface CandlestickConfig extends ChartConfig {
 function computeSMA(data: OhlcvBar[], period: number): (number | null)[] {
   const result: (number | null)[] = [];
   for (let i = 0; i < data.length; i++) {
-    if (i < period - 1) { result.push(null); continue; }
+    if (i < period - 1) {
+      result.push(null);
+      continue;
+    }
     let sum = 0;
     for (let j = i - period + 1; j <= i; j++) sum += data[j]!.close;
     result.push(sum / period);
@@ -199,11 +258,15 @@ export function renderCandlestick(data: OhlcvBar[], cfg?: CandlestickConfig): st
   const plotLeft = pad.left;
   const plotRight = w - pad.right;
 
-  const allHigh = Math.max(...data.map(d => d.high));
-  const allLow = Math.min(...data.map(d => d.low));
+  const allHigh = Math.max(...data.map((d) => d.high));
+  const allLow = Math.min(...data.map((d) => d.low));
   const pricePad = (allHigh - allLow) * 0.05 || 1;
   const yScale = linearScale([allLow - pricePad, allHigh + pricePad], [plotBot, plotTop]);
-  const xBand = bandScale(data.map(d => d.date), [plotLeft, plotRight], 0.2);
+  const xBand = bandScale(
+    data.map((d) => d.date),
+    [plotLeft, plotRight],
+    0.2
+  );
   const candleW = Math.max(1, xBand.bandwidth);
 
   const parts: string[] = [svgOpen(w, h, bg), svgTitle(title, w, fg)];
@@ -223,9 +286,13 @@ export function renderCandlestick(data: OhlcvBar[], cfg?: CandlestickConfig): st
     const bodyBot = yScale(Math.min(bar.open, bar.close));
     const bodyH = Math.max(1, bodyBot - bodyTop);
     // Wick
-    parts.push(`<line x1="${cx}" y1="${yScale(bar.high)}" x2="${cx}" y2="${yScale(bar.low)}" stroke="${color}" stroke-width="1"/>`);
+    parts.push(
+      `<line x1="${cx}" y1="${yScale(bar.high)}" x2="${cx}" y2="${yScale(bar.low)}" stroke="${color}" stroke-width="1"/>`
+    );
     // Body
-    parts.push(`<rect x="${x}" y="${bodyTop}" width="${candleW}" height="${bodyH}" fill="${color}" rx="1"/>`);
+    parts.push(
+      `<rect x="${x}" y="${bodyTop}" width="${candleW}" height="${bodyH}" fill="${color}" rx="1"/>`
+    );
   }
 
   // Moving averages
@@ -233,10 +300,14 @@ export function renderCandlestick(data: OhlcvBar[], cfg?: CandlestickConfig): st
     const maColors = ['#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899'];
     cfg.movingAverages.forEach((ma, mi) => {
       const sma = computeSMA(data, ma.period);
-      const pts = sma.map((v, i) => v !== null ? `${xBand(data[i]!.date) + candleW / 2},${yScale(v)}` : null).filter(Boolean);
+      const pts = sma
+        .map((v, i) => (v !== null ? `${xBand(data[i]!.date) + candleW / 2},${yScale(v)}` : null))
+        .filter(Boolean);
       if (pts.length > 1) {
         const col = ma.color ?? maColors[mi % maColors.length];
-        parts.push(`<polyline points="${pts.join(' ')}" fill="none" stroke="${col}" stroke-width="1.5" opacity="0.8"/>`);
+        parts.push(
+          `<polyline points="${pts.join(' ')}" fill="none" stroke="${col}" stroke-width="1.5" opacity="0.8"/>`
+        );
       }
     });
   }
@@ -245,7 +316,7 @@ export function renderCandlestick(data: OhlcvBar[], cfg?: CandlestickConfig): st
   if (showVol) {
     const volTop = h - pad.bottom;
     const volBot = h - priceBot + 4;
-    const maxVol = Math.max(...data.map(d => d.volume ?? 0)) || 1;
+    const maxVol = Math.max(...data.map((d) => d.volume ?? 0)) || 1;
     const vScale = linearScale([0, maxVol], [volTop, volBot]);
     for (const bar of data) {
       if (!bar.volume) continue;
@@ -262,7 +333,9 @@ export function renderCandlestick(data: OhlcvBar[], cfg?: CandlestickConfig): st
   for (let i = 0; i < data.length; i += labelStep) {
     const bar = data[i]!;
     const x = xBand(bar.date) + candleW / 2;
-    parts.push(`<text x="${x}" y="${h - pad.bottom + 14}" text-anchor="middle" font-size="9" fill="${fg}">${escapeXml(bar.date)}</text>`);
+    parts.push(
+      `<text x="${x}" y="${h - pad.bottom + 14}" text-anchor="middle" font-size="9" fill="${fg}">${escapeXml(bar.date)}</text>`
+    );
   }
 
   parts.push('</svg>');
@@ -278,27 +351,28 @@ export interface LineSeriesInput {
 }
 
 export function renderLineChart(series: LineSeriesInput[], cfg?: ChartConfig): string {
-  if (!series.length || !series.some(s => s.data.length)) return emptySvg(cfg);
-  const { w, h, pad, dark, colors, fg, bg, grid, showLegend, gridLines, title } = resolveConfig(cfg);
+  if (!series.length || !series.some((s) => s.data.length)) return emptySvg(cfg);
+  const { w, h, pad, dark, colors, fg, bg, grid, showLegend, gridLines, title } =
+    resolveConfig(cfg);
   const plotTop = pad.top + (title ? 10 : 0);
   const plotBot = h - pad.bottom;
   const plotLeft = pad.left;
   const plotRight = w - pad.right;
 
   // Determine if x is numeric or categorical
-  const allX = series.flatMap(s => s.data.map(d => d.x));
-  const isNumeric = allX.every(v => typeof v === 'number');
+  const allX = series.flatMap((s) => s.data.map((d) => d.x));
+  const isNumeric = allX.every((v) => typeof v === 'number');
 
   let xFn: (v: number | string) => number;
   let xLabels: string[] = [];
 
   if (isNumeric) {
-    const nums = allX as number[];
+    const nums = allX;
     const xMin = Math.min(...nums);
     const xMax = Math.max(...nums);
     const xs = linearScale([xMin, xMax], [plotLeft, plotRight]);
     xFn = (v) => xs(v as number);
-    xLabels = niceTicks(xMin, xMax).map(v => formatTick(v));
+    xLabels = niceTicks(xMin, xMax).map((v) => formatTick(v));
   } else {
     const unique = [...new Set(allX.map(String))];
     const bs = bandScale(unique, [plotLeft, plotRight], 0);
@@ -306,7 +380,7 @@ export function renderLineChart(series: LineSeriesInput[], cfg?: ChartConfig): s
     xLabels = unique;
   }
 
-  const allY = series.flatMap(s => s.data.map(d => d.y));
+  const allY = series.flatMap((s) => s.data.map((d) => d.y));
   const yMin = Math.min(...allY);
   const yMax = Math.max(...allY);
   const yPad = (yMax - yMin) * 0.05 || 1;
@@ -320,24 +394,28 @@ export function renderLineChart(series: LineSeriesInput[], cfg?: ChartConfig): s
   // X labels
   const xStep = Math.max(1, Math.floor(xLabels.length / 10));
   if (isNumeric) {
-    const numTicks = niceTicks(Math.min(...(allX as number[])), Math.max(...(allX as number[])));
+    const numTicks = niceTicks(Math.min(...allX), Math.max(...allX));
     for (const t of numTicks) {
       const xPos = xFn(t);
-      parts.push(`<text x="${xPos}" y="${h - pad.bottom + 14}" text-anchor="middle" font-size="10" fill="${fg}">${formatTick(t)}</text>`);
+      parts.push(
+        `<text x="${xPos}" y="${h - pad.bottom + 14}" text-anchor="middle" font-size="10" fill="${fg}">${formatTick(t)}</text>`
+      );
     }
   } else {
     const bs = bandScale(xLabels, [plotLeft, plotRight], 0);
     for (let i = 0; i < xLabels.length; i += xStep) {
       const label = xLabels[i]!;
       const xPos = bs(label) + bs.bandwidth / 2;
-      parts.push(`<text x="${xPos}" y="${h - pad.bottom + 14}" text-anchor="middle" font-size="10" fill="${fg}">${escapeXml(label)}</text>`);
+      parts.push(
+        `<text x="${xPos}" y="${h - pad.bottom + 14}" text-anchor="middle" font-size="10" fill="${fg}">${escapeXml(label)}</text>`
+      );
     }
   }
 
   // Series
   series.forEach((s, si) => {
     const color = s.color ?? colors[si % colors.length];
-    const pts = s.data.map(d => `${xFn(d.x)},${yScale(d.y)}`).join(' ');
+    const pts = s.data.map((d) => `${xFn(d.x)},${yScale(d.y)}`).join(' ');
     parts.push(`<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2"/>`);
     // Dots if few points
     if (s.data.length <= 30) {
@@ -348,7 +426,14 @@ export function renderLineChart(series: LineSeriesInput[], cfg?: ChartConfig): s
   });
 
   if (showLegend && series.length > 1) {
-    parts.push(svgLegend(series.map((s, i) => ({ name: s.name, color: s.color ?? colors[i % colors.length]! })), plotLeft, h - 16, fg));
+    parts.push(
+      svgLegend(
+        series.map((s, i) => ({ name: s.name, color: s.color ?? colors[i % colors.length]! })),
+        plotLeft,
+        h - 16,
+        fg
+      )
+    );
   }
 
   parts.push('</svg>');
@@ -369,7 +454,8 @@ export interface BarChartConfig extends ChartConfig {
 
 export function renderBarChart(data: BarDataInput[], cfg?: BarChartConfig): string {
   if (!data.length) return emptySvg(cfg);
-  const { w, h, pad, dark, colors, fg, bg, grid, showLegend, gridLines, title } = resolveConfig(cfg);
+  const { w, h, pad, dark, colors, fg, bg, grid, showLegend, gridLines, title } =
+    resolveConfig(cfg);
   const stacked = cfg?.stacked ?? false;
   const horizontal = cfg?.horizontal ?? false;
   const plotTop = pad.top + (title ? 10 : 0);
@@ -377,20 +463,24 @@ export function renderBarChart(data: BarDataInput[], cfg?: BarChartConfig): stri
   const plotLeft = pad.left;
   const plotRight = w - pad.right;
 
-  const keys = [...new Set(data.flatMap(d => Object.keys(d.values)))];
+  const keys = [...new Set(data.flatMap((d) => Object.keys(d.values)))];
 
   let maxVal: number;
   if (stacked) {
-    maxVal = Math.max(...data.map(d => Object.values(d.values).reduce((a, b) => a + b, 0)));
+    maxVal = Math.max(...data.map((d) => Object.values(d.values).reduce((a, b) => a + b, 0)));
   } else {
-    maxVal = Math.max(...data.flatMap(d => Object.values(d.values)));
+    maxVal = Math.max(...data.flatMap((d) => Object.values(d.values)));
   }
   maxVal = maxVal || 1;
 
   const parts: string[] = [svgOpen(w, h, bg), svgTitle(title, w, fg)];
 
   if (!horizontal) {
-    const xBs = bandScale(data.map(d => d.label), [plotLeft, plotRight], 0.2);
+    const xBs = bandScale(
+      data.map((d) => d.label),
+      [plotLeft, plotRight],
+      0.2
+    );
     const yScale = linearScale([0, maxVal * 1.1], [plotBot, plotTop]);
     const yTicks = niceTicks(0, maxVal * 1.1);
     if (gridLines) parts.push(svgGridH(yTicks, yScale, plotLeft, plotRight, grid));
@@ -404,7 +494,9 @@ export function renderBarChart(data: BarDataInput[], cfg?: BarChartConfig): stri
           const v = item.values[k] ?? 0;
           const barTop = yScale(cumY + v);
           const barBot = yScale(cumY);
-          parts.push(`<rect x="${x0}" y="${barTop}" width="${xBs.bandwidth}" height="${barBot - barTop}" fill="${colors[ki % colors.length]}" rx="2"/>`);
+          parts.push(
+            `<rect x="${x0}" y="${barTop}" width="${xBs.bandwidth}" height="${barBot - barTop}" fill="${colors[ki % colors.length]}" rx="2"/>`
+          );
           cumY += v;
         });
       } else {
@@ -413,15 +505,23 @@ export function renderBarChart(data: BarDataInput[], cfg?: BarChartConfig): stri
           const v = item.values[k] ?? 0;
           const bx = x0 + ki * groupW;
           const barTop = yScale(v);
-          parts.push(`<rect x="${bx}" y="${barTop}" width="${groupW * 0.85}" height="${plotBot - barTop}" fill="${colors[ki % colors.length]}" rx="2"/>`);
+          parts.push(
+            `<rect x="${bx}" y="${barTop}" width="${groupW * 0.85}" height="${plotBot - barTop}" fill="${colors[ki % colors.length]}" rx="2"/>`
+          );
         });
       }
       // Label
-      parts.push(`<text x="${x0 + xBs.bandwidth / 2}" y="${h - pad.bottom + 14}" text-anchor="middle" font-size="10" fill="${fg}">${escapeXml(item.label)}</text>`);
+      parts.push(
+        `<text x="${x0 + xBs.bandwidth / 2}" y="${h - pad.bottom + 14}" text-anchor="middle" font-size="10" fill="${fg}">${escapeXml(item.label)}</text>`
+      );
     }
   } else {
     // Horizontal bars
-    const yBs = bandScale(data.map(d => d.label), [plotTop, plotBot], 0.2);
+    const yBs = bandScale(
+      data.map((d) => d.label),
+      [plotTop, plotBot],
+      0.2
+    );
     const xScale = linearScale([0, maxVal * 1.1], [plotLeft, plotRight]);
 
     for (const item of data) {
@@ -432,7 +532,9 @@ export function renderBarChart(data: BarDataInput[], cfg?: BarChartConfig): stri
           const v = item.values[k] ?? 0;
           const barLeft = xScale(cumX);
           const barRight = xScale(cumX + v);
-          parts.push(`<rect x="${barLeft}" y="${y0}" width="${barRight - barLeft}" height="${yBs.bandwidth}" fill="${colors[ki % colors.length]}" rx="2"/>`);
+          parts.push(
+            `<rect x="${barLeft}" y="${y0}" width="${barRight - barLeft}" height="${yBs.bandwidth}" fill="${colors[ki % colors.length]}" rx="2"/>`
+          );
           cumX += v;
         });
       } else {
@@ -441,16 +543,27 @@ export function renderBarChart(data: BarDataInput[], cfg?: BarChartConfig): stri
           const v = item.values[k] ?? 0;
           const by = y0 + ki * groupH;
           const barRight = xScale(v);
-          parts.push(`<rect x="${plotLeft}" y="${by}" width="${barRight - plotLeft}" height="${groupH * 0.85}" fill="${colors[ki % colors.length]}" rx="2"/>`);
+          parts.push(
+            `<rect x="${plotLeft}" y="${by}" width="${barRight - plotLeft}" height="${groupH * 0.85}" fill="${colors[ki % colors.length]}" rx="2"/>`
+          );
         });
       }
       // Label
-      parts.push(`<text x="${plotLeft - 6}" y="${yBs(item.label) + yBs.bandwidth / 2 + 3}" text-anchor="end" font-size="10" fill="${fg}">${escapeXml(item.label)}</text>`);
+      parts.push(
+        `<text x="${plotLeft - 6}" y="${yBs(item.label) + yBs.bandwidth / 2 + 3}" text-anchor="end" font-size="10" fill="${fg}">${escapeXml(item.label)}</text>`
+      );
     }
   }
 
   if (showLegend && keys.length > 1) {
-    parts.push(svgLegend(keys.map((k, i) => ({ name: k, color: colors[i % colors.length]! })), plotLeft, h - 16, fg));
+    parts.push(
+      svgLegend(
+        keys.map((k, i) => ({ name: k, color: colors[i % colors.length]! })),
+        plotLeft,
+        h - 16,
+        fg
+      )
+    );
   }
 
   parts.push('</svg>');
@@ -515,15 +628,21 @@ export function renderPieChart(slices: PieSliceInput[], cfg?: PieChartConfig): s
     const lx = cx + labelR * Math.cos(midAngle);
     const ly = cy + labelR * Math.sin(midAngle);
     const pct = ((slice.value / total) * 100).toFixed(1);
-    parts.push(`<text x="${lx}" y="${ly}" text-anchor="middle" font-size="10" fill="${fg}">${escapeXml(slice.label)} ${pct}%</text>`);
+    parts.push(
+      `<text x="${lx}" y="${ly}" text-anchor="middle" font-size="10" fill="${fg}">${escapeXml(slice.label)} ${pct}%</text>`
+    );
 
     angle = endAngle;
   });
 
   // Center label for donut
   if (donut) {
-    parts.push(`<text x="${cx}" y="${cy - 6}" text-anchor="middle" font-size="14" font-weight="600" fill="${fg}">Total</text>`);
-    parts.push(`<text x="${cx}" y="${cy + 12}" text-anchor="middle" font-size="12" fill="${fg}">${formatTick(total)}</text>`);
+    parts.push(
+      `<text x="${cx}" y="${cy - 6}" text-anchor="middle" font-size="14" font-weight="600" fill="${fg}">Total</text>`
+    );
+    parts.push(
+      `<text x="${cx}" y="${cy + 12}" text-anchor="middle" font-size="12" fill="${fg}">${formatTick(total)}</text>`
+    );
   }
 
   parts.push('</svg>');
@@ -554,11 +673,14 @@ export function renderScatterPlot(points: ScatterPointInput[], cfg?: ScatterConf
   const plotLeft = pad.left;
   const plotRight = w - pad.right;
 
-  const xs = points.map(p => p.x);
-  const ys = points.map(p => p.y);
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
   const xPad = (Math.max(...xs) - Math.min(...xs)) * 0.05 || 1;
   const yPad = (Math.max(...ys) - Math.min(...ys)) * 0.05 || 1;
-  const xScale = linearScale([Math.min(...xs) - xPad, Math.max(...xs) + xPad], [plotLeft, plotRight]);
+  const xScale = linearScale(
+    [Math.min(...xs) - xPad, Math.max(...xs) + xPad],
+    [plotLeft, plotRight]
+  );
   const yScale = linearScale([Math.min(...ys) - yPad, Math.max(...ys) + yPad], [plotBot, plotTop]);
 
   const xTicks = niceTicks(xScale.domain[0], xScale.domain[1]);
@@ -568,12 +690,20 @@ export function renderScatterPlot(points: ScatterPointInput[], cfg?: ScatterConf
   if (gridLines) parts.push(svgGridH(yTicks, yScale, plotLeft, plotRight, grid));
   parts.push(svgYAxis(yTicks, yScale, plotLeft, fg));
   for (const t of xTicks) {
-    parts.push(`<text x="${xScale(t)}" y="${h - pad.bottom + 14}" text-anchor="middle" font-size="10" fill="${fg}">${formatTick(t)}</text>`);
+    parts.push(
+      `<text x="${xScale(t)}" y="${h - pad.bottom + 14}" text-anchor="middle" font-size="10" fill="${fg}">${formatTick(t)}</text>`
+    );
   }
 
   // Axis labels
-  if (cfg?.xLabel) parts.push(`<text x="${(plotLeft + plotRight) / 2}" y="${h - 6}" text-anchor="middle" font-size="12" fill="${fg}">${escapeXml(cfg.xLabel)}</text>`);
-  if (cfg?.yLabel) parts.push(`<text x="14" y="${(plotTop + plotBot) / 2}" text-anchor="middle" font-size="12" fill="${fg}" transform="rotate(-90,14,${(plotTop + plotBot) / 2})">${escapeXml(cfg.yLabel)}</text>`);
+  if (cfg?.xLabel)
+    parts.push(
+      `<text x="${(plotLeft + plotRight) / 2}" y="${h - 6}" text-anchor="middle" font-size="12" fill="${fg}">${escapeXml(cfg.xLabel)}</text>`
+    );
+  if (cfg?.yLabel)
+    parts.push(
+      `<text x="14" y="${(plotTop + plotBot) / 2}" text-anchor="middle" font-size="12" fill="${fg}" transform="rotate(-90,14,${(plotTop + plotBot) / 2})">${escapeXml(cfg.yLabel)}</text>`
+    );
 
   // Trend line (simple linear regression)
   if (cfg?.showTrendLine && points.length >= 2) {
@@ -586,16 +716,22 @@ export function renderScatterPlot(points: ScatterPointInput[], cfg?: ScatterConf
     const intercept = (sumY - slope * sumX) / n;
     const x0 = Math.min(...xs);
     const x1 = Math.max(...xs);
-    parts.push(`<line x1="${xScale(x0)}" y1="${yScale(slope * x0 + intercept)}" x2="${xScale(x1)}" y2="${yScale(slope * x1 + intercept)}" stroke="${grid}" stroke-width="1.5" stroke-dasharray="5 3"/>`);
+    parts.push(
+      `<line x1="${xScale(x0)}" y1="${yScale(slope * x0 + intercept)}" x2="${xScale(x1)}" y2="${yScale(slope * x1 + intercept)}" stroke="${grid}" stroke-width="1.5" stroke-dasharray="5 3"/>`
+    );
   }
 
   // Points
   for (const p of points) {
     const r = clamp(p.size ?? 5, 2, 20);
     const color = p.color ?? colors[0]!;
-    parts.push(`<circle cx="${xScale(p.x)}" cy="${yScale(p.y)}" r="${r}" fill="${hexToRgba(color, 0.7)}" stroke="${color}" stroke-width="1"/>`);
+    parts.push(
+      `<circle cx="${xScale(p.x)}" cy="${yScale(p.y)}" r="${r}" fill="${hexToRgba(color, 0.7)}" stroke="${color}" stroke-width="1"/>`
+    );
     if (p.label) {
-      parts.push(`<text x="${xScale(p.x)}" y="${yScale(p.y) - r - 4}" text-anchor="middle" font-size="9" fill="${fg}">${escapeXml(p.label)}</text>`);
+      parts.push(
+        `<text x="${xScale(p.x)}" y="${yScale(p.y) - r - 4}" text-anchor="middle" font-size="9" fill="${fg}">${escapeXml(p.label)}</text>`
+      );
     }
   }
 
@@ -621,7 +757,7 @@ export function renderWaterfall(items: WaterfallItem[], cfg?: ChartConfig): stri
 
   // Compute running totals
   let running = 0;
-  const resolved = items.map(it => {
+  const resolved = items.map((it) => {
     if (it.isTotal) {
       const total = running;
       return { ...it, start: 0, end: total };
@@ -631,19 +767,25 @@ export function renderWaterfall(items: WaterfallItem[], cfg?: ChartConfig): stri
     return { ...it, start, end: running };
   });
 
-  const allVals = resolved.flatMap(r => [r.start, r.end]);
+  const allVals = resolved.flatMap((r) => [r.start, r.end]);
   const lo = Math.min(0, ...allVals);
   const hi = Math.max(0, ...allVals);
   const valPad = (hi - lo) * 0.1 || 1;
   const yScale = linearScale([lo - valPad, hi + valPad], [plotBot, plotTop]);
-  const xBs = bandScale(items.map(i => i.label), [plotLeft, plotRight], 0.25);
+  const xBs = bandScale(
+    items.map((i) => i.label),
+    [plotLeft, plotRight],
+    0.25
+  );
   const yTicks = niceTicks(lo - valPad, hi + valPad);
 
   const parts: string[] = [svgOpen(w, h, bg), svgTitle(title, w, fg)];
   if (gridLines) parts.push(svgGridH(yTicks, yScale, plotLeft, plotRight, grid));
   parts.push(svgYAxis(yTicks, yScale, plotLeft, fg));
   // Zero line
-  parts.push(`<line x1="${plotLeft}" y1="${yScale(0)}" x2="${plotRight}" y2="${yScale(0)}" stroke="${fg}" stroke-width="0.5" opacity="0.4"/>`);
+  parts.push(
+    `<line x1="${plotLeft}" y1="${yScale(0)}" x2="${plotRight}" y2="${yScale(0)}" stroke="${fg}" stroke-width="0.5" opacity="0.4"/>`
+  );
 
   for (const r of resolved) {
     const x = xBs(r.label);
@@ -654,12 +796,18 @@ export function renderWaterfall(items: WaterfallItem[], cfg?: ChartConfig): stri
     if (r.isTotal) color = '#6366f1';
     else if (r.value >= 0) color = '#22c55e';
     else color = '#ef4444';
-    parts.push(`<rect x="${x}" y="${top}" width="${xBs.bandwidth}" height="${barH}" fill="${color}" rx="2"/>`);
+    parts.push(
+      `<rect x="${x}" y="${top}" width="${xBs.bandwidth}" height="${barH}" fill="${color}" rx="2"/>`
+    );
     // Value label
     const labelY = r.value >= 0 || r.isTotal ? top - 4 : bot + 12;
-    parts.push(`<text x="${x + xBs.bandwidth / 2}" y="${labelY}" text-anchor="middle" font-size="9" fill="${fg}">${formatTick(r.end - r.start)}</text>`);
+    parts.push(
+      `<text x="${x + xBs.bandwidth / 2}" y="${labelY}" text-anchor="middle" font-size="9" fill="${fg}">${formatTick(r.end - r.start)}</text>`
+    );
     // X label
-    parts.push(`<text x="${x + xBs.bandwidth / 2}" y="${h - pad.bottom + 14}" text-anchor="middle" font-size="10" fill="${fg}">${escapeXml(r.label)}</text>`);
+    parts.push(
+      `<text x="${x + xBs.bandwidth / 2}" y="${h - pad.bottom + 14}" text-anchor="middle" font-size="10" fill="${fg}">${escapeXml(r.label)}</text>`
+    );
   }
 
   // Connector lines between bars
@@ -670,7 +818,9 @@ export function renderWaterfall(items: WaterfallItem[], cfg?: ChartConfig): stri
     const x1 = xBs(cur.label) + xBs.bandwidth;
     const x2 = xBs(nxt.label);
     const y = yScale(cur.end);
-    parts.push(`<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${fg}" stroke-width="0.5" stroke-dasharray="3 2" opacity="0.4"/>`);
+    parts.push(
+      `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${fg}" stroke-width="0.5" stroke-dasharray="3 2" opacity="0.4"/>`
+    );
   }
 
   parts.push('</svg>');
@@ -729,24 +879,32 @@ export function renderHeatmap(matrix: HeatmapInput, cfg?: HeatmapConfig): string
   // Column headers
   for (let c = 0; c < n; c++) {
     const x = plotLeft + c * cellW + cellW / 2;
-    parts.push(`<text x="${x}" y="${plotTop - 8}" text-anchor="middle" font-size="9" fill="${fg}" transform="rotate(-45,${x},${plotTop - 8})">${escapeXml(labels[c]!)}</text>`);
+    parts.push(
+      `<text x="${x}" y="${plotTop - 8}" text-anchor="middle" font-size="9" fill="${fg}" transform="rotate(-45,${x},${plotTop - 8})">${escapeXml(labels[c]!)}</text>`
+    );
   }
 
   // Cells
   for (let r = 0; r < n; r++) {
     // Row label
-    parts.push(`<text x="${plotLeft - 6}" y="${plotTop + r * cellH + cellH / 2 + 3}" text-anchor="end" font-size="9" fill="${fg}">${escapeXml(labels[r]!)}</text>`);
+    parts.push(
+      `<text x="${plotLeft - 6}" y="${plotTop + r * cellH + cellH / 2 + 3}" text-anchor="end" font-size="9" fill="${fg}">${escapeXml(labels[r]!)}</text>`
+    );
     for (let c = 0; c < n; c++) {
       const v = values[r]?.[c] ?? 0;
       const x = plotLeft + c * cellW;
       const y = plotTop + r * cellH;
       const color = heatColor(v, lo, hi, colorLow, colorHigh);
-      parts.push(`<rect x="${x}" y="${y}" width="${cellW - 1}" height="${cellH - 1}" fill="${color}" rx="2"/>`);
+      parts.push(
+        `<rect x="${x}" y="${y}" width="${cellW - 1}" height="${cellH - 1}" fill="${color}" rx="2"/>`
+      );
       if (showVals) {
         // Pick text color based on brightness
         const brightness = clamp((v - lo) / (hi - lo || 1), 0, 1);
         const textColor = brightness > 0.5 ? '#ffffff' : '#1f2937';
-        parts.push(`<text x="${x + cellW / 2}" y="${y + cellH / 2 + 3}" text-anchor="middle" font-size="9" fill="${textColor}">${v.toFixed(2)}</text>`);
+        parts.push(
+          `<text x="${x + cellW / 2}" y="${y + cellH / 2 + 3}" text-anchor="middle" font-size="9" fill="${textColor}">${v.toFixed(2)}</text>`
+        );
       }
     }
   }
@@ -778,7 +936,9 @@ export function renderSparkline(values: number[], cfg?: SparklineConfig): string
   const yScale = linearScale([lo, hi], [h - pad, pad]);
 
   const pts = values.map((v, i) => `${xScale(i)},${yScale(v)}`).join(' ');
-  const parts: string[] = [`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">`];
+  const parts: string[] = [
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">`,
+  ];
 
   if (fill) {
     const fillPts = `${xScale(0)},${h - pad} ${pts} ${xScale(values.length - 1)},${h - pad}`;

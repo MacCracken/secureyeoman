@@ -14,10 +14,22 @@ import { securityReferenceArchitectureSkill } from './security-reference-archite
 const ALL_SKILLS = [
   { name: 'Senior Web Designer', skill: seniorWebDesignerSkill, category: 'design' },
   { name: 'Senior Software Engineer', skill: seniorSoftwareEngineerSkill, category: 'development' },
-  { name: 'Sr. Software Engineer - Audit / Code Review', skill: seniorSoftwareEngineerAuditSkill, category: 'development' },
+  {
+    name: 'Sr. Software Engineer - Audit / Code Review',
+    skill: seniorSoftwareEngineerAuditSkill,
+    category: 'development',
+  },
   { name: 'Senior DevOps/SRE', skill: devopsSreSkill, category: 'infrastructure' },
-  { name: 'Veteran Financial Manager/Trader', skill: veteranFinancialManagerSkill, category: 'finance' },
-  { name: 'Security Reference Architecture', skill: securityReferenceArchitectureSkill, category: 'security' },
+  {
+    name: 'Veteran Financial Manager/Trader',
+    skill: veteranFinancialManagerSkill,
+    category: 'finance',
+  },
+  {
+    name: 'Security Reference Architecture',
+    skill: securityReferenceArchitectureSkill,
+    category: 'security',
+  },
 ];
 
 describe('Role-Based Skills', () => {
@@ -34,7 +46,7 @@ describe('Role-Based Skills', () => {
 
         it('has instructions as joined string', () => {
           expect(typeof skill.instructions).toBe('string');
-          expect((skill.instructions as string).length).toBeGreaterThan(100);
+          expect(skill.instructions!.length).toBeGreaterThan(100);
         });
 
         it('has description within length limit (2000 chars)', () => {
@@ -73,7 +85,13 @@ describe('Role-Based Skills', () => {
 
   describe('autonomy levels', () => {
     it('most role skills are L1', () => {
-      const l1Skills = [seniorWebDesignerSkill, seniorSoftwareEngineerSkill, seniorSoftwareEngineerAuditSkill, devopsSreSkill, veteranFinancialManagerSkill];
+      const l1Skills = [
+        seniorWebDesignerSkill,
+        seniorSoftwareEngineerSkill,
+        seniorSoftwareEngineerAuditSkill,
+        devopsSreSkill,
+        veteranFinancialManagerSkill,
+      ];
       for (const skill of l1Skills) {
         expect(skill.autonomyLevel, `${skill.name} should be L1`).toBe('L1');
       }
@@ -208,7 +226,7 @@ describe('Role-Based Skills', () => {
 
   describe('instruction content quality', () => {
     it('Senior Web Designer covers all 4 review areas', () => {
-      const text = seniorWebDesignerSkill.instructions as string;
+      const text = seniorWebDesignerSkill.instructions!;
       expect(text).toContain('Visual Hierarchy');
       expect(text).toContain('Friction');
       expect(text).toContain('Technical Feasibility');
@@ -216,14 +234,14 @@ describe('Role-Based Skills', () => {
     });
 
     it('Senior Software Engineer mentions core principles', () => {
-      const text = seniorSoftwareEngineerSkill.instructions as string;
+      const text = seniorSoftwareEngineerSkill.instructions!;
       expect(text).toContain('Clarity over Cleverness');
       expect(text).toContain('Context is King');
       expect(text).toContain('trade-off');
     });
 
     it('Audit skill covers all 6 review criteria', () => {
-      const text = seniorSoftwareEngineerAuditSkill.instructions as string;
+      const text = seniorSoftwareEngineerAuditSkill.instructions!;
       expect(text).toContain('Logic & Safety');
       expect(text).toContain('Security');
       expect(text).toContain('Performance');
@@ -233,14 +251,14 @@ describe('Role-Based Skills', () => {
     });
 
     it('Audit skill includes severity guidelines', () => {
-      const text = seniorSoftwareEngineerAuditSkill.instructions as string;
+      const text = seniorSoftwareEngineerAuditSkill.instructions!;
       expect(text).toContain('HIGH');
       expect(text).toContain('MEDIUM');
       expect(text).toContain('LOW');
     });
 
     it('DevOps/SRE covers reliability, scalability, observability', () => {
-      const text = devopsSreSkill.instructions as string;
+      const text = devopsSreSkill.instructions!;
       expect(text).toContain('Reliability First');
       expect(text).toContain('Scalability');
       expect(text).toContain('Observability');
@@ -249,7 +267,7 @@ describe('Role-Based Skills', () => {
     });
 
     it('Financial Manager includes bear/bull case framework', () => {
-      const text = veteranFinancialManagerSkill.instructions as string;
+      const text = veteranFinancialManagerSkill.instructions!;
       expect(text).toContain('Bear Case');
       expect(text).toContain('Bull Case');
       expect(text).toContain('Risk/Reward');
@@ -257,7 +275,7 @@ describe('Role-Based Skills', () => {
     });
 
     it('Security Reference Architecture references SRA frameworks', () => {
-      const text = securityReferenceArchitectureSkill.instructions as string;
+      const text = securityReferenceArchitectureSkill.instructions!;
       expect(text).toContain('AWS SRA');
       expect(text).toContain('CISA Zero Trust');
       expect(text).toContain('MCRA');
@@ -266,7 +284,7 @@ describe('Role-Based Skills', () => {
     });
 
     it('Security Reference Architecture covers all 7 assessment steps', () => {
-      const text = securityReferenceArchitectureSkill.instructions as string;
+      const text = securityReferenceArchitectureSkill.instructions!;
       expect(text).toContain('Blueprint Selection');
       expect(text).toContain('Control Assessment');
       expect(text).toContain('Gap Analysis');

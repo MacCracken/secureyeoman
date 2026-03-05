@@ -191,12 +191,10 @@ describe('SevSandbox', () => {
         return '';
       });
 
-      mockExecFile.mockImplementation(
-        (_cmd: string, _args: string[], _opts: any, cb: Function) => {
-          cb(null, JSON.stringify({ success: true, result: 99 }), '');
-          return { stderr: { on: vi.fn() } };
-        }
-      );
+      mockExecFile.mockImplementation((_cmd: string, _args: string[], _opts: any, cb: Function) => {
+        cb(null, JSON.stringify({ success: true, result: 99 }), '');
+        return { stderr: { on: vi.fn() } };
+      });
 
       const sandbox = new SevSandbox();
       const result = await sandbox.run(async () => 99);
@@ -217,12 +215,10 @@ describe('SevSandbox', () => {
         return '';
       });
 
-      mockExecFile.mockImplementation(
-        (_cmd: string, _args: string[], _opts: any, cb: Function) => {
-          cb(new Error('qemu crashed'), '', 'fatal error');
-          return { stderr: { on: vi.fn() } };
-        }
-      );
+      mockExecFile.mockImplementation((_cmd: string, _args: string[], _opts: any, cb: Function) => {
+        cb(new Error('qemu crashed'), '', 'fatal error');
+        return { stderr: { on: vi.fn() } };
+      });
 
       const sandbox = new SevSandbox();
       const result = await sandbox.run(async () => 0);
@@ -243,12 +239,10 @@ describe('SevSandbox', () => {
         return '';
       });
 
-      mockExecFile.mockImplementation(
-        (_cmd: string, _args: string[], _opts: any, cb: Function) => {
-          cb(null, 'not json', '');
-          return { stderr: { on: vi.fn() } };
-        }
-      );
+      mockExecFile.mockImplementation((_cmd: string, _args: string[], _opts: any, cb: Function) => {
+        cb(null, 'not json', '');
+        return { stderr: { on: vi.fn() } };
+      });
 
       const sandbox = new SevSandbox();
       const result = await sandbox.run(async () => 0);
@@ -269,12 +263,10 @@ describe('SevSandbox', () => {
         return '';
       });
 
-      mockExecFile.mockImplementation(
-        (_cmd: string, _args: string[], _opts: any, cb: Function) => {
-          cb(null, JSON.stringify({ success: true, result: 1 }), 'security violation detected');
-          return { stderr: { on: vi.fn() } };
-        }
-      );
+      mockExecFile.mockImplementation((_cmd: string, _args: string[], _opts: any, cb: Function) => {
+        cb(null, JSON.stringify({ success: true, result: 1 }), 'security violation detected');
+        return { stderr: { on: vi.fn() } };
+      });
 
       const sandbox = new SevSandbox();
       const result = await sandbox.run(async () => 1);
@@ -297,12 +289,10 @@ describe('SevSandbox', () => {
         return '';
       });
 
-      mockExecFile.mockImplementation(
-        (_cmd: string, _args: string[], _opts: any, cb: Function) => {
-          cb(null, JSON.stringify({ success: true, result: 1 }), '');
-          return { stderr: { on: vi.fn() } };
-        }
-      );
+      mockExecFile.mockImplementation((_cmd: string, _args: string[], _opts: any, cb: Function) => {
+        cb(null, JSON.stringify({ success: true, result: 1 }), '');
+        return { stderr: { on: vi.fn() } };
+      });
 
       const sandbox = new SevSandbox();
       await sandbox.run(async () => 1);
@@ -326,13 +316,11 @@ describe('SevSandbox', () => {
       });
 
       let capturedArgs: string[] = [];
-      mockExecFile.mockImplementation(
-        (_cmd: string, args: string[], _opts: any, cb: Function) => {
-          capturedArgs = args;
-          cb(null, JSON.stringify({ success: true, result: 1 }), '');
-          return { stderr: { on: vi.fn() } };
-        }
-      );
+      mockExecFile.mockImplementation((_cmd: string, args: string[], _opts: any, cb: Function) => {
+        capturedArgs = args;
+        cb(null, JSON.stringify({ success: true, result: 1 }), '');
+        return { stderr: { on: vi.fn() } };
+      });
 
       const sandbox = new SevSandbox({ memorySize: '1G', vcpus: 4 });
       await sandbox.run(async () => 1);

@@ -60,6 +60,10 @@ export class AuthModule extends BaseModule {
     }
   }
 
-  getAuthStorage(): AuthStorage | null { return this.authStorage; }
-  getAuthService(): AuthService | null { return this.authService; }
+  getAuthStorage(): AuthStorage | null {
+    return this.authStorage;
+  }
+  getAuthService(): AuthService | null {
+    return this.authService;
+  }
 }

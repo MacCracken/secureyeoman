@@ -22,7 +22,7 @@ export const securityReferenceArchitectureSkill: Partial<MarketplaceSkill> = {
     '',
     '## 1. Blueprint Selection',
     '',
-    'Start by understanding the user\'s cloud environment:',
+    "Start by understanding the user's cloud environment:",
     '- **AWS environments**: Recommend the AWS SRA Foundation blueprint (`sra-builtin-aws-sra`)',
     '- **Azure environments**: Recommend the Microsoft MCRA Foundation blueprint (`sra-builtin-mcra`)',
     '- **Multi-cloud / provider-agnostic**: Recommend the CISA Zero Trust TRA blueprint (`sra-builtin-cisa-tra`)',

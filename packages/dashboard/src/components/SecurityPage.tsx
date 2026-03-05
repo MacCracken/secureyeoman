@@ -107,7 +107,12 @@ export function SecurityPage() {
     const path = location.pathname;
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
-    if (tabParam === 'audit' || tabParam === 'reports' || tabParam === 'reports-logs' || path.includes('/reports'))
+    if (
+      tabParam === 'audit' ||
+      tabParam === 'reports' ||
+      tabParam === 'reports-logs' ||
+      path.includes('/reports')
+    )
       return 'reports-logs';
     if (tabParam === 'automations') return 'automations';
     if (tabParam === 'ml') return 'ml';
@@ -218,7 +223,9 @@ export function SecurityPage() {
 
       <div className="flex gap-1 border-b border-border overflow-x-auto">
         <button
-          onClick={() => setActiveTab('overview')}
+          onClick={() => {
+            setActiveTab('overview');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'overview'
               ? 'border-primary text-primary'
@@ -229,7 +236,9 @@ export function SecurityPage() {
           Overview
         </button>
         <button
-          onClick={() => setActiveTab('nodes')}
+          onClick={() => {
+            setActiveTab('nodes');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'nodes'
               ? 'border-primary text-primary'
@@ -240,7 +249,9 @@ export function SecurityPage() {
           System
         </button>
         <button
-          onClick={() => setActiveTab('automations')}
+          onClick={() => {
+            setActiveTab('automations');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'automations'
               ? 'border-primary text-primary'
@@ -251,7 +262,9 @@ export function SecurityPage() {
           Automations
         </button>
         <button
-          onClick={() => setActiveTab('autonomy')}
+          onClick={() => {
+            setActiveTab('autonomy');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'autonomy'
               ? 'border-primary text-primary'
@@ -263,7 +276,9 @@ export function SecurityPage() {
         </button>
         {mlEnabled && (
           <button
-            onClick={() => setActiveTab('ml')}
+            onClick={() => {
+              setActiveTab('ml');
+            }}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === 'ml'
                 ? 'border-primary text-primary'
@@ -276,7 +291,9 @@ export function SecurityPage() {
           </button>
         )}
         <button
-          onClick={() => setActiveTab('reports-logs')}
+          onClick={() => {
+            setActiveTab('reports-logs');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'reports-logs'
               ? 'border-primary text-primary'
@@ -287,7 +304,9 @@ export function SecurityPage() {
           Reports &amp; Logs
         </button>
         <button
-          onClick={() => setActiveTab('risk')}
+          onClick={() => {
+            setActiveTab('risk');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'risk'
               ? 'border-primary text-primary'
@@ -298,7 +317,9 @@ export function SecurityPage() {
           Risk
         </button>
         <button
-          onClick={() => setActiveTab('scope')}
+          onClick={() => {
+            setActiveTab('scope');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'scope'
               ? 'border-primary text-primary'
@@ -309,7 +330,9 @@ export function SecurityPage() {
           Scope
         </button>
         <button
-          onClick={() => setActiveTab('capture')}
+          onClick={() => {
+            setActiveTab('capture');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'capture'
               ? 'border-primary text-primary'
@@ -332,7 +355,9 @@ export function SecurityPage() {
             onVerify={handleVerifyChain}
             onAcknowledge={acknowledgeEvent}
             onAcknowledgeAll={acknowledgeAll}
-            onViewAuditLog={() => setActiveTab('reports-logs')}
+            onViewAuditLog={() => {
+              setActiveTab('reports-logs');
+            }}
           />
         </Suspense>
       )}

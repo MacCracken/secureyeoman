@@ -1187,9 +1187,7 @@ describe('MarketplaceManager', () => {
         }
         return [];
       });
-      mockReadFile.mockResolvedValue(
-        JSON.stringify({ variables: { background: '#000' } })
-      );
+      mockReadFile.mockResolvedValue(JSON.stringify({ variables: { background: '#000' } }));
 
       const { manager } = makeManager({
         findByNameAndSource: vi.fn().mockResolvedValue(null),

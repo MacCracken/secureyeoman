@@ -159,11 +159,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
       });
       return reply.send({ ...result.data, mode: creds.mode, integrationId: creds.integrationId });
     } catch (err) {
-      return sendError(
-        reply,
-        500,
-        `Twitter API error: ${toErrorMessage(err)}`
-      );
+      return sendError(reply, 500, `Twitter API error: ${toErrorMessage(err)}`);
     }
   });
 
@@ -187,11 +183,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         });
         return reply.send(result.data);
       } catch (err) {
-        return sendError(
-          reply,
-          500,
-          `Twitter API error: ${toErrorMessage(err)}`
-        );
+        return sendError(reply, 500, `Twitter API error: ${toErrorMessage(err)}`);
       }
     }
   );
@@ -218,11 +210,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         });
         return reply.send(result.data);
       } catch (err) {
-        return sendError(
-          reply,
-          500,
-          `Twitter API error: ${toErrorMessage(err)}`
-        );
+        return sendError(reply, 500, `Twitter API error: ${toErrorMessage(err)}`);
       }
     }
   );
@@ -248,11 +236,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         });
         return reply.send(result.data);
       } catch (err) {
-        return sendError(
-          reply,
-          500,
-          `Twitter API error: ${toErrorMessage(err)}`
-        );
+        return sendError(reply, 500, `Twitter API error: ${toErrorMessage(err)}`);
       }
     }
   );
@@ -277,11 +261,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         });
         return reply.send({ ...result.data, selfId: me.data.id });
       } catch (err) {
-        return sendError(
-          reply,
-          500,
-          `Twitter API error: ${toErrorMessage(err)}`
-        );
+        return sendError(reply, 500, `Twitter API error: ${toErrorMessage(err)}`);
       }
     }
   );
@@ -305,11 +285,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         });
         return reply.send(result.data);
       } catch (err) {
-        return sendError(
-          reply,
-          500,
-          `Twitter API error: ${toErrorMessage(err)}`
-        );
+        return sendError(reply, 500, `Twitter API error: ${toErrorMessage(err)}`);
       }
     }
   );
@@ -354,11 +330,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
       );
       return reply.code(201).send(result.data);
     } catch (err) {
-      return sendError(
-        reply,
-        500,
-        `Twitter API error: ${toErrorMessage(err)}`
-      );
+      return sendError(reply, 500, `Twitter API error: ${toErrorMessage(err)}`);
     }
   });
 
@@ -403,22 +375,14 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
           buffer = Buffer.from(data!, 'base64');
         }
       } catch (err) {
-        return sendError(
-          reply,
-          400,
-          `Failed to retrieve media: ${toErrorMessage(err)}`
-        );
+        return sendError(reply, 400, `Failed to retrieve media: ${toErrorMessage(err)}`);
       }
 
       try {
         const mediaId = await creds.userClient!.v1.uploadMedia(buffer, { mimeType });
         return reply.send({ mediaId });
       } catch (err) {
-        return sendError(
-          reply,
-          500,
-          `Twitter media upload error: ${toErrorMessage(err)}`
-        );
+        return sendError(reply, 500, `Twitter media upload error: ${toErrorMessage(err)}`);
       }
     }
   );
@@ -445,11 +409,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         const result = await creds.userClient.v2.like(me.data.id, req.params.tweetId);
         return reply.send(result.data);
       } catch (err) {
-        return sendError(
-          reply,
-          500,
-          `Twitter API error: ${toErrorMessage(err)}`
-        );
+        return sendError(reply, 500, `Twitter API error: ${toErrorMessage(err)}`);
       }
     }
   );
@@ -476,11 +436,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         const result = await creds.userClient.v2.retweet(me.data.id, req.params.tweetId);
         return reply.send(result.data);
       } catch (err) {
-        return sendError(
-          reply,
-          500,
-          `Twitter API error: ${toErrorMessage(err)}`
-        );
+        return sendError(reply, 500, `Twitter API error: ${toErrorMessage(err)}`);
       }
     }
   );
@@ -507,11 +463,7 @@ export function registerTwitterRoutes(app: FastifyInstance, opts: TwitterRoutesO
         const result = await creds.userClient.v2.unretweet(me.data.id, req.params.tweetId);
         return reply.send(result.data);
       } catch (err) {
-        return sendError(
-          reply,
-          500,
-          `Twitter API error: ${toErrorMessage(err)}`
-        );
+        return sendError(reply, 500, `Twitter API error: ${toErrorMessage(err)}`);
       }
     }
   );

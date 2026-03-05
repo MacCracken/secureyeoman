@@ -96,13 +96,14 @@ export class WasmSandbox implements Sandbox {
       seccomp: false,
       namespaces: false,
       rlimits: false,
-      platform: process.platform === 'linux'
-        ? 'linux'
-        : process.platform === 'darwin'
-          ? 'darwin'
-          : process.platform === 'win32'
-            ? 'win32'
-            : 'other',
+      platform:
+        process.platform === 'linux'
+          ? 'linux'
+          : process.platform === 'darwin'
+            ? 'darwin'
+            : process.platform === 'win32'
+              ? 'win32'
+              : 'other',
       wasm: true,
     } as SandboxCapabilities & { wasm: boolean };
   }
@@ -111,7 +112,8 @@ export class WasmSandbox implements Sandbox {
     const startTime = Date.now();
     const violations: SandboxViolation[] = [];
     const timeoutMs = opts?.timeoutMs ?? this.opts.maxExecutionMs ?? 30000;
-    const maxMemoryMb = opts?.resources?.maxMemoryMb ?? (this.opts.maxMemoryPages ?? 256) * 64 / 1024;
+    const maxMemoryMb =
+      opts?.resources?.maxMemoryMb ?? ((this.opts.maxMemoryPages ?? 256) * 64) / 1024;
 
     try {
       const result = await this.executeInSandbox<T>(fn, timeoutMs, maxMemoryMb, opts, violations);
@@ -260,7 +262,7 @@ export class WasmSandbox implements Sandbox {
 
       // Ensure interval doesn't keep the process alive
       if (poll && typeof poll === 'object' && 'unref' in poll) {
-        (poll as NodeJS.Timeout).unref();
+        poll.unref();
       }
     });
 
@@ -289,7 +291,7 @@ export class WasmSandbox implements Sandbox {
       const paths = mode === 'write' ? allowedWritePaths : allAllowed;
       const resolved = require('node:path').resolve(filePath);
       return paths.some((allowed: string) => {
-        const resolvedAllowed = require('node:path').resolve(allowed);
+        const resolvedAllowed = String(require('node:path').resolve(allowed));
         return resolved === resolvedAllowed || resolved.startsWith(resolvedAllowed + '/');
       });
     };

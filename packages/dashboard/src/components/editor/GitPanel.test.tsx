@@ -43,7 +43,12 @@ describe('GitPanel', () => {
         return { output: 'main', error: '', exitCode: 0, cwd: '/tmp/repo' };
       }
       if (cmd === 'git status --porcelain') {
-        return { output: 'M  src/index.ts\n?? newfile.txt', error: '', exitCode: 0, cwd: '/tmp/repo' };
+        return {
+          output: 'M  src/index.ts\n?? newfile.txt',
+          error: '',
+          exitCode: 0,
+          cwd: '/tmp/repo',
+        };
       }
       if (cmd === 'git diff --cached') {
         return { output: '+added line', error: '', exitCode: 0, cwd: '/tmp/repo' };
@@ -111,10 +116,7 @@ describe('GitPanel', () => {
     await user.click(commitBtn);
 
     await waitFor(() => {
-      expect(mockExec).toHaveBeenCalledWith(
-        expect.stringContaining('git commit -m'),
-        '/tmp/repo'
-      );
+      expect(mockExec).toHaveBeenCalledWith(expect.stringContaining('git commit -m'), '/tmp/repo');
     });
   });
 

@@ -956,7 +956,7 @@ export class BrainManager {
   applyCognitiveRanking(memories: Memory[], nowMs: number): Memory[] {
     if (!this.cognitiveEnabled || memories.length === 0) return memories;
 
-    const cfg = this.config.cognitiveMemory!;
+    const cfg = this.config.cognitiveMemory;
     const threshold = cfg.retrievalThreshold;
 
     const scored = memories.map((m) => {
@@ -1050,7 +1050,7 @@ export class BrainManager {
   // ── Working Memory (Phase 125-B) ─────────────────────────
 
   /** Get items currently in the working memory buffer. */
-  getWorkingMemoryItems(): Array<{ id: string; content: string; score: number; source: string }> {
+  getWorkingMemoryItems(): { id: string; content: string; score: number; source: string }[] {
     if (!this.workingMemoryEnabled) return [];
     return this.deps.workingMemoryBuffer!.getItems();
   }

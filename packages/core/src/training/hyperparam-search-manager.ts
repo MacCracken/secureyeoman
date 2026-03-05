@@ -23,8 +23,7 @@ function rowToSearch(row: Record<string, unknown>): HyperparamSearch {
     bestMetricValue: (row.best_metric_value as number) ?? null,
     createdAt:
       row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at ?? ''),
-    completedAt:
-      row.completed_at instanceof Date ? row.completed_at.toISOString() : null,
+    completedAt: row.completed_at instanceof Date ? row.completed_at.toISOString() : null,
   };
 }
 
@@ -98,9 +97,13 @@ export class HyperparamSearchManager {
       try {
         const job = await this.deps.finetuneManager.createJob({
           name: `${search.name}-trial-${trialConfig._trialIndex}`,
-          baseModel: (trialConfig.baseModel as string) ?? (search.baseConfig.baseModel as string) ?? 'unknown',
+          baseModel:
+            (trialConfig.baseModel as string) ??
+            (search.baseConfig.baseModel as string) ??
+            'unknown',
           adapterName: `${search.name}-trial-${trialConfig._trialIndex}`,
-          datasetPath: (trialConfig.datasetPath as string) ?? (search.baseConfig.datasetPath as string) ?? '',
+          datasetPath:
+            (trialConfig.datasetPath as string) ?? (search.baseConfig.datasetPath as string) ?? '',
           loraRank: trialConfig.loraRank as number | undefined,
           loraAlpha: trialConfig.loraAlpha as number | undefined,
           batchSize: trialConfig.batchSize as number | undefined,
@@ -113,13 +116,17 @@ export class HyperparamSearchManager {
 
         await this.deps.finetuneManager.startJob(job.id);
       } catch (err) {
-        this.deps.logger.error('Failed to create trial job', { error: err instanceof Error ? err.message : String(err) });
+        this.deps.logger.error('Failed to create trial job', {
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
     }
 
     // Watch for completion in background
-    this._watchCompletion(id).catch((err) => {
-      this.deps.logger.error('Search completion watch error', { error: err instanceof Error ? err.message : String(err) });
+    this._watchCompletion(id).catch((err: unknown) => {
+      this.deps.logger.error('Search completion watch error', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     });
   }
 
@@ -144,7 +151,11 @@ export class HyperparamSearchManager {
     const combinations: Record<string, unknown>[] = [];
     const values = keys.map((k) => (Array.isArray(space[k]) ? space[k] : [space[k]]));
 
-    function* cartesian(arrays: unknown[][], idx = 0, current: unknown[] = []): Generator<unknown[]> {
+    function* cartesian(
+      arrays: unknown[][],
+      idx = 0,
+      current: unknown[] = []
+    ): Generator<unknown[]> {
       if (idx === arrays.length) {
         yield [...current];
         return;

@@ -760,7 +760,12 @@ export interface ConversationMessageResponse {
   tokensUsed: number | null;
   brainContext: BrainContext | null;
   creationEvents: CreationEvent[] | null;
-  citationsMeta?: { sources: SourceReference[]; citationsEnabled: boolean; groundednessMode?: string; groundingScore?: number } | null;
+  citationsMeta?: {
+    sources: SourceReference[];
+    citationsEnabled: boolean;
+    groundednessMode?: string;
+    groundingScore?: number;
+  } | null;
   groundingScore?: number | null;
   createdAt: number;
 }
@@ -799,7 +804,12 @@ export interface ChatMessage {
   creationEvents?: CreationEvent[];
   toolCalls?: ToolCallRecord[];
   thinkingContent?: string;
-  citationsMeta?: { sources: SourceReference[]; citationsEnabled: boolean; groundednessMode?: string; groundingScore?: number } | null;
+  citationsMeta?: {
+    sources: SourceReference[];
+    citationsEnabled: boolean;
+    groundednessMode?: string;
+    groundingScore?: number;
+  } | null;
   groundingScore?: number | null;
 }
 

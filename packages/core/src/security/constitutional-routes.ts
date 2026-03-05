@@ -13,7 +13,7 @@ import { ConstitutionalEngine } from './constitutional.js';
 
 export function registerConstitutionalRoutes(
   app: FastifyInstance,
-  secureYeoman: SecureYeoman,
+  secureYeoman: SecureYeoman
 ): void {
   const config = secureYeoman.getConfig().security.constitutional;
   if (!config.enabled) return;
@@ -60,7 +60,7 @@ export function registerConstitutionalRoutes(
           weight: p.weight,
         })),
       });
-    },
+    }
   );
 
   // POST /api/v1/security/constitutional/critique
@@ -68,7 +68,7 @@ export function registerConstitutionalRoutes(
     '/api/v1/security/constitutional/critique',
     async (
       req: FastifyRequest<{ Body: { prompt: string; response: string } }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       const { prompt, response } = req.body ?? {};
       if (!prompt || !response) {
@@ -81,7 +81,7 @@ export function registerConstitutionalRoutes(
         critiques,
         violationCount: critiques.filter((c) => c.violated).length,
       });
-    },
+    }
   );
 
   // POST /api/v1/security/constitutional/revise
@@ -89,7 +89,7 @@ export function registerConstitutionalRoutes(
     '/api/v1/security/constitutional/revise',
     async (
       req: FastifyRequest<{ Body: { prompt: string; response: string } }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       const { prompt, response } = req.body ?? {};
       if (!prompt || !response) {
@@ -100,10 +100,7 @@ export function registerConstitutionalRoutes(
       const revision = await eng.critiqueAndRevise(prompt, response);
 
       // Record preference pair if configured
-      if (
-        revision.revised &&
-        config.recordPreferencePairs
-      ) {
+      if (revision.revised && config.recordPreferencePairs) {
         try {
           const prefMgr = secureYeoman.getPreferenceManager?.();
           if (prefMgr) {
@@ -127,6 +124,6 @@ export function registerConstitutionalRoutes(
       }
 
       return reply.send(revision);
-    },
+    }
   );
 }

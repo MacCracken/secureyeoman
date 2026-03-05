@@ -183,7 +183,7 @@ export class TrainingModule extends BaseModule {
     this.hyperparamSearchManager = new HyperparamSearchManager({
       pool,
       logger: this.logger.child({ component: 'HyperparamSearchManager' }),
-      finetuneManager: this.finetuneManager!,
+      finetuneManager: this.finetuneManager,
     });
     this.logger.debug('Advanced Training managers initialized');
 

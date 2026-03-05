@@ -429,9 +429,7 @@ export class MarketplaceManager {
           limit: 1000,
         });
         const communityDefsByName = new Map(
-          allDefs
-            .filter((d) => (d as any).createdBy === 'community')
-            .map((d) => [d.name, d])
+          allDefs.filter((d) => (d as any).createdBy === 'community').map((d) => [d.name, d])
         );
 
         for (const filePath of workflowFiles) {
@@ -504,27 +502,30 @@ export class MarketplaceManager {
               continue;
             }
             if (syncedWorkflowNames.has(data.name)) {
-              this.logger.warn(`Skipped directory workflow "${data.name}" — already synced from JSON`);
+              this.logger.warn(
+                `Skipped directory workflow "${data.name}" — already synced from JSON`
+              );
               continue;
             }
 
             // Read README.md as description fallback
             const readmeContent = await this.readOptionalMd(path.join(dirPath, 'README.md'));
-            const description = typeof data.description === 'string'
-              ? data.description
-              : readmeContent ?? '';
+            const description =
+              typeof data.description === 'string' ? data.description : (readmeContent ?? '');
 
             // Inject step prompts from steps/ markdown files
-            const steps = await Promise.all((data.steps as Array<Record<string, unknown>>).map(async (step) => {
-              const stepId = String(step.id ?? '');
-              const stepMdPath = path.join(dirPath, 'steps', `${stepId}.md`);
-              const stepPrompt = await this.readOptionalMd(stepMdPath);
-              if (stepPrompt !== null) {
-                const config = (step.config ?? {}) as Record<string, unknown>;
-                return { ...step, config: { ...config, prompt: stepPrompt } };
-              }
-              return step;
-            }));
+            const steps = await Promise.all(
+              (data.steps as Record<string, unknown>[]).map(async (step) => {
+                const stepId = String(step.id ?? '');
+                const stepMdPath = path.join(dirPath, 'steps', `${stepId}.md`);
+                const stepPrompt = await this.readOptionalMd(stepMdPath);
+                if (stepPrompt !== null) {
+                  const config = (step.config ?? {}) as Record<string, unknown>;
+                  return { ...step, config: { ...config, prompt: stepPrompt } };
+                }
+                return step;
+              })
+            );
 
             const workflowName = data.name;
             const existing = communityDefsByName.get(workflowName);
@@ -657,23 +658,24 @@ export class MarketplaceManager {
 
             // Read README.md as description fallback
             const readmeContent = await this.readOptionalMd(path.join(dirPath, 'README.md'));
-            const description = typeof data.description === 'string'
-              ? data.description
-              : readmeContent ?? '';
+            const description =
+              typeof data.description === 'string' ? data.description : (readmeContent ?? '');
 
             // Inject role prompts from roles/ markdown files
             const swarmName = data.name;
-            const roles = await Promise.all((data.roles as Record<string, unknown>[]).map(async (r) => {
-              const roleName = String(r.role ?? '');
-              const roleMdPath = path.join(dirPath, 'roles', `${roleName}.md`);
-              const rolePrompt = await this.readOptionalMd(roleMdPath);
-              return {
-                role: roleName,
-                profileName: String(r.profileName ?? ''),
-                description: typeof r.description === 'string' ? r.description : '',
-                ...(rolePrompt !== null ? { systemPromptOverride: rolePrompt } : {}),
-              };
-            }));
+            const roles = await Promise.all(
+              (data.roles as Record<string, unknown>[]).map(async (r) => {
+                const roleName = String(r.role ?? '');
+                const roleMdPath = path.join(dirPath, 'roles', `${roleName}.md`);
+                const rolePrompt = await this.readOptionalMd(roleMdPath);
+                return {
+                  role: roleName,
+                  profileName: String(r.profileName ?? ''),
+                  description: typeof r.description === 'string' ? r.description : '',
+                  ...(rolePrompt !== null ? { systemPromptOverride: rolePrompt } : {}),
+                };
+              })
+            );
 
             const { templates } = await this.swarmManager.listTemplates({ limit: 1000 });
             const existing = templates.find((t) => t.name === swarmName && !t.isBuiltin);
@@ -723,9 +725,7 @@ export class MarketplaceManager {
               continue;
             }
             if (!Array.isArray(data.members) || (data.members as unknown[]).length === 0) {
-              result.errors.push(
-                `Skipped council ${filePath}: missing required field "members"`
-              );
+              result.errors.push(`Skipped council ${filePath}: missing required field "members"`);
               result.skipped++;
               continue;
             }
@@ -753,7 +753,7 @@ export class MarketplaceManager {
               await this.councilManager.updateTemplate(existing.id, {
                 description: typeof data.description === 'string' ? data.description : undefined,
                 members,
-                facilitatorProfile: data.facilitatorProfile as string,
+                facilitatorProfile: data.facilitatorProfile,
                 deliberationStrategy: (typeof data.deliberationStrategy === 'string'
                   ? data.deliberationStrategy
                   : 'rounds') as any,
@@ -768,7 +768,7 @@ export class MarketplaceManager {
                 name: councilName,
                 description: typeof data.description === 'string' ? data.description : '',
                 members,
-                facilitatorProfile: data.facilitatorProfile as string,
+                facilitatorProfile: data.facilitatorProfile,
                 deliberationStrategy: (typeof data.deliberationStrategy === 'string'
                   ? data.deliberationStrategy
                   : 'rounds') as any,
@@ -808,10 +808,9 @@ export class MarketplaceManager {
           }
 
           try {
-            const metadata = JSON.parse(await fs.promises.readFile(metadataPath, 'utf-8')) as Record<
-              string,
-              unknown
-            >;
+            const metadata = JSON.parse(
+              await fs.promises.readFile(metadataPath, 'utf-8')
+            ) as Record<string, unknown>;
 
             if (!metadata.name || typeof metadata.name !== 'string') {
               result.errors.push(

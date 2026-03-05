@@ -77,14 +77,14 @@ describe('DocumentManager — Provenance (Phase 110)', () => {
 
     it('computes weighted average correctly for mixed scores', async () => {
       const scores: ProvenanceScores = {
-        authority: 0.8,    // weight 0.20 → 0.16
-        currency: 0.6,    // weight 0.10 → 0.06
+        authority: 0.8, // weight 0.20 → 0.16
+        currency: 0.6, // weight 0.10 → 0.06
         objectivity: 0.7, // weight 0.10 → 0.07
-        accuracy: 0.9,    // weight 0.20 → 0.18
+        accuracy: 0.9, // weight 0.20 → 0.18
         methodology: 0.5, // weight 0.10 → 0.05
-        coverage: 0.4,    // weight 0.05 → 0.02
+        coverage: 0.4, // weight 0.05 → 0.02
         reliability: 0.8, // weight 0.15 → 0.12
-        provenance: 0.7,  // weight 0.10 → 0.07
+        provenance: 0.7, // weight 0.10 → 0.07
       };
       // Expected: 0.16 + 0.06 + 0.07 + 0.18 + 0.05 + 0.02 + 0.12 + 0.07 = 0.73
 
@@ -118,8 +118,14 @@ describe('DocumentManager — Provenance (Phase 110)', () => {
 
     it('returns the updated document', async () => {
       const scores: ProvenanceScores = {
-        authority: 0.9, currency: 0.8, objectivity: 0.7, accuracy: 0.9,
-        methodology: 0.6, coverage: 0.5, reliability: 0.8, provenance: 0.7,
+        authority: 0.9,
+        currency: 0.8,
+        objectivity: 0.7,
+        accuracy: 0.9,
+        methodology: 0.6,
+        coverage: 0.5,
+        reliability: 0.8,
+        provenance: 0.7,
       };
       const mockDoc = { id: 'doc-1', trustScore: 0.75, sourceQuality: scores };
 

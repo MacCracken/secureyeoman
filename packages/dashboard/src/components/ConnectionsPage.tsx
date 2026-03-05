@@ -3249,105 +3249,105 @@ function LocalServerCard({
 
           {/* CI/CD Platforms — Phase 90 */}
           <FeatureLock feature="cicd_integration">
-          <div className="mt-3 pt-2 border-t border-border/50">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5 flex items-center gap-1">
-              <GitBranch className="w-3 h-3" />
-              CI/CD Platforms
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {/* GitHub Actions */}
-              <label
-                className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
-                title="GitHub Actions tools (gha_*) — list/trigger/cancel workflows, fetch logs. Reuses existing GitHub OAuth token."
-              >
-                <GitBranch className="w-4 h-4 text-muted-foreground shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <span className="text-xs font-medium">GitHub Actions</span>
-                  <p className="text-[10px] text-muted-foreground truncate">
-                    gha_list_workflows, dispatch, cancel, logs
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={featureConfig.exposeGithubActions ?? false}
-                  onChange={(e) => {
-                    onFeatureToggle({ exposeGithubActions: e.target.checked });
-                  }}
-                  disabled={isFeatureToggling}
-                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
-                />
-              </label>
+            <div className="mt-3 pt-2 border-t border-border/50">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5 flex items-center gap-1">
+                <GitBranch className="w-3 h-3" />
+                CI/CD Platforms
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {/* GitHub Actions */}
+                <label
+                  className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                  title="GitHub Actions tools (gha_*) — list/trigger/cancel workflows, fetch logs. Reuses existing GitHub OAuth token."
+                >
+                  <GitBranch className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-medium">GitHub Actions</span>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      gha_list_workflows, dispatch, cancel, logs
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={featureConfig.exposeGithubActions ?? false}
+                    onChange={(e) => {
+                      onFeatureToggle({ exposeGithubActions: e.target.checked });
+                    }}
+                    disabled={isFeatureToggling}
+                    className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                  />
+                </label>
 
-              {/* Jenkins */}
-              <label
-                className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
-                title="Jenkins tools (jenkins_*) — list jobs, trigger/get builds, fetch logs. Requires jenkinsUrl, username, API token."
-              >
-                <Wrench className="w-4 h-4 text-muted-foreground shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <span className="text-xs font-medium">Jenkins</span>
-                  <p className="text-[10px] text-muted-foreground truncate">
-                    jenkins_list_jobs, trigger_build, get_build_log
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={featureConfig.exposeJenkins ?? false}
-                  onChange={(e) => {
-                    onFeatureToggle({ exposeJenkins: e.target.checked });
-                  }}
-                  disabled={isFeatureToggling}
-                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
-                />
-              </label>
+                {/* Jenkins */}
+                <label
+                  className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                  title="Jenkins tools (jenkins_*) — list jobs, trigger/get builds, fetch logs. Requires jenkinsUrl, username, API token."
+                >
+                  <Wrench className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-medium">Jenkins</span>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      jenkins_list_jobs, trigger_build, get_build_log
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={featureConfig.exposeJenkins ?? false}
+                    onChange={(e) => {
+                      onFeatureToggle({ exposeJenkins: e.target.checked });
+                    }}
+                    disabled={isFeatureToggling}
+                    className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                  />
+                </label>
 
-              {/* GitLab CI */}
-              <label
-                className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
-                title="GitLab CI tools (gitlab_*) — list/trigger/cancel pipelines, fetch job logs. Requires gitlabToken."
-              >
-                <GitMerge className="w-4 h-4 text-muted-foreground shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <span className="text-xs font-medium">GitLab CI</span>
-                  <p className="text-[10px] text-muted-foreground truncate">
-                    gitlab_list_pipelines, trigger, cancel, job_log
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={featureConfig.exposeGitlabCi ?? false}
-                  onChange={(e) => {
-                    onFeatureToggle({ exposeGitlabCi: e.target.checked });
-                  }}
-                  disabled={isFeatureToggling}
-                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
-                />
-              </label>
+                {/* GitLab CI */}
+                <label
+                  className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                  title="GitLab CI tools (gitlab_*) — list/trigger/cancel pipelines, fetch job logs. Requires gitlabToken."
+                >
+                  <GitMerge className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-medium">GitLab CI</span>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      gitlab_list_pipelines, trigger, cancel, job_log
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={featureConfig.exposeGitlabCi ?? false}
+                    onChange={(e) => {
+                      onFeatureToggle({ exposeGitlabCi: e.target.checked });
+                    }}
+                    disabled={isFeatureToggling}
+                    className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                  />
+                </label>
 
-              {/* Northflank */}
-              <label
-                className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
-                title="Northflank tools (northflank_*) — list services, trigger builds/deployments. Requires northflankApiKey."
-              >
-                <Zap className="w-4 h-4 text-muted-foreground shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <span className="text-xs font-medium">Northflank</span>
-                  <p className="text-[10px] text-muted-foreground truncate">
-                    northflank_list_services, trigger_build, deploy
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={featureConfig.exposeNorthflank ?? false}
-                  onChange={(e) => {
-                    onFeatureToggle({ exposeNorthflank: e.target.checked });
-                  }}
-                  disabled={isFeatureToggling}
-                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
-                />
-              </label>
+                {/* Northflank */}
+                <label
+                  className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                  title="Northflank tools (northflank_*) — list services, trigger builds/deployments. Requires northflankApiKey."
+                >
+                  <Zap className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-medium">Northflank</span>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      northflank_list_services, trigger_build, deploy
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={featureConfig.exposeNorthflank ?? false}
+                    onChange={(e) => {
+                      onFeatureToggle({ exposeNorthflank: e.target.checked });
+                    }}
+                    disabled={isFeatureToggling}
+                    className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                  />
+                </label>
+              </div>
             </div>
-          </div>
           </FeatureLock>
 
           {/* Markdown for Agents — Content-Signal enforcement policy */}
@@ -4235,7 +4235,10 @@ const OAUTH_PROVIDER_META: Record<
 const AVAILABLE_OAUTH_PROVIDERS = ['google', 'github'];
 
 /** Known OAuth provider env var names for credential setup */
-const OAUTH_CREDENTIAL_KEYS: Record<string, { clientIdKey: string; clientSecretKey: string; label: string; note?: string }> = {
+const OAUTH_CREDENTIAL_KEYS: Record<
+  string,
+  { clientIdKey: string; clientSecretKey: string; label: string; note?: string }
+> = {
   google: {
     clientIdKey: 'GOOGLE_OAUTH_CLIENT_ID',
     clientSecretKey: 'GOOGLE_OAUTH_CLIENT_SECRET',
@@ -4249,8 +4252,16 @@ const OAUTH_CREDENTIAL_KEYS: Record<string, { clientIdKey: string; clientSecretK
   },
 };
 
-function OAuthCredentialSetup({ configuredIds, onReload }: { configuredIds: Set<string>; onReload: () => void }) {
-  const [forms, setForms] = useState<Record<string, { clientId: string; clientSecret: string }>>({});
+function OAuthCredentialSetup({
+  configuredIds,
+  onReload,
+}: {
+  configuredIds: Set<string>;
+  onReload: () => void;
+}) {
+  const [forms, setForms] = useState<Record<string, { clientId: string; clientSecret: string }>>(
+    {}
+  );
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
@@ -4275,7 +4286,9 @@ function OAuthCredentialSetup({ configuredIds, onReload }: { configuredIds: Set<
       setSaved(providerId);
       setForms((prev) => ({ ...prev, [providerId]: { clientId: '', clientSecret: '' } }));
       onReload();
-      setTimeout(() => setSaved(null), 3000);
+      setTimeout(() => {
+        setSaved(null);
+      }, 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save credentials');
     } finally {
@@ -4290,9 +4303,7 @@ function OAuthCredentialSetup({ configuredIds, onReload }: { configuredIds: Set<
         Enter OAuth client credentials for providers not yet configured. Credentials are stored
         securely in Security &gt; Secrets.
       </p>
-      {error && (
-        <p className="text-sm text-destructive">{error}</p>
-      )}
+      {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {unconfigured.map(([id, creds]) => {
           const form = forms[id] ?? { clientId: '', clientSecret: '' };
@@ -4308,31 +4319,29 @@ function OAuthCredentialSetup({ configuredIds, onReload }: { configuredIds: Set<
                   </span>
                 )}
               </div>
-              {creds.note && (
-                <p className="text-xs text-muted-foreground">{creds.note}</p>
-              )}
+              {creds.note && <p className="text-xs text-muted-foreground">{creds.note}</p>}
               <input
                 type="text"
                 placeholder="Client ID"
                 value={form.clientId}
-                onChange={(e) =>
+                onChange={(e) => {
                   setForms((prev) => ({
                     ...prev,
                     [id]: { ...form, clientId: e.target.value },
-                  }))
-                }
+                  }));
+                }}
                 className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <input
                 type="password"
                 placeholder="Client Secret"
                 value={form.clientSecret}
-                onChange={(e) =>
+                onChange={(e) => {
                   setForms((prev) => ({
                     ...prev,
                     [id]: { ...form, clientSecret: e.target.value },
-                  }))
-                }
+                  }));
+                }}
                 className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <button

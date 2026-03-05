@@ -100,10 +100,7 @@ export class CognitiveMemoryStorage extends PgBaseStorage {
    * Spreading activation: given a set of source IDs, return the top associated
    * IDs with their summed weights.
    */
-  async getTopAssociatedIds(
-    sourceIds: string[],
-    limit: number
-  ): Promise<Map<string, number>> {
+  async getTopAssociatedIds(sourceIds: string[], limit: number): Promise<Map<string, number>> {
     if (sourceIds.length === 0) return new Map();
 
     const rows = await this.queryMany<{ related_id: string; total_weight: number }>(
@@ -131,22 +128,17 @@ export class CognitiveMemoryStorage extends PgBaseStorage {
    * Multiply all association weights by decayFactor, delete near-zero entries.
    */
   async decayAssociations(decayFactor: number): Promise<number> {
-    await this.execute(
-      `UPDATE brain.associations SET weight = weight * $1`,
-      [decayFactor]
-    );
-    return this.execute(
-      `DELETE FROM brain.associations WHERE weight < 0.001`
-    );
+    await this.execute(`UPDATE brain.associations SET weight = weight * $1`, [decayFactor]);
+    return this.execute(`DELETE FROM brain.associations WHERE weight < 0.001`);
   }
 
   // ── Confidence ──────────────────────────────────────────────
 
   async updateDocumentConfidence(docId: string, confidence: number): Promise<void> {
-    await this.execute(
-      `UPDATE brain.documents SET confidence = $2 WHERE id = $1`,
-      [docId, confidence]
-    );
+    await this.execute(`UPDATE brain.documents SET confidence = $2 WHERE id = $1`, [
+      docId,
+      confidence,
+    ]);
   }
 
   // ── Activation Queries ──────────────────────────────────────
@@ -174,9 +166,7 @@ export class CognitiveMemoryStorage extends PgBaseStorage {
   async getCognitiveStats(personalityId?: string): Promise<CognitiveStats> {
     const now = Date.now();
 
-    const pidFilter = personalityId
-      ? `WHERE personality_id = $2 OR personality_id IS NULL`
-      : '';
+    const pidFilter = personalityId ? `WHERE personality_id = $2 OR personality_id IS NULL` : '';
     const pidParams = personalityId ? [now, personalityId] : [now];
 
     const topMemories = await this.queryMany<{ id: string; activation: number }>(

@@ -61,9 +61,7 @@ function CheckpointBrowser({
   resuming: boolean;
 }) {
   if (checkpoints.length === 0) {
-    return (
-      <div className="text-xs text-zinc-500">No checkpoints yet</div>
-    );
+    return <div className="text-xs text-zinc-500">No checkpoints yet</div>;
   }
 
   return (
@@ -76,12 +74,12 @@ function CheckpointBrowser({
           <div className="flex items-center gap-3 text-xs">
             <span className="font-mono text-zinc-300">Step {cp.step}</span>
             <span className="text-zinc-400">Loss: {cp.loss.toFixed(4)}</span>
-            <span className="text-zinc-500">
-              {new Date(cp.date).toLocaleDateString()}
-            </span>
+            <span className="text-zinc-500">{new Date(cp.date).toLocaleDateString()}</span>
           </div>
           <button
-            onClick={() => onResume(cp.id)}
+            onClick={() => {
+              onResume(cp.id);
+            }}
             disabled={resuming}
             className="rounded bg-blue-600 px-2 py-0.5 text-xs text-white hover:bg-blue-500 disabled:opacity-50"
           >
@@ -98,7 +96,11 @@ export default function AdvancedTrainingWidget() {
   const [method, setMethod] = useState<TrainingMethod>('sft');
   const [gpuCount, setGpuCount] = useState(1);
 
-  const { data: jobs, isLoading, error } = useQuery<TrainingJob[]>({
+  const {
+    data: jobs,
+    isLoading,
+    error,
+  } = useQuery<TrainingJob[]>({
     queryKey: ['advanced-training-jobs'],
     queryFn: () => fetchApi('/api/v1/training/advanced/jobs'),
     refetchInterval: 10_000,
@@ -127,16 +129,12 @@ export default function AdvancedTrainingWidget() {
   });
 
   if (isLoading) {
-    return (
-      <div className="p-4 text-sm text-zinc-400">Loading training data...</div>
-    );
+    return <div className="p-4 text-sm text-zinc-400">Loading training data...</div>;
   }
 
   if (error) {
     return (
-      <div className="p-4 text-sm text-red-400">
-        Error loading training data: {(error as Error).message}
-      </div>
+      <div className="p-4 text-sm text-red-400">Error loading training data: {error.message}</div>
     );
   }
 
@@ -151,25 +149,22 @@ export default function AdvancedTrainingWidget() {
 
   return (
     <div className="flex flex-col gap-3 p-4 text-sm">
-      <h3 className="text-base font-semibold text-zinc-200">
-        Advanced Training
-      </h3>
+      <h3 className="text-base font-semibold text-zinc-200">Advanced Training</h3>
 
       {/* Training Method Selector */}
       <div className="rounded border border-zinc-700 p-3">
         <div className="mb-2 font-medium text-zinc-300">Training Method</div>
         <div className="space-y-1">
           {methods.map((m) => (
-            <label
-              key={m.value}
-              className="flex cursor-pointer items-center gap-2"
-            >
+            <label key={m.value} className="flex cursor-pointer items-center gap-2">
               <input
                 type="radio"
                 name="training-method"
                 value={m.value}
                 checked={method === m.value}
-                onChange={() => setMethod(m.value)}
+                onChange={() => {
+                  setMethod(m.value);
+                }}
                 className="accent-blue-500"
               />
               <span className="text-zinc-200">{m.label}</span>
@@ -188,18 +183,20 @@ export default function AdvancedTrainingWidget() {
             min={1}
             max={8}
             value={gpuCount}
-            onChange={(e) => setGpuCount(Number(e.target.value))}
+            onChange={(e) => {
+              setGpuCount(Number(e.target.value));
+            }}
             className="flex-1 accent-blue-500"
           />
-          <span className="w-6 text-center font-mono text-zinc-200">
-            {gpuCount}
-          </span>
+          <span className="w-6 text-center font-mono text-zinc-200">{gpuCount}</span>
         </div>
       </div>
 
       {/* Start Button */}
       <button
-        onClick={() => startMutation.mutate({ method, gpuCount })}
+        onClick={() => {
+          startMutation.mutate({ method, gpuCount });
+        }}
         disabled={startMutation.isPending || !!activeJob}
         className="rounded bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50"
       >
@@ -207,9 +204,7 @@ export default function AdvancedTrainingWidget() {
       </button>
 
       {startMutation.isError && (
-        <div className="text-xs text-red-400">
-          Failed to start: {(startMutation.error as Error).message}
-        </div>
+        <div className="text-xs text-red-400">Failed to start: {startMutation.error.message}</div>
       )}
 
       {/* Active Job Progress */}
@@ -239,7 +234,9 @@ export default function AdvancedTrainingWidget() {
         <div className="mb-2 font-medium text-zinc-300">Checkpoints</div>
         <CheckpointBrowser
           checkpoints={allCheckpoints}
-          onResume={(id) => resumeMutation.mutate(id)}
+          onResume={(id) => {
+            resumeMutation.mutate(id);
+          }}
           resuming={resumeMutation.isPending}
         />
       </div>

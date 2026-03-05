@@ -197,10 +197,7 @@ export class SraStorage extends PgBaseStorage {
   }
 
   async deleteBlueprint(id: string): Promise<boolean> {
-    const count = await this.execute(
-      `DELETE FROM security.sra_blueprints WHERE id = $1`,
-      [id]
-    );
+    const count = await this.execute(`DELETE FROM security.sra_blueprints WHERE id = $1`, [id]);
     return count > 0;
   }
 
@@ -480,9 +477,7 @@ export class SraStorage extends PgBaseStorage {
       this.queryMany<{ framework: string; count: string }>(
         `SELECT framework, COUNT(*)::text AS count FROM security.sra_blueprints GROUP BY framework`
       ),
-      this.queryOne<{ count: string }>(
-        `SELECT COUNT(*) AS count FROM security.sra_blueprints`
-      ),
+      this.queryOne<{ count: string }>(`SELECT COUNT(*) AS count FROM security.sra_blueprints`),
     ]);
 
     const byProvider: Record<string, number> = {};
@@ -505,9 +500,7 @@ export class SraStorage extends PgBaseStorage {
     recent: SraAssessment[];
   }> {
     const [totalRow, avgRow, recentRows] = await Promise.all([
-      this.queryOne<{ count: string }>(
-        `SELECT COUNT(*) AS count FROM security.sra_assessments`
-      ),
+      this.queryOne<{ count: string }>(`SELECT COUNT(*) AS count FROM security.sra_assessments`),
       this.queryOne<{ avg: string | null }>(
         `SELECT AVG((summary->>'complianceScore')::numeric)::text AS avg
          FROM security.sra_assessments

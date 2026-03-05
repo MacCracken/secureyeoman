@@ -7,12 +7,7 @@
  * Compute a unified diff between two strings.
  * Returns empty string when inputs are identical.
  */
-export function computeUnifiedDiff(
-  a: string,
-  b: string,
-  labelA = 'a',
-  labelB = 'b'
-): string {
+export function computeUnifiedDiff(a: string, b: string, labelA = 'a', labelB = 'b'): string {
   const linesA = a.split('\n');
   const linesB = b.split('\n');
 

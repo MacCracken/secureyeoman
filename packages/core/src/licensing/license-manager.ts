@@ -66,7 +66,8 @@ export class LicenseManager {
   private enforcementEnabled: boolean;
 
   constructor(licenseKey?: string, enforcement?: boolean) {
-    this.enforcementEnabled = enforcement ?? process.env.SECUREYEOMAN_LICENSE_ENFORCEMENT === 'true';
+    this.enforcementEnabled =
+      enforcement ?? process.env.SECUREYEOMAN_LICENSE_ENFORCEMENT === 'true';
     if (licenseKey) {
       try {
         this.claims = LicenseManager.validate(licenseKey);

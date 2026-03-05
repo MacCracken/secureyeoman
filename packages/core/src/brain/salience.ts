@@ -38,7 +38,7 @@ export interface SalienceWeights {
 }
 
 export const DEFAULT_SALIENCE_WEIGHTS: SalienceWeights = {
-  urgency: 0.30,
+  urgency: 0.3,
   error: 0.25,
   frustration: 0.15,
   success: 0.15,
@@ -123,7 +123,7 @@ export class SalienceClassifier {
     if (this.anchors) return;
     if (this.initPromise) return this.initPromise;
 
-    this.initPromise = this.doInitialize().catch((err) => {
+    this.initPromise = this.doInitialize().catch((err: unknown) => {
       // Clear so next call retries instead of returning a permanently rejected promise
       this.initPromise = null;
       throw err;
@@ -134,9 +134,10 @@ export class SalienceClassifier {
   private async doInitialize(): Promise<void> {
     const anchors = new Map<keyof SalienceWeights, number[][]>();
 
-    for (const [dimension, texts] of Object.entries(ANCHOR_TEXTS) as Array<
-      [keyof SalienceWeights, string[]]
-    >) {
+    for (const [dimension, texts] of Object.entries(ANCHOR_TEXTS) as [
+      keyof SalienceWeights,
+      string[],
+    ][]) {
       const embeddings = await this.embeddingProvider.embed(texts);
       anchors.set(dimension, embeddings);
     }
@@ -188,8 +189,8 @@ export class SalienceClassifier {
     let composite = 0;
     let totalWeight = 0;
     for (const [dim, weight] of Object.entries(this.weights)) {
-      composite += (scores[dim] ?? 0) * weight;
-      totalWeight += weight;
+      composite += (scores[dim] ?? 0) * Number(weight);
+      totalWeight += Number(weight);
     }
     composite = totalWeight > 0 ? composite / totalWeight : 0;
 

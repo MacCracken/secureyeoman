@@ -120,7 +120,10 @@ export function registerConversationRoutes(
       if (!conversation) {
         return sendError(reply, 404, 'Conversation not found');
       }
-      const { limit, offset } = parsePagination(request.query, { maxLimit: 1000, defaultLimit: 1000 });
+      const { limit, offset } = parsePagination(request.query, {
+        maxLimit: 1000,
+        defaultLimit: 1000,
+      });
       const messages = await conversationStorage.getMessages(request.params.id, { limit, offset });
       return { ...conversation, messages };
     }

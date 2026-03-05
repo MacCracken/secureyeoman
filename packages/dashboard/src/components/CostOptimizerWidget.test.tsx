@@ -80,7 +80,7 @@ describe('CostOptimizerWidget', () => {
   it('shows loading state', () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(() => new Promise(() => {})),
+      vi.fn(() => new Promise(() => {}))
     );
     render(<CostOptimizerWidget />, { wrapper });
     expect(screen.getByText(/Loading cost analysis/i)).toBeTruthy();
@@ -92,7 +92,7 @@ describe('CostOptimizerWidget', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => mockAnalysis,
-      }),
+      })
     );
     render(<CostOptimizerWidget />, { wrapper });
     await waitFor(() => {
@@ -109,7 +109,7 @@ describe('CostOptimizerWidget', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => mockAnalysis,
-      }),
+      })
     );
     render(<CostOptimizerWidget />, { wrapper });
     await waitFor(() => {
@@ -125,7 +125,7 @@ describe('CostOptimizerWidget', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => mockAnalysis,
-      }),
+      })
     );
     render(<CostOptimizerWidget />, { wrapper });
     await waitFor(() => {
@@ -143,7 +143,7 @@ describe('CostOptimizerWidget', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => mockAnalysis,
-      }),
+      })
     );
     render(<CostOptimizerWidget />, { wrapper });
     await waitFor(() => {
@@ -160,7 +160,7 @@ describe('CostOptimizerWidget', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-      }),
+      })
     );
     render(<CostOptimizerWidget />, { wrapper });
     await waitFor(() => {
@@ -178,7 +178,7 @@ describe('CostOptimizerWidget', () => {
           routingSuggestions: [],
           potentialSavingsUsd: 0,
         }),
-      }),
+      })
     );
     render(<CostOptimizerWidget />, { wrapper });
     await waitFor(() => {
@@ -195,7 +195,7 @@ describe('CostOptimizerWidget', () => {
           ...mockAnalysis,
           perModelStats: [],
         }),
-      }),
+      })
     );
     render(<CostOptimizerWidget />, { wrapper });
     await waitFor(() => {

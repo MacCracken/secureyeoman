@@ -76,27 +76,27 @@ export class DelegationModule extends BaseModule {
       if (!this.subAgentStorage) {
         this.subAgentStorage = new SubAgentStorage();
       }
-      this.subAgentManager = new SubAgentManager(this.config!.delegation, {
+      this.subAgentManager = new SubAgentManager(this.config.delegation, {
         storage: this.subAgentStorage,
         aiClientConfig: {
-          model: this.config!.model,
+          model: this.config.model,
           retryConfig: {
-            maxRetries: this.config!.model.maxRetries,
-            baseDelayMs: this.config!.model.retryDelayMs,
+            maxRetries: this.config.model.maxRetries,
+            baseDelayMs: this.config.model.retryDelayMs,
           },
         },
         aiClientDeps: {
           auditChain: this.deps.getAuditChain() ?? undefined,
-          logger: this.logger!.child({ component: 'SubAgentAI' }),
+          logger: this.logger.child({ component: 'SubAgentAI' }),
         },
         mcpClient: this.deps.getMcpClientManager() ?? undefined,
         auditChain: this.deps.getAuditChain()!,
-        logger: this.logger!.child({ component: 'SubAgentManager' }),
+        logger: this.logger.child({ component: 'SubAgentManager' }),
         brainManager: this.deps.getBrainManager() ?? undefined,
-        securityConfig: this.config!.security,
+        securityConfig: this.config.security,
       });
       await this.subAgentManager.initialize();
-      this.logger!.debug('Sub-agent delegation system initialized');
+      this.logger.debug('Sub-agent delegation system initialized');
 
       // Swarm manager
       try {
@@ -107,12 +107,12 @@ export class DelegationModule extends BaseModule {
         this.swarmManager = new SwarmManager({
           storage: this.swarmStorage,
           subAgentManager: subMgr,
-          logger: this.logger!.child({ component: 'SwarmManager' }),
+          logger: this.logger.child({ component: 'SwarmManager' }),
         });
         await this.swarmManager.initialize();
-        this.logger!.debug('Swarm manager initialized');
+        this.logger.debug('Swarm manager initialized');
       } catch (swarmError) {
-        this.logger!.warn('Swarm manager initialization failed (non-fatal)', {
+        this.logger.warn('Swarm manager initialization failed (non-fatal)', {
           error: swarmError instanceof Error ? swarmError.message : 'Unknown error',
         });
       }
@@ -127,23 +127,23 @@ export class DelegationModule extends BaseModule {
           storage: this.teamStorage,
           subAgentManager: subMgr,
           aiClientConfig: {
-            model: this.config!.model,
+            model: this.config.model,
             retryConfig: {
-              maxRetries: this.config!.model.maxRetries,
-              baseDelayMs: this.config!.model.retryDelayMs,
+              maxRetries: this.config.model.maxRetries,
+              baseDelayMs: this.config.model.retryDelayMs,
             },
           },
           aiClientDeps: {
             auditChain: this.deps.getAuditChain() ?? undefined,
-            logger: this.logger!.child({ component: 'TeamManagerAI' }),
+            logger: this.logger.child({ component: 'TeamManagerAI' }),
           },
           auditChain: this.deps.getAuditChain(),
-          logger: this.logger!.child({ component: 'TeamManager' }),
+          logger: this.logger.child({ component: 'TeamManager' }),
         });
         await this.teamManager.initialize();
-        this.logger!.debug('Team manager initialized');
+        this.logger.debug('Team manager initialized');
       } catch (teamError) {
-        this.logger!.warn('Team manager initialization failed (non-fatal)', {
+        this.logger.warn('Team manager initialization failed (non-fatal)', {
           error: teamError instanceof Error ? teamError.message : 'Unknown error',
         });
       }
@@ -158,18 +158,18 @@ export class DelegationModule extends BaseModule {
           storage: this.councilStorage,
           subAgentManager: subMgrCouncil,
           aiClientConfig: {
-            model: this.config!.model,
+            model: this.config.model,
           },
           aiClientDeps: {
             auditChain: this.deps.getAuditChain() ?? undefined,
-            logger: this.logger!.child({ component: 'CouncilManagerAI' }),
+            logger: this.logger.child({ component: 'CouncilManagerAI' }),
           },
-          logger: this.logger!.child({ component: 'CouncilManager' }),
+          logger: this.logger.child({ component: 'CouncilManager' }),
         });
         await this.councilManager.initialize();
-        this.logger!.debug('Council manager initialized');
+        this.logger.debug('Council manager initialized');
       } catch (councilError) {
-        this.logger!.warn('Council manager initialization failed (non-fatal)', {
+        this.logger.warn('Council manager initialization failed (non-fatal)', {
           error: councilError instanceof Error ? councilError.message : 'Unknown error',
         });
       }
@@ -193,7 +193,7 @@ export class DelegationModule extends BaseModule {
           storage: this.workflowStorage,
           subAgentManager: subMgr2,
           swarmManager: this.swarmManager,
-          logger: this.logger!.child({ component: 'WorkflowManager' }),
+          logger: this.logger.child({ component: 'WorkflowManager' }),
           dataCurationManager: trainingMod?.getDataCurationManager() ?? null,
           distillationManager: trainingMod?.getDistillationManager() ?? null,
           finetuneManager: trainingMod?.getFinetuneManager() ?? null,
@@ -208,7 +208,7 @@ export class DelegationModule extends BaseModule {
           },
         });
         await this.workflowManager.initialize();
-        this.logger!.debug('Workflow manager initialized');
+        this.logger.debug('Workflow manager initialized');
 
         // Wire into marketplace for community sync
         this.deps.getMarketplaceManager()?.setDelegationManagers({
@@ -218,12 +218,12 @@ export class DelegationModule extends BaseModule {
           soulManager: this.deps.getSoulManager() ?? undefined,
         });
       } catch (workflowError) {
-        this.logger!.warn('Workflow manager initialization failed (non-fatal)', {
+        this.logger.warn('Workflow manager initialization failed (non-fatal)', {
           error: workflowError instanceof Error ? workflowError.message : 'Unknown error',
         });
       }
     } catch (error) {
-      this.logger!.warn('Sub-agent delegation initialization failed (non-fatal)', {
+      this.logger.warn('Sub-agent delegation initialization failed (non-fatal)', {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
@@ -280,16 +280,40 @@ export class DelegationModule extends BaseModule {
   }
 
   // --- Getters ---
-  getSubAgentStorage(): SubAgentStorage | null { return this.subAgentStorage; }
-  getSubAgentManager(): SubAgentManager | null { return this.subAgentManager; }
-  getSwarmStorage(): SwarmStorage | null { return this.swarmStorage; }
-  getSwarmManager(): SwarmManager | null { return this.swarmManager; }
-  getTeamStorage(): TeamStorage | null { return this.teamStorage; }
-  getTeamManager(): TeamManager | null { return this.teamManager; }
-  getCouncilStorage(): CouncilStorage | null { return this.councilStorage; }
-  getCouncilManager(): CouncilManager | null { return this.councilManager; }
-  getWorkflowStorage(): WorkflowStorage | null { return this.workflowStorage; }
-  getWorkflowManager(): WorkflowManager | null { return this.workflowManager; }
-  getWorkflowVersionStorage(): WorkflowVersionStorage | null { return this.workflowVersionStorage; }
-  getWorkflowVersionManager(): WorkflowVersionManager | null { return this.workflowVersionManager; }
+  getSubAgentStorage(): SubAgentStorage | null {
+    return this.subAgentStorage;
+  }
+  getSubAgentManager(): SubAgentManager | null {
+    return this.subAgentManager;
+  }
+  getSwarmStorage(): SwarmStorage | null {
+    return this.swarmStorage;
+  }
+  getSwarmManager(): SwarmManager | null {
+    return this.swarmManager;
+  }
+  getTeamStorage(): TeamStorage | null {
+    return this.teamStorage;
+  }
+  getTeamManager(): TeamManager | null {
+    return this.teamManager;
+  }
+  getCouncilStorage(): CouncilStorage | null {
+    return this.councilStorage;
+  }
+  getCouncilManager(): CouncilManager | null {
+    return this.councilManager;
+  }
+  getWorkflowStorage(): WorkflowStorage | null {
+    return this.workflowStorage;
+  }
+  getWorkflowManager(): WorkflowManager | null {
+    return this.workflowManager;
+  }
+  getWorkflowVersionStorage(): WorkflowVersionStorage | null {
+    return this.workflowVersionStorage;
+  }
+  getWorkflowVersionManager(): WorkflowVersionManager | null {
+    return this.workflowVersionManager;
+  }
 }

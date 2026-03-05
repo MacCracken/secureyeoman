@@ -70,13 +70,13 @@ export {
 } from './working-memory.js';
 
 // Salience Classification (Phase 125-C)
-export {
-  SalienceClassifier,
-  type SalienceScores,
-  type SalienceWeights,
-} from './salience.js';
+export { SalienceClassifier, type SalienceScores, type SalienceWeights } from './salience.js';
 
 // Future Scaffolds (Phase 125 — Pending)
 export { ReconsolidationManager, type ReconsolidationConfig } from './reconsolidation.js';
-export { SchemaClusteringManager, type SchemaClusteringConfig, kMeans } from './schema-clustering.js';
+export {
+  SchemaClusteringManager,
+  type SchemaClusteringConfig,
+  kMeans,
+} from './schema-clustering.js';
 export { RetrievalOptimizer, type RetrievalOptimizerConfig } from './retrieval-optimizer.js';

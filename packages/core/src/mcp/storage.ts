@@ -299,7 +299,10 @@ export class McpStorage extends PgBaseStorage {
     const config = { ...MCP_CONFIG_DEFAULTS };
     for (const row of rows) {
       if (row.key in config) {
-        (config as Record<string, unknown>)[row.key] = safeJsonParse(row.value, (config as Record<string, unknown>)[row.key]);
+        (config as Record<string, unknown>)[row.key] = safeJsonParse(
+          row.value,
+          (config as Record<string, unknown>)[row.key]
+        );
       }
     }
     this.configCache = { value: config, expiresAt: now + McpStorage.CONFIG_CACHE_TTL_MS };

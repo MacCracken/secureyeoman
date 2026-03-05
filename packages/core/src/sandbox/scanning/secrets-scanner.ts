@@ -169,7 +169,8 @@ const SECRET_PATTERNS: SecretPattern[] = [
     category: 'pii',
     severity: 'critical',
     message: 'Credit card number pattern detected',
-    pattern: /\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\b/,
+    pattern:
+      /\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\b/,
     redactLabel: 'CREDIT_CARD',
   },
 
@@ -189,9 +190,8 @@ export class SecretsScanner implements ArtifactScanner {
   readonly version = '1.0.0';
 
   async scan(artifact: SandboxArtifact, signal?: AbortSignal): Promise<ScanFinding[]> {
-    const content = typeof artifact.content === 'string'
-      ? artifact.content
-      : artifact.content.toString('utf-8');
+    const content =
+      typeof artifact.content === 'string' ? artifact.content : artifact.content.toString('utf-8');
 
     const findings: ScanFinding[] = [];
     const lines = content.split('\n');
@@ -202,9 +202,8 @@ export class SecretsScanner implements ArtifactScanner {
 
       // Anti-ReDoS guard
       const rawLine = lines[i] ?? '';
-      const line = rawLine.length > MAX_LINE_LENGTH
-        ? rawLine.substring(0, MAX_LINE_LENGTH)
-        : rawLine;
+      const line =
+        rawLine.length > MAX_LINE_LENGTH ? rawLine.substring(0, MAX_LINE_LENGTH) : rawLine;
 
       for (const pattern of SECRET_PATTERNS) {
         if (findings.length >= MAX_FINDINGS) break;

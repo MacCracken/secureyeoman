@@ -298,9 +298,7 @@ describe('SettingsPage', () => {
     expect(screen.getByText('CI/CD Integration')).toBeInTheDocument();
     expect(screen.getByText('Advanced Observability')).toBeInTheDocument();
     // Community tier message
-    expect(
-      screen.getByText(/Enter a license key to unlock licensed features/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Enter a license key to unlock licensed features/)).toBeInTheDocument();
   });
 
   it('shows enterprise tier with green feature chips for enabled features', async () => {

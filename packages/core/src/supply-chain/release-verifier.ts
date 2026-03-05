@@ -42,7 +42,9 @@ export async function sha256File(filePath: string): Promise<string> {
     const hash = createHash('sha256');
     const stream = createReadStream(filePath);
     stream.on('data', (chunk) => hash.update(chunk));
-    stream.on('end', () => resolve(hash.digest('hex')));
+    stream.on('end', () => {
+      resolve(hash.digest('hex'));
+    });
     stream.on('error', reject);
   });
 }
@@ -58,7 +60,7 @@ export function parseSha256Sums(content: string): Map<string, string> {
     if (!trimmed || trimmed.startsWith('#')) continue;
 
     // Standard sha256sum output: hash  filename (two spaces)
-    const match = trimmed.match(/^([a-f0-9]{64})\s+(.+)$/);
+    const match = /^([a-f0-9]{64})\s+(.+)$/.exec(trimmed);
     if (match) {
       entries.set(match[2]!, match[1]!);
     }
@@ -128,7 +130,11 @@ export async function verifyCosignSignature(
 ): Promise<CosignResult> {
   const available = await isCosignAvailable();
   if (!available) {
-    return { verified: false, error: 'cosign CLI not installed. Install from https://docs.sigstore.dev/cosign/system_config/installation/' };
+    return {
+      verified: false,
+      error:
+        'cosign CLI not installed. Install from https://docs.sigstore.dev/cosign/system_config/installation/',
+    };
   }
 
   const args = ['verify-blob', '--experimental'];
@@ -182,7 +188,7 @@ export async function verifyRelease(
     cosign = await verifyCosignSignature(binaryPath, cosignOptions);
   }
 
-  const verified = checksum?.valid === true && (cosign === null || cosign.verified);
+  const verified = checksum?.valid && (cosign === null || cosign.verified);
 
   return { binaryPath, checksum, cosign, verified };
 }

@@ -6,8 +6,18 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import type { ScanFinding, ScanFindingSeverity, ScanResult, ScanVerdict } from '@secureyeoman/shared';
-import type { ArtifactScanner, SandboxArtifact, ScanPipelineConfig, ThreatAssessmentResult } from './types.js';
+import type {
+  ScanFinding,
+  ScanFindingSeverity,
+  ScanResult,
+  ScanVerdict,
+} from '@secureyeoman/shared';
+import type {
+  ArtifactScanner,
+  SandboxArtifact,
+  ScanPipelineConfig,
+  ThreatAssessmentResult,
+} from './types.js';
 
 const SEVERITY_ORDER: ScanFindingSeverity[] = ['info', 'low', 'medium', 'high', 'critical'];
 const DEFAULT_MAX_FINDINGS = 200;
@@ -30,7 +40,7 @@ export function severityRank(s: ScanFindingSeverity): number {
 export function severityToVerdict(
   worst: ScanFindingSeverity,
   findingCount: number,
-  config: ScanPipelineConfig,
+  config: ScanPipelineConfig
 ): ScanVerdict {
   const policy = config.policy;
 
@@ -95,7 +105,9 @@ export class ScannerPipeline {
     const ac = new AbortController();
 
     // Timeout
-    const timer = setTimeout(() => ac.abort(), this.config.timeoutMs);
+    const timer = setTimeout(() => {
+      ac.abort();
+    }, this.config.timeoutMs);
 
     try {
       const allFindings: ScanFinding[] = [];
@@ -114,7 +126,7 @@ export class ScannerPipeline {
           }
 
           return { scanner: scanner.name, version: scanner.version, findings };
-        }),
+        })
       );
 
       const scannerVersions: Record<string, string> = {};
@@ -161,14 +173,26 @@ export class ScannerPipeline {
 
       if (threatAssessment) {
         scanResult.threatAssessment = {
-          classification: threatAssessment.classification as ScanResult['threatAssessment'] extends infer T
-            ? T extends { classification: infer C } ? C : never : never,
+          classification:
+            threatAssessment.classification as ScanResult['threatAssessment'] extends infer T
+              ? T extends { classification: infer C }
+                ? C
+                : never
+              : never,
           intentScore: threatAssessment.intentScore,
-          killChainStages: threatAssessment.killChainStages as ScanResult['threatAssessment'] extends infer T
-            ? T extends { killChainStages: infer K } ? K : never : never,
+          killChainStages:
+            threatAssessment.killChainStages as ScanResult['threatAssessment'] extends infer T
+              ? T extends { killChainStages: infer K }
+                ? K
+                : never
+              : never,
           matchedPatterns: threatAssessment.matchedPatterns,
-          escalationTier: threatAssessment.escalationTier as ScanResult['threatAssessment'] extends infer T
-            ? T extends { escalationTier: infer E } ? E : never : never,
+          escalationTier:
+            threatAssessment.escalationTier as ScanResult['threatAssessment'] extends infer T
+              ? T extends { escalationTier: infer E }
+                ? E
+                : never
+              : never,
           summary: threatAssessment.summary,
         };
       }
@@ -180,13 +204,15 @@ export class ScannerPipeline {
       return {
         artifactId: artifact.id,
         verdict: this.config.policy.failOpen ? 'pass' : 'quarantine',
-        findings: [{
-          id: randomUUID(),
-          scanner: 'scanner-pipeline',
-          severity: 'high',
-          category: 'scan_error',
-          message: `Pipeline error: ${err instanceof Error ? err.message : String(err)}`,
-        }],
+        findings: [
+          {
+            id: randomUUID(),
+            scanner: 'scanner-pipeline',
+            severity: 'high',
+            category: 'scan_error',
+            message: `Pipeline error: ${err instanceof Error ? err.message : String(err)}`,
+          },
+        ],
         worstSeverity: 'high',
         scanDurationMs,
         scannerVersions: {},

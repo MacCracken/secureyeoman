@@ -87,7 +87,12 @@ describe('SemanticCache', () => {
 
   describe('get()', () => {
     it('returns null when disabled', async () => {
-      const disabledCache = new SemanticCache({ pool, logger, embed: mockEmbed, config: disabledConfig });
+      const disabledCache = new SemanticCache({
+        pool,
+        logger,
+        embed: mockEmbed,
+        config: disabledConfig,
+      });
       const result = await disabledCache.get('test query', 'anthropic', 'test-model');
       expect(result).toBeNull();
       expect(mockEmbed).not.toHaveBeenCalled();
@@ -118,7 +123,8 @@ describe('SemanticCache', () => {
 
     it('increments hit count', async () => {
       const entry = makeCacheEntry({ similarity: 0.95 });
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [entry], rowCount: 1 }) // search
         .mockResolvedValueOnce({ rows: [], rowCount: 1 }); // update hit_count
 
@@ -148,19 +154,30 @@ describe('SemanticCache', () => {
     });
 
     it('does nothing when disabled', async () => {
-      const disabledCache = new SemanticCache({ pool, logger, embed: mockEmbed, config: disabledConfig });
+      const disabledCache = new SemanticCache({
+        pool,
+        logger,
+        embed: mockEmbed,
+        config: disabledConfig,
+      });
 
       await disabledCache.set('What is 2+2?', 'anthropic', 'test-model', { content: '4' } as any);
       expect(pool.query).not.toHaveBeenCalled();
     });
 
     it('evicts oldest when at max entries', async () => {
-      const smallCache = new SemanticCache({ pool, logger, embed: mockEmbed, config: {
-        ...enabledConfig,
-        maxEntries: 1,
-      } });
+      const smallCache = new SemanticCache({
+        pool,
+        logger,
+        embed: mockEmbed,
+        config: {
+          ...enabledConfig,
+          maxEntries: 1,
+        },
+      });
 
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [{ count: '1' }], rowCount: 1 }) // count check
         .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // evict oldest
         .mockResolvedValueOnce({ rows: [], rowCount: 1 }); // insert
@@ -174,9 +191,7 @@ describe('SemanticCache', () => {
 
       await cache.set('What is 2+2?', 'anthropic', 'test-model', { content: '4' } as any);
 
-      const insertCall = pool.query.mock.calls.find(
-        (c: any) => String(c[0]).includes('INSERT')
-      );
+      const insertCall = pool.query.mock.calls.find((c: any) => String(c[0]).includes('INSERT'));
       expect(insertCall).toBeDefined();
     });
   });

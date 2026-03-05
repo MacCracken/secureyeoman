@@ -84,7 +84,8 @@ export class WhatsAppIntegration implements Integration {
       }
 
       if (connection === 'close') {
-        const reason = (lastDisconnect?.error as { output?: { statusCode?: number } })?.output?.statusCode;
+        const reason = (lastDisconnect?.error as { output?: { statusCode?: number } })?.output
+          ?.statusCode;
         const shouldReconnect = reason !== (DisconnectReason.loggedOut as number);
 
         this.logger?.warn('WhatsApp connection closed', { reason, shouldReconnect });

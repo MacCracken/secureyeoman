@@ -69,9 +69,18 @@ describe('athi command', () => {
   // ── list ──────────────────────────────────────────────────────
 
   it('lists scenarios in table format', async () => {
-    mockFetch({ items: [
-      { id: 'athi-001', title: 'Prompt Injection', actor: 'cybercriminal', riskScore: 20, status: 'identified' },
-    ], total: 1 });
+    mockFetch({
+      items: [
+        {
+          id: 'athi-001',
+          title: 'Prompt Injection',
+          actor: 'cybercriminal',
+          riskScore: 20,
+          status: 'identified',
+        },
+      ],
+      total: 1,
+    });
 
     const { stdout, stderr, getStdout } = createStreams();
     const code = await athiCommand.run({ argv: ['list'], stdout, stderr });
@@ -177,13 +186,20 @@ describe('athi command', () => {
     await athiCommand.run({
       argv: [
         'create',
-        '--title', 'Complex',
-        '--actor', 'nation_state',
-        '--techniques', 'model_theft,supply_chain',
-        '--harms', 'data_breach,financial_loss',
-        '--impacts', 'ip_theft,legal_liability',
-        '--likelihood', '4',
-        '--severity', '5',
+        '--title',
+        'Complex',
+        '--actor',
+        'nation_state',
+        '--techniques',
+        'model_theft,supply_chain',
+        '--harms',
+        'data_breach,financial_loss',
+        '--impacts',
+        'ip_theft,legal_liability',
+        '--likelihood',
+        '4',
+        '--severity',
+        '5',
       ],
       stdout,
       stderr,
@@ -202,7 +218,13 @@ describe('athi command', () => {
   it('displays risk matrix', async () => {
     mockFetch({
       matrix: [
-        { actor: 'cybercriminal', technique: 'prompt_injection', avgRiskScore: 15, maxRiskScore: 20, count: 3 },
+        {
+          actor: 'cybercriminal',
+          technique: 'prompt_injection',
+          avgRiskScore: 15,
+          maxRiskScore: 20,
+          count: 3,
+        },
       ],
     });
 

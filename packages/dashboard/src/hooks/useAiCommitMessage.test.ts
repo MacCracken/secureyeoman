@@ -26,7 +26,12 @@ describe('useAiCommitMessage', () => {
 
   it('generates commit message from diff', async () => {
     mockExec
-      .mockResolvedValueOnce({ output: ' 1 file changed, 3 insertions(+)', error: '', exitCode: 0, cwd: '/tmp' })
+      .mockResolvedValueOnce({
+        output: ' 1 file changed, 3 insertions(+)',
+        error: '',
+        exitCode: 0,
+        cwd: '/tmp',
+      })
       .mockResolvedValueOnce({ output: '+const x = 1;', error: '', exitCode: 0, cwd: '/tmp' });
 
     mockSend.mockResolvedValue({

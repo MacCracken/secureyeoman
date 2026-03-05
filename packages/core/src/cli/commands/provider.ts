@@ -120,7 +120,7 @@ async function runList(
       return 0;
     }
 
-    const accounts = res.data as Array<Record<string, unknown>>;
+    const accounts = res.data as Record<string, unknown>[];
     if (accounts.length === 0) {
       ctx.stdout.write('No provider accounts configured.\n');
       return 0;
@@ -213,10 +213,14 @@ async function runValidate(
   }
 
   try {
-    const res = await apiCall(baseUrl, `/api/v1/provider-accounts/${encodeURIComponent(id)}/validate`, {
-      method: 'POST',
-      token,
-    });
+    const res = await apiCall(
+      baseUrl,
+      `/api/v1/provider-accounts/${encodeURIComponent(id)}/validate`,
+      {
+        method: 'POST',
+        token,
+      }
+    );
 
     if (!res?.ok) {
       ctx.stderr.write('Validation failed\n');
@@ -299,7 +303,7 @@ async function runCosts(
       return 0;
     }
 
-    const summaries = res.data as Array<Record<string, unknown>>;
+    const summaries = res.data as Record<string, unknown>[];
     if (summaries.length === 0) {
       ctx.stdout.write('No cost data available.\n');
       return 0;

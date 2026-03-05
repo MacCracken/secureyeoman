@@ -53,18 +53,10 @@ export const SraControlStatusSchema = z.enum([
 ]);
 export type SraControlStatus = z.infer<typeof SraControlStatusSchema>;
 
-export const SraBlueprintStatusSchema = z.enum([
-  'draft',
-  'active',
-  'archived',
-]);
+export const SraBlueprintStatusSchema = z.enum(['draft', 'active', 'archived']);
 export type SraBlueprintStatus = z.infer<typeof SraBlueprintStatusSchema>;
 
-export const SraAssessmentStatusSchema = z.enum([
-  'in_progress',
-  'completed',
-  'archived',
-]);
+export const SraAssessmentStatusSchema = z.enum(['in_progress', 'completed', 'archived']);
 export type SraAssessmentStatus = z.infer<typeof SraAssessmentStatusSchema>;
 
 // ─── Sub-schemas ─────────────────────────────────────────────────

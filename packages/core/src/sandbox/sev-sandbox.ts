@@ -238,16 +238,24 @@ const fn = ${fn.toString()};
   private buildQemuArgs(scriptPath: string, memorySize: string, vcpus: number): string[] {
     return [
       '-enable-kvm',
-      '-cpu', 'EPYC-v4',
-      '-machine', 'q35,confidential-guest-support=sev0,memory-backend=ram1',
-      '-object', 'memory-backend-memfd-private,id=ram1,size=' + memorySize,
-      '-object', 'sev-snp-guest,id=sev0,policy=0x30000,cbitpos=51,reduced-phys-bits=1',
-      '-smp', String(vcpus),
-      '-m', memorySize,
+      '-cpu',
+      'EPYC-v4',
+      '-machine',
+      'q35,confidential-guest-support=sev0,memory-backend=ram1',
+      '-object',
+      'memory-backend-memfd-private,id=ram1,size=' + memorySize,
+      '-object',
+      'sev-snp-guest,id=sev0,policy=0x30000,cbitpos=51,reduced-phys-bits=1',
+      '-smp',
+      String(vcpus),
+      '-m',
+      memorySize,
       '-nographic',
       '-no-reboot',
-      '-virtfs', `local,path=${path.dirname(scriptPath)},mount_tag=task,security_model=none,readonly=on`,
-      '-append', `task=${path.basename(scriptPath)}`,
+      '-virtfs',
+      `local,path=${path.dirname(scriptPath)},mount_tag=task,security_model=none,readonly=on`,
+      '-append',
+      `task=${path.basename(scriptPath)}`,
     ];
   }
 

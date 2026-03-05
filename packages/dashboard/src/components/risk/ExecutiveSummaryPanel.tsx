@@ -59,9 +59,9 @@ function normalise(s: ExecutiveSummary) {
   if (isDepartmental(s)) return s;
   return {
     totalDepartments: Object.keys(s.byActor).length,
-    totalOpenRisks: s.totalScenarios - (s.byStatus['mitigated'] ?? 0),
+    totalOpenRisks: s.totalScenarios - (s.byStatus.mitigated ?? 0),
     totalOverdueRisks: 0,
-    totalCriticalRisks: s.byStatus['identified'] ?? 0,
+    totalCriticalRisks: s.byStatus.identified ?? 0,
     appetiteBreaches: 0,
     averageScore: s.averageRiskScore,
     departments: [] as DepartmentSummary[],

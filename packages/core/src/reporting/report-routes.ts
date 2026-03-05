@@ -4,7 +4,10 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { AuditReportGenerator } from './audit-report.js';
-import type { ComplianceReportGenerator, ComplianceReportOptions } from './compliance-report-generator.js';
+import type {
+  ComplianceReportGenerator,
+  ComplianceReportOptions,
+} from './compliance-report-generator.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
 
 export interface ReportRoutesOptions {

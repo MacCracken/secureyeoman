@@ -119,7 +119,9 @@ async function runCompliance(ctx: CommandContext, argv: string[]): Promise<numbe
   argv = formatResult.rest;
   const jsonResult = extractBoolFlag(argv, 'json');
 
-  const framework = frameworkResult.value as import('../../supply-chain/compliance-mapping.js').ComplianceFramework | undefined;
+  const framework = frameworkResult.value as
+    | import('../../supply-chain/compliance-mapping.js').ComplianceFramework
+    | undefined;
   const format = formatResult.value ?? (jsonResult.value ? 'json' : 'md');
 
   if (framework && !ALL_FRAMEWORKS.includes(framework)) {
@@ -223,10 +225,13 @@ async function runDeps(ctx: CommandContext, argv: string[]): Promise<number> {
       ctx.stdout.write('\n  Alerts:\n');
       for (const alert of alerts) {
         const levelColor =
-          alert.level === 'critical' ? c.red :
-          alert.level === 'high' ? c.red :
-          alert.level === 'medium' ? c.yellow :
-          c.dim;
+          alert.level === 'critical'
+            ? c.red
+            : alert.level === 'high'
+              ? c.red
+              : alert.level === 'medium'
+                ? c.yellow
+                : c.dim;
         ctx.stdout.write(`    ${levelColor(`[${alert.level.toUpperCase()}]`)} ${alert.message}\n`);
       }
     }

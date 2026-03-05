@@ -23,18 +23,16 @@ describe('AWS Polly TTS Provider', () => {
       delete process.env.POLLY_REGION;
       const { synthesizeViaPolly } = await import('./polly.js');
 
-      await expect(
-        synthesizeViaPolly({ text: 'Hello world' })
-      ).rejects.toThrow('POLLY_REGION');
+      await expect(synthesizeViaPolly({ text: 'Hello world' })).rejects.toThrow('POLLY_REGION');
     });
 
     it('should throw when AWS credentials are not set', async () => {
       delete process.env.AWS_ACCESS_KEY_ID;
       const { synthesizeViaPolly } = await import('./polly.js');
 
-      await expect(
-        synthesizeViaPolly({ text: 'Hello world' })
-      ).rejects.toThrow('AWS_ACCESS_KEY_ID');
+      await expect(synthesizeViaPolly({ text: 'Hello world' })).rejects.toThrow(
+        'AWS_ACCESS_KEY_ID'
+      );
     });
 
     it('should call Polly SynthesizeSpeech endpoint', async () => {
@@ -185,9 +183,7 @@ describe('AWS Polly TTS Provider', () => {
       });
       const { synthesizeViaPolly } = await import('./polly.js');
 
-      await expect(
-        synthesizeViaPolly({ text: 'Hello' })
-      ).rejects.toThrow('AWS Polly error (400)');
+      await expect(synthesizeViaPolly({ text: 'Hello' })).rejects.toThrow('AWS Polly error (400)');
     });
 
     it('should include session token when set', async () => {

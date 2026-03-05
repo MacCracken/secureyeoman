@@ -20,9 +20,9 @@ export interface SbomComponent {
   version: string;
   purl: string;
   scope?: 'required' | 'optional';
-  licenses?: Array<{ license: { id: string } }>;
-  hashes?: Array<{ alg: string; content: string }>;
-  externalReferences?: Array<{ type: string; url: string }>;
+  licenses?: { license: { id: string } }[];
+  hashes?: { alg: string; content: string }[];
+  externalReferences?: { type: string; url: string }[];
 }
 
 export interface SbomDocument {
@@ -32,7 +32,7 @@ export interface SbomDocument {
   version: number;
   metadata: {
     timestamp: string;
-    tools: Array<{ vendor: string; name: string; version: string }>;
+    tools: { vendor: string; name: string; version: string }[];
     component: {
       type: 'application';
       name: string;
@@ -159,7 +159,7 @@ function extractComponents(lockData: PackageLockV3, includeDev: boolean): SbomCo
 
 function extractNameFromPath(path: string): string | null {
   // path format: "node_modules/@scope/name" or "node_modules/name"
-  const match = path.match(/node_modules\/(.+)$/);
+  const match = /node_modules\/(.+)$/.exec(path);
   return match?.[1] ?? null;
 }
 
@@ -224,8 +224,8 @@ function buildComponent(name: string, dep: PackageLockDep): SbomComponent {
   return component;
 }
 
-function parseIntegrityHashes(integrity: string): Array<{ alg: string; content: string }> {
-  const hashes: Array<{ alg: string; content: string }> = [];
+function parseIntegrityHashes(integrity: string): { alg: string; content: string }[] {
+  const hashes: { alg: string; content: string }[] = [];
 
   for (const part of integrity.split(' ')) {
     const dashIdx = part.indexOf('-');
@@ -238,7 +238,14 @@ function parseIntegrityHashes(integrity: string): Array<{ alg: string; content: 
     try {
       const hex = Buffer.from(b64, 'base64').toString('hex');
       // Map to CycloneDX algorithm names
-      const cycloneAlg = alg === 'SHA512' ? 'SHA-512' : alg === 'SHA256' ? 'SHA-256' : alg === 'SHA1' ? 'SHA-1' : alg;
+      const cycloneAlg =
+        alg === 'SHA512'
+          ? 'SHA-512'
+          : alg === 'SHA256'
+            ? 'SHA-256'
+            : alg === 'SHA1'
+              ? 'SHA-1'
+              : alg;
       hashes.push({ alg: cycloneAlg, content: hex });
     } catch {
       // skip malformed hash
@@ -249,9 +256,7 @@ function parseIntegrityHashes(integrity: string): Array<{ alg: string; content: 
 }
 
 function generateUuid(): string {
-  const bytes = createHash('sha256')
-    .update(`${Date.now()}-${Math.random()}`)
-    .digest();
+  const bytes = createHash('sha256').update(`${Date.now()}-${Math.random()}`).digest();
 
   // Format as UUID v4-like
   const hex = bytes.subarray(0, 16).toString('hex');

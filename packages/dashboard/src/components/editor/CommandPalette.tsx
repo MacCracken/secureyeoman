@@ -94,7 +94,9 @@ export function CommandPalette({
       {/* Palette */}
       <div
         className="relative w-full max-w-md bg-card border border-border rounded-lg shadow-2xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
       >
         {/* Search input */}
         <div className="flex items-center gap-2 px-3 py-2.5 border-b">
@@ -103,7 +105,9 @@ export function CommandPalette({
             ref={inputRef}
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+            }}
             onKeyDown={handleKeyDown}
             placeholder="Type a command..."
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
@@ -115,7 +119,11 @@ export function CommandPalette({
         </div>
 
         {/* Results */}
-        <div ref={listRef} className="max-h-[300px] overflow-y-auto py-1" data-testid="command-palette-list">
+        <div
+          ref={listRef}
+          className="max-h-[300px] overflow-y-auto py-1"
+          data-testid="command-palette-list"
+        >
           {filtered.length === 0 && (
             <div className="px-3 py-6 text-center text-sm text-muted-foreground">
               No matching commands
@@ -129,8 +137,12 @@ export function CommandPalette({
               {group.items.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => execute(item.globalIndex)}
-                  onMouseEnter={() => setSelectedIndex(item.globalIndex)}
+                  onClick={() => {
+                    execute(item.globalIndex);
+                  }}
+                  onMouseEnter={() => {
+                    setSelectedIndex(item.globalIndex);
+                  }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors ${
                     item.globalIndex === selectedIndex
                       ? 'bg-primary/10 text-primary'

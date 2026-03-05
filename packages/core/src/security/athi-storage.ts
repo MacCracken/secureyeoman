@@ -170,10 +170,7 @@ export class AthiStorage extends PgBaseStorage {
   }
 
   async deleteScenario(id: string): Promise<boolean> {
-    const count = await this.execute(
-      `DELETE FROM security.athi_scenarios WHERE id = $1`,
-      [id]
-    );
+    const count = await this.execute(`DELETE FROM security.athi_scenarios WHERE id = $1`, [id]);
     return count > 0;
   }
 

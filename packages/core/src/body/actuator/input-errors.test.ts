@@ -176,9 +176,7 @@ describe('focusWindow() — command failure branches', () => {
   });
 
   it('propagates osascript failure on macOS focusWindow', async () => {
-    const mockExecFileAsync = vi
-      .fn()
-      .mockRejectedValue(new Error('osascript: command not found'));
+    const mockExecFileAsync = vi.fn().mockRejectedValue(new Error('osascript: command not found'));
 
     vi.doMock('@nut-tree/nut-js', () => ({}));
     vi.doMock('node:child_process', () => ({ execFile: vi.fn() }));
@@ -197,9 +195,7 @@ describe('focusWindow() — command failure branches', () => {
   });
 
   it('propagates powershell failure on Windows focusWindow', async () => {
-    const mockExecFileAsync = vi
-      .fn()
-      .mockRejectedValue(new Error('powershell: execution timeout'));
+    const mockExecFileAsync = vi.fn().mockRejectedValue(new Error('powershell: execution timeout'));
 
     vi.doMock('@nut-tree/nut-js', () => ({}));
     vi.doMock('node:child_process', () => ({ execFile: vi.fn() }));
@@ -252,9 +248,7 @@ describe('resizeWindow() — command failure branches', () => {
   });
 
   it('propagates powershell resize failure on Windows', async () => {
-    const mockExecFileAsync = vi
-      .fn()
-      .mockRejectedValue(new Error('MoveWindow: access denied'));
+    const mockExecFileAsync = vi.fn().mockRejectedValue(new Error('MoveWindow: access denied'));
 
     vi.doMock('@nut-tree/nut-js', () => ({}));
     vi.doMock('node:child_process', () => ({ execFile: vi.fn() }));

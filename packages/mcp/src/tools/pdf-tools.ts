@@ -24,6 +24,17 @@ import type { CoreApiClient } from '../core-client.js';
 import type { ToolMiddleware } from './index.js';
 import { wrapToolHandler } from './tool-utils.js';
 
+// Response shapes from core PDF extraction endpoints
+interface ExtractResult {
+  text: string;
+  pages: number;
+}
+
+interface ExtractPagesResult {
+  totalPages: number;
+  pages: { pageNumber: number; text: string; wordCount: number }[];
+}
+
 function disabled(): { content: { type: 'text'; text: string }[]; isError: boolean } {
   return {
     content: [
@@ -83,20 +94,24 @@ export function registerPdfTools(
       visibility: z.enum(['private', 'shared']).optional().describe('Document visibility'),
       title: z.string().optional().describe('Document title (defaults to filename)'),
     },
-    wrapToolHandler('pdf_upload', middleware, async ({ pdfBase64, filename, personalityId, visibility, title }) => {
-      if (!config.exposePdf) return disabled();
-      // The upload endpoint expects multipart, but from MCP we use base64 via ingest-text
-      // Actually, we POST a synthetic buffer through the extract → ingest flow
-      const result = await client.post('/api/v1/brain/documents/ingest-text', {
-        text: `[PDF Upload] ${filename}`,
-        title: title ?? filename,
-        personalityId: personalityId ?? null,
-        visibility: visibility ?? 'private',
-        format: 'pdf',
-        pdfBase64,
-      });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    })
+    wrapToolHandler(
+      'pdf_upload',
+      middleware,
+      async ({ pdfBase64, filename, personalityId, visibility, title }) => {
+        if (!config.exposePdf) return disabled();
+        // The upload endpoint expects multipart, but from MCP we use base64 via ingest-text
+        // Actually, we POST a synthetic buffer through the extract → ingest flow
+        const result = await client.post('/api/v1/brain/documents/ingest-text', {
+          text: `[PDF Upload] ${filename}`,
+          title: title ?? filename,
+          personalityId: personalityId ?? null,
+          visibility: visibility ?? 'private',
+          format: 'pdf',
+          pdfBase64,
+        });
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      }
+    )
   );
 
   // ── pdf_analyze ───────────────────────────────────────────────────────────
@@ -105,22 +120,35 @@ export function registerPdfTools(
     'Analyze a PDF with AI. Supports: summary, key_findings, entities, risks, action_items, or custom analysis with a prompt.',
     {
       pdfBase64: z.string().describe('Base64-encoded PDF file content'),
-      analysisType: z.enum(['summary', 'key_findings', 'entities', 'risks', 'action_items', 'custom'])
+      analysisType: z
+        .enum(['summary', 'key_findings', 'entities', 'risks', 'action_items', 'custom'])
         .describe('Type of analysis to perform'),
-      customPrompt: z.string().optional().describe('Custom analysis prompt (required when analysisType is "custom")'),
-      maxLength: z.number().int().min(100).max(100000).optional()
+      customPrompt: z
+        .string()
+        .optional()
+        .describe('Custom analysis prompt (required when analysisType is "custom")'),
+      maxLength: z
+        .number()
+        .int()
+        .min(100)
+        .max(100000)
+        .optional()
         .describe('Max characters of PDF text to analyze (default: all)'),
     },
-    wrapToolHandler('pdf_analyze', middleware, async ({ pdfBase64, analysisType, customPrompt, maxLength }) => {
-      if (!config.exposePdf) return disabled();
-      const result = await client.post('/api/v1/brain/documents/analyze', {
-        pdfBase64,
-        analysisType,
-        customPrompt,
-        maxLength,
-      });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    })
+    wrapToolHandler(
+      'pdf_analyze',
+      middleware,
+      async ({ pdfBase64, analysisType, customPrompt, maxLength }) => {
+        if (!config.exposePdf) return disabled();
+        const result = await client.post('/api/v1/brain/documents/analyze', {
+          pdfBase64,
+          analysisType,
+          customPrompt,
+          maxLength,
+        });
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      }
+    )
   );
 
   // ── pdf_search ────────────────────────────────────────────────────────────
@@ -136,10 +164,9 @@ export function registerPdfTools(
       if (!config.exposePdf) return disabled();
 
       // Extract text via core API
-      const extracted = await client.post('/api/v1/brain/documents/extract', { pdfBase64 }) as {
-        text: string;
-        pages: number;
-      };
+      const extracted = await client.post<ExtractResult>('/api/v1/brain/documents/extract', {
+        pdfBase64,
+      });
 
       const text = extracted.text;
       const searchQuery = caseSensitive ? query : query.toLowerCase();
@@ -166,15 +193,21 @@ export function registerPdfTools(
       }
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify({
-            matches,
-            totalMatches: matches.length,
-            query,
-            totalPages: extracted.pages,
-          }, null, 2),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(
+              {
+                matches,
+                totalMatches: matches.length,
+                query,
+                totalPages: extracted.pages,
+              },
+              null,
+              2
+            ),
+          },
+        ],
       };
     })
   );
@@ -193,8 +226,8 @@ export function registerPdfTools(
 
       // Extract text from both PDFs
       const [extractA, extractB] = await Promise.all([
-        client.post('/api/v1/brain/documents/extract', { pdfBase64: pdfA_base64 }) as Promise<{ text: string; pages: number }>,
-        client.post('/api/v1/brain/documents/extract', { pdfBase64: pdfB_base64 }) as Promise<{ text: string; pages: number }>,
+        client.post<ExtractResult>('/api/v1/brain/documents/extract', { pdfBase64: pdfA_base64 }),
+        client.post<ExtractResult>('/api/v1/brain/documents/extract', { pdfBase64: pdfB_base64 }),
       ]);
 
       const splitMode = mode === 'words' ? /\s+/ : /\n/;
@@ -202,7 +235,12 @@ export function registerPdfTools(
       const linesB = extractB.text.split(splitMode);
 
       // Simple line-level diff
-      const changes: { type: 'added' | 'removed' | 'unchanged'; content: string; lineA?: number; lineB?: number }[] = [];
+      const changes: {
+        type: 'added' | 'removed' | 'unchanged';
+        content: string;
+        lineA?: number;
+        lineB?: number;
+      }[] = [];
       let additions = 0;
       let deletions = 0;
 
@@ -224,17 +262,23 @@ export function registerPdfTools(
       }
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify({
-            additions,
-            deletions,
-            changes: changes.slice(0, 200), // Cap at 200 change entries
-            summary: `${additions} additions, ${deletions} deletions across ${maxLen} lines`,
-            pagesA: extractA.pages,
-            pagesB: extractB.pages,
-          }, null, 2),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(
+              {
+                additions,
+                deletions,
+                changes: changes.slice(0, 200), // Cap at 200 change entries
+                summary: `${additions} additions, ${deletions} deletions across ${maxLen} lines`,
+                pagesA: extractA.pages,
+                pagesB: extractB.pages,
+              },
+              null,
+              2
+            ),
+          },
+        ],
       };
     })
   );
@@ -266,7 +310,10 @@ export function registerPdfTools(
     'Extract text from a PDF page by page. Returns text, word count per page. Supports page range (e.g. "1-5", "2,4,6").',
     {
       pdfBase64: z.string().describe('Base64-encoded PDF file content'),
-      pageRange: z.string().optional().describe('Page range to extract (e.g. "1-5", "2,4,6"). Omit for all pages.'),
+      pageRange: z
+        .string()
+        .optional()
+        .describe('Page range to extract (e.g. "1-5", "2,4,6"). Omit for all pages.'),
     },
     wrapToolHandler('pdf_extract_pages', middleware, async ({ pdfBase64, pageRange }) => {
       if (!config.exposePdf) return disabled();
@@ -286,18 +333,25 @@ export function registerPdfTools(
     {
       pdfBase64: z.string().describe('Base64-encoded PDF file content'),
       pageRange: z.string().optional().describe('Page range to extract tables from (e.g. "1-3")'),
-      outputFormat: z.enum(['markdown', 'csv', 'json']).optional().describe('Table output format (default: markdown)'),
+      outputFormat: z
+        .enum(['markdown', 'csv', 'json'])
+        .optional()
+        .describe('Table output format (default: markdown)'),
     },
-    wrapToolHandler('pdf_extract_tables', middleware, async ({ pdfBase64, pageRange, outputFormat }) => {
-      if (!config.exposePdf) return disabled();
-      if (!config.exposePdfAdvanced) return disabledAdvanced();
-      const result = await client.post('/api/v1/brain/documents/extract-tables', {
-        pdfBase64,
-        pageRange,
-        outputFormat,
-      });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    })
+    wrapToolHandler(
+      'pdf_extract_tables',
+      middleware,
+      async ({ pdfBase64, pageRange, outputFormat }) => {
+        if (!config.exposePdf) return disabled();
+        if (!config.exposePdfAdvanced) return disabledAdvanced();
+        const result = await client.post('/api/v1/brain/documents/extract-tables', {
+          pdfBase64,
+          pageRange,
+          outputFormat,
+        });
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      }
+    )
   );
 
   // ── pdf_visual_analyze ──────────────────────────────────────────────
@@ -312,14 +366,16 @@ export function registerPdfTools(
       if (!config.exposePdf) return disabled();
       if (!config.exposePdfAdvanced) return disabledAdvanced();
 
-      const extracted = await client.post('/api/v1/brain/documents/extract-pages', {
-        pdfBase64,
-        pageRange,
-      }) as { pages: { pageNumber: number; text: string; wordCount: number }[]; totalPages: number };
+      const extracted = await client.post<ExtractPagesResult>(
+        '/api/v1/brain/documents/extract-pages',
+        { pdfBase64, pageRange },
+      );
 
-      const pageAnalysis = extracted.pages.map((p) => {
-        return `--- Page ${p.pageNumber} (${p.wordCount} words) ---\n${p.text}`;
-      }).join('\n\n');
+      const pageAnalysis = extracted.pages
+        .map((p) => {
+          return `--- Page ${p.pageNumber} (${p.wordCount} words) ---\n${p.text}`;
+        })
+        .join('\n\n');
 
       const analysisPrompt = [
         'Analyze the structural layout of this document. For each page identify:',
@@ -337,14 +393,20 @@ export function registerPdfTools(
       ].join('\n');
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify({
-            analysisPrompt,
-            totalPages: extracted.totalPages,
-            analyzedPages: extracted.pages.length,
-          }, null, 2),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(
+              {
+                analysisPrompt,
+                totalPages: extracted.totalPages,
+                analyzedPages: extracted.pages.length,
+              },
+              null,
+              2
+            ),
+          },
+        ],
       };
     })
   );
@@ -356,31 +418,38 @@ export function registerPdfTools(
     {
       pdfBase64: z.string().describe('Base64-encoded PDF file content'),
       pageRange: z.string().optional().describe('Page range to summarize (e.g. "1-10")'),
-      style: z.enum(['executive', 'detailed', 'bullet_points']).optional()
+      style: z
+        .enum(['executive', 'detailed', 'bullet_points'])
+        .optional()
         .describe('Summary style (default: executive)'),
     },
     wrapToolHandler('pdf_summarize', middleware, async ({ pdfBase64, pageRange, style }) => {
       if (!config.exposePdf) return disabled();
       if (!config.exposePdfAdvanced) return disabledAdvanced();
 
-      const extracted = await client.post('/api/v1/brain/documents/extract-pages', {
-        pdfBase64,
-        pageRange,
-      }) as { pages: { pageNumber: number; text: string; wordCount: number }[]; totalPages: number };
+      const extracted = await client.post<ExtractPagesResult>(
+        '/api/v1/brain/documents/extract-pages',
+        { pdfBase64, pageRange },
+      );
 
       const summaryStyle = style ?? 'executive';
       const styleInstructions: Record<string, string> = {
-        executive: 'Write a concise executive summary (3-5 paragraphs). Focus on key conclusions, decisions needed, and impact.',
-        detailed: 'Write a detailed summary covering all main points, arguments, and evidence. Organize by topic or section.',
-        bullet_points: 'Summarize as a structured bullet-point list. Group related points under section headers.',
+        executive:
+          'Write a concise executive summary (3-5 paragraphs). Focus on key conclusions, decisions needed, and impact.',
+        detailed:
+          'Write a detailed summary covering all main points, arguments, and evidence. Organize by topic or section.',
+        bullet_points:
+          'Summarize as a structured bullet-point list. Group related points under section headers.',
       };
 
-      const pageContent = extracted.pages.map((p) => {
-        return `[Page ${p.pageNumber}]\n${p.text}`;
-      }).join('\n\n');
+      const pageContent = extracted.pages
+        .map((p) => {
+          return `[Page ${p.pageNumber}]\n${p.text}`;
+        })
+        .join('\n\n');
 
       const summaryPrompt = [
-        styleInstructions[summaryStyle] ?? styleInstructions['executive']!,
+        styleInstructions[summaryStyle] ?? styleInstructions.executive!,
         '',
         'IMPORTANT: Cite page numbers for each claim or finding using [p.N] format.',
         '',
@@ -390,15 +459,21 @@ export function registerPdfTools(
       ].join('\n');
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify({
-            summaryPrompt,
-            style: summaryStyle,
-            totalPages: extracted.totalPages,
-            analyzedPages: extracted.pages.length,
-          }, null, 2),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(
+              {
+                summaryPrompt,
+                style: summaryStyle,
+                totalPages: extracted.totalPages,
+                analyzedPages: extracted.pages.length,
+              },
+              null,
+              2
+            ),
+          },
+        ],
       };
     })
   );

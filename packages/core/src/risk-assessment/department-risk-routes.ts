@@ -119,33 +119,39 @@ export function registerDepartmentRiskRoutes(
   // ── Department Scorecard ─────────────────────────────────────
 
   // GET /api/v1/risk/departments/:id/scorecard
-  app.get<{ Params: { id: string } }>('/api/v1/risk/departments/:id/scorecard', async (req, reply) => {
-    const { id } = req.params;
-    try {
-      const scorecard = await mgr.getDepartmentScorecard(id);
-      return reply.send({ scorecard });
-    } catch (err) {
-      if ((err as Error).message?.includes('not found')) {
-        return sendError(reply, 404, toErrorMessage(err));
+  app.get<{ Params: { id: string } }>(
+    '/api/v1/risk/departments/:id/scorecard',
+    async (req, reply) => {
+      const { id } = req.params;
+      try {
+        const scorecard = await mgr.getDepartmentScorecard(id);
+        return reply.send({ scorecard });
+      } catch (err) {
+        if ((err as Error).message?.includes('not found')) {
+          return sendError(reply, 404, toErrorMessage(err));
+        }
+        return sendError(reply, 500, toErrorMessage(err));
       }
-      return sendError(reply, 500, toErrorMessage(err));
     }
-  });
+  );
 
   // POST /api/v1/risk/departments/:id/snapshot
-  app.post<{ Params: { id: string } }>('/api/v1/risk/departments/:id/snapshot', async (req, reply) => {
-    const { id } = req.params;
-    const body = req.body as { assessmentId?: string } | undefined;
-    try {
-      const score = await mgr.snapshotDepartmentScore(id, body?.assessmentId);
-      return reply.code(201).send({ score });
-    } catch (err) {
-      if ((err as Error).message?.includes('not found')) {
-        return sendError(reply, 404, toErrorMessage(err));
+  app.post<{ Params: { id: string } }>(
+    '/api/v1/risk/departments/:id/snapshot',
+    async (req, reply) => {
+      const { id } = req.params;
+      const body = req.body as { assessmentId?: string } | undefined;
+      try {
+        const score = await mgr.snapshotDepartmentScore(id, body?.assessmentId);
+        return reply.code(201).send({ score });
+      } catch (err) {
+        if ((err as Error).message?.includes('not found')) {
+          return sendError(reply, 404, toErrorMessage(err));
+        }
+        return sendError(reply, 500, toErrorMessage(err));
       }
-      return sendError(reply, 500, toErrorMessage(err));
     }
-  });
+  );
 
   // POST /api/v1/risk/departments/snapshot-all
   app.post('/api/v1/risk/departments/snapshot-all', async (req, reply) => {

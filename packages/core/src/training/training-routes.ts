@@ -1675,7 +1675,12 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
 
       const count = await prefManager.exportAsJsonlFile(body.path, {
         personalityId: body.personalityId,
-        source: body.source as 'annotation' | 'comparison' | 'multi_turn' | 'constitutional' | undefined,
+        source: body.source as
+          | 'annotation'
+          | 'comparison'
+          | 'multi_turn'
+          | 'constitutional'
+          | undefined,
       });
       return { path: body.path, count };
     }

@@ -15,7 +15,12 @@ export interface EscalationManagerDeps {
     fire: (type: string, severity: string, message: string, meta?: Record<string, unknown>) => void;
   } | null;
   auditChain?: {
-    record: (event: string, level: string, message: string, metadata?: Record<string, unknown>) => Promise<void>;
+    record: (
+      event: string,
+      level: string,
+      message: string,
+      metadata?: Record<string, unknown>
+    ) => Promise<void>;
   } | null;
   getSoulManager?: () => {
     suspendPersonality?: (id: string, reason: string) => Promise<void>;
@@ -53,7 +58,7 @@ export class EscalationManager {
           'escalation_triggered',
           tier === 'tier4_revoke' || tier === 'tier3_suspend' ? 'security' : 'info',
           `Escalation ${tier}: ${scanResult.verdict} verdict on artifact from ${artifact.sourceContext}`,
-          meta,
+          meta
         );
       } catch {
         // Non-critical
@@ -68,7 +73,7 @@ export class EscalationManager {
           'escalation_triggered',
           tier === 'tier4_revoke' ? 'critical' : tier === 'tier3_suspend' ? 'error' : 'warn',
           `Threat escalation ${tier}: ${scanResult.findings.length} findings`,
-          meta,
+          meta
         );
       }
     }
@@ -80,7 +85,7 @@ export class EscalationManager {
         try {
           await soulMgr.suspendPersonality(
             artifact.personalityId,
-            `Auto-suspended: threat escalation ${tier}`,
+            `Auto-suspended: threat escalation ${tier}`
           );
         } catch {
           // Non-critical

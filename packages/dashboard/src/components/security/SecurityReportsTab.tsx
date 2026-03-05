@@ -96,7 +96,10 @@ export function ReportsTab({ reviewed, onMarkReviewed, onMarkAllReviewed }: Repo
           return;
         }
         case 'register-report': {
-          const text = await fetchRegisterReport({ format, departmentId: selectedDept || undefined });
+          const text = await fetchRegisterReport({
+            format,
+            departmentId: selectedDept || undefined,
+          });
           triggerDownload(new Blob([text]), `register-report.${format}`);
           return;
         }
@@ -142,7 +145,9 @@ export function ReportsTab({ reviewed, onMarkReviewed, onMarkAllReviewed }: Repo
             </label>
             <select
               value={reportType}
-              onChange={(e) => handleTypeChange(e.target.value as ReportType)}
+              onChange={(e) => {
+                handleTypeChange(e.target.value as ReportType);
+              }}
               className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
               data-testid="report-type-select"
             >
@@ -158,7 +163,9 @@ export function ReportsTab({ reviewed, onMarkReviewed, onMarkAllReviewed }: Repo
             <label className="text-xs font-medium text-muted-foreground block mb-1">Format</label>
             <select
               value={format}
-              onChange={(e) => setFormat(e.target.value)}
+              onChange={(e) => {
+                setFormat(e.target.value);
+              }}
               className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
               data-testid="report-format-select"
             >
@@ -177,7 +184,9 @@ export function ReportsTab({ reviewed, onMarkReviewed, onMarkAllReviewed }: Repo
               </label>
               <select
                 value={selectedDept}
-                onChange={(e) => setSelectedDept(e.target.value)}
+                onChange={(e) => {
+                  setSelectedDept(e.target.value);
+                }}
                 className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
                 data-testid="department-select"
               >
@@ -195,7 +204,9 @@ export function ReportsTab({ reviewed, onMarkReviewed, onMarkAllReviewed }: Repo
 
           <button
             className="btn btn-ghost flex items-center gap-2"
-            onClick={() => mutation.mutate()}
+            onClick={() => {
+              mutation.mutate();
+            }}
             disabled={mutation.isPending || (needsDept === 'required' && !selectedDept)}
           >
             {mutation.isPending ? (

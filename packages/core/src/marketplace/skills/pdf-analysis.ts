@@ -63,7 +63,7 @@ export const pdfAnalysisSkill: Partial<MarketplaceSkill> = {
     '- For large PDFs, use `pageRange` to focus on relevant sections.',
     '- Always cite page numbers when referencing specific content.',
     '- Use `pdf_upload` to save important documents to the knowledge base for future retrieval.',
-    '- When extracting tables, specify `outputFormat` (markdown, csv, json) based on the user\'s needs.',
+    "- When extracting tables, specify `outputFormat` (markdown, csv, json) based on the user's needs.",
   ].join('\n'),
   tags: [
     'pdf',

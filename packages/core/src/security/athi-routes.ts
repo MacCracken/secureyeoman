@@ -90,45 +90,54 @@ export function registerAthiRoutes(app: FastifyInstance, opts: AthiRoutesOptions
 
   // ── DELETE /api/v1/security/athi/scenarios/:id ───────────────────────────
 
-  app.delete<{ Params: { id: string } }>('/api/v1/security/athi/scenarios/:id', async (req, reply) => {
-    const { id } = req.params;
-    try {
-      const deleted = await mgr.deleteScenario(id);
-      if (!deleted) return sendError(reply, 404, 'Scenario not found');
-      return reply.code(204).send();
-    } catch (err) {
-      return sendError(reply, 500, toErrorMessage(err));
+  app.delete<{ Params: { id: string } }>(
+    '/api/v1/security/athi/scenarios/:id',
+    async (req, reply) => {
+      const { id } = req.params;
+      try {
+        const deleted = await mgr.deleteScenario(id);
+        if (!deleted) return sendError(reply, 404, 'Scenario not found');
+        return reply.code(204).send();
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
     }
-  });
+  );
 
   // ── POST /api/v1/security/athi/scenarios/:id/link-events ─────────────────
 
-  app.post<{ Params: { id: string } }>('/api/v1/security/athi/scenarios/:id/link-events', async (req, reply) => {
-    const { id } = req.params;
-    try {
-      const body = req.body as { eventIds?: string[] };
-      if (!Array.isArray(body?.eventIds) || body.eventIds.length === 0) {
-        return sendError(reply, 400, 'eventIds must be a non-empty array of strings');
+  app.post<{ Params: { id: string } }>(
+    '/api/v1/security/athi/scenarios/:id/link-events',
+    async (req, reply) => {
+      const { id } = req.params;
+      try {
+        const body = req.body as { eventIds?: string[] };
+        if (!Array.isArray(body?.eventIds) || body.eventIds.length === 0) {
+          return sendError(reply, 400, 'eventIds must be a non-empty array of strings');
+        }
+        const scenario = await mgr.linkEvents(id, body.eventIds);
+        if (!scenario) return sendError(reply, 404, 'Scenario not found');
+        return reply.send({ scenario });
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
       }
-      const scenario = await mgr.linkEvents(id, body.eventIds);
-      if (!scenario) return sendError(reply, 404, 'Scenario not found');
-      return reply.send({ scenario });
-    } catch (err) {
-      return sendError(reply, 500, toErrorMessage(err));
     }
-  });
+  );
 
   // ── GET /api/v1/security/athi/scenarios/by-technique/:technique ────────
 
-  app.get<{ Params: { technique: string } }>('/api/v1/security/athi/scenarios/by-technique/:technique', async (req, reply) => {
-    const { technique } = req.params;
-    try {
-      const scenarios = await mgr.findScenariosForTechnique(technique);
-      return reply.send({ scenarios });
-    } catch (err) {
-      return sendError(reply, 500, toErrorMessage(err));
+  app.get<{ Params: { technique: string } }>(
+    '/api/v1/security/athi/scenarios/by-technique/:technique',
+    async (req, reply) => {
+      const { technique } = req.params;
+      try {
+        const scenarios = await mgr.findScenariosForTechnique(technique);
+        return reply.send({ scenarios });
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
     }
-  });
+  );
 
   // ── GET /api/v1/security/athi/matrix ─────────────────────────────────────
 
@@ -147,11 +156,11 @@ export function registerAthiRoutes(app: FastifyInstance, opts: AthiRoutesOptions
   app.get('/api/v1/security/athi/top-risks', async (req, reply) => {
     const { orgId } = req.query as { limit?: string; orgId?: string };
     try {
-      const { limit: topLimit } = parsePagination(req.query as Record<string, string>, { maxLimit: 50, defaultLimit: 10 });
-      const topRisks = await mgr.getTopRisks(
-        topLimit,
-        orgId
-      );
+      const { limit: topLimit } = parsePagination(req.query as Record<string, string>, {
+        maxLimit: 50,
+        defaultLimit: 10,
+      });
+      const topRisks = await mgr.getTopRisks(topLimit, orgId);
       return reply.send({ topRisks });
     } catch (err) {
       return sendError(reply, 500, toErrorMessage(err));

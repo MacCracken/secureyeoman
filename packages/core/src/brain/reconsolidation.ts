@@ -100,10 +100,7 @@ export class ReconsolidationManager {
    *
    * TODO: Implement storage mutations.
    */
-  async apply(
-    _memoryId: string,
-    _decision: ReconsolidationDecision
-  ): Promise<void> {
+  async apply(_memoryId: string, _decision: ReconsolidationDecision): Promise<void> {
     // Future implementation
   }
 }

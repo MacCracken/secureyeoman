@@ -37,7 +37,10 @@ function makeJobRow(overrides: Partial<Record<string, unknown>> = {}): Record<st
   return {
     id: 'batch-1',
     name: 'Test batch',
-    prompts: [{ id: '0', prompt: 'Hello' }, { id: '1', prompt: 'World' }],
+    prompts: [
+      { id: '0', prompt: 'Hello' },
+      { id: '1', prompt: 'World' },
+    ],
     concurrency: 5,
     status: 'pending',
     total_prompts: 2,
@@ -84,7 +87,10 @@ describe('BatchInferenceManager', () => {
 
       const job = await manager.createJob({
         name: 'Test batch',
-        prompts: [{ id: '0', prompt: 'Hello' }, { id: '1', prompt: 'World' }],
+        prompts: [
+          { id: '0', prompt: 'Hello' },
+          { id: '1', prompt: 'World' },
+        ],
       });
 
       expect(pool.query).toHaveBeenCalled();
@@ -180,8 +186,14 @@ describe('BatchInferenceManager', () => {
 
   describe('executeJob()', () => {
     it('processes all prompts', async () => {
-      const row = makeJobRow({ prompts: [{ id: '0', prompt: 'Hello' }, { id: '1', prompt: 'World' }] });
-      pool.query = vi.fn()
+      const row = makeJobRow({
+        prompts: [
+          { id: '0', prompt: 'Hello' },
+          { id: '1', prompt: 'World' },
+        ],
+      });
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 }) // getJob
         .mockResolvedValue({ rows: [], rowCount: 1 }); // updates
 
@@ -190,12 +202,19 @@ describe('BatchInferenceManager', () => {
     });
 
     it('handles prompt failures', async () => {
-      const row = makeJobRow({ prompts: [{ id: '0', prompt: 'Hello' }, { id: '1', prompt: 'Fail' }] });
-      pool.query = vi.fn()
+      const row = makeJobRow({
+        prompts: [
+          { id: '0', prompt: 'Hello' },
+          { id: '1', prompt: 'Fail' },
+        ],
+      });
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 })
         .mockResolvedValue({ rows: [], rowCount: 1 });
 
-      aiClient.chat = vi.fn()
+      aiClient.chat = vi
+        .fn()
         .mockResolvedValueOnce({ content: 'ok' })
         .mockRejectedValueOnce(new Error('provider error'));
 
@@ -204,7 +223,10 @@ describe('BatchInferenceManager', () => {
     });
 
     it('respects concurrency limit', async () => {
-      const prompts = Array.from({ length: 10 }, (_, i) => ({ id: String(i), prompt: `Prompt ${i}` }));
+      const prompts = Array.from({ length: 10 }, (_, i) => ({
+        id: String(i),
+        prompt: `Prompt ${i}`,
+      }));
       const row = makeJobRow({ prompts, concurrency: 2, total_prompts: 10 });
       const runningRow = { ...row, status: 'running' };
       let firstSelect = true;
@@ -231,7 +253,8 @@ describe('BatchInferenceManager', () => {
 
     it('updates progress in DB', async () => {
       const row = makeJobRow({ prompts: [{ id: '0', prompt: 'Hello' }] });
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 })
         .mockResolvedValue({ rows: [], rowCount: 1 });
 
@@ -255,7 +278,8 @@ describe('BatchInferenceManager', () => {
 
     it('sets status to completed', async () => {
       const row = makeJobRow({ prompts: [{ id: '0', prompt: 'Hello' }] });
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 })
         .mockResolvedValue({ rows: [], rowCount: 1 });
 
@@ -267,8 +291,14 @@ describe('BatchInferenceManager', () => {
     });
 
     it('sets status to failed when all prompts fail', async () => {
-      const row = makeJobRow({ prompts: [{ id: '0', prompt: 'Fail1' }, { id: '1', prompt: 'Fail2' }] });
-      pool.query = vi.fn()
+      const row = makeJobRow({
+        prompts: [
+          { id: '0', prompt: 'Fail1' },
+          { id: '1', prompt: 'Fail2' },
+        ],
+      });
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 })
         .mockResolvedValue({ rows: [], rowCount: 1 });
 
@@ -282,12 +312,15 @@ describe('BatchInferenceManager', () => {
     });
 
     it('stops on cancellation', async () => {
-      const prompts = Array.from({ length: 20 }, (_, i) => ({ id: String(i), prompt: `Prompt ${i}` }));
+      const prompts = Array.from({ length: 20 }, (_, i) => ({
+        id: String(i),
+        prompt: `Prompt ${i}`,
+      }));
       const row = makeJobRow({ prompts, total_prompts: 20 });
       const cancelledRow = makeJobRow({ prompts, total_prompts: 20, status: 'cancelled' });
       let selectCount = 0;
       pool.query = vi.fn(async (sql: string) => {
-        if (String(sql).includes('SELECT')) {
+        if (sql.includes('SELECT')) {
           selectCount++;
           // First SELECT is the initial getJob (returns pending)
           if (selectCount === 1) return { rows: [row], rowCount: 1 };

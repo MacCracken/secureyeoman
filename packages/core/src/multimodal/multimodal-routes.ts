@@ -387,7 +387,11 @@ export function registerMultimodalRoutes(
         );
       }
       if (vocabularyName.length > 200 || !/^[a-zA-Z0-9._-]+$/.test(vocabularyName)) {
-        return sendError(reply, 400, 'vocabularyName must be alphanumeric with ._- (max 200 chars)');
+        return sendError(
+          reply,
+          400,
+          'vocabularyName must be alphanumeric with ._- (max 200 chars)'
+        );
       }
 
       try {
@@ -413,10 +417,7 @@ export function registerMultimodalRoutes(
 
   app.delete(
     '/api/v1/multimodal/transcribe/vocabulary/:name',
-    async (
-      request: FastifyRequest<{ Params: { name: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { name: string } }>, reply: FastifyReply) => {
       const { name } = request.params;
       if (!name) return sendError(reply, 400, 'Vocabulary name is required');
 

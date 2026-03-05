@@ -49,17 +49,37 @@ interface ProviderTeeInfo {
 }
 
 const PROVIDER_TEE_SUPPORT: Record<string, ProviderTeeInfo> = {
-  anthropic: { supported: true, technologies: ['none'], notes: 'Claims secure infrastructure; no remote attestation API' },
-  openai: { supported: true, technologies: ['none'], notes: 'Azure OpenAI supports SGX/SEV-SNP via Azure CC' },
-  gemini: { supported: true, technologies: ['tdx'], notes: 'GCP Confidential VMs (TDX/SEV-SNP) available' },
-  ollama: { supported: false, technologies: ['none'], notes: 'Local provider — TEE depends on host hardware' },
+  anthropic: {
+    supported: true,
+    technologies: ['none'],
+    notes: 'Claims secure infrastructure; no remote attestation API',
+  },
+  openai: {
+    supported: true,
+    technologies: ['none'],
+    notes: 'Azure OpenAI supports SGX/SEV-SNP via Azure CC',
+  },
+  gemini: {
+    supported: true,
+    technologies: ['tdx'],
+    notes: 'GCP Confidential VMs (TDX/SEV-SNP) available',
+  },
+  ollama: {
+    supported: false,
+    technologies: ['none'],
+    notes: 'Local provider — TEE depends on host hardware',
+  },
   lmstudio: { supported: false, technologies: ['none'], notes: 'Local provider' },
   localai: { supported: false, technologies: ['none'], notes: 'Local provider' },
   deepseek: { supported: false, technologies: ['none'], notes: 'No public TEE attestation' },
   mistral: { supported: false, technologies: ['none'], notes: 'No public TEE attestation' },
   grok: { supported: false, technologies: ['none'], notes: 'No public TEE attestation' },
   groq: { supported: false, technologies: ['none'], notes: 'No public TEE attestation' },
-  openrouter: { supported: false, technologies: ['none'], notes: 'Proxy — TEE depends on upstream provider' },
+  openrouter: {
+    supported: false,
+    technologies: ['none'],
+    notes: 'Proxy — TEE depends on upstream provider',
+  },
   opencode: { supported: false, technologies: ['none'], notes: 'Local provider' },
   letta: { supported: false, technologies: ['none'], notes: 'Stateful agent platform' },
 };
@@ -123,9 +143,15 @@ export class TeeAttestationVerifier {
     // 5/6. Evaluate against providerLevel
     if (!supported) {
       if (this.config.providerLevel === 'required') {
-        this.logger?.warn('TEE required but provider not supported', { component: 'tee', provider });
+        this.logger?.warn('TEE required but provider not supported', {
+          component: 'tee',
+          provider,
+        });
       } else if (this.config.providerLevel === 'optional') {
-        this.logger?.info('TEE optional — provider not supported, allowing', { component: 'tee', provider });
+        this.logger?.info('TEE optional — provider not supported, allowing', {
+          component: 'tee',
+          provider,
+        });
       }
     }
 
@@ -187,7 +213,9 @@ export class TeeAttestationVerifier {
    * Delegates to the registered remote provider if one exists for the given
    * provider name; otherwise falls back to the synchronous `verify()` path.
    */
-  async verifyAsync(provider: string): Promise<{ allowed: boolean; result: ProviderAttestationResult }> {
+  async verifyAsync(
+    provider: string
+  ): Promise<{ allowed: boolean; result: ProviderAttestationResult }> {
     const remote = this.remoteProviders.get(provider);
     if (!remote) {
       return this.verify(provider);
@@ -218,7 +246,10 @@ export class TeeAttestationVerifier {
     const result = await remote.verifyAsync(provider);
 
     // Store in cache
-    if (this.config.attestationStrategy === 'cached' || this.config.attestationStrategy === 'per_request') {
+    if (
+      this.config.attestationStrategy === 'cached' ||
+      this.config.attestationStrategy === 'per_request'
+    ) {
       this.cache.set(provider, result);
     }
 
@@ -271,7 +302,7 @@ export class TeeAttestationVerifier {
     verified: boolean,
     technology: TeeTechnology | null,
     now: number,
-    details?: string,
+    details?: string
   ): ProviderAttestationResult {
     return {
       provider,

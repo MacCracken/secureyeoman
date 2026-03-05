@@ -44,7 +44,10 @@ export function registerBackupRoutes(app: FastifyInstance, opts: BackupRoutesOpt
       reply: FastifyReply
     ) => {
       try {
-        const { limit, offset } = parsePagination(request.query, { maxLimit: 200, defaultLimit: 50 });
+        const { limit, offset } = parsePagination(request.query, {
+          maxLimit: 200,
+          defaultLimit: 50,
+        });
         const result = await backupManager.listBackups(limit, offset);
         return reply.send({ backups: result.records, total: result.total, limit, offset });
       } catch (err) {

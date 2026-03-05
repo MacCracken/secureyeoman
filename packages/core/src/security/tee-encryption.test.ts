@@ -60,13 +60,7 @@ describe('TeeEncryptionManager', () => {
   const fakeCiphertext = Buffer.from('encrypted-data');
 
   function buildSealedBuffer(keySourceTag: number): Buffer {
-    return Buffer.concat([
-      MAGIC,
-      fakeIv,
-      fakeAuthTag,
-      Buffer.from([keySourceTag]),
-      fakeCiphertext,
-    ]);
+    return Buffer.concat([MAGIC, fakeIv, fakeAuthTag, Buffer.from([keySourceTag]), fakeCiphertext]);
   }
 
   beforeEach(() => {
@@ -87,8 +81,7 @@ describe('TeeEncryptionManager', () => {
     });
 
     it('seals a model file with keyring key source', () => {
-      process.env.SECUREYEOMAN_MODEL_ENCRYPTION_KEY =
-        'a'.repeat(64); // 32 bytes hex
+      process.env.SECUREYEOMAN_MODEL_ENCRYPTION_KEY = 'a'.repeat(64); // 32 bytes hex
 
       mockExistsSync.mockReturnValue(true);
       mockReadFileSync.mockReturnValue(Buffer.from('model data'));

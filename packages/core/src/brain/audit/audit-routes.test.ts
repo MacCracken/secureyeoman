@@ -1,5 +1,9 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
-import type { MemoryAuditReport, MemoryHealthMetrics, MemoryAuditScope } from '@secureyeoman/shared';
+import type {
+  MemoryAuditReport,
+  MemoryHealthMetrics,
+  MemoryAuditScope,
+} from '@secureyeoman/shared';
 
 vi.mock('../../utils/errors.js', () => ({
   toErrorMessage: (err: unknown) => (err instanceof Error ? err.message : String(err)),
@@ -226,7 +230,11 @@ describe('registerAuditRoutes', () => {
       const result = await callRoute('POST', '/api/v1/brain/audit/run', {
         body: { scope: 'hourly' },
       });
-      expect(sendError).toHaveBeenCalledWith(expect.anything(), 400, 'Scope must be daily, weekly, or monthly');
+      expect(sendError).toHaveBeenCalledWith(
+        expect.anything(),
+        400,
+        'Scope must be daily, weekly, or monthly'
+      );
       expect(mockScheduler.runManualAudit).not.toHaveBeenCalled();
     });
 
@@ -260,7 +268,11 @@ describe('registerAuditRoutes', () => {
 
       // 4th should be rate limited
       const result = await callRoute('POST', '/api/v1/brain/audit/run');
-      expect(sendError).toHaveBeenCalledWith(expect.anything(), 429, 'Rate limit exceeded for audit runs');
+      expect(sendError).toHaveBeenCalledWith(
+        expect.anything(),
+        429,
+        'Rate limit exceeded for audit runs'
+      );
       expect(mockScheduler.runManualAudit).toHaveBeenCalledTimes(3);
     });
   });
@@ -310,9 +322,7 @@ describe('registerAuditRoutes', () => {
       await callRoute('GET', '/api/v1/brain/audit/reports', {
         query: { limit: '999' },
       });
-      expect(mockStorage.listReports).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 200 })
-      );
+      expect(mockStorage.listReports).toHaveBeenCalledWith(expect.objectContaining({ limit: 200 }));
     });
 
     it('returns empty array when no reports exist', async () => {

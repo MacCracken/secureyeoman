@@ -102,7 +102,11 @@ describe('BackupReplicationManager', () => {
     });
 
     it('ships to S3 when provider is s3', async () => {
-      const mgr = new BackupReplicationManager({ ...baseConfig, provider: 's3', bucket: 'my-bucket' });
+      const mgr = new BackupReplicationManager({
+        ...baseConfig,
+        provider: 's3',
+        bucket: 'my-bucket',
+      });
       await mgr.createAndShipBackup();
       const callArgs = mockExecAsync.mock.calls;
       // First call is pg_dump, second is aws s3 cp
@@ -111,14 +115,22 @@ describe('BackupReplicationManager', () => {
     });
 
     it('ships to Azure when provider is azure', async () => {
-      const mgr = new BackupReplicationManager({ ...baseConfig, provider: 'azure', bucket: 'container' });
+      const mgr = new BackupReplicationManager({
+        ...baseConfig,
+        provider: 'azure',
+        bucket: 'container',
+      });
       await mgr.createAndShipBackup();
       const callArgs = mockExecAsync.mock.calls;
       expect(callArgs[1]?.[0]).toContain('az storage blob upload');
     });
 
     it('ships to GCS when provider is gcs', async () => {
-      const mgr = new BackupReplicationManager({ ...baseConfig, provider: 'gcs', bucket: 'my-gcs-bucket' });
+      const mgr = new BackupReplicationManager({
+        ...baseConfig,
+        provider: 'gcs',
+        bucket: 'my-gcs-bucket',
+      });
       await mgr.createAndShipBackup();
       const callArgs = mockExecAsync.mock.calls;
       expect(callArgs[1]?.[0]).toContain('gsutil cp');
@@ -155,8 +167,9 @@ describe('BackupReplicationManager', () => {
 
   describe('retention enforcement', () => {
     it('removes old local backups beyond retention count', async () => {
-      const files = Array.from({ length: 35 }, (_, i) =>
-        `secureyeoman-backup-2026-03-${String(i + 1).padStart(2, '0')}.sql.gz`
+      const files = Array.from(
+        { length: 35 },
+        (_, i) => `secureyeoman-backup-2026-03-${String(i + 1).padStart(2, '0')}.sql.gz`
       );
       mockReaddirSync.mockReturnValue(files);
 

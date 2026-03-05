@@ -17,7 +17,9 @@ function rowToBaseline(row: Record<string, unknown>): DriftBaseline {
     sampleCount: row.sample_count as number,
     threshold: (row.threshold as number) ?? 0.15,
     computedAt:
-      row.computed_at instanceof Date ? row.computed_at.toISOString() : String(row.computed_at ?? ''),
+      row.computed_at instanceof Date
+        ? row.computed_at.toISOString()
+        : String(row.computed_at ?? ''),
   };
 }
 
@@ -31,7 +33,9 @@ function rowToSnapshot(row: Record<string, unknown>): DriftSnapshot {
     driftMagnitude: row.drift_magnitude as number,
     alertTriggered: (row.alert_triggered as boolean) ?? false,
     computedAt:
-      row.computed_at instanceof Date ? row.computed_at.toISOString() : String(row.computed_at ?? ''),
+      row.computed_at instanceof Date
+        ? row.computed_at.toISOString()
+        : String(row.computed_at ?? ''),
   };
 }
 
@@ -49,10 +53,7 @@ export class DriftDetectionManager {
   /**
    * Compute a baseline from recent conversation quality scores for a personality.
    */
-  async computeBaseline(
-    personalityId: string,
-    threshold = 0.15
-  ): Promise<DriftBaseline> {
+  async computeBaseline(personalityId: string, threshold = 0.15): Promise<DriftBaseline> {
     const { rows: stats } = await this.deps.pool.query<{
       avg: number;
       stddev: number;
@@ -82,10 +83,7 @@ export class DriftDetectionManager {
       [personalityId, mean, stddev, count, threshold]
     );
 
-    this.deps.logger.info(
-      'Drift baseline computed',
-      { personalityId, mean, stddev, count }
-    );
+    this.deps.logger.info('Drift baseline computed', { personalityId, mean, stddev, count });
     return rowToBaseline(rows[0]!);
   }
 
@@ -125,10 +123,10 @@ export class DriftDetectionManager {
         const snapshot = await this.checkDrift(baseline);
         if (snapshot) snapshots.push(snapshot);
       } catch (err) {
-        this.deps.logger.warn(
-          'Drift check failed for baseline',
-          { baselineId: baseline.id, error: err instanceof Error ? err.message : String(err) }
-        );
+        this.deps.logger.warn('Drift check failed for baseline', {
+          baselineId: baseline.id,
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
     }
 
@@ -183,10 +181,11 @@ export class DriftDetectionManager {
     const snapshot = rowToSnapshot(rows[0]!);
 
     if (alertTriggered) {
-      this.deps.logger.warn(
-        'Quality drift detected',
-        { personalityId: baseline.personalityId, driftMagnitude, threshold: baseline.threshold }
-      );
+      this.deps.logger.warn('Quality drift detected', {
+        personalityId: baseline.personalityId,
+        driftMagnitude,
+        threshold: baseline.threshold,
+      });
     }
 
     return snapshot;
@@ -195,11 +194,10 @@ export class DriftDetectionManager {
   startPeriodicCheck(intervalMs: number): void {
     if (this.checkInterval) return;
     this.checkInterval = setInterval(() => {
-      void this.checkAllDrift().catch((err) => {
-        this.deps.logger.error(
-          'Periodic drift check error',
-          { error: err instanceof Error ? err.message : String(err) }
-        );
+      void this.checkAllDrift().catch((err: unknown) => {
+        this.deps.logger.error('Periodic drift check error', {
+          error: err instanceof Error ? err.message : String(err),
+        });
       });
     }, intervalMs);
   }

@@ -26,11 +26,11 @@ import type {
 
 // ── Helpers ──────────────────────────────────────────────────
 
-function safeJsonParse<T>(val: unknown): T | null {
+function safeJsonParse(val: unknown): unknown {
   if (val === null || val === undefined) return null;
-  if (typeof val === 'object') return val as T;
+  if (typeof val === 'object') return val;
   try {
-    return JSON.parse(val as string) as T;
+    return JSON.parse(val as string);
   } catch {
     return null;
   }
@@ -44,11 +44,13 @@ function rowToReport(row: AuditReportRow): MemoryAuditReport {
     scope: row.scope as MemoryAuditScope,
     startedAt: row.started_at,
     completedAt: row.completed_at,
-    preSnapshot: safeJsonParse<AuditSnapshot>(row.pre_snapshot),
-    postSnapshot: safeJsonParse<AuditSnapshot>(row.post_snapshot),
-    compressionSummary: safeJsonParse<CompressionSummary>(row.compression_summary),
-    reorganizationSummary: safeJsonParse<ReorganizationSummary>(row.reorganization_summary),
-    maintenanceSummary: safeJsonParse<MaintenanceSummary>(row.maintenance_summary),
+    preSnapshot: safeJsonParse(row.pre_snapshot) as AuditSnapshot | null,
+    postSnapshot: safeJsonParse(row.post_snapshot) as AuditSnapshot | null,
+    compressionSummary: safeJsonParse(row.compression_summary) as CompressionSummary | null,
+    reorganizationSummary: safeJsonParse(
+      row.reorganization_summary
+    ) as ReorganizationSummary | null,
+    maintenanceSummary: safeJsonParse(row.maintenance_summary) as MaintenanceSummary | null,
     status: row.status as MemoryAuditStatus,
     approvedBy: row.approved_by,
     approvedAt: row.approved_at,
@@ -62,7 +64,7 @@ function rowToArchive(row: MemoryArchiveRow): MemoryArchiveEntry {
     originalMemoryId: row.original_memory_id,
     originalContent: row.original_content,
     originalImportance: row.original_importance,
-    originalContext: (safeJsonParse<Record<string, unknown>>(row.original_context) ?? {}) as Record<string, unknown>,
+    originalContext: (safeJsonParse(row.original_context) as Record<string, unknown> | null) ?? {},
     transformType: row.transform_type as MemoryArchiveEntry['transformType'],
     auditReportId: row.audit_report_id,
     archivedAt: row.archived_at,
@@ -236,16 +238,11 @@ export class MemoryAuditStorage extends PgBaseStorage {
 
   async cleanupOldArchives(olderThanMs: number): Promise<number> {
     const cutoff = Date.now() - olderThanMs;
-    return this.execute(
-      'DELETE FROM brain.memory_archive WHERE archived_at < $1',
-      [cutoff]
-    );
+    return this.execute('DELETE FROM brain.memory_archive WHERE archived_at < $1', [cutoff]);
   }
 
   async getHealthMetrics(personalityId?: string): Promise<MemoryHealthMetrics> {
-    const pidCondition = personalityId
-      ? 'AND personality_id = $1'
-      : '';
+    const pidCondition = personalityId ? 'AND personality_id = $1' : '';
     const pidVals = personalityId ? [personalityId] : [];
 
     // Total memories count

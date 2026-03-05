@@ -110,10 +110,7 @@ export function registerAuditRoutes(app: FastifyInstance, opts: AuditRoutesOptio
 
   app.get(
     '/api/v1/brain/audit/reports/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const report = await auditStorage.getReport(request.params.id);
       if (!report) {
         return sendError(reply, 404, 'Audit report not found');

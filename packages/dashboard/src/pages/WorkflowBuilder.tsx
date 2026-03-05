@@ -47,9 +47,7 @@ import {
   type WorkflowEdge,
 } from '../api/client';
 
-const WorkflowVersionHistory = lazy(
-  () => import('../components/workflow/WorkflowVersionHistory')
-);
+const WorkflowVersionHistory = lazy(() => import('../components/workflow/WorkflowVersionHistory'));
 
 // ── Step type metadata ────────────────────────────────────────────────
 
@@ -309,7 +307,9 @@ export function WorkflowBuilder() {
           {toast && <span className="text-xs text-muted-foreground">{toast}</span>}
           {!isNew && (
             <button
-              onClick={() => { setShowHistory((v) => !v); }}
+              onClick={() => {
+                setShowHistory((v) => !v);
+              }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm font-medium transition-colors ${
                 showHistory ? 'bg-muted border-primary' : 'hover:bg-muted/50'
               }`}
@@ -522,7 +522,9 @@ export function WorkflowBuilder() {
       {/* Version history drawer */}
       {showHistory && id && (
         <div className="border-t bg-card shrink-0 overflow-y-auto max-h-[40vh] p-4">
-          <Suspense fallback={<div className="text-sm text-muted-foreground">Loading history...</div>}>
+          <Suspense
+            fallback={<div className="text-sm text-muted-foreground">Loading history...</div>}
+          >
             <WorkflowVersionHistory workflowId={id} />
           </Suspense>
         </div>

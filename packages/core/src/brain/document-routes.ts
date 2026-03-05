@@ -313,10 +313,7 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
   // GET /api/v1/brain/citations/:messageId
   app.get(
     '/api/v1/brain/citations/:messageId',
-    async (
-      request: FastifyRequest<{ Params: { messageId: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { messageId: string } }>, reply: FastifyReply) => {
       const { brainStorage } = opts;
       if (!brainStorage) return sendError(reply, 503, 'Brain storage not available');
       // Return citation feedback for this message
@@ -340,7 +337,11 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
 
       const { citationIndex, sourceId, relevant } = request.body ?? {};
       if (typeof citationIndex !== 'number' || !sourceId || typeof relevant !== 'boolean') {
-        return sendError(reply, 400, 'citationIndex (number), sourceId (string), and relevant (boolean) are required');
+        return sendError(
+          reply,
+          400,
+          'citationIndex (number), sourceId (string), and relevant (boolean) are required'
+        );
       }
 
       const result = await brainStorage.addCitationFeedback({
@@ -381,7 +382,12 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
       const vis: DocumentVisibility = visibility === 'shared' ? 'shared' : 'private';
 
       try {
-        const doc = await documentManager.ingestExcalidraw(scene, title, personalityId ?? null, vis);
+        const doc = await documentManager.ingestExcalidraw(
+          scene,
+          title,
+          personalityId ?? null,
+          vis
+        );
         if (doc.status === 'ready') {
           void documentManager.generateSourceGuide(personalityId ?? null);
         }
@@ -438,7 +444,13 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
       request: FastifyRequest<{
         Body: {
           pdfBase64: string;
-          analysisType: 'summary' | 'key_findings' | 'entities' | 'risks' | 'action_items' | 'custom';
+          analysisType:
+            | 'summary'
+            | 'key_findings'
+            | 'entities'
+            | 'risks'
+            | 'action_items'
+            | 'custom';
           customPrompt?: string;
           maxLength?: number;
         };
@@ -452,7 +464,14 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
           return sendError(reply, 400, 'pdfBase64 (string) is required');
         }
 
-        const validTypes = ['summary', 'key_findings', 'entities', 'risks', 'action_items', 'custom'];
+        const validTypes = [
+          'summary',
+          'key_findings',
+          'entities',
+          'risks',
+          'action_items',
+          'custom',
+        ];
         if (!analysisType || !validTypes.includes(analysisType)) {
           return sendError(reply, 400, `analysisType must be one of: ${validTypes.join(', ')}`);
         }
@@ -479,7 +498,7 @@ export function registerDocumentRoutes(app: FastifyInstance, opts: DocumentRoute
           custom: `${customPrompt}\n\nDocument:\n${truncatedText}`,
         };
 
-        const analysis = analysisPrompts[analysisType] ?? analysisPrompts['summary']!;
+        const analysis = analysisPrompts[analysisType] ?? analysisPrompts.summary!;
 
         return {
           analysis,

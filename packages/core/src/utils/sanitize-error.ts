@@ -16,7 +16,11 @@ export class AppError extends Error {
   }
 }
 
-export function sanitizeErrorForClient(err: unknown): { message: string; code?: string; debug?: string } {
+export function sanitizeErrorForClient(err: unknown): {
+  message: string;
+  code?: string;
+  debug?: string;
+} {
   const isDev = process.env.NODE_ENV !== 'production';
   const rawMessage = err instanceof Error ? err.message : String(err);
 

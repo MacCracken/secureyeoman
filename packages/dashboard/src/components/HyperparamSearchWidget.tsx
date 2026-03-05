@@ -50,15 +50,16 @@ async function fetchApi<T>(path: string, opts?: RequestInit): Promise<T> {
   return res.json();
 }
 
-function WizardForm({ onSubmit, submitting }: {
+function WizardForm({
+  onSubmit,
+  submitting,
+}: {
   onSubmit: (data: { name: string; strategy: Strategy; paramSpace: ParamSpace[] }) => void;
   submitting: boolean;
 }) {
   const [name, setName] = useState('');
   const [strategy, setStrategy] = useState<Strategy>('bayesian');
-  const [paramText, setParamText] = useState(
-    'learning_rate 1e-5 1e-3\nbatch_size 8 64',
-  );
+  const [paramText, setParamText] = useState('learning_rate 1e-5 1e-3\nbatch_size 8 64');
 
   const handleSubmit = () => {
     const paramSpace: ParamSpace[] = paramText
@@ -85,7 +86,9 @@ function WizardForm({ onSubmit, submitting }: {
         <input
           type="text"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+          }}
           placeholder="my-search-run"
           className="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-sm text-zinc-200 placeholder-zinc-500 focus:border-blue-500 focus:outline-none"
         />
@@ -101,7 +104,9 @@ function WizardForm({ onSubmit, submitting }: {
                 name="hp-strategy"
                 value={s}
                 checked={strategy === s}
-                onChange={() => setStrategy(s)}
+                onChange={() => {
+                  setStrategy(s);
+                }}
                 className="accent-blue-500"
               />
               <span className="text-sm capitalize text-zinc-200">{s}</span>
@@ -116,7 +121,9 @@ function WizardForm({ onSubmit, submitting }: {
         </label>
         <textarea
           value={paramText}
-          onChange={(e) => setParamText(e.target.value)}
+          onChange={(e) => {
+            setParamText(e.target.value);
+          }}
           rows={3}
           className="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 font-mono text-xs text-zinc-200 placeholder-zinc-500 focus:border-blue-500 focus:outline-none"
         />
@@ -184,7 +191,11 @@ function TrialGrid({ trials, bestTrialId }: { trials: Trial[]; bestTrialId: stri
 export default function HyperparamSearchWidget() {
   const queryClient = useQueryClient();
 
-  const { data: searches, isLoading, error } = useQuery<SearchJob[]>({
+  const {
+    data: searches,
+    isLoading,
+    error,
+  } = useQuery<SearchJob[]>({
     queryKey: ['hyperparam-searches'],
     queryFn: () => fetchApi('/api/v1/training/hyperparam/searches'),
     refetchInterval: 5_000,
@@ -202,34 +213,26 @@ export default function HyperparamSearchWidget() {
   });
 
   if (isLoading) {
-    return (
-      <div className="p-4 text-sm text-zinc-400">Loading searches...</div>
-    );
+    return <div className="p-4 text-sm text-zinc-400">Loading searches...</div>;
   }
 
   if (error) {
-    return (
-      <div className="p-4 text-sm text-red-400">
-        Error: {(error as Error).message}
-      </div>
-    );
+    return <div className="p-4 text-sm text-red-400">Error: {error.message}</div>;
   }
 
   return (
     <div className="flex flex-col gap-3 p-4 text-sm">
-      <h3 className="text-base font-semibold text-zinc-200">
-        Hyperparameter Search
-      </h3>
+      <h3 className="text-base font-semibold text-zinc-200">Hyperparameter Search</h3>
 
       <WizardForm
-        onSubmit={(data) => createMutation.mutate(data)}
+        onSubmit={(data) => {
+          createMutation.mutate(data);
+        }}
         submitting={createMutation.isPending}
       />
 
       {createMutation.isError && (
-        <div className="text-xs text-red-400">
-          Failed: {(createMutation.error as Error).message}
-        </div>
+        <div className="text-xs text-red-400">Failed: {createMutation.error.message}</div>
       )}
 
       {/* Active Searches */}
@@ -242,8 +245,8 @@ export default function HyperparamSearchWidget() {
             </span>
           </div>
           <div className="mb-2 text-xs text-zinc-500">
-            {search.trials.filter((t) => t.status === 'completed').length}/
-            {search.trials.length} trials complete
+            {search.trials.filter((t) => t.status === 'completed').length}/{search.trials.length}{' '}
+            trials complete
           </div>
           <TrialGrid trials={search.trials} bestTrialId={search.bestTrialId} />
         </div>

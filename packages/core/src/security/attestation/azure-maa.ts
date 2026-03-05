@@ -37,7 +37,9 @@ export class AzureMaaAttestationProvider implements RemoteAttestationProvider {
 
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
+      const timeout = setTimeout(() => {
+        controller.abort();
+      }, 5000);
 
       const response = await fetch(url, {
         method: 'POST',
@@ -90,10 +92,12 @@ export class AzureMaaAttestationProvider implements RemoteAttestationProvider {
         };
       }
 
-      const payload = JSON.parse(Buffer.from(parts[1]!, 'base64url').toString()) as Record<string, unknown>;
+      const payload = JSON.parse(Buffer.from(parts[1]!, 'base64url').toString()) as Record<
+        string,
+        unknown
+      >;
       const verified =
-        payload['x-ms-attestation-type'] === 'sgx' &&
-        payload['x-ms-policy-signer'] !== undefined;
+        payload['x-ms-attestation-type'] === 'sgx' && payload['x-ms-policy-signer'] !== undefined;
 
       const expMs = typeof payload.exp === 'number' ? payload.exp * 1000 : now + 3_600_000;
 

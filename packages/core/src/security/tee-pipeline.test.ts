@@ -14,7 +14,7 @@ import type { TeeAttestationVerifier, ProviderAttestationResult } from './tee-at
 function makeMockResult(
   provider: string,
   verified = true,
-  technology: string | null = null,
+  technology: string | null = null
 ): ProviderAttestationResult {
   const now = Date.now();
   return {
@@ -27,9 +27,7 @@ function makeMockResult(
   };
 }
 
-function makeMockVerifier(
-  overrides: Partial<TeeAttestationVerifier> = {},
-): TeeAttestationVerifier {
+function makeMockVerifier(overrides: Partial<TeeAttestationVerifier> = {}): TeeAttestationVerifier {
   return {
     verify: vi.fn().mockReturnValue({
       allowed: true,
@@ -50,9 +48,7 @@ function makeMockVerifier(
   } as unknown as TeeAttestationVerifier;
 }
 
-function makeDeps(
-  overrides: Partial<ConfidentialPipelineDeps> = {},
-): ConfidentialPipelineDeps {
+function makeDeps(overrides: Partial<ConfidentialPipelineDeps> = {}): ConfidentialPipelineDeps {
   return {
     teeVerifier: makeMockVerifier(),
     logger: { warn: vi.fn(), info: vi.fn(), debug: vi.fn() } as any,
@@ -98,11 +94,11 @@ describe('ConfidentialPipelineManager', () => {
     expect(deps.auditFn).toHaveBeenCalledTimes(2);
     expect(deps.auditFn).toHaveBeenCalledWith(
       'tee_pipeline_start',
-      expect.objectContaining({ provider: 'anthropic' }),
+      expect.objectContaining({ provider: 'anthropic' })
     );
     expect(deps.auditFn).toHaveBeenCalledWith(
       'tee_pipeline_attestation',
-      expect.objectContaining({ provider: 'anthropic', verified: true }),
+      expect.objectContaining({ provider: 'anthropic', verified: true })
     );
   });
 
@@ -130,9 +126,9 @@ describe('ConfidentialPipelineManager', () => {
   });
 
   it('verifyConfidentialResponse throws for unknown request', async () => {
-    await expect(
-      manager.verifyConfidentialResponse('nonexistent-id'),
-    ).rejects.toThrow('Unknown request: nonexistent-id');
+    await expect(manager.verifyConfidentialResponse('nonexistent-id')).rejects.toThrow(
+      'Unknown request: nonexistent-id'
+    );
   });
 
   it('verifyConfidentialResponse removes from active requests', async () => {
@@ -154,7 +150,7 @@ describe('ConfidentialPipelineManager', () => {
         requestId: req.requestId,
         provider: 'anthropic',
         chainValid: true,
-      }),
+      })
     );
   });
 

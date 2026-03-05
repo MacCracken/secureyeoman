@@ -33,7 +33,9 @@ function makeAlertManager() {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function makeBaselineRow(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
+function makeBaselineRow(
+  overrides: Partial<Record<string, unknown>> = {}
+): Record<string, unknown> {
   return {
     id: 'baseline-1',
     personality_id: 'p-1',
@@ -46,7 +48,9 @@ function makeBaselineRow(overrides: Partial<Record<string, unknown>> = {}): Reco
   };
 }
 
-function makeSnapshotRow(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
+function makeSnapshotRow(
+  overrides: Partial<Record<string, unknown>> = {}
+): Record<string, unknown> {
   return {
     id: 'snap-1',
     baseline_id: 'baseline-1',
@@ -85,7 +89,8 @@ describe('DriftDetectionManager', () => {
   describe('computeBaseline()', () => {
     it('inserts baseline with mean/stddev', async () => {
       const row = makeBaselineRow();
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [{ avg: 0.85, stddev: 0.05, count: '100' }], rowCount: 1 }) // compute stats
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 }); // insert
 
@@ -97,7 +102,8 @@ describe('DriftDetectionManager', () => {
 
     it('stores personality_id', async () => {
       const row = makeBaselineRow({ personality_id: 'p-42' });
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [{ avg: 0.8, stddev: 0.1, count: '50' }], rowCount: 1 })
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 });
 
@@ -107,7 +113,8 @@ describe('DriftDetectionManager', () => {
 
     it('with custom threshold', async () => {
       const row = makeBaselineRow({ threshold: 3.0 });
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [{ avg: 0.8, stddev: 0.1, count: '50' }], rowCount: 1 })
         .mockResolvedValueOnce({ rows: [row], rowCount: 1 });
 
@@ -175,7 +182,8 @@ describe('DriftDetectionManager', () => {
 
     it('creates snapshot', async () => {
       const snapshotRow = makeSnapshotRow();
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [{ avg: 0.82, stddev: 0.03, count: '50' }], rowCount: 1 }) // current stats
         .mockResolvedValueOnce({ rows: [snapshotRow], rowCount: 1 }); // insert snapshot
 
@@ -185,8 +193,9 @@ describe('DriftDetectionManager', () => {
 
     it('logs warning when drift > threshold', async () => {
       const snapshotRow = makeSnapshotRow({ drift_magnitude: 3.0, alert_triggered: true });
-      pool.query = vi.fn()
-        .mockResolvedValueOnce({ rows: [{ avg: 0.70, stddev: 0.04, count: '50' }], rowCount: 1 })
+      pool.query = vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [{ avg: 0.7, stddev: 0.04, count: '50' }], rowCount: 1 })
         .mockResolvedValueOnce({ rows: [snapshotRow], rowCount: 1 });
 
       await manager.checkDrift(baselineObj);
@@ -198,7 +207,8 @@ describe('DriftDetectionManager', () => {
 
     it('no alert when drift < threshold', async () => {
       const snapshotRow = makeSnapshotRow({ drift_magnitude: 0.5, alert_triggered: false });
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [{ avg: 0.84, stddev: 0.04, count: '50' }], rowCount: 1 })
         .mockResolvedValueOnce({ rows: [snapshotRow], rowCount: 1 });
 
@@ -207,7 +217,8 @@ describe('DriftDetectionManager', () => {
     });
 
     it('returns null when insufficient samples', async () => {
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [{ avg: null, stddev: 0, count: '0' }], rowCount: 1 });
 
       const result = await manager.checkDrift(baselineObj);
@@ -217,8 +228,9 @@ describe('DriftDetectionManager', () => {
     it('computes drift magnitude correctly', async () => {
       // mean=0.85, stddev=0.05, current=0.70 → drift = |0.85-0.70|/0.05 = 3.0
       const snapshotRow = makeSnapshotRow({ drift_magnitude: 3.0 });
-      pool.query = vi.fn()
-        .mockResolvedValueOnce({ rows: [{ avg: 0.70, stddev: 0.04, count: '50' }], rowCount: 1 })
+      pool.query = vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [{ avg: 0.7, stddev: 0.04, count: '50' }], rowCount: 1 })
         .mockResolvedValueOnce({ rows: [snapshotRow], rowCount: 1 });
 
       const result = await manager.checkDrift(baselineObj);
@@ -229,7 +241,8 @@ describe('DriftDetectionManager', () => {
     it('logs drift warning with metadata', async () => {
       const lowThresholdBaseline = { ...baselineObj, threshold: 1.0 };
       const snapshotRow = makeSnapshotRow({ drift_magnitude: 2.0, alert_triggered: true });
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: [{ avg: 0.75, stddev: 0.04, count: '50' }], rowCount: 1 })
         .mockResolvedValueOnce({ rows: [snapshotRow], rowCount: 1 });
 
@@ -249,7 +262,8 @@ describe('DriftDetectionManager', () => {
   describe('checkAllDrift()', () => {
     it('checks all baselines', async () => {
       const baselines = [makeBaselineRow(), makeBaselineRow({ id: 'baseline-2' })];
-      pool.query = vi.fn()
+      pool.query = vi
+        .fn()
         .mockResolvedValueOnce({ rows: baselines, rowCount: baselines.length }) // list baselines
         .mockResolvedValueOnce({ rows: [{ avg: 0.84, stddev: 0.04, count: '50' }], rowCount: 1 }) // stats for baseline 1
         .mockResolvedValueOnce({ rows: [makeSnapshotRow()], rowCount: 1 }) // insert snapshot 1

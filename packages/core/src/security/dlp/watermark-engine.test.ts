@@ -145,11 +145,12 @@ describe('WatermarkEngine — cross-cutting', () => {
     const algorithms = ['unicode-steganography', 'whitespace', 'homoglyph'] as const;
     for (const algo of algorithms) {
       const engine = new WatermarkEngine(algo);
-      const text = algo === 'homoglyph'
-        ? 'a]e]o]p]c]x]'.repeat(100)
-        : algo === 'whitespace'
-          ? Array.from({ length: 300 }, (_, i) => `Line ${i}`).join('\n')
-          : 'Hello world test document content.';
+      const text =
+        algo === 'homoglyph'
+          ? 'a]e]o]p]c]x]'.repeat(100)
+          : algo === 'whitespace'
+            ? Array.from({ length: 300 }, (_, i) => `Line ${i}`).join('\n')
+            : 'Hello world test document content.';
       const watermarked = engine.embed(text, PAYLOAD);
       const extracted = engine.extract(watermarked);
       expect(extracted, `roundtrip failed for ${algo}`).not.toBeNull();

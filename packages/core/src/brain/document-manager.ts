@@ -377,10 +377,7 @@ export class DocumentManager {
    * Update the 8-dimension provenance scores for a document.
    * Computes a weighted-average trust_score from the PROVENANCE_WEIGHTS constant.
    */
-  async updateProvenance(
-    docId: string,
-    scores: ProvenanceScores
-  ): Promise<KbDocument | null> {
+  async updateProvenance(docId: string, scores: ProvenanceScores): Promise<KbDocument | null> {
     const trustScore = Object.entries(PROVENANCE_WEIGHTS).reduce(
       (sum, [key, weight]) => sum + (scores[key as keyof ProvenanceScores] ?? 0.5) * weight,
       0
@@ -482,7 +479,8 @@ function extractExcalidrawLabels(scene: Record<string, unknown>): string[] {
     if (typeof el !== 'object' || el === null) continue;
     const elem = el as Record<string, unknown>;
     if (typeof elem.text === 'string' && elem.text.trim()) labels.add(elem.text.trim());
-    if (typeof elem.originalText === 'string' && elem.originalText.trim()) labels.add(elem.originalText.trim());
+    if (typeof elem.originalText === 'string' && elem.originalText.trim())
+      labels.add(elem.originalText.trim());
   }
   return Array.from(labels);
 }

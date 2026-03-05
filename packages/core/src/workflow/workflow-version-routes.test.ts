@@ -75,7 +75,9 @@ function makeMockWorkflowManager(): WorkflowManager {
   } as unknown as WorkflowManager;
 }
 
-function makeMockVersionManager(overrides: Partial<WorkflowVersionManager> = {}): WorkflowVersionManager {
+function makeMockVersionManager(
+  overrides: Partial<WorkflowVersionManager> = {}
+): WorkflowVersionManager {
   return {
     recordVersion: vi.fn().mockResolvedValue(VERSION),
     tagRelease: vi.fn().mockResolvedValue({ ...VERSION, versionTag: '2026.3.3' }),

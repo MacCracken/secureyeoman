@@ -57,7 +57,7 @@ export function TeeStatusWidget() {
     mutationFn: (provider: string) =>
       fetchApi<{ allowed: boolean; result: AttestationResult }>(
         `/api/v1/security/tee/verify/${encodeURIComponent(provider)}`,
-        { method: 'POST' },
+        { method: 'POST' }
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tee-providers'] });
@@ -65,15 +65,11 @@ export function TeeStatusWidget() {
   });
 
   if (isLoading) {
-    return (
-      <div className="p-4 text-sm text-zinc-400">Loading TEE status...</div>
-    );
+    return <div className="p-4 text-sm text-zinc-400">Loading TEE status...</div>;
   }
 
   if (!providers) {
-    return (
-      <div className="p-4 text-sm text-zinc-500">TEE data unavailable</div>
-    );
+    return <div className="p-4 text-sm text-zinc-500">TEE data unavailable</div>;
   }
 
   const hw = providers.hardware;
@@ -86,9 +82,7 @@ export function TeeStatusWidget() {
 
   return (
     <div className="flex flex-col gap-3 p-4 text-sm">
-      <h3 className="text-base font-semibold text-zinc-200">
-        Confidential Computing
-      </h3>
+      <h3 className="text-base font-semibold text-zinc-200">Confidential Computing</h3>
 
       {/* Hardware Detection */}
       <div className="rounded border border-zinc-700 p-3">
@@ -103,15 +97,10 @@ export function TeeStatusWidget() {
 
       {/* TEE Coverage */}
       <div className="rounded border border-zinc-700 p-3">
-        <div className="mb-2 font-medium text-zinc-300">
-          TEE Provider Coverage
-        </div>
+        <div className="mb-2 font-medium text-zinc-300">TEE Provider Coverage</div>
         <div className="flex items-center gap-2">
           <div className="h-2 flex-1 rounded bg-zinc-700">
-            <div
-              className="h-2 rounded bg-green-500"
-              style={{ width: `${coverage}%` }}
-            />
+            <div className="h-2 rounded bg-green-500" style={{ width: `${coverage}%` }} />
           </div>
           <span className="text-xs text-zinc-400">{coverage}%</span>
         </div>
@@ -128,7 +117,9 @@ export function TeeStatusWidget() {
             <div key={p} className="flex items-center justify-between">
               <span className="text-zinc-300">{p}</span>
               <button
-                onClick={() => verifyMutation.mutate(p)}
+                onClick={() => {
+                  verifyMutation.mutate(p);
+                }}
                 disabled={verifyMutation.isPending}
                 className="rounded bg-zinc-700 px-2 py-0.5 text-xs text-zinc-300 hover:bg-zinc-600 disabled:opacity-50"
               >
@@ -140,9 +131,7 @@ export function TeeStatusWidget() {
       </div>
 
       {/* Cache Stats */}
-      <div className="text-xs text-zinc-500">
-        Attestation cache: {cacheSize} entries
-      </div>
+      <div className="text-xs text-zinc-500">Attestation cache: {cacheSize} entries</div>
     </div>
   );
 }
@@ -153,9 +142,7 @@ function HardwareItem({ label, available }: { label: string; available: boolean 
       <span className={available ? 'text-green-400' : 'text-zinc-500'}>
         {available ? '\u25CF' : '\u25CB'}
       </span>
-      <span className={available ? 'text-zinc-200' : 'text-zinc-500'}>
-        {label}
-      </span>
+      <span className={available ? 'text-zinc-200' : 'text-zinc-500'}>{label}</span>
     </div>
   );
 }

@@ -50,7 +50,9 @@ function ScheduleSection({
         {presets.map((preset) => (
           <button
             key={preset.value}
-            onClick={() => onChange(preset.value)}
+            onClick={() => {
+              onChange(preset.value);
+            }}
             className={`px-3 py-2 rounded-lg text-xs border transition-colors ${
               value === preset.value
                 ? 'border-primary bg-primary/10 text-primary'
@@ -65,7 +67,9 @@ function ScheduleSection({
         <input
           type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
           placeholder="Cron expression"
           className="flex-1 bg-card border border-border rounded-lg px-3 py-2 text-sm"
         />
@@ -74,11 +78,7 @@ function ScheduleSection({
           disabled={isSaving}
           className="btn btn-ghost text-sm flex items-center gap-1"
         >
-          {isSaving ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
-          ) : (
-            <Save className="w-3 h-3" />
-          )}
+          {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
           Save
         </button>
       </div>
@@ -137,24 +137,36 @@ export default function AuditScheduleConfig() {
         <ScheduleSection
           scope="daily"
           value={schedules.daily}
-          onChange={(v) => setSchedules((s) => ({ ...s, daily: v }))}
-          onSave={() => handleSave('daily')}
+          onChange={(v) => {
+            setSchedules((s) => ({ ...s, daily: v }));
+          }}
+          onSave={() => {
+            handleSave('daily');
+          }}
           isSaving={mutation.isPending}
           presets={DAILY_PRESETS}
         />
         <ScheduleSection
           scope="weekly"
           value={schedules.weekly}
-          onChange={(v) => setSchedules((s) => ({ ...s, weekly: v }))}
-          onSave={() => handleSave('weekly')}
+          onChange={(v) => {
+            setSchedules((s) => ({ ...s, weekly: v }));
+          }}
+          onSave={() => {
+            handleSave('weekly');
+          }}
           isSaving={mutation.isPending}
           presets={WEEKLY_PRESETS}
         />
         <ScheduleSection
           scope="monthly"
           value={schedules.monthly}
-          onChange={(v) => setSchedules((s) => ({ ...s, monthly: v }))}
-          onSave={() => handleSave('monthly')}
+          onChange={(v) => {
+            setSchedules((s) => ({ ...s, monthly: v }));
+          }}
+          onSave={() => {
+            handleSave('monthly');
+          }}
           isSaving={mutation.isPending}
           presets={MONTHLY_PRESETS}
         />

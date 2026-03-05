@@ -191,7 +191,11 @@ describe('POST /api/v1/training/export', () => {
   });
 
   it('returns 503 when conversation storage unavailable', async () => {
-    const sy = { getConversationStorage: vi.fn(() => null), getBrainManager: vi.fn(), getLicenseManager: vi.fn(() => new LicenseManager()) } as any;
+    const sy = {
+      getConversationStorage: vi.fn(() => null),
+      getBrainManager: vi.fn(),
+      getLicenseManager: vi.fn(() => new LicenseManager()),
+    } as any;
     const localApp = await buildApp(sy);
     const res = await localApp.inject({
       method: 'POST',

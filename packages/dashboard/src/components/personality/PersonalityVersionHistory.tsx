@@ -27,11 +27,7 @@ interface DriftInfo {
   diffSummary: string;
 }
 
-export default function PersonalityVersionHistory({
-  personalityId,
-}: {
-  personalityId: string;
-}) {
+export default function PersonalityVersionHistory({ personalityId }: { personalityId: string }) {
   const [versions, setVersions] = useState<VersionEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [drift, setDrift] = useState<DriftInfo | null>(null);
@@ -73,7 +69,12 @@ export default function PersonalityVersionHistory({
   };
 
   const handleRollback = async (versionId: string) => {
-    if (!window.confirm('Roll back to this version? A new version entry will be created with the restored content.')) return;
+    if (
+      !window.confirm(
+        'Roll back to this version? A new version entry will be created with the restored content.'
+      )
+    )
+      return;
     try {
       await rollbackPersonality(personalityId, versionId);
       await loadData();
@@ -115,14 +116,15 @@ export default function PersonalityVersionHistory({
       )}
 
       {/* Drift badge */}
-      {drift && drift.lastTaggedVersion && (
+      {drift?.lastTaggedVersion && (
         <div className="flex items-center justify-between bg-muted border border-border rounded px-4 py-3">
           <div>
             <span className="font-medium">Last release: </span>
             <span className="font-mono text-sm">{drift.lastTaggedVersion}</span>
             {drift.uncommittedChanges > 0 && (
               <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-warning/10 text-warning">
-                {drift.uncommittedChanges} uncommitted change{drift.uncommittedChanges > 1 ? 's' : ''}
+                {drift.uncommittedChanges} uncommitted change
+                {drift.uncommittedChanges > 1 ? 's' : ''}
               </span>
             )}
             {drift.uncommittedChanges === 0 && (
@@ -154,11 +156,11 @@ export default function PersonalityVersionHistory({
 
       {/* Version list */}
       <div>
-        <h3 className="font-medium text-foreground mb-2">
-          Versions ({total})
-        </h3>
+        <h3 className="font-medium text-foreground mb-2">Versions ({total})</h3>
         {versions.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No versions recorded yet. Edit the personality to create the first version.</p>
+          <p className="text-muted-foreground text-sm">
+            No versions recorded yet. Edit the personality to create the first version.
+          </p>
         ) : (
           <div className="border border-border rounded divide-y divide-border">
             {versions.map((v, i) => {
@@ -169,7 +171,9 @@ export default function PersonalityVersionHistory({
                   className={`px-4 py-3 hover:bg-muted/50 cursor-pointer ${
                     selectedVersion?.id === v.id ? 'bg-primary/5' : ''
                   }`}
-                  onClick={() => setSelectedVersion(selectedVersion?.id === v.id ? null : v)}
+                  onClick={() => {
+                    setSelectedVersion(selectedVersion?.id === v.id ? null : v);
+                  }}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -254,7 +258,10 @@ export default function PersonalityVersionHistory({
               Diff: {diffPair[0].slice(0, 8)} vs {diffPair[1].slice(0, 8)}
             </h3>
             <button
-              onClick={() => { setDiffText(null); setDiffPair(null); }}
+              onClick={() => {
+                setDiffText(null);
+                setDiffPair(null);
+              }}
               className="text-xs text-muted-foreground hover:text-foreground"
             >
               Close
@@ -265,13 +272,17 @@ export default function PersonalityVersionHistory({
               <span
                 key={i}
                 className={
-                  line.startsWith('+') ? 'text-green-500' :
-                  line.startsWith('-') ? 'text-red-500' :
-                  line.startsWith('@') ? 'text-blue-500' :
-                  ''
+                  line.startsWith('+')
+                    ? 'text-green-500'
+                    : line.startsWith('-')
+                      ? 'text-red-500'
+                      : line.startsWith('@')
+                        ? 'text-blue-500'
+                        : ''
                 }
               >
-                {line}{'\n'}
+                {line}
+                {'\n'}
               </span>
             ))}
           </pre>

@@ -121,7 +121,7 @@ export function initPoolFromConfig(dbConfig: DatabaseConfig): pg.Pool {
  * Called after initPool() with replica host configurations.
  */
 export function initReplicaPools(
-  replicas: Array<{ host: string; port?: number }>,
+  replicas: { host: string; port?: number }[],
   baseConfig: PgPoolConfig,
   replicaPoolSize = 5
 ): void {

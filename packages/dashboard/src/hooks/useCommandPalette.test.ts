@@ -5,9 +5,29 @@ import { useCommandPalette, type CommandItem } from './useCommandPalette';
 import React from 'react';
 
 const makeCommands = (): CommandItem[] => [
-  { id: 'a', label: 'Alpha', category: 'file', icon: null as unknown as React.ReactNode, action: vi.fn(), keywords: ['first'] },
-  { id: 'b', label: 'Beta', category: 'panel', icon: null as unknown as React.ReactNode, action: vi.fn() },
-  { id: 'c', label: 'Charlie', category: 'file', icon: null as unknown as React.ReactNode, action: vi.fn(), keywords: ['third'] },
+  {
+    id: 'a',
+    label: 'Alpha',
+    category: 'file',
+    icon: null as unknown as React.ReactNode,
+    action: vi.fn(),
+    keywords: ['first'],
+  },
+  {
+    id: 'b',
+    label: 'Beta',
+    category: 'panel',
+    icon: null as unknown as React.ReactNode,
+    action: vi.fn(),
+  },
+  {
+    id: 'c',
+    label: 'Charlie',
+    category: 'file',
+    icon: null as unknown as React.ReactNode,
+    action: vi.fn(),
+    keywords: ['third'],
+  },
 ];
 
 describe('useCommandPalette', () => {

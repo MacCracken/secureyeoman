@@ -15,11 +15,7 @@ vi.mock('../../api/client', async () => {
   };
 });
 
-import {
-  fetchAccountCosts,
-  fetchAccountCostTrend,
-  exportAccountCostsCsv,
-} from '../../api/client';
+import { fetchAccountCosts, fetchAccountCostTrend, exportAccountCostsCsv } from '../../api/client';
 
 const mockFetchAccountCosts = vi.mocked(fetchAccountCosts);
 const mockFetchAccountCostTrend = vi.mocked(fetchAccountCostTrend);
@@ -115,9 +111,7 @@ describe('CostDashboard', () => {
 
     renderComponent();
 
-    expect(
-      await screen.findByText(/No cost data for this period/)
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/No cost data for this period/)).toBeInTheDocument();
   });
 
   it('renders overview cards with calculated totals', async () => {

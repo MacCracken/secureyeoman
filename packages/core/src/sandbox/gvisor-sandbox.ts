@@ -181,7 +181,8 @@ const fn = ${fn.toString()};
             ? ['--network=none']
             : []),
           'run',
-          '--bundle', tmpDir,
+          '--bundle',
+          tmpDir,
           containerId,
         ];
 
@@ -208,59 +209,64 @@ const fn = ${fn.toString()};
         let stdout = '';
         let stderr = '';
 
-        const child = execFile(runsc, args, {
-          timeout: timeoutMs + 5000, // buffer beyond our manual timeout
-          maxBuffer: 10 * 1024 * 1024,
-        }, (err, stdoutBuf, stderrBuf) => {
-          clearTimeout(timer);
-          stdout = stdoutBuf;
-          stderr = stderrBuf;
+        const child = execFile(
+          runsc,
+          args,
+          {
+            timeout: timeoutMs + 5000, // buffer beyond our manual timeout
+            maxBuffer: 10 * 1024 * 1024,
+          },
+          (err, stdoutBuf, stderrBuf) => {
+            clearTimeout(timer);
+            stdout = stdoutBuf;
+            stderr = stderrBuf;
 
-          const endTime = Date.now();
-          const cpuTimeMs = endTime - startTime;
+            const endTime = Date.now();
+            const cpuTimeMs = endTime - startTime;
 
-          if (err) {
-            this.getLogger().warn(`gVisor execution failed: ${err.message}`);
-            violations.push({
-              type: 'syscall',
-              description: `gVisor execution error: ${err.message}`,
-              timestamp: Date.now(),
-            });
-            resolve({
-              success: false,
-              error: new Error(err.message),
-              resourceUsage: { memoryPeakMb: 0, cpuTimeMs },
-              violations,
-            });
-            return;
-          }
-
-          try {
-            const parsed = JSON.parse(stdout);
-            if (parsed.success) {
+            if (err) {
+              this.getLogger().warn(`gVisor execution failed: ${err.message}`);
+              violations.push({
+                type: 'syscall',
+                description: `gVisor execution error: ${err.message}`,
+                timestamp: Date.now(),
+              });
               resolve({
-                success: true,
-                result: parsed.result as T,
+                success: false,
+                error: new Error(err.message),
                 resourceUsage: { memoryPeakMb: 0, cpuTimeMs },
                 violations,
               });
-            } else {
+              return;
+            }
+
+            try {
+              const parsed = JSON.parse(stdout);
+              if (parsed.success) {
+                resolve({
+                  success: true,
+                  result: parsed.result as T,
+                  resourceUsage: { memoryPeakMb: 0, cpuTimeMs },
+                  violations,
+                });
+              } else {
+                resolve({
+                  success: false,
+                  error: new Error(parsed.error ?? 'Task failed in gVisor sandbox'),
+                  resourceUsage: { memoryPeakMb: 0, cpuTimeMs },
+                  violations,
+                });
+              }
+            } catch {
               resolve({
                 success: false,
-                error: new Error(parsed.error ?? 'Task failed in gVisor sandbox'),
+                error: new Error(`Failed to parse gVisor output: ${stdout.slice(0, 200)}`),
                 resourceUsage: { memoryPeakMb: 0, cpuTimeMs },
                 violations,
               });
             }
-          } catch {
-            resolve({
-              success: false,
-              error: new Error(`Failed to parse gVisor output: ${stdout.slice(0, 200)}`),
-              resourceUsage: { memoryPeakMb: 0, cpuTimeMs },
-              violations,
-            });
           }
-        });
+        );
 
         // Log stderr violations (gVisor security events)
         child.stderr?.on('data', (chunk: Buffer) => {
@@ -306,9 +312,19 @@ const fn = ${fn.toString()};
 
     const mounts = [
       { destination: '/proc', type: 'proc', source: 'proc' },
-      { destination: '/tmp', type: 'tmpfs', source: 'tmpfs', options: ['nosuid', 'nodev', 'size=64m'] },
+      {
+        destination: '/tmp',
+        type: 'tmpfs',
+        source: 'tmpfs',
+        options: ['nosuid', 'nodev', 'size=64m'],
+      },
       // Mount node binary read-only
-      { destination: '/usr/local/bin/node', type: 'bind', source: process.execPath, options: ['rbind', 'ro'] },
+      {
+        destination: '/usr/local/bin/node',
+        type: 'bind',
+        source: process.execPath,
+        options: ['rbind', 'ro'],
+      },
     ];
 
     // Add read-only mounts for allowed paths
@@ -369,7 +385,10 @@ const fn = ${fn.toString()};
   /**
    * Fallback: run in-process with basic resource tracking when runsc is unavailable.
    */
-  private async runFallback<T>(fn: () => Promise<T>, opts?: SandboxOptions): Promise<SandboxResult<T>> {
+  private async runFallback<T>(
+    fn: () => Promise<T>,
+    opts?: SandboxOptions
+  ): Promise<SandboxResult<T>> {
     const startTime = Date.now();
     const memBefore = process.memoryUsage().heapUsed;
 

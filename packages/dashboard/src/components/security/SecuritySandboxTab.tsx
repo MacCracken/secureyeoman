@@ -61,7 +61,9 @@ function VerdictBadge({ verdict }: { verdict: string }) {
     block: 'bg-red-500/10 text-red-600',
   };
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium ${styles[verdict] ?? 'bg-muted text-muted-foreground'}`}>
+    <span
+      className={`px-2 py-0.5 rounded text-xs font-medium ${styles[verdict] ?? 'bg-muted text-muted-foreground'}`}
+    >
       {verdict}
     </span>
   );
@@ -78,7 +80,9 @@ function SeverityBadge({ severity }: { severity: string }) {
     info: 'bg-muted text-muted-foreground',
   };
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium ${styles[severity] ?? 'bg-muted text-muted-foreground'}`}>
+    <span
+      className={`px-2 py-0.5 rounded text-xs font-medium ${styles[severity] ?? 'bg-muted text-muted-foreground'}`}
+    >
       {severity}
     </span>
   );
@@ -215,7 +219,9 @@ export function SandboxTab() {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => approveMut.mutate(item.id)}
+                    onClick={() => {
+                      approveMut.mutate(item.id);
+                    }}
                     disabled={approveMut.isPending}
                     className="p-1.5 rounded hover:bg-accent text-green-600"
                     title="Approve and release"
@@ -223,7 +229,9 @@ export function SandboxTab() {
                     <CheckSquare className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => deleteMut.mutate(item.id)}
+                    onClick={() => {
+                      deleteMut.mutate(item.id);
+                    }}
                     disabled={deleteMut.isPending}
                     className="p-1.5 rounded hover:bg-accent text-red-600"
                     title="Permanently delete"
@@ -256,7 +264,9 @@ export function SandboxTab() {
               {(threats.patterns ?? []).slice(0, 12).map((p: any) => (
                 <div key={p.id} className="bg-muted/50 rounded p-2 text-xs">
                   <div className="font-medium truncate">{p.name}</div>
-                  <div className="text-muted-foreground">{p.category} | w={p.intentWeight}</div>
+                  <div className="text-muted-foreground">
+                    {p.category} | w={p.intentWeight}
+                  </div>
                 </div>
               ))}
             </div>
@@ -270,7 +280,9 @@ export function SandboxTab() {
           <h3 className="font-medium text-sm">Recent Scans</h3>
           <div className="flex items-center gap-2 text-xs">
             <button
-              onClick={() => setScansPage(Math.max(0, scansPage - 1))}
+              onClick={() => {
+                setScansPage(Math.max(0, scansPage - 1));
+              }}
               disabled={scansPage === 0}
               className="px-2 py-1 rounded bg-muted hover:bg-accent disabled:opacity-50"
             >
@@ -278,7 +290,9 @@ export function SandboxTab() {
             </button>
             <span className="text-muted-foreground">Page {scansPage + 1}</span>
             <button
-              onClick={() => setScansPage(scansPage + 1)}
+              onClick={() => {
+                setScansPage(scansPage + 1);
+              }}
               disabled={(scans?.rows?.length ?? 0) < pageSize}
               className="px-2 py-1 rounded bg-muted hover:bg-accent disabled:opacity-50"
             >

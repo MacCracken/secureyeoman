@@ -163,15 +163,18 @@ export function registerIntentRoutes(app: FastifyInstance, opts: IntentRoutesOpt
   });
 
   // ── GET /api/v1/intent/:id/goals/:goalId/timeline — goal lifecycle events ─
-  app.get<{ Params: { id: string; goalId: string } }>('/api/v1/intent/:id/goals/:goalId/timeline', async (req, reply) => {
-    const { id, goalId } = req.params;
-    try {
-      const record = await storage.getIntentDoc(id);
-      if (!record) return sendError(reply, 404, 'Intent document not found');
-      const entries = await intentManager.getGoalTimeline(id, goalId);
-      return reply.send({ entries });
-    } catch (err) {
-      return sendError(reply, 500, toErrorMessage(err));
+  app.get<{ Params: { id: string; goalId: string } }>(
+    '/api/v1/intent/:id/goals/:goalId/timeline',
+    async (req, reply) => {
+      const { id, goalId } = req.params;
+      try {
+        const record = await storage.getIntentDoc(id);
+        if (!record) return sendError(reply, 404, 'Intent document not found');
+        const entries = await intentManager.getGoalTimeline(id, goalId);
+        return reply.send({ entries });
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
     }
-  });
+  );
 }

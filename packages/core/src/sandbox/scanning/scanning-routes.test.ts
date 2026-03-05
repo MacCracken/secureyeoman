@@ -56,16 +56,19 @@ describe('Scanning Routes', () => {
     });
 
     it('passes query params', async () => {
-      await app.inject({ method: 'GET', url: '/api/v1/sandbox/scans?limit=10&offset=5&verdict=block' });
+      await app.inject({
+        method: 'GET',
+        url: '/api/v1/sandbox/scans?limit=10&offset=5&verdict=block',
+      });
       expect(opts.scanHistoryStore!.list).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 10, offset: 5, verdict: 'block' }),
+        expect.objectContaining({ limit: 10, offset: 5, verdict: 'block' })
       );
     });
 
     it('caps limit at 100', async () => {
       await app.inject({ method: 'GET', url: '/api/v1/sandbox/scans?limit=999' });
       expect(opts.scanHistoryStore!.list).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 100 }),
+        expect.objectContaining({ limit: 100 })
       );
     });
 
@@ -121,14 +124,20 @@ describe('Scanning Routes', () => {
 
   describe('GET /api/v1/sandbox/quarantine/:id', () => {
     it('returns 404 for missing entry', async () => {
-      const res = await app.inject({ method: 'GET', url: `/api/v1/sandbox/quarantine/${randomUUID()}` });
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/sandbox/quarantine/${randomUUID()}`,
+      });
       expect(res.statusCode).toBe(404);
     });
 
     it('returns entry when found', async () => {
       const entry = { id: randomUUID(), status: 'quarantined' };
       (opts.quarantineStorage!.get as any).mockResolvedValue(entry);
-      const res = await app.inject({ method: 'GET', url: `/api/v1/sandbox/quarantine/${entry.id}` });
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/sandbox/quarantine/${entry.id}`,
+      });
       expect(res.statusCode).toBe(200);
       expect(JSON.parse(res.payload).entry).toEqual(entry);
     });

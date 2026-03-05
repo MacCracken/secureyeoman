@@ -31,17 +31,19 @@ describe('RetentionStore', () => {
 
   it('gets policy by content type', async () => {
     mockQuery.mockResolvedValueOnce({
-      rows: [{
-        id: 'pol-1',
-        contentType: 'conversation',
-        retentionDays: 90,
-        classificationLevel: 'confidential',
-        enabled: true,
-        lastPurgeAt: null,
-        createdAt: 1000,
-        updatedAt: 1000,
-        tenantId: 'default',
-      }],
+      rows: [
+        {
+          id: 'pol-1',
+          contentType: 'conversation',
+          retentionDays: 90,
+          classificationLevel: 'confidential',
+          enabled: true,
+          lastPurgeAt: null,
+          createdAt: 1000,
+          updatedAt: 1000,
+          tenantId: 'default',
+        },
+      ],
     });
     const policy = await store.getByContentType('conversation', 'confidential');
     expect(policy).toBeTruthy();
@@ -58,8 +60,28 @@ describe('RetentionStore', () => {
   it('lists all retention policies', async () => {
     mockQuery.mockResolvedValueOnce({
       rows: [
-        { id: 'p1', contentType: 'conversation', retentionDays: 90, classificationLevel: null, enabled: true, lastPurgeAt: null, createdAt: 1000, updatedAt: 1000, tenantId: 'default' },
-        { id: 'p2', contentType: 'document', retentionDays: 365, classificationLevel: 'restricted', enabled: false, lastPurgeAt: null, createdAt: 900, updatedAt: 900, tenantId: 'default' },
+        {
+          id: 'p1',
+          contentType: 'conversation',
+          retentionDays: 90,
+          classificationLevel: null,
+          enabled: true,
+          lastPurgeAt: null,
+          createdAt: 1000,
+          updatedAt: 1000,
+          tenantId: 'default',
+        },
+        {
+          id: 'p2',
+          contentType: 'document',
+          retentionDays: 365,
+          classificationLevel: 'restricted',
+          enabled: false,
+          lastPurgeAt: null,
+          createdAt: 900,
+          updatedAt: 900,
+          tenantId: 'default',
+        },
       ],
     });
     const policies = await store.list();

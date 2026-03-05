@@ -382,7 +382,9 @@ export function DepartmentalRiskTab() {
         <Suspense fallback={null}>
           <RegisterEntryFormModal
             open={showEntryModal}
-            onClose={() => setShowEntryModal(false)}
+            onClose={() => {
+              setShowEntryModal(false);
+            }}
             onSubmit={handleEntrySubmit}
           />
         </Suspense>

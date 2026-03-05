@@ -47,16 +47,13 @@ function StatCard({
 }
 
 function HealthGauge({ score }: { score: number }) {
-  const color =
-    score >= 80 ? 'text-success' : score >= 50 ? 'text-warning' : 'text-destructive';
+  const color = score >= 80 ? 'text-success' : score >= 50 ? 'text-warning' : 'text-destructive';
   const bgColor =
     score >= 80 ? 'bg-success/20' : score >= 50 ? 'bg-warning/20' : 'bg-destructive/20';
 
   return (
     <div className="flex items-center gap-4">
-      <div
-        className={`w-20 h-20 rounded-full flex items-center justify-center ${bgColor}`}
-      >
+      <div className={`w-20 h-20 rounded-full flex items-center justify-center ${bgColor}`}>
         <span className={`text-2xl font-bold ${color}`}>{score}</span>
       </div>
       <div>
@@ -171,9 +168,9 @@ export default function MemoryHealthTab() {
           <div className="flex items-center gap-2">
             <select
               value={auditScope}
-              onChange={(e) =>
-                setAuditScope(e.target.value as 'daily' | 'weekly' | 'monthly')
-              }
+              onChange={(e) => {
+                setAuditScope(e.target.value as 'daily' | 'weekly' | 'monthly');
+              }}
               className="bg-card border border-border rounded-lg px-2 py-1 text-sm"
             >
               <option value="daily">Daily</option>
@@ -214,13 +211,13 @@ export default function MemoryHealthTab() {
                 <div>
                   <span className="text-sm font-medium">{String(report.scope)} audit</span>
                   <span className="text-xs text-muted-foreground ml-2">
-                    {report.startedAt
-                      ? new Date(report.startedAt as number).toLocaleString()
-                      : ''}
+                    {report.startedAt ? new Date(report.startedAt as number).toLocaleString() : ''}
                   </span>
                 </div>
                 <button
-                  onClick={() => approveMutation.mutate(String(report.id))}
+                  onClick={() => {
+                    approveMutation.mutate(String(report.id));
+                  }}
                   disabled={approveMutation.isPending}
                   className="flex items-center gap-1 btn btn-ghost text-xs px-3 py-1 bg-success/10 text-success hover:bg-success/20"
                 >
@@ -245,9 +242,7 @@ export default function MemoryHealthTab() {
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
           ) : reports.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground text-sm">
-              No audits run yet
-            </div>
+            <div className="text-center py-8 text-muted-foreground text-sm">No audits run yet</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">

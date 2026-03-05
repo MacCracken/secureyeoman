@@ -116,15 +116,11 @@ describe('ScanFindingSchema', () => {
   });
 
   it('rejects scanner name > 64 chars', () => {
-    expect(() =>
-      ScanFindingSchema.parse({ ...validFinding, scanner: 'x'.repeat(65) })
-    ).toThrow();
+    expect(() => ScanFindingSchema.parse({ ...validFinding, scanner: 'x'.repeat(65) })).toThrow();
   });
 
   it('rejects message > 1024 chars', () => {
-    expect(() =>
-      ScanFindingSchema.parse({ ...validFinding, message: 'x'.repeat(1025) })
-    ).toThrow();
+    expect(() => ScanFindingSchema.parse({ ...validFinding, message: 'x'.repeat(1025) })).toThrow();
   });
 });
 

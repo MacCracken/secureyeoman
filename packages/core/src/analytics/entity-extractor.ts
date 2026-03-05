@@ -90,8 +90,13 @@ export class EntityExtractor {
   }
 
   async extractFromMessages(messages: { role: string; content: string }[]): Promise<ExtractResult> {
-    const transcript = messages.map((m) => `${m.role}: ${m.content.slice(0, MESSAGE_PREVIEW_LENGTH)}`).join('\n');
-    const truncated = transcript.length > TRANSCRIPT_TRUNCATION_LENGTH ? transcript.slice(0, TRANSCRIPT_TRUNCATION_LENGTH) + '\n...' : transcript;
+    const transcript = messages
+      .map((m) => `${m.role}: ${m.content.slice(0, MESSAGE_PREVIEW_LENGTH)}`)
+      .join('\n');
+    const truncated =
+      transcript.length > TRANSCRIPT_TRUNCATION_LENGTH
+        ? transcript.slice(0, TRANSCRIPT_TRUNCATION_LENGTH) + '\n...'
+        : transcript;
 
     const response = await this.aiClient.chat({
       messages: [{ role: 'user', content: EXTRACT_PROMPT + truncated }],

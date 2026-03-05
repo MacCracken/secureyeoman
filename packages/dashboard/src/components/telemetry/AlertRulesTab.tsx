@@ -172,7 +172,8 @@ const RULE_TEMPLATES: RuleTemplate[] = [
     label: 'ATHI Unmitigated Critical',
     category: 'Security',
     name: 'ATHI Unmitigated Critical',
-    description: 'Fires when a critical ATHI scenario remains in identified status without mitigations',
+    description:
+      'Fires when a critical ATHI scenario remains in identified status without mitigations',
     metricPath: 'security.athi_threat.status',
     operator: 'eq',
     threshold: 'identified',
@@ -744,75 +745,75 @@ export function AlertRulesTab() {
       </div>
 
       <FeatureLock feature="advanced_observability">
-      {showForm && (
-        <RuleForm
-          initial={formInitial}
-          onSave={handleSaveNew}
-          onCancel={() => {
-            setShowForm(false);
-            setFormInitial(undefined);
-          }}
-          saving={createMutation.isPending}
-        />
-      )}
-
-      {!showForm && (
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
+        {showForm && (
+          <RuleForm
+            initial={formInitial}
+            onSave={handleSaveNew}
+            onCancel={() => {
+              setShowForm(false);
               setFormInitial(undefined);
-              setShowForm(true);
             }}
-            className="btn btn-sm btn-ghost flex items-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" /> New rule
-          </button>
+            saving={createMutation.isPending}
+          />
+        )}
 
-          <div className="relative" ref={templateRef}>
+        {!showForm && (
+          <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                setShowTemplates((v) => !v);
+                setFormInitial(undefined);
+                setShowForm(true);
               }}
               className="btn btn-sm btn-ghost flex items-center gap-1.5"
             >
-              <FileText className="w-4 h-4" /> From template
+              <Plus className="w-4 h-4" /> New rule
             </button>
-            {showTemplates && (
-              <div className="absolute left-0 top-full mt-1 z-50 w-72 bg-popover border rounded-lg shadow-lg py-1">
-                {Array.from(new Set(RULE_TEMPLATES.map((t) => t.category))).map((cat) => (
-                  <div key={cat}>
-                    <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                      {cat}
+
+            <div className="relative" ref={templateRef}>
+              <button
+                onClick={() => {
+                  setShowTemplates((v) => !v);
+                }}
+                className="btn btn-sm btn-ghost flex items-center gap-1.5"
+              >
+                <FileText className="w-4 h-4" /> From template
+              </button>
+              {showTemplates && (
+                <div className="absolute left-0 top-full mt-1 z-50 w-72 bg-popover border rounded-lg shadow-lg py-1">
+                  {Array.from(new Set(RULE_TEMPLATES.map((t) => t.category))).map((cat) => (
+                    <div key={cat}>
+                      <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        {cat}
+                      </div>
+                      {RULE_TEMPLATES.filter((t) => t.category === cat).map((t) => (
+                        <button
+                          key={t.label}
+                          className="w-full text-left px-3 py-1.5 text-sm hover:bg-muted transition-colors"
+                          onClick={() => {
+                            setFormInitial({
+                              name: t.name,
+                              description: t.description,
+                              metricPath: t.metricPath,
+                              operator: t.operator,
+                              threshold: String(t.threshold),
+                              cooldownSeconds: String(t.cooldownSeconds),
+                              enabled: true,
+                              channels: [],
+                            });
+                            setShowForm(true);
+                            setShowTemplates(false);
+                          }}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
                     </div>
-                    {RULE_TEMPLATES.filter((t) => t.category === cat).map((t) => (
-                      <button
-                        key={t.label}
-                        className="w-full text-left px-3 py-1.5 text-sm hover:bg-muted transition-colors"
-                        onClick={() => {
-                          setFormInitial({
-                            name: t.name,
-                            description: t.description,
-                            metricPath: t.metricPath,
-                            operator: t.operator,
-                            threshold: String(t.threshold),
-                            cooldownSeconds: String(t.cooldownSeconds),
-                            enabled: true,
-                            channels: [],
-                          });
-                          setShowForm(true);
-                          setShowTemplates(false);
-                        }}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
       </FeatureLock>
     </div>
   );

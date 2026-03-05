@@ -63,9 +63,7 @@ describe('reorganization-prompts', () => {
     });
 
     it('includes access count', () => {
-      const prompt = buildClusterDecisionPrompt([
-        makeMemory({ accessCount: 42 }),
-      ]);
+      const prompt = buildClusterDecisionPrompt([makeMemory({ accessCount: 42 })]);
 
       expect(prompt).toContain('accesses=42');
     });
@@ -138,9 +136,9 @@ describe('reorganization-prompts', () => {
     it('filters entries without required action and reason fields', () => {
       const response = JSON.stringify([
         { action: 'KEEP', id: 'm-1', reason: 'fine' },
-        { action: 'PROMOTE', id: 'm-2' },          // missing reason
-        { reason: 'some reason' },                   // missing action
-        { action: 123, reason: 'wrong type' },       // action is not string
+        { action: 'PROMOTE', id: 'm-2' }, // missing reason
+        { reason: 'some reason' }, // missing action
+        { action: 123, reason: 'wrong type' }, // action is not string
         null,
       ]);
 

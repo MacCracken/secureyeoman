@@ -30,8 +30,15 @@ vi.mock('../logging/logger.js', () => ({
 // ─── Tests ────────────────────────────────────────────────────
 
 import {
-  initPool, getPool, closePool, resetPool, initPoolFromConfig,
-  initReplicaPools, getReadPool, hasReadReplicas, getReplicaCount,
+  initPool,
+  getPool,
+  closePool,
+  resetPool,
+  initPoolFromConfig,
+  initReplicaPools,
+  getReadPool,
+  hasReadReplicas,
+  getReplicaCount,
 } from './pg-pool.js';
 
 describe('pg-pool', () => {

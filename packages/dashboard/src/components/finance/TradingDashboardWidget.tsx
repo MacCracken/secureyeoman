@@ -30,7 +30,10 @@ const DEMO_DATA: OhlcvPoint[] = Array.from({ length: 30 }, (_, i) => {
   };
 });
 
-export function TradingDashboardWidget({ nodeId: _nodeId, onConfigChange: _onConfigChange }: TradingDashboardWidgetProps) {
+export function TradingDashboardWidget({
+  nodeId: _nodeId,
+  onConfigChange: _onConfigChange,
+}: TradingDashboardWidgetProps) {
   const [symbol, setSymbol] = useState('AAPL');
   const [isLoading] = useState(false);
 
@@ -41,7 +44,9 @@ export function TradingDashboardWidget({ nodeId: _nodeId, onConfigChange: _onCon
         <input
           type="text"
           value={symbol}
-          onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+          onChange={(e) => {
+            setSymbol(e.target.value.toUpperCase());
+          }}
           className="border rounded px-2 py-1 text-sm w-24 bg-background"
           placeholder="Symbol"
         />
@@ -51,18 +56,13 @@ export function TradingDashboardWidget({ nodeId: _nodeId, onConfigChange: _onCon
 
       {/* Candlestick chart */}
       <div className="flex-1 min-h-0">
-        <CandlestickChart
-          data={DEMO_DATA}
-          movingAverages={[20]}
-          showVolume
-          height={280}
-        />
+        <CandlestickChart data={DEMO_DATA} movingAverages={[20]} showVolume height={280} />
       </div>
 
       {/* Summary stats */}
       <div className="grid grid-cols-4 gap-2 text-xs">
         {(['Open', 'High', 'Low', 'Close'] as const).map((label) => {
-          const last = DEMO_DATA[DEMO_DATA.length - 1]!;
+          const last = DEMO_DATA[DEMO_DATA.length - 1];
           const val = last[label.toLowerCase() as keyof OhlcvPoint] as number;
           return (
             <div key={label} className="bg-muted/50 rounded p-1.5 text-center">

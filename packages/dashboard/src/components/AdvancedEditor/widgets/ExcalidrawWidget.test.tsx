@@ -110,7 +110,10 @@ describe('ExcalidrawWidget', () => {
   it('Save to KB triggers POST', async () => {
     mockFetch
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ documents: [] }) }) // loadKbDocs
-      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ document: { id: 'doc-1' } }) }); // save
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ document: { id: 'doc-1' } }),
+      }); // save
 
     render(<ExcalidrawWidget sceneJson={SAMPLE_SCENE} />);
 
@@ -133,15 +136,17 @@ describe('ExcalidrawWidget', () => {
     mockFetch
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          documents: [{ id: 'doc-1', title: 'Test', format: 'excalidraw' }],
-        }),
+        json: () =>
+          Promise.resolve({
+            documents: [{ id: 'doc-1', title: 'Test', format: 'excalidraw' }],
+          }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          document: { id: 'doc-1', title: 'Test', metadata: { excalidrawScene: scenePayload } },
-        }),
+        json: () =>
+          Promise.resolve({
+            document: { id: 'doc-1', title: 'Test', metadata: { excalidrawScene: scenePayload } },
+          }),
       });
 
     render(<ExcalidrawWidget />);

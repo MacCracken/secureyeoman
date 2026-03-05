@@ -113,7 +113,12 @@ export function registerBrainTools(
       inputSchema: {
         itemId: z.string().describe('Memory or document ID to get associations for'),
         limit: z.number().int().min(1).max(100).default(20).describe('Max associations to return'),
-        minWeight: z.number().min(0).max(1).optional().describe('Minimum association weight filter'),
+        minWeight: z
+          .number()
+          .min(0)
+          .max(1)
+          .optional()
+          .describe('Minimum association weight filter'),
       },
     },
     wrapToolHandler('memory_associations', middleware, async (args) => {

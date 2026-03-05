@@ -88,11 +88,13 @@ describe('RetentionManager', () => {
 
     it('handles multiple policies', async () => {
       const p1 = makePolicy({ id: 'pol-1', contentType: 'conversation' });
-      const p2 = makePolicy({ id: 'pol-2', contentType: 'document', classificationLevel: 'restricted' });
+      const p2 = makePolicy({
+        id: 'pol-2',
+        contentType: 'document',
+        classificationLevel: 'restricted',
+      });
       (store.list as any).mockResolvedValue([p1, p2]);
-      (store.purgeClassifications as any)
-        .mockResolvedValueOnce(3)
-        .mockResolvedValueOnce(7);
+      (store.purgeClassifications as any).mockResolvedValueOnce(3).mockResolvedValueOnce(7);
 
       const result = await manager.runPurge();
 
@@ -179,10 +181,7 @@ describe('RetentionManager', () => {
   describe('timer', () => {
     it('starts periodic purge timer', () => {
       manager.start();
-      expect(logger.info).toHaveBeenCalledWith(
-        'Retention manager started',
-        { intervalMs: 1000 }
-      );
+      expect(logger.info).toHaveBeenCalledWith('Retention manager started', { intervalMs: 1000 });
     });
 
     it('stop clears the timer', () => {

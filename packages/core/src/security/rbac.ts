@@ -541,7 +541,7 @@ export class RBAC {
   private evaluateClassificationCondition(
     operator: string,
     conditionValue: unknown,
-    actualValue: unknown,
+    actualValue: unknown
   ): boolean {
     if (typeof conditionValue !== 'string' || typeof actualValue !== 'string') {
       return false;

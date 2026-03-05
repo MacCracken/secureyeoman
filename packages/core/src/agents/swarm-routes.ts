@@ -128,11 +128,7 @@ export function registerSwarmRoutes(
         });
         return reply.code(201).send({ template });
       } catch (err) {
-        return sendError(
-          reply,
-          400,
-          toErrorMessage(err)
-        );
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );

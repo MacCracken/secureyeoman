@@ -95,27 +95,22 @@ function DatasetRefreshPanel() {
 
       <div className="flex items-center justify-between text-xs">
         <span className="text-zinc-400">
-          Last run:{' '}
-          {data.lastRunAt
-            ? new Date(data.lastRunAt).toLocaleString()
-            : 'Never'}
+          Last run: {data.lastRunAt ? new Date(data.lastRunAt).toLocaleString() : 'Never'}
         </span>
-        <span className="text-zinc-500">
-          Next: {new Date(data.nextRunAt).toLocaleString()}
-        </span>
+        <span className="text-zinc-500">Next: {new Date(data.nextRunAt).toLocaleString()}</span>
       </div>
 
       <div className="flex items-center gap-2">
         <button
-          onClick={() => triggerMutation.mutate()}
+          onClick={() => {
+            triggerMutation.mutate();
+          }}
           disabled={triggerMutation.isPending || data.status === 'running'}
           className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50"
         >
           {data.status === 'running' ? 'Running...' : 'Trigger Now'}
         </button>
-        {data.status === 'error' && (
-          <span className="text-xs text-red-400">Last run failed</span>
-        )}
+        {data.status === 'error' && <span className="text-xs text-red-400">Last run failed</span>}
       </div>
     </div>
   );
@@ -178,9 +173,7 @@ function DriftMonitorPanel() {
       {/* Snapshot Timeline */}
       {data.snapshots.length > 0 && (
         <div className="max-h-32 overflow-y-auto">
-          <div className="text-xs font-medium text-zinc-400 mb-1">
-            Recent Snapshots
-          </div>
+          <div className="text-xs font-medium text-zinc-400 mb-1">Recent Snapshots</div>
           {data.snapshots.slice(-10).map((snap, i) => (
             <div
               key={i}
@@ -190,9 +183,7 @@ function DriftMonitorPanel() {
               <span className={`font-mono ${driftColor(snap.driftScore)}`}>
                 {snap.driftScore.toFixed(3)}
               </span>
-              <span className="text-zinc-500">
-                {new Date(snap.timestamp).toLocaleDateString()}
-              </span>
+              <span className="text-zinc-500">{new Date(snap.timestamp).toLocaleDateString()}</span>
             </div>
           ))}
         </div>
@@ -238,9 +229,7 @@ function OnlineUpdatesPanel() {
           className="flex items-center justify-between rounded border border-zinc-700 px-2 py-1.5"
         >
           <div className="flex items-center gap-2">
-            <span className={statusColor[job.status]}>
-              {statusIcon[job.status]}
-            </span>
+            <span className={statusColor[job.status]}>{statusIcon[job.status]}</span>
             <span className="text-xs text-zinc-300">{job.personality}</span>
           </div>
           <div className="flex items-center gap-3 text-xs text-zinc-500">
@@ -264,16 +253,16 @@ export default function ContinualLearningWidget() {
 
   return (
     <div className="flex flex-col gap-3 p-4 text-sm">
-      <h3 className="text-base font-semibold text-zinc-200">
-        Continual Learning
-      </h3>
+      <h3 className="text-base font-semibold text-zinc-200">Continual Learning</h3>
 
       {/* Panel Tabs */}
       <div className="flex gap-1 rounded bg-zinc-800 p-0.5">
         {panels.map((p) => (
           <button
             key={p.key}
-            onClick={() => setActivePanel(p.key)}
+            onClick={() => {
+              setActivePanel(p.key);
+            }}
             className={`flex-1 rounded px-2 py-1 text-xs font-medium transition-colors ${
               activePanel === p.key
                 ? 'bg-zinc-600 text-zinc-100'

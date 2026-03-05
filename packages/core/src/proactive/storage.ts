@@ -75,6 +75,9 @@ function triggerFromRow(
 }
 
 function suggestionFromRow(row: SuggestionRow): Suggestion {
+  const result = row.result
+    ? (safeJsonParse(row.result, null) as unknown as Suggestion['result'])
+    : undefined;
   return {
     id: row.id,
     triggerId: row.trigger_id,
@@ -88,7 +91,7 @@ function suggestionFromRow(row: SuggestionRow): Suggestion {
     approvedAt: row.approved_at ?? undefined,
     executedAt: row.executed_at ?? undefined,
     dismissedAt: row.dismissed_at ?? undefined,
-    result: row.result ? safeJsonParse(row.result, undefined) : undefined,
+    result,
   };
 }
 

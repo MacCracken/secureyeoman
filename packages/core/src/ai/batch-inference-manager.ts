@@ -22,8 +22,7 @@ function rowToJob(row: Record<string, unknown>): BatchInferenceJob {
     failedPrompts: (row.failed_prompts as number) ?? 0,
     createdAt:
       row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at ?? ''),
-    completedAt:
-      row.completed_at instanceof Date ? row.completed_at.toISOString() : null,
+    completedAt: row.completed_at instanceof Date ? row.completed_at.toISOString() : null,
     createdBy: (row.created_by as string) ?? null,
   };
 }
@@ -101,10 +100,9 @@ export class BatchInferenceManager {
     if (!job) throw new Error(`Batch job not found: ${jobId}`);
     if (job.status !== 'pending') throw new Error(`Batch job ${jobId} is not pending`);
 
-    await this.deps.pool.query(
-      `UPDATE ai.batch_inference_jobs SET status='running' WHERE id=$1`,
-      [jobId]
-    );
+    await this.deps.pool.query(`UPDATE ai.batch_inference_jobs SET status='running' WHERE id=$1`, [
+      jobId,
+    ]);
 
     const results: BatchResult[] = [];
     let completed = 0;
@@ -144,12 +142,16 @@ export class BatchInferenceManager {
 
       // Update progress periodically (every 10 prompts or at end)
       if ((completed + failed) % 10 === 0 || completed + failed >= job.totalPrompts) {
-        await this.deps.pool.query(
-          `UPDATE ai.batch_inference_jobs
+        await this.deps.pool
+          .query(
+            `UPDATE ai.batch_inference_jobs
            SET completed_prompts=$1, failed_prompts=$2, results=$3
            WHERE id=$4`,
-          [completed, failed, JSON.stringify(results), jobId]
-        ).catch(() => {/* ignore progress update failures */});
+            [completed, failed, JSON.stringify(results), jobId]
+          )
+          .catch(() => {
+            /* ignore progress update failures */
+          });
       }
     };
 
@@ -166,10 +168,7 @@ export class BatchInferenceManager {
         await Promise.race(active);
         // Remove completed tasks
         for (let i = active.length - 1; i >= 0; i--) {
-          const settled = await Promise.race([
-            active[i]!.then(() => true),
-            Promise.resolve(false),
-          ]);
+          const settled = await Promise.race([active[i]!.then(() => true), Promise.resolve(false)]);
           if (settled) active.splice(i, 1);
         }
       }

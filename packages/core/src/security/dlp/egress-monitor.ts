@@ -46,10 +46,10 @@ export class EgressMonitor {
       byClassification[cls] = (byClassification[cls] ?? 0) + 1;
     }
 
-    this.logger.debug(
-      'Egress stats computed',
-      { totalEvents: events.length, period: { from, to } }
-    );
+    this.logger.debug('Egress stats computed', {
+      totalEvents: events.length,
+      period: { from, to },
+    });
 
     return {
       totalEvents: events.length,
@@ -149,10 +149,7 @@ export class EgressMonitor {
       }
     }
 
-    this.logger.debug(
-      'Egress anomaly detection completed',
-      { anomalyCount: anomalies.length }
-    );
+    this.logger.debug('Egress anomaly detection completed', { anomalyCount: anomalies.length });
 
     return anomalies;
   }

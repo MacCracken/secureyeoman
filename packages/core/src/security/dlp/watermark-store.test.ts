@@ -31,15 +31,17 @@ describe('WatermarkStore', () => {
 
   it('gets watermark by content ID', async () => {
     mockQuery.mockResolvedValueOnce({
-      rows: [{
-        id: 'wm-1',
-        contentId: 'doc-1',
-        contentType: 'text',
-        watermarkData: '{"t":"default"}',
-        algorithm: 'unicode-steganography',
-        createdAt: 1700000000000,
-        tenantId: 'default',
-      }],
+      rows: [
+        {
+          id: 'wm-1',
+          contentId: 'doc-1',
+          contentType: 'text',
+          watermarkData: '{"t":"default"}',
+          algorithm: 'unicode-steganography',
+          createdAt: 1700000000000,
+          tenantId: 'default',
+        },
+      ],
     });
     const record = await store.getByContentId('doc-1');
     expect(record).toBeTruthy();
@@ -53,10 +55,9 @@ describe('WatermarkStore', () => {
   });
 
   it('lists watermarks with filters', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ count: '1' }] })
-      .mockResolvedValueOnce({
-        rows: [{
+    mockQuery.mockResolvedValueOnce({ rows: [{ count: '1' }] }).mockResolvedValueOnce({
+      rows: [
+        {
           id: 'wm-1',
           contentId: 'doc-1',
           contentType: 'text',
@@ -64,8 +65,9 @@ describe('WatermarkStore', () => {
           algorithm: 'whitespace',
           createdAt: 1700000000000,
           tenantId: 'default',
-        }],
-      });
+        },
+      ],
+    });
     const { records, total } = await store.list({ algorithm: 'whitespace', limit: 10, offset: 0 });
     expect(total).toBe(1);
     expect(records).toHaveLength(1);
@@ -73,9 +75,7 @@ describe('WatermarkStore', () => {
   });
 
   it('lists all watermarks without filters', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ count: '0' }] })
-      .mockResolvedValueOnce({ rows: [] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ count: '0' }] }).mockResolvedValueOnce({ rows: [] });
     const { records, total } = await store.list();
     expect(total).toBe(0);
     expect(records).toHaveLength(0);

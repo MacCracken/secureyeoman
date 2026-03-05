@@ -3,9 +3,12 @@ import { ClassificationEngine } from './classification-engine.js';
 import type { ClassificationStore } from './classification-store.js';
 
 function makeEngine() {
-  return new ClassificationEngine({}, {
-    logger: { debug: vi.fn(), warn: vi.fn(), info: vi.fn(), error: vi.fn() } as any,
-  });
+  return new ClassificationEngine(
+    {},
+    {
+      logger: { debug: vi.fn(), warn: vi.fn(), info: vi.fn(), error: vi.fn() } as any,
+    }
+  );
 }
 
 function makeMockStore() {

@@ -48,8 +48,7 @@ export class OpenRouterProvider extends BaseProvider {
     this.client = new OpenAI({
       apiKey,
       timeout: this.modelConfig.requestTimeoutMs,
-      baseURL:
-        this.modelConfig.baseUrl ?? process.env.OPENROUTER_BASE_URL ?? OPENROUTER_BASE_URL,
+      baseURL: this.modelConfig.baseUrl ?? process.env.OPENROUTER_BASE_URL ?? OPENROUTER_BASE_URL,
       defaultHeaders: {
         'HTTP-Referer': 'https://secureyeoman.com',
         'X-Title': 'SecureYeoman',

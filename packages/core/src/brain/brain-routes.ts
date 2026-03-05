@@ -61,7 +61,6 @@ function checkBrainRateLimit(key: string, maxPerMinute: number): boolean {
   return true;
 }
 
-
 function validateContent(content: unknown, reply: FastifyReply): string | null {
   if (typeof content !== 'string' || content.trim().length === 0) {
     void sendError(reply, 400, 'Content is required and must be a non-empty string');
@@ -360,7 +359,10 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       if (!heartbeatManager) {
         return sendError(reply, 503, 'Heartbeat system not available');
       }
-      const { limit } = parsePagination(request.query, { defaultLimit: 10, maxLimit: MAX_QUERY_LIMIT });
+      const { limit } = parsePagination(request.query, {
+        defaultLimit: 10,
+        maxLimit: MAX_QUERY_LIMIT,
+      });
       const memories = await brainManager.recall({ source: 'heartbeat', limit });
       return { history: memories };
     }
@@ -440,7 +442,10 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         if (!q) {
           return sendError(reply, 400, 'Query parameter "q" is required');
         }
-        const searchPg = parsePagination({ limit, offset }, { maxLimit: MAX_QUERY_LIMIT, defaultLimit: 50 });
+        const searchPg = parsePagination(
+          { limit, offset },
+          { maxLimit: MAX_QUERY_LIMIT, defaultLimit: 50 }
+        );
         const result = await brainManager.searchAuditLogs(q, {
           limit: searchPg.limit,
           offset: searchPg.offset,
@@ -562,7 +567,10 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     '/api/v1/brain/consolidation/history',
     async (request: FastifyRequest<{ Querystring: { limit?: string } }>, reply: FastifyReply) => {
       try {
-        const { limit } = parsePagination(request.query as { limit?: string }, { defaultLimit: 50, maxLimit: MAX_QUERY_LIMIT });
+        const { limit } = parsePagination(request.query as { limit?: string }, {
+          defaultLimit: 50,
+          maxLimit: MAX_QUERY_LIMIT,
+        });
         const memories = await brainManager.recall({ source: 'consolidation', limit });
         return { history: memories };
       } catch (err) {
@@ -650,7 +658,10 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
 
   app.get(
     '/api/v1/brain/cognitive-stats',
-    async (request: FastifyRequest<{ Querystring: { personalityId?: string } }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{ Querystring: { personalityId?: string } }>,
+      reply: FastifyReply
+    ) => {
       if (!cognitiveMemoryManager) {
         return sendError(reply, 503, 'Cognitive memory system not available');
       }

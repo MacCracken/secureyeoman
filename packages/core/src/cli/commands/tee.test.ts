@@ -31,7 +31,7 @@ function mockFetch(data: unknown, status = 200) {
       status,
       headers: { get: () => 'application/json' },
       json: async () => data,
-    }),
+    })
   );
 }
 

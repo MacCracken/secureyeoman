@@ -2261,14 +2261,20 @@ describe('WorkflowEngine deterministic dispatch', () => {
     const def = makeDefinition([step]);
     const run = makeRun();
     await engine.execute(run, def);
-    expect(mockExecFileSync).toHaveBeenCalledWith('echo', ['hello'], expect.objectContaining({
-      timeout: 30000,
-      encoding: 'utf-8',
-    }));
+    expect(mockExecFileSync).toHaveBeenCalledWith(
+      'echo',
+      ['hello'],
+      expect.objectContaining({
+        timeout: 30000,
+        encoding: 'utf-8',
+      })
+    );
   });
 
   it('deterministic=true with command fails — falls through to agent dispatch', async () => {
-    mockExecFileSync.mockImplementation(() => { throw new Error('command not found'); });
+    mockExecFileSync.mockImplementation(() => {
+      throw new Error('command not found');
+    });
     const mockDelegate = vi.fn().mockResolvedValue({ result: 'agent-result' });
     const engine = makeEngine({
       subAgentManager: { delegate: mockDelegate },
@@ -2334,9 +2340,13 @@ describe('WorkflowEngine deterministic dispatch', () => {
     const def = makeDefinition([step]);
     const run = makeRun();
     await engine.execute(run, def);
-    expect(mockExecFileSync).toHaveBeenCalledWith('ls', ['-la'], expect.objectContaining({
-      timeout: 5000,
-    }));
+    expect(mockExecFileSync).toHaveBeenCalledWith(
+      'ls',
+      ['-la'],
+      expect.objectContaining({
+        timeout: 5000,
+      })
+    );
   });
 
   it('deterministic=true with command that has no args', async () => {

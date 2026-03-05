@@ -50,10 +50,14 @@ function makeMocks() {
     isEnabled: vi.fn().mockReturnValue(true),
     getSchedule: vi.fn().mockImplementation((scope: string) => {
       switch (scope) {
-        case 'daily': return '30 3 * * *';
-        case 'weekly': return '0 4 * * 0';
-        case 'monthly': return '0 5 1 * *';
-        default: return '* * * * *';
+        case 'daily':
+          return '30 3 * * *';
+        case 'weekly':
+          return '0 4 * * 0';
+        case 'monthly':
+          return '0 5 1 * *';
+        default:
+          return '* * * * *';
       }
     }),
     isCompressionEnabled: vi.fn().mockReturnValue(true),
@@ -189,10 +193,10 @@ describe('MemoryAuditScheduler', () => {
   it('setSchedule() logs the update', async () => {
     const scheduler = makeScheduler(mocks);
     await scheduler.setSchedule('monthly', '0 1 15 * *');
-    expect(mockLogger.info).toHaveBeenCalledWith(
-      'Audit schedule updated',
-      { scope: 'monthly', cron: '0 1 15 * *' }
-    );
+    expect(mockLogger.info).toHaveBeenCalledWith('Audit schedule updated', {
+      scope: 'monthly',
+      cron: '0 1 15 * *',
+    });
   });
 
   // ── runManualAudit ─────────────────────────────────────────
@@ -217,10 +221,10 @@ describe('MemoryAuditScheduler', () => {
   it('runManualAudit() logs the trigger', async () => {
     const scheduler = makeScheduler(mocks);
     await scheduler.runManualAudit('weekly', 'soul-7');
-    expect(mockLogger.info).toHaveBeenCalledWith(
-      'Manual audit triggered',
-      { scope: 'weekly', personalityId: 'soul-7' }
-    );
+    expect(mockLogger.info).toHaveBeenCalledWith('Manual audit triggered', {
+      scope: 'weekly',
+      personalityId: 'soul-7',
+    });
   });
 
   // ── History ────────────────────────────────────────────────

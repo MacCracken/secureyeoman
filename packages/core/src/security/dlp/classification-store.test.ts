@@ -34,18 +34,20 @@ describe('ClassificationStore', () => {
 
   it('gets classification by content ID', async () => {
     mockQuery.mockResolvedValueOnce({
-      rows: [{
-        id: 'cls-1',
-        contentId: 'conv-1',
-        contentType: 'conversation',
-        classificationLevel: 'confidential',
-        autoLevel: 'confidential',
-        manualOverride: false,
-        overriddenBy: null,
-        rulesTriggered: [],
-        classifiedAt: 1000,
-        tenantId: 'default',
-      }],
+      rows: [
+        {
+          id: 'cls-1',
+          contentId: 'conv-1',
+          contentType: 'conversation',
+          classificationLevel: 'confidential',
+          autoLevel: 'confidential',
+          manualOverride: false,
+          overriddenBy: null,
+          rulesTriggered: [],
+          classifiedAt: 1000,
+          tenantId: 'default',
+        },
+      ],
     });
     const record = await store.getByContentId('conv-1', 'conversation');
     expect(record).toBeTruthy();
@@ -66,23 +68,41 @@ describe('ClassificationStore', () => {
   });
 
   it('lists classifications with filters', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ count: '2' }] })
-      .mockResolvedValueOnce({
-        rows: [
-          { id: 'c1', contentId: 'a', contentType: 'message', classificationLevel: 'confidential', autoLevel: 'confidential', manualOverride: false, overriddenBy: null, rulesTriggered: [], classifiedAt: 1000, tenantId: 'default' },
-          { id: 'c2', contentId: 'b', contentType: 'message', classificationLevel: 'confidential', autoLevel: 'confidential', manualOverride: false, overriddenBy: null, rulesTriggered: [], classifiedAt: 900, tenantId: 'default' },
-        ],
-      });
+    mockQuery.mockResolvedValueOnce({ rows: [{ count: '2' }] }).mockResolvedValueOnce({
+      rows: [
+        {
+          id: 'c1',
+          contentId: 'a',
+          contentType: 'message',
+          classificationLevel: 'confidential',
+          autoLevel: 'confidential',
+          manualOverride: false,
+          overriddenBy: null,
+          rulesTriggered: [],
+          classifiedAt: 1000,
+          tenantId: 'default',
+        },
+        {
+          id: 'c2',
+          contentId: 'b',
+          contentType: 'message',
+          classificationLevel: 'confidential',
+          autoLevel: 'confidential',
+          manualOverride: false,
+          overriddenBy: null,
+          rulesTriggered: [],
+          classifiedAt: 900,
+          tenantId: 'default',
+        },
+      ],
+    });
     const { records, total } = await store.list({ level: 'confidential', limit: 10, offset: 0 });
     expect(total).toBe(2);
     expect(records).toHaveLength(2);
   });
 
   it('lists all classifications without filters', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ count: '0' }] })
-      .mockResolvedValueOnce({ rows: [] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ count: '0' }] }).mockResolvedValueOnce({ rows: [] });
     const { records, total } = await store.list({});
     expect(total).toBe(0);
     expect(records).toHaveLength(0);

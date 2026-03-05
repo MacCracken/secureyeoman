@@ -28,9 +28,15 @@ export interface AlertRoutesOptions {
 
 export function registerAlertRoutes(app: FastifyInstance, opts: AlertRoutesOptions): void {
   const { alertManager, secureYeoman } = opts;
-  const alertGuardOpts = (secureYeoman
-    ? { preHandler: [requiresLicense('advanced_observability', () => secureYeoman.getLicenseManager())] }
-    : {}) as Record<string, unknown>;
+  const alertGuardOpts = (
+    secureYeoman
+      ? {
+          preHandler: [
+            requiresLicense('advanced_observability', () => secureYeoman.getLicenseManager()),
+          ],
+        }
+      : {}
+  ) as Record<string, unknown>;
 
   // GET /api/v1/alerts/rules
   app.get('/api/v1/alerts/rules', async (_request, reply: FastifyReply) => {

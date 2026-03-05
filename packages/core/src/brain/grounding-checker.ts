@@ -33,7 +33,12 @@ export function splitSentences(text: string): string[] {
   const raw = cleaned.split(/(?<=[.!?])\s+/);
 
   return raw
-    .map((s) => s.replace(/\u0000/g, '.').replace(/\u0001/g, '.').trim())
+    .map((s) =>
+      s
+        .replace(/\u0000/g, '.')
+        .replace(/\u0001/g, '.')
+        .trim()
+    )
     .filter((s) => s.length > 0);
 }
 

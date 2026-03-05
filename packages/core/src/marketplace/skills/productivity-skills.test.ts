@@ -16,7 +16,11 @@ const ALL_SKILLS = [
   { name: 'Prompt Craft', skill: promptCraftSkill, category: 'productivity' },
   { name: 'Context Engineering', skill: contextEngineeringSkill, category: 'productivity' },
   { name: 'Intent Engineering', skill: intentEngineeringSkill, category: 'productivity' },
-  { name: 'Specification Engineering', skill: specificationEngineeringSkill, category: 'productivity' },
+  {
+    name: 'Specification Engineering',
+    skill: specificationEngineeringSkill,
+    category: 'productivity',
+  },
   { name: 'SOP Writer', skill: sopWriterSkill, category: 'productivity' },
 ];
 
@@ -78,7 +82,13 @@ describe('Productivity & Utility Skills', () => {
   });
 
   describe('authorInfo present on engineering skills', () => {
-    const withAuthorInfo = [promptCraftSkill, contextEngineeringSkill, intentEngineeringSkill, specificationEngineeringSkill, sopWriterSkill];
+    const withAuthorInfo = [
+      promptCraftSkill,
+      contextEngineeringSkill,
+      intentEngineeringSkill,
+      specificationEngineeringSkill,
+      sopWriterSkill,
+    ];
     for (const skill of withAuthorInfo) {
       it(`${skill.name} has authorInfo`, () => {
         expect(skill.authorInfo).toBeDefined();
@@ -190,7 +200,7 @@ describe('Productivity & Utility Skills', () => {
 
   describe('instruction content quality', () => {
     it('Specification Engineering instructions mention all 4 sections', () => {
-      const text = specificationEngineeringSkill.instructions as string;
+      const text = specificationEngineeringSkill.instructions!;
       expect(text).toContain('Problem Statement');
       expect(text).toContain('Acceptance Criteria');
       expect(text).toContain('Constraint');
@@ -198,7 +208,7 @@ describe('Productivity & Utility Skills', () => {
     });
 
     it('Context Engineering instructions mention Write/Select/Compress/Isolate', () => {
-      const text = contextEngineeringSkill.instructions as string;
+      const text = contextEngineeringSkill.instructions!;
       expect(text).toContain('**Write**');
       expect(text).toContain('**Select**');
       expect(text).toContain('**Compress**');
@@ -206,7 +216,7 @@ describe('Productivity & Utility Skills', () => {
     });
 
     it('Intent Engineering instructions mention the 4-step process', () => {
-      const text = intentEngineeringSkill.instructions as string;
+      const text = intentEngineeringSkill.instructions!;
       expect(text).toContain('Step 1');
       expect(text).toContain('Step 2');
       expect(text).toContain('Step 3');
@@ -214,7 +224,7 @@ describe('Productivity & Utility Skills', () => {
     });
 
     it('SOP Writer instructions list all 5 SOP types', () => {
-      const text = sopWriterSkill.instructions as string;
+      const text = sopWriterSkill.instructions!;
       expect(text).toContain('Checklist');
       expect(text).toContain('Hierarchical');
       expect(text).toContain('Flowchart');
@@ -223,7 +233,7 @@ describe('Productivity & Utility Skills', () => {
     });
 
     it('Prompt Craft instructions cover technique selection', () => {
-      const text = promptCraftSkill.instructions as string;
+      const text = promptCraftSkill.instructions!;
       expect(text).toContain('Zero-shot');
       expect(text).toContain('Few-shot');
       expect(text).toContain('Chain-of-Thought');

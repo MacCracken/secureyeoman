@@ -49,7 +49,11 @@ export default function BatchInferenceWidget() {
   const [prompts, setPrompts] = useState('');
   const [concurrency, setConcurrency] = useState(4);
 
-  const { data: jobs, isLoading, error } = useQuery<BatchJob[]>({
+  const {
+    data: jobs,
+    isLoading,
+    error,
+  } = useQuery<BatchJob[]>({
     queryKey: ['batch-inference-jobs'],
     queryFn: () => fetchApi('/api/v1/inference/batch/jobs'),
     refetchInterval: 5_000,
@@ -78,24 +82,16 @@ export default function BatchInferenceWidget() {
   };
 
   if (isLoading) {
-    return (
-      <div className="p-4 text-sm text-zinc-400">Loading batch jobs...</div>
-    );
+    return <div className="p-4 text-sm text-zinc-400">Loading batch jobs...</div>;
   }
 
   if (error) {
-    return (
-      <div className="p-4 text-sm text-red-400">
-        Error: {(error as Error).message}
-      </div>
-    );
+    return <div className="p-4 text-sm text-red-400">Error: {error.message}</div>;
   }
 
   return (
     <div className="flex flex-col gap-3 p-4 text-sm">
-      <h3 className="text-base font-semibold text-zinc-200">
-        Batch Inference
-      </h3>
+      <h3 className="text-base font-semibold text-zinc-200">Batch Inference</h3>
 
       {/* Job Form */}
       <div className="space-y-3 rounded border border-zinc-700 p-3">
@@ -106,35 +102,39 @@ export default function BatchInferenceWidget() {
           <input
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+            }}
             placeholder="batch-eval-01"
             className="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-sm text-zinc-200 placeholder-zinc-500 focus:border-blue-500 focus:outline-none"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-xs text-zinc-400">
-            Prompts (one per line)
-          </label>
+          <label className="mb-1 block text-xs text-zinc-400">Prompts (one per line)</label>
           <textarea
             value={prompts}
-            onChange={(e) => setPrompts(e.target.value)}
+            onChange={(e) => {
+              setPrompts(e.target.value);
+            }}
             rows={4}
-            placeholder={"Explain quantum computing\nSummarize this document\nTranslate to French: Hello world"}
+            placeholder={
+              'Explain quantum computing\nSummarize this document\nTranslate to French: Hello world'
+            }
             className="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-sm text-zinc-200 placeholder-zinc-500 focus:border-blue-500 focus:outline-none"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-xs text-zinc-400">
-            Concurrency: {concurrency}
-          </label>
+          <label className="mb-1 block text-xs text-zinc-400">Concurrency: {concurrency}</label>
           <input
             type="range"
             min={1}
             max={32}
             value={concurrency}
-            onChange={(e) => setConcurrency(Number(e.target.value))}
+            onChange={(e) => {
+              setConcurrency(Number(e.target.value));
+            }}
             className="w-full accent-blue-500"
           />
         </div>
@@ -148,17 +148,14 @@ export default function BatchInferenceWidget() {
         </button>
 
         {createMutation.isError && (
-          <div className="text-xs text-red-400">
-            Failed: {(createMutation.error as Error).message}
-          </div>
+          <div className="text-xs text-red-400">Failed: {createMutation.error.message}</div>
         )}
       </div>
 
       {/* Job List */}
       {(jobs ?? []).map((job) => {
-        const pct = job.totalPrompts > 0
-          ? Math.round((job.completedPrompts / job.totalPrompts) * 100)
-          : 0;
+        const pct =
+          job.totalPrompts > 0 ? Math.round((job.completedPrompts / job.totalPrompts) * 100) : 0;
 
         return (
           <div key={job.id} className="rounded border border-zinc-700 p-3">
@@ -201,16 +198,10 @@ export default function BatchInferenceWidget() {
                         <td className="max-w-[180px] truncate py-1 pr-2 text-zinc-300">
                           {r.prompt}
                         </td>
-                        <td className="py-1 pr-2 font-mono text-zinc-400">
-                          {r.latencyMs}ms
-                        </td>
+                        <td className="py-1 pr-2 font-mono text-zinc-400">{r.latencyMs}ms</td>
                         <td className="py-1">
                           <span
-                            className={
-                              r.status === 'completed'
-                                ? 'text-green-400'
-                                : 'text-red-400'
-                            }
+                            className={r.status === 'completed' ? 'text-green-400' : 'text-red-400'}
                           >
                             {r.status === 'completed' ? '\u2713' : '\u2717'}
                           </span>

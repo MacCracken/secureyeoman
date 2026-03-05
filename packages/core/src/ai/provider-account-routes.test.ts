@@ -466,9 +466,7 @@ describe('Provider Account Routes', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.headers['content-type']).toBe('text/csv');
-      expect(res.headers['content-disposition']).toBe(
-        'attachment; filename="provider-costs.csv"'
-      );
+      expect(res.headers['content-disposition']).toBe('attachment; filename="provider-costs.csv"');
 
       const lines = res.body.split('\n');
       expect(lines[0]).toBe(

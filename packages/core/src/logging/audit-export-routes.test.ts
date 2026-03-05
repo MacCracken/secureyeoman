@@ -198,9 +198,7 @@ describe('POST /api/v1/audit/export', () => {
       payload: { format: 'jsonl', userId: 'u1' },
     });
     expect(res.statusCode).toBe(200);
-    expect(storage.iterateFiltered).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: 'u1' })
-    );
+    expect(storage.iterateFiltered).toHaveBeenCalledWith(expect.objectContaining({ userId: 'u1' }));
   });
 
   it('enforces limit by capping emitted entries', async () => {

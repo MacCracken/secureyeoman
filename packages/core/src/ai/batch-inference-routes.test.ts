@@ -66,12 +66,14 @@ function makeAIClient() {
   } as any;
 }
 
-function buildMockSY(opts: {
-  batchManager?: any;
-  semanticCache?: any;
-  kvCacheWarmer?: any;
-  aiClient?: any;
-} = {}) {
+function buildMockSY(
+  opts: {
+    batchManager?: any;
+    semanticCache?: any;
+    kvCacheWarmer?: any;
+    aiClient?: any;
+  } = {}
+) {
   return {
     getBatchInferenceManager: vi.fn(() => opts.batchManager ?? makeBatchManager()),
     getSemanticCache: vi.fn(() => opts.semanticCache ?? makeSemanticCache()),

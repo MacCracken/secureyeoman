@@ -186,11 +186,11 @@ export class RetrievalOptimizer {
   /**
    * Get optimization stats for monitoring.
    */
-  getStats(): Array<{
+  getStats(): {
     weights: RetrievalWeights;
     mean: number;
     pulls: number;
-  }> {
+  }[] {
     return this.arms.map((arm) => ({
       weights: { ...arm.weights },
       mean: arm.alpha / (arm.alpha + arm.beta),

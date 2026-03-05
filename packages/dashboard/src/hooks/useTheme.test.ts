@@ -182,7 +182,11 @@ describe('validateCustomTheme', () => {
   function makeValidExport(): CustomThemeExport {
     const colors: Record<string, string> = {};
     for (const v of THEME_CSS_VARS) colors[v] = '0 0% 50%';
-    return { name: 'Test Theme', isDark: true, colors: colors as Record<typeof THEME_CSS_VARS[number], string> };
+    return {
+      name: 'Test Theme',
+      isDark: true,
+      colors: colors as Record<(typeof THEME_CSS_VARS)[number], string>,
+    };
   }
 
   it('accepts a valid theme', () => {
@@ -247,7 +251,7 @@ describe('custom theme storage', () => {
 
   beforeEach(() => {
     // Mock localStorage
-    Object.keys(store).forEach((k) => delete store[k]);
+    Object.keys(store).forEach((k) => Reflect.deleteProperty(store, k));
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation((key) => store[key] ?? null);
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation((key, value) => {
       store[key] = value;
@@ -257,7 +261,7 @@ describe('custom theme storage', () => {
   function makeTheme(name: string, isDark = true): CustomThemeExport {
     const colors: Record<string, string> = {};
     for (const v of THEME_CSS_VARS) colors[v] = '0 0% 50%';
-    return { name, isDark, colors: colors as Record<typeof THEME_CSS_VARS[number], string> };
+    return { name, isDark, colors: colors as Record<(typeof THEME_CSS_VARS)[number], string> };
   }
 
   it('loadCustomThemes returns empty array when nothing stored', () => {
@@ -323,7 +327,7 @@ describe('theme scheduling', () => {
   const store: Record<string, string> = {};
 
   beforeEach(() => {
-    Object.keys(store).forEach((k) => delete store[k]);
+    Object.keys(store).forEach((k) => Reflect.deleteProperty(store, k));
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation((key) => store[key] ?? null);
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation((key, value) => {
       store[key] = value;

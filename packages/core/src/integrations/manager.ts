@@ -116,7 +116,11 @@ export class IntegrationManager {
 
   // ── Factory Registration ─────────────────────────────────
 
-  registerPlatform(platform: Platform, factory: () => Integration | Promise<Integration>, configSchema?: z.ZodType): void {
+  registerPlatform(
+    platform: Platform,
+    factory: () => Integration | Promise<Integration>,
+    configSchema?: z.ZodType
+  ): void {
     this.factories.set(platform, factory);
     if (configSchema) {
       this.configSchemas.set(platform, configSchema);

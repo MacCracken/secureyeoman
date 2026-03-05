@@ -72,9 +72,7 @@ export const riskCommand: Command = {
     if (isLocal) {
       const LOCAL_COMMANDS = ['summary', 'departments', 'register'];
       if (!sub || !LOCAL_COMMANDS.includes(sub)) {
-        ctx.stderr.write(
-          `--local mode only supports: ${LOCAL_COMMANDS.join(', ')}\n`
-        );
+        ctx.stderr.write(`--local mode only supports: ${LOCAL_COMMANDS.join(', ')}\n`);
         return 1;
       }
       return await runLocalRisk(ctx, sub, jsonOutput, args);
@@ -563,12 +561,10 @@ async function runLocalRisk(
   const liteCtx = await liteBootstrap({ skipMigrations: true });
 
   try {
-    const { DepartmentRiskStorage } = await import(
-      '../../risk-assessment/department-risk-storage.js'
-    );
-    const { DepartmentRiskManager } = await import(
-      '../../risk-assessment/department-risk-manager.js'
-    );
+    const { DepartmentRiskStorage } =
+      await import('../../risk-assessment/department-risk-storage.js');
+    const { DepartmentRiskManager } =
+      await import('../../risk-assessment/department-risk-manager.js');
     const storage = new DepartmentRiskStorage();
     const manager = new DepartmentRiskManager({ storage, pool: liteCtx.pool });
 
@@ -605,9 +601,7 @@ async function runLocalRisk(
         }
         ctx.stdout.write(`\n  ${c.bold('Departments (local)')} (${items.length})\n\n`);
         for (const d of items) {
-          ctx.stdout.write(
-            `  ${c.cyan(String(d.id).slice(0, 8))}  ${d.name}\n`
-          );
+          ctx.stdout.write(`  ${c.cyan(d.id.slice(0, 8))}  ${d.name}\n`);
         }
         ctx.stdout.write('\n');
         return 0;
@@ -634,7 +628,7 @@ async function runLocalRisk(
           const severityColor =
             e.severity === 'critical' ? c.red : e.severity === 'high' ? c.yellow : c.dim;
           ctx.stdout.write(
-            `  ${c.cyan(String(e.id).slice(0, 8))}  ${severityColor(`[${e.severity}]`)}  ${e.title}  ${c.dim(`(${e.status})`)}\n`
+            `  ${c.cyan(e.id.slice(0, 8))}  ${severityColor(`[${e.severity}]`)}  ${e.title}  ${c.dim(`(${e.status})`)}\n`
           );
         }
         ctx.stdout.write('\n');

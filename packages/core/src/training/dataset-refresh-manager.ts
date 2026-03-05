@@ -14,16 +14,12 @@ function rowToJob(row: Record<string, unknown>): DatasetRefreshJob {
     targetDatasetId: (row.target_dataset_id as string) ?? null,
     curationRules: (row.curation_rules as Record<string, unknown>) ?? {},
     lastConversationTs:
-      row.last_conversation_ts instanceof Date
-        ? row.last_conversation_ts.toISOString()
-        : null,
+      row.last_conversation_ts instanceof Date ? row.last_conversation_ts.toISOString() : null,
     samplesAdded: (row.samples_added as number) ?? 0,
     scheduleCron: (row.schedule_cron as string) ?? null,
     status: row.status as DatasetRefreshJob['status'],
-    lastRunAt:
-      row.last_run_at instanceof Date ? row.last_run_at.toISOString() : null,
-    nextRunAt:
-      row.next_run_at instanceof Date ? row.next_run_at.toISOString() : null,
+    lastRunAt: row.last_run_at instanceof Date ? row.last_run_at.toISOString() : null,
+    nextRunAt: row.next_run_at instanceof Date ? row.next_run_at.toISOString() : null,
     createdAt:
       row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at ?? ''),
   };
@@ -35,7 +31,7 @@ export interface DatasetRefreshManagerDeps {
 }
 
 export class DatasetRefreshManager {
-  private cronHandles: Map<string, ReturnType<typeof setInterval>> = new Map();
+  private cronHandles = new Map<string, ReturnType<typeof setInterval>>();
 
   constructor(private readonly deps: DatasetRefreshManagerDeps) {}
 
@@ -145,11 +141,11 @@ export class DatasetRefreshManager {
   startCron(id: string, intervalMs: number): void {
     if (this.cronHandles.has(id)) return;
     const handle = setInterval(() => {
-      void this.runRefresh(id).catch((err) => {
-        this.deps.logger.error(
-          'Dataset refresh cron error',
-          { id, error: err instanceof Error ? err.message : String(err) }
-        );
+      void this.runRefresh(id).catch((err: unknown) => {
+        this.deps.logger.error('Dataset refresh cron error', {
+          id,
+          error: err instanceof Error ? err.message : String(err),
+        });
       });
     }, intervalMs);
     this.cronHandles.set(id, handle);

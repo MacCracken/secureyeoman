@@ -238,7 +238,7 @@ export class PlatformModule implements AppModule {
     if (deps.pool) {
       try {
         this.branchingManager = new BranchingManager({
-          conversationStorage: this.chatConversationStorage!,
+          conversationStorage: this.chatConversationStorage,
           pool: deps.pool,
           logger: this.logger.child({ component: 'BranchingManager' }),
           aiClient: deps.aiClient ?? undefined,

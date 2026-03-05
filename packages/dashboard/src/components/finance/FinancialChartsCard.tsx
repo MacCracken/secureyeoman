@@ -26,7 +26,7 @@ const DEMO_OHLCV: OhlcvPoint[] = Array.from({ length: 20 }, (_, i) => {
 
 const DEMO_ALLOC: AllocationSlice[] = [
   { name: 'US Equity', value: 45000 },
-  { name: 'Int\'l Equity', value: 20000 },
+  { name: "Int'l Equity", value: 20000 },
   { name: 'Bonds', value: 25000 },
   { name: 'Real Estate', value: 7000 },
   { name: 'Cash', value: 3000 },
@@ -41,7 +41,9 @@ export function FinancialChartsCard() {
     <div className="flex flex-col gap-2" data-testid="financial-charts-card">
       <div className="flex items-center gap-2">
         <button
-          onClick={() => setView('candlestick')}
+          onClick={() => {
+            setView('candlestick');
+          }}
           className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
             view === 'candlestick'
               ? 'bg-primary text-primary-foreground'
@@ -52,7 +54,9 @@ export function FinancialChartsCard() {
           Price
         </button>
         <button
-          onClick={() => setView('allocation')}
+          onClick={() => {
+            setView('allocation');
+          }}
           className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
             view === 'allocation'
               ? 'bg-primary text-primary-foreground'

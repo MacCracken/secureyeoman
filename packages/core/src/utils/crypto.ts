@@ -8,7 +8,13 @@
  * - No custom crypto implementations
  */
 
-import { createHash, createHmac, randomBytes, timingSafeEqual, scrypt as scryptCb } from 'node:crypto';
+import {
+  createHash,
+  createHmac,
+  randomBytes,
+  timingSafeEqual,
+  scrypt as scryptCb,
+} from 'node:crypto';
 import { promisify } from 'node:util';
 
 const scryptAsync = promisify(scryptCb);

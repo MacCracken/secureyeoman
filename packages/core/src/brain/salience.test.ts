@@ -3,10 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  SalienceClassifier,
-  DEFAULT_SALIENCE_WEIGHTS,
-} from './salience.js';
+import { SalienceClassifier, DEFAULT_SALIENCE_WEIGHTS } from './salience.js';
 import type { EmbeddingProvider } from '../ai/embeddings/types.js';
 
 function createMockEmbedding(): EmbeddingProvider {
@@ -19,9 +16,13 @@ function createMockEmbedding(): EmbeddingProvider {
         const lower = text.toLowerCase();
         // Generate deterministic embeddings based on keyword presence
         const urgency = lower.includes('urgent') || lower.includes('critical') ? 0.9 : 0.1;
-        const error = lower.includes('error') || lower.includes('bug') || lower.includes('broke') ? 0.9 : 0.1;
+        const error =
+          lower.includes('error') || lower.includes('bug') || lower.includes('broke') ? 0.9 : 0.1;
         const frustration = lower.includes('frustrat') || lower.includes('stuck') ? 0.9 : 0.1;
-        const success = lower.includes('success') || lower.includes('perfect') || lower.includes('solved') ? 0.9 : 0.1;
+        const success =
+          lower.includes('success') || lower.includes('perfect') || lower.includes('solved')
+            ? 0.9
+            : 0.1;
         // Normalize
         const norm = Math.sqrt(urgency ** 2 + error ** 2 + frustration ** 2 + success ** 2);
         return [urgency / norm, error / norm, frustration / norm, success / norm];

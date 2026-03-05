@@ -65,13 +65,15 @@ export class ScanHistoryStore extends PgBaseStorage {
         sr.threatAssessment ? JSON.stringify(sr.threatAssessment) : null,
         input.tenantId ?? null,
         now,
-      ],
+      ]
     );
 
     return this.mapRow(row!);
   }
 
-  async list(opts: ScanHistoryListOptions = {}): Promise<{ items: ScanHistoryRow[]; total: number }> {
+  async list(
+    opts: ScanHistoryListOptions = {}
+  ): Promise<{ items: ScanHistoryRow[]; total: number }> {
     const conditions: string[] = [];
     const values: unknown[] = [];
     let paramIdx = 1;
@@ -103,7 +105,7 @@ export class ScanHistoryStore extends PgBaseStorage {
 
     const countResult = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*)::text AS count FROM sandbox.scan_history ${where}`,
-      values,
+      values
     );
     const total = parseInt(countResult?.count ?? '0', 10);
 
@@ -111,7 +113,7 @@ export class ScanHistoryStore extends PgBaseStorage {
       `SELECT * FROM sandbox.scan_history ${where}
        ORDER BY created_at DESC
        LIMIT $${paramIdx++} OFFSET $${paramIdx}`,
-      [...values, limit, offset],
+      [...values, limit, offset]
     );
 
     return { items: rows.map((r) => this.mapRow(r)), total };
@@ -120,7 +122,7 @@ export class ScanHistoryStore extends PgBaseStorage {
   async getById(id: string): Promise<ScanHistoryRow | null> {
     const row = await this.queryOne<Record<string, unknown>>(
       'SELECT * FROM sandbox.scan_history WHERE id = $1',
-      [id],
+      [id]
     );
     return row ? this.mapRow(row) : null;
   }
@@ -132,17 +134,17 @@ export class ScanHistoryStore extends PgBaseStorage {
     const [totalRow, verdictRows, severityRows, avgRow, recentRow] = await Promise.all([
       this.queryOne<{ count: string }>('SELECT COUNT(*)::text AS count FROM sandbox.scan_history'),
       this.queryMany<{ verdict: string; count: string }>(
-        'SELECT verdict, COUNT(*)::text AS count FROM sandbox.scan_history GROUP BY verdict',
+        'SELECT verdict, COUNT(*)::text AS count FROM sandbox.scan_history GROUP BY verdict'
       ),
       this.queryMany<{ worst_severity: string; count: string }>(
-        'SELECT worst_severity, COUNT(*)::text AS count FROM sandbox.scan_history GROUP BY worst_severity',
+        'SELECT worst_severity, COUNT(*)::text AS count FROM sandbox.scan_history GROUP BY worst_severity'
       ),
       this.queryOne<{ avg: string }>(
-        'SELECT COALESCE(AVG(scan_duration_ms), 0)::text AS avg FROM sandbox.scan_history',
+        'SELECT COALESCE(AVG(scan_duration_ms), 0)::text AS avg FROM sandbox.scan_history'
       ),
       this.queryOne<{ count: string }>(
         'SELECT COUNT(*)::text AS count FROM sandbox.scan_history WHERE created_at >= $1',
-        [dayAgo],
+        [dayAgo]
       ),
     ]);
 
@@ -175,14 +177,19 @@ export class ScanHistoryStore extends PgBaseStorage {
       userId: (row.user_id ?? row.userId) as string | undefined,
       verdict: row.verdict as ScanHistoryRow['verdict'],
       findingCount: Number(row.finding_count ?? row.findingCount ?? 0),
-      worstSeverity: (row.worst_severity ?? row.worstSeverity ?? 'info') as ScanHistoryRow['worstSeverity'],
+      worstSeverity: (row.worst_severity ??
+        row.worstSeverity ??
+        'info') as ScanHistoryRow['worstSeverity'],
       intentScore: row.intent_score != null ? Number(row.intent_score) : undefined,
       scanDurationMs: Number(row.scan_duration_ms ?? row.scanDurationMs ?? 0),
-      findings: typeof row.findings === 'string' ? JSON.parse(row.findings) : (row.findings as any[] ?? []),
+      findings:
+        typeof row.findings === 'string'
+          ? JSON.parse(row.findings)
+          : ((row.findings as any[]) ?? []),
       threatAssessment: row.threat_assessment
-        ? (typeof row.threat_assessment === 'string'
-          ? JSON.parse(row.threat_assessment)
-          : row.threat_assessment) as ScanHistoryRow['threatAssessment']
+        ? ((typeof row.threat_assessment === 'string'
+            ? JSON.parse(row.threat_assessment)
+            : row.threat_assessment) as ScanHistoryRow['threatAssessment'])
         : undefined,
       tenantId: (row.tenant_id ?? row.tenantId) as string | undefined,
       createdAt: Number(row.created_at ?? row.createdAt),

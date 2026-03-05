@@ -21,8 +21,7 @@ export function registerTrainingTools(
 
   registerApiProxyTool(server, client, middleware, {
     name: 'training_start_dpo',
-    description:
-      'Start a DPO (Direct Preference Optimization) training job using preference pairs',
+    description: 'Start a DPO (Direct Preference Optimization) training job using preference pairs',
     method: 'post',
     inputSchema: {
       name: z.string().describe('Job name'),
@@ -38,8 +37,7 @@ export function registerTrainingTools(
 
   registerApiProxyTool(server, client, middleware, {
     name: 'training_start_rlhf',
-    description:
-      'Start an RLHF training job using PPO with a reward model',
+    description: 'Start an RLHF training job using PPO with a reward model',
     method: 'post',
     inputSchema: {
       name: z.string().describe('Job name'),
@@ -164,13 +162,16 @@ export function registerTrainingTools(
 
   registerApiProxyTool(server, client, middleware, {
     name: 'training_online_update',
-    description:
-      'Start an online LoRA adapter update from recent high-quality conversations',
+    description: 'Start an online LoRA adapter update from recent high-quality conversations',
     method: 'post',
     inputSchema: {
       personalityId: z.string().describe('Personality ID'),
       adapterName: z.string().describe('Output adapter name'),
-      gradientAccumulationSteps: z.number().int().optional().describe('Gradient accumulation steps (default 4)'),
+      gradientAccumulationSteps: z
+        .number()
+        .int()
+        .optional()
+        .describe('Gradient accumulation steps (default 4)'),
       replayBufferSize: z.number().int().optional().describe('Replay buffer size (default 100)'),
     },
     buildPath: () => '/api/v1/training/online-updates',

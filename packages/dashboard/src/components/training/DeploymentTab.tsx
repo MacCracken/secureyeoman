@@ -209,7 +209,9 @@ export function DeploymentTab() {
           </button>
           <button
             onClick={() => {
-              deployPersonalityId && rollbackMutation.mutate(deployPersonalityId);
+              if (deployPersonalityId) {
+                rollbackMutation.mutate(deployPersonalityId);
+              }
             }}
             disabled={!deployPersonalityId || rollbackMutation.isPending}
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 border rounded-md hover:bg-muted disabled:opacity-50"

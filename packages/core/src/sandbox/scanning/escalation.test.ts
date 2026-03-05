@@ -8,7 +8,9 @@ function makeScanResult(overrides: Partial<ScanResult> = {}): ScanResult {
   return {
     artifactId: randomUUID(),
     verdict: 'quarantine',
-    findings: [{ id: randomUUID(), scanner: 'test', severity: 'high', category: 'test', message: 'test' }],
+    findings: [
+      { id: randomUUID(), scanner: 'test', severity: 'high', category: 'test', message: 'test' },
+    ],
     worstSeverity: 'high',
     scanDurationMs: 100,
     scannerVersions: {},
@@ -54,7 +56,14 @@ describe('EscalationManager', () => {
     const mgr = new EscalationManager(deps);
     const scanResult = makeScanResult({
       worstSeverity: 'low',
-      threatAssessment: { escalationTier: 'tier1_log', classification: 'benign', intentScore: 0.1, killChainStages: [], matchedPatterns: [], summary: '' },
+      threatAssessment: {
+        escalationTier: 'tier1_log',
+        classification: 'benign',
+        intentScore: 0.1,
+        killChainStages: [],
+        matchedPatterns: [],
+        summary: '',
+      },
     });
     await mgr.handleEscalation(scanResult, makeArtifact());
     expect(auditRecord).toHaveBeenCalledTimes(1);
@@ -66,32 +75,66 @@ describe('EscalationManager', () => {
   it('fires alert for tier2', async () => {
     const mgr = new EscalationManager(deps);
     const scanResult = makeScanResult({
-      threatAssessment: { escalationTier: 'tier2_alert', classification: 'suspicious', intentScore: 0.3, killChainStages: [], matchedPatterns: [], summary: '' },
+      threatAssessment: {
+        escalationTier: 'tier2_alert',
+        classification: 'suspicious',
+        intentScore: 0.3,
+        killChainStages: [],
+        matchedPatterns: [],
+        summary: '',
+      },
     });
     await mgr.handleEscalation(scanResult, makeArtifact());
     expect(auditRecord).toHaveBeenCalledTimes(1);
     expect(alertFire).toHaveBeenCalledTimes(1);
-    expect(alertFire).toHaveBeenCalledWith('escalation_triggered', 'warn', expect.any(String), expect.any(Object));
+    expect(alertFire).toHaveBeenCalledWith(
+      'escalation_triggered',
+      'warn',
+      expect.any(String),
+      expect.any(Object)
+    );
     expect(suspendPersonality).not.toHaveBeenCalled();
   });
 
   it('suspends personality for tier3', async () => {
     const mgr = new EscalationManager(deps);
     const scanResult = makeScanResult({
-      threatAssessment: { escalationTier: 'tier3_suspend', classification: 'likely_malicious', intentScore: 0.6, killChainStages: [], matchedPatterns: [], summary: '' },
+      threatAssessment: {
+        escalationTier: 'tier3_suspend',
+        classification: 'likely_malicious',
+        intentScore: 0.6,
+        killChainStages: [],
+        matchedPatterns: [],
+        summary: '',
+      },
     });
     await mgr.handleEscalation(scanResult, makeArtifact());
     expect(auditRecord).toHaveBeenCalledTimes(1);
     expect(alertFire).toHaveBeenCalledTimes(1);
-    expect(alertFire).toHaveBeenCalledWith('escalation_triggered', 'error', expect.any(String), expect.any(Object));
+    expect(alertFire).toHaveBeenCalledWith(
+      'escalation_triggered',
+      'error',
+      expect.any(String),
+      expect.any(Object)
+    );
     expect(suspendPersonality).toHaveBeenCalledTimes(1);
-    expect(suspendPersonality).toHaveBeenCalledWith('personality-1', expect.stringContaining('tier3_suspend'));
+    expect(suspendPersonality).toHaveBeenCalledWith(
+      'personality-1',
+      expect.stringContaining('tier3_suspend')
+    );
   });
 
   it('skips personality suspension when no personalityId', async () => {
     const mgr = new EscalationManager(deps);
     const scanResult = makeScanResult({
-      threatAssessment: { escalationTier: 'tier3_suspend', classification: 'likely_malicious', intentScore: 0.6, killChainStages: [], matchedPatterns: [], summary: '' },
+      threatAssessment: {
+        escalationTier: 'tier3_suspend',
+        classification: 'likely_malicious',
+        intentScore: 0.6,
+        killChainStages: [],
+        matchedPatterns: [],
+        summary: '',
+      },
     });
     await mgr.handleEscalation(scanResult, makeArtifact({ personalityId: undefined }));
     expect(suspendPersonality).not.toHaveBeenCalled();
@@ -101,19 +144,33 @@ describe('EscalationManager', () => {
     const mgr = new EscalationManager(deps);
     const scanResult = makeScanResult({
       worstSeverity: 'critical',
-      threatAssessment: { escalationTier: 'tier4_revoke', classification: 'malicious', intentScore: 0.9, killChainStages: [], matchedPatterns: [], summary: '' },
+      threatAssessment: {
+        escalationTier: 'tier4_revoke',
+        classification: 'malicious',
+        intentScore: 0.9,
+        killChainStages: [],
+        matchedPatterns: [],
+        summary: '',
+      },
     });
     await mgr.handleEscalation(scanResult, makeArtifact());
     expect(auditRecord).toHaveBeenCalledTimes(1);
-    expect(alertFire).toHaveBeenCalledWith('escalation_triggered', 'critical', expect.any(String), expect.any(Object));
+    expect(alertFire).toHaveBeenCalledWith(
+      'escalation_triggered',
+      'critical',
+      expect.any(String),
+      expect.any(Object)
+    );
     expect(suspendPersonality).toHaveBeenCalledTimes(1);
     expect(createEntry).toHaveBeenCalledTimes(1);
-    expect(createEntry).toHaveBeenCalledWith(expect.objectContaining({
-      severity: 'critical',
-      source: 'automated',
-      category: 'security',
-      status: 'open',
-    }));
+    expect(createEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'critical',
+        source: 'automated',
+        category: 'security',
+        status: 'open',
+      })
+    );
   });
 
   it('infers tier from worst severity when no threatAssessment', async () => {
@@ -150,10 +207,17 @@ describe('EscalationManager', () => {
       mgr.handleEscalation(
         makeScanResult({
           worstSeverity: 'critical',
-          threatAssessment: { escalationTier: 'tier4_revoke', classification: 'malicious', intentScore: 0.9, killChainStages: [], matchedPatterns: [], summary: '' },
+          threatAssessment: {
+            escalationTier: 'tier4_revoke',
+            classification: 'malicious',
+            intentScore: 0.9,
+            killChainStages: [],
+            matchedPatterns: [],
+            summary: '',
+          },
         }),
-        makeArtifact(),
-      ),
+        makeArtifact()
+      )
     ).resolves.toBeUndefined();
   });
 
@@ -161,7 +225,7 @@ describe('EscalationManager', () => {
     const failingAudit = vi.fn().mockRejectedValue(new Error('audit fail'));
     const mgr = new EscalationManager({ auditChain: { record: failingAudit } });
     await expect(
-      mgr.handleEscalation(makeScanResult({ worstSeverity: 'low' }), makeArtifact()),
+      mgr.handleEscalation(makeScanResult({ worstSeverity: 'low' }), makeArtifact())
     ).resolves.toBeUndefined();
   });
 
@@ -173,10 +237,17 @@ describe('EscalationManager', () => {
     await expect(
       mgr.handleEscalation(
         makeScanResult({
-          threatAssessment: { escalationTier: 'tier3_suspend', classification: 'likely_malicious', intentScore: 0.6, killChainStages: [], matchedPatterns: [], summary: '' },
+          threatAssessment: {
+            escalationTier: 'tier3_suspend',
+            classification: 'likely_malicious',
+            intentScore: 0.6,
+            killChainStages: [],
+            matchedPatterns: [],
+            summary: '',
+          },
         }),
-        makeArtifact(),
-      ),
+        makeArtifact()
+      )
     ).resolves.toBeUndefined();
   });
 
@@ -189,16 +260,27 @@ describe('EscalationManager', () => {
       mgr.handleEscalation(
         makeScanResult({
           worstSeverity: 'critical',
-          threatAssessment: { escalationTier: 'tier4_revoke', classification: 'malicious', intentScore: 0.9, killChainStages: [], matchedPatterns: [], summary: '' },
+          threatAssessment: {
+            escalationTier: 'tier4_revoke',
+            classification: 'malicious',
+            intentScore: 0.9,
+            killChainStages: [],
+            matchedPatterns: [],
+            summary: '',
+          },
         }),
-        makeArtifact(),
-      ),
+        makeArtifact()
+      )
     ).resolves.toBeUndefined();
   });
 
   it('includes metadata in audit record', async () => {
     const mgr = new EscalationManager(deps);
-    const artifact = makeArtifact({ sourceContext: 'sandbox.run', personalityId: 'p-1', userId: 'u-1' });
+    const artifact = makeArtifact({
+      sourceContext: 'sandbox.run',
+      personalityId: 'p-1',
+      userId: 'u-1',
+    });
     const scanResult = makeScanResult({ worstSeverity: 'low' });
     await mgr.handleEscalation(scanResult, artifact);
     expect(auditRecord).toHaveBeenCalledWith(
@@ -212,7 +294,7 @@ describe('EscalationManager', () => {
         userId: 'u-1',
         verdict: scanResult.verdict,
         worstSeverity: 'low',
-      }),
+      })
     );
   });
 
@@ -220,11 +302,23 @@ describe('EscalationManager', () => {
     const mgr = new EscalationManager(deps);
     await mgr.handleEscalation(
       makeScanResult({
-        threatAssessment: { escalationTier: 'tier3_suspend', classification: 'likely_malicious', intentScore: 0.6, killChainStages: [], matchedPatterns: [], summary: '' },
+        threatAssessment: {
+          escalationTier: 'tier3_suspend',
+          classification: 'likely_malicious',
+          intentScore: 0.6,
+          killChainStages: [],
+          matchedPatterns: [],
+          summary: '',
+        },
       }),
-      makeArtifact(),
+      makeArtifact()
     );
-    expect(auditRecord).toHaveBeenCalledWith('escalation_triggered', 'security', expect.any(String), expect.any(Object));
+    expect(auditRecord).toHaveBeenCalledWith(
+      'escalation_triggered',
+      'security',
+      expect.any(String),
+      expect.any(Object)
+    );
   });
 
   it('returns null soul manager gracefully', async () => {
@@ -234,10 +328,17 @@ describe('EscalationManager', () => {
     await expect(
       mgr.handleEscalation(
         makeScanResult({
-          threatAssessment: { escalationTier: 'tier3_suspend', classification: 'likely_malicious', intentScore: 0.6, killChainStages: [], matchedPatterns: [], summary: '' },
+          threatAssessment: {
+            escalationTier: 'tier3_suspend',
+            classification: 'likely_malicious',
+            intentScore: 0.6,
+            killChainStages: [],
+            matchedPatterns: [],
+            summary: '',
+          },
         }),
-        makeArtifact(),
-      ),
+        makeArtifact()
+      )
     ).resolves.toBeUndefined();
   });
 
@@ -248,10 +349,17 @@ describe('EscalationManager', () => {
     await expect(
       mgr.handleEscalation(
         makeScanResult({
-          threatAssessment: { escalationTier: 'tier2_alert', classification: 'suspicious', intentScore: 0.3, killChainStages: [], matchedPatterns: [], summary: '' },
+          threatAssessment: {
+            escalationTier: 'tier2_alert',
+            classification: 'suspicious',
+            intentScore: 0.3,
+            killChainStages: [],
+            matchedPatterns: [],
+            summary: '',
+          },
         }),
-        makeArtifact(),
-      ),
+        makeArtifact()
+      )
     ).resolves.toBeUndefined();
   });
 });

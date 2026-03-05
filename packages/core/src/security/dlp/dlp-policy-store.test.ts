@@ -33,19 +33,21 @@ describe('DlpPolicyStore', () => {
 
   it('gets a policy by ID', async () => {
     mockQuery.mockResolvedValueOnce({
-      rows: [{
-        id: 'pol-1',
-        name: 'Test Policy',
-        description: null,
-        enabled: true,
-        rules: [{ type: 'keyword', value: 'secret' }],
-        action: 'warn',
-        classificationLevels: ['confidential'],
-        appliesTo: ['email'],
-        createdAt: 1000,
-        updatedAt: 1000,
-        tenantId: 'default',
-      }],
+      rows: [
+        {
+          id: 'pol-1',
+          name: 'Test Policy',
+          description: null,
+          enabled: true,
+          rules: [{ type: 'keyword', value: 'secret' }],
+          action: 'warn',
+          classificationLevels: ['confidential'],
+          appliesTo: ['email'],
+          createdAt: 1000,
+          updatedAt: 1000,
+          tenantId: 'default',
+        },
+      ],
     });
     const policy = await store.getById('pol-1');
     expect(policy).toBeTruthy();
@@ -60,14 +62,36 @@ describe('DlpPolicyStore', () => {
   });
 
   it('lists policies with filters', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ count: '2' }] })
-      .mockResolvedValueOnce({
-        rows: [
-          { id: 'p1', name: 'Policy 1', description: null, enabled: true, rules: [], action: 'warn', classificationLevels: [], appliesTo: ['slack'], createdAt: 1000, updatedAt: 1000, tenantId: 'default' },
-          { id: 'p2', name: 'Policy 2', description: null, enabled: true, rules: [], action: 'block', classificationLevels: [], appliesTo: ['slack'], createdAt: 900, updatedAt: 900, tenantId: 'default' },
-        ],
-      });
+    mockQuery.mockResolvedValueOnce({ rows: [{ count: '2' }] }).mockResolvedValueOnce({
+      rows: [
+        {
+          id: 'p1',
+          name: 'Policy 1',
+          description: null,
+          enabled: true,
+          rules: [],
+          action: 'warn',
+          classificationLevels: [],
+          appliesTo: ['slack'],
+          createdAt: 1000,
+          updatedAt: 1000,
+          tenantId: 'default',
+        },
+        {
+          id: 'p2',
+          name: 'Policy 2',
+          description: null,
+          enabled: true,
+          rules: [],
+          action: 'block',
+          classificationLevels: [],
+          appliesTo: ['slack'],
+          createdAt: 900,
+          updatedAt: 900,
+          tenantId: 'default',
+        },
+      ],
+    });
     const { policies, total } = await store.list({ active: true, appliesTo: 'slack' });
     expect(total).toBe(2);
     expect(policies).toHaveLength(2);
@@ -99,9 +123,7 @@ describe('DlpPolicyStore', () => {
   });
 
   it('lists all policies without filters', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [{ count: '0' }] })
-      .mockResolvedValueOnce({ rows: [] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ count: '0' }] }).mockResolvedValueOnce({ rows: [] });
     const { policies, total } = await store.list();
     expect(total).toBe(0);
     expect(policies).toHaveLength(0);

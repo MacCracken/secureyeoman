@@ -66,15 +66,11 @@ export function DlpWidget() {
   const isLoading = clsLoading || egressLoading || policyLoading;
 
   if (isLoading) {
-    return (
-      <div className="p-4 text-sm text-zinc-400">Loading DLP data...</div>
-    );
+    return <div className="p-4 text-sm text-zinc-400">Loading DLP data...</div>;
   }
 
   if (!classData && !egressData && !policyData) {
-    return (
-      <div className="p-4 text-sm text-zinc-500">DLP data unavailable</div>
-    );
+    return <div className="p-4 text-sm text-zinc-500">DLP data unavailable</div>;
   }
 
   // Compute classification counts
@@ -99,9 +95,7 @@ export function DlpWidget() {
 
   return (
     <div className="flex flex-col gap-3 p-4 text-sm">
-      <h3 className="text-base font-semibold text-zinc-200">
-        Data Loss Prevention
-      </h3>
+      <h3 className="text-base font-semibold text-zinc-200">Data Loss Prevention</h3>
 
       {/* Classification Overview */}
       <div className="rounded border border-zinc-700 p-3">
@@ -109,19 +103,13 @@ export function DlpWidget() {
         <div className="grid grid-cols-2 gap-2">
           {['public', 'internal', 'confidential', 'restricted'].map((level) => (
             <div key={level} className="flex items-center justify-between">
-              <span className={levelColors[level] ?? 'text-zinc-400'}>
-                {level}
-              </span>
-              <span className="text-zinc-300 font-mono text-xs">
-                {clsCounts[level] ?? 0}
-              </span>
+              <span className={levelColors[level] ?? 'text-zinc-400'}>{level}</span>
+              <span className="text-zinc-300 font-mono text-xs">{clsCounts[level] ?? 0}</span>
             </div>
           ))}
         </div>
         {classData?.total !== undefined && (
-          <div className="mt-2 text-xs text-zinc-500">
-            {classData.total} total classifications
-          </div>
+          <div className="mt-2 text-xs text-zinc-500">{classData.total} total classifications</div>
         )}
       </div>
 
@@ -133,9 +121,7 @@ export function DlpWidget() {
             <div className="space-y-1 text-xs">
               <div className="flex justify-between">
                 <span className="text-zinc-400">Total Events</span>
-                <span className="text-zinc-300 font-mono">
-                  {(egressData as any).totalEvents}
-                </span>
+                <span className="text-zinc-300 font-mono">{(egressData as any).totalEvents}</span>
               </div>
               {(egressData as any).byAction &&
                 Object.entries((egressData as any).byAction).map(([action, count]) => (
@@ -180,9 +166,7 @@ export function DlpWidget() {
         <div className="mt-2 space-y-1">
           {policies.slice(0, 5).map((p) => (
             <div key={p.id} className="flex items-center justify-between text-xs">
-              <span className={p.enabled ? 'text-zinc-300' : 'text-zinc-500'}>
-                {p.name}
-              </span>
+              <span className={p.enabled ? 'text-zinc-300' : 'text-zinc-500'}>{p.name}</span>
               <span
                 className={
                   p.action === 'block'
@@ -197,9 +181,7 @@ export function DlpWidget() {
             </div>
           ))}
         </div>
-        {totalPolicies === 0 && (
-          <div className="text-xs text-zinc-500">No policies configured</div>
-        )}
+        {totalPolicies === 0 && <div className="text-xs text-zinc-500">No policies configured</div>}
       </div>
     </div>
   );

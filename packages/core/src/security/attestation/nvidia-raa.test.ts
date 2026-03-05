@@ -31,16 +31,19 @@ describe('NvidiaRaaAttestationProvider', () => {
   });
 
   it('returns verified when CC mode is on and status is verified', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        confidential_compute_mode: true,
-        attestation_status: 'verified',
-        driver_version: '535.104.05',
-        gpu_uuid: 'GPU-abc-123',
-        technology: 'sev',
-      }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          confidential_compute_mode: true,
+          attestation_status: 'verified',
+          driver_version: '535.104.05',
+          gpu_uuid: 'GPU-abc-123',
+          technology: 'sev',
+        }),
+      })
+    );
 
     const provider = new NvidiaRaaAttestationProvider({ endpoint: 'https://nras.example.com' });
     const result = await provider.verifyAsync('openai');
@@ -52,14 +55,17 @@ describe('NvidiaRaaAttestationProvider', () => {
   });
 
   it('returns unverified when CC mode is off', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        confidential_compute_mode: false,
-        attestation_status: 'verified',
-        gpu_uuid: 'GPU-xyz',
-      }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          confidential_compute_mode: false,
+          attestation_status: 'verified',
+          gpu_uuid: 'GPU-xyz',
+        }),
+      })
+    );
 
     const provider = new NvidiaRaaAttestationProvider({ endpoint: 'https://nras.example.com' });
     const result = await provider.verifyAsync('openai');
@@ -68,13 +74,16 @@ describe('NvidiaRaaAttestationProvider', () => {
   });
 
   it('returns unverified when attestation_status is not verified', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        confidential_compute_mode: true,
-        attestation_status: 'failed',
-      }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          confidential_compute_mode: true,
+          attestation_status: 'failed',
+        }),
+      })
+    );
 
     const provider = new NvidiaRaaAttestationProvider({ endpoint: 'https://nras.example.com' });
     const result = await provider.verifyAsync('openai');
@@ -83,13 +92,16 @@ describe('NvidiaRaaAttestationProvider', () => {
   });
 
   it('defaults technology to auto when not specified', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        confidential_compute_mode: true,
-        attestation_status: 'verified',
-      }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          confidential_compute_mode: true,
+          attestation_status: 'verified',
+        }),
+      })
+    );
 
     const provider = new NvidiaRaaAttestationProvider({ endpoint: 'https://nras.example.com' });
     const result = await provider.verifyAsync('openai');
@@ -97,14 +109,17 @@ describe('NvidiaRaaAttestationProvider', () => {
   });
 
   it('detects technology from response (tdx)', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        confidential_compute_mode: true,
-        attestation_status: 'verified',
-        technology: 'tdx',
-      }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          confidential_compute_mode: true,
+          attestation_status: 'verified',
+          technology: 'tdx',
+        }),
+      })
+    );
 
     const provider = new NvidiaRaaAttestationProvider({ endpoint: 'https://nras.example.com' });
     const result = await provider.verifyAsync('openai');
@@ -112,11 +127,14 @@ describe('NvidiaRaaAttestationProvider', () => {
   });
 
   it('returns unverified on HTTP error', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: false,
-      status: 502,
-      statusText: 'Bad Gateway',
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 502,
+        statusText: 'Bad Gateway',
+      })
+    );
 
     const provider = new NvidiaRaaAttestationProvider({ endpoint: 'https://nras.example.com' });
     const result = await provider.verifyAsync('openai');
@@ -134,7 +152,10 @@ describe('NvidiaRaaAttestationProvider', () => {
   });
 
   it('handles fetch abort', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new DOMException('The operation was aborted', 'AbortError')));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new DOMException('The operation was aborted', 'AbortError'))
+    );
 
     const provider = new NvidiaRaaAttestationProvider({ endpoint: 'https://nras.example.com' });
     const result = await provider.verifyAsync('openai');
@@ -154,7 +175,7 @@ describe('NvidiaRaaAttestationProvider', () => {
     await provider.verifyAsync('openai');
     expect(fetchMock).toHaveBeenCalledWith(
       'https://nras.example.com/v1/attestation/gpu',
-      expect.any(Object),
+      expect.any(Object)
     );
   });
 
@@ -167,13 +188,16 @@ describe('NvidiaRaaAttestationProvider', () => {
   });
 
   it('handles missing gpu_uuid and driver_version gracefully', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        confidential_compute_mode: true,
-        attestation_status: 'verified',
-      }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          confidential_compute_mode: true,
+          attestation_status: 'verified',
+        }),
+      })
+    );
 
     const provider = new NvidiaRaaAttestationProvider({ endpoint: 'https://nras.example.com' });
     const result = await provider.verifyAsync('openai');

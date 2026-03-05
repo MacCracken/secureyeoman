@@ -959,7 +959,14 @@ describe('GET /api/v1/soul/personalities/:id/distill', () => {
   it('passes includeMemory query param', async () => {
     const distillMock = vi.fn().mockResolvedValue({
       markdown: '# Distilled',
-      metadata: { activeSkills: { count: 0, names: [] }, memoryEntries: 0, connectedIntegrations: [], appliedStrategy: null, modelConfig: null, composedAt: '2026-03-02T00:00:00.000Z' },
+      metadata: {
+        activeSkills: { count: 0, names: [] },
+        memoryEntries: 0,
+        connectedIntegrations: [],
+        appliedStrategy: null,
+        modelConfig: null,
+        composedAt: '2026-03-02T00:00:00.000Z',
+      },
     });
     const app = buildApp({ distillPersonality: distillMock });
     await app.inject({

@@ -67,7 +67,7 @@ async function runStatus(
   ctx: CommandContext,
   baseUrl: string,
   token: string | undefined,
-  jsonOutput: boolean,
+  jsonOutput: boolean
 ): Promise<number> {
   const res = await apiCall(baseUrl, '/api/v1/security/tee/providers', { token });
   if (!res?.ok) {
@@ -89,16 +89,16 @@ async function runStatus(
 
   ctx.stdout.write(`  ${c.bold('Hardware')}\n`);
   ctx.stdout.write(
-    `    SGX:      ${hw.sgxAvailable ? c.green('available') : c.dim('not detected')}\n`,
+    `    SGX:      ${hw.sgxAvailable ? c.green('available') : c.dim('not detected')}\n`
   );
   ctx.stdout.write(
-    `    SEV:      ${hw.sevAvailable ? c.green('available') : c.dim('not detected')}\n`,
+    `    SEV:      ${hw.sevAvailable ? c.green('available') : c.dim('not detected')}\n`
   );
   ctx.stdout.write(
-    `    TPM:      ${hw.tpmAvailable ? c.green('available') : c.dim('not detected')}\n`,
+    `    TPM:      ${hw.tpmAvailable ? c.green('available') : c.dim('not detected')}\n`
   );
   ctx.stdout.write(
-    `    NVIDIA CC: ${hw.nvidiaCC ? c.green('enabled') : c.dim('not detected')}\n\n`,
+    `    NVIDIA CC: ${hw.nvidiaCC ? c.green('enabled') : c.dim('not detected')}\n\n`
   );
 
   ctx.stdout.write(`  ${c.bold('TEE-Capable Providers')} (${providers.length})\n`);
@@ -115,7 +115,7 @@ async function runVerify(
   baseUrl: string,
   token: string | undefined,
   jsonOutput: boolean,
-  args: string[],
+  args: string[]
 ): Promise<number> {
   const provider = args[0];
   if (!provider) {
@@ -129,7 +129,7 @@ async function runVerify(
     {
       method: 'POST',
       token,
-    },
+    }
   );
   if (!res?.ok) {
     ctx.stderr.write(`Failed to verify provider: ${provider}\n`);
@@ -160,7 +160,7 @@ async function runHardware(
   ctx: CommandContext,
   baseUrl: string,
   token: string | undefined,
-  jsonOutput: boolean,
+  jsonOutput: boolean
 ): Promise<number> {
   const res = await apiCall(baseUrl, '/api/v1/security/tee/providers', { token });
   if (!res?.ok) {
@@ -178,16 +178,16 @@ async function runHardware(
 
   ctx.stdout.write(`\n  ${c.bold('TEE Hardware Detection')}\n\n`);
   ctx.stdout.write(
-    `  Intel SGX:    ${hw.sgxAvailable ? c.green('/dev/sgx_enclave detected') : c.dim('not available')}\n`,
+    `  Intel SGX:    ${hw.sgxAvailable ? c.green('/dev/sgx_enclave detected') : c.dim('not available')}\n`
   );
   ctx.stdout.write(
-    `  AMD SEV:      ${hw.sevAvailable ? c.green('/dev/sev detected') : c.dim('not available')}\n`,
+    `  AMD SEV:      ${hw.sevAvailable ? c.green('/dev/sev detected') : c.dim('not available')}\n`
   );
   ctx.stdout.write(
-    `  TPM 2.0:      ${hw.tpmAvailable ? c.green('/dev/tpm0 detected') : c.dim('not available')}\n`,
+    `  TPM 2.0:      ${hw.tpmAvailable ? c.green('/dev/tpm0 detected') : c.dim('not available')}\n`
   );
   ctx.stdout.write(
-    `  NVIDIA CC:    ${hw.nvidiaCC ? c.green('Confidential Compute enabled') : c.dim('not detected')}\n`,
+    `  NVIDIA CC:    ${hw.nvidiaCC ? c.green('Confidential Compute enabled') : c.dim('not detected')}\n`
   );
   ctx.stdout.write('\n');
   return 0;

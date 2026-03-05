@@ -199,7 +199,9 @@ function AdvancedEditorInner() {
   const applyLayout = useCallback(
     (layout: CanvasLayout) => {
       setNodes(layout.nodes);
-      setTimeout(() => setViewport(layout.viewport), 50);
+      setTimeout(() => {
+        setViewport(layout.viewport);
+      }, 50);
     },
     [setNodes, setViewport]
   );
@@ -294,9 +296,7 @@ function AdvancedEditorInner() {
 
   const focusNode = useCallback(
     (nodeId: string) => {
-      setNodes((nds) =>
-        nds.map((n) => ({ ...n, selected: n.id === nodeId }))
-      );
+      setNodes((nds) => nds.map((n) => ({ ...n, selected: n.id === nodeId })));
     },
     [setNodes]
   );
@@ -307,7 +307,9 @@ function AdvancedEditorInner() {
     nodes,
     focusNode,
     closeNode: handleClose,
-    toggleCatalog: () => setCatalogOpen((v) => !v),
+    toggleCatalog: () => {
+      setCatalogOpen((v) => !v);
+    },
     saveLayout: doSave,
     selectedNodeId,
   });
@@ -338,7 +340,9 @@ function AdvancedEditorInner() {
         {/* Layout Switcher */}
         <div className="relative">
           <button
-            onClick={() => setLayoutMenuOpen((v) => !v)}
+            onClick={() => {
+              setLayoutMenuOpen((v) => !v);
+            }}
             className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded border hover:bg-muted"
           >
             <LayoutDashboard className="w-3.5 h-3.5" />
@@ -354,7 +358,9 @@ function AdvancedEditorInner() {
               {(['Dev', 'Ops', 'Chat'] as PresetName[]).map((p) => (
                 <button
                   key={p}
-                  onClick={() => handleLoadPreset(p)}
+                  onClick={() => {
+                    handleLoadPreset(p);
+                  }}
                   className="w-full text-left px-3 py-1.5 hover:bg-muted"
                 >
                   {p}
@@ -371,13 +377,17 @@ function AdvancedEditorInner() {
                   {Object.keys(namedLayouts).map((name) => (
                     <div key={name} className="flex items-center group">
                       <button
-                        onClick={() => handleLoadLayout(name)}
+                        onClick={() => {
+                          handleLoadLayout(name);
+                        }}
                         className="flex-1 text-left px-3 py-1.5 hover:bg-muted truncate"
                       >
                         {name}
                       </button>
                       <button
-                        onClick={() => handleDeleteLayout(name)}
+                        onClick={() => {
+                          handleDeleteLayout(name);
+                        }}
                         className="px-2 py-1 opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 rounded"
                         title="Delete layout"
                       >
@@ -473,7 +483,9 @@ function AdvancedEditorInner() {
       {layoutMenuOpen && (
         <div
           className="fixed inset-0 z-40"
-          onClick={() => setLayoutMenuOpen(false)}
+          onClick={() => {
+            setLayoutMenuOpen(false);
+          }}
         />
       )}
     </div>

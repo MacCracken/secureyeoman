@@ -127,11 +127,11 @@ export interface Association {
 }
 
 export interface CognitiveStats {
-  topMemories: Array<{ id: string; activation: number }>;
-  topDocuments: Array<{ id: string; activation: number }>;
+  topMemories: { id: string; activation: number }[];
+  topDocuments: { id: string; activation: number }[];
   associationCount: number;
   avgAssociationWeight: number;
-  accessTrend: Array<{ day: string; count: number }>;
+  accessTrend: { day: string; count: number }[];
 }
 
 export interface BrainStats {

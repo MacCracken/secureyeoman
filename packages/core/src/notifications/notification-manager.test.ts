@@ -781,6 +781,8 @@ describe('NotificationManager cleanup job edge cases', () => {
 
     // After stop, the stopped timer should not fire again
     // (the leaked first timer may still fire — that's the bug this test documents)
-    expect((storage.deleteOlderThan as any).mock.calls.length).toBeGreaterThanOrEqual(countAfterStop);
+    expect((storage.deleteOlderThan as any).mock.calls.length).toBeGreaterThanOrEqual(
+      countAfterStop
+    );
   });
 });

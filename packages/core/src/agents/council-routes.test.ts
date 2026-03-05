@@ -10,7 +10,13 @@ const TEMPLATE = {
   name: 'Board of Directors',
   description: 'Strategic review',
   members: [
-    { role: 'CFO', profileName: 'analyst', description: 'Finance', weight: 1, perspective: 'Financial' },
+    {
+      role: 'CFO',
+      profileName: 'analyst',
+      description: 'Finance',
+      weight: 1,
+      perspective: 'Financial',
+    },
   ],
   facilitatorProfile: 'summarizer',
   deliberationStrategy: 'rounds',
@@ -45,8 +51,18 @@ const COUNCIL_RUN = {
 };
 
 const CATALOG = [
-  { name: 'Board of Directors', description: 'Strategic review', members: [], facilitatorProfile: 'summarizer' },
-  { name: 'Architecture Review Board', description: 'Tech review', members: [], facilitatorProfile: 'summarizer' },
+  {
+    name: 'Board of Directors',
+    description: 'Strategic review',
+    members: [],
+    facilitatorProfile: 'summarizer',
+  },
+  {
+    name: 'Architecture Review Board',
+    description: 'Tech review',
+    members: [],
+    facilitatorProfile: 'summarizer',
+  },
 ];
 
 // ─── Mock factory ──────────────────────────────────────────────────

@@ -23,8 +23,20 @@ const TEMPLATE = {
   name: 'Board of Directors',
   description: 'Strategic review',
   members: [
-    { role: 'CFO', profileName: 'analyst', description: 'Finance', weight: 1, perspective: 'Financial perspective' },
-    { role: 'CTO', profileName: 'coder', description: 'Tech', weight: 1, perspective: 'Technical perspective' },
+    {
+      role: 'CFO',
+      profileName: 'analyst',
+      description: 'Finance',
+      weight: 1,
+      perspective: 'Financial perspective',
+    },
+    {
+      role: 'CTO',
+      profileName: 'coder',
+      description: 'Tech',
+      weight: 1,
+      perspective: 'Technical perspective',
+    },
   ],
   facilitatorProfile: 'summarizer',
   deliberationStrategy: 'rounds' as const,
@@ -142,7 +154,9 @@ describe('CouncilManager', () => {
     it('initializes without seeding templates', async () => {
       const { manager, logger } = buildManager();
       await manager.initialize();
-      expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('CouncilManager initialized'));
+      expect(logger.debug).toHaveBeenCalledWith(
+        expect.stringContaining('CouncilManager initialized')
+      );
     });
   });
 
@@ -273,9 +287,10 @@ describe('CouncilManager', () => {
       const { manager, storage, subAgentManager } = buildManager({
         storageOverrides: {
           getTemplate: vi.fn().mockResolvedValue(singlePassTemplate),
-          getRun: vi.fn()
-            .mockResolvedValueOnce(RUN)        // first call from createRun flow
-            .mockResolvedValue(completedRun),   // subsequent calls
+          getRun: vi
+            .fn()
+            .mockResolvedValueOnce(RUN) // first call from createRun flow
+            .mockResolvedValue(completedRun), // subsequent calls
         },
       });
 
@@ -296,9 +311,7 @@ describe('CouncilManager', () => {
       const completedRun = { ...RUN, status: 'completed' as const, decision: 'Support expansion' };
       const { manager, storage, subAgentManager } = buildManager({
         storageOverrides: {
-          getRun: vi.fn()
-            .mockResolvedValueOnce(RUN)
-            .mockResolvedValue(completedRun),
+          getRun: vi.fn().mockResolvedValueOnce(RUN).mockResolvedValue(completedRun),
         },
       });
 
@@ -332,9 +345,7 @@ describe('CouncilManager', () => {
       const { manager, subAgentManager } = buildManager({
         storageOverrides: {
           getTemplate: vi.fn().mockResolvedValue(consensusTemplate),
-          getRun: vi.fn()
-            .mockResolvedValueOnce(RUN)
-            .mockResolvedValue(completedRun),
+          getRun: vi.fn().mockResolvedValueOnce(RUN).mockResolvedValue(completedRun),
         },
       });
 
@@ -346,16 +357,19 @@ describe('CouncilManager', () => {
 
     it('handles delegation failure gracefully', async () => {
       const completedRun = { ...RUN, status: 'completed' as const };
-      const failingDelegate = vi.fn()
+      const failingDelegate = vi
+        .fn()
         .mockRejectedValueOnce(new Error('Agent unavailable'))
         .mockResolvedValue(DELEGATION_RESULT);
 
       const { manager, storage } = buildManager({
         storageOverrides: {
-          getTemplate: vi.fn().mockResolvedValue({ ...TEMPLATE, maxRounds: 1, deliberationStrategy: 'single_pass' as const }),
-          getRun: vi.fn()
-            .mockResolvedValueOnce(RUN)
-            .mockResolvedValue(completedRun),
+          getTemplate: vi.fn().mockResolvedValue({
+            ...TEMPLATE,
+            maxRounds: 1,
+            deliberationStrategy: 'single_pass' as const,
+          }),
+          getRun: vi.fn().mockResolvedValueOnce(RUN).mockResolvedValue(completedRun),
         },
         agentOverrides: { delegate: failingDelegate },
       });
@@ -374,10 +388,12 @@ describe('CouncilManager', () => {
       const completedRun = { ...RUN, status: 'completed' as const };
       const { manager, storage } = buildManager({
         storageOverrides: {
-          getTemplate: vi.fn().mockResolvedValue({ ...TEMPLATE, maxRounds: 1, deliberationStrategy: 'single_pass' as const }),
-          getRun: vi.fn()
-            .mockResolvedValueOnce(RUN)
-            .mockResolvedValue(completedRun),
+          getTemplate: vi.fn().mockResolvedValue({
+            ...TEMPLATE,
+            maxRounds: 1,
+            deliberationStrategy: 'single_pass' as const,
+          }),
+          getRun: vi.fn().mockResolvedValueOnce(RUN).mockResolvedValue(completedRun),
         },
         agentOverrides: {
           delegate: vi.fn().mockResolvedValue({
@@ -418,9 +434,7 @@ describe('CouncilManager', () => {
       const completedRun = { ...RUN, status: 'completed' as const };
       const { manager, subAgentManager } = buildManager({
         storageOverrides: {
-          getRun: vi.fn()
-            .mockResolvedValueOnce(RUN)
-            .mockResolvedValue(completedRun),
+          getRun: vi.fn().mockResolvedValueOnce(RUN).mockResolvedValue(completedRun),
           getPositionsForRound: vi.fn().mockResolvedValue(positions),
         },
       });
@@ -428,7 +442,9 @@ describe('CouncilManager', () => {
       await manager.convene({ templateId: 'tmpl-1', topic: 'Test context' });
 
       // Round 2 calls should include prior positions in the task
-      const round2Calls = (subAgentManager.delegate as ReturnType<typeof vi.fn>).mock.calls.slice(2);
+      const round2Calls = (subAgentManager.delegate as ReturnType<typeof vi.fn>).mock.calls.slice(
+        2
+      );
       expect(round2Calls.length).toBe(2);
       for (const call of round2Calls) {
         expect(call[0].task).toContain('round 2');
@@ -440,10 +456,12 @@ describe('CouncilManager', () => {
       const completedRun = { ...RUN, status: 'completed' as const };
       const { manager, subAgentManager } = buildManager({
         storageOverrides: {
-          getTemplate: vi.fn().mockResolvedValue({ ...TEMPLATE, maxRounds: 1, deliberationStrategy: 'single_pass' as const }),
-          getRun: vi.fn()
-            .mockResolvedValueOnce(RUN)
-            .mockResolvedValue(completedRun),
+          getTemplate: vi.fn().mockResolvedValue({
+            ...TEMPLATE,
+            maxRounds: 1,
+            deliberationStrategy: 'single_pass' as const,
+          }),
+          getRun: vi.fn().mockResolvedValueOnce(RUN).mockResolvedValue(completedRun),
         },
       });
 
@@ -460,14 +478,26 @@ describe('CouncilManager', () => {
       const failedRun = { ...RUN, status: 'failed' as const, decision: 'Error: All agents down' };
       const { manager, storage } = buildManager({
         storageOverrides: {
-          getTemplate: vi.fn().mockResolvedValue({ ...TEMPLATE, maxRounds: 1, deliberationStrategy: 'single_pass' as const }),
+          getTemplate: vi.fn().mockResolvedValue({
+            ...TEMPLATE,
+            maxRounds: 1,
+            deliberationStrategy: 'single_pass' as const,
+          }),
           createRun: vi.fn().mockResolvedValue(RUN),
           getRun: vi.fn().mockResolvedValue(failedRun),
           updateRun: vi.fn().mockResolvedValue(undefined),
           getPositionsForRun: vi.fn().mockResolvedValue([]),
           createPosition: vi.fn().mockResolvedValue({
-            id: 'pos-x', councilRunId: 'run-1', memberRole: 'CFO', profileName: 'analyst',
-            round: 1, position: 'Error', confidence: 0, keyPoints: [], agreements: [], disagreements: [],
+            id: 'pos-x',
+            councilRunId: 'run-1',
+            memberRole: 'CFO',
+            profileName: 'analyst',
+            round: 1,
+            position: 'Error',
+            confidence: 0,
+            keyPoints: [],
+            agreements: [],
+            disagreements: [],
             createdAt: 1000,
           }),
         },

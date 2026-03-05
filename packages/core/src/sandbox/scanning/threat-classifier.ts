@@ -28,9 +28,8 @@ export class ThreatClassifier implements ThreatClassifierIntegration {
   }
 
   classify(findings: ScanFinding[], artifact: SandboxArtifact): ThreatAssessmentResult {
-    const content = typeof artifact.content === 'string'
-      ? artifact.content
-      : artifact.content.toString('utf-8');
+    const content =
+      typeof artifact.content === 'string' ? artifact.content : artifact.content.toString('utf-8');
 
     // Step 1: Match threat patterns against content
     const matchedPatternIds: string[] = [];
@@ -58,9 +57,8 @@ export class ThreatClassifier implements ThreatClassifierIntegration {
       severityScore += SEVERITY_WEIGHTS[finding.severity] ?? 0;
     }
     // Normalize by count (capped)
-    const normalizedSeverity = findings.length > 0
-      ? Math.min(severityScore / findings.length, 1)
-      : 0;
+    const normalizedSeverity =
+      findings.length > 0 ? Math.min(severityScore / findings.length, 1) : 0;
 
     // Step 3: Co-occurrence amplification
     let coOccurrenceBoost = 1;
@@ -76,9 +74,10 @@ export class ThreatClassifier implements ThreatClassifierIntegration {
     }
 
     // Step 4: Compute final intent score (0.0–1.0)
-    const rawScore = matchedPatternIds.length > 0
-      ? (patternIntentSum / matchedPatternIds.length) * 0.6 + normalizedSeverity * 0.4
-      : normalizedSeverity * 0.5;
+    const rawScore =
+      matchedPatternIds.length > 0
+        ? (patternIntentSum / matchedPatternIds.length) * 0.6 + normalizedSeverity * 0.4
+        : normalizedSeverity * 0.5;
 
     const intentScore = Math.min(rawScore * coOccurrenceBoost, 1.0);
 
@@ -113,11 +112,7 @@ export class ThreatClassifier implements ThreatClassifierIntegration {
     return 'tier4_revoke';
   }
 
-  private buildSummary(
-    matchedPatterns: string[],
-    classification: string,
-    score: number,
-  ): string {
+  private buildSummary(matchedPatterns: string[], classification: string, score: number): string {
     if (matchedPatterns.length === 0) {
       return `Classification: ${classification} (score: ${score.toFixed(2)}). No known threat patterns matched.`;
     }

@@ -8,11 +8,7 @@ vi.mock('node:child_process', () => ({
   execFileSync: mockExecFileSync,
 }));
 
-import {
-  detectConfidentialGpu,
-  isGpuConfidential,
-  blockNonConfidentialGpu,
-} from './tee-gpu.js';
+import { detectConfidentialGpu, isGpuConfidential, blockNonConfidentialGpu } from './tee-gpu.js';
 
 describe('Confidential GPU Detection', () => {
   beforeEach(() => {
