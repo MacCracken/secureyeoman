@@ -339,6 +339,21 @@ router.registerLazy({
   loader: () => import('./cli/commands/sandbox.js').then((m) => m.sandboxCommand),
 });
 
+router.registerLazy({
+  name: 'sbom',
+  aliases: ['bom'],
+  description: 'Generate SBOM, compliance mappings, and dependency tracking',
+  usage: 'secureyeoman sbom <generate|compliance|deps> [options]',
+  loader: () => import('./cli/commands/sbom.js').then((m) => m.sbomCommand),
+});
+
+router.registerLazy({
+  name: 'verify',
+  description: 'Verify binary release integrity (checksum + signature)',
+  usage: 'secureyeoman verify <binary> [options]',
+  loader: () => import('./cli/commands/verify.js').then((m) => m.verifyCommand),
+});
+
 // ── Help command (eager — uses router directly) ────────────────────────────
 
 router.register({

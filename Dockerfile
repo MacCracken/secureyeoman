@@ -7,7 +7,8 @@
 # Then build this image:
 #   docker build -t secureyeoman .
 
-FROM debian:bookworm-slim
+# Pin by digest for reproducible builds (debian:bookworm-slim as of 2026-03-05)
+FROM debian:bookworm-slim@sha256:74d56e3931e0d5a1dd51f8c8a2466d21de84a271cd3b5a733b803aa91abf4421
 
 LABEL org.opencontainers.image.source="https://github.com/MacCracken/secureyeoman"
 LABEL org.opencontainers.image.description="SecureYeoman — Secure, local-first AI assistant"

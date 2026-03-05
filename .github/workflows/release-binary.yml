@@ -6,7 +6,9 @@ on:
       - '[0-9][0-9][0-9][0-9].[0-9]*'   # e.g. 2026.2.19
 
 permissions:
-  contents: write  # needed for creating GitHub releases and uploading assets
+  contents: write       # creating GitHub releases and uploading assets
+  id-token: write       # Sigstore OIDC token for keyless signing
+  attestations: write   # SLSA provenance attestations
 
 jobs:
   build:
@@ -63,6 +65,35 @@ jobs:
           SMOKE_PG_PASSWORD: secureyeoman_dev
         run: bash scripts/smoke-test-binary.sh
 
+      - name: Generate CycloneDX SBOM
+        run: |
+          node packages/core/dist/cli.js sbom generate --output dist/secureyeoman-sbom.cdx.json
+          echo "==> SBOM generated"
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign binaries with cosign (keyless)
+        run: |
+          for binary in dist/secureyeoman-linux-x64 dist/secureyeoman-linux-arm64 dist/secureyeoman-darwin-arm64 dist/secureyeoman-windows-x64.exe dist/secureyeoman-lite-linux-x64 dist/secureyeoman-lite-linux-arm64 dist/secureyeoman-lite-windows-x64.exe; do
+            if [ -f "$binary" ]; then
+              cosign sign-blob --yes "$binary" --output-signature "${binary}.sig" --output-certificate "${binary}.cert"
+              echo "==> Signed: $binary"
+            fi
+          done
+
+      - name: Generate SLSA provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            dist/secureyeoman-linux-x64
+            dist/secureyeoman-linux-arm64
+            dist/secureyeoman-darwin-arm64
+            dist/secureyeoman-windows-x64.exe
+            dist/secureyeoman-lite-linux-x64
+            dist/secureyeoman-lite-linux-arm64
+            dist/secureyeoman-lite-windows-x64.exe
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -75,6 +106,9 @@ jobs:
             dist/secureyeoman-lite-linux-arm64
             dist/secureyeoman-lite-windows-x64.exe
             dist/SHA256SUMS
+            dist/secureyeoman-sbom.cdx.json
+            dist/*.sig
+            dist/*.cert
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

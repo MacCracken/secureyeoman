@@ -9,11 +9,15 @@
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
-| 125-E | Cognitive ML — Advanced Features | P2 — ML | Planned |
-| 127 | IDE Experience (Basic Editor) | P3 — power user UX | Planned |
-| — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| Future | LLM Providers, Voice, Infrastructure | Future / Demand-Gated | — |
+| 139 | OpenTelemetry & SIEM Integration | P1 — enterprise | Planned |
+| 140 | RAG Evaluation Metrics | P1 — differentiation | Planned |
+| 141 | Cognitive ML — Advanced Features | P2 — ML | Planned |
+| 142 | Prompt Versioning & A/B Testing | P2 — iteration | Planned |
+| 143 | Extensible Guardrail Pipeline | P2 — security | Planned |
+| 144 | IDE Experience | P3 — power user UX | Planned |
+| — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
+| Future | LLM Providers, Voice, Infrastructure, Dev Ecosystem | Future / Demand-Gated | — |
 
 ### Recently Completed (see [Changelog](../../CHANGELOG.md))
 | Phase | Name |
@@ -21,6 +25,8 @@
 | 135 | Agent Evaluation Harness — [ADR 206](../adr/206-agent-eval-harness.md) |
 | 136 | Data Loss Prevention (DLP) — [ADR 207](../adr/207-data-loss-prevention.md) |
 | 137 | Multi-Region & HA — [ADR 208](../adr/208-multi-region-ha.md) |
+| 138 | Supply Chain Security & Compliance Artifacts — [ADR 209](../adr/209-supply-chain-security.md) |
+| — | Startup & Resource Optimization — [2026.3.5f] |
 
 ---
 
@@ -65,7 +71,55 @@
 
 ---
 
-## Phase 125-E: Cognitive ML — Advanced Features (Pending)
+## License Up: Tier Audit & Enforcement Activation
+
+**Priority**: P1 — Commercial. Must complete before public release.
+
+**Prerequisite**: Phase 106 (license gating infrastructure — ✅).
+
+- [ ] **Tier audit** — Comprehensive audit of all features into tiers:
+  - **Community** (free): Chat, personalities, basic brain/memory, manual workflows, MCP tools, marketplace skills, basic editor, training dataset export, community skills, basic observability (metrics dashboard read-only)
+  - **Pro** (mid-tier, new): Advanced editor/canvas, knowledge base connectors, observability dashboards, CI/CD read-only status, provider account management, advanced workflow templates, computer-use episodes, custom integrations, advanced brain features (document ingestion, source guides)
+  - **Enterprise**: Adaptive learning pipeline (distillation, fine-tune, evaluation, DPO, counterfactual generation), SSO/SAML, multi-tenancy (RLS), CI/CD webhook integration + workflow triggers, advanced alert rules (create/edit/delete), A2A federation, swarm orchestration advanced modes, audit chain export, confidential computing / TEE-aware provider routing, remote attestation verification
+- [ ] **Enable enforcement** — Set `SECUREYEOMAN_LICENSE_ENFORCEMENT=true` as default in `.env.example`. Update all env templates.
+- [ ] **Upgrade prompts** — "Upgrade to Pro" and "Upgrade to Enterprise" CTAs in `FeatureLock` with pricing page links.
+- [ ] **License key purchase flow** — Integration with payment provider or manual key issuance workflow. Dashboard license management page.
+- [ ] **Grace period** — Existing community installs get 30-day grace period when enforcement activates, with countdown banner.
+
+---
+
+## Phase 139: OpenTelemetry & SIEM Integration
+
+**Priority**: P1 — Enterprise procurement checkbox. Unblocks deals where Prometheus alone isn't sufficient.
+
+**What exists**: `otel.ts` with `initTracing()` at startup. `otel-fastify-plugin.ts` for route spans. UUIDv7 correlation IDs on all requests.
+
+- [ ] **Deep OTel instrumentation** — Extend spans to AI provider calls, tool executions, workflow steps, A2A calls. Currently only Fastify request-level spans.
+- [ ] **Distributed trace context** — Propagate trace IDs across sub-agent delegations and cross-cluster federation calls.
+- [ ] **Trace-aware logging** — Enrich Pino entries with `traceId` and `spanId` for log-to-trace correlation.
+- [ ] **SIEM log forwarding** — Structured output for Splunk HEC, Elastic ECS, Azure Sentinel CEF, AWS CloudWatch. Configurable via `observability.siem`.
+- [ ] **Audit chain → SIEM bridge** — Real-time forwarding of audit chain events with severity mapping.
+- [ ] **Cost attribution dashboards** — Per-tenant, per-personality, per-workflow cost tracking. Budget alerts. CSV chargeback reports.
+- [ ] **SLO monitoring** — Response latency, tool success rate, retrieval quality SLOs. Burn-rate alerting.
+
+---
+
+## Phase 140: RAG Evaluation Metrics
+
+**Priority**: P1 — Quantitative proof of knowledge retrieval quality. No competitor measures this.
+
+*Overlap note*: Phase 141 (Cognitive ML) includes retrieval optimizer, context retrieval, and salience scoring. RAG metrics should be co-developed with Phase 141 to share evaluation infrastructure.
+
+- [ ] **Faithfulness score** — LLM-as-Judge or NLI-based scoring against retrieved context.
+- [ ] **Answer relevance** — Semantic similarity between question and answer.
+- [ ] **Context recall / precision** — Did retrieval find all relevant docs? Were retrieved chunks used?
+- [ ] **Retrieval latency percentiles** — p50/p95/p99 for vector search, FTS, hybrid RRF.
+- [ ] **Chunk utilization rate** — Referenced chunks vs discarded. Indicates chunking quality.
+- [ ] **Dashboard widget** — RAG quality metrics with time-series trends and threshold alerts.
+
+---
+
+## Phase 141: Cognitive ML — Advanced Features
 
 **Priority**: P2 — Builds on Phase 125-D scaffolds. Requires active ML features to be validated in production first.
 
@@ -78,7 +132,37 @@
 
 ---
 
-### 127: IDE Experience (Basic Editor)
+## Phase 142: Prompt Versioning & A/B Testing
+
+**Priority**: P2 — Valuable for teams iterating on prompts. Compliance teams want audit trails.
+
+*Overlap note*: Phase 114 (Versioning) already stores `PersonalityVersion` snapshots with diff support. This extends that to structured A/B testing and prompt-specific tooling.
+
+- [ ] **Prompt version store** — Versioned snapshots of system prompts, skill instructions, tool descriptions. Diff view. Rollback.
+- [ ] **A/B testing** — Route % of conversations to variant prompts. Track outcomes. Statistical significance.
+- [ ] **Prompt changelog** — Annotated history with rationale. Exportable for compliance.
+- [ ] **Template variables** — `{{variable}}` substitution. Centralized safety preamble, compliance disclaimers.
+- [ ] **Prompt linting** — Detect conflicting instructions, overly long prompts, missing safety boundaries.
+
+---
+
+## Phase 143: Extensible Guardrail Pipeline
+
+**Priority**: P2 — Pluggable filter chain beyond ResponseGuard.
+
+*Overlap note*: Phase 136 (DLP) added PII detection, content classification, and egress scanning. Phase 95 (ContentGuardrail) added input/output guardrails with sync/async evaluation. This extends those into a user-pluggable pipeline with custom filters and per-personality configuration.
+
+- [ ] **Filter plugin interface** — `GuardrailFilter` with `onInput`/`onOutput` hooks. Chain of responsibility.
+- [ ] **Custom filter SDK** — User-written TypeScript filters loaded from `guardrails/` directory.
+- [ ] **Per-personality filter config** — Different guardrail configs per personality.
+- [ ] **Dry-run mode** — Observation mode for threshold tuning.
+- [ ] **Filter metrics** — Activation rate, false positives, latency impact.
+
+---
+
+## Phase 144: IDE Experience
+
+**Priority**: P3 — Power user UX.
 
 *Evolves the basic editor (`/editor`) into a full IDE experience. The editor platform is mature (unified editor, MultiTerminal, model selectors, memory toggle, Agent World). These items add the missing IDE-class features for the standard editor view.*
 
@@ -118,32 +202,9 @@ Current: 86.35% stmt / 76.24% branches / 87.21% lines. Target: 88% stmt / 77% br
 
 ---
 
-## Wrap-Up — Pre-Release Gating
-
-Items below represent the final steps required before public release. They depend on completed phases and focus on enforcement activation, tier auditing, and commercialization.
-
-### License Up: Tier Audit & Enforcement Activation
-
-**Priority**: P1 — Commercial. Must complete before public release.
-
-**Prerequisite**: Phase 106 (license gating infrastructure — ✅).
-
-- [ ] **Tier audit** — Comprehensive audit of all features into tiers:
-  - **Community** (free): Chat, personalities, basic brain/memory, manual workflows, MCP tools, marketplace skills, basic editor, training dataset export, community skills, basic observability (metrics dashboard read-only)
-  - **Pro** (mid-tier, new): Advanced editor/canvas, knowledge base connectors, observability dashboards, CI/CD read-only status, provider account management, advanced workflow templates, computer-use episodes, custom integrations, advanced brain features (document ingestion, source guides)
-  - **Enterprise**: Adaptive learning pipeline (distillation, fine-tune, evaluation, DPO, counterfactual generation), SSO/SAML, multi-tenancy (RLS), CI/CD webhook integration + workflow triggers, advanced alert rules (create/edit/delete), A2A federation, swarm orchestration advanced modes, audit chain export, confidential computing / TEE-aware provider routing, remote attestation verification
-- [ ] **Enable enforcement** — Set `SECUREYEOMAN_LICENSE_ENFORCEMENT=true` as default in `.env.example`. Update all env templates.
-- [ ] **Upgrade prompts** — "Upgrade to Pro" and "Upgrade to Enterprise" CTAs in `FeatureLock` with pricing page links.
-- [ ] **License key purchase flow** — Integration with payment provider or manual key issuance workflow. Dashboard license management page.
-- [ ] **Grace period** — Existing community installs get 30-day grace period when enforcement activates, with countdown banner.
-
----
-
 ## Future Features — Demand-Gated
 
 Items below are planned but demand-gated or lower priority. Grouped by theme. Implementation order will be determined by adoption signals and user demand.
-
----
 
 ---
 
@@ -232,4 +293,3 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 ---
 
 *Last updated: 2026-03-05. See [Changelog](../../CHANGELOG.md) for full history.*
-

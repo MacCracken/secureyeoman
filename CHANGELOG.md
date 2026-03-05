@@ -4,6 +4,21 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ---
 
+## [2026.3.5g] — 2026-03-05
+
+### Supply Chain Security & Compliance Artifacts (Phase 138, Brainstorm #2, ADR 209)
+
+- **SBOM generation** (`supply-chain/sbom-generator.ts`): CycloneDX 1.5 JSON SBOM from `package-lock.json`. Supports lockfile v1/v2/v3. Extracts name, version, purl, integrity hashes, licenses, registry URLs, scope. Satisfies US EO 14028 and EU Cyber Resilience Act requirements.
+- **Release verification** (`supply-chain/release-verifier.ts`): SHA256 checksum verification (streaming hash) + optional Sigstore cosign keyless signature verification. Graceful degradation when cosign CLI absent.
+- **Compliance framework mapping** (`supply-chain/compliance-mapping.ts`): Static mappings of 74 controls across 5 frameworks — NIST SP 800-53 Rev 5 (24), SOC 2 Type II (14), ISO 27001:2022 (14), HIPAA Security Rule (13), EU AI Act (9). Each entry: control ID, title, feature, evidence path, status.
+- **Dependency provenance tracking** (`supply-chain/dependency-tracker.ts`): Diff-based analysis of `package-lock.json` against a saved baseline. Detects new/removed deps, version changes, integrity hash mismatches, registry URL redirects. Risk analysis with severity levels (critical/high/medium/info).
+- **CLI: `secureyeoman sbom`** — Sub-commands: `generate` (SBOM), `compliance` (framework mapping), `deps` (provenance tracking), `deps baseline` (accept changes). Alias: `bom`.
+- **CLI: `secureyeoman verify`** — Verify binary checksums and cosign signatures. Flags: `--sums`, `--cosign`, `--identity`, `--issuer`, `--json`.
+- **GitHub Actions CI** (`release-binary.yml`): Sigstore cosign keyless signing of all 7 binaries (`.sig` + `.cert`). SLSA provenance attestation via `actions/attest-build-provenance@v2`. CycloneDX SBOM attached to release. Permissions: `id-token: write`, `attestations: write`.
+- **Reproducible Docker builds**: Base image `debian:bookworm-slim` pinned by SHA256 digest.
+- **57 tests** across 6 files: sbom-generator (10), release-verifier (4), compliance-mapping (14), dependency-tracker (17), sbom CLI (8), verify CLI (4).
+- **Guide**: `docs/guides/supply-chain-security.md` — SBOM, verification, compliance, dependency tracking, CI integration.
+
 ## [2026.3.5f] — 2026-03-05
 
 ### Startup & Resource Optimization (Brainstorm #1)
@@ -19,6 +34,7 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Cold-start CLI mode** (`cli/lite-bootstrap.ts`): `liteBootstrap()` boots config + logger + DB pool with pool size 2 (vs 10) and `allowExitOnIdle`. Skips all domain modules, gateway, WebSocket, cron, integrations. `--local` flag added to `memory` (stats, memories, knowledge, activation) and `risk` (summary, departments, register) CLI commands for direct DB access without a running server.
 - **Connection pooling**: `PgPoolConfig.idleTimeoutMillis` now configurable (default 30s). Lite bootstrap uses pool size 2 with aggressive idle cleanup for CLI one-shot commands.
 - **Memory profiling**: `/health/deep` endpoint now includes `memory` object with RSS, heap used/total, external, arrayBuffers from `process.memoryUsage()`. `secureyeoman status --profile` CLI flag shows component health and memory stats.
+- **Binary size audit** — Audited the 123MB compiled binary. Bun runtime accounts for 100MB (verified via empty entry point). Application bundle is ~23MB for 32 deps + 595 compiled files. Integration SDKs (discord.js, @slack/bolt, baileys, grammy) are dynamic-imported but bundled by Bun's compiler; externalizing would save ~15MB but break single-binary distribution. Heavy native addons (playwright, better-sqlite3, canvas, faiss-node) already externalized. MCP tool manifest <50KB. No actionable tree-shaking opportunities. Conclusion: binary size is Bun-runtime-dominated; app portion well-optimized.
 - 13,202 core unit tests + 820 MCP tests passing.
 
 ### Compliance Audit Mode (Brainstorm #4a)
