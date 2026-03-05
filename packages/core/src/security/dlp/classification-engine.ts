@@ -116,14 +116,14 @@ export class ClassificationEngine {
             }
           }
         } catch {
-          this.logger.warn({ pattern: patStr, name }, 'Invalid custom DLP pattern, skipping');
+          this.logger.warn('Invalid custom DLP pattern, skipping', { pattern: patStr, name });
         }
       }
     }
 
     this.logger.debug(
-      { level: highestLevel, rulesCount: rules.length, piiCount: piiFound.length },
-      'Content classified'
+      'Content classified',
+      { level: highestLevel, rulesCount: rules.length, piiCount: piiFound.length }
     );
 
     return {

@@ -208,8 +208,8 @@ export class CostOptimizer {
       .map((s) => ({ model: `${s.provider}/${s.model}`, costUsd: s.totalCostUsd, callCount: s.calls }));
 
     this.logger.info(
-      { days, perModelCount: perModelStats.length, suggestionsCount: routingSuggestions.length },
-      'Detailed cost analysis completed'
+      'Detailed cost analysis completed',
+      { days, perModelCount: perModelStats.length, suggestionsCount: routingSuggestions.length }
     );
 
     return {

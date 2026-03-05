@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockQuery = vi.fn();
 vi.mock('../../storage/pg-pool.js', () => ({ getPool: () => ({ query: mockQuery }) }));
-vi.mock('../../utils/id.js', () => ({ generateId: () => 'test-egress-id' }));
+vi.mock('../../utils/id.js', () => ({ uuidv7: () => 'test-egress-id' }));
 
 import { EgressStore } from './egress-store.js';
 
@@ -54,7 +54,7 @@ describe('EgressStore', () => {
           tenantId: 'default',
         }],
       });
-    const { events, total } = await store.query({
+    const { events, total } = await store.queryEgress({
       destinationType: 'slack',
       actionTaken: 'blocked',
     });
@@ -67,7 +67,7 @@ describe('EgressStore', () => {
     mockQuery
       .mockResolvedValueOnce({ rows: [{ count: '0' }] })
       .mockResolvedValueOnce({ rows: [] });
-    const { events, total } = await store.query({
+    const { events, total } = await store.queryEgress({
       fromTime: 1000,
       toTime: 2000,
     });
@@ -81,7 +81,7 @@ describe('EgressStore', () => {
     mockQuery
       .mockResolvedValueOnce({ rows: [{ count: '0' }] })
       .mockResolvedValueOnce({ rows: [] });
-    const { events, total } = await store.query();
+    const { events, total } = await store.queryEgress();
     expect(total).toBe(0);
     expect(events).toHaveLength(0);
   });

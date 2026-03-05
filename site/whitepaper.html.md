@@ -21,7 +21,9 @@ Unlike agents that run on the host OS with inherited user permissions, SecureYeo
 - **Kernel-level restriction** — Landlock and seccomp confine the agent to specific file paths and system calls (macOS: sandbox-exec profile applied automatically).
 - **WASM / gVisor support** — For high-risk tasks, code executes inside wasmtime or gVisor, preventing container escapes. Toggled via Security Policy flags.
 - **Skill Trust Tiers** — Community-imported skills receive a 26-prefix allow-list; write-capable and network-egress tools require operator promotion to a higher tier.
-- **ToolOutputScanner** — 18-pattern credential redaction replaces API keys, JWTs, and PEM material with `[REDACTED:<type>]` before any LLM response surfaces.
+- **ToolOutputScanner** — 20-pattern credential redaction replaces API keys, JWTs, and PEM material with `[REDACTED:<type>]` before any LLM response surfaces.
+- **Data Loss Prevention** — Content classification (PII regex + keyword + custom patterns, 4-tier levels), DLP policy engine (block/warn/log), egress scanning with z-score anomaly detection, invisible watermarking (3 algorithms). 22 REST endpoints, 6 MCP tools.
+- **Supply Chain Security** — SBOM generation (CycloneDX), SLSA Level 3 provenance (Sigstore), signed releases (cosign), compliance mapping across NIST 800-53, SOC 2, ISO 27001, HIPAA, and EU AI Act.
 
 ### II. Hardened Policy Gating — The OPA Layer
 
@@ -80,7 +82,7 @@ As deployments grow from a single agent to autonomous fleets, governance surface
 - **Swarms** — Sequential, parallel, and dynamic topologies; each run audited as a named delegation chain.
 - **Council of AIs** — Multi-round group deliberation with facilitator-driven consensus, until_consensus and majority voting strategies.
 - **Teams** — A coordinator LLM reads member descriptions and dynamically assigns tasks per run. Coordinator reasoning stored on the run record for post-hoc review.
-- **DAG Workflows** — 14 step types, OR-trigger dependencies (`triggerMode: 'any'`), strict schema enforcement, and human approval gates. Autonomy levels (L2 human-on-the-loop / L3 human-in-the-loop) declared per workflow.
+- **DAG Workflows** — 19 step types, OR-trigger dependencies (`triggerMode: 'any'`), strict schema enforcement, and human approval gates. Autonomy levels (L2 human-on-the-loop / L3 human-in-the-loop) declared per workflow.
 - **A2A Protocol** — Agent-to-agent delegation with E2E encryption and mDNS peer discovery. Gated via `allowA2A` security policy toggle.
 - **Sub-Agent Controls** — Maximum delegation depth and token budget enforced at the engine level, not by prompt.
 
@@ -103,4 +105,4 @@ The choice is no longer between AI Productivity and Corporate Security. SecureYe
 
 ---
 
-SecureYeoman v2026.3.5 | 12 ADRs | AGPL-3.0 + Commercial License
+SecureYeoman v2026.3.5 | 19 ADRs | AGPL-3.0 + Commercial License

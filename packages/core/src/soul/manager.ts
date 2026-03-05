@@ -280,6 +280,8 @@ export class SoulManager {
             exposeCharting: false,
             exposeConstitutional: false,
             exposeTee: false,
+            exposeEval: false,
+            exposeDlp: false,
           },
           proactiveConfig: {
             enabled: false,
@@ -312,6 +314,9 @@ export class SoulManager {
           groundednessMode: 'off' as const,
           contextOverflowStrategy: 'summarise' as const,
           confidentialCompute: 'off' as const,
+          pollyLexiconNames: [],
+          voiceAnnouncements: false,
+          voiceAnnouncementEvents: [],
         },
       },
       { isArchetype: true }

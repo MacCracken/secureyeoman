@@ -113,12 +113,12 @@ describe('DlpManager', () => {
     mockScanner.scan.mockResolvedValue(makeScanResult({ action: 'warned', findings: [{ type: 'keyword', description: 'Found', severity: 'medium' }] }));
     await manager.scanOutbound('Content', 'slack');
     expect(mockLogger.info).toHaveBeenCalledWith(
+      'DLP outbound scan completed',
       expect.objectContaining({
         destination: 'slack',
         action: 'warned',
         findingsCount: 1,
-      }),
-      'DLP outbound scan completed'
+      })
     );
   });
 });

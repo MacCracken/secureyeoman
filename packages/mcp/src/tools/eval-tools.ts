@@ -24,7 +24,7 @@ export function registerEvalTools(
       limit: z.number().int().optional().describe('Max results'),
     },
     buildPath: () => '/api/v1/eval/scenarios',
-    buildQuery: (args) => args,
+    buildQuery: (args) => Object.fromEntries(Object.entries(args).map(([k, v]) => [k, String(v)])),
   });
 
   registerApiProxyTool(server, client, middleware, {
@@ -77,7 +77,7 @@ export function registerEvalTools(
     inputSchema: {
       scenarioId: z.string().describe('Scenario ID to run'),
     },
-    buildPath: (args) => `/api/v1/eval/scenarios/${encodeURIComponent(args.scenarioId)}/run`,
+    buildPath: (args) => `/api/v1/eval/scenarios/${encodeURIComponent(String(args.scenarioId))}/run`,
     buildBody: () => ({}),
   });
 
@@ -89,7 +89,7 @@ export function registerEvalTools(
       limit: z.number().int().optional().describe('Max results'),
     },
     buildPath: () => '/api/v1/eval/suites',
-    buildQuery: (args) => args,
+    buildQuery: (args) => Object.fromEntries(Object.entries(args).map(([k, v]) => [k, String(v)])),
   });
 
   registerApiProxyTool(server, client, middleware, {
@@ -116,7 +116,7 @@ export function registerEvalTools(
     inputSchema: {
       suiteId: z.string().describe('Suite ID to run'),
     },
-    buildPath: (args) => `/api/v1/eval/suites/${encodeURIComponent(args.suiteId)}/run`,
+    buildPath: (args) => `/api/v1/eval/suites/${encodeURIComponent(String(args.suiteId))}/run`,
     buildBody: () => ({}),
   });
 
@@ -129,7 +129,7 @@ export function registerEvalTools(
       limit: z.number().int().optional().describe('Max results'),
     },
     buildPath: () => '/api/v1/eval/runs',
-    buildQuery: (args) => args,
+    buildQuery: (args) => Object.fromEntries(Object.entries(args).map(([k, v]) => [k, String(v)])),
   });
 
   registerApiProxyTool(server, client, middleware, {
@@ -139,6 +139,6 @@ export function registerEvalTools(
     inputSchema: {
       runId: z.string().describe('Suite run ID'),
     },
-    buildPath: (args) => `/api/v1/eval/runs/${encodeURIComponent(args.runId)}`,
+    buildPath: (args) => `/api/v1/eval/runs/${encodeURIComponent(String(args.runId))}`,
   });
 }

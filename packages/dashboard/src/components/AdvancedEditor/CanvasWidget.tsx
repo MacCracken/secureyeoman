@@ -14,6 +14,13 @@ import {
   MessageSquare,
   PenTool,
   CandlestickChart as CandlestickIcon,
+  ShieldCheck,
+  GraduationCap,
+  SlidersHorizontal,
+  Layers,
+  RefreshCcw,
+  ShieldAlert,
+  DollarSign,
   X,
   Minus,
   Maximize2,
@@ -73,6 +80,13 @@ const WIDGET_ICONS: Record<CanvasWidgetType, React.ReactNode> = {
   chat: <MessageSquare className="w-3.5 h-3.5" />,
   excalidraw: <PenTool className="w-3.5 h-3.5" />,
   'trading-dashboard': <CandlestickIcon className="w-3.5 h-3.5" />,
+  'tee-status': <ShieldCheck className="w-3.5 h-3.5" />,
+  'advanced-training': <GraduationCap className="w-3.5 h-3.5" />,
+  'hyperparam-search': <SlidersHorizontal className="w-3.5 h-3.5" />,
+  'batch-inference': <Layers className="w-3.5 h-3.5" />,
+  'continual-learning': <RefreshCcw className="w-3.5 h-3.5" />,
+  'dlp-overview': <ShieldAlert className="w-3.5 h-3.5" />,
+  'cost-optimizer': <DollarSign className="w-3.5 h-3.5" />,
 };
 
 function WidgetContent({ data, nodeId }: { data: CanvasWidgetData; nodeId: string }) {
@@ -146,6 +160,20 @@ function WidgetContent({ data, nodeId }: { data: CanvasWidgetData; nodeId: strin
           onConfigChange={(cfg) => onConfigChange?.({ ...config, ...cfg })}
         />
       );
+    case 'tee-status':
+      return <div className="p-4 text-muted-foreground text-sm">TEE Status</div>;
+    case 'advanced-training':
+      return <div className="p-4 text-muted-foreground text-sm">Advanced Training</div>;
+    case 'hyperparam-search':
+      return <div className="p-4 text-muted-foreground text-sm">Hyperparam Search</div>;
+    case 'batch-inference':
+      return <div className="p-4 text-muted-foreground text-sm">Batch Inference</div>;
+    case 'continual-learning':
+      return <div className="p-4 text-muted-foreground text-sm">Continual Learning</div>;
+    case 'dlp-overview':
+      return <div className="p-4 text-muted-foreground text-sm">DLP Overview</div>;
+    case 'cost-optimizer':
+      return <div className="p-4 text-muted-foreground text-sm">Cost Optimizer</div>;
     default:
       return <div className="p-4 text-muted-foreground text-sm">Unknown widget type</div>;
   }

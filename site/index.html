@@ -153,7 +153,7 @@
           </div>
           <div class="hero-stats">
             <div class="stat">
-              <span class="stat-value">15,332</span>
+              <span class="stat-value">~16,100</span>
               <span class="stat-label">Tests</span>
             </div>
             <div class="stat-divider"></div>
@@ -270,6 +270,7 @@
               <li>Global rate limiting + sandbox artifact scanning</li>
               <li>Five sandboxing modes + externalization gate</li>
               <li>TEE-aware provider routing + attestation verification</li>
+              <li>DLP — PII classification, egress scanning, watermarking</li>
               <li>Organizational Intent — hard boundaries &amp; OPA policies</li>
             </ul>
           </div>
@@ -293,6 +294,7 @@
               <li>Departmental Risk Register &amp; ATHI threat governance</li>
               <li>Risk Assessment — composite 0–100 score across 5 domains</li>
               <li>Immutable, tamper-evident logs + Prometheus metrics</li>
+              <li>Supply chain: SBOM (CycloneDX), SLSA L3, signed releases</li>
             </ul>
           </div>
 
@@ -323,14 +325,14 @@
             </div>
             <h3 class="feature-title">274 MCP Tools & Integrations</h3>
             <p class="feature-desc">
-              36 platform integrations: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams,
+              32 platform integrations: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams,
               GitHub, GitLab, Gmail, Google Calendar, Jira, Notion, AWS, Azure DevOps, and more.
               274 built-in MCP tools, 9 resources, and 4 prompts — with SSRF protection,
               encrypted credentials, and Markdown-for-Agents content negotiation
               (<code>Accept: text/markdown</code>, <code>Content-Signal</code> enforcement).
             </p>
             <ul class="feature-list">
-              <li>36 platform integrations</li>
+              <li>32 platform integrations</li>
               <li>274 tools · 9 resources · 4 prompts</li>
               <li>SSRF protection + encrypted creds</li>
               <li>Markdown-for-Agents content negotiation</li>
@@ -348,13 +350,13 @@
               with budget and depth controls. Agent Swarms (sequential, parallel, dynamic).
               Teams — a coordinator LLM dynamically assigns tasks to members at runtime.
               Council of AIs — multi-round group deliberation with facilitator-driven consensus.
-              DAG workflow engine with 14 step types, OR-trigger dependencies, and a
+              DAG workflow engine with 19 step types, OR-trigger dependencies, and a
               ReactFlow visual builder with human approval gates.
             </p>
             <ul class="feature-list">
               <li>A2A protocol (E2E encrypted)</li>
               <li>Swarms + Teams + Council of AIs</li>
-              <li>DAG workflows — 14 step types</li>
+              <li>DAG workflows — 19 step types</li>
               <li>ReactFlow visual builder + L3 approval gates</li>
             </ul>
           </div>
@@ -413,7 +415,7 @@
               TLS — with a live badge in the dashboard. Multi-user workspaces, voice I/O (10
               TTS + 7 STT providers with binary streaming and Whisper model selection), and
               portable skill marketplace sync. Per-user notification preferences with quiet
-              hours and severity filters across 36 platforms.
+              hours and severity filters across 32 platforms.
             </p>
             <ul class="feature-list">
               <li>Single binary + Docker + K8s Helm</li>
@@ -545,7 +547,7 @@
             </div>
             <h3>Threat Intelligence</h3>
             <p>
-              Aggregate data across 36 platforms, enrich findings with NVD CVE lookups, and
+              Aggregate data across 32 platforms, enrich findings with NVD CVE lookups, and
               surface insights your team can act on.
             </p>
           </div>
@@ -694,7 +696,7 @@
 
           <div class="compare-row">
             <div class="compare-feature-col"><i class="fas fa-plug"></i> Integrations</div>
-            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 36 platforms</span></div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 32 platforms</span></div>
             <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> 23+</span></div>
             <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> CLI / Web</span></div>
             <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> 10+</span></div>
@@ -741,12 +743,12 @@
             <div class="diff-card">
               <div class="diff-icon"><i class="fas fa-eye-slash"></i></div>
               <h4>Credential Redaction</h4>
-              <p>ToolOutputScanner scans every LLM response for 18 credential patterns — API keys, JWTs, PEM certs, DB strings — and replaces them with <code>[REDACTED:&lt;type&gt;]</code> before they reach the UI.</p>
+              <p>ToolOutputScanner scans every LLM response for 20 credential patterns — API keys, JWTs, PEM certs, DB strings — and replaces them with <code>[REDACTED:&lt;type&gt;]</code> before they reach the UI.</p>
             </div>
             <div class="diff-card">
               <div class="diff-icon"><i class="fas fa-project-diagram"></i></div>
               <h4>DAG Workflow Builder</h4>
-              <p>14 step types — agent, swarm, condition, transform, webhook, subworkflow, ML pipeline, and human approval gates. OR-trigger dependencies. Mustache data-flow. ReactFlow visual builder. No other framework ships this.</p>
+              <p>19 step types — agent, swarm, condition, transform, webhook, subworkflow, ML pipeline, and human approval gates. OR-trigger dependencies. Mustache data-flow. ReactFlow visual builder. No other framework ships this.</p>
             </div>
             <div class="diff-card">
               <div class="diff-icon"><i class="fas fa-search"></i></div>
@@ -832,7 +834,7 @@
               <span class="exec-role exec-role-ciso">CISO</span>
             </div>
             <h3>Risk Quantification</h3>
-            <p>Competitors' 10+ CVEs — including a CVSS 8.8 one-click remote code execution — translate directly to breach exposure. IBM's 2024 Cost of a Data Breach Report puts the average incident at $4.88M. SecureYeoman's zero-CVE track record, cryptographic audit chain, five sandboxing modes, and 18-pattern credential redaction convert that exposure into measurable risk reduction you can report to the board.</p>
+            <p>Competitors' 10+ CVEs — including a CVSS 8.8 one-click remote code execution — translate directly to breach exposure. IBM's 2024 Cost of a Data Breach Report puts the average incident at $4.88M. SecureYeoman's zero-CVE track record, cryptographic audit chain, five sandboxing modes, and 20-pattern credential redaction convert that exposure into measurable risk reduction you can report to the board.</p>
             <div class="exec-proof">
               <span class="proof-item"><i class="fas fa-check-circle"></i> 0 CVEs on record</span>
               <span class="proof-item"><i class="fas fa-check-circle"></i> HMAC-SHA256 audit chain</span>
@@ -877,11 +879,11 @@
               <span class="exec-role exec-role-cto">CTO</span>
             </div>
             <h3>Operational Efficiency</h3>
-            <p>37 network security tools, 36 platform integrations, 274 MCP tools — one platform, one deployment, one vendor relationship. Replace fragmented point solutions: network scanner, vulnerability feed, workflow engine, secrets manager, AI gateway, and agent orchestration. Delivered as a single ~123 MB binary or a Helm chart. Your team ships faster; your vendor list shrinks.</p>
+            <p>37 network security tools, 32 platform integrations, 274 MCP tools — one platform, one deployment, one vendor relationship. Replace fragmented point solutions: network scanner, vulnerability feed, workflow engine, secrets manager, AI gateway, and agent orchestration. Delivered as a single ~123 MB binary or a Helm chart. Your team ships faster; your vendor list shrinks.</p>
             <div class="exec-proof">
               <span class="proof-item"><i class="fas fa-check-circle"></i> Single binary or Kubernetes Helm</span>
               <span class="proof-item"><i class="fas fa-check-circle"></i> Replaces 6+ point tools</span>
-              <span class="proof-item"><i class="fas fa-check-circle"></i> 36 platform integrations built-in</span>
+              <span class="proof-item"><i class="fas fa-check-circle"></i> 32 platform integrations built-in</span>
             </div>
           </div>
 
@@ -892,7 +894,7 @@
               <span class="exec-role exec-role-ceo">CEO / Board</span>
             </div>
             <h3>Strategic Advantage</h3>
-            <p>The enterprise AI adoption race has a hidden variable: organisations deploying vulnerable frameworks are one incident away from regulatory scrutiny, customer trust damage, and emergency remediation spend. SecureYeoman lets you deploy AI at full operational speed — autonomous agent workflows, multi-agent swarms, 36 platform integrations, DAG orchestration — without the exposure. Your competitors are patching. You are shipping.</p>
+            <p>The enterprise AI adoption race has a hidden variable: organisations deploying vulnerable frameworks are one incident away from regulatory scrutiny, customer trust damage, and emergency remediation spend. SecureYeoman lets you deploy AI at full operational speed — autonomous agent workflows, multi-agent swarms, 32 platform integrations, DAG orchestration — without the exposure. Your competitors are patching. You are shipping.</p>
             <div class="exec-proof">
               <span class="proof-item"><i class="fas fa-check-circle"></i> Autonomous agent workflows at scale</span>
               <span class="proof-item"><i class="fas fa-check-circle"></i> Governance-first architecture</span>
@@ -1229,10 +1231,10 @@
 - AI Provider API Key
 
 <span class="comment"># Security Keys (32+ chars each)</span>
-SECUREYEOMAN_SIGNING_KEY="..."
-SECUREYEOMAN_TOKEN_SECRET="..."
-SECUREYEOMAN_ENCRYPTION_KEY="..."
-SECUREYEOMAN_ADMIN_PASSWORD="..."</code></pre>
+SECUREYEOMAN_SIGNING_KEY="&lt;your-signing-key&gt;"
+SECUREYEOMAN_TOKEN_SECRET="&lt;your-token-secret&gt;"
+SECUREYEOMAN_ENCRYPTION_KEY="&lt;your-encryption-key&gt;"
+SECUREYEOMAN_ADMIN_PASSWORD="&lt;your-admin-password&gt;"</code></pre>
                 </div>
               </div>
             </div>
@@ -1293,7 +1295,7 @@ SECUREYEOMAN_ADMIN_PASSWORD="..."</code></pre>
               </div>
               <div class="stat-row">
                 <span class="stat-name">Tests</span>
-                <span class="stat-value">15,332</span>
+                <span class="stat-value">~16,100</span>
               </div>
               <div class="stat-row">
                 <span class="stat-name">TS Files</span>

@@ -441,7 +441,7 @@ async function runLocalMemory(
     }
 
     if (subcommand === 'memories') {
-      const memories = await brainStorage.getMemories({ limit });
+      const memories = await brainStorage.queryMemories({ limit });
       if (json) {
         ctx.stdout.write(JSON.stringify(memories, null, 2) + '\n');
         return 0;
@@ -468,7 +468,7 @@ async function runLocalMemory(
     }
 
     if (subcommand === 'knowledge') {
-      const knowledge = await brainStorage.getKnowledge({ limit });
+      const knowledge = await brainStorage.queryKnowledge({ limit });
       if (json) {
         ctx.stdout.write(JSON.stringify(knowledge, null, 2) + '\n');
         return 0;
@@ -496,7 +496,7 @@ async function runLocalMemory(
     if (subcommand === 'activation') {
       const { CognitiveMemoryStorage } = await import('../../brain/cognitive-memory-store.js');
       const cogStore = new CognitiveMemoryStorage();
-      const stats = await cogStore.getActivationStats();
+      const stats = await cogStore.getCognitiveStats();
       if (json) {
         ctx.stdout.write(JSON.stringify(stats, null, 2) + '\n');
         return 0;

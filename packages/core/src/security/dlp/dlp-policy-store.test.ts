@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockQuery = vi.fn();
 vi.mock('../../storage/pg-pool.js', () => ({ getPool: () => ({ query: mockQuery }) }));
-vi.mock('../../utils/id.js', () => ({ generateId: () => 'test-policy-id' }));
+vi.mock('../../utils/id.js', () => ({ uuidv7: () => 'test-policy-id' }));
 
 import { DlpPolicyStore } from './dlp-policy-store.js';
 

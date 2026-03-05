@@ -57,10 +57,10 @@ export class RetentionManager {
     if (this.timer) return;
     this.timer = setInterval(() => {
       void this.runPurge().catch((err) => {
-        this.logger.error({ err }, 'Retention purge failed');
+        this.logger.error('Retention purge failed', { err });
       });
     }, this.purgeIntervalMs);
-    this.logger.info({ intervalMs: this.purgeIntervalMs }, 'Retention manager started');
+    this.logger.info('Retention manager started', { intervalMs: this.purgeIntervalMs });
   }
 
   /**
@@ -109,8 +109,8 @@ export class RetentionManager {
 
     const durationMs = Date.now() - start;
     this.logger.info(
-      { totalPurged, policiesApplied: details.length, durationMs },
-      'Retention purge completed'
+      'Retention purge completed',
+      { totalPurged, policiesApplied: details.length, durationMs }
     );
 
     return {

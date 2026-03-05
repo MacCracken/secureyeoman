@@ -3,7 +3,7 @@
  */
 
 import { PgBaseStorage } from '../../storage/pg-base.js';
-import { generateId } from '../../utils/id.js';
+import { uuidv7 as generateId } from '../../utils/id.js';
 import type { DlpPolicy, DlpPolicyRule, ClassificationLevel } from './types.js';
 
 export interface DlpPolicyFilters {

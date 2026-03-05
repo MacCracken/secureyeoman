@@ -2,7 +2,7 @@
 
 > Zero-budget guerrilla marketing plan for a sovereign AI agent platform with zero market awareness, strong technical differentiation, and a favorable competitive window.
 >
-> **Last updated:** 2026-03-02
+> **Last updated:** 2026-03-05
 
 ---
 
@@ -33,10 +33,10 @@ One line. Every channel. Every post. Burn it into the audience's memory.
 
 | Audience | Message |
 |----------|---------|
-| Enterprise CISO/CTO | "13,097 tests. HMAC-SHA256 audit chain. RBAC + SSO/SAML. Air-gapped. The enterprise AI agent platform that was built for your compliance team, not against them." |
+| Enterprise CISO/CTO | "~16,100 tests. HMAC-SHA256 audit chain. RBAC + SSO/SAML. Air-gapped. The enterprise AI agent platform that was built for your compliance team, not against them." |
 | Self-hoster / homelabber | "One curl. One binary. Twelve AI providers. Zero cloud dependency. Your AI, your hardware, your rules." |
 | Security professional | "OpenClaw has 135,000+ exposed instances and 1,184+ malicious skills. We have a cryptographic audit chain and OPA governance. Pick one." |
-| Developer | "200+ MCP tools. DAG workflow builder. Multi-agent swarms. AGPL-3.0. Ship it on a Friday, sleep on Saturday." |
+| Developer | "274 MCP tools. DAG workflow builder. Multi-agent swarms. AGPL-3.0. Ship it on a Friday, sleep on Saturday." |
 
 ### The Sovereignty Stack (Differentiator Framework)
 
@@ -98,7 +98,7 @@ Three stories that write themselves. Every piece of content should map to at lea
 **The facts:**
 - OpenAI Frontier: OpenAI models only, OpenAI cloud, OpenAI rules. Enterprise subscription pricing
 - Devin 2.0: dropped to $20/mo (from $500) — race to commoditize cloud-hosted agents. Acquired Windsurf. All code and conversation data on Cognition's servers
-- SecureYeoman: 12 AI providers (including fully local via Ollama/LM Studio), your infrastructure, AGPL-3.0
+- SecureYeoman: 13 AI providers (including fully local via Ollama/LM Studio), your infrastructure, AGPL-3.0
 
 **How to use it:**
 - "What happens when your AI provider raises prices 10x?" (it's happened before — see GPT-4 → GPT-4o pricing history)
@@ -115,8 +115,8 @@ Three stories that write themselves. Every piece of content should map to at lea
 |------|--------|-------|
 | **README polish** | Already strong. Add a GIF/screenshot above the fold showing the dashboard. First impression is visual. | Dev |
 | **Social preview image** | Create `docs/assets/social-preview.png` (1280x640). Show the dashboard with the sovereignty tagline. Set as GitHub repo social preview. | Design |
-| **GitHub repo hygiene** | Topics: `ai-agent`, `self-hosted`, `enterprise`, `security`, `mcp`, `typescript`, `kubernetes`. Description: "Sovereign AI agent platform — self-hosted, governed, multi-model. 13,659 tests." | Dev |
-| **llms.txt** | Already exists at `site/llms.txt`. Verify it's current with v2026.3.3 features. | Dev |
+| **GitHub repo hygiene** | Topics: `ai-agent`, `self-hosted`, `enterprise`, `security`, `mcp`, `typescript`, `kubernetes`. Description: "Sovereign AI agent platform — self-hosted, governed, multi-model. ~16,100 tests." | Dev |
+| **llms.txt** | Already exists at `site/llms.txt`. Verify it's current with v2026.3.5 features. | Dev |
 | **Comparison pages** | Write 3 markdown files: `docs/vs-openclaw.md`, `docs/vs-openai-frontier.md`, `docs/vs-manus.md`. These become SEO landing pages. Structure: problem → comparison table → "try it" CTA. | Dev |
 | **Demo video** | Record a 5-minute video: `curl install` → `secureyeoman init` → dashboard tour → create a workflow → run a swarm. No narration needed if captions are clear. Host on YouTube. | Dev |
 | **"Good first issues"** | Tag 10-15 issues with `good first issue` + `help wanted`. These are contributor bait for the post-launch wave. | Dev |
@@ -138,7 +138,7 @@ Three stories that write themselves. Every piece of content should map to at lea
 
 **What makes HN posts succeed:**
 - Lead with what's different, not what it does (sovereignty, not features)
-- Show the engineering rigor: "13,097 tests, 153 ADRs, 87% coverage"
+- Show the engineering rigor: "~16,100 tests, 19 ADRs, 87% coverage"
 - Be honest about trade-offs: "30s startup vs PicoClaw's <1s — we chose enterprise features over embedded performance"
 - Respond to criticism gracefully and technically — HN respects humility and depth
 
@@ -246,7 +246,7 @@ Six recurring themes. Every piece of content maps to one.
 
 | Subreddit | Audience | Angle |
 |-----------|----------|-------|
-| r/selfhosted | Self-hosters, homelabbers | "New self-hosted AI agent platform — single binary, 12 AI providers, air-gap capable" |
+| r/selfhosted | Self-hosters, homelabbers | "New self-hosted AI agent platform — single binary, 13 AI providers, air-gap capable" |
 | r/homelab | Home server enthusiasts | "Run your own AI agent on your homelab — Docker Compose, works with Ollama" |
 | r/cybersecurity | Security professionals | Security incident response content; comparison with OpenClaw's CVE history |
 | r/LocalLLaMA | Local AI enthusiasts | "Self-hosted AI agent platform with Ollama integration, training pipeline, and LoRA fine-tuning" |
@@ -343,7 +343,7 @@ Six recurring themes. Every piece of content maps to one.
 
 **How:**
 - When a researcher publishes an OpenClaw vulnerability analysis, reply with a technical explanation of how SecureYeoman handles the same vector
-- Offer the codebase for security review — the 13,097 tests and 87% coverage make this a credible invitation
+- Offer the codebase for security review — the ~16,100 tests and 87% coverage make this a credible invitation
 - Submit SecureYeoman to bug bounty platforms (HackerOne free tier or GitHub Security Advisories)
 - Engage with AI security research communities (OWASP AI, MITRE ATLAS)
 
@@ -535,7 +535,7 @@ SecureYeoman follows the same structure with a stronger copyleft (AGPL > MIT for
 ### Show HN Post
 
 ```
-Title: Show HN: SecureYeoman – Sovereign AI agent platform (self-hosted, 13K tests, 200+ MCP tools)
+Title: Show HN: SecureYeoman – Sovereign AI agent platform (self-hosted, 13K tests, 274 MCP tools)
 
 Text:
 Hi HN, I built SecureYeoman — an enterprise-grade AI agent platform that runs
@@ -549,13 +549,13 @@ CVSS 8.8 RCE via a single link click).
 SecureYeoman is the governed alternative:
 
 - Self-hosted (single binary, Docker, or Kubernetes Helm chart)
-- 12 AI providers (Anthropic, OpenAI, Gemini, Ollama, local models, etc.)
+- 13 AI providers (Anthropic, OpenAI, Gemini, Ollama, local models, etc.)
 - Enterprise security: RBAC, SSO/OIDC/SAML, AES-256-GCM encryption,
   HMAC-SHA256 audit chain, OPA/CEL governance, Landlock/seccomp/WASM sandboxing
-- 200+ MCP tools, 36 platform integrations, DAG workflow builder
+- 274 MCP tools, 32 platform integrations, DAG workflow builder
 - Multi-agent: swarms, teams, A2A protocol
 - Full training pipeline: distillation, LoRA fine-tuning, LLM-as-Judge eval
-- 13,097 tests (87% coverage), 153 Architecture Decision Records
+- ~16,100 tests (87% coverage), 19 Architecture Decision Records
 - AGPL-3.0 + commercial dual license
 
 Quick start:
@@ -575,7 +575,7 @@ or competitive landscape. We've done extensive competitive analysis against
 ### Reddit r/selfhosted Post
 
 ```
-Title: Self-hosted AI agent platform with 12 AI providers, 200+ MCP tools,
+Title: Self-hosted AI agent platform with 13 AI providers, 274 MCP tools,
        and enterprise security — no cloud dependency
 
 Body:
@@ -590,7 +590,7 @@ Or Docker Compose: git clone + docker compose up -d
 
 **What it does:**
 - Chat with AI using 12 providers (including Ollama for fully local)
-- 200+ MCP tools for automation (GitHub, Slack, email, CI/CD, network security, etc.)
+- 274 MCP tools for automation (GitHub, Slack, email, CI/CD, network security, etc.)
 - Build workflows with a visual DAG editor
 - Run multi-agent swarms and teams
 - Full dashboard (React + Tailwind, 18 themes)
@@ -604,7 +604,7 @@ Or Docker Compose: git clone + docker compose up -d
 - ~1 GB RAM baseline (vs 2-8 GB for OpenClaw)
 
 **Resources:**
-- Single binary: ~80 MB (Linux x64/arm64, macOS arm64, Windows x64)
+- Single binary: ~123 MB (Linux x64/arm64, macOS arm64, Windows x64)
 - RAM: ~1 GB baseline
 - Works great with Ollama for fully air-gapped deployments
 
@@ -633,19 +633,19 @@ Your AI agent shouldn't report to someone else's cloud. 🧵
 
 3/ SecureYeoman:
 - Self-hosted (one binary, Docker, or K8s)
-- 12 AI providers (including fully local via Ollama)
+- 13 AI providers (including fully local via Ollama)
 - RBAC + SSO/SAML + HMAC-SHA256 audit chain
-- 200+ MCP tools
+- 274 MCP tools
 - Multi-agent swarms, teams, DAG workflows
 - Full training pipeline
 
 4/ The numbers:
-- 13,097 tests
+- ~16,100 tests
 - 87% code coverage
-- 153 Architecture Decision Records
-- 200+ MCP tools
-- 36 platform integrations
-- ~80 MB single binary
+- 19 Architecture Decision Records
+- 274 MCP tools
+- 32 platform integrations
+- ~123 MB single binary
 
 curl -fsSL https://secureyeoman.ai/install | bash
 

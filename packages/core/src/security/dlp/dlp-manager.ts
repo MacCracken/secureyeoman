@@ -71,19 +71,19 @@ export class DlpManager {
       });
     } catch (err) {
       this.logger.warn(
-        { error: err instanceof Error ? err.message : String(err) },
-        'Failed to record egress event'
+        'Failed to record egress event',
+        { error: err instanceof Error ? err.message : String(err) }
       );
     }
 
     this.logger.info(
+      'DLP outbound scan completed',
       {
         destination,
         action: result.action,
         findingsCount: result.findings.length,
         classificationLevel: result.classificationLevel,
-      },
-      'DLP outbound scan completed'
+      }
     );
 
     return result;

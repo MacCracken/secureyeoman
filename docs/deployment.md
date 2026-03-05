@@ -168,7 +168,7 @@ Services:
 | `mcp` | 3001 | `mcp` / `full` | MCP protocol server |
 | `dashboard-dev` | 3000 | `dev` | Vite dev server for frontend development |
 
-### Production image (binary-based, ~80 MB)
+### Production image (binary-based)
 
 ```bash
 # Requires Bun (https://bun.sh)
@@ -189,16 +189,6 @@ docker run -d \
 ```
 
 The MCP service is opt-in via Docker Compose profiles. Set `MCP_ENABLED=true` in `.env` before starting it. The MCP service self-mints a service JWT using the shared `SECUREYEOMAN_TOKEN_SECRET` — no manual token configuration needed.
-
-NoNewPrivileges=yes
-ProtectSystem=strict
-ProtectHome=yes
-ReadWritePaths=/opt/secureyeoman/data
-PrivateTmp=yes
-
-[Install]
-WantedBy=multi-user.target
-```
 
 ## Reverse Proxy
 
@@ -311,17 +301,20 @@ helm install secureyeoman deploy/helm/secureyeoman \
 
 ## Backup
 
-### Database Backup
+### PostgreSQL Backup (Tier 1)
+
+SecureYeoman provides built-in backup/restore via the REST API and CLI. See the [Backup & Disaster Recovery Guide](guides/backup-disaster-recovery.md) for full details.
 
 ```bash
-# Stop the service
-sudo systemctl stop secureyeoman
+# Via API
+curl -X POST http://localhost:18789/api/v1/admin/backups \
+  -H "Authorization: Bearer $TOKEN"
 
-# Copy database files
-cp /opt/secureyeoman/data/*.db /backup/secureyeoman/
+# Via CLI
+secureyeoman backup create
 
-# Restart
-sudo systemctl start secureyeoman
+# Manual pg_dump
+pg_dump -Fc secureyeoman > /backup/secureyeoman-$(date +%Y%m%d).dump
 ```
 
 ### Automated Backup Script
@@ -330,8 +323,7 @@ sudo systemctl start secureyeoman
 #!/bin/bash
 BACKUP_DIR="/backup/secureyeoman/$(date +%Y%m%d)"
 mkdir -p "$BACKUP_DIR"
-sqlite3 /opt/secureyeoman/data/audit.db ".backup '$BACKUP_DIR/audit.db'"
-sqlite3 /opt/secureyeoman/data/tasks.db ".backup '$BACKUP_DIR/tasks.db'"
+pg_dump -Fc secureyeoman > "$BACKUP_DIR/secureyeoman.dump"
 # Retain 30 days
 find /backup/secureyeoman -type d -mtime +30 -exec rm -rf {} +
 ```

@@ -89,11 +89,11 @@ export class VoiceAnnouncementManager {
 
       const { audioBase64, format } = await this.deps.synthesizeSpeech(text, voice);
       this.deps.broadcastAudio?.(personalityId, audioBase64, format);
-      this.deps.logger.debug({ personalityId, event }, 'Voice announcement sent');
+      this.deps.logger.debug('Voice announcement sent', { personalityId, event });
     } catch (error) {
       this.deps.logger.warn(
-        { error: error instanceof Error ? error.message : String(error), personalityId, event },
-        'Voice announcement failed'
+        'Voice announcement failed',
+        { error: error instanceof Error ? error.message : String(error), personalityId, event }
       );
     } finally {
       this.pending.delete(key);

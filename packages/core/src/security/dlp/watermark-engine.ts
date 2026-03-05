@@ -138,9 +138,9 @@ function embedWhitespace(text: string, payload: WatermarkPayload): string {
 
   for (let i = 0; i < bits.length; i++) {
     // Strip existing trailing spaces first
-    lines[i] = lines[i].replace(/ +$/, '');
+    lines[i] = lines[i]!.replace(/ +$/, '');
     if (bits[i] === '1') {
-      lines[i] += ' ';
+      lines[i]! += ' ';
     }
   }
 
@@ -186,13 +186,13 @@ function embedHomoglyph(text: string, payload: WatermarkPayload): string {
   let bitIdx = 0;
 
   for (let i = 0; i < chars.length && bitIdx < bits.length; i++) {
-    const lower = chars[i].toLowerCase();
+    const lower = chars[i]!.toLowerCase();
     if (HOMOGLYPH_MAP[lower]) {
       if (bits[bitIdx] === '1') {
         // Replace with Cyrillic lookalike, preserving case
-        chars[i] = chars[i] === chars[i].toUpperCase()
-          ? HOMOGLYPH_MAP[lower].toUpperCase()
-          : HOMOGLYPH_MAP[lower];
+        chars[i] = chars[i]! === chars[i]!.toUpperCase()
+          ? HOMOGLYPH_MAP[lower]!.toUpperCase()
+          : HOMOGLYPH_MAP[lower]!;
       }
       // bit 0 = keep original Latin
       bitIdx++;

@@ -1550,8 +1550,8 @@ export class GatewayServer {
       // Integration adapter status
       try {
         const integrationManager = this.secureYeoman.getIntegrationManager();
-        const integrations = integrationManager.getActiveIntegrations?.() ?? [];
-        const activeCount = Array.isArray(integrations) ? integrations.length : 0;
+        const integrations = await integrationManager.listIntegrations({ enabled: true });
+        const activeCount = integrations.length;
         components.integrations = {
           ok: true,
           detail: `${activeCount} active adapter(s)`,

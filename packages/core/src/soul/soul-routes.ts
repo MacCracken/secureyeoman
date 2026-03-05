@@ -918,6 +918,8 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               exposeCharting: false,
               exposeConstitutional: false,
               exposeTee: false,
+              exposeEval: false,
+              exposeDlp: false,
             },
             proactiveConfig: {
               enabled: false,
@@ -944,6 +946,9 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
               timezone: 'UTC',
             },
+            pollyLexiconNames: [],
+            voiceAnnouncements: false,
+            voiceAnnouncementEvents: [],
             omnipresentMind: false,
             knowledgeMode: 'rag' as const,
             enableCitations: false,

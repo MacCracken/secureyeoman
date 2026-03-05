@@ -1,9 +1,24 @@
 -- ===========================================================================
 -- SecureYeoman — Consolidated Baseline Schema (v2026.3.5)
--- Generated via pg_dump after applying all migrations (001-009).
+-- Generated via pg_dump after applying all migrations (001-008).
 -- This single file replaces all previous migration files.
 -- ===========================================================================
 
+--
+--
+
+
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
 
 --
 -- Name: a2a; Type: SCHEMA; Schema: -; Owner: -
@@ -94,6 +109,27 @@ CREATE SCHEMA IF NOT EXISTS comms;
 --
 
 CREATE SCHEMA IF NOT EXISTS dashboard;
+
+
+--
+-- Name: dlp; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA IF NOT EXISTS dlp;
+
+
+--
+-- Name: eval; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA IF NOT EXISTS eval;
+
+
+--
+-- Name: events; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA IF NOT EXISTS events;
 
 
 --
@@ -251,10 +287,17 @@ CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;
 
 
 --
+-- Name: EXTENSION vector; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION vector IS 'vector data type and ivfflat and hnsw access methods';
+
+
+--
 -- Name: update_search_vector(); Type: FUNCTION; Schema: audit; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION audit.update_search_vector() RETURNS trigger
+CREATE FUNCTION audit.update_search_vector() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -271,7 +314,7 @@ $$;
 -- Name: update_chunk_fts(); Type: FUNCTION; Schema: brain; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION brain.update_chunk_fts() RETURNS trigger
+CREATE FUNCTION brain.update_chunk_fts() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -327,6 +370,23 @@ CREATE TABLE IF NOT EXISTS a2a.peers (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT peers_status_check CHECK ((status = ANY (ARRAY['online'::text, 'offline'::text, 'unknown'::text]))),
     CONSTRAINT peers_trust_level_check CHECK ((trust_level = ANY (ARRAY['untrusted'::text, 'verified'::text, 'trusted'::text])))
+);
+
+
+--
+-- Name: backup_replications; Type: TABLE; Schema: admin; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS admin.backup_replications (
+    id text NOT NULL,
+    backup_id text NOT NULL,
+    provider text DEFAULT 'local'::text NOT NULL,
+    remote_path text NOT NULL,
+    size_bytes bigint,
+    status text DEFAULT 'pending'::text NOT NULL,
+    created_at bigint DEFAULT ((EXTRACT(epoch FROM now()))::bigint * 1000) NOT NULL,
+    completed_at bigint,
+    error text
 );
 
 
@@ -619,6 +679,27 @@ CREATE TABLE IF NOT EXISTS ai.account_cost_records (
 
 
 --
+-- Name: batch_inference_jobs; Type: TABLE; Schema: ai; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS ai.batch_inference_jobs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text,
+    prompts jsonb NOT NULL,
+    concurrency integer DEFAULT 5,
+    status text DEFAULT 'pending'::text,
+    results jsonb DEFAULT '[]'::jsonb,
+    total_prompts integer NOT NULL,
+    completed_prompts integer DEFAULT 0,
+    failed_prompts integer DEFAULT 0,
+    created_at timestamp with time zone DEFAULT now(),
+    completed_at timestamp with time zone,
+    created_by text,
+    CONSTRAINT batch_inference_jobs_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'running'::text, 'completed'::text, 'failed'::text, 'cancelled'::text])))
+);
+
+
+--
 -- Name: provider_accounts; Type: TABLE; Schema: ai; Owner: -
 --
 
@@ -637,6 +718,23 @@ CREATE TABLE IF NOT EXISTS ai.provider_accounts (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT provider_accounts_status_check CHECK ((status = ANY (ARRAY['active'::text, 'invalid'::text, 'rate_limited'::text, 'disabled'::text])))
+);
+
+
+--
+-- Name: semantic_cache; Type: TABLE; Schema: ai; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS ai.semantic_cache (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    embedding public.vector(384) NOT NULL,
+    provider text NOT NULL,
+    model text NOT NULL,
+    request_hash text NOT NULL,
+    response jsonb NOT NULL,
+    hit_count integer DEFAULT 0,
+    created_at timestamp with time zone DEFAULT now(),
+    expires_at timestamp with time zone NOT NULL
 );
 
 
@@ -719,7 +817,7 @@ CREATE TABLE IF NOT EXISTS analytics.usage_anomalies (
 -- Name: entries_seq_seq; Type: SEQUENCE; Schema: audit; Owner: -
 --
 
-CREATE SEQUENCE IF NOT EXISTS audit.entries_seq_seq
+CREATE SEQUENCE audit.entries_seq_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -1267,6 +1365,241 @@ CREATE TABLE IF NOT EXISTS dashboard.custom_dashboards (
 
 
 --
+-- Name: classifications; Type: TABLE; Schema: dlp; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS dlp.classifications (
+    id text NOT NULL,
+    content_id text NOT NULL,
+    content_type text NOT NULL,
+    classification_level text DEFAULT 'internal'::text NOT NULL,
+    auto_level text,
+    manual_override boolean DEFAULT false,
+    overridden_by text,
+    rules_triggered jsonb DEFAULT '[]'::jsonb,
+    classified_at bigint NOT NULL,
+    tenant_id text DEFAULT 'default'::text NOT NULL,
+    CONSTRAINT classifications_auto_level_check CHECK ((auto_level = ANY (ARRAY['public'::text, 'internal'::text, 'confidential'::text, 'restricted'::text]))),
+    CONSTRAINT classifications_classification_level_check CHECK ((classification_level = ANY (ARRAY['public'::text, 'internal'::text, 'confidential'::text, 'restricted'::text]))),
+    CONSTRAINT classifications_content_type_check CHECK ((content_type = ANY (ARRAY['conversation'::text, 'document'::text, 'memory'::text, 'knowledge'::text, 'message'::text])))
+);
+
+
+--
+-- Name: egress_log; Type: TABLE; Schema: dlp; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS dlp.egress_log (
+    id text NOT NULL,
+    destination_type text NOT NULL,
+    destination_id text,
+    content_hash text NOT NULL,
+    classification_level text,
+    bytes_sent integer DEFAULT 0,
+    policy_id text,
+    action_taken text NOT NULL,
+    scan_findings jsonb DEFAULT '[]'::jsonb,
+    user_id text,
+    personality_id text,
+    created_at bigint NOT NULL,
+    tenant_id text DEFAULT 'default'::text NOT NULL,
+    CONSTRAINT egress_log_action_taken_check CHECK ((action_taken = ANY (ARRAY['allowed'::text, 'blocked'::text, 'warned'::text])))
+);
+
+
+--
+-- Name: policies; Type: TABLE; Schema: dlp; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS dlp.policies (
+    id text NOT NULL,
+    name text NOT NULL,
+    description text,
+    enabled boolean DEFAULT true,
+    rules jsonb DEFAULT '[]'::jsonb NOT NULL,
+    action text DEFAULT 'warn'::text NOT NULL,
+    classification_levels text[] DEFAULT '{confidential,restricted}'::text[] NOT NULL,
+    applies_to text[] DEFAULT '{email,slack,webhook,api}'::text[] NOT NULL,
+    created_at bigint NOT NULL,
+    updated_at bigint NOT NULL,
+    tenant_id text DEFAULT 'default'::text NOT NULL,
+    CONSTRAINT policies_action_check CHECK ((action = ANY (ARRAY['block'::text, 'warn'::text, 'log'::text])))
+);
+
+
+--
+-- Name: retention_policies; Type: TABLE; Schema: dlp; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS dlp.retention_policies (
+    id text NOT NULL,
+    content_type text NOT NULL,
+    retention_days integer NOT NULL,
+    classification_level text,
+    enabled boolean DEFAULT true,
+    last_purge_at bigint,
+    created_at bigint NOT NULL,
+    updated_at bigint NOT NULL,
+    tenant_id text DEFAULT 'default'::text NOT NULL,
+    CONSTRAINT retention_policies_classification_level_check CHECK ((classification_level = ANY (ARRAY['public'::text, 'internal'::text, 'confidential'::text, 'restricted'::text]))),
+    CONSTRAINT retention_policies_content_type_check CHECK ((content_type = ANY (ARRAY['conversation'::text, 'memory'::text, 'document'::text, 'knowledge'::text, 'audit_log'::text])))
+);
+
+
+--
+-- Name: watermarks; Type: TABLE; Schema: dlp; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS dlp.watermarks (
+    id text NOT NULL,
+    content_id text NOT NULL,
+    content_type text NOT NULL,
+    watermark_data text NOT NULL,
+    algorithm text DEFAULT 'unicode-steganography'::text NOT NULL,
+    created_at bigint NOT NULL,
+    tenant_id text DEFAULT 'default'::text NOT NULL
+);
+
+
+--
+-- Name: scenario_runs; Type: TABLE; Schema: eval; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS eval.scenario_runs (
+    id text NOT NULL,
+    suite_run_id text NOT NULL,
+    scenario_id text NOT NULL,
+    scenario_name text NOT NULL,
+    passed boolean NOT NULL,
+    status text NOT NULL,
+    output text DEFAULT ''::text NOT NULL,
+    assertion_results jsonb DEFAULT '[]'::jsonb NOT NULL,
+    tool_calls jsonb DEFAULT '[]'::jsonb NOT NULL,
+    tool_call_errors jsonb DEFAULT '[]'::jsonb NOT NULL,
+    forbidden_violations jsonb DEFAULT '[]'::jsonb NOT NULL,
+    input_tokens integer DEFAULT 0 NOT NULL,
+    output_tokens integer DEFAULT 0 NOT NULL,
+    total_tokens integer DEFAULT 0 NOT NULL,
+    cost_usd double precision DEFAULT 0 NOT NULL,
+    duration_ms integer DEFAULT 0 NOT NULL,
+    error_message text,
+    model text,
+    personality_id text,
+    tenant_id text DEFAULT 'default'::text NOT NULL,
+    created_at bigint DEFAULT ((EXTRACT(epoch FROM now()) * (1000)::numeric))::bigint NOT NULL,
+    CONSTRAINT scenario_runs_status_check CHECK ((status = ANY (ARRAY['passed'::text, 'failed'::text, 'error'::text, 'timeout'::text, 'budget_exceeded'::text])))
+);
+
+
+--
+-- Name: scenarios; Type: TABLE; Schema: eval; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS eval.scenarios (
+    id text NOT NULL,
+    name text NOT NULL,
+    description text DEFAULT ''::text NOT NULL,
+    category text DEFAULT 'general'::text NOT NULL,
+    tags jsonb DEFAULT '[]'::jsonb NOT NULL,
+    input text NOT NULL,
+    conversation_history jsonb DEFAULT '[]'::jsonb NOT NULL,
+    expected_tool_calls jsonb DEFAULT '[]'::jsonb NOT NULL,
+    ordered_tool_calls boolean DEFAULT false NOT NULL,
+    forbidden_tool_calls jsonb DEFAULT '[]'::jsonb NOT NULL,
+    output_assertions jsonb DEFAULT '[]'::jsonb NOT NULL,
+    max_tokens integer,
+    max_duration_ms integer DEFAULT 60000 NOT NULL,
+    personality_id text,
+    skill_ids jsonb DEFAULT '[]'::jsonb NOT NULL,
+    model text,
+    tenant_id text DEFAULT 'default'::text NOT NULL,
+    created_at bigint DEFAULT ((EXTRACT(epoch FROM now()) * (1000)::numeric))::bigint NOT NULL,
+    updated_at bigint DEFAULT ((EXTRACT(epoch FROM now()) * (1000)::numeric))::bigint NOT NULL
+);
+
+
+--
+-- Name: suite_runs; Type: TABLE; Schema: eval; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS eval.suite_runs (
+    id text NOT NULL,
+    suite_id text NOT NULL,
+    suite_name text NOT NULL,
+    passed boolean NOT NULL,
+    total_scenarios integer DEFAULT 0 NOT NULL,
+    passed_count integer DEFAULT 0 NOT NULL,
+    failed_count integer DEFAULT 0 NOT NULL,
+    error_count integer DEFAULT 0 NOT NULL,
+    total_duration_ms integer DEFAULT 0 NOT NULL,
+    total_tokens integer DEFAULT 0 NOT NULL,
+    total_cost_usd double precision DEFAULT 0 NOT NULL,
+    started_at bigint NOT NULL,
+    completed_at bigint NOT NULL,
+    tenant_id text DEFAULT 'default'::text NOT NULL,
+    created_at bigint DEFAULT ((EXTRACT(epoch FROM now()) * (1000)::numeric))::bigint NOT NULL
+);
+
+
+--
+-- Name: suites; Type: TABLE; Schema: eval; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS eval.suites (
+    id text NOT NULL,
+    name text NOT NULL,
+    description text DEFAULT ''::text NOT NULL,
+    scenario_ids jsonb DEFAULT '[]'::jsonb NOT NULL,
+    max_cost_usd double precision,
+    concurrency integer DEFAULT 1 NOT NULL,
+    tenant_id text DEFAULT 'default'::text NOT NULL,
+    created_at bigint DEFAULT ((EXTRACT(epoch FROM now()) * (1000)::numeric))::bigint NOT NULL,
+    updated_at bigint DEFAULT ((EXTRACT(epoch FROM now()) * (1000)::numeric))::bigint NOT NULL
+);
+
+
+--
+-- Name: deliveries; Type: TABLE; Schema: events; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS events.deliveries (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    subscription_id uuid NOT NULL,
+    event_type text NOT NULL,
+    payload jsonb NOT NULL,
+    status text DEFAULT 'pending'::text NOT NULL,
+    attempts integer DEFAULT 0,
+    max_attempts integer DEFAULT 4,
+    last_attempt_at bigint,
+    next_retry_at bigint,
+    response_status integer,
+    response_body text,
+    error text,
+    created_at bigint DEFAULT ((EXTRACT(epoch FROM now()) * (1000)::numeric))::bigint NOT NULL,
+    tenant_id text DEFAULT 'default'::text NOT NULL
+);
+
+
+--
+-- Name: subscriptions; Type: TABLE; Schema: events; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS events.subscriptions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    event_types text[] NOT NULL,
+    webhook_url text NOT NULL,
+    secret text,
+    enabled boolean DEFAULT true,
+    headers jsonb DEFAULT '{}'::jsonb,
+    retry_policy jsonb DEFAULT '{"backoffMs": 1000, "maxRetries": 3}'::jsonb,
+    created_at bigint DEFAULT ((EXTRACT(epoch FROM now()) * (1000)::numeric))::bigint NOT NULL,
+    updated_at bigint,
+    tenant_id text DEFAULT 'default'::text NOT NULL
+);
+
+
+--
 -- Name: approvals; Type: TABLE; Schema: execution; Owner: -
 --
 
@@ -1375,6 +1708,23 @@ CREATE TABLE IF NOT EXISTS extensions.webhooks (
 
 
 --
+-- Name: delegations; Type: TABLE; Schema: federation; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS federation.delegations (
+    id text NOT NULL,
+    source_cluster_id text NOT NULL,
+    target_cluster_id text NOT NULL,
+    agent_id text NOT NULL,
+    task_summary text DEFAULT ''::text NOT NULL,
+    status text DEFAULT 'pending'::text NOT NULL,
+    metadata_only boolean DEFAULT true NOT NULL,
+    created_at bigint DEFAULT ((EXTRACT(epoch FROM now()))::bigint * 1000) NOT NULL,
+    completed_at bigint
+);
+
+
+--
 -- Name: peers; Type: TABLE; Schema: federation; Owner: -
 --
 
@@ -1389,6 +1739,10 @@ CREATE TABLE IF NOT EXISTS federation.peers (
     last_seen timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    cluster_id text,
+    region text DEFAULT ''::text,
+    agent_count integer DEFAULT 0,
+    latency_ms integer,
     CONSTRAINT peers_status_check CHECK ((status = ANY (ARRAY['online'::text, 'offline'::text, 'unknown'::text])))
 );
 
@@ -1779,7 +2133,7 @@ CREATE TABLE IF NOT EXISTS public.usage_error_records (
 -- Name: usage_error_records_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE IF NOT EXISTS public.usage_error_records_id_seq
+CREATE SEQUENCE public.usage_error_records_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -1817,7 +2171,7 @@ CREATE TABLE IF NOT EXISTS public.usage_records (
 -- Name: usage_records_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE IF NOT EXISTS public.usage_records_id_seq
+CREATE SEQUENCE public.usage_records_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -1893,7 +2247,7 @@ CREATE TABLE IF NOT EXISTS rbac.user_role_assignments (
 -- Name: user_role_assignments_id_seq; Type: SEQUENCE; Schema: rbac; Owner: -
 --
 
-CREATE SEQUENCE IF NOT EXISTS rbac.user_role_assignments_id_seq
+CREATE SEQUENCE rbac.user_role_assignments_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -2460,6 +2814,21 @@ CREATE TABLE IF NOT EXISTS training.approval_requests (
 
 
 --
+-- Name: checkpoints; Type: TABLE; Schema: training; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS training.checkpoints (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    finetune_job_id text NOT NULL,
+    step integer NOT NULL,
+    path text NOT NULL,
+    loss double precision,
+    metadata jsonb DEFAULT '{}'::jsonb,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
 -- Name: computer_use_episodes; Type: TABLE; Schema: training; Owner: -
 --
 
@@ -2509,6 +2878,26 @@ CREATE TABLE IF NOT EXISTS training.curated_datasets (
 
 
 --
+-- Name: dataset_refresh_jobs; Type: TABLE; Schema: training; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS training.dataset_refresh_jobs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    target_dataset_id uuid,
+    curation_rules jsonb NOT NULL,
+    last_conversation_ts timestamp with time zone,
+    samples_added integer DEFAULT 0,
+    schedule_cron text,
+    status text DEFAULT 'idle'::text,
+    last_run_at timestamp with time zone,
+    next_run_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT dataset_refresh_jobs_status_check CHECK ((status = ANY (ARRAY['idle'::text, 'running'::text, 'completed'::text, 'failed'::text])))
+);
+
+
+--
 -- Name: distillation_jobs; Type: TABLE; Schema: training; Owner: -
 --
 
@@ -2526,6 +2915,37 @@ CREATE TABLE IF NOT EXISTS training.distillation_jobs (
     error_message text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     completed_at timestamp with time zone
+);
+
+
+--
+-- Name: drift_baselines; Type: TABLE; Schema: training; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS training.drift_baselines (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    personality_id uuid NOT NULL,
+    baseline_mean double precision NOT NULL,
+    baseline_stddev double precision NOT NULL,
+    sample_count integer NOT NULL,
+    threshold double precision DEFAULT 0.15,
+    computed_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: drift_snapshots; Type: TABLE; Schema: training; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS training.drift_snapshots (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    baseline_id uuid NOT NULL,
+    current_mean double precision NOT NULL,
+    current_stddev double precision NOT NULL,
+    sample_count integer NOT NULL,
+    drift_magnitude double precision NOT NULL,
+    alert_triggered boolean DEFAULT false,
+    computed_at timestamp with time zone DEFAULT now()
 );
 
 
@@ -2617,7 +3037,38 @@ CREATE TABLE IF NOT EXISTS training.finetune_jobs (
     adapter_path text,
     error_message text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    completed_at timestamp with time zone
+    completed_at timestamp with time zone,
+    training_method text DEFAULT 'sft'::text NOT NULL,
+    parent_job_id text,
+    num_gpus integer DEFAULT 1 NOT NULL,
+    learning_rate double precision,
+    warmup_steps integer,
+    checkpoint_steps integer,
+    resume_from_checkpoint text,
+    reward_model_path text,
+    search_id uuid
+);
+
+
+--
+-- Name: hyperparam_searches; Type: TABLE; Schema: training; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS training.hyperparam_searches (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    base_config jsonb NOT NULL,
+    search_strategy text NOT NULL,
+    param_space jsonb NOT NULL,
+    max_trials integer DEFAULT 10,
+    metric_to_optimize text DEFAULT 'eval_loss'::text,
+    status text DEFAULT 'pending'::text,
+    best_job_id text,
+    best_metric_value double precision,
+    created_at timestamp with time zone DEFAULT now(),
+    completed_at timestamp with time zone,
+    CONSTRAINT hyperparam_searches_search_strategy_check CHECK ((search_strategy = ANY (ARRAY['grid'::text, 'random'::text]))),
+    CONSTRAINT hyperparam_searches_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'running'::text, 'completed'::text, 'failed'::text, 'cancelled'::text])))
 );
 
 
@@ -2635,6 +3086,26 @@ CREATE TABLE IF NOT EXISTS training.model_versions (
     is_active boolean DEFAULT true NOT NULL,
     deployed_at timestamp with time zone DEFAULT now() NOT NULL,
     rolled_back_at timestamp with time zone
+);
+
+
+--
+-- Name: online_update_jobs; Type: TABLE; Schema: training; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS training.online_update_jobs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    personality_id uuid NOT NULL,
+    adapter_name text NOT NULL,
+    conversation_ids text[] NOT NULL,
+    gradient_accumulation_steps integer DEFAULT 4,
+    replay_buffer_size integer DEFAULT 100,
+    status text DEFAULT 'pending'::text,
+    container_id text,
+    error_message text,
+    created_at timestamp with time zone DEFAULT now(),
+    completed_at timestamp with time zone,
+    CONSTRAINT online_update_jobs_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'running'::text, 'completed'::text, 'failed'::text])))
 );
 
 
@@ -2702,7 +3173,7 @@ CREATE TABLE IF NOT EXISTS training.preference_pairs (
     annotator_id text,
     metadata jsonb DEFAULT '{}'::jsonb,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT preference_pairs_source_check CHECK ((source = ANY (ARRAY['annotation'::text, 'comparison'::text, 'multi_turn'::text])))
+    CONSTRAINT preference_pairs_source_check CHECK ((source = ANY (ARRAY['annotation'::text, 'comparison'::text, 'multi_turn'::text, 'constitutional'::text])))
 );
 
 
@@ -2860,6 +3331,14 @@ ALTER TABLE ONLY a2a.peers
 
 
 --
+-- Name: backup_replications backup_replications_pkey; Type: CONSTRAINT; Schema: admin; Owner: -
+--
+
+ALTER TABLE ONLY admin.backup_replications
+    ADD CONSTRAINT backup_replications_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: backups backups_pkey; Type: CONSTRAINT; Schema: admin; Owner: -
 --
 
@@ -2996,11 +3475,27 @@ ALTER TABLE ONLY ai.account_cost_records
 
 
 --
+-- Name: batch_inference_jobs batch_inference_jobs_pkey; Type: CONSTRAINT; Schema: ai; Owner: -
+--
+
+ALTER TABLE ONLY ai.batch_inference_jobs
+    ADD CONSTRAINT batch_inference_jobs_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: provider_accounts provider_accounts_pkey; Type: CONSTRAINT; Schema: ai; Owner: -
 --
 
 ALTER TABLE ONLY ai.provider_accounts
     ADD CONSTRAINT provider_accounts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: semantic_cache semantic_cache_pkey; Type: CONSTRAINT; Schema: ai; Owner: -
+--
+
+ALTER TABLE ONLY ai.semantic_cache
+    ADD CONSTRAINT semantic_cache_pkey PRIMARY KEY (id);
 
 
 --
@@ -3332,6 +3827,94 @@ ALTER TABLE ONLY dashboard.custom_dashboards
 
 
 --
+-- Name: classifications classifications_pkey; Type: CONSTRAINT; Schema: dlp; Owner: -
+--
+
+ALTER TABLE ONLY dlp.classifications
+    ADD CONSTRAINT classifications_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: egress_log egress_log_pkey; Type: CONSTRAINT; Schema: dlp; Owner: -
+--
+
+ALTER TABLE ONLY dlp.egress_log
+    ADD CONSTRAINT egress_log_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: policies policies_pkey; Type: CONSTRAINT; Schema: dlp; Owner: -
+--
+
+ALTER TABLE ONLY dlp.policies
+    ADD CONSTRAINT policies_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: retention_policies retention_policies_pkey; Type: CONSTRAINT; Schema: dlp; Owner: -
+--
+
+ALTER TABLE ONLY dlp.retention_policies
+    ADD CONSTRAINT retention_policies_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: watermarks watermarks_pkey; Type: CONSTRAINT; Schema: dlp; Owner: -
+--
+
+ALTER TABLE ONLY dlp.watermarks
+    ADD CONSTRAINT watermarks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: scenario_runs scenario_runs_pkey; Type: CONSTRAINT; Schema: eval; Owner: -
+--
+
+ALTER TABLE ONLY eval.scenario_runs
+    ADD CONSTRAINT scenario_runs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: scenarios scenarios_pkey; Type: CONSTRAINT; Schema: eval; Owner: -
+--
+
+ALTER TABLE ONLY eval.scenarios
+    ADD CONSTRAINT scenarios_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: suite_runs suite_runs_pkey; Type: CONSTRAINT; Schema: eval; Owner: -
+--
+
+ALTER TABLE ONLY eval.suite_runs
+    ADD CONSTRAINT suite_runs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: suites suites_pkey; Type: CONSTRAINT; Schema: eval; Owner: -
+--
+
+ALTER TABLE ONLY eval.suites
+    ADD CONSTRAINT suites_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: deliveries deliveries_pkey; Type: CONSTRAINT; Schema: events; Owner: -
+--
+
+ALTER TABLE ONLY events.deliveries
+    ADD CONSTRAINT deliveries_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: subscriptions subscriptions_pkey; Type: CONSTRAINT; Schema: events; Owner: -
+--
+
+ALTER TABLE ONLY events.subscriptions
+    ADD CONSTRAINT subscriptions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: approvals approvals_pkey; Type: CONSTRAINT; Schema: execution; Owner: -
 --
 
@@ -3385,6 +3968,14 @@ ALTER TABLE ONLY extensions.hooks
 
 ALTER TABLE ONLY extensions.webhooks
     ADD CONSTRAINT webhooks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: delegations delegations_pkey; Type: CONSTRAINT; Schema: federation; Owner: -
+--
+
+ALTER TABLE ONLY federation.delegations
+    ADD CONSTRAINT delegations_pkey PRIMARY KEY (id);
 
 
 --
@@ -3876,6 +4467,22 @@ ALTER TABLE ONLY training.approval_requests
 
 
 --
+-- Name: checkpoints checkpoints_finetune_job_id_step_key; Type: CONSTRAINT; Schema: training; Owner: -
+--
+
+ALTER TABLE ONLY training.checkpoints
+    ADD CONSTRAINT checkpoints_finetune_job_id_step_key UNIQUE (finetune_job_id, step);
+
+
+--
+-- Name: checkpoints checkpoints_pkey; Type: CONSTRAINT; Schema: training; Owner: -
+--
+
+ALTER TABLE ONLY training.checkpoints
+    ADD CONSTRAINT checkpoints_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: computer_use_episodes computer_use_episodes_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
@@ -3900,11 +4507,35 @@ ALTER TABLE ONLY training.curated_datasets
 
 
 --
+-- Name: dataset_refresh_jobs dataset_refresh_jobs_pkey; Type: CONSTRAINT; Schema: training; Owner: -
+--
+
+ALTER TABLE ONLY training.dataset_refresh_jobs
+    ADD CONSTRAINT dataset_refresh_jobs_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: distillation_jobs distillation_jobs_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
 ALTER TABLE ONLY training.distillation_jobs
     ADD CONSTRAINT distillation_jobs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: drift_baselines drift_baselines_pkey; Type: CONSTRAINT; Schema: training; Owner: -
+--
+
+ALTER TABLE ONLY training.drift_baselines
+    ADD CONSTRAINT drift_baselines_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: drift_snapshots drift_snapshots_pkey; Type: CONSTRAINT; Schema: training; Owner: -
+--
+
+ALTER TABLE ONLY training.drift_snapshots
+    ADD CONSTRAINT drift_snapshots_pkey PRIMARY KEY (id);
 
 
 --
@@ -3948,11 +4579,27 @@ ALTER TABLE ONLY training.finetune_jobs
 
 
 --
+-- Name: hyperparam_searches hyperparam_searches_pkey; Type: CONSTRAINT; Schema: training; Owner: -
+--
+
+ALTER TABLE ONLY training.hyperparam_searches
+    ADD CONSTRAINT hyperparam_searches_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: model_versions model_versions_pkey; Type: CONSTRAINT; Schema: training; Owner: -
 --
 
 ALTER TABLE ONLY training.model_versions
     ADD CONSTRAINT model_versions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: online_update_jobs online_update_jobs_pkey; Type: CONSTRAINT; Schema: training; Owner: -
+--
+
+ALTER TABLE ONLY training.online_update_jobs
+    ADD CONSTRAINT online_update_jobs_pkey PRIMARY KEY (id);
 
 
 --
@@ -4084,6 +4731,13 @@ CREATE INDEX IF NOT EXISTS idx_a2a_peers_trust ON a2a.peers USING btree (trust_l
 
 
 --
+-- Name: idx_backup_replications_backup; Type: INDEX; Schema: admin; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_backup_replications_backup ON admin.backup_replications USING btree (backup_id);
+
+
+--
 -- Name: idx_backups_created_at; Type: INDEX; Schema: admin; Owner: -
 --
 
@@ -4210,6 +4864,13 @@ CREATE INDEX IF NOT EXISTS idx_team_runs_team_id ON agents.team_runs USING btree
 
 
 --
+-- Name: batch_inference_status_idx; Type: INDEX; Schema: ai; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS batch_inference_status_idx ON ai.batch_inference_jobs USING btree (status);
+
+
+--
 -- Name: idx_account_cost_account_id; Type: INDEX; Schema: ai; Owner: -
 --
 
@@ -4242,6 +4903,20 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_provider_accounts_default ON ai.provider_a
 --
 
 CREATE INDEX IF NOT EXISTS idx_provider_accounts_provider ON ai.provider_accounts USING btree (provider);
+
+
+--
+-- Name: semantic_cache_embedding_idx; Type: INDEX; Schema: ai; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS semantic_cache_embedding_idx ON ai.semantic_cache USING ivfflat (embedding public.vector_cosine_ops) WITH (lists='100');
+
+
+--
+-- Name: semantic_cache_expires_idx; Type: INDEX; Schema: ai; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS semantic_cache_expires_idx ON ai.semantic_cache USING btree (expires_at);
 
 
 --
@@ -4700,6 +5375,174 @@ CREATE INDEX IF NOT EXISTS idx_comms_message_time ON comms.message_log USING btr
 
 
 --
+-- Name: idx_dlp_class_content; Type: INDEX; Schema: dlp; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_dlp_class_content ON dlp.classifications USING btree (content_id, content_type);
+
+
+--
+-- Name: idx_dlp_class_level; Type: INDEX; Schema: dlp; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_dlp_class_level ON dlp.classifications USING btree (classification_level);
+
+
+--
+-- Name: idx_dlp_class_tenant; Type: INDEX; Schema: dlp; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_dlp_class_tenant ON dlp.classifications USING btree (tenant_id);
+
+
+--
+-- Name: idx_dlp_egress_created; Type: INDEX; Schema: dlp; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_dlp_egress_created ON dlp.egress_log USING btree (created_at DESC);
+
+
+--
+-- Name: idx_dlp_egress_dest; Type: INDEX; Schema: dlp; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_dlp_egress_dest ON dlp.egress_log USING btree (destination_type);
+
+
+--
+-- Name: idx_dlp_egress_tenant; Type: INDEX; Schema: dlp; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_dlp_egress_tenant ON dlp.egress_log USING btree (tenant_id);
+
+
+--
+-- Name: idx_dlp_policies_tenant; Type: INDEX; Schema: dlp; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_dlp_policies_tenant ON dlp.policies USING btree (tenant_id);
+
+
+--
+-- Name: idx_dlp_retention_tenant; Type: INDEX; Schema: dlp; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_dlp_retention_tenant ON dlp.retention_policies USING btree (tenant_id);
+
+
+--
+-- Name: idx_dlp_watermark_content; Type: INDEX; Schema: dlp; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_dlp_watermark_content ON dlp.watermarks USING btree (content_id);
+
+
+--
+-- Name: idx_eval_scenario_runs_scenario; Type: INDEX; Schema: eval; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_eval_scenario_runs_scenario ON eval.scenario_runs USING btree (scenario_id);
+
+
+--
+-- Name: idx_eval_scenario_runs_status; Type: INDEX; Schema: eval; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_eval_scenario_runs_status ON eval.scenario_runs USING btree (status);
+
+
+--
+-- Name: idx_eval_scenario_runs_suite; Type: INDEX; Schema: eval; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_eval_scenario_runs_suite ON eval.scenario_runs USING btree (suite_run_id);
+
+
+--
+-- Name: idx_eval_scenario_runs_tenant; Type: INDEX; Schema: eval; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_eval_scenario_runs_tenant ON eval.scenario_runs USING btree (tenant_id);
+
+
+--
+-- Name: idx_eval_scenarios_category; Type: INDEX; Schema: eval; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_eval_scenarios_category ON eval.scenarios USING btree (category);
+
+
+--
+-- Name: idx_eval_scenarios_tenant; Type: INDEX; Schema: eval; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_eval_scenarios_tenant ON eval.scenarios USING btree (tenant_id);
+
+
+--
+-- Name: idx_eval_suite_runs_started; Type: INDEX; Schema: eval; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_eval_suite_runs_started ON eval.suite_runs USING btree (started_at DESC);
+
+
+--
+-- Name: idx_eval_suite_runs_suite; Type: INDEX; Schema: eval; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_eval_suite_runs_suite ON eval.suite_runs USING btree (suite_id);
+
+
+--
+-- Name: idx_eval_suite_runs_tenant; Type: INDEX; Schema: eval; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_eval_suite_runs_tenant ON eval.suite_runs USING btree (tenant_id);
+
+
+--
+-- Name: idx_eval_suites_tenant; Type: INDEX; Schema: eval; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_eval_suites_tenant ON eval.suites USING btree (tenant_id);
+
+
+--
+-- Name: idx_deliveries_next_retry; Type: INDEX; Schema: events; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_deliveries_next_retry ON events.deliveries USING btree (next_retry_at) WHERE (status = 'retrying'::text);
+
+
+--
+-- Name: idx_deliveries_status; Type: INDEX; Schema: events; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_deliveries_status ON events.deliveries USING btree (status) WHERE (status = ANY (ARRAY['pending'::text, 'retrying'::text]));
+
+
+--
+-- Name: idx_deliveries_subscription; Type: INDEX; Schema: events; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_deliveries_subscription ON events.deliveries USING btree (subscription_id);
+
+
+--
+-- Name: idx_subscriptions_enabled; Type: INDEX; Schema: events; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_subscriptions_enabled ON events.subscriptions USING btree (enabled) WHERE (enabled = true);
+
+
+--
+-- Name: idx_subscriptions_tenant; Type: INDEX; Schema: events; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_subscriptions_tenant ON events.subscriptions USING btree (tenant_id);
+
+
+--
 -- Name: idx_exec_approvals_status; Type: INDEX; Schema: execution; Owner: -
 --
 
@@ -4746,6 +5589,27 @@ CREATE INDEX IF NOT EXISTS idx_hooks_extension ON extensions.hooks USING btree (
 --
 
 CREATE INDEX IF NOT EXISTS idx_hooks_point ON extensions.hooks USING btree (hook_point);
+
+
+--
+-- Name: idx_federation_delegations_source; Type: INDEX; Schema: federation; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_federation_delegations_source ON federation.delegations USING btree (source_cluster_id);
+
+
+--
+-- Name: idx_federation_delegations_status; Type: INDEX; Schema: federation; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_federation_delegations_status ON federation.delegations USING btree (status);
+
+
+--
+-- Name: idx_federation_delegations_target; Type: INDEX; Schema: federation; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS idx_federation_delegations_target ON federation.delegations USING btree (target_cluster_id);
 
 
 --
@@ -4935,6 +5799,20 @@ CREATE INDEX IF NOT EXISTS usage_error_records_at_idx ON public.usage_error_reco
 --
 
 CREATE INDEX IF NOT EXISTS usage_records_personality_idx ON public.usage_records USING btree (personality_id);
+
+
+--
+-- Name: usage_records_personality_recorded_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS usage_records_personality_recorded_idx ON public.usage_records USING btree (personality_id, recorded_at DESC);
+
+
+--
+-- Name: usage_records_provider_recorded_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS usage_records_provider_recorded_idx ON public.usage_records USING btree (provider, recorded_at DESC);
 
 
 --
@@ -5309,6 +6187,20 @@ CREATE INDEX IF NOT EXISTS approval_requests_status_idx ON training.approval_req
 
 
 --
+-- Name: checkpoints_job_id_idx; Type: INDEX; Schema: training; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS checkpoints_job_id_idx ON training.checkpoints USING btree (finetune_job_id);
+
+
+--
+-- Name: dataset_refresh_status_idx; Type: INDEX; Schema: training; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS dataset_refresh_status_idx ON training.dataset_refresh_jobs USING btree (status);
+
+
+--
 -- Name: distillation_jobs_created_at_idx; Type: INDEX; Schema: training; Owner: -
 --
 
@@ -5323,6 +6215,20 @@ CREATE INDEX IF NOT EXISTS distillation_jobs_status_idx ON training.distillation
 
 
 --
+-- Name: drift_baselines_personality_idx; Type: INDEX; Schema: training; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS drift_baselines_personality_idx ON training.drift_baselines USING btree (personality_id);
+
+
+--
+-- Name: drift_snapshots_baseline_idx; Type: INDEX; Schema: training; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS drift_snapshots_baseline_idx ON training.drift_snapshots USING btree (baseline_id);
+
+
+--
 -- Name: finetune_jobs_created_at_idx; Type: INDEX; Schema: training; Owner: -
 --
 
@@ -5330,10 +6236,31 @@ CREATE INDEX IF NOT EXISTS finetune_jobs_created_at_idx ON training.finetune_job
 
 
 --
+-- Name: finetune_jobs_parent_job_id_idx; Type: INDEX; Schema: training; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS finetune_jobs_parent_job_id_idx ON training.finetune_jobs USING btree (parent_job_id);
+
+
+--
+-- Name: finetune_jobs_search_id_idx; Type: INDEX; Schema: training; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS finetune_jobs_search_id_idx ON training.finetune_jobs USING btree (search_id);
+
+
+--
 -- Name: finetune_jobs_status_idx; Type: INDEX; Schema: training; Owner: -
 --
 
 CREATE INDEX IF NOT EXISTS finetune_jobs_status_idx ON training.finetune_jobs USING btree (status);
+
+
+--
+-- Name: hyperparam_searches_status_idx; Type: INDEX; Schema: training; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS hyperparam_searches_status_idx ON training.hyperparam_searches USING btree (status);
 
 
 --
@@ -5463,6 +6390,13 @@ CREATE INDEX IF NOT EXISTS idx_preference_pairs_source ON training.preference_pa
 
 
 --
+-- Name: online_update_status_idx; Type: INDEX; Schema: training; Owner: -
+--
+
+CREATE INDEX IF NOT EXISTS online_update_status_idx ON training.online_update_jobs USING btree (status);
+
+
+--
 -- Name: pipeline_lineage_created_at_idx; Type: INDEX; Schema: training; Owner: -
 --
 
@@ -5536,14 +6470,14 @@ CREATE INDEX IF NOT EXISTS idx_workspace_workspaces_tenant ON workspace.workspac
 -- Name: entries trg_audit_search_vector; Type: TRIGGER; Schema: audit; Owner: -
 --
 
-CREATE OR REPLACE TRIGGER trg_audit_search_vector BEFORE INSERT OR UPDATE ON audit.entries FOR EACH ROW EXECUTE FUNCTION audit.update_search_vector();
+CREATE TRIGGER trg_audit_search_vector BEFORE INSERT OR UPDATE ON audit.entries FOR EACH ROW EXECUTE FUNCTION audit.update_search_vector();
 
 
 --
 -- Name: document_chunks trg_chunk_fts; Type: TRIGGER; Schema: brain; Owner: -
 --
 
-CREATE OR REPLACE TRIGGER trg_chunk_fts BEFORE INSERT OR UPDATE OF content ON brain.document_chunks FOR EACH ROW EXECUTE FUNCTION brain.update_chunk_fts();
+CREATE TRIGGER trg_chunk_fts BEFORE INSERT OR UPDATE OF content ON brain.document_chunks FOR EACH ROW EXECUTE FUNCTION brain.update_chunk_fts();
 
 
 --
@@ -5552,6 +6486,14 @@ CREATE OR REPLACE TRIGGER trg_chunk_fts BEFORE INSERT OR UPDATE OF content ON br
 
 ALTER TABLE ONLY a2a.capabilities
     ADD CONSTRAINT capabilities_peer_id_fkey FOREIGN KEY (peer_id) REFERENCES a2a.peers(id) ON DELETE CASCADE;
+
+
+--
+-- Name: backup_replications backup_replications_backup_id_fkey; Type: FK CONSTRAINT; Schema: admin; Owner: -
+--
+
+ALTER TABLE ONLY admin.backup_replications
+    ADD CONSTRAINT backup_replications_backup_id_fkey FOREIGN KEY (backup_id) REFERENCES admin.backups(id) ON DELETE CASCADE;
 
 
 --
@@ -5795,6 +6737,30 @@ ALTER TABLE ONLY chat.replay_results
 
 
 --
+-- Name: scenario_runs scenario_runs_suite_run_id_fkey; Type: FK CONSTRAINT; Schema: eval; Owner: -
+--
+
+ALTER TABLE ONLY eval.scenario_runs
+    ADD CONSTRAINT scenario_runs_suite_run_id_fkey FOREIGN KEY (suite_run_id) REFERENCES eval.suite_runs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: suite_runs suite_runs_suite_id_fkey; Type: FK CONSTRAINT; Schema: eval; Owner: -
+--
+
+ALTER TABLE ONLY eval.suite_runs
+    ADD CONSTRAINT suite_runs_suite_id_fkey FOREIGN KEY (suite_id) REFERENCES eval.suites(id) ON DELETE CASCADE;
+
+
+--
+-- Name: deliveries deliveries_subscription_id_fkey; Type: FK CONSTRAINT; Schema: events; Owner: -
+--
+
+ALTER TABLE ONLY events.deliveries
+    ADD CONSTRAINT deliveries_subscription_id_fkey FOREIGN KEY (subscription_id) REFERENCES events.subscriptions(id) ON DELETE CASCADE;
+
+
+--
 -- Name: history history_session_id_fkey; Type: FK CONSTRAINT; Schema: execution; Owner: -
 --
 
@@ -5939,6 +6905,30 @@ ALTER TABLE ONLY training.ab_test_assignments
 
 
 --
+-- Name: checkpoints checkpoints_finetune_job_id_fkey; Type: FK CONSTRAINT; Schema: training; Owner: -
+--
+
+ALTER TABLE ONLY training.checkpoints
+    ADD CONSTRAINT checkpoints_finetune_job_id_fkey FOREIGN KEY (finetune_job_id) REFERENCES training.finetune_jobs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: dataset_refresh_jobs dataset_refresh_jobs_target_dataset_id_fkey; Type: FK CONSTRAINT; Schema: training; Owner: -
+--
+
+ALTER TABLE ONLY training.dataset_refresh_jobs
+    ADD CONSTRAINT dataset_refresh_jobs_target_dataset_id_fkey FOREIGN KEY (target_dataset_id) REFERENCES training.curated_datasets(id);
+
+
+--
+-- Name: drift_snapshots drift_snapshots_baseline_id_fkey; Type: FK CONSTRAINT; Schema: training; Owner: -
+--
+
+ALTER TABLE ONLY training.drift_snapshots
+    ADD CONSTRAINT drift_snapshots_baseline_id_fkey FOREIGN KEY (baseline_id) REFERENCES training.drift_baselines(id) ON DELETE CASCADE;
+
+
+--
 -- Name: eval_scores eval_scores_dataset_id_fkey; Type: FK CONSTRAINT; Schema: training; Owner: -
 --
 
@@ -5952,6 +6942,30 @@ ALTER TABLE ONLY training.eval_scores
 
 ALTER TABLE ONLY training.experiments
     ADD CONSTRAINT experiments_finetune_job_id_fkey FOREIGN KEY (finetune_job_id) REFERENCES training.finetune_jobs(id);
+
+
+--
+-- Name: finetune_jobs finetune_jobs_parent_job_id_fkey; Type: FK CONSTRAINT; Schema: training; Owner: -
+--
+
+ALTER TABLE ONLY training.finetune_jobs
+    ADD CONSTRAINT finetune_jobs_parent_job_id_fkey FOREIGN KEY (parent_job_id) REFERENCES training.finetune_jobs(id);
+
+
+--
+-- Name: finetune_jobs finetune_jobs_search_id_fkey; Type: FK CONSTRAINT; Schema: training; Owner: -
+--
+
+ALTER TABLE ONLY training.finetune_jobs
+    ADD CONSTRAINT finetune_jobs_search_id_fkey FOREIGN KEY (search_id) REFERENCES training.hyperparam_searches(id);
+
+
+--
+-- Name: hyperparam_searches hyperparam_searches_best_job_id_fkey; Type: FK CONSTRAINT; Schema: training; Owner: -
+--
+
+ALTER TABLE ONLY training.hyperparam_searches
+    ADD CONSTRAINT hyperparam_searches_best_job_id_fkey FOREIGN KEY (best_job_id) REFERENCES training.finetune_jobs(id);
 
 
 --
@@ -6016,6 +7030,11 @@ ALTER TABLE ONLY workspace.members
 
 ALTER TABLE ONLY workspace.workspaces
     ADD CONSTRAINT workspaces_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES auth.tenants(id);
+
+
+--
+--
+
 
 
 -- ===========================================================================

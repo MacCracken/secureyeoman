@@ -160,6 +160,6 @@ All data stored in the `responsible_ai` PostgreSQL schema:
 
 ## Related
 
-- [ADR 202: Responsible AI](../adr/012-operations-and-lifecycle.md)
-- [Training & Evaluation Guide](./training.md)
+- [ADR 012: Operations & Lifecycle](../adr/012-operations-and-lifecycle.md)
+- [Training & ML Guide](./training-ml.md)
 - [EU AI Act Overview](https://artificialintelligenceact.eu/)

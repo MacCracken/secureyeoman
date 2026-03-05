@@ -3,8 +3,8 @@
 > SecureYeoman is a sovereign AI agent platform that runs entirely on your infrastructure. It provides multi-model intelligence (13 AI providers), enterprise-grade security (RBAC, SSO/SAML, sandboxing, TEE-aware routing, audit trails), multi-agent orchestration (swarms, teams, DAG workflows, A2A protocol), a 274-tool MCP server, and a full ML lifecycle platform — without sending data off-premises. Dual-licensed: AGPL-3.0 + Commercial.
 
 - Version: 2026.3.5
-- 12 ADRs, 49 guides
-- 36 platform integrations, 274 MCP tools, 39 CLI commands
+- 19 ADRs, 49 guides
+- 32 platform integrations, 274 MCP tools, 39 CLI commands
 
 ## Documentation
 
@@ -37,7 +37,7 @@
 
 ## Optional
 
-- [ADRs](https://github.com/MacCracken/secureyeoman/tree/main/docs/adr): 12 consolidated architecture decision records
+- [ADRs](https://github.com/MacCracken/secureyeoman/tree/main/docs/adr): 19 consolidated architecture decision records
 - [Roadmap](https://github.com/MacCracken/secureyeoman/blob/main/docs/development/roadmap.md): Development roadmap
 - [Changelog](https://github.com/MacCracken/secureyeoman/blob/main/CHANGELOG.md): Release history
 - [Contributing](https://github.com/MacCracken/secureyeoman/blob/main/CONTRIBUTING.md): Contribution guide

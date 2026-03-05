@@ -19,19 +19,6 @@
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | Future | LLM Providers, Voice, Infrastructure, Dev Ecosystem | Future / Demand-Gated | — |
 
-### Recently Completed (see [Changelog](../../CHANGELOG.md))
-| Phase | Name |
-|-------|------|
-| 135 | Agent Evaluation Harness — [ADR 206](../adr/206-agent-eval-harness.md) |
-| 136 | Data Loss Prevention (DLP) — [ADR 207](../adr/207-data-loss-prevention.md) |
-| 137 | Multi-Region & HA — [ADR 208](../adr/208-multi-region-ha.md) |
-| 138 | Supply Chain Security & Compliance Artifacts — [ADR 209](../adr/209-supply-chain-security.md) |
-| — | Startup & Resource Optimization — [2026.3.5f] |
-
----
-
-- [ ] enterprise department per - what other business units can we provide tools for, additonal skills/worksflows/swarms/security, legal, business risks are already covers as will as intents; where else can we improve
-
 ## Phase XX: QA & Manual Testing (Ongoing)
 
 **Priority**: P0 — Ongoing. Continuous verification of features that lack automated integration coverage. Items move to Changelog when confirmed working; new regressions are added here as discovered.
@@ -188,8 +175,6 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 Current: 86.35% stmt / 76.24% branches / 87.21% lines. Target: 88% stmt / 77% branches.
 
-**Completed (2026-03-05)**: Licensing (+18 tests), Logging (+26 tests), Actuator (+10 tests), Notifications (+16 tests). Capture-permissions already had a test file (377 lines, 19 tests).
-
 **Remaining targets by coverage gap** (directory-level):
 
 | Directory | Priority |
@@ -210,7 +195,7 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ### Developer Ecosystem & Community Growth
 
-*From Brainstorm #7. Only way to close the skill gap (87 vs 13,729) at scale.*
+*Only way to close the skill gap at scale.*
 
 - [ ] **Skill SDK** — `npx create-secureyeoman-skill` scaffolding tool. Generates skill directory with schema, test harness, README template, and CI config.
 - [ ] **Skill testing framework** — Mock MCP context, simulate tool calls, assert outputs. `SkillTestRunner` class.
@@ -271,6 +256,21 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 - [ ] **Optimistic Locking** — `version` field on personalities and skills; API returns `409 Conflict` on stale saves; dashboard shows "Someone else edited this — reload?" banner.
 - [ ] **ELK Integration** — Eclipse Layout Kernel for advanced constraint-based graph layouts. ~2 MB WASM bundle — justified only when graph complexity outgrows Dagre.
 - [ ] **Agent World — Configurable FPS** — fps slider in card settings popover (1–16 fps), persisted in layout config. Only worthwhile if users report animation overhead on low-power devices.
+
+---
+
+### Ideas & Exploration
+
+*Lower-priority ideas. Not scheduled — track here for future consideration.*
+
+- [ ] **Agent replay & debugging** — Record + replay execution traces. Complements eval harness (Phase 135).
+- [ ] **Policy-as-Code repository** — Git-backed OPA/CEL bundles. PR-based policy changes.
+- [ ] **WebAuthn/FIDO2 auth** — Hardware key authentication for admins.
+- [ ] **Agent sandboxing profiles** — Named sandbox configs (dev/prod/high-security).
+- [ ] **Offline-first PWA** — ServiceWorker + IndexedDB. Closes mobile gap without native apps.
+- [ ] **Chaos engineering toolkit** — Fault injection for workflow resilience testing.
+- [ ] **Conversation branching visualization** — Visual tree with diff view.
+- [ ] **Federated learning** — Multi-instance model improvement with differential privacy.
 
 ---
 

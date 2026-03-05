@@ -10,7 +10,7 @@
 
 As autonomous agents move from experimental scripts to enterprise tools, they introduce three critical attack vectors: **Data Exfiltration**, **Unauthorized System Mutation**, and **Credential Exposure**. While "viral" agents prioritize autonomy at the expense of security, SecureYeoman is engineered as a **Governed AI Framework**. It provides the utility of an autonomous agent within a Zero-Trust architectural boundary — every tool call gated, every action logged, every secret kept from the model.
 
-SecureYeoman ships today (v2026.3.3) with 13,659 tests, 163 Architecture Decision Records, and a production Kubernetes Helm chart. It runs fully air-gapped on your infrastructure: no cloud dependency, no behavioral extraction, no AI that answers to someone else.
+SecureYeoman ships today with ~16,100 tests, 19 Architecture Decision Records, and a production Kubernetes Helm chart. It runs fully air-gapped on your infrastructure: no cloud dependency, no behavioral extraction, no AI that answers to someone else.
 
 ---
 
@@ -114,12 +114,15 @@ SecureYeoman is the only enterprise-grade, fully self-hosted AI agent platform t
 - OPA + CEL governance + LLM-as-Judge
 - ResponseGuard + ToolOutputScanner + Prompt Security
 - DAG workflow orchestration with visual builder + human approval gates
-- 31 messaging integrations + 180+ MCP tools
-- Single ~80 MB binary, fully air-gapped, Kubernetes-ready
+- Data Loss Prevention — PII detection, content classification, egress scanning, watermarking
+- Supply chain security — SBOM generation, SLSA provenance, signed releases, dependency tracking
+- Multi-region HA — read replicas, cross-cluster federation, failover
+- 32 platform integrations + 274 MCP tools
+- Single ~123 MB binary, fully air-gapped, Kubernetes-ready
 
 All in a single deployable binary. A yeoman owns their land. So should you.
 
 ---
 
-*SecureYeoman v2026.3.3 — 13,659 tests · 163 ADRs · AGPL-3.0 + Commercial License*
+*SecureYeoman — ~16,100 tests · 19 ADRs · AGPL-3.0 + Commercial License*
 *security@secureyeoman.ai · https://github.com/MacCracken/secureyeoman*

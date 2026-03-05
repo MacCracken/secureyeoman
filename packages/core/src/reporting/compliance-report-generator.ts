@@ -71,7 +71,7 @@ export class ComplianceReportGenerator {
     const includeEgress = options.includeEgress !== false;
     const includeClassifications = options.includeClassifications !== false;
 
-    this.logger.info({ id, format: options.format }, 'Generating compliance report');
+    this.logger.info('Generating compliance report', { id, format: options.format });
 
     // 1. Query audit events
     let auditEvents: AuditEntry[] = [];
@@ -88,7 +88,7 @@ export class ComplianceReportGenerator {
         const result = await this.queryAuditLog(auditOpts);
         auditEvents = result.entries;
       } catch (err) {
-        this.logger.warn({ id, error: err instanceof Error ? err.message : String(err) }, 'Failed to query audit events for compliance report');
+        this.logger.warn('Failed to query audit events for compliance report', { id, error: err instanceof Error ? err.message : String(err) });
       }
     }
 
@@ -102,10 +102,10 @@ export class ComplianceReportGenerator {
           limit: 10000,
           offset: 0,
         };
-        const result = await this.egressStore.query(egressFilters);
+        const result = await this.egressStore.queryEgress(egressFilters);
         egressEvents = result.events;
       } catch (err) {
-        this.logger.warn({ id, error: err instanceof Error ? err.message : String(err) }, 'Failed to query egress events for compliance report');
+        this.logger.warn('Failed to query egress events for compliance report', { id, error: err instanceof Error ? err.message : String(err) });
       }
     }
 
@@ -135,7 +135,7 @@ export class ComplianceReportGenerator {
           classifications = classifications.filter((c) => options.contentTypes!.includes(c.contentType));
         }
       } catch (err) {
-        this.logger.warn({ id, error: err instanceof Error ? err.message : String(err) }, 'Failed to query classifications for compliance report');
+        this.logger.warn('Failed to query classifications for compliance report', { id, error: err instanceof Error ? err.message : String(err) });
       }
     }
 
@@ -173,8 +173,8 @@ export class ComplianceReportGenerator {
     this.reports.set(id, { ...report, content });
 
     this.logger.info(
-      { id, auditEvents: auditEvents.length, egressEvents: egressEvents.length, classifications: classifications.length },
-      'Compliance report generated'
+      'Compliance report generated',
+      { id, auditEvents: auditEvents.length, egressEvents: egressEvents.length, classifications: classifications.length }
     );
 
     return { id, summary, content };

@@ -8,8 +8,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import type { Pool } from 'pg';
-import type { SecureLogger } from '../logging/secure-logger.js';
+import type { SecureLogger } from '../logging/logger.js';
 import { EvalStore } from './eval-store.js';
 import { runScenario } from './eval-engine.js';
 import type { EvalAgentDeps } from './eval-engine.js';
@@ -22,7 +21,6 @@ import type {
 } from '@secureyeoman/shared';
 
 export interface EvalManagerDeps {
-  pool: Pool;
   logger: SecureLogger;
   agentDeps: EvalAgentDeps;
   config: AgentEvalConfig;
@@ -36,7 +34,7 @@ export class EvalManager {
   private readonly activeRuns = new Map<string, AbortController>();
 
   constructor(deps: EvalManagerDeps) {
-    this.store = new EvalStore(deps.pool);
+    this.store = new EvalStore();
     this.logger = deps.logger;
     this.agentDeps = deps.agentDeps;
     this.config = deps.config;
@@ -94,7 +92,7 @@ export class EvalManager {
     const controller = new AbortController();
     this.activeRuns.set(runId, controller);
 
-    this.logger.info({ suiteId, runId, scenarioCount: suite.scenarioIds.length }, 'Starting eval suite run');
+    this.logger.info('Starting eval suite run', { suiteId, runId, scenarioCount: suite.scenarioIds.length });
 
     const startedAt = Date.now();
     const results: ScenarioRunResult[] = [];
@@ -109,7 +107,7 @@ export class EvalManager {
       if (scenario) {
         scenarios.push(scenario);
       } else {
-        this.logger.warn({ scenarioId: sid, suiteId }, 'Scenario not found, skipping');
+        this.logger.warn('Scenario not found, skipping', { scenarioId: sid, suiteId });
       }
     }
 
@@ -127,10 +125,7 @@ export class EvalManager {
           results.push(result);
           totalCostUsd += result.costUsd;
 
-          this.logger.info(
-            { scenarioId: scenario.id, passed: result.passed, status: result.status, durationMs: result.durationMs },
-            'Scenario completed'
-          );
+          this.logger.info('Scenario completed', { scenarioId: scenario.id, passed: result.passed, status: result.status, durationMs: result.durationMs });
         }
       } else {
         // Concurrent execution in batches
@@ -184,10 +179,7 @@ export class EvalManager {
       await this.store.saveSuiteRun(suiteResult, tenantId);
     }
 
-    this.logger.info(
-      { runId, suiteId, passed: suiteResult.passed, passedCount, failedCount, errorCount, durationMs: suiteResult.totalDurationMs },
-      'Eval suite run completed'
-    );
+    this.logger.info('Eval suite run completed', { runId, suiteId, passed: suiteResult.passed, passedCount, failedCount, errorCount, durationMs: suiteResult.totalDurationMs });
 
     return suiteResult;
   }
@@ -220,13 +212,10 @@ export class EvalManager {
       throw new Error(`Scenario not found: ${scenarioId}`);
     }
 
-    this.logger.info({ scenarioId }, 'Running single scenario evaluation');
+    this.logger.info('Running single scenario evaluation', { scenarioId });
     const result = await runScenario(scenario, this.agentDeps);
 
-    this.logger.info(
-      { scenarioId, passed: result.passed, status: result.status, durationMs: result.durationMs },
-      'Single scenario evaluation completed'
-    );
+    this.logger.info('Single scenario evaluation completed', { scenarioId, passed: result.passed, status: result.status, durationMs: result.durationMs });
 
     return result;
   }
@@ -235,7 +224,7 @@ export class EvalManager {
   async cleanupOldRuns(tenantId = 'default'): Promise<number> {
     const deleted = await this.store.deleteOldRuns(this.config.retentionDays, tenantId);
     if (deleted > 0) {
-      this.logger.info({ deleted, retentionDays: this.config.retentionDays }, 'Cleaned up old eval runs');
+      this.logger.info('Cleaned up old eval runs', { deleted, retentionDays: this.config.retentionDays });
     }
     return deleted;
   }

@@ -180,8 +180,8 @@ describe('RetentionManager', () => {
     it('starts periodic purge timer', () => {
       manager.start();
       expect(logger.info).toHaveBeenCalledWith(
-        { intervalMs: 1000 },
-        'Retention manager started'
+        'Retention manager started',
+        { intervalMs: 1000 }
       );
     });
 
@@ -196,7 +196,7 @@ describe('RetentionManager', () => {
       manager.start(); // second call should be no-op
       // Only one "started" log
       const startCalls = (logger.info as any).mock.calls.filter(
-        (c: any[]) => typeof c[1] === 'string' && c[1].includes('started')
+        (c: any[]) => typeof c[0] === 'string' && c[0].includes('started')
       );
       expect(startCalls).toHaveLength(1);
     });

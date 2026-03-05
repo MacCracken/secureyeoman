@@ -26,7 +26,7 @@ export class EgressMonitor {
    * Aggregate egress_log by destination, action, classification level.
    */
   async getStats(from: number, to: number): Promise<EgressStats> {
-    const { events } = await this.egressStore.query({
+    const { events } = await this.egressStore.queryEgress({
       fromTime: from,
       toTime: to,
       limit: 10_000,
@@ -47,8 +47,8 @@ export class EgressMonitor {
     }
 
     this.logger.debug(
-      { totalEvents: events.length, period: { from, to } },
-      'Egress stats computed'
+      'Egress stats computed',
+      { totalEvents: events.length, period: { from, to } }
     );
 
     return {
@@ -68,7 +68,7 @@ export class EgressMonitor {
     const now = Date.now();
     const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
 
-    const { events } = await this.egressStore.query({
+    const { events } = await this.egressStore.queryEgress({
       fromTime: sevenDaysAgo,
       toTime: now,
       limit: 50_000,
@@ -150,8 +150,8 @@ export class EgressMonitor {
     }
 
     this.logger.debug(
-      { anomalyCount: anomalies.length },
-      'Egress anomaly detection completed'
+      'Egress anomaly detection completed',
+      { anomalyCount: anomalies.length }
     );
 
     return anomalies;
@@ -161,7 +161,7 @@ export class EgressMonitor {
    * List known egress destinations with last-seen timestamps.
    */
   async getDestinations(): Promise<EgressDestination[]> {
-    const { events } = await this.egressStore.query({ limit: 10_000 });
+    const { events } = await this.egressStore.queryEgress({ limit: 10_000 });
 
     const destMap = new Map<string, EgressDestination>();
     for (const event of events) {

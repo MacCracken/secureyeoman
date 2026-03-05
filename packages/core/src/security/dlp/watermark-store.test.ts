@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockQuery = vi.fn();
 vi.mock('../../storage/pg-pool.js', () => ({ getPool: () => ({ query: mockQuery }) }));
-vi.mock('../../utils/id.js', () => ({ generateId: () => 'wm-test-id' }));
+vi.mock('../../utils/id.js', () => ({ uuidv7: () => 'wm-test-id' }));
 
 import { WatermarkStore } from './watermark-store.js';
 

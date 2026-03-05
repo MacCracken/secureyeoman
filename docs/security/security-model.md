@@ -327,7 +327,7 @@ const validationPipeline = {
 
 #### RBAC Enforcement
 
-Role permission matrix (as of Phase 22 RBAC audit — see [ADR 068](../adr/068-rbac-audit-phase-22.md)):
+Role permission matrix (see [ADR 002: Security Architecture](../adr/002-security-architecture.md)):
 
 | Resource       | admin | operator | auditor | viewer |
 |----------------|:-----:|:--------:|:-------:|:------:|
@@ -443,7 +443,7 @@ Cross-Site Request Forgery (CSRF) protection is **not required** for the SecureY
 
 **CORS** (via `@fastify/cors`) restricts which origins can make requests with custom headers, providing the appropriate protection.
 
-**Important:** If session cookies are ever introduced (e.g., SSO refresh tokens, persistent login), CSRF protection MUST be added at that point. See [ADR 115](../adr/115-csrf-not-applicable-bearer-token-api.md) for the full analysis and requirements.
+**Important:** If session cookies are ever introduced (e.g., SSO refresh tokens, persistent login), CSRF protection MUST be added at that point. See [ADR 002: Security Architecture](../adr/002-security-architecture.md) for the full analysis and requirements.
 
 ### 2. Authorization Controls
 
@@ -879,7 +879,7 @@ Some `npm audit` findings are accepted risks because they exist exclusively in d
 
 | Advisory | Package | Severity | Exposure | Resolution | ADR |
 |---|---|---|---|---|---|
-| GHSA-2g4f-4pwh-qvx6 | `ajv@6.x` (via `eslint` / `@eslint/eslintrc`) | Moderate | Dev-only. ReDoS requires `$data` option — not used by ESLint. Never shipped to users. | Wait for `eslint` to upgrade to `ajv >= 8.18.0`. | [ADR 048](../adr/048-eslint-ajv-vulnerability-accepted-risk.md) |
+| GHSA-2g4f-4pwh-qvx6 | `ajv@6.x` (via `eslint` / `@eslint/eslintrc`) | Moderate | Dev-only. ReDoS requires `$data` option — not used by ESLint. Never shipped to users. | Wait for `eslint` to upgrade to `ajv >= 8.18.0`. | [ADR 002: Security Architecture](../adr/002-security-architecture.md) |
 
 **Policy**: Any accepted-risk finding must have a corresponding ADR with an explicit attack surface assessment, documented resolution criteria, and a [Dependency Watch](../development/roadmap.md#dependency-watch) entry in the roadmap.
 

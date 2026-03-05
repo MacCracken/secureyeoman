@@ -4,7 +4,15 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ---
 
-## [2026.3.5g] — 2026-03-05
+## [2026.3.5] — 2026-03-05
+
+### Documentation & Site Audit
+
+- **Site sync** — Updated `site/index.html`, `whitepaper.html`, `llms.txt`, `sitemap.xml` to match current codebase: tests ~16,100, 32 integrations, 274 MCP tools, 19 ADRs, 20 ToolOutputScanner patterns, 19 DAG step types, 13 AI providers. Added DLP and Supply Chain to whitepaper and feature cards.
+- **Functional audit rework** — Grouped "Where SecureYeoman Leads" (41 items) into 5 domain categories. Removed stale ADR references. Structured closing differentiator paragraph.
+- **Brainstorm archived** — Removed `brainstorm-2026-3-5.md`; remaining ideas migrated to roadmap's "Ideas & Exploration" section.
+- **Cross-doc consistency** — Fixed stale numbers in ADR 001, ADR 008, security-model.md, responsible-ai.md, deployment.md, white-paper.md, features.md, marketing-strategy.md, openapi.yaml.
+- **Comparison table updated** — Site now uses Agent Zero, PicoClaw, Ironclaw (was Goose/ZeroClaw/TrustClaw in `.md` variant).
 
 ### Supply Chain Security & Compliance Artifacts (Phase 138, Brainstorm #2, ADR 209)
 
@@ -18,8 +26,6 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Reproducible Docker builds**: Base image `debian:bookworm-slim` pinned by SHA256 digest.
 - **57 tests** across 6 files: sbom-generator (10), release-verifier (4), compliance-mapping (14), dependency-tracker (17), sbom CLI (8), verify CLI (4).
 - **Guide**: `docs/guides/supply-chain-security.md` — SBOM, verification, compliance, dependency tracking, CI integration.
-
-## [2026.3.5f] — 2026-03-05
 
 ### Startup & Resource Optimization (Brainstorm #1)
 
@@ -66,10 +72,6 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 - 13,203 core unit tests + 1,276 dashboard tests passing.
 
----
-
-## [2026.3.5e] — 2026-03-05
-
 ### Phase 136 — Data Loss Prevention (DLP) & Content Classification
 
 - **Content classification engine** (`security/dlp/classification-engine.ts`): Three-layer classifier — PII regex detection (email, phone, SSN, credit card, IP), keyword dictionary matching (restricted/confidential), custom regex patterns. Four-tier levels: `public < internal < confidential < restricted`. Highest triggered level wins. Configurable via `security.dlp.classification` config.
@@ -92,10 +94,6 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Tests**: 147 new tests across 14 files (130 core, 9 MCP, 8 dashboard).
 - **Docs**: ADR 207, guide `data-loss-prevention.md`.
 
----
-
-## [2026.3.5d] — 2026-03-05
-
 ### Phase 137 — Multi-Region & High Availability
 
 - **Read replica routing** (`pg-pool.ts`): `initReplicaPools()`, `getReadPool()` with round-robin selection, `hasReadReplicas()`, `getReplicaCount()`. Config: `readReplicas[]`, `replicaPoolSize`, `maxReplicationLagMs` on `DatabaseConfigSchema`. Falls back to primary when no replicas configured.
@@ -106,10 +104,6 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Config**: `ReadReplicaConfigSchema`, `BackupReplicationConfigSchema` (new). Database config extended with `readReplicas`, `replicaPoolSize`, `maxReplicationLagMs`.
 - **Tests**: 30+ tests across pg-pool read replicas, HA health checks, and backup replication manager.
 - **Docs**: ADR 208, guide `multi-region-ha.md`.
-
----
-
-## [2026.3.5c] — 2026-03-05
 
 ### Phase 135 — Agent Evaluation Harness
 
@@ -127,10 +121,6 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Route permissions**: Convention-based via `/api/v1/eval` prefix → `eval` resource.
 - **Tests**: 30+ tests across eval engine (assertions, tool validation, scenario execution, timeouts, budgets) and eval manager (CRUD, suite runs, cancellation). Dashboard widget tests.
 - **Docs**: ADR 206, guide `agent-eval-harness.md`.
-
----
-
-## [2026.3.5b] — 2026-03-05
 
 ### Pro Tier & License Rename
 
@@ -180,10 +170,6 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Data-driven MCP tool gates** (`chat-routes.ts`): 15 if-statements replaced with `gateRules` table.
 - **Parallel cleanup** (`secureyeoman.ts`): 14 independent module cleanups now run via `Promise.all()`.
 
----
-
-## [2026.3.5] — 2026-03-05
-
 ### Voice Pipeline: AWS Polly + Transcribe
 
 - **AWS Transcribe STT provider** (`multimodal/stt/transcribe.ts`): Full AWS Transcribe integration using the batch transcription API with SigV4 authentication. Supports 100+ languages via automatic language identification or explicit language code. Speaker diarization with configurable max speakers. Custom vocabulary support per-personality (via `transcribeVocabularyName` on BodyConfig) or global (via `TRANSCRIBE_CUSTOM_VOCABULARY` env var). Custom vocabulary CRUD: create/update (with conflict auto-retry), list, delete — all via Transcribe JSON API.
@@ -205,7 +191,7 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Security**: `TOXICITY_CLASSIFIER_TIMEOUT_MS`, `GROUNDING_SEARCH_THRESHOLD`, `DEFAULT_SYSTEM_PROMPT_LEAK_THRESHOLD`, `PARTIAL_COMPLIANCE_WEIGHT` across content-guardrail, response-guard, sra-manager.
 - **Workflow**: `DEFAULT_RETRY_BACKOFF_MS`, `DEFAULT_COMMAND_TIMEOUT_MS`, `MAX_EXEC_BUFFER_BYTES`, `WEBHOOK_TIMEOUT_MS`, `MAX_WEBHOOK_RESPONSE_BYTES`, `CI_FETCH_TIMEOUT_MS`, `CI_ERROR_BODY_LIMIT`, `DEFAULT_CI_POLL_INTERVAL_MS` in workflow-engine. 11 constants in workflow-templates for distillation/finetune/DPO/CI thresholds.
 - **Other**: `DEFAULT_RETENTION_DAYS`/`CLEANUP_INTERVAL_MS` (notification-manager), `DEFAULT_SIGNAL_REFRESH_INTERVAL_MS`/`HTTP_SIGNAL_TIMEOUT_MS` (intent/manager), `SESSION_EXPIRY_CHECK_INTERVAL_MS` (execution/manager), `DEFAULT_COMPACTION_THRESHOLD`/`DEFAULT_PRESERVE_RECENT_TURNS` (context-compactor), `SUMMARIZER_TEMPERATURE` (chat/compression), `AUDIT_EXPORT_DEFAULT_LIMIT` (audit-module), `POLYGLOT_SAMPLE_SIZE` (data-scanner), `DOMAIN_WEIGHT_*` (risk-assessment), `MAX_SECRETS`/`MAX_SECRET_LENGTH` (secrets-filter).
-- **Roadmap cleanup**: Removed 4 completed/already-done items from Code Audit 3 backlog (magic numbers, config schema split, granular health checks, unused optional deps). Remaining 4 items (dashboard accessibility, MCP tool descriptions, circuit breaker, OpenAPI spec) completed in [2026.3.5b].
+- **Roadmap cleanup**: Removed 4 completed/already-done items from Code Audit 3 backlog (magic numbers, config schema split, granular health checks, unused optional deps). Remaining 4 items (dashboard accessibility, MCP tool descriptions, circuit breaker, OpenAPI spec) completed in this release.
 
 ### Advanced Training (Phase 131)
 

@@ -3,7 +3,7 @@
  */
 
 import { PgBaseStorage } from '../../storage/pg-base.js';
-import { generateId } from '../../utils/id.js';
+import { uuidv7 as generateId } from '../../utils/id.js';
 import type { EgressEvent, DlpFinding } from './types.js';
 
 export interface EgressQueryFilters {
@@ -42,7 +42,7 @@ export class EgressStore extends PgBaseStorage {
     return id;
   }
 
-  async query(filters?: EgressQueryFilters): Promise<{ events: EgressEvent[]; total: number }> {
+  async queryEgress(filters?: EgressQueryFilters): Promise<{ events: EgressEvent[]; total: number }> {
     const conditions: string[] = [];
     const values: unknown[] = [];
     let idx = 1;

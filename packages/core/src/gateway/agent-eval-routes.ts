@@ -7,7 +7,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { EvalScenarioSchema, EvalSuiteSchema } from '@secureyeoman/shared';
 import type { EvalManager } from '../agent-eval/eval-manager.js';
-import { sendError } from './error-utils.js';
+import { sendError } from '../utils/errors.js';
 
 export interface AgentEvalRoutesOptions {
   evalManager: EvalManager;

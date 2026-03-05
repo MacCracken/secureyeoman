@@ -151,7 +151,7 @@ function makeDeps(overrides: {
   });
 
   const egressStore = {
-    query: vi.fn().mockResolvedValue({
+    queryEgress: vi.fn().mockResolvedValue({
       events: overrides.egressEvents ?? mockEgressEvents,
       total: (overrides.egressEvents ?? mockEgressEvents).length,
     }),
@@ -325,7 +325,7 @@ describe('ComplianceReportGenerator', () => {
     expect(deps.queryAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({ from: 1700000100000, to: 1700000300000 })
     );
-    expect(deps.egressStore.query).toHaveBeenCalledWith(
+    expect(deps.egressStore.queryEgress).toHaveBeenCalledWith(
       expect.objectContaining({ fromTime: 1700000100000, toTime: 1700000300000 })
     );
   });
@@ -343,7 +343,7 @@ describe('ComplianceReportGenerator', () => {
     expect(parsed.egressEvents).toHaveLength(3);
     expect(deps.queryAuditLog).not.toHaveBeenCalled();
     expect(deps.classificationStore.list).not.toHaveBeenCalled();
-    expect(deps.egressStore.query).toHaveBeenCalled();
+    expect(deps.egressStore.queryEgress).toHaveBeenCalled();
   });
 
   // 12
@@ -358,7 +358,7 @@ describe('ComplianceReportGenerator', () => {
     expect(parsed.egressEvents).toHaveLength(0);
     expect(parsed.classifications).toHaveLength(0);
     expect(deps.queryAuditLog).toHaveBeenCalled();
-    expect(deps.egressStore.query).not.toHaveBeenCalled();
+    expect(deps.egressStore.queryEgress).not.toHaveBeenCalled();
     expect(deps.classificationStore.list).not.toHaveBeenCalled();
   });
 
@@ -370,7 +370,7 @@ describe('ComplianceReportGenerator', () => {
     expect(parsed.egressEvents).toHaveLength(3);
     expect(parsed.classifications).toHaveLength(3);
     expect(deps.queryAuditLog).toHaveBeenCalled();
-    expect(deps.egressStore.query).toHaveBeenCalled();
+    expect(deps.egressStore.queryEgress).toHaveBeenCalled();
     expect(deps.classificationStore.list).toHaveBeenCalled();
   });
 
@@ -393,7 +393,7 @@ describe('ComplianceReportGenerator', () => {
   // 16
   it('handles query failures gracefully and produces partial report', async () => {
     deps.queryAuditLog.mockRejectedValue(new Error('DB connection failed'));
-    deps.egressStore.query.mockRejectedValue(new Error('Egress store unavailable'));
+    deps.egressStore.queryEgress.mockRejectedValue(new Error('Egress store unavailable'));
 
     const result = await generator.generate(baseOptions('json'));
     const parsed = JSON.parse(result.content);

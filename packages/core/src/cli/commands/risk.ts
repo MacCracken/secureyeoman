@@ -566,10 +566,14 @@ async function runLocalRisk(
     const { DepartmentRiskStorage } = await import(
       '../../risk-assessment/department-risk-storage.js'
     );
+    const { DepartmentRiskManager } = await import(
+      '../../risk-assessment/department-risk-manager.js'
+    );
     const storage = new DepartmentRiskStorage();
+    const manager = new DepartmentRiskManager({ storage, pool: liteCtx.pool });
 
     if (sub === 'summary') {
-      const summary = await storage.getExecutiveSummary();
+      const summary = await manager.getExecutiveSummary();
       if (jsonOutput) {
         ctx.stdout.write(JSON.stringify({ summary }, null, 2) + '\n');
         return 0;
@@ -589,7 +593,7 @@ async function runLocalRisk(
     if (sub === 'departments') {
       const action = args[0] ?? 'list';
       if (action === 'list') {
-        const items = await storage.listDepartments();
+        const { items } = await storage.listDepartments();
         if (jsonOutput) {
           ctx.stdout.write(JSON.stringify({ items }, null, 2) + '\n');
           return 0;
@@ -615,7 +619,7 @@ async function runLocalRisk(
     if (sub === 'register') {
       const action = args[0] ?? 'list';
       if (action === 'list') {
-        const items = await storage.listRegisterEntries({});
+        const { items } = await storage.listRegisterEntries({});
         if (jsonOutput) {
           ctx.stdout.write(JSON.stringify({ items }, null, 2) + '\n');
           return 0;

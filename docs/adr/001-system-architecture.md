@@ -199,7 +199,7 @@ The system compiles to a self-contained binary via `bun build --compile`, embedd
 | Tier 1 | linux-x64, linux-arm64, darwin-arm64, windows-x64 | PostgreSQL required |
 | Tier 2 (Lite) | linux-x64, linux-arm64, windows-x64 | SQLite only, no external dependencies |
 
-The binary ships as an ~80 MB Docker image (based on `debian:bookworm-slim`) compared to ~600 MB for the Node.js-based image. The MCP server runs as a `secureyeoman mcp-server` subcommand within the same binary.
+The binary ships as an ~123 MB Docker image (based on `debian:bookworm-slim`) compared to ~600 MB for the Node.js-based image. The MCP server runs as a `secureyeoman mcp-server` subcommand within the same binary.
 
 A storage backend abstraction (`resolveBackend(config)`) selects PostgreSQL when `DATABASE_URL` is set and SQLite otherwise (in `auto` mode), configurable via `storage.backend`.
 

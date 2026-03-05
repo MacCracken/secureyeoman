@@ -5,7 +5,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { PgBaseStorage } from '../storage/pg-base-storage.js';
+import { PgBaseStorage } from '../storage/pg-base.js';
 import type {
   EvalScenario,
   EvalSuite,
@@ -151,7 +151,7 @@ export class EvalStore extends PgBaseStorage {
 
     const limit = Math.min(opts.limit ?? 100, 500);
     const offset = opts.offset ?? 0;
-    const rows = await this.query<Record<string, unknown>>(
+    const rows = await this.queryMany<Record<string, unknown>>(
       `SELECT * FROM eval.scenarios WHERE ${where} ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
       [...values, limit, offset]
     );
@@ -261,7 +261,7 @@ export class EvalStore extends PgBaseStorage {
 
     const limit = Math.min(opts.limit ?? 100, 500);
     const offset = opts.offset ?? 0;
-    const rows = await this.query<Record<string, unknown>>(
+    const rows = await this.queryMany<Record<string, unknown>>(
       'SELECT * FROM eval.suites WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3',
       [tenantId, limit, offset]
     );
@@ -327,7 +327,7 @@ export class EvalStore extends PgBaseStorage {
     );
     if (!row) return null;
 
-    const scenarioRows = await this.query<Record<string, unknown>>(
+    const scenarioRows = await this.queryMany<Record<string, unknown>>(
       'SELECT * FROM eval.scenario_runs WHERE suite_run_id = $1 ORDER BY created_at',
       [id]
     );
@@ -356,7 +356,7 @@ export class EvalStore extends PgBaseStorage {
 
     const limit = Math.min(opts.limit ?? 50, 200);
     const offset = opts.offset ?? 0;
-    const rows = await this.query<Record<string, unknown>>(
+    const rows = await this.queryMany<Record<string, unknown>>(
       `SELECT * FROM eval.suite_runs WHERE ${where} ORDER BY started_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
       [...values, limit, offset]
     );

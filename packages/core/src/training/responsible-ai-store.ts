@@ -158,7 +158,7 @@ function toModelCard(r: ModelCardRow): ModelCard {
     ethicalConsiderations: r.ethical_considerations ?? undefined,
     trainingDataSummary:
       typeof r.training_data_summary === 'string'
-        ? safeJsonParse(r.training_data_summary, {})
+        ? safeJsonParse(r.training_data_summary, { sampleCount: 0 })
         : r.training_data_summary,
     evaluationResults:
       r.evaluation_results != null
