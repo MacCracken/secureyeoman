@@ -2205,3 +2205,296 @@ describe('POST /api/v1/training/preferences/export (Phase 105)', () => {
     await app.close();
   });
 });
+
+// ── Phase 131: Advanced Training routes ────────────────────────────────────
+
+function buildMockCheckpointStore(overrides: Record<string, unknown> = {}) {
+  return {
+    listByJob: vi.fn().mockResolvedValue([
+      { id: 'ckpt-1', finetuneJobId: 'ft-1', step: 100, path: '/ckpt/100', loss: 0.42 },
+      { id: 'ckpt-2', finetuneJobId: 'ft-1', step: 200, path: '/ckpt/200', loss: 0.35 },
+    ]),
+    ...overrides,
+  };
+}
+
+function buildMockHyperparamSearchManager(overrides: Record<string, unknown> = {}) {
+  return {
+    create: vi.fn().mockResolvedValue({
+      id: 'hs-1',
+      name: 'grid-test',
+      searchStrategy: 'grid',
+      status: 'pending',
+    }),
+    list: vi.fn().mockResolvedValue([{ id: 'hs-1', name: 'grid-test' }]),
+    get: vi.fn().mockResolvedValue({
+      id: 'hs-1',
+      name: 'grid-test',
+      searchStrategy: 'grid',
+      status: 'pending',
+    }),
+    startSearch: vi.fn().mockResolvedValue(undefined),
+    cancel: vi.fn().mockResolvedValue(true),
+    ...overrides,
+  };
+}
+
+function buildMockPreferenceManagerFull(overrides: Record<string, unknown> = {}) {
+  return {
+    ...buildMockPreferenceManager(),
+    exportAsJsonlFile: vi.fn().mockResolvedValue(42),
+    ...overrides,
+  };
+}
+
+describe('GET /api/v1/training/finetune/jobs/:id/checkpoints (Phase 131)', () => {
+  it('returns checkpoints for a job', async () => {
+    const cs = buildMockCheckpointStore();
+    const { app } = await buildPhase98App({ getCheckpointStore: vi.fn(() => cs) });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/finetune/jobs/ft-1/checkpoints',
+    });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body).toHaveLength(2);
+    expect(body[0].step).toBe(100);
+    await app.close();
+  });
+
+  it('returns 503 when checkpoint store unavailable', async () => {
+    const { app } = await buildPhase98App();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/finetune/jobs/ft-1/checkpoints',
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+describe('POST /api/v1/training/finetune/jobs/:id/resume (Phase 131)', () => {
+  it('resumes a job from checkpoint', async () => {
+    const fm = buildMockFinetuneManager();
+    const { app } = await buildPhase98App({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/finetune/jobs/ft-1/resume',
+      payload: { checkpointPath: '/ckpt/200' },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(fm.createJob).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resumeFromCheckpoint: '/ckpt/200',
+        parentJobId: 'ft-1',
+      })
+    );
+    await app.close();
+  });
+
+  it('returns 503 when finetune manager unavailable', async () => {
+    const { app } = await buildPhase98App();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/finetune/jobs/ft-1/resume',
+      payload: { checkpointPath: '/ckpt/200' },
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('returns 404 when original job not found', async () => {
+    const fm = buildMockFinetuneManager({ getJob: vi.fn().mockResolvedValue(null) });
+    const { app } = await buildPhase98App({ getFinetuneManager: vi.fn(() => fm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/finetune/jobs/missing/resume',
+      payload: { checkpointPath: '/ckpt/200' },
+    });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+});
+
+describe('POST /api/v1/training/preference-pairs/export-file (Phase 131)', () => {
+  it('exports preference pairs to file', async () => {
+    const pm = buildMockPreferenceManagerFull();
+    const { app } = await buildPhase98App({ getPreferenceManager: vi.fn(() => pm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/preference-pairs/export-file',
+      payload: { path: '/tmp/prefs.jsonl' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.path).toBe('/tmp/prefs.jsonl');
+    expect(body.count).toBe(42);
+    await app.close();
+  });
+
+  it('returns 400 when path is missing', async () => {
+    const pm = buildMockPreferenceManagerFull();
+    const { app } = await buildPhase98App({ getPreferenceManager: vi.fn(() => pm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/preference-pairs/export-file',
+      payload: {},
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 503 when preference manager unavailable', async () => {
+    const { app } = await buildPhase98App();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/preference-pairs/export-file',
+      payload: { path: '/tmp/prefs.jsonl' },
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+describe('POST /api/v1/training/hyperparam/searches (Phase 131)', () => {
+  it('creates a hyperparam search', async () => {
+    const hm = buildMockHyperparamSearchManager();
+    const { app } = await buildPhase98App({ getHyperparamSearchManager: vi.fn(() => hm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/hyperparam/searches',
+      payload: {
+        name: 'grid-test',
+        baseConfig: { baseModel: 'llama3:8b' },
+        searchStrategy: 'grid',
+        paramSpace: { loraRank: [8, 16] },
+      },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(JSON.parse(res.payload).id).toBe('hs-1');
+    await app.close();
+  });
+
+  it('returns 400 when name is missing', async () => {
+    const hm = buildMockHyperparamSearchManager();
+    const { app } = await buildPhase98App({ getHyperparamSearchManager: vi.fn(() => hm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/hyperparam/searches',
+      payload: {
+        name: '',
+        baseConfig: {},
+        searchStrategy: 'grid',
+        paramSpace: {},
+      },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 503 when manager unavailable', async () => {
+    const { app } = await buildPhase98App();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/hyperparam/searches',
+      payload: {
+        name: 'test',
+        baseConfig: {},
+        searchStrategy: 'grid',
+        paramSpace: {},
+      },
+    });
+    expect(res.statusCode).toBe(503);
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/hyperparam/searches (Phase 131)', () => {
+  it('lists searches', async () => {
+    const hm = buildMockHyperparamSearchManager();
+    const { app } = await buildPhase98App({ getHyperparamSearchManager: vi.fn(() => hm) });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/hyperparam/searches',
+    });
+    expect(res.statusCode).toBe(200);
+    await app.close();
+  });
+});
+
+describe('GET /api/v1/training/hyperparam/searches/:id (Phase 131)', () => {
+  it('returns a specific search', async () => {
+    const hm = buildMockHyperparamSearchManager();
+    const { app } = await buildPhase98App({ getHyperparamSearchManager: vi.fn(() => hm) });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/hyperparam/searches/hs-1',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).id).toBe('hs-1');
+    await app.close();
+  });
+
+  it('returns 404 when not found', async () => {
+    const hm = buildMockHyperparamSearchManager({ get: vi.fn().mockResolvedValue(null) });
+    const { app } = await buildPhase98App({ getHyperparamSearchManager: vi.fn(() => hm) });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/training/hyperparam/searches/missing',
+    });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+});
+
+describe('POST /api/v1/training/hyperparam/searches/:id/start (Phase 131)', () => {
+  it('starts a search and returns 202', async () => {
+    const hm = buildMockHyperparamSearchManager();
+    const { app } = await buildPhase98App({ getHyperparamSearchManager: vi.fn(() => hm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/hyperparam/searches/hs-1/start',
+    });
+    expect(res.statusCode).toBe(202);
+    expect(JSON.parse(res.payload).ok).toBe(true);
+    await app.close();
+  });
+
+  it('returns 400 when start fails', async () => {
+    const hm = buildMockHyperparamSearchManager({
+      startSearch: vi.fn().mockRejectedValue(new Error('Search not found: hs-bad')),
+    });
+    const { app } = await buildPhase98App({ getHyperparamSearchManager: vi.fn(() => hm) });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/training/hyperparam/searches/hs-bad/start',
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+});
+
+describe('DELETE /api/v1/training/hyperparam/searches/:id (Phase 131)', () => {
+  it('cancels a search', async () => {
+    const hm = buildMockHyperparamSearchManager();
+    const { app } = await buildPhase98App({ getHyperparamSearchManager: vi.fn(() => hm) });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/training/hyperparam/searches/hs-1',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).ok).toBe(true);
+    await app.close();
+  });
+
+  it('returns 404 when search not found or already completed', async () => {
+    const hm = buildMockHyperparamSearchManager({ cancel: vi.fn().mockResolvedValue(false) });
+    const { app } = await buildPhase98App({ getHyperparamSearchManager: vi.fn(() => hm) });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/training/hyperparam/searches/missing',
+    });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+});

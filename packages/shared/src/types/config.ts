@@ -748,6 +748,9 @@ export const ModelConfigSchema = z.object({
 
   /** Require TEE-verified providers for AI requests. Overrides security.tee.providerLevel for this model config. */
   confidentialCompute: z.enum(['off', 'optional', 'required']).default('off'),
+
+  /** Draft model for speculative decoding (scaffold — actual speculation deferred to Phase 132-B). */
+  draftModel: z.string().optional(),
 });
 
 export type ModelConfig = z.infer<typeof ModelConfigSchema>;
@@ -796,6 +799,124 @@ export const NotificationsConfigSchema = z
   .default({});
 
 export type NotificationsConfig = z.infer<typeof NotificationsConfigSchema>;
+
+// ── Advanced Training Config (Phase 131) ──────────────────────────────
+export const AdvancedTrainingConfigSchema = z
+  .object({
+    /** Default Docker image for SFT training. */
+    defaultImage: z.string().default('ghcr.io/secureyeoman/unsloth-trainer:latest'),
+    /** Docker image for DPO training. */
+    dpoImage: z.string().default('ghcr.io/secureyeoman/dpo-trainer:latest'),
+    /** Docker image for RLHF training. */
+    rlhfImage: z.string().default('ghcr.io/secureyeoman/rlhf-trainer:latest'),
+    /** Maximum concurrent training jobs. */
+    maxConcurrentJobs: z.number().int().positive().max(20).default(3),
+    /** Days to retain checkpoint artifacts before cleanup. */
+    checkpointRetentionDays: z.number().int().positive().max(365).default(30),
+    /** Hyperparameter search defaults. */
+    hyperparamSearch: z
+      .object({
+        maxTrials: z.number().int().positive().max(100).default(10),
+        defaultMetric: z.string().default('eval_loss'),
+      })
+      .default({}),
+  })
+  .default({});
+
+export type AdvancedTrainingConfig = z.infer<typeof AdvancedTrainingConfigSchema>;
+
+// ── Inference Optimization Config (Phase 132) ─────────────────────────
+export const SemanticCacheConfigSchema = z
+  .object({
+    /** Enable vector-backed semantic response cache. */
+    enabled: z.boolean().default(false),
+    /** Cosine similarity threshold for cache hits (0-1). */
+    similarityThreshold: z.number().min(0).max(1).default(0.95),
+    /** TTL for cached entries in milliseconds. Default 1 hour. */
+    ttlMs: z.number().int().positive().max(86_400_000).default(3_600_000),
+    /** Maximum number of cached entries. */
+    maxEntries: z.number().int().positive().max(100_000).default(10_000),
+    /** Embedding model for query vectorization. */
+    embeddingModel: z.string().default('all-MiniLM-L6-v2'),
+  })
+  .default({});
+
+export type SemanticCacheConfig = z.infer<typeof SemanticCacheConfigSchema>;
+
+export const BatchInferenceConfigSchema = z
+  .object({
+    /** Enable batch inference endpoint. */
+    enabled: z.boolean().default(false),
+    /** Maximum concurrent prompts per batch. */
+    maxConcurrency: z.number().int().positive().max(50).default(5),
+    /** Maximum prompts per batch job. */
+    maxPromptsPerBatch: z.number().int().positive().max(10_000).default(1_000),
+    /** Timeout per individual prompt in milliseconds. */
+    timeoutMs: z.number().int().positive().max(600_000).default(120_000),
+  })
+  .default({});
+
+export type BatchInferenceConfig = z.infer<typeof BatchInferenceConfigSchema>;
+
+export const InferenceOptimizationConfigSchema = z
+  .object({
+    semanticCache: SemanticCacheConfigSchema,
+    batchInference: BatchInferenceConfigSchema,
+    /** Enable KV cache warming on personality activation. */
+    kvCacheWarming: z
+      .object({
+        enabled: z.boolean().default(false),
+        keepAlive: z.string().default('30m'),
+      })
+      .default({}),
+    /** Speculative decoding scaffold (actual implementation deferred). */
+    speculativeDecoding: z
+      .object({
+        enabled: z.boolean().default(false),
+      })
+      .default({}),
+  })
+  .default({});
+
+export type InferenceOptimizationConfig = z.infer<typeof InferenceOptimizationConfigSchema>;
+
+// ── Continual Learning Config (Phase 133) ─────────────────────────────
+export const ContinualLearningConfigSchema = z
+  .object({
+    /** Dataset refresh configuration. */
+    datasetRefresh: z
+      .object({
+        enabled: z.boolean().default(false),
+        /** Default cron schedule for refresh jobs. */
+        defaultCron: z.string().default('0 2 * * *'),
+      })
+      .default({}),
+    /** Drift detection configuration. */
+    driftDetection: z
+      .object({
+        enabled: z.boolean().default(false),
+        /** Check interval in milliseconds. Default 1 hour. */
+        checkIntervalMs: z.number().int().positive().max(86_400_000).default(3_600_000),
+        /** Default z-score threshold for drift alerts. */
+        defaultThreshold: z.number().min(0).max(1).default(0.15),
+      })
+      .default({}),
+    /** Online update configuration. */
+    onlineUpdates: z
+      .object({
+        enabled: z.boolean().default(false),
+        /** Default gradient accumulation steps. */
+        gradientAccumulationSteps: z.number().int().positive().max(64).default(4),
+        /** Default replay buffer size. */
+        replayBufferSize: z.number().int().positive().max(10_000).default(100),
+        /** Docker image for online LoRA updates. */
+        image: z.string().default('ghcr.io/secureyeoman/online-trainer:latest'),
+      })
+      .default({}),
+  })
+  .default({});
+
+export type ContinualLearningConfig = z.infer<typeof ContinualLearningConfigSchema>;
 
 // ── Domain-specific config groups ─────────────────────────────────────
 // Allows targeted validation of a single domain without parsing all 27 fields.

@@ -13,7 +13,10 @@
 | 127 | IDE Experience (Basic Editor) | P3 — power user UX | Planned |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| Future | LLM Providers, LLM Lifecycle, Responsible AI, Voice, Infrastructure | Future / Demand-Gated | — |
+| 131 | Advanced Training (DPO, RLHF, Hyperparam Search) | P1 — ML | ✅ Complete |
+| 132 | Inference Optimization (Batch, Cache, Warmup) | P1 — ML | ✅ Complete |
+| 133 | Continual Learning (Refresh, Drift, Online) | P1 — ML | ✅ Complete |
+| Future | LLM Providers, Voice, Infrastructure | Future / Demand-Gated | — |
 
 ---
 
@@ -70,30 +73,6 @@
 - [ ] **Working Memory REST API** — Expose working memory buffer via `GET /brain/working-memory` and `GET /brain/working-memory/stats`. Add MCP tools `brain_working_memory` and `brain_working_memory_stats`.
 
 ---
-
-### 129: Confidential Computing — TEE Full Stack
-
-*Extends Phase 128 (Tier 1: config + routing) with hardware-level TEE integration, attestation APIs, and encrypted model/data handling. Builds on the existing `TeeAttestationVerifier`, `TeeConfigSchema`, and AIClient/ModelRouter TEE filtering.*
-
-**Priority**: P2 — Security/competitive differentiator. Depends on Phase 128 (TEE-aware routing — completed).
-
-#### Remote Attestation (Tier 2a)
-- [ ] **Azure MAA attestation** — Call Azure Attestation Service to verify SGX/SEV-SNP claims for Azure OpenAI endpoints. Async `verifyAzureAttestation()` in `TeeAttestationVerifier`. Cache results per `attestationCacheTtlMs`. Requires Azure MAA SDK or REST calls.
-- [ ] **NVIDIA RAA attestation** — Verify NVIDIA Remote Attestation API for H100/H200 CC mode on self-hosted GPU inference. Parse GPU attestation reports (PPCIE measurements). Useful for local Ollama/vLLM on confidential GPUs.
-- [ ] **AWS Nitro attestation** — Verify Nitro Enclave attestation documents (COSE_Sign1 format). PCR validation against expected measurements. For AWS-hosted inference endpoints.
-- [ ] **Attestation REST API** — `GET /api/v1/security/tee/providers` (list provider TEE capabilities), `GET /api/v1/security/tee/attestation/:provider` (last attestation result), `POST /api/v1/security/tee/verify/:provider` (force re-verify). Auth: `security:read`/`security:write`.
-
-#### Sandbox & Execution (Tier 2b)
-- [ ] **SGX sandbox backend** — Add `'sgx'` to `SandboxManager` technology selector. Execute code inside Intel SGX enclaves using Gramine or Occlum. Requires SGX-capable hardware + driver.
-- [ ] **SEV sandbox backend** — Add `'sev'` to `SandboxManager` technology selector. Launch sandboxed execution in AMD SEV-SNP VMs. Requires SEV-capable CPU + KVM.
-- [ ] **Encrypted model weights at rest** — Sealed storage for local model weights. Keys bound to platform PCR measurements (TPM/TEE). Models decrypted only inside TEE boundary. Integration with Ollama model storage.
-- [ ] **Nitro Enclaves for key management** — Extend HSM roadmap item. Use AWS Nitro Enclaves for audit chain signing keys and credential encryption. Alternative to Vault for cloud-native deployments.
-
-#### Full Pipeline (Tier 3)
-- [ ] **Confidential GPU inference** — Detect NVIDIA CC mode on local GPUs. Verify GPU is in confidential mode before loading training datasets or running fine-tuning jobs. Block non-CC GPUs when `confidentialCompute: 'required'`.
-- [ ] **End-to-end confidential pipeline** — Prompt → TEE-verified inference → encrypted response → TEE-sealed memory storage. Full chain-of-custody attestation recorded in audit log with cryptographic proof.
-- [ ] **TEE-aware training pipeline** — Require TEE attestation before sending training data to fine-tuning endpoints. Verify data never leaves enclave boundary. Integration with `TrainingModule` job dispatch.
-- [ ] **Dashboard TEE status** — Provider TEE status indicators in ModelWidget and provider accounts page. Attestation freshness badges, verification history timeline, TEE coverage percentage across active providers.
 
 ### 127: IDE Experience (Basic Editor)
 
@@ -168,31 +147,14 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
-### LLM Lifecycle Platform — Advanced
+### LLM Lifecycle Platform — Advanced (Completed)
 
-*Extends the completed training pipeline (Phases 64, 73, 92, 97, 98) with advanced training objectives, scale, and continual learning. Demand-gated pending real-world usage.*
+*Phases 131–133 completed 2026-03-05. See CHANGELOG and ADRs 203–205.*
 
-#### Advanced Training
-
-- [ ] **DPO (Direct Preference Optimization)** — Training objective using `(chosen, rejected)` pairs from the annotation UI directly. New `training_method: 'dpo'` option on finetune jobs. `scripts/train_dpo.py` using TRL's `DPOTrainer`.
-- [ ] **RLHF scaffolding** — Reward model training stage: fine-tune a small classifier on preference pairs; use the reward model to guide PPO or GRPO training.
-- [ ] **Hyperparameter search** — Grid or random search over key fine-tuning params: learning rate, LoRA rank, batch size, warmup steps, epochs. Each combination spawns a child job. Best checkpoint promoted automatically.
-- [ ] **Multi-GPU / distributed training** — `accelerate` + `deepspeed` integration for models that don't fit on a single GPU. Job spec gains `num_gpus` field.
-- [ ] **Checkpoint management** — Save intermediate checkpoints at configurable step intervals. Resume interrupted jobs from the latest checkpoint. Checkpoint browser in the Training tab.
-
-#### Inference Optimization
-
-- [ ] **Async / batch inference** — `POST /api/v1/ai/batch` accepts an array of prompts; returns a job ID. Worker processes prompts in a queue (configurable concurrency). Useful for running evaluation suites or bulk annotation without blocking the chat interface.
-- [ ] **KV-cache warming** — Pre-warm Ollama's KV cache with a personality's system prompt on startup. Exposed as `warmupOnActivation: boolean` in personality settings.
-- [ ] **Speculative decoding** — When a small draft model is available alongside a large target model, use the draft to propose token sequences that the target verifies in parallel. `draftModel` field on the personality's inference profile.
-- [ ] **Response caching** — Semantic cache for repeated or near-duplicate prompts (embedding cosine > configurable threshold). Cache backed by the existing vector store. Cache stats in the AI health endpoint and ModelWidget.
-
-#### Continual Learning
-
-- [ ] **Automatic dataset refresh** — Scheduled job that runs the curation pipeline on conversations accumulated since the last training run and appends clean samples to the active distillation dataset.
-- [ ] **Drift detection** — Monitor quality score distribution of recent conversations vs. the training-period baseline. Alert when mean quality drops more than a configurable threshold.
-- [ ] **Online adapter updates** — Lightweight LoRA adapter updates from individual conversations using gradient accumulation, without a full retrain. Replay buffer prevents catastrophic forgetting. *(Revisit once fine-tuning pipeline has meaningful real-world usage.)*
-- [ ] **Training from scratch** — Pre-train on a curated local corpus. Scoped to small models (≤3B params) as domain-specific lightweight specialists.
+- [x] **Phase 131: Advanced Training** — DPO, RLHF, reward model training, hyperparameter search (grid/random), multi-GPU, checkpoint management. 5 MCP tools, 9 REST endpoints. ADR 203.
+- [x] **Phase 132: Inference Optimization** — Batch inference, semantic cache (pgvector), KV cache warming, speculative decoding scaffold. 4 MCP tools, 7 REST endpoints. ADR 204.
+- [x] **Phase 133: Continual Learning** — Dataset refresh with cron scheduling, drift detection with baselines/snapshots/alerts, online LoRA updates with replay buffer. 4 MCP tools, 11 REST endpoints. ADR 205.
+- [ ] **Training from scratch** — Pre-train on a curated local corpus. Scoped to small models (≤3B params). *(Deferred — revisit when fine-tuning has real-world usage.)*
 
 ---
 

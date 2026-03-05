@@ -6,6 +6,59 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.5] — 2026-03-05
 
+### Advanced Training (Phase 131)
+
+- **DPO training**: `training_method: 'dpo'` on finetune jobs. `scripts/train_dpo.py` uses TRL DPOTrainer with LoRA. Preference pairs exported to disk JSONL via `POST /training/preference-pairs/export-file`.
+- **RLHF training**: `training_method: 'rlhf'` with PPO via TRL PPOTrainer + reward model. `scripts/train_rlhf.py`. Reward model training via `scripts/train_reward.py`.
+- **Hyperparameter search**: `training.hyperparam_searches` table. Grid and random strategies. Child finetune jobs spawned per trial. Best trial selected by metric. 5 REST endpoints (`POST/GET/DELETE /training/hyperparam/searches`, start, get).
+- **Multi-GPU**: `num_gpus` field on finetune jobs. Docker `--gpus "device=0,1,..."` for multi-GPU training.
+- **Checkpoint management**: `training.checkpoints` table. Step/loss/path tracking. Resume from checkpoint via `POST /training/finetune/jobs/:id/resume`. Checkpoint browser endpoint.
+- **Training method selector**: SFT, DPO, RLHF, reward, pretrain. Image auto-selection per method.
+- **MCP tools**: `training_start_dpo`, `training_start_rlhf`, `training_hyperparam_search`, `training_list_checkpoints`, `training_resume_from_checkpoint`.
+- **Dashboard**: Training method selector, HyperparamSearchWidget, CheckpointBrowser. Canvas registry entries.
+- **Migration**: `002_advanced_training.sql` — columns on `finetune_jobs`, `hyperparam_searches` table, `checkpoints` table.
+- **Config**: `AdvancedTrainingConfigSchema` (defaultImage, dpoImage, rlhfImage, maxConcurrentJobs, checkpointRetentionDays, hyperparamSearch).
+
+### Inference Optimization (Phase 132)
+
+- **Batch inference**: `ai.batch_inference_jobs` table. `BatchInferenceManager` with p-limit concurrency. Progress tracking. 4 REST endpoints (`POST/GET/DELETE /ai/batch`, get by ID).
+- **Semantic cache**: `ai.semantic_cache` table with pgvector embeddings. Cosine similarity threshold matching. TTL eviction. Hit count tracking. `GET /ai/cache/stats`, `POST /ai/cache/clear`.
+- **KV cache warming**: `KvCacheWarmer` sends minimal Ollama `/api/chat` request with `keep_alive` and `num_predict: 1`. `POST /ai/warmup`. `warmupOnActivation` field on `BodyConfigSchema`.
+- **Speculative decoding scaffold**: `draftModel` field on `ModelConfigSchema`. Validation only — actual token speculation deferred to Phase 132-B.
+- **MCP tools**: `ai_batch_inference`, `ai_batch_status`, `ai_cache_stats`, `ai_warmup_model`.
+- **Dashboard**: BatchInferenceWidget, CacheStatsCard.
+- **Migration**: `003_inference_optimization.sql` — `batch_inference_jobs` and `semantic_cache` tables with vector index.
+- **Config**: `SemanticCacheConfigSchema`, `BatchInferenceConfigSchema`, `InferenceOptimizationConfigSchema`.
+
+### Continual Learning (Phase 133)
+
+- **Dataset refresh**: `training.dataset_refresh_jobs` table. Scheduled worker queries conversations since watermark, applies curation rules, appends samples. Cron scheduling support. 4 REST endpoints.
+- **Drift detection**: `training.drift_baselines` and `training.drift_snapshots` tables. Baseline mean/stddev from quality scores. Periodic comparison with configurable threshold. Alert via AlertManager on breach. 4 REST endpoints.
+- **Online adapter updates**: `training.online_update_jobs` table. Docker container with gradient accumulation + replay buffer. Conversation export to ShareGPT JSONL. `scripts/train_online.py`. 3 REST endpoints.
+- **MCP tools**: `training_dataset_refresh`, `training_drift_check`, `training_drift_baseline`, `training_online_update`.
+- **Dashboard**: ContinualLearningWidget with three panels (refresh, drift, online updates).
+- **Migration**: `004_continual_learning.sql` — 4 new tables with indexes.
+- **Config**: `ContinualLearningConfigSchema` (datasetRefresh, driftDetection, onlineUpdates sub-schemas).
+- **Quality scorer**: Added `getScoreDistribution()` method for drift detection.
+- **Tests**: ~186 new tests across phases. **ADRs**: 203, 204, 205. **Guides**: `advanced-training.md`, `inference-optimization.md`, `continual-learning.md`.
+
+### Confidential Computing — TEE Full Stack (Phase 129)
+
+- **Remote attestation providers**: Three pluggable `RemoteAttestationProvider` implementations — Azure MAA (JWT attestation tokens, SGX claim validation), NVIDIA RAA (GPU CC mode detection via REST API), AWS Nitro (COSE_Sign1 parsing with built-in CBOR decoder, PCR validation). Registered via `TeeAttestationVerifier.registerRemoteProvider()`.
+- **Async attestation**: `verifyAsync()` on `TeeAttestationVerifier` for remote attestation path. Bounded attestation history (100 per provider). Static `detectHardware()` probes SGX, SEV, TPM, NVIDIA CC.
+- **SGX sandbox backend**: `SgxSandbox` executes code via Gramine-SGX manifest. Detects `/dev/sgx_enclave` or `/dev/isgx`. Falls back to in-process.
+- **SEV sandbox backend**: `SevSandbox` launches SEV-SNP micro-VMs via QEMU. Detects `/dev/sev`. Falls back to in-process.
+- **Encrypted model weights**: `TeeEncryptionManager` with AES-256-GCM. Wire format: `SEALED_V1 || iv(12) || authTag(16) || keySourceTag(1) || ciphertext`. Key sources: TPM (`tpm2_unseal`), TEE (stub), keyring (env var).
+- **Confidential GPU detection**: `detectConfidentialGpu()`, `isGpuConfidential()`, `blockNonConfidentialGpu()` via `nvidia-smi` query.
+- **Confidential pipeline**: `ConfidentialPipelineManager` with SHA-256 hash chain-of-custody, nonce generation, provider attestation verification. Audit events: `tee_pipeline_start/attestation/complete`. Bounded at 1,000 active requests.
+- **REST API**: `GET /api/v1/security/tee/providers`, `GET /attestation/:provider`, `POST /verify/:provider`. Convention-based RBAC via `security` resource.
+- **MCP tools**: `tee_providers`, `tee_status`, `tee_verify`. Feature-gated by `exposeTee` in `McpFeaturesSchema`.
+- **CLI**: `secureyeoman tee` with `status`, `verify <provider>`, `hardware` subcommands. Alias: `confidential`.
+- **Dashboard**: `TeeStatusWidget` — provider status table, hardware detection, coverage bar, verify buttons. Canvas registry: `'tee-status'` (monitoring).
+- **Marketplace**: "Confidential Computing" builtin skill (category: security, 3 mcpToolsAllowed). 25 total builtin skills.
+- **Config**: `TeeConfigSchema` extended with `remoteAttestation` (azureMaa, nvidiaRaa, awsNitro) and `teeHardware` (sgxEnabled, sevEnabled, encryptedModels).
+- **Tests**: ~175 new tests across 12 test files (attestation providers, routes, sandboxes, encryption, GPU, pipeline, MCP, dashboard, CLI). **ADR 012** (appended). **Guide**: `confidential-computing.md` (updated).
+
 ### Responsible AI (Phase 130)
 
 - **Cohort-based error analysis**: Slice eval results by dimension (topic_category, user_role, time_of_day, personality_id, model_name, language, custom). Per-cohort error rates, avg scores across 5 judge dimensions. Sorted worst-first. REST: `POST /responsible-ai/cohort-analysis`, `GET` by ID or eval run.

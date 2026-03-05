@@ -593,6 +593,425 @@ describe('FinetuneManager', () => {
   });
 });
 
+// ── Phase 131: Advanced Training ──────────────────────────────────────────────
+
+describe('FinetuneManager — Phase 131 (Advanced Training)', () => {
+  let pool: ReturnType<typeof makePool>;
+  let logger: ReturnType<typeof makeLogger>;
+  let manager: FinetuneManager;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    pool = makePool();
+    logger = makeLogger();
+    manager = new FinetuneManager(pool, logger, '/tmp/test-finetune');
+  });
+
+  // ── createJob with new fields ────────────────────────────────────────────
+
+  describe('createJob() with Phase 131 fields', () => {
+    it('creates job with trainingMethod=dpo', async () => {
+      const row = makeJobRow({ training_method: 'dpo' });
+      pool.query = vi.fn(async () => ({ rows: [row], rowCount: 1 }));
+
+      const job = await manager.createJob({
+        name: 'DPO Test',
+        baseModel: 'llama3:8b',
+        adapterName: 'dpo-adapter',
+        datasetPath: '/data/prefs.jsonl',
+        trainingMethod: 'dpo',
+      });
+
+      expect(pool.query).toHaveBeenCalledOnce();
+      const sql = pool.query.mock.calls[0][0] as string;
+      expect(sql).toContain('training_method');
+      expect(job.trainingMethod).toBe('dpo');
+    });
+
+    it('creates job with numGpus=2', async () => {
+      const row = makeJobRow({ num_gpus: 2 });
+      pool.query = vi.fn(async () => ({ rows: [row], rowCount: 1 }));
+
+      const job = await manager.createJob({
+        name: 'Multi-GPU',
+        baseModel: 'llama3:8b',
+        adapterName: 'adapt',
+        datasetPath: '/data/ds',
+        numGpus: 2,
+      });
+
+      expect(job.numGpus).toBe(2);
+    });
+
+    it('creates job with learningRate and warmupSteps', async () => {
+      const row = makeJobRow({ learning_rate: 2e-4, warmup_steps: 100 });
+      pool.query = vi.fn(async () => ({ rows: [row], rowCount: 1 }));
+
+      const job = await manager.createJob({
+        name: 'LR Test',
+        baseModel: 'llama3:8b',
+        adapterName: 'adapt',
+        datasetPath: '/data/ds',
+        learningRate: 2e-4,
+        warmupSteps: 100,
+      });
+
+      expect(job.learningRate).toBe(2e-4);
+      expect(job.warmupSteps).toBe(100);
+    });
+
+    it('creates job with checkpointSteps', async () => {
+      const row = makeJobRow({ checkpoint_steps: 500 });
+      pool.query = vi.fn(async () => ({ rows: [row], rowCount: 1 }));
+
+      const job = await manager.createJob({
+        name: 'Ckpt Test',
+        baseModel: 'llama3:8b',
+        adapterName: 'adapt',
+        datasetPath: '/data/ds',
+        checkpointSteps: 500,
+      });
+
+      expect(job.checkpointSteps).toBe(500);
+    });
+
+    it('creates job with resumeFromCheckpoint', async () => {
+      const row = makeJobRow({ resume_from_checkpoint: '/workspace/checkpoint-100' });
+      pool.query = vi.fn(async () => ({ rows: [row], rowCount: 1 }));
+
+      const job = await manager.createJob({
+        name: 'Resume Test',
+        baseModel: 'llama3:8b',
+        adapterName: 'adapt',
+        datasetPath: '/data/ds',
+        resumeFromCheckpoint: '/workspace/checkpoint-100',
+      });
+
+      expect(job.resumeFromCheckpoint).toBe('/workspace/checkpoint-100');
+    });
+
+    it('creates job with rewardModelPath', async () => {
+      const row = makeJobRow({ reward_model_path: '/models/reward-v1' });
+      pool.query = vi.fn(async () => ({ rows: [row], rowCount: 1 }));
+
+      const job = await manager.createJob({
+        name: 'RLHF Test',
+        baseModel: 'llama3:8b',
+        adapterName: 'adapt',
+        datasetPath: '/data/ds',
+        rewardModelPath: '/models/reward-v1',
+      });
+
+      expect(job.rewardModelPath).toBe('/models/reward-v1');
+    });
+
+    it('creates job with searchId', async () => {
+      const row = makeJobRow({ search_id: 'hs-1' });
+      pool.query = vi.fn(async () => ({ rows: [row], rowCount: 1 }));
+
+      const job = await manager.createJob({
+        name: 'Search Trial',
+        baseModel: 'llama3:8b',
+        adapterName: 'adapt',
+        datasetPath: '/data/ds',
+        searchId: 'hs-1',
+      });
+
+      expect(job.searchId).toBe('hs-1');
+    });
+
+    it('creates job with parentJobId', async () => {
+      const row = makeJobRow({ parent_job_id: 'ft-parent' });
+      pool.query = vi.fn(async () => ({ rows: [row], rowCount: 1 }));
+
+      const job = await manager.createJob({
+        name: 'Child Job',
+        baseModel: 'llama3:8b',
+        adapterName: 'adapt',
+        datasetPath: '/data/ds',
+        parentJobId: 'ft-parent',
+      });
+
+      expect(job.parentJobId).toBe('ft-parent');
+    });
+  });
+
+  // ── rowToJob mapping ─────────────────────────────────────────────────────
+
+  describe('rowToJob maps all new fields', () => {
+    it('maps all Phase 131 columns correctly', async () => {
+      const row = makeJobRow({
+        training_method: 'rlhf',
+        parent_job_id: 'ft-parent',
+        num_gpus: 4,
+        learning_rate: 1e-5,
+        warmup_steps: 50,
+        checkpoint_steps: 250,
+        resume_from_checkpoint: '/ckpt/100',
+        reward_model_path: '/models/rm',
+        search_id: 'hs-42',
+      });
+      pool.query = vi.fn(async () => ({ rows: [row], rowCount: 1 }));
+
+      const job = await manager.getJob('ft-1');
+
+      expect(job!.trainingMethod).toBe('rlhf');
+      expect(job!.parentJobId).toBe('ft-parent');
+      expect(job!.numGpus).toBe(4);
+      expect(job!.learningRate).toBe(1e-5);
+      expect(job!.warmupSteps).toBe(50);
+      expect(job!.checkpointSteps).toBe(250);
+      expect(job!.resumeFromCheckpoint).toBe('/ckpt/100');
+      expect(job!.rewardModelPath).toBe('/models/rm');
+      expect(job!.searchId).toBe('hs-42');
+    });
+
+    it('defaults missing new fields', async () => {
+      pool.query = vi.fn(async () => ({ rows: [makeJobRow()], rowCount: 1 }));
+
+      const job = await manager.getJob('ft-1');
+
+      expect(job!.trainingMethod).toBe('sft');
+      expect(job!.parentJobId).toBeNull();
+      expect(job!.numGpus).toBe(1);
+      expect(job!.learningRate).toBeNull();
+      expect(job!.warmupSteps).toBeNull();
+      expect(job!.checkpointSteps).toBeNull();
+      expect(job!.resumeFromCheckpoint).toBeNull();
+      expect(job!.rewardModelPath).toBeNull();
+      expect(job!.searchId).toBeNull();
+    });
+  });
+
+  // ── startJob image selection ─────────────────────────────────────────────
+
+  describe('startJob() image selection', () => {
+    it('uses dpo-trainer image for dpo method', async () => {
+      const { spawn } = await import('node:child_process');
+      const mockSpawn = vi.mocked(spawn);
+
+      pool.query = vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [makeJobRow({ training_method: 'dpo' })], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValue({ rows: [makeJobRow({ status: 'running' })], rowCount: 1 });
+
+      await manager.startJob('ft-1');
+
+      const dockerArgs = mockSpawn.mock.calls[0]![1] as string[];
+      expect(dockerArgs).toContain('ghcr.io/secureyeoman/dpo-trainer:latest');
+    });
+
+    it('uses rlhf-trainer image for rlhf method', async () => {
+      const { spawn } = await import('node:child_process');
+      const mockSpawn = vi.mocked(spawn);
+
+      pool.query = vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [makeJobRow({ training_method: 'rlhf' })], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValue({ rows: [makeJobRow({ status: 'running' })], rowCount: 1 });
+
+      await manager.startJob('ft-1');
+
+      const dockerArgs = mockSpawn.mock.calls[0]![1] as string[];
+      expect(dockerArgs).toContain('ghcr.io/secureyeoman/rlhf-trainer:latest');
+    });
+
+    it('uses reward-trainer image for reward method', async () => {
+      const { spawn } = await import('node:child_process');
+      const mockSpawn = vi.mocked(spawn);
+
+      pool.query = vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [makeJobRow({ training_method: 'reward' })], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValue({ rows: [makeJobRow({ status: 'running' })], rowCount: 1 });
+
+      await manager.startJob('ft-1');
+
+      const dockerArgs = mockSpawn.mock.calls[0]![1] as string[];
+      expect(dockerArgs).toContain('ghcr.io/secureyeoman/reward-trainer:latest');
+    });
+  });
+
+  // ── startJob multi-GPU ───────────────────────────────────────────────────
+
+  describe('startJob() multi-GPU', () => {
+    it('builds correct device string for multi-GPU', async () => {
+      const { spawn } = await import('node:child_process');
+      const mockSpawn = vi.mocked(spawn);
+
+      pool.query = vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [makeJobRow({ num_gpus: 3 })], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValue({ rows: [makeJobRow({ status: 'running' })], rowCount: 1 });
+
+      await manager.startJob('ft-1');
+
+      const dockerArgs = mockSpawn.mock.calls[0]![1] as string[];
+      // For numGpus=3, gpuArg should be '"device=0,1,2"'
+      expect(dockerArgs).toContain('"device=0,1,2"');
+    });
+  });
+
+  // ── startJob includes new config fields ──────────────────────────────────
+
+  describe('startJob() config.json', () => {
+    it('includes new config fields in written config', async () => {
+      const { writeFileSync } = await import('node:fs');
+      const mockWriteFileSync = vi.mocked(writeFileSync);
+
+      pool.query = vi
+        .fn()
+        .mockResolvedValueOnce({
+          rows: [
+            makeJobRow({
+              training_method: 'dpo',
+              learning_rate: 2e-4,
+              warmup_steps: 100,
+              checkpoint_steps: 500,
+              resume_from_checkpoint: '/ckpt/50',
+              reward_model_path: '/models/rm',
+            }),
+          ],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValue({ rows: [makeJobRow({ status: 'running' })], rowCount: 1 });
+
+      await manager.startJob('ft-1');
+
+      expect(mockWriteFileSync).toHaveBeenCalled();
+      const writtenConfig = JSON.parse(mockWriteFileSync.mock.calls[0]![1] as string);
+      expect(writtenConfig.training_method).toBe('dpo');
+      expect(writtenConfig.learning_rate).toBe(2e-4);
+      expect(writtenConfig.warmup_steps).toBe(100);
+      expect(writtenConfig.checkpoint_steps).toBe(500);
+      expect(writtenConfig.resume_from_checkpoint).toBe('/ckpt/50');
+      expect(writtenConfig.reward_model_path).toBe('/models/rm');
+    });
+  });
+
+  // ── convenience methods ──────────────────────────────────────────────────
+
+  describe('startDpoJob()', () => {
+    it('creates job with dpo method and starts it', async () => {
+      const row = makeJobRow({ training_method: 'dpo', status: 'pending' });
+      const runningRow = makeJobRow({ training_method: 'dpo', status: 'running' });
+
+      pool.query = vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [row], rowCount: 1 }) // createJob INSERT
+        .mockResolvedValueOnce({ rows: [row], rowCount: 1 }) // startJob getJob
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })    // startJob UPDATE running
+        .mockResolvedValue({ rows: [runningRow], rowCount: 1 }); // getJob final
+
+      const job = await manager.startDpoJob({
+        name: 'DPO',
+        baseModel: 'llama3:8b',
+        adapterName: 'dpo-a',
+        datasetPath: '/data/prefs.jsonl',
+      });
+
+      expect(job).toBeDefined();
+    });
+  });
+
+  describe('startRlhfJob()', () => {
+    it('creates job with rlhf method', async () => {
+      const row = makeJobRow({ training_method: 'rlhf', status: 'pending' });
+      const runningRow = makeJobRow({ training_method: 'rlhf', status: 'running' });
+
+      pool.query = vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [row], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [row], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValue({ rows: [runningRow], rowCount: 1 });
+
+      const job = await manager.startRlhfJob({
+        name: 'RLHF',
+        baseModel: 'llama3:8b',
+        adapterName: 'rlhf-a',
+        datasetPath: '/data/rlhf.jsonl',
+        rewardModelPath: '/models/rm',
+      });
+
+      expect(job).toBeDefined();
+    });
+  });
+
+  describe('startRewardJob()', () => {
+    it('creates job with reward method', async () => {
+      const row = makeJobRow({ training_method: 'reward', status: 'pending' });
+      const runningRow = makeJobRow({ training_method: 'reward', status: 'running' });
+
+      pool.query = vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [row], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [row], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+        .mockResolvedValue({ rows: [runningRow], rowCount: 1 });
+
+      const job = await manager.startRewardJob({
+        name: 'Reward',
+        baseModel: 'llama3:8b',
+        adapterName: 'reward-a',
+        datasetPath: '/data/prefs.jsonl',
+      });
+
+      expect(job).toBeDefined();
+    });
+  });
+
+  // ── listJobs / getJob include new fields ─────────────────────────────────
+
+  describe('listJobs() includes new fields', () => {
+    it('returns jobs with Phase 131 fields', async () => {
+      pool.query = vi.fn(async () => ({
+        rows: [
+          makeJobRow({
+            training_method: 'dpo',
+            num_gpus: 2,
+            search_id: 'hs-1',
+          }),
+        ],
+        rowCount: 1,
+      }));
+
+      const jobs = await manager.listJobs();
+      expect(jobs).toHaveLength(1);
+      expect(jobs[0]!.trainingMethod).toBe('dpo');
+      expect(jobs[0]!.numGpus).toBe(2);
+      expect(jobs[0]!.searchId).toBe('hs-1');
+    });
+  });
+
+  describe('getJob() includes new fields', () => {
+    it('returns job with Phase 131 fields', async () => {
+      pool.query = vi.fn(async () => ({
+        rows: [
+          makeJobRow({
+            training_method: 'rlhf',
+            learning_rate: 5e-5,
+            warmup_steps: 200,
+            reward_model_path: '/models/rm-v2',
+          }),
+        ],
+        rowCount: 1,
+      }));
+
+      const job = await manager.getJob('ft-1');
+      expect(job!.trainingMethod).toBe('rlhf');
+      expect(job!.learningRate).toBe(5e-5);
+      expect(job!.warmupSteps).toBe(200);
+      expect(job!.rewardModelPath).toBe('/models/rm-v2');
+    });
+  });
+});
+
 // ── Job Completion Alert Events (Phase 104) ──────────────────────────────────
 
 describe('FinetuneManager alert events', () => {

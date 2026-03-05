@@ -6,6 +6,7 @@
  * Supports JSONL export for DPO fine-tuning pipelines.
  */
 
+import { writeFileSync } from 'node:fs';
 import type { Pool } from 'pg';
 import type { SecureLogger } from '../logging/logger.js';
 import type {
@@ -138,6 +139,21 @@ export class PreferenceManager {
       offset += BATCH;
       if (rows.length < BATCH) break;
     }
+  }
+
+  /**
+   * Export preference pairs to a JSONL file on disk for container mount.
+   */
+  async exportAsJsonlFile(
+    path: string,
+    opts?: { personalityId?: string; source?: PreferencePairSource }
+  ): Promise<number> {
+    const lines: string[] = [];
+    for await (const line of this.exportAsDpo(opts)) {
+      lines.push(line);
+    }
+    writeFileSync(path, lines.join(''));
+    return lines.length;
   }
 
   private mapRow(r: Record<string, unknown>): PreferencePair {

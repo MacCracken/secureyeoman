@@ -27,6 +27,7 @@ const BASE_BODY: PersonalityCreate['body'] = {
   enabled: false,
   capabilities: [],
   heartEnabled: true,
+  warmupOnActivation: false,
   creationConfig: {
     skills: false,
     tasks: false,

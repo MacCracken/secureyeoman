@@ -1484,6 +1484,38 @@ export class SecureYeoman {
   getDesktopTrainingBridge(): DesktopTrainingBridge | null {
     return this.trainingMod?.getDesktopTrainingBridge() ?? null;
   }
+  getCheckpointStore() {
+    this.ensureInitialized();
+    return this.trainingMod?.getCheckpointStore() ?? null;
+  }
+  getHyperparamSearchManager() {
+    this.ensureInitialized();
+    return this.trainingMod?.getHyperparamSearchManager() ?? null;
+  }
+  getDatasetRefreshManager() {
+    this.ensureInitialized();
+    return this.trainingMod?.getDatasetRefreshManager() ?? null;
+  }
+  getDriftDetectionManager() {
+    this.ensureInitialized();
+    return this.trainingMod?.getDriftDetectionManager() ?? null;
+  }
+  getOnlineUpdateManager() {
+    this.ensureInitialized();
+    return this.trainingMod?.getOnlineUpdateManager() ?? null;
+  }
+  getBatchInferenceManager() {
+    this.ensureInitialized();
+    return this.aiMod?.getBatchInferenceManager() ?? null;
+  }
+  getSemanticCache() {
+    this.ensureInitialized();
+    return this.aiMod?.getSemanticCache() ?? null;
+  }
+  getKvCacheWarmer() {
+    this.ensureInitialized();
+    return this.aiMod?.getKvCacheWarmer() ?? null;
+  }
 
   // ------------------------------------------------------------------
   // Getters — AnalyticsModule delegations

@@ -411,4 +411,43 @@ export class AIModule extends BaseModule {
   getSystemPreferences(): SystemPreferencesStorage | null {
     return this.systemPreferences;
   }
+
+  // Phase 132 stubs — initialized lazily to avoid dependency on pool
+  private batchInferenceManager: import('../ai/batch-inference-manager.js').BatchInferenceManager | null = null;
+  private semanticCache: import('../ai/semantic-cache.js').SemanticCache | null = null;
+  private kvCacheWarmer: import('../ai/kv-cache-warmer.js').KvCacheWarmer | null = null;
+
+  getBatchInferenceManager() {
+    return this.batchInferenceManager;
+  }
+  getSemanticCache() {
+    return this.semanticCache;
+  }
+  getKvCacheWarmer() {
+    return this.kvCacheWarmer;
+  }
+
+  /** Initialize Phase 132 inference optimization managers. */
+  async initInferenceOptimization(pool: import('pg').Pool): Promise<void> {
+    if (!this.aiClient) return;
+
+    // Batch inference manager
+    const { BatchInferenceManager } = await import('../ai/batch-inference-manager.js');
+    this.batchInferenceManager = new BatchInferenceManager({
+      pool,
+      logger: this.logger.child({ component: 'BatchInferenceManager' }),
+      aiClient: this.aiClient,
+    });
+    this.logger.debug('BatchInferenceManager initialized');
+
+    // KV cache warmer
+    const ollamaBaseUrl = this.config.model.baseUrl ?? 'http://localhost:11434';
+    const { KvCacheWarmer } = await import('../ai/kv-cache-warmer.js');
+    this.kvCacheWarmer = new KvCacheWarmer({
+      logger: this.logger.child({ component: 'KvCacheWarmer' }),
+      ollamaBaseUrl,
+      config: { enabled: false, keepAlive: '30m' },
+    });
+    this.logger.debug('KvCacheWarmer initialized');
+  }
 }

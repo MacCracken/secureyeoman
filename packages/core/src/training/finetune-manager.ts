@@ -24,6 +24,8 @@ import { emitJobCompletion } from '../telemetry/job-completion-events.js';
 
 export type FinetuneStatus = 'pending' | 'running' | 'complete' | 'failed' | 'cancelled';
 
+export type TrainingMethod = 'sft' | 'dpo' | 'rlhf' | 'reward' | 'pretrain';
+
 export interface FinetuneJobConfig {
   name: string;
   baseModel: string;
@@ -35,6 +37,15 @@ export interface FinetuneJobConfig {
   epochs?: number;
   vramBudgetGb?: number;
   image?: string;
+  trainingMethod?: TrainingMethod;
+  parentJobId?: string;
+  numGpus?: number;
+  learningRate?: number;
+  warmupSteps?: number;
+  checkpointSteps?: number;
+  resumeFromCheckpoint?: string;
+  rewardModelPath?: string;
+  searchId?: string;
 }
 
 export interface FinetuneJob {
@@ -55,6 +66,15 @@ export interface FinetuneJob {
   errorMessage: string | null;
   createdAt: number;
   completedAt: number | null;
+  trainingMethod: TrainingMethod;
+  parentJobId: string | null;
+  numGpus: number;
+  learningRate: number | null;
+  warmupSteps: number | null;
+  checkpointSteps: number | null;
+  resumeFromCheckpoint: string | null;
+  rewardModelPath: string | null;
+  searchId: string | null;
 }
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
@@ -78,6 +98,15 @@ function rowToJob(row: Record<string, unknown>): FinetuneJob {
     errorMessage: (row.error_message as string | null) ?? null,
     createdAt: row.created_at instanceof Date ? row.created_at.getTime() : Date.now(),
     completedAt: row.completed_at instanceof Date ? row.completed_at.getTime() : null,
+    trainingMethod: (row.training_method as TrainingMethod) ?? 'sft',
+    parentJobId: (row.parent_job_id as string | null) ?? null,
+    numGpus: (row.num_gpus as number) ?? 1,
+    learningRate: (row.learning_rate as number | null) ?? null,
+    warmupSteps: (row.warmup_steps as number | null) ?? null,
+    checkpointSteps: (row.checkpoint_steps as number | null) ?? null,
+    resumeFromCheckpoint: (row.resume_from_checkpoint as string | null) ?? null,
+    rewardModelPath: (row.reward_model_path as string | null) ?? null,
+    searchId: (row.search_id as string | null) ?? null,
   };
 }
 
@@ -113,26 +142,30 @@ export class FinetuneManager {
       epochs = 3,
       vramBudgetGb = 12,
       image = 'ghcr.io/secureyeoman/unsloth-trainer:latest',
+      trainingMethod = 'sft',
+      parentJobId,
+      numGpus = 1,
+      learningRate,
+      warmupSteps,
+      checkpointSteps,
+      resumeFromCheckpoint,
+      rewardModelPath,
+      searchId,
     } = cfg;
 
     const { rows } = await this.pool.query<Record<string, unknown>>(
       `INSERT INTO training.finetune_jobs
          (id, name, base_model, adapter_name, dataset_path,
-          lora_rank, lora_alpha, batch_size, epochs, vram_budget_gb, image)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+          lora_rank, lora_alpha, batch_size, epochs, vram_budget_gb, image,
+          training_method, parent_job_id, num_gpus, learning_rate, warmup_steps,
+          checkpoint_steps, resume_from_checkpoint, reward_model_path, search_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
        RETURNING *`,
       [
-        id,
-        name,
-        baseModel,
-        adapterName,
-        datasetPath,
-        loraRank,
-        loraAlpha,
-        batchSize,
-        epochs,
-        vramBudgetGb,
-        image,
+        id, name, baseModel, adapterName, datasetPath,
+        loraRank, loraAlpha, batchSize, epochs, vramBudgetGb, image,
+        trainingMethod, parentJobId ?? null, numGpus, learningRate ?? null, warmupSteps ?? null,
+        checkpointSteps ?? null, resumeFromCheckpoint ?? null, rewardModelPath ?? null, searchId ?? null,
       ]
     );
     return rowToJob(rows[0]!);
@@ -203,7 +236,7 @@ export class FinetuneManager {
     mkdirSync(adapterDir, { recursive: true });
 
     const configPath = join(jobDir, 'config.json');
-    const trainConfig = {
+    const trainConfig: Record<string, unknown> = {
       base_model: job.baseModel,
       adapter_name: job.adapterName,
       dataset_path: job.datasetPath,
@@ -213,20 +246,35 @@ export class FinetuneManager {
       batch_size: job.batchSize,
       epochs: job.epochs,
       vram_budget_gb: job.vramBudgetGb,
+      training_method: job.trainingMethod,
     };
+    if (job.learningRate != null) trainConfig.learning_rate = job.learningRate;
+    if (job.warmupSteps != null) trainConfig.warmup_steps = job.warmupSteps;
+    if (job.checkpointSteps != null) trainConfig.checkpoint_steps = job.checkpointSteps;
+    if (job.resumeFromCheckpoint) trainConfig.resume_from_checkpoint = job.resumeFromCheckpoint;
+    if (job.rewardModelPath) trainConfig.reward_model_path = job.rewardModelPath;
     writeFileSync(configPath, JSON.stringify(trainConfig, null, 2));
+
+    // Build GPU argument for multi-GPU support
+    const gpuArg =
+      job.numGpus > 1
+        ? `"device=${Array.from({ length: job.numGpus }, (_, i) => i).join(',')}"`
+        : 'all';
+
+    // Select image based on training method
+    const image = this._selectImage(job);
 
     // Launch Docker container
     const dockerArgs = [
       'run',
       '--rm',
       '--gpus',
-      'all',
+      gpuArg,
       '-v',
       `${jobDir}:/workspace`,
       '--name',
       `sy-finetune-${jobId}`,
-      job.image,
+      image,
     ];
 
     const child = spawn('docker', dockerArgs, { detached: true, stdio: 'ignore' });
@@ -358,6 +406,51 @@ export class FinetuneManager {
         resolve = r;
       });
     }
+  }
+
+  /**
+   * Select Docker image based on training method.
+   */
+  private _selectImage(job: FinetuneJob): string {
+    switch (job.trainingMethod) {
+      case 'dpo':
+        return 'ghcr.io/secureyeoman/dpo-trainer:latest';
+      case 'rlhf':
+        return 'ghcr.io/secureyeoman/rlhf-trainer:latest';
+      case 'reward':
+        return 'ghcr.io/secureyeoman/reward-trainer:latest';
+      default:
+        return job.image;
+    }
+  }
+
+  /**
+   * Start a DPO training job. Requires preference pairs exported to disk.
+   */
+  async startDpoJob(cfg: Omit<FinetuneJobConfig, 'trainingMethod'>): Promise<FinetuneJob> {
+    const job = await this.createJob({ ...cfg, trainingMethod: 'dpo' });
+    await this.startJob(job.id);
+    return (await this.getJob(job.id))!;
+  }
+
+  /**
+   * Start an RLHF training job. Requires a reward model path.
+   */
+  async startRlhfJob(
+    cfg: Omit<FinetuneJobConfig, 'trainingMethod'> & { rewardModelPath: string }
+  ): Promise<FinetuneJob> {
+    const job = await this.createJob({ ...cfg, trainingMethod: 'rlhf' });
+    await this.startJob(job.id);
+    return (await this.getJob(job.id))!;
+  }
+
+  /**
+   * Start a reward model training job from preference pairs.
+   */
+  async startRewardJob(cfg: Omit<FinetuneJobConfig, 'trainingMethod'>): Promise<FinetuneJob> {
+    const job = await this.createJob({ ...cfg, trainingMethod: 'reward' });
+    await this.startJob(job.id);
+    return (await this.getJob(job.id))!;
   }
 
   /**

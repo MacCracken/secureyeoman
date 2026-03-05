@@ -95,6 +95,8 @@ import { registerBackupRoutes } from '../backup/backup-routes.js';
 import { registerTenantRoutes } from '../tenants/tenant-routes.js';
 import { registerTrainingRoutes } from '../training/training-routes.js';
 import { registerResponsibleAiRoutes } from '../training/responsible-ai-routes.js';
+import { registerBatchInferenceRoutes } from '../ai/batch-inference-routes.js';
+import { registerContinualLearningRoutes } from '../training/continual-learning-routes.js';
 import { registerLicenseRoutes } from '../licensing/license-routes.js';
 import { registerFederationRoutes } from '../federation/federation-routes.js';
 import { registerGatewayRoutes } from './gateway-routes.js';
@@ -1293,6 +1295,8 @@ export class GatewayServer {
     try {
       registerTrainingRoutes(this.app, { secureYeoman: this.secureYeoman });
       registerResponsibleAiRoutes(this.app, { secureYeoman: this.secureYeoman });
+      registerBatchInferenceRoutes(this.app, { secureYeoman: this.secureYeoman });
+      registerContinualLearningRoutes(this.app, { secureYeoman: this.secureYeoman });
       registerLicenseRoutes(this.app, { secureYeoman: this.secureYeoman });
       this.getLogger().info('Training routes registered');
     } catch (err) {

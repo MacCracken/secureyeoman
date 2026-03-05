@@ -319,6 +319,8 @@ export const BodyConfigSchema = z
     costBudget: CostBudgetSchema,
     /** Per-personality TEE/confidential compute requirement. Overrides security-level default. */
     confidentialCompute: z.enum(['off', 'optional', 'required']).default('off'),
+    /** Warm the KV cache when this personality is activated (Ollama only). */
+    warmupOnActivation: z.boolean().default(false),
   })
   .default({});
 

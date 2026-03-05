@@ -142,6 +142,51 @@ export class ConversationQualityScorer {
     }
   }
 
+  /**
+   * Get score distribution for a personality within a time range.
+   * Used by drift detection to compute baseline and current stats.
+   */
+  async getScoreDistribution(
+    personalityId: string,
+    fromTs?: string,
+    toTs?: string
+  ): Promise<{ mean: number; stddev: number; count: number }> {
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+    let idx = 1;
+
+    conditions.push(`m.personality_id = $${idx++}`);
+    params.push(personalityId);
+
+    if (fromTs) {
+      conditions.push(`cq.scored_at >= $${idx++}`);
+      params.push(fromTs);
+    }
+    if (toTs) {
+      conditions.push(`cq.scored_at <= $${idx++}`);
+      params.push(toTs);
+    }
+
+    const where = conditions.join(' AND ');
+    const { rows } = await this.pool.query<{ avg: number; stddev: number; count: string }>(
+      `SELECT
+         COALESCE(AVG(cq.quality_score), 0) AS avg,
+         COALESCE(STDDEV(cq.quality_score), 0) AS stddev,
+         COUNT(*)::text AS count
+       FROM training.conversation_quality cq
+       JOIN chat.conversations c ON c.id = cq.conversation_id
+       JOIN chat.messages m ON m.conversation_id = c.id
+       WHERE ${where}`,
+      params
+    );
+
+    return {
+      mean: rows[0]?.avg ?? 0,
+      stddev: rows[0]?.stddev ?? 0,
+      count: parseInt(rows[0]?.count ?? '0', 10),
+    };
+  }
+
   // ── Private helpers ────────────────────────────────────────────────────────
 
   private async _computeScore(

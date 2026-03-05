@@ -1600,4 +1600,162 @@ export function registerTrainingRoutes(app: FastifyInstance, opts: TrainingRoute
       return reply.code(201).send(pair);
     }
   );
+
+  // ── Phase 131: Advanced Training ──────────────────────────────────────
+
+  // List checkpoints for a finetune job
+  app.get(
+    '/api/v1/training/finetune/jobs/:id/checkpoints',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const store = secureYeoman.getCheckpointStore?.();
+      if (!store) return sendError(reply, 503, 'Checkpoint store not available');
+      return store.listByJob(request.params.id);
+    }
+  );
+
+  // Resume from checkpoint
+  app.post(
+    '/api/v1/training/finetune/jobs/:id/resume',
+    async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Body: { checkpointPath: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getFinetuneManager();
+      if (!manager) return sendError(reply, 503, 'Finetune manager not available');
+
+      const originalJob = await manager.getJob(request.params.id);
+      if (!originalJob) return sendError(reply, 404, 'Original job not found');
+
+      const newJob = await manager.createJob({
+        name: `${originalJob.name}-resumed`,
+        baseModel: originalJob.baseModel,
+        adapterName: originalJob.adapterName,
+        datasetPath: originalJob.datasetPath,
+        loraRank: originalJob.loraRank,
+        loraAlpha: originalJob.loraAlpha,
+        batchSize: originalJob.batchSize,
+        epochs: originalJob.epochs,
+        trainingMethod: originalJob.trainingMethod,
+        numGpus: originalJob.numGpus,
+        learningRate: originalJob.learningRate ?? undefined,
+        warmupSteps: originalJob.warmupSteps ?? undefined,
+        checkpointSteps: originalJob.checkpointSteps ?? undefined,
+        resumeFromCheckpoint: request.body?.checkpointPath,
+        parentJobId: originalJob.id,
+      });
+
+      try {
+        await manager.startJob(newJob.id);
+      } catch (err) {
+        return reply.code(201).send({ ...newJob, startError: toErrorMessage(err) });
+      }
+
+      const started = await manager.getJob(newJob.id);
+      return reply.code(201).send(started ?? newJob);
+    }
+  );
+
+  // Export preference pairs to disk JSONL
+  app.post(
+    '/api/v1/training/preference-pairs/export-file',
+    async (
+      request: FastifyRequest<{
+        Body: { path: string; personalityId?: string; source?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const prefManager = secureYeoman.getPreferenceManager();
+      if (!prefManager) return sendError(reply, 503, 'Preference manager not available');
+
+      const body = request.body;
+      if (!body?.path?.trim()) return sendError(reply, 400, 'path is required');
+
+      const count = await prefManager.exportAsJsonlFile(body.path, {
+        personalityId: body.personalityId,
+        source: body.source as 'annotation' | 'comparison' | 'multi_turn' | 'constitutional' | undefined,
+      });
+      return { path: body.path, count };
+    }
+  );
+
+  // Hyperparameter search endpoints
+  app.post(
+    '/api/v1/training/hyperparam/searches',
+    async (
+      request: FastifyRequest<{
+        Body: {
+          name: string;
+          baseConfig: Record<string, unknown>;
+          searchStrategy: 'grid' | 'random';
+          paramSpace: Record<string, unknown>;
+          maxTrials?: number;
+          metricToOptimize?: string;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const manager = secureYeoman.getHyperparamSearchManager?.();
+      if (!manager) return sendError(reply, 503, 'Hyperparam search manager not available');
+
+      const body = request.body;
+      if (!body?.name?.trim()) return sendError(reply, 400, 'name is required');
+      if (!body.baseConfig) return sendError(reply, 400, 'baseConfig is required');
+      if (!body.searchStrategy) return sendError(reply, 400, 'searchStrategy is required');
+      if (!body.paramSpace) return sendError(reply, 400, 'paramSpace is required');
+
+      const search = await manager.create(body);
+      return reply.code(201).send(search);
+    }
+  );
+
+  app.get(
+    '/api/v1/training/hyperparam/searches',
+    async (_request: FastifyRequest, reply: FastifyReply) => {
+      const manager = secureYeoman.getHyperparamSearchManager?.();
+      if (!manager) return sendError(reply, 503, 'Hyperparam search manager not available');
+      return manager.list();
+    }
+  );
+
+  app.get(
+    '/api/v1/training/hyperparam/searches/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getHyperparamSearchManager?.();
+      if (!manager) return sendError(reply, 503, 'Hyperparam search manager not available');
+
+      const search = await manager.get(request.params.id);
+      if (!search) return sendError(reply, 404, 'Search not found');
+      return search;
+    }
+  );
+
+  app.post(
+    '/api/v1/training/hyperparam/searches/:id/start',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getHyperparamSearchManager?.();
+      if (!manager) return sendError(reply, 503, 'Hyperparam search manager not available');
+
+      try {
+        await manager.startSearch(request.params.id);
+        return reply.code(202).send({ ok: true });
+      } catch (err) {
+        return sendError(reply, 400, toErrorMessage(err));
+      }
+    }
+  );
+
+  app.delete(
+    '/api/v1/training/hyperparam/searches/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const manager = secureYeoman.getHyperparamSearchManager?.();
+      if (!manager) return sendError(reply, 503, 'Hyperparam search manager not available');
+
+      const cancelled = await manager.cancel(request.params.id);
+      if (!cancelled) return sendError(reply, 404, 'Search not found or already completed');
+      return { ok: true };
+    }
+  );
 }

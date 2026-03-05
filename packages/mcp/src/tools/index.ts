@@ -47,6 +47,7 @@ import { registerChartTools } from './chart-tools.js';
 import { registerConstitutionalTools } from './constitutional-tools.js';
 import { registerResponsibleAiTools } from './responsible-ai-tools.js';
 import { registerTeeTools } from './tee-tools.js';
+import { registerTrainingTools } from './training-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -112,4 +113,6 @@ export async function registerAllTools(
   registerResponsibleAiTools(server, client, middleware);
   // TEE / Confidential Computing tools (Phase 129-D)
   registerTeeTools(server, client, config, middleware);
+  // Training, inference optimization, and continual learning tools (Phases 131-133)
+  registerTrainingTools(server, client, middleware);
 }

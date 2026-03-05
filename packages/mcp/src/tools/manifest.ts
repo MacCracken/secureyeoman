@@ -1101,5 +1101,72 @@ export function getToolManifest(): ToolManifestEntry[] {
       description:
         'Force re-verify TEE attestation for a provider (clears cache and runs fresh check)',
     },
+
+    // Phase 131: Advanced Training tools
+    {
+      name: 'training_start_dpo',
+      description:
+        'Start a DPO (Direct Preference Optimization) training job using preference pairs',
+    },
+    {
+      name: 'training_start_rlhf',
+      description: 'Start an RLHF training job using PPO with a reward model',
+    },
+    {
+      name: 'training_hyperparam_search',
+      description:
+        'Create and start a hyperparameter search (grid or random) across training configurations',
+    },
+    {
+      name: 'training_list_checkpoints',
+      description:
+        'List checkpoints for a fine-tuning job with step numbers and loss values',
+    },
+    {
+      name: 'training_resume_from_checkpoint',
+      description: 'Resume a training job from a specific checkpoint',
+    },
+
+    // Phase 132: Inference Optimization tools
+    {
+      name: 'ai_batch_inference',
+      description: 'Submit a batch of prompts for parallel inference processing',
+    },
+    {
+      name: 'ai_batch_status',
+      description: 'Get status and results of a batch inference job',
+    },
+    {
+      name: 'ai_cache_stats',
+      description:
+        'Get LRU and semantic cache statistics including hit rates',
+    },
+    {
+      name: 'ai_warmup_model',
+      description:
+        'Warm the KV cache for an Ollama model to reduce first-response latency',
+    },
+
+    // Phase 133: Continual Learning tools
+    {
+      name: 'training_dataset_refresh',
+      description:
+        'Create or trigger a dataset refresh job that pulls new conversations into a training dataset',
+    },
+    {
+      name: 'training_drift_check',
+      description:
+        'Run an immediate drift check across all personality quality baselines',
+    },
+    {
+      name: 'training_drift_baseline',
+      description:
+        'Compute a quality score baseline for a personality for drift detection',
+    },
+    {
+      name: 'training_online_update',
+      description:
+        'Start an online LoRA adapter update from recent high-quality conversations',
+    },
   ];
 }

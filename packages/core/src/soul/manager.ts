@@ -235,6 +235,7 @@ export class SoulManager {
           enabled: false,
           capabilities: [],
           heartEnabled: true,
+          warmupOnActivation: false,
           creationConfig: {
             skills: false,
             tasks: false,

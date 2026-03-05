@@ -12,7 +12,11 @@ export type CanvasWidgetType =
   | 'mission-card'
   | 'excalidraw'
   | 'trading-dashboard'
-  | 'tee-status';
+  | 'tee-status'
+  | 'advanced-training'
+  | 'hyperparam-search'
+  | 'batch-inference'
+  | 'continual-learning';
 
 export interface CanvasWidgetDef {
   type: CanvasWidgetType;
@@ -136,6 +140,38 @@ export const CANVAS_WIDGET_REGISTRY: readonly CanvasWidgetDef[] = [
     description: 'Confidential Computing hardware detection and provider attestation status',
     defaultWidth: 480,
     defaultHeight: 400,
+  },
+  {
+    type: 'advanced-training',
+    label: 'Advanced Training',
+    category: 'ai-agents',
+    description: 'Multi-method fine-tuning (SFT/DPO/RLHF) with multi-GPU and checkpoint management',
+    defaultWidth: 560,
+    defaultHeight: 480,
+  },
+  {
+    type: 'hyperparam-search',
+    label: 'Hyperparam Search',
+    category: 'ai-agents',
+    description: 'Hyperparameter search wizard with trial grid and best-trial tracking',
+    defaultWidth: 560,
+    defaultHeight: 460,
+  },
+  {
+    type: 'batch-inference',
+    label: 'Batch Inference',
+    category: 'ai-agents',
+    description: 'Batch inference job management with progress and per-prompt results',
+    defaultWidth: 560,
+    defaultHeight: 440,
+  },
+  {
+    type: 'continual-learning',
+    label: 'Continual Learning',
+    category: 'monitoring',
+    description: 'Dataset refresh, drift monitoring, and online update management',
+    defaultWidth: 520,
+    defaultHeight: 460,
   },
 ];
 

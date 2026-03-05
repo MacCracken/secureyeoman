@@ -503,6 +503,16 @@ export {
   ConstitutionalConfigSchema,
   type ConstitutionalPrinciple,
   type ConstitutionalConfig,
+  AdvancedTrainingConfigSchema,
+  SemanticCacheConfigSchema,
+  BatchInferenceConfigSchema,
+  InferenceOptimizationConfigSchema,
+  ContinualLearningConfigSchema,
+  type AdvancedTrainingConfig,
+  type SemanticCacheConfig,
+  type BatchInferenceConfig,
+  type InferenceOptimizationConfig,
+  type ContinualLearningConfig,
 } from './config.js';
 
 // Proactive types
@@ -738,6 +748,17 @@ export type {
   AbTestAssignment,
   AbTestResolveResult,
   SideBySideRating,
+  TrainingMethod,
+  HyperparamSearch,
+  HyperparamSearchCreate,
+  Checkpoint,
+  BatchInferenceJob,
+  BatchPrompt,
+  BatchResult,
+  DatasetRefreshJob,
+  DriftBaseline,
+  DriftSnapshot,
+  OnlineUpdateJob,
 } from './lifecycle.js';
 
 // Shareables types (Phase 89 + Phase 113)

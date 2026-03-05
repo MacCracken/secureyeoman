@@ -181,3 +181,122 @@ export interface SideBySideRating {
   personalityId?: string;
   annotatorId?: string;
 }
+
+// ── Phase 131: Advanced Training ─────────────────────────────────────────
+
+export type TrainingMethod = 'sft' | 'dpo' | 'rlhf' | 'reward' | 'pretrain';
+
+export interface HyperparamSearch {
+  id: string;
+  name: string;
+  baseConfig: Record<string, unknown>;
+  searchStrategy: 'grid' | 'random';
+  paramSpace: Record<string, unknown>;
+  maxTrials: number;
+  metricToOptimize: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  bestJobId?: string | null;
+  bestMetricValue?: number | null;
+  createdAt: string;
+  completedAt?: string | null;
+}
+
+export interface HyperparamSearchCreate {
+  name: string;
+  baseConfig: Record<string, unknown>;
+  searchStrategy: 'grid' | 'random';
+  paramSpace: Record<string, unknown>;
+  maxTrials?: number;
+  metricToOptimize?: string;
+}
+
+export interface Checkpoint {
+  id: string;
+  finetuneJobId: string;
+  step: number;
+  path: string;
+  loss?: number | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+// ── Phase 132: Inference Optimization ────────────────────────────────────
+
+export interface BatchInferenceJob {
+  id: string;
+  name?: string | null;
+  prompts: BatchPrompt[];
+  concurrency: number;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  results: BatchResult[];
+  totalPrompts: number;
+  completedPrompts: number;
+  failedPrompts: number;
+  createdAt: string;
+  completedAt?: string | null;
+  createdBy?: string | null;
+}
+
+export interface BatchPrompt {
+  id: string;
+  prompt: string;
+  systemPrompt?: string;
+}
+
+export interface BatchResult {
+  promptId: string;
+  response?: string;
+  error?: string;
+  latencyMs?: number;
+}
+
+// ── Phase 133: Continual Learning ────────────────────────────────────────
+
+export interface DatasetRefreshJob {
+  id: string;
+  name: string;
+  targetDatasetId?: string | null;
+  curationRules: Record<string, unknown>;
+  lastConversationTs?: string | null;
+  samplesAdded: number;
+  scheduleCron?: string | null;
+  status: 'idle' | 'running' | 'completed' | 'failed';
+  lastRunAt?: string | null;
+  nextRunAt?: string | null;
+  createdAt: string;
+}
+
+export interface DriftBaseline {
+  id: string;
+  personalityId: string;
+  baselineMean: number;
+  baselineStddev: number;
+  sampleCount: number;
+  threshold: number;
+  computedAt: string;
+}
+
+export interface DriftSnapshot {
+  id: string;
+  baselineId: string;
+  currentMean: number;
+  currentStddev: number;
+  sampleCount: number;
+  driftMagnitude: number;
+  alertTriggered: boolean;
+  computedAt: string;
+}
+
+export interface OnlineUpdateJob {
+  id: string;
+  personalityId: string;
+  adapterName: string;
+  conversationIds: string[];
+  gradientAccumulationSteps: number;
+  replayBufferSize: number;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  containerId?: string | null;
+  errorMessage?: string | null;
+  createdAt: string;
+  completedAt?: string | null;
+}

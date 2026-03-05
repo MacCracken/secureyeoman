@@ -22,6 +22,11 @@ import { ExperimentRegistryManager } from '../training/experiment-registry.js';
 import { ModelVersionManager } from '../training/model-version-manager.js';
 import { AbTestManager } from '../training/ab-test-manager.js';
 import { ResponsibleAiManager } from '../training/responsible-ai-manager.js';
+import { CheckpointStore } from '../training/checkpoint-store.js';
+import { HyperparamSearchManager } from '../training/hyperparam-search-manager.js';
+import { DatasetRefreshManager } from '../training/dataset-refresh-manager.js';
+import { DriftDetectionManager } from '../training/drift-detection-manager.js';
+import { OnlineUpdateManager } from '../training/online-update-manager.js';
 import { getPool } from '../storage/pg-pool.js';
 import { requireSecret } from '../config/loader.js';
 import type { AIClient } from '../ai/client.js';
@@ -56,6 +61,11 @@ export class TrainingModule extends BaseModule {
   private modelVersionManager: ModelVersionManager | null = null;
   private abTestManager: AbTestManager | null = null;
   private responsibleAiManager: ResponsibleAiManager | null = null;
+  private checkpointStore: CheckpointStore | null = null;
+  private hyperparamSearchManager: HyperparamSearchManager | null = null;
+  private datasetRefreshManager: DatasetRefreshManager | null = null;
+  private driftDetectionManager: DriftDetectionManager | null = null;
+  private onlineUpdateManager: OnlineUpdateManager | null = null;
 
   constructor(private readonly deps: TrainingModuleDeps) {
     super();
@@ -164,6 +174,34 @@ export class TrainingModule extends BaseModule {
       aiClient: this.deps.aiClient,
     });
     this.logger.debug('Lifecycle Platform managers initialized');
+
+    // Phase 131: Advanced Training managers
+    this.checkpointStore = new CheckpointStore({
+      pool,
+      logger: this.logger.child({ component: 'CheckpointStore' }),
+    });
+    this.hyperparamSearchManager = new HyperparamSearchManager({
+      pool,
+      logger: this.logger.child({ component: 'HyperparamSearchManager' }),
+      finetuneManager: this.finetuneManager!,
+    });
+    this.logger.debug('Advanced Training managers initialized');
+
+    // Phase 133: Continual Learning managers
+    this.datasetRefreshManager = new DatasetRefreshManager({
+      pool,
+      logger: this.logger.child({ component: 'DatasetRefreshManager' }),
+    });
+    this.driftDetectionManager = new DriftDetectionManager({
+      pool,
+      logger: this.logger.child({ component: 'DriftDetectionManager' }),
+      getAlertManager: this.deps.getAlertManager,
+    });
+    this.onlineUpdateManager = new OnlineUpdateManager({
+      pool,
+      logger: this.logger.child({ component: 'OnlineUpdateManager' }),
+    });
+    this.logger.debug('Continual Learning managers initialized');
   }
 
   async cleanup(): Promise<void> {
@@ -190,6 +228,17 @@ export class TrainingModule extends BaseModule {
     this.modelVersionManager = null;
     this.abTestManager = null;
     this.responsibleAiManager = null;
+    this.checkpointStore = null;
+    this.hyperparamSearchManager = null;
+    if (this.datasetRefreshManager) {
+      this.datasetRefreshManager.stopAll();
+      this.datasetRefreshManager = null;
+    }
+    if (this.driftDetectionManager) {
+      this.driftDetectionManager.stop();
+      this.driftDetectionManager = null;
+    }
+    this.onlineUpdateManager = null;
   }
 
   // --- Getters ---
@@ -243,5 +292,20 @@ export class TrainingModule extends BaseModule {
   }
   getResponsibleAiManager(): ResponsibleAiManager | null {
     return this.responsibleAiManager;
+  }
+  getCheckpointStore(): CheckpointStore | null {
+    return this.checkpointStore;
+  }
+  getHyperparamSearchManager(): HyperparamSearchManager | null {
+    return this.hyperparamSearchManager;
+  }
+  getDatasetRefreshManager(): DatasetRefreshManager | null {
+    return this.datasetRefreshManager;
+  }
+  getDriftDetectionManager(): DriftDetectionManager | null {
+    return this.driftDetectionManager;
+  }
+  getOnlineUpdateManager(): OnlineUpdateManager | null {
+    return this.onlineUpdateManager;
   }
 }
