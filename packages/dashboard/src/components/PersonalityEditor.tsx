@@ -1210,6 +1210,7 @@ function BrainSection({
   onDefaultModelChange,
   modelFallbacks,
   onModelFallbacksChange,
+  communityEnabled,
   modelData,
 }: {
   personalityId: string | null;
@@ -1251,6 +1252,7 @@ function BrainSection({
   onNotebookTokenBudgetChange: (v: number | null) => void;
   injectDateTime: boolean;
   onInjectDateTimeChange: (v: boolean) => void;
+  communityEnabled: boolean;
   defaultModel: { provider: string; model: string } | null;
   onDefaultModelChange: (v: { provider: string; model: string } | null) => void;
   modelFallbacks: { provider: string; model: string }[];
@@ -1268,8 +1270,9 @@ function BrainSection({
   const [deleteTarget, setDeleteTarget] = useState<KnowledgeEntry | null>(null);
 
   const { data: knowledgeData } = useQuery({
-    queryKey: ['knowledge'],
-    queryFn: () => fetchKnowledge(),
+    queryKey: ['knowledge', personalityId],
+    queryFn: () => fetchKnowledge({ personalityId }),
+    enabled: !!personalityId,
   });
   const knowledge = knowledgeData?.knowledge ?? [];
 
@@ -1309,7 +1312,7 @@ function BrainSection({
   const learnMut = useMutation({
     mutationFn: () => learnKnowledge(teachTopic, teachContent),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['knowledge'] });
+      void queryClient.invalidateQueries({ queryKey: ['knowledge', personalityId] });
       setTeachTopic('');
       setTeachContent('');
     },
@@ -1319,14 +1322,14 @@ function BrainSection({
     mutationFn: ({ id, data }: { id: string; data: { content?: string; confidence?: number } }) =>
       updateKnowledge(id, data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['knowledge'] });
+      void queryClient.invalidateQueries({ queryKey: ['knowledge', personalityId] });
       setEditingId(null);
     },
   });
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteKnowledge(id),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['knowledge'] }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['knowledge', personalityId] }),
   });
 
   const syncMut = useMutation({
@@ -2207,14 +2210,19 @@ function BrainSection({
                 className="text-primary hover:underline"
               >
                 Skills Marketplace
-              </button>{' '}
-              or{' '}
-              <button
-                onClick={() => navigate('/skills', { state: { initialTab: 'community' } })}
-                className="text-primary hover:underline"
-              >
-                Community
-              </button>{' '}
+              </button>
+              {communityEnabled && (
+                <>
+                  {' '}
+                  or{' '}
+                  <button
+                    onClick={() => navigate('/skills', { state: { initialTab: 'community' } })}
+                    className="text-primary hover:underline"
+                  >
+                    Community
+                  </button>
+                </>
+              )}{' '}
               tabs, or create a personal skill in the{' '}
               <button onClick={() => navigate('/skills')} className="text-primary hover:underline">
                 Skills → Personal
@@ -5282,6 +5290,7 @@ export function PersonalityEditor({
             onInjectDateTimeChange={(v) => {
               setForm((f) => ({ ...f, injectDateTime: v }));
             }}
+            communityEnabled={securityPolicy?.allowCommunityGitFetch ?? false}
             defaultModel={form.defaultModel ?? null}
             onDefaultModelChange={(v) => {
               setForm((f) => ({ ...f, defaultModel: v }));
@@ -5426,11 +5435,19 @@ export function PersonalityEditor({
 
                       {/* Actions - always visible */}
                       <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
-                        {/* Set as default */}
+                        {/* Set / clear default */}
                         {p.isDefault ? (
-                          <span className="p-1.5 sm:p-2 text-primary" title="Default personality">
+                          <button
+                            onClick={() => {
+                              clearDefaultMut.mutate();
+                            }}
+                            disabled={clearDefaultMut.isPending}
+                            className="btn-ghost p-1.5 sm:p-2 text-primary hover:text-muted-foreground rounded-lg"
+                            title="Remove as default"
+                            aria-label="Remove default personality"
+                          >
                             <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
-                          </span>
+                          </button>
                         ) : (
                           <button
                             onClick={() => {
@@ -5714,6 +5731,14 @@ export function PersonalityView() {
     },
   });
 
+  const clearDefaultMut = useMutation({
+    mutationFn: () => clearDefaultPersonality(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['personalities'] });
+      void queryClient.invalidateQueries({ queryKey: ['promptPreview'] });
+    },
+  });
+
   const handleConfirmDelete = useCallback(() => {
     if (deleteTarget) {
       deleteMut.mutate(deleteTarget.id);
@@ -5851,9 +5876,16 @@ export function PersonalityView() {
 
                     <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
                       {p.isDefault ? (
-                        <span className="p-1.5 sm:p-2 text-primary" title="Default personality">
+                        <button
+                          onClick={() => {
+                            clearDefaultMut.mutate();
+                          }}
+                          disabled={clearDefaultMut.isPending}
+                          className="btn-ghost p-1.5 sm:p-2 text-primary hover:text-muted-foreground rounded-lg"
+                          title="Remove as default"
+                        >
                           <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
-                        </span>
+                        </button>
                       ) : (
                         <button
                           onClick={() => {

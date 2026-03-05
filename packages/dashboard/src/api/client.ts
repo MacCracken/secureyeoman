@@ -5910,6 +5910,16 @@ export async function tagPersonalityRelease(
   });
 }
 
+export async function deletePersonalityTag(
+  personalityId: string,
+  versionId: string
+): Promise<PersonalityVersion> {
+  return request<PersonalityVersion>(
+    `/soul/personalities/${personalityId}/versions/${versionId}/tag`,
+    { method: 'DELETE' }
+  );
+}
+
 export async function rollbackPersonality(
   personalityId: string,
   versionId: string

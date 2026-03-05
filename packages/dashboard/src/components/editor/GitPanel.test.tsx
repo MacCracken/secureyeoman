@@ -40,21 +40,21 @@ describe('GitPanel', () => {
     // Default responses for branch, status, diff
     mockExec.mockImplementation(async (cmd: string) => {
       if (cmd === 'git branch --show-current') {
-        return { output: 'main', error: '', exitCode: 0 };
+        return { output: 'main', error: '', exitCode: 0, cwd: '/tmp/repo' };
       }
       if (cmd === 'git status --porcelain') {
-        return { output: 'M  src/index.ts\n?? newfile.txt', error: '', exitCode: 0 };
+        return { output: 'M  src/index.ts\n?? newfile.txt', error: '', exitCode: 0, cwd: '/tmp/repo' };
       }
       if (cmd === 'git diff --cached') {
-        return { output: '+added line', error: '', exitCode: 0 };
+        return { output: '+added line', error: '', exitCode: 0, cwd: '/tmp/repo' };
       }
       if (cmd === 'git diff') {
-        return { output: '-removed line', error: '', exitCode: 0 };
+        return { output: '-removed line', error: '', exitCode: 0, cwd: '/tmp/repo' };
       }
       if (cmd === 'git log --oneline -10') {
-        return { output: 'abc1234 Initial commit', error: '', exitCode: 0 };
+        return { output: 'abc1234 Initial commit', error: '', exitCode: 0, cwd: '/tmp/repo' };
       }
-      return { output: '', error: '', exitCode: 0 };
+      return { output: '', error: '', exitCode: 0, cwd: '/tmp/repo' };
     });
   });
 

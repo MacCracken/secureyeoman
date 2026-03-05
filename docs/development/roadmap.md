@@ -69,28 +69,9 @@
 - [ ] Security > Risk should also include Security > ATHI
 - [ ] Security > Risk should also include Security > Sandbox
 
-### Personality View
-
-- [ ] Personality - user is no longer able to remove defaulted personalities
-- [ ] Personalities Knowledge items are cross contaiminated; lets fix them to have their own unique knowledge points to what their personality should know.
-- [ ] Personality Edit > 'Add skills from the Skills Marketplace or Community tabs, or create a personal skill in the Skills → Personal tab.' displays when community tab is disabled
-- [ ] Personality > Version Histoy - should match theme, user should be able to revert correctly, apper to create new item every revert.  Additionaly, user should have the ability to delete a given tag.  Also should display intital tag - original version number.
-
-### Connections
-
-- [ ] Connections > Integrations > OAuth - lets have the user enter the oauth information through the dashboard or cli; lets remove need in .env files.  When OAuth is added it is added to Security > Secrets to keep them secret.
-- [ ] Connections > Intgerations > Email > Gmail - lets make sure that any OAuth needs can be captured through the dashboard or CLI and store in Security > Secrets.
-
-
 ### Organization
 
 - [ ] Create new Organizational tab for Intents, Risks (per department), other organization items (workpace, users)
-
-
-### Administration
-
-- [ ] Administration > General > Active Souls, Soul System and Reasoning Strategies should appear as their own new Administration > Souls view
-- [ ] Administration > General > Notifications should be folded into Administration > Notifications tab
 
 
 ---

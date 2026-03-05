@@ -481,6 +481,23 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     }
   );
 
+  app.delete(
+    '/api/v1/soul/personalities/:id/versions/:vId/tag',
+    async (
+      request: FastifyRequest<{ Params: { id: string; vId: string } }>,
+      reply: FastifyReply
+    ) => {
+      if (!personalityVersionManager) return sendError(reply, 501, 'Versioning not available');
+      try {
+        const version = await personalityVersionManager.clearTag(request.params.vId);
+        if (!version) return sendError(reply, 404, 'Version not found');
+        return version;
+      } catch (e) {
+        return sendError(reply, 400, toErrorMessage(e));
+      }
+    }
+  );
+
   app.post(
     '/api/v1/soul/personalities/:id/versions/:vId/rollback',
     async (

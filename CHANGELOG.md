@@ -6,6 +6,31 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.4] — 2026-03-04
 
+### Administration Tab Reorganization
+
+- **Souls tab** (`SettingsPage.tsx`): Extracted Soul System, Reasoning Strategies, and Active Souls from General tab into a new dedicated "Souls" administration tab. Route `/souls` added to `DashboardLayout.tsx`.
+- **Notifications consolidation** (`SettingsPage.tsx`): Moved `NotificationSettings` (localStorage-based prefs) from General tab into the Notifications tab alongside `NotificationPrefsPanel` (channel config).
+- **Tests** (`SettingsPage.test.tsx`): Updated to verify General tab no longer renders Soul System, new Souls tab renders it, and Notifications tab shows both components.
+
+### OAuth Credential Setup via Dashboard
+
+- **OAuth reload endpoint** (`oauth-routes.ts`): `POST /api/v1/auth/oauth/reload` — calls `OAuthService.reload()` to re-read credentials from `process.env` (populated by SecretsManager). Returns updated configured provider list. Auth: `secrets:write`.
+- **OAuthCredentialSetup component** (`ConnectionsPage.tsx`): Per-provider (Google, GitHub) forms for entering Client ID and Client Secret. Saves via `setSecret()` API (stored in Security > Secrets), then calls `reloadOAuthConfig()` to activate. Shows "Configured" badge for providers with existing credentials.
+- **API client** (`client.ts`): Added `reloadOAuthConfig()` (`POST /auth/oauth/reload`).
+- **Auth** (`auth-middleware.ts`): Added `/api/v1/auth/oauth/reload` route permission (`secrets:write`).
+- **Tests** (`oauth-routes.test.ts`): Reload endpoint test + `OAuthService.reload()` env var pickup test.
+
+### Personality View Bug Fixes
+
+- **Default personality removal** (`PersonalityEditor.tsx`): Filled stars on default personalities are now clickable buttons that call `clearDefaultMut.mutate()` to remove the default designation. Fixed in both personality list sections.
+- **Knowledge cross-contamination** (`PersonalityEditor.tsx`): Scoped knowledge query key to `['knowledge', personalityId]` and passed `personalityId` to `fetchKnowledge()`. All invalidation calls updated to match. Prevents knowledge items from one personality leaking into another's view.
+- **Community tab link visibility** (`PersonalityEditor.tsx`): Added `communityEnabled` prop to `BrainSection`, driven by `securityPolicy.allowCommunityGitFetch`. Community button link only renders when the feature is enabled.
+- **Version History theme & UX** (`PersonalityVersionHistory.tsx`): Replaced all hard-coded colors with theme-aware classes (`bg-muted`, `text-foreground`, `bg-primary`, etc.). Added tag deletion with `×` button and confirmation dialog. Added "original" badge for the oldest version entry. Improved rollback confirmation to explain a new version will be created.
+- **Delete tag endpoint** (`soul-routes.ts`): `DELETE /api/v1/soul/personalities/:id/versions/:vId/tag` — calls `PersonalityVersionManager.clearTag()`, returns updated version or 404. Auth: `soul:write`.
+- **clearTag backend** (`personality-version-storage.ts`, `personality-version-manager.ts`): `clearTag(id)` sets `version_tag = NULL` and returns updated row.
+- **API client** (`client.ts`): Added `deletePersonalityTag(personalityId, versionId)`.
+- **Tests**: 2 storage tests, 1 manager test, 2 route tests for clearTag. All 12,218 tests passing.
+
 ### Phase 111: Departmental Risk Register
 
 - **Shared types** (`packages/shared/src/types/departmental-risk.ts`): 19 Zod schemas — `RiskCategory` (10 values), `RegisterEntryStatus` (6 values), `RegisterEntrySource` (7 values), `RegisterEntrySeverity` (5 values), `DepartmentObjective`, `ComplianceTarget`, `RiskAppetite`, `MitigationItem`, `Department`/`DepartmentCreate`/`DepartmentUpdate`, `RegisterEntry`/`RegisterEntryCreate`/`RegisterEntryUpdate`, `DepartmentScore`, `DepartmentScorecard`, `DepartmentIntentSummary`, `RiskHeatmapCell`, `RiskTrendPoint`. Exported from `types/index.ts`.

@@ -137,6 +137,14 @@ export class PersonalityVersionStorage extends PgBaseStorage {
     return row ? rowToVersion(row) : null;
   }
 
+  async clearTag(id: string): Promise<PersonalityVersion | null> {
+    const row = await this.queryOne<PersonalityVersionRow>(
+      'UPDATE soul.personality_versions SET version_tag = NULL WHERE id = $1 RETURNING *',
+      [id]
+    );
+    return row ? rowToVersion(row) : null;
+  }
+
   async generateNextTag(personalityId: string): Promise<string> {
     const now = new Date();
     const baseTag = `${now.getFullYear()}.${now.getMonth() + 1}.${now.getDate()}`;

@@ -182,6 +182,32 @@ describe('Personality version routes', () => {
     });
   });
 
+  // ── Delete tag ──────────────────────────────────────────────────────
+
+  describe('DELETE /api/v1/soul/personalities/:id/versions/:vId/tag', () => {
+    it('clears tag and returns updated version (200)', async () => {
+      const cleared = { ...VERSION, versionTag: null };
+      const res = await buildApp({
+        clearTag: vi.fn().mockResolvedValue(cleared),
+      }).inject({
+        method: 'DELETE',
+        url: '/api/v1/soul/personalities/pers-1/versions/pv-1/tag',
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.body).versionTag).toBeNull();
+    });
+
+    it('returns 404 when version not found', async () => {
+      const res = await buildApp({
+        clearTag: vi.fn().mockResolvedValue(null),
+      }).inject({
+        method: 'DELETE',
+        url: '/api/v1/soul/personalities/pers-1/versions/missing/tag',
+      });
+      expect(res.statusCode).toBe(404);
+    });
+  });
+
   // ── Rollback ───────────────────────────────────────────────────────
 
   describe('POST /api/v1/soul/personalities/:id/versions/:vId/rollback', () => {

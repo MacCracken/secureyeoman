@@ -92,6 +92,9 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/soul/personalities/:id/versions/:vId/rollback': {
     POST: { resource: 'soul', action: 'write' },
   },
+  '/api/v1/soul/personalities/:id/versions/:vId/tag': {
+    DELETE: { resource: 'soul', action: 'write' },
+  },
   '/api/v1/soul/personalities/:id/drift': {
     GET: { resource: 'soul', action: 'read' },
   },

@@ -26,8 +26,8 @@ describe('useAiCommitMessage', () => {
 
   it('generates commit message from diff', async () => {
     mockExec
-      .mockResolvedValueOnce({ output: ' 1 file changed, 3 insertions(+)', error: '', exitCode: 0 })
-      .mockResolvedValueOnce({ output: '+const x = 1;', error: '', exitCode: 0 });
+      .mockResolvedValueOnce({ output: ' 1 file changed, 3 insertions(+)', error: '', exitCode: 0, cwd: '/tmp' })
+      .mockResolvedValueOnce({ output: '+const x = 1;', error: '', exitCode: 0, cwd: '/tmp' });
 
     mockSend.mockResolvedValue({
       role: 'assistant',
@@ -48,8 +48,8 @@ describe('useAiCommitMessage', () => {
 
   it('passes personalityId to sendChatMessage', async () => {
     mockExec
-      .mockResolvedValueOnce({ output: 'stats', error: '', exitCode: 0 })
-      .mockResolvedValueOnce({ output: 'diff', error: '', exitCode: 0 });
+      .mockResolvedValueOnce({ output: 'stats', error: '', exitCode: 0, cwd: '/tmp' })
+      .mockResolvedValueOnce({ output: 'diff', error: '', exitCode: 0, cwd: '/tmp' });
 
     mockSend.mockResolvedValue({
       role: 'assistant',
@@ -71,8 +71,8 @@ describe('useAiCommitMessage', () => {
 
   it('constructs prompt with diff stats and diff content', async () => {
     mockExec
-      .mockResolvedValueOnce({ output: 'stat output', error: '', exitCode: 0 })
-      .mockResolvedValueOnce({ output: 'diff content', error: '', exitCode: 0 });
+      .mockResolvedValueOnce({ output: 'stat output', error: '', exitCode: 0, cwd: '/tmp' })
+      .mockResolvedValueOnce({ output: 'diff content', error: '', exitCode: 0, cwd: '/tmp' });
 
     mockSend.mockResolvedValue({
       role: 'assistant',
@@ -95,8 +95,8 @@ describe('useAiCommitMessage', () => {
 
   it('strips code fences from response', async () => {
     mockExec
-      .mockResolvedValueOnce({ output: 'stats', error: '', exitCode: 0 })
-      .mockResolvedValueOnce({ output: 'diff', error: '', exitCode: 0 });
+      .mockResolvedValueOnce({ output: 'stats', error: '', exitCode: 0, cwd: '/tmp' })
+      .mockResolvedValueOnce({ output: 'diff', error: '', exitCode: 0, cwd: '/tmp' });
 
     mockSend.mockResolvedValue({
       role: 'assistant',
@@ -116,8 +116,8 @@ describe('useAiCommitMessage', () => {
 
   it('strips surrounding quotes', async () => {
     mockExec
-      .mockResolvedValueOnce({ output: 'stats', error: '', exitCode: 0 })
-      .mockResolvedValueOnce({ output: 'diff', error: '', exitCode: 0 });
+      .mockResolvedValueOnce({ output: 'stats', error: '', exitCode: 0, cwd: '/tmp' })
+      .mockResolvedValueOnce({ output: 'diff', error: '', exitCode: 0, cwd: '/tmp' });
 
     mockSend.mockResolvedValue({
       role: 'assistant',
@@ -137,8 +137,8 @@ describe('useAiCommitMessage', () => {
 
   it('handles empty diff gracefully', async () => {
     mockExec
-      .mockResolvedValueOnce({ output: '', error: '', exitCode: 0 })
-      .mockResolvedValueOnce({ output: '', error: '', exitCode: 0 });
+      .mockResolvedValueOnce({ output: '', error: '', exitCode: 0, cwd: '/tmp' })
+      .mockResolvedValueOnce({ output: '', error: '', exitCode: 0, cwd: '/tmp' });
 
     const { result } = renderHook(() => useAiCommitMessage('/tmp'));
 
@@ -152,8 +152,8 @@ describe('useAiCommitMessage', () => {
 
   it('handles API error gracefully', async () => {
     mockExec
-      .mockResolvedValueOnce({ output: 'stats', error: '', exitCode: 0 })
-      .mockResolvedValueOnce({ output: 'diff', error: '', exitCode: 0 });
+      .mockResolvedValueOnce({ output: 'stats', error: '', exitCode: 0, cwd: '/tmp' })
+      .mockResolvedValueOnce({ output: 'diff', error: '', exitCode: 0, cwd: '/tmp' });
 
     mockSend.mockRejectedValue(new Error('API error'));
 

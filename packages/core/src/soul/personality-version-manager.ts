@@ -121,6 +121,13 @@ export class PersonalityVersionManager {
   }
 
   /**
+   * Remove a tag from a version.
+   */
+  async clearTag(versionId: string): Promise<PersonalityVersion | null> {
+    return this.versionStorage.clearTag(versionId);
+  }
+
+  /**
    * Compute unified diff between two versions.
    */
   async diffVersions(versionIdA: string, versionIdB: string): Promise<string> {

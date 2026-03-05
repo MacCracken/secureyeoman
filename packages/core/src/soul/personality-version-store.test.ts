@@ -156,6 +156,22 @@ describe('PersonalityVersionStorage', () => {
     });
   });
 
+  describe('clearTag', () => {
+    it('sets version_tag to NULL and returns updated row', async () => {
+      const cleared = { ...SAMPLE_ROW, version_tag: null };
+      mockQuery.mockResolvedValueOnce({ rows: [cleared] });
+      const result = await storage.clearTag('pv-1');
+      expect(result?.versionTag).toBeNull();
+      expect(mockQuery.mock.calls[0][0]).toContain('version_tag = NULL');
+    });
+
+    it('returns null when version not found', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [] });
+      const result = await storage.clearTag('missing');
+      expect(result).toBeNull();
+    });
+  });
+
   describe('generateNextTag', () => {
     it('returns base date tag when no existing tags', async () => {
       mockQuery.mockResolvedValueOnce({ rows: [] });

@@ -44,6 +44,7 @@ function makeMockStorage(overrides: Partial<PersonalityVersionStorage> = {}): Pe
     getLatestTaggedVersion: vi.fn().mockResolvedValue(null),
     tagVersion: vi.fn().mockResolvedValue({ ...VERSION, versionTag: '2026.3.3' }),
     generateNextTag: vi.fn().mockResolvedValue('2026.3.3'),
+    clearTag: vi.fn().mockResolvedValue({ ...VERSION, versionTag: null }),
     deleteVersionsForPersonality: vi.fn().mockResolvedValue(0),
     ...overrides,
   } as unknown as PersonalityVersionStorage;
@@ -200,6 +201,18 @@ describe('PersonalityVersionManager', () => {
 
       const result = await manager.getVersion('pers-1', 'nope');
       expect(result).toBeNull();
+    });
+  });
+
+  describe('clearTag', () => {
+    it('delegates to storage clearTag', async () => {
+      const cleared = { ...VERSION, versionTag: null };
+      versionStorage = makeMockStorage({ clearTag: vi.fn().mockResolvedValue(cleared) });
+      manager = new PersonalityVersionManager({ versionStorage, soulStorage, serializer });
+
+      const result = await manager.clearTag('pv-1');
+      expect(versionStorage.clearTag).toHaveBeenCalledWith('pv-1');
+      expect(result?.versionTag).toBeNull();
     });
   });
 

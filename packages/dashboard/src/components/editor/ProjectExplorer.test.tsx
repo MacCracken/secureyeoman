@@ -41,7 +41,7 @@ describe('ProjectExplorer', () => {
   });
 
   it('renders explorer header', async () => {
-    mockExec.mockResolvedValue({ output: '', error: '', exitCode: 0 });
+    mockExec.mockResolvedValue({ output: '', error: '', exitCode: 0, cwd: '/tmp' });
     renderExplorer();
     expect(screen.getByTestId('project-explorer')).toBeInTheDocument();
     expect(screen.getByText('Explorer')).toBeInTheDocument();
@@ -52,6 +52,7 @@ describe('ProjectExplorer', () => {
       output: 'd src\nf README.md\nf package.json',
       error: '',
       exitCode: 0,
+      cwd: '/tmp',
     });
     renderExplorer();
     await waitFor(() => {
@@ -66,6 +67,7 @@ describe('ProjectExplorer', () => {
       output: 'f b.txt\nd alpha\nf a.txt',
       error: '',
       exitCode: 0,
+      cwd: '/tmp',
     });
     renderExplorer();
     await waitFor(() => {
@@ -75,7 +77,7 @@ describe('ProjectExplorer', () => {
   });
 
   it('shows empty directory message', async () => {
-    mockExec.mockResolvedValue({ output: '', error: '', exitCode: 0 });
+    mockExec.mockResolvedValue({ output: '', error: '', exitCode: 0, cwd: '/tmp' });
     renderExplorer();
     await waitFor(() => {
       expect(screen.getByText('Empty directory')).toBeInTheDocument();
@@ -85,8 +87,8 @@ describe('ProjectExplorer', () => {
   it('opens file on click', async () => {
     const user = userEvent.setup();
     mockExec
-      .mockResolvedValueOnce({ output: 'f hello.txt', error: '', exitCode: 0 })
-      .mockResolvedValueOnce({ output: 'file contents here', error: '', exitCode: 0 });
+      .mockResolvedValueOnce({ output: 'f hello.txt', error: '', exitCode: 0, cwd: '/tmp' })
+      .mockResolvedValueOnce({ output: 'file contents here', error: '', exitCode: 0, cwd: '/tmp' });
 
     const { props } = renderExplorer();
 
@@ -104,8 +106,8 @@ describe('ProjectExplorer', () => {
   it('expands directory on click', async () => {
     const user = userEvent.setup();
     mockExec
-      .mockResolvedValueOnce({ output: 'd mydir', error: '', exitCode: 0 })
-      .mockResolvedValueOnce({ output: 'f inner.txt', error: '', exitCode: 0 });
+      .mockResolvedValueOnce({ output: 'd mydir', error: '', exitCode: 0, cwd: '/tmp' })
+      .mockResolvedValueOnce({ output: 'f inner.txt', error: '', exitCode: 0, cwd: '/tmp' });
 
     renderExplorer();
 
@@ -122,7 +124,7 @@ describe('ProjectExplorer', () => {
 
   it('shows context menu on right-click', async () => {
     const user = userEvent.setup();
-    mockExec.mockResolvedValue({ output: 'd testdir', error: '', exitCode: 0 });
+    mockExec.mockResolvedValue({ output: 'd testdir', error: '', exitCode: 0, cwd: '/tmp' });
 
     renderExplorer();
 
@@ -142,7 +144,7 @@ describe('ProjectExplorer', () => {
   });
 
   it('renders cwd input', () => {
-    mockExec.mockResolvedValue({ output: '', error: '', exitCode: 0 });
+    mockExec.mockResolvedValue({ output: '', error: '', exitCode: 0, cwd: '/tmp' });
     renderExplorer();
     expect(screen.getByPlaceholderText('/path/to/folder')).toBeInTheDocument();
   });

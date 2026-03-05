@@ -10,7 +10,7 @@
  * Requires a running PostgreSQL instance (TEST_DB_* or DATABASE_HOST env vars).
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { initPool, closePool, resetPool, getPool } from '../pg-pool.js';
+import { initPool, getPool } from '../pg-pool.js';
 import { runMigrations } from './runner.js';
 import { MIGRATION_MANIFEST } from './manifest.js';
 
@@ -30,21 +30,34 @@ async function appliedIds(): Promise<string[]> {
   return res.rows.map((r) => r.id);
 }
 
-async function wipeMigrationsTable(): Promise<void> {
-  // Truncate tracking table only — leaves all schema objects intact so SQL
-  // with IF NOT EXISTS doesn't fail on re-apply.
-  await getPool().query('TRUNCATE schema_migrations');
-
-  // Ensure the default tenant exists before re-applying migrations: migration
-  // 022 inserts the admin user using tenant_id DEFAULT 'default', which
-  // requires auth.tenants to have the 'default' row. Migration 058 seeds it,
-  // but 022 runs first during re-application when all the schema data has
-  // been cleaned up by a prior test suite's truncateAllTables() call.
-  await getPool().query(`
-    INSERT INTO auth.tenants (id, name, slug, plan, metadata, created_at, updated_at)
-    VALUES ('default', 'Default', 'default', 'enterprise', '{}', 0, 0)
-    ON CONFLICT DO NOTHING
-  `);
+async function wipeAllSchemas(): Promise<void> {
+  const pool = getPool();
+  // Drop every application schema + the tracking table so runMigrations()
+  // starts from a truly blank database (only public + pg_* remain).
+  const schemas = [
+    'a2a','admin','agents','ai','analytics','audit','auth','brain','browser',
+    'capture','chat','comms','dashboard','execution','experiment','extensions',
+    'federation','integration','marketplace','mcp','multimodal','proactive',
+    'rbac','risk','rotation','sandbox','security','soul','spirit','task',
+    'telemetry','training','workflow','workspace',
+  ];
+  for (const s of schemas) {
+    await pool.query(`DROP SCHEMA IF EXISTS ${s} CASCADE`);
+  }
+  await pool.query('DROP TABLE IF EXISTS schema_migrations');
+  // Drop all public-schema application tables/sequences created by migrations
+  const pubTables = await pool.query<{ tablename: string }>(
+    `SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename NOT IN ('pg_stat_statements')`
+  );
+  for (const row of pubTables.rows) {
+    await pool.query(`DROP TABLE IF EXISTS public."${row.tablename}" CASCADE`);
+  }
+  const pubSeqs = await pool.query<{ sequencename: string }>(
+    `SELECT sequencename FROM pg_sequences WHERE schemaname = 'public'`
+  );
+  for (const row of pubSeqs.rows) {
+    await pool.query(`DROP SEQUENCE IF EXISTS public."${row.sequencename}" CASCADE`);
+  }
 }
 
 describe('runMigrations()', () => {
@@ -58,12 +71,12 @@ describe('runMigrations()', () => {
   afterAll(async () => {
     // Leave DB fully migrated for any subsequent suites that share the test DB.
     await runMigrations();
-    await closePool();
-    resetPool();
+    // Do NOT closePool/resetPool — with isolate: false the pool is shared
+    // across all DB test files and must stay alive.
   });
 
   it('applies all manifest entries on a fresh schema_migrations table', async () => {
-    await wipeMigrationsTable();
+    await wipeAllSchemas();
     await runMigrations();
 
     const ids = await appliedIds();
