@@ -165,11 +165,12 @@ export class InputValidator {
     let blocked = false;
     let blockReason: string | undefined;
 
-    // Stage 1: Size check
-    if (input.length > this.config.maxInputLength) {
+    // Stage 1: Size check (byte length to prevent multi-byte character bypass)
+    const byteLength = Buffer.byteLength(input, 'utf-8');
+    if (byteLength > this.config.maxInputLength) {
       this.getLogger().warn('Input exceeds size limit', {
         ...context,
-        inputLength: input.length,
+        inputLength: byteLength,
         maxLength: this.config.maxInputLength,
       });
 
@@ -179,7 +180,7 @@ export class InputValidator {
         warnings: [
           {
             code: 'SIZE_EXCEEDED',
-            message: `Input exceeds maximum length of ${this.config.maxInputLength}`,
+            message: `Input exceeds maximum size of ${this.config.maxInputLength} bytes`,
             severity: 'high',
           },
         ],

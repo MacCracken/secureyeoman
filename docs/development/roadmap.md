@@ -61,10 +61,10 @@
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
-| 126 | Canvas Editor Improvements | P3 — canvas improvements | Planned |
-| — | Engineering Backlog | Ongoing | Pick-up opportunistically |
+| 126 | Canvas Workspace Improvements (Advanced Editor) | P3 — canvas | Planned |
+| 127 | IDE Experience (Basic Editor) | P3 — power user UX | Planned |
+| — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| 109 | Editor Improvements (IDE) | P3 — power user UX | Future / Demand-Gated |
 | Future | LLM Providers, LLM Lifecycle, Responsible AI, Voice, Infrastructure | Future / Demand-Gated | — |
 
 ---
@@ -73,7 +73,7 @@
 
 ---
 
-### 126: Canvas Workspace Improvements
+### 126: Canvas Workspace Improvements (Advanced Editor)
 
 *Extends the Phase 100 canvas workspace (`/editor/advanced`) with power-user features. The 11-widget canvas is functional; these items address the gaps identified during QA.*
 
@@ -82,11 +82,50 @@
 - [ ] **Multiple saved layouts & export** — Replace single `canvas:workspace` localStorage key with a named-layout system. `canvas:layouts` stores `{ [name]: CanvasLayout }`. Layout switcher dropdown in the canvas toolbar. Export layout as JSON; import from file. Presets: "Dev" (terminal + editor + git), "Ops" (CI/CD + pipeline + training live), "Chat" (chat + agent world + task kanban).
 - [ ] **Mission card embedding** — Extract the mission card renderer from `MissionControlPage` into a reusable `<MissionCardEmbed cardId={id} />` component. Wire it into `MissionCardNode` widget (currently a placeholder). Card shows objective, progress, and linked tasks.
 
+### 127: IDE Experience (Basic Editor)
+
+*Evolves the basic editor (`/editor`) into a full IDE experience. The editor platform is mature (unified editor, MultiTerminal, model selectors, memory toggle, Agent World). These items add the missing IDE-class features for the standard editor view.*
+
+- [ ] **Auto-Claude–style patterns** — Plan display, step-by-step approval, AI commit messages, context badges.
+- [ ] **Multi-file editing** — Tabs, split panes.
+- [ ] **Project explorer** — File tree sidebar with create/rename/delete.
+- [ ] **Command palette** — `Cmd/Ctrl+K` fuzzy command search across all editor actions.
+- [ ] **Inline AI completion** — Copilot-style ghost text suggestions from the active personality.
+- [ ] **Multi-file search & replace** — Cross-file search with preview and batch replace.
+- [ ] **Collaborative editing** — Yjs CRDT for real-time multi-user editing.
+- [ ] **Keybindings editor** — UI for customizing keyboard shortcuts.
+- [ ] **Responsive / mobile layout** — Adaptive layout for smaller screens.
+- [ ] **Training integration** — Export/annotation hooks from editor to training pipeline.
+- [ ] **Plugin / extension system** — Third-party editor extensions.
+
 ---
 
 ## Engineering Backlog
 
 Non-phase items tracked for future improvement. Pick up opportunistically or when touching adjacent code.
+
+### Security Hardening (from 2026-03-05 Audit)
+
+#### Auth & Crypto
+- [ ] **Admin password bcrypt migration** — Replace SHA256 with bcrypt/Argon2 for admin password hashing. Requires: async hash in login flow, config format migration (store bcrypt hash instead of SHA256 hex), update integration test helpers. Reference: `security/auth.ts:158`.
+- [ ] **Token revocation race condition** — Add DB transaction or optimistic locking around `isTokenRevoked()` + `revokeToken()` to prevent in-flight replay within milliseconds of logout. Reference: `security/auth.ts:202-207`.
+
+#### Performance
+- [ ] **Config schema splitting** — Split `ConfigSchema` into domain-specific sub-schemas for targeted Zod validation. Currently validates all 27 top-level fields on every parse. Reference: `shared/types/config.ts:685-718`.
+- [ ] **InputValidator regex consolidation** — Combine 15 individual injection regex patterns into a single alternation pattern for fewer regex passes per input. Reference: `security/input-validator.ts:22-130`.
+- [ ] **PromptGuard pattern precompilation** — Combine 12 guard patterns into single precompiled regex. Reference: `security/prompt-guard.ts:51-128`.
+- [ ] **Embedding batch backpressure** — Add adaptive delay between embedding API batches to prevent 429 rate limits during `reindexAll()`. Reference: `brain/vector/manager.ts:165-214`.
+
+#### Security Gaps
+- [ ] **ROUTE_PERMISSIONS auto-generation** — Auto-generate from route registration metadata instead of maintaining 100+ hardcoded entries. Ensure all dynamically registered routes have explicit permission mapping. Reference: `gateway/auth-middleware.ts`.
+- [ ] **Delegation promise cleanup** — `activeDelegations` Map entries not cleaned up after timeout; can block all new delegations when hitting `maxConcurrent`. Reference: `agents/manager.ts:345-351`.
+- [ ] **Async generator stream cleanup** — AI provider `chatStream()` generators may not clean up if consumer stops iterating early. Add try/finally. Reference: `ai/providers/anthropic.ts:105-195`.
+
+#### Database
+- [ ] **Composite indexes for usage storage** — Add `(provider, recorded_at DESC)` and `(personality_id, recorded_at DESC)` indexes to prevent full table scans on dashboard/reporting queries. Reference: `ai/usage-storage.ts:100-104`.
+- [ ] **Migration statement timeout** — Add `SET statement_timeout = 300000` per migration query to prevent stuck migrations from blocking other pods. Reference: `storage/migrations/runner.ts:45-76`.
+- [ ] **Brain storage default LIMIT** — Add safe default `LIMIT 10000` to `queryMemories()` when caller doesn't specify, preventing OOM on large datasets. Reference: `brain/storage.ts:313-376`.
+- [ ] **Delegation history pruning** — Implement retention policy for `agents.delegations` table (archive/delete records older than 90 days). Reference: `agents/manager.ts`.
 
 ### Test Coverage — Final 1% Push (Phase 105)
 
@@ -141,22 +180,6 @@ Items below represent the final steps required before public release. They depen
 Items below are planned but demand-gated or lower priority. Grouped by theme. Implementation order will be determined by adoption signals and user demand.
 
 ---
-
-### Phase 109: Editor Improvements (Auto-Claude–Style IDE)
-
-*Previously Phase 100. The editor platform is mature with 80+ improvements shipped across multiple phases: unified editor with MultiTerminal (4 tabs, command history, worktree selector, shell hardening), inline chat with personality context, ReactFlow canvas workspace (11 widget types, layout persistence), model/strategy selectors with health indicators, memory toggle, Agent World panel, Excalidraw diagramming, CI/CD workflow integration, and comprehensive security policy gating. See Phases 60, 69, 78b, ADR 173, and Phase 117 in the Changelog. The items below are aspirational IDE features beyond the current scope — implement incrementally based on user feedback.*
-
-- [ ] **Auto-Claude–style patterns** — Plan display, step-by-step approval, AI commit messages, context badges.
-- [ ] **Multi-file editing** — Tabs, split panes.
-- [ ] **Project explorer** — File tree sidebar.
-- [ ] **Command palette** — `Cmd/Ctrl+K` fuzzy command search.
-- [ ] **Inline AI completion** — Copilot-style ghost text suggestions.
-- [ ] **Multi-file search & replace** — Cross-file search with preview and batch replace.
-- [ ] **Collaborative editing** — Yjs CRDT for real-time multi-user editing.
-- [ ] **Keybindings editor** — UI for customizing keyboard shortcuts.
-- [ ] **Responsive / mobile layout** — Adaptive layout for smaller screens.
-- [ ] **Training integration** — Export/annotation hooks from editor to training pipeline.
-- [ ] **Plugin / extension system** — Third-party editor extensions.
 
 ---
 
@@ -301,4 +324,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-04 — Removed completed phases: 120 (Community Skills Expansion), 125 (Strategic Trading Skills), 125-C (Advanced Financial Charting), 111 (Departmental Risk Register), God Object Decomposition (Phase 1+2), Security View fixes, Organization page, OAuth credential setup, Personality view bug fixes, 122-A/B (PDF Analysis), 124 (Cognitive Memory), 117 (Excalidraw Diagramming). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-05 — Added Security Hardening backlog (13 deferred items from codebase audit). Removed completed phases: 120 (Community Skills Expansion), 125 (Strategic Trading Skills), 125-C (Advanced Financial Charting), 111 (Departmental Risk Register), God Object Decomposition (Phase 1+2), Security View fixes, Organization page, OAuth credential setup, Personality view bug fixes, 122-A/B (PDF Analysis), 124 (Cognitive Memory), 117 (Excalidraw Diagramming). See [Changelog](../../CHANGELOG.md) for full history.*

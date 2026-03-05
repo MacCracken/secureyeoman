@@ -28,6 +28,7 @@ function defaultConfig(overrides?: Partial<BrainConfig>): BrainConfig {
     enabled: true,
     maxMemories: 10000,
     maxKnowledge: 5000,
+    maxContentLength: 4096,
     memoryRetentionDays: 90,
     importanceDecayRate: 0.01,
     contextWindowMemories: 10,

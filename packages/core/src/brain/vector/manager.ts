@@ -176,6 +176,7 @@ export class VectorMemoryManager {
             type: 'memory',
             memoryType: memories[i + idx]!.type,
             source: memories[i + idx]!.source,
+            personalityId: memories[i + idx]!.personalityId ?? null,
           },
         }));
         await this.store.insertBatch(items);
@@ -198,6 +199,7 @@ export class VectorMemoryManager {
             type: 'knowledge',
             topic: knowledge[i + idx]!.topic,
             source: knowledge[i + idx]!.source,
+            personalityId: knowledge[i + idx]!.personalityId ?? null,
           },
         }));
         await this.store.insertBatch(items);

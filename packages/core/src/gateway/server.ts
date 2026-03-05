@@ -169,7 +169,6 @@ export class GatewayServer {
   private logger: SecureLogger | null = null;
   private metricsInterval: NodeJS.Timeout | null = null;
   private heartbeatInterval: NodeJS.Timeout | null = null;
-  private clientIdCounter = 0;
   private lastMetricsJson: string | null = null;
 
   constructor(options: GatewayServerOptions) {
@@ -2762,7 +2761,7 @@ export class GatewayServer {
         }
       }
 
-      const clientId = `client_${String(++this.clientIdCounter)}`;
+      const clientId = `client_${uuidv7()}`;
 
       const client: WebSocketClient = {
         ws: socket,
@@ -2788,8 +2787,11 @@ export class GatewayServer {
           };
 
           if (data.type === 'subscribe' && data.payload?.channels) {
+            // Cap channel subscriptions to prevent memory exhaustion
+            const maxChannels = 50;
+            const channelsToProcess = data.payload.channels.slice(0, maxChannels);
             const subscribed: string[] = [];
-            for (const channel of data.payload.channels) {
+            for (const channel of channelsToProcess) {
               const perm = CHANNEL_PERMISSIONS[channel];
               if (perm) {
                 // Fail-secure: if channel requires a permission and client has no role, deny
@@ -2893,7 +2895,7 @@ export class GatewayServer {
 
       socket.binaryType = 'arraybuffer';
 
-      const clientId = `collab_${String(++this.clientIdCounter)}`;
+      const clientId = `collab_${uuidv7()}`;
 
       // Resolve initial content from the soul manager so new rooms converge
       // immediately to the current REST-persisted value.
@@ -3071,11 +3073,16 @@ export class GatewayServer {
       this.heartbeatInterval = setInterval(() => {
         const now = Date.now();
         for (const [id, client] of this.clients) {
-          if (now - client.lastPong > 60_000) {
-            client.ws.terminate();
+          try {
+            if (now - client.lastPong > 60_000) {
+              client.ws.terminate();
+              this.clients.delete(id);
+            } else {
+              client.ws.ping();
+            }
+          } catch {
+            // Socket may already be closed/invalid — clean up silently
             this.clients.delete(id);
-          } else {
-            client.ws.ping();
           }
         }
       }, 30_000);

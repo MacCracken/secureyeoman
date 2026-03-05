@@ -101,7 +101,9 @@ export class ApiEmbeddingProvider extends BaseEmbeddingProvider {
 
     if (!response.ok) {
       const err = await response.text();
-      throw new Error(`Gemini embedding API error ${response.status}: ${err}`);
+      // Sanitize error — Gemini URL contains API key as query parameter
+      const sanitized = err.replace(/key=[^&\s"'}]+/gi, 'key=[REDACTED]');
+      throw new Error(`Gemini embedding API error ${response.status}: ${sanitized}`);
     }
 
     const data = (await response.json()) as {

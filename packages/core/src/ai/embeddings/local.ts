@@ -61,6 +61,10 @@ export class LocalEmbeddingProvider extends BaseEmbeddingProvider {
   protected async doEmbed(texts: string[]): Promise<number[][]> {
     await this.ensureProcess();
 
+    // Bound queue to prevent memory exhaustion under high concurrency
+    if (this.responseQueue.length >= 100) {
+      throw new Error('Local embedding request queue full (100 pending)');
+    }
     return new Promise((resolve, reject) => {
       this.responseQueue.push({ resolve, reject });
       const request = JSON.stringify({ texts }) + '\n';

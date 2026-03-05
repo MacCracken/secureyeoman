@@ -77,7 +77,7 @@ export class WorkingMemoryBuffer {
 
   /**
    * Record a query and update the trajectory. Returns any pre-fetched items
-   * that are relevant to this query (cache hits).
+   * that scored above prefetchThreshold (relevant cache hits).
    */
   async recordQuery(queryText: string): Promise<WorkingMemoryItem[]> {
     const [queryEmbedding] = await this.embeddingProvider.embed([queryText]);
@@ -91,10 +91,13 @@ export class WorkingMemoryBuffer {
       this.queryTrajectory.shift();
     }
 
-    // Check prefetch cache for hits
+    // Return pre-fetched items that scored above threshold (already filtered at fetch time)
+    // Drain the cache — items not consumed here expire
     const hits: WorkingMemoryItem[] = [];
     for (const [id, item] of this.prefetchCache) {
-      hits.push(item);
+      if (item.score >= this.config.prefetchThreshold) {
+        hits.push(item);
+      }
       this.prefetchCache.delete(id);
     }
 
@@ -152,13 +155,15 @@ export class WorkingMemoryBuffer {
       const bufferIds = new Set(this.buffer.map((b) => b.id));
       let cached = 0;
 
+      const maxPrefetch = this.config.prefetchLimit * 2;
       for (const result of results) {
         const cleanId = result.id.replace(/^(memory|knowledge):/, '');
         if (bufferIds.has(cleanId) || this.prefetchCache.has(cleanId)) continue;
+        if (this.prefetchCache.size >= maxPrefetch) break;
 
         this.prefetchCache.set(cleanId, {
           id: cleanId,
-          content: '', // Content loaded on access
+          content: '',
           score: result.score,
           source: 'prefetch',
           addedAt: Date.now(),

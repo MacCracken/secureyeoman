@@ -1,11 +1,6 @@
 /**
- * UUID generation utility.
+ * UUID generation utility — re-exports the RFC 9562 compliant uuidv7
+ * from crypto.ts to avoid duplicate implementations.
  */
 
-import crypto from 'node:crypto';
-
-/** Generate a UUIDv7 (time-ordered). Falls back to UUIDv4 if not available. */
-export function uuidv7(): string {
-  // Node 20+ crypto.randomUUID() returns v4; use it as fallback.
-  return crypto.randomUUID();
-}
+export { uuidv7 } from './crypto.js';

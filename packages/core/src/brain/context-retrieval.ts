@@ -41,7 +41,8 @@ export function fuseEmbeddings(
   queryWeight: number
 ): number[] {
   const lambda = Math.max(0, Math.min(1, queryWeight));
-  const dim = queryEmbedding.length;
+  const dim = Math.min(queryEmbedding.length, contextEmbedding.length);
+  if (dim === 0) return [];
   const fused = new Array<number>(dim);
 
   for (let i = 0; i < dim; i++) {
@@ -74,7 +75,8 @@ export function computeCentroid(embeddings: number[][]): number[] | null {
   const centroid = new Array<number>(dim).fill(0);
 
   for (const emb of embeddings) {
-    for (let i = 0; i < dim; i++) {
+    const len = Math.min(dim, emb.length);
+    for (let i = 0; i < len; i++) {
       centroid[i]! += emb[i]!;
     }
   }

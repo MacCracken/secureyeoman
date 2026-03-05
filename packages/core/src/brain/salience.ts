@@ -123,7 +123,11 @@ export class SalienceClassifier {
     if (this.anchors) return;
     if (this.initPromise) return this.initPromise;
 
-    this.initPromise = this.doInitialize();
+    this.initPromise = this.doInitialize().catch((err) => {
+      // Clear so next call retries instead of returning a permanently rejected promise
+      this.initPromise = null;
+      throw err;
+    });
     return this.initPromise;
   }
 

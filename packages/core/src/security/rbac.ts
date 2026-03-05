@@ -264,6 +264,9 @@ export class RBAC {
     for (const assignment of assignments) {
       this.userRoles.set(assignment.userId, assignment.roleId);
     }
+
+    // Invalidate permission cache — persisted roles may differ from defaults
+    this.clearCache();
   }
 
   private getLogger(): SecureLogger {
@@ -349,6 +352,9 @@ export class RBAC {
     const cached = this.permissionCache.get(cacheKey);
 
     if (cached !== undefined) {
+      // Move to end for LRU eviction (Map preserves insertion order)
+      this.permissionCache.delete(cacheKey);
+      this.permissionCache.set(cacheKey, cached);
       return {
         granted: cached,
         reason: cached ? 'Cached grant' : 'Cached denial',

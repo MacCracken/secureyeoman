@@ -88,7 +88,9 @@ A capacity-limited scratchpad (default 7 items, from Miller's 7±2 law) that tra
 
 - **capacity**: Maximum items in the buffer. Excess items are evicted by lowest score. Default 7.
 - **prefetchLimit**: Number of items to pre-fetch per prediction cycle. Default 5.
-- **recencyDecay**: Exponential decay factor for trajectory weighting (newer = heavier). Default 0.8.
+- **prefetchThreshold** (0.0–1.0): Minimum similarity score for pre-fetched items. Default 0.3.
+- **recencyDecay** (0.0–1.0): Exponential decay factor for trajectory weighting (newer = heavier). Default 0.8.
+- **minQueriesForPrediction**: Minimum queries in the trajectory before prediction activates. Default 2.
 
 ### API
 

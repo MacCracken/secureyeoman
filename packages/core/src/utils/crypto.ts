@@ -136,6 +136,16 @@ export function sanitizeForLogging(input: unknown): unknown {
         regex: /-----BEGIN[^-]+PRIVATE KEY-----[\s\S]*?-----END[^-]+PRIVATE KEY-----/g,
         replacement: '[REDACTED_PRIVATE_KEY]',
       },
+      // JWT tokens (three base64url segments)
+      {
+        regex: /eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/g,
+        replacement: '[REDACTED_JWT]',
+      },
+      // Database connection strings (redact user:password)
+      {
+        regex: /((?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?):\/\/)[^:]+:[^@]+@/gi,
+        replacement: '$1[REDACTED]@',
+      },
     ];
 
     let sanitized = input;

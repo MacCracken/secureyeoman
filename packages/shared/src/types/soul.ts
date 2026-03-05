@@ -693,7 +693,7 @@ export const CognitiveMemoryConfigSchema = z
 
 export type CognitiveMemoryConfig = z.infer<typeof CognitiveMemoryConfigSchema>;
 
-// ─── Context-Dependent Retrieval Config (Phase 125-A) ──────
+// ─── Context-Dependent Retrieval Config (Phase 125-D) ──────
 
 export const ContextRetrievalConfigSchema = z
   .object({
@@ -709,7 +709,7 @@ export const ContextRetrievalConfigSchema = z
 
 export type ContextRetrievalConfig = z.infer<typeof ContextRetrievalConfigSchema>;
 
-// ─── Working Memory / Predictive Pre-Fetch Config (Phase 125-B) ──
+// ─── Working Memory / Predictive Pre-Fetch Config (Phase 125-D) ──
 
 export const WorkingMemoryConfigSchema = z
   .object({
@@ -729,7 +729,7 @@ export const WorkingMemoryConfigSchema = z
 
 export type WorkingMemoryConfig = z.infer<typeof WorkingMemoryConfigSchema>;
 
-// ─── Salience Classification Config (Phase 125-C) ──────────
+// ─── Salience Classification Config (Phase 125-D) ──────────
 
 export const SalienceConfigSchema = z
   .object({

@@ -93,18 +93,19 @@ export class BrainManager {
       throw new Error('Brain is not enabled');
     }
 
-    const maxContentLength = (this.config as any).maxContentLength ?? 4096;
+    const maxContentLength = this.config.maxContentLength;
     if (content.length > maxContentLength) {
       throw new Error(`Memory content exceeds maximum length of ${maxContentLength}`);
     }
 
     const count = await this.storage.getMemoryCount();
     if (count >= this.config.maxMemories) {
-      // Prune lowest-importance memory before adding new one
+      // Prune lowest-importance memory, scoped to the same personality to avoid cross-eviction
       const lowest = await this.storage.queryMemories({
         limit: 1,
         minImportance: 0,
         sortDirection: 'asc',
+        personalityId: this.resolvePersonalityId(personalityId),
       });
       if (lowest[0]) {
         await this.storage.deleteMemory(lowest[0].id);
@@ -207,37 +208,37 @@ export class BrainManager {
         const limit = query.limit ?? 10;
         const threshold = this.config.vector.similarityThreshold;
 
-        // Context-dependent retrieval: use fused embedding when context is available
+        // Context-dependent retrieval: fuse query + context embeddings, run RRF merge
         let vectorResults: VectorResult[];
         if (this.contextRetrievalEnabled) {
           try {
-            const searchVector = await this.deps.contextRetriever!.getSearchVector(query.search);
-            vectorResults = await this.deps.vectorMemoryManager!.searchMemories(
+            // getSearchVector embeds the query once and fuses with context centroid
+            const fusedVector = await this.deps.contextRetriever!.getSearchVector(query.search);
+            // Search with fused vector (context-biased)
+            const fusedResults = await this.deps.vectorMemoryManager!.searchMemoriesByVector(
+              fusedVector,
+              limit,
+              threshold,
+              resolvedPersonalityId
+            );
+            // Also search with raw query for diversity (reuse the query embedding from getSearchVector)
+            const rawResults = await this.deps.vectorMemoryManager!.searchMemories(
               query.search,
               limit,
               threshold,
               resolvedPersonalityId
             );
-            // Re-search with fused vector for better context-aware results
-            const fusedResults = await this.deps.vectorMemoryManager!.searchMemoriesByVector(
-              searchVector,
-              limit,
-              threshold,
-              resolvedPersonalityId
-            ).catch(() => null);
-            if (fusedResults) {
-              // Merge: RRF between raw vector results and context-fused results
-              const merged = new Map<string, number>();
-              vectorResults.forEach((r, i) => merged.set(r.id, 1 / (60 + i + 1)));
-              fusedResults.forEach((r, i) => {
-                merged.set(r.id, (merged.get(r.id) ?? 0) + 1 / (60 + i + 1));
-              });
-              const sortedIds = [...merged.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
-              vectorResults = sortedIds.slice(0, limit).map((id) => {
-                const orig = vectorResults.find((r) => r.id === id) ?? fusedResults!.find((r) => r.id === id);
-                return { id, score: orig?.score ?? 0, metadata: orig?.metadata };
-              });
-            }
+            // RRF merge: fused results + raw results
+            const merged = new Map<string, number>();
+            fusedResults.forEach((r, i) => merged.set(r.id, 1 / (60 + i + 1)));
+            rawResults.forEach((r, i) => {
+              merged.set(r.id, (merged.get(r.id) ?? 0) + 1 / (60 + i + 1));
+            });
+            const sortedIds = [...merged.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
+            vectorResults = sortedIds.slice(0, limit).map((id) => {
+              const orig = fusedResults.find((r) => r.id === id) ?? rawResults.find((r) => r.id === id);
+              return { id, score: orig?.score ?? 0, metadata: orig?.metadata };
+            });
           } catch {
             vectorResults = await this.deps.vectorMemoryManager!.searchMemories(
               query.search,
@@ -347,6 +348,10 @@ export class BrainManager {
     } catch {
       /* best-effort chunk cleanup */
     }
+    // Remove salience metadata (best-effort)
+    if (this.salienceEnabled) {
+      void this.storage.deleteMeta(`salience:${id}`).catch(() => {});
+    }
     if (this.vectorEnabled) {
       try {
         await this.deps.vectorMemoryManager!.removeMemory(id);
@@ -373,7 +378,7 @@ export class BrainManager {
       throw new Error('Brain is not enabled');
     }
 
-    const maxContentLength = (this.config as any).maxContentLength ?? 4096;
+    const maxContentLength = this.config.maxContentLength;
     if (content.length > maxContentLength) {
       throw new Error(`Knowledge content exceeds maximum length of ${maxContentLength}`);
     }
@@ -440,7 +445,17 @@ export class BrainManager {
     id: string,
     data: { content?: string; confidence?: number; supersedes?: string }
   ): Promise<KnowledgeEntry> {
-    return this.storage.updateKnowledge(id, data);
+    const entry = await this.storage.updateKnowledge(id, data);
+    // Re-index vector store when content changes
+    if (data.content && this.vectorEnabled) {
+      try {
+        await this.deps.vectorMemoryManager!.removeKnowledge(id);
+        await this.deps.vectorMemoryManager!.indexKnowledge(entry);
+      } catch (err) {
+        this.deps.logger.warn('Failed to re-index updated knowledge in vector store', { error: String(err) });
+      }
+    }
+    return entry;
   }
 
   async deleteKnowledge(id: string): Promise<void> {
@@ -491,11 +506,7 @@ export class BrainManager {
         );
 
         if (memResults.length > 0) {
-          const fetchedMemories: import('./types.js').Memory[] = [];
-          for (const vr of memResults) {
-            const memory = await this.storage.getMemory(vr.id);
-            if (memory) fetchedMemories.push(memory);
-          }
+          const fetchedMemories = await this.storage.getMemoryBatch(memResults.map((r) => r.id));
           const rankedMemories = this.applyCognitiveRanking(fetchedMemories, Date.now());
           this.recordRetrieval(rankedMemories.map((m) => m.id));
 
@@ -576,12 +587,14 @@ export class BrainManager {
   private sanitizeForPrompt(content: string): string {
     // Strip known prompt injection markers
     const patterns = [
-      /\[\[SYSTEM\]\]|\{\{system\}\}|<\|system\|>|<<SYS>>|<s>\[INST\]/gi,
-      /ignore\s+(all\s+)?(previous|prior|above)\s+(instructions?|prompts?|rules?)/gi,
+      /\[\[SYSTEM\]\]|\{\{system\}\}|<\|system\|>|<<SYS>>|<s>\[INST\]|<\|im_start\|>system/gi,
+      /ignore\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions?|prompts?|rules?)/gi,
+      /disregard\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions?|prompts?|rules?)/gi,
       /forget\s+(all\s+)?(previous|prior|your)\s+(instructions?|training|context)/gi,
       /pretend\s+(you\s+are|to\s+be|you're)\s+(a\s+)?(different|new|another)\s+(ai|assistant|bot)/gi,
       /DAN\s*mode|developer\s*mode|jailbreak|do\s*anything\s*now/gi,
       /you\s+are\s+now\s+(in\s+)?(unrestricted|unfiltered|uncensored)\s+mode/gi,
+      /\[INST\]|\[\/INST\]|<\|assistant\|>|<\|user\|>|<\|endoftext\|>/gi,
     ];
     let sanitized = content;
     for (const pattern of patterns) {
@@ -869,7 +882,7 @@ export class BrainManager {
     const prunedIds = await this.storage.pruneExpiredMemories();
 
     // Prune by importance floor
-    const importanceFloor = (this.config as any).importanceFloor ?? 0.05;
+    const importanceFloor = this.config.importanceFloor;
     const floorPrunedIds = await this.storage.pruneByImportanceFloor(importanceFloor);
     const allPrunedIds = [...prunedIds, ...floorPrunedIds];
 

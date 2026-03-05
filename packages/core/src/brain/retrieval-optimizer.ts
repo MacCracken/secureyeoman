@@ -61,14 +61,13 @@ interface BetaArm {
  * Returns a value in [0, 1].
  */
 export function sampleBeta(alpha: number, beta: number): number {
-  // Simple approximation using the mean + noise for deterministic environments
-  // Full implementation would use gamma distribution sampling
+  // Normal approximation of Beta distribution (accurate for alpha,beta > 2)
   const mean = alpha / (alpha + beta);
   const variance = (alpha * beta) / ((alpha + beta) ** 2 * (alpha + beta + 1));
   const stddev = Math.sqrt(variance);
 
-  // Box-Muller transform for normal sample
-  const u1 = Math.random();
+  // Box-Muller transform for normal sample (guard against log(0))
+  const u1 = Math.random() || 1e-10;
   const u2 = Math.random();
   const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
 

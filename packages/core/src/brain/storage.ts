@@ -1116,6 +1116,10 @@ export class BrainStorage extends PgBaseStorage {
     );
   }
 
+  async deleteMeta(key: string): Promise<void> {
+    await this.execute('DELETE FROM brain.meta WHERE key = $1', [key]);
+  }
+
   // ── Stats ────────────────────────────────────────────────────
 
   async getStats(personalityId?: string): Promise<BrainStats> {

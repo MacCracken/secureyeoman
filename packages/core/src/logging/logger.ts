@@ -186,11 +186,15 @@ class SecureLoggerImpl implements SecureLogger {
   }
 
   trace(msg: string, context?: LogContext): void {
-    this.pino.trace(this.sanitizeContext(context), msg);
+    if (this.pino.isLevelEnabled('trace')) {
+      this.pino.trace(this.sanitizeContext(context), msg);
+    }
   }
 
   debug(msg: string, context?: LogContext): void {
-    this.pino.debug(this.sanitizeContext(context), msg);
+    if (this.pino.isLevelEnabled('debug')) {
+      this.pino.debug(this.sanitizeContext(context), msg);
+    }
   }
 
   info(msg: string, context?: LogContext): void {

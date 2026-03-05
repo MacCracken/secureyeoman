@@ -408,19 +408,22 @@ export class ContentGuardrail {
 
   private extractCitations(text: string): string[] {
     const citations: string[] = [];
+    const MAX_CITATIONS = 20;
 
     // Quoted text
     const quoteRegex = /"([^"]{10,200})"/g;
     let match: RegExpExecArray | null;
-    while ((match = quoteRegex.exec(text)) !== null) {
+    while ((match = quoteRegex.exec(text)) !== null && citations.length < MAX_CITATIONS) {
       if (match[1]) citations.push(match[1]);
     }
 
     // "According to..." patterns
-    const accordingRegex =
-      /(?:according to|as stated (?:by|in)|as reported (?:by|in))\s+(.{10,100}?)(?:\.|,|;|\n)/gi;
-    while ((match = accordingRegex.exec(text)) !== null) {
-      if (match[1]) citations.push(match[1].trim());
+    if (citations.length < MAX_CITATIONS) {
+      const accordingRegex =
+        /(?:according to|as stated (?:by|in)|as reported (?:by|in))\s+(.{10,100}?)(?:\.|,|;|\n)/gi;
+      while ((match = accordingRegex.exec(text)) !== null && citations.length < MAX_CITATIONS) {
+        if (match[1]) citations.push(match[1].trim());
+      }
     }
 
     return citations;

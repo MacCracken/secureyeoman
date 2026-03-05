@@ -43,16 +43,23 @@ export class PgBaseStorage {
 
   protected async withTransaction<T>(fn: (client: pg.PoolClient) => Promise<T>): Promise<T> {
     const client = await this.getPool().connect();
+    let released = false;
     try {
       await client.query('BEGIN');
       const result = await fn(client);
       await client.query('COMMIT');
       return result;
     } catch (err) {
-      await client.query('ROLLBACK');
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackErr) {
+        // Connection is compromised — pass error to release() so pool can discard it
+        released = true;
+        client.release(rollbackErr instanceof Error ? rollbackErr : new Error(String(rollbackErr)));
+      }
       throw err;
     } finally {
-      client.release();
+      if (!released) client.release();
     }
   }
 

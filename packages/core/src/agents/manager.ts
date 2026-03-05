@@ -774,11 +774,16 @@ export class SubAgentManager {
           );
         }
 
+        const MAX_OUTPUT_BYTES = 10 * 1024 * 1024; // 10 MB cap
         child.stdout.on('data', (d: Buffer) => {
-          stdout += d.toString();
+          if (stdout.length < MAX_OUTPUT_BYTES) {
+            stdout += d.toString();
+          }
         });
         child.stderr.on('data', (d: Buffer) => {
-          stderr += d.toString();
+          if (stderr.length < MAX_OUTPUT_BYTES) {
+            stderr += d.toString();
+          }
         });
 
         child.on('error', (err) => {

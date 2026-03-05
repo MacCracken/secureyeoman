@@ -109,6 +109,9 @@ export class WorkflowEngine {
   private readonly alertManager: AlertManager | null;
   // Council of AIs
   private readonly councilManager: CouncilManager | null;
+  /** Tracks subworkflow nesting depth to prevent infinite recursion. */
+  private subworkflowDepth = 0;
+  private static readonly MAX_SUBWORKFLOW_DEPTH = 10;
 
   constructor(deps: WorkflowEngineDeps) {
     this.storage = deps.storage;
@@ -143,8 +146,13 @@ export class WorkflowEngine {
     try {
       const tiers = this.topologicalSort(definition.steps);
 
+      const MAX_PARALLEL_STEPS = 20;
       for (const tier of tiers) {
-        await Promise.all(tier.map((stepId) => this.executeStep(stepId, definition, ctx, run.id)));
+        // Batch parallel execution to prevent resource exhaustion
+        for (let i = 0; i < tier.length; i += MAX_PARALLEL_STEPS) {
+          const batch = tier.slice(i, i + MAX_PARALLEL_STEPS);
+          await Promise.all(batch.map((stepId) => this.executeStep(stepId, definition, ctx, run.id)));
+        }
       }
 
       const lastOutput = this.buildOutput(ctx);
@@ -507,12 +515,20 @@ export class WorkflowEngine {
           method,
           headers,
           body: body ?? undefined,
+          signal: AbortSignal.timeout(30_000),
         });
+        // Cap response to 10 MB to prevent memory exhaustion
         const responseText = await response.text();
+        if (responseText.length > 10 * 1024 * 1024) {
+          throw new Error(`Webhook response too large (${responseText.length} bytes)`);
+        }
         return { status: response.status, body: responseText };
       }
 
       case 'subworkflow': {
+        if (this.subworkflowDepth >= WorkflowEngine.MAX_SUBWORKFLOW_DEPTH) {
+          throw new Error(`Subworkflow nesting depth exceeds limit (${WorkflowEngine.MAX_SUBWORKFLOW_DEPTH})`);
+        }
         const subWorkflowId = String(cfg.workflowId ?? '');
         const subDefinition = await this.storage.getDefinition(subWorkflowId);
         if (!subDefinition) {
@@ -527,7 +543,12 @@ export class WorkflowEngine {
           subInput,
           'subworkflow'
         );
-        await this.execute(subRun, subDefinition);
+        this.subworkflowDepth++;
+        try {
+          await this.execute(subRun, subDefinition);
+        } finally {
+          this.subworkflowDepth--;
+        }
         const updatedSubRun = await this.storage.getRun(subRun.id);
         return updatedSubRun?.output ?? null;
       }
@@ -717,6 +738,7 @@ export class WorkflowEngine {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt }),
+            signal: AbortSignal.timeout(60_000),
           });
           const json = (await response.json()) as { response?: string; text?: string };
           return json.response ?? json.text ?? '';
@@ -856,10 +878,10 @@ export class WorkflowEngine {
           if (token) headers.Authorization = `Bearer ${token}`;
           const res = await fetch(
             `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowId}/dispatches`,
-            { method: 'POST', headers, body: JSON.stringify({ ref, inputs }) }
+            { method: 'POST', headers, body: JSON.stringify({ ref, inputs }), signal: AbortSignal.timeout(30_000) }
           );
           if (!res.ok && res.status !== 204) {
-            const errBody = await res.text();
+            const errBody = (await res.text()).slice(0, 1000);
             throw new Error(`GitHub Actions dispatch failed (${res.status}): ${errBody}`);
           }
           // GHA dispatch returns 204 — no run ID is synchronously available.
@@ -888,9 +910,10 @@ export class WorkflowEngine {
             method: 'POST',
             headers,
             body: JSON.stringify({ ref, variables: variableList }),
+            signal: AbortSignal.timeout(30_000),
           });
           if (!res.ok) {
-            const errBody = await res.text();
+            const errBody = (await res.text()).slice(0, 1000);
             throw new Error(`GitLab pipeline trigger failed (${res.status}): ${errBody}`);
           }
           const data = (await res.json()) as { id: number; web_url: string };
@@ -935,7 +958,7 @@ export class WorkflowEngine {
           while (Date.now() < deadline) {
             const res = await fetch(
               `https://api.github.com/repos/${owner}/${repo}/actions/runs/${runId}`,
-              { headers }
+              { headers, signal: AbortSignal.timeout(15_000) }
             );
             if (res.ok) {
               const data = (await res.json()) as {
@@ -970,7 +993,7 @@ export class WorkflowEngine {
           while (Date.now() < deadline) {
             const res = await fetch(
               `${gitlabUrl}/api/v4/projects/${projectId}/pipelines/${runId}`,
-              { headers }
+              { headers, signal: AbortSignal.timeout(15_000) }
             );
             if (res.ok) {
               const data = (await res.json()) as { status: string; web_url: string };
