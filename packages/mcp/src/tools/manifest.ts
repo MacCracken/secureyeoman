@@ -804,6 +804,23 @@ export function getToolManifest(): ToolManifestEntry[] {
         'Get an executive summary of the Security Reference Architecture posture.',
     },
 
+    // Constitutional AI tools
+    {
+      name: 'constitutional_principles',
+      description:
+        'List the active constitutional AI principles used for self-critique and response revision.',
+    },
+    {
+      name: 'constitutional_critique',
+      description:
+        'Critique an AI response against the active constitutional principles. Returns per-principle violation findings.',
+    },
+    {
+      name: 'constitutional_revise',
+      description:
+        'Full critique-and-revise loop: evaluate a response against the constitution, revise if violations found, record preference pairs for DPO training.',
+    },
+
     // Excalidraw diagramming tools (Phase 117)
     {
       name: 'excalidraw_create',

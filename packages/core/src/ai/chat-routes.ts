@@ -27,6 +27,7 @@ import { createResponseGuard } from '../security/response-guard.js';
 import { AbuseDetector } from '../security/abuse-detector.js';
 import { createContentGuardrail } from '../security/content-guardrail.js';
 import { LLMJudge } from '../security/llm-judge.js';
+import { ConstitutionalEngine } from '../security/constitutional.js';
 import { ContextCompactor, getContextWindowSize } from './context-compactor.js';
 import { GroundingChecker } from '../brain/grounding-checker.js';
 import { getLogger } from '../logging/logger.js';
@@ -860,6 +861,35 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
   // Groundedness enforcement — verifies AI claims against retrieved sources (Phase 110).
   const groundingChecker = new GroundingChecker();
 
+  // Constitutional AI — self-critique and revision loop.
+  let constitutionalEngine: ConstitutionalEngine | null = null;
+  try {
+    const constitutionalConfig = secureYeoman.getConfig().security.constitutional;
+    if (constitutionalConfig.enabled) {
+      const _aiClientForConst = secureYeoman.getAIClient();
+      constitutionalEngine = new ConstitutionalEngine(constitutionalConfig, {
+        logger: secureYeoman.getLogger(),
+        chat: async (msgs, opts) => {
+          const resp = await _aiClientForConst.chat({
+            messages: msgs.map((m) => ({ role: m.role, content: m.content })),
+            model: opts?.model,
+            temperature: opts?.temperature,
+            stream: false,
+          });
+          return resp.content;
+        },
+        getIntentBoundaries: () => {
+          const intentMgr = secureYeoman.getIntentManager?.();
+          if (!intentMgr) return [];
+          const doc = intentMgr.getActiveIntent?.();
+          return doc?.hardBoundaries ?? [];
+        },
+      });
+    }
+  } catch {
+    constitutionalEngine = null;
+  }
+
   // LLM-as-Judge for high-autonomy tool calls (Phase 54).
   let llmJudge: LLMJudge | null = null;
   try {
@@ -1545,6 +1575,62 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         const response = scanResult.redacted
           ? { ...rawResponse, content: scanResult.text }
           : rawResponse;
+
+        // ── Constitutional AI — self-critique and revision ──────────────────────
+        if (constitutionalEngine?.isEnabled) {
+          const constMode = secureYeoman.getConfig().security.constitutional.mode;
+          const userPrompt = messages.filter((m) => m.role === 'user').pop()?.content ?? '';
+          const revision = await constitutionalEngine.critiqueAndRevise(
+            typeof userPrompt === 'string' ? userPrompt : '',
+            response.content,
+          );
+
+          if (revision.critiques.some((c) => c.violated)) {
+            void secureYeoman.getAuditChain().record({
+              event: 'constitutional_critique',
+              level: 'info',
+              message: `Constitutional critique: ${revision.critiques.filter((c) => c.violated).length} violation(s) found`,
+              metadata: {
+                violations: revision.critiques.filter((c) => c.violated).map((c) => c.principleId),
+                revised: revision.revised,
+                mode: constMode,
+              },
+            });
+          }
+
+          // In online mode, apply the revision
+          if (constMode === 'online' && revision.revised) {
+            response.content = revision.revisedResponse;
+          }
+
+          // Record preference pairs for DPO training
+          if (
+            revision.revised &&
+            secureYeoman.getConfig().security.constitutional.recordPreferencePairs
+          ) {
+            try {
+              const prefMgr = secureYeoman.getPreferenceManager?.();
+              if (prefMgr) {
+                void prefMgr.recordAnnotation({
+                  prompt: typeof userPrompt === 'string' ? userPrompt : '',
+                  chosen: revision.revisedResponse,
+                  rejected: revision.originalResponse,
+                  source: 'constitutional',
+                  conversationId: conversationId ?? undefined,
+                  personalityId: personality?.id,
+                  metadata: {
+                    critiques: revision.critiques
+                      .filter((c) => c.violated)
+                      .map((c) => ({ id: c.principleId, severity: c.severity })),
+                    round: revision.revisionRound,
+                  },
+                });
+              }
+            } catch {
+              // Non-critical — don't block response
+            }
+          }
+        }
 
         // ── ResponseGuard (Phase 54) — output-side safety scan ────────────────
         {
@@ -2537,7 +2623,62 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
 
         // Credential scan
         const scanResult = scanner.scan(finalContent, 'llm_response');
-        const safeContent = scanResult.redacted ? scanResult.text : finalContent;
+        let safeContent = scanResult.redacted ? scanResult.text : finalContent;
+
+        // ── Constitutional AI — self-critique and revision (streaming post-hoc) ─
+        if (constitutionalEngine?.isEnabled) {
+          const constModeS = secureYeoman.getConfig().security.constitutional.mode;
+          const userPromptS = messages.filter((m) => m.role === 'user').pop()?.content ?? '';
+          const revisionS = await constitutionalEngine.critiqueAndRevise(
+            typeof userPromptS === 'string' ? userPromptS : '',
+            safeContent,
+          );
+
+          if (revisionS.critiques.some((c) => c.violated)) {
+            void secureYeoman.getAuditChain().record({
+              event: 'constitutional_critique',
+              level: 'info',
+              message: `Constitutional critique (stream): ${revisionS.critiques.filter((c) => c.violated).length} violation(s)`,
+              metadata: {
+                violations: revisionS.critiques.filter((c) => c.violated).map((c) => c.principleId),
+                revised: revisionS.revised,
+                mode: constModeS,
+              },
+            });
+          }
+
+          if (constModeS === 'online' && revisionS.revised) {
+            safeContent = revisionS.revisedResponse;
+            emit({ type: 'content_delta', content: '\n\n[Revised by Constitutional AI]' });
+          }
+
+          if (
+            revisionS.revised &&
+            secureYeoman.getConfig().security.constitutional.recordPreferencePairs
+          ) {
+            try {
+              const prefMgrS = secureYeoman.getPreferenceManager?.();
+              if (prefMgrS) {
+                void prefMgrS.recordAnnotation({
+                  prompt: typeof userPromptS === 'string' ? userPromptS : '',
+                  chosen: revisionS.revisedResponse,
+                  rejected: revisionS.originalResponse,
+                  source: 'constitutional',
+                  conversationId: conversationId ?? undefined,
+                  personalityId: personality?.id,
+                  metadata: {
+                    critiques: revisionS.critiques
+                      .filter((c) => c.violated)
+                      .map((c) => ({ id: c.principleId, severity: c.severity })),
+                    round: revisionS.revisionRound,
+                  },
+                });
+              }
+            } catch {
+              // Non-critical
+            }
+          }
+        }
 
         // ── ResponseGuard (Phase 54) — output-side safety scan ────────────────
         {

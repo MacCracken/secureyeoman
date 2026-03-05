@@ -218,4 +218,41 @@ describe('Prometheus Metrics', () => {
     const output = formatPrometheusMetrics({});
     expect(output).not.toContain('secureyeoman_risk_department_count');
   });
+
+  // Phase 83 — Personality activity heatmap
+  it('formats personality activity metrics', () => {
+    const metrics: Partial<MetricsSnapshot> = {
+      personalityActivity: [
+        { personalityId: 'p-alpha', requests: 42, tokens: 15000, costUsd: 0.1234 },
+        { personalityId: 'p-beta', requests: 7, tokens: 3000, costUsd: 0.0456 },
+      ],
+    };
+    const output = formatPrometheusMetrics(metrics);
+    expect(output).toContain('friday_personality_requests_today{personality_id="p-alpha"} 42');
+    expect(output).toContain('friday_personality_requests_today{personality_id="p-beta"} 7');
+    expect(output).toContain('friday_personality_tokens_today{personality_id="p-alpha"} 15000');
+    expect(output).toContain('friday_personality_tokens_today{personality_id="p-beta"} 3000');
+    expect(output).toContain('friday_personality_cost_usd_today{personality_id="p-alpha"} 0.1234');
+    expect(output).toContain('friday_personality_cost_usd_today{personality_id="p-beta"} 0.0456');
+  });
+
+  it('omits personality activity section when empty', () => {
+    const output = formatPrometheusMetrics({ personalityActivity: [] });
+    expect(output).not.toContain('friday_personality_requests_today');
+  });
+
+  it('omits personality activity section when not provided', () => {
+    const output = formatPrometheusMetrics({});
+    expect(output).not.toContain('friday_personality_requests_today');
+  });
+
+  it('escapes double quotes in personality IDs', () => {
+    const metrics: Partial<MetricsSnapshot> = {
+      personalityActivity: [
+        { personalityId: 'p-with"quote', requests: 1, tokens: 100, costUsd: 0.001 },
+      ],
+    };
+    const output = formatPrometheusMetrics(metrics);
+    expect(output).toContain('personality_id="p-with\\"quote"');
+  });
 });

@@ -39,6 +39,13 @@ export interface LatencyPercentiles {
   count: number;
 }
 
+export interface PersonalityActivityEntry {
+  personalityId: string;
+  requests: number;
+  tokens: number;
+  costUsd: number;
+}
+
 export interface UsageStats {
   inputTokensToday: number;
   outputTokensToday: number;
@@ -54,6 +61,8 @@ export interface UsageStats {
   /** Latency percentiles computed from the in-memory ring buffer. */
   apiLatencyPercentiles: LatencyPercentiles;
   byProvider: Record<string, ProviderStats>;
+  /** Per-personality request/token/cost aggregates for the current day. */
+  byPersonality: PersonalityActivityEntry[];
 }
 
 interface ProviderStats {
@@ -116,6 +125,13 @@ export class UsageTracker {
   private monthCostUsd = 0;
   private providerStats: Record<string, ProviderStats> = {};
 
+  /** Per-personality activity for today — reset on day rollover. Capped at 500 entries. */
+  private personalityActivity = new Map<
+    string,
+    { requests: number; tokens: number; costUsd: number }
+  >();
+  private static readonly MAX_PERSONALITY_ENTRIES = 500;
+
   // Reset timestamps — loaded from DB so counters start from the right baseline
   private errorsResetAt = 0;
   private latencyResetAt = 0;
@@ -170,6 +186,7 @@ export class UsageTracker {
     const today = dayKey(Date.now());
     if (today !== this.currentDayKey) {
       this.todayRecords.length = 0;
+      this.personalityActivity.clear();
       this.currentDayKey = today;
     }
 
@@ -196,6 +213,25 @@ export class UsageTracker {
     ps.tokensUsed += record.usage.totalTokens;
     ps.costUsd += record.costUsd;
     ps.calls++;
+
+    // Per-personality activity tracking
+    if (
+      record.personalityId &&
+      this.personalityActivity.size < UsageTracker.MAX_PERSONALITY_ENTRIES
+    ) {
+      const pa = this.personalityActivity.get(record.personalityId);
+      if (pa) {
+        pa.requests++;
+        pa.tokens += record.usage.totalTokens;
+        pa.costUsd += record.costUsd;
+      } else {
+        this.personalityActivity.set(record.personalityId, {
+          requests: 1,
+          tokens: record.usage.totalTokens,
+          costUsd: record.costUsd,
+        });
+      }
+    }
 
     if (record.latencyMs !== undefined) {
       this.apiLatencyTotalMs += record.latencyMs;
@@ -298,6 +334,13 @@ export class UsageTracker {
       }
     }
 
+    const byPersonality: PersonalityActivityEntry[] = [];
+    for (const [personalityId, pa] of this.personalityActivity) {
+      byPersonality.push({ personalityId, ...pa });
+    }
+    // Sort descending by requests for Grafana top-N panels
+    byPersonality.sort((a, b) => b.requests - a.requests);
+
     return {
       inputTokensToday,
       outputTokensToday,
@@ -311,6 +354,7 @@ export class UsageTracker {
       apiCallCount: this.latencyCallCount,
       apiLatencyPercentiles: this.latencyRing.percentiles(),
       byProvider: this.providerStats,
+      byPersonality,
     };
   }
 

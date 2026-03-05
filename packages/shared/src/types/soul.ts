@@ -109,6 +109,8 @@ export const McpFeaturesSchema = z
     exposeCognitiveMemory: z.boolean().default(false),
     /** Financial charting tools (chart_*). Requires global exposeCharting. */
     exposeCharting: z.boolean().default(false),
+    /** Constitutional AI tools (constitutional_*). Requires global exposeConstitutional. */
+    exposeConstitutional: z.boolean().default(false),
   })
   .default({});
 

@@ -71,6 +71,8 @@ export {
   type TimeSeriesPoint,
   type TimeSeries,
   type MetricsQuery,
+  PersonalityActivityEntrySchema,
+  type PersonalityActivityEntry,
 } from './metrics.js';
 
 // AI types
@@ -497,6 +499,10 @@ export {
   type OpsDomainConfig,
   type ExtensionsDomainConfig,
   type ConfigDomain,
+  ConstitutionalPrincipleSchema,
+  ConstitutionalConfigSchema,
+  type ConstitutionalPrinciple,
+  type ConstitutionalConfig,
 } from './config.js';
 
 // Proactive types

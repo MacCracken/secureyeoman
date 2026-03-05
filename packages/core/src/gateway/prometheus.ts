@@ -135,6 +135,32 @@ export function formatPrometheusMetrics(metrics: Partial<MetricsSnapshot>): stri
     lines.push(`secureyeoman_risk_appetite_breaches ${dr.appetiteBreaches}`);
   }
 
+  // ── Personality Activity Metrics (Phase 83) ─────────────
+  if (metrics.personalityActivity && metrics.personalityActivity.length > 0) {
+    lines.push('# HELP friday_personality_requests_today Per-personality request count today');
+    lines.push('# TYPE friday_personality_requests_today gauge');
+    for (const pa of metrics.personalityActivity) {
+      const pid = pa.personalityId.replace(/"/g, '\\"');
+      lines.push(`friday_personality_requests_today{personality_id="${pid}"} ${pa.requests}`);
+    }
+
+    lines.push('# HELP friday_personality_tokens_today Per-personality token usage today');
+    lines.push('# TYPE friday_personality_tokens_today gauge');
+    for (const pa of metrics.personalityActivity) {
+      const pid = pa.personalityId.replace(/"/g, '\\"');
+      lines.push(`friday_personality_tokens_today{personality_id="${pid}"} ${pa.tokens}`);
+    }
+
+    lines.push('# HELP friday_personality_cost_usd_today Per-personality cost in USD today');
+    lines.push('# TYPE friday_personality_cost_usd_today gauge');
+    for (const pa of metrics.personalityActivity) {
+      const pid = pa.personalityId.replace(/"/g, '\\"');
+      lines.push(
+        `friday_personality_cost_usd_today{personality_id="${pid}"} ${pa.costUsd.toFixed(4)}`
+      );
+    }
+  }
+
   // ── Process Metrics ──────────────────────────────────────
   const mem = process.memoryUsage();
   lines.push('# HELP process_heap_bytes Node.js heap usage in bytes');

@@ -9,12 +9,7 @@
  * - Graceful shutdown ensures audit trail is complete
  */
 
-import {
-  loadConfig,
-  validateSecrets,
-  getSecret,
-  type LoadConfigOptions,
-} from './config/loader.js';
+import { loadConfig, validateSecrets, getSecret, type LoadConfigOptions } from './config/loader.js';
 import { initializeLogger, type SecureLogger } from './logging/logger.js';
 import {
   AuditChain,
@@ -115,7 +110,11 @@ import type { SsoStorage } from './security/sso-storage.js';
 import type { SsoManager } from './security/sso-manager.js';
 import type { AthiManager } from './security/athi-manager.js';
 import type { SraManager } from './security/sra-manager.js';
-import type { ExternalizationGate, QuarantineStorage, ScanHistoryStore } from './sandbox/scanning/index.js';
+import type {
+  ExternalizationGate,
+  QuarantineStorage,
+  ScanHistoryStore,
+} from './sandbox/scanning/index.js';
 import type { McpStorage } from './mcp/storage.js';
 import type { McpClientManager } from './mcp/client.js';
 import type { McpServer } from './mcp/server.js';
@@ -355,7 +354,10 @@ export class SecureYeoman {
           const persistedKey = await this.brainStorage!.getMeta('license:key');
           if (persistedKey) {
             process.env[this.config.licensing.licenseKeyEnv] = persistedKey;
-            this.licenseManager = new LicenseManager(persistedKey, this.config.licensing.enforcement);
+            this.licenseManager = new LicenseManager(
+              persistedKey,
+              this.config.licensing.enforcement
+            );
             this.logger.info('License key loaded from brain.meta', {
               tier: this.licenseManager.getTier(),
             });
@@ -892,11 +894,16 @@ export class SecureYeoman {
             }
           })()
         : {}),
+      // Per-personality activity heatmap (Phase 83)
+      ...(aiStats?.byPersonality && aiStats.byPersonality.length > 0
+        ? { personalityActivity: aiStats.byPersonality }
+        : {}),
       // Departmental risk metrics (Phase 111)
       ...(this.platformMod?.getDepartmentRiskManager()
         ? await (async () => {
             try {
-              const summary = await this.platformMod!.getDepartmentRiskManager()!.getExecutiveSummary();
+              const summary =
+                await this.platformMod!.getDepartmentRiskManager()!.getExecutiveSummary();
               return {
                 departmentalRisk: {
                   departmentCount: summary.totalDepartments,
@@ -974,7 +981,11 @@ export class SecureYeoman {
     return this.auditMod!.enforceAuditRetention(opts);
   }
 
-  async exportAuditLog(opts?: { from?: number; to?: number; limit?: number }): Promise<AuditEntry[]> {
+  async exportAuditLog(opts?: {
+    from?: number;
+    to?: number;
+    limit?: number;
+  }): Promise<AuditEntry[]> {
     this.ensureInitialized();
     return this.auditMod!.exportAuditLog(opts);
   }
@@ -983,15 +994,39 @@ export class SecureYeoman {
   // Getters — core infrastructure
   // ------------------------------------------------------------------
 
-  getLogger(): SecureLogger { this.ensureInitialized(); return this.logger!; }
-  getRBAC(): RBAC { this.ensureInitialized(); return this.rbac!; }
-  getAuditChain(): AuditChain { this.ensureInitialized(); return this.auditChain!; }
-  getValidator(): InputValidator { this.ensureInitialized(); return this.validator!; }
-  getRateLimiter(): RateLimiterLike { this.ensureInitialized(); return this.rateLimiter!; }
-  getConfig(): Config { this.ensureInitialized(); return this.config!; }
-  getGateway(): GatewayServer | null { return this.gateway; }
-  getTaskExecutor(): TaskExecutor | null { return this.taskExecutor; }
-  getLicenseManager(): LicenseManager { return this.licenseManager; }
+  getLogger(): SecureLogger {
+    this.ensureInitialized();
+    return this.logger!;
+  }
+  getRBAC(): RBAC {
+    this.ensureInitialized();
+    return this.rbac!;
+  }
+  getAuditChain(): AuditChain {
+    this.ensureInitialized();
+    return this.auditChain!;
+  }
+  getValidator(): InputValidator {
+    this.ensureInitialized();
+    return this.validator!;
+  }
+  getRateLimiter(): RateLimiterLike {
+    this.ensureInitialized();
+    return this.rateLimiter!;
+  }
+  getConfig(): Config {
+    this.ensureInitialized();
+    return this.config!;
+  }
+  getGateway(): GatewayServer | null {
+    return this.gateway;
+  }
+  getTaskExecutor(): TaskExecutor | null {
+    return this.taskExecutor;
+  }
+  getLicenseManager(): LicenseManager {
+    return this.licenseManager;
+  }
 
   getDataDir(): string {
     this.ensureInitialized();
@@ -999,10 +1034,16 @@ export class SecureYeoman {
   }
 
   getPool(): import('pg').Pool | null {
-    try { return getPool(); } catch { return null; }
+    try {
+      return getPool();
+    } catch {
+      return null;
+    }
   }
 
-  getAuditStorage(): AuditChainStorage | null { return this.auditStorage; }
+  getAuditStorage(): AuditChainStorage | null {
+    return this.auditStorage;
+  }
   getReportGenerator(): AuditReportGenerator | null {
     this.ensureInitialized();
     return this.auditMod?.getReportGenerator() ?? null;
@@ -1012,25 +1053,56 @@ export class SecureYeoman {
   // Getters — SecurityModule delegations
   // ------------------------------------------------------------------
 
-  getSecretsManager(): SecretsManager | null { return this.securityMod?.getSecretsManager() ?? null; }
-  getTlsManager(): TlsManager | null { return this.securityMod?.getTlsManager() ?? null; }
-  getRotationManager(): SecretRotationManager | null { return this.securityMod?.getRotationManager() ?? null; }
-  getKeyringManager(): KeyringManager | null { return this.securityMod?.getKeyringManager() ?? null; }
-  getSsoStorage(): SsoStorage | null { this.ensureInitialized(); return this.securityMod?.getSsoStorage() ?? null; }
-  getSsoManager(): SsoManager | null { this.ensureInitialized(); return this.securityMod?.getSsoManager() ?? null; }
-  getAthiManager(): AthiManager | null { this.ensureInitialized(); return this.securityMod?.getAthiManager() ?? null; }
-  getSraManager(): SraManager | null { this.ensureInitialized(); return this.securityMod?.getSraManager() ?? null; }
-  getExternalizationGate(): ExternalizationGate | null { this.ensureInitialized(); return this.securityMod?.getExternalizationGate() ?? null; }
-  getQuarantineStorage(): QuarantineStorage | null { this.ensureInitialized(); return this.securityMod?.getQuarantineStorage() ?? null; }
-  getScanHistoryStore(): ScanHistoryStore | null { this.ensureInitialized(); return this.securityMod?.getScanHistoryStore() ?? null; }
+  getSecretsManager(): SecretsManager | null {
+    return this.securityMod?.getSecretsManager() ?? null;
+  }
+  getTlsManager(): TlsManager | null {
+    return this.securityMod?.getTlsManager() ?? null;
+  }
+  getRotationManager(): SecretRotationManager | null {
+    return this.securityMod?.getRotationManager() ?? null;
+  }
+  getKeyringManager(): KeyringManager | null {
+    return this.securityMod?.getKeyringManager() ?? null;
+  }
+  getSsoStorage(): SsoStorage | null {
+    this.ensureInitialized();
+    return this.securityMod?.getSsoStorage() ?? null;
+  }
+  getSsoManager(): SsoManager | null {
+    this.ensureInitialized();
+    return this.securityMod?.getSsoManager() ?? null;
+  }
+  getAthiManager(): AthiManager | null {
+    this.ensureInitialized();
+    return this.securityMod?.getAthiManager() ?? null;
+  }
+  getSraManager(): SraManager | null {
+    this.ensureInitialized();
+    return this.securityMod?.getSraManager() ?? null;
+  }
+  getExternalizationGate(): ExternalizationGate | null {
+    this.ensureInitialized();
+    return this.securityMod?.getExternalizationGate() ?? null;
+  }
+  getQuarantineStorage(): QuarantineStorage | null {
+    this.ensureInitialized();
+    return this.securityMod?.getQuarantineStorage() ?? null;
+  }
+  getScanHistoryStore(): ScanHistoryStore | null {
+    this.ensureInitialized();
+    return this.securityMod?.getScanHistoryStore() ?? null;
+  }
 
   getAutonomyAuditManager(): AutonomyAuditManager | null {
     this.ensureInitialized();
-    return this.securityMod?.getOrCreateAutonomyAuditManager(
-      this.soulMod?.getSoulManager() ?? null,
-      this.delegationMod?.getWorkflowManager() ?? null,
-      this.auditChain,
-    ) ?? null;
+    return (
+      this.securityMod?.getOrCreateAutonomyAuditManager(
+        this.soulMod?.getSoulManager() ?? null,
+        this.delegationMod?.getWorkflowManager() ?? null,
+        this.auditChain
+      ) ?? null
+    );
   }
 
   // ------------------------------------------------------------------
@@ -1056,17 +1128,35 @@ export class SecureYeoman {
   getAIClient(): AIClient {
     this.ensureInitialized();
     const client = this.aiMod?.getAIClient();
-    if (!client) throw new Error('AI client is not available. Check provider configuration and API keys.');
+    if (!client)
+      throw new Error('AI client is not available. Check provider configuration and API keys.');
     return client;
   }
 
-  getUsageStorage(): UsageStorage | null { return this.aiMod?.getUsageStorage() ?? null; }
-  getCostOptimizer(): CostOptimizer | null { this.ensureInitialized(); return this.aiMod?.getCostOptimizer() ?? null; }
-  getCostCalculator() { this.ensureInitialized(); return this.aiMod?.getAIClient()?.getCostCalculator() ?? null; }
-  getProviderAccountManager(): ProviderAccountManager | null { this.ensureInitialized(); return this.aiMod?.getProviderAccountManager() ?? null; }
-  getProviderHealthTracker(): ProviderHealthTracker { return this.aiMod!.getProviderHealthTracker(); }
-  getCostBudgetChecker(): CostBudgetChecker | null { return this.aiMod?.getCostBudgetChecker() ?? null; }
-  getSystemPreferences(): SystemPreferencesStorage | null { return this.aiMod?.getSystemPreferences() ?? null; }
+  getUsageStorage(): UsageStorage | null {
+    return this.aiMod?.getUsageStorage() ?? null;
+  }
+  getCostOptimizer(): CostOptimizer | null {
+    this.ensureInitialized();
+    return this.aiMod?.getCostOptimizer() ?? null;
+  }
+  getCostCalculator() {
+    this.ensureInitialized();
+    return this.aiMod?.getAIClient()?.getCostCalculator() ?? null;
+  }
+  getProviderAccountManager(): ProviderAccountManager | null {
+    this.ensureInitialized();
+    return this.aiMod?.getProviderAccountManager() ?? null;
+  }
+  getProviderHealthTracker(): ProviderHealthTracker {
+    return this.aiMod!.getProviderHealthTracker();
+  }
+  getCostBudgetChecker(): CostBudgetChecker | null {
+    return this.aiMod?.getCostBudgetChecker() ?? null;
+  }
+  getSystemPreferences(): SystemPreferencesStorage | null {
+    return this.aiMod?.getSystemPreferences() ?? null;
+  }
 
   switchModel(provider: string, model: string): void {
     this.ensureInitialized();
@@ -1106,18 +1196,31 @@ export class SecureYeoman {
     return this.brainManager;
   }
 
-  getBrainStorage(): BrainStorage | null { return this.brainStorage; }
-  getCognitiveMemoryManager(): CognitiveMemoryManager | null { return this.brainMod?.getCognitiveMemoryManager() ?? null; }
-  getCognitiveMemoryStorage(): CognitiveMemoryStorage | null { return this.brainMod?.getCognitiveMemoryStorage() ?? null; }
+  getBrainStorage(): BrainStorage | null {
+    return this.brainStorage;
+  }
+  getCognitiveMemoryManager(): CognitiveMemoryManager | null {
+    return this.brainMod?.getCognitiveMemoryManager() ?? null;
+  }
+  getCognitiveMemoryStorage(): CognitiveMemoryStorage | null {
+    return this.brainMod?.getCognitiveMemoryStorage() ?? null;
+  }
   getDocumentManager(): DocumentManager {
     this.ensureInitialized();
     const dm = this.brainMod?.getDocumentManager();
     if (!dm) throw new Error('Document manager is not available');
     return dm;
   }
-  getMemoryAuditScheduler(): import('./brain/audit/scheduler.js').MemoryAuditScheduler | null { return this.brainMod?.getMemoryAuditScheduler() ?? null; }
-  getMemoryAuditStorage(): import('./brain/audit/audit-store.js').MemoryAuditStorage | null { return this.brainMod?.getMemoryAuditStorage() ?? null; }
-  getExternalBrainSync(): ExternalBrainSync | null { this.ensureInitialized(); return this.brainMod?.getExternalBrainSync() ?? null; }
+  getMemoryAuditScheduler(): import('./brain/audit/scheduler.js').MemoryAuditScheduler | null {
+    return this.brainMod?.getMemoryAuditScheduler() ?? null;
+  }
+  getMemoryAuditStorage(): import('./brain/audit/audit-store.js').MemoryAuditStorage | null {
+    return this.brainMod?.getMemoryAuditStorage() ?? null;
+  }
+  getExternalBrainSync(): ExternalBrainSync | null {
+    this.ensureInitialized();
+    return this.brainMod?.getExternalBrainSync() ?? null;
+  }
   getStrategyStorage(): StrategyStorage {
     this.ensureInitialized();
     const ss = this.brainMod?.getStrategyStorage();
@@ -1178,87 +1281,246 @@ export class SecureYeoman {
     return is;
   }
 
-  getMessageRouter(): MessageRouter | null { return this.integrationMod?.getMessageRouter() ?? null; }
-  getGroupChatStorage(): GroupChatStorage | null { return this.integrationMod?.getGroupChatStorage() ?? null; }
-  getRoutingRulesStorage(): RoutingRulesStorage | null { return this.integrationMod?.getRoutingRulesStorage() ?? null; }
-  getRoutingRulesManager(): RoutingRulesManager | null { return this.integrationMod?.getRoutingRulesManager() ?? null; }
-  getAgentComms(): AgentComms | null { this.ensureInitialized(); return this.integrationMod?.getAgentComms() ?? null; }
+  getMessageRouter(): MessageRouter | null {
+    return this.integrationMod?.getMessageRouter() ?? null;
+  }
+  getGroupChatStorage(): GroupChatStorage | null {
+    return this.integrationMod?.getGroupChatStorage() ?? null;
+  }
+  getRoutingRulesStorage(): RoutingRulesStorage | null {
+    return this.integrationMod?.getRoutingRulesStorage() ?? null;
+  }
+  getRoutingRulesManager(): RoutingRulesManager | null {
+    return this.integrationMod?.getRoutingRulesManager() ?? null;
+  }
+  getAgentComms(): AgentComms | null {
+    this.ensureInitialized();
+    return this.integrationMod?.getAgentComms() ?? null;
+  }
 
   // ------------------------------------------------------------------
   // Getters — PlatformModule delegations
   // ------------------------------------------------------------------
 
-  getMcpStorage(): McpStorage | null { this.ensureInitialized(); return this.platformMod?.getMcpStorage() ?? null; }
-  getMcpClientManager(): McpClientManager | null { this.ensureInitialized(); return this.platformMod?.getMcpClientManager() ?? null; }
-  getMcpServer(): McpServer | null { this.ensureInitialized(); return this.platformMod?.getMcpServer() ?? null; }
-  getDashboardManager(): DashboardManager | null { this.ensureInitialized(); return this.platformMod?.getDashboardManager() ?? null; }
-  getWorkspaceManager(): WorkspaceManager | null { this.ensureInitialized(); return this.platformMod?.getWorkspaceManager() ?? null; }
-  getExperimentManager(): ExperimentManager | null { this.ensureInitialized(); return this.platformMod?.getExperimentManager() ?? null; }
-  getMarketplaceManager(): MarketplaceManager | null { this.ensureInitialized(); return this.platformMod?.getMarketplaceManager() ?? null; }
-  getConversationStorage(): ConversationStorage | null { this.ensureInitialized(); return this.platformMod?.getConversationStorage() ?? null; }
-  getBranchingManager(): BranchingManager | null { this.ensureInitialized(); return this.platformMod?.getBranchingManager() ?? null; }
-  getNotificationManager(): NotificationManager | null { this.ensureInitialized(); return this.platformMod?.getNotificationManager() ?? null; }
-  getUserNotificationPrefsStorage(): UserNotificationPrefsStorage | null { this.ensureInitialized(); return this.platformMod?.getUserNotificationPrefsStorage() ?? null; }
-  getRiskAssessmentManager(): RiskAssessmentManager | null { this.ensureInitialized(); return this.platformMod?.getRiskAssessmentManager() ?? null; }
-  getDepartmentRiskManager(): DepartmentRiskManager | null { this.ensureInitialized(); return this.platformMod?.getDepartmentRiskManager() ?? null; }
-  getBackupManager(): BackupManager | null { this.ensureInitialized(); return this.platformMod?.getBackupManager() ?? null; }
-  getTenantManager(): TenantManager | null { this.ensureInitialized(); return this.platformMod?.getTenantManager() ?? null; }
-  getFederationManager(): FederationManager | null { return this.platformMod?.getFederationManager() ?? null; }
-  getAlertManager(): AlertManager | null { return this.platformMod?.getAlertManager() ?? null; }
-  getAlertStorage(): AlertStorage | null { return this.platformMod?.getAlertStorage() ?? null; }
-  getDynamicToolManager(): DynamicToolManager | null { this.ensureInitialized(); return this.platformMod?.getDynamicToolManager() ?? null; }
+  getMcpStorage(): McpStorage | null {
+    this.ensureInitialized();
+    return this.platformMod?.getMcpStorage() ?? null;
+  }
+  getMcpClientManager(): McpClientManager | null {
+    this.ensureInitialized();
+    return this.platformMod?.getMcpClientManager() ?? null;
+  }
+  getMcpServer(): McpServer | null {
+    this.ensureInitialized();
+    return this.platformMod?.getMcpServer() ?? null;
+  }
+  getDashboardManager(): DashboardManager | null {
+    this.ensureInitialized();
+    return this.platformMod?.getDashboardManager() ?? null;
+  }
+  getWorkspaceManager(): WorkspaceManager | null {
+    this.ensureInitialized();
+    return this.platformMod?.getWorkspaceManager() ?? null;
+  }
+  getExperimentManager(): ExperimentManager | null {
+    this.ensureInitialized();
+    return this.platformMod?.getExperimentManager() ?? null;
+  }
+  getMarketplaceManager(): MarketplaceManager | null {
+    this.ensureInitialized();
+    return this.platformMod?.getMarketplaceManager() ?? null;
+  }
+  getConversationStorage(): ConversationStorage | null {
+    this.ensureInitialized();
+    return this.platformMod?.getConversationStorage() ?? null;
+  }
+  getBranchingManager(): BranchingManager | null {
+    this.ensureInitialized();
+    return this.platformMod?.getBranchingManager() ?? null;
+  }
+  getNotificationManager(): NotificationManager | null {
+    this.ensureInitialized();
+    return this.platformMod?.getNotificationManager() ?? null;
+  }
+  getUserNotificationPrefsStorage(): UserNotificationPrefsStorage | null {
+    this.ensureInitialized();
+    return this.platformMod?.getUserNotificationPrefsStorage() ?? null;
+  }
+  getRiskAssessmentManager(): RiskAssessmentManager | null {
+    this.ensureInitialized();
+    return this.platformMod?.getRiskAssessmentManager() ?? null;
+  }
+  getDepartmentRiskManager(): DepartmentRiskManager | null {
+    this.ensureInitialized();
+    return this.platformMod?.getDepartmentRiskManager() ?? null;
+  }
+  getBackupManager(): BackupManager | null {
+    this.ensureInitialized();
+    return this.platformMod?.getBackupManager() ?? null;
+  }
+  getTenantManager(): TenantManager | null {
+    this.ensureInitialized();
+    return this.platformMod?.getTenantManager() ?? null;
+  }
+  getFederationManager(): FederationManager | null {
+    return this.platformMod?.getFederationManager() ?? null;
+  }
+  getAlertManager(): AlertManager | null {
+    return this.platformMod?.getAlertManager() ?? null;
+  }
+  getAlertStorage(): AlertStorage | null {
+    return this.platformMod?.getAlertStorage() ?? null;
+  }
+  getDynamicToolManager(): DynamicToolManager | null {
+    this.ensureInitialized();
+    return this.platformMod?.getDynamicToolManager() ?? null;
+  }
 
   // ------------------------------------------------------------------
   // Getters — DelegationModule delegations
   // ------------------------------------------------------------------
 
-  getSubAgentManager(): SubAgentManager | null { this.ensureInitialized(); return this.delegationMod?.getSubAgentManager() ?? null; }
-  getSwarmManager(): SwarmManager | null { this.ensureInitialized(); return this.delegationMod?.getSwarmManager() ?? null; }
-  getSwarmStorage(): SwarmStorage | null { this.ensureInitialized(); return this.delegationMod?.getSwarmStorage() ?? null; }
-  getSubAgentStorage(): SubAgentStorage | null { this.ensureInitialized(); return this.delegationMod?.getSubAgentStorage() ?? null; }
-  getTeamManager(): TeamManager | null { this.ensureInitialized(); return this.delegationMod?.getTeamManager() ?? null; }
-  getCouncilManager(): CouncilManager | null { this.ensureInitialized(); return this.delegationMod?.getCouncilManager() ?? null; }
-  getWorkflowManager(): WorkflowManager | null { this.ensureInitialized(); return this.delegationMod?.getWorkflowManager() ?? null; }
-  getWorkflowVersionManager(): WorkflowVersionManager | null { this.ensureInitialized(); return this.delegationMod?.getWorkflowVersionManager() ?? null; }
+  getSubAgentManager(): SubAgentManager | null {
+    this.ensureInitialized();
+    return this.delegationMod?.getSubAgentManager() ?? null;
+  }
+  getSwarmManager(): SwarmManager | null {
+    this.ensureInitialized();
+    return this.delegationMod?.getSwarmManager() ?? null;
+  }
+  getSwarmStorage(): SwarmStorage | null {
+    this.ensureInitialized();
+    return this.delegationMod?.getSwarmStorage() ?? null;
+  }
+  getSubAgentStorage(): SubAgentStorage | null {
+    this.ensureInitialized();
+    return this.delegationMod?.getSubAgentStorage() ?? null;
+  }
+  getTeamManager(): TeamManager | null {
+    this.ensureInitialized();
+    return this.delegationMod?.getTeamManager() ?? null;
+  }
+  getCouncilManager(): CouncilManager | null {
+    this.ensureInitialized();
+    return this.delegationMod?.getCouncilManager() ?? null;
+  }
+  getWorkflowManager(): WorkflowManager | null {
+    this.ensureInitialized();
+    return this.delegationMod?.getWorkflowManager() ?? null;
+  }
+  getWorkflowVersionManager(): WorkflowVersionManager | null {
+    this.ensureInitialized();
+    return this.delegationMod?.getWorkflowVersionManager() ?? null;
+  }
 
   // ------------------------------------------------------------------
   // Getters — TrainingModule delegations
   // ------------------------------------------------------------------
 
-  getDistillationManager(): DistillationManager | null { this.ensureInitialized(); return this.trainingMod?.getDistillationManager() ?? null; }
-  getFinetuneManager(): FinetuneManager | null { this.ensureInitialized(); return this.trainingMod?.getFinetuneManager() ?? null; }
-  getDataCurationManager(): DataCurationManager | null { this.ensureInitialized(); return this.trainingMod?.getDataCurationManager() ?? null; }
-  getEvaluationManager(): EvaluationManager | null { this.ensureInitialized(); return this.trainingMod?.getEvaluationManager() ?? null; }
-  getPipelineApprovalManager(): PipelineApprovalManager | null { this.ensureInitialized(); return this.trainingMod?.getPipelineApprovalManager() ?? null; }
-  getPipelineLineageStorage(): PipelineLineageStorage | null { this.ensureInitialized(); return this.trainingMod?.getPipelineLineageStorage() ?? null; }
-  getLlmJudgeManager(): LlmJudgeManager | null { this.ensureInitialized(); return this.trainingMod?.getLlmJudgeManager() ?? null; }
-  getPreferenceManager(): PreferenceManager | null { this.ensureInitialized(); return this.trainingMod?.getPreferenceManager() ?? null; }
-  getDatasetCuratorManager(): DatasetCuratorManager | null { this.ensureInitialized(); return this.trainingMod?.getDatasetCuratorManager() ?? null; }
-  getExperimentRegistryManager(): ExperimentRegistryManager | null { this.ensureInitialized(); return this.trainingMod?.getExperimentRegistryManager() ?? null; }
-  getModelVersionManager(): ModelVersionManager | null { this.ensureInitialized(); return this.trainingMod?.getModelVersionManager() ?? null; }
-  getAbTestManager(): AbTestManager | null { this.ensureInitialized(); return this.trainingMod?.getAbTestManager() ?? null; }
-  getConversationQualityScorer(): ConversationQualityScorer | null { this.ensureInitialized(); return this.trainingMod?.getConversationQualityScorer() ?? null; }
-  getComputerUseManager(): ComputerUseManager | null { this.ensureInitialized(); return this.trainingMod?.getComputerUseManager() ?? null; }
-  getCaptureAuditLogger(): CaptureAuditLogger | null { return this.trainingMod?.getCaptureAuditLogger() ?? null; }
-  getDesktopTrainingBridge(): DesktopTrainingBridge | null { return this.trainingMod?.getDesktopTrainingBridge() ?? null; }
+  getDistillationManager(): DistillationManager | null {
+    this.ensureInitialized();
+    return this.trainingMod?.getDistillationManager() ?? null;
+  }
+  getFinetuneManager(): FinetuneManager | null {
+    this.ensureInitialized();
+    return this.trainingMod?.getFinetuneManager() ?? null;
+  }
+  getDataCurationManager(): DataCurationManager | null {
+    this.ensureInitialized();
+    return this.trainingMod?.getDataCurationManager() ?? null;
+  }
+  getEvaluationManager(): EvaluationManager | null {
+    this.ensureInitialized();
+    return this.trainingMod?.getEvaluationManager() ?? null;
+  }
+  getPipelineApprovalManager(): PipelineApprovalManager | null {
+    this.ensureInitialized();
+    return this.trainingMod?.getPipelineApprovalManager() ?? null;
+  }
+  getPipelineLineageStorage(): PipelineLineageStorage | null {
+    this.ensureInitialized();
+    return this.trainingMod?.getPipelineLineageStorage() ?? null;
+  }
+  getLlmJudgeManager(): LlmJudgeManager | null {
+    this.ensureInitialized();
+    return this.trainingMod?.getLlmJudgeManager() ?? null;
+  }
+  getPreferenceManager(): PreferenceManager | null {
+    this.ensureInitialized();
+    return this.trainingMod?.getPreferenceManager() ?? null;
+  }
+  getDatasetCuratorManager(): DatasetCuratorManager | null {
+    this.ensureInitialized();
+    return this.trainingMod?.getDatasetCuratorManager() ?? null;
+  }
+  getExperimentRegistryManager(): ExperimentRegistryManager | null {
+    this.ensureInitialized();
+    return this.trainingMod?.getExperimentRegistryManager() ?? null;
+  }
+  getModelVersionManager(): ModelVersionManager | null {
+    this.ensureInitialized();
+    return this.trainingMod?.getModelVersionManager() ?? null;
+  }
+  getAbTestManager(): AbTestManager | null {
+    this.ensureInitialized();
+    return this.trainingMod?.getAbTestManager() ?? null;
+  }
+  getConversationQualityScorer(): ConversationQualityScorer | null {
+    this.ensureInitialized();
+    return this.trainingMod?.getConversationQualityScorer() ?? null;
+  }
+  getComputerUseManager(): ComputerUseManager | null {
+    this.ensureInitialized();
+    return this.trainingMod?.getComputerUseManager() ?? null;
+  }
+  getCaptureAuditLogger(): CaptureAuditLogger | null {
+    return this.trainingMod?.getCaptureAuditLogger() ?? null;
+  }
+  getDesktopTrainingBridge(): DesktopTrainingBridge | null {
+    return this.trainingMod?.getDesktopTrainingBridge() ?? null;
+  }
 
   // ------------------------------------------------------------------
   // Getters — AnalyticsModule delegations
   // ------------------------------------------------------------------
 
-  getAnalyticsStorage(): AnalyticsStorage | null { this.ensureInitialized(); return this.analyticsMod?.getAnalyticsStorage() ?? null; }
-  getSentimentAnalyzer(): SentimentAnalyzer | null { this.ensureInitialized(); return this.analyticsMod?.getSentimentAnalyzer() ?? null; }
-  getConversationSummarizer(): ConversationSummarizer | null { this.ensureInitialized(); return this.analyticsMod?.getConversationSummarizer() ?? null; }
-  getEntityExtractor(): EntityExtractor | null { this.ensureInitialized(); return this.analyticsMod?.getEntityExtractor() ?? null; }
-  getEngagementMetricsService(): EngagementMetricsService | null { this.ensureInitialized(); return this.analyticsMod?.getEngagementMetricsService() ?? null; }
-  getUsageAnomalyDetector(): UsageAnomalyDetector | null { this.ensureInitialized(); return this.analyticsMod?.getUsageAnomalyDetector() ?? null; }
+  getAnalyticsStorage(): AnalyticsStorage | null {
+    this.ensureInitialized();
+    return this.analyticsMod?.getAnalyticsStorage() ?? null;
+  }
+  getSentimentAnalyzer(): SentimentAnalyzer | null {
+    this.ensureInitialized();
+    return this.analyticsMod?.getSentimentAnalyzer() ?? null;
+  }
+  getConversationSummarizer(): ConversationSummarizer | null {
+    this.ensureInitialized();
+    return this.analyticsMod?.getConversationSummarizer() ?? null;
+  }
+  getEntityExtractor(): EntityExtractor | null {
+    this.ensureInitialized();
+    return this.analyticsMod?.getEntityExtractor() ?? null;
+  }
+  getEngagementMetricsService(): EngagementMetricsService | null {
+    this.ensureInitialized();
+    return this.analyticsMod?.getEngagementMetricsService() ?? null;
+  }
+  getUsageAnomalyDetector(): UsageAnomalyDetector | null {
+    this.ensureInitialized();
+    return this.analyticsMod?.getUsageAnomalyDetector() ?? null;
+  }
 
   // ------------------------------------------------------------------
   // Getters — BodyModule delegations
   // ------------------------------------------------------------------
 
-  getHeartbeatManager(): HeartbeatManager | null { this.ensureInitialized(); return this.bodyMod?.getHeartbeatManager() ?? null; }
-  getHeartbeatLogStorage(): HeartbeatLogStorage | null { this.ensureInitialized(); return this.bodyMod?.getHeartbeatLogStorage() ?? null; }
+  getHeartbeatManager(): HeartbeatManager | null {
+    this.ensureInitialized();
+    return this.bodyMod?.getHeartbeatManager() ?? null;
+  }
+  getHeartbeatLogStorage(): HeartbeatLogStorage | null {
+    this.ensureInitialized();
+    return this.bodyMod?.getHeartbeatLogStorage() ?? null;
+  }
 
   // ------------------------------------------------------------------
   // Getters — standalone optional managers
@@ -1276,12 +1538,30 @@ export class SecureYeoman {
     return this.taskStorage;
   }
 
-  getExtensionManager(): ExtensionManager | null { this.ensureInitialized(); return this.extensionManager; }
-  getExecutionManager(): CodeExecutionManager | null { this.ensureInitialized(); return this.executionManager; }
-  getA2AManager(): A2AManager | null { this.ensureInitialized(); return this.a2aManager; }
-  getProactiveManager(): import('./proactive/manager.js').ProactiveManager | null { this.ensureInitialized(); return this.proactiveManager; }
-  getMultimodalManager(): import('./multimodal/manager.js').MultimodalManager | null { this.ensureInitialized(); return this.multimodalManager; }
-  getBrowserSessionStorage(): import('./browser/storage.js').BrowserSessionStorage | null { this.ensureInitialized(); return this.browserSessionStorage; }
+  getExtensionManager(): ExtensionManager | null {
+    this.ensureInitialized();
+    return this.extensionManager;
+  }
+  getExecutionManager(): CodeExecutionManager | null {
+    this.ensureInitialized();
+    return this.executionManager;
+  }
+  getA2AManager(): A2AManager | null {
+    this.ensureInitialized();
+    return this.a2aManager;
+  }
+  getProactiveManager(): import('./proactive/manager.js').ProactiveManager | null {
+    this.ensureInitialized();
+    return this.proactiveManager;
+  }
+  getMultimodalManager(): import('./multimodal/manager.js').MultimodalManager | null {
+    this.ensureInitialized();
+    return this.multimodalManager;
+  }
+  getBrowserSessionStorage(): import('./browser/storage.js').BrowserSessionStorage | null {
+    this.ensureInitialized();
+    return this.browserSessionStorage;
+  }
 
   // ------------------------------------------------------------------
   // License management
@@ -1366,21 +1646,34 @@ export class SecureYeoman {
     }
     if (updates.allowA2A !== undefined) this.config!.security.allowA2A = updates.allowA2A;
     if (updates.allowSwarms !== undefined) this.config!.security.allowSwarms = updates.allowSwarms;
-    if (updates.allowExtensions !== undefined) this.config!.security.allowExtensions = updates.allowExtensions;
-    if (updates.allowExecution !== undefined) this.config!.security.allowExecution = updates.allowExecution;
-    if (updates.allowProactive !== undefined) this.config!.security.allowProactive = updates.allowProactive;
-    if (updates.allowWorkflows !== undefined) this.config!.security.allowWorkflows = updates.allowWorkflows;
-    if (updates.allowExperiments !== undefined) this.config!.security.allowExperiments = updates.allowExperiments;
-    if (updates.allowStorybook !== undefined) this.config!.security.allowStorybook = updates.allowStorybook;
-    if (updates.allowMultimodal !== undefined) this.config!.security.allowMultimodal = updates.allowMultimodal;
-    if (updates.allowDesktopControl !== undefined) this.config!.security.allowDesktopControl = updates.allowDesktopControl;
+    if (updates.allowExtensions !== undefined)
+      this.config!.security.allowExtensions = updates.allowExtensions;
+    if (updates.allowExecution !== undefined)
+      this.config!.security.allowExecution = updates.allowExecution;
+    if (updates.allowProactive !== undefined)
+      this.config!.security.allowProactive = updates.allowProactive;
+    if (updates.allowWorkflows !== undefined)
+      this.config!.security.allowWorkflows = updates.allowWorkflows;
+    if (updates.allowExperiments !== undefined)
+      this.config!.security.allowExperiments = updates.allowExperiments;
+    if (updates.allowStorybook !== undefined)
+      this.config!.security.allowStorybook = updates.allowStorybook;
+    if (updates.allowMultimodal !== undefined)
+      this.config!.security.allowMultimodal = updates.allowMultimodal;
+    if (updates.allowDesktopControl !== undefined)
+      this.config!.security.allowDesktopControl = updates.allowDesktopControl;
     if (updates.allowCamera !== undefined) this.config!.security.allowCamera = updates.allowCamera;
-    if (updates.allowDynamicTools !== undefined) this.config!.security.allowDynamicTools = updates.allowDynamicTools;
-    if (updates.sandboxDynamicTools !== undefined) this.config!.security.sandboxDynamicTools = updates.sandboxDynamicTools;
-    if (updates.allowAnomalyDetection !== undefined) this.config!.security.allowAnomalyDetection = updates.allowAnomalyDetection;
-    if (updates.sandboxGvisor !== undefined) this.config!.security.sandboxGvisor = updates.sandboxGvisor;
+    if (updates.allowDynamicTools !== undefined)
+      this.config!.security.allowDynamicTools = updates.allowDynamicTools;
+    if (updates.sandboxDynamicTools !== undefined)
+      this.config!.security.sandboxDynamicTools = updates.sandboxDynamicTools;
+    if (updates.allowAnomalyDetection !== undefined)
+      this.config!.security.allowAnomalyDetection = updates.allowAnomalyDetection;
+    if (updates.sandboxGvisor !== undefined)
+      this.config!.security.sandboxGvisor = updates.sandboxGvisor;
     if (updates.sandboxWasm !== undefined) this.config!.security.sandboxWasm = updates.sandboxWasm;
-    if (updates.sandboxCredentialProxy !== undefined) this.config!.security.sandboxCredentialProxy = updates.sandboxCredentialProxy;
+    if (updates.sandboxCredentialProxy !== undefined)
+      this.config!.security.sandboxCredentialProxy = updates.sandboxCredentialProxy;
     if (updates.allowCommunityGitFetch !== undefined) {
       this.config!.security.allowCommunityGitFetch = updates.allowCommunityGitFetch;
       this.platformMod?.getMarketplaceManager()?.updatePolicy({
@@ -1389,32 +1682,65 @@ export class SecureYeoman {
     }
     if (updates.communityGitUrl !== undefined) {
       this.config!.security.communityGitUrl = updates.communityGitUrl;
-      this.platformMod?.getMarketplaceManager()?.updatePolicy({ communityGitUrl: updates.communityGitUrl });
+      this.platformMod
+        ?.getMarketplaceManager()
+        ?.updatePolicy({ communityGitUrl: updates.communityGitUrl });
     }
-    if (updates.allowNetworkTools !== undefined) this.config!.security.allowNetworkTools = updates.allowNetworkTools;
-    if (updates.allowNetBoxWrite !== undefined) this.config!.security.allowNetBoxWrite = updates.allowNetBoxWrite;
-    if (updates.allowTwingate !== undefined) this.config!.security.allowTwingate = updates.allowTwingate;
-    if (updates.allowOrgIntent !== undefined) this.config!.security.allowOrgIntent = updates.allowOrgIntent;
-    if (updates.allowIntentEditor !== undefined) this.config!.security.allowIntentEditor = updates.allowIntentEditor;
-    if (updates.allowCodeEditor !== undefined) this.config!.security.allowCodeEditor = updates.allowCodeEditor;
-    if (updates.allowAdvancedEditor !== undefined) this.config!.security.allowAdvancedEditor = updates.allowAdvancedEditor;
-    if (updates.allowTrainingExport !== undefined) this.config!.security.allowTrainingExport = updates.allowTrainingExport;
-    if (updates.promptGuardMode !== undefined) this.config!.security.promptGuard.mode = updates.promptGuardMode;
-    if (updates.responseGuardMode !== undefined) this.config!.security.responseGuard.mode = updates.responseGuardMode;
-    if (updates.jailbreakThreshold !== undefined) this.config!.security.inputValidation.jailbreakThreshold = updates.jailbreakThreshold;
-    if (updates.jailbreakAction !== undefined) this.config!.security.inputValidation.jailbreakAction = updates.jailbreakAction;
-    if (updates.strictSystemPromptConfidentiality !== undefined) this.config!.security.strictSystemPromptConfidentiality = updates.strictSystemPromptConfidentiality;
-    if (updates.abuseDetectionEnabled !== undefined) this.config!.security.abuseDetection.enabled = updates.abuseDetectionEnabled;
-    if (updates.contentGuardrailsEnabled !== undefined) this.config!.security.contentGuardrails.enabled = updates.contentGuardrailsEnabled;
-    if (updates.contentGuardrailsPiiMode !== undefined) this.config!.security.contentGuardrails.piiMode = updates.contentGuardrailsPiiMode;
-    if (updates.contentGuardrailsToxicityEnabled !== undefined) this.config!.security.contentGuardrails.toxicityEnabled = updates.contentGuardrailsToxicityEnabled;
-    if (updates.contentGuardrailsToxicityMode !== undefined) this.config!.security.contentGuardrails.toxicityMode = updates.contentGuardrailsToxicityMode;
-    if (updates.contentGuardrailsToxicityClassifierUrl !== undefined) this.config!.security.contentGuardrails.toxicityClassifierUrl = updates.contentGuardrailsToxicityClassifierUrl;
-    if (updates.contentGuardrailsToxicityThreshold !== undefined) this.config!.security.contentGuardrails.toxicityThreshold = updates.contentGuardrailsToxicityThreshold;
-    if (updates.contentGuardrailsBlockList !== undefined) this.config!.security.contentGuardrails.blockList = updates.contentGuardrailsBlockList;
-    if (updates.contentGuardrailsBlockedTopics !== undefined) this.config!.security.contentGuardrails.blockedTopics = updates.contentGuardrailsBlockedTopics;
-    if (updates.contentGuardrailsGroundingEnabled !== undefined) this.config!.security.contentGuardrails.groundingEnabled = updates.contentGuardrailsGroundingEnabled;
-    if (updates.contentGuardrailsGroundingMode !== undefined) this.config!.security.contentGuardrails.groundingMode = updates.contentGuardrailsGroundingMode;
+    if (updates.allowNetworkTools !== undefined)
+      this.config!.security.allowNetworkTools = updates.allowNetworkTools;
+    if (updates.allowNetBoxWrite !== undefined)
+      this.config!.security.allowNetBoxWrite = updates.allowNetBoxWrite;
+    if (updates.allowTwingate !== undefined)
+      this.config!.security.allowTwingate = updates.allowTwingate;
+    if (updates.allowOrgIntent !== undefined)
+      this.config!.security.allowOrgIntent = updates.allowOrgIntent;
+    if (updates.allowIntentEditor !== undefined)
+      this.config!.security.allowIntentEditor = updates.allowIntentEditor;
+    if (updates.allowCodeEditor !== undefined)
+      this.config!.security.allowCodeEditor = updates.allowCodeEditor;
+    if (updates.allowAdvancedEditor !== undefined)
+      this.config!.security.allowAdvancedEditor = updates.allowAdvancedEditor;
+    if (updates.allowTrainingExport !== undefined)
+      this.config!.security.allowTrainingExport = updates.allowTrainingExport;
+    if (updates.promptGuardMode !== undefined)
+      this.config!.security.promptGuard.mode = updates.promptGuardMode;
+    if (updates.responseGuardMode !== undefined)
+      this.config!.security.responseGuard.mode = updates.responseGuardMode;
+    if (updates.jailbreakThreshold !== undefined)
+      this.config!.security.inputValidation.jailbreakThreshold = updates.jailbreakThreshold;
+    if (updates.jailbreakAction !== undefined)
+      this.config!.security.inputValidation.jailbreakAction = updates.jailbreakAction;
+    if (updates.strictSystemPromptConfidentiality !== undefined)
+      this.config!.security.strictSystemPromptConfidentiality =
+        updates.strictSystemPromptConfidentiality;
+    if (updates.abuseDetectionEnabled !== undefined)
+      this.config!.security.abuseDetection.enabled = updates.abuseDetectionEnabled;
+    if (updates.contentGuardrailsEnabled !== undefined)
+      this.config!.security.contentGuardrails.enabled = updates.contentGuardrailsEnabled;
+    if (updates.contentGuardrailsPiiMode !== undefined)
+      this.config!.security.contentGuardrails.piiMode = updates.contentGuardrailsPiiMode;
+    if (updates.contentGuardrailsToxicityEnabled !== undefined)
+      this.config!.security.contentGuardrails.toxicityEnabled =
+        updates.contentGuardrailsToxicityEnabled;
+    if (updates.contentGuardrailsToxicityMode !== undefined)
+      this.config!.security.contentGuardrails.toxicityMode = updates.contentGuardrailsToxicityMode;
+    if (updates.contentGuardrailsToxicityClassifierUrl !== undefined)
+      this.config!.security.contentGuardrails.toxicityClassifierUrl =
+        updates.contentGuardrailsToxicityClassifierUrl;
+    if (updates.contentGuardrailsToxicityThreshold !== undefined)
+      this.config!.security.contentGuardrails.toxicityThreshold =
+        updates.contentGuardrailsToxicityThreshold;
+    if (updates.contentGuardrailsBlockList !== undefined)
+      this.config!.security.contentGuardrails.blockList = updates.contentGuardrailsBlockList;
+    if (updates.contentGuardrailsBlockedTopics !== undefined)
+      this.config!.security.contentGuardrails.blockedTopics =
+        updates.contentGuardrailsBlockedTopics;
+    if (updates.contentGuardrailsGroundingEnabled !== undefined)
+      this.config!.security.contentGuardrails.groundingEnabled =
+        updates.contentGuardrailsGroundingEnabled;
+    if (updates.contentGuardrailsGroundingMode !== undefined)
+      this.config!.security.contentGuardrails.groundingMode =
+        updates.contentGuardrailsGroundingMode;
 
     this.logger?.info('Security policy updated', updates);
 
@@ -1453,20 +1779,54 @@ export class SecureYeoman {
       const pool = getPool();
       const result = await pool.query('SELECT key, value FROM security.policy');
       const policyKeys = [
-        'allowSubAgents', 'allowA2A', 'allowSwarms', 'allowExtensions', 'allowExecution',
-        'allowProactive', 'allowWorkflows', 'allowExperiments', 'allowStorybook', 'allowMultimodal',
-        'allowDesktopControl', 'allowCamera', 'allowDynamicTools', 'sandboxDynamicTools',
-        'allowAnomalyDetection', 'sandboxGvisor', 'sandboxWasm', 'sandboxCredentialProxy',
-        'allowCommunityGitFetch', 'allowNetworkTools', 'allowNetBoxWrite', 'allowTwingate',
-        'allowOrgIntent', 'allowIntentEditor', 'allowCodeEditor', 'allowAdvancedEditor',
-        'allowTrainingExport', 'strictSystemPromptConfidentiality',
+        'allowSubAgents',
+        'allowA2A',
+        'allowSwarms',
+        'allowExtensions',
+        'allowExecution',
+        'allowProactive',
+        'allowWorkflows',
+        'allowExperiments',
+        'allowStorybook',
+        'allowMultimodal',
+        'allowDesktopControl',
+        'allowCamera',
+        'allowDynamicTools',
+        'sandboxDynamicTools',
+        'allowAnomalyDetection',
+        'sandboxGvisor',
+        'sandboxWasm',
+        'sandboxCredentialProxy',
+        'allowCommunityGitFetch',
+        'allowNetworkTools',
+        'allowNetBoxWrite',
+        'allowTwingate',
+        'allowOrgIntent',
+        'allowIntentEditor',
+        'allowCodeEditor',
+        'allowAdvancedEditor',
+        'allowTrainingExport',
+        'strictSystemPromptConfidentiality',
       ] as const;
       const nestedPolicyHandlers: Record<string, (val: unknown) => void> = {
-        promptGuardMode: (v) => { this.config!.security.promptGuard.mode = v as 'block' | 'warn' | 'disabled'; },
-        responseGuardMode: (v) => { this.config!.security.responseGuard.mode = v as 'block' | 'warn' | 'disabled'; },
-        jailbreakThreshold: (v) => { this.config!.security.inputValidation.jailbreakThreshold = v as number; },
-        jailbreakAction: (v) => { this.config!.security.inputValidation.jailbreakAction = v as 'block' | 'warn' | 'audit_only'; },
-        abuseDetectionEnabled: (v) => { this.config!.security.abuseDetection.enabled = v as boolean; },
+        promptGuardMode: (v) => {
+          this.config!.security.promptGuard.mode = v as 'block' | 'warn' | 'disabled';
+        },
+        responseGuardMode: (v) => {
+          this.config!.security.responseGuard.mode = v as 'block' | 'warn' | 'disabled';
+        },
+        jailbreakThreshold: (v) => {
+          this.config!.security.inputValidation.jailbreakThreshold = v as number;
+        },
+        jailbreakAction: (v) => {
+          this.config!.security.inputValidation.jailbreakAction = v as
+            | 'block'
+            | 'warn'
+            | 'audit_only';
+        },
+        abuseDetectionEnabled: (v) => {
+          this.config!.security.abuseDetection.enabled = v as boolean;
+        },
       };
       for (const row of result.rows) {
         const val = JSON.parse(row.value);

@@ -55,7 +55,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Sec
 
 - **Self-hosted, not SaaS** — single binary, Docker, or Kubernetes. Your data stays on your machines.
 - **Governed by design** — RBAC, audit trails, cryptographic integrity, sandboxed execution, organizational intent policies.
-- **Multi-agent orchestration** — swarms, teams, DAG workflows, A2A protocol, and a 271-tool MCP server.
+- **Multi-agent orchestration** — swarms, teams, DAG workflows, A2A protocol, and a 274-tool MCP server.
 - **Full ML lifecycle** — distillation, LoRA fine-tuning, LLM-as-Judge evaluation, conversation analytics, A/B experiments, and model versioning.
 
 ---
@@ -130,7 +130,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Sec
 
 | Capability | Details |
 |---|---|
-| MCP server | 271 tools, 9 resources, 4 prompts; streamable HTTP, SSE, and stdio transports; financial charting (8 chart types) |
+| MCP server | 274 tools, 9 resources, 4 prompts; streamable HTTP, SSE, and stdio transports; financial charting (8 chart types) |
 | Platforms | 32 — Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, GitHub, GitLab, Google Chat, Gmail, Google Calendar, Email (IMAP/SMTP), Jira, Notion, AWS, Azure DevOps, Linear, Airtable, DingTalk, LINE, QQ, Twitter/X, Spotify, Stripe, YouTube, Zapier, Figma, Todoist, iMessage, CLI, Generic Webhook |
 | CI/CD | 21 tools — GitHub Actions (6), Jenkins (5), GitLab CI (5), Northflank (5); `ci_trigger`/`ci_wait` workflow steps; webhook ingest |
 | Security toolkits | Kali (15 pentest tools), Network (38 tools: discovery, scanning, SSH, NetBox, NVD/CVE, PCAP), Docker (14 tools) |

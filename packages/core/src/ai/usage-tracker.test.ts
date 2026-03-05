@@ -299,6 +299,120 @@ describe('UsageTracker', () => {
     expect(resetAtValue).toBeGreaterThan(0);
   });
 
+  describe('personality activity tracking', () => {
+    it('tracks per-personality requests, tokens, and cost', () => {
+      tracker.record({
+        provider: 'anthropic',
+        model: 'test',
+        usage: makeUsage(1000),
+        costUsd: 0.01,
+        timestamp: Date.now(),
+        personalityId: 'p1',
+      });
+      tracker.record({
+        provider: 'anthropic',
+        model: 'test',
+        usage: makeUsage(500),
+        costUsd: 0.005,
+        timestamp: Date.now(),
+        personalityId: 'p1',
+      });
+      tracker.record({
+        provider: 'openai',
+        model: 'gpt-4o',
+        usage: makeUsage(300),
+        costUsd: 0.003,
+        timestamp: Date.now(),
+        personalityId: 'p2',
+      });
+
+      const stats = tracker.getStats();
+      expect(stats.byPersonality).toHaveLength(2);
+
+      const p1 = stats.byPersonality.find((p) => p.personalityId === 'p1');
+      expect(p1).toBeDefined();
+      expect(p1!.requests).toBe(2);
+      expect(p1!.tokens).toBe(1500);
+      expect(p1!.costUsd).toBeCloseTo(0.015);
+
+      const p2 = stats.byPersonality.find((p) => p.personalityId === 'p2');
+      expect(p2).toBeDefined();
+      expect(p2!.requests).toBe(1);
+      expect(p2!.tokens).toBe(300);
+    });
+
+    it('sorts byPersonality descending by requests', () => {
+      tracker.record({
+        provider: 'anthropic',
+        model: 'test',
+        usage: makeUsage(100),
+        costUsd: 0.001,
+        timestamp: Date.now(),
+        personalityId: 'low',
+      });
+      for (let i = 0; i < 3; i++) {
+        tracker.record({
+          provider: 'anthropic',
+          model: 'test',
+          usage: makeUsage(100),
+          costUsd: 0.001,
+          timestamp: Date.now(),
+          personalityId: 'high',
+        });
+      }
+
+      const stats = tracker.getStats();
+      expect(stats.byPersonality[0]!.personalityId).toBe('high');
+      expect(stats.byPersonality[0]!.requests).toBe(3);
+      expect(stats.byPersonality[1]!.personalityId).toBe('low');
+    });
+
+    it('skips records without personalityId', () => {
+      tracker.record({
+        provider: 'anthropic',
+        model: 'test',
+        usage: makeUsage(100),
+        costUsd: 0.001,
+        timestamp: Date.now(),
+      });
+
+      const stats = tracker.getStats();
+      expect(stats.byPersonality).toHaveLength(0);
+    });
+
+    it('clears personality activity on day rollover', () => {
+      tracker.record({
+        provider: 'anthropic',
+        model: 'test',
+        usage: makeUsage(500),
+        costUsd: 0.005,
+        timestamp: Date.now(),
+        personalityId: 'p1',
+      });
+      expect(tracker.getStats().byPersonality).toHaveLength(1);
+
+      // Simulate midnight rollover
+      (tracker as any).currentDayKey = '1970-01-01';
+      tracker.record({
+        provider: 'openai',
+        model: 'gpt-4o',
+        usage: makeUsage(100),
+        costUsd: 0.001,
+        timestamp: Date.now(),
+        personalityId: 'p2',
+      });
+
+      const stats = tracker.getStats();
+      expect(stats.byPersonality).toHaveLength(1);
+      expect(stats.byPersonality[0]!.personalityId).toBe('p2');
+    });
+
+    it('returns empty byPersonality initially', () => {
+      const stats = tracker.getStats();
+      expect(stats.byPersonality).toEqual([]);
+    });
+  });
+
   it('resetLatency() resets latency counters and calls storage.setResetAt', async () => {
     let resetAtType = '';
     const mockStorage = {

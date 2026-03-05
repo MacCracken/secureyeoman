@@ -1,10 +1,10 @@
 # SecureYeoman
 
-> SecureYeoman is a sovereign AI agent platform that runs entirely on your infrastructure. It provides multi-model intelligence (13 AI providers), enterprise-grade security (RBAC, SSO/SAML, sandboxing, TEE-aware routing, audit trails), multi-agent orchestration (swarms, teams, DAG workflows, A2A protocol), a 271-tool MCP server, and a full ML lifecycle platform — without sending data off-premises. Dual-licensed: AGPL-3.0 + Commercial.
+> SecureYeoman is a sovereign AI agent platform that runs entirely on your infrastructure. It provides multi-model intelligence (13 AI providers), enterprise-grade security (RBAC, SSO/SAML, sandboxing, TEE-aware routing, audit trails), multi-agent orchestration (swarms, teams, DAG workflows, A2A protocol), a 274-tool MCP server, and a full ML lifecycle platform — without sending data off-premises. Dual-licensed: AGPL-3.0 + Commercial.
 
 - Version: 2026.3.5
-- 12 ADRs, 66 guides
-- 36 platform integrations, 271 MCP tools, 39 CLI commands
+- 12 ADRs, 67 guides
+- 36 platform integrations, 274 MCP tools, 39 CLI commands
 
 ## Documentation
 
@@ -32,6 +32,7 @@
 - [Confidential Computing](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/confidential-computing.md): TEE-aware provider routing and attestation
 - [Cognitive ML Memory](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/cognitive-ml-memory.md): Context retrieval, working memory, salience classification
 - [Job Completion Notifications](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/job-completion-notifications.md): Alert rules for workflow/training job events, ntfy channel
+- [Constitutional AI](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/constitutional-ai.md): Self-critique, revision, and DPO training
 - [Troubleshooting](https://github.com/MacCracken/secureyeoman/blob/main/docs/troubleshooting.md): Common problems and fixes
 
 ## Optional

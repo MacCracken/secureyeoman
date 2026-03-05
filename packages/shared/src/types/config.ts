@@ -285,6 +285,49 @@ export const TeeConfigSchema = z
 
 export type TeeConfig = z.infer<typeof TeeConfigSchema>;
 
+// ─── Constitutional AI Config ──────────────────────────────────────────────
+
+export const ConstitutionalPrincipleSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().min(1),
+  /** Critique instruction — tells the LLM how to evaluate against this principle */
+  critiquePrompt: z.string().min(1),
+  /** Weight 0-1 for prioritizing this principle in revision. Default 1. */
+  weight: z.number().min(0).max(1).default(1),
+  /** Whether this principle is active */
+  enabled: z.boolean().default(true),
+});
+
+export type ConstitutionalPrinciple = z.infer<typeof ConstitutionalPrincipleSchema>;
+
+export const ConstitutionalConfigSchema = z
+  .object({
+    /** Enable constitutional AI self-critique and revision */
+    enabled: z.boolean().default(false),
+    /** Mode: 'online' revises before returning; 'offline' records pairs for training only */
+    mode: z.enum(['online', 'offline']).default('offline'),
+    /** Custom principles — merged with defaults when useDefaults is true */
+    principles: z.array(ConstitutionalPrincipleSchema).default([]),
+    /** Include built-in principles (helpfulness, harmlessness, honesty) */
+    useDefaults: z.boolean().default(true),
+    /** Also import hard boundaries from active organizational intent as principles */
+    importIntentBoundaries: z.boolean().default(true),
+    /** Model override for critique/revision calls (null = use same model as primary) */
+    model: z.string().nullable().default(null),
+    /** Temperature for critique calls (low for consistency) */
+    critiqueTemperature: z.number().min(0).max(2).default(0.2),
+    /** Maximum revision rounds before accepting */
+    maxRevisionRounds: z.number().int().min(1).max(5).default(1),
+    /** Record (original, revised) preference pairs for DPO training */
+    recordPreferencePairs: z.boolean().default(true),
+    /** Minimum number of critique findings to trigger revision (skip if below) */
+    revisionThreshold: z.number().int().min(1).default(1),
+  })
+  .default({});
+
+export type ConstitutionalConfig = z.infer<typeof ConstitutionalConfigSchema>;
+
 // Security configuration
 export const SecurityConfigSchema = z.object({
   rbac: RbacConfigSchema,
@@ -422,6 +465,8 @@ export const SecurityConfigSchema = z.object({
     .default({}),
   /** Confidential Computing / TEE configuration for AI provider attestation. */
   tee: TeeConfigSchema,
+  /** Constitutional AI — self-critique and revision loop for alignment. */
+  constitutional: ConstitutionalConfigSchema,
 });
 
 export type SecurityConfig = z.infer<typeof SecurityConfigSchema>;

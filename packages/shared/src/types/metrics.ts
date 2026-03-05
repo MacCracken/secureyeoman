@@ -113,6 +113,16 @@ export const DepartmentalRiskMetricsSchema = z.object({
 
 export type DepartmentalRiskMetrics = z.infer<typeof DepartmentalRiskMetricsSchema>;
 
+// Per-personality activity metrics (Phase 83)
+export const PersonalityActivityEntrySchema = z.object({
+  personalityId: z.string(),
+  requests: z.number().int().nonnegative(),
+  tokens: z.number().int().nonnegative(),
+  costUsd: z.number().nonnegative(),
+});
+
+export type PersonalityActivityEntry = z.infer<typeof PersonalityActivityEntrySchema>;
+
 // Combined metrics snapshot
 export const MetricsSnapshotSchema = z.object({
   timestamp: z.number().int().positive(),
@@ -123,6 +133,8 @@ export const MetricsSnapshotSchema = z.object({
   traceId: z.string().optional(),
   /** Departmental risk register summary (Phase 111). */
   departmentalRisk: DepartmentalRiskMetricsSchema.optional(),
+  /** Per-personality request rate / token / cost for today (Phase 83). */
+  personalityActivity: z.array(PersonalityActivityEntrySchema).optional(),
 });
 
 export type MetricsSnapshot = z.infer<typeof MetricsSnapshotSchema>;

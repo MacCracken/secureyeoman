@@ -190,6 +190,8 @@ export const McpServiceConfigSchema = z.object({
   exposePdfAdvanced: z.boolean().default(true),
   /** Enable financial charting tools (chart_*). On by default. */
   exposeCharting: z.boolean().default(true),
+  /** Enable Constitutional AI tools (constitutional_*). Off by default. */
+  exposeConstitutional: z.boolean().default(false),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

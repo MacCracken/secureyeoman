@@ -169,17 +169,6 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
-### Observability & Telemetry (Phase 83 remnants)
-
-*As SecureYeoman moves into production deployments, operators need distributed tracing, metrics export, and correlation tooling beyond what the built-in audit log provides.*
-
-**Completed (2026-03-05)**: Histogram metrics (p50/p95/p99 ring buffer + Prometheus summary), AI completion OTel spans, MCP tool call OTel spans.
-
-**Remaining / Future improvements (demand-gated)**:
-- [ ] **Personality activity heatmap** — Per-personality request rate in Grafana.
-
----
-
 ### LLM Lifecycle Platform — Advanced
 
 *Extends the completed training pipeline (Phases 64, 73, 92, 97, 98) with advanced training objectives, scale, and continual learning. Demand-gated pending real-world usage.*
@@ -299,4 +288,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-03-05 — Completed Phase 126 (Canvas Workspace Improvements — event bus, keyboard shortcuts, named layouts, mission card embed). See [Changelog](../../CHANGELOG.md) for full history.*
+*Last updated: 2026-03-05. See [Changelog](../../CHANGELOG.md) for full history.*

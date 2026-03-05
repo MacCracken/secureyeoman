@@ -86,6 +86,7 @@ import { registerDepartmentRiskRoutes } from '../risk-assessment/department-risk
 import { registerProviderAccountRoutes } from '../ai/provider-account-routes.js';
 import { registerAthiRoutes } from '../security/athi-routes.js';
 import { registerSraRoutes } from '../security/sra-routes.js';
+import { registerConstitutionalRoutes } from '../security/constitutional-routes.js';
 import { registerAuditExportRoutes } from '../logging/audit-export-routes.js';
 import { SQLiteAuditStorage } from '../logging/sqlite-storage.js';
 import { registerBackupRoutes } from '../backup/backup-routes.js';
@@ -361,7 +362,9 @@ export class GatewayServer {
       if (rateLimiter && 'createFastifyHook' in rateLimiter) {
         this.app.addHook(
           'onRequest',
-          (rateLimiter as import('../security/rate-limiter.js').RateLimiter).createFastifyHook() as any
+          (
+            rateLimiter as import('../security/rate-limiter.js').RateLimiter
+          ).createFastifyHook() as any
         );
       }
     }
@@ -419,7 +422,12 @@ export class GatewayServer {
         const scheme = this.config.tls.enabled ? 'https' : 'http';
         const host = this.config.host === '0.0.0.0' ? 'localhost' : this.config.host;
         const dashboardUrl = `${scheme}://${host}:${this.config.port}`;
-        registerSsoRoutes(this.app, { ssoManager, ssoStorage, dashboardUrl, secureYeoman: this.secureYeoman });
+        registerSsoRoutes(this.app, {
+          ssoManager,
+          ssoStorage,
+          dashboardUrl,
+          secureYeoman: this.secureYeoman,
+        });
       }
     } catch {
       // SSO manager may not be available — skip routes
@@ -1027,6 +1035,15 @@ export class GatewayServer {
       });
     }
 
+    // Constitutional AI routes
+    try {
+      registerConstitutionalRoutes(this.app, this.secureYeoman);
+    } catch (err) {
+      this.getLogger().debug('Constitutional AI routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
     // Extension routes
     try {
       const extensionManager = this.secureYeoman.getExtensionManager();
@@ -1345,11 +1362,23 @@ export class GatewayServer {
         quarantineStorage,
         pipeline: (externalizationGate as any)?.deps?.pipeline ?? null,
         policy: scanningPolicy ?? null,
-        auditChain: scanningAuditChain ? {
-          record: async (event: string, level: string, message: string, metadata?: Record<string, unknown>): Promise<void> => {
-            await scanningAuditChain!.record({ event, level: level as 'info' | 'warn' | 'error' | 'security' | 'debug' | 'trace', message, metadata });
-          },
-        } : null,
+        auditChain: scanningAuditChain
+          ? {
+              record: async (
+                event: string,
+                level: string,
+                message: string,
+                metadata?: Record<string, unknown>
+              ): Promise<void> => {
+                await scanningAuditChain!.record({
+                  event,
+                  level: level as 'info' | 'warn' | 'error' | 'security' | 'debug' | 'trace',
+                  message,
+                  metadata,
+                });
+              },
+            }
+          : null,
       });
       this.getLogger().info('Sandbox scanning routes registered');
     } catch (err) {
@@ -1536,6 +1565,54 @@ export class GatewayServer {
     this.app.get('/api/v1/metrics', async () => {
       return this.secureYeoman.getMetrics();
     });
+
+    // Personality activity heatmap — hourly per-personality request counts (Phase 83)
+    this.app.get(
+      '/api/v1/metrics/personality-activity',
+      async (
+        request: FastifyRequest<{
+          Querystring: { days?: string };
+        }>
+      ) => {
+        const usageStorage = this.secureYeoman.getUsageStorage();
+        if (!usageStorage) {
+          return { heatmap: [], personalities: [] };
+        }
+
+        const days = Math.min(Math.max(Number(request.query.days) || 7, 1), 30);
+        const from = Date.now() - days * 86_400_000;
+
+        const records = await usageStorage.queryHistory({
+          from,
+          groupBy: 'hour',
+        });
+
+        // Build heatmap: { hour → { personalityId → requests } }
+        const hourMap = new Map<string, Map<string, number>>();
+        const personalitySet = new Set<string>();
+
+        for (const r of records) {
+          const pid = r.personalityId ?? '_none';
+          personalitySet.add(pid);
+          let bucket = hourMap.get(r.date);
+          if (!bucket) {
+            bucket = new Map();
+            hourMap.set(r.date, bucket);
+          }
+          bucket.set(pid, (bucket.get(pid) ?? 0) + r.calls);
+        }
+
+        const personalities = [...personalitySet].sort();
+        const heatmap = [...hourMap.entries()]
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([hour, pMap]) => ({
+            hour,
+            counts: Object.fromEntries(pMap),
+          }));
+
+        return { heatmap, personalities };
+      }
+    );
 
     // Cost breakdown endpoint
     this.app.get('/api/v1/costs/breakdown', async () => {
@@ -2715,16 +2792,24 @@ export class GatewayServer {
       if (this.authService) {
         const url = new URL(request.url, `http://${request.hostname}`);
         const protocols = request.headers['sec-websocket-protocol'];
-        const protocolToken = typeof protocols === 'string'
-          ? protocols.split(',').map(p => p.trim()).find(p => p.startsWith('token.'))?.slice(6)
-          : undefined;
+        const protocolToken =
+          typeof protocols === 'string'
+            ? protocols
+                .split(',')
+                .map((p) => p.trim())
+                .find((p) => p.startsWith('token.'))
+                ?.slice(6)
+            : undefined;
         const queryToken = url.searchParams.get('token');
         const token = protocolToken ?? queryToken;
 
         if (queryToken && !protocolToken) {
-          this.getLogger().warn('WebSocket auth via query param is deprecated, use Sec-WebSocket-Protocol', {
-            ip: request.ip,
-          });
+          this.getLogger().warn(
+            'WebSocket auth via query param is deprecated, use Sec-WebSocket-Protocol',
+            {
+              ip: request.ip,
+            }
+          );
         }
 
         if (!token) {
@@ -2842,106 +2927,118 @@ export class GatewayServer {
     // ── Collaborative editing endpoint (Yjs binary protocol) ────────────
     // Path: /ws/collab/:docId — auth via Sec-WebSocket-Protocol (preferred) or ?token= (fallback)
     // docId format: "personality:<uuid>" | "skill:<uuid>"
-    this.app.get('/ws/collab/:docId', { websocket: true }, async (socket, request: FastifyRequest<{ Params: { docId: string } }>) => {
-      const { docId } = request.params;
+    this.app.get(
+      '/ws/collab/:docId',
+      { websocket: true },
+      async (socket, request: FastifyRequest<{ Params: { docId: string } }>) => {
+        const { docId } = request.params;
 
-      // Auth — prefer Sec-WebSocket-Protocol subprotocol, fall back to query param
-      let authUser: { userId: string; role: string; displayName: string } | undefined;
-      if (this.authService) {
-        const url = new URL(request.url, `http://${request.hostname}`);
-        const protocols = request.headers['sec-websocket-protocol'];
-        const protocolToken = typeof protocols === 'string'
-          ? protocols.split(',').map(p => p.trim()).find(p => p.startsWith('token.'))?.slice(6)
-          : undefined;
-        const queryToken = url.searchParams.get('token');
-        const token = protocolToken ?? queryToken;
+        // Auth — prefer Sec-WebSocket-Protocol subprotocol, fall back to query param
+        let authUser: { userId: string; role: string; displayName: string } | undefined;
+        if (this.authService) {
+          const url = new URL(request.url, `http://${request.hostname}`);
+          const protocols = request.headers['sec-websocket-protocol'];
+          const protocolToken =
+            typeof protocols === 'string'
+              ? protocols
+                  .split(',')
+                  .map((p) => p.trim())
+                  .find((p) => p.startsWith('token.'))
+                  ?.slice(6)
+              : undefined;
+          const queryToken = url.searchParams.get('token');
+          const token = protocolToken ?? queryToken;
 
-        if (queryToken && !protocolToken) {
-          this.getLogger().warn('WebSocket auth via query param is deprecated, use Sec-WebSocket-Protocol', {
-            ip: request.ip,
-          });
-        }
-
-        if (!token) {
-          socket.close(4401, 'Missing authentication token');
-          return;
-        }
-        try {
-          const user = await this.authService.validateToken(token);
-          // Resolve display name: try soul users, fall back to role label
-          let displayName = user.role === 'admin' ? 'Admin' : 'User';
-          try {
-            const soulManager = this.secureYeoman.getSoulManager();
-            const soulUser = await soulManager.getUser(user.userId);
-            if (soulUser?.name) displayName = soulUser.name;
-          } catch {
-            // Non-fatal: user may not have a soul profile
+          if (queryToken && !protocolToken) {
+            this.getLogger().warn(
+              'WebSocket auth via query param is deprecated, use Sec-WebSocket-Protocol',
+              {
+                ip: request.ip,
+              }
+            );
           }
-          authUser = { userId: user.userId, role: user.role, displayName };
-        } catch {
-          socket.close(4401, 'Invalid authentication token');
+
+          if (!token) {
+            socket.close(4401, 'Missing authentication token');
+            return;
+          }
+          try {
+            const user = await this.authService.validateToken(token);
+            // Resolve display name: try soul users, fall back to role label
+            let displayName = user.role === 'admin' ? 'Admin' : 'User';
+            try {
+              const soulManager = this.secureYeoman.getSoulManager();
+              const soulUser = await soulManager.getUser(user.userId);
+              if (soulUser?.name) displayName = soulUser.name;
+            } catch {
+              // Non-fatal: user may not have a soul profile
+            }
+            authUser = { userId: user.userId, role: user.role, displayName };
+          } catch {
+            socket.close(4401, 'Invalid authentication token');
+            return;
+          }
+        } else {
+          // No auth service configured (dev mode) — allow with placeholder identity
+          authUser = { userId: 'dev', role: 'admin', displayName: 'Dev' };
+        }
+
+        // Validate docId format
+        if (!/^(personality|skill):[0-9a-f-]{36}$/.test(docId)) {
+          socket.close(4400, 'Invalid docId format');
           return;
         }
-      } else {
-        // No auth service configured (dev mode) — allow with placeholder identity
-        authUser = { userId: 'dev', role: 'admin', displayName: 'Dev' };
-      }
 
-      // Validate docId format
-      if (!/^(personality|skill):[0-9a-f-]{36}$/.test(docId)) {
-        socket.close(4400, 'Invalid docId format');
-        return;
-      }
+        socket.binaryType = 'arraybuffer';
 
-      socket.binaryType = 'arraybuffer';
+        const clientId = `collab_${uuidv7()}`;
 
-      const clientId = `collab_${uuidv7()}`;
-
-      // Resolve initial content from the soul manager so new rooms converge
-      // immediately to the current REST-persisted value.
-      let initialContent: string | undefined;
-      try {
-        const soulManager = this.secureYeoman.getSoulManager();
-        if (docId.startsWith('personality:')) {
-          const id = docId.slice('personality:'.length);
-          const p = await soulManager.getPersonality(id);
-          initialContent = p?.systemPrompt;
-        } else if (docId.startsWith('skill:')) {
-          const id = docId.slice('skill:'.length);
-          const s = await soulManager.getSkill(id);
-          initialContent = s?.instructions;
+        // Resolve initial content from the soul manager so new rooms converge
+        // immediately to the current REST-persisted value.
+        let initialContent: string | undefined;
+        try {
+          const soulManager = this.secureYeoman.getSoulManager();
+          if (docId.startsWith('personality:')) {
+            const id = docId.slice('personality:'.length);
+            const p = await soulManager.getPersonality(id);
+            initialContent = p?.systemPrompt;
+          } else if (docId.startsWith('skill:')) {
+            const id = docId.slice('skill:'.length);
+            const s = await soulManager.getSkill(id);
+            initialContent = s?.instructions;
+          }
+        } catch {
+          // Non-fatal
         }
-      } catch {
-        // Non-fatal
-      }
 
-      await this.collabManager.join(
-        docId,
-        clientId,
-        socket,
-        authUser.userId,
-        authUser.displayName,
-        initialContent
-      );
-
-      socket.on('message', (message: Buffer) => {
-        const data = new Uint8Array(message instanceof ArrayBuffer ? message : message.buffer);
-        this.collabManager.handleMessage(docId, clientId, data);
-      });
-
-      socket.on('close', () => {
-        this.collabManager.leave(docId, clientId);
-        this.getLogger().debug('Collab client disconnected', { clientId, docId });
-      });
-
-      socket.on('error', (error: Error) => {
-        this.getLogger().error('Collab WebSocket error', {
-          clientId,
+        await this.collabManager.join(
           docId,
-          error: error.message,
+          clientId,
+          socket,
+          authUser.userId,
+          authUser.displayName,
+          initialContent
+        );
+
+        socket.on('message', (message: Buffer) => {
+          const data = new Uint8Array(message instanceof ArrayBuffer ? message : message.buffer);
+          this.collabManager.handleMessage(docId, clientId, data);
         });
-      });
-    });
+
+        socket.on('close', () => {
+          this.collabManager.leave(docId, clientId);
+          this.getLogger().debug('Collab client disconnected', { clientId, docId });
+        });
+
+        socket.on('error', (error: Error) => {
+          this.getLogger().error('Collab WebSocket error', {
+            clientId,
+            docId,
+            error: error.message,
+          });
+        });
+      }
+    );
   }
 
   /**

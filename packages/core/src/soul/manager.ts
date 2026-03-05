@@ -277,6 +277,7 @@ export class SoulManager {
             exposePdfAdvanced: false,
             exposeCognitiveMemory: false,
             exposeCharting: false,
+            exposeConstitutional: false,
           },
           proactiveConfig: {
             enabled: false,

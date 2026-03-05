@@ -262,3 +262,30 @@ Security telemetry is presented through a dedicated dashboard surface that aggre
 - PKCE state expiry (10 minutes) must align with identity provider session timeout to avoid failed authentication flows.
 - CIDR validation covers IPv4 only; IPv6 scope enforcement is not yet implemented.
 - LLM-as-Judge adds latency to the tool execution path when enabled and may itself be susceptible to adversarial prompting.
+
+### Constitutional AI — Self-Critique and Revision
+
+SecureYeoman implements a Constitutional AI engine that applies self-critique and revision to LLM responses before they reach the user. Inspired by Anthropic's Constitutional AI research, the system evaluates every response against a configurable set of principles (the "constitution") and optionally revises responses that violate them.
+
+**Architecture.** The `ConstitutionalEngine` (`security/constitutional.ts`) operates in the response pipeline between credential scanning and ResponseGuard. It executes a critique-then-revise loop:
+
+1. **Critique** — The engine constructs a structured prompt containing all active principles with per-principle evaluation instructions. A separate LLM call evaluates the response and returns a JSON array of findings (principleId, violated, explanation, severity).
+2. **Revise** — If the number of violations meets or exceeds the configurable `revisionThreshold`, the engine makes a revision LLM call that rewrites the response to address the identified issues while preserving useful content.
+3. **Record** — When `recordPreferencePairs` is enabled, the (original, revised) pair is stored via `PreferenceManager` with `source: 'constitutional'` for downstream DPO fine-tuning.
+
+**Principle sources.** Principles are resolved from three sources, merged in order:
+- **Built-in defaults**: Helpfulness, Harmlessness, Honesty — the "3H" alignment principles.
+- **Custom principles**: User-configured via `security.constitutional.principles[]`. Each principle has an id, name, description, critique prompt, weight, and enabled flag. Same-id custom principles override defaults.
+- **Organizational intent**: When `importIntentBoundaries` is true, hard boundaries from the active intent document are automatically converted to principles.
+
+**Operating modes:**
+- **Offline** (default): Critiques and records preference pairs but does not modify the response served to the user. Suitable for training data generation.
+- **Online**: Applies the revision before serving the response. Adds latency (1-2 additional LLM calls per response) but ensures alignment in real-time.
+
+**Configuration.** The feature is gated by `security.constitutional.enabled` (default `false`). Key settings: `mode` (online/offline), `maxRevisionRounds` (1-5), `revisionThreshold`, `critiqueTemperature`, `model` override, `useDefaults`, `importIntentBoundaries`, `recordPreferencePairs`.
+
+**REST API.** Three endpoints under `/api/v1/security/constitutional/`: `GET /principles` (list active principles), `POST /critique` (evaluate a response), `POST /revise` (full critique-and-revise loop). Auth: `security:read` / `security:write`.
+
+**MCP tools.** `constitutional_principles`, `constitutional_critique`, `constitutional_revise` — gated by `exposeConstitutional` feature flag.
+
+**Fail-safe.** All LLM calls in the constitutional pipeline are wrapped in try-catch with warn-level logging. On any failure (provider unavailable, parse error, timeout), the original response passes through unmodified. The feature never blocks a response from being served.

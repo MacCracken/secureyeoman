@@ -64,6 +64,11 @@ Applied 24 fixes across 11 files:
 - Added `debug`/`warn` logging to 20 silent `.catch(() => {})` handlers across 13 production files (brain/manager, federation-manager, ai-module, platform-module, ai/client, sra-manager, athi-manager, audit/scheduler, consolidation/manager, outbound-webhook-dispatcher).
 - Clarifying comments added to intentionally silent catches (desktop-routes audit, gateway usage recording, usage-tracker error path).
 
+### Observability & Telemetry — Phase 83 Completion
+
+- **Personality activity heatmap**: Per-personality request/token/cost tracking in `UsageTracker` via bounded in-memory `Map` (cap 500 entries, auto-cleared on day rollover). Three new Prometheus gauges: `friday_personality_requests_today`, `friday_personality_tokens_today`, `friday_personality_cost_usd_today` — all labeled by `personality_id`. `MetricsSnapshot` schema extended with `personalityActivity` array. REST endpoint `GET /api/v1/metrics/personality-activity?days=N` returns hourly heatmap buckets for Grafana JSON datasource. 9 new tests (5 usage-tracker, 4 prometheus).
+- Phase 83 is now fully complete: histogram metrics (p50/p95/p99 ring buffer + Prometheus summary), AI completion OTel spans, MCP tool call OTel spans, and personality activity heatmap.
+
 ### Sandbox Enhancements
 
 - **GVisor Sandbox** (`sandbox/gvisor-sandbox.ts`): gVisor (`runsc`) based sandbox execution with hardware-level isolation via userspace syscall interception. OCI runtime container creation, configurable memory/CPU limits, filesystem restrictions, network policy. Linux-only with auto-fallback to NoopSandbox when `runsc` is unavailable.
@@ -87,6 +92,16 @@ Applied 24 fixes across 11 files:
 - **AI completion OTel spans** (`ai/client.ts`): Every `doChatWithProvider()` and `doChatStreamWithProvider()` call wrapped in an OpenTelemetry span (`ai.chat <provider>/<model>`). Attributes: `ai.provider`, `ai.model`, `ai.stream`, `ai.message_count`, `ai.tool_count`, `ai.latency_ms`, `ai.input_tokens`, `ai.output_tokens`, `ai.total_tokens`, `ai.stop_reason`. Stream variant uses manual `startSpan()` for async generator compatibility.
 - **MCP tool call OTel spans** (`mcp/client.ts`): `callTool()` wrapped in `mcp.tool <toolName>` span. Attributes: `mcp.tool_name`, `mcp.server_id`, `mcp.server_name`, `mcp.latency_ms`. Error status set on failure.
 - **Shared metrics schema** (`shared/types/metrics.ts`): `apiLatencyP50Ms`, `apiLatencyP95Ms`, `apiLatencyP99Ms` fields added to `ResourceMetrics` (default 0, backward-compatible).
+
+### Constitutional AI
+
+- **Constitutional Engine** (`security/constitutional.ts`): Self-critique and revision loop implementing Constitutional AI. Evaluates LLM responses against configurable principles, identifies violations, and revises responses. Three principle sources: built-in defaults (Helpfulness, Harmlessness, Honesty), user-configured custom principles, and auto-imported organizational intent hard boundaries.
+- **Config** (`shared/types/config.ts`): `ConstitutionalConfigSchema` — `enabled`, `mode` (online/offline), `principles[]`, `useDefaults`, `importIntentBoundaries`, `model`, `critiqueTemperature`, `maxRevisionRounds` (1–5), `revisionThreshold`, `recordPreferencePairs`. Added to `SecurityConfigSchema`.
+- **Chat pipeline integration** (`ai/chat-routes.ts`): Critique-and-revise runs between credential scan and ResponseGuard for both streaming and non-streaming paths. Online mode applies revisions before serving; offline mode records preference pairs only.
+- **DPO preference pairs**: Revised responses recorded via `PreferenceManager` with `source: 'constitutional'` for downstream DPO fine-tuning. `PreferencePairSource` type extended.
+- **REST API**: `GET /security/constitutional/principles`, `POST /critique`, `POST /revise`. Auth: `security:read`/`security:write`.
+- **MCP tools**: `constitutional_principles`, `constitutional_critique`, `constitutional_revise` — gated by `exposeConstitutional`.
+- **Tests**: 28 new tests. Guide: `constitutional-ai.md`. ADR 002 updated.
 
 ### Security Gap Fixes
 

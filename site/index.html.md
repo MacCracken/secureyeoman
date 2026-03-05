@@ -2,7 +2,7 @@
 
 Most AI assistants work for the platform that hosts them. SecureYeoman works for you — self-hosted, enterprise-hardened, and answerable only to you. Your data doesn't have to train their models. Your conversations and data don't have to be their product.
 
-**v2026.3.5** | AGPL-3.0 License | 271 MCP Tools | 39 CLI Commands
+**v2026.3.5** | AGPL-3.0 License | 274 MCP Tools | 39 CLI Commands
 
 ---
 
@@ -43,12 +43,12 @@ Injection detection scoring, PII scanning (SSN, credit card, email, phone), toxi
 - Toxicity & topic guardrails
 - ResponseGuard output scanner
 
-### 4. 271 MCP Tools & Integrations
+### 4. 274 MCP Tools & Integrations
 
-36 platform integrations: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, Gmail, GitHub, Jira, Linear, Notion, and more. 271 built-in MCP tools, 9 resources, and 4 prompts — with SSRF protection, rate limiting, and audit logging.
+36 platform integrations: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, Gmail, GitHub, Jira, Linear, Notion, and more. 274 built-in MCP tools, 9 resources, and 4 prompts — with SSRF protection, rate limiting, and audit logging.
 
 - 36 platform integrations
-- 271 tools, 9 resources, 4 prompts
+- 274 tools, 9 resources, 4 prompts
 - SSRF protection + rate limiting
 - Full audit trail on every tool call
 
@@ -135,7 +135,7 @@ Preference annotation, experiment registry, model versioning, A/B testing, and c
 | Data Residency | 100% local | Cloud default | Cloud only | Local | Cloud sandbox |
 | RBAC + SSO | Full | None | None | None | None |
 | Multi-tenancy | RLS-enforced | No | No | No | No |
-| MCP Tools | 271 | Limited | External | None | Via path |
+| MCP Tools | 274 | Limited | External | None | Via path |
 | Cryptographic Audit | HMAC-SHA256 | No | No | No | Local DB only |
 | Workflow Orchestration | DAG + Visual | No | No | No | No |
 | Integrations | 36 platforms | 23+ | CLI/Web | 10+ | ~2 |

@@ -7,7 +7,7 @@
 
 // ── Preference Pairs (DPO) ─────────────────────────────────────────────────
 
-export type PreferencePairSource = 'annotation' | 'comparison' | 'multi_turn';
+export type PreferencePairSource = 'annotation' | 'comparison' | 'multi_turn' | 'constitutional';
 
 export interface PreferencePair {
   id: string;
