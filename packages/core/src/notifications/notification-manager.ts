@@ -42,6 +42,17 @@ const LEVEL_RANKS: Record<NotificationLevel, number> = {
   critical: 3,
 };
 
+// ── Constants ────────────────────────────────────────────────────────────────
+
+/** Default number of days to retain notifications before cleanup deletes them. */
+const DEFAULT_RETENTION_DAYS = 30;
+
+/** Interval between cleanup runs: 24 hours in milliseconds. */
+const CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000; // 86_400_000
+
+/** Milliseconds per day, used to convert retention days to a max-age duration. */
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 export class NotificationManager {
   private _broadcast: ((payload: unknown) => void) | undefined;
   private _userPrefsStorage: UserNotificationPrefsStorage | null = null;
@@ -171,8 +182,8 @@ export class NotificationManager {
    * Start a daily cleanup job that deletes notifications older than `retentionDays`.
    * Fires immediately on first call, then every 24 hours.
    */
-  startCleanupJob(retentionDays = 30): void {
-    const maxAgeMs = retentionDays * 24 * 60 * 60 * 1000;
+  startCleanupJob(retentionDays = DEFAULT_RETENTION_DAYS): void {
+    const maxAgeMs = retentionDays * MS_PER_DAY;
 
     const runCleanup = () => {
       void this.storage.deleteOlderThan(maxAgeMs).catch(() => {
@@ -181,7 +192,7 @@ export class NotificationManager {
     };
 
     runCleanup(); // fire immediately
-    this._cleanupTimer = setInterval(runCleanup, 86_400_000); // once per day
+    this._cleanupTimer = setInterval(runCleanup, CLEANUP_INTERVAL_MS);
     if (this._cleanupTimer.unref) {
       this._cleanupTimer.unref();
     }

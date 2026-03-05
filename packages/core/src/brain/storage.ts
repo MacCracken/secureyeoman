@@ -25,6 +25,21 @@ import type {
 import type { Skill, SkillCreate, SkillUpdate } from '@secureyeoman/shared';
 import { uuidv7 } from '../utils/crypto.js';
 
+// ── Constants ─────────────────────────────────────────────────
+
+const DEFAULT_MEMORY_IMPORTANCE = 0.5;
+const DEFAULT_KNOWLEDGE_CONFIDENCE = 0.8;
+const DEFAULT_TRUST_SCORE = 0.5;
+const GROUNDING_LOW_THRESHOLD = 0.5;
+const SKILL_LIST_LIMIT = 1_000;
+const KNOWLEDGE_QUERY_LIMIT = 1_000;
+const MS_PER_DAY = 86_400_000;
+const CHARS_PER_TOKEN_ESTIMATE = 4;
+/** RRF (Reciprocal Rank Fusion) smoothing constant — standard value from the original RRF paper. */
+const RRF_CONSTANT = 60.0;
+/** RRF fallback rank for missing results — effectively zero contribution. */
+const RRF_MAX_RANK = 9999;
+
 // ── Row Types ────────────────────────────────────────────────
 
 interface MemoryRow {
@@ -132,7 +147,7 @@ function rowToDocument(row: DocumentRow): KbDocument {
     chunkCount: row.chunk_count,
     errorMessage: row.error_message,
     sourceQuality: safeJsonParseProv(row.source_quality),
-    trustScore: row.trust_score ?? 0.5,
+    trustScore: row.trust_score ?? DEFAULT_TRUST_SCORE,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -231,7 +246,7 @@ export class BrainStorage extends PgBaseStorage {
         data.content,
         data.source,
         JSON.stringify(data.context ?? {}),
-        data.importance ?? 0.5,
+        data.importance ?? DEFAULT_MEMORY_IMPORTANCE,
         data.expiresAt ?? null,
         now,
         now,
@@ -393,7 +408,7 @@ export class BrainStorage extends PgBaseStorage {
 
   async decayMemories(decayRate: number): Promise<number> {
     const now = Date.now();
-    const oneDayMs = 86_400_000;
+    const oneDayMs = MS_PER_DAY;
 
     // Reduce importance of memories not accessed in the last day
     const count = await this.execute(
@@ -463,7 +478,7 @@ export class BrainStorage extends PgBaseStorage {
         data.topic,
         data.content,
         data.source,
-        data.confidence ?? 0.8,
+        data.confidence ?? DEFAULT_KNOWLEDGE_CONFIDENCE,
         now,
         now,
       ]
@@ -518,7 +533,7 @@ export class BrainStorage extends PgBaseStorage {
 
     sql += ' ORDER BY confidence DESC, updated_at DESC';
 
-    const kbLimit = Math.min(query.limit ?? 1_000, 1_000);
+    const kbLimit = Math.min(query.limit ?? KNOWLEDGE_QUERY_LIMIT, KNOWLEDGE_QUERY_LIMIT);
     sql += ` LIMIT $${idx++}`;
     params.push(kbLimit);
 
@@ -730,7 +745,7 @@ export class BrainStorage extends PgBaseStorage {
       params.push(filter.forPersonalityId);
     }
 
-    sql += ' ORDER BY usage_count DESC, created_at DESC LIMIT 1000';
+    sql += ` ORDER BY usage_count DESC, created_at DESC LIMIT ${SKILL_LIST_LIMIT}`;
 
     const rows = await this.queryMany<SkillRow>(sql, params);
     return rows.map(rowToSkill);
@@ -852,8 +867,8 @@ export class BrainStorage extends PgBaseStorage {
            vec AS (${vectorSubquery}),
            combined AS (
              SELECT COALESCE(fts.id, vec.id) AS id,
-                    COALESCE($${fwParam}::float / (60.0 + COALESCE(fts.fts_rank, 9999)), 0)
-                    + COALESCE($${vwParam}::float / (60.0 + COALESCE(vec.vec_rank, 9999)), 0) AS rrf_score
+                    COALESCE($${fwParam}::float / (${RRF_CONSTANT} + COALESCE(fts.fts_rank, ${RRF_MAX_RANK})), 0)
+                    + COALESCE($${vwParam}::float / (${RRF_CONSTANT} + COALESCE(vec.vec_rank, ${RRF_MAX_RANK})), 0) AS rrf_score
              FROM fts FULL OUTER JOIN vec ON fts.id = vec.id
            )
       SELECT m.*, c.rrf_score
@@ -924,8 +939,8 @@ export class BrainStorage extends PgBaseStorage {
            vec AS (${vectorSubquery}),
            combined AS (
              SELECT COALESCE(fts.id, vec.id) AS id,
-                    COALESCE($${fwParam}::float / (60.0 + COALESCE(fts.fts_rank, 9999)), 0)
-                    + COALESCE($${vwParam}::float / (60.0 + COALESCE(vec.vec_rank, 9999)), 0) AS rrf_score
+                    COALESCE($${fwParam}::float / (${RRF_CONSTANT} + COALESCE(fts.fts_rank, ${RRF_MAX_RANK})), 0)
+                    + COALESCE($${vwParam}::float / (${RRF_CONSTANT} + COALESCE(vec.vec_rank, ${RRF_MAX_RANK})), 0) AS rrf_score
              FROM fts FULL OUTER JOIN vec ON fts.id = vec.id
            )
       SELECT k.*, c.rrf_score
@@ -1016,8 +1031,8 @@ export class BrainStorage extends PgBaseStorage {
                     COALESCE(fts.source_id, vec.source_id) AS source_id,
                     COALESCE(fts.source_table, vec.source_table) AS source_table,
                     COALESCE(fts.content, vec.content) AS content,
-                    1.0 / (60.0 + COALESCE(fts.fts_rank, 9999))
-                    + 1.0 / (60.0 + COALESCE(vec.vec_rank, 9999)) AS rrf_score
+                    1.0 / (${RRF_CONSTANT} + COALESCE(fts.fts_rank, ${RRF_MAX_RANK}))
+                    + 1.0 / (${RRF_CONSTANT} + COALESCE(vec.vec_rank, ${RRF_MAX_RANK})) AS rrf_score
              FROM fts FULL OUTER JOIN vec ON fts.id = vec.id
            )
       SELECT * FROM combined ORDER BY rrf_score DESC LIMIT $${limitParam}
@@ -1311,7 +1326,7 @@ export class BrainStorage extends PgBaseStorage {
         format: doc.format,
         chunkCount: doc.chunkCount,
         text,
-        estimatedTokens: Math.ceil(text.length / 4),
+        estimatedTokens: Math.ceil(text.length / CHARS_PER_TOKEN_ESTIMATE),
       });
     }
 
@@ -1332,7 +1347,7 @@ export class BrainStorage extends PgBaseStorage {
   }
 
   async getKnowledgeHealthStats(personalityId?: string): Promise<KnowledgeHealthStats> {
-    const since24h = Date.now() - 86_400_000;
+    const since24h = Date.now() - MS_PER_DAY;
 
     // Total documents + chunk sum + by-format breakdown
     let docSql =
@@ -1408,7 +1423,7 @@ export class BrainStorage extends PgBaseStorage {
       'SELECT trust_score FROM brain.documents WHERE id = $1',
       [id]
     );
-    return row?.trust_score ?? 0.5;
+    return row?.trust_score ?? DEFAULT_TRUST_SCORE;
   }
 
   async getDocumentsByIds(ids: string[]): Promise<KbDocument[]> {
@@ -1463,7 +1478,7 @@ export class BrainStorage extends PgBaseStorage {
     personalityId: string,
     windowDays = 30
   ): Promise<{ averageScore: number | null; totalMessages: number; lowGroundingCount: number }> {
-    const since = Date.now() - windowDays * 86_400_000;
+    const since = Date.now() - windowDays * MS_PER_DAY;
     const row = await this.queryOne<{
       avg_score: number | null;
       total: string;
@@ -1472,7 +1487,7 @@ export class BrainStorage extends PgBaseStorage {
       `SELECT
          AVG(m.grounding_score) AS avg_score,
          COUNT(*) AS total,
-         COUNT(*) FILTER (WHERE m.grounding_score < 0.5) AS low_count
+         COUNT(*) FILTER (WHERE m.grounding_score < ${GROUNDING_LOW_THRESHOLD}) AS low_count
        FROM chat.messages m
        JOIN chat.conversations c ON c.id = m.conversation_id
        WHERE m.grounding_score IS NOT NULL

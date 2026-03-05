@@ -97,6 +97,14 @@ function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// ── Constants ────────────────────────────────────────────────────────
+
+/** Timeout in ms for external toxicity classifier HTTP calls. */
+const TOXICITY_CLASSIFIER_TIMEOUT_MS = 5000;
+
+/** Minimum semantic search score to consider a citation grounded. */
+const GROUNDING_SEARCH_THRESHOLD = 0.5;
+
 // ── Main class ────────────────────────────────────────────────────────
 
 export class ContentGuardrail {
@@ -357,7 +365,7 @@ export class ContentGuardrail {
       const controller = new AbortController();
       const timeout = setTimeout(() => {
         controller.abort();
-      }, 5000);
+      }, TOXICITY_CLASSIFIER_TIMEOUT_MS);
       const response = await fetch(this.config.toxicityClassifierUrl!, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -388,7 +396,7 @@ export class ContentGuardrail {
         const results = await this.deps.brainManager!.semanticSearch(citation, {
           type: 'knowledge',
           limit: 1,
-          threshold: 0.5,
+          threshold: GROUNDING_SEARCH_THRESHOLD,
         });
         if (results.length === 0) {
           findings.push({

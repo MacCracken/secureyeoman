@@ -24,6 +24,11 @@ import type {
   SraAssessmentSummary,
 } from '@secureyeoman/shared';
 
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+/** Weight assigned to partially implemented controls when computing compliance score. */
+const PARTIAL_COMPLIANCE_WEIGHT = 0.5;
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface SraManagerDeps {
@@ -1302,7 +1307,7 @@ export class SraManager {
           break;
         case 'partially_implemented':
           partial++;
-          domainImplemented[dom]! += 0.5;
+          domainImplemented[dom]! += PARTIAL_COMPLIANCE_WEIGHT;
           break;
         case 'not_implemented':
           notImplemented++;
@@ -1331,7 +1336,7 @@ export class SraManager {
 
     const assessable = totalControls - notApplicable;
     const complianceScore =
-      assessable > 0 ? Math.round(((implemented + partial * 0.5) / assessable) * 100) : 100;
+      assessable > 0 ? Math.round(((implemented + partial * PARTIAL_COMPLIANCE_WEIGHT) / assessable) * 100) : 100;
 
     return {
       complianceScore,

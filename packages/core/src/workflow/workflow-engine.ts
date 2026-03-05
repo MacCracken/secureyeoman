@@ -36,6 +36,16 @@ import type { AlertManager } from '../telemetry/alert-manager.js';
 import type { CouncilManager } from '../agents/council-manager.js';
 import { emitJobCompletion } from '../telemetry/job-completion-events.js';
 
+// ── Magic-number constants ───────────────────────────────────────────────────
+const DEFAULT_RETRY_BACKOFF_MS = 1000;
+const DEFAULT_COMMAND_TIMEOUT_MS = 30_000;
+const MAX_EXEC_BUFFER_BYTES = 10 * 1024 * 1024; // 10 MB
+const WEBHOOK_TIMEOUT_MS = 30_000;
+const MAX_WEBHOOK_RESPONSE_BYTES = 10 * 1024 * 1024; // 10 MB
+const CI_FETCH_TIMEOUT_MS = 30_000;
+const CI_ERROR_BODY_LIMIT = 1000;
+const DEFAULT_CI_POLL_INTERVAL_MS = 10_000;
+
 const _outputSchemaValidator = new OutputSchemaValidator();
 
 export class WorkflowCycleError extends Error {
@@ -292,7 +302,7 @@ export class WorkflowEngine {
     let error: string | null = null;
 
     const maxAttempts = step.retryPolicy?.maxAttempts ?? 1;
-    const backoffMs = step.retryPolicy?.backoffMs ?? 1000;
+    const backoffMs = step.retryPolicy?.backoffMs ?? DEFAULT_RETRY_BACKOFF_MS;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
@@ -427,11 +437,11 @@ export class WorkflowEngine {
           try {
             const cmdStr = String(cfg.command);
             const parts = cmdStr.split(/\s+/).filter(Boolean);
-            const timeoutMs = Number(cfg.timeoutMs ?? 30000);
+            const timeoutMs = Number(cfg.timeoutMs ?? DEFAULT_COMMAND_TIMEOUT_MS);
             const stdout = execFileSync(parts[0]!, parts.slice(1), {
               timeout: timeoutMs,
               encoding: 'utf-8',
-              maxBuffer: 10 * 1024 * 1024,
+              maxBuffer: MAX_EXEC_BUFFER_BYTES,
             });
             return stdout;
           } catch (err) {
@@ -515,11 +525,11 @@ export class WorkflowEngine {
           method,
           headers,
           body: body ?? undefined,
-          signal: AbortSignal.timeout(30_000),
+          signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
         });
         // Cap response to 10 MB to prevent memory exhaustion
         const responseText = await response.text();
-        if (responseText.length > 10 * 1024 * 1024) {
+        if (responseText.length > MAX_WEBHOOK_RESPONSE_BYTES) {
           throw new Error(`Webhook response too large (${responseText.length} bytes)`);
         }
         return { status: response.status, body: responseText };
@@ -878,10 +888,10 @@ export class WorkflowEngine {
           if (token) headers.Authorization = `Bearer ${token}`;
           const res = await fetch(
             `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowId}/dispatches`,
-            { method: 'POST', headers, body: JSON.stringify({ ref, inputs }), signal: AbortSignal.timeout(30_000) }
+            { method: 'POST', headers, body: JSON.stringify({ ref, inputs }), signal: AbortSignal.timeout(CI_FETCH_TIMEOUT_MS) }
           );
           if (!res.ok && res.status !== 204) {
-            const errBody = (await res.text()).slice(0, 1000);
+            const errBody = (await res.text()).slice(0, CI_ERROR_BODY_LIMIT);
             throw new Error(`GitHub Actions dispatch failed (${res.status}): ${errBody}`);
           }
           // GHA dispatch returns 204 — no run ID is synchronously available.
@@ -910,10 +920,10 @@ export class WorkflowEngine {
             method: 'POST',
             headers,
             body: JSON.stringify({ ref, variables: variableList }),
-            signal: AbortSignal.timeout(30_000),
+            signal: AbortSignal.timeout(CI_FETCH_TIMEOUT_MS),
           });
           if (!res.ok) {
-            const errBody = (await res.text()).slice(0, 1000);
+            const errBody = (await res.text()).slice(0, CI_ERROR_BODY_LIMIT);
             throw new Error(`GitLab pipeline trigger failed (${res.status}): ${errBody}`);
           }
           const data = (await res.json()) as { id: number; web_url: string };
@@ -936,7 +946,7 @@ export class WorkflowEngine {
         // Poll a CI run until it reaches a terminal state.
         const provider = String(cfg.provider ?? 'github-actions');
         const runId = this.resolveTemplate(String(cfg.runId ?? ''), ctx);
-        const pollMs = Number(cfg.pollIntervalMs ?? 10_000);
+        const pollMs = Number(cfg.pollIntervalMs ?? DEFAULT_CI_POLL_INTERVAL_MS);
         const timeoutMs = Number(cfg.timeoutMs ?? 1_800_000); // 30 min default
 
         this.logger.info('ci_wait: polling CI run', { provider, runId, pollMs, timeoutMs });

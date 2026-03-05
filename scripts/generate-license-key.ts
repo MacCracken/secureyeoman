@@ -35,14 +35,16 @@ import { randomUUID } from 'node:crypto';
 
 const PRIVATE_KEY_PATH = '.license-private.pem';
 
-type EnterpriseFeature =
+type LicensedFeature =
   | 'adaptive_learning'
   | 'sso_saml'
   | 'multi_tenancy'
   | 'cicd_integration'
   | 'advanced_observability';
 
-const VALID_FEATURES: EnterpriseFeature[] = [
+const VALID_TIERS = ['community', 'pro', 'enterprise'] as const;
+
+const VALID_FEATURES: LicensedFeature[] = [
   'adaptive_learning',
   'sso_saml',
   'multi_tenancy',
@@ -109,13 +111,13 @@ function issueKey(args: Record<string, string>): void {
     process.exit(1);
   }
 
-  if (tier !== 'enterprise' && tier !== 'community') {
-    console.error('\n❌ --tier must be enterprise or community\n');
+  if (!(VALID_TIERS as readonly string[]).includes(tier)) {
+    console.error(`\n❌ --tier must be one of: ${VALID_TIERS.join(', ')}\n`);
     process.exit(1);
   }
 
-  const features: EnterpriseFeature[] = featuresRaw
-    ? featuresRaw.split(',').map((f) => f.trim() as EnterpriseFeature)
+  const features: LicensedFeature[] = featuresRaw
+    ? featuresRaw.split(',').map((f) => f.trim() as LicensedFeature)
     : [];
 
   const invalidFeatures = features.filter((f) => !VALID_FEATURES.includes(f));
@@ -182,7 +184,7 @@ Usage:
 Options:
   --init               Generate a new Ed25519 keypair (first-time setup)
   --org <name>         Organization name (required for key issuance)
-  --tier <tier>        License tier: enterprise | community (default: enterprise)
+  --tier <tier>        License tier: community | pro | enterprise (default: enterprise)
   --seats <n>          Seat count (default: 1)
   --features <list>    Comma-separated features to enable:
                          adaptive_learning, sso_saml, multi_tenancy,

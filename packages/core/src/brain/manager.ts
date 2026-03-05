@@ -27,6 +27,13 @@ import { chunk as chunkContent } from './chunker.js';
 import { uuidv7 } from '../utils/crypto.js';
 import { actrActivation, ageDays, compositeScore } from './activation.js';
 
+// ── Constants ─────────────────────────────────────────────────
+
+const MS_PER_DAY = 86_400_000;
+const CHUNK_CONTENT_THRESHOLD = 200;
+/** RRF (Reciprocal Rank Fusion) smoothing constant — standard value from the original RRF paper. */
+const RRF_CONSTANT = 60;
+
 export class BrainManager {
   private readonly storage: BrainStorage;
   private readonly config: BrainConfig;
@@ -129,7 +136,7 @@ export class BrainManager {
 
     // Episodic memories get an expiration based on retention config
     if (type === 'episodic') {
-      data.expiresAt = Date.now() + this.config.memoryRetentionDays * 86_400_000;
+      data.expiresAt = Date.now() + this.config.memoryRetentionDays * MS_PER_DAY;
     }
 
     const memory = await this.storage.createMemory(data, this.resolvePersonalityId(personalityId));
@@ -144,7 +151,7 @@ export class BrainManager {
     }
 
     // Content-chunked indexing for large documents (best-effort)
-    if (content.length > 200) {
+    if (content.length > CHUNK_CONTENT_THRESHOLD) {
       try {
         const chunks = chunkContent(content);
         if (chunks.length > 1) {
@@ -243,9 +250,9 @@ export class BrainManager {
             );
             // RRF merge: fused results + raw results
             const merged = new Map<string, number>();
-            fusedResults.forEach((r, i) => merged.set(r.id, 1 / (60 + i + 1)));
+            fusedResults.forEach((r, i) => merged.set(r.id, 1 / (RRF_CONSTANT + i + 1)));
             rawResults.forEach((r, i) => {
-              merged.set(r.id, (merged.get(r.id) ?? 0) + 1 / (60 + i + 1));
+              merged.set(r.id, (merged.get(r.id) ?? 0) + 1 / (RRF_CONSTANT + i + 1));
             });
             const sortedIds = [...merged.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
             const resultMap = new Map([...fusedResults, ...rawResults].map((r) => [r.id, r]));
@@ -283,7 +290,7 @@ export class BrainManager {
             resolvedPersonalityId
           );
           ftsResults.forEach((r, i) => {
-            ftsRrfScores.set(r.id, 1 / (60 + i + 1));
+            ftsRrfScores.set(r.id, 1 / (RRF_CONSTANT + i + 1));
           });
         } catch {
           // FTS columns not yet migrated — skip FTS contribution
@@ -292,7 +299,7 @@ export class BrainManager {
         // Merge via RRF
         const combined = new Map<string, number>();
         vectorResults.forEach((r, i) => {
-          combined.set(r.id, (combined.get(r.id) ?? 0) + 1 / (60 + i + 1));
+          combined.set(r.id, (combined.get(r.id) ?? 0) + 1 / (RRF_CONSTANT + i + 1));
         });
         for (const [id, ftsScore] of ftsRrfScores) {
           combined.set(id, (combined.get(id) ?? 0) + ftsScore);
@@ -420,7 +427,7 @@ export class BrainManager {
     }
 
     // Content-chunked indexing for large knowledge entries (best-effort)
-    if (content.length > 200) {
+    if (content.length > CHUNK_CONTENT_THRESHOLD) {
       try {
         const chunks = chunkContent(content);
         if (chunks.length > 1) {

@@ -2,7 +2,7 @@ import { createContext, useContext, useCallback, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchLicenseStatus, type LicenseStatus } from '../api/client';
 
-const ALL_ENTERPRISE_FEATURES = [
+const ALL_LICENSED_FEATURES = [
   'adaptive_learning',
   'sso_saml',
   'multi_tenancy',
@@ -10,9 +10,14 @@ const ALL_ENTERPRISE_FEATURES = [
   'advanced_observability',
 ] as const;
 
-export type EnterpriseFeature = (typeof ALL_ENTERPRISE_FEATURES)[number];
+export type LicensedFeature = (typeof ALL_LICENSED_FEATURES)[number];
 
-export { ALL_ENTERPRISE_FEATURES };
+/** @deprecated Use LicensedFeature */
+export type EnterpriseFeature = LicensedFeature;
+
+export { ALL_LICENSED_FEATURES };
+/** @deprecated Use ALL_LICENSED_FEATURES */
+export const ALL_ENTERPRISE_FEATURES = ALL_LICENSED_FEATURES;
 
 interface LicenseContextValue {
   license: LicenseStatus | null;
@@ -35,7 +40,7 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
     retry: 1,
   });
 
-  const isEnterprise = license?.tier === 'enterprise' && license.valid;
+  const isEnterprise = (license?.tier === 'enterprise' || license?.tier === 'pro') && license.valid;
   const enforcementEnabled = license?.enforcementEnabled ?? false;
 
   const hasFeature = useCallback(

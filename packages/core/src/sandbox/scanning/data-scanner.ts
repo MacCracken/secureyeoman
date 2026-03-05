@@ -9,6 +9,9 @@ import type { ArtifactScanner, SandboxArtifact } from './types.js';
 
 const MAX_FINDINGS = 200;
 
+/** Number of leading bytes to sample for binary-content (polyglot) detection. */
+const POLYGLOT_SAMPLE_SIZE = 512;
+
 // ── Magic bytes for executable detection ──
 const MAGIC_BYTES: Array<{ name: string; bytes: number[]; severity: ScanFinding['severity'] }> = [
   { name: 'ELF executable', bytes: [0x7f, 0x45, 0x4c, 0x46], severity: 'critical' },
@@ -153,7 +156,7 @@ export class DataScanner implements ArtifactScanner {
     const declaredText = artifact.type.startsWith('text/') || artifact.type === 'application/json';
     if (declaredText) {
       // Check if content actually looks binary
-      const sample = buf.subarray(0, Math.min(512, buf.length));
+      const sample = buf.subarray(0, Math.min(POLYGLOT_SAMPLE_SIZE, buf.length));
       let nullCount = 0;
       for (const b of sample) {
         if (b === 0) nullCount++;

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { requiresLicense } from './license-guard.js';
-import type { LicenseManager, EnterpriseFeature } from './license-manager.js';
+import type { LicenseManager, LicensedFeature } from './license-manager.js';
 
 function makeLicenseManager(overrides: Partial<Record<keyof LicenseManager, unknown>> = {}) {
   return {
@@ -64,7 +64,7 @@ describe('requiresLicense', () => {
     expect(sent.code).toBe(402);
     expect(sent.body).toEqual({
       error: 'Payment Required',
-      message: 'Enterprise license required',
+      message: 'License required',
       statusCode: 402,
       feature: 'multi_tenancy',
       tier: 'community',
@@ -80,7 +80,7 @@ describe('requiresLicense', () => {
     const { reply, sent } = makeReply();
     hook({} as any, reply, vi.fn());
     expect((sent.body as any).feature).toBe('cicd_integration');
-    expect((sent.body as any).message).toBe('Enterprise license required');
+    expect((sent.body as any).message).toBe('License required');
   });
 
   it('402 body includes current tier from license manager', () => {
@@ -96,7 +96,7 @@ describe('requiresLicense', () => {
   });
 
   it('works with all enterprise features', () => {
-    const features: EnterpriseFeature[] = [
+    const features: LicensedFeature[] = [
       'adaptive_learning',
       'sso_saml',
       'multi_tenancy',

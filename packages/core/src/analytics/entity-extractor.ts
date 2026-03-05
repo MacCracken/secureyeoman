@@ -8,8 +8,10 @@ import type { SecureLogger } from '../logging/logger.js';
 import type { AIClient } from '../ai/client.js';
 import type { AnalyticsStorage } from './analytics-storage.js';
 
-const EXTRACT_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+const EXTRACT_INTERVAL_MS = 900_000; // 15 minutes
 const BATCH_SIZE = 30;
+const MESSAGE_PREVIEW_LENGTH = 500;
+const TRANSCRIPT_TRUNCATION_LENGTH = 4_000;
 
 const EXTRACT_PROMPT = `Extract entities and key phrases from the following conversation.
 Return ONLY valid JSON with no additional text:
@@ -88,8 +90,8 @@ export class EntityExtractor {
   }
 
   async extractFromMessages(messages: { role: string; content: string }[]): Promise<ExtractResult> {
-    const transcript = messages.map((m) => `${m.role}: ${m.content.slice(0, 500)}`).join('\n');
-    const truncated = transcript.length > 4000 ? transcript.slice(0, 4000) + '\n...' : transcript;
+    const transcript = messages.map((m) => `${m.role}: ${m.content.slice(0, MESSAGE_PREVIEW_LENGTH)}`).join('\n');
+    const truncated = transcript.length > TRANSCRIPT_TRUNCATION_LENGTH ? transcript.slice(0, TRANSCRIPT_TRUNCATION_LENGTH) + '\n...' : transcript;
 
     const response = await this.aiClient.chat({
       messages: [{ role: 'user', content: EXTRACT_PROMPT + truncated }],

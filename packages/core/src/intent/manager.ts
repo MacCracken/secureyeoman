@@ -29,6 +29,10 @@ import type {
 import { OpaClient } from './opa-client.js';
 import { evalCel } from './cel-evaluator.js';
 
+// ── Constants ────────────────────────────────────────────────────────────────
+const DEFAULT_SIGNAL_REFRESH_INTERVAL_MS = 300_000; // 5 min
+const HTTP_SIGNAL_TIMEOUT_MS = 10_000;
+
 export interface IntentManagerDeps {
   storage: IntentStorage;
   signalRefreshIntervalMs?: number;
@@ -111,7 +115,7 @@ export class IntentManager {
 
   constructor(deps: IntentManagerDeps) {
     this.storage = deps.storage;
-    this.signalRefreshIntervalMs = deps.signalRefreshIntervalMs ?? 300_000; // 5 min default
+    this.signalRefreshIntervalMs = deps.signalRefreshIntervalMs ?? DEFAULT_SIGNAL_REFRESH_INTERVAL_MS;
     // opaClient: undefined → auto-detect from config/env; null → disabled; instance → use it
     this.opa = deps.opaClient === undefined ? OpaClient.fromEnv(deps.opaAddr) : (deps.opaClient ?? null);
     this.callMcpTool = deps.callMcpTool ?? null;
@@ -305,7 +309,7 @@ export class IntentManager {
   /** Fetch a numeric signal value via HTTP GET. */
   private async _fetchHttpSignal(url: string): Promise<number | null> {
     try {
-      const resp = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+      const resp = await fetch(url, { signal: AbortSignal.timeout(HTTP_SIGNAL_TIMEOUT_MS) });
       if (!resp.ok) return null;
       const body = await resp.json();
       if (typeof body === 'number') return body;

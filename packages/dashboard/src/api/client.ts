@@ -5254,7 +5254,7 @@ export async function deleteWorktree(id: string): Promise<void> {
 // ── License ───────────────────────────────────────────────────────────────────
 
 export interface LicenseStatus {
-  tier: 'community' | 'enterprise';
+  tier: 'community' | 'pro' | 'enterprise';
   valid: boolean;
   organization: string | null;
   seats: number | null;

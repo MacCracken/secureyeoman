@@ -1,7 +1,10 @@
 import { useContext, type ReactNode } from 'react';
 import { Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { LicenseContext, type EnterpriseFeature } from '../hooks/useLicense';
+import { LicenseContext, type LicensedFeature } from '../hooks/useLicense';
+
+/** @deprecated Use LicensedFeature */
+export type { LicensedFeature as EnterpriseFeature } from '../hooks/useLicense';
 
 const FEATURE_LABELS: Record<string, string> = {
   adaptive_learning: 'Adaptive Learning Pipeline',
@@ -12,7 +15,7 @@ const FEATURE_LABELS: Record<string, string> = {
 };
 
 interface FeatureLockProps {
-  feature: EnterpriseFeature;
+  feature: LicensedFeature;
   children: ReactNode;
   className?: string;
 }
@@ -25,6 +28,8 @@ export function FeatureLock({ feature, children, className = '' }: FeatureLockPr
     return <>{children}</>;
   }
 
+  const tierLabel = ctx.license?.tier === 'community' ? 'Pro' : 'Enterprise';
+
   return (
     <div className={`relative ${className}`}>
       <div className="opacity-40 pointer-events-none select-none">{children}</div>
@@ -35,13 +40,13 @@ export function FeatureLock({ feature, children, className = '' }: FeatureLockPr
             {FEATURE_LABELS[feature] ?? feature}
           </p>
           <p className="text-xs text-muted-foreground">
-            This feature requires an Enterprise license
+            This feature requires a {tierLabel} license
           </p>
           <Link
             to="/settings#license"
             className="inline-block text-xs text-primary hover:underline"
           >
-            Upgrade to Enterprise
+            Upgrade to {tierLabel}
           </Link>
         </div>
       </div>

@@ -14,6 +14,12 @@
  * @param additionalPatterns - Extra regex strings to match env var names
  * @returns A function that replaces secret values with [REDACTED]
  */
+/** Maximum number of secret values to include in the redaction regex. */
+const MAX_SECRETS = 200;
+
+/** Maximum character length of an individual secret value to include in the regex. */
+const MAX_SECRET_LENGTH = 500;
+
 export function createSecretsFilter(additionalPatterns: string[] = []): (line: string) => string {
   const defaultNamePatterns = [/^SECUREYEOMAN_/, /_API_KEY$/, /_SECRET$/, /_PASSWORD$/, /_TOKEN$/];
 
@@ -34,8 +40,6 @@ export function createSecretsFilter(additionalPatterns: string[] = []): (line: s
   secretValues.sort((a, b) => b.length - a.length);
 
   // Cap secrets to prevent ReDoS with very large alternation regexes
-  const MAX_SECRETS = 200;
-  const MAX_SECRET_LENGTH = 500;
   const capped = secretValues.slice(0, MAX_SECRETS).filter((v) => v.length <= MAX_SECRET_LENGTH);
 
   // Build a single regex from all secret values if any exist

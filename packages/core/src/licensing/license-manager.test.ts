@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { generateKeyPairSync, sign } from 'node:crypto';
-import { LicenseManager, type LicenseClaims, type EnterpriseFeature } from './license-manager.js';
+import { LicenseManager, type LicenseClaims, type LicensedFeature } from './license-manager.js';
 
 // ── Test keypair (generated fresh per test run — never committed) ─────────────
 
@@ -103,7 +103,7 @@ describe('LicenseManager — community tier (no key)', () => {
 
   it('hasFeature() always returns false', () => {
     const lm = new LicenseManager();
-    const features: EnterpriseFeature[] = [
+    const features: LicensedFeature[] = [
       'adaptive_learning',
       'sso_saml',
       'multi_tenancy',
@@ -207,7 +207,7 @@ describe('LicenseManager — all features key', () => {
   });
 
   it('hasFeature() returns true for all enterprise features', () => {
-    const features: EnterpriseFeature[] = [
+    const features: LicensedFeature[] = [
       'adaptive_learning',
       'sso_saml',
       'multi_tenancy',
@@ -356,7 +356,7 @@ describe('LicenseManager — enforcement flag', () => {
 
   it('isFeatureAllowed() returns true for all features when enforcement is off', () => {
     const lm = new LicenseManager(); // no key, enforcement off
-    const features: EnterpriseFeature[] = [
+    const features: LicensedFeature[] = [
       'adaptive_learning',
       'sso_saml',
       'multi_tenancy',
@@ -567,6 +567,45 @@ describe('LicenseManager — claims field validation edge cases', () => {
     const key = buildKey(claims as any);
     const lm = withTestKey(() => lm, key);
     expect(lm.getParseError()).toMatch(/missing required fields/i);
+  });
+});
+
+describe('LicenseManager — valid pro key', () => {
+  let lm: LicenseManager;
+
+  beforeAll(() => {
+    const key = buildKey(validClaims({ tier: 'pro', features: ['adaptive_learning'] }));
+    lm = withTestKey(() => lm, key);
+  });
+
+  it('getTier() returns pro', () => {
+    expect(lm.getTier()).toBe('pro');
+  });
+
+  it('isValid() returns true', () => {
+    expect(lm.isValid()).toBe(true);
+  });
+
+  it('hasFeature() returns true for granted features', () => {
+    expect(lm.hasFeature('adaptive_learning')).toBe(true);
+  });
+
+  it('hasFeature() returns false for non-granted features', () => {
+    expect(lm.hasFeature('sso_saml')).toBe(false);
+    expect(lm.hasFeature('multi_tenancy')).toBe(false);
+  });
+
+  it('toStatusObject() reflects pro tier', () => {
+    const s = lm.toStatusObject();
+    expect(s.tier).toBe('pro');
+    expect(s.valid).toBe(true);
+  });
+
+  it('isFeatureAllowed with enforcement=true delegates to hasFeature', () => {
+    const key = buildKey(validClaims({ tier: 'pro', features: ['adaptive_learning'] }));
+    const enforced = withTestKeyAndEnforcement(key, true);
+    expect(enforced.isFeatureAllowed('adaptive_learning')).toBe(true);
+    expect(enforced.isFeatureAllowed('sso_saml')).toBe(false);
   });
 });
 

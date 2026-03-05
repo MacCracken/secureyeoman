@@ -26,6 +26,7 @@ export interface CodeExecutionManagerDeps {
 
 const DEFAULT_TIMEOUT = 30_000;
 const MAX_OUTPUT_LENGTH = 1_000_000; // 1 MB
+const SESSION_EXPIRY_CHECK_INTERVAL_MS = 60_000;
 
 export class CodeExecutionManager {
   private readonly config: ExecutionConfig;
@@ -57,10 +58,10 @@ export class CodeExecutionManager {
       });
     }
 
-    // Start periodic expiry check (every 60 seconds)
+    // Start periodic expiry check
     this.expiryTimer = setInterval(() => {
       void this.expireStaleSessions();
-    }, 60_000);
+    }, SESSION_EXPIRY_CHECK_INTERVAL_MS);
     this.expiryTimer.unref();
 
     this.deps.logger.debug('CodeExecutionManager initialized', {

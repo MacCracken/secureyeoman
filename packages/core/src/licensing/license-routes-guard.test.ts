@@ -85,7 +85,7 @@ describe('Training routes — license guard', () => {
       expect(res.statusCode).toBe(402);
       const body = JSON.parse(res.payload);
       expect(body.error).toBe('Payment Required');
-      expect(body.message).toBe('Enterprise license required');
+      expect(body.message).toBe('License required');
       expect(body.feature).toBe('adaptive_learning');
     });
 

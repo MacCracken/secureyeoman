@@ -42,6 +42,15 @@ interface DomainResult {
   metadata: Record<string, unknown>;
 }
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+/** Domain weights for composite risk score calculation. */
+const DOMAIN_WEIGHT_SECURITY = 0.3;
+const DOMAIN_WEIGHT_AUTONOMY = 0.25;
+const DOMAIN_WEIGHT_GOVERNANCE = 0.2;
+const DOMAIN_WEIGHT_INFRASTRUCTURE = 0.15;
+const DOMAIN_WEIGHT_EXTERNAL = 0.1;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function clamp(value: number, min: number, max: number): number {
@@ -133,11 +142,11 @@ export class RiskAssessmentManager {
 
       // Composite score with domain weights
       const weights: Record<string, number> = {
-        security: 0.3,
-        autonomy: 0.25,
-        governance: 0.2,
-        infrastructure: 0.15,
-        external: 0.1,
+        security: DOMAIN_WEIGHT_SECURITY,
+        autonomy: DOMAIN_WEIGHT_AUTONOMY,
+        governance: DOMAIN_WEIGHT_GOVERNANCE,
+        infrastructure: DOMAIN_WEIGHT_INFRASTRUCTURE,
+        external: DOMAIN_WEIGHT_EXTERNAL,
       };
 
       let weightedSum = 0;

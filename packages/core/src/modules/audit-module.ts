@@ -21,6 +21,9 @@ import { requireSecret } from '../config/loader.js';
 import { getPool } from '../storage/pg-pool.js';
 import type { AuditEntry } from '@secureyeoman/shared';
 
+/** Default cap on audit entries returned by exportAuditLog. */
+const AUDIT_EXPORT_DEFAULT_LIMIT = 100_000;
+
 /** External deps needed at construction time. */
 export interface AuditModuleDeps {
   /** User-provided audit storage override (from SecureYeomanOptions). */
@@ -124,7 +127,7 @@ export class AuditModule extends BaseModule {
     const result = await this.queryAuditLog({
       from: opts?.from,
       to: opts?.to,
-      limit: opts?.limit ?? 100_000,
+      limit: opts?.limit ?? AUDIT_EXPORT_DEFAULT_LIMIT,
       offset: 0,
       order: 'asc' as const,
     });

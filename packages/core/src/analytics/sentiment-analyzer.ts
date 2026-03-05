@@ -10,8 +10,10 @@ import type { SecureLogger } from '../logging/logger.js';
 import type { AIClient } from '../ai/client.js';
 import type { AnalyticsStorage } from './analytics-storage.js';
 
-const SENTIMENT_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const SENTIMENT_INTERVAL_MS = 300_000; // 5 minutes
 const BATCH_SIZE = 100;
+const CONTENT_TRUNCATION_LENGTH = 2_000;
+const DEFAULT_SENTIMENT_SCORE = 0.5;
 
 const SENTIMENT_PROMPT = `Classify the sentiment of the following assistant message.
 Return ONLY valid JSON with no additional text: {"sentiment":"positive"|"neutral"|"negative","score":0.0-1.0}
@@ -70,7 +72,7 @@ export class SentimentAnalyzer {
   async classifyMessage(
     content: string
   ): Promise<{ sentiment: 'positive' | 'neutral' | 'negative'; score: number }> {
-    const truncated = content.length > 2000 ? content.slice(0, 2000) + '...' : content;
+    const truncated = content.length > CONTENT_TRUNCATION_LENGTH ? content.slice(0, CONTENT_TRUNCATION_LENGTH) + '...' : content;
     const response = await this.aiClient.chat({
       messages: [{ role: 'user', content: SENTIMENT_PROMPT + truncated }],
       stream: false,
@@ -79,14 +81,14 @@ export class SentimentAnalyzer {
     const text = typeof response.content === 'string' ? response.content : '';
     const jsonMatch = /\{[^}]+\}/.exec(text);
     if (!jsonMatch) {
-      return { sentiment: 'neutral', score: 0.5 };
+      return { sentiment: 'neutral', score: DEFAULT_SENTIMENT_SCORE };
     }
 
     const parsed = JSON.parse(jsonMatch[0]) as { sentiment?: string; score?: number };
     const sentiment = ['positive', 'neutral', 'negative'].includes(parsed.sentiment ?? '')
       ? (parsed.sentiment as 'positive' | 'neutral' | 'negative')
       : 'neutral';
-    const score = typeof parsed.score === 'number' ? Math.max(0, Math.min(1, parsed.score)) : 0.5;
+    const score = typeof parsed.score === 'number' ? Math.max(0, Math.min(1, parsed.score)) : DEFAULT_SENTIMENT_SCORE;
 
     return { sentiment, score };
   }

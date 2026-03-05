@@ -1,5 +1,5 @@
 /**
- * License Guard — Fastify preHandler hook factory for enterprise feature gating.
+ * License Guard — Fastify preHandler hook factory for licensed feature gating.
  *
  * Usage:
  *   app.post('/api/v1/admin/tenants', {
@@ -11,11 +11,14 @@
  */
 
 import type { FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
-import type { EnterpriseFeature, LicenseManager } from './license-manager.js';
+import type { LicensedFeature, LicenseManager } from './license-manager.js';
 import { sendError } from '../utils/errors.js';
 
+/** @deprecated Use LicensedFeature */
+export type { LicensedFeature as EnterpriseFeature } from './license-manager.js';
+
 export function requiresLicense(
-  feature: EnterpriseFeature,
+  feature: LicensedFeature,
   getLicenseManager: () => LicenseManager
 ): preHandlerHookHandler {
   return (_request: FastifyRequest, reply: FastifyReply, done: (err?: Error) => void) => {
@@ -25,6 +28,6 @@ export function requiresLicense(
       return;
     }
 
-    sendError(reply, 402, 'Enterprise license required', { extra: { feature, tier: lm.getTier() } });
+    sendError(reply, 402, 'License required', { extra: { feature, tier: lm.getTier() } });
   };
 }

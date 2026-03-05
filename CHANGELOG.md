@@ -19,6 +19,16 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 - **Provider metadata**: `polly` (AWS Polly, cloud) and `transcribe` (AWS Transcribe, cloud) added to `PROVIDER_META` in manager. Both appear in `detectAvailableProviders()` when respective region env vars are set.
 - **Tests**: 48 new tests — Transcribe provider (14: SigV4 signing, credential validation, vocabulary management, language resolution, diarization), Polly provider (22: synthesis, voice resolution, SSML detection, lexicon management, voice registry, session tokens), Voice announcements (12: event routing, deduplication, throttling, error handling).
 
+### Code Audit 3: Magic Number Extraction
+
+- **Named constants**: Extracted ~50+ magic numbers to named `UPPER_SNAKE_CASE` constants at file scope across ~20 production files. Constants kept local to their files (not centralized). Purely cosmetic — no behavioral changes.
+- **Brain storage/manager**: `DEFAULT_MEMORY_IMPORTANCE`, `DEFAULT_KNOWLEDGE_CONFIDENCE`, `DEFAULT_TRUST_SCORE`, `GROUNDING_LOW_THRESHOLD`, `SKILL_LIST_LIMIT`, `KNOWLEDGE_QUERY_LIMIT`, `MS_PER_DAY`, `CHARS_PER_TOKEN_ESTIMATE`, `RRF_CONSTANT`, `RRF_MAX_RANK`, `CHUNK_CONTENT_THRESHOLD`.
+- **Analytics**: `CONTENT_TRUNCATION_LENGTH`, `DEFAULT_SENTIMENT_SCORE`, `SENTIMENT_INTERVAL_MS`, `MESSAGE_PREVIEW_LENGTH`, `TRANSCRIPT_TRUNCATION_LENGTH`, `EXTRACT_INTERVAL_MS`, `SUMMARIZE_INTERVAL_MS` across sentiment-analyzer, entity-extractor, conversation-summarizer.
+- **Security**: `TOXICITY_CLASSIFIER_TIMEOUT_MS`, `GROUNDING_SEARCH_THRESHOLD`, `DEFAULT_SYSTEM_PROMPT_LEAK_THRESHOLD`, `PARTIAL_COMPLIANCE_WEIGHT` across content-guardrail, response-guard, sra-manager.
+- **Workflow**: `DEFAULT_RETRY_BACKOFF_MS`, `DEFAULT_COMMAND_TIMEOUT_MS`, `MAX_EXEC_BUFFER_BYTES`, `WEBHOOK_TIMEOUT_MS`, `MAX_WEBHOOK_RESPONSE_BYTES`, `CI_FETCH_TIMEOUT_MS`, `CI_ERROR_BODY_LIMIT`, `DEFAULT_CI_POLL_INTERVAL_MS` in workflow-engine. 11 constants in workflow-templates for distillation/finetune/DPO/CI thresholds.
+- **Other**: `DEFAULT_RETENTION_DAYS`/`CLEANUP_INTERVAL_MS` (notification-manager), `DEFAULT_SIGNAL_REFRESH_INTERVAL_MS`/`HTTP_SIGNAL_TIMEOUT_MS` (intent/manager), `SESSION_EXPIRY_CHECK_INTERVAL_MS` (execution/manager), `DEFAULT_COMPACTION_THRESHOLD`/`DEFAULT_PRESERVE_RECENT_TURNS` (context-compactor), `SUMMARIZER_TEMPERATURE` (chat/compression), `AUDIT_EXPORT_DEFAULT_LIMIT` (audit-module), `POLYGLOT_SAMPLE_SIZE` (data-scanner), `DOMAIN_WEIGHT_*` (risk-assessment), `MAX_SECRETS`/`MAX_SECRET_LENGTH` (secrets-filter).
+- **Roadmap cleanup**: Removed 4 completed/already-done items from Code Audit 3 backlog (magic numbers, config schema split, granular health checks, unused optional deps). 4 remaining: dashboard accessibility, MCP tool descriptions, circuit breaker pattern, OpenAPI spec regeneration.
+
 ### Advanced Training (Phase 131)
 
 - **DPO training**: `training_method: 'dpo'` on finetune jobs. `scripts/train_dpo.py` uses TRL DPOTrainer with LoRA. Preference pairs exported to disk JSONL via `POST /training/preference-pairs/export-file`.

@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { LicenseProvider, useLicense, ALL_ENTERPRISE_FEATURES } from './useLicense';
+import { LicenseProvider, useLicense, ALL_LICENSED_FEATURES, ALL_ENTERPRISE_FEATURES } from './useLicense';
 
 vi.mock('../api/client', () => ({
   fetchLicenseStatus: vi.fn(),
@@ -178,12 +178,36 @@ describe('useLicense', () => {
     expect(result.current.hasFeature('adaptive_learning')).toBe(false);
   });
 
-  it('exports ALL_ENTERPRISE_FEATURES with 5 features', () => {
-    expect(ALL_ENTERPRISE_FEATURES).toHaveLength(5);
-    expect(ALL_ENTERPRISE_FEATURES).toContain('adaptive_learning');
-    expect(ALL_ENTERPRISE_FEATURES).toContain('sso_saml');
-    expect(ALL_ENTERPRISE_FEATURES).toContain('multi_tenancy');
-    expect(ALL_ENTERPRISE_FEATURES).toContain('cicd_integration');
-    expect(ALL_ENTERPRISE_FEATURES).toContain('advanced_observability');
+  it('exports ALL_LICENSED_FEATURES with 5 features', () => {
+    expect(ALL_LICENSED_FEATURES).toHaveLength(5);
+    expect(ALL_LICENSED_FEATURES).toContain('adaptive_learning');
+    expect(ALL_LICENSED_FEATURES).toContain('sso_saml');
+    expect(ALL_LICENSED_FEATURES).toContain('multi_tenancy');
+    expect(ALL_LICENSED_FEATURES).toContain('cicd_integration');
+    expect(ALL_LICENSED_FEATURES).toContain('advanced_observability');
+  });
+
+  it('exports ALL_ENTERPRISE_FEATURES as deprecated alias', () => {
+    expect(ALL_ENTERPRISE_FEATURES).toEqual(ALL_LICENSED_FEATURES);
+  });
+
+  it('returns pro tier license data with isEnterprise=true', async () => {
+    mockFetchLicenseStatus.mockResolvedValue({
+      tier: 'pro',
+      valid: true,
+      organization: 'Acme Corp',
+      seats: 10,
+      features: ['adaptive_learning'],
+      licenseId: 'lic-pro-1',
+      expiresAt: null,
+      error: null,
+      enforcementEnabled: true,
+    });
+    const { result } = renderHook(() => useLicense(), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.isEnterprise).toBe(true);
+    expect(result.current.license?.tier).toBe('pro');
+    expect(result.current.hasFeature('adaptive_learning')).toBe(true);
+    expect(result.current.hasFeature('sso_saml')).toBe(false);
   });
 });

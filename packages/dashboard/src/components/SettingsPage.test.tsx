@@ -299,7 +299,7 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Advanced Observability')).toBeInTheDocument();
     // Community tier message
     expect(
-      screen.getByText(/Enter a license key to unlock enterprise features/)
+      screen.getByText(/Enter a license key to unlock licensed features/)
     ).toBeInTheDocument();
   });
 

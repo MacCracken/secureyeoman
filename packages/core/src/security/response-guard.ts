@@ -105,6 +105,11 @@ const RESPONSE_PATTERNS: {
   },
 ];
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+/** Default trigram overlap ratio above which a system prompt leak is reported. */
+const DEFAULT_SYSTEM_PROMPT_LEAK_THRESHOLD = 0.3;
+
 // ─── ResponseGuard class ──────────────────────────────────────────────────────
 
 export class ResponseGuard {
@@ -114,7 +119,7 @@ export class ResponseGuard {
 
   constructor(config: ResponseGuardConfig) {
     this.mode = config.mode;
-    this.systemPromptLeakThreshold = config.systemPromptLeakThreshold ?? 0.3;
+    this.systemPromptLeakThreshold = config.systemPromptLeakThreshold ?? DEFAULT_SYSTEM_PROMPT_LEAK_THRESHOLD;
   }
 
   private getLogger(): SecureLogger {

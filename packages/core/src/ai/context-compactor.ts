@@ -77,6 +77,12 @@ const CONTEXT_WINDOW: Record<string, number> = {
 
 const DEFAULT_CONTEXT_WINDOW = 8_192;
 
+/** Fraction of context window at which compaction triggers (80%). */
+const DEFAULT_COMPACTION_THRESHOLD = 0.8;
+
+/** Number of recent turns to preserve verbatim during compaction. */
+const DEFAULT_PRESERVE_RECENT_TURNS = 4;
+
 export function getContextWindowSize(model: string): number {
   return CONTEXT_WINDOW[model] ?? DEFAULT_CONTEXT_WINDOW;
 }
@@ -118,8 +124,8 @@ export class ContextCompactor {
   private readonly preserveRecentTurns: number;
 
   constructor(options: CompactorOptions = {}) {
-    this.thresholdFraction = options.thresholdFraction ?? 0.8;
-    this.preserveRecentTurns = options.preserveRecentTurns ?? 4;
+    this.thresholdFraction = options.thresholdFraction ?? DEFAULT_COMPACTION_THRESHOLD;
+    this.preserveRecentTurns = options.preserveRecentTurns ?? DEFAULT_PRESERVE_RECENT_TURNS;
   }
 
   /**

@@ -95,13 +95,9 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 ### Code Audit 3 (from 2026-03-05 Audit)
 
-- [ ] **Magic numbers to named constants** — Extract hardcoded timeouts, limits, and thresholds (60_000, 30_000, 0.8, etc.) in `gateway/server.ts`, `ai/context-compactor.ts`, and ~20 other files into named constants or config values.
-- [ ] **Config schema split** — Break `packages/shared/src/types/config.ts` (1,007 lines, 184 Zod defs) into `config/core.ts`, `config/security.ts`, `config/brain.ts`, etc. with barrel re-export.
-- [ ] **Granular health checks** — Add `/health/ready` endpoint that probes DB pool, MCP availability, Redis, and integration health for Kubernetes liveness/readiness.
 - [ ] **Dashboard accessibility** — Wire `axe-core` into dashboard test suite (`vitest-axe`). Add ARIA labels to form inputs, icon-only buttons, modals. CI gate on violations.
 - [ ] **MCP tool descriptions** — Enhance 274 tool descriptions with parameter examples, error conditions, and category grouping in `manifest.ts`.
 - [ ] **Circuit breaker pattern** — Add lightweight circuit breaker to AI client and IntegrationManager for external service calls (threshold, half-open, reset).
-- [ ] **Remove unused optional deps** — Audit and remove `@nut-tree/nut-js`, `faiss-node`, consolidate screenshot libraries.
 - [ ] **OpenAPI spec regeneration** — Auto-generate OpenAPI spec from route definitions (current `docs/api/openapi.yaml` is from 2023, 68 route files now).
 
 ### Test Coverage — Final Push (Phase 105)

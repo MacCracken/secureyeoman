@@ -15,16 +15,19 @@ import { createPublicKey, verify } from 'node:crypto';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type LicenseTier = 'community' | 'enterprise';
+export type LicenseTier = 'community' | 'pro' | 'enterprise';
 
-export type EnterpriseFeature =
+export type LicensedFeature =
   | 'adaptive_learning'
   | 'sso_saml'
   | 'multi_tenancy'
   | 'cicd_integration'
   | 'advanced_observability';
 
-export const ALL_ENTERPRISE_FEATURES: EnterpriseFeature[] = [
+/** @deprecated Use LicensedFeature instead. */
+export type EnterpriseFeature = LicensedFeature;
+
+export const ALL_LICENSED_FEATURES: LicensedFeature[] = [
   'adaptive_learning',
   'sso_saml',
   'multi_tenancy',
@@ -32,11 +35,14 @@ export const ALL_ENTERPRISE_FEATURES: EnterpriseFeature[] = [
   'advanced_observability',
 ];
 
+/** @deprecated Use ALL_LICENSED_FEATURES instead. */
+export const ALL_ENTERPRISE_FEATURES = ALL_LICENSED_FEATURES;
+
 export interface LicenseClaims {
   tier: LicenseTier;
   organization: string;
   seats: number;
-  features: EnterpriseFeature[];
+  features: LicensedFeature[];
   licenseId: string;
   /** Issued-at: Unix seconds */
   iat: number;
@@ -114,14 +120,15 @@ export class LicenseManager {
     return claims;
   }
 
-  /** Returns 'enterprise' when a valid enterprise key is loaded, otherwise 'community'. */
+  /** Returns the license tier: 'enterprise', 'pro', or 'community'. */
   getTier(): LicenseTier {
     return this.claims?.tier ?? 'community';
   }
 
-  /** Returns true only when a valid enterprise key grants the requested feature. */
-  hasFeature(feature: EnterpriseFeature): boolean {
-    if (this.claims?.tier !== 'enterprise') return false;
+  /** Returns true when a valid pro or enterprise key grants the requested feature. */
+  hasFeature(feature: LicensedFeature): boolean {
+    if (!this.claims) return false;
+    if (this.claims.tier !== 'enterprise' && this.claims.tier !== 'pro') return false;
     return this.claims.features.includes(feature);
   }
 
@@ -135,7 +142,7 @@ export class LicenseManager {
    * - When enforcement is disabled (default), always true.
    * - When enforcement is enabled, delegates to hasFeature().
    */
-  isFeatureAllowed(feature: EnterpriseFeature): boolean {
+  isFeatureAllowed(feature: LicensedFeature): boolean {
     if (!this.enforcementEnabled) return true;
     return this.hasFeature(feature);
   }

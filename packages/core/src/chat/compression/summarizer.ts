@@ -4,6 +4,9 @@
 
 import type { AIProvider } from '../../ai/providers/base.js';
 
+/** Low temperature for deterministic, factual summaries. */
+const SUMMARIZER_TEMPERATURE = 0.3;
+
 export interface SummarizerDeps {
   aiProvider: AIProvider;
   model?: string;
@@ -32,7 +35,7 @@ export async function summarizeTopic(
     model: deps.model,
     stream: false,
     maxTokens: 300,
-    temperature: 0.3,
+    temperature: SUMMARIZER_TEMPERATURE,
   });
 
   return response.content;
@@ -58,7 +61,7 @@ export async function summarizeBulk(topics: string[], deps: SummarizerDeps): Pro
     model: deps.model,
     stream: false,
     maxTokens: 400,
-    temperature: 0.3,
+    temperature: SUMMARIZER_TEMPERATURE,
   });
 
   return response.content;

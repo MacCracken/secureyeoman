@@ -6,6 +6,20 @@
 
 import type { WorkflowDefinitionCreateInput, WorkflowStep } from '@secureyeoman/shared';
 
+// ── Template constants ───────────────────────────────────────────────────────
+const DISTILLATION_MAX_CONVERSATIONS = 2000;
+const DISTILLATION_TIMEOUT_MS = 7_200_000; // 2h
+const DISTILLATION_POLL_INTERVAL_MS = 30_000;
+const FINETUNE_MAX_CONVERSATIONS = 5000;
+const FINETUNE_TIMEOUT_MS = 14_400_000; // 4h
+const FINETUNE_POLL_INTERVAL_MS = 60_000;
+const FINETUNE_QUALITY_THRESHOLD = 0.6;
+const DPO_TIMEOUT_MS = 10_800_000; // 3h
+const DPO_POLL_INTERVAL_MS = 30_000;
+const DPO_WIN_RATE_THRESHOLD = 0.55;
+const CI_WAIT_POLL_INTERVAL_MS = 15_000;
+const CI_WAIT_TIMEOUT_MS = 1_800_000; // 30min
+
 // ── Step builder helpers ───────────────────────────────────────────────────────
 // Reduce repetitive step-object literals in template definitions.
 
@@ -236,7 +250,7 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
           outputDir: '{{input.outputDir}}',
           personalityIds: '{{input.personalityIds}}',
           minTurns: 2,
-          maxConversations: 2000,
+          maxConversations: DISTILLATION_MAX_CONVERSATIONS,
         },
         dependsOn: [],
         onError: 'fail',
@@ -249,8 +263,8 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         config: {
           jobType: 'distillation',
           jobId: '{{input.distillationJobId}}',
-          timeoutMs: 7200000, // 2h
-          pollIntervalMs: 30000,
+          timeoutMs: DISTILLATION_TIMEOUT_MS,
+          pollIntervalMs: DISTILLATION_POLL_INTERVAL_MS,
         },
         dependsOn: ['curate'],
         onError: 'fail',
@@ -310,7 +324,7 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
           outputDir: '{{input.outputDir}}',
           personalityIds: '{{input.personalityIds}}',
           minTurns: 2,
-          maxConversations: 5000,
+          maxConversations: FINETUNE_MAX_CONVERSATIONS,
         },
         dependsOn: [],
         onError: 'fail',
@@ -323,8 +337,8 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         config: {
           jobType: 'finetune',
           jobId: '{{input.finetuneJobId}}',
-          timeoutMs: 14400000, // 4h
-          pollIntervalMs: 60000,
+          timeoutMs: FINETUNE_TIMEOUT_MS,
+          pollIntervalMs: FINETUNE_POLL_INTERVAL_MS,
         },
         dependsOn: ['curate'],
         onError: 'fail',
@@ -362,7 +376,7 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         description: 'Register adapter with Ollama when char_similarity ≥ threshold',
         config: {
           metricPath: 'steps.eval.output.metrics.char_similarity',
-          threshold: 0.6,
+          threshold: FINETUNE_QUALITY_THRESHOLD,
           jobId: '{{input.finetuneJobId}}',
           ollamaUrl: '{{input.ollamaUrl}}',
           personalityId: '{{input.personalityId}}',
@@ -413,8 +427,8 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         config: {
           jobType: 'distillation',
           jobId: '{{input.dpoJobId}}',
-          timeoutMs: 10800000, // 3h
-          pollIntervalMs: 30000,
+          timeoutMs: DPO_TIMEOUT_MS,
+          pollIntervalMs: DPO_POLL_INTERVAL_MS,
         },
         dependsOn: ['curate'],
         onError: 'fail',
@@ -439,7 +453,7 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
         description: 'Deploy DPO model when win-rate metric exceeds 55%',
         config: {
           metricPath: 'steps.eval.output.metrics.char_similarity',
-          threshold: 0.55,
+          threshold: DPO_WIN_RATE_THRESHOLD,
           jobId: '{{input.dpoJobId}}',
           ollamaUrl: '{{input.ollamaUrl}}',
           personalityId: '{{input.personalityId}}',
@@ -590,8 +604,8 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreateInput[] = [
           owner: '{{input.owner}}',
           repo: '{{input.repo}}',
           runId: '{{steps.trigger.output.runId}}',
-          pollIntervalMs: 15000,
-          timeoutMs: 1800000,
+          pollIntervalMs: CI_WAIT_POLL_INTERVAL_MS,
+          timeoutMs: CI_WAIT_TIMEOUT_MS,
         },
         dependsOn: ['trigger'],
         onError: 'continue',

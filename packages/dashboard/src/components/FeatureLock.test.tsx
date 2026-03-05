@@ -55,7 +55,7 @@ describe('FeatureLock', () => {
       </Wrapper>
     );
     expect(await screen.findByTestId('child')).toBeInTheDocument();
-    expect(screen.queryByText('This feature requires an Enterprise license')).not.toBeInTheDocument();
+    expect(screen.queryByText('This feature requires a Pro license')).not.toBeInTheDocument();
   });
 
   it('renders children when enforcement is on and feature is licensed', async () => {
@@ -79,7 +79,7 @@ describe('FeatureLock', () => {
       </Wrapper>
     );
     expect(await screen.findByTestId('child')).toBeInTheDocument();
-    expect(screen.queryByText('This feature requires an Enterprise license')).not.toBeInTheDocument();
+    expect(screen.queryByText('This feature requires a Pro license')).not.toBeInTheDocument();
   });
 
   it('shows lock overlay when enforcement is on and feature is not licensed', async () => {
@@ -103,10 +103,10 @@ describe('FeatureLock', () => {
       </Wrapper>
     );
     expect(
-      await screen.findByText('This feature requires an Enterprise license')
+      await screen.findByText('This feature requires a Pro license')
     ).toBeInTheDocument();
     expect(screen.getByText('Adaptive Learning Pipeline')).toBeInTheDocument();
-    expect(screen.getByText('Upgrade to Enterprise')).toBeInTheDocument();
+    expect(screen.getByText('Upgrade to Pro')).toBeInTheDocument();
   });
 
   it('displays correct feature label for each feature', async () => {
@@ -153,7 +153,7 @@ describe('FeatureLock', () => {
       </Wrapper>
     );
     // The children are still in the DOM but dimmed
-    await screen.findByText('This feature requires an Enterprise license');
+    await screen.findByText('This feature requires a Pro license');
     expect(screen.getByTestId('child')).toBeInTheDocument();
     // The parent wrapper should have opacity class
     const dimmedDiv = container.querySelector('.opacity-40');
@@ -180,7 +180,7 @@ describe('FeatureLock', () => {
         </FeatureLock>
       </Wrapper>
     );
-    await screen.findByText('This feature requires an Enterprise license');
+    await screen.findByText('This feature requires a Pro license');
     const wrapper = container.querySelector('.my-custom-class');
     expect(wrapper).not.toBeNull();
   });

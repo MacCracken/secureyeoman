@@ -33,7 +33,7 @@ import {
   setLicenseKey,
 } from '../api/client';
 import type { BackupRecord } from '../types';
-import { useLicense, ALL_ENTERPRISE_FEATURES } from '../hooks/useLicense';
+import { useLicense, ALL_LICENSED_FEATURES } from '../hooks/useLicense';
 import { NotificationSettings } from './NotificationSettings';
 import { LogRetentionSettings } from './LogRetentionSettings';
 import { SecuritySettings, RolesSettings, SecretsPanel } from './SecuritySettings';
@@ -836,7 +836,7 @@ function LicenseCard() {
           <span
             className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${isEnterprise ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
           >
-            {isLoading ? '…' : isEnterprise ? 'Enterprise' : 'Community'}
+            {isLoading ? '…' : isEnterprise ? (license?.tier === 'enterprise' ? 'Enterprise' : 'Pro') : 'Community'}
           </span>
         </div>
         <button
@@ -891,7 +891,7 @@ function LicenseCard() {
 
             {/* Feature chips — green for available, grey/locked for missing */}
             <div className="flex flex-wrap gap-1.5 pt-1">
-              {ALL_ENTERPRISE_FEATURES.map((f) => {
+              {ALL_LICENSED_FEATURES.map((f) => {
                 const available = hasFeature(f);
                 return (
                   <span
@@ -909,7 +909,7 @@ function LicenseCard() {
 
             {!isEnterprise && (
               <p className="text-sm text-muted-foreground">
-                Running on the community tier. Enter a license key to unlock enterprise features.
+                Running on the community tier. Enter a license key to unlock licensed features.
               </p>
             )}
 

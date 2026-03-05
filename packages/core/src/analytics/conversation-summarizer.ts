@@ -8,7 +8,9 @@ import type { SecureLogger } from '../logging/logger.js';
 import type { AIClient } from '../ai/client.js';
 import type { AnalyticsStorage } from './analytics-storage.js';
 
-const SUMMARIZE_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+const SUMMARIZE_INTERVAL_MS = 600_000; // 10 minutes
+const MESSAGE_PREVIEW_LENGTH = 500;
+const TRANSCRIPT_TRUNCATION_LENGTH = 4_000;
 
 const SUMMARIZE_PROMPT = `Summarize the following conversation in 2-3 concise sentences.
 Focus on the key topics discussed, decisions made, and outcomes.
@@ -81,8 +83,8 @@ export class ConversationSummarizer {
   }
 
   async generateSummary(messages: { role: string; content: string }[]): Promise<string> {
-    const transcript = messages.map((m) => `${m.role}: ${m.content.slice(0, 500)}`).join('\n');
-    const truncated = transcript.length > 4000 ? transcript.slice(0, 4000) + '\n...' : transcript;
+    const transcript = messages.map((m) => `${m.role}: ${m.content.slice(0, MESSAGE_PREVIEW_LENGTH)}`).join('\n');
+    const truncated = transcript.length > TRANSCRIPT_TRUNCATION_LENGTH ? transcript.slice(0, TRANSCRIPT_TRUNCATION_LENGTH) + '\n...' : transcript;
 
     const response = await this.aiClient.chat({
       messages: [{ role: 'user', content: SUMMARIZE_PROMPT + truncated }],
