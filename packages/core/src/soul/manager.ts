@@ -308,6 +308,7 @@ export class SoulManager {
           enableCitations: false,
           groundednessMode: 'off' as const,
           contextOverflowStrategy: 'summarise' as const,
+          confidentialCompute: 'off' as const,
         },
       },
       { isArchetype: true }

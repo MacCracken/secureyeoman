@@ -105,7 +105,7 @@ export class SubAgentManager {
     // Prune completed delegations older than 90 days on startup
     const pruned = await this.storage.pruneDelegations(90);
     if (pruned > 0) {
-      this.deps.logger.info({ pruned }, 'Pruned old delegation records');
+      this.deps.logger.info(`Pruned ${pruned} old delegation records`);
     }
     this.deps.logger.debug('SubAgentManager initialized with built-in profiles');
   }

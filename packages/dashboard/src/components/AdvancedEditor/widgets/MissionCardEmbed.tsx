@@ -41,7 +41,7 @@ export const MissionCardEmbed = memo(function MissionCardEmbed({ cardId }: Missi
         <div className="text-[10px] text-muted-foreground">{cardDef.description}</div>
       </div>
       <div className="flex-1 p-3 text-xs">
-        <MissionCardSummary cardId={cardId} metrics={metrics} navigate={navigate} />
+        <MissionCardSummary cardId={cardId} metrics={metrics as Record<string, unknown> | undefined} navigate={navigate} />
       </div>
     </div>
   );

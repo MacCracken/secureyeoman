@@ -19,8 +19,9 @@ vi.mock('../storage/pg-pool.js', () => ({
   }),
 }));
 
-vi.mock('node:crypto', () => {
-  const mod = { randomUUID: () => 'test-uuid-1234' };
+vi.mock('node:crypto', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:crypto')>();
+  const mod = { ...actual, randomUUID: () => 'test-uuid-1234' as `${string}-${string}-${string}-${string}-${string}` };
   return { ...mod, default: mod };
 });
 

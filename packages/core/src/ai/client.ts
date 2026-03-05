@@ -493,6 +493,7 @@ export class AIClient {
       fallbacks: [],
       responseCache: this.primaryModelConfig.responseCache,
       localFirst: this.primaryModelConfig.localFirst,
+      confidentialCompute: fbConfig.confidentialCompute ?? this.primaryModelConfig.confidentialCompute,
     };
 
     const provider = this.createProvider({ model: fullModelConfig, retryConfig: this.retryConfig });

@@ -201,7 +201,7 @@ describe('validateCustomTheme', () => {
 
   it('rejects missing name', () => {
     const exp = makeValidExport();
-    (exp as Record<string, unknown>).name = '';
+    (exp as unknown as Record<string, unknown>).name = '';
     expect(validateCustomTheme(exp).valid).toBe(false);
   });
 
@@ -213,13 +213,13 @@ describe('validateCustomTheme', () => {
 
   it('rejects non-boolean isDark', () => {
     const exp = makeValidExport();
-    (exp as Record<string, unknown>).isDark = 'yes';
+    (exp as unknown as Record<string, unknown>).isDark = 'yes';
     expect(validateCustomTheme(exp).valid).toBe(false);
   });
 
   it('rejects missing colors object', () => {
     const exp = makeValidExport();
-    (exp as Record<string, unknown>).colors = undefined;
+    (exp as unknown as Record<string, unknown>).colors = undefined;
     expect(validateCustomTheme(exp).valid).toBe(false);
   });
 

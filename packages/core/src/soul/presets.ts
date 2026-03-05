@@ -75,6 +75,7 @@ const BASE_BODY: PersonalityCreate['body'] = {
   enableCitations: false,
   groundednessMode: 'off' as const,
   contextOverflowStrategy: 'summarise' as const,
+  confidentialCompute: 'off' as const,
 };
 
 // ── Preset definitions ───────────────────────────────────────────────────────

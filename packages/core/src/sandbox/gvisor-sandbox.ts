@@ -220,7 +220,7 @@ const fn = ${fn.toString()};
           const cpuTimeMs = endTime - startTime;
 
           if (err) {
-            this.getLogger().warn({ err: err.message, stderr }, 'gVisor execution failed');
+            this.getLogger().warn(`gVisor execution failed: ${err.message}`);
             violations.push({
               type: 'syscall',
               description: `gVisor execution error: ${err.message}`,
