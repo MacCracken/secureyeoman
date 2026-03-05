@@ -121,29 +121,21 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 ### Security Hardening (from 2026-03-05 Audit)
 
 
-### Test Coverage — Final 1% Push (Phase 105)
+### Test Coverage — Final Push (Phase 105)
 
-Current: 87.01% stmt / 76.02% branches. Target: 88% / 77%. Gap: <1% each.
+Current: 86.35% stmt / 76.24% branches / 87.21% lines. Target: 88% stmt / 77% branches.
 
-**Highest-impact targets by coverage gap** (directory-level, sorted by branch gap):
+**Completed (2026-03-05)**: Licensing (+18 tests), Logging (+26 tests), Actuator (+10 tests), Notifications (+16 tests). Capture-permissions already had a test file (377 lines, 19 tests).
 
-| Directory | Stmts | Branches | Priority |
-|-----------|-------|----------|----------|
-| `body/actuator/` | 75.63% | 61.17% | HIGH — desktop control branch coverage |
-| `logging/` | 74.93% | 62.18% | HIGH — audit chain + export branches |
-| `licensing/` | 67.30% | 63.63% | HIGH — license validation branches |
-| `notifications/` | 90.00% | 64.22% | MEDIUM — good stmt, weak branch |
-| `sandbox/` | 77.67% | 66.16% | MEDIUM — sandbox exec branches |
-| `cli/commands/` | 76.83% | 68.12% | MEDIUM — flag parsing branches |
-| `config/` | 81.81% | 69.01% | MEDIUM — config validation branches |
-| `training/` | 78.81% | 69.84% | MEDIUM — manager logic branches |
-| `workflow/` | 91.78% | 72.70% | LOW — good stmt, branch gap in engine conditions |
+**Remaining targets by coverage gap** (directory-level):
 
-- [ ] **Licensing branch coverage** — `licensing/` at 67.30% stmt / 63.63% branch. License validation branching (expired, invalid signature, missing claims, feature checks) is fully unit-testable. The `TestLicenseManager` pattern is already established.
-- [ ] **Logging branch coverage** — `logging/` at 74.93% stmt / 62.18% branch. Audit chain integrity verification, export format branches, and log rotation logic are unit-testable with mocked storage.
-- [ ] **Actuator branch coverage** — `body/actuator/` at 75.63% stmt / 61.17% branch. Desktop control action dispatch and platform-specific branching.
-- [ ] **Notification branch coverage** — `notifications/` at 90% stmt / 64.22% branch. Notification preference filtering and channel dispatch branches.
-- [ ] **Capture-permissions tests** — `body/capture-permissions.ts` has no test file. Security-critical RBAC permission enforcement for screen capture operations.
+| Directory | Priority |
+|-----------|----------|
+| `sandbox/` | MEDIUM — sandbox exec branches |
+| `cli/commands/` | MEDIUM — flag parsing branches |
+| `config/` | MEDIUM — config validation branches |
+| `training/` | MEDIUM — manager logic branches |
+| `workflow/` | LOW — good stmt, branch gap in engine conditions |
 
 ---
 

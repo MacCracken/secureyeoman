@@ -1,6 +1,6 @@
 # Functionality Audit: SecureYeoman vs Competitors
 
-> Comparative analysis as of **2026-03-02** — SecureYeoman against OpenClaw, Agent Zero, PicoClaw, Ironclaw, TrustClaw, Manus AI (Meta), Devin 2.0, OpenHands, OpenAI Frontier, ZeroClaw, and NanoBot.
+> Comparative analysis as of **2026-03-05** — SecureYeoman against OpenClaw, Agent Zero, PicoClaw, Ironclaw, TrustClaw, Manus AI (Meta), Devin 2.0, OpenHands, OpenAI Frontier, ZeroClaw, and NanoBot.
 
 ---
 
@@ -230,10 +230,10 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 
 | | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
 |--|--|--|--|--|--|
-| Test count | **15,059** | Limited (community-driven) | Minimal | Minimal | Not published (Rust type safety provides baseline) |
-| Line coverage | **≥ 87%** | Not tracked | Not tracked | Not tracked | Not tracked |
-| Test files | **883** | Unknown | Unknown | Unknown | Unknown |
-| ADR records | **166** | Unknown | Unknown | Unknown | Unknown |
+| Test count | **15,332** | Limited (community-driven) | Minimal | Minimal | Not published (Rust type safety provides baseline) |
+| Line coverage | **87.2%** | Not tracked | Not tracked | Not tracked | Not tracked |
+| Test files | **674** | Unknown | Unknown | Unknown | Unknown |
+| ADR records | **201** | Unknown | Unknown | Unknown | Unknown |
 | CI/CD | ✅ lint · typecheck · test · build · security audit · docker-push · helm-lint | ✅ | Basic | Minimal | ✅ Cargo CI |
 | Security test suite | ✅ Dedicated security + chaos suites; vitest-axe a11y smoke tests | ❌ Multiple CVEs 2026 | ❌ | ❌ | ✅ Memory-safe by language; WASM sandbox tests |
 | Storybook | ✅ | ❌ | ❌ | ❌ | ❌ |
@@ -508,7 +508,7 @@ OpenAI Frontier launched **February 5, 2026** as OpenAI's enterprise-focused aut
 | **Managed SaaS** | Not positioned | Self-hosted only by design; OpenAI Frontier targets enterprise SaaS; Manus AI (acquired by Meta) shifts to Meta's platform; Ironclaw offers cloud-hosted TEE |
 | **Research / education** | Not positioned | NanoBot serves this segment; SecureYeoman is overkill for single-researcher use |
 
-**Key differentiator**: SecureYeoman is the only enterprise-grade, self-hosted AI agent platform that combines full RBAC/SSO/SAML, multi-tenancy, cryptographic audit chain, Vault/OpenBao secrets management, zero-trust network access (Twingate), a network security toolkit (38 MCP tools + 15 Kali tools), ResponseGuard + OPA/CEL governance, vector memory with hybrid FTS+RRF and per-personality scoping, DAG workflow orchestration with a visual builder (19 step types), AI training pipeline (distillation + LoRA + LLM-as-Judge), ML lifecycle platform (A/B testing, experiment registry, conversation branching), backup & DR, audit log export, correlation ID observability, a community repository (87 skills across 13 categories, 7 workflows, 2 swarm + 2 council templates, 7 security templates, 3 personalities, 3 themes), and Kubernetes production readiness — all in a single ~80 MB binary deployable fully air-gapped, with 14,177+ tests across core, dashboard, and MCP packages.
+**Key differentiator**: SecureYeoman is the only enterprise-grade, self-hosted AI agent platform that combines full RBAC/SSO/SAML, multi-tenancy, cryptographic audit chain, Vault/OpenBao secrets management, zero-trust network access (Twingate), a network security toolkit (38 MCP tools + 15 Kali tools), ResponseGuard + OPA/CEL governance, vector memory with hybrid FTS+RRF and per-personality scoping, DAG workflow orchestration with a visual builder (19 step types), AI training pipeline (distillation + LoRA + LLM-as-Judge), ML lifecycle platform (A/B testing, experiment registry, conversation branching), backup & DR, audit log export, correlation ID observability, a community repository (87 skills across 13 categories, 7 workflows, 2 swarm + 2 council templates, 7 security templates, 3 personalities, 3 themes), and Kubernetes production readiness — all in a single ~80 MB binary deployable fully air-gapped, with 15,332 tests across core, dashboard, and MCP packages.
 
 **The sovereignty argument**: Every new competitor — TrustClaw, Manus AI (now Meta), OpenAI Frontier, Devin — that claims "security" or "enterprise-ready" while routing data through its own cloud reinforces SecureYeoman's core position. The answer to "but Manus AI is easier to set up" is `curl -fsSL https://secureyeoman.ai/install | bash && secureyeoman init`. The answer to "but OpenAI Frontier has enterprise brand" is model-provider lock-in, data sovereignty, and the fact that SecureYeoman supports 13 providers including fully local models. The answer to "but TrustClaw is more secure" is the cryptographic audit chain, OPA governance, and the fact that SecureYeoman's Outbound Credential Proxy means neither TrustClaw nor any other third party ever sees your key material.
 

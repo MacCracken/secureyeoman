@@ -473,3 +473,40 @@ describe('createNoopLogger — identity check (Phase 105)', () => {
     expect(grandchild).toBe(noop);
   });
 });
+
+// ── Sanitization output verification ─────────────────────────────────────────
+
+import { sanitizeForLogging } from '../utils/crypto.js';
+
+describe('sanitizeForLogging — JWT and DB connection string redaction', () => {
+  it('redacts JWT tokens in strings', () => {
+    const jwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4ifQ.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
+    // The JWT is embedded alone (no "token:" prefix which triggers a different pattern first)
+    const result = sanitizeForLogging(`JWT=${jwt} end`);
+    expect(result).toContain('[REDACTED_JWT]');
+    expect(result).not.toContain('eyJ');
+  });
+
+  it('redacts PostgreSQL connection strings', () => {
+    const connStr = 'postgresql://admin:s3cret_pass@db.example.com:5432/mydb';
+    const result = sanitizeForLogging(connStr);
+    expect(result).toBe('postgresql://[REDACTED]@db.example.com:5432/mydb');
+    expect(result).not.toContain('admin');
+    expect(result).not.toContain('s3cret_pass');
+  });
+
+  it('redacts MySQL connection strings', () => {
+    const connStr = 'mysql://root:password123@localhost:3306/testdb';
+    const result = sanitizeForLogging(connStr);
+    expect(result).toBe('mysql://[REDACTED]@localhost:3306/testdb');
+    expect(result).not.toContain('root');
+    expect(result).not.toContain('password123');
+  });
+
+  it('redacts MongoDB connection strings', () => {
+    const connStr = 'mongodb+srv://user:pass@cluster0.abc.mongodb.net/db';
+    const result = sanitizeForLogging(connStr);
+    expect(result).toBe('mongodb+srv://[REDACTED]@cluster0.abc.mongodb.net/db');
+    expect(result).not.toContain('user:pass');
+  });
+});

@@ -154,4 +154,90 @@ describe('POST /api/v1/audit/export', () => {
     expect(res.headers['content-disposition']).toContain('attachment');
     expect(res.headers['content-disposition']).toContain('audit-export.jsonl');
   });
+
+  it('passes from/to time range filters to storage', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/audit/export',
+      payload: { format: 'jsonl', from: 1700000000000, to: 1700000002000 },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(storage.iterateFiltered).toHaveBeenCalledWith(
+      expect.objectContaining({ from: 1700000000000, to: 1700000002000 })
+    );
+  });
+
+  it('passes level[] filter to storage', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/audit/export',
+      payload: { format: 'jsonl', level: ['info', 'warn'] },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(storage.iterateFiltered).toHaveBeenCalledWith(
+      expect.objectContaining({ level: ['info', 'warn'] })
+    );
+  });
+
+  it('passes event[] filter to storage', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/audit/export',
+      payload: { format: 'jsonl', event: ['login', 'logout'] },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(storage.iterateFiltered).toHaveBeenCalledWith(
+      expect.objectContaining({ event: ['login', 'logout'] })
+    );
+  });
+
+  it('passes userId filter to storage', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/audit/export',
+      payload: { format: 'jsonl', userId: 'u1' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(storage.iterateFiltered).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'u1' })
+    );
+  });
+
+  it('enforces limit by capping emitted entries', async () => {
+    // Create a storage that yields many entries
+    const manyEntries = Array.from({ length: 10 }, (_, i) => ({
+      ...MOCK_ENTRIES[0],
+      id: `e-${i}`,
+    }));
+    async function* iterateMany() {
+      for (const entry of manyEntries) yield entry;
+    }
+    storage.iterateFiltered = vi.fn(() => iterateMany());
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/audit/export',
+      payload: { format: 'jsonl', limit: 3 },
+    });
+    expect(res.statusCode).toBe(200);
+    const lines = res.body.trim().split('\n').filter(Boolean);
+    expect(lines).toHaveLength(3);
+  });
+
+  it('uses syslog .log extension in Content-Disposition', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/audit/export',
+      payload: { format: 'syslog' },
+    });
+    expect(res.headers['content-disposition']).toContain('audit-export.log');
+  });
+
+  it('uses .csv extension in Content-Disposition for csv format', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/audit/export',
+      payload: { format: 'csv' },
+    });
+    expect(res.headers['content-disposition']).toContain('audit-export.csv');
+  });
 });

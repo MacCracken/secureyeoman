@@ -1,11 +1,11 @@
 # SECUREYEOMAN
 
-[![Version](https://img.shields.io/badge/Version-2026.3.4-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.3.4)
+[![Version](https://img.shields.io/badge/Version-2026.3.5-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.3.5)
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSE.commercial)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: 15,059](https://img.shields.io/badge/Tests-15%2C059-brightgreen.svg)]()
+[![Tests: 15,332](https://img.shields.io/badge/Tests-15%2C332-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%20LTS-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
@@ -69,7 +69,8 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Sec
 | Authentication | JWT + API key, OIDC SSO (Okta/Azure AD/Auth0), SAML 2.0 |
 | Authorization | RBAC, per-personality active hours, Organizational Intent (OPA) |
 | Encryption | AES-256-GCM at rest, mTLS in transit, TLS lifecycle management |
-| Sandboxing | Landlock, seccomp, gVisor, WASM |
+| Sandboxing | Landlock, seccomp, gVisor, WASM, namespace isolation |
+| Confidential Computing | TEE-aware provider routing, attestation verification, per-model/personality TEE policy |
 | Sandbox Scanning | Artifact scanning, externalization gate, quarantine, threat classification, kill chain mapping |
 | Rate Limiting | Global per-route limits (API/terminal/workflow/auth), Fastify onRequest hook |
 | Prompt Security | Jailbreak scoring, system-prompt leak detection, abuse pattern detection, safe expression evaluator |
@@ -118,25 +119,25 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Sec
 
 | Capability | Details |
 |---|---|
-| Stack | React + Vite + Tailwind, 31-theme system |
+| Stack | React + Vite + Tailwind, 53-theme system (31 built-in + custom theme editor) |
 | Chat | Rich Markdown, Mermaid diagrams, KaTeX math, conversation branching |
 | Collaboration | Real-time CRDT editing (Yjs), group chat, presence indicators |
 | Mission Control | Drag-and-drop card layout (12 cards, S/M/L resize) |
-| Editor | Multi-terminal, memory panel, model selector, agent world map, canvas workspace |
+| Editor | Multi-terminal, memory panel, model selector, agent world map, canvas workspace (event bus, keyboard shortcuts, named layouts, mission card embedding) |
 | Visualization | WebGL graph, live network-mode badge (Local / LAN / Public) |
 
 ### Integrations & MCP
 
 | Capability | Details |
 |---|---|
-| MCP server | 271 tools, 9 resources, 4 prompts; streamable HTTP, SSE, and stdio transports |
+| MCP server | 271 tools, 9 resources, 4 prompts; streamable HTTP, SSE, and stdio transports; financial charting (8 chart types) |
 | Platforms | 32 — Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, GitHub, GitLab, Google Chat, Gmail, Google Calendar, Email (IMAP/SMTP), Jira, Notion, AWS, Azure DevOps, Linear, Airtable, DingTalk, LINE, QQ, Twitter/X, Spotify, Stripe, YouTube, Zapier, Figma, Todoist, iMessage, CLI, Generic Webhook |
 | CI/CD | 21 tools — GitHub Actions (6), Jenkins (5), GitLab CI (5), Northflank (5); `ci_trigger`/`ci_wait` workflow steps; webhook ingest |
 | Security toolkits | Kali (15 pentest tools), Network (38 tools: discovery, scanning, SSH, NetBox, NVD/CVE, PCAP), Docker (14 tools) |
 | Knowledge Base | Document ingestion (PDF, HTML, Markdown, URL, GitHub Wiki), RAG / Notebook / Hybrid modes, Source Guide |
 | Cognitive Memory | ACT-R activation, Hebbian associative learning, context-dependent retrieval (embedding fusion), working memory buffer (predictive pre-fetch), salience classification (emotion/urgency tagging) |
 | Memory Audits | Scheduled compression, reorganization, coherence checking, archive with reversibility |
-| Skills & Marketplace | 24 builtin + 87 community skills (13 categories), skill trust tiers, 7 workflow + 2 swarm + 2 council templates, 7 security templates, 3 personalities, 3 themes |
+| Skills & Marketplace | 24 builtin + 87 community skills (13 categories), skill trust tiers, 21 workflow + 5 swarm + 2 council templates, 7 security templates, 3 personalities, 3 themes |
 
 ### Enterprise & Operations
 
@@ -148,7 +149,7 @@ A **sovereign AI agent platform** that runs entirely on your infrastructure. Sec
 | Multi-tenancy | PostgreSQL RLS partitioning, tenant CRUD API |
 | Observability | OpenTelemetry (OTLP gRPC), Prometheus `/metrics`, alert rules engine (Slack/PagerDuty/OpsGenie/webhook), ECS logs, Grafana dashboards |
 | API Gateway | Expose personalities as endpoints with per-key RPM/TPD rate limits, usage analytics (p50/p95), CSV export |
-| Deployment | Single binary (~80 MB), Docker (~80 MB), Kubernetes Helm chart; Linux x64/arm64, macOS arm64, Windows x64 |
+| Deployment | Single binary (~123 MB), Docker, Kubernetes Helm chart; Linux x64/arm64, macOS arm64, Windows x64 |
 | Native clients | Tauri v2 desktop + Capacitor v6 mobile (shared dashboard frontend) |
 | CLI | 39 commands, full-screen TUI, agent world ASCII map, shell completions, `--json` scripting output |
 | Extensions | Rich lifecycle hook system, TypeScript plugin modules, hot-reload support |
@@ -287,12 +288,12 @@ Or connect via HTTP: `http://localhost:3001/mcp` (when running with `--profile m
 | Topic | Link |
 |-------|------|
 | Architecture | [Architecture Overview](docs/development/architecture.md) |
-| ADRs | [199 Architecture Decision Records](docs/adr/) |
+| ADRs | [201 Architecture Decision Records](docs/adr/) |
 | Roadmap | [Development Roadmap](docs/development/roadmap.md) |
 | Contributing | [Contributing Guide](CONTRIBUTING.md) |
 | Changelog | [CHANGELOG.md](CHANGELOG.md) |
 
-See [`docs/guides/`](docs/guides/) for all 64 guides, including integrations, CI/CD, knowledge base, security testing, content guardrails, and more.
+See [`docs/guides/`](docs/guides/) for all 66 guides, including integrations, CI/CD, knowledge base, security testing, content guardrails, and more.
 
 ---
 

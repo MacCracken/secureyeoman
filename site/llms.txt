@@ -1,10 +1,10 @@
 # SecureYeoman
 
-> SecureYeoman is a sovereign AI agent platform that runs entirely on your infrastructure. It provides multi-model intelligence (14 AI providers), enterprise-grade security (RBAC, SSO/SAML, sandboxing, audit trails), multi-agent orchestration (swarms, teams, DAG workflows, A2A protocol), a 200+ tool MCP server, and a full ML lifecycle platform — without sending data off-premises. Dual-licensed: AGPL-3.0 + Commercial.
+> SecureYeoman is a sovereign AI agent platform that runs entirely on your infrastructure. It provides multi-model intelligence (13 AI providers), enterprise-grade security (RBAC, SSO/SAML, sandboxing, TEE-aware routing, audit trails), multi-agent orchestration (swarms, teams, DAG workflows, A2A protocol), a 271-tool MCP server, and a full ML lifecycle platform — without sending data off-premises. Dual-licensed: AGPL-3.0 + Commercial.
 
-- Version: 2026.3.3
-- 13,659 tests, 163 ADRs, 63 guides
-- 36 platform integrations, 200+ MCP tools, 39 CLI commands
+- Version: 2026.3.4
+- 201 ADRs, 66 guides
+- 36 platform integrations, 271 MCP tools, 39 CLI commands
 
 ## Documentation
 
@@ -29,12 +29,14 @@
 - [Kubernetes](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/kubernetes-deployment.md): Helm chart deployment
 - [Deployment](https://github.com/MacCracken/secureyeoman/blob/main/docs/deployment.md): Docker and deployment guide
 - [Licensing](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/licensing.md): AGPL-3.0 and commercial license details
+- [Confidential Computing](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/confidential-computing.md): TEE-aware provider routing and attestation
+- [Cognitive ML Memory](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/cognitive-ml-memory.md): Context retrieval, working memory, salience classification
 - [Job Completion Notifications](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/job-completion-notifications.md): Alert rules for workflow/training job events, ntfy channel
 - [Troubleshooting](https://github.com/MacCracken/secureyeoman/blob/main/docs/troubleshooting.md): Common problems and fixes
 
 ## Optional
 
-- [ADRs](https://github.com/MacCracken/secureyeoman/tree/main/docs/adr): 163 architecture decision records
+- [ADRs](https://github.com/MacCracken/secureyeoman/tree/main/docs/adr): 201 architecture decision records
 - [Roadmap](https://github.com/MacCracken/secureyeoman/blob/main/docs/development/roadmap.md): Development roadmap
 - [Changelog](https://github.com/MacCracken/secureyeoman/blob/main/CHANGELOG.md): Release history
 - [Contributing](https://github.com/MacCracken/secureyeoman/blob/main/CONTRIBUTING.md): Contribution guide

@@ -2,7 +2,7 @@
 
 Most AI assistants work for the platform that hosts them. SecureYeoman works for you — self-hosted, enterprise-hardened, and answerable only to you. Your data doesn't have to train their models. Your conversations and data don't have to be their product.
 
-**v2026.3.3** | 13,659 Tests | AGPL-3.0 License | 200+ MCP Tools | 39 CLI Commands
+**v2026.3.4** | AGPL-3.0 License | 271 MCP Tools | 39 CLI Commands
 
 ---
 
@@ -23,6 +23,7 @@ RBAC with 4 permission levels, SSO/OIDC (Okta, Azure AD, Auth0), SAML 2.0, OPA p
 - HMAC-SHA256 cryptographic audit chain
 - Global rate limiting + sandbox artifact scanning
 - Outbound Credential Proxy
+- TEE-aware provider routing + attestation verification
 
 ### 2. Sandboxed Execution
 
@@ -42,12 +43,12 @@ Injection detection scoring, PII scanning (SSN, credit card, email, phone), toxi
 - Toxicity & topic guardrails
 - ResponseGuard output scanner
 
-### 4. 200+ MCP Tools & Integrations
+### 4. 271 MCP Tools & Integrations
 
-36 platform integrations: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, Gmail, GitHub, Jira, Linear, Notion, and more. 200+ built-in MCP tools, 9 resources, and 4 prompts — with SSRF protection, rate limiting, and audit logging.
+36 platform integrations: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, Gmail, GitHub, Jira, Linear, Notion, and more. 271 built-in MCP tools, 9 resources, and 4 prompts — with SSRF protection, rate limiting, and audit logging.
 
 - 36 platform integrations
-- 200+ tools, 9 resources, 4 prompts
+- 271 tools, 9 resources, 4 prompts
 - SSRF protection + rate limiting
 - Full audit trail on every tool call
 
@@ -80,7 +81,7 @@ Vector semantic search (FAISS/Qdrant/ChromaDB) fused with tsvector full-text sea
 
 ### 8. Flexible Deployment
 
-Single ~80 MB binary (Linux x64/arm64, macOS arm64), Docker, or Kubernetes with Helm, HPA, PDB, and NetworkPolicies. Three network modes — Local, LAN, or Public TLS. Multi-user workspaces, voice I/O (10 TTS + 7 STT providers), and portable skill marketplace sync. Per-user notification preferences with quiet hours and severity filters across 36 platforms.
+Single ~123 MB binary (Linux x64/arm64, macOS arm64), Docker, or Kubernetes with Helm, HPA, PDB, and NetworkPolicies. Three network modes — Local, LAN, or Public TLS. Multi-user workspaces, voice I/O (10 TTS + 7 STT providers), and portable skill marketplace sync. Per-user notification preferences with quiet hours and severity filters across 36 platforms.
 
 - Single binary + Docker + K8s Helm
 - Local / LAN / Public TLS modes
@@ -134,7 +135,7 @@ Preference annotation, experiment registry, model versioning, A/B testing, and c
 | Data Residency | 100% local | Cloud default | Cloud only | Local | Cloud sandbox |
 | RBAC + SSO | Full | None | None | None | None |
 | Multi-tenancy | RLS-enforced | No | No | No | No |
-| MCP Tools | 200+ | Limited | External | None | Via path |
+| MCP Tools | 271 | Limited | External | None | Via path |
 | Cryptographic Audit | HMAC-SHA256 | No | No | No | Local DB only |
 | Workflow Orchestration | DAG + Visual | No | No | No | No |
 | Integrations | 36 platforms | 23+ | CLI/Web | 10+ | ~2 |
@@ -159,7 +160,7 @@ cd secureyeoman && npm install && npm run build
 ## Community
 
 - **License**: AGPL-3.0
-- **Tests**: 13,659
+- **ADRs**: 201
 - **GitHub**: [github.com/MacCracken/secureyeoman](https://github.com/MacCracken/secureyeoman)
 - **Discussions**: [GitHub Discussions](https://github.com/MacCracken/secureyeoman/discussions)
 
