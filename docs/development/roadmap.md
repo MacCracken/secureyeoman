@@ -13,9 +13,6 @@
 | 127 | IDE Experience (Basic Editor) | P3 — power user UX | Planned |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
-| 131 | Advanced Training (DPO, RLHF, Hyperparam Search) | P1 — ML | ✅ Complete |
-| 132 | Inference Optimization (Batch, Cache, Warmup) | P1 — ML | ✅ Complete |
-| 133 | Continual Learning (Refresh, Drift, Online) | P1 — ML | ✅ Complete |
 | Future | LLM Providers, Voice, Infrastructure | Future / Demand-Gated | — |
 
 ---
@@ -147,13 +144,8 @@ Items below are planned but demand-gated or lower priority. Grouped by theme. Im
 
 ---
 
-### LLM Lifecycle Platform — Advanced (Completed)
+### LLM Lifecycle — Deferred
 
-*Phases 131–133 completed 2026-03-05. See CHANGELOG and ADRs 203–205.*
-
-- [x] **Phase 131: Advanced Training** — DPO, RLHF, reward model training, hyperparameter search (grid/random), multi-GPU, checkpoint management. 5 MCP tools, 9 REST endpoints. ADR 203.
-- [x] **Phase 132: Inference Optimization** — Batch inference, semantic cache (pgvector), KV cache warming, speculative decoding scaffold. 4 MCP tools, 7 REST endpoints. ADR 204.
-- [x] **Phase 133: Continual Learning** — Dataset refresh with cron scheduling, drift detection with baselines/snapshots/alerts, online LoRA updates with replay buffer. 4 MCP tools, 11 REST endpoints. ADR 205.
 - [ ] **Training from scratch** — Pre-train on a curated local corpus. Scoped to small models (≤3B params). *(Deferred — revisit when fine-tuning has real-world usage.)*
 
 ---
