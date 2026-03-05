@@ -206,6 +206,7 @@ function MultiTerminal({ outputRef, onCommandComplete }: MultiTerminalProps) {
             }}
             className="px-1.5 py-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted/50 transition-colors flex-shrink-0"
             title="New terminal"
+            aria-label="New terminal"
           >
             <Plus className="w-3 h-3" />
           </button>
@@ -422,6 +423,7 @@ function SessionsPanel() {
               }}
               className="btn-ghost p-1 rounded text-destructive hover:bg-destructive/10"
               title="Terminate session"
+              aria-label="Terminate session"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -550,6 +552,7 @@ function HistoryPanel() {
                         }}
                         className="btn-ghost p-0.5 rounded text-green-500 hover:bg-green-500/10"
                         title="Approve"
+                        aria-label="Approve"
                       >
                         <CheckCircle className="w-3 h-3" />
                       </button>
@@ -559,6 +562,7 @@ function HistoryPanel() {
                         }}
                         className="btn-ghost p-0.5 rounded text-red-500 hover:bg-red-500/10"
                         title="Reject"
+                        aria-label="Reject"
                       >
                         <XCircle className="w-3 h-3" />
                       </button>
@@ -1325,6 +1329,7 @@ function StandardEditorPage() {
                   }}
                   className="text-muted-foreground hover:text-foreground flex-shrink-0"
                   title="Close chat"
+                  aria-label="Close chat"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -1697,6 +1702,7 @@ function StandardEditorPage() {
                     }}
                     className="ml-1 text-muted-foreground hover:text-foreground"
                     title="Close agent world"
+                    aria-label="Close agent world"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>

@@ -133,6 +133,7 @@ function IntentDocCard({
             }}
             className="text-muted-foreground hover:text-destructive transition-colors"
             title="Delete intent document"
+            aria-label="Delete intent document"
           >
             <Trash2 className="w-4 h-4" />
           </button>

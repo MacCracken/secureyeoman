@@ -22,6 +22,7 @@ import { DEFAULT_RATE_LIMITS } from './types.js';
 import type { PluginLoader, LoadedPlugin } from './plugin-loader.js';
 import type { OutboundWebhookDispatcher } from './outbound-webhook-dispatcher.js';
 import type { SecureLogger } from '../logging/logger.js';
+import type { CircuitBreakerRegistry } from '../resilience/circuit-breaker.js';
 import type { z } from 'zod';
 
 export interface IntegrationManagerDeps {
@@ -29,6 +30,8 @@ export interface IntegrationManagerDeps {
   onMessage: IntegrationDeps['onMessage'];
   multimodalManager?: IntegrationDeps['multimodalManager'];
   oauthTokenService?: IntegrationDeps['oauthTokenService'];
+  /** Circuit breaker registry for fail-fast on unhealthy integrations. */
+  circuitBreakerRegistry?: CircuitBreakerRegistry;
 }
 
 export interface AutoReconnectConfig {
@@ -235,6 +238,7 @@ export class IntegrationManager {
       this.registry.set(id, entry);
       await this.storage.updateStatus(id, 'connected');
       this.reconnectState.delete(id);
+      this.deps.circuitBreakerRegistry?.get(`integration:${id}`)?.reset();
 
       this.deps.logger.info(`Integration started: ${config.displayName} (${config.platform})`);
 
@@ -491,7 +495,12 @@ export class IntegrationManager {
       );
     }
 
-    const platformMessageId = await entry.integration.sendMessage(chatId, text, metadata);
+    const breaker = this.deps.circuitBreakerRegistry?.get(`integration:${integrationId}`, {
+      failureThreshold: 5,
+      resetTimeoutMs: 60_000,
+    });
+    const sendFn = () => entry.integration.sendMessage(chatId, text, metadata);
+    const platformMessageId = breaker ? await breaker.execute(sendFn) : await sendFn();
 
     const outboundTimestamp = Date.now();
     await this.storage.storeMessage({

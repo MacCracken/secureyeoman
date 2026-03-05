@@ -9,6 +9,7 @@
 export interface ToolManifestEntry {
   name: string;
   description: string;
+  category: string;
 }
 
 export function getToolManifest(): ToolManifestEntry[] {
@@ -18,116 +19,343 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'knowledge_search',
       description:
         'Search the SecureYeoman knowledge base. Optional instanceId param searches a federated peer instance.',
+      category: 'brain',
     },
-    { name: 'knowledge_get', description: 'Get a specific knowledge entry by ID' },
-    { name: 'knowledge_store', description: 'Store a new knowledge entry' },
-    { name: 'memory_recall', description: 'Recall memories matching a query' },
+    {
+      name: 'knowledge_get',
+      description:
+        'Retrieve a specific knowledge entry by ID. Returns the full entry with content, metadata, confidence score, and source attribution.',
+      category: 'brain',
+    },
+    {
+      name: 'knowledge_store',
+      description:
+        'Store a new knowledge entry with content, optional source URL, and metadata tags. Auto-generates embeddings for semantic search.',
+      category: 'brain',
+    },
+    {
+      name: 'memory_recall',
+      description:
+        'Recall memories matching a natural language query. Supports filters by importance, date range, and personality. Returns ranked results with relevance scores.',
+      category: 'brain',
+    },
     // Cognitive Memory tools (Phase 124)
     {
       name: 'memory_activation_stats',
       description:
         'Get cognitive memory activation stats — top memories/documents, associations, access trend',
+      category: 'brain',
     },
     {
       name: 'memory_associations',
       description:
         'Get Hebbian associative links for a memory or document with co-activation weights',
+      category: 'brain',
     },
 
     // Task tools
-    { name: 'task_create', description: 'Create a new agent task' },
-    { name: 'task_list', description: 'List tasks with optional filters' },
-    { name: 'task_get', description: 'Get a specific task by ID' },
-    { name: 'task_cancel', description: 'Cancel a running task' },
+    {
+      name: 'task_create',
+      description:
+        'Create a new agent task with name, description, and optional schedule. Supports cron expressions for recurring tasks.',
+      category: 'task',
+    },
+    {
+      name: 'task_list',
+      description:
+        'List tasks with optional filters: status (pending/running/completed/failed), personality, date range. Paginated.',
+      category: 'task',
+    },
+    {
+      name: 'task_get',
+      description:
+        'Get a specific task by ID including status, output, logs, and execution history.',
+      category: 'task',
+    },
+    {
+      name: 'task_cancel',
+      description:
+        'Cancel a running or pending task by ID. Running tasks receive SIGTERM with graceful shutdown.',
+      category: 'task',
+    },
 
     // System tools
-    { name: 'system_health', description: 'Check system health status' },
-    { name: 'system_metrics', description: 'Get system performance metrics' },
-    { name: 'system_config', description: 'Get current system configuration (secrets redacted)' },
+    {
+      name: 'system_health',
+      description:
+        'Check system health: database connectivity, AI provider status, memory usage, disk space, queue depth.',
+      category: 'system',
+    },
+    {
+      name: 'system_metrics',
+      description:
+        'Get system performance metrics: CPU, memory, request latency (p50/p95/p99), active connections, cache hit rates.',
+      category: 'system',
+    },
+    {
+      name: 'system_config',
+      description:
+        'Get the current system configuration with secrets redacted. Includes AI, security, brain, and integration settings.',
+      category: 'system',
+    },
 
     // Integration tools
-    { name: 'integration_list', description: 'List all configured integrations' },
-    { name: 'integration_send', description: 'Send a message via an integration' },
-    { name: 'integration_status', description: 'Get integration connection status' },
+    {
+      name: 'integration_list',
+      description:
+        'List all configured integrations (Slack, Discord, Teams, etc.) with connection status and capabilities.',
+      category: 'integration',
+    },
+    {
+      name: 'integration_send',
+      description:
+        'Send a message via an integration by name or ID. Supports text, markdown, and platform-specific formatting.',
+      category: 'integration',
+    },
+    {
+      name: 'integration_status',
+      description:
+        'Get detailed connection status for an integration: connected/disconnected, last message time, error details.',
+      category: 'integration',
+    },
 
     // Soul tools
-    { name: 'personality_get', description: 'Get the active personality profile' },
-    { name: 'personality_switch', description: 'Switch to a different personality' },
-    { name: 'skill_list', description: 'List available skills' },
-    { name: 'skill_execute', description: 'Execute a skill by name' },
+    {
+      name: 'personality_get',
+      description:
+        'Get the active personality profile including name, system prompt, model config, skills, and voice settings.',
+      category: 'soul',
+    },
+    {
+      name: 'personality_switch',
+      description:
+        'Switch to a different personality by name or ID. Loads the personality config and updates the active context.',
+      category: 'soul',
+    },
+    {
+      name: 'skill_list',
+      description:
+        'List available skills for the active personality with descriptions, categories, and enabled/disabled status.',
+      category: 'soul',
+    },
+    {
+      name: 'skill_execute',
+      description:
+        'Execute a skill by name with optional input parameters. Returns the skill output and any side effects.',
+      category: 'soul',
+    },
 
     // Audit tools
-    { name: 'audit_query', description: 'Query the audit log with filters' },
-    { name: 'audit_verify', description: 'Verify audit chain integrity' },
-    { name: 'audit_stats', description: 'Get audit statistics' },
+    {
+      name: 'audit_query',
+      description:
+        'Query the audit log with filters: action type, actor, target, date range, severity. Supports pagination and sorting.',
+      category: 'audit',
+    },
+    {
+      name: 'audit_verify',
+      description:
+        'Verify audit chain integrity using SHA-256 hash chain. Returns valid/invalid status with first broken link details.',
+      category: 'audit',
+    },
+    {
+      name: 'audit_stats',
+      description:
+        'Get audit statistics: event counts by type, top actors, hourly distribution, chain health status.',
+      category: 'audit',
+    },
 
     // Git & GitHub tools
-    { name: 'git_status', description: 'Show working tree status for a git repository' },
-    { name: 'git_log', description: 'Show commit log for a git repository' },
-    { name: 'git_diff', description: 'Show changes between commits, working tree, etc.' },
-    { name: 'git_branch_list', description: 'List branches in a git repository' },
-    { name: 'git_commit', description: 'Create a new commit with staged changes' },
-    { name: 'git_checkout', description: 'Switch branches or restore working tree files' },
-    { name: 'git_show', description: 'Show details of a specific commit' },
-    { name: 'github_pr_list', description: 'List pull requests for a GitHub repository' },
-    { name: 'github_pr_view', description: 'View details of a specific pull request' },
-    { name: 'github_pr_create', description: 'Create a new pull request' },
-    { name: 'github_pr_diff', description: 'View the diff of a pull request' },
-    { name: 'github_issue_list', description: 'List issues for a GitHub repository' },
-    { name: 'github_issue_view', description: 'View details of a specific issue' },
-    { name: 'github_issue_create', description: 'Create a new issue' },
-    { name: 'github_repo_view', description: 'View repository information' },
+    {
+      name: 'git_status',
+      description:
+        'Show working tree status: staged, unstaged, and untracked files. Params: cwd (required — repo path).',
+      category: 'git',
+    },
+    {
+      name: 'git_log',
+      description:
+        'Show commit log. Params: cwd, maxCount (default 20), oneline (default true). Returns hash, author, date, message.',
+      category: 'git',
+    },
+    {
+      name: 'git_diff',
+      description:
+        'Show diff between commits, branches, or working tree. Params: cwd, ref1, ref2, cached (staged only), path filter.',
+      category: 'git',
+    },
+    {
+      name: 'git_branch_list',
+      description: 'List branches in a git repository',
+      category: 'git',
+    },
+    {
+      name: 'git_commit',
+      description:
+        'Create a new commit with staged changes. Params: cwd, message (required). Runs pre-commit hooks.',
+      category: 'git',
+    },
+    {
+      name: 'git_checkout',
+      description:
+        'Switch branches or restore files. Params: cwd, ref (branch/tag/commit), createBranch (boolean).',
+      category: 'git',
+    },
+    {
+      name: 'git_show',
+      description: 'Show details of a specific commit',
+      category: 'git',
+    },
+    {
+      name: 'github_pr_list',
+      description: 'List pull requests for a GitHub repository',
+      category: 'git',
+    },
+    {
+      name: 'github_pr_view',
+      description: 'View details of a specific pull request',
+      category: 'git',
+    },
+    {
+      name: 'github_pr_create',
+      description: 'Create a new pull request',
+      category: 'git',
+    },
+    {
+      name: 'github_pr_diff',
+      description: 'View the diff of a pull request',
+      category: 'git',
+    },
+    {
+      name: 'github_issue_list',
+      description: 'List issues for a GitHub repository',
+      category: 'git',
+    },
+    {
+      name: 'github_issue_view',
+      description: 'View details of a specific issue',
+      category: 'git',
+    },
+    {
+      name: 'github_issue_create',
+      description: 'Create a new issue',
+      category: 'git',
+    },
+    {
+      name: 'github_repo_view',
+      description: 'View repository information',
+      category: 'git',
+    },
 
     // Filesystem tools
-    { name: 'fs_read', description: 'Read a file (path-restricted, admin-only)' },
-    { name: 'fs_write', description: 'Write a file (path-restricted, admin-only)' },
-    { name: 'fs_list', description: 'List directory contents (path-restricted, admin-only)' },
-    { name: 'fs_search', description: 'Search files by pattern (path-restricted, admin-only)' },
+    {
+      name: 'fs_read',
+      description:
+        'Read file contents. Params: path (required). Restricted to allowed directories. Returns text content with line numbers.',
+      category: 'filesystem',
+    },
+    {
+      name: 'fs_write',
+      description:
+        'Write file contents. Params: path, content (required). Creates parent directories. Restricted to allowed directories.',
+      category: 'filesystem',
+    },
+    {
+      name: 'fs_list',
+      description:
+        'List directory contents. Params: path (required), recursive (boolean). Returns filenames, sizes, and types.',
+      category: 'filesystem',
+    },
+    {
+      name: 'fs_search',
+      description:
+        'Search files by glob pattern. Params: pattern (required), path (search root). Returns matching file paths.',
+      category: 'filesystem',
+    },
 
     // Web tools (scraping)
     {
       name: 'web_scrape_markdown',
       description: 'Scrape a webpage and convert to clean LLM-ready markdown',
+      category: 'web',
     },
     {
       name: 'web_scrape_html',
       description: 'Scrape raw HTML from a webpage with optional CSS selector',
+      category: 'web',
     },
     {
       name: 'web_scrape_batch',
       description: 'Scrape multiple URLs in parallel and return markdown (max 10)',
+      category: 'web',
     },
     {
       name: 'web_extract_structured',
       description: 'Extract structured data from a webpage as JSON',
+      category: 'web',
     },
 
     // Web tools (search)
-    { name: 'web_search', description: 'Search the web using configurable search backend' },
-    { name: 'web_search_batch', description: 'Run multiple search queries in parallel (max 5)' },
+    {
+      name: 'web_search',
+      description: 'Search the web using configurable search backend',
+      category: 'web',
+    },
+    {
+      name: 'web_search_batch',
+      description: 'Run multiple search queries in parallel (max 5)',
+      category: 'web',
+    },
 
     // Browser automation tools (placeholder — requires Playwright/Puppeteer)
-    { name: 'browser_navigate', description: 'Navigate to a URL and return page content' },
-    { name: 'browser_screenshot', description: 'Take a screenshot of a webpage' },
-    { name: 'browser_click', description: 'Click an element on a page' },
-    { name: 'browser_fill', description: 'Fill in a form field on a page' },
-    { name: 'browser_evaluate', description: 'Execute JavaScript in the browser context' },
-    { name: 'browser_pdf', description: 'Generate a PDF from a webpage' },
+    {
+      name: 'browser_navigate',
+      description: 'Navigate to a URL and return page content',
+      category: 'browser',
+    },
+    {
+      name: 'browser_screenshot',
+      description: 'Take a screenshot of a webpage',
+      category: 'browser',
+    },
+    {
+      name: 'browser_click',
+      description: 'Click an element on a page',
+      category: 'browser',
+    },
+    {
+      name: 'browser_fill',
+      description: 'Fill in a form field on a page',
+      category: 'browser',
+    },
+    {
+      name: 'browser_evaluate',
+      description: 'Execute JavaScript in the browser context',
+      category: 'browser',
+    },
+    {
+      name: 'browser_pdf',
+      description: 'Generate a PDF from a webpage',
+      category: 'browser',
+    },
 
     // Diagnostic tools — Channel B (sub-agent/external reporting)
     {
       name: 'diag_report_status',
       description:
         "Push this sub-agent's health status (uptime, task count, errors) to the orchestrator",
+      category: 'diagnostic',
     },
     {
       name: 'diag_query_agent',
       description:
         'Retrieve the most recent health report from a spawned sub-agent by personality ID',
+      category: 'diagnostic',
     },
     {
       name: 'diag_ping_integrations',
       description: 'Ping all MCP servers and integrations connected to the active personality',
+      category: 'diagnostic',
     },
 
     // Desktop control tools (vision capability — screen observation)
@@ -135,60 +363,74 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'desktop_screenshot',
       description:
         'Capture a screenshot of the screen, window, or region — returns image + AI description',
+      category: 'desktop',
     },
     {
       name: 'desktop_window_list',
       description: 'List all open windows with IDs, titles, and bounds',
+      category: 'desktop',
     },
     {
       name: 'desktop_display_list',
       description: 'List all connected monitors/displays with IDs, names, and resolutions',
+      category: 'desktop',
     },
     {
       name: 'desktop_camera_capture',
       description: 'Capture a single frame from the system camera (requires allowCamera)',
+      category: 'desktop',
     },
 
     // Desktop control tools (limb_movement capability — input control)
     {
       name: 'desktop_window_focus',
       description: 'Focus (bring to foreground) a window by its ID',
+      category: 'desktop',
     },
     {
       name: 'desktop_window_resize',
       description: 'Resize and/or reposition a window by ID',
+      category: 'desktop',
     },
     {
       name: 'desktop_mouse_move',
       description: 'Move the mouse cursor to absolute screen coordinates',
+      category: 'desktop',
     },
     {
       name: 'desktop_click',
       description: 'Click a mouse button at current or specified coordinates',
+      category: 'desktop',
     },
     {
       name: 'desktop_scroll',
       description: 'Scroll the mouse wheel horizontally or vertically',
+      category: 'desktop',
     },
     {
       name: 'desktop_type',
       description: 'Type text into the currently focused window',
+      category: 'desktop',
     },
     {
       name: 'desktop_key',
       description: "Press or release a key combination (e.g., 'ctrl+c', 'enter')",
+      category: 'desktop',
     },
     {
       name: 'desktop_clipboard_read',
       description: 'Read the current clipboard content',
+      category: 'desktop',
     },
     {
       name: 'desktop_clipboard_write',
       description: 'Write text to the clipboard',
+      category: 'desktop',
     },
     {
       name: 'desktop_input_sequence',
       description: 'Execute an ordered sequence of input actions atomically (max 50 steps)',
+      category: 'desktop',
     },
 
     // Network tools — device automation (46.1)
@@ -196,50 +438,61 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'network_device_connect',
       description:
         'Open SSH session to a network device; returns sessionId for subsequent commands',
+      category: 'network',
     },
     {
       name: 'network_show_command',
       description: 'Execute IOS-XE/NX-OS/IOS-XR/EOS show commands on a connected device',
+      category: 'network',
     },
     {
       name: 'network_config_push',
       description: 'Push configuration lines to a device via SSH config mode (dry-run supported)',
+      category: 'network',
     },
     {
       name: 'network_health_check',
       description:
         'Fleet-wide health check: run show version + show interfaces across a list of targets',
+      category: 'network',
     },
     {
       name: 'network_ping_test',
       description: 'Execute ping from a connected device to a target IP; returns loss % and RTT',
+      category: 'network',
     },
     {
       name: 'network_traceroute',
       description: 'Execute traceroute from a connected device; returns hop list with latency',
+      category: 'network',
     },
 
     // Network tools — discovery & topology (46.2)
     {
       name: 'network_discovery_cdp',
       description: 'Run show cdp neighbors detail; return structured neighbor list',
+      category: 'network',
     },
     {
       name: 'network_discovery_lldp',
       description: 'Run show lldp neighbors detail; return structured neighbor list',
+      category: 'network',
     },
     {
       name: 'network_topology_build',
       description:
         'Recursively discover network topology via CDP from seed devices; returns JSON graph and Mermaid diagram',
+      category: 'network',
     },
     {
       name: 'network_arp_table',
       description: 'Return parsed ARP table (IP → MAC → interface) from a connected device',
+      category: 'network',
     },
     {
       name: 'network_mac_table',
       description: 'Return parsed MAC address table (MAC → VLAN → interface) from a switch',
+      category: 'network',
     },
 
     // Network tools — routing & switching (46.3)
@@ -247,28 +500,34 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'network_routing_table',
       description:
         'Parse show ip route; return structured route entries with protocol, prefix, next-hop, AD/metric',
+      category: 'network',
     },
     {
       name: 'network_ospf_neighbors',
       description:
         'Parse show ip ospf neighbor; return neighbor list with state, dead timer, interface',
+      category: 'network',
     },
     {
       name: 'network_ospf_lsdb',
       description: 'Parse show ip ospf database; return LSA summary by type',
+      category: 'network',
     },
     {
       name: 'network_bgp_peers',
       description: 'Parse show bgp summary; return peer list with ASN, state, prefix count',
+      category: 'network',
     },
     {
       name: 'network_interface_status',
       description:
         'Parse show interfaces; return per-interface admin/oper state, speed, duplex, errors',
+      category: 'network',
     },
     {
       name: 'network_vlan_list',
       description: 'Parse show vlan brief; return VLAN ID, name, active ports',
+      category: 'network',
     },
 
     // Network tools — security auditing (46.4)
@@ -276,59 +535,75 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'network_acl_audit',
       description:
         'Parse show ip access-lists; return ACL entries, match counts, implicit deny analysis',
+      category: 'network',
     },
     {
       name: 'network_aaa_status',
       description: 'Return AAA server list and method config from a connected device',
+      category: 'network',
     },
     {
       name: 'network_port_security',
       description:
         'Parse show port-security; return per-interface violations, max MAC, sticky config',
+      category: 'network',
     },
     {
       name: 'network_stp_status',
       description:
         'Parse show spanning-tree; return root bridge, port roles/states, topology change count',
+      category: 'network',
     },
     {
       name: 'network_software_version',
       description:
         'Parse show version; return OS family, version string, uptime, platform, serial number',
+      category: 'network',
     },
 
     // Network tools — NetBox source of truth (46.5)
     {
       name: 'netbox_devices_list',
       description: 'Query NetBox devices with optional site/role/tag/status filters',
+      category: 'network',
     },
     {
       name: 'netbox_interfaces_list',
       description: 'Query NetBox interfaces for a device with IP assignments',
+      category: 'network',
     },
-    { name: 'netbox_ipam_ips', description: 'Query NetBox IP addresses by prefix, VRF, or device' },
+    {
+      name: 'netbox_ipam_ips',
+      description: 'Query NetBox IP addresses by prefix, VRF, or device',
+      category: 'network',
+    },
     {
       name: 'netbox_cables',
       description: 'Query NetBox cables with endpoint A/B device and interface',
+      category: 'network',
     },
     {
       name: 'netbox_reconcile',
       description:
         'Compare live CDP topology against NetBox cables; return structured drift report',
+      category: 'network',
     },
 
     // Network tools — NVD / CVE vulnerability assessment (46.6)
     {
       name: 'nvd_cve_search',
       description: 'Search NVD CVE database by keyword with optional CVSS severity filter',
+      category: 'network',
     },
     {
       name: 'nvd_cve_by_software',
       description: 'Look up CVEs for a specific vendor/product/version using CPE match',
+      category: 'network',
     },
     {
       name: 'nvd_cve_get',
       description: 'Fetch full CVE record by CVE ID including CVSS v3 vector, CWE, and references',
+      category: 'network',
     },
 
     // Network tools — utilities (46.7)
@@ -336,38 +611,46 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'subnet_calculator',
       description:
         'Calculate IPv4 subnet details: network, broadcast, first/last host, mask, wildcard mask, host count',
+      category: 'network',
     },
     {
       name: 'subnet_vlsm',
       description:
         'VLSM planning — carve a parent prefix into subnets sized for given host requirements',
+      category: 'network',
     },
     {
       name: 'wildcard_mask_calc',
       description: 'Convert a subnet mask or prefix length to an ACL wildcard mask',
+      category: 'network',
     },
 
     // Network tools — PCAP analysis (46.8)
     {
       name: 'pcap_upload',
       description: 'Upload a pcap/pcapng file (base64-encoded) for analysis; returns pcapId',
+      category: 'network',
     },
     {
       name: 'pcap_protocol_hierarchy',
       description: 'Run tshark protocol hierarchy statistics on an uploaded pcap',
+      category: 'network',
     },
     {
       name: 'pcap_conversations',
       description:
         'List IP/TCP/UDP conversations in an uploaded pcap with bytes, packets, duration',
+      category: 'network',
     },
     {
       name: 'pcap_dns_queries',
       description: 'Extract DNS query/response pairs from an uploaded pcap',
+      category: 'network',
     },
     {
       name: 'pcap_http_requests',
       description: 'Extract HTTP request/response metadata from an uploaded pcap',
+      category: 'network',
     },
 
     // Twingate tools (Phase 45)
@@ -375,158 +658,222 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'twingate_resources_list',
       description:
         'List all Twingate Resources; returns id, name, address, group access, protocol rules',
+      category: 'twingate',
     },
     {
       name: 'twingate_resource_get',
       description:
         'Fetch a single Twingate Resource by id with full protocol policy and group assignments',
+      category: 'twingate',
     },
     {
       name: 'twingate_groups_list',
       description:
         'List Twingate access groups and which identities/service accounts can reach which resources',
+      category: 'twingate',
     },
     {
       name: 'twingate_service_accounts_list',
       description:
         'List Twingate service accounts (non-human principals for agent-to-resource access)',
+      category: 'twingate',
     },
     {
       name: 'twingate_service_account_create',
       description:
         'Create a Twingate service account scoped to specific resources; returns account id for key generation',
+      category: 'twingate',
     },
     {
       name: 'twingate_service_key_create',
       description:
         'Generate a service key for a service account; stores it in SecretsManager — returned once',
+      category: 'twingate',
     },
     {
       name: 'twingate_service_key_revoke',
       description: 'Revoke a Twingate service key by id; emits twingate_key_revoked audit event',
+      category: 'twingate',
     },
     {
       name: 'twingate_connectors_list',
       description:
         'List Twingate Connectors with online/offline status, remote network, and last heartbeat',
+      category: 'twingate',
     },
     {
       name: 'twingate_remote_networks_list',
       description: 'List Twingate Remote Networks (private network segments behind Connectors)',
+      category: 'twingate',
     },
     {
       name: 'twingate_mcp_connect',
       description:
         'Open a proxy session to a private MCP server reachable via the Twingate Client tunnel; returns sessionId',
+      category: 'twingate',
     },
     {
       name: 'twingate_mcp_list_tools',
       description: 'List tools exposed by a private MCP server connected via twingate_mcp_connect',
+      category: 'twingate',
     },
     {
       name: 'twingate_mcp_call_tool',
       description:
         'Invoke a tool on a connected private MCP server; returns result; emits twingate_mcp_tool_call audit event',
+      category: 'twingate',
     },
-    { name: 'twingate_mcp_disconnect', description: 'Close a Twingate MCP proxy session' },
+    {
+      name: 'twingate_mcp_disconnect',
+      description: 'Close a Twingate MCP proxy session',
+      category: 'twingate',
+    },
 
     // Organizational Intent tools (Phase 48)
     {
       name: 'intent_signal_read',
       description:
         'Read the current value of a named signal from the active organizational intent document',
+      category: 'intent',
     },
     {
       name: 'intent_list',
       description: 'List all organizational intent documents (metadata only)',
+      category: 'intent',
     },
     {
       name: 'intent_get',
       description:
         'Get a specific organizational intent document by ID with full body (goals, signals, boundaries, policies)',
+      category: 'intent',
     },
     {
       name: 'intent_get_active',
       description: 'Get the currently active organizational intent document with full body',
+      category: 'intent',
     },
     {
       name: 'intent_create',
       description:
         'Create a new organizational intent document with goals, signals, authorized actions, boundaries, and policies',
+      category: 'intent',
     },
     {
       name: 'intent_update',
       description:
         'Update an existing organizational intent document (partial update — only included fields change)',
+      category: 'intent',
     },
     {
       name: 'intent_activate',
       description: 'Set a specific intent document as the active one (deactivates all others)',
+      category: 'intent',
     },
     {
       name: 'intent_delete',
       description: 'Delete an organizational intent document and deactivate it if active',
+      category: 'intent',
     },
     {
       name: 'intent_enforcement_log',
       description:
         'Query the intent enforcement log (boundary_violated, action_blocked, goal_activated, policy_warn, etc.)',
+      category: 'intent',
     },
 
     // Gmail tools (Phase 63)
     {
       name: 'gmail_profile',
       description: 'Get connected Gmail account email, mode, message and thread counts',
+      category: 'gmail',
     },
     {
       name: 'gmail_list_messages',
       description: 'List Gmail messages with Gmail search syntax (is:unread, from:alice@...)',
+      category: 'gmail',
     },
     {
       name: 'gmail_read_message',
       description: 'Read full Gmail message content by ID (headers + body + labels)',
+      category: 'gmail',
     },
     {
       name: 'gmail_read_thread',
       description: 'Read all messages in a Gmail thread (full conversation chain)',
+      category: 'gmail',
     },
     {
       name: 'gmail_list_labels',
       description: 'List all Gmail labels including system labels (INBOX, SENT, TRASH)',
+      category: 'gmail',
     },
     {
       name: 'gmail_compose_draft',
       description: 'Create a Gmail draft (not sent — requires human review)',
+      category: 'gmail',
     },
-    { name: 'gmail_send_email', description: 'Send email immediately via Gmail (auto mode only)' },
+    {
+      name: 'gmail_send_email',
+      description: 'Send email immediately via Gmail (auto mode only)',
+      category: 'gmail',
+    },
 
     // Twitter / X tools (Phase 63)
-    { name: 'twitter_profile', description: 'Get authenticated Twitter / X account profile' },
+    {
+      name: 'twitter_profile',
+      description: 'Get authenticated Twitter / X account profile',
+      category: 'twitter',
+    },
     {
       name: 'twitter_search',
       description: 'Search recent tweets (supports Twitter search operators)',
+      category: 'twitter',
     },
-    { name: 'twitter_get_tweet', description: 'Get a single tweet by ID' },
-    { name: 'twitter_get_user', description: 'Look up a Twitter / X user by username' },
+    {
+      name: 'twitter_get_tweet',
+      description: 'Get a single tweet by ID',
+      category: 'twitter',
+    },
+    {
+      name: 'twitter_get_user',
+      description: 'Look up a Twitter / X user by username',
+      category: 'twitter',
+    },
     {
       name: 'twitter_get_mentions',
       description: 'Get mentions of the authenticated Twitter / X account',
+      category: 'twitter',
     },
     {
       name: 'twitter_get_timeline',
       description: 'Get the authenticated Twitter / X account home timeline',
+      category: 'twitter',
     },
     {
       name: 'twitter_post_tweet',
       description: 'Post a tweet (or preview in draft mode without posting)',
+      category: 'twitter',
     },
-    { name: 'twitter_like_tweet', description: 'Like a tweet (auto mode only)' },
-    { name: 'twitter_retweet', description: 'Retweet a tweet (auto mode only)' },
-    { name: 'twitter_unretweet', description: 'Undo a retweet (auto mode only)' },
+    {
+      name: 'twitter_like_tweet',
+      description: 'Like a tweet (auto mode only)',
+      category: 'twitter',
+    },
+    {
+      name: 'twitter_retweet',
+      description: 'Retweet a tweet (auto mode only)',
+      category: 'twitter',
+    },
+    {
+      name: 'twitter_unretweet',
+      description: 'Undo a retweet (auto mode only)',
+      category: 'twitter',
+    },
     {
       name: 'twitter_upload_media',
       description:
         'Upload an image or video to Twitter to attach to a tweet — requires OAuth 1.0a credentials and auto mode',
+      category: 'twitter',
     },
 
     // GitHub API tools (Phase 70)
@@ -534,62 +881,98 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'github_profile',
       description:
         'Get the connected GitHub account profile — login, name, email, public repos count, access mode, and two_factor_authentication status (boolean). Use to surface 2FA security recommendations.',
+      category: 'github_api',
     },
     {
       name: 'github_list_repos',
       description: 'List repositories for the authenticated GitHub user',
+      category: 'github_api',
     },
-    { name: 'github_get_repo', description: 'Get details for a specific GitHub repository' },
-    { name: 'github_list_prs', description: 'List pull requests for a GitHub repository' },
-    { name: 'github_get_pr', description: 'Get details of a specific pull request' },
-    { name: 'github_list_issues', description: 'List issues for a GitHub repository' },
-    { name: 'github_get_issue', description: 'Get details of a specific issue' },
-    { name: 'github_create_issue', description: 'Create a new GitHub issue' },
+    {
+      name: 'github_get_repo',
+      description: 'Get details for a specific GitHub repository',
+      category: 'github_api',
+    },
+    {
+      name: 'github_list_prs',
+      description: 'List pull requests for a GitHub repository',
+      category: 'github_api',
+    },
+    {
+      name: 'github_get_pr',
+      description: 'Get details of a specific pull request',
+      category: 'github_api',
+    },
+    {
+      name: 'github_list_issues',
+      description: 'List issues for a GitHub repository',
+      category: 'github_api',
+    },
+    {
+      name: 'github_get_issue',
+      description: 'Get details of a specific issue',
+      category: 'github_api',
+    },
+    {
+      name: 'github_create_issue',
+      description: 'Create a new GitHub issue',
+      category: 'github_api',
+    },
     {
       name: 'github_create_pr',
       description: 'Create a new pull request (draft mode returns preview)',
+      category: 'github_api',
     },
     {
       name: 'github_comment',
       description: 'Add a comment to a GitHub issue or PR (auto mode only)',
+      category: 'github_api',
     },
     {
       name: 'github_list_ssh_keys',
       description: 'List SSH public keys on the connected GitHub account (all modes)',
+      category: 'github_api',
     },
     {
       name: 'github_add_ssh_key',
       description:
         'Add an SSH public key to the connected GitHub account (draft → preview, suggest → blocked)',
+      category: 'github_api',
     },
     {
       name: 'github_delete_ssh_key',
       description:
         'Remove an SSH public key from the connected GitHub account by key_id (auto mode only)',
+      category: 'github_api',
     },
     {
       name: 'github_setup_ssh',
       description:
         'Generate ed25519 SSH key pair in this container, register public key with GitHub, configure ~/.ssh/ for git push/pull via SSH',
+      category: 'github_api',
     },
     {
       name: 'github_rotate_ssh_key',
       description:
         'Rotate the container SSH key: generate new key, register with GitHub, revoke old key, update ~/.ssh/',
+      category: 'github_api',
     },
     {
       name: 'github_create_repo',
       description: 'Create a new GitHub repository (draft → preview, suggest → blocked)',
+      category: 'github_api',
     },
     {
       name: 'github_fork_repo',
       description:
         'Fork a GitHub repository into the authenticated user or org (draft → preview, suggest → blocked)',
+      category: 'github_api',
     },
     {
       name: 'github_sync_fork',
       description:
         'Sync a fork branch with its upstream repository via the GitHub Merges API (draft → preview, suggest → blocked, 204 = already up-to-date)',
+      category: 'github_api',
     },
 
     // Ollama model lifecycle tools (Phase 64)
@@ -597,54 +980,89 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'ollama_pull',
       description:
         'Pull (download) an Ollama model from the registry — only available when provider is ollama',
+      category: 'ollama',
     },
     {
       name: 'ollama_rm',
       description:
         'Remove a locally downloaded Ollama model to free disk space — only available when provider is ollama',
+      category: 'ollama',
     },
 
     // Docker management tools (Phase 74)
     {
       name: 'docker_ps',
       description: 'List Docker containers (running by default; use all=true to include stopped)',
+      category: 'docker',
     },
     {
       name: 'docker_logs',
       description: 'Fetch recent logs from a Docker container with optional timestamps',
+      category: 'docker',
     },
     {
       name: 'docker_inspect',
       description: 'Return detailed metadata for a container or image as JSON',
+      category: 'docker',
     },
     {
       name: 'docker_stats',
       description: 'One-shot snapshot of CPU, memory, and network I/O for running containers',
+      category: 'docker',
     },
     {
       name: 'docker_images',
       description: 'List locally available Docker images with optional filter',
+      category: 'docker',
     },
-    { name: 'docker_start', description: 'Start one or more stopped Docker containers' },
-    { name: 'docker_stop', description: 'Stop one or more running Docker containers' },
-    { name: 'docker_restart', description: 'Restart one or more Docker containers' },
+    {
+      name: 'docker_start',
+      description:
+        'Start one or more stopped containers. Params: containers (array of names or IDs).',
+      category: 'docker',
+    },
+    {
+      name: 'docker_stop',
+      description:
+        'Stop one or more running containers. Params: containers (array), timeout (seconds, default 10).',
+      category: 'docker',
+    },
+    {
+      name: 'docker_restart',
+      description:
+        'Restart containers. Params: containers (array), timeout (seconds before SIGKILL).',
+      category: 'docker',
+    },
     {
       name: 'docker_exec',
       description: 'Execute a command inside a running Docker container and return its output',
+      category: 'docker',
     },
-    { name: 'docker_pull', description: 'Pull a Docker image from a registry' },
-    { name: 'docker_compose_ps', description: 'List services in a Docker Compose project' },
+    {
+      name: 'docker_pull',
+      description:
+        'Pull a Docker image from a registry. Params: image (e.g. "nginx:latest"). Returns pull progress.',
+      category: 'docker',
+    },
+    {
+      name: 'docker_compose_ps',
+      description: 'List services in a Docker Compose project',
+      category: 'docker',
+    },
     {
       name: 'docker_compose_logs',
       description: 'Fetch logs from a Docker Compose project or specific service',
+      category: 'docker',
     },
     {
       name: 'docker_compose_up',
       description: 'Start Docker Compose services in detached mode (with optional build)',
+      category: 'docker',
     },
     {
       name: 'docker_compose_down',
       description: 'Stop and remove containers and networks for a Docker Compose project',
+      category: 'docker',
     },
 
     // Knowledge Base tools (Phase 82)
@@ -652,48 +1070,58 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'kb_search',
       description:
         'Semantic search across the knowledge base (documents + entries). Returns chunks ranked by relevance.',
+      category: 'knowledge_base',
     },
     {
       name: 'kb_add_document',
       description:
         'Ingest a URL or raw text into the knowledge base. URL is fetched and indexed; raw text is stored directly.',
+      category: 'knowledge_base',
     },
     {
       name: 'kb_list_documents',
       description:
         'List all documents ingested into the knowledge base with status and chunk counts.',
+      category: 'knowledge_base',
     },
     {
       name: 'kb_delete_document',
       description: 'Delete a document from the knowledge base and remove all its indexed chunks.',
+      category: 'knowledge_base',
     },
 
     // CI/CD — GitHub Actions (Phase 90)
     {
       name: 'gha_list_workflows',
       description: 'List all GitHub Actions workflows in a repository.',
+      category: 'cicd',
     },
     {
       name: 'gha_dispatch_workflow',
       description:
         'Trigger a workflow_dispatch event for a GitHub Actions workflow on a specified ref with optional inputs.',
+      category: 'cicd',
     },
     {
       name: 'gha_list_runs',
       description:
         'List workflow runs for a GitHub repository, optionally filtered by branch and status.',
+      category: 'cicd',
     },
     {
       name: 'gha_get_run',
       description: 'Get details and current status of a specific GitHub Actions workflow run.',
+      category: 'cicd',
     },
     {
       name: 'gha_cancel_run',
       description: 'Cancel a running or queued GitHub Actions workflow run.',
+      category: 'cicd',
     },
     {
       name: 'gha_get_run_logs',
       description: 'Get the download URL for logs of a completed GitHub Actions workflow run.',
+      category: 'cicd',
     },
 
     // CI/CD — Jenkins (Phase 90)
@@ -701,24 +1129,29 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'jenkins_list_jobs',
       description:
         'List all jobs on the Jenkins server with their name, URL, and build color/status.',
+      category: 'cicd',
     },
     {
       name: 'jenkins_trigger_build',
       description: 'Trigger a Jenkins job build, optionally with parameters.',
+      category: 'cicd',
     },
     {
       name: 'jenkins_get_build',
       description:
         'Get details of a specific Jenkins job build (status, result, duration, timestamp).',
+      category: 'cicd',
     },
     {
       name: 'jenkins_get_build_log',
       description: 'Get the console text log for a specific Jenkins job build.',
+      category: 'cicd',
     },
     {
       name: 'jenkins_queue_item',
       description:
         'Get the status of a Jenkins queue item to find the build number after triggering.',
+      category: 'cicd',
     },
 
     // CI/CD — GitLab CI (Phase 90)
@@ -726,45 +1159,55 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'gitlab_list_pipelines',
       description:
         'List recent CI/CD pipelines for a GitLab project, optionally filtered by ref and status.',
+      category: 'cicd',
     },
     {
       name: 'gitlab_trigger_pipeline',
       description:
         'Trigger a new GitLab CI/CD pipeline on a specified ref with optional variables.',
+      category: 'cicd',
     },
     {
       name: 'gitlab_get_pipeline',
       description: 'Get details and status of a specific GitLab CI/CD pipeline.',
+      category: 'cicd',
     },
     {
       name: 'gitlab_get_job_log',
       description: 'Get the log (trace) output for a specific GitLab CI job.',
+      category: 'cicd',
     },
     {
       name: 'gitlab_cancel_pipeline',
       description: 'Cancel a running GitLab CI/CD pipeline.',
+      category: 'cicd',
     },
 
     // CI/CD — Northflank (Phase 90)
     {
       name: 'northflank_list_services',
       description: 'List all services in a Northflank project.',
+      category: 'cicd',
     },
     {
       name: 'northflank_trigger_build',
       description: 'Trigger a build for a Northflank combined/build service.',
+      category: 'cicd',
     },
     {
       name: 'northflank_get_build',
       description: 'Get details and status of a specific Northflank build.',
+      category: 'cicd',
     },
     {
       name: 'northflank_list_deployments',
       description: 'List all deployments in a Northflank project.',
+      category: 'cicd',
     },
     {
       name: 'northflank_trigger_deployment',
       description: 'Trigger a redeployment for a Northflank deployment service.',
+      category: 'cicd',
     },
 
     // SRA — Security Reference Architecture (Phase 123)
@@ -772,33 +1215,40 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'sra_list_blueprints',
       description:
         'List available Security Reference Architecture blueprints, filtered by provider, framework, or status.',
+      category: 'sra',
     },
     {
       name: 'sra_get_blueprint',
       description:
         'Get a specific SRA blueprint by ID, including all controls with implementation guidance.',
+      category: 'sra',
     },
     {
       name: 'sra_create_blueprint',
       description: 'Create a custom Security Reference Architecture blueprint with controls.',
+      category: 'sra',
     },
     {
       name: 'sra_assess',
       description: 'Create a new SRA assessment against a blueprint for gap analysis.',
+      category: 'sra',
     },
     {
       name: 'sra_get_assessment',
       description:
         'Get a specific SRA assessment by ID, including control results and compliance summary.',
+      category: 'sra',
     },
     {
       name: 'sra_compliance_map',
       description:
         'List compliance framework mappings across security domains (NIST CSF, CIS v8, SOC 2, FedRAMP).',
+      category: 'sra',
     },
     {
       name: 'sra_summary',
       description: 'Get an executive summary of the Security Reference Architecture posture.',
+      category: 'sra',
     },
 
     // Constitutional AI tools
@@ -806,133 +1256,165 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'constitutional_principles',
       description:
         'List the active constitutional AI principles used for self-critique and response revision.',
+      category: 'constitutional_ai',
     },
     {
       name: 'constitutional_critique',
       description:
         'Critique an AI response against the active constitutional principles. Returns per-principle violation findings.',
+      category: 'constitutional_ai',
     },
     {
       name: 'constitutional_revise',
       description:
         'Full critique-and-revise loop: evaluate a response against the constitution, revise if violations found, record preference pairs for DPO training.',
+      category: 'constitutional_ai',
     },
 
     // Excalidraw diagramming tools (Phase 117)
     {
       name: 'excalidraw_create',
       description: 'Generate an Excalidraw scene JSON from structured element specs',
+      category: 'excalidraw',
     },
     {
       name: 'excalidraw_validate',
       description:
         'Validate an Excalidraw scene for layout issues, orphaned bindings, and accessibility',
+      category: 'excalidraw',
     },
     {
       name: 'excalidraw_modify',
       description:
         'Patch an existing Excalidraw scene with add/update/delete/move/restyle operations',
+      category: 'excalidraw',
     },
     {
       name: 'excalidraw_templates',
       description: 'List available Excalidraw element templates and color palettes',
+      category: 'excalidraw',
     },
     {
       name: 'excalidraw_from_description',
       description:
         'Generate an Excalidraw scene from a natural language description and diagram type',
+      category: 'excalidraw',
     },
     {
       name: 'excalidraw_render',
       description: 'Render an Excalidraw scene to SVG for preview or export',
+      category: 'excalidraw',
     },
 
     // PDF Analysis tools (Phase 122-A)
     {
       name: 'pdf_extract_text',
       description: 'Extract text content from a PDF file (base64-encoded)',
+      category: 'pdf',
     },
     {
       name: 'pdf_upload',
       description: 'Upload a PDF to the knowledge base for indexing and retrieval',
+      category: 'pdf',
     },
     {
       name: 'pdf_analyze',
       description:
         'Analyze a PDF with AI — summary, key findings, entities, risks, or action items',
+      category: 'pdf',
     },
     {
       name: 'pdf_search',
       description: 'Search within a PDF for text matches with page-level context',
+      category: 'pdf',
     },
     {
       name: 'pdf_compare',
       description: 'Compare two PDFs and return a line-level diff with change summary',
+      category: 'pdf',
     },
     {
       name: 'pdf_list',
       description: 'List PDF documents in the knowledge base',
+      category: 'pdf',
     },
 
     // Advanced PDF Analysis tools (Phase 122-B)
     {
       name: 'pdf_extract_pages',
       description: 'Extract text from a PDF page by page with optional page range',
+      category: 'pdf',
     },
     {
       name: 'pdf_extract_tables',
       description: 'Extract tables from a PDF with AI-ready prompts per page',
+      category: 'pdf',
     },
     {
       name: 'pdf_visual_analyze',
       description: 'Analyze the structural layout of a PDF (headers, sections, tables, figures)',
+      category: 'pdf',
     },
     {
       name: 'pdf_summarize',
       description: 'Generate a hierarchical summary of a PDF with page citations',
+      category: 'pdf',
     },
     {
       name: 'pdf_form_fields',
       description: 'Read AcroForm fields from a PDF (text, checkbox, radio, dropdown, signature)',
+      category: 'pdf',
     },
 
     // Trading tools — BullShift integration
     {
       name: 'bullshift_health',
       description: 'Check if the BullShift trading API server is running',
+      category: 'trading',
     },
     {
       name: 'bullshift_get_account',
       description: 'Get trading account balance, buying power, and margin',
+      category: 'trading',
     },
     {
       name: 'bullshift_get_positions',
       description: 'List all open positions with entry price, current price, and P&L',
+      category: 'trading',
     },
     {
       name: 'bullshift_submit_order',
       description: 'Submit a market, limit, stop, or stop-limit trading order',
+      category: 'trading',
     },
-    { name: 'bullshift_cancel_order', description: 'Cancel a pending trading order by ID' },
+    {
+      name: 'bullshift_cancel_order',
+      description: 'Cancel a pending trading order by ID',
+      category: 'trading',
+    },
 
     // Trading tools — Market data (Phase 125)
     {
       name: 'market_quote',
       description: 'Get real-time price quote for a stock, ETF, forex pair, or crypto',
+      category: 'trading',
     },
     {
       name: 'market_historical',
       description: 'Get historical daily OHLCV price data for a symbol (up to 100 days)',
+      category: 'trading',
     },
     {
       name: 'market_search',
       description: 'Search for ticker symbols by company name or keyword',
+      category: 'trading',
     },
 
     // Trading tools — Journal (Phase 125)
     {
       name: 'trading_journal_log',
       description: 'Log a completed trade to the trading journal with P&L calculation',
+      category: 'trading',
     },
 
     // Financial charting tools (Phase 125)
@@ -940,109 +1422,122 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'chart_candlestick',
       description:
         'Generate OHLCV candlestick chart SVG with optional volume bars and moving averages',
+      category: 'charting',
     },
     {
       name: 'chart_line',
       description: 'Generate multi-series line chart SVG for price trends and time series',
+      category: 'charting',
     },
     {
       name: 'chart_bar',
       description: 'Generate grouped or stacked bar chart SVG for comparisons and allocations',
+      category: 'charting',
     },
     {
       name: 'chart_pie',
       description: 'Generate pie or donut chart SVG for portfolio allocation and distributions',
+      category: 'charting',
     },
     {
       name: 'chart_scatter',
       description: 'Generate scatter plot SVG for risk vs return and correlation analysis',
+      category: 'charting',
     },
     {
       name: 'chart_waterfall',
       description: 'Generate waterfall chart SVG for P&L breakdown and synergy bridges',
+      category: 'charting',
     },
     {
       name: 'chart_heatmap',
       description: 'Generate correlation matrix heatmap SVG for asset correlations',
+      category: 'charting',
     },
     {
       name: 'chart_sparkline',
       description: 'Generate compact inline sparkline SVG for quick trend indicators',
+      category: 'charting',
     },
 
     // Security tools — Kali Linux toolkit (Phase 58)
-    { name: 'sec_nmap', description: 'Run an nmap port/service scan against an authorized target' },
+    {
+      name: 'sec_nmap',
+      description: 'Run an nmap port/service scan against an authorized target',
+      category: 'security',
+    },
     {
       name: 'sec_gobuster',
       description: 'Run gobuster directory/DNS brute-force against an authorized target',
+      category: 'security',
     },
     {
       name: 'sec_ffuf',
       description: 'Run ffuf web fuzzer against an authorized target',
+      category: 'security',
     },
     {
       name: 'sec_sqlmap',
       description: 'Run sqlmap SQL injection scanner against an authorized target',
+      category: 'security',
     },
     {
       name: 'sec_nikto',
       description: 'Run nikto web vulnerability scanner against an authorized target',
+      category: 'security',
     },
     {
       name: 'sec_nuclei',
       description: 'Run nuclei template-based vulnerability scanner against an authorized target',
+      category: 'security',
     },
-    { name: 'sec_whatweb', description: 'Fingerprint web technologies on an authorized target' },
+    {
+      name: 'sec_whatweb',
+      description: 'Fingerprint web technologies on an authorized target',
+      category: 'security',
+    },
     {
       name: 'sec_wpscan',
       description: 'Run WPScan WordPress vulnerability scanner against an authorized target',
+      category: 'security',
     },
     {
       name: 'sec_hashcat',
       description: 'Attempt offline hash cracking with hashcat (no live brute-force)',
+      category: 'security',
     },
     {
       name: 'sec_john',
       description: 'Attempt offline hash cracking with John the Ripper (no live brute-force)',
+      category: 'security',
     },
     {
       name: 'sec_theharvester',
       description: 'Gather OSINT (emails, subdomains, IPs) for a domain using theHarvester',
+      category: 'security',
     },
-    { name: 'sec_dig', description: 'DNS lookup using dig' },
-    { name: 'sec_whois', description: 'WHOIS lookup for a domain or IP' },
-    { name: 'sec_shodan', description: 'Look up a host on Shodan (requires SHODAN_API_KEY)' },
+    {
+      name: 'sec_dig',
+      description:
+        'DNS lookup using dig. Params: domain (required), type (A/AAAA/MX/NS/TXT/CNAME, default A), server (optional DNS server).',
+      category: 'security',
+    },
+    {
+      name: 'sec_whois',
+      description:
+        'WHOIS lookup for a domain or IP. Returns registrar, dates, nameservers, and contact info.',
+      category: 'security',
+    },
+    {
+      name: 'sec_shodan',
+      description: 'Look up a host on Shodan (requires SHODAN_API_KEY)',
+      category: 'security',
+    },
     {
       name: 'sec_hydra',
       description:
         'Run hydra brute-force attack against an authorized target (requires allowBruteForce)',
-    },
-
-    // GitHub Actions tools (Phase 90)
-    {
-      name: 'gha_list_workflows',
-      description: 'List all GitHub Actions workflows in a repository',
-    },
-    {
-      name: 'gha_dispatch_workflow',
-      description: 'Trigger a workflow dispatch event for a GitHub Actions workflow',
-    },
-    {
-      name: 'gha_list_runs',
-      description:
-        'List workflow runs for a GitHub repository, optionally filtered by branch and status',
-    },
-    {
-      name: 'gha_get_run',
-      description: 'Get details and status of a specific GitHub Actions workflow run',
-    },
-    {
-      name: 'gha_cancel_run',
-      description: 'Cancel a running or queued GitHub Actions workflow run',
-    },
-    {
-      name: 'gha_get_run_logs',
-      description: 'Get the download URL for logs of a completed GitHub Actions workflow run',
+      category: 'security',
     },
 
     // Responsible AI tools (Phase 130)
@@ -1050,40 +1545,48 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'rai_cohort_analysis',
       description:
         'Run cohort-based error analysis on an eval run — slice by model_name, topic_category, user_role, time_of_day, etc.',
+      category: 'responsible_ai',
     },
     {
       name: 'rai_fairness_report',
       description:
         'Compute fairness metrics (demographic parity, equalized odds, disparate impact) for an eval run by protected attribute',
+      category: 'responsible_ai',
     },
     {
       name: 'rai_shap_explain',
       description:
         'Compute SHAP-style token attributions for a prompt/response pair — shows which tokens most influenced the output',
+      category: 'responsible_ai',
     },
     {
       name: 'rai_provenance_query',
       description:
         'Query data provenance records — check which conversations were included/excluded from training datasets',
+      category: 'responsible_ai',
     },
     {
       name: 'rai_provenance_summary',
       description:
         'Get a summary of data provenance for a training dataset — included/filtered/synthetic/redacted counts',
+      category: 'responsible_ai',
     },
     {
       name: 'rai_user_provenance',
       description:
         "Check if a specific user's data was used in any training dataset — important for GDPR compliance",
+      category: 'responsible_ai',
     },
     {
       name: 'rai_model_card',
       description:
         'Generate or retrieve a model card for a personality — intended use, limitations, eval results, fairness, EU AI Act classification',
+      category: 'responsible_ai',
     },
     {
       name: 'rai_model_card_markdown',
       description: 'Get a model card rendered as Markdown in Hugging Face Model Card format',
+      category: 'responsible_ai',
     },
 
     // TEE / Confidential Computing tools (Phase 129-D)
@@ -1091,15 +1594,18 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'tee_providers',
       description:
         'List TEE-capable providers, hardware detection status, and attestation cache stats',
+      category: 'tee',
     },
     {
       name: 'tee_status',
       description: 'Get attestation status and history for a specific TEE provider',
+      category: 'tee',
     },
     {
       name: 'tee_verify',
       description:
         'Force re-verify TEE attestation for a provider (clears cache and runs fresh check)',
+      category: 'tee',
     },
 
     // Phase 131: Advanced Training tools
@@ -1107,44 +1613,53 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'training_start_dpo',
       description:
         'Start a DPO (Direct Preference Optimization) training job using preference pairs',
+      category: 'training',
     },
     {
       name: 'training_start_rlhf',
       description: 'Start an RLHF training job using PPO with a reward model',
+      category: 'training',
     },
     {
       name: 'training_hyperparam_search',
       description:
         'Create and start a hyperparameter search (grid or random) across training configurations',
+      category: 'training',
     },
     {
       name: 'training_list_checkpoints',
       description:
         'List checkpoints for a fine-tuning job with step numbers and loss values',
+      category: 'training',
     },
     {
       name: 'training_resume_from_checkpoint',
       description: 'Resume a training job from a specific checkpoint',
+      category: 'training',
     },
 
     // Phase 132: Inference Optimization tools
     {
       name: 'ai_batch_inference',
       description: 'Submit a batch of prompts for parallel inference processing',
+      category: 'inference',
     },
     {
       name: 'ai_batch_status',
       description: 'Get status and results of a batch inference job',
+      category: 'inference',
     },
     {
       name: 'ai_cache_stats',
       description:
         'Get LRU and semantic cache statistics including hit rates',
+      category: 'inference',
     },
     {
       name: 'ai_warmup_model',
       description:
         'Warm the KV cache for an Ollama model to reduce first-response latency',
+      category: 'inference',
     },
 
     // Phase 133: Continual Learning tools
@@ -1152,21 +1667,25 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'training_dataset_refresh',
       description:
         'Create or trigger a dataset refresh job that pulls new conversations into a training dataset',
+      category: 'training',
     },
     {
       name: 'training_drift_check',
       description:
         'Run an immediate drift check across all personality quality baselines',
+      category: 'training',
     },
     {
       name: 'training_drift_baseline',
       description:
         'Compute a quality score baseline for a personality for drift detection',
+      category: 'training',
     },
     {
       name: 'training_online_update',
       description:
         'Start an online LoRA adapter update from recent high-quality conversations',
+      category: 'training',
     },
   ];
 }

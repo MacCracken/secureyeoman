@@ -97,8 +97,6 @@ Non-phase items tracked for future improvement. Pick up opportunistically or whe
 
 - [ ] **Dashboard accessibility** — Wire `axe-core` into dashboard test suite (`vitest-axe`). Add ARIA labels to form inputs, icon-only buttons, modals. CI gate on violations.
 - [ ] **MCP tool descriptions** — Enhance 274 tool descriptions with parameter examples, error conditions, and category grouping in `manifest.ts`.
-- [ ] **Circuit breaker pattern** — Add lightweight circuit breaker to AI client and IntegrationManager for external service calls (threshold, half-open, reset).
-- [ ] **OpenAPI spec regeneration** — Auto-generate OpenAPI spec from route definitions (current `docs/api/openapi.yaml` is from 2023, 68 route files now).
 
 ### Test Coverage — Final Push (Phase 105)
 
@@ -132,7 +130,6 @@ Items below represent the final steps required before public release. They depen
   - **Community** (free): Chat, personalities, basic brain/memory, manual workflows, MCP tools, marketplace skills, basic editor, training dataset export, community skills, basic observability (metrics dashboard read-only)
   - **Pro** (mid-tier, new): Advanced editor/canvas, knowledge base connectors, observability dashboards, CI/CD read-only status, provider account management, advanced workflow templates, computer-use episodes, custom integrations, advanced brain features (document ingestion, source guides)
   - **Enterprise**: Adaptive learning pipeline (distillation, fine-tune, evaluation, DPO, counterfactual generation), SSO/SAML, multi-tenancy (RLS), CI/CD webhook integration + workflow triggers, advanced alert rules (create/edit/delete), A2A federation, swarm orchestration advanced modes, audit chain export, confidential computing / TEE-aware provider routing, remote attestation verification
-- [ ] **Pro tier in LicenseManager** — Add `'pro'` to `LicenseTier`. Rename `EnterpriseFeature` → `LicensedFeature`. Add pro-tier features. Update license key generation script + validation.
 - [ ] **Enable enforcement** — Set `SECUREYEOMAN_LICENSE_ENFORCEMENT=true` as default in `.env.example`. Update all env templates.
 - [ ] **Upgrade prompts** — "Upgrade to Pro" and "Upgrade to Enterprise" CTAs in `FeatureLock` with pricing page links.
 - [ ] **License key purchase flow** — Integration with payment provider or manual key issuance workflow. Dashboard license management page.

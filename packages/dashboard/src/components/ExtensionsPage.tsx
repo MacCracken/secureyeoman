@@ -355,6 +355,7 @@ function ExtensionsTab() {
                   }}
                   className="btn-ghost p-1 rounded text-destructive hover:bg-destructive/10"
                   title="Remove extension"
+                  aria-label="Remove extension"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -578,6 +579,7 @@ function HooksTab() {
                   }}
                   className="btn-ghost p-1 rounded text-destructive hover:bg-destructive/10"
                   title="Remove hook"
+                  aria-label="Remove hook"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -766,6 +768,7 @@ function WebhooksTab() {
                 }}
                 className="btn-ghost p-1 rounded text-destructive hover:bg-destructive/10"
                 title="Remove webhook"
+                aria-label="Remove webhook"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -1025,6 +1028,7 @@ function DebuggerTab() {
               disabled={isFetching}
               className="btn-ghost p-1.5 rounded"
               title="Refresh log"
+              aria-label="Refresh log"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />
             </button>

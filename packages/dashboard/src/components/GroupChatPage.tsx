@@ -138,7 +138,7 @@ export function GroupChatPage() {
           <button
             onClick={() => void refetchChannels()}
             className="p-1 rounded hover:bg-muted text-muted-foreground"
-            title="Refresh"
+            aria-label="Refresh channels"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -280,6 +280,7 @@ export function GroupChatPage() {
                 onKeyDown={handleKeyDown}
                 placeholder="Type a reply… (Enter to send, Shift+Enter for newline)"
                 rows={2}
+                aria-label="Reply message"
                 className="flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <button

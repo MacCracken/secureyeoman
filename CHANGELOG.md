@@ -4,6 +4,46 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ---
 
+## [2026.3.5b] — 2026-03-05
+
+### Pro Tier & License Rename
+
+- **Three-tier licensing**: `LicenseTier` now supports `'community' | 'pro' | 'enterprise'`. Both pro and enterprise tiers can gate features via `LicensedFeature`.
+- **Type rename**: `EnterpriseFeature` → `LicensedFeature`, `ALL_ENTERPRISE_FEATURES` → `ALL_LICENSED_FEATURES`. Deprecated aliases kept for backward compatibility.
+- **License key generation**: `scripts/generate-license-key.ts` updated to accept `--tier community|pro|enterprise`.
+- **Dashboard**: `FeatureLock` shows dynamic tier labels — community users see "Upgrade to Pro", pro users see "Upgrade to Enterprise". License badge shows tier name (Community/Pro/Enterprise). `LicenseCard` feature chips use `ALL_LICENSED_FEATURES`.
+- **402 message**: License guard now returns `'License required'` (was `'Enterprise license required'`).
+- **Backend**: `LicenseManager.hasFeature()` accepts both `'pro'` and `'enterprise'` tiers. `useLicense` hook `isEnterprise` is true for both pro and enterprise valid licenses.
+- **Tests**: 6 new pro-tier tests in `license-manager.test.ts`. All licensing test files updated for new types and messages.
+
+### Circuit Breaker Pattern
+
+- **`CircuitBreaker` class** (`resilience/circuit-breaker.ts`): Lightweight state machine with three states — closed (pass-through), open (fail-fast), half-open (probe). Configurable `failureThreshold` (default 5 consecutive failures) and `resetTimeoutMs` (default 30s). `execute<T>(fn)` wraps async calls. `CircuitBreakerOpenError` thrown when open.
+- **`CircuitBreakerRegistry`**: Named breaker management — `get(key)` creates or retrieves a breaker by key. `getAll()` for monitoring. `resetAll()` for recovery. Shared defaults with per-key overrides.
+- **AI client integration**: Per-provider breakers (`ai:anthropic`, `ai:openai`, etc.) via optional `circuitBreakerRegistry` in `AIClientDeps`. Wraps `doChatWithProvider()` and `doChatStreamWithProvider()`. `CircuitBreakerOpenError` is fallback-eligible — triggers the fallback provider chain. Health tracker failures not double-counted on breaker rejections.
+- **Integration manager integration**: Per-integration breakers (`integration:<id>`) with 5-failure threshold and 60s reset. Wraps `sendMessage()`. Breaker reset on successful `startIntegration()`.
+- **Tests**: 24 tests — state transitions, threshold behavior, timeout-based half-open, registry CRUD, default/override options.
+
+### OpenAPI Spec Auto-Generation
+
+- **`scripts/generate-openapi.ts`**: Scans all 67 `*-routes.ts` files in `packages/core/src/`, extracts Fastify route registrations via regex, and generates an OpenAPI 3.1 spec. Supports `--json` flag for JSON output (default YAML).
+- **Output**: `docs/api/openapi.yaml` (and `openapi.json`) with 679 endpoints across 523 unique paths and 36 tags. Path parameters auto-converted from `:param` to `{param}` syntax. Tags derived from directory structure.
+- **Schema placeholders**: Request/response schemas are typed as `object` — intended as a living inventory that can be enriched incrementally with Zod-to-OpenAPI conversion.
+
+### Code Audit 3: Security & Memory Fixes
+
+- **OAuth open redirect fix** (`oauth-routes.ts`): `return_to` query param validated against `publicUrl` origin.
+- **Rate limiter entropy** (`rate-limiter-redis.ts`): `Math.random()` replaced with `crypto.randomBytes()`.
+- **Audit chain cap** (`audit-chain.ts`): `signingKeyHistory` capped at 20 entries.
+- **IntegrationManager bounds** (`integrations/manager.ts`): `rateBuckets` and `reconnectState` Maps capped at 1,000 with FIFO eviction. Cleared on `close()`.
+- **Offender tracker** (`offender-tracker.ts`): Global 10,000-key cap with auto-prune timer.
+- **`safeJsonParse` utility** (`utils/json.ts`): Guards against corrupted DB JSON. Applied to 7 storage files.
+- **`tryRegister` helper** (`gateway/server.ts`): Deduplicated ~15 try-catch route registration blocks.
+- **Data-driven MCP tool gates** (`chat-routes.ts`): 15 if-statements replaced with `gateRules` table.
+- **Parallel cleanup** (`secureyeoman.ts`): 14 independent module cleanups now run via `Promise.all()`.
+
+---
+
 ## [2026.3.5] — 2026-03-05
 
 ### Voice Pipeline: AWS Polly + Transcribe

@@ -9,7 +9,17 @@ import * as axeMatchers from 'vitest-axe/matchers';
 
 // Only fail on critical a11y violations to avoid pre-existing minor issues blocking CI
 
-const axe = (configureAxe as any)({ impactLevels: ['critical'] });
+const axe = (configureAxe as any)({ impactLevels: ['critical', 'serious'] });
+
+// Some components have pre-existing serious violations (unlabeled selects/inputs).
+// Use this relaxed config for those components until they are fixed.
+const axeRelaxed = (configureAxe as any)({
+  impactLevels: ['critical', 'serious'],
+  rules: {
+    'select-name': { enabled: false },
+    label: { enabled: false },
+  },
+});
 
 expect.extend(axeMatchers);
 
@@ -100,6 +110,52 @@ vi.mock('./api/client', () => ({
   setDefaultPersonality: vi.fn(),
   clearDefaultPersonality: vi.fn(),
   downloadBackup: vi.fn(),
+  fetchMarketplaceSkills: vi.fn(),
+  installMarketplaceSkill: vi.fn(),
+  uninstallMarketplaceSkill: vi.fn(),
+  fetchA2AConfig: vi.fn(),
+  fetchActivePersonality: vi.fn(),
+  fetchGroupChatChannels: vi.fn(),
+  fetchGroupChatMessages: vi.fn(),
+  sendGroupChatMessage: vi.fn(),
+  fetchDepartments: vi.fn(),
+  fetchDepartmentScorecard: vi.fn(),
+  fetchHeatmap: vi.fn(),
+  fetchRiskSummary: vi.fn(),
+  fetchRegisterEntries: vi.fn(),
+  createDepartment: vi.fn(),
+  updateDepartment: vi.fn(),
+  createRegisterEntry: vi.fn(),
+  updateRegisterEntry: vi.fn(),
+  deleteRegisterEntry: vi.fn(),
+  snapshotDepartment: vi.fn(),
+  fetchStrategies: vi.fn(),
+  deleteConversation: vi.fn(),
+  renameConversation: vi.fn(),
+  fetchActiveDelegations: vi.fn(),
+  fetchCostBreakdown: vi.fn(),
+  fetchCostHistory: vi.fn(),
+  resetUsageStat: vi.fn(),
+  fetchAgentProfiles: vi.fn(),
+  fetchDelegations: vi.fn(),
+  fetchDelegation: vi.fn(),
+  cancelDelegation: vi.fn(),
+  delegateTask: vi.fn(),
+  createAgentProfile: vi.fn(),
+  deleteAgentProfile: vi.fn(),
+  fetchDelegationMessages: vi.fn(),
+  fetchProfileSkills: vi.fn(),
+  addProfileSkill: vi.fn(),
+  removeProfileSkill: vi.fn(),
+  fetchMemories: vi.fn(),
+  fetchKnowledge: vi.fn(),
+  searchSimilar: vi.fn(),
+  addMemory: vi.fn(),
+  deleteMemory: vi.fn(),
+  deleteKnowledge: vi.fn(),
+  reindexBrain: vi.fn(),
+  fetchIntegrations: vi.fn(),
+  fetchAvailablePlatforms: vi.fn(),
 }));
 
 import * as api from './api/client';
@@ -221,6 +277,24 @@ beforeEach(() => {
     enforcementEnabled: false,
   } as any);
   vi.mocked(api.setLicenseKey).mockResolvedValue({} as any);
+  vi.mocked(api.fetchMarketplaceSkills).mockResolvedValue({ skills: [], total: 0 } as any);
+  vi.mocked(api.fetchA2AConfig).mockResolvedValue({ config: {} } as any);
+  vi.mocked(api.fetchActivePersonality).mockResolvedValue({ personality: null } as any);
+  vi.mocked(api.fetchGroupChatChannels).mockResolvedValue({ channels: [], total: 0 } as any);
+  vi.mocked(api.fetchDepartments).mockResolvedValue({ departments: [], total: 0 } as any);
+  vi.mocked(api.fetchHeatmap).mockResolvedValue({ cells: [] } as any);
+  vi.mocked(api.fetchRiskSummary).mockResolvedValue({ summary: {} } as any);
+  vi.mocked(api.fetchRegisterEntries).mockResolvedValue({ entries: [], total: 0 } as any);
+  vi.mocked(api.fetchStrategies).mockResolvedValue({ strategies: [] } as any);
+  vi.mocked(api.fetchActiveDelegations).mockResolvedValue({ delegations: [] } as any);
+  vi.mocked(api.fetchCostBreakdown).mockResolvedValue({ breakdown: [] } as any);
+  vi.mocked(api.fetchCostHistory).mockResolvedValue({ history: [] } as any);
+  vi.mocked(api.fetchAgentProfiles).mockResolvedValue({ profiles: [] } as any);
+  vi.mocked(api.fetchDelegations).mockResolvedValue({ delegations: [], total: 0 } as any);
+  vi.mocked(api.fetchMemories).mockResolvedValue({ memories: [], total: 0 } as any);
+  vi.mocked(api.fetchKnowledge).mockResolvedValue({ entries: [], total: 0 } as any);
+  vi.mocked(api.fetchIntegrations).mockResolvedValue({ integrations: [] } as any);
+  vi.mocked(api.fetchAvailablePlatforms).mockResolvedValue({ platforms: [] } as any);
 });
 
 describe('a11y smoke tests (axe-core)', () => {
@@ -268,6 +342,134 @@ describe('a11y smoke tests (axe-core)', () => {
     const { container } = render(
       <Wrapper>
         <OnboardingWizard onComplete={() => undefined} />
+      </Wrapper>
+    );
+
+    const results = await (axe as any)(container);
+
+    (expect(results) as any).toHaveNoViolations();
+  });
+
+  // ReportsPage has a pre-existing unlabeled <select> (select-name) — tracked for fix
+  it('ReportsPage has no critical/serious axe violations', async () => {
+    const { ReportsPage } = await import('./components/ReportsPage');
+    const { container } = render(
+      <Wrapper>
+        <ReportsPage />
+      </Wrapper>
+    );
+
+    const results = await (axeRelaxed as any)(container);
+
+    (expect(results) as any).toHaveNoViolations();
+  });
+
+  it('MetricsPage has no critical/serious axe violations', async () => {
+    const { MetricsPage } = await import('./components/MetricsPage');
+    const { container } = render(
+      <Wrapper>
+        <MetricsPage />
+      </Wrapper>
+    );
+
+    const results = await (axe as any)(container);
+
+    (expect(results) as any).toHaveNoViolations();
+  });
+
+  it('OpenTasks has no critical/serious axe violations', async () => {
+    const { OpenTasks } = await import('./components/TaskHistory');
+    const { container } = render(
+      <Wrapper>
+        <OpenTasks />
+      </Wrapper>
+    );
+
+    const results = await (axe as any)(container);
+
+    (expect(results) as any).toHaveNoViolations();
+  });
+
+  it('MarketplacePage has no critical/serious axe violations', async () => {
+    const { MarketplacePage } = await import('./components/MarketplacePage');
+    const { container } = render(
+      <Wrapper>
+        <MarketplacePage />
+      </Wrapper>
+    );
+
+    const results = await (axe as any)(container);
+
+    (expect(results) as any).toHaveNoViolations();
+  });
+
+  // AgentsPage has a pre-existing unlabeled <input type="number"> (label) — tracked for fix
+  it('AgentsPage has no critical/serious axe violations', async () => {
+    const { AgentsPage } = await import('./components/AgentsPage');
+    const { container } = render(
+      <Wrapper>
+        <AgentsPage />
+      </Wrapper>
+    );
+
+    const results = await (axeRelaxed as any)(container);
+
+    (expect(results) as any).toHaveNoViolations();
+  });
+
+  // SkillsPage has a pre-existing unlabeled <select> (select-name) — tracked for fix
+  it('SkillsPage has no critical/serious axe violations', async () => {
+    const { SkillsPage } = await import('./components/SkillsPage');
+    const { container } = render(
+      <Wrapper>
+        <SkillsPage />
+      </Wrapper>
+    );
+
+    const results = await (axeRelaxed as any)(container);
+
+    (expect(results) as any).toHaveNoViolations();
+  });
+
+  it('DepartmentalRiskTab has no critical/serious axe violations', async () => {
+    const { DepartmentalRiskTab } = await import('./components/DepartmentalRiskTab');
+    const { container } = render(
+      <Wrapper>
+        <DepartmentalRiskTab />
+      </Wrapper>
+    );
+
+    const results = await (axe as any)(container);
+
+    (expect(results) as any).toHaveNoViolations();
+  });
+
+  it('GroupChatPage has no critical/serious axe violations', async () => {
+    const { GroupChatPage } = await import('./components/GroupChatPage');
+    const { container } = render(
+      <Wrapper>
+        <GroupChatPage />
+      </Wrapper>
+    );
+
+    const results = await (axe as any)(container);
+
+    (expect(results) as any).toHaveNoViolations();
+  });
+
+  it('ConversationList has no critical/serious axe violations', async () => {
+    const { ConversationList } = await import('./components/ConversationList');
+    const { container } = render(
+      <Wrapper>
+        <ConversationList
+          activeConversationId={null}
+          onSelect={() => undefined}
+          onNew={() => undefined}
+          collapsed={false}
+          onToggleCollapse={() => undefined}
+          mobileOpen={false}
+          onMobileClose={() => undefined}
+        />
       </Wrapper>
     );
 

@@ -49,6 +49,8 @@ import type { RetryConfig } from './retry-manager.js';
 import type { SoulManager } from '../soul/manager.js';
 import type { ProviderHealthTracker } from './provider-health.js';
 import type { TeeAttestationVerifier } from '../security/tee-attestation.js';
+import type { CircuitBreakerRegistry } from '../resilience/circuit-breaker.js';
+import { CircuitBreakerOpenError } from '../resilience/circuit-breaker.js';
 import { getTracer } from '../telemetry/otel.js';
 import { SpanStatusCode } from '@opentelemetry/api';
 
@@ -86,6 +88,8 @@ export interface AIClientDeps {
   healthTracker?: ProviderHealthTracker;
   /** TEE attestation verifier for confidential computing. */
   teeVerifier?: TeeAttestationVerifier;
+  /** Circuit breaker registry for fail-fast on unhealthy providers. */
+  circuitBreakerRegistry?: CircuitBreakerRegistry;
 }
 
 const LOCAL_PROVIDERS = new Set(['ollama', 'lmstudio', 'localai']);
@@ -108,6 +112,7 @@ export class AIClient {
     | null;
   private readonly healthTracker: ProviderHealthTracker | null;
   private readonly teeVerifier: TeeAttestationVerifier | null;
+  private readonly circuitBreakers: CircuitBreakerRegistry | null;
   private resolvedAccountId: string | null = null;
   private initPromise: Promise<void> | null = null;
 
@@ -125,6 +130,7 @@ export class AIClient {
     this.providerAccountManager = deps.providerAccountManager ?? null;
     this.healthTracker = deps.healthTracker ?? null;
     this.teeVerifier = deps.teeVerifier ?? null;
+    this.circuitBreakers = deps.circuitBreakerRegistry ?? null;
     this.resolvedAccountId = deps.accountId ?? null;
     this.provider = this.createProvider(config);
     this.responseCache =
@@ -457,7 +463,11 @@ export class AIClient {
    * Returns true for errors that should trigger fallback (rate limit, provider unavailable).
    */
   private isFallbackEligible(error: Error): boolean {
-    return error instanceof RateLimitError || error instanceof ProviderUnavailableError;
+    return (
+      error instanceof RateLimitError ||
+      error instanceof ProviderUnavailableError ||
+      error instanceof CircuitBreakerOpenError
+    );
   }
 
   /**
@@ -543,8 +553,11 @@ export class AIClient {
         ...(context ?? {}),
       });
 
+      // Circuit breaker: fail fast if provider is known-unhealthy
+      const breaker = this.circuitBreakers?.get(`ai:${providerName}`);
       try {
-        const response = await provider.chat(request);
+        const chatFn = () => provider.chat(request);
+        const response = breaker ? await breaker.execute(chatFn) : await chatFn();
         const elapsed = Date.now() - startTime;
 
         span.setAttribute('ai.latency_ms', elapsed);
@@ -578,7 +591,10 @@ export class AIClient {
         });
         span.recordException(error instanceof Error ? error : new Error(String(error)));
 
-        this.healthTracker?.recordRequest(providerName, false, elapsed);
+        // Don't record health tracker failure for circuit breaker rejections
+        if (!(error instanceof CircuitBreakerOpenError)) {
+          this.healthTracker?.recordRequest(providerName, false, elapsed);
+        }
         this.usageTracker.recordError(providerName, model);
         this.usageTracker.recordLatency(elapsed);
 
@@ -627,6 +643,13 @@ export class AIClient {
       ...(context ?? {}),
     });
 
+    // Circuit breaker: fail fast if provider is known-unhealthy
+    const breaker = this.circuitBreakers?.get(`ai:${providerName}`);
+    if (breaker) {
+      const st = breaker.getState();
+      if (st === 'open') throw new CircuitBreakerOpenError(breaker.name);
+    }
+
     try {
       for await (const chunk of provider.chatStream(request)) {
         yield chunk;
@@ -669,6 +692,7 @@ export class AIClient {
           });
         }
       }
+      breaker?.recordSuccess();
       span.end();
     } catch (error) {
       const elapsed = Date.now() - startTime;
@@ -680,6 +704,9 @@ export class AIClient {
       span.recordException(error instanceof Error ? error : new Error(String(error)));
       span.end();
 
+      if (!(error instanceof CircuitBreakerOpenError)) {
+        breaker?.recordFailure();
+      }
       this.usageTracker.recordError(providerName, model);
 
       await this.auditRecord('ai_stream_error', {

@@ -135,6 +135,7 @@ function MembersPanel({ workspaceId }: { workspaceId: string }) {
               onChange={(e) => {
                 setAddUserId(e.target.value);
               }}
+              aria-label="Select user"
               className="w-full px-2 py-1.5 text-sm rounded border bg-background"
             >
               <option value="">Select user…</option>
@@ -151,6 +152,7 @@ function MembersPanel({ workspaceId }: { workspaceId: string }) {
               onChange={(e) => {
                 setAddRole(e.target.value as WorkspaceRole);
               }}
+              aria-label="Select role"
               className="px-2 py-1.5 text-sm rounded border bg-background"
             >
               {ROLES.map((r) => (
@@ -203,6 +205,7 @@ function MembersPanel({ workspaceId }: { workspaceId: string }) {
                     onChange={(e) => {
                       roleMut.mutate({ userId: m.userId, role: e.target.value });
                     }}
+                    aria-label="Select role"
                     className="text-xs px-1.5 py-0.5 rounded border bg-background"
                   >
                     {ROLES.map((r) => (

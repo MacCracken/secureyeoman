@@ -442,7 +442,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
   const renderPersonality = () => (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <button onClick={goBack} className="btn-ghost p-1 rounded">
+        <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
           <ChevronDown className="w-4 h-4 rotate-90" />
         </button>
         <h3 className="text-lg font-semibold">New Personality</h3>
@@ -526,7 +526,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
   const renderTask = () => (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <button onClick={goBack} className="btn-ghost p-1 rounded">
+        <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
           <ChevronDown className="w-4 h-4 rotate-90" />
         </button>
         <h3 className="text-lg font-semibold">New Task</h3>
@@ -605,7 +605,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
   const renderSkill = () => (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <button onClick={goBack} className="btn-ghost p-1 rounded">
+        <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
           <ChevronDown className="w-4 h-4 rotate-90" />
         </button>
         <h3 className="text-lg font-semibold">New Skill</h3>
@@ -680,7 +680,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
   const renderExperiment = () => (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <button onClick={goBack} className="btn-ghost p-1 rounded">
+        <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
           <ChevronDown className="w-4 h-4 rotate-90" />
         </button>
         <h3 className="text-lg font-semibold">New Experiment</h3>
@@ -734,7 +734,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
   const renderSubAgent = () => (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <button onClick={goBack} className="btn-ghost p-1 rounded">
+        <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
           <ChevronDown className="w-4 h-4 rotate-90" />
         </button>
         <h3 className="text-lg font-semibold">New Sub-Agent</h3>
@@ -788,7 +788,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
   const renderCustomRole = () => (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <button onClick={goBack} className="btn-ghost p-1 rounded">
+        <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
           <ChevronDown className="w-4 h-4 rotate-90" />
         </button>
         <h3 className="text-lg font-semibold">New Custom Role</h3>
@@ -881,7 +881,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <button onClick={goBack} className="btn-ghost p-1 rounded">
+          <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
             <ChevronDown className="w-4 h-4 rotate-90" />
           </button>
           <h3 className="text-lg font-semibold">New Proactive Trigger</h3>
@@ -1035,7 +1035,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <button onClick={goBack} className="btn-ghost p-1 rounded">
+          <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
             <ChevronDown className="w-4 h-4 rotate-90" />
           </button>
           <h3 className="text-lg font-semibold">New Extension</h3>
@@ -1133,7 +1133,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <button onClick={goBack} className="btn-ghost p-1 rounded">
+          <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
             <ChevronDown className="w-4 h-4 rotate-90" />
           </button>
           <h3 className="text-lg font-semibold">New User</h3>
@@ -1217,7 +1217,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <button onClick={goBack} className="btn-ghost p-1 rounded">
+          <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
             <ChevronDown className="w-4 h-4 rotate-90" />
           </button>
           <h3 className="text-lg font-semibold">New Workspace</h3>
@@ -1302,7 +1302,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <button onClick={goBack} className="btn-ghost p-1 rounded">
+          <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
             <ChevronDown className="w-4 h-4 rotate-90" />
           </button>
           <h3 className="text-lg font-semibold">Add Memory</h3>
@@ -1568,7 +1568,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <button onClick={goBack} className="btn-ghost p-1 rounded">
+          <button onClick={goBack} className="btn-ghost p-1 rounded" aria-label="Go back">
             <ChevronDown className="w-4 h-4 rotate-90" />
           </button>
           <h3 className="text-lg font-semibold">New Intent</h3>

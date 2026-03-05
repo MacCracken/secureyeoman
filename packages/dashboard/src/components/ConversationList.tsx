@@ -115,21 +115,21 @@ export function ConversationList({
       <div className="flex items-center justify-between px-3 py-2.5 border-b">
         <span className="text-sm font-medium">Conversations</span>
         <div className="flex items-center gap-1">
-          <button onClick={handleNew} className="btn-ghost p-1.5 rounded" title="New conversation">
+          <button onClick={handleNew} className="btn-ghost p-1.5 rounded" aria-label="New conversation">
             <Plus className="w-4 h-4" />
           </button>
           {/* Hide collapse on mobile — use backdrop dismiss instead */}
           <button
             onClick={onToggleCollapse}
             className="btn-ghost p-1.5 rounded hidden md:flex"
-            title="Collapse"
+            aria-label="Collapse"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             onClick={onMobileClose}
             className="btn-ghost p-1.5 rounded md:hidden"
-            title="Close"
+            aria-label="Close"
           >
             <X className="w-4 h-4" />
           </button>
@@ -211,7 +211,7 @@ export function ConversationList({
                       handleStartRename(conv);
                     }}
                     className="p-1 hover:text-primary"
-                    title="Rename"
+                    aria-label="Rename"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
@@ -221,7 +221,7 @@ export function ConversationList({
                       deleteMutation.mutate(conv.id);
                     }}
                     className="p-1 hover:text-destructive"
-                    title="Delete"
+                    aria-label="Delete"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -261,11 +261,11 @@ export function ConversationList({
           <button
             onClick={onToggleCollapse}
             className="btn-ghost p-1.5 rounded mb-2"
-            title="Expand conversations"
+            aria-label="Expand conversations"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
-          <button onClick={onNew} className="btn-ghost p-1.5 rounded mb-2" title="New conversation">
+          <button onClick={onNew} className="btn-ghost p-1.5 rounded mb-2" aria-label="New conversation">
             <Plus className="w-4 h-4" />
           </button>
           {conversations.slice(0, 10).map((conv) => (
@@ -277,7 +277,7 @@ export function ConversationList({
               className={`p-1.5 rounded mb-0.5 transition-colors ${
                 activeConversationId === conv.id ? 'bg-primary/15 text-primary' : 'btn-ghost'
               }`}
-              title={conv.title}
+              aria-label={conv.title}
             >
               <MessageSquare className="w-3.5 h-3.5" />
             </button>
