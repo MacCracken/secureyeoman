@@ -281,6 +281,7 @@ NEAR AI's Rust-based privacy-first agent runtime, publicly launched **2026-02-23
 | 33 | **Accessibility compliance** | eslint-plugin-jsx-a11y at warn level; focus-visible ring; 44px touch targets; axe-core smoke tests |
 | 34 | **Community Repository** | 87 community skills across 13 categories; 7 workflow templates; 2 swarm + 2 council templates; 7 security assessment templates; 3 personalities; 3 dashboard themes; schema-validated with 1,310 tests |
 | 35 | **Agent Evaluation Harness** | Structured agent behavior testing — eval scenarios with expected tool calls, forbidden tool calls, output assertions (exact/regex/semantic/contains), budget constraints, multi-turn support. Suites with concurrency and cost budget. 8 MCP tools, 12 REST endpoints, dashboard widget. No competitor offers this. |
+| 36 | **Multi-Region & HA** | Read replica routing (round-robin), cross-cluster A2A federation with data residency, backup replication to S3/Azure/GCS/local, enhanced health checks (replication lag, pgvector, cert expiry, adapter status). Active-passive failover docs (Patroni/pg_auto_failover). |
 
 ---
 

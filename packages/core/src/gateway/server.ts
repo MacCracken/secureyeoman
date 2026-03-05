@@ -88,6 +88,7 @@ import { registerAthiRoutes } from '../security/athi-routes.js';
 import { registerSraRoutes } from '../security/sra-routes.js';
 import { registerConstitutionalRoutes } from '../security/constitutional-routes.js';
 import { registerTeeRoutes } from '../security/tee-routes.js';
+import { registerDlpRoutes } from '../security/dlp/dlp-routes.js';
 import { TeeAttestationVerifier } from '../security/tee-attestation.js';
 import { registerAuditExportRoutes } from '../logging/audit-export-routes.js';
 import { SQLiteAuditStorage } from '../logging/sqlite-storage.js';
@@ -979,6 +980,35 @@ export class GatewayServer {
       });
     }
 
+    // DLP routes (Phase 136)
+    try {
+      const classificationEngine = this.secureYeoman.getClassificationEngine();
+      const classificationStore = this.secureYeoman.getClassificationStore();
+      const dlpManager = this.secureYeoman.getDlpManager();
+      const dlpPolicyStore = this.secureYeoman.getDlpPolicyStore();
+      const watermarkEngine = this.secureYeoman.getWatermarkEngine();
+      const watermarkStore = this.secureYeoman.getWatermarkStore();
+      const retentionStore = this.secureYeoman.getRetentionStore();
+      const retentionManager = this.secureYeoman.getRetentionManager();
+      if (classificationEngine && classificationStore) {
+        registerDlpRoutes(this.app, {
+          classificationEngine,
+          classificationStore,
+          dlpManager: dlpManager ?? undefined,
+          dlpPolicyStore: dlpPolicyStore ?? undefined,
+          watermarkEngine: watermarkEngine ?? undefined,
+          watermarkStore: watermarkStore ?? undefined,
+          retentionStore: retentionStore ?? undefined,
+          retentionManager: retentionManager ?? undefined,
+        });
+        this.getLogger().info('DLP routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('DLP routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
     // Extension routes
     try {
       const extensionManager = this.secureYeoman.getExtensionManager();
@@ -1447,6 +1477,33 @@ export class GatewayServer {
         };
       } catch {
         components.intent = { ok: false, detail: 'unavailable' };
+      }
+
+      // HA health checks (Phase 137)
+      try {
+        const { runHaHealthChecks } = await import('../ha/ha-health-checks.js');
+        const haChecks = await runHaHealthChecks({
+          maxReplicationLagMs: 10_000,
+          certPath: this.config.tls.certPath ?? undefined,
+        });
+        for (const [name, check] of Object.entries(haChecks)) {
+          components[name] = check;
+        }
+      } catch {
+        // HA checks are optional — skip if module not available
+      }
+
+      // Integration adapter status
+      try {
+        const integrationManager = this.secureYeoman.getIntegrationManager();
+        const integrations = integrationManager.getActiveIntegrations?.() ?? [];
+        const activeCount = Array.isArray(integrations) ? integrations.length : 0;
+        components.integrations = {
+          ok: true,
+          detail: `${activeCount} active adapter(s)`,
+        };
+      } catch {
+        components.integrations = { ok: true, detail: 'not configured' };
       }
 
       const allOk = Object.values(components).every((c) => c.ok);

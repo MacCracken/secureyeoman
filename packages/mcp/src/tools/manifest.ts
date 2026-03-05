@@ -1732,5 +1732,42 @@ export function getToolManifest(): ToolManifestEntry[] {
       description: 'Get detailed results of a specific eval suite run including per-scenario results',
       category: 'eval',
     },
+
+    // DLP tools (Phase 136-F)
+    {
+      name: 'dlp_classify',
+      description:
+        'Classify text content for sensitivity level (public/internal/confidential/restricted) with PII and keyword detection',
+      category: 'dlp',
+    },
+    {
+      name: 'dlp_scan',
+      description:
+        'Scan outbound content against DLP policies. Returns allowed/blocked/warned status and findings.',
+      category: 'dlp',
+    },
+    {
+      name: 'dlp_policies',
+      description: 'List DLP policies with optional active filter',
+      category: 'dlp',
+    },
+    {
+      name: 'dlp_egress_stats',
+      description:
+        'Get egress monitoring statistics aggregated by destination, action, and classification level',
+      category: 'dlp',
+    },
+    {
+      name: 'dlp_watermark_embed',
+      description:
+        'Embed an invisible watermark into text for content provenance tracking',
+      category: 'dlp',
+    },
+    {
+      name: 'dlp_watermark_extract',
+      description:
+        'Extract a watermark payload from watermarked text to identify provenance',
+      category: 'dlp',
+    },
   ];
 }

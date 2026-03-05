@@ -4,6 +4,47 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ---
 
+## [2026.3.5e] — 2026-03-05
+
+### Phase 136 — Data Loss Prevention (DLP) & Content Classification
+
+- **Content classification engine** (`security/dlp/classification-engine.ts`): Three-layer classifier — PII regex detection (email, phone, SSN, credit card, IP), keyword dictionary matching (restricted/confidential), custom regex patterns. Four-tier levels: `public < internal < confidential < restricted`. Highest triggered level wins. Configurable via `security.dlp.classification` config.
+- **Classification store** (`security/dlp/classification-store.ts`): PgBaseStorage for `dlp.classifications` table. CRUD with content type filtering, manual override with audit trail.
+- **DLP policy store** (`security/dlp/dlp-policy-store.ts`): PgBaseStorage for `dlp.policies` table. Policy rules match on PII type, keywords, classification level, custom patterns. Three actions: block, warn, log.
+- **DLP scanner** (`security/dlp/dlp-scanner.ts`): Evaluates content against active policies. Classifies via engine, fetches matching policies by destination, evaluates rules, returns action + findings + matched policies.
+- **DLP manager** (`security/dlp/dlp-manager.ts`): Facade tying scanner + stores + egress logging. `scanOutbound()` scans, logs to egress, returns result.
+- **Egress store** (`security/dlp/egress-store.ts`): PgBaseStorage for `dlp.egress_log`. Records outbound data flow events with destination, action, classification level.
+- **Egress monitor** (`security/dlp/egress-monitor.ts`): Aggregate egress stats by destination/action/classification. Z-score anomaly detection on hourly volumes. Destination listing with last-seen timestamps.
+- **Classification-aware RBAC** (`security/rbac.ts`): Extended condition evaluator with `classification` field. Ordered comparison using `CLASSIFICATION_RANK`. Supports eq/neq/lt/lte/gt/gte operators. Example: `{ field: 'classification', operator: 'lte', value: 'confidential' }`.
+- **Data retention** (`security/dlp/retention-manager.ts`, `retention-store.ts`): Per-content-type retention policies with classification-level awareness. Timer-based automated purge (configurable interval, default 24h). Preview endpoint shows what would be purged.
+- **Watermarking** (`security/dlp/watermark-engine.ts`): Three invisible watermark algorithms — unicode-steganography (zero-width chars), whitespace encoding, homoglyph substitution (Cyrillic/Latin). Encodes tenant_id, user_id, content_id, timestamp. Embed/extract/detect APIs.
+- **Watermark store** (`security/dlp/watermark-store.ts`): PgBaseStorage for `dlp.watermarks` provenance registry.
+- **Migration `006_dlp.sql`**: `dlp` schema with 5 tables — classifications, policies, egress_log, retention_policies, watermarks.
+- **22 REST endpoints** under `/api/v1/security/dlp/` — classification CRUD, scan, policy CRUD, retention CRUD + preview, egress stats/anomalies/destinations, watermark embed/extract/detect.
+- **6 MCP tools**: `dlp_classify`, `dlp_scan`, `dlp_policies`, `dlp_egress_stats`, `dlp_watermark_embed`, `dlp_watermark_extract`. Feature gate: `exposeDlp`.
+- **Dashboard**: `DlpWidget` — classification overview, recent egress events, policy status. Canvas type: `dlp-overview`.
+- **Config**: `DlpConfigSchema` in `SecurityConfigSchema` with sub-objects (classification, scanning, retention, watermarking).
+- **Route permissions**: Convention-based via `/api/v1/security/dlp` prefix → `security` resource.
+- **Tests**: 147 new tests across 14 files (130 core, 9 MCP, 8 dashboard).
+- **Docs**: ADR 207, guide `data-loss-prevention.md`.
+
+---
+
+## [2026.3.5d] — 2026-03-05
+
+### Phase 137 — Multi-Region & High Availability
+
+- **Read replica routing** (`pg-pool.ts`): `initReplicaPools()`, `getReadPool()` with round-robin selection, `hasReadReplicas()`, `getReplicaCount()`. Config: `readReplicas[]`, `replicaPoolSize`, `maxReplicationLagMs` on `DatabaseConfigSchema`. Falls back to primary when no replicas configured.
+- **Cross-cluster A2A federation**: `A2AConfigSchema.federation` sub-object with `clusterId`, `region`, `remoteClusters[]`, `allowContentReplication`. Extends existing FederationManager (Phase 79) with cross-cluster delegation tracking. Data residency enforced: task metadata crosses clusters, conversation content stays local by default.
+- **Backup replication** (`backup-replication-manager.ts`): Ships pg_dump backups to S3-compatible, Azure Blob, GCS, or local filesystem. Config: `BackupReplicationConfigSchema` in `InfraConfigSchema` with provider, bucket, prefix, schedule, retentionCount. Retention enforcement for local provider.
+- **Enhanced health checks**: `/health/deep` now includes replication lag monitoring (via `pg_last_xact_replay_timestamp()`), pgvector connectivity check, TLS certificate expiry countdown (warns at 30d, fails at 7d), read replica pool status, and integration adapter status.
+- **Migration `007_ha.sql`**: `federation.delegations` table, `admin.backup_replications` table, conditional cross-cluster columns on `federation.peers`.
+- **Config**: `ReadReplicaConfigSchema`, `BackupReplicationConfigSchema` (new). Database config extended with `readReplicas`, `replicaPoolSize`, `maxReplicationLagMs`.
+- **Tests**: 30+ tests across pg-pool read replicas, HA health checks, and backup replication manager.
+- **Docs**: ADR 208, guide `multi-region-ha.md`.
+
+---
+
 ## [2026.3.5c] — 2026-03-05
 
 ### Phase 135 — Agent Evaluation Harness

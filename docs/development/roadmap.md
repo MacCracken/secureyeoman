@@ -9,14 +9,18 @@
 | Phase | Name | Priority | Status |
 |-------|------|----------|--------|
 | XX | QA & Manual Testing | P0 — ongoing | 🔄 Continuous |
-| 135 | Agent Evaluation Harness | P1 — differentiation | **Done** |
 | 125-E | Cognitive ML — Advanced Features | P2 — ML | Planned |
 | 127 | IDE Experience (Basic Editor) | P3 — power user UX | Planned |
-| 136 | Data Loss Prevention (DLP) & Content Classification | P2 — security | Planned |
-| 137 | Multi-Region & High Availability | P2 — infrastructure | Planned |
 | — | Engineering Backlog (incl. Security Hardening) | Ongoing | Pick-up opportunistically |
 | License Up | Tier Audit & Enforcement Activation | P1 — commercial | Planned (pre-release) |
 | Future | LLM Providers, Voice, Infrastructure | Future / Demand-Gated | — |
+
+### Recently Completed (see [Changelog](../../CHANGELOG.md))
+| Phase | Name |
+|-------|------|
+| 135 | Agent Evaluation Harness — [ADR 206](../adr/206-agent-eval-harness.md) |
+| 136 | Data Loss Prevention (DLP) — [ADR 207](../adr/207-data-loss-prevention.md) |
+| 137 | Multi-Region & HA — [ADR 208](../adr/208-multi-region-ha.md) |
 
 ---
 
@@ -89,31 +93,6 @@
 - [ ] **Responsive / mobile layout** — Adaptive layout for smaller screens.
 - [ ] **Training integration** — Export/annotation hooks from editor to training pipeline.
 - [ ] **Plugin / extension system** — Third-party editor extensions.
-
----
-
-## Phase 136: Data Loss Prevention (DLP) & Content Classification
-
-**Priority**: P2 — Security. Natural extension of the sovereignty and compliance positioning. Required for HIPAA/financial services buyers.
-
-- [ ] **Outbound DLP scanning** — Before any tool sends data externally (email, Slack, webhook, API call), scan content for PII, credentials, classified information, and custom patterns. Block or warn based on policy. Log all DLP events to audit chain.
-- [ ] **Content classification engine** — Auto-classify conversations and documents into sensitivity levels: Public, Internal, Confidential, Restricted. Classification based on content analysis (regex + NER + keyword lists). Manual override supported.
-- [ ] **Classification-aware access control** — RBAC rules that reference content classification. Example: Viewer role can see Public and Internal conversations but not Confidential.
-- [ ] **Data retention policies** — Per-tenant configurable retention periods with automated purge. Separate retention for conversations, memories, documents, audit logs. Required for GDPR Article 17 (right to erasure) and HIPAA retention requirements.
-- [ ] **Egress monitoring** — Dashboard showing all outbound data flows: which tools sent data externally, to which endpoints, how much data, classification level. Anomaly detection for unusual egress patterns.
-- [ ] **Watermarking** — Invisible watermarks in AI-generated content for provenance tracking.
-
----
-
-## Phase 137: Multi-Region & High Availability
-
-**Priority**: P2 — Infrastructure. Current K8s support is single-cluster.
-
-- [ ] **Active-passive failover** — Document and support PostgreSQL streaming replication with automatic promotion (Patroni or pg_auto_failover). Provide Helm values for standby cluster configuration.
-- [ ] **Cross-cluster A2A federation** — Extend A2A protocol to cross-cluster agent discovery for global deployments. Agents in one region can delegate to agents in another. Respects data residency — task metadata crosses clusters but conversation content stays local.
-- [ ] **Read replica routing** — Route read-only queries (brain search, audit reads, dashboard stats) to PostgreSQL read replicas. Write operations go to primary. Connection routing in `pg-pool.ts`.
-- [ ] **Backup replication** — Automated backup shipping to secondary storage (S3-compatible, Azure Blob, GCS). Point-in-time recovery documentation.
-- [ ] **Health check enhancements** — Deeper health checks: database replication lag, vector store connectivity, certificate expiry countdown, integration adapter status. Kubernetes readiness probe considers all critical subsystems.
 
 ---
 

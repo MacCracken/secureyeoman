@@ -16,13 +16,14 @@ export type CanvasWidgetType =
   | 'advanced-training'
   | 'hyperparam-search'
   | 'batch-inference'
-  | 'continual-learning';
+  | 'continual-learning'
+  | 'dlp-overview';
 
 export interface CanvasWidgetDef {
   type: CanvasWidgetType;
   label: string;
   description: string;
-  category: 'development' | 'ai-agents' | 'monitoring' | 'pipelines' | 'finance';
+  category: 'development' | 'ai-agents' | 'monitoring' | 'pipelines' | 'finance' | 'security';
   defaultWidth: number;
   defaultHeight: number;
   singleton?: boolean;
@@ -173,6 +174,14 @@ export const CANVAS_WIDGET_REGISTRY: readonly CanvasWidgetDef[] = [
     defaultWidth: 520,
     defaultHeight: 460,
   },
+  {
+    type: 'dlp-overview',
+    label: 'DLP Overview',
+    category: 'security',
+    description: 'Data Loss Prevention classification, egress monitoring, and policy status',
+    defaultWidth: 480,
+    defaultHeight: 440,
+  },
 ];
 
 export const CATEGORY_LABELS: Record<CanvasWidgetDef['category'], string> = {
@@ -181,4 +190,5 @@ export const CATEGORY_LABELS: Record<CanvasWidgetDef['category'], string> = {
   monitoring: 'Monitoring',
   pipelines: 'Pipelines',
   finance: 'Finance',
+  security: 'Security',
 };

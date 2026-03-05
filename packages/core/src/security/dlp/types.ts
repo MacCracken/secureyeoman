@@ -109,3 +109,29 @@ export interface WatermarkRecord {
   createdAt: number;
   tenantId: string;
 }
+
+// ── Egress Monitoring Types (Phase 136-F) ───────────────────────────────────
+
+export interface EgressStats {
+  totalEvents: number;
+  byDestination: Record<string, number>;
+  byAction: Record<string, number>;
+  byClassification: Record<string, number>;
+  period: { from: number; to: number };
+}
+
+export interface EgressAnomaly {
+  hour: string;
+  volume: number;
+  mean: number;
+  stddev: number;
+  zScore: number;
+  type: 'volume_spike' | 'new_destination' | 'restricted_egress';
+}
+
+export interface EgressDestination {
+  destination: string;
+  destinationType: string;
+  eventCount: number;
+  lastSeen: number;
+}

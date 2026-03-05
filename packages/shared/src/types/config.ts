@@ -90,7 +90,7 @@ export const ExecutionConfigSchema = zz
 
 export type ExecutionConfig = zz.infer<typeof ExecutionConfigSchema>;
 
-// ─── A2A Protocol Config (Phase 6.5) ──────────────────────────────
+// ─── A2A Protocol Config (Phase 6.5 + Phase 137 cross-cluster) ────────
 export const A2AConfigSchema = zz
   .object({
     enabled: zz.boolean().default(false),
@@ -98,6 +98,31 @@ export const A2AConfigSchema = zz
     trustedPeers: zz.array(zz.string()).default([]),
     port: zz.number().int().min(1024).max(65535).default(18790),
     maxPeers: zz.number().int().positive().max(100).default(20),
+    /** Cross-cluster federation (Phase 137). */
+    federation: zz
+      .object({
+        /** Enable cross-cluster agent discovery and delegation. */
+        enabled: zz.boolean().default(false),
+        /** This cluster's unique identifier. */
+        clusterId: zz.string().default(''),
+        /** This cluster's region label (e.g., 'us-east-1', 'eu-west-1'). */
+        region: zz.string().default(''),
+        /** Remote cluster endpoints for federated discovery. */
+        remoteClusters: zz
+          .array(
+            zz.object({
+              clusterId: zz.string().min(1),
+              region: zz.string().min(1),
+              url: zz.string().min(1),
+              /** Shared secret for inter-cluster auth (env var name). */
+              secretEnv: zz.string().optional(),
+            })
+          )
+          .default([]),
+        /** Allow conversation content to cross cluster boundaries. Default false (metadata only). */
+        allowContentReplication: zz.boolean().default(false),
+      })
+      .default({}),
   })
   .default({});
 
@@ -117,6 +142,18 @@ const EnvVarRefSchema = z
   .string()
   .regex(/^[A-Z][A-Z0-9_]*$/, 'Must be a valid environment variable name');
 
+// ─── Read Replica Config (Phase 137 — HA) ────────────────────────────
+export const ReadReplicaConfigSchema = z.object({
+  host: z.string().min(1),
+  port: z.number().default(5432),
+  /** Override user for replica (e.g. read-only user). Falls back to primary user. */
+  user: z.string().optional(),
+  /** Override password env var for replica. Falls back to primary passwordEnv. */
+  passwordEnv: z.string().optional(),
+});
+
+export type ReadReplicaConfig = z.infer<typeof ReadReplicaConfigSchema>;
+
 // Database configuration
 export const DatabaseConfigSchema = z
   .object({
@@ -128,6 +165,12 @@ export const DatabaseConfigSchema = z
     ssl: z.boolean().default(false),
     /** Max PostgreSQL connections in the pool. Increase for multi-user/SaaS deployments. */
     poolSize: z.number().default(10),
+    /** Read replicas for routing read-only queries. Empty = all queries go to primary. */
+    readReplicas: z.array(ReadReplicaConfigSchema).default([]),
+    /** Pool size per read replica. Default 5. */
+    replicaPoolSize: z.number().int().min(1).max(50).default(5),
+    /** Maximum acceptable replication lag in milliseconds. Replicas beyond this are skipped. Default 10s. */
+    maxReplicationLagMs: z.number().int().positive().default(10_000),
   })
   .default({});
 
@@ -971,12 +1014,41 @@ export type { AgentEvalConfig } from './agent-eval.js';
 // ── Domain-specific config groups ─────────────────────────────────────
 // Allows targeted validation of a single domain without parsing all 27 fields.
 
-/** Infrastructure: version, core, storage, licensing */
+// ─── Backup Replication Config (Phase 137 — HA) ──────────────────────
+export const BackupReplicationConfigSchema = z
+  .object({
+    /** Enable automated backup shipping to remote storage. */
+    enabled: z.boolean().default(false),
+    /** Remote storage provider. */
+    provider: z.enum(['s3', 'azure', 'gcs', 'local']).default('local'),
+    /** S3-compatible endpoint URL (for S3, MinIO, etc.). */
+    endpoint: z.string().default(''),
+    /** Bucket/container name. */
+    bucket: z.string().default(''),
+    /** Key prefix for backups within the bucket. */
+    prefix: z.string().default('secureyeoman-backups/'),
+    /** Env var name for access key / credentials. */
+    accessKeyEnv: z.string().default('BACKUP_ACCESS_KEY'),
+    /** Env var name for secret key. */
+    secretKeyEnv: z.string().default('BACKUP_SECRET_KEY'),
+    /** AWS region (for S3). */
+    region: z.string().default(''),
+    /** Cron schedule for automated backups. Default: daily at 2 AM. */
+    schedule: z.string().default('0 2 * * *'),
+    /** Number of remote backups to retain. Default 30. */
+    retentionCount: z.number().int().min(1).default(30),
+  })
+  .default({});
+
+export type BackupReplicationConfig = z.infer<typeof BackupReplicationConfigSchema>;
+
+/** Infrastructure: version, core, storage, licensing, backupReplication */
 export const InfraConfigSchema = z.object({
   version: z.string().default('1.0'),
   core: CoreConfigSchema.default({}),
   storage: StorageBackendConfigSchema,
   licensing: LicensingConfigSchema,
+  backupReplication: BackupReplicationConfigSchema,
 });
 export type InfraConfig = z.infer<typeof InfraConfigSchema>;
 

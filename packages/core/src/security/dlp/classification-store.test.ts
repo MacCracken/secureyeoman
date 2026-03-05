@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockQuery = vi.fn();
 vi.mock('../../storage/pg-pool.js', () => ({ getPool: () => ({ query: mockQuery }) }));
+vi.mock('../../utils/id.js', () => ({ generateId: () => 'test-id' }));
 
 import { ClassificationStore } from './classification-store.js';
 
@@ -9,12 +10,12 @@ describe('ClassificationStore', () => {
   let store: ClassificationStore;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockQuery.mockReset();
     store = new ClassificationStore();
   });
 
   it('creates a classification record', async () => {
-    mockQuery.mockResolvedValueOnce({ rowCount: 1 });
+    mockQuery.mockResolvedValueOnce({ rowCount: 1, rows: [] });
     const id = await store.create({
       contentId: 'conv-1',
       contentType: 'conversation',
@@ -26,7 +27,7 @@ describe('ClassificationStore', () => {
       classifiedAt: Date.now(),
       tenantId: 'default',
     });
-    expect(id).toBeTruthy();
+    expect(id).toBe('test-id');
     expect(mockQuery).toHaveBeenCalledTimes(1);
     expect(mockQuery.mock.calls[0][0]).toContain('INSERT INTO dlp.classifications');
   });
@@ -58,7 +59,7 @@ describe('ClassificationStore', () => {
   });
 
   it('overrides classification level', async () => {
-    mockQuery.mockResolvedValueOnce({ rowCount: 1 });
+    mockQuery.mockResolvedValueOnce({ rowCount: 1, rows: [] });
     const count = await store.override('conv-1', 'conversation', 'restricted', 'admin');
     expect(count).toBe(1);
     expect(mockQuery.mock.calls[0][0]).toContain('manual_override = true');

@@ -12,6 +12,7 @@ import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logge
 import { RoleSchema, type Permission, type RoleDefinition } from '@secureyeoman/shared';
 import type { RBACStorage } from './rbac-storage.js';
 import type { CaptureResource, CaptureAction, CaptureScope } from '../body/types.js';
+import { CLASSIFICATION_RANK, type ClassificationLevel } from './dlp/types.js';
 
 // Default role definitions
 const DEFAULT_ROLES: RoleDefinition[] = [
@@ -478,12 +479,21 @@ export class RBAC {
   }
 
   /**
-   * Evaluate a permission condition
+   * Evaluate a permission condition.
+   *
+   * When `condition.field === 'classification'`, values are compared using
+   * the ordinal ranking from `CLASSIFICATION_RANK` (public < internal <
+   * confidential < restricted) instead of raw numeric/string comparison.
    */
   private evaluateCondition(
     condition: { field: string; operator: string; value: unknown },
     actualValue: unknown
   ): boolean {
+    // Classification-aware comparison using ordinal ranking
+    if (condition.field === 'classification') {
+      return this.evaluateClassificationCondition(condition.operator, condition.value, actualValue);
+    }
+
     switch (condition.operator) {
       case 'eq':
         return actualValue === condition.value;
@@ -517,6 +527,43 @@ export class RBAC {
           typeof condition.value === 'number' &&
           actualValue <= condition.value
         );
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Compare classification levels using ordinal ranking.
+   *
+   * Both `conditionValue` and `actualValue` must be valid ClassificationLevel
+   * strings.  Returns false if either is unrecognised.
+   */
+  private evaluateClassificationCondition(
+    operator: string,
+    conditionValue: unknown,
+    actualValue: unknown,
+  ): boolean {
+    if (typeof conditionValue !== 'string' || typeof actualValue !== 'string') {
+      return false;
+    }
+    const condRank = CLASSIFICATION_RANK[conditionValue as ClassificationLevel];
+    const actRank = CLASSIFICATION_RANK[actualValue as ClassificationLevel];
+    if (condRank === undefined || actRank === undefined) {
+      return false;
+    }
+    switch (operator) {
+      case 'eq':
+        return actRank === condRank;
+      case 'neq':
+        return actRank !== condRank;
+      case 'gt':
+        return actRank > condRank;
+      case 'gte':
+        return actRank >= condRank;
+      case 'lt':
+        return actRank < condRank;
+      case 'lte':
+        return actRank <= condRank;
       default:
         return false;
     }

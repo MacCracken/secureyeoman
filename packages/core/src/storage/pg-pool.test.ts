@@ -24,12 +24,15 @@ vi.mock('pg', () => ({
 }));
 
 vi.mock('../logging/logger.js', () => ({
-  getLogger: vi.fn().mockReturnValue({ error: vi.fn(), warn: vi.fn() }),
+  getLogger: vi.fn().mockReturnValue({ error: vi.fn(), warn: vi.fn(), info: vi.fn() }),
 }));
 
 // ─── Tests ────────────────────────────────────────────────────
 
-import { initPool, getPool, closePool, resetPool, initPoolFromConfig } from './pg-pool.js';
+import {
+  initPool, getPool, closePool, resetPool, initPoolFromConfig,
+  initReplicaPools, getReadPool, hasReadReplicas, getReplicaCount,
+} from './pg-pool.js';
 
 describe('pg-pool', () => {
   const baseConfig = {
@@ -158,6 +161,93 @@ describe('pg-pool', () => {
       resetPool();
       expect(() => getPool()).toThrow('not initialized');
       expect(mockPoolInstance.end).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('read replicas (Phase 137)', () => {
+    it('hasReadReplicas returns false when no replicas', () => {
+      expect(hasReadReplicas()).toBe(false);
+    });
+
+    it('getReadPool falls back to primary when no replicas', () => {
+      initPool(baseConfig);
+      expect(getReadPool()).toBe(mockPoolInstance);
+    });
+
+    it('initReplicaPools creates replica pools', () => {
+      initPool(baseConfig);
+
+      // Each call returns a new mock instance
+      let callCount = 0;
+      const replicaInstances: any[] = [];
+      MockPool.mockImplementation(function () {
+        callCount++;
+        const inst = { ...mockPoolInstance, _replicaIdx: callCount };
+        replicaInstances.push(inst);
+        return inst;
+      });
+
+      initReplicaPools([{ host: 'r1' }, { host: 'r2' }], baseConfig, 3);
+
+      expect(hasReadReplicas()).toBe(true);
+      expect(getReplicaCount()).toBe(2);
+    });
+
+    it('getReadPool round-robins across replicas', () => {
+      // Reset and create distinct pool mocks
+      resetPool();
+      MockPool.mockClear();
+
+      const pools: any[] = [];
+      MockPool.mockImplementation(function () {
+        const p = { ...mockPoolInstance, _id: pools.length };
+        pools.push(p);
+        return p;
+      });
+
+      initPool(baseConfig); // pools[0] = primary
+      initReplicaPools([{ host: 'r1' }, { host: 'r2' }], baseConfig);
+      // pools[1] = replica0, pools[2] = replica1
+
+      const p1 = getReadPool();
+      const p2 = getReadPool();
+      const p3 = getReadPool();
+
+      // Should alternate between replica pools
+      expect(p1).not.toBe(p2);
+      expect(p1).toBe(p3); // round-robin wraps
+    });
+
+    it('closePool closes replica pools', async () => {
+      const endFns: any[] = [];
+      MockPool.mockImplementation(function () {
+        const endFn = vi.fn().mockResolvedValue(undefined);
+        endFns.push(endFn);
+        return { ...mockPoolInstance, end: endFn, on: vi.fn() };
+      });
+
+      initPool(baseConfig);
+      initReplicaPools([{ host: 'r1' }], baseConfig);
+
+      await closePool();
+
+      // Primary + 1 replica = 2 end() calls
+      expect(endFns).toHaveLength(2);
+      endFns.forEach((fn) => expect(fn).toHaveBeenCalled());
+      expect(hasReadReplicas()).toBe(false);
+    });
+
+    it('resetPool clears replica state', () => {
+      MockPool.mockImplementation(function () {
+        return { ...mockPoolInstance, on: vi.fn(), end: vi.fn() };
+      });
+
+      initPool(baseConfig);
+      initReplicaPools([{ host: 'r1' }], baseConfig);
+
+      resetPool();
+      expect(hasReadReplicas()).toBe(false);
+      expect(getReplicaCount()).toBe(0);
     });
   });
 

@@ -49,6 +49,7 @@ import { registerResponsibleAiTools } from './responsible-ai-tools.js';
 import { registerTeeTools } from './tee-tools.js';
 import { registerTrainingTools } from './training-tools.js';
 import { registerEvalTools } from './eval-tools.js';
+import { registerDlpTools } from './dlp-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -118,4 +119,6 @@ export async function registerAllTools(
   registerTrainingTools(server, client, middleware);
   // Agent Eval Harness tools (Phase 135)
   registerEvalTools(server, client, middleware);
+  // DLP tools (Phase 136-F)
+  registerDlpTools(server, client, config, middleware);
 }

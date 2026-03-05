@@ -1082,6 +1082,38 @@ export class SecureYeoman {
     this.ensureInitialized();
     return this.securityMod?.getSraManager() ?? null;
   }
+  getClassificationEngine() {
+    this.ensureInitialized();
+    return this.securityMod?.getClassificationEngine() ?? null;
+  }
+  getClassificationStore() {
+    this.ensureInitialized();
+    return this.securityMod?.getClassificationStore() ?? null;
+  }
+  getDlpManager() {
+    this.ensureInitialized();
+    return this.securityMod?.getDlpManager() ?? null;
+  }
+  getDlpPolicyStore() {
+    this.ensureInitialized();
+    return this.securityMod?.getDlpPolicyStore() ?? null;
+  }
+  getWatermarkEngine() {
+    this.ensureInitialized();
+    return this.securityMod?.getWatermarkEngine() ?? null;
+  }
+  getWatermarkStore() {
+    this.ensureInitialized();
+    return this.securityMod?.getWatermarkStore() ?? null;
+  }
+  getRetentionStore() {
+    this.ensureInitialized();
+    return this.securityMod?.getRetentionStore() ?? null;
+  }
+  getRetentionManager() {
+    this.ensureInitialized();
+    return this.securityMod?.getRetentionManager() ?? null;
+  }
   getExternalizationGate(): ExternalizationGate | null {
     this.ensureInitialized();
     return this.securityMod?.getExternalizationGate() ?? null;

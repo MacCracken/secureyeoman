@@ -38,18 +38,7 @@ The ClawHavoc supply chain attack (1,184+ malicious skills, 135,000+ exposed ins
 
 No competitor in the audit (OpenClaw, Agent Zero, PicoClaw, Ironclaw, TrustClaw, Manus, Devin, OpenHands, OpenAI Frontier) has a structured agent evaluation framework. This is the next frontier after "can the agent do the task" — "can we prove the agent does the task reliably, safely, and consistently."
 
-### 3a. Agent Eval Harness
-
-A testing framework for agent behavior — "unit tests for AI agents."
-
-- **Eval scenario schema** — Define test cases: input prompt, expected tool calls (ordered or unordered), expected output patterns (regex, semantic similarity, exact match), expected memory operations, maximum token budget, maximum wall-clock time.
-- **Eval runner** — Execute scenarios against a personality + skill configuration. Record full execution trace (every LLM call, tool invocation, decision). Compare against expectations. Report pass/fail with detailed diffs.
-- **Regression suite** — Library of built-in eval scenarios covering common failure modes: tool misuse, hallucinated tool names, infinite loops, prompt injection resistance, context window overflow, multi-step reasoning chains.
-- **CI integration** — `secureyeoman eval run --suite regression` as a CI step. Exit code reflects pass/fail. JUnit XML output for CI dashboard integration.
-- **Eval dashboard widget** — Historical pass rates, failure trends, per-scenario drill-down. Canvas type: `'eval-results'`.
-- **Custom eval authoring** — Users define org-specific eval scenarios (e.g., "when asked about patient data, the agent must use the PHI-safe tool, never the general search tool"). YAML or JSON schema.
-- **Comparative eval** — Run the same scenario against multiple personalities, models, or skill configurations. Side-by-side results table. Useful for model migration decisions.
-- **Cost tracking per eval** — Token usage and estimated cost per scenario run. Budget cap to prevent runaway eval costs.
+### ~~3a. Agent Eval Harness~~ → Completed as Phase 135
 
 ### 3b. RAG Evaluation Metrics
 
@@ -101,16 +90,7 @@ Pluggable input/output filter chain beyond ResponseGuard.
 
 ---
 
-## 5. Data Loss Prevention (DLP) & Content Classification
-
-**ROI**: MEDIUM-HIGH — Natural extension of the security positioning. Required for HIPAA/financial services.
-
-- **Outbound DLP scanning** — Before any tool sends data externally (email, Slack, webhook, API call), scan content for PII, credentials, classified information, and custom patterns. Block or warn based on policy. Log all DLP events to audit chain.
-- **Content classification engine** — Auto-classify conversations and documents into sensitivity levels: Public, Internal, Confidential, Restricted. Classification based on content analysis (regex + NER + keyword lists). Manual override supported.
-- **Classification-aware access control** — RBAC rules that reference content classification. Example: Viewer role can see Public and Internal conversations but not Confidential. Operator can see Confidential but not Restricted.
-- **Data retention policies** — Per-tenant configurable retention periods with automated purge. Separate retention for conversations, memories, documents, audit logs. Required for GDPR Article 17 (right to erasure) and HIPAA retention requirements.
-- **Egress monitoring** — Dashboard showing all outbound data flows: which tools sent data externally, to which endpoints, how much data, classification level. Anomaly detection for unusual egress patterns.
-- **Watermarking** — Invisible watermarks in AI-generated content for provenance tracking. Useful for detecting unauthorized distribution of agent outputs.
+## ~~5. Data Loss Prevention (DLP) & Content Classification~~ → Completed as Phase 136
 
 ---
 
@@ -124,19 +104,11 @@ Pluggable input/output filter chain beyond ResponseGuard.
 - **API client libraries** — Python (`secureyeoman-py`) and Go (`secureyeoman-go`) SDKs wrapping the REST API. Generated from OpenAPI spec. Enables programmatic integration beyond MCP.
 - **Webhook/event system** — Subscribe to agent lifecycle events (conversation.started, tool.called, workflow.completed, memory.created, eval.failed). HTTP webhook delivery with retry. Enables external integrations without polling.
 - **Interactive tutorials** — Guided onboarding flows in the dashboard: "Create your first skill," "Set up SSO," "Build a workflow." Step-by-step with contextual help.
-- **OpenAPI spec generation** — Auto-generate OpenAPI 3.1 spec from Fastify route schemas. Serve at `/api/docs`. Enables API explorer and client generation.
+- ~~**OpenAPI spec generation**~~ — Completed. `scripts/generate-openapi.ts` auto-generates spec. See `docs/api/openapi.yaml`.
 
 ---
 
-## 7. Multi-Region & High Availability
-
-**ROI**: MEDIUM — Relevant for large enterprise deployments. Current K8s support is single-cluster.
-
-- **Active-passive failover** — Document PostgreSQL streaming replication setup with automatic promotion (Patroni or pg_auto_failover). Provide Helm values for standby cluster.
-- **Cross-cluster A2A federation** — Extend A2A protocol to cross-cluster agent discovery. Agents in US-East can delegate to agents in EU-West. Respects data residency — task metadata crosses clusters but conversation content stays local.
-- **Read replica routing** — Route read-only queries (brain search, audit reads, dashboard stats) to PostgreSQL read replicas. Write operations go to primary. Connection routing in `pg-pool.ts`.
-- **Backup replication** — Automated backup shipping to secondary storage (S3-compatible, Azure Blob, GCS). Point-in-time recovery documentation.
-- **Health check enhancements** — Deeper health checks: database replication lag, vector store connectivity, certificate expiry countdown, integration adapter status. Kubernetes readiness probe considers all critical subsystems.
+## ~~7. Multi-Region & High Availability~~ → Completed as Phase 137
 
 ---
 

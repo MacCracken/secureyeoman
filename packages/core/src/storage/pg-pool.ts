@@ -13,6 +13,8 @@ const { Pool, types } = pg;
 types.setTypeParser(20, (val: string) => parseInt(val, 10));
 
 let pool: pg.Pool | null = null;
+let replicaPools: pg.Pool[] = [];
+let nextReplicaIdx = 0;
 
 export interface PgPoolConfig {
   host: string;
@@ -109,6 +111,50 @@ export function initPoolFromConfig(dbConfig: DatabaseConfig): pg.Pool {
   });
 }
 
+/**
+ * Initialize read replica connection pools.
+ * Called after initPool() with replica host configurations.
+ */
+export function initReplicaPools(
+  replicas: Array<{ host: string; port?: number }>,
+  baseConfig: PgPoolConfig,
+  replicaPoolSize = 5
+): void {
+  for (const replica of replicas) {
+    const replicaPool = new Pool({
+      host: replica.host,
+      port: replica.port ?? baseConfig.port,
+      database: baseConfig.database,
+      user: baseConfig.user,
+      password: baseConfig.password,
+      ssl: baseConfig.ssl
+        ? {
+            rejectUnauthorized: baseConfig.sslRejectUnauthorized ?? true,
+            ...(baseConfig.sslCa ? { ca: baseConfig.sslCa } : {}),
+          }
+        : false,
+      max: replicaPoolSize,
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 5_000,
+      statement_timeout: 30_000,
+      allowExitOnIdle: true,
+    });
+
+    replicaPool.on('error', (err: Error) => {
+      getLogger().error('Unexpected PostgreSQL replica pool error', {
+        error: err.message,
+        host: replica.host,
+      });
+    });
+
+    replicaPools.push(replicaPool);
+  }
+
+  if (replicaPools.length > 0) {
+    getLogger().info(`Initialized ${replicaPools.length} read replica pool(s)`);
+  }
+}
+
 export function getPool(): pg.Pool {
   if (!pool) {
     throw new Error('PostgreSQL pool not initialized. Call initPool() first.');
@@ -116,7 +162,37 @@ export function getPool(): pg.Pool {
   return pool;
 }
 
+/**
+ * Get a read replica pool (round-robin). Falls back to primary if no replicas configured.
+ * Use this for read-only queries (brain search, audit reads, dashboard stats).
+ */
+export function getReadPool(): pg.Pool {
+  if (replicaPools.length === 0) {
+    return getPool(); // Fall back to primary
+  }
+  const idx = nextReplicaIdx % replicaPools.length;
+  nextReplicaIdx = (nextReplicaIdx + 1) % replicaPools.length;
+  return replicaPools[idx]!;
+}
+
+/** Check if read replicas are configured. */
+export function hasReadReplicas(): boolean {
+  return replicaPools.length > 0;
+}
+
+/** Get count of configured read replica pools. */
+export function getReplicaCount(): number {
+  return replicaPools.length;
+}
+
 export async function closePool(): Promise<void> {
+  // Close replica pools first
+  for (const rp of replicaPools) {
+    await rp.end();
+  }
+  replicaPools = [];
+  nextReplicaIdx = 0;
+
   if (pool) {
     await pool.end();
     pool = null;
@@ -126,4 +202,6 @@ export async function closePool(): Promise<void> {
 /** Reset pool reference (for testing) */
 export function resetPool(): void {
   pool = null;
+  replicaPools = [];
+  nextReplicaIdx = 0;
 }

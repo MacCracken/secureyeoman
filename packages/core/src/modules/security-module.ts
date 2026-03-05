@@ -46,6 +46,16 @@ import {
   QuarantineStorage,
   ScanHistoryStore,
 } from '../sandbox/scanning/index.js';
+import { ClassificationEngine } from '../security/dlp/classification-engine.js';
+import { ClassificationStore } from '../security/dlp/classification-store.js';
+import { DlpPolicyStore } from '../security/dlp/dlp-policy-store.js';
+import { EgressStore } from '../security/dlp/egress-store.js';
+import { DlpScanner } from '../security/dlp/dlp-scanner.js';
+import { DlpManager } from '../security/dlp/dlp-manager.js';
+import { WatermarkEngine } from '../security/dlp/watermark-engine.js';
+import { WatermarkStore } from '../security/dlp/watermark-store.js';
+import { RetentionStore } from '../security/dlp/retention-store.js';
+import { RetentionManager } from '../security/dlp/retention-manager.js';
 import { getPool } from '../storage/pg-pool.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { AuthService } from '../security/auth.js';
@@ -100,6 +110,18 @@ export class SecurityModule implements AppModule {
   private rotationManager: SecretRotationManager | null = null;
   private ssoStorage: SsoStorage | null = null;
   private ssoManager: SsoManager | null = null;
+
+  // --- DLP (Phase 136) ---
+  private classificationEngine: ClassificationEngine | null = null;
+  private classificationStore: ClassificationStore | null = null;
+  private dlpPolicyStore: DlpPolicyStore | null = null;
+  private egressStore: EgressStore | null = null;
+  private dlpScanner: DlpScanner | null = null;
+  private dlpManager: DlpManager | null = null;
+  private watermarkEngine: WatermarkEngine | null = null;
+  private watermarkStore: WatermarkStore | null = null;
+  private retentionStore: RetentionStore | null = null;
+  private retentionManager: RetentionManager | null = null;
 
   // --- Phase 4: late ---
   private externalizationGate: ExternalizationGate | null = null;
@@ -179,6 +201,44 @@ export class SecurityModule implements AppModule {
     const dataDir = this.config.core?.dataDir ?? '~/.secureyeoman/data';
     this.quarantineStorage = new QuarantineStorage(dataDir);
     this.logger.debug('ScanHistoryStore + QuarantineStorage initialized');
+
+    // DLP Classification (Phase 136)
+    this.classificationStore = new ClassificationStore();
+    const dlpCfg = this.config.security.dlp;
+    this.classificationEngine = new ClassificationEngine(
+      dlpCfg?.classification ?? {},
+      { logger: this.logger.child({ component: 'ClassificationEngine' }) },
+    );
+    this.logger.debug('DLP classification engine initialized');
+
+    // DLP Outbound Scanning (Phase 136-B)
+    this.dlpPolicyStore = new DlpPolicyStore();
+    this.egressStore = new EgressStore();
+    this.dlpScanner = new DlpScanner(
+      this.classificationEngine,
+      this.dlpPolicyStore,
+    );
+    this.dlpManager = new DlpManager({
+      scanner: this.dlpScanner,
+      policyStore: this.dlpPolicyStore,
+      egressStore: this.egressStore,
+      classificationStore: this.classificationStore,
+      logger: this.logger.child({ component: 'DlpManager' }),
+    });
+    this.logger.debug('DLP outbound scanning initialized');
+
+    // DLP Watermarking (Phase 136-E)
+    this.watermarkEngine = new WatermarkEngine();
+    this.watermarkStore = new WatermarkStore();
+    this.logger.debug('DLP watermark engine initialized');
+
+    // DLP Retention (Phase 136-D)
+    this.retentionStore = new RetentionStore();
+    this.retentionManager = new RetentionManager({
+      retentionStore: this.retentionStore,
+      logger: this.logger.child({ component: 'RetentionManager' }),
+    });
+    this.logger.debug('DLP retention manager initialized');
 
     // RBAC
     this.rbacStorage = new RBACStorage();
@@ -359,6 +419,11 @@ export class SecurityModule implements AppModule {
         });
       }
     }
+
+    // Start retention manager timer (Phase 136-D)
+    if (this.retentionManager) {
+      this.retentionManager.start();
+    }
   }
 
   // ------------------------------------------------------------------
@@ -449,6 +514,40 @@ export class SecurityModule implements AppModule {
       this.quarantineStorage = null;
     }
     this.externalizationGate = null;
+
+    // DLP
+    if (this.classificationStore) {
+      this.classificationStore.close();
+      this.classificationStore = null;
+    }
+    this.classificationEngine = null;
+
+    if (this.dlpPolicyStore) {
+      this.dlpPolicyStore.close();
+      this.dlpPolicyStore = null;
+    }
+    if (this.egressStore) {
+      this.egressStore.close();
+      this.egressStore = null;
+    }
+    this.dlpScanner = null;
+    this.dlpManager = null;
+
+    if (this.watermarkStore) {
+      this.watermarkStore.close();
+      this.watermarkStore = null;
+    }
+    this.watermarkEngine = null;
+
+    // Retention (Phase 136-D)
+    if (this.retentionManager) {
+      this.retentionManager.stop();
+      this.retentionManager = null;
+    }
+    if (this.retentionStore) {
+      this.retentionStore.close();
+      this.retentionStore = null;
+    }
   }
 
   // ------------------------------------------------------------------
@@ -472,4 +571,12 @@ export class SecurityModule implements AppModule {
   getScanHistoryStore(): ScanHistoryStore | null { return this.scanHistoryStore; }
   getQuarantineStorage(): QuarantineStorage | null { return this.quarantineStorage; }
   getExternalizationGate(): ExternalizationGate | null { return this.externalizationGate; }
+  getClassificationEngine(): ClassificationEngine | null { return this.classificationEngine; }
+  getClassificationStore(): ClassificationStore | null { return this.classificationStore; }
+  getDlpManager(): DlpManager | null { return this.dlpManager; }
+  getDlpPolicyStore(): DlpPolicyStore | null { return this.dlpPolicyStore; }
+  getWatermarkEngine(): WatermarkEngine | null { return this.watermarkEngine; }
+  getWatermarkStore(): WatermarkStore | null { return this.watermarkStore; }
+  getRetentionStore(): RetentionStore | null { return this.retentionStore; }
+  getRetentionManager(): RetentionManager | null { return this.retentionManager; }
 }

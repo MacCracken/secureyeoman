@@ -515,6 +515,10 @@ export {
   type ContinualLearningConfig,
   AgentEvalConfigSchema,
   type AgentEvalConfig,
+  ReadReplicaConfigSchema,
+  type ReadReplicaConfig,
+  BackupReplicationConfigSchema,
+  type BackupReplicationConfig,
 } from './config.js';
 
 // Agent Eval types
