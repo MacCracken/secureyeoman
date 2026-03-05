@@ -98,7 +98,7 @@ security:
 - `flag` — appends `[unverified]` to unverified citations
 - `block` — rejects responses containing unverified citations
 
-Requires a populated knowledge base (see [Knowledge Base Guide](./knowledge-base.md)).
+Requires a populated knowledge base (see [Knowledge & Memory Guide](./knowledge-memory.md)).
 
 ## Audit Trail
 

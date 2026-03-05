@@ -13,6 +13,9 @@ export interface SandboxCapabilities {
   rlimits: boolean;
   platform: 'linux' | 'darwin' | 'win32' | 'other';
   credentialProxy?: boolean;
+  sgx?: boolean;
+  sev?: boolean;
+  tpm?: boolean;
 }
 
 export interface SandboxOptions {

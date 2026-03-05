@@ -6,8 +6,8 @@
  * script copies *.sql alongside the compiled *.js files so they are
  * always co-located with manifest.js at runtime.
  *
- * 001_baseline.sql is the consolidated initial-release schema.
- * New migrations should be appended after it in numeric order.
+ * 001_baseline.sql is the consolidated initial-release schema (v2026.3.5).
+ * New migrations should be appended after it starting at 002_*.
  */
 
 import { readFileSync } from 'node:fs';
@@ -36,8 +36,4 @@ function readSql(filename: string): string {
 
 export const MIGRATION_MANIFEST: { id: string; sql: string }[] = [
   { id: '001_baseline', sql: readSql('001_baseline.sql') },
-  { id: '006_memory_audits', sql: readSql('006_memory_audits.sql') },
-  { id: '007_sra', sql: readSql('007_sra.sql') },
-  { id: '008_cognitive_memory', sql: readSql('008_cognitive_memory.sql') },
-  { id: '009_brain_fts_indexes', sql: readSql('009_brain_fts_indexes.sql') },
 ];

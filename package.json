@@ -1,7 +1,7 @@
 {
   "name": "secureyeoman",
-  "version": "2026.3.4",
-  "description": "SecureYeoman \u2014 Secure, local-first AI assistant",
+  "version": "2026.3.5",
+  "description": "SecureYeoman — Secure, local-first AI assistant",
   "private": true,
   "type": "module",
   "workspaces": [

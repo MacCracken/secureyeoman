@@ -521,7 +521,7 @@ export class AIClient {
     request: AIRequest,
     context?: Record<string, unknown>
   ): Promise<AIResponse> {
-    this.verifyTeeCompliance(providerName);
+    await this.verifyTeeCompliance(providerName);
     const tracer = getTracer('secureyeoman.ai');
     const model = request.model ?? 'default';
 
@@ -603,7 +603,7 @@ export class AIClient {
     request: AIRequest,
     context?: Record<string, unknown>
   ): AsyncGenerator<AIStreamChunk, void, unknown> {
-    this.verifyTeeCompliance(providerName);
+    await this.verifyTeeCompliance(providerName);
     const tracer = getTracer('secureyeoman.ai');
     const model = request.model ?? 'default';
     const span = tracer.startSpan(`ai.chat.stream ${providerName}/${model}`, {
@@ -697,14 +697,14 @@ export class AIClient {
    * Checks model-level override first, then falls back to security-level config.
    * Only active when a teeVerifier is injected.
    */
-  private verifyTeeCompliance(providerName: string): void {
+  private async verifyTeeCompliance(providerName: string): Promise<void> {
     if (!this.teeVerifier) return;
 
     // Model-level confidentialCompute overrides security-level tee config
     const modelLevel = this.primaryModelConfig.confidentialCompute;
     if (modelLevel === 'off') return;
 
-    const { allowed, result } = this.teeVerifier.verify(providerName);
+    const { allowed, result } = await this.teeVerifier.verifyAsync(providerName);
     if (!allowed) {
       throw new ProviderUnavailableError(
         `Provider '${providerName}' does not meet TEE/confidential compute requirements` +

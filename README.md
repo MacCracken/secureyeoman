@@ -293,7 +293,7 @@ Or connect via HTTP: `http://localhost:3001/mcp` (when running with `--profile m
 | Contributing | [Contributing Guide](CONTRIBUTING.md) |
 | Changelog | [CHANGELOG.md](CHANGELOG.md) |
 
-See [`docs/guides/`](docs/guides/) for all 66 guides, including integrations, CI/CD, knowledge base, security testing, content guardrails, and more.
+See [`docs/guides/`](docs/guides/) for all 49 guides, including integrations, CI/CD, knowledge base, security testing, content guardrails, and more.
 
 ---
 

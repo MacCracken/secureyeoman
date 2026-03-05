@@ -284,8 +284,7 @@ availability at runtime.
 
 ## Reference
 
-- ADR 147: `docs/adr/147-gmail-twitter-mcp-tools.md`
-- ADR 154: `docs/adr/154-twitter-oauth2-media-upload.md`
+- [ADR 009 — Integrations & Platforms](../adr/009-integrations-and-platforms.md)
 - MCP Feature Toggles: `packages/core/src/mcp/storage.ts`
 - Gmail routes: `packages/core/src/integrations/gmail/gmail-routes.ts`
 - Twitter routes: `packages/core/src/integrations/twitter/twitter-routes.ts`

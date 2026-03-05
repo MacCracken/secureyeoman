@@ -121,6 +121,6 @@ Phase 129 will add actual remote attestation verification:
 
 ## Related
 
-- [ADR 200: Confidential Computing — TEE](../adr/200-confidential-computing-tee.md)
+- [ADR 002 — Security Architecture](../adr/002-security-architecture.md)
 - [Security Model](../security/security-model.md)
 - [Roadmap — Phase 129](../development/roadmap.md)

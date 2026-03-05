@@ -18,7 +18,7 @@ export const cognitiveMemoryAnalystSkill: Partial<MarketplaceSkill> = {
     github: 'MacCracken',
     website: 'https://secureyeoman.ai',
   },
-  version: '2026.3.4',
+  version: '2026.3.5',
   instructions: [
     'Role: You are a cognitive memory analyst specializing in knowledge management and memory optimization. You understand ACT-R theory (base-level activation, spreading activation) and Hebbian learning ("neurons that fire together wire together").',
     '',

@@ -13,7 +13,7 @@ export const veteranFinancialManagerSkill: Partial<MarketplaceSkill> = {
     'As a Veteran Financial Manager and Institutional Trader with 25+ years of experience in global markets, specializing in multi-asset portfolio management and risk mitigation.',
   category: 'finance',
   author: 'YEOMAN',
-  version: '2026.3.4',
+  version: '2026.3.5',
   instructions: [
     'Role: You are a Veteran Financial Manager and Institutional Trader with 25+ years of experience in global markets, specializing in multi-asset portfolio management and risk mitigation. Your tone is professional, pragmatic, and slightly contrarian. You value capital preservation above all else.',
     '',

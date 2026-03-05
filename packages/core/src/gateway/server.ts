@@ -92,6 +92,7 @@ import { SQLiteAuditStorage } from '../logging/sqlite-storage.js';
 import { registerBackupRoutes } from '../backup/backup-routes.js';
 import { registerTenantRoutes } from '../tenants/tenant-routes.js';
 import { registerTrainingRoutes } from '../training/training-routes.js';
+import { registerResponsibleAiRoutes } from '../training/responsible-ai-routes.js';
 import { registerLicenseRoutes } from '../licensing/license-routes.js';
 import { registerFederationRoutes } from '../federation/federation-routes.js';
 import { registerGatewayRoutes } from './gateway-routes.js';
@@ -1268,6 +1269,7 @@ export class GatewayServer {
     // Training dataset export routes
     try {
       registerTrainingRoutes(this.app, { secureYeoman: this.secureYeoman });
+      registerResponsibleAiRoutes(this.app, { secureYeoman: this.secureYeoman });
       registerLicenseRoutes(this.app, { secureYeoman: this.secureYeoman });
       this.getLogger().info('Training routes registered');
     } catch (err) {

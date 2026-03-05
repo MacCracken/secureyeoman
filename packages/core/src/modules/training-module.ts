@@ -21,6 +21,7 @@ import { DatasetCuratorManager } from '../training/dataset-curator.js';
 import { ExperimentRegistryManager } from '../training/experiment-registry.js';
 import { ModelVersionManager } from '../training/model-version-manager.js';
 import { AbTestManager } from '../training/ab-test-manager.js';
+import { ResponsibleAiManager } from '../training/responsible-ai-manager.js';
 import { getPool } from '../storage/pg-pool.js';
 import { requireSecret } from '../config/loader.js';
 import type { AIClient } from '../ai/client.js';
@@ -54,6 +55,7 @@ export class TrainingModule extends BaseModule {
   private experimentRegistryManager: ExperimentRegistryManager | null = null;
   private modelVersionManager: ModelVersionManager | null = null;
   private abTestManager: AbTestManager | null = null;
+  private responsibleAiManager: ResponsibleAiManager | null = null;
 
   constructor(private readonly deps: TrainingModuleDeps) {
     super();
@@ -156,6 +158,11 @@ export class TrainingModule extends BaseModule {
       pool,
       logger: this.logger.child({ component: 'AbTestManager' }),
     });
+    this.responsibleAiManager = new ResponsibleAiManager({
+      pool,
+      logger: this.logger.child({ component: 'ResponsibleAiManager' }),
+      aiClient: this.deps.aiClient,
+    });
     this.logger.debug('Lifecycle Platform managers initialized');
   }
 
@@ -182,23 +189,59 @@ export class TrainingModule extends BaseModule {
     this.experimentRegistryManager = null;
     this.modelVersionManager = null;
     this.abTestManager = null;
+    this.responsibleAiManager = null;
   }
 
   // --- Getters ---
-  getDistillationManager(): DistillationManager | null { return this.distillationManager; }
-  getFinetuneManager(): FinetuneManager | null { return this.finetuneManager; }
-  getDataCurationManager(): DataCurationManager | null { return this.dataCurationManager; }
-  getEvaluationManager(): EvaluationManager | null { return this.evaluationManager; }
-  getPipelineApprovalManager(): PipelineApprovalManager | null { return this.pipelineApprovalManager; }
-  getPipelineLineageStorage(): PipelineLineageStorage | null { return this.pipelineLineageStorage; }
-  getConversationQualityScorer(): ConversationQualityScorer | null { return this.conversationQualityScorer; }
-  getComputerUseManager(): ComputerUseManager | null { return this.computerUseManager; }
-  getCaptureAuditLogger(): CaptureAuditLogger | null { return this.captureAuditLogger; }
-  getDesktopTrainingBridge(): DesktopTrainingBridge | null { return this.desktopTrainingBridge; }
-  getLlmJudgeManager(): LlmJudgeManager | null { return this.llmJudgeManager; }
-  getPreferenceManager(): PreferenceManager | null { return this.preferenceManager; }
-  getDatasetCuratorManager(): DatasetCuratorManager | null { return this.datasetCuratorManager; }
-  getExperimentRegistryManager(): ExperimentRegistryManager | null { return this.experimentRegistryManager; }
-  getModelVersionManager(): ModelVersionManager | null { return this.modelVersionManager; }
-  getAbTestManager(): AbTestManager | null { return this.abTestManager; }
+  getDistillationManager(): DistillationManager | null {
+    return this.distillationManager;
+  }
+  getFinetuneManager(): FinetuneManager | null {
+    return this.finetuneManager;
+  }
+  getDataCurationManager(): DataCurationManager | null {
+    return this.dataCurationManager;
+  }
+  getEvaluationManager(): EvaluationManager | null {
+    return this.evaluationManager;
+  }
+  getPipelineApprovalManager(): PipelineApprovalManager | null {
+    return this.pipelineApprovalManager;
+  }
+  getPipelineLineageStorage(): PipelineLineageStorage | null {
+    return this.pipelineLineageStorage;
+  }
+  getConversationQualityScorer(): ConversationQualityScorer | null {
+    return this.conversationQualityScorer;
+  }
+  getComputerUseManager(): ComputerUseManager | null {
+    return this.computerUseManager;
+  }
+  getCaptureAuditLogger(): CaptureAuditLogger | null {
+    return this.captureAuditLogger;
+  }
+  getDesktopTrainingBridge(): DesktopTrainingBridge | null {
+    return this.desktopTrainingBridge;
+  }
+  getLlmJudgeManager(): LlmJudgeManager | null {
+    return this.llmJudgeManager;
+  }
+  getPreferenceManager(): PreferenceManager | null {
+    return this.preferenceManager;
+  }
+  getDatasetCuratorManager(): DatasetCuratorManager | null {
+    return this.datasetCuratorManager;
+  }
+  getExperimentRegistryManager(): ExperimentRegistryManager | null {
+    return this.experimentRegistryManager;
+  }
+  getModelVersionManager(): ModelVersionManager | null {
+    return this.modelVersionManager;
+  }
+  getAbTestManager(): AbTestManager | null {
+    return this.abTestManager;
+  }
+  getResponsibleAiManager(): ResponsibleAiManager | null {
+    return this.responsibleAiManager;
+  }
 }

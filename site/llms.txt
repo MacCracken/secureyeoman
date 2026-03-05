@@ -3,7 +3,7 @@
 > SecureYeoman is a sovereign AI agent platform that runs entirely on your infrastructure. It provides multi-model intelligence (13 AI providers), enterprise-grade security (RBAC, SSO/SAML, sandboxing, TEE-aware routing, audit trails), multi-agent orchestration (swarms, teams, DAG workflows, A2A protocol), a 274-tool MCP server, and a full ML lifecycle platform — without sending data off-premises. Dual-licensed: AGPL-3.0 + Commercial.
 
 - Version: 2026.3.5
-- 12 ADRs, 67 guides
+- 12 ADRs, 49 guides
 - 36 platform integrations, 274 MCP tools, 39 CLI commands
 
 ## Documentation
@@ -21,7 +21,7 @@
 ## Guides
 
 - [Integrations](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/integrations.md): Platform integration setup
-- [Knowledge Base](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/knowledge-base.md): RAG and document ingestion
+- [Knowledge & Memory](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/knowledge-memory.md): RAG, document ingestion, citations, memory scoping
 - [Observability](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/observability.md): OpenTelemetry, Prometheus, alerts
 - [CI/CD Integration](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/cicd-integration.md): GitHub Actions, Jenkins, GitLab CI
 - [Security Testing](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/security-testing.md): Security testing guide
@@ -31,7 +31,7 @@
 - [Licensing](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/licensing.md): AGPL-3.0 and commercial license details
 - [Confidential Computing](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/confidential-computing.md): TEE-aware provider routing and attestation
 - [Cognitive ML Memory](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/cognitive-ml-memory.md): Context retrieval, working memory, salience classification
-- [Job Completion Notifications](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/job-completion-notifications.md): Alert rules for workflow/training job events, ntfy channel
+- [Notifications](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/notifications.md): Alert rules, job completion notifications, ntfy channel
 - [Constitutional AI](https://github.com/MacCracken/secureyeoman/blob/main/docs/guides/constitutional-ai.md): Self-critique, revision, and DPO training
 - [Troubleshooting](https://github.com/MacCracken/secureyeoman/blob/main/docs/troubleshooting.md): Common problems and fixes
 

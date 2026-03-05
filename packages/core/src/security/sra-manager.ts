@@ -1395,7 +1395,7 @@ export class SraManager {
         framework: 'aws_sra' as const,
         status: 'active' as const,
         controls: makeAwsSraControls(),
-        metadata: { version: '2026.3.4' },
+        metadata: { version: '2026.3.5' },
       },
       {
         id: 'sra-builtin-cisa-tra',
@@ -1406,7 +1406,7 @@ export class SraManager {
         framework: 'cisa_tra' as const,
         status: 'active' as const,
         controls: makeCisaTraControls(),
-        metadata: { version: '2026.3.4' },
+        metadata: { version: '2026.3.5' },
       },
       {
         id: 'sra-builtin-mcra',
@@ -1417,7 +1417,7 @@ export class SraManager {
         framework: 'mcra' as const,
         status: 'active' as const,
         controls: makeMcraControls(),
-        metadata: { version: '2026.3.4' },
+        metadata: { version: '2026.3.5' },
       },
     ];
 

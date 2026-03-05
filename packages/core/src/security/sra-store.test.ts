@@ -19,7 +19,7 @@ const SAMPLE_BLUEPRINT_ROW = {
   controls: [{ id: 'c1', domain: 'identity_access', title: 'MFA', description: 'Enable MFA', priority: 'critical' }],
   status: 'active',
   is_builtin: true,
-  metadata: { version: '2026.3.4' },
+  metadata: { version: '2026.3.5' },
   created_by: 'system',
   created_at: 1000,
   updated_at: 1000,

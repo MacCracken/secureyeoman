@@ -128,4 +128,4 @@ The following integration paths are planned but not yet implemented:
 - **Full BullShift integration adapter** (2026.6.x) — event subscriptions, bi-directional
   routing, trade audit via SecureYeoman's cryptographic audit chain.
 
-See [ADR 100](../adr/100-bullshift-mcp-trading-tools.md) for the full decision record.
+See [ADR 008 — MCP Server & Tools](../adr/008-mcp-server-and-tools.md) for the full decision record.

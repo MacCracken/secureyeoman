@@ -90,6 +90,7 @@ const PREFIX_RESOURCE_MAP: readonly [prefix: string, resource: string][] = [
   ['/api/v1/risk', 'risk'],
   ['/api/v1/workflows', 'workflows'],
   ['/api/v1/sandbox', 'sandbox'],
+  ['/api/v1/responsible-ai', 'responsible_ai'],
 ];
 
 // ── Explicit overrides ───────────────────────────────────────────────

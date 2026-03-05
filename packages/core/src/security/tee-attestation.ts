@@ -6,7 +6,9 @@
  * attestation (calling provider APIs) is a future phase item.
  */
 
+import { existsSync } from 'node:fs';
 import type { SecureLogger } from '../logging/logger.js';
+import type { RemoteAttestationProvider, TeeHardwareDetection } from './tee-types.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -70,6 +72,8 @@ export class TeeAttestationVerifier {
   private readonly config: TeeConfig;
   private readonly cache = new Map<string, ProviderAttestationResult>();
   private readonly logger: SecureLogger | null;
+  private readonly remoteProviders = new Map<string, RemoteAttestationProvider>();
+  private readonly history = new Map<string, ProviderAttestationResult[]>();
 
   constructor(config: TeeConfig, logger?: SecureLogger) {
     this.config = config;
@@ -170,8 +174,97 @@ export class TeeAttestationVerifier {
   }
 
   // -----------------------------------------------------------------------
+  // Remote attestation (Phase 129)
+  // -----------------------------------------------------------------------
+
+  /** Register a remote attestation provider for a given provider name. */
+  registerRemoteProvider(name: string, provider: RemoteAttestationProvider): void {
+    this.remoteProviders.set(name, provider);
+  }
+
+  /**
+   * Async attestation verification.
+   * Delegates to the registered remote provider if one exists for the given
+   * provider name; otherwise falls back to the synchronous `verify()` path.
+   */
+  async verifyAsync(provider: string): Promise<{ allowed: boolean; result: ProviderAttestationResult }> {
+    const remote = this.remoteProviders.get(provider);
+    if (!remote) {
+      return this.verify(provider);
+    }
+
+    // If TEE not enabled or providerLevel off, short-circuit
+    if (!this.config.enabled) {
+      const now = Date.now();
+      const result = this.buildResult(provider, true, null, now, 'TEE verification disabled');
+      return { allowed: true, result };
+    }
+    if (this.config.providerLevel === 'off') {
+      const now = Date.now();
+      const result = this.buildResult(provider, true, null, now, 'Provider TEE level is off');
+      return { allowed: true, result };
+    }
+
+    // Check cache
+    if (this.config.attestationStrategy === 'cached') {
+      const cached = this.cache.get(provider);
+      if (cached && cached.expiresAt > Date.now()) {
+        this.logger?.debug('TEE attestation cache hit (async)', { component: 'tee', provider });
+        return { allowed: this.resolveAllowed(cached.verified), result: cached };
+      }
+    }
+
+    // Call remote provider
+    const result = await remote.verifyAsync(provider);
+
+    // Store in cache
+    if (this.config.attestationStrategy === 'cached' || this.config.attestationStrategy === 'per_request') {
+      this.cache.set(provider, result);
+    }
+
+    // Store in history (cap at 100 per provider)
+    this.appendHistory(provider, result);
+
+    const allowed = this.resolveAllowed(result.verified);
+    if (!result.verified && this.config.providerLevel === 'required') {
+      this.applyFailureAction(provider, result);
+    }
+
+    return { allowed, result };
+  }
+
+  /** Return the last N attestation results for a provider. */
+  getAttestationHistory(provider: string, limit = 10): ProviderAttestationResult[] {
+    const entries = this.history.get(provider);
+    if (!entries) return [];
+    return entries.slice(-Math.min(limit, entries.length));
+  }
+
+  /** Synchronously detect available TEE hardware on the host. */
+  static detectHardware(): TeeHardwareDetection {
+    return {
+      sgxAvailable: existsSync('/dev/sgx_enclave') || existsSync('/dev/isgx'),
+      sevAvailable: existsSync('/dev/sev'),
+      tpmAvailable: existsSync('/dev/tpm0'),
+      nvidiaCC: false, // Detected asynchronously via tee-gpu.ts
+    };
+  }
+
+  // -----------------------------------------------------------------------
   // Private helpers
   // -----------------------------------------------------------------------
+
+  private appendHistory(provider: string, result: ProviderAttestationResult): void {
+    let entries = this.history.get(provider);
+    if (!entries) {
+      entries = [];
+      this.history.set(provider, entries);
+    }
+    entries.push(result);
+    if (entries.length > 100) {
+      entries.shift();
+    }
+  }
 
   private buildResult(
     provider: string,

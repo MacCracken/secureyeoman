@@ -40,6 +40,20 @@ This ADR consolidates operational decisions governing the CLI experience, audio 
 
 **Dashboard Templates.** Seven pre-built rule templates across Workflows, Training, and Security categories via "From template" dropdown.
 
+### Responsible AI (Phase 130)
+
+**Cohort Error Analysis.** `POST /api/v1/responsible-ai/cohort-analysis` slices eval run results by dimension (topic_category, user_role, time_of_day, personality_id, model_name, language, custom). Groups eval scores, computes per-cohort error rates (avg < 3.0 = error), sorts worst-first. Stored in `responsible_ai.cohort_analyses` with JSONB slices.
+
+**Fairness Metrics.** `POST /api/v1/responsible-ai/fairness` computes demographic parity (max positive-rate difference), equalized odds (max TPR difference), and disparate impact ratio (min/max positive-rate). Threshold defaults to 0.8 (four-fifths rule). Stored in `responsible_ai.fairness_reports`.
+
+**SHAP Token Attribution.** `POST /api/v1/responsible-ai/shap` computes leave-one-out perturbation-based attributions for each input token. Optionally uses AI client for scoring; falls back to length-based heuristic. Normalized to sum 1.0. Stored in `responsible_ai.shap_explanations`.
+
+**Data Provenance.** Tracks every conversation's inclusion/exclusion in training datasets. Four statuses: included, filtered (with reason), synthetic, redacted. Batch insert for curation pipelines. `GET /provenance/user/:id` answers "was this user's data used in training?" `POST /provenance/redact/:id` marks records as redacted for GDPR right-to-erasure. Stored in `responsible_ai.provenance_entries`.
+
+**Model Cards.** Auto-generated structured cards aligned with Hugging Face Model Card format and EU AI Act transparency requirements. Includes: intended use, limitations, ethical considerations, training data summary, evaluation results, fairness assessment, risk classification (minimal/limited/high/unacceptable). Markdown rendering via `GET /model-cards/:id/markdown`. Stored in `responsible_ai.model_cards`.
+
+**RBAC.** `responsible_ai` resource added to PREFIX_RESOURCE_MAP. Operator: read+write. Auditor: read-only.
+
 ## Consequences
 
 **Positive:**

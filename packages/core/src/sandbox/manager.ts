@@ -14,6 +14,8 @@ import { LinuxSandbox } from './linux-sandbox.js';
 import { DarwinSandbox } from './darwin-sandbox.js';
 import { GVisorSandbox } from './gvisor-sandbox.js';
 import { WasmSandbox } from './wasm-sandbox.js';
+import { SgxSandbox } from './sgx-sandbox.js';
+import { SevSandbox } from './sev-sandbox.js';
 import {
   CredentialProxy,
   type CredentialProxyHandle,
@@ -22,7 +24,7 @@ import {
 
 export interface SandboxManagerConfig {
   enabled: boolean;
-  technology: 'auto' | 'seccomp' | 'landlock' | 'gvisor' | 'wasm' | 'none';
+  technology: 'auto' | 'seccomp' | 'landlock' | 'gvisor' | 'wasm' | 'sgx' | 'sev' | 'none';
   allowedReadPaths: string[];
   allowedWritePaths: string[];
   maxMemoryMb: number;
@@ -163,6 +165,30 @@ export class SandboxManager {
     if (this.config.technology === 'wasm') {
       this.getLogger().info('Using WASM sandbox (isolated VM context)');
       this.sandbox = new WasmSandbox();
+      return this.sandbox;
+    }
+
+    if (this.config.technology === 'sgx') {
+      const sgx = new SgxSandbox();
+      if (sgx.isAvailable()) {
+        this.getLogger().info('Using SGX (Gramine-SGX) sandbox');
+        this.sandbox = sgx;
+        return this.sandbox;
+      }
+      this.getLogger().warn('SGX requested but not available, falling back to NoopSandbox');
+      this.sandbox = new NoopSandbox();
+      return this.sandbox;
+    }
+
+    if (this.config.technology === 'sev') {
+      const sev = new SevSandbox();
+      if (sev.isAvailable()) {
+        this.getLogger().info('Using SEV-SNP (QEMU) sandbox');
+        this.sandbox = sev;
+        return this.sandbox;
+      }
+      this.getLogger().warn('SEV requested but not available, falling back to NoopSandbox');
+      this.sandbox = new NoopSandbox();
       return this.sandbox;
     }
 

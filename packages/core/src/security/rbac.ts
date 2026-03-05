@@ -49,6 +49,7 @@ const DEFAULT_ROLES: RoleDefinition[] = [
       { resource: 'browser', actions: ['read', 'write'] },
       { resource: 'extensions', actions: ['read', 'write'] },
       { resource: 'auth', actions: ['read'] },
+      { resource: 'responsible_ai', actions: ['read', 'write'] },
       // Voice permissions
       { resource: 'voice', actions: ['listen', 'tts'] },
       // Capture permissions with time limits (5 minutes max)
@@ -82,6 +83,7 @@ const DEFAULT_ROLES: RoleDefinition[] = [
       // Review captured data for compliance
       { resource: 'capture.screen', actions: ['review'] },
       { resource: 'capture.camera', actions: ['review'] },
+      { resource: 'responsible_ai', actions: ['read'] },
     ],
   },
   {

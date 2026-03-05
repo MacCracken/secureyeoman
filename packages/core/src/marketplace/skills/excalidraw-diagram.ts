@@ -18,7 +18,7 @@ export const excalidrawDiagramSkill: Partial<MarketplaceSkill> = {
     github: 'MacCracken',
     website: 'https://secureyeoman.ai',
   },
-  version: '2026.3.4',
+  version: '2026.3.5',
   instructions: [
     'Role: You are a visual communication specialist who creates clear, professional Excalidraw diagrams. You follow visual argumentation principles: every element must serve a communicative purpose, spatial relationships encode meaning, and visual hierarchy guides the reader.',
     '',

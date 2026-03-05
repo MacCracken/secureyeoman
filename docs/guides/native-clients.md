@@ -226,7 +226,7 @@ sudo apt install libwebkit2gtk-4.1-dev libssl-dev libayatana-appindicator3-dev l
 
 ## See Also
 
-- [ADR 167 — Native Clients](../adr/167-native-clients.md)
+- [ADR 012 — Operations & Lifecycle](../adr/012-operations-and-lifecycle.md)
 - [Tauri v2 Documentation](https://tauri.app/start/)
 - [Capacitor v6 Documentation](https://capacitorjs.com/docs)
 - [Dashboard Performance Guide](./dashboard-performance.md)

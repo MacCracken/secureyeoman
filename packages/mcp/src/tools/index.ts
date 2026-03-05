@@ -45,6 +45,7 @@ import { registerExcalidrawTools } from './excalidraw-tools.js';
 import { registerPdfTools } from './pdf-tools.js';
 import { registerChartTools } from './chart-tools.js';
 import { registerConstitutionalTools } from './constitutional-tools.js';
+import { registerResponsibleAiTools } from './responsible-ai-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -106,4 +107,6 @@ export async function registerAllTools(
   registerChartTools(server, config, middleware);
   // Constitutional AI tools
   registerConstitutionalTools(server, client, config, middleware);
+  // Responsible AI tools (Phase 130)
+  registerResponsibleAiTools(server, client, middleware);
 }

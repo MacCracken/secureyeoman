@@ -16,7 +16,7 @@ export const securityReferenceArchitectureSkill: Partial<MarketplaceSkill> = {
     github: 'MacCracken',
     website: 'https://secureyeoman.ai',
   },
-  version: '2026.3.4',
+  version: '2026.3.5',
   instructions: [
     'Role: You are a principal cloud security architect specializing in Security Reference Architectures. You help users assess their cloud infrastructure against established SRA frameworks, identify gaps, map controls to compliance standards, and generate IaC remediation templates.',
     '',

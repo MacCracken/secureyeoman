@@ -91,6 +91,7 @@ import type { DatasetCuratorManager } from './training/dataset-curator.js';
 import type { ExperimentRegistryManager } from './training/experiment-registry.js';
 import type { ModelVersionManager } from './training/model-version-manager.js';
 import type { AbTestManager } from './training/ab-test-manager.js';
+import type { ResponsibleAiManager } from './training/responsible-ai-manager.js';
 import { initTracing } from './telemetry/otel.js';
 import { LicenseManager } from './licensing/license-manager.js';
 import type { StrategyStorage } from './soul/strategy-storage.js';
@@ -1464,6 +1465,10 @@ export class SecureYeoman {
   getAbTestManager(): AbTestManager | null {
     this.ensureInitialized();
     return this.trainingMod?.getAbTestManager() ?? null;
+  }
+  getResponsibleAiManager(): ResponsibleAiManager | null {
+    this.ensureInitialized();
+    return this.trainingMod?.getResponsibleAiManager() ?? null;
   }
   getConversationQualityScorer(): ConversationQualityScorer | null {
     this.ensureInitialized();

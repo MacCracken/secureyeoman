@@ -6,6 +6,19 @@ All notable changes to SecureYeoman are documented in this file. Versions use th
 
 ## [2026.3.5] — 2026-03-05
 
+### Responsible AI (Phase 130)
+
+- **Cohort-based error analysis**: Slice eval results by dimension (topic_category, user_role, time_of_day, personality_id, model_name, language, custom). Per-cohort error rates, avg scores across 5 judge dimensions. Sorted worst-first. REST: `POST /responsible-ai/cohort-analysis`, `GET` by ID or eval run.
+- **Fairness metrics**: Demographic parity, equalized odds, and disparate impact ratio (four-fifths rule). Per-group positive/error/TPR/FPR rates. Configurable threshold (default 0.8). REST: `POST /responsible-ai/fairness`, `GET` by ID or eval run.
+- **SHAP token attribution**: Leave-one-out perturbation-based explainability. Normalized per-token attributions. AI client scoring with heuristic fallback. REST: `POST /responsible-ai/shap`, `GET` by ID.
+- **Data provenance audit**: Full lineage tracking for training datasets — included, filtered (with reason), synthetic, redacted. Batch insert. User provenance query ("was my data used?"). GDPR right-to-erasure via `POST /provenance/redact/:userId`. REST: `GET /provenance`, `/provenance/summary/:datasetId`, `/provenance/user/:userId`.
+- **Model card generation**: Structured cards aligned with Hugging Face Model Card format. EU AI Act risk classification (minimal/limited/high/unacceptable). Training data summary, eval results, fairness assessment. Markdown rendering. REST: `POST /model-cards`, `GET` by ID/personality, `GET :id/markdown`.
+- **Schema**: `responsible_ai` schema with 5 tables (cohort_analyses, fairness_reports, shap_explanations, provenance_entries, model_cards) + 12 indexes.
+- **Shared types**: 18 Zod schemas (`CohortAnalysis`, `FairnessReport`, `ShapExplanation`, `ProvenanceEntry`, `ModelCard`, configs, create schemas).
+- **RBAC**: `responsible_ai` resource in PREFIX_RESOURCE_MAP. Operator: read+write. Auditor: read-only.
+- **Dashboard**: ResponsibleAiPage with 5 sections — cohort heatmap, fairness gauge, SHAP token heatmap, provenance summary, model card viewer.
+- **Tests**: 47 new tests (16 manager, 16 storage, 15 routes). **ADR 202** (appended to ADR 012). **Guide**: `responsible-ai.md`.
+
 ### Canvas Workspace Improvements (Phase 126)
 
 - **Inter-widget event bus** (`canvas-event-bus.ts`): `CanvasEventBus` singleton with typed `emit(event)` / `on(type, handler)` / `off()`. Wildcard `*` listeners. Well-known event types: `terminal:output`, `terminal:error`, `editor:fileChanged`, `canvas:focusWidget`, `canvas:createWidget`. Terminal widgets now emit output/error events for cross-widget workflows. Widgets subscribe in `useEffect` with cleanup.

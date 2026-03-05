@@ -780,13 +780,11 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'sra_create_blueprint',
-      description:
-        'Create a custom Security Reference Architecture blueprint with controls.',
+      description: 'Create a custom Security Reference Architecture blueprint with controls.',
     },
     {
       name: 'sra_assess',
-      description:
-        'Create a new SRA assessment against a blueprint for gap analysis.',
+      description: 'Create a new SRA assessment against a blueprint for gap analysis.',
     },
     {
       name: 'sra_get_assessment',
@@ -800,8 +798,7 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'sra_summary',
-      description:
-        'Get an executive summary of the Security Reference Architecture posture.',
+      description: 'Get an executive summary of the Security Reference Architecture posture.',
     },
 
     // Constitutional AI tools
@@ -824,8 +821,7 @@ export function getToolManifest(): ToolManifestEntry[] {
     // Excalidraw diagramming tools (Phase 117)
     {
       name: 'excalidraw_create',
-      description:
-        'Generate an Excalidraw scene JSON from structured element specs',
+      description: 'Generate an Excalidraw scene JSON from structured element specs',
     },
     {
       name: 'excalidraw_validate',
@@ -839,8 +835,7 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'excalidraw_templates',
-      description:
-        'List available Excalidraw element templates and color palettes',
+      description: 'List available Excalidraw element templates and color palettes',
     },
     {
       name: 'excalidraw_from_description',
@@ -849,20 +844,17 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'excalidraw_render',
-      description:
-        'Render an Excalidraw scene to SVG for preview or export',
+      description: 'Render an Excalidraw scene to SVG for preview or export',
     },
 
     // PDF Analysis tools (Phase 122-A)
     {
       name: 'pdf_extract_text',
-      description:
-        'Extract text content from a PDF file (base64-encoded)',
+      description: 'Extract text content from a PDF file (base64-encoded)',
     },
     {
       name: 'pdf_upload',
-      description:
-        'Upload a PDF to the knowledge base for indexing and retrieval',
+      description: 'Upload a PDF to the knowledge base for indexing and retrieval',
     },
     {
       name: 'pdf_analyze',
@@ -871,49 +863,44 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'pdf_search',
-      description:
-        'Search within a PDF for text matches with page-level context',
+      description: 'Search within a PDF for text matches with page-level context',
     },
     {
       name: 'pdf_compare',
-      description:
-        'Compare two PDFs and return a line-level diff with change summary',
+      description: 'Compare two PDFs and return a line-level diff with change summary',
     },
     {
       name: 'pdf_list',
-      description:
-        'List PDF documents in the knowledge base',
+      description: 'List PDF documents in the knowledge base',
     },
 
     // Advanced PDF Analysis tools (Phase 122-B)
     {
       name: 'pdf_extract_pages',
-      description:
-        'Extract text from a PDF page by page with optional page range',
+      description: 'Extract text from a PDF page by page with optional page range',
     },
     {
       name: 'pdf_extract_tables',
-      description:
-        'Extract tables from a PDF with AI-ready prompts per page',
+      description: 'Extract tables from a PDF with AI-ready prompts per page',
     },
     {
       name: 'pdf_visual_analyze',
-      description:
-        'Analyze the structural layout of a PDF (headers, sections, tables, figures)',
+      description: 'Analyze the structural layout of a PDF (headers, sections, tables, figures)',
     },
     {
       name: 'pdf_summarize',
-      description:
-        'Generate a hierarchical summary of a PDF with page citations',
+      description: 'Generate a hierarchical summary of a PDF with page citations',
     },
     {
       name: 'pdf_form_fields',
-      description:
-        'Read AcroForm fields from a PDF (text, checkbox, radio, dropdown, signature)',
+      description: 'Read AcroForm fields from a PDF (text, checkbox, radio, dropdown, signature)',
     },
 
     // Trading tools — BullShift integration
-    { name: 'bullshift_health', description: 'Check if the BullShift trading API server is running' },
+    {
+      name: 'bullshift_health',
+      description: 'Check if the BullShift trading API server is running',
+    },
     {
       name: 'bullshift_get_account',
       description: 'Get trading account balance, buying power, and margin',
@@ -956,38 +943,31 @@ export function getToolManifest(): ToolManifestEntry[] {
     },
     {
       name: 'chart_line',
-      description:
-        'Generate multi-series line chart SVG for price trends and time series',
+      description: 'Generate multi-series line chart SVG for price trends and time series',
     },
     {
       name: 'chart_bar',
-      description:
-        'Generate grouped or stacked bar chart SVG for comparisons and allocations',
+      description: 'Generate grouped or stacked bar chart SVG for comparisons and allocations',
     },
     {
       name: 'chart_pie',
-      description:
-        'Generate pie or donut chart SVG for portfolio allocation and distributions',
+      description: 'Generate pie or donut chart SVG for portfolio allocation and distributions',
     },
     {
       name: 'chart_scatter',
-      description:
-        'Generate scatter plot SVG for risk vs return and correlation analysis',
+      description: 'Generate scatter plot SVG for risk vs return and correlation analysis',
     },
     {
       name: 'chart_waterfall',
-      description:
-        'Generate waterfall chart SVG for P&L breakdown and synergy bridges',
+      description: 'Generate waterfall chart SVG for P&L breakdown and synergy bridges',
     },
     {
       name: 'chart_heatmap',
-      description:
-        'Generate correlation matrix heatmap SVG for asset correlations',
+      description: 'Generate correlation matrix heatmap SVG for asset correlations',
     },
     {
       name: 'chart_sparkline',
-      description:
-        'Generate compact inline sparkline SVG for quick trend indicators',
+      description: 'Generate compact inline sparkline SVG for quick trend indicators',
     },
 
     // Security tools — Kali Linux toolkit (Phase 58)
@@ -1034,18 +1014,23 @@ export function getToolManifest(): ToolManifestEntry[] {
     { name: 'sec_shodan', description: 'Look up a host on Shodan (requires SHODAN_API_KEY)' },
     {
       name: 'sec_hydra',
-      description: 'Run hydra brute-force attack against an authorized target (requires allowBruteForce)',
+      description:
+        'Run hydra brute-force attack against an authorized target (requires allowBruteForce)',
     },
 
     // GitHub Actions tools (Phase 90)
-    { name: 'gha_list_workflows', description: 'List all GitHub Actions workflows in a repository' },
+    {
+      name: 'gha_list_workflows',
+      description: 'List all GitHub Actions workflows in a repository',
+    },
     {
       name: 'gha_dispatch_workflow',
       description: 'Trigger a workflow dispatch event for a GitHub Actions workflow',
     },
     {
       name: 'gha_list_runs',
-      description: 'List workflow runs for a GitHub repository, optionally filtered by branch and status',
+      description:
+        'List workflow runs for a GitHub repository, optionally filtered by branch and status',
     },
     {
       name: 'gha_get_run',
@@ -1058,6 +1043,47 @@ export function getToolManifest(): ToolManifestEntry[] {
     {
       name: 'gha_get_run_logs',
       description: 'Get the download URL for logs of a completed GitHub Actions workflow run',
+    },
+
+    // Responsible AI tools (Phase 130)
+    {
+      name: 'rai_cohort_analysis',
+      description:
+        'Run cohort-based error analysis on an eval run — slice by model_name, topic_category, user_role, time_of_day, etc.',
+    },
+    {
+      name: 'rai_fairness_report',
+      description:
+        'Compute fairness metrics (demographic parity, equalized odds, disparate impact) for an eval run by protected attribute',
+    },
+    {
+      name: 'rai_shap_explain',
+      description:
+        'Compute SHAP-style token attributions for a prompt/response pair — shows which tokens most influenced the output',
+    },
+    {
+      name: 'rai_provenance_query',
+      description:
+        'Query data provenance records — check which conversations were included/excluded from training datasets',
+    },
+    {
+      name: 'rai_provenance_summary',
+      description:
+        'Get a summary of data provenance for a training dataset — included/filtered/synthetic/redacted counts',
+    },
+    {
+      name: 'rai_user_provenance',
+      description:
+        "Check if a specific user's data was used in any training dataset — important for GDPR compliance",
+    },
+    {
+      name: 'rai_model_card',
+      description:
+        'Generate or retrieve a model card for a personality — intended use, limitations, eval results, fairness, EU AI Act classification',
+    },
+    {
+      name: 'rai_model_card_markdown',
+      description: 'Get a model card rendered as Markdown in Hugging Face Model Card format',
     },
   ];
 }

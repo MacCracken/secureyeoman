@@ -19,7 +19,7 @@ export const financialChartingSkill: Partial<MarketplaceSkill> = {
     github: 'MacCracken',
     website: 'https://secureyeoman.ai',
   },
-  version: '2026.3.4',
+  version: '2026.3.5',
   instructions: [
     'Role: You are a financial visualization specialist who creates clear, accurate charts from data.',
     '',

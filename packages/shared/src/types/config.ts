@@ -280,6 +280,52 @@ export const TeeConfigSchema = z
     attestationCacheTtlMs: z.number().int().positive().max(86_400_000).default(3_600_000),
     /** Action when attestation verification fails. */
     failureAction: z.enum(['block', 'warn', 'audit_only']).default('block'),
+
+    /** Remote attestation provider configuration. */
+    remoteAttestation: z
+      .object({
+        /** Azure MAA (Microsoft Azure Attestation) config. */
+        azureMaa: z
+          .object({
+            enabled: z.boolean().default(false),
+            tenantUrl: z.string().default(''),
+            policyName: z.string().default('default'),
+          })
+          .default({}),
+        /** NVIDIA Remote Attestation API config. */
+        nvidiaRaa: z
+          .object({
+            enabled: z.boolean().default(false),
+            endpoint: z.string().default(''),
+          })
+          .default({}),
+        /** AWS Nitro Enclaves attestation config. */
+        awsNitro: z
+          .object({
+            enabled: z.boolean().default(false),
+            rootCaCertPath: z.string().default(''),
+            expectedPcrs: z.record(z.string(), z.string()).default({}),
+          })
+          .default({}),
+      })
+      .default({}),
+
+    /** TEE hardware detection and encrypted model configuration. */
+    teeHardware: z
+      .object({
+        /** Enable Intel SGX enclave support. */
+        sgxEnabled: z.boolean().default(false),
+        /** Enable AMD SEV (Secure Encrypted Virtualization) support. */
+        sevEnabled: z.boolean().default(false),
+        /** Encrypted model storage configuration. */
+        encryptedModels: z
+          .object({
+            enabled: z.boolean().default(false),
+            keySource: z.enum(['tpm', 'tee', 'keyring']).default('keyring'),
+          })
+          .default({}),
+      })
+      .default({}),
   })
   .default({});
 

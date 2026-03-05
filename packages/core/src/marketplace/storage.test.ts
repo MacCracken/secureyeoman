@@ -58,27 +58,27 @@ vi.mock('./skills/index.js', () => ({
   securityReferenceArchitectureSkill: {
     name: 'Security Reference Architecture',
     author: 'YEOMAN',
-    version: '2026.3.4',
+    version: '2026.3.5',
   },
   excalidrawDiagramSkill: {
     name: 'Excalidraw Diagram',
     author: 'YEOMAN',
-    version: '2026.3.4',
+    version: '2026.3.5',
   },
   pdfAnalysisSkill: {
     name: 'PDF Analysis',
     author: 'YEOMAN',
-    version: '2026.3.4',
+    version: '2026.3.5',
   },
   cognitiveMemoryAnalystSkill: {
     name: 'Cognitive Memory Analyst',
     author: 'YEOMAN',
-    version: '2026.3.4',
+    version: '2026.3.5',
   },
   financialChartingSkill: {
     name: 'Financial Charting',
     author: 'YEOMAN',
-    version: '2026.3.4',
+    version: '2026.3.5',
   },
 }));
 

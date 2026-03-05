@@ -524,7 +524,7 @@ secureyeoman agnostic --help            # full usage
 
 The Agnostic UI is available at http://localhost:8000.
 
-For configuration details see the [Configuration Reference](../configuration.md#agnostic-qa-team-bridge) and [ADR 090](../adr/090-agnostic-qa-sub-agent-team.md).
+For configuration details see the [Configuration Reference](../configuration.md#agnostic-qa-team-bridge) and [ADR 004 — Agents & Orchestration](../adr/004-agents-and-orchestration.md).
 
 ---
 

@@ -2,8 +2,10 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   TeeAttestationVerifier,
   type TeeConfig,
+  type ProviderAttestationResult,
 } from './tee-attestation.js';
 import type { SecureLogger } from '../logging/logger.js';
+import type { RemoteAttestationProvider } from './tee-types.js';
 
 function makeConfig(overrides: Partial<TeeConfig> = {}): TeeConfig {
   return {
@@ -289,6 +291,218 @@ describe('TeeAttestationVerifier', () => {
         expect.stringContaining('audit'),
         expect.objectContaining({ provider: 'grok' }),
       );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Phase 129 — Remote attestation, history, hardware detection
+  // -------------------------------------------------------------------------
+
+  describe('registerRemoteProvider() and verifyAsync()', () => {
+    function makeMockRemoteProvider(verified: boolean, details?: string): RemoteAttestationProvider {
+      return {
+        name: 'mock-remote',
+        verifyAsync: vi.fn(async (provider: string): Promise<ProviderAttestationResult> => ({
+          provider,
+          verified,
+          technology: 'sgx',
+          attestationTime: Date.now(),
+          expiresAt: Date.now() + 3_600_000,
+          details: details ?? 'Remote attestation result',
+        })),
+      };
+    }
+
+    it('uses remote provider when registered', async () => {
+      const remote = makeMockRemoteProvider(true);
+      const verifier = new TeeAttestationVerifier(makeConfig());
+      verifier.registerRemoteProvider('anthropic', remote);
+
+      const { allowed, result } = await verifier.verifyAsync('anthropic');
+      expect(allowed).toBe(true);
+      expect(result.verified).toBe(true);
+      expect(result.technology).toBe('sgx');
+      expect(remote.verifyAsync).toHaveBeenCalledWith('anthropic');
+    });
+
+    it('falls back to sync verify() when no remote provider registered', async () => {
+      const verifier = new TeeAttestationVerifier(makeConfig());
+      const { allowed, result } = await verifier.verifyAsync('anthropic');
+      expect(allowed).toBe(true);
+      expect(result.verified).toBe(true);
+      // Should match sync verify behavior
+      expect(result.technology).toBeNull(); // anthropic has only 'none'
+    });
+
+    it('stores result in cache after remote verification', async () => {
+      const remote = makeMockRemoteProvider(true);
+      const verifier = new TeeAttestationVerifier(makeConfig({ attestationStrategy: 'cached' }));
+      verifier.registerRemoteProvider('anthropic', remote);
+
+      await verifier.verifyAsync('anthropic');
+      expect(verifier.getCacheStats().size).toBe(1);
+      expect(verifier.getCacheStats().providers).toContain('anthropic');
+    });
+
+    it('stores result in cache for per_request strategy', async () => {
+      const remote = makeMockRemoteProvider(true);
+      const verifier = new TeeAttestationVerifier(makeConfig({ attestationStrategy: 'per_request' }));
+      verifier.registerRemoteProvider('anthropic', remote);
+
+      await verifier.verifyAsync('anthropic');
+      expect(verifier.getCacheStats().size).toBe(1);
+    });
+
+    it('applies failureAction for failed remote attestation', async () => {
+      const logger = makeLogger();
+      const remote = makeMockRemoteProvider(false, 'Remote check failed');
+      const verifier = new TeeAttestationVerifier(
+        makeConfig({ providerLevel: 'required', failureAction: 'block' }),
+        logger,
+      );
+      verifier.registerRemoteProvider('ollama', remote);
+
+      const { allowed } = await verifier.verifyAsync('ollama');
+      expect(allowed).toBe(false);
+      expect(logger.warn).toHaveBeenCalled();
+    });
+
+    it('allows through with warn failureAction on failed remote attestation', async () => {
+      const logger = makeLogger();
+      const remote = makeMockRemoteProvider(false);
+      const verifier = new TeeAttestationVerifier(
+        makeConfig({ providerLevel: 'required', failureAction: 'warn' }),
+        logger,
+      );
+      verifier.registerRemoteProvider('ollama', remote);
+
+      const { allowed } = await verifier.verifyAsync('ollama');
+      expect(allowed).toBe(true);
+    });
+
+    it('short-circuits when TEE disabled', async () => {
+      const remote = makeMockRemoteProvider(true);
+      const verifier = new TeeAttestationVerifier(makeConfig({ enabled: false }));
+      verifier.registerRemoteProvider('anthropic', remote);
+
+      const { allowed } = await verifier.verifyAsync('anthropic');
+      expect(allowed).toBe(true);
+      expect(remote.verifyAsync).not.toHaveBeenCalled();
+    });
+
+    it('short-circuits when providerLevel is off', async () => {
+      const remote = makeMockRemoteProvider(true);
+      const verifier = new TeeAttestationVerifier(makeConfig({ providerLevel: 'off' }));
+      verifier.registerRemoteProvider('anthropic', remote);
+
+      const { allowed } = await verifier.verifyAsync('anthropic');
+      expect(allowed).toBe(true);
+      expect(remote.verifyAsync).not.toHaveBeenCalled();
+    });
+
+    it('returns cached result on subsequent async calls', async () => {
+      const remote = makeMockRemoteProvider(true);
+      const logger = makeLogger();
+      const verifier = new TeeAttestationVerifier(makeConfig({ attestationStrategy: 'cached' }), logger);
+      verifier.registerRemoteProvider('anthropic', remote);
+
+      await verifier.verifyAsync('anthropic');
+      await verifier.verifyAsync('anthropic');
+
+      // Remote should be called once; second call hits cache
+      expect(remote.verifyAsync).toHaveBeenCalledTimes(1);
+      expect(logger.debug).toHaveBeenCalledWith(
+        'TEE attestation cache hit (async)',
+        expect.objectContaining({ provider: 'anthropic' }),
+      );
+    });
+  });
+
+  describe('getAttestationHistory()', () => {
+    function makeMockRemoteProvider(): RemoteAttestationProvider {
+      let callCount = 0;
+      return {
+        name: 'mock-remote',
+        verifyAsync: vi.fn(async (provider: string): Promise<ProviderAttestationResult> => {
+          callCount++;
+          return {
+            provider,
+            verified: true,
+            technology: 'sev',
+            attestationTime: callCount,
+            expiresAt: Date.now() + 1, // Expire fast so cache doesn't interfere
+            details: `Call ${callCount}`,
+          };
+        }),
+      };
+    }
+
+    it('returns empty array for unknown provider', () => {
+      const verifier = new TeeAttestationVerifier(makeConfig());
+      expect(verifier.getAttestationHistory('unknown')).toEqual([]);
+    });
+
+    it('returns results from async verification', async () => {
+      const remote = makeMockRemoteProvider();
+      const verifier = new TeeAttestationVerifier(makeConfig({ attestationStrategy: 'per_request' }));
+      verifier.registerRemoteProvider('test', remote);
+
+      await verifier.verifyAsync('test');
+      const history = verifier.getAttestationHistory('test');
+      expect(history).toHaveLength(1);
+      expect(history[0].provider).toBe('test');
+    });
+
+    it('respects the limit parameter', async () => {
+      const remote = makeMockRemoteProvider();
+      const verifier = new TeeAttestationVerifier(makeConfig({ attestationStrategy: 'none' }));
+      verifier.registerRemoteProvider('test', remote);
+
+      for (let i = 0; i < 5; i++) {
+        await verifier.verifyAsync('test');
+      }
+
+      const limited = verifier.getAttestationHistory('test', 3);
+      expect(limited).toHaveLength(3);
+      // Should be the last 3 entries
+      expect(limited[0].details).toBe('Call 3');
+      expect(limited[2].details).toBe('Call 5');
+    });
+
+    it('caps history at 100 entries per provider', async () => {
+      const remote = makeMockRemoteProvider();
+      const verifier = new TeeAttestationVerifier(makeConfig({ attestationStrategy: 'none' }));
+      verifier.registerRemoteProvider('test', remote);
+
+      for (let i = 0; i < 110; i++) {
+        await verifier.verifyAsync('test');
+      }
+
+      const history = verifier.getAttestationHistory('test', 200);
+      expect(history).toHaveLength(100);
+      // Oldest should be call 11 (first 10 shifted out)
+      expect(history[0].attestationTime).toBe(11);
+    });
+  });
+
+  describe('detectHardware()', () => {
+    const mockExistsSync = vi.hoisted(() => vi.fn((_path: string) => false));
+
+    // We need a separate import with the mock applied — use dynamic reimport
+    it('returns the expected shape with nothing available', async () => {
+      // On a typical dev/CI machine none of the TEE devices exist,
+      // so detectHardware should return all false.
+      const hw = TeeAttestationVerifier.detectHardware();
+      expect(hw).toHaveProperty('sgxAvailable');
+      expect(hw).toHaveProperty('sevAvailable');
+      expect(hw).toHaveProperty('tpmAvailable');
+      expect(hw).toHaveProperty('nvidiaCC');
+      // nvidiaCC is always false (detected asynchronously)
+      expect(hw.nvidiaCC).toBe(false);
+      // Structural check — all values are booleans
+      expect(typeof hw.sgxAvailable).toBe('boolean');
+      expect(typeof hw.sevAvailable).toBe('boolean');
+      expect(typeof hw.tpmAvailable).toBe('boolean');
     });
   });
 });

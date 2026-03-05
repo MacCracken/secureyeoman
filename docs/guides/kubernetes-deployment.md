@@ -212,4 +212,4 @@ kubectl port-forward -n secureyeoman svc/secureyeoman-core 18789:18789
 
 - [Architecture Overview](../development/architecture.md)
 - [Security Model](../security/security-model.md)
-- [ADR 042: Kubernetes Deployment & Observability](../adr/042-kubernetes-deployment.md)
+- [ADR 012 — Operations & Lifecycle](../adr/012-operations-and-lifecycle.md)

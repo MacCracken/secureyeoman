@@ -129,5 +129,5 @@ By submitting a pull request you agree to the CLA in `CONTRIBUTING.md`, which al
 
 - [LICENSE](../../LICENSE) — AGPL-3.0 full text
 - [LICENSE.commercial](../../LICENSE.commercial) — Commercial license template
-- [ADR 171 — Dual Licensing](../adr/171-dual-licensing.md) — Architectural decision record
+- [ADR 012 — Operations & Lifecycle](../adr/012-operations-and-lifecycle.md) — Architectural decision record
 - [Getting Started](./getting-started.md) — Installation and first run

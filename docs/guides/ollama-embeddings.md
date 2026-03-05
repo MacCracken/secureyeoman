@@ -12,7 +12,7 @@ Benefits of using Ollama as the embedding provider:
 
 - **Privacy:** Embeddings are computed locally; no text is sent to external services.
 - **No cost:** No API usage charges for embedding calls.
-- **Custom models:** You can use fine-tuned embedding models you have trained yourself (see the [Training Dataset Export Guide](./training-dataset-export.md)).
+- **Custom models:** You can use fine-tuned embedding models you have trained yourself (see the [Training & ML Guide](./training-ml.md)).
 - **Offline operation:** Works without internet access once the model is pulled.
 
 ---
@@ -78,7 +78,7 @@ ollama pull all-minilm
 
 ## Using Custom (Fine-Tuned) Models
 
-If you have trained a custom embedding model using sentence-transformers (see the [Training Dataset Export Guide](./training-dataset-export.md)), you can convert and serve it via Ollama.
+If you have trained a custom embedding model using sentence-transformers (see the [Training & ML Guide](./training-ml.md)), you can convert and serve it via Ollama.
 
 ### Convert to GGUF
 
